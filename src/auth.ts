@@ -1,0 +1,91 @@
+import NextAuth from "next-auth";
+import Credentials from "next-auth/providers/credentials";
+import bcrypt from "bcryptjs";
+import { prisma } from "@/lib/prisma";
+import type { Role } from "@/lib/constants";
+
+export const { handlers, signIn, signOut, auth } = NextAuth({
+  session: { strategy: "jwt" },
+  pages: { signIn: "/login" },
+  providers: [
+    Credentials({
+      credentials: {
+        username: { label: "Username" },
+        password: { label: "Password", type: "password" },
+      },
+      authorize: async (creds) => {
+        const username = creds?.username as string | undefined;
+        const password = creds?.password as string | undefined;
+        if (!username || !password) return null;
+
+        // Retry once on DB error — Neon serverless wakes up on first connection
+        let user: any;
+        for (let attempt = 1; attempt <= 2; attempt++) {
+          try {
+            user = await prisma.user.findUnique({
+              where: { username },
+              include: { doctor: true, hospitalStaff: { include: { hospital: true } }, refractionist: true },
+            });
+            break;
+          } catch (err: any) {
+            console.error(`[auth] DB error (attempt ${attempt}):`, err?.message ?? err);
+            if (attempt === 2) return null;
+            await new Promise((r) => setTimeout(r, 1500));
+          }
+        }
+        if (!user || !user.active) return null;
+
+        const valid = await bcrypt.compare(password, user.passwordHash);
+        if (!valid) return null;
+
+        let profileId = "";
+        let profileName = username;
+        let hospitalId: string | undefined;
+        let doctorId: string | undefined;
+
+        if (user.role === "DOCTOR" && user.doctor) {
+          profileId = user.doctor.id;
+          profileName = user.doctor.name;
+          doctorId = user.doctor.id;
+        } else if (user.role === "HOSPITAL" && user.hospitalStaff) {
+          profileId = user.hospitalStaff.id;
+          profileName = user.hospitalStaff.name;
+          hospitalId = user.hospitalStaff.hospitalId;
+        } else if (user.role === "REFRACTIONIST" && user.refractionist) {
+          profileId = user.refractionist.id;
+          profileName = user.refractionist.name;
+          hospitalId = user.refractionist.hospitalId;
+          doctorId = user.refractionist.doctorId;
+        }
+
+        return {
+          id: user.id,
+          name: profileName,
+          role: user.role as Role,
+          profileId,
+          hospitalId,
+          doctorId,
+        };
+      },
+    }),
+  ],
+  callbacks: {
+    jwt: async ({ token, user }) => {
+      if (user) {
+        token.role = (user as any).role;
+        token.profileId = (user as any).profileId;
+        token.hospitalId = (user as any).hospitalId;
+        token.doctorId = (user as any).doctorId;
+      }
+      return token;
+    },
+    session: async ({ session, token }) => {
+      (session.user as any).id = token.sub;
+      (session.user as any).role = token.role;
+      (session.user as any).profileId = token.profileId;
+      (session.user as any).hospitalId = token.hospitalId;
+      (session.user as any).doctorId = token.doctorId;
+      return session;
+    },
+  },
+});

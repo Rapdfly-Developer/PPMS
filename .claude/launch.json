@@ -1,0 +1,18 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "Next.js Dev Server",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "port": 3000,
+      "autoPort": true
+    },
+    {
+      "name": "RFConnector Portal",
+      "runtimeExecutable": "C:\\Users\\ELCOT\\Desktop\\PPMS\\start-rfconnector.bat",
+      "runtimeArgs": [],
+      "port": 5173
+    }
+  ]
+}

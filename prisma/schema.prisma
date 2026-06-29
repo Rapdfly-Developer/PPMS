@@ -1,0 +1,505 @@
+// PPMS - Personal Patient Management System
+// Multi-tenant EMR & appointment platform for visiting ophthalmologists
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// Identity & tenancy
+// ──────────────────────────────────────────────────────────────────────────
+
+// Role: DOCTOR | HOSPITAL | REFRACTIONIST
+model User {
+  id            String   @id @default(cuid())
+  username      String   @unique
+  passwordHash  String
+  role          String
+  email         String?
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+
+  doctor        Doctor?
+  hospitalStaff HospitalStaff?
+  refractionist Refractionist?
+  auditLogs     AuditLog[]
+  notifications Notification[]
+}
+
+model Doctor {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id])
+  name        String
+  specialty   String   @default("Ophthalmology")
+  contact     String?
+  credentials String?
+  createdAt   DateTime @default(now())
+
+  hospitalLinks  DoctorHospitalLink[]
+  refractionists Refractionist[]
+  patients       Patient[]
+  appointments   Appointment[]
+  visits         Visit[]
+  availabilities DoctorAvailability[]
+}
+
+model Hospital {
+  id             String   @id @default(cuid())
+  name           String
+  shortCode      String   @unique
+  address        String?
+  contact        String?
+  retentionYears Int      @default(7)
+  createdAt      DateTime @default(now())
+
+  doctorLinks    DoctorHospitalLink[]
+  staff          HospitalStaff[]
+  refractionists Refractionist[]
+  patients       Patient[]
+  appointments   Appointment[]
+  visits         Visit[]
+  availabilities DoctorAvailability[]
+  chipOptions    ChipOption[]
+}
+
+// Scoped login for a Hospital, linked to exactly one Doctor-Hospital relationship
+model HospitalStaff {
+  id         String   @id @default(cuid())
+  userId     String   @unique
+  user       User     @relation(fields: [userId], references: [id])
+  hospitalId String
+  hospital   Hospital @relation(fields: [hospitalId], references: [id])
+  name       String
+  mobile     String?
+  createdAt  DateTime @default(now())
+}
+
+model DoctorHospitalLink {
+  id         String   @id @default(cuid())
+  doctorId   String
+  doctor     Doctor   @relation(fields: [doctorId], references: [id])
+  hospitalId String
+  hospital   Hospital @relation(fields: [hospitalId], references: [id])
+  active     Boolean  @default(true)
+
+  @@unique([doctorId, hospitalId])
+}
+
+model Refractionist {
+  id         String   @id @default(cuid())
+  userId     String   @unique
+  user       User     @relation(fields: [userId], references: [id])
+  name       String
+  mobile     String?
+  doctorId   String
+  doctor     Doctor   @relation(fields: [doctorId], references: [id])
+  hospitalId String
+  hospital   Hospital @relation(fields: [hospitalId], references: [id])
+  createdAt  DateTime @default(now())
+}
+
+// Recurring weekly availability slots, e.g. "Mondays 16:00-19:00 at Hospital A"
+model DoctorAvailability {
+  id         String   @id @default(cuid())
+  doctorId   String
+  doctor     Doctor   @relation(fields: [doctorId], references: [id])
+  hospitalId String
+  hospital   Hospital @relation(fields: [hospitalId], references: [id])
+  weekday    Int
+  startTime  String
+  endTime    String
+  slotMins   Int      @default(15)
+
+  @@unique([doctorId, hospitalId, weekday])
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// Patients & appointments
+// ──────────────────────────────────────────────────────────────────────────
+
+// Sex: MALE | FEMALE | OTHER
+model Patient {
+  id              String   @id @default(cuid())
+  udid            String   @unique // Unique persistent patient identifier
+  doctorId        String?
+  doctor          Doctor?  @relation(fields: [doctorId], references: [id])
+  registeredAtId  String?
+  registeredAt    Hospital? @relation(fields: [registeredAtId], references: [id])
+  name            String
+  age             Int
+  sex             String
+  mobile          String
+  aadhaarEncrypted String  // encrypted at rest; masked in UI except for Doctor
+  category        String   @default("GENERAL") // GENERAL | BPL | SUBSIDISED | ECHS | INSURANCE
+  address         String?
+  city            String?
+  state           String?
+  pincode         String?
+  complaint       String?
+  createdAt       DateTime @default(now())
+
+  appointments    Appointment[]
+  visits          Visit[]
+  pastExternalVisits PastExternalVisit[]
+}
+
+// AppointmentStatus: REQUESTED | CONFIRMED | RESCHEDULED | COMPLETED | CANCELLED | NO_SHOW
+model Appointment {
+  id         String            @id @default(cuid())
+  patientId  String
+  patient    Patient           @relation(fields: [patientId], references: [id])
+  doctorId   String?
+  doctor     Doctor?           @relation(fields: [doctorId], references: [id])
+  hospitalId String
+  hospital   Hospital          @relation(fields: [hospitalId], references: [id])
+  dateTime   DateTime
+  visitType  String            @default("General OPD")
+  status     String            @default("REQUESTED")
+  isWalkIn   Boolean           @default(false)
+  notes      String?
+  createdAt  DateTime          @default(now())
+
+  visit      Visit?
+
+  @@index([doctorId, dateTime])
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// Visit (parent record for one consultation encounter)
+// ──────────────────────────────────────────────────────────────────────────
+
+model Visit {
+  id            String   @id @default(cuid())
+  patientId     String
+  patient       Patient  @relation(fields: [patientId], references: [id])
+  doctorId      String
+  doctor        Doctor   @relation(fields: [doctorId], references: [id])
+  hospitalId    String
+  hospital      Hospital @relation(fields: [hospitalId], references: [id])
+  appointmentId String?  @unique
+  appointment   Appointment? @relation(fields: [appointmentId], references: [id])
+  date          DateTime @default(now())
+  status        String   @default("IN_PROGRESS") // IN_PROGRESS | CLOSED
+  visitType     String   @default("General OPD")
+  sentToPharmacy Boolean @default(false)
+
+  generalExam        GeneralExamination?
+  medications        Medication[]
+  visualAcuity       VisualAcuity?
+  refraction         RefractiveCorrection?
+  colourVisionCS     ColourVisionContrastSensitivity?
+  iopReadings        IOPReading[]
+  anteriorSegment    AnteriorSegment?
+  posteriorSegment   PosteriorSegment?
+  diplopiaChart      DiplopiaChart?
+  hessChart          HessChart?
+  retinoscopy        Retinoscopy?
+  tearFilm           TearFilm?
+  lacrimalSac        LacrimalSacSyringing?
+  investigationOrders InvestigationOrder[]
+  diagnoses          Diagnosis[]
+  dispense           Dispense?
+  admission          Admission?
+  surgicalCounselling SurgicalCounselling?
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// General Examination
+// ──────────────────────────────────────────────────────────────────────────
+
+model GeneralExamination {
+  id                  String   @id @default(cuid())
+  visitId             String   @unique
+  visit               Visit    @relation(fields: [visitId], references: [id])
+  bp                  String?
+  pulse                String?
+  temperature         String?
+  weight              String?
+  chiefComplaint      String?
+  hpi                 String?
+  provisionalDx       String?
+  pastMedicalHistory  String? // JSON array of chip values, cumulative
+  pmhOtherText        String?
+  medications         String? // free text list
+  allergies           String?
+  nkda                Boolean  @default(false)
+  updatedAt           DateTime @updatedAt
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// Plan - Prescription (dispensed/prescribed drugs for this visit, distinct
+// from GeneralExamination.medications which records the patient's reported
+// ongoing medications at intake)
+// ──────────────────────────────────────────────────────────────────────────
+
+model Medication {
+  id           String   @id @default(cuid())
+  visitId      String
+  visit        Visit    @relation(fields: [visitId], references: [id])
+  drugName     String
+  dosage       String?
+  frequency    String?
+  duration     String?
+  instructions String?
+  createdAt    DateTime @default(now())
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// Past External Visits (OCR ingestion)
+// ──────────────────────────────────────────────────────────────────────────
+
+// VerificationStatus: PENDING_REVIEW | VERIFIED | REJECTED
+model PastExternalVisit {
+  id                 String              @id @default(cuid())
+  patientId          String
+  patient            Patient             @relation(fields: [patientId], references: [id])
+  sourceDate         DateTime?
+  sourceHospital     String?
+  extractedDiagnosis String?
+  extractedTreatment String?
+  scanFileRef        String?
+  verificationStatus String              @default("PENDING_REVIEW")
+  createdAt          DateTime            @default(now())
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// Ophthalmic Examination sub-modules (RE/LE captured as JSON per eye)
+// ──────────────────────────────────────────────────────────────────────────
+
+model VisualAcuity {
+  id               String   @id @default(cuid())
+  visitId          String   @unique
+  visit            Visit    @relation(fields: [visitId], references: [id])
+  testMethod       String?  // Snellen | E-chart | LogMAR | Symbols | HOTV
+  re               String?  // JSON: { distanceUnaided, distancePinhole, distanceBestCorrected, nearUnaided, nearPinhole, nearBestCorrected }
+  le               String?
+  reviewedByDoctor Boolean  @default(false)
+  updatedAt        DateTime @updatedAt
+}
+
+model RefractiveCorrection {
+  id               String   @id @default(cuid())
+  visitId          String   @unique
+  visit            Visit    @relation(fields: [visitId], references: [id])
+  re               String?  // JSON: { distance: {sph,cyl,axis,va}, near: {sph,cyl,axis,va} }
+  le               String?
+  sentToOpticals   Boolean  @default(false)
+  reviewedByDoctor Boolean  @default(false)
+  updatedAt        DateTime @updatedAt
+}
+
+model ColourVisionContrastSensitivity {
+  id               String   @id @default(cuid())
+  visitId          String   @unique
+  visit            Visit    @relation(fields: [visitId], references: [id])
+  re               String?  // JSON: { ishihara, d15, lanthonyD15, hrr, cityUniv, pelliRobson, marsLetterCS, vistech, fact }
+  le               String?
+  reviewedByDoctor Boolean  @default(false)
+  updatedAt        DateTime @updatedAt
+}
+
+model IOPReading {
+  id               String   @id @default(cuid())
+  visitId          String
+  visit            Visit    @relation(fields: [visitId], references: [id])
+  re               Float?
+  le               Float?
+  method           String?  // NCT | Goldmann | ...
+  takenAt          DateTime @default(now())
+  source           String   @default("DOCTOR") // DOCTOR | REFRACTIONIST
+  reviewedByDoctor Boolean  @default(false)
+}
+
+model AnteriorSegment {
+  id        String   @id @default(cuid())
+  visitId   String   @unique
+  visit     Visit    @relation(fields: [visitId], references: [id])
+  re        String?  // JSON: { upperLid, lowerLid, conjunctiva, sclera, cornea, anteriorChamber, iris, pupil, lens, freeText }
+  le        String?
+  updatedAt DateTime @updatedAt
+}
+
+model PosteriorSegment {
+  id        String   @id @default(cuid())
+  visitId   String   @unique
+  visit     Visit    @relation(fields: [visitId], references: [id])
+  re        String?  // JSON: { media, discSize, discShape, discColour, discVessels, cdr, nrr, macula, retinalVessels, periphery }
+  le        String?
+  notes     String?
+  updatedAt DateTime @updatedAt
+}
+
+model DiplopiaChart {
+  id        String   @id @default(cuid())
+  visitId   String   @unique
+  visit     Visit    @relation(fields: [visitId], references: [id])
+  grid      String   // JSON map of 9 positions -> { status: NOT_TESTED|NO_DIPLOPIA|DIPLOPIA_PRESENT, notes }
+  updatedAt DateTime @updatedAt
+}
+
+model HessChart {
+  id        String   @id @default(cuid())
+  visitId   String   @unique
+  visit     Visit    @relation(fields: [visitId], references: [id])
+  grid      String   // JSON map of 9 positions -> { reH, reV, leH, leV }
+  interpretation String?
+  updatedAt DateTime @updatedAt
+}
+
+model Retinoscopy {
+  id        String   @id @default(cuid())
+  visitId   String   @unique
+  visit     Visit    @relation(fields: [visitId], references: [id])
+  re        String?
+  le        String?
+  updatedAt DateTime @updatedAt
+}
+
+model TearFilm {
+  id        String   @id @default(cuid())
+  visitId   String   @unique
+  visit     Visit    @relation(fields: [visitId], references: [id])
+  tbutRe    Float?
+  tbutLe    Float?
+  schirmer1Re Float?
+  schirmer1Le Float?
+  schirmer2Re Float?
+  schirmer2Le Float?
+  updatedAt DateTime @updatedAt
+}
+
+model LacrimalSacSyringing {
+  id        String   @id @default(cuid())
+  visitId   String   @unique
+  visit     Visit    @relation(fields: [visitId], references: [id])
+  re        String?  // JSON chips + free text
+  le        String?
+  updatedAt DateTime @updatedAt
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// Investigations & Assessment
+// ──────────────────────────────────────────────────────────────────────────
+
+// OrderPriority: ROUTINE | URGENT | STAT
+// OrderStatus: ORDERED | IN_PROGRESS | RESULT_AVAILABLE | REVIEWED
+model InvestigationOrder {
+  id         String        @id @default(cuid())
+  visitId    String
+  visit      Visit         @relation(fields: [visitId], references: [id])
+  category   String        // Imaging & Functional Tests | Pre-op & Lab
+  testName   String
+  priority   String        @default("ROUTINE")
+  laterality String?       // RE | LE | OU
+  notes      String?
+  status     String        @default("ORDERED")
+  resultRef  String?
+  createdAt  DateTime      @default(now())
+}
+
+// DiagnosisStatus: ACTIVE | RESOLVED | CHRONIC
+model Diagnosis {
+  id          String          @id @default(cuid())
+  visitId     String
+  visit       Visit           @relation(fields: [visitId], references: [id])
+  icd10Code   String
+  description String
+  status      String          @default("ACTIVE")
+  laterality  String?         // RE | LE | OU
+  provisional Boolean         @default(false)
+  createdAt   DateTime        @default(now())
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// Disposition
+// ──────────────────────────────────────────────────────────────────────────
+
+model Dispense {
+  id           String   @id @default(cuid())
+  visitId      String   @unique
+  visit        Visit    @relation(fields: [visitId], references: [id])
+  shortSummary String
+  longSummaryUrl String?
+  createdAt    DateTime @default(now())
+}
+
+model Admission {
+  id              String    @id @default(cuid())
+  visitId         String    @unique
+  visit           Visit     @relation(fields: [visitId], references: [id])
+  reason          String
+  ward            String
+  numberOfDays    Int
+  discharged      Boolean   @default(false)
+  dischargedAt    DateTime?
+  createdAt       DateTime  @default(now())
+}
+
+model SurgicalCounselling {
+  id              String   @id @default(cuid())
+  visitId         String   @unique
+  visit           Visit    @relation(fields: [visitId], references: [id])
+  surgeryType     String
+  rightEye        Boolean  @default(false)
+  leftEye         Boolean  @default(false)
+  anaesthesiaType String
+  surgeryDate     DateTime
+  conflictFlag    Boolean  @default(false)
+  createdAt       DateTime @default(now())
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// Audit trail
+// ──────────────────────────────────────────────────────────────────────────
+
+// ──────────────────────────────────────────────────────────────────────────
+// In-app notifications
+// ──────────────────────────────────────────────────────────────────────────
+
+// NotificationType: APPOINTMENT_REQUESTED | APPOINTMENT_CONFIRMED | APPOINTMENT_RESCHEDULED
+//                   APPOINTMENT_CANCELLED | PATIENT_ADMITTED | GENERAL
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  type      String
+  message   String
+  entityId  String?  // optional reference (appointmentId, visitId, etc.)
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  entityType String
+  entityId   String
+  action     String
+  oldValue   String?
+  newValue   String?
+  timestamp  DateTime @default(now())
+}
+
+// Configurable chip/dropdown values per hospital (or global when hospitalId is null)
+// category examples: "PMH", "VISIT_TYPE", "INVESTIGATION_TYPE"
+model ChipOption {
+  id         String    @id @default(cuid())
+  category   String
+  value      String
+  label      String
+  hospitalId String?
+  hospital   Hospital? @relation(fields: [hospitalId], references: [id])
+  sortOrder  Int       @default(0)
+  active     Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+
+  @@unique([category, value, hospitalId])
+  @@index([category, hospitalId])
+}

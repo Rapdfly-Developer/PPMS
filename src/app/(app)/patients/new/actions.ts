@@ -1,0 +1,95 @@
+"use server";
+
+import { prisma } from "@/lib/prisma";
+import { requireRole } from "@/lib/rbac";
+import { generateUDID } from "@/lib/udid";
+import { encryptAadhaar } from "@/lib/crypto";
+import { redirect } from "next/navigation";
+
+export type RegisterPatientState = { error?: string };
+
+export async function registerPatientAction(_prev: RegisterPatientState, formData: FormData): Promise<RegisterPatientState> {
+  const user = await requireRole("DOCTOR", "HOSPITAL");
+
+  const name = (formData.get("name") as string).trim();
+  const age = parseInt(formData.get("age") as string, 10);
+  const sex = formData.get("sex") as string;
+  const mobile = (formData.get("mobile") as string).trim();
+  const aadhaar = (formData.get("aadhaar") as string).replace(/\s/g, "");
+  const address = (formData.get("address") as string)?.trim() || null;
+  const city = (formData.get("city") as string)?.trim() || null;
+  const state = (formData.get("state") as string)?.trim() || null;
+  const pincode = (formData.get("pincode") as string)?.trim() || null;
+  const category = (formData.get("category") as string) || "GENERAL";
+  const complaint = (formData.get("complaint") as string)?.trim() || null;
+  const hospitalId = (formData.get("hospitalId") as string) || null;
+
+  if (!name || isNaN(age) || !sex || !mobile || !aadhaar) {
+    return { error: "Please fill in all mandatory fields." };
+  }
+  if (!/^\d{10}$/.test(mobile)) {
+    return { error: "Mobile number must be exactly 10 digits." };
+  }
+  if (!/^\d{12}$/.test(aadhaar)) {
+    return { error: "Aadhaar number must be 12 digits." };
+  }
+  if (pincode && !/^\d{6}$/.test(pincode)) {
+    return { error: "Pincode must be exactly 6 digits." };
+  }
+
+  // Re-fetch IDs from DB to avoid stale JWT values after schema changes or DB resets
+  let doctorId: string | null = null;
+  let resolvedHospitalId: string | null = hospitalId;
+
+  if (user.role === "DOCTOR") {
+    const doctor = await prisma.doctor.findUnique({ where: { userId: user.id }, select: { id: true } });
+    if (!doctor) return { error: "Session expired. Please sign out and sign back in." };
+    doctorId = doctor.id;
+  } else if (user.role === "HOSPITAL") {
+    const staff = await prisma.hospitalStaff.findUnique({ where: { userId: user.id }, select: { hospitalId: true, hospital: { select: { doctorLinks: { select: { doctorId: true }, take: 1 } } } } });
+    if (!staff) return { error: "Session expired. Please sign out and sign back in." };
+    resolvedHospitalId = hospitalId ?? staff.hospitalId;
+    doctorId = staff.hospital?.doctorLinks[0]?.doctorId ?? null;
+  }
+
+  const registeredAtId = resolvedHospitalId ?? undefined;
+
+  // Resolve hospital short code for UHID generation
+  const hospital = registeredAtId
+    ? await prisma.hospital.findUnique({ where: { id: registeredAtId }, select: { shortCode: true } })
+    : null;
+  const shortCode = hospital?.shortCode ?? "GEN";
+
+  const patient = await prisma.patient.create({
+    data: {
+      udid: await generateUDID(shortCode),
+      doctorId,
+      registeredAtId,
+      name,
+      age,
+      sex,
+      mobile,
+      aadhaarEncrypted: encryptAadhaar(aadhaar),
+      category,
+      address,
+      city,
+      state,
+      pincode,
+      complaint,
+    },
+  });
+
+  // Save uploaded prior external visit documents
+  const savedFiles = formData.getAll("pastVisitFiles[]") as string[];
+  if (savedFiles.length > 0) {
+    await prisma.pastExternalVisit.createMany({
+      data: savedFiles.map((savedName) => ({
+        patientId: patient.id,
+        scanFileRef: savedName,
+        verificationStatus: "PENDING_REVIEW",
+      })),
+    });
+  }
+
+  redirect(`/patients/registered/${patient.udid}`);
+}
