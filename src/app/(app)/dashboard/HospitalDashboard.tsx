@@ -5,18 +5,11 @@ import {
   CalendarDays, Clock, CheckCircle2, UserCheck, TrendingUp, Wallet,
 } from "lucide-react";
 import type { SessionUser } from "@/lib/rbac";
-import { LiveClock } from "@/components/ui/LiveClock";
 import {
   DashboardSchedule, DashboardCharts,
   type ScheduleAppt, type TrendPoint, type StatusPoint,
 } from "./DashboardClient";
 
-/* ── helpers ──────────────────────────────────────────────────────────── */
-function greet(name: string) {
-  const h = new Date().getHours();
-  const prefix = h < 12 ? "Good Morning" : h < 17 ? "Good Afternoon" : "Good Evening";
-  return `${prefix}, ${name.split(" ")[0]}`;
-}
 
 /* ══════════════════════════════════════════════════════════════════════════
    Server component
@@ -174,36 +167,6 @@ export async function HospitalDashboard({
   return (
     <div className="fade-in space-y-5">
 
-      {/* ── Hero greeting card ─────────────────────────────────────────── */}
-      <div
-        className="rounded-2xl p-6 md:p-8 overflow-hidden relative"
-        style={{ background: "linear-gradient(135deg, var(--color-primary-700) 0%, var(--color-primary-500) 60%, #2BA89C 100%)" }}
-      >
-        {/* Decorative circles */}
-        <div className="absolute -top-10 -right-10 w-52 h-52 rounded-full opacity-10 bg-white" />
-        <div className="absolute -bottom-8 right-24 w-36 h-36 rounded-full opacity-10 bg-white" />
-
-        <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          {/* Left */}
-          <div>
-            <div className="inline-flex items-center gap-1.5 text-xs font-semibold bg-white/20 text-white/90 px-3 py-1 rounded-full mb-3">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-300 animate-pulse" />
-              {hospital?.name ?? "Hospital"}
-            </div>
-            <h1 className="text-2xl md:text-3xl font-bold text-white tracking-tight">
-              {greet(user.name)}
-            </h1>
-            <p className="text-sm text-white/70 mt-1">
-              {format(now, "EEEE, d MMMM yyyy")} · Today you have{" "}
-              <span className="text-white font-semibold">{totalToday} appointment{totalToday !== 1 ? "s" : ""}</span>
-            </p>
-          </div>
-
-          {/* Right: live clock */}
-          <LiveClock />
-        </div>
-
-      </div>
 
       {/* ── KPI cards ──────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

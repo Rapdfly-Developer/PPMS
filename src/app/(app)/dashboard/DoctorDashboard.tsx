@@ -1,10 +1,9 @@
 import { prisma } from "@/lib/prisma";
-import { LiveClock } from "@/components/ui/LiveClock";
 import {
   Scissors, BedDouble, ArrowRight, AlertTriangle,
   Activity, Stethoscope, Eye, FileText, Calendar, Users, BarChart2,
   Clock, CheckCircle2, RefreshCw, Zap, Bell, FlaskConical,
-  HeartPulse, ChevronRight, Plus, ClipboardList,
+  ChevronRight, ClipboardList,
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -237,36 +236,6 @@ export async function DoctorDashboard({
   return (
     <div className="space-y-4">
 
-      {/* ── Hero header ─────────────────────────────────────────────────── */}
-      <div className="rounded-2xl overflow-hidden relative"
-        style={{ background: "linear-gradient(135deg, #0F4C75 0%, #1B6CA8 50%, #118A7E 100%)" }}
-      >
-        <div className="absolute inset-0 opacity-10 pointer-events-none"
-          style={{ backgroundImage: "radial-gradient(circle at 70% 50%, #fff 0%, transparent 60%)" }}
-        />
-        <div className="relative px-5 py-4 sm:px-7 sm:py-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <HeartPulse size={14} className="text-emerald-300" />
-              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-300">Doctor Dashboard</span>
-            </div>
-            <h1 className="text-xl sm:text-2xl font-bold text-white">
-              Good {now.getHours() < 12 ? "morning" : now.getHours() < 17 ? "afternoon" : "evening"}, Dr. {user.name.split(" ")[0]}
-            </h1>
-            <p className="text-sm text-blue-200 mt-0.5">
-              {format(now, "EEEE, MMMM d, yyyy")} · {totalToday} patient{totalToday !== 1 ? "s" : ""} scheduled today
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <LiveClock />
-            <Link href="/emr"
-              className="flex items-center gap-2 rounded-xl bg-white/15 hover:bg-white/25 border border-white/20 px-4 py-2.5 text-sm font-semibold text-white transition-colors"
-            >
-              <Plus size={14} /> New Visit
-            </Link>
-          </div>
-        </div>
-      </div>
 
       {/* ── KPI cards ───────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-5">
