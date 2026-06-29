@@ -53,11 +53,9 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
     "dashboard.view",
     "patients.view", "patients.create", "patients.edit",
     "appointments.view", "appointments.create", "appointments.edit", "appointments.cancel",
-    "emr.view",
     "investigations.view", "investigations.create", "investigations.edit",
     "billing.view", "billing.create", "billing.edit", "billing.print",
     "reports.view", "reports.export",
-    "settings.view",
   ],
 
   REFRACTIONIST: [
@@ -88,16 +86,13 @@ async function main() {
   }
   console.log(`  ✓ ${allKeys.length} permission records upserted`);
 
-  // Upsert role → permission mappings
+  // Sync role → permission mappings (delete stale, insert fresh)
   for (const [role, keys] of Object.entries(ROLE_PERMISSIONS)) {
+    await prisma.rolePermission.deleteMany({ where: { role } });
     for (const key of keys) {
       const perm = await prisma.permission.findUnique({ where: { key } });
       if (!perm) { console.warn(`  ! Permission "${key}" not found, skipping`); continue; }
-      await prisma.rolePermission.upsert({
-        where: { role_permissionId: { role, permissionId: perm.id } },
-        create: { role, permissionId: perm.id },
-        update: {},
-      });
+      await prisma.rolePermission.create({ data: { role, permissionId: perm.id } });
     }
     console.log(`  ✓ ${role}: ${keys.length} permissions assigned`);
   }
