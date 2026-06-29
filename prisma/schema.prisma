@@ -488,6 +488,28 @@ model AuditLog {
   timestamp  DateTime @default(now())
 }
 
+// ──────────────────────────────────────────────────────────────────────────
+// RBAC — granular permissions per role
+// ──────────────────────────────────────────────────────────────────────────
+
+model Permission {
+  id    String @id @default(cuid())
+  key   String @unique  // e.g. "patients.view", "emr.edit"
+  label String?
+
+  rolePermissions RolePermission[]
+}
+
+model RolePermission {
+  id           String     @id @default(cuid())
+  role         String     // "DOCTOR" | "HOSPITAL" | "REFRACTIONIST"
+  permissionId String
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([role, permissionId])
+  @@index([role])
+}
+
 // Configurable chip/dropdown values per hospital (or global when hospitalId is null)
 // category examples: "PMH", "VISIT_TYPE", "INVESTIGATION_TYPE"
 model ChipOption {

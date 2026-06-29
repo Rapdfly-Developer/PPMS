@@ -1,59 +1,106 @@
-import type { SessionUser } from "./rbac";
-import type { Role } from "./constants";
-import { redirect } from "next/navigation";
-import { roleHome } from "./rbac";
+// Centralised permission keys for PPMS RBAC system.
+// Format: module.action — e.g. "patients.view", "emr.edit"
 
-/**
- * Central capability table.
- * DOCTOR is super-admin and bypasses every check — other roles are listed
- * explicitly for what they are permitted to do.
- */
-const PERMISSIONS = {
-  // Appointments
-  "appointments:view":    ["DOCTOR", "HOSPITAL", "REFRACTIONIST"],
-  "appointments:book":    ["DOCTOR", "HOSPITAL"],
-  "appointments:confirm": ["DOCTOR", "HOSPITAL"],
-  "appointments:cancel":  ["DOCTOR", "HOSPITAL"],
+export const P = {
+  // Dashboard
+  DASHBOARD_VIEW:          "dashboard.view",
 
   // Patients
-  "patients:view":        ["DOCTOR", "HOSPITAL"],
-  "patients:register":    ["DOCTOR", "HOSPITAL"],
-  "patients:edit":        ["DOCTOR", "HOSPITAL"],
+  PATIENTS_VIEW:           "patients.view",
+  PATIENTS_CREATE:         "patients.create",
+  PATIENTS_EDIT:           "patients.edit",
+  PATIENTS_DELETE:         "patients.delete",
 
-  // EMR / Clinical
-  "emr:view":             ["DOCTOR", "HOSPITAL", "REFRACTIONIST"],
-  "emr:write":            ["DOCTOR"],
-  "emr:refraction":       ["DOCTOR", "REFRACTIONIST"],
+  // Appointments
+  APPOINTMENTS_VIEW:       "appointments.view",
+  APPOINTMENTS_CREATE:     "appointments.create",
+  APPOINTMENTS_EDIT:       "appointments.edit",
+  APPOINTMENTS_CANCEL:     "appointments.cancel",
+
+  // EMR
+  EMR_VIEW:                "emr.view",
+  EMR_CREATE:              "emr.create",
+  EMR_EDIT:                "emr.edit",
+  EMR_PRINT:               "emr.print",
+
+  // Refraction
+  REFRACTION_VIEW:         "refraction.view",
+  REFRACTION_CREATE:       "refraction.create",
+  REFRACTION_EDIT:         "refraction.edit",
+
+  // Investigations
+  INVESTIGATIONS_VIEW:     "investigations.view",
+  INVESTIGATIONS_CREATE:   "investigations.create",
+  INVESTIGATIONS_EDIT:     "investigations.edit",
+
+  // Billing
+  BILLING_VIEW:            "billing.view",
+  BILLING_CREATE:          "billing.create",
+  BILLING_EDIT:            "billing.edit",
+  BILLING_PRINT:           "billing.print",
+
+  // Reports / Analytics
+  REPORTS_VIEW:            "reports.view",
+  REPORTS_EXPORT:          "reports.export",
 
   // IPD
-  "ipd:view":             ["DOCTOR"],
-  "ipd:admit":            ["DOCTOR"],
-  "ipd:discharge":        ["DOCTOR"],
-
-  // Queue
-  "queue:view":           ["DOCTOR", "REFRACTIONIST"],
+  IPD_VIEW:                "ipd.view",
+  IPD_MANAGE:              "ipd.manage",
 
   // Availability
-  "availability:manage":  ["DOCTOR"],
+  AVAILABILITY_VIEW:       "availability.view",
+  AVAILABILITY_MANAGE:     "availability.manage",
 
-  // Admin / Settings
-  "users:manage":         ["DOCTOR"],
-  "audit:view":           ["DOCTOR"],
-  "chips:manage":         ["DOCTOR"],
-  "history:view":         ["DOCTOR"],
-  "settings:hospital":    ["DOCTOR", "HOSPITAL"],
-} satisfies Record<string, Role[]>;
+  // Settings
+  SETTINGS_VIEW:           "settings.view",
+  SETTINGS_MANAGE:         "settings.manage",
 
-export type Permission = keyof typeof PERMISSIONS;
+  // User & Role management (Doctor/super-admin only)
+  USERS_MANAGE:            "users.manage",
+  ROLES_MANAGE:            "roles.manage",
+} as const;
 
-/** Returns true if the user can perform the given action.
- *  DOCTOR always returns true (super-admin). */
-export function can(user: SessionUser, action: Permission): boolean {
-  if (user.role === "DOCTOR") return true;
-  return (PERMISSIONS[action] as Role[]).includes(user.role);
-}
+export type PermissionKey = (typeof P)[keyof typeof P];
 
-/** Redirects to the user's home page if they cannot perform the action. */
-export function assertCan(user: SessionUser, action: Permission): void {
-  if (!can(user, action)) redirect(roleHome(user.role));
-}
+export const ALL_PERMISSIONS = Object.values(P) as string[];
+
+// Default permission sets seeded into the RolePermission table.
+// DOCTOR uses "*" wildcard — userCan() treats this as "all permissions".
+export const ROLE_DEFAULT_PERMISSIONS: Record<string, string[]> = {
+  DOCTOR: ["*"],
+
+  HOSPITAL: [
+    P.DASHBOARD_VIEW,
+    P.PATIENTS_VIEW,
+    P.PATIENTS_CREATE,
+    P.PATIENTS_EDIT,
+    P.APPOINTMENTS_VIEW,
+    P.APPOINTMENTS_CREATE,
+    P.APPOINTMENTS_EDIT,
+    P.APPOINTMENTS_CANCEL,
+    P.EMR_VIEW,
+    P.INVESTIGATIONS_VIEW,
+    P.INVESTIGATIONS_CREATE,
+    P.INVESTIGATIONS_EDIT,
+    P.BILLING_VIEW,
+    P.BILLING_CREATE,
+    P.BILLING_EDIT,
+    P.BILLING_PRINT,
+    P.REPORTS_VIEW,
+    P.REPORTS_EXPORT,
+    P.SETTINGS_VIEW,
+  ],
+
+  REFRACTIONIST: [
+    P.DASHBOARD_VIEW,
+    P.PATIENTS_VIEW,
+    P.APPOINTMENTS_VIEW,
+    P.EMR_VIEW,
+    P.REFRACTION_VIEW,
+    P.REFRACTION_CREATE,
+    P.REFRACTION_EDIT,
+    P.INVESTIGATIONS_VIEW,
+    P.INVESTIGATIONS_CREATE,
+    P.INVESTIGATIONS_EDIT,
+  ],
+};

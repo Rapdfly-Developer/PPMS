@@ -58,6 +58,18 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           doctorId = user.refractionist.doctorId;
         }
 
+        // Fetch permissions for this role from DB (Doctor gets wildcard "*")
+        let permissions: string[];
+        if (user.role === "DOCTOR") {
+          permissions = ["*"];
+        } else {
+          const rolePerms = await prisma.rolePermission.findMany({
+            where: { role: user.role },
+            include: { permission: { select: { key: true } } },
+          });
+          permissions = rolePerms.map((rp) => rp.permission.key);
+        }
+
         return {
           id: user.id,
           name: profileName,
@@ -65,6 +77,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           profileId,
           hospitalId,
           doctorId,
+          permissions,
         };
       },
     }),
@@ -76,6 +89,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.profileId = (user as any).profileId;
         token.hospitalId = (user as any).hospitalId;
         token.doctorId = (user as any).doctorId;
+        token.permissions = (user as any).permissions;
       }
       return token;
     },
@@ -85,6 +99,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       (session.user as any).profileId = token.profileId;
       (session.user as any).hospitalId = token.hospitalId;
       (session.user as any).doctorId = token.doctorId;
+      (session.user as any).permissions = token.permissions ?? [];
       return session;
     },
   },

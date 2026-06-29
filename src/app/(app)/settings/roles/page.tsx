@@ -8,58 +8,86 @@ const PERMISSION_MATRIX: {
   permissions: { key: string; label: string; description: string; roles: Role[] }[];
 }[] = [
   {
+    category: "Dashboard",
+    permissions: [
+      { key: "dashboard.view",      label: "View Dashboard",         description: "Access the main dashboard",                              roles: ["DOCTOR", "HOSPITAL", "REFRACTIONIST"] },
+    ],
+  },
+  {
     category: "Appointments",
     permissions: [
-      { key: "appointments:view",    label: "View Appointments",    description: "See the full appointment list and details",           roles: ["DOCTOR", "HOSPITAL", "REFRACTIONIST"] },
-      { key: "appointments:book",    label: "Book Appointments",    description: "Schedule new appointments for patients",              roles: ["DOCTOR", "HOSPITAL"] },
-      { key: "appointments:confirm", label: "Confirm Appointments", description: "Move an appointment from Requested → Confirmed",      roles: ["DOCTOR", "HOSPITAL"] },
-      { key: "appointments:cancel",  label: "Cancel Appointments",  description: "Cancel an existing appointment",                      roles: ["DOCTOR", "HOSPITAL"] },
+      { key: "appointments.view",   label: "View Appointments",      description: "See the full appointment list and details",              roles: ["DOCTOR", "HOSPITAL", "REFRACTIONIST"] },
+      { key: "appointments.create", label: "Book Appointments",      description: "Schedule new appointments for patients",                 roles: ["DOCTOR", "HOSPITAL"] },
+      { key: "appointments.edit",   label: "Edit Appointments",      description: "Modify appointment details and status",                  roles: ["DOCTOR", "HOSPITAL"] },
+      { key: "appointments.cancel", label: "Cancel Appointments",    description: "Cancel an existing appointment",                         roles: ["DOCTOR", "HOSPITAL"] },
     ],
   },
   {
     category: "Patients",
     permissions: [
-      { key: "patients:view",     label: "View Patients",     description: "Browse and search the patient directory",             roles: ["DOCTOR", "HOSPITAL"] },
-      { key: "patients:register", label: "Register Patients", description: "Create new patient records with UDID",                roles: ["DOCTOR", "HOSPITAL"] },
-      { key: "patients:edit",     label: "Edit Patient Info",  description: "Update demographics and contact details",             roles: ["DOCTOR", "HOSPITAL"] },
+      { key: "patients.view",       label: "View Patients",          description: "Browse and search the patient directory",                roles: ["DOCTOR", "HOSPITAL", "REFRACTIONIST"] },
+      { key: "patients.create",     label: "Register Patients",      description: "Create new patient records with UDID",                   roles: ["DOCTOR", "HOSPITAL"] },
+      { key: "patients.edit",       label: "Edit Patient Info",      description: "Update demographics and contact details",                roles: ["DOCTOR", "HOSPITAL"] },
+      { key: "patients.delete",     label: "Delete Patients",        description: "Permanently remove a patient record",                    roles: ["DOCTOR"] },
     ],
   },
   {
     category: "EMR / Clinical",
     permissions: [
-      { key: "emr:view",       label: "View EMR",             description: "Read visit history, VA, IOP and clinical notes",      roles: ["DOCTOR", "HOSPITAL", "REFRACTIONIST"] },
-      { key: "emr:write",      label: "Write Clinical Notes", description: "Add or edit doctor examination notes",                roles: ["DOCTOR"] },
-      { key: "emr:refraction", label: "Record Refraction",    description: "Enter refraction, VA, IOP and colour vision results", roles: ["DOCTOR", "REFRACTIONIST"] },
+      { key: "emr.view",            label: "View EMR",               description: "Read visit history, VA, IOP and clinical notes",         roles: ["DOCTOR", "HOSPITAL", "REFRACTIONIST"] },
+      { key: "emr.create",          label: "Create EMR Records",     description: "Open new visits and add examination data",               roles: ["DOCTOR"] },
+      { key: "emr.edit",            label: "Edit EMR Records",       description: "Modify existing clinical notes and findings",            roles: ["DOCTOR"] },
+      { key: "emr.print",           label: "Print / Export EMR",     description: "Generate and download prescription PDFs",                roles: ["DOCTOR"] },
+      { key: "refraction.view",     label: "View Refraction",        description: "Read refraction and VA results",                         roles: ["DOCTOR", "HOSPITAL", "REFRACTIONIST"] },
+      { key: "refraction.create",   label: "Record Refraction",      description: "Enter new refraction, VA, IOP and colour vision results", roles: ["DOCTOR", "REFRACTIONIST"] },
+      { key: "refraction.edit",     label: "Edit Refraction",        description: "Modify existing refraction records",                     roles: ["DOCTOR", "REFRACTIONIST"] },
+    ],
+  },
+  {
+    category: "Investigations",
+    permissions: [
+      { key: "investigations.view",   label: "View Investigations",  description: "See ordered investigations and results",                 roles: ["DOCTOR", "HOSPITAL", "REFRACTIONIST"] },
+      { key: "investigations.create", label: "Order Investigations", description: "Place new investigation orders",                         roles: ["DOCTOR", "HOSPITAL", "REFRACTIONIST"] },
+      { key: "investigations.edit",   label: "Edit Investigations",  description: "Update investigation status and results",                roles: ["DOCTOR", "HOSPITAL", "REFRACTIONIST"] },
+    ],
+  },
+  {
+    category: "Billing",
+    permissions: [
+      { key: "billing.view",   label: "View Billing",    description: "See bills and payment history",                      roles: ["DOCTOR", "HOSPITAL"] },
+      { key: "billing.create", label: "Create Bills",    description: "Generate new bills for visits",                       roles: ["DOCTOR", "HOSPITAL"] },
+      { key: "billing.edit",   label: "Edit Bills",      description: "Modify existing bills",                               roles: ["DOCTOR", "HOSPITAL"] },
+      { key: "billing.print",  label: "Print Bills",     description: "Print or export billing documents",                   roles: ["DOCTOR", "HOSPITAL"] },
     ],
   },
   {
     category: "IPD (In-Patient)",
     permissions: [
-      { key: "ipd:view",      label: "View IPD",          description: "See current and past in-patient admissions",            roles: ["DOCTOR"] },
-      { key: "ipd:admit",     label: "Admit Patients",    description: "Create a new IPD admission record",                     roles: ["DOCTOR"] },
-      { key: "ipd:discharge", label: "Discharge Patients","description": "Mark an admission as discharged",                    roles: ["DOCTOR"] },
+      { key: "ipd.view",   label: "View IPD",           description: "See current and past in-patient admissions",          roles: ["DOCTOR"] },
+      { key: "ipd.manage", label: "Manage IPD",         description: "Admit patients, update status, and discharge",        roles: ["DOCTOR"] },
     ],
   },
   {
-    category: "Queue",
+    category: "Reports & Analytics",
     permissions: [
-      { key: "queue:view", label: "View Today's Queue", description: "See today's refraction/pre-test queue", roles: ["DOCTOR", "REFRACTIONIST"] },
+      { key: "reports.view",   label: "View Analytics",  description: "Access reports and statistical dashboards",          roles: ["DOCTOR", "HOSPITAL"] },
+      { key: "reports.export", label: "Export Reports",  description: "Download reports as CSV or PDF",                     roles: ["DOCTOR", "HOSPITAL"] },
     ],
   },
   {
     category: "Availability",
     permissions: [
-      { key: "availability:manage", label: "Manage Availability", description: "Set weekly slots and timings per hospital", roles: ["DOCTOR"] },
+      { key: "availability.view",   label: "View Availability",   description: "See weekly slots and timings",                roles: ["DOCTOR"] },
+      { key: "availability.manage", label: "Manage Availability", description: "Set weekly slots and timings per hospital",   roles: ["DOCTOR"] },
     ],
   },
   {
-    category: "Administration",
+    category: "Settings & Administration",
     permissions: [
-      { key: "users:manage",      label: "Manage Users",       description: "Create, edit and deactivate Hospital / Refractionist accounts", roles: ["DOCTOR"] },
-      { key: "audit:view",        label: "View Audit Trail",   description: "See a full log of all system actions",                          roles: ["DOCTOR"] },
-      { key: "chips:manage",      label: "Manage Chip Options","description": "Configure pre-set tags for prescriptions and notes",          roles: ["DOCTOR"] },
-      { key: "history:view",      label: "View History",       description: "Access patient visit and appointment history reports",          roles: ["DOCTOR"] },
-      { key: "settings:hospital", label: "Hospital Settings",  description: "Edit hospital profile and configuration",                      roles: ["DOCTOR", "HOSPITAL"] },
+      { key: "settings.view",   label: "View Settings",        description: "Access the settings section",                  roles: ["DOCTOR", "HOSPITAL"] },
+      { key: "settings.manage", label: "Manage Settings",      description: "Edit hospital profile and chip options",        roles: ["DOCTOR", "HOSPITAL"] },
+      { key: "users.manage",    label: "Manage Users",         description: "Create, edit and deactivate user accounts",     roles: ["DOCTOR"] },
+      { key: "roles.manage",    label: "Manage Roles",         description: "Change role-permission assignments in DB",      roles: ["DOCTOR"] },
     ],
   },
 ];

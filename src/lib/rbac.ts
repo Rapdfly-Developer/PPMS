@@ -9,6 +9,7 @@ export type SessionUser = {
   profileId: string;
   hospitalId?: string;
   doctorId?: string;
+  permissions?: string[];
 };
 
 export async function requireUser(): Promise<SessionUser> {
@@ -21,6 +22,19 @@ export async function requireRole(...roles: Role[]): Promise<SessionUser> {
   const user = await requireUser();
   // DOCTOR is super-admin — passes every role check unconditionally.
   if (user.role === "DOCTOR" || roles.includes(user.role)) return user;
+  redirect(roleHome(user.role));
+}
+
+/** True if the user holds the given permission (or is super-admin with "*"). */
+export function userCan(user: SessionUser, permission: string): boolean {
+  const perms = user.permissions ?? [];
+  return perms.includes("*") || perms.includes(permission);
+}
+
+/** Redirects to the role's home page if the user lacks the given permission. */
+export async function requirePermission(permission: string): Promise<SessionUser> {
+  const user = await requireUser();
+  if (userCan(user, permission)) return user;
   redirect(roleHome(user.role));
 }
 
