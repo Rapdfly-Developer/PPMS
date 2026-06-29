@@ -9,46 +9,42 @@ import {
 } from "lucide-react";
 import clsx from "clsx";
 import type { Role } from "@/lib/constants";
-import { usePermissions } from "@/hooks/usePermissions";
 
 type NavItem = {
   href: string;
   label: string;
   icon: any;
   permission: string;
-  /** If set, only show this item when the user has one of these roles */
   roles?: Role[];
-  /** Short label for mobile nav */
   shortLabel?: string;
 };
 
-// Master list — each item declares the permission it requires.
-// Items are filtered at runtime based on the session's permissions array.
 const ALL_NAV: NavItem[] = [
-  { href: "/dashboard",    label: "Dashboard",     icon: LayoutDashboard, permission: "dashboard.view",     shortLabel: "Home"     },
-  { href: "/appointments", label: "Appointments",  icon: CalendarDays,    permission: "appointments.view",  shortLabel: "Appts",   roles: ["DOCTOR", "HOSPITAL"] },
-  { href: "/queue",        label: "Today's Queue", icon: CalendarClock,   permission: "appointments.view",  shortLabel: "Queue",   roles: ["REFRACTIONIST"] },
-  { href: "/patients",     label: "Patients",      icon: Users,           permission: "patients.view",      shortLabel: "Patients" },
-  { href: "/emr",          label: "EMR",           icon: ClipboardList,   permission: "emr.view",           shortLabel: "EMR"      },
-  { href: "/ipd",          label: "IPD",           icon: BedDouble,       permission: "ipd.view",           shortLabel: "IPD",     roles: ["DOCTOR"] },
-  { href: "/analytics",    label: "Analytics",     icon: BarChart2,       permission: "reports.view",       shortLabel: "Reports"  },
-  { href: "/availability", label: "Availability",  icon: Clock,           permission: "availability.view",  shortLabel: "Avail",   roles: ["DOCTOR"] },
-  { href: "/settings",     label: "Settings",      icon: Settings,        permission: "settings.view",      shortLabel: "Settings" },
+  { href: "/dashboard",    label: "Dashboard",     icon: LayoutDashboard, permission: "dashboard.view",    shortLabel: "Home"     },
+  { href: "/appointments", label: "Appointments",  icon: CalendarDays,    permission: "appointments.view", shortLabel: "Appts",   roles: ["DOCTOR", "HOSPITAL"] },
+  { href: "/queue",        label: "Today's Queue", icon: CalendarClock,   permission: "appointments.view", shortLabel: "Queue",   roles: ["REFRACTIONIST"] },
+  { href: "/patients",     label: "Patients",      icon: Users,           permission: "patients.view",     shortLabel: "Patients" },
+  { href: "/emr",          label: "EMR",           icon: ClipboardList,   permission: "emr.view",          shortLabel: "EMR"      },
+  { href: "/ipd",          label: "IPD",           icon: BedDouble,       permission: "ipd.view",          shortLabel: "IPD",     roles: ["DOCTOR"] },
+  { href: "/analytics",    label: "Analytics",     icon: BarChart2,       permission: "reports.view",      shortLabel: "Reports"  },
+  { href: "/availability", label: "Availability",  icon: Clock,           permission: "availability.view", shortLabel: "Avail",   roles: ["DOCTOR"] },
+  { href: "/settings",     label: "Settings",      icon: Settings,        permission: "settings.view",     shortLabel: "Settings" },
 ];
 
-
-export function Sidebar({ role, name }: { role: Role; name: string }) {
-  const pathname = usePathname();
-  const { can } = usePermissions();
-
-  const items = ALL_NAV.filter((item) => {
+function filterNav(role: Role, permissions: string[]) {
+  const can = (p: string) => permissions.includes("*") || permissions.includes(p);
+  return ALL_NAV.filter((item) => {
     if (item.roles && !item.roles.includes(role)) return false;
     return can(item.permission);
   });
+}
+
+export function Sidebar({ role, name, permissions }: { role: Role; name: string; permissions: string[] }) {
+  const pathname = usePathname();
+  const items = filterNav(role, permissions);
 
   return (
     <aside className="hidden lg:flex w-56 shrink-0 bg-[var(--color-primary-900)] text-white flex-col">
-      {/* Logo */}
       <div className="flex items-center gap-2.5 px-5 py-5">
         <div className="rounded-xl bg-white/10 p-2">
           <Eye size={18} />
@@ -59,7 +55,6 @@ export function Sidebar({ role, name }: { role: Role; name: string }) {
         </div>
       </div>
 
-      {/* Nav */}
       <nav className="flex-1 px-3 flex flex-col gap-0.5">
         {items.map((item) => {
           const active = pathname === item.href || pathname?.startsWith(item.href + "/");
@@ -80,7 +75,6 @@ export function Sidebar({ role, name }: { role: Role; name: string }) {
         })}
       </nav>
 
-      {/* User name at bottom */}
       <div className="px-4 py-4 border-t border-white/10">
         <p className="text-xs font-medium text-white/50 px-2 truncate">{name}</p>
       </div>
@@ -88,15 +82,9 @@ export function Sidebar({ role, name }: { role: Role; name: string }) {
   );
 }
 
-export function MobileNav({ role }: { role: Role }) {
+export function MobileNav({ role, permissions }: { role: Role; permissions: string[] }) {
   const pathname = usePathname();
-  const { can } = usePermissions();
-
-  // Mobile shows max 5 items
-  const items = ALL_NAV.filter((item) => {
-    if (item.roles && !item.roles.includes(role)) return false;
-    return can(item.permission);
-  }).slice(0, 5);
+  const items = filterNav(role, permissions).slice(0, 5);
 
   return (
     <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-[var(--color-primary-900)] border-t border-white/10 flex">
