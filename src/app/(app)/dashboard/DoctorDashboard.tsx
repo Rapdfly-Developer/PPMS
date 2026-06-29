@@ -178,7 +178,7 @@ export async function DoctorDashboard({
   ] = await Promise.all([
     prisma.appointment.findMany({
       where: { doctorId, dateTime: { gte: startOfToday, lte: endOfToday } },
-      include: { patient: true, hospital: { select: { name: true } } },
+      include: { patient: true, hospital: { select: { name: true } }, visit: { select: { id: true } } },
       orderBy: { dateTime: "asc" },
     }),
     prisma.appointment.count({
@@ -384,7 +384,8 @@ export async function DoctorDashboard({
                             <p className="text-xs font-mono font-semibold text-[var(--color-ink-700)]">
                               {format(appt.dateTime, "hh:mm aa")}
                             </p>
-                            <Link href="/emr"
+                            <Link
+                              href={appt.visit ? `/emr/${appt.patient.udid}?visit=${appt.visit.id}` : `/emr/${appt.patient.udid}`}
                               className="text-[10px] font-medium text-[var(--color-primary-600)] hover:underline"
                             >
                               Start visit →
