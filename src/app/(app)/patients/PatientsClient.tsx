@@ -216,9 +216,14 @@ function RecentPanel({ recentReg }: { recentReg: RecentPat[] }) {
                       {cat.label}
                     </span>
                   </div>
-                  <p className="text-[10px] text-[var(--color-ink-400)] mt-0.5">
-                    {format(new Date(p.createdAt), "dd MMM, h:mm a")} · {p.age}y {p.sex.charAt(0)}
-                  </p>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="font-mono text-[10px] text-[#115E59] bg-[#F0F8F6] px-1.5 py-0.5 rounded">
+                      {p.udid}
+                    </span>
+                    <span className="text-[10px] text-[var(--color-ink-400)]">
+                      {p.age}y {p.sex.charAt(0)}
+                    </span>
+                  </div>
                 </div>
                 <Link
                   href={`/patients/${p.udid}`}
@@ -568,6 +573,9 @@ export function PatientsClient({
                             >
                               <div className="font-semibold text-[var(--color-ink-900)] text-sm leading-tight truncate max-w-[150px] hover:text-[var(--color-primary-600)] transition-colors">
                                 {p.name}
+                              </div>
+                              <div className="font-mono text-[10px] text-[#115E59] bg-[#F0F8F6] px-1.5 py-0.5 rounded mt-0.5 inline-block">
+                                {p.udid}
                               </div>
                             </Link>
                           </div>
