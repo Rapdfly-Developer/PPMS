@@ -411,7 +411,6 @@ export async function DoctorDashboard({
                   <ul className="divide-y divide-[var(--color-border)]">
                     {todaySurgeries.map((s) => {
                       const av = avatarColor(s.visit.patient.name);
-                      const sc = s.visit.surgicalCounselling;
                       return (
                         <li key={s.id} className="flex items-center gap-3 px-4 py-2.5 hover:bg-[var(--color-surface-sunken)] transition-colors">
                           <div className="size-8 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0"
@@ -422,7 +421,7 @@ export async function DoctorDashboard({
                           <div className="min-w-0 flex-1">
                             <p className="text-sm font-semibold text-[var(--color-ink-900)]">{s.visit.patient.name}</p>
                             <p className="text-xs text-[var(--color-ink-400)] mt-0.5">
-                              {sc?.surgeryType ?? "Surgery"}{s.surgeryDate ? ` · ${format(new Date(s.surgeryDate), "hh:mm a")}` : ""}
+                              {(s as any).surgeryType ?? "Surgery"}{s.surgeryDate ? ` · ${format(new Date(s.surgeryDate), "hh:mm a")}` : ""}
                             </p>
                           </div>
                           <span className="shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-100 text-rose-700">Today</span>
