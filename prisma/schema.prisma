@@ -36,6 +36,7 @@ model Doctor {
   userId      String   @unique
   user        User     @relation(fields: [userId], references: [id])
   name        String
+  shortCode   String?  @unique
   specialty   String   @default("Ophthalmology")
   contact     String?
   credentials String?

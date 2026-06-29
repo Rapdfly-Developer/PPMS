@@ -1,9 +1,9 @@
 import { prisma } from "@/lib/prisma";
 
-// Format: PPMS-{HOSPITALCODE}-NNNN  (per-hospital sequential number, zero-padded to 4 digits)
-// e.g. PPMS-SEH-0001, PPMS-SEH-0002, PPMS-CMH-0001
-export async function generateUDID(hospitalShortCode: string): Promise<string> {
-  const prefix = `PPMS-${hospitalShortCode.toUpperCase()}-`;
+// Format: PPMS-{DOCTORCODE}-NNNN  (per-doctor sequential number, zero-padded to 4 digits)
+// e.g. PPMS-DRS-0001, PPMS-DRS-0002
+export async function generateUDID(shortCode: string): Promise<string> {
+  const prefix = `PPMS-${shortCode.toUpperCase()}-`;
 
   return prisma.$transaction(async (tx) => {
     // Fetch all UHIDs for this hospital prefix, filter to purely sequential ones in JS

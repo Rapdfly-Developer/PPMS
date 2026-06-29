@@ -41,24 +41,31 @@ export async function registerPatientAction(_prev: RegisterPatientState, formDat
   let doctorId: string | null = null;
   let resolvedHospitalId: string | null = hospitalId;
 
+  let doctorShortCode: string | null = null;
+
   if (user.role === "DOCTOR") {
-    const doctor = await prisma.doctor.findUnique({ where: { userId: user.id }, select: { id: true } });
+    const doctor = await prisma.doctor.findUnique({ where: { userId: user.id }, select: { id: true, shortCode: true } });
     if (!doctor) return { error: "Session expired. Please sign out and sign back in." };
     doctorId = doctor.id;
+    doctorShortCode = doctor.shortCode ?? null;
   } else if (user.role === "HOSPITAL") {
-    const staff = await prisma.hospitalStaff.findUnique({ where: { userId: user.id }, select: { hospitalId: true, hospital: { select: { doctorLinks: { select: { doctorId: true }, take: 1 } } } } });
+    const staff = await prisma.hospitalStaff.findUnique({ where: { userId: user.id }, select: { hospitalId: true, hospital: { select: { doctorLinks: { select: { doctorId: true, doctor: { select: { shortCode: true } } }, take: 1 } } } } });
     if (!staff) return { error: "Session expired. Please sign out and sign back in." };
     resolvedHospitalId = hospitalId ?? staff.hospitalId;
-    doctorId = staff.hospital?.doctorLinks[0]?.doctorId ?? null;
+    const link = staff.hospital?.doctorLinks[0];
+    doctorId = link?.doctorId ?? null;
+    doctorShortCode = link?.doctor?.shortCode ?? null;
   }
 
   const registeredAtId = resolvedHospitalId ?? undefined;
 
-  // Resolve hospital short code for UHID generation
-  const hospital = registeredAtId
-    ? await prisma.hospital.findUnique({ where: { id: registeredAtId }, select: { shortCode: true } })
-    : null;
-  const shortCode = hospital?.shortCode ?? "GEN";
+  // Use doctor short code for UDID; fall back to hospital short code if doctor hasn't set one yet
+  let shortCode = doctorShortCode;
+  if (!shortCode && registeredAtId) {
+    const hospital = await prisma.hospital.findUnique({ where: { id: registeredAtId }, select: { shortCode: true } });
+    shortCode = hospital?.shortCode ?? null;
+  }
+  shortCode = shortCode ?? "GEN";
 
   const patient = await prisma.patient.create({
     data: {

@@ -17,6 +17,7 @@ import {
 // ── Types ────────────────────────────────────────────────────────────────────
 
 type Section =
+  | "profile"
   | "users" | "roles" | "departments"
   | "hospital" | "appointments" | "notifications"
   | "audit" | "export" | "logs";
@@ -33,10 +34,16 @@ interface HospitalRow {
   id: string; name: string; shortCode: string; address: string; contact: string;
 }
 
+interface DoctorProfile {
+  id: string; name: string; shortCode: string;
+  specialty: string; contact: string; credentials: string;
+}
+
 interface Props {
   users: UserRow[];
   auditLogs: AuditRow[];
   hospitals: HospitalRow[];
+  doctor: DoctorProfile | null;
 }
 
 // ── Sidebar config ───────────────────────────────────────────────────────────
@@ -45,6 +52,12 @@ const SIDEBAR_GROUPS: {
   id: string; label: string; icon: any;
   items: { id: Section; label: string; icon: any; badge?: string }[];
 }[] = [
+  {
+    id: "profile-group", label: "My Profile", icon: Stethoscope,
+    items: [
+      { id: "profile", label: "Doctor Profile", icon: Stethoscope },
+    ],
+  },
   {
     id: "user-mgmt", label: "User Management", icon: Users,
     items: [
@@ -1398,13 +1411,101 @@ function LogsSection() {
   );
 }
 
+// ── SECTION: DOCTOR PROFILE ───────────────────────────────────────────────────
+
+function ProfileSection({ doctor }: { doctor: DoctorProfile | null }) {
+  const [shortCode, setShortCode] = useState(doctor?.shortCode ?? "");
+  const [specialty, setSpecialty] = useState(doctor?.specialty ?? "");
+  const [contact, setContact]     = useState(doctor?.contact ?? "");
+  const [credentials, setCredentials] = useState(doctor?.credentials ?? "");
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+
+  const save = async () => {
+    setSaving(true);
+    setMsg(null);
+    const { saveDoctorProfile } = await import("./actions");
+    const res = await saveDoctorProfile({ shortCode, specialty, contact, credentials });
+    setSaving(false);
+    setMsg(res.error ? { type: "err", text: res.error } : { type: "ok", text: "Profile saved." });
+    setTimeout(() => setMsg(null), 3000);
+  };
+
+  return (
+    <div>
+      <SectionHeader title="Doctor Profile" desc="Your identity used across PPMS — short code determines new patient UDID prefix." />
+      <div className="space-y-4">
+        <Card className="p-5">
+          <p className="text-sm font-semibold text-[var(--color-ink-900)] mb-4">Identity</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <LBL>Full Name</LBL>
+              <INP value={doctor?.name ?? ""} disabled className="bg-[var(--color-surface-sunken)] opacity-70 cursor-not-allowed" />
+              <p className="text-[10px] text-[var(--color-ink-400)] mt-1">Name is set by the system administrator.</p>
+            </div>
+            <div>
+              <LBL>Short Code <span className="text-[var(--color-primary-600)]">*</span></LBL>
+              <INP
+                value={shortCode}
+                maxLength={6}
+                onChange={(e) => setShortCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))}
+                placeholder="e.g. DRS"
+                className="font-mono uppercase"
+              />
+              <p className="text-[10px] text-[var(--color-ink-400)] mt-1">
+                2–6 letters. New patients get UDID like <span className="font-mono text-[var(--color-primary-600)]">PPMS-{shortCode || "DRS"}-0001</span>
+              </p>
+            </div>
+            <div>
+              <LBL>Specialty</LBL>
+              <INP value={specialty} onChange={(e) => setSpecialty(e.target.value)} placeholder="e.g. Ophthalmology" />
+            </div>
+            <div>
+              <LBL>Contact</LBL>
+              <INP value={contact} onChange={(e) => setContact(e.target.value)} placeholder="Phone or email" />
+            </div>
+            <div className="sm:col-span-2">
+              <LBL>Credentials / Qualifications</LBL>
+              <INP value={credentials} onChange={(e) => setCredentials(e.target.value)} placeholder="e.g. MBBS, MS (Ophth)" />
+            </div>
+          </div>
+          <div className="flex items-center gap-3 mt-5 pt-4 border-t border-[var(--color-border)]">
+            <button
+              onClick={save}
+              disabled={saving}
+              className="flex items-center gap-2 rounded-xl bg-[var(--color-primary-600)] px-5 py-2 text-sm font-semibold text-white hover:bg-[var(--color-primary-700)] disabled:opacity-60 transition-colors"
+            >
+              <Save size={14} /> {saving ? "Saving…" : "Save Profile"}
+            </button>
+            {msg && (
+              <span className={`text-xs font-medium ${msg.type === "ok" ? "text-[var(--color-success-600)]" : "text-red-600"}`}>
+                {msg.text}
+              </span>
+            )}
+          </div>
+        </Card>
+
+        <Card className="p-5">
+          <p className="text-sm font-semibold text-[var(--color-ink-900)] mb-1">About Patient UDIDs</p>
+          <p className="text-xs text-[var(--color-ink-500)] leading-relaxed">
+            Every patient you register gets a unique ID in the format <span className="font-mono">PPMS-{shortCode || "????"}-0001</span>.
+            The number increments for each new patient. Set your short code above to personalise this prefix.
+            Existing patient UDIDs are not changed when you update your short code.
+          </p>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
 // ── MAIN EXPORT ───────────────────────────────────────────────────────────────
 
-export function DoctorSettingsClient({ users, auditLogs, hospitals }: Props) {
-  const [activeSection, setActiveSection] = useState<Section>("users");
+export function DoctorSettingsClient({ users, auditLogs, hospitals, doctor }: Props) {
+  const [activeSection, setActiveSection] = useState<Section>("profile");
 
   const content = () => {
     switch (activeSection) {
+      case "profile":      return <ProfileSection doctor={doctor} />;
       case "users":        return <UsersSection users={users} />;
       case "roles":        return <RolesSection />;
       case "departments":  return <DepartmentsSection />;

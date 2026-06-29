@@ -31,6 +31,39 @@ export async function updateHospitalSettings(
   return {};
 }
 
+// ── Doctor profile (DOCTOR role) ───────────────────────────────────────────
+
+export async function saveDoctorProfile(
+  data: { shortCode?: string; specialty?: string; contact?: string; credentials?: string }
+): Promise<{ error?: string }> {
+  const user = await requireRole("DOCTOR");
+  const doctor = await prisma.doctor.findUnique({ where: { userId: user.id }, select: { id: true } });
+  if (!doctor) return { error: "Doctor profile not found." };
+
+  const shortCode = data.shortCode?.trim().toUpperCase().replace(/[^A-Z0-9]/g, "") || undefined;
+  if (shortCode && (shortCode.length < 2 || shortCode.length > 6)) {
+    return { error: "Short code must be 2–6 letters (A–Z, 0–9)." };
+  }
+
+  try {
+    await prisma.doctor.update({
+      where: { id: doctor.id },
+      data: {
+        ...(shortCode !== undefined ? { shortCode } : {}),
+        ...(data.specialty !== undefined ? { specialty: data.specialty } : {}),
+        ...(data.contact !== undefined ? { contact: data.contact } : {}),
+        ...(data.credentials !== undefined ? { credentials: data.credentials } : {}),
+      },
+    });
+  } catch (e: any) {
+    if (e?.code === "P2002") return { error: "That short code is already taken by another doctor." };
+    return { error: "Could not save profile." };
+  }
+
+  revalidatePath("/settings");
+  return {};
+}
+
 // ── ChipOption management (DOCTOR role) ────────────────────────────────────
 
 async function getDoctorId(userId: string) {

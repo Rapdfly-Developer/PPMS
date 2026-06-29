@@ -20,7 +20,7 @@ export default async function SettingsPage() {
   // ── Doctor role ──────────────────────────────────────────────────────────
   const doctorId = scopeDoctorId(user);
 
-  const [allUsers, auditLogs, doctorLinks] = await Promise.all([
+  const [allUsers, auditLogs, doctorLinks, doctorProfile] = await Promise.all([
     prisma.user.findMany({
       include: {
         hospitalStaff: { include: { hospital: { select: { name: true } } } },
@@ -36,6 +36,10 @@ export default async function SettingsPage() {
     prisma.doctorHospitalLink.findMany({
       where: { doctorId },
       include: { hospital: true },
+    }),
+    prisma.doctor.findUnique({
+      where: { id: doctorId },
+      select: { id: true, name: true, shortCode: true, specialty: true, contact: true, credentials: true },
     }),
   ]);
 
@@ -70,6 +74,14 @@ export default async function SettingsPage() {
       users={serializedUsers}
       auditLogs={serializedAudit}
       hospitals={serializedHospitals}
+      doctor={doctorProfile ? {
+        id: doctorProfile.id,
+        name: doctorProfile.name,
+        shortCode: doctorProfile.shortCode ?? "",
+        specialty: doctorProfile.specialty ?? "",
+        contact: doctorProfile.contact ?? "",
+        credentials: doctorProfile.credentials ?? "",
+      } : null}
     />
   );
 }
