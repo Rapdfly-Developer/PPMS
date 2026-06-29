@@ -83,9 +83,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
       le: (cv as any).le ?? null,
       notes: (cv as any).notes ?? null,
     } : null,
-    anteriorSegment: as_ ? parseJSON((as_ as any).data, null) : null,
+    anteriorSegment: as_ ? parseJSON((as_ as any).data, undefined) : null,
     posteriorSegment: ps ? {
-      data: parseJSON((ps as any).data, null),
+      data: parseJSON((ps as any).data, undefined),
       cdr: (ps as any).cdr ?? null,
       notes: (ps as any).notes ?? null,
     } : null,

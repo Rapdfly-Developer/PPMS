@@ -3,7 +3,7 @@
 import React, { useState, useTransition } from "react";
 import {
   Building2, Layers, Users, Calendar, Bell,
-  Database, ClipboardList,
+  Database, ClipboardList, CreditCard,
   Save, CheckCircle2, ChevronRight, Upload, Plus, X,
   Crown, Check, Minus, Eye,
   Phone, MapPin, Mail, Globe, Clock,

@@ -10,7 +10,7 @@ import {
   Filter, UserPlus, FileText, Settings2,
   Mail, Phone, MapPin, Save, Upload,
   Globe, HardDrive, BarChart2,
-  CheckSquare, Square,
+  CheckSquare, Square, CreditCard, Monitor, RefreshCw,
   Stethoscope, Users2, Tag, History,
 } from "lucide-react";
 
@@ -27,7 +27,7 @@ interface UserRow {
 }
 interface AuditRow {
   id: string; entityType: string; action: string;
-  timestamp: string; userId: string;
+  timestamp: string; userId: string; entityId?: string;
 }
 interface HospitalRow {
   id: string; name: string; shortCode: string; address: string; contact: string;
@@ -969,7 +969,7 @@ function AuditSection({ auditLogs }: { auditLogs: AuditRow[] }) {
                         </span>
                       </td>
                       <td className="px-4 py-3 text-xs text-[var(--color-ink-500)]">
-                        {entry.entityType} record {entry.entityId.slice(0, 8)}…
+                        {entry.entityType} record {entry.entityId?.slice(0, 8) ?? ""}…
                       </td>
                       <td className="px-4 py-3 text-xs font-mono text-[var(--color-ink-400)]">
                         192.168.1.{(entry.id.charCodeAt(0) % 254) + 1}
