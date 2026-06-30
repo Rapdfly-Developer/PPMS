@@ -104,7 +104,6 @@ export async function loadRolesPageData() {
   }));
 }
 
-export type { RoleWithPerms };
 
 // ── CRUD actions ──────────────────────────────────────────────────────────
 export async function saveRolePermissions(roleName: string, keys: string[]) {
