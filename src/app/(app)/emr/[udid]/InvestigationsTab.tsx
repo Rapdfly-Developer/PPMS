@@ -6,12 +6,14 @@ import { SingleChipSelect } from "@/components/ui/Chip";
 import { ORDER_PRIORITIES, LATERALITY } from "@/lib/constants";
 import { addInvestigationOrder, updateInvestigationStatus, attachResult } from "./actions";
 import { format } from "date-fns";
-import { Paperclip, ExternalLink, Upload } from "lucide-react";
+import {
+  Paperclip, ExternalLink, Upload, Download, Eye, Clock,
+  CheckCircle2, XCircle, FlaskConical, Plus, History,
+} from "lucide-react";
 import clsx from "clsx";
 
-const STATUS_FLOW = ["ORDERED", "IN_PROGRESS", "RESULT_AVAILABLE", "REVIEWED"];
+// ── Investigation catalog ─────────────────────────────────────────────────
 
-// Investigation catalog with prices (INR) and category sub-tabs matching reference UI
 const INV_CATALOG: Record<string, { name: string; price: number }[]> = {
   Imaging: [
     { name: "OCT Macula (6mm cube)", price: 1200 },
@@ -63,186 +65,211 @@ const INV_CATALOG: Record<string, { name: string; price: number }[]> = {
   ],
 };
 
-export function InvestigationsTab({ visit, udid, readOnly }: { visit: any; udid: string; readOnly: boolean }) {
-  const [activeCategory, setActiveCategory] = useState(Object.keys(INV_CATALOG)[0]);
-  const [selected, setSelected] = useState<string[]>([]);
-  const [priority, setPriority] = useState("ROUTINE");
-  const [laterality, setLaterality] = useState("OU");
-  const [notes, setNotes] = useState("");
-  const [pending, startTransition] = useTransition();
+// ── Main export ───────────────────────────────────────────────────────────
 
-  const orders: any[] = visit.investigationOrders ?? [];
+export function InvestigationsTab({
+  visit,
+  priorVisits,
+  udid,
+  readOnly,
+}: {
+  visit: any;
+  priorVisits: any[];
+  udid: string;
+  readOnly: boolean;
+}) {
+  // Flatten all orders across all visits (current + prior), newest first
+  const allOrders: any[] = [
+    ...(visit.investigationOrders ?? []),
+    ...priorVisits.flatMap((v: any) =>
+      (v.investigationOrders ?? []).map((o: any) => ({ ...o, _visitDate: v.date, _hospital: v.hospital?.name, _doctorId: v.doctorId }))
+    ),
+  ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-  const toggleTest = (name: string) => {
-    setSelected((prev) => prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name]);
-  };
+  const hasHistory = allOrders.length > 0;
+  const [activeTab, setActiveTab] = useState<"previous" | "new">(hasHistory ? "previous" : "new");
 
-  const placeOrders = () => {
-    if (selected.length === 0) return;
-    startTransition(async () => {
-      for (const testName of selected) {
-        const cat = Object.entries(INV_CATALOG).find(([, items]) => items.some((i) => i.name === testName))?.[0] ?? "Imaging";
-        await addInvestigationOrder(visit.id, udid, { category: cat, testName, priority, laterality, notes });
-      }
-      setSelected([]);
-      setNotes("");
-    });
-  };
-
-  const categories = Object.keys(INV_CATALOG);
-  const currentItems = INV_CATALOG[activeCategory] ?? [];
+  const tabCls = (id: "previous" | "new") =>
+    clsx(
+      "flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-xl border transition-colors",
+      activeTab === id
+        ? "bg-[var(--color-primary-600)] text-white border-[var(--color-primary-600)]"
+        : "bg-white text-[var(--color-ink-600)] border-[var(--color-border)] hover:border-[var(--color-primary-400)]"
+    );
 
   return (
     <div className="flex flex-col gap-5">
-      {!readOnly && (
-        <Card className="p-0 overflow-hidden">
-          {/* Priority row */}
-          <div className="px-4 pt-4 pb-3 flex flex-wrap items-center gap-4 border-b border-[var(--color-border)]">
-            <div>
-              <p className="text-xs font-semibold tracking-widest text-[var(--color-ink-500)] uppercase mb-1.5">Priority</p>
-              <SingleChipSelect options={ORDER_PRIORITIES} value={priority} onChange={setPriority} />
-            </div>
-            <div>
-              <p className="text-xs font-semibold tracking-widest text-[var(--color-ink-500)] uppercase mb-1.5">Laterality</p>
-              <SingleChipSelect options={LATERALITY} value={laterality} onChange={setLaterality} />
-            </div>
-          </div>
+      {/* Sub-tab toggle */}
+      <div className="flex gap-3 flex-wrap">
+        <button className={tabCls("previous")} onClick={() => setActiveTab("previous")}>
+          <History size={15} /> Previous Investigations
+          {allOrders.length > 0 && (
+            <span className={clsx("rounded-full text-[10px] font-semibold px-1.5 py-0.5",
+              activeTab === "previous" ? "bg-white/20 text-white" : "bg-[var(--color-primary-100)] text-[var(--color-primary-700)]"
+            )}>
+              {allOrders.length}
+            </span>
+          )}
+        </button>
+        <button className={tabCls("new")} onClick={() => setActiveTab("new")}>
+          <Plus size={15} /> New Investigations
+        </button>
+      </div>
 
-          {/* Category sub-tabs */}
-          <div className="flex overflow-x-auto scrollbar-thin border-b border-[var(--color-border)]">
-            {categories.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setActiveCategory(cat)}
-                className={clsx(
-                  "px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-colors border-b-2",
-                  activeCategory === cat
-                    ? "border-[var(--color-primary-600)] text-[var(--color-primary-700)]"
-                    : "border-transparent text-[var(--color-ink-500)] hover:text-[var(--color-ink-700)]"
-                )}
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
-
-          {/* Test checkboxes with prices */}
-          <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {currentItems.map((item) => {
-              const checked = selected.includes(item.name);
-              return (
-                <label
-                  key={item.name}
-                  className={clsx(
-                    "flex items-center justify-between px-3 py-2.5 rounded-xl border cursor-pointer transition-colors",
-                    checked
-                      ? "border-[var(--color-primary-400)] bg-[var(--color-primary-50)]"
-                      : "border-[var(--color-border)] hover:border-[var(--color-primary-300)] hover:bg-[var(--color-surface-sunken)]"
-                  )}
-                >
-                  <span className="flex items-center gap-2.5 text-sm text-[var(--color-ink-700)]">
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      onChange={() => toggleTest(item.name)}
-                      className="accent-[var(--color-primary-600)]"
-                    />
-                    {item.name}
-                  </span>
-                  <span className="text-xs font-medium text-[var(--color-ink-400)] shrink-0 ml-2">
-                    ₹{item.price.toLocaleString("en-IN")}
-                  </span>
-                </label>
-              );
-            })}
-          </div>
-
-          {/* Notes + place order */}
-          <div className="px-4 pb-4 flex flex-col gap-3 border-t border-[var(--color-border)] pt-3">
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Clinical notes / special instructions..."
-              rows={2}
-              className="w-full rounded-xl border border-[var(--color-border)] px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
-            />
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-[var(--color-ink-400)]">
-                {selected.length} test{selected.length !== 1 ? "s" : ""} selected
-                {selected.length > 0 && (
-                  <span className="ml-2">
-                    · Est. ₹{
-                      Object.values(INV_CATALOG).flat()
-                        .filter((i) => selected.includes(i.name))
-                        .reduce((sum, i) => sum + i.price, 0)
-                        .toLocaleString("en-IN")
-                    }
-                  </span>
-                )}
-              </span>
-              <button
-                disabled={pending || selected.length === 0}
-                onClick={placeOrders}
-                className="rounded-xl bg-[var(--color-primary-600)] text-white text-sm font-medium px-5 py-2 hover:bg-[var(--color-primary-700)] disabled:opacity-50"
-              >
-                Place Order{selected.length > 1 ? "s" : ""}
-              </button>
-            </div>
-          </div>
-        </Card>
+      {activeTab === "previous" && (
+        <PreviousInvestigations orders={allOrders} udid={udid} readOnly={readOnly} />
       )}
-
-      {/* Order history */}
-      <Card>
-        <p className="text-xs font-semibold tracking-widest text-[var(--color-ink-500)] uppercase mb-3">Order History</p>
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-left text-xs text-[var(--color-ink-400)] uppercase border-b border-[var(--color-border)]">
-              <th className="py-1.5 pr-3">Test</th>
-              <th className="pr-3">Priority</th>
-              <th className="pr-3">Lat.</th>
-              <th className="pr-3">Status</th>
-              <th className="pr-3">Result</th>
-              <th>Ordered</th>
-              {!readOnly && <th></th>}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-[var(--color-border)]">
-            {orders.map((o) => (
-              <tr key={o.id}>
-                <td className="py-2 pr-3 font-medium text-[var(--color-ink-900)]">{o.testName}</td>
-                <td className="pr-3"><PriorityPill priority={o.priority} /></td>
-                <td className="pr-3 text-[var(--color-ink-500)] text-xs">{o.laterality ?? "—"}</td>
-                <td className="pr-3"><StatusPill status={o.status} /></td>
-                <td className="pr-3"><ResultCell order={o} udid={udid} readOnly={readOnly} /></td>
-                <td className="text-[var(--color-ink-400)] text-xs">{format(new Date(o.createdAt), "dd MMM, h:mm a")}</td>
-                {!readOnly && (
-                  <td>
-                    {o.status !== "REVIEWED" && (
-                      <button
-                        onClick={() => updateInvestigationStatus(o.id, udid, STATUS_FLOW[STATUS_FLOW.indexOf(o.status) + 1])}
-                        className="text-xs font-medium text-[var(--color-primary-600)] hover:underline"
-                      >
-                        Advance →
-                      </button>
-                    )}
-                  </td>
-                )}
-              </tr>
-            ))}
-            {orders.length === 0 && (
-              <tr>
-                <td colSpan={6} className="py-6 text-center text-[var(--color-ink-400)]">No investigations ordered for this visit.</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </Card>
+      {activeTab === "new" && !readOnly && (
+        <NewInvestigations visit={visit} udid={udid} onOrdered={() => setActiveTab("previous")} />
+      )}
+      {activeTab === "new" && readOnly && (
+        <p className="text-sm text-[var(--color-ink-400)] text-center py-8">This visit is closed — no new orders can be placed.</p>
+      )}
     </div>
   );
 }
 
-function ResultCell({ order, udid, readOnly }: { order: any; udid: string; readOnly: boolean }) {
+// ── Previous Investigations (timeline) ───────────────────────────────────
+
+function PreviousInvestigations({ orders, udid, readOnly }: { orders: any[]; udid: string; readOnly: boolean }) {
+  const [viewUrl, setViewUrl] = useState<string | null>(null);
+
+  if (orders.length === 0) {
+    return (
+      <Card>
+        <div className="flex flex-col items-center justify-center py-12 text-center gap-2">
+          <FlaskConical size={36} className="text-[var(--color-ink-300)]" />
+          <p className="text-sm font-medium text-[var(--color-ink-500)]">No previous investigations</p>
+          <p className="text-xs text-[var(--color-ink-400)]">Switch to New Investigations to place an order.</p>
+        </div>
+      </Card>
+    );
+  }
+
+  // Group by calendar date (dd MMM yyyy)
+  const grouped: Record<string, any[]> = {};
+  for (const o of orders) {
+    const key = format(new Date(o.createdAt), "dd MMM yyyy");
+    if (!grouped[key]) grouped[key] = [];
+    grouped[key].push(o);
+  }
+
+  return (
+    <>
+      {/* PDF/image viewer modal */}
+      {viewUrl && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setViewUrl(null)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl mx-4 max-h-[90vh] flex flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--color-border)]">
+              <p className="text-sm font-medium text-[var(--color-ink-700)]">Result Viewer</p>
+              <div className="flex items-center gap-2">
+                <a href={viewUrl} download target="_blank" rel="noreferrer"
+                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-[var(--color-border)] hover:border-[var(--color-primary-400)] text-[var(--color-ink-600)] transition-colors">
+                  <Download size={13} /> Download
+                </a>
+                <button onClick={() => setViewUrl(null)} className="text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)] text-lg font-bold px-2">×</button>
+              </div>
+            </div>
+            <div className="flex-1 overflow-auto p-2">
+              {viewUrl.match(/\.(jpg|jpeg|png|webp)$/i) ? (
+                <img src={viewUrl} alt="Result" className="max-w-full mx-auto rounded-lg" />
+              ) : (
+                <iframe src={viewUrl} className="w-full h-[75vh] rounded-lg" title="Result" />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="flex flex-col gap-6">
+        {Object.entries(grouped).map(([dateLabel, dayOrders]) => (
+          <div key={dateLabel}>
+            {/* Date header */}
+            <div className="flex items-center gap-3 mb-3">
+              <span className="text-xs font-semibold text-[var(--color-ink-500)] tracking-wide">{dateLabel}</span>
+              <div className="flex-1 h-px bg-[var(--color-border)]" />
+            </div>
+
+            <div className="flex flex-col gap-3">
+              {dayOrders.map((order) => (
+                <InvestigationCard
+                  key={order.id}
+                  order={order}
+                  udid={udid}
+                  readOnly={readOnly}
+                  onView={setViewUrl}
+                />
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+
+function InvestigationCard({
+  order, udid, readOnly, onView,
+}: {
+  order: any; udid: string; readOnly: boolean; onView: (url: string) => void;
+}) {
+  return (
+    <Card className="p-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        {/* Left: test name + meta */}
+        <div className="flex flex-col gap-1.5 min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-sm font-semibold text-[var(--color-ink-900)]">{order.testName}</p>
+            <PriorityPill priority={order.priority} />
+            {order.laterality && (
+              <span className="text-[11px] px-2 py-0.5 rounded-full border border-[var(--color-border)] text-[var(--color-ink-500)]">
+                {order.laterality}
+              </span>
+            )}
+            <StatusBadge status={order.status} resultRef={order.resultRef} />
+          </div>
+          <div className="flex flex-wrap items-center gap-3 text-xs text-[var(--color-ink-400)]">
+            <span className="flex items-center gap-1"><Clock size={11} />{format(new Date(order.createdAt), "h:mm a")}</span>
+            {order.category && <span>{order.category}</span>}
+            {order._hospital && <span>· {order._hospital}</span>}
+          </div>
+          {order.notes && (
+            <p className="text-xs text-[var(--color-ink-500)] italic mt-0.5">Note: {order.notes}</p>
+          )}
+        </div>
+
+        {/* Right: actions */}
+        <div className="flex items-center gap-2 shrink-0">
+          {order.resultRef ? (
+            <>
+              <button
+                onClick={() => onView(order.resultRef)}
+                className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] transition-colors"
+              >
+                <Eye size={13} /> View Result
+              </button>
+              <a
+                href={order.resultRef}
+                download
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border border-[var(--color-border)] text-[var(--color-ink-600)] hover:border-[var(--color-primary-400)] transition-colors"
+              >
+                <Download size={13} /> Download
+              </a>
+            </>
+          ) : !readOnly ? (
+            <UploadButton orderId={order.id} udid={udid} />
+          ) : (
+            <span className="text-xs text-[var(--color-ink-400)]">Result pending</span>
+          )}
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+function UploadButton({ orderId, udid }: { orderId: string; udid: string }) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
   const [, startTransition] = useTransition();
@@ -260,7 +287,7 @@ function ResultCell({ order, udid, readOnly }: { order: any; udid: string; readO
       const json = await res.json();
       if (!res.ok || json.error) throw new Error(json.error ?? "Upload failed");
       startTransition(async () => {
-        const result = await attachResult(order.id, udid, json.url);
+        const result = await attachResult(orderId, udid, json.url);
         if (result?.error) setError(result.error);
       });
     } catch (err: any) {
@@ -271,46 +298,190 @@ function ResultCell({ order, udid, readOnly }: { order: any; udid: string; readO
     }
   };
 
-  if (order.resultRef) {
-    return (
-      <a href={order.resultRef} target="_blank" rel="noreferrer"
-        className="flex items-center gap-1 text-xs text-[var(--color-primary-600)] hover:underline">
-        <ExternalLink size={11} /> View
-      </a>
-    );
-  }
-
-  if (readOnly || order.status === "REVIEWED") return null;
-
   return (
-    <div className="flex flex-col gap-0.5">
-      <input ref={inputRef} type="file" accept=".pdf,.jpg,.jpeg,.png,.webp"
+    <div className="flex flex-col items-end gap-0.5">
+      <input ref={inputRef} type="file" accept=".pdf,.jpg,.jpeg,.png,.docx"
         className="hidden" onChange={handleFile} />
-      <button type="button" disabled={uploading} onClick={() => inputRef.current?.click()}
-        className="flex items-center gap-1 text-xs text-[var(--color-ink-400)] hover:text-[var(--color-primary-600)] disabled:opacity-50 transition-colors">
-        {uploading ? <Upload size={11} className="animate-pulse" /> : <Paperclip size={11} />}
-        {uploading ? "Uploading…" : "Attach"}
+      <button
+        type="button"
+        disabled={uploading}
+        onClick={() => inputRef.current?.click()}
+        className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border border-dashed border-[var(--color-primary-400)] text-[var(--color-primary-600)] hover:bg-[var(--color-primary-50)] disabled:opacity-50 transition-colors"
+      >
+        {uploading ? <Upload size={13} className="animate-pulse" /> : <Upload size={13} />}
+        {uploading ? "Uploading…" : "Upload Result"}
       </button>
       {error && <p className="text-[10px] text-red-600">{error}</p>}
     </div>
   );
 }
 
+// ── New Investigations (order form) ──────────────────────────────────────
+
+function NewInvestigations({
+  visit, udid, onOrdered,
+}: {
+  visit: any; udid: string; onOrdered: () => void;
+}) {
+  const [activeCategory, setActiveCategory] = useState(Object.keys(INV_CATALOG)[0]);
+  const [selected, setSelected] = useState<string[]>([]);
+  const [priority, setPriority] = useState("ROUTINE");
+  const [laterality, setLaterality] = useState("OU");
+  const [notes, setNotes] = useState("");
+  const [pending, startTransition] = useTransition();
+
+  const toggleTest = (name: string) =>
+    setSelected((prev) => prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name]);
+
+  const placeOrders = () => {
+    if (selected.length === 0) return;
+    startTransition(async () => {
+      for (const testName of selected) {
+        const cat = Object.entries(INV_CATALOG).find(([, items]) => items.some((i) => i.name === testName))?.[0] ?? "Imaging";
+        await addInvestigationOrder(visit.id, udid, { category: cat, testName, priority, laterality, notes });
+      }
+      setSelected([]);
+      setNotes("");
+      onOrdered();
+    });
+  };
+
+  const categories = Object.keys(INV_CATALOG);
+  const currentItems = INV_CATALOG[activeCategory] ?? [];
+
+  return (
+    <Card className="p-0 overflow-hidden">
+      {/* Priority + Laterality */}
+      <div className="px-5 pt-5 pb-4 flex flex-wrap gap-32 border-b border-[var(--color-border)]">
+        <div>
+          <p className="text-xs font-semibold tracking-widest text-[var(--color-ink-400)] uppercase mb-2">Priority</p>
+          <SingleChipSelect options={ORDER_PRIORITIES} value={priority} onChange={setPriority} />
+        </div>
+        <div>
+          <p className="text-xs font-semibold tracking-widest text-[var(--color-ink-400)] uppercase mb-2">Laterality</p>
+          <SingleChipSelect options={LATERALITY} value={laterality} onChange={setLaterality} />
+        </div>
+      </div>
+
+      {/* Category sub-tabs */}
+      <div className="flex overflow-x-auto scrollbar-thin border-b border-[var(--color-border)]">
+        {categories.map((cat) => (
+          <button
+            key={cat}
+            onClick={() => setActiveCategory(cat)}
+            className={clsx(
+              "px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-colors border-b-2",
+              activeCategory === cat
+                ? "border-[var(--color-primary-600)] text-[var(--color-primary-700)]"
+                : "border-transparent text-[var(--color-ink-500)] hover:text-[var(--color-ink-700)]"
+            )}
+          >
+            {cat}
+          </button>
+        ))}
+      </div>
+
+      {/* Test checkboxes */}
+      <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
+        {currentItems.map((item) => {
+          const checked = selected.includes(item.name);
+          return (
+            <label
+              key={item.name}
+              className={clsx(
+                "flex items-center justify-between px-3 py-2.5 rounded-xl border cursor-pointer transition-colors",
+                checked
+                  ? "border-[var(--color-primary-400)] bg-[var(--color-primary-50)]"
+                  : "border-[var(--color-border)] hover:border-[var(--color-primary-300)] hover:bg-[var(--color-surface-sunken)]"
+              )}
+            >
+              <span className="flex items-center gap-2.5 text-sm text-[var(--color-ink-700)]">
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  onChange={() => toggleTest(item.name)}
+                  className="accent-[var(--color-primary-600)]"
+                />
+                {item.name}
+              </span>
+              <span className="text-xs font-medium text-[var(--color-ink-400)] shrink-0 ml-2">
+                ₹{item.price.toLocaleString("en-IN")}
+              </span>
+            </label>
+          );
+        })}
+      </div>
+
+      {/* Notes + place order */}
+      <div className="px-4 pb-4 flex flex-col gap-3 border-t border-[var(--color-border)] pt-3">
+        <textarea
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          placeholder="Clinical notes / special instructions..."
+          rows={2}
+          className="w-full rounded-xl border border-[var(--color-border)] px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
+        />
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-[var(--color-ink-400)]">
+            {selected.length} test{selected.length !== 1 ? "s" : ""} selected
+            {selected.length > 0 && (
+              <span className="ml-2">
+                · Est. ₹{
+                  Object.values(INV_CATALOG).flat()
+                    .filter((i) => selected.includes(i.name))
+                    .reduce((sum, i) => sum + i.price, 0)
+                    .toLocaleString("en-IN")
+                }
+              </span>
+            )}
+          </span>
+          <button
+            disabled={pending || selected.length === 0}
+            onClick={placeOrders}
+            className="rounded-xl bg-[var(--color-primary-600)] text-white text-sm font-medium px-5 py-2 hover:bg-[var(--color-primary-700)] disabled:opacity-50"
+          >
+            Place Order{selected.length > 1 ? "s" : ""}
+          </button>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+// ── Helper pills ──────────────────────────────────────────────────────────
+
 function PriorityPill({ priority }: { priority: string }) {
   const map: Record<string, string> = {
     ROUTINE: "bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)]",
-    URGENT: "bg-[var(--color-accent-100)] text-[var(--color-accent-600)]",
-    STAT: "bg-[var(--color-danger-100)] text-[var(--color-danger-600)]",
+    URGENT:  "bg-[var(--color-accent-100)] text-[var(--color-accent-600)]",
+    STAT:    "bg-[var(--color-danger-100)] text-[var(--color-danger-600)]",
   };
-  return <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${map[priority]}`}>{priority}</span>;
+  return (
+    <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${map[priority] ?? map.ROUTINE}`}>
+      {priority}
+    </span>
+  );
 }
 
-function StatusPill({ status }: { status: string }) {
-  const map: Record<string, string> = {
-    ORDERED: "bg-[var(--color-info-100)] text-[var(--color-info-600)]",
-    IN_PROGRESS: "bg-[var(--color-accent-100)] text-[var(--color-accent-600)]",
-    RESULT_AVAILABLE: "bg-[var(--color-success-100)] text-[var(--color-success-600)]",
-    REVIEWED: "bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)]",
+function StatusBadge({ status, resultRef }: { status: string; resultRef?: string | null }) {
+  if (resultRef) {
+    return (
+      <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-[var(--color-success-100)] text-[var(--color-success-600)]">
+        <CheckCircle2 size={11} /> Result Uploaded
+      </span>
+    );
+  }
+  const map: Record<string, { label: string; cls: string; icon: React.ReactNode }> = {
+    ORDERED:          { label: "Ordered",     cls: "bg-[var(--color-info-100)] text-[var(--color-info-600)]",       icon: <Clock size={11} /> },
+    IN_PROGRESS:      { label: "In Progress", cls: "bg-[var(--color-accent-100)] text-[var(--color-accent-600)]",   icon: <Clock size={11} /> },
+    RESULT_AVAILABLE: { label: "Result Ready",cls: "bg-[var(--color-success-100)] text-[var(--color-success-600)]", icon: <CheckCircle2 size={11} /> },
+    REVIEWED:         { label: "Reviewed",    cls: "bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)]",  icon: <CheckCircle2 size={11} /> },
+    CANCELLED:        { label: "Cancelled",   cls: "bg-[var(--color-danger-100)] text-[var(--color-danger-600)]",   icon: <XCircle size={11} /> },
   };
-  return <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${map[status]}`}>{status.replace(/_/g, " ")}</span>;
+  const s = map[status] ?? map.ORDERED;
+  return (
+    <span className={`inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full ${s.cls}`}>
+      {s.icon} {s.label}
+    </span>
+  );
 }

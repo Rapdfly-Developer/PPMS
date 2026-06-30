@@ -487,7 +487,7 @@ export function BookAppointmentForm({
                 </div>
               ) : (
                 <div className="flex flex-col gap-2 mt-1">
-                  {doctors.map((d) => (
+                  {doctors.filter((d, i, arr) => arr.findIndex((x) => x.id === d.id) === i).map((d) => (
                     <label
                       key={d.id}
                       className="flex items-center gap-3 p-3.5 rounded-xl border cursor-pointer transition-all"

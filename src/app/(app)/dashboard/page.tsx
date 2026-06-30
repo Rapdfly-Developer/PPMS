@@ -1,4 +1,4 @@
-import { requireUser, scopeDoctorId } from "@/lib/rbac";
+import { requirePermission, scopeDoctorId } from "@/lib/rbac";
 import { DoctorDashboard } from "./DoctorDashboard";
 import { HospitalDashboard } from "./HospitalDashboard";
 import { RefractionistDashboard } from "./RefractionistDashboard";
@@ -11,7 +11,7 @@ export default async function DashboardPage({
 }: {
   searchParams: Promise<{ tab?: string }>;
 }) {
-  const user = await requireUser();
+  const user = await requirePermission("dashboard.view");
   const { tab } = await searchParams;
 
   if (user.role === "HOSPITAL") {

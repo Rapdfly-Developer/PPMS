@@ -7,6 +7,7 @@ import {
   X, ChevronRight, Hospital, Stethoscope, FileText,
   CheckCircle2, Clock, AlertCircle, Filter,
 } from "lucide-react";
+import { EmrViewerButton } from "./EmrViewerModal";
 
 /* ── Types ──────────────────────────────────────────────────────────────────── */
 export type SerialVisit = {
@@ -19,6 +20,7 @@ export type SerialVisit = {
   doctor: { name: string } | null;
   chiefComplaint: string | null;
   diagnoses: { description: string }[];
+  hasEmrData: boolean;
 };
 
 export type TodayVisit = {
@@ -63,12 +65,16 @@ function VisitCard({ visit, udid }: { visit: SerialVisit; udid: string }) {
             {format(new Date(visit.date), "dd MMM yyyy")}
           </p>
         </div>
-        <Link
-          href={`/emr/${udid}?visit=${visit.id}`}
-          className="shrink-0 inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-orange-100 text-orange-700 hover:bg-orange-500 hover:text-white transition-colors"
-        >
-          <FileText size={12} /> View EMR
-        </Link>
+        {visit.hasEmrData ? (
+          <EmrViewerButton visitId={visit.id} visitNumber={visit.visitNumber} />
+        ) : (
+          <span
+            className="shrink-0 inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-[var(--color-surface-sunken)] text-[var(--color-ink-400)] cursor-not-allowed"
+            title="No EMR available for this visit"
+          >
+            <FileText size={12} /> No EMR
+          </span>
+        )}
       </div>
 
       {/* Details */}

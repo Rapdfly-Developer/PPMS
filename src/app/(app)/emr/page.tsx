@@ -1,4 +1,4 @@
-import { requireUser, roleHome } from "@/lib/rbac";
+import { requirePermission, roleHome } from "@/lib/rbac";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
@@ -10,8 +10,7 @@ export default async function EMRQueuePage({
 }: {
   searchParams: Promise<{ q?: string; hospital?: string }>;
 }) {
-  const user = await requireUser();
-  if (user.role !== "DOCTOR" && user.role !== "HOSPITAL") redirect(roleHome(user.role));
+  const user = await requirePermission("emr.view");
   const { q, hospital: hospitalFilter } = await searchParams;
 
   const start = new Date();

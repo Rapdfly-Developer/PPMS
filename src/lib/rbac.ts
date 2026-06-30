@@ -1,5 +1,6 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
+import { prisma } from "@/lib/prisma";
 import type { Role } from "@/lib/constants";
 
 export type SessionUser = {
@@ -12,15 +13,27 @@ export type SessionUser = {
   permissions?: string[];
 };
 
+/** Fetches fresh permissions from DB so role-manager changes apply immediately. */
+async function freshPermissions(role: string): Promise<string[]> {
+  if (role === "DOCTOR") return ["*"];
+  const rows = await prisma.rolePermission.findMany({
+    where: { role },
+    select: { permission: { select: { key: true } } },
+  });
+  return rows.map((r) => r.permission.key);
+}
+
 export async function requireUser(): Promise<SessionUser> {
   const session = await auth();
   if (!session?.user) redirect("/login");
-  return session.user as unknown as SessionUser;
+  const user = session.user as unknown as SessionUser;
+  // Always resolve fresh permissions so changes in Role Manager take effect immediately.
+  user.permissions = await freshPermissions(user.role);
+  return user;
 }
 
 export async function requireRole(...roles: Role[]): Promise<SessionUser> {
   const user = await requireUser();
-  // DOCTOR is super-admin — passes every role check unconditionally.
   if (user.role === "DOCTOR" || roles.includes(user.role)) return user;
   redirect(roleHome(user.role));
 }
@@ -38,16 +51,12 @@ export async function requirePermission(permission: string): Promise<SessionUser
   redirect(roleHome(user.role));
 }
 
-// Resolves the doctorId scope a given session user is allowed to query within.
 export function scopeDoctorId(user: SessionUser): string {
   if (user.role === "DOCTOR") return user.profileId;
   if (user.doctorId) return user.doctorId;
   throw new Error("No doctor scope resolvable for this user");
 }
 
-// Each role's landing page - there is no shared /dashboard for Hospital or
-// Refractionist accounts, so login/middleware redirects must branch on role
-// rather than assuming everyone lands on /dashboard.
 export function roleHome(role: Role): string {
   if (role === "DOCTOR") return "/dashboard";
   if (role === "REFRACTIONIST") return "/queue";

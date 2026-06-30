@@ -27,11 +27,12 @@ export async function upsertAvailability(
 
   if (startTime >= endTime) return { error: "End time must be after start time." };
 
-  await prisma.doctorAvailability.upsert({
-    where: { doctorId_hospitalId_weekday: { doctorId, hospitalId, weekday } },
-    create: { doctorId, hospitalId, weekday, startTime, endTime, slotMins },
-    update: { startTime, endTime, slotMins },
-  });
+  const existing = await prisma.doctorAvailability.findFirst({ where: { doctorId, hospitalId, weekday } });
+  if (existing) {
+    await prisma.doctorAvailability.update({ where: { id: existing.id }, data: { startTime, endTime, slotMins } });
+  } else {
+    await prisma.doctorAvailability.create({ data: { doctorId, hospitalId, weekday, startTime, endTime, slotMins } });
+  }
 
   revalidatePath("/availability");
   revalidatePath("/appointments/book");

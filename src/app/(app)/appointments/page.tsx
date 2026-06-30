@@ -1,4 +1,4 @@
-import { requireUser, scopeDoctorId } from "@/lib/rbac";
+import { requirePermission, scopeDoctorId } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { startOfDay } from "date-fns";
 import { AppointmentsClient } from "./AppointmentsClient";
@@ -9,7 +9,7 @@ export default async function AppointmentsPage({
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
   const sp   = await searchParams;
-  const user = await requireUser();
+  const user = await requirePermission("appointments.view");
 
   const dateParam     = sp.date ?? "";
   const statusParam   = sp.status ?? "ALL";

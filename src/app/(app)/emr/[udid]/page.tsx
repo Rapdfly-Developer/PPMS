@@ -1,4 +1,4 @@
-import { requireUser, roleHome } from "@/lib/rbac";
+import { requirePermission } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { notFound, redirect } from "next/navigation";
 import { Card } from "@/components/ui/Card";
@@ -23,9 +23,7 @@ export default async function PatientDetailedEMR({
 }) {
   const { udid } = await params;
   const { visit: visitIdParam } = await searchParams;
-  const user = await requireUser();
-
-  if (user.role !== "DOCTOR" && user.role !== "HOSPITAL" && user.role !== "REFRACTIONIST") redirect(roleHome(user.role));
+  const user = await requirePermission("emr.view");
 
   const patient = await prisma.patient.findUnique({
     where: { udid },
@@ -90,6 +88,9 @@ export default async function PatientDetailedEMR({
   // (Prisma client regenerates on restart; ChipOption table is seeded via /settings/chips)
   const customPmhChips: string[] = [];
 
+  // Read-only when not a doctor, or when the visit is already closed (past visit)
+  const readOnly = user.role !== "DOCTOR" || activeVisit?.status === "CLOSED";
+
   return (
     <div className="fade-in pb-24">
       {/* Header bar */}
@@ -105,6 +106,11 @@ export default async function PatientDetailedEMR({
         {activeVisit && (
           <span className="text-xs font-medium text-[var(--color-info-600)] bg-[var(--color-info-100)] px-2 py-0.5 rounded-lg">
             {activeVisit.visitType}
+          </span>
+        )}
+        {activeVisit?.status === "CLOSED" && (
+          <span className="text-xs font-medium text-amber-700 bg-amber-100 px-2 py-0.5 rounded-lg">
+            Read-only — Visit Closed
           </span>
         )}
       </div>
@@ -153,7 +159,7 @@ export default async function PatientDetailedEMR({
                     visit={activeVisit}
                     priorVisits={priorVisits}
                     udid={udid}
-                    readOnly={user.role !== "DOCTOR"}
+                    readOnly={readOnly}
                     customPmhChips={customPmhChips.length > 0 ? customPmhChips : undefined}
                   />
                 ),
@@ -206,17 +212,6 @@ export default async function PatientDetailedEMR({
                   ),
               },
               {
-                id: "plan",
-                label: "Plan",
-                icon: <Link2 size={14} />,
-                content:
-                  user.role === "DOCTOR" ? (
-                    <PlanTab visit={activeVisit} udid={udid} patientSex={patient.sex} />
-                  ) : (
-                    <p className="text-sm text-[var(--color-ink-400)]">Not accessible for this role.</p>
-                  ),
-              },
-              {
                 id: "inv",
                 label: "Investigations",
                 icon: <FileText size={14} />,
@@ -225,7 +220,18 @@ export default async function PatientDetailedEMR({
                   user.role === "REFRACTIONIST" ? (
                     <p className="text-sm text-[var(--color-ink-400)]">Not accessible for this role.</p>
                   ) : (
-                    <InvestigationsTab visit={activeVisit} udid={udid} readOnly={user.role !== "DOCTOR"} />
+                    <InvestigationsTab visit={activeVisit} priorVisits={priorVisits} udid={udid} readOnly={readOnly} />
+                  ),
+              },
+              {
+                id: "plan",
+                label: "Plan",
+                icon: <Link2 size={14} />,
+                content:
+                  user.role === "DOCTOR" ? (
+                    <PlanTab visit={activeVisit} udid={udid} patientSex={patient.sex} />
+                  ) : (
+                    <p className="text-sm text-[var(--color-ink-400)]">Not accessible for this role.</p>
                   ),
               },
             ]}

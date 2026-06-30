@@ -1,4 +1,4 @@
-import { requireUser } from "@/lib/rbac";
+import { requirePermission } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import { format, startOfDay, endOfDay } from "date-fns";
@@ -20,7 +20,7 @@ export default async function PatientProfilePage({
   params: Promise<{ udid: string }>;
 }) {
   const { udid } = await params;
-  const user = await requireUser();
+  const user = await requirePermission("patients.view");
 
   const patient = await prisma.patient.findUnique({
     where: { udid },
@@ -78,6 +78,7 @@ export default async function PatientProfilePage({
     doctor:        v.doctor   ?? null,
     chiefComplaint: v.generalExam?.chiefComplaint ?? null,
     diagnoses:     v.diagnoses,
+    hasEmrData:    !!v.generalExam,
   }));
 
   /* ── Banner info ──────────────────────────────────────────────────────── */

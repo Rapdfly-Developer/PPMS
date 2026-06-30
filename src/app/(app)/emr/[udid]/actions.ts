@@ -303,6 +303,8 @@ export async function updateDiagnosisStatus(id: string, udid: string, status: st
 
 export async function removeDiagnosis(id: string, udid: string) {
   const user = await requireRole("DOCTOR");
+  const existing = await prisma.diagnosis.findUnique({ where: { id } });
+  if (!existing) { revalidate(udid); return; }
   await prisma.diagnosis.delete({ where: { id } });
   await writeAudit(user.id, "Diagnosis", id, "REMOVE");
   revalidate(udid);
@@ -420,6 +422,20 @@ export async function saveSurgicalCounselling(
     },
   });
   await writeAudit(user.id, "SurgicalCounselling", visitId, "SAVE", data);
+  revalidate(udid);
+}
+
+export async function saveFollowUp(visitId: string, udid: string, data: { followUpDate?: string | null; referralEnabled: boolean; referralNote?: string }) {
+  await requireRole("DOCTOR");
+  await assertVisitAccess(visitId);
+  await prisma.visit.update({
+    where: { id: visitId },
+    data: {
+      followUpDate: data.followUpDate ? new Date(data.followUpDate) : null,
+      referralEnabled: data.referralEnabled,
+      referralNote: data.referralNote ?? null,
+    },
+  });
   revalidate(udid);
 }
 

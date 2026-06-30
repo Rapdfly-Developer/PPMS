@@ -4,7 +4,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { useCallback, useTransition, useState, useRef, useEffect } from "react";
 import { format, isToday, isTomorrow } from "date-fns";
 import {
-  Table2, LayoutGrid, Search, X, ChevronDown, ChevronRight,
+  Search, X, ChevronDown, ChevronRight,
   Filter, Calendar, Plus,
 } from "lucide-react";
 import Link from "next/link";
@@ -63,7 +63,7 @@ export function AppointmentsClient({
   total:          number;
   page:           number;
   pageSize:       number;
-  view:           "card" | "table";
+  view?:          string;
   role:           string;
   isHospital:     boolean;
   dateParam:      string;
@@ -154,7 +154,7 @@ export function AppointmentsClient({
         date:      dateParam,
         status:    statusParam,
         search,
-        view,
+        view:      "card",
         page:      String(page),
         pageSize:  String(pageSize),
         doctor:    doctorIdParam,
@@ -267,7 +267,7 @@ export function AppointmentsClient({
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          {isHospital && (
+          {(isHospital || role === "DOCTOR") && (
             <Link
               href="/appointments/book"
               className="inline-flex items-center gap-2 bg-[var(--color-primary-600)] text-white text-sm font-semibold px-4 py-2.5 rounded-xl hover:bg-[var(--color-primary-700)] transition-colors shadow-sm"
@@ -388,31 +388,6 @@ export function AppointmentsClient({
 
       {/* ── View controls + top pagination ────────────────────────────────── */}
       <div className="flex items-center flex-wrap gap-3 mb-4">
-        {/* View toggle */}
-        <div className="flex rounded-xl border border-[var(--color-border)] overflow-hidden shadow-sm">
-          <button
-            onClick={() => navigate({ view: "table", page: 1 })}
-            className={clsx(
-              "inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold transition-colors",
-              view === "table"
-                ? "bg-[var(--color-primary-600)] text-white"
-                : "bg-white text-[var(--color-ink-500)] hover:bg-[var(--color-surface-sunken)]"
-            )}
-          >
-            <Table2 size={15} /> Table View
-          </button>
-          <button
-            onClick={() => navigate({ view: "card", page: 1 })}
-            className={clsx(
-              "inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold transition-colors border-l border-[var(--color-border)]",
-              view === "card"
-                ? "bg-[var(--color-primary-600)] text-white"
-                : "bg-white text-[var(--color-ink-500)] hover:bg-[var(--color-surface-sunken)]"
-            )}
-          >
-            <LayoutGrid size={15} /> Card View
-          </button>
-        </div>
 
         {/* Page size */}
         <div className="flex items-center gap-2 text-sm text-[var(--color-ink-600)]">
@@ -524,30 +499,8 @@ export function AppointmentsClient({
                           )}
                         </button>
 
-                        {/* TABLE view */}
-                        {isExpanded && view === "table" && (
-                          <div className="border-t border-[var(--color-border)] overflow-x-auto">
-                            <table className="w-full text-sm min-w-[800px]">
-                              <thead>
-                                <tr className="bg-[var(--color-ink-50)]">
-                                  {["Time", "UHID", "Patient Name", "Age / Gender", "Doctor", "Department", "Type", "Status", "Actions"].map((col) => (
-                                    <th key={col} className="px-4 py-3 text-left text-xs font-semibold text-[var(--color-ink-500)] tracking-wide whitespace-nowrap">
-                                      {col}
-                                    </th>
-                                  ))}
-                                </tr>
-                              </thead>
-                              <tbody className="divide-y divide-[var(--color-border)]">
-                                {slotAppts.map((appt: any) => (
-                                  <AppointmentTableRow key={appt.id} appt={appt} role={role} token={tokenMap[appt.id]} />
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
-                        )}
-
                         {/* CARD view */}
-                        {isExpanded && view === "card" && (
+                        {isExpanded && (
                           <ul className="divide-y divide-[var(--color-border)] px-5">
                             {slotAppts.map((appt: any) => (
                               <AppointmentRow key={appt.id} appt={appt} role={role} token={tokenMap[appt.id]} />

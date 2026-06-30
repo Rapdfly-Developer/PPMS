@@ -16,7 +16,7 @@ export function Tabs({
 
   return (
     <div className="w-full">
-      <div className="flex gap-1 overflow-x-auto scrollbar-thin border-b border-[var(--color-border)] mb-5">
+      <div className="flex flex-wrap gap-1 border-b border-[var(--color-border)] mb-5">
         {tabs.map((tab) => (
           <button
             key={tab.id}

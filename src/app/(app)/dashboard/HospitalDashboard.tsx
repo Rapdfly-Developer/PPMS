@@ -1,19 +1,8 @@
 import { prisma } from "@/lib/prisma";
-import { format, subDays } from "date-fns";
-import Link from "next/link";
-import {
-  CalendarDays, Clock, CheckCircle2, UserCheck, TrendingUp, Wallet,
-} from "lucide-react";
+import { format, startOfMonth } from "date-fns";
 import type { SessionUser } from "@/lib/rbac";
-import {
-  DashboardSchedule, DashboardCharts,
-  type ScheduleAppt, type TrendPoint, type StatusPoint,
-} from "./DashboardClient";
+import { HospitalDashboardClient } from "./HospitalDashboardClient";
 
-
-/* ══════════════════════════════════════════════════════════════════════════
-   Server component
-══════════════════════════════════════════════════════════════════════════ */
 export async function HospitalDashboard({
   user,
   hospitalId,
@@ -21,192 +10,111 @@ export async function HospitalDashboard({
   user: SessionUser;
   hospitalId: string;
 }) {
-  /* ── Date boundaries ────────────────────────────────────────────────── */
-  const now      = new Date();
-  const dayStart = new Date(now); dayStart.setHours(0, 0, 0, 0);
-  const dayEnd   = new Date(now); dayEnd.setHours(23, 59, 59, 999);
-  const weekStart = new Date(subDays(now, 6)); weekStart.setHours(0, 0, 0, 0);
+  const now       = new Date();
+  const dayStart  = new Date(now); dayStart.setHours(0, 0, 0, 0);
+  const dayEnd    = new Date(now); dayEnd.setHours(23, 59, 59, 999);
+  const monthStart = startOfMonth(now);
 
-  /* ── Parallel DB fetches ────────────────────────────────────────────── */
-  const [
-    todayAppts,
-    pendingAppts,
-    hospital,
-    newPatientsToday,
-    totalPatients,
-    todayVisits,
-    weekAppts,
-  ] = await Promise.all([
-    /* All today's appointments */
+  const [todayAppts, upcomingSurgeries, monthlyAppts, hospital, linkedDoctors, activeAdmissions] = await Promise.all([
+    // Today's appointments with full patient + doctor info
     prisma.appointment.findMany({
       where: { hospitalId, dateTime: { gte: dayStart, lte: dayEnd } },
       include: {
-        patient: { select: { name: true, udid: true, age: true, sex: true, mobile: true } },
-        doctor:  { select: { name: true, specialty: true } },
+        patient: { select: { name: true, udid: true, age: true, sex: true } },
+        doctor:  { select: { id: true, name: true } },
+        visit:   { select: { id: true } },
       },
       orderBy: { dateTime: "asc" },
     }),
 
-    /* Pending (any date) for notifications */
-    prisma.appointment.findMany({
-      where: { hospitalId, status: "REQUESTED" },
-      include: { patient: { select: { name: true, udid: true } } },
-      orderBy: { createdAt: "desc" },
-      take: 8,
+    // Upcoming surgeries (today onwards)
+    prisma.surgicalCounselling.findMany({
+      where: { surgeryDate: { gte: dayStart }, visit: { hospitalId } },
+      select: {
+        id: true, surgeryType: true, surgeryDate: true, rightEye: true, leftEye: true,
+        visit: { select: { patient: { select: { name: true, udid: true } }, doctor: { select: { name: true } } } },
+      },
+      orderBy: { surgeryDate: "asc" },
     }),
 
-    /* Hospital info */
-    prisma.hospital.findUnique({ where: { id: hospitalId } }),
-
-    /* New patients registered today */
-    prisma.patient.count({ where: { registeredAtId: hospitalId, createdAt: { gte: dayStart } } }),
-
-    /* Total registered */
-    prisma.patient.count({ where: { registeredAtId: hospitalId } }),
-
-    /* Today's visits for flow tracker */
-    prisma.visit.findMany({
-      where: { hospitalId, date: { gte: dayStart, lte: dayEnd } },
-      select: { status: true, sentToPharmacy: true },
+    // Monthly appointments for trend number
+    prisma.appointment.count({
+      where: { hospitalId, dateTime: { gte: monthStart, lte: dayEnd } },
     }),
 
-    /* Last 7 days for trend chart */
-    prisma.appointment.findMany({
-      where: { hospitalId, dateTime: { gte: weekStart, lte: dayEnd } },
-      select: { dateTime: true, status: true },
+    // Hospital name
+    prisma.hospital.findUnique({ where: { id: hospitalId }, select: { name: true } }),
+
+    // Doctors linked to this hospital (for doctor filter)
+    prisma.doctorHospitalLink.findMany({
+      where: { hospitalId, active: true },
+      select: { doctor: { select: { id: true, name: true } } },
+    }),
+
+    // Active IPD admissions
+    prisma.admission.findMany({
+      where: { discharged: false, visit: { hospitalId } },
+      select: {
+        id: true, ward: true, reason: true, createdAt: true,
+        visit: {
+          select: {
+            patient: { select: { name: true, udid: true } },
+            doctor:  { select: { name: true } },
+          },
+        },
+      },
+      orderBy: { createdAt: "asc" },
+      take: 10,
     }),
   ]);
 
-  /* ── Derived KPIs ───────────────────────────────────────────────────── */
-  const totalToday     = todayAppts.length;
-  const waitingCount   = todayAppts.filter((a) => a.status === "CONFIRMED" && !a.isWalkIn).length;
-  const checkedInCount = todayAppts.filter((a) => a.status === "CONFIRMED" && (a as any).isWalkIn).length;
-  const completedToday = todayAppts.filter((a) => a.status === "COMPLETED").length;
-  const cancelledToday = todayAppts.filter((a) => a.status === "CANCELLED").length;
-  const pendingCount   = pendingAppts.length;
+  // Derived KPIs
+  const totalToday    = todayAppts.length;
+  const pendingOPD    = todayAppts.filter((a) => ["REQUESTED", "CONFIRMED"].includes(a.status)).length;
+  const consultedToday = todayAppts.filter((a) => a.status === "COMPLETED").length;
+  const surgeryCount  = upcomingSurgeries.length;
 
-  /* ── 7-day trend ────────────────────────────────────────────────────── */
-  const trendMap: Record<string, number> = {};
-  for (const a of weekAppts) {
-    const dk = format(new Date(a.dateTime), "yyyy-MM-dd");
-    trendMap[dk] = (trendMap[dk] ?? 0) + 1;
-  }
-  const trend: TrendPoint[] = Array.from({ length: 7 }, (_, i) => {
-    const d   = subDays(now, 6 - i);
-    const dk  = format(d, "yyyy-MM-dd");
-    return { date: dk, label: format(d, "EEE"), count: trendMap[dk] ?? 0 };
-  });
-
-  /* ── Status distribution ────────────────────────────────────────────── */
-  const statusDist: StatusPoint[] = [
-    { label: "Confirmed",   count: waitingCount,   bar: "bg-emerald-500", dot: "bg-emerald-500" },
-    { label: "Requested",   count: pendingCount,   bar: "bg-amber-400",   dot: "bg-amber-400"   },
-    { label: "Completed",   count: completedToday, bar: "bg-[var(--color-primary-600)]", dot: "bg-[var(--color-primary-600)]" },
-    { label: "Walk-ins",    count: checkedInCount, bar: "bg-blue-500",    dot: "bg-blue-500"    },
-    { label: "Cancelled",   count: cancelledToday, bar: "bg-red-400",     dot: "bg-red-400"     },
-  ];
-
-  /* ── Serialisable schedule rows ─────────────────────────────────────── */
-  const scheduleRows: ScheduleAppt[] = todayAppts.map((a) => ({
+  // Serialise for client
+  const appts = todayAppts.map((a) => ({
     id:        a.id,
     dateTime:  a.dateTime.toISOString(),
     status:    a.status,
-    isWalkIn:  (a as any).isWalkIn ?? false,
     visitType: (a as any).visitType ?? "General OPD",
-    patient:   { name: a.patient.name, udid: a.patient.udid, age: a.patient.age, sex: a.patient.sex, mobile: a.patient.mobile },
-    doctor:    a.doctor ? { name: a.doctor.name, specialty: a.doctor.specialty } : null,
+    patient:   { name: a.patient.name, udid: a.patient.udid, age: a.patient.age, sex: a.patient.sex },
+    doctor:    a.doctor ? { id: a.doctor.id, name: a.doctor.name } : null,
+    visitId:   a.visit?.id ?? null,
   }));
 
-  /* ── KPI card definition ────────────────────────────────────────────── */
-  const kpis = [
-    {
-      label: "Today's Appointments", value: totalToday,
-      sub: `${completedToday} completed`,
-      icon: <CalendarDays size={20} />,
-      iconBg: "bg-[var(--color-primary-100)] text-[var(--color-primary-700)]",
-      valueCls: "text-[var(--color-primary-700)]",
-      href: "/appointments",
-    },
-    {
-      label: "Waiting Patients", value: waitingCount,
-      sub: "Confirmed, not yet seen",
-      icon: <Clock size={20} />,
-      iconBg: "bg-amber-100 text-amber-700",
-      valueCls: "text-amber-700",
-      href: "/appointments?status=CONFIRMED",
-    },
-    {
-      label: "Checked-In (Walk-in)", value: checkedInCount,
-      sub: "Walk-in patients at desk",
-      icon: <UserCheck size={20} />,
-      iconBg: "bg-blue-100 text-blue-700",
-      valueCls: "text-blue-700",
-      href: "/appointments",
-    },
-    {
-      label: "Pending Requests", value: pendingCount,
-      sub: "Awaiting your confirmation",
-      icon: <TrendingUp size={20} />,
-      iconBg: "bg-[var(--color-danger-100)] text-[var(--color-danger-600)]",
-      valueCls: "text-[var(--color-danger-600)]",
-      href: "/appointments?status=REQUESTED",
-    },
-    {
-      label: "Completed Consultations", value: completedToday,
-      sub: "Today's finished visits",
-      icon: <CheckCircle2 size={20} />,
-      iconBg: "bg-[var(--color-success-100)] text-[var(--color-success-600)]",
-      valueCls: "text-[var(--color-success-600)]",
-      href: "/appointments?status=COMPLETED",
-    },
-  ];
+  const surgeries = upcomingSurgeries.map((s) => ({
+    id:          s.id,
+    surgeryType: s.surgeryType,
+    surgeryDate: s.surgeryDate.toISOString(),
+    rightEye:    s.rightEye,
+    leftEye:     s.leftEye,
+    patient:     s.visit.patient,
+    doctor:      s.visit.doctor,
+  }));
 
-  /* ══════════════════════════════════════════════════════════════════════
-     RENDER
-  ══════════════════════════════════════════════════════════════════════ */
+  const doctors = linkedDoctors.map((l) => ({ id: l.doctor.id, name: l.doctor.name }));
+
+  const admissions = activeAdmissions.map((a) => ({
+    id:        a.id,
+    ward:      a.ward,
+    reason:    a.reason,
+    createdAt: a.createdAt.toISOString(),
+    patient:   a.visit.patient,
+    doctor:    a.visit.doctor,
+  }));
+
   return (
-    <div className="fade-in space-y-5">
-
-
-      {/* ── KPI cards ──────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {kpis.map((kpi) => (
-          <Link key={kpi.label} href={kpi.href} className="block group">
-            <div className="surface-card p-5 transition-all duration-200 group-hover:-translate-y-0.5 group-hover:shadow-[var(--shadow-lifted)]">
-              <div className="flex items-start justify-between">
-                <div className="min-w-0 flex-1">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">{kpi.label}</p>
-                  <p className={`text-3xl font-bold mt-1.5 tracking-tight ${kpi.valueCls}`}>{kpi.value}</p>
-                  <p className="text-xs text-[var(--color-ink-400)] mt-1">{kpi.sub}</p>
-                </div>
-                <div className={`shrink-0 p-3 rounded-2xl ${kpi.iconBg}`}>
-                  {kpi.icon}
-                </div>
-              </div>
-            </div>
-          </Link>
-        ))}
-      </div>
-
-      {/* ── Schedule ───────────────────────────────────────────────────── */}
-      <div className="surface-card p-5">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h2 className="text-base font-semibold text-[var(--color-ink-900)]">Today's Schedule</h2>
-            <p className="text-xs text-[var(--color-ink-400)] mt-0.5">{totalToday} appointments · {format(now, "d MMM yyyy")}</p>
-          </div>
-          <Link
-            href="/appointments"
-            className="text-xs font-semibold text-[var(--color-primary-600)] hover:text-[var(--color-primary-800)] hover:underline"
-          >
-            View all →
-          </Link>
-        </div>
-        <DashboardSchedule appointments={scheduleRows} />
-      </div>
-
-      {/* ── Charts row ─────────────────────────────────────────────────── */}
-      <DashboardCharts trend={trend} statusDist={statusDist} />
-    </div>
+    <HospitalDashboardClient
+      hospitalName={hospital?.name ?? "Hospital"}
+      kpis={{ totalToday, pendingOPD, consultedToday, surgeryCount, monthlyAppts }}
+      appointments={appts}
+      surgeries={surgeries}
+      admissions={admissions}
+      doctors={doctors}
+      todayLabel={format(now, "EEEE, d MMM yyyy")}
+    />
   );
 }

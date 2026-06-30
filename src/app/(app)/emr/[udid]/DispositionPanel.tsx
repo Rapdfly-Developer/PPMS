@@ -3,8 +3,8 @@
 import { useState, useTransition } from "react";
 import { SingleChipSelect } from "@/components/ui/Chip";
 import { WARDS, ANAESTHESIA_TYPES, SURGERY_TYPES } from "@/lib/constants";
-import { saveDispense, saveAdmission, saveSurgicalCounselling } from "./actions";
-import { AlertTriangle, Download } from "lucide-react";
+import { saveDispense, saveAdmission, saveSurgicalCounselling, saveFollowUp } from "./actions";
+import { AlertTriangle } from "lucide-react";
 
 // Disposition panels (Dispense / Admit / Surgical Counselling), rendered
 // inside the Plan tab's toggle group - see PlanTab.tsx.
@@ -41,27 +41,7 @@ export function DispensePanel({ visit, udid }: { visit: any; udid: string }) {
         rows={4}
         className="w-full rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm"
       />
-      <button
-        disabled={pending}
-        onClick={() =>
-          startTransition(async () => {
-            await saveDispense(visit.id, udid, summary);
-            setSaved(true);
-          })
-        }
-        className="mt-3 text-sm font-medium px-4 py-2 rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)]"
-      >
-        Finalise Dispense Summary
-      </button>
-      {saved && <span className="ml-3 text-xs text-[var(--color-success-600)] font-medium">Saved</span>}
-      <a
-        href={`/api/dispense-pdf/${visit.id}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="inline-flex items-center gap-1.5 mt-3 ml-2 text-sm font-medium px-4 py-2 rounded-lg bg-white border border-[var(--color-border)] hover:border-[var(--color-primary-500)] text-[var(--color-ink-700)]"
-      >
-        <Download size={14} /> Download Long Summary (PDF)
-      </a>
+      {saved && <span className="mt-2 text-xs text-[var(--color-success-600)] font-medium">Saved</span>}
     </div>
   );
 }
@@ -100,6 +80,101 @@ export function AdmitPanel({ visit, udid, patientSex }: { visit: any; udid: stri
         Save Admission
       </button>
       {saved && <span className="ml-3 text-xs text-[var(--color-success-600)] font-medium">Saved — hospital notified</span>}
+    </div>
+  );
+}
+
+export function FollowUpdatesPanel({ visit, udid }: { visit: any; udid: string }) {
+  const toInputDate = (d: any) => d ? new Date(d).toISOString().slice(0, 10) : "";
+  const [followUpDate, setFollowUpDate] = useState(toInputDate(visit.followUpDate));
+  const [referralEnabled, setReferralEnabled] = useState(visit.referralEnabled ?? false);
+  const [referralNote, setReferralNote] = useState(visit.referralNote ?? "");
+  const [pending, startTransition] = useTransition();
+  const [saved, setSaved] = useState(false);
+
+  const addWeeks = (weeks: number) => {
+    const d = new Date();
+    d.setDate(d.getDate() + weeks * 7);
+    setFollowUpDate(d.toISOString().slice(0, 10));
+    setSaved(false);
+  };
+  const addMonths = (months: number) => {
+    const d = new Date();
+    d.setMonth(d.getMonth() + months);
+    setFollowUpDate(d.toISOString().slice(0, 10));
+    setSaved(false);
+  };
+
+  const formatDate = (iso: string) => {
+    if (!iso) return "";
+    const d = new Date(iso);
+    return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+  };
+
+  const chipCls = "px-3 py-1 rounded-full text-xs border border-[var(--color-border)] bg-white text-[var(--color-ink-600)] hover:border-[var(--color-primary-400)] hover:bg-[var(--color-primary-50)] transition-colors";
+
+  const save = () =>
+    startTransition(async () => {
+      await saveFollowUp(visit.id, udid, { followUpDate: followUpDate || null, referralEnabled, referralNote });
+      setSaved(true);
+    });
+
+  return (
+    <div className="rounded-xl border border-[var(--color-border)] p-4 flex flex-col gap-5">
+      {/* Follow-up date */}
+      <div>
+        <p className="text-[10px] font-semibold tracking-widest text-[var(--color-ink-400)] uppercase mb-2">Follow-up</p>
+        <p className="text-xs text-[var(--color-ink-500)] mb-1.5">Follow-up Date</p>
+        <div className="flex flex-wrap items-center gap-2">
+          <input
+            type="date"
+            value={followUpDate}
+            onChange={(e) => { setFollowUpDate(e.target.value); setSaved(false); }}
+            className="rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
+          />
+          <button className={chipCls} onClick={() => addWeeks(1)}>1w</button>
+          <button className={chipCls} onClick={() => addWeeks(2)}>2w</button>
+          <button className={chipCls} onClick={() => addWeeks(4)}>4w</button>
+          <button className={chipCls} onClick={() => addMonths(3)}>3m</button>
+          <button className={chipCls} onClick={() => addMonths(6)}>6m</button>
+          {followUpDate && (
+            <span className="text-sm text-[var(--color-ink-500)]">{formatDate(followUpDate)}</span>
+          )}
+        </div>
+      </div>
+
+      {/* Referral */}
+      <div>
+        <p className="text-[10px] font-semibold tracking-widest text-[var(--color-ink-400)] uppercase mb-2">Referral</p>
+        <label className="flex items-center gap-2 text-sm text-[var(--color-ink-700)] cursor-pointer">
+          <input
+            type="checkbox"
+            checked={referralEnabled}
+            onChange={(e) => { setReferralEnabled(e.target.checked); setSaved(false); }}
+          />
+          Enable referral
+        </label>
+        {referralEnabled && (
+          <textarea
+            value={referralNote}
+            onChange={(e) => { setReferralNote(e.target.value); setSaved(false); }}
+            rows={2}
+            placeholder="Referral details..."
+            className="mt-2 w-full rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
+          />
+        )}
+      </div>
+
+      <div className="flex items-center gap-3">
+        <button
+          disabled={pending}
+          onClick={save}
+          className="text-sm font-medium px-4 py-2 rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-60 transition-colors"
+        >
+          Save
+        </button>
+        {saved && <span className="text-xs text-[var(--color-success-600)] font-medium">Saved</span>}
+      </div>
     </div>
   );
 }

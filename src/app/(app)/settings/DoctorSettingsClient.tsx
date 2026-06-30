@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
+import Link from "next/link";
 import { format, formatDistanceToNow } from "date-fns";
 import {
   Users, Shield, Building2, Calendar, Bell,
@@ -488,145 +489,27 @@ function UsersSection({ users }: { users: UserRow[] }) {
 
 // ── SECTION: ROLES & PERMISSIONS ─────────────────────────────────────────────
 
-const PERM_GROUPS = [
-  {
-    cat: "Appointments",
-    perms: [
-      { label: "View Appointments",    roles: ["DOCTOR","HOSPITAL","REFRACTIONIST"] },
-      { label: "Book Appointments",    roles: ["DOCTOR","HOSPITAL"] },
-      { label: "Confirm Appointments", roles: ["DOCTOR","HOSPITAL"] },
-      { label: "Cancel Appointments",  roles: ["DOCTOR","HOSPITAL"] },
-    ],
-  },
-  {
-    cat: "Patients",
-    perms: [
-      { label: "View Patients",     roles: ["DOCTOR","HOSPITAL"] },
-      { label: "Register Patients", roles: ["DOCTOR","HOSPITAL"] },
-      { label: "Edit Patient Info", roles: ["DOCTOR","HOSPITAL"] },
-    ],
-  },
-  {
-    cat: "EMR / Clinical",
-    perms: [
-      { label: "View EMR",             roles: ["DOCTOR","HOSPITAL","REFRACTIONIST"] },
-      { label: "Write Clinical Notes", roles: ["DOCTOR"] },
-      { label: "Record Refraction",    roles: ["DOCTOR","REFRACTIONIST"] },
-    ],
-  },
-  {
-    cat: "IPD",
-    perms: [
-      { label: "View IPD",          roles: ["DOCTOR"] },
-      { label: "Admit Patients",    roles: ["DOCTOR"] },
-      { label: "Discharge Patients",roles: ["DOCTOR"] },
-    ],
-  },
-  {
-    cat: "Administration",
-    perms: [
-      { label: "Manage Users",      roles: ["DOCTOR"] },
-      { label: "View Audit Trail",  roles: ["DOCTOR"] },
-      { label: "Hospital Settings", roles: ["DOCTOR","HOSPITAL"] },
-      { label: "Chip Options",      roles: ["DOCTOR"] },
-    ],
-  },
-];
-
-const ROLE_COLS = [
-  { key: "DOCTOR",        label: "Doctor",        short: "DR", bg: "bg-[var(--color-primary-600)]" },
-  { key: "HOSPITAL",      label: "Staff",          short: "ST", bg: "bg-emerald-600" },
-  { key: "REFRACTIONIST", label: "Refractionist",  short: "RF", bg: "bg-amber-500"   },
-];
-
 function RolesSection() {
-  const totalPerms = PERM_GROUPS.reduce((s, g) => s + g.perms.length, 0);
-
   return (
     <div>
-      <SectionHeader title="Roles & Permissions" desc={`${totalPerms} permissions across ${PERM_GROUPS.length} categories`} />
-
-      {/* Role cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-        {ROLE_COLS.map((r) => {
-          const count = r.key === "DOCTOR"
-            ? totalPerms
-            : PERM_GROUPS.reduce((s, g) => s + g.perms.filter((p) => p.roles.includes(r.key)).length, 0);
-          const pct = Math.round((count / totalPerms) * 100);
-          return (
-            <Card key={r.key} className="p-4">
-              <div className="flex items-center gap-3 mb-3">
-                <span className={`w-9 h-9 rounded-xl flex items-center justify-center text-white text-xs font-bold ${r.bg}`}>{r.short}</span>
-                <div>
-                  <p className="text-sm font-semibold text-[var(--color-ink-900)]">{r.label}</p>
-                  <p className="text-xs text-[var(--color-ink-400)]">{count}/{totalPerms} permissions</p>
-                </div>
-              </div>
-              <div className="h-1.5 rounded-full bg-[var(--color-surface-sunken)]">
-                <div className={`h-1.5 rounded-full ${r.bg}`} style={{ width: `${pct}%` }} />
-              </div>
-            </Card>
-          );
-        })}
-      </div>
-
-      {/* Permission matrix */}
-      <Card>
-        <CardHeader
-          title="Permission Matrix"
-          sub="Doctor is super admin — full access to all features"
-        />
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm min-w-[560px]">
-            <thead>
-              <tr className="border-b border-[var(--color-border)] bg-[var(--color-surface-sunken)]">
-                <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)] w-[52%]">Permission</th>
-                {ROLE_COLS.map((r) => (
-                  <th key={r.key} className="px-3 py-3 text-center text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">
-                    <span className={`inline-flex items-center justify-center w-6 h-6 rounded-lg text-white text-[10px] font-bold ${r.bg}`}>{r.short}</span>
-                    <span className="block mt-1 text-[9px]">{r.label}</span>
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {PERM_GROUPS.map((group) => (
-                <React.Fragment key={group.cat}>
-                  <tr>
-                    <td colSpan={4} className="px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)] bg-[var(--color-surface-sunken)]/60">
-                      {group.cat}
-                    </td>
-                  </tr>
-                  {group.perms.map((perm) => (
-                    <tr key={perm.label} className="border-t border-[var(--color-border)] hover:bg-[var(--color-surface-sunken)] transition-colors">
-                      <td className="px-4 py-3 text-sm text-[var(--color-ink-700)] font-medium">{perm.label}</td>
-                      {ROLE_COLS.map((r) => {
-                        const isAdmin = r.key === "DOCTOR";
-                        const allowed = isAdmin || perm.roles.includes(r.key);
-                        return (
-                          <td key={r.key} className="px-3 py-3 text-center">
-                            <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full ${
-                              isAdmin ? "bg-[var(--color-primary-100)]" : allowed ? "bg-emerald-100" : "bg-[var(--color-surface-sunken)]"
-                            }`}>
-                              {isAdmin ? <Crown size={11} className="text-[var(--color-primary-600)]" /> :
-                               allowed ? <Check size={11} className="text-emerald-600" strokeWidth={2.5} /> :
-                                         <X size={11} className="text-[var(--color-ink-300)]" />}
-                            </span>
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  ))}
-                </React.Fragment>
-              ))}
-            </tbody>
-          </table>
+      <SectionHeader title="Roles & Permissions" desc="Manage roles and assign module permissions" />
+      <Card className="p-8 flex flex-col items-center gap-4 text-center">
+        <div className="w-14 h-14 rounded-2xl bg-[var(--color-primary-100)] flex items-center justify-center">
+          <Shield size={28} className="text-[var(--color-primary-600)]" />
         </div>
-        <div className="px-4 py-3 border-t border-[var(--color-border)] bg-[var(--color-surface-sunken)] flex gap-4 text-[11px] text-[var(--color-ink-400)]">
-          <span className="flex items-center gap-1"><span className="w-4 h-4 rounded-full bg-[var(--color-primary-100)] inline-flex items-center justify-center"><Crown size={8} className="text-[var(--color-primary-600)]" /></span> Super Admin</span>
-          <span className="flex items-center gap-1"><span className="w-4 h-4 rounded-full bg-emerald-100 inline-flex items-center justify-center"><Check size={8} className="text-emerald-600" strokeWidth={2.5} /></span> Allowed</span>
-          <span className="flex items-center gap-1"><span className="w-4 h-4 rounded-full bg-[var(--color-surface-sunken)] inline-flex items-center justify-center"><X size={8} className="text-[var(--color-ink-300)]" /></span> Restricted</span>
+        <div>
+          <p className="font-semibold text-[var(--color-ink-900)] mb-1">Role & Permission Management</p>
+          <p className="text-sm text-[var(--color-ink-500)] max-w-sm">
+            Create roles, assign module-level permissions, and control what each role can access across the system.
+          </p>
         </div>
+        <Link
+          href="/settings/roles"
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[var(--color-primary-600)] text-white text-sm font-semibold hover:bg-[var(--color-primary-700)] transition-colors"
+        >
+          <Shield size={15} />
+          Open Role Manager
+        </Link>
       </Card>
     </div>
   );

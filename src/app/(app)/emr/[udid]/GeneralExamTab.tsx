@@ -8,6 +8,7 @@ import { ChipGroup } from "@/components/ui/Chip";
 import { PAST_MEDICAL_HISTORY_CHIPS, VITAL_RANGES } from "@/lib/constants";
 import { parseJSON } from "@/lib/json";
 import { useAutoSave, SaveIndicator } from "@/lib/useAutoSave";
+import { KeywordTextarea } from "@/components/emr/KeywordField";
 import { saveGeneralExam } from "./actions";
 
 function parseBP(value: string): { sys: number; dia: number } | null {
@@ -81,7 +82,57 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, customPmhCh
         <SaveIndicator state={state} />
       </div>
 
-      {/* VITALS — collapsible */}
+      {/* CHIEF COMPLAINT */}
+      <Card>
+        <FieldWithHistory label="CHIEF COMPLAINT" history={histFor((g) => g.chiefComplaint)}>
+          <KeywordTextarea fieldKey="ge_chiefComplaint" value={chiefComplaint} onChange={setChiefComplaint} disabled={readOnly} rows={2} />
+        </FieldWithHistory>
+      </Card>
+
+      {/* HISTORY OF PRESENT ILLNESS */}
+      <Card>
+        <FieldWithHistory label="HISTORY OF PRESENT ILLNESS" history={histFor((g) => g.hpi)}>
+          <KeywordTextarea fieldKey="ge_hpi" value={hpi} onChange={setHpi} disabled={readOnly} rows={3} placeholder="Onset, character, duration, aggravating/relieving factors..." />
+        </FieldWithHistory>
+      </Card>
+
+      {/* PAST MEDICAL HISTORY */}
+      <Card>
+        <p className="text-xs font-semibold tracking-widest text-[var(--color-ink-500)] uppercase mb-3">
+          Past Medical History <span className="text-[10px] font-normal normal-case tracking-normal text-[var(--color-ink-400)]">(cumulative across visits)</span>
+        </p>
+        <ChipGroup
+          options={pmhChipOptions}
+          value={pmh}
+          onChange={readOnly ? () => {} : setPmh}
+          allowOther
+          otherValue={pmhOther}
+          onOtherChange={readOnly ? undefined : setPmhOther}
+        />
+      </Card>
+
+      {/* CURRENT MEDICATIONS */}
+      <Card>
+        <FieldWithHistory label="CURRENT MEDICATIONS" history={histFor((g) => g.medications)}>
+          <KeywordTextarea fieldKey="ge_medications" value={medications} onChange={setMedications} disabled={readOnly} rows={2} placeholder="Drug, dosage, frequency" />
+        </FieldWithHistory>
+      </Card>
+
+      {/* ALLERGIES */}
+      <Card>
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-xs font-semibold tracking-widest text-[var(--color-ink-500)] uppercase">Allergies</p>
+          <label className="flex items-center gap-2 text-xs text-[var(--color-ink-500)]">
+            <input type="checkbox" disabled={readOnly} checked={nkda} onChange={(e) => setNkda(e.target.checked)} />
+            NKDA (No Known Drug Allergies)
+          </label>
+        </div>
+        {!nkda && (
+          <KeywordTextarea fieldKey="ge_allergies" value={allergies} onChange={setAllergies} disabled={readOnly} rows={2} />
+        )}
+      </Card>
+
+      {/* VITALS — collapsible, moved to bottom */}
       <Card className="p-0 overflow-hidden">
         <button
           type="button"
@@ -117,82 +168,6 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, customPmhCh
               {numWarning(weight, VITAL_RANGES.weight, "weight") && <VitalWarning message={numWarning(weight, VITAL_RANGES.weight, "weight")} />}
             </FieldWithHistory>
           </div>
-        )}
-      </Card>
-
-      {/* CHIEF COMPLAINT */}
-      <Card>
-        <FieldWithHistory label="CHIEF COMPLAINT" history={histFor((g) => g.chiefComplaint)}>
-          <textarea
-            disabled={readOnly}
-            value={chiefComplaint}
-            onChange={(e) => setChiefComplaint(e.target.value)}
-            rows={2}
-            className="w-full rounded-xl border border-[var(--color-border)] bg-white px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] disabled:bg-[var(--color-surface-sunken)]"
-          />
-        </FieldWithHistory>
-      </Card>
-
-      {/* HISTORY OF PRESENT ILLNESS */}
-      <Card>
-        <FieldWithHistory label="HISTORY OF PRESENT ILLNESS" history={histFor((g) => g.hpi)}>
-          <textarea
-            disabled={readOnly}
-            value={hpi}
-            onChange={(e) => setHpi(e.target.value)}
-            rows={3}
-            placeholder="Onset, character, duration, aggravating/relieving factors..."
-            className="w-full rounded-xl border border-[var(--color-border)] bg-white px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] disabled:bg-[var(--color-surface-sunken)]"
-          />
-        </FieldWithHistory>
-      </Card>
-
-      {/* PAST MEDICAL HISTORY */}
-      <Card>
-        <p className="text-xs font-semibold tracking-widest text-[var(--color-ink-500)] uppercase mb-3">
-          Past Medical History <span className="text-[10px] font-normal normal-case tracking-normal text-[var(--color-ink-400)]">(cumulative across visits)</span>
-        </p>
-        <ChipGroup
-          options={pmhChipOptions}
-          value={pmh}
-          onChange={readOnly ? () => {} : setPmh}
-          allowOther
-          otherValue={pmhOther}
-          onOtherChange={readOnly ? undefined : setPmhOther}
-        />
-      </Card>
-
-      {/* CURRENT MEDICATIONS */}
-      <Card>
-        <FieldWithHistory label="CURRENT MEDICATIONS" history={histFor((g) => g.medications)}>
-          <textarea
-            disabled={readOnly}
-            value={medications}
-            onChange={(e) => setMedications(e.target.value)}
-            rows={2}
-            placeholder="Drug, dosage, frequency"
-            className="w-full rounded-xl border border-[var(--color-border)] bg-white px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] disabled:bg-[var(--color-surface-sunken)]"
-          />
-        </FieldWithHistory>
-      </Card>
-
-      {/* ALLERGIES */}
-      <Card>
-        <div className="flex items-center justify-between mb-2">
-          <p className="text-xs font-semibold tracking-widest text-[var(--color-ink-500)] uppercase">Allergies</p>
-          <label className="flex items-center gap-2 text-xs text-[var(--color-ink-500)]">
-            <input type="checkbox" disabled={readOnly} checked={nkda} onChange={(e) => setNkda(e.target.checked)} />
-            NKDA (No Known Drug Allergies)
-          </label>
-        </div>
-        {!nkda && (
-          <textarea
-            disabled={readOnly}
-            value={allergies}
-            onChange={(e) => setAllergies(e.target.value)}
-            rows={2}
-            className="w-full rounded-xl border border-[var(--color-border)] bg-white px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] disabled:bg-[var(--color-surface-sunken)]"
-          />
         )}
       </Card>
     </div>

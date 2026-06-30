@@ -1,8 +1,8 @@
 // Centralised enum-like constants (SQLite has no native enum support in Prisma,
 // so these are validated/typed at the application layer instead).
 
-export const ROLES = ["DOCTOR", "HOSPITAL", "REFRACTIONIST"] as const;
-export type Role = (typeof ROLES)[number];
+export const ROLES = ["DOCTOR", "HOSPITAL", "REFRACTIONIST", "RECEPTIONIST"] as const;
+export type Role = string; // dynamic roles from DB; ROLES array used for validation
 
 export const SEXES = ["MALE", "FEMALE", "OTHER"] as const;
 export type Sex = (typeof SEXES)[number];
@@ -71,14 +71,17 @@ export const ANTERIOR_SEGMENT_STRUCTURES: Record<string, string[]> = {
 };
 
 export const POSTERIOR_SEGMENT_OPTIONS: Record<string, string[]> = {
-  media: ["Clear", "Hazy", "Vitreous haemorrhage", "Asteroid hyalosis"],
-  discSize: ["Normal", "Small", "Large"],
-  discShape: ["Round", "Oval", "Tilted"],
-  discColour: ["Normal pink", "Pale", "Hyperaemic"],
-  discVessels: ["Normal", "NVD", "Attenuated"],
-  macula: ["Normal", "CSME", "ERM", "MH", "CSR", "Dry ARMD", "Wet ARMD", "NPDR", "PDR"],
-  retinalVessels: ["Normal", "AV nicking", "Attenuation", "NVE", "Haemorrhages", "Exudates"],
-  periphery: ["Normal", "Lattice degeneration", "Break/Tear", "Detachment"],
+  media:          ["Clear", "Vitreous haze", "Vitreous haemorrhage", "Asteroid hyalosis", "Synchysis scintillans"],
+  discSize:       [],
+  discShape:      [],
+  discColour:     ["Normal", "Pale", "Hyperaemic", "Cupped", "Drusen", "Disc oedema", "Tilted disc"],
+  discVessels:    [],
+  discMargin:     [],
+  cdr:            [],
+  nrr:            [],
+  macula:         ["Normal", "Dry ARMD", "Wet ARMD", "CSME", "ERM", "MH", "CSR", "Macular scar", "Flat scar"],
+  retinalVessels: ["Normal", "AV nipping", "Copper/silver wiring", "CRVO", "BRVO", "CRAO", "NVE", "NVD"],
+  background:     ["Normal", "DR absent", "Mild NPDR", "Moderate NPDR", "Severe NPDR", "PDR", "Laser scars"],
 };
 
 export const LACRIMAL_SAC_CHIPS = [

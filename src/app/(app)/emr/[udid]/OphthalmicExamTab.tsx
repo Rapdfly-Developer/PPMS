@@ -1,18 +1,17 @@
 "use client";
 
 import { useState, useEffect, useTransition } from "react";
-import { Trash2 } from "lucide-react";
+import { Trash2, Plus, X } from "lucide-react";
+import { KeywordInput, KeywordTextarea } from "@/components/emr/KeywordField";
 import { Card } from "@/components/ui/Card";
 import { Tabs } from "@/components/ui/Tabs";
-import { ChipGroup, SingleChipSelect } from "@/components/ui/Chip";
+import { SingleChipSelect } from "@/components/ui/Chip";
 import { useAutoSave, SaveIndicator } from "@/lib/useAutoSave";
 import { parseJSON } from "@/lib/json";
 import { DiplopiaGrid, HessGrid } from "@/components/emr/Grid9Position";
 import {
   VA_TEST_METHODS,
   VA_SNELLEN_VALUES,
-  COLOUR_VISION_TESTS,
-  CONTRAST_SENSITIVITY_TESTS,
   IOP_METHODS,
   ANTERIOR_SEGMENT_STRUCTURES,
   POSTERIOR_SEGMENT_OPTIONS,
@@ -21,7 +20,6 @@ import {
 import {
   saveVisualAcuity,
   saveRefraction,
-  sendToOpticals,
   saveColourVision,
   addIOPReading,
   removeIOPReading,
@@ -35,10 +33,9 @@ import {
   markOphthalmicReviewed,
 } from "./actions";
 import { format } from "date-fns";
+import { ChipGroup } from "@/components/ui/Chip";
 
-type Role = "DOCTOR" | "HOSPITAL" | "REFRACTIONIST";
-
-export function OphthalmicExamTab({ visit, priorVisits, udid, role }: { visit: any; priorVisits: any[]; udid: string; role: Role }) {
+export function OphthalmicExamTab({ visit, priorVisits, udid, role }: { visit: any; priorVisits: any[]; udid: string; role: string }) {
   const refractionistCanEdit = role === "REFRACTIONIST" || role === "DOCTOR";
   const doctorOnly = role === "DOCTOR";
 
@@ -53,17 +50,17 @@ export function OphthalmicExamTab({ visit, priorVisits, udid, role }: { visit: a
     <Tabs
       defaultTab="va"
       tabs={[
-        { id: "va", label: "Visual Acuity", content: <VisualAcuityCard visit={visit} udid={udid} editable={refractionistCanEdit} /> },
-        { id: "refraction", label: "Refraction", content: <RefractionCard visit={visit} udid={udid} editable={refractionistCanEdit} /> },
-        { id: "cv", label: "Colour Vision / CS", content: <ColourVisionCard visit={visit} udid={udid} editable={refractionistCanEdit} /> },
-        { id: "iop", label: "IOP", content: <IOPCard visit={visit} udid={udid} editable={refractionistCanEdit} priorVisits={priorVisits} /> },
-        { id: "anterior", label: "Anterior Segment", content: <AnteriorSegmentCard visit={visit} udid={udid} editable={doctorOnly} /> },
+        { id: "va",        label: "Visual Acuity",    content: <VisualAcuityCard visit={visit} udid={udid} editable={refractionistCanEdit} /> },
+        { id: "refraction",label: "Refraction",        content: <RefractionCard visit={visit} udid={udid} editable={refractionistCanEdit} /> },
+        { id: "cv",        label: "Colour / Contrast", content: <ColourContrastTab visit={visit} udid={udid} editable={refractionistCanEdit} /> },
+        { id: "iop",       label: "IOP",               content: <IOPCard visit={visit} udid={udid} editable={refractionistCanEdit} priorVisits={priorVisits} /> },
+        { id: "anterior",  label: "Anterior Segment",  content: <AnteriorSegmentCard visit={visit} udid={udid} editable={doctorOnly} /> },
         { id: "posterior", label: "Posterior Segment", content: <PosteriorSegmentCard visit={visit} udid={udid} editable={doctorOnly} /> },
-        { id: "diplopia", label: "Diplopia Chart", content: <DiplopiaCard visit={visit} udid={udid} editable={doctorOnly} /> },
-        { id: "hess", label: "Hess Chart", content: <HessCard visit={visit} udid={udid} editable={doctorOnly} /> },
-        { id: "retino", label: "Retinoscopy", content: <RetinoscopyCard visit={visit} udid={udid} editable={doctorOnly} /> },
-        { id: "tear", label: "Tear Film", content: <TearFilmCard visit={visit} udid={udid} editable={doctorOnly} /> },
-        { id: "lacrimal", label: "Lacrimal Sac", content: <LacrimalSacCard visit={visit} udid={udid} editable={doctorOnly} /> },
+        { id: "diplopia",  label: "Diplopia Chart",    content: <DiplopiaCard visit={visit} udid={udid} editable={doctorOnly} /> },
+        { id: "hess",      label: "Hess Chart",        content: <HessCard visit={visit} udid={udid} editable={doctorOnly} /> },
+        { id: "retino",    label: "Retinoscopy",        content: <RetinoscopyCard visit={visit} udid={udid} editable={doctorOnly} /> },
+        { id: "tear",      label: "Tear Film",          content: <TearFilmCard visit={visit} udid={udid} editable={doctorOnly} /> },
+        { id: "lacrimal",  label: "Lacrimal Sac",       content: <LacrimalSacCard visit={visit} udid={udid} editable={doctorOnly} /> },
       ]}
     />
   );
@@ -73,34 +70,38 @@ function EyeColumns({ children }: { children: [React.ReactNode, React.ReactNode]
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
       <div>
-        <p className="text-xs font-semibold text-[var(--color-primary-700)] uppercase tracking-wide mb-2">Right Eye (RE)</p>
+        <p className="text-xs font-semibold text-[var(--color-primary-700)] uppercase tracking-wide mb-2">Right Eye</p>
         {children[0]}
       </div>
       <div>
-        <p className="text-xs font-semibold text-[var(--color-primary-700)] uppercase tracking-wide mb-2">Left Eye (LE)</p>
+        <p className="text-xs font-semibold text-[var(--color-primary-700)] uppercase tracking-wide mb-2">Left Eye</p>
         {children[1]}
       </div>
     </div>
   );
 }
 
-const VA_ROWS: { key: string; label: string; section: "dist" | "near" }[] = [
-  { key: "unaided",        label: "Unaided",        section: "dist" },
-  { key: "pinhole",        label: "Pinhole",        section: "dist" },
-  { key: "bestCorrected",  label: "Best Corrected", section: "dist" },
-  { key: "nearUnaided",    label: "Unaided",        section: "near" },
-  { key: "nearPinhole",    label: "Pinhole",        section: "near" },
-  { key: "nearBestCorrected", label: "Best Corrected", section: "near" },
+/* ── Visual Acuity ─────────────────────────────────────────────────────── */
+
+const VA_DIST_ROWS: { key: string; label: string }[] = [
+  { key: "unaided",       label: "Unaided"  },
+  { key: "pinhole",       label: "Pinhole"  },
+  { key: "bestCorrected", label: "Aided"    },
+];
+
+const VA_NEAR_ROWS: { key: string; label: string }[] = [
+  { key: "nearUnaided",       label: "Unaided" },
+  { key: "nearBestCorrected", label: "Aided"   },
 ];
 
 function VisualAcuityCard({ visit, udid, editable }: { visit: any; udid: string; editable: boolean }) {
   const va = visit.visualAcuity;
   const [testMethod, setTestMethod] = useState(va?.testMethod ?? "Snellen");
   const [re, setRe] = useState(
-    parseJSON(va?.re, { unaided: "", pinhole: "", bestCorrected: "", nearUnaided: "", nearPinhole: "", nearBestCorrected: "", nearN: "" })
+    parseJSON(va?.re, { unaided: "", pinhole: "", bestCorrected: "", nearUnaided: "", nearPinhole: "", nearBestCorrected: "" })
   );
   const [le, setLe] = useState(
-    parseJSON(va?.le, { unaided: "", pinhole: "", bestCorrected: "", nearUnaided: "", nearPinhole: "", nearBestCorrected: "", nearN: "" })
+    parseJSON(va?.le, { unaided: "", pinhole: "", bestCorrected: "", nearUnaided: "", nearPinhole: "", nearBestCorrected: "" })
   );
 
   const state = useAutoSave({ testMethod, re: JSON.stringify(re), le: JSON.stringify(le) }, async (d) => {
@@ -113,10 +114,23 @@ function VisualAcuityCard({ visit, udid, editable }: { visit: any; udid: string;
       disabled={!editable}
       value={(eye as any)[key] ?? "-"}
       onChange={(e) => setEye({ ...eye, [key]: e.target.value })}
-      className="w-full rounded border border-[var(--color-border)] bg-white px-1.5 py-1 text-xs disabled:bg-[var(--color-surface-sunken)]"
+      className="rounded border border-[var(--color-border)] bg-white px-1.5 py-1 text-xs disabled:bg-[var(--color-surface-sunken)] w-24"
     >
       {VA_SNELLEN_VALUES.map((v) => <option key={v} value={v}>{v}</option>)}
     </select>
+  );
+
+  const tableSection = (label: string, rows: typeof VA_DIST_ROWS) => (
+    <>
+      <tr><td colSpan={3} className="pt-3 pb-1 text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-widest">{label}</td></tr>
+      {rows.map((row) => (
+        <tr key={row.key}>
+          <td className="py-2 pr-3 font-medium text-[var(--color-ink-600)] whitespace-nowrap text-xs">{row.label}</td>
+          <td className="py-2 px-2">{sel(re, setRe, row.key)}</td>
+          <td className="py-2 pl-8 pr-2">{sel(le, setLe, row.key)}</td>
+        </tr>
+      ))}
+    </>
   );
 
   return (
@@ -128,42 +142,17 @@ function VisualAcuityCard({ visit, udid, editable }: { visit: any; udid: string;
       <SingleChipSelect options={VA_TEST_METHODS} value={testMethod} onChange={editable ? setTestMethod : () => {}} />
 
       <div className="mt-4 overflow-x-auto">
-        <table className="w-full text-xs min-w-[320px]">
+        <table className="text-xs min-w-[280px]">
           <thead>
-            <tr className="border-b border-[var(--color-border)]">
-              <th className="py-1.5 pr-2 text-left text-[var(--color-ink-400)] font-medium w-28"></th>
-              <th className="py-1.5 px-1 text-center text-[var(--color-primary-700)] font-semibold">RE</th>
-              <th className="py-1.5 px-1 text-center text-[var(--color-primary-700)] font-semibold">LE</th>
+            <tr>
+              <th className="pb-2 pr-3 text-left text-[var(--color-ink-400)] font-medium w-28"></th>
+              <th className="pb-2 px-2 text-center text-[var(--color-primary-700)] font-semibold">RE</th>
+              <th className="pb-2 pl-8 pr-2 text-center text-[var(--color-primary-700)] font-semibold">LE</th>
             </tr>
           </thead>
           <tbody>
-            <tr><td colSpan={3} className="pt-2 pb-0.5 text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-widest">Distance</td></tr>
-            {VA_ROWS.filter(r => r.section === "dist").map(row => (
-              <tr key={row.key} className="border-b border-[var(--color-border)] last:border-0">
-                <td className="py-1 pr-2 font-medium text-[var(--color-ink-600)] whitespace-nowrap">{row.label}</td>
-                <td className="py-1 px-1">{sel(re, setRe, row.key)}</td>
-                <td className="py-1 px-1">{sel(le, setLe, row.key)}</td>
-              </tr>
-            ))}
-            <tr><td colSpan={3} className="pt-3 pb-0.5 text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-widest">Near</td></tr>
-            {VA_ROWS.filter(r => r.section === "near").map(row => (
-              <tr key={row.key} className="border-b border-[var(--color-border)] last:border-0">
-                <td className="py-1 pr-2 font-medium text-[var(--color-ink-600)] whitespace-nowrap">{row.label}</td>
-                <td className="py-1 px-1">{sel(re, setRe, row.key)}</td>
-                <td className="py-1 px-1">{sel(le, setLe, row.key)}</td>
-              </tr>
-            ))}
-            <tr className="border-b border-[var(--color-border)]">
-              <td className="py-1 pr-2 font-medium text-[var(--color-ink-600)] whitespace-nowrap">Near (N)</td>
-              <td className="py-1 px-1">
-                <input disabled={!editable} value={(re as any).nearN ?? ""} onChange={(e) => setRe({ ...re, nearN: e.target.value })}
-                  placeholder="N5" className="w-full rounded border border-[var(--color-border)] bg-white px-1.5 py-1 text-xs disabled:bg-[var(--color-surface-sunken)]" />
-              </td>
-              <td className="py-1 px-1">
-                <input disabled={!editable} value={(le as any).nearN ?? ""} onChange={(e) => setLe({ ...le, nearN: e.target.value })}
-                  placeholder="N5" className="w-full rounded border border-[var(--color-border)] bg-white px-1.5 py-1 text-xs disabled:bg-[var(--color-surface-sunken)]" />
-              </td>
-            </tr>
+            {tableSection("Distance", VA_DIST_ROWS)}
+            {tableSection("Near", VA_NEAR_ROWS)}
           </tbody>
         </table>
       </div>
@@ -171,31 +160,58 @@ function VisualAcuityCard({ visit, udid, editable }: { visit: any; udid: string;
   );
 }
 
+/* ── Refraction ────────────────────────────────────────────────────────── */
+
 function RefractionCard({ visit, udid, editable }: { visit: any; udid: string; editable: boolean }) {
   const rc = visit.refraction;
-  const [re, setRe] = useState(parseJSON(rc?.re, { sph: "", cyl: "", axis: "", va: "", nearSph: "", nearCyl: "", nearAxis: "" }));
-  const [le, setLe] = useState(parseJSON(rc?.le, { sph: "", cyl: "", axis: "", va: "", nearSph: "", nearCyl: "", nearAxis: "" }));
+  const [re, setRe] = useState(parseJSON(rc?.re, { sph: "", cyl: "", axis: "", va: "", nearSph: "", nearVa: "" }));
+  const [le, setLe] = useState(parseJSON(rc?.le, { sph: "", cyl: "", axis: "", va: "", nearSph: "", nearVa: "" }));
 
   const state = useAutoSave({ re: JSON.stringify(re), le: JSON.stringify(le) }, async (d) => {
     if (!editable) return;
     await saveRefraction(visit.id, udid, d);
   });
 
+  const smallInput = (label: string, value: string, onChange: (v: string) => void) => (
+    <div className="flex flex-col gap-0.5">
+      <label className="text-[10px] text-[var(--color-ink-400)] font-medium">{label}</label>
+      <input
+        type="text"
+        disabled={!editable}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-20 rounded border border-[var(--color-border)] bg-white px-2 py-1 text-xs disabled:bg-[var(--color-surface-sunken)]"
+      />
+    </div>
+  );
+
+  const vaSelect = (label: string, value: string, onChange: (v: string) => void) => (
+    <div className="flex flex-col gap-0.5">
+      <label className="text-[10px] text-[var(--color-ink-400)] font-medium">{label}</label>
+      <select
+        disabled={!editable}
+        value={value || "-"}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-28 rounded border border-[var(--color-border)] bg-white px-1.5 py-1 text-xs disabled:bg-[var(--color-surface-sunken)]"
+      >
+        {VA_SNELLEN_VALUES.map((v) => <option key={v} value={v}>{v}</option>)}
+      </select>
+    </div>
+  );
+
   const eyeFields = (val: typeof re, setVal: typeof setRe) => (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-4">
       <p className="text-xs text-[var(--color-ink-400)] font-medium">Distance</p>
-      <div className="grid grid-cols-3 gap-1.5">
-        <LabeledInput label="Sph" value={val.sph} onChange={(v) => setVal({ ...val, sph: v })} disabled={!editable} />
-        <LabeledInput label="Cyl" value={val.cyl} onChange={(v) => setVal({ ...val, cyl: v })} disabled={!editable} />
-        <LabeledInput label="Axis 0-180°" value={val.axis} onChange={(v) => setVal({ ...val, axis: v })} disabled={!editable} />
+      <div className="flex gap-3 flex-wrap">
+        {smallInput("Sph",   val.sph,  (v) => setVal({ ...val, sph: v }))}
+        {smallInput("Cyl",   val.cyl,  (v) => setVal({ ...val, cyl: v }))}
+        {smallInput("Axis°", val.axis, (v) => setVal({ ...val, axis: v }))}
       </div>
-      <LabeledInput label="Resulting VA" value={val.va} onChange={(v) => setVal({ ...val, va: v })} disabled={!editable} />
-      <p className="text-xs text-[var(--color-ink-400)] font-medium mt-2">Near</p>
-      <div className="grid grid-cols-3 gap-1.5">
-        <LabeledInput label="Sph" value={val.nearSph} onChange={(v) => setVal({ ...val, nearSph: v })} disabled={!editable} />
-        <LabeledInput label="Cyl" value={val.nearCyl} onChange={(v) => setVal({ ...val, nearCyl: v })} disabled={!editable} />
-        <LabeledInput label="Axis" value={val.nearAxis} onChange={(v) => setVal({ ...val, nearAxis: v })} disabled={!editable} />
-      </div>
+      {vaSelect("Resulting VA", val.va, (v) => setVal({ ...val, va: v }))}
+
+      <p className="text-xs text-[var(--color-ink-400)] font-medium">Near</p>
+      {smallInput("Sph", val.nearSph, (v) => setVal({ ...val, nearSph: v }))}
+      {vaSelect("Resulting VA", val.nearVa, (v) => setVal({ ...val, nearVa: v }))}
     </div>
   );
 
@@ -203,17 +219,7 @@ function RefractionCard({ visit, udid, editable }: { visit: any; udid: string; e
     <Card>
       <div className="flex items-center justify-between mb-3">
         <p className="text-sm font-medium text-[var(--color-ink-700)]">Refractive Correction</p>
-        <div className="flex items-center gap-3">
-          <SaveIndicator state={state} />
-          {editable && (
-            <button
-              onClick={() => sendToOpticals(visit.id, udid)}
-              className="text-xs font-medium px-3 py-1.5 rounded-lg bg-[var(--color-primary-100)] text-[var(--color-primary-700)] hover:bg-[var(--color-primary-600)] hover:text-white transition-colors"
-            >
-              {rc?.sentToOpticals ? "Resend to Opticals" : "Send to Opticals"}
-            </button>
-          )}
-        </div>
+        <SaveIndicator state={state} />
       </div>
       <EyeColumns>
         {eyeFields(re, setRe)}
@@ -223,67 +229,143 @@ function RefractionCard({ visit, udid, editable }: { visit: any; udid: string; e
   );
 }
 
+/* ── Colour Vision + Contrast Vision (combined tab) ─────────────────────── */
+
 const CV_OPTIONS = ["Normal", "Defective", "Not Tested"] as const;
 type CVResult = typeof CV_OPTIONS[number] | "";
 
-function ColourVisionCard({ visit, udid, editable }: { visit: any; udid: string; editable: boolean }) {
+const CV_METHODS = ["Ishihara", "D-15 Farnsworth", "Lanthony D-15", "HRR", "City University"] as const;
+const CS_METHODS = ["Pelli-Robson", "Mars Letter CS", "Vistech", "FACT"] as const;
+
+function ColourContrastTab({ visit, udid, editable }: { visit: any; udid: string; editable: boolean }) {
   const cv = visit.colourVisionCS;
-  const storedRe = parseJSON(cv?.re, {});
-  const storedLe = parseJSON(cv?.le, {});
-  const [reResult, setReResult] = useState<CVResult>((storedRe as any).result ?? "");
-  const [leResult, setLeResult] = useState<CVResult>((storedLe as any).result ?? "");
-  const [reNotes, setReNotes]   = useState<string>((storedRe as any).notes ?? "");
-  const [leNotes, setLeNotes]   = useState<string>((storedLe as any).notes ?? "");
+  const storedRe = parseJSON(cv?.re, {}) as any;
+  const storedLe = parseJSON(cv?.le, {}) as any;
+
+  // Colour Vision state
+  const [reCvMethod, setReCvMethod] = useState<string>(storedRe.cvMethod ?? "Ishihara");
+  const [leCvMethod, setLeCvMethod] = useState<string>(storedLe.cvMethod ?? "Ishihara");
+  const [reResult, setReResult] = useState<CVResult>(storedRe.result ?? "");
+  const [leResult, setLeResult] = useState<CVResult>(storedLe.result ?? "");
+  const [reNotes, setReNotes]   = useState<string>(storedRe.notes ?? "");
+  const [leNotes, setLeNotes]   = useState<string>(storedLe.notes ?? "");
+
+  // Contrast Vision state
+  const [reCsMethod, setReCsMethod] = useState<string>(storedRe.csMethod ?? "Pelli-Robson");
+  const [leCsMethod, setLeCsMethod] = useState<string>(storedLe.csMethod ?? "Pelli-Robson");
+  const [csReResult, setCsReResult] = useState<CVResult>(storedRe.csResult ?? "");
+  const [csLeResult, setCsLeResult] = useState<CVResult>(storedLe.csResult ?? "");
+  const [csReNotes, setCsReNotes]   = useState<string>(storedRe.csNotes ?? "");
+  const [csLeNotes, setCsLeNotes]   = useState<string>(storedLe.csNotes ?? "");
 
   const state = useAutoSave(
-    { re: JSON.stringify({ result: reResult, notes: reNotes }), le: JSON.stringify({ result: leResult, notes: leNotes }) },
+    {
+      re: JSON.stringify({ cvMethod: reCvMethod, result: reResult, notes: reNotes, csMethod: reCsMethod, csResult: csReResult, csNotes: csReNotes }),
+      le: JSON.stringify({ cvMethod: leCvMethod, result: leResult, notes: leNotes, csMethod: leCsMethod, csResult: csLeResult, csNotes: csLeNotes }),
+    },
     async (d) => { if (!editable) return; await saveColourVision(visit.id, udid, d); }
   );
 
-  const eyePanel = (label: string, result: CVResult, setResult: (v: CVResult) => void, notes: string, setNotes: (v: string) => void) => (
-    <div>
-      <p className="text-xs font-semibold text-[var(--color-primary-700)] uppercase tracking-wide mb-2">{label}</p>
-      <div className="flex gap-2 flex-wrap mb-3">
-        {CV_OPTIONS.map((opt) => (
-          <button
-            key={opt}
-            disabled={!editable}
-            onClick={() => setResult(result === opt ? "" : opt)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
-              result === opt
-                ? opt === "Normal"     ? "bg-emerald-100 border-emerald-400 text-emerald-700"
-                : opt === "Defective"  ? "bg-red-100 border-red-400 text-red-700"
-                :                        "bg-[var(--color-surface-sunken)] border-[var(--color-ink-300)] text-[var(--color-ink-500)]"
-                : "bg-white border-[var(--color-border)] text-[var(--color-ink-600)] hover:border-[var(--color-primary-400)]"
-            } disabled:cursor-default`}
-          >
-            {opt}
-          </button>
-        ))}
-      </div>
-      <input
-        disabled={!editable}
-        value={notes}
-        onChange={(e) => setNotes(e.target.value)}
-        placeholder="Notes (e.g. Ishihara 10/38)..."
-        className="w-full rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-xs disabled:bg-[var(--color-surface-sunken)]"
-      />
+  return (
+    <div className="flex flex-col gap-4">
+      <SaveIndicator state={state} />
+
+      {/* Colour Vision card */}
+      <Card>
+        <p className="text-sm font-medium text-[var(--color-ink-700)] mb-3">Colour Vision</p>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          {[
+            { label: "Right Eye", method: reCvMethod, setMethod: setReCvMethod, result: reResult, setResult: setReResult, notes: reNotes, setNotes: setReNotes },
+            { label: "Left Eye",  method: leCvMethod, setMethod: setLeCvMethod, result: leResult, setResult: setLeResult, notes: leNotes, setNotes: setLeNotes },
+          ].map(({ label, method, setMethod, result, setResult, notes, setNotes }) => (
+            <div key={label} className="flex flex-col gap-3">
+              <p className="text-xs font-semibold text-[var(--color-primary-700)] uppercase tracking-wide">{label}</p>
+              <div>
+                <label className="text-[10px] text-[var(--color-ink-400)] font-medium block mb-1">Method</label>
+                <select
+                  disabled={!editable}
+                  value={method}
+                  onChange={(e) => setMethod(e.target.value)}
+                  className="rounded-lg border border-[var(--color-border)] bg-white px-2.5 py-1.5 text-xs disabled:bg-[var(--color-surface-sunken)]"
+                >
+                  {CV_METHODS.map((m) => <option key={m}>{m}</option>)}
+                </select>
+              </div>
+              <div className="flex gap-2 flex-wrap">
+                {CV_OPTIONS.map((opt) => (
+                  <button
+                    key={opt}
+                    disabled={!editable}
+                    onClick={() => setResult(result === opt ? "" : opt)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                      result === opt
+                        ? opt === "Normal"    ? "bg-emerald-100 border-emerald-400 text-emerald-700"
+                        : opt === "Defective" ? "bg-red-100 border-red-400 text-red-700"
+                        :                       "bg-[var(--color-surface-sunken)] border-[var(--color-ink-300)] text-[var(--color-ink-500)]"
+                        : "bg-white border-[var(--color-border)] text-[var(--color-ink-600)] hover:border-[var(--color-primary-400)]"
+                    } disabled:cursor-default`}
+                  >
+                    {opt}
+                  </button>
+                ))}
+              </div>
+              <KeywordInput fieldKey={`cv_${label}`} value={notes} onChange={setNotes} disabled={!editable} placeholder="Notes..." className="flex-1 w-full rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-xs disabled:bg-[var(--color-surface-sunken)]" />
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      {/* Contrast Vision card */}
+      <Card>
+        <p className="text-sm font-medium text-[var(--color-ink-700)] mb-3">Contrast Vision</p>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          {[
+            { label: "Right Eye", method: reCsMethod, setMethod: setReCsMethod, result: csReResult, setResult: setCsReResult, notes: csReNotes, setNotes: setCsReNotes },
+            { label: "Left Eye",  method: leCsMethod, setMethod: setLeCsMethod, result: csLeResult, setResult: setCsLeResult, notes: csLeNotes, setNotes: setCsLeNotes },
+          ].map(({ label, method, setMethod, result, setResult, notes, setNotes }) => (
+            <div key={label} className="flex flex-col gap-3">
+              <p className="text-xs font-semibold text-[var(--color-primary-700)] uppercase tracking-wide">{label}</p>
+              <div>
+                <label className="text-[10px] text-[var(--color-ink-400)] font-medium block mb-1">Method</label>
+                <select
+                  disabled={!editable}
+                  value={method}
+                  onChange={(e) => setMethod(e.target.value)}
+                  className="rounded-lg border border-[var(--color-border)] bg-white px-2.5 py-1.5 text-xs disabled:bg-[var(--color-surface-sunken)]"
+                >
+                  {CS_METHODS.map((m) => <option key={m}>{m}</option>)}
+                </select>
+              </div>
+              <div className="flex gap-2 flex-wrap">
+                {CV_OPTIONS.map((opt) => (
+                  <button
+                    key={opt}
+                    disabled={!editable}
+                    onClick={() => setResult(result === opt ? "" : opt)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                      result === opt
+                        ? opt === "Normal"    ? "bg-emerald-100 border-emerald-400 text-emerald-700"
+                        : opt === "Defective" ? "bg-red-100 border-red-400 text-red-700"
+                        :                       "bg-[var(--color-surface-sunken)] border-[var(--color-ink-300)] text-[var(--color-ink-500)]"
+                        : "bg-white border-[var(--color-border)] text-[var(--color-ink-600)] hover:border-[var(--color-primary-400)]"
+                    } disabled:cursor-default`}
+                  >
+                    {opt}
+                  </button>
+                ))}
+              </div>
+              <KeywordInput fieldKey={`cv_${label}`} value={notes} onChange={setNotes} disabled={!editable} placeholder="Notes..." className="flex-1 w-full rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-xs disabled:bg-[var(--color-surface-sunken)]" />
+            </div>
+          ))}
+        </div>
+      </Card>
     </div>
   );
-
-  return (
-    <Card>
-      <div className="flex items-center justify-between mb-4">
-        <p className="text-sm font-medium text-[var(--color-ink-700)]">Colour Vision</p>
-        <SaveIndicator state={state} />
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        {eyePanel("Right Eye (RE)", reResult, setReResult, reNotes, setReNotes)}
-        {eyePanel("Left Eye (LE)", leResult, setLeResult, leNotes, setLeNotes)}
-      </div>
-    </Card>
-  );
 }
+
+/* ── IOP ──────────────────────────────────────────────────────────────── */
 
 function IOPCard({ visit, udid, editable, priorVisits }: { visit: any; udid: string; editable: boolean; priorVisits: any[] }) {
   const [re, setRe] = useState("");
@@ -299,9 +381,7 @@ function IOPCard({ visit, udid, editable, priorVisits }: { visit: any; udid: str
       (v.iopReadings as any[]).map((r: any) => ({
         date: v.date,
         hospitalName: v.hospital?.name,
-        re: r.re,
-        le: r.le,
-        method: r.method,
+        re: r.re, le: r.le, method: r.method,
       }))
     )
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -309,8 +389,7 @@ function IOPCard({ visit, udid, editable, priorVisits }: { visit: any; udid: str
   const add = async () => {
     if (!re && !le) return;
     await addIOPReading(visit.id, udid, { re: re ? parseFloat(re) : undefined, le: le ? parseFloat(le) : undefined, method });
-    setRe("");
-    setLe("");
+    setRe(""); setLe("");
   };
 
   return (
@@ -327,116 +406,199 @@ function IOPCard({ visit, udid, editable, priorVisits }: { visit: any; udid: str
           </button>
         )}
       </div>
+
       {editable && (
-        <div className="flex items-end gap-2 mb-4 flex-wrap">
-          <LabeledInput label="RE" value={re} onChange={setRe} compact />
-          <LabeledInput label="LE" value={le} onChange={setLe} compact />
+        <div className="flex items-end gap-3 mb-4 flex-wrap">
+          {/* Method first */}
           <div>
-            <label className="text-xs text-[var(--color-ink-400)]">Method</label>
-            <select value={method} onChange={(e) => setMethod(e.target.value)} className="mt-1 block rounded-lg border border-[var(--color-border)] text-sm px-2 py-1.5 bg-white">
-              {IOP_METHODS.map((m) => (
-                <option key={m}>{m}</option>
-              ))}
+            <label className="text-xs text-[var(--color-ink-400)] block mb-1">Method</label>
+            <select value={method} onChange={(e) => setMethod(e.target.value)}
+              className="rounded-lg border border-[var(--color-border)] text-sm px-2.5 py-1.5 bg-white">
+              {IOP_METHODS.map((m) => <option key={m}>{m}</option>)}
             </select>
           </div>
-          <button onClick={add} className="rounded-lg bg-[var(--color-primary-600)] text-white text-xs font-medium px-3 py-1.5 hover:bg-[var(--color-primary-700)]">
+          <LabeledInput label="RE" value={re} onChange={setRe} compact />
+          <LabeledInput label="LE" value={le} onChange={setLe} compact />
+          <button onClick={add}
+            className="rounded-lg bg-[var(--color-primary-600)] text-white text-xs font-medium px-3 py-1.5 hover:bg-[var(--color-primary-700)]">
             Add Reading
           </button>
         </div>
       )}
-      <div className="overflow-x-auto"><table className="w-full text-sm min-w-[320px]">
-        <thead>
-          <tr className="text-left text-xs text-[var(--color-ink-400)] uppercase border-b border-[var(--color-border)]">
-            <th className="py-1.5">Time</th><th>RE</th><th>LE</th><th>Method</th><th>Source</th><th></th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-[var(--color-border)]">
-          {readings.map((r) => (
-            <tr key={r.id}>
-              <td className="py-1.5">{format(new Date(r.takenAt), "h:mm a, dd MMM")}</td>
-              <td>{r.re ?? "—"}</td>
-              <td>{r.le ?? "—"}</td>
-              <td>{r.method}</td>
-              <td className="text-xs text-[var(--color-ink-400)]">{r.source}</td>
-              <td className="py-1.5 pl-2">
-                {editable && (
-                  <button
-                    disabled={deletePending}
-                    onClick={() => startDelete(() => removeIOPReading(r.id, udid))}
-                    className="text-[var(--color-ink-300)] hover:text-[var(--color-danger-600)] disabled:opacity-40"
-                    title="Delete reading"
-                  >
-                    <Trash2 size={13} />
-                  </button>
-                )}
-              </td>
+
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm min-w-[320px]">
+          <thead>
+            <tr className="text-left text-xs text-[var(--color-ink-400)] uppercase border-b border-[var(--color-border)]">
+              <th className="py-1.5">Time</th><th>RE</th><th>LE</th><th>Method</th><th>Source</th><th></th>
             </tr>
-          ))}
-          {readings.length === 0 && (
-            <tr><td colSpan={5} className="py-4 text-center text-[var(--color-ink-400)]">No readings yet.</td></tr>
-          )}
-        </tbody>
-      </table></div>
+          </thead>
+          <tbody className="divide-y divide-[var(--color-border)]">
+            {readings.map((r) => (
+              <tr key={r.id}>
+                <td className="py-1.5">{format(new Date(r.takenAt), "h:mm a, dd MMM")}</td>
+                <td>{r.re ?? "—"}</td>
+                <td>{r.le ?? "—"}</td>
+                <td>{r.method}</td>
+                <td className="text-xs text-[var(--color-ink-400)]">{r.source}</td>
+                <td className="py-1.5 pl-2">
+                  {editable && (
+                    <button disabled={deletePending}
+                      onClick={() => startDelete(() => removeIOPReading(r.id, udid))}
+                      className="text-[var(--color-ink-300)] hover:text-[var(--color-danger-600)] disabled:opacity-40"
+                      title="Delete reading">
+                      <Trash2 size={13} />
+                    </button>
+                  )}
+                </td>
+              </tr>
+            ))}
+            {readings.length === 0 && (
+              <tr><td colSpan={5} className="py-4 text-center text-[var(--color-ink-400)]">No readings yet.</td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
       {showHistory && priorIOPRows.length > 0 && (
         <div className="mt-4 rounded-xl border border-[var(--color-border)] bg-amber-50 p-3">
           <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide mb-2">Prior IOP Readings</p>
-          <div className="overflow-x-auto"><table className="w-full text-sm min-w-[320px]">
-            <thead>
-              <tr className="text-left text-xs text-[var(--color-ink-400)] uppercase border-b border-amber-200">
-                <th className="py-1.5">Visit date</th><th>RE</th><th>LE</th><th>Method</th><th>Hospital</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-amber-100">
-              {priorIOPRows.map((r, i) => (
-                <tr key={i}>
-                  <td className="py-1.5">{format(new Date(r.date), "dd MMM yyyy")}</td>
-                  <td>{r.re ?? "—"}</td>
-                  <td>{r.le ?? "—"}</td>
-                  <td>{r.method}</td>
-                  <td className="text-xs text-[var(--color-ink-400)]">{r.hospitalName ?? "—"}</td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm min-w-[320px]">
+              <thead>
+                <tr className="text-left text-xs text-[var(--color-ink-400)] uppercase border-b border-amber-200">
+                  <th className="py-1.5">Visit date</th><th>RE</th><th>LE</th><th>Method</th><th>Hospital</th>
                 </tr>
-              ))}
-            </tbody>
-          </table></div>
+              </thead>
+              <tbody className="divide-y divide-amber-100">
+                {priorIOPRows.map((r, i) => (
+                  <tr key={i}>
+                    <td className="py-1.5">{format(new Date(r.date), "dd MMM yyyy")}</td>
+                    <td>{r.re ?? "—"}</td>
+                    <td>{r.le ?? "—"}</td>
+                    <td>{r.method}</td>
+                    <td className="text-xs text-[var(--color-ink-400)]">{r.hospitalName ?? "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </Card>
   );
 }
 
-function SegmentTable({
-  structures, re, le, setRe, setLe, editable,
+/* ── Anterior Segment — text input + predefined keyword chips ─────────────── */
+
+const AS_KEYS = Object.keys(ANTERIOR_SEGMENT_STRUCTURES) as (keyof typeof ANTERIOR_SEGMENT_STRUCTURES)[];
+
+function toLabel(key: string) {
+  return key.replace(/([A-Z])/g, " $1").replace(/^./, (c) => c.toUpperCase());
+}
+
+const CUSTOM_KW_KEY = (structureKey: string, eye: string) => `seg_custom_${structureKey}_${eye}`;
+
+function SegmentEyeInput({
+  structureKey,
+  options,
+  eye,
+  placeholder,
+  value,
+  onChange,
+  disabled,
 }: {
-  structures: Record<string, string[]>;
-  re: Record<string, string[]>; le: Record<string, string[]>;
-  setRe: (v: Record<string, string[]>) => void;
-  setLe: (v: Record<string, string[]>) => void;
-  editable: boolean;
+  structureKey: string;
+  options: string[];
+  eye: "RE" | "LE";
+  placeholder?: string;
+  value: string;
+  onChange: (v: string) => void;
+  disabled: boolean;
 }) {
+  const lsKey = CUSTOM_KW_KEY(structureKey, eye);
+  const [customKws, setCustomKws] = useState<string[]>([]);
+  useEffect(() => {
+    try { setCustomKws(JSON.parse(localStorage.getItem(lsKey) ?? "[]")); } catch { setCustomKws([]); }
+  }, [lsKey]);
+
+  const saveCustomKws = (kws: string[]) => {
+    setCustomKws(kws);
+    localStorage.setItem(lsKey, JSON.stringify(kws));
+  };
+
+  const append = (kw: string) => {
+    onChange(value ? `${value}, ${kw}` : kw);
+  };
+
+  const addKeyword = () => {
+    const typed = value.split(",").map((s) => s.trim()).filter(Boolean).pop() ?? "";
+    if (!typed || options.includes(typed) || customKws.includes(typed)) return;
+    saveCustomKws([...customKws, typed]);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") addKeyword();
+  };
+
+  const removeCustomKw = (kw: string) => {
+    saveCustomKws(customKws.filter((k) => k !== kw));
+  };
+
+  const ph = placeholder ?? `${toLabel(structureKey)} ${eye}...`;
+
   return (
-    <div>
-      <div className="grid grid-cols-[110px_1fr_1fr] gap-x-3 mb-1.5 px-1">
-        <div />
-        <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-primary-700)]">Right Eye (RE)</p>
-        <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-primary-700)]">Left Eye (LE)</p>
-      </div>
-      {Object.entries(structures).map(([key, opts]) => (
-        <div key={key} className="grid grid-cols-[110px_1fr_1fr] gap-x-3 py-2 border-t border-[var(--color-border)] items-start">
-          <p className="text-xs font-medium text-[var(--color-ink-600)] capitalize pt-1">
-            {key.replace(/([A-Z])/g, " $1")}
-          </p>
-          <ChipGroup options={opts} value={re[key] ?? []} onChange={(next) => editable && setRe({ ...re, [key]: next })} />
-          <ChipGroup options={opts} value={le[key] ?? []} onChange={(next) => editable && setLe({ ...le, [key]: next })} />
+    <div className="flex flex-col gap-1.5">
+      <input
+        disabled={disabled}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onKeyDown={handleKeyDown}
+        placeholder={ph}
+        className="w-full rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] disabled:bg-[var(--color-surface-sunken)]"
+      />
+      {!disabled && (
+        <div className="flex flex-wrap items-center gap-1.5">
+          <button
+            type="button"
+            onClick={addKeyword}
+            className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-[10px] font-medium text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] transition-colors whitespace-nowrap"
+          >
+            <Plus size={11} strokeWidth={2.5} />
+            Keyword
+          </button>
+          {customKws.map((kw) => (
+            <span key={kw} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-[11px] text-[var(--color-primary-700)]">
+              <button type="button" onClick={() => append(kw)} className="hover:underline">{kw}</button>
+              <button type="button" onClick={() => removeCustomKw(kw)} className="ml-0.5 text-[var(--color-ink-400)] hover:text-red-500 transition-colors">
+                <X size={9} strokeWidth={2.5} />
+              </button>
+            </span>
+          ))}
         </div>
-      ))}
+      )}
+      {!disabled && options.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {options.map((opt) => (
+            <button
+              key={opt}
+              type="button"
+              onClick={() => append(opt)}
+              className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full border border-[var(--color-border)] bg-white text-[11px] text-[var(--color-ink-500)] hover:bg-[var(--color-primary-50)] hover:border-[var(--color-primary-300)] hover:text-[var(--color-primary-700)] transition-colors"
+            >
+              {opt}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
 
 function AnteriorSegmentCard({ visit, udid, editable }: { visit: any; udid: string; editable: boolean }) {
-  const as = visit.anteriorSegment;
-  const [re, setRe] = useState<Record<string, string[]>>(parseJSON(as?.re, {}));
-  const [le, setLe] = useState<Record<string, string[]>>(parseJSON(as?.le, {}));
+  const as_ = visit.anteriorSegment;
+  const [re, setRe] = useState<Record<string, string>>(parseJSON(as_?.re, {}));
+  const [le, setLe] = useState<Record<string, string>>(parseJSON(as_?.le, {}));
 
   const state = useAutoSave({ re: JSON.stringify(re), le: JSON.stringify(le) }, async (d) => {
     if (!editable) return;
@@ -445,49 +607,145 @@ function AnteriorSegmentCard({ visit, udid, editable }: { visit: any; udid: stri
 
   return (
     <Card>
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between mb-4">
         <p className="text-sm font-medium text-[var(--color-ink-700)]">Anterior Segment</p>
         <SaveIndicator state={state} />
       </div>
-      <SegmentTable structures={ANTERIOR_SEGMENT_STRUCTURES} re={re} le={le} setRe={setRe} setLe={setLe} editable={editable} />
+
+      {/* Column headers */}
+      <div className="grid grid-cols-[140px_1fr_1fr] gap-x-4 mb-3 px-1 border-b border-[var(--color-border)] pb-2">
+        <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-ink-400)]">Structure</p>
+        <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-primary-700)]">Right Eye</p>
+        <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-primary-700)]">Left Eye</p>
+      </div>
+
+      <div className="flex flex-col gap-5">
+        {AS_KEYS.map((key) => (
+          <div key={key} className="grid grid-cols-[140px_1fr_1fr] gap-x-6 items-start">
+            <p className="text-sm font-medium text-[var(--color-ink-700)] pt-2">{toLabel(key)}</p>
+            <SegmentEyeInput structureKey={key} options={ANTERIOR_SEGMENT_STRUCTURES[key] ?? []} eye="RE" value={re[key] ?? ""} onChange={(v) => setRe({ ...re, [key]: v })} disabled={!editable} />
+            <SegmentEyeInput structureKey={key} options={ANTERIOR_SEGMENT_STRUCTURES[key] ?? []} eye="LE" value={le[key] ?? ""} onChange={(v) => setLe({ ...le, [key]: v })} disabled={!editable} />
+          </div>
+        ))}
+      </div>
     </Card>
   );
 }
 
+/* ── Posterior Segment ───────────────────────────────────────────────────── */
+
+const PS_KEYS = Object.keys(POSTERIOR_SEGMENT_OPTIONS) as (keyof typeof POSTERIOR_SEGMENT_OPTIONS)[];
+
+const PS_LABELS: Record<string, string> = {
+  media:          "Media",
+  discSize:       "Disc Size",
+  discShape:      "Disc Shape",
+  discColour:     "Disc Colour",
+  discVessels:    "Disc Vessels",
+  discMargin:     "Disc Margin",
+  cdr:            "CDR",
+  nrr:            "NRR",
+  macula:         "Macula",
+  retinalVessels: "Retinal Vessels",
+  background:     "Background",
+};
+
+const PS_PLACEHOLDERS: Record<string, string> = {
+  media:          "Media clarity",
+  discSize:       "Normal / Small / Large",
+  discShape:      "Round / Oval",
+  discColour:     "Pink / Pale / Hyperaemic",
+  discVessels:    "Normal / NVD",
+  discMargin:     "Disc margin findings",
+  cdr:            "e.g. 0.4",
+  nrr:            "Intact / Notched / Thinned",
+  macula:         "Macular findings",
+  retinalVessels: "Vascular findings",
+  background:     "Background retina",
+};
+
 function PosteriorSegmentCard({ visit, udid, editable }: { visit: any; udid: string; editable: boolean }) {
   const ps = visit.posteriorSegment;
-  const [re, setRe] = useState<Record<string, string[]>>(parseJSON(ps?.re, {}));
-  const [le, setLe] = useState<Record<string, string[]>>(parseJSON(ps?.le, {}));
-  const [notes, setNotes] = useState(ps?.notes ?? "");
+  const [re, setRe] = useState<Record<string, string>>(parseJSON(ps?.re, {}));
+  const [le, setLe] = useState<Record<string, string>>(parseJSON(ps?.le, {}));
 
-  const state = useAutoSave({ re: JSON.stringify(re), le: JSON.stringify(le), notes }, async (d) => {
+  const state = useAutoSave({ re: JSON.stringify(re), le: JSON.stringify(le) }, async (d) => {
     if (!editable) return;
     await savePosteriorSegment(visit.id, udid, d);
   });
 
   return (
     <Card>
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between mb-4">
         <p className="text-sm font-medium text-[var(--color-ink-700)]">Posterior Segment</p>
         <SaveIndicator state={state} />
       </div>
-      <SegmentTable structures={POSTERIOR_SEGMENT_OPTIONS} re={re} le={le} setRe={setRe} setLe={setLe} editable={editable} />
 
-      {/* CDR row */}
-      <div className="grid grid-cols-[110px_1fr_1fr] gap-x-3 py-2 border-t border-[var(--color-border)] items-center">
-        <p className="text-xs font-medium text-[var(--color-ink-600)]">CDR</p>
-        <LabeledInput label="" value={re["cdr"]?.[0] ?? ""} onChange={(v) => setRe({ ...re, cdr: [v] })} disabled={!editable} compact />
-        <LabeledInput label="" value={le["cdr"]?.[0] ?? ""} onChange={(v) => setLe({ ...le, cdr: [v] })} disabled={!editable} compact />
+      {/* Column headers */}
+      <div className="grid grid-cols-[140px_1fr_1fr] gap-x-4 mb-3 px-1 border-b border-[var(--color-border)] pb-2">
+        <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-ink-400)]">Structure</p>
+        <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-primary-700)]">Right Eye</p>
+        <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-primary-700)]">Left Eye</p>
       </div>
 
-      <div className="mt-3">
-        <label className="text-xs font-medium text-[var(--color-ink-500)]">Additional Notes</label>
-        <textarea disabled={!editable} value={notes} onChange={(e) => setNotes(e.target.value)} rows={2}
-          className="mt-1 w-full rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm" />
+      <div className="flex flex-col gap-5">
+        {PS_KEYS.map((key) => (
+          <div key={key} className="grid grid-cols-[140px_1fr_1fr] gap-x-6 items-start">
+            <p className="text-sm font-medium text-[var(--color-ink-700)] pt-2 whitespace-pre-line">
+              {PS_LABELS[key] ?? toLabel(key)}
+            </p>
+            <SegmentEyeInput
+              structureKey={key}
+              options={POSTERIOR_SEGMENT_OPTIONS[key] ?? []}
+              eye="RE"
+              placeholder={`${PS_PLACEHOLDERS[key] ?? toLabel(key)} RE...`}
+              value={re[key] ?? ""}
+              onChange={(v) => setRe({ ...re, [key]: v })}
+              disabled={!editable}
+            />
+            <SegmentEyeInput
+              structureKey={key}
+              options={POSTERIOR_SEGMENT_OPTIONS[key] ?? []}
+              eye="LE"
+              placeholder={`${PS_PLACEHOLDERS[key] ?? toLabel(key)} LE...`}
+              value={le[key] ?? ""}
+              onChange={(v) => setLe({ ...le, [key]: v })}
+              disabled={!editable}
+            />
+          </div>
+        ))}
+      </div>
+
+      {/* Per-eye notes */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5 pt-4 border-t border-[var(--color-border)]">
+        <div>
+          <label className="text-xs font-medium text-[var(--color-ink-500)] block mb-1">RE Notes</label>
+          <textarea
+            disabled={!editable}
+            value={re._notes ?? ""}
+            onChange={(e) => setRe({ ...re, _notes: e.target.value })}
+            rows={2}
+            placeholder="Any additional RE observations..."
+            className="w-full rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm disabled:bg-[var(--color-surface-sunken)]"
+          />
+        </div>
+        <div>
+          <label className="text-xs font-medium text-[var(--color-ink-500)] block mb-1">LE Notes</label>
+          <textarea
+            disabled={!editable}
+            value={le._notes ?? ""}
+            onChange={(e) => setLe({ ...le, _notes: e.target.value })}
+            rows={2}
+            placeholder="Any additional LE observations..."
+            className="w-full rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm disabled:bg-[var(--color-surface-sunken)]"
+          />
+        </div>
       </div>
     </Card>
   );
 }
+
+/* ── Diplopia / Hess / Retinoscopy / Tear Film ───────────────────────────── */
 
 function DiplopiaCard({ visit, udid, editable }: { visit: any; udid: string; editable: boolean }) {
   const dc = visit.diplopiaChart;
@@ -504,7 +762,7 @@ function DiplopiaCard({ visit, udid, editable }: { visit: any; udid: string; edi
         <p className="text-sm font-medium text-[var(--color-ink-700)]">Diplopia Charting</p>
         <SaveIndicator state={state} />
       </div>
-      <p className="text-xs text-[var(--color-ink-400)] mb-3">Click a position to cycle: Not tested -&gt; No diplopia -&gt; Diplopia present</p>
+      <p className="text-xs text-[var(--color-ink-400)] mb-3">Click a position to cycle: Not tested → No diplopia → Diplopia present</p>
       <DiplopiaGrid
         grid={grid}
         onChange={(pos, status) => editable && setGrid({ ...grid, [pos]: { ...(grid[pos] ?? {}), status } })}
@@ -540,7 +798,8 @@ function HessCard({ visit, udid, editable }: { visit: any; udid: string; editabl
       />
       <div className="mt-4 max-w-md">
         <label className="text-xs font-medium text-[var(--color-ink-500)]">Interpretation</label>
-        <textarea disabled={!editable} value={interpretation} onChange={(e) => setInterpretation(e.target.value)} rows={2} className="mt-1 w-full rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm" />
+        <textarea disabled={!editable} value={interpretation} onChange={(e) => setInterpretation(e.target.value)} rows={2}
+          className="mt-1 w-full rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm" />
       </div>
     </Card>
   );
@@ -563,8 +822,10 @@ function RetinoscopyCard({ visit, udid, editable }: { visit: any; udid: string; 
         <SaveIndicator state={state} />
       </div>
       <EyeColumns>
-        <input disabled={!editable} value={re} onChange={(e) => setRe(e.target.value)} placeholder="e.g. +1.50 / -0.50 x 90" className="w-full rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm" />
-        <input disabled={!editable} value={le} onChange={(e) => setLe(e.target.value)} placeholder="e.g. +1.50 / -0.50 x 90" className="w-full rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm" />
+        <input disabled={!editable} value={re} onChange={(e) => setRe(e.target.value)} placeholder="e.g. +1.50 / -0.50 x 90"
+          className="w-full rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm" />
+        <input disabled={!editable} value={le} onChange={(e) => setLe(e.target.value)} placeholder="e.g. +1.50 / -0.50 x 90"
+          className="w-full rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm" />
       </EyeColumns>
     </Card>
   );
@@ -573,12 +834,9 @@ function RetinoscopyCard({ visit, udid, editable }: { visit: any; udid: string; 
 function TearFilmCard({ visit, udid, editable }: { visit: any; udid: string; editable: boolean }) {
   const tf = visit.tearFilm;
   const [data, setData] = useState({
-    tbutRe: tf?.tbutRe ?? "",
-    tbutLe: tf?.tbutLe ?? "",
-    schirmer1Re: tf?.schirmer1Re ?? "",
-    schirmer1Le: tf?.schirmer1Le ?? "",
-    schirmer2Re: tf?.schirmer2Re ?? "",
-    schirmer2Le: tf?.schirmer2Le ?? "",
+    tbutRe: tf?.tbutRe ?? "", tbutLe: tf?.tbutLe ?? "",
+    schirmer1Re: tf?.schirmer1Re ?? "", schirmer1Le: tf?.schirmer1Le ?? "",
+    schirmer2Re: tf?.schirmer2Re ?? "", schirmer2Le: tf?.schirmer2Le ?? "",
   });
 
   const state = useAutoSave(data, async (d) => {
@@ -598,28 +856,38 @@ function TearFilmCard({ visit, udid, editable }: { visit: any; udid: string; edi
       <EyeColumns>
         <div className="flex flex-col gap-2">
           <LabeledInput label="TBUT (seconds)" value={data.tbutRe} onChange={upd("tbutRe")} disabled={!editable} />
-          <LabeledInput label="Schirmer's 1 - no anaesthetic (mm)" value={data.schirmer1Re} onChange={upd("schirmer1Re")} disabled={!editable} />
-          <LabeledInput label="Schirmer's 2 - with anaesthetic (mm)" value={data.schirmer2Re} onChange={upd("schirmer2Re")} disabled={!editable} />
+          <LabeledInput label="Schirmer's 1 – no anaesthetic (mm)" value={data.schirmer1Re} onChange={upd("schirmer1Re")} disabled={!editable} />
+          <LabeledInput label="Schirmer's 2 – with anaesthetic (mm)" value={data.schirmer2Re} onChange={upd("schirmer2Re")} disabled={!editable} />
         </div>
         <div className="flex flex-col gap-2">
           <LabeledInput label="TBUT (seconds)" value={data.tbutLe} onChange={upd("tbutLe")} disabled={!editable} />
-          <LabeledInput label="Schirmer's 1 - no anaesthetic (mm)" value={data.schirmer1Le} onChange={upd("schirmer1Le")} disabled={!editable} />
-          <LabeledInput label="Schirmer's 2 - with anaesthetic (mm)" value={data.schirmer2Le} onChange={upd("schirmer2Le")} disabled={!editable} />
+          <LabeledInput label="Schirmer's 1 – no anaesthetic (mm)" value={data.schirmer1Le} onChange={upd("schirmer1Le")} disabled={!editable} />
+          <LabeledInput label="Schirmer's 2 – with anaesthetic (mm)" value={data.schirmer2Le} onChange={upd("schirmer2Le")} disabled={!editable} />
         </div>
       </EyeColumns>
     </Card>
   );
 }
 
+/* ── Lacrimal Sac ─────────────────────────────────────────────────────────── */
+
 function LacrimalSacCard({ visit, udid, editable }: { visit: any; udid: string; editable: boolean }) {
   const ls = visit.lacrimalSac;
-  const [re, setRe] = useState<string[]>(parseJSON(ls?.re, []));
-  const [le, setLe] = useState<string[]>(parseJSON(ls?.le, []));
+  const storedRe = parseJSON(ls?.re, {}) as any;
+  const storedLe = parseJSON(ls?.le, {}) as any;
 
-  const state = useAutoSave({ re: JSON.stringify(re), le: JSON.stringify(le) }, async (d) => {
-    if (!editable) return;
-    await saveLacrimalSac(visit.id, udid, d);
-  });
+  const [reChips, setReChips]     = useState<string[]>(Array.isArray(storedRe) ? storedRe : (storedRe.chips ?? []));
+  const [leChips, setLeChips]     = useState<string[]>(Array.isArray(storedLe) ? storedLe : (storedLe.chips ?? []));
+  const [reFindings, setReFindings] = useState<string>(Array.isArray(storedRe) ? "" : (storedRe.findings ?? ""));
+  const [leFindings, setLeFindings] = useState<string>(Array.isArray(storedLe) ? "" : (storedLe.findings ?? ""));
+
+  const state = useAutoSave(
+    {
+      re: JSON.stringify({ chips: reChips, findings: reFindings }),
+      le: JSON.stringify({ chips: leChips, findings: leFindings }),
+    },
+    async (d) => { if (!editable) return; await saveLacrimalSac(visit.id, udid, d); }
+  );
 
   return (
     <Card>
@@ -627,26 +895,28 @@ function LacrimalSacCard({ visit, udid, editable }: { visit: any; udid: string; 
         <p className="text-sm font-medium text-[var(--color-ink-700)]">Lacrimal Sac Syringing</p>
         <SaveIndicator state={state} />
       </div>
-      <EyeColumns>
-        <ChipGroup options={LACRIMAL_SAC_CHIPS} value={re} onChange={editable ? setRe : () => {}} />
-        <ChipGroup options={LACRIMAL_SAC_CHIPS} value={le} onChange={editable ? setLe : () => {}} />
-      </EyeColumns>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div className="flex flex-col gap-3">
+          <p className="text-xs font-semibold text-[var(--color-primary-700)] uppercase tracking-wide">Right Eye</p>
+          <KeywordInput fieldKey="lacrimal_re_findings" value={reFindings} onChange={setReFindings} disabled={!editable} placeholder="Enter findings..." />
+          <ChipGroup options={LACRIMAL_SAC_CHIPS} value={reChips} onChange={editable ? setReChips : () => {}} />
+        </div>
+        <div className="flex flex-col gap-3">
+          <p className="text-xs font-semibold text-[var(--color-primary-700)] uppercase tracking-wide">Left Eye</p>
+          <KeywordInput fieldKey="lacrimal_le_findings" value={leFindings} onChange={setLeFindings} disabled={!editable} placeholder="Enter findings..." />
+          <ChipGroup options={LACRIMAL_SAC_CHIPS} value={leChips} onChange={editable ? setLeChips : () => {}} />
+        </div>
+      </div>
     </Card>
   );
 }
 
+/* ── Shared helpers ──────────────────────────────────────────────────────── */
+
 function LabeledInput({
-  label,
-  value,
-  onChange,
-  disabled,
-  compact,
+  label, value, onChange, disabled, compact,
 }: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  disabled?: boolean;
-  compact?: boolean;
+  label: string; value: string; onChange: (v: string) => void; disabled?: boolean; compact?: boolean;
 }) {
   return (
     <div className={compact ? "flex items-center gap-2" : ""}>

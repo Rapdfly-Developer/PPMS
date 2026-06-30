@@ -1,4 +1,4 @@
-import { requireUser, scopeDoctorId } from "@/lib/rbac";
+import { requirePermission, scopeDoctorId } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { startOfDay, subDays, format } from "date-fns";
 import { PatientsClient } from "./PatientsClient";
@@ -9,7 +9,7 @@ export default async function PatientsPage({
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
   const sp   = await searchParams;
-  const user = await requireUser();
+  const user = await requirePermission("patients.view");
   const isHospital = user.role === "HOSPITAL";
 
   const q              = (sp.q        ?? "").trim();

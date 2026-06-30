@@ -27,7 +27,6 @@ const ALL_NAV: NavItem[] = [
   { href: "/emr",          label: "EMR",           icon: ClipboardList,   permission: "emr.view",          shortLabel: "EMR"      },
   { href: "/ipd",          label: "IPD",           icon: BedDouble,       permission: "ipd.view",          shortLabel: "IPD",     roles: ["DOCTOR"] },
   { href: "/analytics",    label: "Analytics",     icon: BarChart2,       permission: "reports.view",      shortLabel: "Reports"  },
-  { href: "/availability", label: "Availability",  icon: Clock,           permission: "availability.view", shortLabel: "Avail",   roles: ["DOCTOR"] },
   { href: "/settings",     label: "Settings",      icon: Settings,        permission: "settings.view",     shortLabel: "Settings" },
 ];
 
