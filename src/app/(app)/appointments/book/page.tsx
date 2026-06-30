@@ -19,7 +19,10 @@ export default async function BookAppointmentPage() {
     where: hospitalId
       ? { hospitalId, active: true }
       : { doctorId: user.profileId!, active: true },
-    include: { doctor: { select: { id: true, name: true, specialty: true } } },
+    include: {
+      doctor: { select: { id: true, name: true, specialty: true } },
+      hospital: { select: { id: true, name: true } },
+    },
   });
   const doctors = links.map((l) => l.doctor);
   const doctorIds = doctors.map((d) => d.id);
@@ -33,22 +36,32 @@ export default async function BookAppointmentPage() {
     select: { id: true, name: true, udid: true, age: true, sex: true, mobile: true },
   });
 
-  // Doctor availability — keyed by doctorId
+  // Doctor availability — keyed by doctorId, includes hospitalId for slot scoping
   const availabilityRows = await prisma.doctorAvailability.findMany({
     where: {
       doctorId: { in: doctorIds },
       ...(hospitalId ? { hospitalId } : {}),
+      status: "ACTIVE",
     },
     orderBy: { weekday: "asc" },
   });
-  const availabilityByDoctor: Record<string, { weekday: number; startTime: string; endTime: string; slotMins: number }[]> = {};
+  const availabilityByDoctor: Record<string, { weekday: number; startTime: string; endTime: string; slotMins: number; hospitalId: string }[]> = {};
   for (const row of availabilityRows) {
     (availabilityByDoctor[row.doctorId] ??= []).push({
       weekday: row.weekday,
       startTime: row.startTime,
       endTime: row.endTime,
       slotMins: row.slotMins,
+      hospitalId: row.hospitalId,
     });
+  }
+
+  // Hospitals per doctor — needed when DOCTOR role books (they choose which hospital)
+  const hospitalsByDoctor: Record<string, { id: string; name: string }[]> = {};
+  if (!hospitalId) {
+    for (const link of links) {
+      (hospitalsByDoctor[link.doctor.id] ??= []).push({ id: link.hospital.id, name: link.hospital.name });
+    }
   }
 
   return (
@@ -57,6 +70,7 @@ export default async function BookAppointmentPage() {
       patients={patients}
       hospitalId={hospitalId}
       availabilityByDoctor={availabilityByDoctor}
+      hospitalsByDoctor={hospitalsByDoctor}
     />
   );
 }

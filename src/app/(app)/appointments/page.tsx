@@ -2,6 +2,7 @@ import { requirePermission, scopeDoctorId } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { startOfDay } from "date-fns";
 import { AppointmentsClient } from "./AppointmentsClient";
+import { AppointmentsHub } from "./AppointmentsHub";
 
 export default async function AppointmentsPage({
   searchParams,
@@ -10,6 +11,8 @@ export default async function AppointmentsPage({
 }) {
   const sp   = await searchParams;
   const user = await requirePermission("appointments.view");
+
+  if (user.role === "DOCTOR") return <AppointmentsHub />;
 
   const dateParam     = sp.date ?? "";
   const statusParam   = sp.status ?? "ALL";

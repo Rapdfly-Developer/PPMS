@@ -21,19 +21,12 @@ export async function getAvailability() {
 
 export async function getHospitalsForDoctor() {
   const doctorId = await getDoctorId();
-  // Hospitals where doctor has had visits or appointments
-  const [visitHospitals, apptHospitals, existingAvail] = await Promise.all([
-    prisma.visit.findMany({ where: { doctorId }, select: { hospital: { select: { id: true, name: true } } }, distinct: ["hospitalId"] }),
-    prisma.appointment.findMany({ where: { doctorId }, select: { hospital: { select: { id: true, name: true } } }, distinct: ["hospitalId"] }),
-    prisma.doctorAvailability.findMany({ where: { doctorId }, select: { hospital: { select: { id: true, name: true } } } }),
-  ]);
-  const all = [
-    ...visitHospitals.map((v: any) => v.hospital),
-    ...apptHospitals.map((a: any) => a.hospital),
-    ...existingAvail.map((a: any) => a.hospital),
-  ];
-  const seen = new Set<string>();
-  return all.filter((h) => h && !seen.has(h.id) && seen.add(h.id));
+  const links = await prisma.doctorHospitalLink.findMany({
+    where: { doctorId, active: true },
+    include: { hospital: { select: { id: true, name: true } } },
+    orderBy: { hospital: { name: "asc" } },
+  });
+  return links.map((l) => ({ id: l.hospital.id, name: l.hospital.name }));
 }
 
 export async function upsertAvailability(data: {

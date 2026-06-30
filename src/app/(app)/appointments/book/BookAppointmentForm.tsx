@@ -5,7 +5,7 @@ import Link from "next/link";
 import {
   ArrowLeft, Search, UserPlus, Stethoscope,
   Calendar, Clock, FileText, ChevronRight,
-  User, Phone, CreditCard, AlertCircle, CheckCircle2, Info,
+  User, Phone, CreditCard, AlertCircle, CheckCircle2, Info, Building2,
 } from "lucide-react";
 import { bookAppointment, getBookedSlots } from "./actions";
 
@@ -23,9 +23,10 @@ const FALLBACK_SLOTS = [
   "17:00","17:15","17:30","17:45",
 ];
 
-type AvailSlot = { weekday: number; startTime: string; endTime: string; slotMins: number };
+type AvailSlot = { weekday: number; startTime: string; endTime: string; slotMins: number; hospitalId: string };
 type Doctor  = { id: string; name: string; specialty: string };
 type Patient = { id: string; name: string; udid: string; age: number | null; sex: string; mobile: string };
+type Hospital = { id: string; name: string };
 
 function generateSlots(start: string, end: string, mins: number): string[] {
   const slots: string[] = [];
@@ -47,11 +48,13 @@ export function BookAppointmentForm({
   patients,
   hospitalId,
   availabilityByDoctor = {},
+  hospitalsByDoctor = {},
 }: {
   doctors: Doctor[];
   patients: Patient[];
   hospitalId: string | null;
   availabilityByDoctor?: Record<string, AvailSlot[]>;
+  hospitalsByDoctor?: Record<string, Hospital[]>;
 }) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState("");
@@ -80,12 +83,29 @@ export function BookAppointmentForm({
   const [notes,      setNotes]      = useState("");
   const [bookedTimes, setBookedTimes] = useState<string[]>([]);
 
+  // For DOCTOR role: selected hospital (since hospitalId is null)
+  const doctorHospitals = hospitalsByDoctor[doctorId] ?? [];
+  const [selectedHospitalId, setSelectedHospitalId] = useState<string>(() => doctorHospitals[0]?.id ?? "");
+  // Effective hospital for slot checking / booking
+  const effectiveHospitalId = hospitalId ?? selectedHospitalId;
+
+  // Reset selected hospital when doctor changes
+  function handleDoctorChange(id: string) {
+    setDoctorId(id);
+    setTime("09:00");
+    const firstHosp = (hospitalsByDoctor[id] ?? [])[0]?.id ?? "";
+    setSelectedHospitalId(firstHosp);
+  }
+
   const todayStr = new Date().toISOString().split("T")[0];
 
-  // Compute slots from doctor availability for selected date
+  // Compute slots: filter by selected hospital + weekday
   const doctorAvail = availabilityByDoctor[doctorId] ?? [];
   const weekday = new Date(date + "T12:00:00").getDay(); // noon to avoid DST edge
-  const todayAvail = doctorAvail.find((a) => a.weekday === weekday);
+  // Match on both weekday AND hospital (a doctor may visit multiple hospitals same day)
+  const todayAvail = doctorAvail.find(
+    (a) => a.weekday === weekday && (!effectiveHospitalId || a.hospitalId === effectiveHospitalId)
+  );
   const usingAvailability = !!todayAvail;
 
   const baseSlots = todayAvail
@@ -100,11 +120,12 @@ export function BookAppointmentForm({
     return true;
   });
 
-  // Fetch booked slots whenever doctor or date changes
+  // Fetch booked slots whenever doctor, date or hospital changes
   useEffect(() => {
-    if (!doctorId || !date || !hospitalId) return;
-    getBookedSlots(doctorId, date, hospitalId).then(setBookedTimes).catch(() => {});
-  }, [doctorId, date, hospitalId]);
+    if (!doctorId || !date || !effectiveHospitalId) return;
+    getBookedSlots(doctorId, date, effectiveHospitalId).then(setBookedTimes).catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [doctorId, date, effectiveHospitalId]);
 
   // Keep selected time valid when slots change
   useEffect(() => {
@@ -116,11 +137,6 @@ export function BookAppointmentForm({
 
   function handleDateChange(newDate: string) {
     setDate(newDate);
-  }
-
-  function handleDoctorChange(id: string) {
-    setDoctorId(id);
-    setTime("09:00");
   }
 
   const filtered = search.trim()
@@ -144,7 +160,7 @@ export function BookAppointmentForm({
     fd.set("visitType",    visitType);
     fd.set("notes",        notes);
     fd.set("encounterType", encounterType);
-    if (hospitalId) fd.set("hospitalId", hospitalId);
+    if (effectiveHospitalId) fd.set("hospitalId", effectiveHospitalId);
 
     // For walk-in, allocate the next available time slot after current time
     if (encounterType === "walkin") {
@@ -519,6 +535,32 @@ export function BookAppointmentForm({
                 </div>
               )}
             </div>
+
+            {/* Hospital selector — DOCTOR role only (hospital role has fixed hospitalId) */}
+            {!hospitalId && doctorHospitals.length > 0 && (
+              <div>
+                <FieldLabel icon={<Building2 size={12} />}>Hospital *</FieldLabel>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {doctorHospitals.map((h) => (
+                    <label key={h.id} className={`flex items-center gap-2 px-4 py-3 rounded-xl border cursor-pointer transition-all ${
+                      selectedHospitalId === h.id
+                        ? "border-[var(--color-primary-600)] bg-[var(--color-primary-50)]"
+                        : "border-[var(--color-border)] bg-white hover:bg-[var(--color-surface-sunken)]"
+                    }`}>
+                      <input
+                        type="radio"
+                        name="hospital"
+                        value={h.id}
+                        checked={selectedHospitalId === h.id}
+                        onChange={() => { setSelectedHospitalId(h.id); setTime("09:00"); }}
+                        className="accent-[var(--color-primary-600)]"
+                      />
+                      <span className="text-sm font-medium text-[var(--color-ink-900)]">{h.name}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Date + Time — only for scheduled appointment */}
             {encounterType === "appointment" ? (

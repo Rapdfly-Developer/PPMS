@@ -12,8 +12,9 @@ export async function DoctorDashboard({
   const dayStart   = startOfDay(now);
   const dayEnd     = endOfDay(now);
   const monthStart = startOfMonth(now);
+  const todayWeekday = now.getDay();
 
-  const [todayAppts, upcomingSurgeries, monthlyCount, linkedHospitals, activeAdmissions] = await Promise.all([
+  const [todayAppts, upcomingSurgeries, monthlyCount, linkedHospitals, activeAdmissions, todayAvailability, weeklyAvailability] = await Promise.all([
     // Today's appointments across all hospitals
     prisma.appointment.findMany({
       where: { doctorId, dateTime: { gte: dayStart, lte: dayEnd } },
@@ -68,6 +69,20 @@ export async function DoctorDashboard({
       orderBy: { createdAt: "asc" },
       take: 5,
     }),
+
+    // Today's scheduled sessions (by weekday)
+    prisma.doctorAvailability.findMany({
+      where: { doctorId, weekday: todayWeekday, status: "ACTIVE" },
+      include: { hospital: { select: { id: true, name: true } } },
+      orderBy: { startTime: "asc" },
+    }),
+
+    // All active weekly schedules (for Upcoming section)
+    prisma.doctorAvailability.findMany({
+      where: { doctorId, status: "ACTIVE" },
+      include: { hospital: { select: { id: true, name: true } } },
+      orderBy: [{ weekday: "asc" }, { startTime: "asc" }],
+    }),
   ]);
 
   // Serialise
@@ -103,6 +118,32 @@ export async function DoctorDashboard({
     surgeryType: a.visit.surgicalCounselling?.surgeryType ?? null,
   }));
 
+  // Today's schedule: each session with live appointment count
+  const todaySchedule = todayAvailability.map((a) => {
+    const apptCount = todayAppts.filter((ap) => ap.hospital.id === a.hospitalId).length;
+    return {
+      id:          a.id,
+      hospitalId:  a.hospitalId,
+      hospitalName: a.hospital.name,
+      startTime:   a.startTime,
+      endTime:     a.endTime,
+      slotMins:    a.slotMins,
+      maxPatients: a.maxPatients,
+      apptCount,
+    };
+  });
+
+  // Upcoming schedules: next 7 days (skip today, sort by next occurrence)
+  const upcoming: { weekday: number; hospitalName: string; startTime: string; endTime: string; daysAway: number }[] = [];
+  for (let d = 1; d <= 7; d++) {
+    const wd = (todayWeekday + d) % 7;
+    const sessions = weeklyAvailability.filter((a) => a.weekday === wd);
+    for (const s of sessions) {
+      upcoming.push({ weekday: wd, hospitalName: s.hospital.name, startTime: s.startTime, endTime: s.endTime, daysAway: d });
+    }
+    if (upcoming.length >= 6) break;
+  }
+
   return (
     <DoctorDashboardClient
       doctorName={user.name}
@@ -112,6 +153,8 @@ export async function DoctorDashboard({
       admissions={admissions}
       monthlyCount={monthlyCount}
       todayLabel={format(now, "EEEE, d MMM yyyy")}
+      todaySchedule={todaySchedule}
+      upcomingSchedule={upcoming}
     />
   );
 }
