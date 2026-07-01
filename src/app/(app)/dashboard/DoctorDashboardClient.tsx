@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   CalendarDays, Clock, Scissors, BarChart2,
-  ChevronDown,
+  ChevronDown, Plus,
   ClipboardList,
   Building2, BedDouble, Phone, RefreshCw,
 } from "lucide-react";
@@ -224,6 +224,13 @@ export function DoctorDashboardClient({
           <p className="text-sm text-[var(--color-ink-400)] mt-0.5">{todayLabel}</p>
         </div>
         <div className="flex items-center gap-2">
+          {/* New Encounter */}
+          <Link
+            href="/appointments/new"
+            className="inline-flex items-center gap-2 bg-[var(--color-primary-900)] text-white text-sm font-medium px-4 py-2 rounded-xl hover:bg-[var(--color-primary-800)] transition-colors"
+          >
+            <Plus size={15} /> New Encounter
+          </Link>
           {/* Hospital filter dropdown */}
           <div className="relative">
             <select
