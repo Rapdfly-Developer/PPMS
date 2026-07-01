@@ -9,6 +9,7 @@ export function ChipGroup({
   allowOther = false,
   otherValue,
   onOtherChange,
+  chipClassName = "chip",
 }: {
   options: readonly string[] | string[];
   value: string[];
@@ -16,6 +17,7 @@ export function ChipGroup({
   allowOther?: boolean;
   otherValue?: string;
   onOtherChange?: (v: string) => void;
+  chipClassName?: string;
 }) {
   const toggle = (opt: string) => {
     if (value.includes(opt)) onChange(value.filter((v) => v !== opt));
@@ -26,12 +28,12 @@ export function ChipGroup({
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-1.5">
         {options.map((opt) => (
           <button
             type="button"
             key={opt}
-            className="chip"
+            className={chipClassName}
             data-active={value.includes(opt)}
             onClick={() => toggle(opt)}
           >

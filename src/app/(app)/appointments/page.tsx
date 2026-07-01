@@ -45,11 +45,7 @@ export default async function AppointmentsPage({
     if (statusParam === "ALL") where.status = { in: ["REQUESTED", "SCHEDULED", "CONFIRMED", "COMPLETED"] };
   } else if (user.role === "HOSPITAL") {
     where.hospitalId = user.hospitalId;
-    if (dateParam) {
-      where.dateTime = dateFilter;
-    } else {
-      where.OR = [{ dateTime: dateFilter }, { status: "REQUESTED" }, { status: "SCHEDULED" }];
-    }
+    where.dateTime = dateParam ? dateFilter : { gte: startOfDay(new Date()) };
   } else {
     where.dateTime = dateFilter;
   }

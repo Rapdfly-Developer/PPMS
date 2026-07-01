@@ -3,7 +3,7 @@
 import { format } from "date-fns";
 import Link from "next/link";
 import { useState, useTransition } from "react";
-import { Phone, Stethoscope, Tag, FileText, CalendarPlus, CheckCircle2, Printer } from "lucide-react";
+import { Phone, Stethoscope, Tag, FileText, CalendarPlus, Printer } from "lucide-react";
 import { hospitalUpdateAppointmentStatus, doctorUpdateAppointmentStatus } from "./actions";
 import { ScheduleNextSlotModal } from "./ScheduleNextSlotModal";
 
@@ -36,13 +36,13 @@ export function AppointmentRow({ appt, role, token }: { appt: any; role: string;
     <li className="py-3 flex flex-col sm:flex-row sm:items-center gap-3 relative">
 
       {/* Token badge */}
-      <div className={`flex items-center justify-center shrink-0 w-9 h-9 rounded-xl text-sm font-bold transition-all duration-300 ${isCompleted ? "opacity-40" : ""}`}
+      <div className="flex items-center justify-center shrink-0 w-9 h-9 rounded-xl text-sm font-bold"
         style={{ background: "var(--color-primary-100)", color: "var(--color-primary-700)" }}>
         {token}
       </div>
 
-      {/* Patient info — blurred when consulted */}
-      <div className={`flex-1 min-w-0 transition-all duration-300 ${isCompleted ? "blur-[1.5px] opacity-40 pointer-events-none select-none" : ""}`}>
+      {/* Patient info */}
+      <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap mb-1">
           <Link
             href={appt.visit ? `/emr/${p.udid}?visit=${appt.visit.id}` : `/patients/${p.udid}`}
@@ -82,40 +82,26 @@ export function AppointmentRow({ appt, role, token }: { appt: any; role: string;
           {appt.status.replace(/_/g, " ")}
         </span>
 
-        {isCompleted && (
-          <span className="flex items-center gap-1 text-[11px] font-medium text-[var(--color-success-600)] bg-[var(--color-success-100)] px-2 py-0.5 rounded-full">
-            <CheckCircle2 size={11} /> Finalized
-          </span>
-        )}
-
-        {/* COMPLETED: View EMR + View Prescription (both roles) */}
-        {isCompleted && appt.visit && (
-          <>
-            <Link
-              href={`/emr/${p.udid}?visit=${appt.visit.id}`}
-              className="text-xs font-medium px-2.5 py-1 rounded-lg bg-[var(--color-primary-50)] text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] transition-colors"
-            >
-              View EMR
-            </Link>
-            <a
-              href={`/api/prescription-pdf/${appt.visit.id}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors"
-            >
-              <Printer size={11} /> Prescription
-            </a>
-          </>
-        )}
-
-        {/* DOCTOR: Open EMR for non-completed appointments */}
-        {role === "DOCTOR" && !isCompleted && (
+        {/* DOCTOR: Open EMR — always visible */}
+        {role === "DOCTOR" && (
           <Link
             href={appt.visit ? `/emr/${p.udid}?visit=${appt.visit.id}` : `/emr/${p.udid}`}
             className="text-xs font-medium px-2.5 py-1 rounded-lg bg-orange-100 text-orange-700 hover:bg-orange-500 hover:text-white transition-colors"
           >
-            Open EMR
+            {isCompleted ? "View EMR" : "Open EMR"}
           </Link>
+        )}
+
+        {/* View Prescription — for completed with a visit (both roles) */}
+        {isCompleted && appt.visit && (
+          <a
+            href={`/api/prescription-pdf/${appt.visit.id}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors"
+          >
+            <Printer size={11} /> Prescription
+          </a>
         )}
 
         {/* Hospital: Confirm / Reject — for both REQUESTED and SCHEDULED */}

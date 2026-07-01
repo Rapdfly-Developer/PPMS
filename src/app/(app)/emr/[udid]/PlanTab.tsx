@@ -379,16 +379,22 @@ function OpticalPrescriptionCard({ visit }: { visit: any; udid: string }) {
   const re = parseJSON(rc?.re, { sph: "", cyl: "", axis: "", nearSph: "" });
   const le = parseJSON(rc?.le, { sph: "", cyl: "", axis: "", nearSph: "" });
 
-  const field = (label: string, value: string) => (
-    <div>
-      <label className="text-[10px] text-[var(--color-ink-400)] block mb-0.5">{label}</label>
-      <input
-        disabled
-        value={value}
-        readOnly
-        className="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-2 py-1.5 text-xs text-center text-[var(--color-ink-700)] cursor-not-allowed"
-      />
-    </div>
+  const cell = (value: string) => (
+    <td className="px-3 py-2 text-center text-xs text-[var(--color-ink-700)] border border-[var(--color-border)]">
+      <span className={value ? "font-mono" : "text-[var(--color-ink-300)]"}>{value || "—"}</span>
+    </td>
+  );
+
+  const th = (label: string) => (
+    <th className="px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-[var(--color-ink-500)] border border-[var(--color-border)] bg-[var(--color-surface-sunken)]">
+      {label}
+    </th>
+  );
+
+  const eyeCell = (label: string, color: string) => (
+    <td className={`px-3 py-2 text-[10px] font-semibold uppercase tracking-wide border border-[var(--color-border)] ${color}`}>
+      {label}
+    </td>
   );
 
   return (
@@ -398,38 +404,34 @@ function OpticalPrescriptionCard({ visit }: { visit: any; udid: string }) {
         <p className="text-[10px] text-[var(--color-ink-400)]">Imported from Refractive Correction</p>
       </div>
 
-      {/* Distance */}
-      <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-3">Distance</p>
-      <div className="grid grid-cols-2 gap-6 mb-5">
-        <div className="flex flex-col gap-3">
-          <p className="text-[10px] font-semibold text-[var(--color-primary-700)] uppercase tracking-wide">Right Eye</p>
-          <div className="grid grid-cols-3 gap-2">
-            {field("SPH",  re.sph)}
-            {field("CYL",  re.cyl)}
-            {field("AXIS", re.axis)}
-          </div>
-        </div>
-        <div className="flex flex-col gap-3">
-          <p className="text-[10px] font-semibold text-[var(--color-primary-700)] uppercase tracking-wide">Left Eye</p>
-          <div className="grid grid-cols-3 gap-2">
-            {field("SPH",  le.sph)}
-            {field("CYL",  le.cyl)}
-            {field("AXIS", le.axis)}
-          </div>
-        </div>
-      </div>
-
-      {/* Near Add */}
-      <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-3">Near Add</p>
-      <div className="grid grid-cols-2 gap-6">
-        <div className="flex flex-col gap-3">
-          <p className="text-[10px] font-semibold text-[var(--color-primary-700)] uppercase tracking-wide">Right Eye</p>
-          {field("SPH", re.nearSph)}
-        </div>
-        <div className="flex flex-col gap-3">
-          <p className="text-[10px] font-semibold text-[var(--color-primary-700)] uppercase tracking-wide">Left Eye</p>
-          {field("SPH", le.nearSph)}
-        </div>
+      <div className="overflow-x-auto">
+        <table className="w-full border-collapse text-sm">
+          <thead>
+            <tr>
+              {th("Eye")}
+              {th("SPH")}
+              {th("CYL")}
+              {th("AXIS")}
+              {th("ADD")}
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              {eyeCell("RE", "text-[var(--color-primary-700)] bg-[var(--color-primary-50)]")}
+              {cell(re.sph)}
+              {cell(re.cyl)}
+              {cell(re.axis)}
+              {cell(re.nearSph)}
+            </tr>
+            <tr>
+              {eyeCell("LE", "text-[var(--color-primary-700)] bg-[var(--color-primary-50)]")}
+              {cell(le.sph)}
+              {cell(le.cyl)}
+              {cell(le.axis)}
+              {cell(le.nearSph)}
+            </tr>
+          </tbody>
+        </table>
       </div>
     </Card>
   );

@@ -6,14 +6,20 @@ import { SingleChipSelect } from "@/components/ui/Chip";
 import { ICD10_OPHTHALMOLOGY, DIAGNOSIS_STATUSES, LATERALITY } from "@/lib/constants";
 import { saveProvisionalDiagnosis, addDiagnosis, updateDiagnosisStatus, removeDiagnosis } from "./actions";
 import { useAutoSave, SaveIndicator } from "@/lib/useAutoSave";
-import { X } from "lucide-react";
+import { X, History, ChevronDown } from "lucide-react";
+import { format } from "date-fns";
 
-export function AssessmentTab({ visit, udid }: { visit: any; udid: string }) {
+export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; udid: string; priorVisits?: any[] }) {
   const [provisionalDx, setProvisionalDx] = useState(visit.generalExam?.provisionalDx ?? "");
   const [query, setQuery] = useState("");
   const [laterality, setLaterality] = useState("OU");
   const [pending, startTransition] = useTransition();
+  const [historyOpen, setHistoryOpen] = useState(false);
   const diagnoses: any[] = visit.diagnoses ?? [];
+
+  const priorDxGroups = priorVisits
+    .filter((v) => v.diagnoses?.length > 0)
+    .map((v) => ({ date: v.date, diagnoses: v.diagnoses as any[] }));
 
   const state = useAutoSave(provisionalDx, async (text) => {
     await saveProvisionalDiagnosis(visit.id, udid, text);
@@ -60,7 +66,41 @@ export function AssessmentTab({ visit, udid }: { visit: any; udid: string }) {
       </Card>
 
       <Card>
-        <p className="text-sm font-medium text-[var(--color-ink-700)] mb-3">Confirmed Diagnosis (ICD-10)</p>
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-sm font-medium text-[var(--color-ink-700)]">Confirmed Diagnosis (ICD-10)</p>
+          {priorDxGroups.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setHistoryOpen((v) => !v)}
+              className="flex items-center gap-1 text-xs text-amber-700 bg-amber-50 hover:bg-amber-100 font-medium px-2.5 py-0.5 rounded-full border border-amber-200 transition-colors"
+            >
+              <History size={11} />
+              History ({priorDxGroups.length})
+              <ChevronDown size={11} className={historyOpen ? "rotate-180 transition-transform" : "transition-transform"} />
+            </button>
+          )}
+        </div>
+        {historyOpen && (
+          <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-3">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-amber-700 mb-2">Previous Diagnoses</p>
+            <div className="space-y-3 max-h-56 overflow-y-auto scrollbar-thin">
+              {priorDxGroups.map((g, gi) => (
+                <div key={gi}>
+                  <p className="text-[10px] font-semibold text-[var(--color-ink-400)] mb-1">{format(new Date(g.date), "d MMM yyyy")}</p>
+                  {g.diagnoses.map((d: any, di: number) => (
+                    <div key={di} className="flex items-center gap-2 text-xs text-[var(--color-ink-700)] border-l-2 border-amber-400 pl-2 mb-0.5">
+                      <span className="font-medium">{d.description}</span>
+                      {d.laterality && <span className="text-[var(--color-ink-400)]">{d.laterality}</span>}
+                      <span className="font-mono text-[var(--color-ink-400)]">{d.icd10Code}</span>
+                      <span className="ml-auto text-[10px] text-[var(--color-ink-400)]">{d.status}</span>
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
 
         <div className="flex flex-wrap gap-1.5 mb-4">
           {DIAGNOSIS_PRESETS.map((p) => (

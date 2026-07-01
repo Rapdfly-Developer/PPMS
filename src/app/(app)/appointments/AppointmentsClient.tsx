@@ -24,7 +24,7 @@ const STATUSES = [
   { value: "RESCHEDULED", label: "Rescheduled"  },
 ];
 
-const VISIT_TYPES = ["Consultation", "Follow-up", "General Checkup", "Emergency", "Review"];
+const VISIT_TYPES = ["Chief Complaint", "Specialist OPD", "Emergency", "Follow-up", "Post-op Review"];
 const PAGE_SIZES  = [10, 25, 50, 100];
 
 function dayHeading(dk: string) {
@@ -464,61 +464,27 @@ export function AppointmentsClient({
                       ({dateAppts.length} Appointment{dateAppts.length !== 1 ? "s" : ""})
                     </span>
                   </div>
-                  <button
-                    onClick={() => toggleDateAll(dk)}
-                    className="inline-flex items-center gap-1.5 text-sm font-medium text-[var(--color-primary-600)] hover:text-[var(--color-primary-800)] transition-colors"
-                  >
-                    <ChevronDown
-                      size={15}
-                      className={clsx("transition-transform", !dateAllExp && "-rotate-90")}
-                    />
-                    {dateAllExp ? "Collapse All" : "Expand All"}
-                  </button>
+                  {role !== "DOCTOR" && (
+                    <button
+                      onClick={() => toggleDateAll(dk)}
+                      className="inline-flex items-center gap-1.5 text-sm font-medium text-[var(--color-primary-600)] hover:text-[var(--color-primary-800)] transition-colors"
+                    >
+                      <ChevronDown
+                        size={15}
+                        className={clsx("transition-transform", !dateAllExp && "-rotate-90")}
+                      />
+                      {dateAllExp ? "Collapse All" : "Expand All"}
+                    </button>
+                  )}
                 </div>
 
-                {/* Hour slot sections */}
-                <div className="flex flex-col gap-2">
-                  {hourKeys.map((hk) => {
-                    const slotKey   = `${dk}:${hk}`;
-                    const isExpanded = expandedSlots.has(slotKey);
-                    const slotAppts  = hourGroups[hk];
-
-                    return (
-                      <div key={hk} className="rounded-xl border border-[var(--color-border)] bg-white overflow-hidden shadow-sm">
-                        {/* Hour header (clickable) */}
-                        <button
-                          onClick={() => toggleSlot(slotKey)}
-                          className="w-full flex items-center gap-3 px-5 py-3.5 hover:bg-[var(--color-ink-50)] transition-colors text-left"
-                        >
-                          {isExpanded
-                            ? <ChevronDown size={16} className="text-[var(--color-ink-500)] shrink-0" />
-                            : <ChevronRight size={16} className="text-[var(--color-ink-500)] shrink-0" />
-                          }
-                          <span className="text-sm font-semibold text-[var(--color-ink-800)]">
-                            {hourLabel(parseInt(hk))}
-                          </span>
-                          <span className="inline-flex items-center justify-center min-w-[22px] h-[22px] px-1.5 rounded-full text-white text-xs font-bold"
-                            style={{ background: "var(--color-primary-600)" }}>
-                            {slotAppts.length}
-                          </span>
-                          {!isExpanded && (
-                            <span className="ml-auto text-sm text-[var(--color-ink-400)]">
-                              {slotAppts.length} Appointment{slotAppts.length !== 1 ? "s" : ""}
-                            </span>
-                          )}
-                        </button>
-
-                        {/* CARD view */}
-                        {isExpanded && (
-                          <ul className="divide-y divide-[var(--color-border)] px-5">
-                            {slotAppts.map((appt: any) => (
-                              <AppointmentRow key={appt.id} appt={appt} role={role} token={tokenMap[appt.id]} />
-                            ))}
-                          </ul>
-                        )}
-                      </div>
-                    );
-                  })}
+                {/* Flat list for all roles */}
+                <div className="rounded-xl border border-[var(--color-border)] bg-white shadow-sm overflow-hidden">
+                  <ul className="divide-y divide-[var(--color-border)] px-5">
+                    {dateAppts.map((appt: any) => (
+                      <AppointmentRow key={appt.id} appt={appt} role={role} token={tokenMap[appt.id]} />
+                    ))}
+                  </ul>
                 </div>
               </div>
             );

@@ -90,7 +90,7 @@ export async function bookAppointment(formData: FormData) {
     patientId = patient.id;
   }
 
-  // Check for double-booking
+  // Check for double-booking (same slot)
   const clash = await prisma.appointment.findFirst({
     where: {
       doctorId,
@@ -100,6 +100,19 @@ export async function bookAppointment(formData: FormData) {
     },
   });
   if (clash) return { error: "That time slot is already booked for this doctor. Please choose another time." };
+
+  // Check for same patient same day
+  const dayStart = new Date(dateTime); dayStart.setHours(0, 0, 0, 0);
+  const dayEnd   = new Date(dateTime); dayEnd.setHours(23, 59, 59, 999);
+  const sameDayAppt = await prisma.appointment.findFirst({
+    where: {
+      patientId,
+      doctorId,
+      dateTime: { gte: dayStart, lte: dayEnd },
+      status: { notIn: ["CANCELLED", "NO_SHOW"] },
+    },
+  });
+  if (sameDayAppt) return { error: "This patient already has an appointment with this doctor today. Only one appointment per patient per day is allowed." };
 
   // Doctor-booked appointments are auto-confirmed; hospital-booked non-walk-ins wait for confirmation
   const status = user.role === "DOCTOR" ? "CONFIRMED" : isWalkIn ? "CONFIRMED" : "REQUESTED";

@@ -15,6 +15,7 @@ export default async function PatientsPage({
   const q              = (sp.q        ?? "").trim();
   const categoryFilter = sp.category  ?? "";
   const sexFilter      = sp.sex       ?? "";
+  const hospitalFilter = sp.hospital  ?? "";
   const sortBy         = sp.sort      ?? "newest";
   const registered     = sp.registered ?? "";
   const page     = Math.max(1, parseInt(sp.page ?? "1", 10) || 1);
@@ -23,13 +24,15 @@ export default async function PatientsPage({
 
   // ── Scope conditions ────────────────────────────────────────────────────────
   const scopeConds: any[] = [];
+  let doctorHospitals: { id: string; name: string }[] = [];
   if (user.role === "DOCTOR") {
     const doctorId = scopeDoctorId(user);
     const links = await prisma.doctorHospitalLink.findMany({
       where: { doctorId, active: true },
-      select: { hospitalId: true },
+      include: { hospital: { select: { id: true, name: true } } },
     });
     const hospitalIds = links.map(l => l.hospitalId);
+    doctorHospitals = links.map(l => ({ id: l.hospital.id, name: l.hospital.name }));
     scopeConds.push({
       OR: [
         { doctorId },
@@ -55,6 +58,7 @@ export default async function PatientsPage({
   }
   if (categoryFilter) listConds.push({ category: categoryFilter });
   if (sexFilter)      listConds.push({ sex: sexFilter });
+  if (hospitalFilter) listConds.push({ registeredAtId: hospitalFilter });
 
   const listWhere: any = listConds.length > 0 ? { AND: listConds } : {};
   const orderBy: any   =
@@ -172,6 +176,8 @@ export default async function PatientsPage({
         q={q}
         categoryFilter={categoryFilter}
         sexFilter={sexFilter}
+        hospitalFilter={hospitalFilter}
+        doctorHospitals={doctorHospitals}
         sortBy={sortBy}
         isHospital={isHospital}
         kpis={{ totalPatients, todayReg, followUpCount, insurancePatients, pendingRequests }}

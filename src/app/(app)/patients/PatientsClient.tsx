@@ -249,6 +249,8 @@ interface Props {
   q: string;
   categoryFilter: string;
   sexFilter: string;
+  hospitalFilter: string;
+  doctorHospitals: { id: string; name: string }[];
   sortBy: string;
   isHospital: boolean;
   kpis: Kpis;
@@ -258,13 +260,13 @@ interface Props {
 }
 
 export function PatientsClient({
-  patients, total, page, pageSize, q, categoryFilter, sexFilter, sortBy,
-  kpis, trendData, catDist, recentReg,
+  patients, total, page, pageSize, q, categoryFilter, sexFilter, hospitalFilter,
+  doctorHospitals, sortBy, kpis, trendData, catDist, recentReg,
 }: Props) {
   const router = useRouter();
   const [searchVal, setSearchVal] = useState(q);
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [showFilters, setShowFilters] = useState(!!(categoryFilter || sexFilter));
+  const [showFilters, setShowFilters] = useState(!!(categoryFilter || sexFilter || hospitalFilter));
   const [, startTransition] = useTransition();
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -273,12 +275,13 @@ export function PatientsClient({
   const to   = Math.min(page * pageSize, total);
 
   function navigate(overrides: Record<string, string>) {
-    const base = { q, category: categoryFilter, sex: sexFilter, sort: sortBy, size: String(pageSize), page: String(page) };
+    const base = { q, category: categoryFilter, sex: sexFilter, hospital: hospitalFilter, sort: sortBy, size: String(pageSize), page: String(page) };
     const merged = { ...base, ...overrides };
     const params = new URLSearchParams();
     if (merged.q)                         params.set("q",        merged.q);
     if (merged.category)                  params.set("category", merged.category);
     if (merged.sex)                       params.set("sex",      merged.sex);
+    if (merged.hospital)                  params.set("hospital", merged.hospital);
     if (merged.sort && merged.sort !== "newest") params.set("sort", merged.sort);
     if (merged.size && merged.size !== "25")     params.set("size", merged.size);
     if (merged.page && merged.page !== "1")      params.set("page", merged.page);
@@ -296,6 +299,7 @@ export function PatientsClient({
     if (q)             params.set("q",        q);
     if (categoryFilter) params.set("category", categoryFilter);
     if (sexFilter)      params.set("sex",      sexFilter);
+    if (hospitalFilter) params.set("hospital", hospitalFilter);
     if (sortBy !== "newest")    params.set("sort", sortBy);
     if (pageSize !== 25)        params.set("size", String(pageSize));
     if (p !== 1)                params.set("page", String(p));
@@ -326,7 +330,7 @@ export function PatientsClient({
     setSelected(next);
   }
 
-  const activeFilters = [categoryFilter, sexFilter].filter(Boolean).length;
+  const activeFilters = [categoryFilter, sexFilter, hospitalFilter].filter(Boolean).length;
 
   return (
     <div>
@@ -461,9 +465,24 @@ export function PatientsClient({
                     <option value="OTHER">Other</option>
                   </select>
                 </div>
+                {doctorHospitals.length > 1 && (
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs font-medium text-[var(--color-ink-500)]">Hospital</label>
+                    <select
+                      value={hospitalFilter}
+                      onChange={e => navigate({ hospital: e.target.value, page: "1" })}
+                      className="rounded-lg border border-[var(--color-border)] bg-white px-2.5 py-1.5 text-xs text-[var(--color-ink-700)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
+                    >
+                      <option value="">All hospitals</option>
+                      {doctorHospitals.map(h => (
+                        <option key={h.id} value={h.id}>{h.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
                 {activeFilters > 0 && (
                   <button
-                    onClick={() => navigate({ category: "", sex: "", page: "1" })}
+                    onClick={() => navigate({ category: "", sex: "", hospital: "", page: "1" })}
                     className="inline-flex items-center gap-1 text-xs text-red-600 hover:text-red-800 font-medium"
                   >
                     <X size={11} /> Clear filters
@@ -506,7 +525,7 @@ export function PatientsClient({
                   {" "}of{" "}
                   <span className="font-semibold text-[var(--color-ink-800)]">{total}</span>
                   {" "}patients
-                  {(q || categoryFilter || sexFilter) && (
+                  {(q || categoryFilter || sexFilter || hospitalFilter) && (
                     <span className="text-[var(--color-ink-400)]"> (filtered)</span>
                   )}
                 </p>
@@ -619,11 +638,11 @@ export function PatientsClient({
                       <td colSpan={7} className="px-4 py-16 text-center">
                         <Users size={36} className="mx-auto text-[var(--color-ink-300)] mb-3" />
                         <p className="text-sm font-medium text-[var(--color-ink-500)]">
-                          {q || categoryFilter || sexFilter
+                          {q || categoryFilter || sexFilter || hospitalFilter
                             ? "No patients match the current filters."
                             : "No patients registered yet."}
                         </p>
-                        {!q && !categoryFilter && !sexFilter && (
+                        {!q && !categoryFilter && !sexFilter && !hospitalFilter && (
                           <Link
                             href="/patients/new"
                             className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-[var(--color-primary-600)] hover:underline"
@@ -631,9 +650,9 @@ export function PatientsClient({
                             <UserPlus size={13} /> Register your first patient
                           </Link>
                         )}
-                        {(q || categoryFilter || sexFilter) && (
+                        {(q || categoryFilter || sexFilter || hospitalFilter) && (
                           <button
-                            onClick={() => navigate({ q: "", category: "", sex: "", page: "1" })}
+                            onClick={() => navigate({ q: "", category: "", sex: "", hospital: "", page: "1" })}
                             className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-[var(--color-ink-500)] hover:text-[var(--color-ink-700)]"
                           >
                             <X size={13} /> Clear all filters

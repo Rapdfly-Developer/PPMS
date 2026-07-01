@@ -135,8 +135,12 @@ export default async function PatientDetailedEMR({
   // (Prisma client regenerates on restart; ChipOption table is seeded via /settings/chips)
   const customPmhChips: string[] = [];
 
-  // Read-only when not a doctor, or when the visit is already closed (past visit)
-  const readOnly = user.role !== "DOCTOR" || activeVisit?.status === "CLOSED";
+  // Allow editing today's closed visits; lock only past-day closed visits
+  const visitDate = activeVisit ? new Date(activeVisit.date) : null;
+  const isVisitFromToday = visitDate
+    ? visitDate.toDateString() === new Date().toDateString()
+    : false;
+  const readOnly = user.role !== "DOCTOR" || (activeVisit?.status === "CLOSED" && !isVisitFromToday);
 
   return (
     <div className="fade-in pb-24">
@@ -163,7 +167,7 @@ export default async function PatientDetailedEMR({
       </div>
 
       {/* Locked banner */}
-      {activeVisit?.status === "CLOSED" && user.role === "DOCTOR" && (
+      {activeVisit?.status === "CLOSED" && user.role === "DOCTOR" && !isVisitFromToday && (
         <div className="mb-4 px-4 py-3 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2 text-sm text-amber-800">
             <Lock size={14} className="shrink-0" />
@@ -172,30 +176,44 @@ export default async function PatientDetailedEMR({
           <RequestUnlockButton />
         </div>
       )}
-
-      {/* Patient info bar */}
-      <div className="surface-card mb-5 py-3 px-4">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-[var(--color-ink-600)]">
-          <span className="font-mono text-xs text-[var(--color-ink-400)]">{patient.udid}</span>
-          <span>·</span>
-          <span>{patient.age}y {patient.sex.charAt(0)}</span>
-          {patient.doctor && (
-            <>
-              <span>·</span>
-              <span>Dr. {patient.doctor.name}</span>
-            </>
-          )}
-          {priorVisits[0] && (
-            <>
-              <span>·</span>
-              <span>Last visit: {format(new Date(priorVisits[0].date), "d MMM yyyy")}</span>
-            </>
-          )}
+      {activeVisit?.status === "CLOSED" && user.role === "DOCTOR" && isVisitFromToday && (
+        <div className="mb-4 px-4 py-3 rounded-xl bg-blue-50 border border-blue-200 flex items-center gap-2 text-sm text-blue-800">
+          <Lock size={14} className="shrink-0" />
+          <span>Finalized today — editing available until end of day.</span>
         </div>
-        <p className="text-sm italic text-[var(--color-ink-400)] mt-0.5">
-          {chiefComplaintSummary ?? "New encounter"}
-          {latestDiagnosis?.laterality ? ` (${latestDiagnosis.laterality})` : ""}
-        </p>
+      )}
+
+      {/* Patient banner */}
+      <div className="surface-card mb-5 px-4 py-3">
+        <div className="flex items-start justify-between gap-3 flex-wrap">
+          <div>
+            <h2 className="text-base font-bold text-[var(--color-ink-900)]">
+              {patient.name}
+              <span className="ml-2 text-sm font-normal text-[var(--color-ink-500)]">
+                {patient.age}y / {patient.sex.charAt(0).toUpperCase()}
+              </span>
+            </h2>
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5 text-xs text-[var(--color-ink-500)]">
+              <span>UHID: <span className="font-mono text-[var(--color-primary-700)]">{patient.udid}</span></span>
+              {patient.mobile && (
+                <><span className="text-[var(--color-border)]">·</span><span>Mobile: {patient.mobile}</span></>
+              )}
+              {patient.registeredAt && (
+                <><span className="text-[var(--color-border)]">·</span><span>{patient.registeredAt.name}</span></>
+              )}
+              {priorVisits[0] && (
+                <><span className="text-[var(--color-border)]">·</span>
+                <span>Last visit: {format(new Date(priorVisits[0].date), "d MMM yyyy")}</span></>
+              )}
+            </div>
+          </div>
+        </div>
+        {chiefComplaintSummary && (
+          <p className="text-xs italic text-[var(--color-ink-400)] mt-1.5 pt-1.5 border-t border-[var(--color-border)]">
+            {chiefComplaintSummary}
+            {latestDiagnosis?.laterality ? ` (${latestDiagnosis.laterality})` : ""}
+          </p>
+        )}
       </div>
 
       {!activeVisit ? (
@@ -267,7 +285,7 @@ export default async function PatientDetailedEMR({
                 icon: <Activity size={14} />,
                 content:
                   user.role === "DOCTOR" ? (
-                    <AssessmentTab visit={activeVisit} udid={udid} />
+                    <AssessmentTab visit={activeVisit} udid={udid} priorVisits={priorVisits} />
                   ) : (
                     <p className="text-sm text-[var(--color-ink-400)]">Not accessible for this role.</p>
                   ),

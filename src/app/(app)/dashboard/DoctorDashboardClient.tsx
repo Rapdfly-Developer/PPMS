@@ -210,8 +210,8 @@ export function DoctorDashboardClient({
   const kpiCards = [
     { label: "Today's OPD", value: totalToday,     sub: selectedHospital === "all" ? "All hospitals" : (hospitals.find(h => h.id === selectedHospital)?.name ?? ""), icon: <CalendarDays size={20} />, bg: "bg-blue-50 text-blue-700",   val: "text-blue-700",   href: "/appointments" },
     { label: "Pending",      value: pendingOPD,     sub: "Scheduled / Waiting",   icon: <Clock size={20} />,        bg: "bg-amber-50 text-amber-700",   val: "text-amber-700",  href: "/appointments" },
-    { label: "Surgeries",    value: surgeryCount,   sub: "Today & upcoming",      icon: <Scissors size={20} />,     bg: "bg-purple-50 text-purple-700", val: "text-purple-700", href: "/ipd"          },
-    { label: "Consulted",    value: consultedToday, sub: `${monthlyCount} this month`, icon: <BarChart2 size={20} />, bg: "bg-green-50 text-green-700", val: "text-green-700",  href: "/analytics"    },
+    { label: "Scheduled OT", value: surgeryCount,   sub: "Today & upcoming",      icon: <Scissors size={20} />,     bg: "bg-purple-50 text-purple-700", val: "text-purple-700", href: "/ipd"          },
+    { label: "Analytics",    value: consultedToday, sub: `${monthlyCount} this month`, icon: <BarChart2 size={20} />, bg: "bg-green-50 text-green-700", val: "text-green-700",  href: "/analytics"    },
   ];
 
   return (
@@ -269,58 +269,92 @@ export function DoctorDashboardClient({
 
 
       {/* ── Today's Appointments ─────────────────────────────────────────── */}
-      <div className="surface-card p-5">
+      <div>
         {/* Section header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
           <h2 className="text-base font-semibold text-[var(--color-ink-900)]">
-            Today's Appointments
+            Today's Queue
             <span className="ml-2 text-sm font-normal text-[var(--color-ink-400)]">{totalToday} total</span>
           </h2>
-          <Link href="/appointments" className="text-xs font-semibold text-[var(--color-primary-600)] hover:underline self-start sm:self-auto">
-            View all →
-          </Link>
+          <div className="flex items-center gap-3">
+            {/* Status filter tabs */}
+            <div className="flex items-center gap-1 flex-wrap">
+              {STATUS_FILTERS.map(({ key, label }) => {
+                const count = key === "ALL"
+                  ? hospitalFiltered.length
+                  : hospitalFiltered.filter((a) => a.status === key).length;
+                return (
+                  <button
+                    key={key}
+                    onClick={() => setStatusFilter(key)}
+                    className={clsx(
+                      "px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors",
+                      statusFilter === key
+                        ? "bg-[var(--color-primary-600)] text-white"
+                        : "bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)] hover:bg-[var(--color-primary-50)] hover:text-[var(--color-primary-700)]"
+                    )}
+                  >
+                    {label}
+                    <span className={clsx("ml-1.5 font-bold", statusFilter === key ? "text-white/80" : "text-[var(--color-ink-400)]")}>
+                      {count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+            <Link href="/appointments" className="text-xs font-semibold text-[var(--color-primary-600)] hover:underline whitespace-nowrap">
+              View all →
+            </Link>
+          </div>
         </div>
 
-        {/* Status filter tabs */}
-        <div className="flex items-center gap-1 flex-wrap mb-4">
-          {STATUS_FILTERS.map(({ key, label }) => {
-            const count = key === "ALL"
-              ? hospitalFiltered.length
-              : hospitalFiltered.filter((a) => a.status === key).length;
-            return (
-              <button
-                key={key}
-                onClick={() => setStatusFilter(key)}
-                className={clsx(
-                  "px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors",
-                  statusFilter === key
-                    ? "bg-[var(--color-primary-600)] text-white"
-                    : "bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)] hover:bg-[var(--color-primary-50)] hover:text-[var(--color-primary-700)]"
-                )}
-              >
-                {label}
-                <span className={clsx("ml-1.5 font-bold", statusFilter === key ? "text-white/80" : "text-[var(--color-ink-400)]")}>
-                  {count}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Content — flat list always */}
+        {/* Per-hospital cards */}
         {totalToday === 0 ? (
-          <div className="text-center py-12 text-[var(--color-ink-400)]">
+          <div className="surface-card text-center py-12 text-[var(--color-ink-400)]">
             <CalendarDays size={32} className="mx-auto mb-2 opacity-30" />
             <p className="text-sm">No appointments scheduled for today</p>
           </div>
-        ) : (() => {
-          const list = statusFilter === "ALL"
-            ? hospitalFiltered
-            : hospitalFiltered.filter((a) => a.status === statusFilter);
-          return list.length === 0
-            ? <p className="text-center text-sm text-[var(--color-ink-400)] py-8">No appointments match this filter.</p>
-            : <div className="space-y-2">{list.map((a) => <ApptRow key={a.id} appt={a} />)}</div>;
-        })()}
+        ) : (
+          <div className="grid grid-cols-1 gap-4">
+            {byHospital.map(({ hospital, appts: hAppts }) => {
+              const filtered = statusFilter === "ALL"
+                ? hAppts
+                : hAppts.filter((a) => a.status === statusFilter);
+              const pending   = hAppts.filter((a) => ["REQUESTED", "CONFIRMED"].includes(a.status)).length;
+              const consulted = hAppts.filter((a) => a.status === "COMPLETED").length;
+              return (
+                <div key={hospital.id} className="surface-card p-4 flex flex-col gap-3">
+                  {/* Hospital header */}
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="shrink-0 p-1.5 rounded-lg bg-[var(--color-primary-50)]">
+                        <Building2 size={15} className="text-[var(--color-primary-700)]" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-bold text-[var(--color-ink-900)] truncate">{hospital.name}</p>
+                        <p className="text-[11px] text-[var(--color-ink-400)]">
+                          {hAppts.length} total · {pending} pending · {consulted} consulted
+                        </p>
+                      </div>
+                    </div>
+                    <span className="shrink-0 text-[11px] font-bold px-2.5 py-1 rounded-full bg-[var(--color-primary-50)] text-[var(--color-primary-700)]">
+                      {hAppts.length}
+                    </span>
+                  </div>
+
+                  {/* Appointment rows */}
+                  {filtered.length === 0 ? (
+                    <p className="text-center text-xs text-[var(--color-ink-400)] py-4">No appointments match this filter.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {filtered.map((a) => <ApptRow key={a.id} appt={a} />)}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* ── Surgeries + IPD side by side ─────────────────────────────────── */}
@@ -331,7 +365,7 @@ export function DoctorDashboardClient({
       {filteredSurgeries.length > 0 && (
         <div className="surface-card p-5">
           <h2 className="text-base font-semibold text-[var(--color-ink-900)] mb-4">
-            Scheduled Surgeries
+            Scheduled OT
             <span className="ml-2 text-xs font-normal text-[var(--color-ink-400)]">{filteredSurgeries.length} upcoming</span>
           </h2>
           <div className="space-y-2">
@@ -370,7 +404,7 @@ export function DoctorDashboardClient({
         <div className="surface-card p-5">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-base font-semibold text-[var(--color-ink-900)]">
-              My IPD Patients
+              IPD Patients
               <span className="ml-2 text-xs font-normal text-[var(--color-ink-400)]">{admissions.length} admitted</span>
             </h2>
             <Link href="/ipd" className="text-xs font-semibold text-[var(--color-primary-600)] hover:underline">View all →</Link>

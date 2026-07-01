@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { bookAppointment, getBookedSlots } from "./actions";
 
-const VISIT_TYPES = ["General OPD", "Specialist OPD", "Emergency", "Follow-up", "Post-op Review"];
+const VISIT_TYPES = ["Chief Complaint", "Specialist OPD", "Emergency", "Follow-up", "Post-op Review"];
 const SEXES = ["MALE", "FEMALE", "OTHER"];
 
 const FALLBACK_SLOTS = [
@@ -79,7 +79,7 @@ export function BookAppointmentForm({
   const [doctorId,   setDoctorId]   = useState(doctors[0]?.id ?? "");
   const [date, setDate] = useState(() => new Date().toISOString().split("T")[0]);
   const [time, setTime] = useState("09:00");
-  const [visitType,  setVisitType]  = useState("General OPD");
+  const [visitType,  setVisitType]  = useState("Chief Complaint");
   const [notes,      setNotes]      = useState("");
   const [bookedTimes, setBookedTimes] = useState<string[]>([]);
 
