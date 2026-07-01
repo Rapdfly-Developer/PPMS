@@ -34,7 +34,7 @@ export default async function EMRQueuePage({
     where: {
       ...roleWhere,
       dateTime: { gte: start, lte: end },
-      status: { in: ["CONFIRMED", "COMPLETED"] },
+      status: { in: ["REQUESTED", "SCHEDULED", "CONFIRMED", "COMPLETED"] },
       ...(q
         ? { patient: { OR: [{ name: { contains: q } }, { udid: { contains: q } }] } }
         : {}),

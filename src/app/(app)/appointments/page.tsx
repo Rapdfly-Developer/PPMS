@@ -2,7 +2,6 @@ import { requirePermission, scopeDoctorId } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { startOfDay } from "date-fns";
 import { AppointmentsClient } from "./AppointmentsClient";
-import { AppointmentsHub } from "./AppointmentsHub";
 
 export default async function AppointmentsPage({
   searchParams,
@@ -11,8 +10,6 @@ export default async function AppointmentsPage({
 }) {
   const sp   = await searchParams;
   const user = await requirePermission("appointments.view");
-
-  if (user.role === "DOCTOR") return <AppointmentsHub />;
 
   const dateParam     = sp.date ?? "";
   const statusParam   = sp.status ?? "ALL";
@@ -45,13 +42,13 @@ export default async function AppointmentsPage({
   if (user.role === "DOCTOR") {
     where.doctorId = scopeDoctorId(user);
     where.dateTime = dateFilter;
-    if (statusParam === "ALL") where.status = { in: ["CONFIRMED", "COMPLETED"] };
+    if (statusParam === "ALL") where.status = { in: ["REQUESTED", "SCHEDULED", "CONFIRMED", "COMPLETED"] };
   } else if (user.role === "HOSPITAL") {
     where.hospitalId = user.hospitalId;
     if (dateParam) {
       where.dateTime = dateFilter;
     } else {
-      where.OR = [{ dateTime: dateFilter }, { status: "REQUESTED" }];
+      where.OR = [{ dateTime: dateFilter }, { status: "REQUESTED" }, { status: "SCHEDULED" }];
     }
   } else {
     where.dateTime = dateFilter;

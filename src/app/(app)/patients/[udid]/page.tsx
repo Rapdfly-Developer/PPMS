@@ -67,6 +67,51 @@ export default async function PatientProfilePage({
     ? { id: todayVisitRecord.id, appointmentId: todayVisitRecord.appointmentId }
     : null;
 
+  /* ── Today's appointment (when no visit yet) ─────────────────────────── */
+  const todayAppointmentId: string | null = !todayVisit
+    ? (await prisma.appointment.findFirst({
+        where: {
+          patientId: patient.id,
+          dateTime: { gte: todayStart, lte: todayEnd },
+          status: { in: ["CONFIRMED", "REQUESTED", "SCHEDULED"] },
+        },
+        orderBy: { dateTime: "asc" },
+        select: { id: true },
+      }))?.id ?? null
+    : null;
+
+  /* ── Patient timeline — finalization audit entries ───────────────────── */
+  const appointmentIds = await prisma.appointment.findMany({
+    where: { patientId: patient.id },
+    select: { id: true },
+  }).then((rows) => rows.map((r) => r.id));
+
+  const rawTimeline = await prisma.auditLog.findMany({
+    where: {
+      action: "FINALIZE_CONSULTATION",
+      entityId: { in: appointmentIds },
+    },
+    orderBy: { timestamp: "desc" },
+    take: 20,
+  });
+
+  const timelineEntries = rawTimeline.map((entry) => {
+    let completedBy: string | null = null;
+    let completedAt: string | null = null;
+    try {
+      const parsed = JSON.parse(entry.newValue ?? "{}");
+      completedBy = parsed.completedBy ?? null;
+      completedAt = parsed.completedAt ?? null;
+    } catch {}
+    return {
+      id: entry.id,
+      action: entry.action,
+      entityId: entry.entityId,
+      completedBy,
+      completedAt: completedAt ?? entry.timestamp.toISOString(),
+    };
+  });
+
   /* ── Serialise visits for client ─────────────────────────────────────── */
   const serialVisits: SerialVisit[] = patient.visits.map((v, i) => ({
     id:            v.id,
@@ -196,7 +241,9 @@ export default async function PatientProfilePage({
         udid={udid}
         visits={serialVisits}
         todayVisit={todayVisit}
+        todayAppointmentId={todayAppointmentId}
         userRole={user.role}
+        timelineEntries={timelineEntries}
       />
     </div>
   );

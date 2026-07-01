@@ -15,6 +15,12 @@ export async function createWalkInEncounter(formData: FormData) {
     return { error: "Patient, visit type and hospital are required." };
   }
 
+  // Verify doctor is linked to this hospital
+  const link = await prisma.doctorHospitalLink.findFirst({
+    where: { doctorId: user.profileId!, hospitalId, active: true },
+  });
+  if (!link) return { error: "You are not linked to the selected hospital." };
+
   const patient = await prisma.patient.findUnique({ where: { id: patientId } });
   if (!patient) return { error: "Patient not found." };
 

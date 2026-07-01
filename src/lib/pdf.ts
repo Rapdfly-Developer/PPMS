@@ -578,3 +578,184 @@ function renderFullEmrHtml(d: FullEmrData): string {
 export async function generateFullEmrPdf(data: FullEmrData): Promise<Buffer> {
   return htmlToPdf(renderFullEmrHtml(data));
 }
+
+// ── Short Summary PDF (Plan section only) ─────────────────────────────────────
+
+export type ShortSummaryData = {
+  patient: { udid: string; name: string; age: number; sex: string; mobile?: string | null };
+  visit: { date: Date; visitType?: string | null; hospitalName: string; doctorName: string; followUpDate?: Date | null; referralEnabled?: boolean; referralNote?: string | null };
+  diagnoses: { description: string; icd10Code: string; status: string; laterality?: string | null }[];
+  medications: { drugName: string; dosage?: string | null; frequency?: string | null; duration?: string | null; instructions?: string | null }[];
+  opticalRx?: {
+    re: { sph?: string; cyl?: string; axis?: string; nearSph?: string };
+    le: { sph?: string; cyl?: string; axis?: string; nearSph?: string };
+  } | null;
+  surgicalCounselling?: { surgeryType?: string | null; surgeryDate?: Date | null; notes?: string | null } | null;
+};
+
+function renderShortSummaryHtml(d: ShortSummaryData): string {
+  const diagHtml = d.diagnoses.length
+    ? d.diagnoses.map((dx, i) =>
+        `<tr>
+          <td>${i + 1}</td>
+          <td>${val(dx.description)}</td>
+          <td class="mono">${val(dx.icd10Code)}</td>
+          <td>${val(dx.laterality)}</td>
+          <td>${escapeHtml(dx.status)}</td>
+        </tr>`).join("")
+    : `<tr><td colspan="5" class="empty">No diagnoses recorded</td></tr>`;
+
+  const medHtml = d.medications.length
+    ? d.medications.map((m, i) =>
+        `<tr>
+          <td>${i + 1}</td>
+          <td><strong>${val(m.drugName)}</strong></td>
+          <td>${val(m.dosage)}</td>
+          <td>${val(m.frequency)}</td>
+          <td>${val(m.duration)}</td>
+          <td>${val(m.instructions)}</td>
+        </tr>`).join("")
+    : `<tr><td colspan="6" class="empty">No medications prescribed</td></tr>`;
+
+  const hasOpticalRx = d.opticalRx && (
+    d.opticalRx.re.sph || d.opticalRx.re.cyl || d.opticalRx.re.axis ||
+    d.opticalRx.le.sph || d.opticalRx.le.cyl || d.opticalRx.le.axis ||
+    d.opticalRx.re.nearSph || d.opticalRx.le.nearSph
+  );
+
+  const rxRow = (label: string, sph?: string, cyl?: string, axis?: string) =>
+    `<tr><td class="row-head">${label}</td><td>${val(sph)}</td><td>${val(cyl)}</td><td>${val(axis)}</td></tr>`;
+
+  const opticalSection = hasOpticalRx ? `
+    <div class="section-title">Optical Prescription</div>
+    <table>
+      <thead><tr><th></th><th>SPH</th><th>CYL</th><th>AXIS</th></tr></thead>
+      <tbody>
+        ${rxRow("RE Distance", d.opticalRx!.re.sph, d.opticalRx!.re.cyl, d.opticalRx!.re.axis)}
+        ${rxRow("LE Distance", d.opticalRx!.le.sph, d.opticalRx!.le.cyl, d.opticalRx!.le.axis)}
+        ${d.opticalRx!.re.nearSph || d.opticalRx!.le.nearSph ? rxRow("RE Near Add", d.opticalRx!.re.nearSph) + rxRow("LE Near Add", d.opticalRx!.le.nearSph) : ""}
+      </tbody>
+    </table>` : "";
+
+  const followUpLine = d.visit.followUpDate
+    ? `<p style="font-size:12px;margin:4px 0;"><strong>Follow-up:</strong> ${format(new Date(d.visit.followUpDate), "dd MMM yyyy")}</p>`
+    : "";
+
+  const referralLine = d.visit.referralEnabled && d.visit.referralNote
+    ? `<p style="font-size:12px;margin:4px 0;"><strong>Referral:</strong> ${escapeHtml(d.visit.referralNote)}</p>`
+    : "";
+
+  const surgicalLine = d.surgicalCounselling?.surgeryType
+    ? `<p style="font-size:12px;margin:4px 0;"><strong>Surgery planned:</strong> ${val(d.surgicalCounselling!.surgeryType)}${d.surgicalCounselling!.surgeryDate ? ` on ${format(new Date(d.surgicalCounselling!.surgeryDate), "dd MMM yyyy")}` : ""}${d.surgicalCounselling!.notes ? ` — ${escapeHtml(d.surgicalCounselling!.notes)}` : ""}</p>`
+    : "";
+
+  const adviceSection = (followUpLine || referralLine || surgicalLine)
+    ? `<div class="section-title">Advice &amp; Follow-up</div>${followUpLine}${referralLine}${surgicalLine}`
+    : "";
+
+  return `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>Short Summary – ${escapeHtml(d.patient.name)}</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  @page { size: A4; margin: 14mm 14mm 14mm 14mm; }
+  body { font-family: "Segoe UI", Arial, sans-serif; color: #14242B; font-size: 12px; line-height: 1.5; }
+
+  .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #0B3D3A; padding-bottom: 14px; margin-bottom: 18px; }
+  .brand { font-size: 20px; font-weight: 800; color: #0B3D3A; letter-spacing: -0.5px; }
+  .brand-sub { font-size: 10px; color: #5C6E76; margin-top: 2px; letter-spacing: 0.04em; text-transform: uppercase; }
+  .meta { text-align: right; font-size: 11px; color: #5C6E76; line-height: 1.7; }
+  .meta strong { color: #14242B; }
+
+  .badge { display: inline-block; background: #F0F8F6; border: 1px solid #C8E6E4; color: #115E59; font-size: 10px; font-weight: 600; border-radius: 99px; padding: 2px 10px; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.06em; }
+
+  .patient-banner { background: #F0F8F6; border: 1px solid #C8E6E4; border-radius: 10px; padding: 12px 16px; margin-bottom: 18px; }
+  .patient-name { font-size: 17px; font-weight: 700; color: #0B3D3A; }
+  .patient-meta { font-size: 11px; color: #5C6E76; margin-top: 3px; }
+  .patient-meta span { margin-right: 14px; }
+  .udid { font-family: monospace; background: #E0F0ED; padding: 1px 6px; border-radius: 4px; color: #115E59; font-size: 10px; }
+
+  .section-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #fff; background: #115E59; padding: 4px 10px; border-radius: 4px; margin: 16px 0 8px; display: inline-block; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 4px; }
+  th { text-align: left; font-size: 9px; text-transform: uppercase; letter-spacing: 0.06em; color: #8A9AA1; border-bottom: 2px solid #E2E6E8; padding: 5px 6px; }
+  td { padding: 6px 6px; border-bottom: 1px solid #EEF0F2; vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  td.row-head { font-weight: 600; color: #0B3D3A; white-space: nowrap; width: 110px; }
+  td.mono { font-family: monospace; }
+  .empty { color: #9AA9B2; font-style: italic; margin: 6px 0; text-align:center; padding:10px; }
+
+  .sig-box { margin-top: 40px; border-top: 1px solid #E2E6E8; padding-top: 16px; display: flex; justify-content: flex-end; }
+  .sig-line { text-align: center; }
+  .sig-line .line { width: 200px; border-top: 1px solid #14242B; margin: 0 auto 6px; }
+  .sig-line p { font-size: 11px; color: #5C6E76; }
+  .sig-line strong { font-size: 12px; color: #0B3D3A; display: block; }
+
+  .footer { margin-top: 20px; font-size: 9px; color: #9AA9B2; text-align: center; border-top: 1px solid #EEF0F2; padding-top: 8px; }
+
+  @media print {
+    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+</style>
+</head>
+<body>
+
+  <div class="header">
+    <div>
+      <div class="brand">${escapeHtml(d.visit.hospitalName)}</div>
+      <div class="brand-sub">Consultation Summary · Plan &amp; Prescription</div>
+    </div>
+    <div class="meta">
+      <strong>${format(d.visit.date, "dd MMM yyyy")}</strong><br/>
+      ${val(d.visit.visitType, "General OPD")}<br/>
+      Dr. ${escapeHtml(d.visit.doctorName)}
+    </div>
+  </div>
+
+  <div class="patient-banner">
+    <div class="patient-name">${escapeHtml(d.patient.name)}</div>
+    <div class="patient-meta">
+      <span class="udid">${escapeHtml(d.patient.udid)}</span>
+      <span>${d.patient.age} yrs · ${escapeHtml(d.patient.sex)}</span>
+      ${d.patient.mobile ? `<span>📞 ${escapeHtml(d.patient.mobile)}</span>` : ""}
+    </div>
+  </div>
+
+  <div class="section-title">Diagnosis</div>
+  <table>
+    <thead><tr><th>#</th><th>Diagnosis</th><th>ICD-10</th><th>Laterality</th><th>Status</th></tr></thead>
+    <tbody>${diagHtml}</tbody>
+  </table>
+
+  <div class="section-title">Medications Prescribed</div>
+  <table>
+    <thead><tr><th>#</th><th>Drug</th><th>Dosage</th><th>Frequency</th><th>Duration</th><th>Instructions</th></tr></thead>
+    <tbody>${medHtml}</tbody>
+  </table>
+
+  ${opticalSection}
+
+  ${adviceSection}
+
+  <div class="sig-box">
+    <div class="sig-line">
+      <div class="line"></div>
+      <strong>Dr. ${escapeHtml(d.visit.doctorName)}</strong>
+      <p>Ophthalmologist</p>
+      <p>${escapeHtml(d.visit.hospitalName)}</p>
+    </div>
+  </div>
+
+  <div class="footer">
+    Generated by PPMS on ${format(new Date(), "dd MMM yyyy, h:mm a")} · ${escapeHtml(d.patient.udid)} · Consultation summary only — not a full EMR.
+  </div>
+
+</body>
+</html>`;
+}
+
+export async function generateShortSummaryPdf(data: ShortSummaryData): Promise<Buffer> {
+  return htmlToPdf(renderShortSummaryHtml(data));
+}

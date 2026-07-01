@@ -15,6 +15,7 @@ import { AppointmentRow } from "./AppointmentRow";
 // ── helpers ────────────────────────────────────────────────────────────────
 const STATUSES = [
   { value: "ALL",          label: "All Status"   },
+  { value: "SCHEDULED",   label: "Scheduled"    },
   { value: "REQUESTED",   label: "Requested"    },
   { value: "CONFIRMED",   label: "Confirmed"    },
   { value: "COMPLETED",   label: "Completed"    },
@@ -267,12 +268,20 @@ export function AppointmentsClient({
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
+          {role === "DOCTOR" && (
+            <Link
+              href="/appointments/availability"
+              className="inline-flex items-center gap-2 bg-[var(--color-primary-600)] text-white text-sm font-semibold px-4 py-2.5 rounded-xl hover:bg-[var(--color-primary-700)] transition-colors shadow-sm"
+            >
+              Doctor Appointment
+            </Link>
+          )}
           {(isHospital || role === "DOCTOR") && (
             <Link
               href="/appointments/book"
               className="inline-flex items-center gap-2 bg-[var(--color-primary-600)] text-white text-sm font-semibold px-4 py-2.5 rounded-xl hover:bg-[var(--color-primary-700)] transition-colors shadow-sm"
             >
-              <Plus size={15} /> Book Appointment
+              <Plus size={15} /> {role === "DOCTOR" ? "Patient Appointment" : "Book Appointment"}
             </Link>
           )}
           {/* Date chip */}

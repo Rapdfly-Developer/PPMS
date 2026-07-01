@@ -152,6 +152,7 @@ export function BookAppointmentForm({
     e.preventDefault();
     if (patientMode === "existing" && !selectedPatient) { setError("Please select a patient."); return; }
     if (!doctorId) { setError("Please select a doctor."); return; }
+    if (!effectiveHospitalId) { setError("Please select a hospital."); return; }
     setError("");
 
     const fd = new FormData();
@@ -160,16 +161,21 @@ export function BookAppointmentForm({
     fd.set("visitType",    visitType);
     fd.set("notes",        notes);
     fd.set("encounterType", encounterType);
-    if (effectiveHospitalId) fd.set("hospitalId", effectiveHospitalId);
+    fd.set("hospitalId", effectiveHospitalId);
 
-    // For walk-in, allocate the next available time slot after current time
+    // For walk-in, allocate the next available time slot after current time (skip already booked)
     if (encounterType === "walkin") {
       const now = new Date();
       const nowMins = now.getHours() * 60 + now.getMinutes();
-      const nextSlot = FALLBACK_SLOTS.find((t) => {
+      const slots = baseSlots.length > 0 ? baseSlots : FALLBACK_SLOTS;
+      const nextSlot = slots.find((t) => {
+        const [h, m] = t.split(":").map(Number);
+        return h * 60 + m > nowMins && !bookedTimes.includes(t);
+      }) ?? slots.find((t) => {
         const [h, m] = t.split(":").map(Number);
         return h * 60 + m > nowMins;
-      }) ?? FALLBACK_SLOTS[FALLBACK_SLOTS.length - 1];
+      });
+      if (!nextSlot) { setError("No available time slots left for today. Please book a scheduled appointment."); return; }
       fd.set("date", now.toISOString().split("T")[0]);
       fd.set("time", nextSlot);
     } else {
@@ -537,7 +543,7 @@ export function BookAppointmentForm({
             </div>
 
             {/* Hospital selector — DOCTOR role only (hospital role has fixed hospitalId) */}
-            {!hospitalId && doctorHospitals.length > 0 && (
+            {!hospitalId && doctorHospitals.length >= 1 && (
               <div>
                 <FieldLabel icon={<Building2 size={12} />}>Hospital *</FieldLabel>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">

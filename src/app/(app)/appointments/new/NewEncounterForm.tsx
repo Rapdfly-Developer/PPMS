@@ -160,7 +160,7 @@ export function NewEncounterForm({
         </div>
 
         {/* Hospital */}
-        {hospitals.length > 1 && (
+        {hospitals.length >= 1 && (
           <div className="surface-card p-5">
             <label className="text-xs font-semibold tracking-widest text-[var(--color-ink-500)] uppercase mb-3 block">
               Hospital

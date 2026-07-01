@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/Card";
 import { Tabs } from "@/components/ui/Tabs";
 import { format } from "date-fns";
 import Link from "next/link";
-import { ArrowLeft, User, Eye, Activity, Link2, FileText, FolderOpen } from "lucide-react";
+import { ArrowLeft, User, Eye, Activity, Link2, FileText, FolderOpen, Lock } from "lucide-react";
 import { GeneralExamTab } from "./GeneralExamTab";
 import { PastExternalVisitsTab } from "./PastExternalVisitsTab";
 import { OphthalmicExamTab } from "./OphthalmicExamTab";
@@ -13,6 +13,7 @@ import { InvestigationsTab } from "./InvestigationsTab";
 import { AssessmentTab } from "./AssessmentTab";
 import { PlanTab } from "./PlanTab";
 import { EmrActionBar } from "./EmrActionBar";
+import { RequestUnlockButton } from "./RequestUnlockButton";
 
 export default async function PatientDetailedEMR({
   params,
@@ -79,6 +80,52 @@ export default async function PatientDetailedEMR({
     patient.visits.find((v) => v.status === "IN_PROGRESS") ||
     patient.visits[0];
 
+  // Auto-create visit when doctor opens EMR and there's a pending appointment
+  if (!activeVisit && user.role === "DOCTOR") {
+    const pendingAppointment = await prisma.appointment.findFirst({
+      where: {
+        patientId: patient.id,
+        doctorId: user.profileId,
+        status: { in: ["CONFIRMED", "REQUESTED", "SCHEDULED"] },
+        visit: null,
+      },
+      orderBy: { dateTime: "asc" },
+    });
+
+    if (pendingAppointment) {
+      // Race guard: check if visit was already created for this appointment
+      let visitId: string;
+      const existing = await prisma.visit.findUnique({
+        where: { appointmentId: pendingAppointment.id },
+        select: { id: true },
+      });
+      if (existing) {
+        visitId = existing.id;
+      } else {
+        const newVisit = await prisma.visit.create({
+          data: {
+            patientId: patient.id,
+            doctorId: user.profileId!,
+            hospitalId: pendingAppointment.hospitalId,
+            appointmentId: pendingAppointment.id,
+            visitType: (pendingAppointment as any).visitType ?? "General OPD",
+          },
+        });
+        if (patient.complaint) {
+          await prisma.generalExamination.create({
+            data: { visitId: newVisit.id, chiefComplaint: patient.complaint },
+          });
+        }
+        await prisma.appointment.update({
+          where: { id: pendingAppointment.id },
+          data: { status: "CONFIRMED" },
+        });
+        visitId = newVisit.id;
+      }
+      redirect(`/emr/${udid}?visit=${visitId}`);
+    }
+  }
+
   const priorVisits = patient.visits.filter((v) => v.id !== activeVisit?.id);
   const latestDiagnosis = patient.visits.flatMap((v) => v.diagnoses)[0];
 
@@ -109,11 +156,22 @@ export default async function PatientDetailedEMR({
           </span>
         )}
         {activeVisit?.status === "CLOSED" && (
-          <span className="text-xs font-medium text-amber-700 bg-amber-100 px-2 py-0.5 rounded-lg">
-            Read-only — Visit Closed
+          <span className="flex items-center gap-1.5 text-xs font-medium text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-lg">
+            <Lock size={11} /> Finalized &amp; Signed — Read-only
           </span>
         )}
       </div>
+
+      {/* Locked banner */}
+      {activeVisit?.status === "CLOSED" && user.role === "DOCTOR" && (
+        <div className="mb-4 px-4 py-3 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 text-sm text-amber-800">
+            <Lock size={14} className="shrink-0" />
+            <span>This consultation has been finalized and signed. Editing is disabled.</span>
+          </div>
+          <RequestUnlockButton />
+        </div>
+      )}
 
       {/* Patient info bar */}
       <div className="surface-card mb-5 py-3 px-4">
@@ -142,9 +200,12 @@ export default async function PatientDetailedEMR({
 
       {!activeVisit ? (
         <Card>
-          <p className="text-sm text-[var(--color-ink-400)] py-8 text-center">
-            No visit on record yet. Confirm an appointment to begin this patient&apos;s EMR.
-          </p>
+          <div className="flex flex-col items-center gap-4 py-10 text-center">
+            <p className="text-sm text-[var(--color-ink-400)]">No visit on record yet.</p>
+            <p className="text-xs text-[var(--color-ink-300)]">
+              Book and confirm an appointment to begin this patient&apos;s EMR.
+            </p>
+          </div>
         </Card>
       ) : (
         <>
@@ -237,7 +298,7 @@ export default async function PatientDetailedEMR({
             ]}
           />
 
-          {user.role === "DOCTOR" && <EmrActionBar visit={activeVisit} udid={udid} />}
+          {user.role === "DOCTOR" && <EmrActionBar visit={activeVisit} udid={udid} patientName={patient.name} />}
         </>
       )}
     </div>

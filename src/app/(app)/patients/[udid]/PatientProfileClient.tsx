@@ -5,7 +5,7 @@ import { format } from "date-fns";
 import Link from "next/link";
 import {
   X, ChevronRight, Hospital, Stethoscope, FileText,
-  CheckCircle2, Clock, AlertCircle, Filter,
+  CheckCircle2, Clock, AlertCircle, Filter, ClipboardCheck,
 } from "lucide-react";
 import { EmrViewerButton } from "./EmrViewerModal";
 
@@ -27,6 +27,14 @@ export type TodayVisit = {
   id: string;
   appointmentId: string | null;
 } | null;
+
+export type TimelineEntry = {
+  id: string;
+  action: string;
+  entityId: string;
+  completedBy: string | null;
+  completedAt: string;
+};
 
 /* ── Status badge ────────────────────────────────────────────────────────────── */
 function StatusBadge({ status }: { status: SerialVisit["status"] }) {
@@ -206,16 +214,21 @@ export function PatientProfileClient({
   udid,
   visits,
   todayVisit,
+  todayAppointmentId,
   userRole,
+  timelineEntries = [],
 }: {
   udid: string;
   visits: SerialVisit[];
   todayVisit: TodayVisit;
+  todayAppointmentId?: string | null;
   userRole: string;
+  timelineEntries?: TimelineEntry[];
 }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   const hasToday = todayVisit !== null;
+  const hasPendingAppointment = !hasToday && !!todayAppointmentId;
 
   return (
     <>
@@ -246,6 +259,14 @@ export function PatientProfileClient({
               <Stethoscope size={16} />
               Today's Visit
             </Link>
+          ) : hasPendingAppointment ? (
+            <Link
+              href={`/emr/${udid}`}
+              className="flex-1 flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-xl font-semibold text-sm bg-emerald-600 text-white hover:bg-emerald-700 transition-colors shadow-sm"
+            >
+              <Stethoscope size={16} />
+              Open EMR
+            </Link>
           ) : (
             <button
               disabled
@@ -257,6 +278,39 @@ export function PatientProfileClient({
           )
         ) : null}
       </div>
+
+      {/* ── Patient Timeline ─────────────────────────────────────────────── */}
+      {timelineEntries.length > 0 && (
+        <div className="mt-5 rounded-xl border border-[var(--color-border)] bg-white overflow-hidden">
+          <div className="px-4 py-3 border-b border-[var(--color-border)] flex items-center gap-2">
+            <ClipboardCheck size={14} className="text-[var(--color-primary-600)]" />
+            <p className="text-sm font-semibold text-[var(--color-ink-800)]">Consultation Timeline</p>
+          </div>
+          <ul className="divide-y divide-[var(--color-border)]">
+            {timelineEntries.map((entry) => (
+              <li key={entry.id} className="px-4 py-3 flex items-start gap-3">
+                <div className="mt-0.5 w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
+                  <CheckCircle2 size={13} className="text-emerald-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-[var(--color-ink-800)]">
+                    Consultation completed and signed
+                    {entry.completedBy && (
+                      <> by <span className="font-medium">Dr. {entry.completedBy}</span></>
+                    )}
+                  </p>
+                  <p className="text-xs text-[var(--color-ink-400)] mt-0.5">
+                    {format(new Date(entry.completedAt), "dd MMM yyyy, h:mm a")}
+                  </p>
+                  <p className="text-[10px] font-mono text-[var(--color-ink-300)] mt-0.5">
+                    Prescription generated
+                  </p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {/* ── Drawer ──────────────────────────────────────────────────────── */}
       <PreviousVisitsDrawer

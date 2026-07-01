@@ -162,10 +162,13 @@ model Appointment {
   hospital   Hospital          @relation(fields: [hospitalId], references: [id])
   dateTime   DateTime
   visitType  String            @default("General OPD")
-  status     String            @default("REQUESTED")
-  isWalkIn   Boolean           @default(false)
-  notes      String?
-  createdAt  DateTime          @default(now())
+  status             String   @default("REQUESTED")
+  consultationStatus String?  // FINALIZED | null
+  completedAt        DateTime?
+  completedBy        String?  // Doctor name
+  isWalkIn           Boolean  @default(false)
+  notes              String?
+  createdAt          DateTime @default(now())
 
   visit      Visit?
 
@@ -189,6 +192,8 @@ model Visit {
   date          DateTime @default(now())
   status        String   @default("IN_PROGRESS") // IN_PROGRESS | CLOSED
   visitType     String   @default("General OPD")
+  finalizedAt   DateTime?
+  finalizedBy   String?  // Doctor name at time of finalization
   sentToPharmacy Boolean @default(false)
   followUpDate   DateTime?
   referralEnabled Boolean @default(false)

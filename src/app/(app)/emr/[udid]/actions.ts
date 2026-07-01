@@ -19,6 +19,53 @@ function revalidate(udid: string) {
   revalidatePath(`/emr/${udid}`);
 }
 
+// ── Start Visit ─────────────────────────────────────────────────────────
+
+export async function startVisit(patientId: string, appointmentId: string, udid: string) {
+  const user = await requireRole("DOCTOR");
+
+  const appointment = await prisma.appointment.findUnique({
+    where: { id: appointmentId },
+    select: { id: true, doctorId: true, hospitalId: true, visitType: true, patientId: true },
+  });
+  if (!appointment) throw new Error("Appointment not found");
+  if (appointment.doctorId !== user.profileId) throw new Error("Forbidden");
+
+  // Prevent duplicate visit for same appointment
+  const existing = await prisma.visit.findUnique({ where: { appointmentId } });
+  if (existing) {
+    revalidate(udid);
+    return { visitId: existing.id };
+  }
+
+  const patient = await prisma.patient.findUnique({ where: { id: patientId } });
+
+  const visit = await prisma.visit.create({
+    data: {
+      patientId,
+      doctorId: user.profileId!,
+      hospitalId: appointment.hospitalId,
+      appointmentId,
+      visitType: appointment.visitType ?? "General OPD",
+    },
+  });
+
+  // Seed chief complaint if patient has one
+  if (patient?.complaint) {
+    await prisma.generalExamination.create({
+      data: { visitId: visit.id, chiefComplaint: patient.complaint },
+    });
+  }
+
+  await prisma.appointment.update({
+    where: { id: appointmentId },
+    data: { status: "CONFIRMED" },
+  });
+
+  revalidate(udid);
+  return { visitId: visit.id };
+}
+
 // ── General Examination ──────────────────────────────────────────────────
 
 export async function saveGeneralExam(visitId: string, udid: string, data: Record<string, any>) {
@@ -440,8 +487,62 @@ export async function saveFollowUp(visitId: string, udid: string, data: { follow
 }
 
 export async function closeVisit(visitId: string, udid: string) {
-  await requireRole("DOCTOR");
-  await prisma.visit.update({ where: { id: visitId }, data: { status: "CLOSED" } });
-  await prisma.appointment.updateMany({ where: { id: (await prisma.visit.findUnique({ where: { id: visitId } }))?.appointmentId ?? "" }, data: { status: "COMPLETED" } });
+  const user = await requireRole("DOCTOR");
+
+  const visit = await prisma.visit.findUnique({
+    where: { id: visitId },
+    include: { doctor: { select: { name: true } } },
+  });
+  if (!visit) throw new Error("Visit not found");
+
+  const now = new Date();
+
+  await prisma.visit.update({
+    where: { id: visitId },
+    data: { status: "CLOSED" },
+  });
+
+  // Resolve appointmentId — visits created via old flow may not have it linked
+  let appointmentId = visit.appointmentId;
+  if (!appointmentId) {
+    const fallback = await prisma.appointment.findFirst({
+      where: {
+        patientId: visit.patientId,
+        doctorId: visit.doctorId,
+        status: { in: ["REQUESTED", "CONFIRMED", "SCHEDULED"] },
+      },
+      orderBy: { dateTime: "desc" },
+      select: { id: true },
+    });
+    appointmentId = fallback?.id ?? null;
+    // Also link the appointment to this visit going forward
+    if (appointmentId) {
+      await prisma.visit.update({ where: { id: visitId }, data: { appointmentId } });
+    }
+  }
+
+  if (appointmentId) {
+    await prisma.appointment.update({
+      where: { id: appointmentId },
+      data: { status: "COMPLETED" },
+    });
+    const completedBy = visit.doctor?.name ?? user.name;
+    await prisma.$executeRaw`
+      UPDATE "Appointment"
+      SET "consultationStatus" = 'FINALIZED',
+          "completedAt"        = ${now},
+          "completedBy"        = ${completedBy}
+      WHERE id = ${appointmentId}
+    `;
+  }
+
+  await writeAudit(user.id, "Appointment", appointmentId ?? visitId, "FINALIZE_CONSULTATION", {
+    completedAt: now.toISOString(),
+    completedBy: visit.doctor?.name ?? user.name,
+    visitId,
+  });
+
   revalidate(udid);
+  revalidatePath("/appointments");
+  revalidatePath("/dashboard");
 }

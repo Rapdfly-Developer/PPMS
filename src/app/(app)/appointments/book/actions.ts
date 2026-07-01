@@ -45,7 +45,8 @@ export async function bookAppointment(formData: FormData) {
   }
 
   const dateTime = new Date(`${dateStr}T${timeStr}`);
-  const hospitalId = user.role === "HOSPITAL" ? user.hospitalId! : (formData.get("hospitalId") as string);
+  const hospitalId = user.role === "HOSPITAL" ? user.hospitalId! : (formData.get("hospitalId") as string | null);
+  if (!hospitalId) return { error: "Hospital is required." };
 
   let patientId: string;
 
@@ -100,6 +101,9 @@ export async function bookAppointment(formData: FormData) {
   });
   if (clash) return { error: "That time slot is already booked for this doctor. Please choose another time." };
 
+  // Doctor-booked appointments are auto-confirmed; hospital-booked non-walk-ins wait for confirmation
+  const status = user.role === "DOCTOR" ? "CONFIRMED" : isWalkIn ? "CONFIRMED" : "REQUESTED";
+
   await prisma.appointment.create({
     data: {
       patientId,
@@ -107,7 +111,7 @@ export async function bookAppointment(formData: FormData) {
       hospitalId,
       dateTime,
       visitType,
-      status: isWalkIn ? "CONFIRMED" : "REQUESTED",
+      status,
       isWalkIn,
       notes,
     },

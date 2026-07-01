@@ -3,11 +3,12 @@
 import { format } from "date-fns";
 import Link from "next/link";
 import { useState, useTransition } from "react";
-import { Phone, Stethoscope, Tag, FileText, CalendarPlus, CheckCircle2 } from "lucide-react";
+import { Phone, Stethoscope, Tag, FileText, CalendarPlus, CheckCircle2, Printer } from "lucide-react";
 import { hospitalUpdateAppointmentStatus, doctorUpdateAppointmentStatus } from "./actions";
 import { ScheduleNextSlotModal } from "./ScheduleNextSlotModal";
 
 const STATUS_STYLES: Record<string, string> = {
+  SCHEDULED:   "bg-[var(--color-primary-50)] text-[var(--color-primary-700)]",
   REQUESTED:   "bg-amber-100 text-amber-700",
   CONFIRMED:   "bg-blue-100 text-blue-700",
   RESCHEDULED: "bg-[var(--color-info-100)] text-[var(--color-info-600)]",
@@ -83,21 +84,42 @@ export function AppointmentRow({ appt, role, token }: { appt: any; role: string;
 
         {isCompleted && (
           <span className="flex items-center gap-1 text-[11px] font-medium text-[var(--color-success-600)] bg-[var(--color-success-100)] px-2 py-0.5 rounded-full">
-            <CheckCircle2 size={11} /> Consulted
+            <CheckCircle2 size={11} /> Finalized
           </span>
         )}
 
-        {role === "DOCTOR" && appt.visit && (
+        {/* COMPLETED: View EMR + View Prescription (both roles) */}
+        {isCompleted && appt.visit && (
+          <>
+            <Link
+              href={`/emr/${p.udid}?visit=${appt.visit.id}`}
+              className="text-xs font-medium px-2.5 py-1 rounded-lg bg-[var(--color-primary-50)] text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] transition-colors"
+            >
+              View EMR
+            </Link>
+            <a
+              href={`/api/prescription-pdf/${appt.visit.id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors"
+            >
+              <Printer size={11} /> Prescription
+            </a>
+          </>
+        )}
+
+        {/* DOCTOR: Open EMR for non-completed appointments */}
+        {role === "DOCTOR" && !isCompleted && (
           <Link
-            href={`/emr/${p.udid}?visit=${appt.visit.id}`}
+            href={appt.visit ? `/emr/${p.udid}?visit=${appt.visit.id}` : `/emr/${p.udid}`}
             className="text-xs font-medium px-2.5 py-1 rounded-lg bg-orange-100 text-orange-700 hover:bg-orange-500 hover:text-white transition-colors"
           >
             Open EMR
           </Link>
         )}
 
-        {/* Hospital: Confirm / Reject */}
-        {role === "HOSPITAL" && appt.status === "REQUESTED" && !appt.isWalkIn && (
+        {/* Hospital: Confirm / Reject — for both REQUESTED and SCHEDULED */}
+        {role === "HOSPITAL" && !isCompleted && (appt.status === "REQUESTED" || appt.status === "SCHEDULED") && !appt.isWalkIn && (
           <>
             <button
               disabled={pending}
@@ -117,7 +139,7 @@ export function AppointmentRow({ appt, role, token }: { appt: any; role: string;
         )}
 
         {/* Hospital: Walk-in confirmed — Schedule Next Slot */}
-        {role === "HOSPITAL" && appt.isWalkIn && appt.status === "CONFIRMED" && (
+        {role === "HOSPITAL" && !isCompleted && appt.isWalkIn && appt.status === "CONFIRMED" && (
           <>
             <button
               onClick={() => setShowSlotModal(true)}
@@ -137,7 +159,7 @@ export function AppointmentRow({ appt, role, token }: { appt: any; role: string;
         )}
 
         {/* Hospital: Cancel confirmed non-walk-in */}
-        {role === "HOSPITAL" && appt.status === "CONFIRMED" && !appt.isWalkIn && (
+        {role === "HOSPITAL" && !isCompleted && appt.status === "CONFIRMED" && !appt.isWalkIn && (
           <button
             disabled={pending}
             onClick={() => hospitalSetStatus("CANCELLED")}
