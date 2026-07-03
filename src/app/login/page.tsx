@@ -98,18 +98,18 @@ export default function LoginPage() {
               <path d="M35 18 Q37 15 39 18 Q41 21 38 23 Q36 21 35 18Z" fill="#157A73" />
             </svg>
             <div>
-              <p className="text-3xl font-black tracking-tight leading-none" style={{ color: "#0B3D3A" }}>PPMS</p>
+              <p className="text-3xl font-black tracking-tight leading-none" style={{ color: "#0F172A" }}>PPMS</p>
               <p className="text-xs font-medium mt-0.5" style={{ color: "#5C6E76" }}>Hospital Management System</p>
             </div>
           </div>
 
           {/* Headline */}
           <div className="mb-4">
-            <h1 className="text-4xl xl:text-5xl font-black leading-tight" style={{ color: "#14242B" }}>
+            <h1 className="text-4xl xl:text-5xl font-black leading-tight" style={{ color: "#0F172A" }}>
               Better{" "}
               <span style={{ color: "#157A73" }}>Healthcare.</span>
             </h1>
-            <h1 className="text-4xl xl:text-5xl font-black leading-tight" style={{ color: "#14242B" }}>
+            <h1 className="text-4xl xl:text-5xl font-black leading-tight" style={{ color: "#0F172A" }}>
               Better{" "}
               <span style={{ color: "#157A73" }}>Management.</span>
             </h1>
@@ -157,7 +157,7 @@ export default function LoginPage() {
                 <rect x="20" y="4" width="12" height="44" rx="5" fill="#157A73" />
                 <rect x="4" y="20" width="44" height="12" rx="5" fill="#157A73" />
               </svg>
-              <p className="text-2xl font-black tracking-tight" style={{ color: "#0B3D3A" }}>PPMS</p>
+              <p className="text-2xl font-black tracking-tight" style={{ color: "#0F172A" }}>PPMS</p>
             </div>
 
             {/* Header */}
@@ -174,7 +174,7 @@ export default function LoginPage() {
                 )}
               </div>
             </div>
-            <h2 className="text-2xl font-bold text-center mb-0.5" style={{ color: "#14242B" }}>Welcome Back</h2>
+            <h2 className="text-2xl font-bold text-center mb-0.5" style={{ color: "#0F172A" }}>Welcome Back</h2>
             <p className="text-sm text-center mb-5" style={{ color: "#8A9AA1" }}>Please sign in to your account</p>
 
             {/* ── Tab switcher ── */}
@@ -184,7 +184,7 @@ export default function LoginPage() {
                 onClick={() => switchTab("password")}
                 className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all"
                 style={tab === "password"
-                  ? { background: "#fff", color: "#14242B", boxShadow: "0 2px 8px rgba(11,61,58,0.10)" }
+                  ? { background: "#fff", color: "#0F172A", boxShadow: "0 2px 8px rgba(11,61,58,0.10)" }
                   : { background: "transparent", color: "#8A9AA1" }}
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
@@ -198,7 +198,7 @@ export default function LoginPage() {
                 onClick={() => switchTab("otp")}
                 className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all"
                 style={tab === "otp"
-                  ? { background: "#fff", color: "#14242B", boxShadow: "0 2px 8px rgba(11,61,58,0.10)" }
+                  ? { background: "#fff", color: "#0F172A", boxShadow: "0 2px 8px rgba(11,61,58,0.10)" }
                   : { background: "transparent", color: "#8A9AA1" }}
               >
                 <Phone size={14} />
@@ -241,7 +241,7 @@ export default function LoginPage() {
                       className="w-full pl-11 pr-4 py-3 text-sm rounded-xl border-2 outline-none transition-all"
                       style={{
                         borderColor: touched.username && fieldErrors.username ? "#B3261E" : "#E2E6E8",
-                        color: "#14242B", background: "#F9FAFA",
+                        color: "#0F172A", background: "#F9FAFA",
                         boxShadow: touched.username && fieldErrors.username ? "0 0 0 3px rgba(179,38,30,0.08)" : "none",
                       }}
                       onFocus={e => {
@@ -286,7 +286,7 @@ export default function LoginPage() {
                       className="w-full pl-11 pr-11 py-3 text-sm rounded-xl border-2 outline-none transition-all"
                       style={{
                         borderColor: touched.password && fieldErrors.password ? "#B3261E" : "#E2E6E8",
-                        color: "#14242B", background: "#F9FAFA",
+                        color: "#0F172A", background: "#F9FAFA",
                         boxShadow: touched.password && fieldErrors.password ? "0 0 0 3px rgba(179,38,30,0.08)" : "none",
                       }}
                       onFocus={e => {
@@ -356,7 +356,7 @@ export default function LoginPage() {
                       className="flex-1 px-4 py-3 text-sm rounded-xl border-2 outline-none transition-all"
                       style={{
                         borderColor: otpTouched.mobile && otpErrors.mobile ? "#B3261E" : "#E2E6E8",
-                        color: "#14242B", background: "#F9FAFA",
+                        color: "#0F172A", background: "#F9FAFA",
                         boxShadow: otpTouched.mobile && otpErrors.mobile ? "0 0 0 3px rgba(179,38,30,0.08)" : "none",
                       }}
                       onFocus={e => {
@@ -407,7 +407,7 @@ export default function LoginPage() {
                       className="w-full px-4 py-3 text-sm rounded-xl border-2 outline-none transition-all tracking-widest font-mono"
                       style={{
                         borderColor: otpTouched.otp && otpErrors.otp ? "#B3261E" : "#E2E6E8",
-                        color: "#14242B", background: "#F9FAFA",
+                        color: "#0F172A", background: "#F9FAFA",
                         boxShadow: otpTouched.otp && otpErrors.otp ? "0 0 0 3px rgba(179,38,30,0.08)" : "none",
                       }}
                       onFocus={e => {
@@ -439,7 +439,7 @@ export default function LoginPage() {
                   className="w-full py-3.5 rounded-2xl text-white font-bold text-sm transition-all mt-1"
                   style={otpSent && otpValue.length >= 6
                     ? { background: "#157A73", boxShadow: "0 4px 14px rgba(21,122,115,0.4)" }
-                    : { background: "#B8C5CB", cursor: "not-allowed" }}
+                    : { background: "#8A9AA1", cursor: "not-allowed" }}
                 >
                   Verify & Sign In
                 </button>
@@ -473,8 +473,8 @@ function HospitalBackground() {
     >
       <defs>
         <linearGradient id="bgBase" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#e8f7f4" />
-          <stop offset="60%" stopColor="#d4efe9" />
+          <stop offset="0%" stopColor="#e8f5f2" />
+          <stop offset="60%" stopColor="#d0ede8" />
           <stop offset="100%" stopColor="#b8e2da" />
         </linearGradient>
         <linearGradient id="ceiling" x1="0" y1="0" x2="0" y2="1">
@@ -483,25 +483,25 @@ function HospitalBackground() {
         </linearGradient>
         <linearGradient id="floor" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="#c8e8e3" />
-          <stop offset="100%" stopColor="#a8d4ce" />
+          <stop offset="100%" stopColor="#a8ceca" />
         </linearGradient>
         <linearGradient id="wall" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#e4f4f0" />
-          <stop offset="100%" stopColor="#ceeae4" />
+          <stop offset="0%" stopColor="#ddf2ee" />
+          <stop offset="100%" stopColor="#c8e8e3" />
         </linearGradient>
         <linearGradient id="window1" x1="0" y1="0" x2="1" y2="1">
           <stop offset="0%" stopColor="#ffffff" stopOpacity="0.9"/>
-          <stop offset="50%" stopColor="#d4efe9" stopOpacity="0.7"/>
-          <stop offset="100%" stopColor="#a8d8d0" stopOpacity="0.5"/>
+          <stop offset="50%" stopColor="#d0ede8" stopOpacity="0.7"/>
+          <stop offset="100%" stopColor="#a8ceca" stopOpacity="0.5"/>
         </linearGradient>
         <linearGradient id="window2" x1="0" y1="0" x2="1" y2="1">
           <stop offset="0%" stopColor="#ffffff" stopOpacity="0.85"/>
           <stop offset="100%" stopColor="#c0e4de" stopOpacity="0.6"/>
         </linearGradient>
         <linearGradient id="corridor" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stopColor="#b0d8d0" stopOpacity="0.3"/>
-          <stop offset="50%" stopColor="#d8f0ec" stopOpacity="0.1"/>
-          <stop offset="100%" stopColor="#b0d8d0" stopOpacity="0.3"/>
+          <stop offset="0%" stopColor="#a8ceca" stopOpacity="0.3"/>
+          <stop offset="50%" stopColor="#d0ede8" stopOpacity="0.1"/>
+          <stop offset="100%" stopColor="#a8ceca" stopOpacity="0.3"/>
         </linearGradient>
         <filter id="blur4">
           <feGaussianBlur stdDeviation="4" />
@@ -542,7 +542,7 @@ function HospitalBackground() {
       <rect y="160" width="1280" height="450" fill="url(#wall)" />
 
       {/* Corridor perspective lines */}
-      <line x1="0" y1="160" x2="1280" y2="160" stroke="#a8d4ce" strokeWidth="2" opacity="0.5" />
+      <line x1="0" y1="160" x2="1280" y2="160" stroke="#a8ceca" strokeWidth="2" opacity="0.5" />
       <line x1="0" y1="610" x2="1280" y2="610" stroke="#88c4bc" strokeWidth="2" opacity="0.5" />
 
       {/* Floor */}
@@ -550,15 +550,15 @@ function HospitalBackground() {
 
       {/* Floor tiles */}
       {Array.from({ length: 11 }).map((_, i) => (
-        <rect key={`ft-${i}`} x={i * 128} y={610} width="126" height="190" fill="none" stroke="#90c0b8" strokeWidth="0.8" opacity="0.5" />
+        <rect key={`ft-${i}`} x={i * 128} y={610} width="126" height="190" fill="none" stroke="#a8ceca" strokeWidth="0.8" opacity="0.5" />
       ))}
       {Array.from({ length: 4 }).map((_, i) => (
-        <line key={`fl-${i}`} x1={0} y1={610 + i * 46} x2={1280} y2={610 + i * 46} stroke="#90c0b8" strokeWidth="0.5" opacity="0.4" />
+        <line key={`fl-${i}`} x1={0} y1={610 + i * 46} x2={1280} y2={610 + i * 46} stroke="#a8ceca" strokeWidth="0.5" opacity="0.4" />
       ))}
 
       {/* ── Large windows LEFT wall ── */}
       {/* Window frame outer */}
-      <rect x="30" y="180" width="200" height="380" rx="4" fill="#c0deda" opacity="0.4" />
+      <rect x="30" y="180" width="200" height="380" rx="4" fill="#c8e8e3" opacity="0.4" />
       <rect x="36" y="186" width="188" height="368" rx="3" fill="url(#window1)" />
       {/* Window mullions */}
       <rect x="128" y="186" width="4" height="368" fill="#a8ceca" opacity="0.7" />
@@ -573,7 +573,7 @@ function HospitalBackground() {
       <ellipse cx="140" cy="310" rx="25" ry="30" fill="#70b8ae" opacity="0.12" />
 
       {/* Second window LEFT */}
-      <rect x="260" y="200" width="160" height="340" rx="4" fill="#c0deda" opacity="0.3" />
+      <rect x="260" y="200" width="160" height="340" rx="4" fill="#c8e8e3" opacity="0.3" />
       <rect x="266" y="206" width="148" height="328" rx="3" fill="url(#window2)" />
       <rect x="338" y="206" width="3" height="328" fill="#a8ceca" opacity="0.5" />
       <rect x="266" y="368" width="148" height="3" fill="#a8ceca" opacity="0.5" />
@@ -585,53 +585,53 @@ function HospitalBackground() {
 
       {/* ── Medical equipment silhouettes ── */}
       {/* IV stand right side */}
-      <rect x="1180" y="280" width="6" height="280" rx="2" fill="#88b8b4" opacity="0.5" />
-      <rect x="1160" y="278" width="46" height="6" rx="2" fill="#88b8b4" opacity="0.5" />
-      <rect x="1176" y="550" width="28" height="8" rx="3" fill="#88b8b4" opacity="0.5" />
+      <rect x="1180" y="280" width="6" height="280" rx="2" fill="#a8ceca" opacity="0.5" />
+      <rect x="1160" y="278" width="46" height="6" rx="2" fill="#a8ceca" opacity="0.5" />
+      <rect x="1176" y="550" width="28" height="8" rx="3" fill="#a8ceca" opacity="0.5" />
       {/* IV bag */}
-      <rect x="1172" y="240" width="20" height="36" rx="6" fill="#a8d4d0" opacity="0.6" />
-      <rect x="1180" y="276" width="4" height="8" fill="#88b8b4" opacity="0.5" />
+      <rect x="1172" y="240" width="20" height="36" rx="6" fill="#a8ceca" opacity="0.6" />
+      <rect x="1180" y="276" width="4" height="8" fill="#a8ceca" opacity="0.5" />
 
       {/* Wheelchair silhouette far right */}
       <g opacity="0.3">
-        <circle cx="1220" cy="560" r="22" stroke="#68a09a" strokeWidth="3" fill="none" />
-        <circle cx="1180" cy="560" r="16" stroke="#68a09a" strokeWidth="3" fill="none" />
-        <rect x="1178" y="510" width="48" height="28" rx="4" fill="#88b8b4" />
-        <rect x="1190" y="500" width="24" height="14" rx="3" fill="#88b8b4" />
-        <line x1="1178" y1="538" x2="1162" y2="558" stroke="#68a09a" strokeWidth="3" strokeLinecap="round" />
-        <line x1="1226" y1="538" x2="1242" y2="558" stroke="#68a09a" strokeWidth="3" strokeLinecap="round" />
+        <circle cx="1220" cy="560" r="22" stroke="#88c8be" strokeWidth="3" fill="none" />
+        <circle cx="1180" cy="560" r="16" stroke="#88c8be" strokeWidth="3" fill="none" />
+        <rect x="1178" y="510" width="48" height="28" rx="4" fill="#a8ceca" />
+        <rect x="1190" y="500" width="24" height="14" rx="3" fill="#a8ceca" />
+        <line x1="1178" y1="538" x2="1162" y2="558" stroke="#88c8be" strokeWidth="3" strokeLinecap="round" />
+        <line x1="1226" y1="538" x2="1242" y2="558" stroke="#88c8be" strokeWidth="3" strokeLinecap="round" />
       </g>
 
       {/* Nurse station desk far background */}
       <rect x="540" y="430" width="220" height="80" rx="4" fill="#a8ceca" opacity="0.25" />
-      <rect x="560" y="420" width="180" height="14" rx="3" fill="#98beba" opacity="0.3" />
+      <rect x="560" y="420" width="180" height="14" rx="3" fill="#a8ceca" opacity="0.3" />
       {/* Computer monitor on desk */}
-      <rect x="610" y="390" width="60" height="38" rx="3" fill="#88aeaa" opacity="0.2" />
-      <rect x="634" y="428" width="12" height="6" fill="#88aeaa" opacity="0.2" />
+      <rect x="610" y="390" width="60" height="38" rx="3" fill="#a8ceca" opacity="0.2" />
+      <rect x="634" y="428" width="12" height="6" fill="#a8ceca" opacity="0.2" />
 
       {/* Plant by the wall */}
-      <rect x="400" y="550" width="10" height="60" rx="2" fill="#6a9e96" opacity="0.35" />
-      <ellipse cx="405" cy="545" rx="20" ry="24" fill="#4a8880" opacity="0.3" />
-      <ellipse cx="390" cy="555" rx="14" ry="16" fill="#3d7872" opacity="0.25" />
-      <rect x="395" y="600" width="20" height="10" rx="3" fill="#8aaeaa" opacity="0.35" />
+      <rect x="400" y="550" width="10" height="60" rx="2" fill="#88c8be" opacity="0.35" />
+      <ellipse cx="405" cy="545" rx="20" ry="24" fill="#70b8ae" opacity="0.3" />
+      <ellipse cx="390" cy="555" rx="14" ry="16" fill="#157A73" opacity="0.25" />
+      <rect x="395" y="600" width="20" height="10" rx="3" fill="#a8ceca" opacity="0.35" />
 
       {/* Second plant */}
-      <rect x="860" y="555" width="9" height="55" rx="2" fill="#6a9e96" opacity="0.3" />
-      <ellipse cx="864" cy="549" rx="18" ry="22" fill="#4a8880" opacity="0.25" />
-      <rect x="856" y="604" width="18" height="8" rx="3" fill="#8aaeaa" opacity="0.3" />
+      <rect x="860" y="555" width="9" height="55" rx="2" fill="#88c8be" opacity="0.3" />
+      <ellipse cx="864" cy="549" rx="18" ry="22" fill="#70b8ae" opacity="0.25" />
+      <rect x="856" y="604" width="18" height="8" rx="3" fill="#a8ceca" opacity="0.3" />
 
       {/* ── Right wall windows (behind card area) ── */}
-      <rect x="820" y="175" width="180" height="370" rx="4" fill="#c0deda" opacity="0.2" />
+      <rect x="820" y="175" width="180" height="370" rx="4" fill="#c8e8e3" opacity="0.2" />
       <rect x="826" y="181" width="168" height="358" rx="3" fill="url(#window2)" opacity="0.5" />
       <rect x="908" y="181" width="3" height="358" fill="#a8ceca" opacity="0.3" />
       <rect x="826" y="362" width="168" height="3" fill="#a8ceca" opacity="0.3" />
 
-      <rect x="1020" y="190" width="160" height="345" rx="4" fill="#c0deda" opacity="0.2" />
+      <rect x="1020" y="190" width="160" height="345" rx="4" fill="#c8e8e3" opacity="0.2" />
       <rect x="1026" y="196" width="148" height="333" rx="3" fill="url(#window1)" opacity="0.45" />
       <rect x="1098" y="196" width="3" height="333" fill="#a8ceca" opacity="0.3" />
 
       {/* Baseboard */}
-      <rect y="598" width="1280" height="16" rx="0" fill="#98c4be" opacity="0.5" />
+      <rect y="598" width="1280" height="16" rx="0" fill="#a8ceca" opacity="0.5" />
 
       {/* Subtle vignette */}
       <rect width="1280" height="800" fill="url(#bgBase)" opacity="0.08" />

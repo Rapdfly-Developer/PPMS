@@ -72,7 +72,7 @@ export default async function HistoryPage({
 
   const label     = dayLabel(selectedDate);
   const dateFormatted = format(new Date(selectedDate), "dd MMM yyyy");
-  const STATUSES  = ["COMPLETED", "CONFIRMED", "REQUESTED", "CANCELLED", "NO_SHOW", "RESCHEDULED"];
+  const STATUSES  = ["DISPENSED", "CONFIRMED", "REQUESTED", "CANCELLED", "NO_SHOW", "RESCHEDULED"];
   const hasFilters = q || status || hospitalId || date;
 
   return (

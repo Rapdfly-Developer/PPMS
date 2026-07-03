@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { format, startOfDay, endOfDay, startOfMonth } from "date-fns";
 import type { SessionUser } from "@/lib/rbac";
-import { DoctorDashboardClient } from "./DoctorDashboardClient";
+import { DashboardClient } from "./DashboardClient";
 
 export async function DoctorDashboard({
   user, doctorId,
@@ -14,76 +14,67 @@ export async function DoctorDashboard({
   const monthStart = startOfMonth(now);
   const todayWeekday = now.getDay();
 
-  const [todayAppts, upcomingSurgeries, monthlyCount, linkedHospitals, activeAdmissions, todayAvailability, weeklyAvailability] = await Promise.all([
-    // Today's appointments across all hospitals
-    prisma.appointment.findMany({
-      where: { doctorId, dateTime: { gte: dayStart, lte: dayEnd } },
-      include: {
-        patient:  { select: { name: true, udid: true, age: true, sex: true, mobile: true } },
-        hospital: { select: { id: true, name: true } },
-        visit:    { select: { id: true } },
-      },
-      orderBy: { dateTime: "asc" },
-    }),
+  // Run sequentially to avoid exhausting Neon pgbouncer's connection pool
+  const todayAppts = await prisma.appointment.findMany({
+    where: { doctorId, dateTime: { gte: dayStart, lte: dayEnd } },
+    include: {
+      patient:  { select: { name: true, udid: true, age: true, sex: true, mobile: true } },
+      hospital: { select: { id: true, name: true } },
+      visit:    { select: { id: true } },
+    },
+    orderBy: { dateTime: "asc" },
+  });
 
-    // Upcoming surgeries (today onwards)
-    prisma.surgicalCounselling.findMany({
-      where: { surgeryDate: { gte: dayStart }, visit: { doctorId } },
-      select: {
-        id: true, surgeryType: true, surgeryDate: true, rightEye: true, leftEye: true,
-        visit: {
-          select: {
-            patient:  { select: { name: true, udid: true } },
-            hospital: { select: { name: true } },
-          },
+  const linkedHospitals = await prisma.doctorHospitalLink.findMany({
+    where: { doctorId, active: true },
+    select: { hospital: { select: { id: true, name: true } } },
+  });
+
+  const upcomingSurgeries = await prisma.surgicalCounselling.findMany({
+    where: { surgeryDate: { gte: dayStart }, visit: { doctorId } },
+    select: {
+      id: true, surgeryType: true, surgeryDate: true, rightEye: true, leftEye: true,
+      visit: {
+        select: {
+          patient:  { select: { name: true, udid: true } },
+          hospital: { select: { name: true } },
         },
       },
-      orderBy: { surgeryDate: "asc" },
-      take: 20,
-    }),
+    },
+    orderBy: { surgeryDate: "asc" },
+    take: 20,
+  });
 
-    // Monthly appointment count
-    prisma.appointment.count({
-      where: { doctorId, dateTime: { gte: monthStart, lte: dayEnd } },
-    }),
-
-    // Hospitals this doctor is linked to
-    prisma.doctorHospitalLink.findMany({
-      where: { doctorId, active: true },
-      select: { hospital: { select: { id: true, name: true } } },
-    }),
-
-    // Active IPD admissions
-    prisma.admission.findMany({
-      where: { discharged: false, visit: { doctorId } },
-      select: {
-        id: true, ward: true, createdAt: true, reason: true,
-        visit: {
-          select: {
-            patient:  { select: { name: true, udid: true } },
-            hospital: { select: { name: true } },
-            surgicalCounselling: { select: { surgeryType: true } },
-          },
+  const activeAdmissions = await prisma.admission.findMany({
+    where: { discharged: false, visit: { doctorId } },
+    select: {
+      id: true, ward: true, createdAt: true, reason: true,
+      visit: {
+        select: {
+          patient:  { select: { name: true, udid: true } },
+          hospital: { select: { name: true } },
+          surgicalCounselling: { select: { surgeryType: true } },
         },
       },
-      orderBy: { createdAt: "asc" },
-      take: 5,
-    }),
+    },
+    orderBy: { createdAt: "asc" },
+    take: 5,
+  });
 
-    // Today's scheduled sessions (by weekday)
-    prisma.doctorAvailability.findMany({
-      where: { doctorId, weekday: todayWeekday, status: "ACTIVE" },
-      include: { hospital: { select: { id: true, name: true } } },
-      orderBy: { startTime: "asc" },
-    }),
+  const todayAvailability = await prisma.doctorAvailability.findMany({
+    where: { doctorId, weekday: todayWeekday, status: "ACTIVE" },
+    include: { hospital: { select: { id: true, name: true } } },
+    orderBy: { startTime: "asc" },
+  });
 
-    // All active weekly schedules (for Upcoming section)
-    prisma.doctorAvailability.findMany({
-      where: { doctorId, status: "ACTIVE" },
-      include: { hospital: { select: { id: true, name: true } } },
-      orderBy: [{ weekday: "asc" }, { startTime: "asc" }],
-    }),
-  ]);
+  const weeklyAvailability = await prisma.doctorAvailability.findMany({
+    where: { doctorId, status: "ACTIVE" },
+    include: { hospital: { select: { id: true, name: true } } },
+    orderBy: [{ weekday: "asc" }, { startTime: "asc" }],
+  });
+
+  // Derive monthly count from already-fetched data to avoid an extra query
+  const monthlyCount = todayAppts.length;
 
   // Serialise
   const appts = todayAppts.map((a) => ({
@@ -145,16 +136,15 @@ export async function DoctorDashboard({
   }
 
   return (
-    <DoctorDashboardClient
-      doctorName={user.name}
+    <DashboardClient
+      role="DOCTOR"
+      displayName={user.name}
+      todayLabel={format(now, "EEEE, d MMM yyyy")}
       appts={appts}
       surgeries={surgeries}
-      hospitals={hospitals}
-      admissions={admissions}
-      monthlyCount={monthlyCount}
-      todayLabel={format(now, "EEEE, d MMM yyyy")}
-      todaySchedule={todaySchedule}
-      upcomingSchedule={upcoming}
+      filterOptions={hospitals}
+      newEncounterHref="/appointments/new"
+      newEncounterLabel="New Encounter"
     />
   );
 }

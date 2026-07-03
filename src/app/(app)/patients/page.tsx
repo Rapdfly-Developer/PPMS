@@ -16,6 +16,7 @@ export default async function PatientsPage({
   const categoryFilter = sp.category  ?? "";
   const sexFilter      = sp.sex       ?? "";
   const hospitalFilter = sp.hospital  ?? "";
+  const opStatusFilter = sp.opStatus  ?? "";
   const sortBy         = sp.sort      ?? "newest";
   const registered     = sp.registered ?? "";
   const page     = Math.max(1, parseInt(sp.page ?? "1", 10) || 1);
@@ -59,6 +60,9 @@ export default async function PatientsPage({
   if (categoryFilter) listConds.push({ category: categoryFilter });
   if (sexFilter)      listConds.push({ sex: sexFilter });
   if (hospitalFilter) listConds.push({ registeredAtId: hospitalFilter });
+  if (opStatusFilter === "surgery")    listConds.push({ visits: { some: { surgicalCounselling: { isNot: null } } } });
+  if (opStatusFilter === "admitted")   listConds.push({ visits: { some: { admission: { discharged: false } } } });
+  if (opStatusFilter === "discharged") listConds.push({ visits: { some: { admission: { discharged: true  } } } });
 
   const listWhere: any = listConds.length > 0 ? { AND: listConds } : {};
   const orderBy: any   =
@@ -88,7 +92,11 @@ export default async function PatientsPage({
       orderBy,
       include: {
         registeredAt: { select: { name: true } },
-        visits: { orderBy: { date: "desc" }, take: 1, select: { date: true } },
+        visits: {
+          orderBy: { date: "desc" },
+          take: 1,
+          select: { date: true, generalExam: { select: { chiefComplaint: true } } },
+        },
       },
       skip:    (page - 1) * pageSize,
       take:    pageSize,
@@ -145,9 +153,10 @@ export default async function PatientsPage({
     sex:          p.sex,
     mobile:       p.mobile,
     category:     p.category,
-    createdAt:    p.createdAt.toISOString(),
-    hospitalName: p.registeredAt?.name ?? null,
-    lastVisit:    p.visits[0]?.date.toISOString() ?? null,
+    createdAt:     p.createdAt.toISOString(),
+    hospitalName:  p.registeredAt?.name ?? null,
+    lastVisit:     p.visits[0]?.date.toISOString() ?? null,
+    chiefComplaint: p.visits[0]?.generalExam?.chiefComplaint ?? null,
   }));
 
   const recentSerialized = recentReg.map(p => ({
@@ -177,6 +186,7 @@ export default async function PatientsPage({
         categoryFilter={categoryFilter}
         sexFilter={sexFilter}
         hospitalFilter={hospitalFilter}
+        opStatusFilter={opStatusFilter}
         doctorHospitals={doctorHospitals}
         sortBy={sortBy}
         isHospital={isHospital}

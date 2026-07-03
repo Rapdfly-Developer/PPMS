@@ -14,6 +14,7 @@ import { AssessmentTab } from "./AssessmentTab";
 import { PlanTab } from "./PlanTab";
 import { EmrActionBar } from "./EmrActionBar";
 import { RequestUnlockButton } from "./RequestUnlockButton";
+import { PrintHeader, PrintFooter } from "@/components/ui/PrintLayout";
 
 export default async function PatientDetailedEMR({
   params,
@@ -142,10 +143,25 @@ export default async function PatientDetailedEMR({
     : false;
   const readOnly = user.role !== "DOCTOR" || (activeVisit?.status === "CLOSED" && !isVisitFromToday);
 
+  const hospital = activeVisit?.hospital;
+  const doctorName = patient.doctor?.name;
+
   return (
     <div className="fade-in pb-24">
+      <PrintHeader
+        hospitalName={hospital?.name}
+        hospitalAddress={hospital?.address ?? undefined}
+        hospitalContact={hospital?.contact ?? undefined}
+        doctorName={doctorName}
+        patientName={patient.name}
+        patientUdid={patient.udid}
+        patientAge={patient.age}
+        patientSex={patient.sex}
+        visitDate={activeVisit?.date}
+        visitType={activeVisit?.visitType}
+      />
       {/* Header bar */}
-      <div className="flex items-center gap-2 mb-3 flex-wrap">
+      <div className="flex items-center gap-2 mb-3 flex-wrap no-print">
         <Link
           href={user.role === "REFRACTIONIST" ? "/queue" : "/emr"}
           className="inline-flex items-center gap-1.5 text-sm text-[var(--color-ink-500)] hover:text-[var(--color-primary-700)]"
@@ -316,9 +332,17 @@ export default async function PatientDetailedEMR({
             ]}
           />
 
-          {user.role === "DOCTOR" && <EmrActionBar visit={activeVisit} udid={udid} patientName={patient.name} />}
+          {user.role === "DOCTOR" && (
+            <div className="no-print">
+              <EmrActionBar visit={activeVisit} udid={udid} patientName={patient.name} />
+            </div>
+          )}
         </>
       )}
+      <PrintFooter
+        hospitalName={hospital?.name}
+        doctorName={doctorName}
+      />
     </div>
   );
 }

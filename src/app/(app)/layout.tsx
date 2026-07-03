@@ -16,16 +16,16 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <div className="min-h-screen flex">
       <IdleTimeout />
-      <Sidebar role={user.role} name={user.name} permissions={permissions} />
+      <div className="contents no-print"><Sidebar role={user.role} name={user.name} permissions={permissions} /></div>
       <div className="flex-1 min-w-0 flex flex-col">
-        <TopBar name={user.name} role={user.role} />
-        <main className="flex-1 bg-[var(--color-bg)] overflow-auto">
+        <div className="contents no-print"><TopBar name={user.name} role={user.role} /></div>
+        <main className="flex-1 bg-[var(--color-bg)] overflow-auto" data-main-content>
           <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-5 lg:py-7 pb-24 lg:pb-7">
             {children}
           </div>
         </main>
       </div>
-      <MobileNav role={user.role} permissions={permissions} />
+      <div className="contents no-print"><MobileNav role={user.role} permissions={permissions} /></div>
     </div>
   );
 }

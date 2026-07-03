@@ -1,409 +1,469 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useMemo, useEffect, useTransition } from "react";
 import { format } from "date-fns";
 import Link from "next/link";
-import { Search, X, Bell, Activity, Clock, User, CheckCircle2, AlertCircle, CalendarPlus } from "lucide-react";
+import { useRouter } from "next/navigation";
+import {
+  ChevronDown, Plus, Building2, Phone, LogIn, Loader2,
+  Sun, Sunset, Moon, ClipboardList,
+} from "lucide-react";
+import clsx from "clsx";
+import { doctorConfirmAppointment } from "@/app/(app)/appointments/actions";
 
 /* ── Types ─────────────────────────────────────────────────────────────── */
-
-export interface ScheduleAppt {
-  id:        string;
-  dateTime:  string;
-  status:    string;
-  isWalkIn:  boolean;
+interface Appt {
+  id: string;
+  dateTime: string;
+  status: string;
   visitType: string;
-  patient:   { name: string; udid: string; age: number; sex: string; mobile: string };
-  doctor:    { name: string; specialty: string } | null;
+  patient: { name: string; udid: string; age: number; sex: string; mobile?: string };
+  hospital?: { id: string; name: string };
+  doctor?:   { id: string; name: string } | null;
+  visitId:   string | null;
 }
 
-export interface TrendPoint {
-  label: string;   // "Mon", "Tue", etc.
-  date:  string;
-  count: number;
+interface Surgery {
+  id: string;
+  surgeryType: string;
+  surgeryDate: string;
+  rightEye: boolean;
+  leftEye: boolean;
+  patient:  { name: string; udid: string };
+  hospital?: { name: string } | null;
+  doctor?:   { name: string } | null;
 }
 
-export interface StatusPoint {
-  label: string;
-  count: number;
-  bar:   string;   // Tailwind bg class
-  dot:   string;   // Tailwind bg class
+export interface DashboardProps {
+  role:              "DOCTOR" | "HOSPITAL";
+  displayName:       string;   // doctor's name or hospital name
+  todayLabel:        string;
+  appts:             Appt[];
+  surgeries:         Surgery[];
+  filterOptions:     { id: string; name: string }[];  // hospitals for DOCTOR, doctors for HOSPITAL
+  newEncounterHref:  string;
+  newEncounterLabel: string;
 }
 
-export interface PendingNotif {
-  id:          string;
-  patientName: string;
-  udid:        string;
-  dateTime:    string;
-  visitType:   string;
-}
-
-interface Props {
-  todayAppts:   ScheduleAppt[];
-  trend:        TrendPoint[];
-  statusDist:   StatusPoint[];
-  pending:      PendingNotif[];
-  newToday:     number;
-  totalPatients: number;
-}
-
-/* ── Status label map ───────────────────────────────────────────────────── */
-
-const STATUS: Record<string, { cls: string; label: string }> = {
-  REQUESTED:   { cls: "bg-amber-100 text-amber-700",     label: "Requested"   },
-  CONFIRMED:   { cls: "bg-emerald-100 text-emerald-700", label: "Confirmed"   },
-  COMPLETED:   { cls: "bg-slate-100 text-slate-600",     label: "Completed"   },
-  CANCELLED:   { cls: "bg-red-100 text-red-700",         label: "Cancelled"   },
-  NO_SHOW:     { cls: "bg-red-100 text-red-500",         label: "No Show"     },
-  RESCHEDULED: { cls: "bg-blue-100 text-blue-700",       label: "Rescheduled" },
+/* ── Status config ──────────────────────────────────────────────────────── */
+const STATUS_CFG: Record<string, { label: string; color: string; dot: string }> = {
+  REQUESTED:   { label: "Scheduled",   color: "bg-blue-100 text-blue-700",    dot: "bg-blue-500"   },
+  CONFIRMED:   { label: "Waiting",     color: "bg-amber-100 text-amber-700",  dot: "bg-amber-500"  },
+  DISPENSED:   { label: "Dispensed",   color: "bg-green-100 text-green-700",  dot: "bg-green-500"  },
+  CANCELLED:   { label: "Cancelled",   color: "bg-red-100 text-red-600",      dot: "bg-red-500"    },
+  NO_SHOW:     { label: "No Show",     color: "bg-gray-100 text-gray-500",    dot: "bg-gray-400"   },
+  RESCHEDULED: { label: "Rescheduled", color: "bg-purple-100 text-purple-700",dot: "bg-purple-500" },
 };
 
-/* ══════════════════════════════════════════════════════════════════════════
-   Schedule Table
-══════════════════════════════════════════════════════════════════════════ */
+const STATUS_FILTERS = [
+  { key: "ALL",       label: "All"       },
+  { key: "CONFIRMED", label: "Waiting"   },
+  { key: "DISPENSED", label: "Dispensed" },
+  { key: "CANCELLED", label: "Cancelled" },
+  { key: "NO_SHOW",   label: "No Show"   },
+] as const;
 
-export function DashboardSchedule({ appointments }: { appointments: ScheduleAppt[] }) {
-  const [q,  setQ]  = useState("");
-  const [st, setSt] = useState("ALL");
-
-  const rows = appointments.filter((a) => {
-    const ql = q.toLowerCase();
-    return (
-      (!ql || a.patient.name.toLowerCase().includes(ql) || a.patient.udid.toLowerCase().includes(ql) || a.patient.mobile.includes(ql)) &&
-      (st === "ALL" || a.status === st)
-    );
-  });
-
+/* ── Surgery row ───────────────────────────────────────────────────────── */
+function SurgeryRow({ s, role }: { s: Surgery; role: "DOCTOR" | "HOSPITAL" }) {
+  const subLabel = role === "DOCTOR"
+    ? (s.hospital?.name ?? null)
+    : (s.doctor ? `Dr. ${s.doctor.name}` : null);
   return (
-    <div>
-      {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-3 mb-4">
-        <div className="relative flex-1 min-w-[180px]">
-          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)]" />
-          <input
-            type="text" value={q} onChange={(e) => setQ(e.target.value)}
-            placeholder="Search name, UHID or phone…"
-            className="w-full pl-9 pr-8 py-2 text-sm rounded-xl border border-[var(--color-border)] bg-white focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)]"
-          />
-          {q && (
-            <button onClick={() => setQ("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-300)] hover:text-[var(--color-ink-600)]">
-              <X size={12} />
-            </button>
-          )}
-        </div>
-        <select
-          value={st} onChange={(e) => setSt(e.target.value)}
-          className="border border-[var(--color-border)] bg-white rounded-xl px-3 py-2 text-sm text-[var(--color-ink-700)] focus:outline-none"
-        >
-          <option value="ALL">All Status</option>
-          {Object.entries(STATUS).map(([v, { label }]) => <option key={v} value={v}>{label}</option>)}
-        </select>
-        <span className="text-xs text-[var(--color-ink-400)] ml-auto">{rows.length} shown</span>
+    <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-[var(--color-border)] bg-white">
+      <div className="w-20 shrink-0 text-center">
+        <p className="text-xs font-bold text-[var(--color-ink-900)]">{format(new Date(s.surgeryDate), "d MMM")}</p>
+        <p className="text-[10px] text-[var(--color-ink-400)]">{format(new Date(s.surgeryDate), "hh:mm a")}</p>
       </div>
-
-      {/* Table */}
-      <div className="overflow-x-auto rounded-xl border border-[var(--color-border)]">
-        <table className="w-full text-sm min-w-[620px]">
-          <thead>
-            <tr className="bg-[var(--color-surface-sunken)]">
-              {["Time", "Patient", "UHID", "Doctor", "Type", "Status", "Action"].map((h) => (
-                <th key={h} className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-[var(--color-border)] bg-white">
-            {rows.length === 0 ? (
-              <tr>
-                <td colSpan={7} className="py-10 text-center text-sm text-[var(--color-ink-400)]">
-                  {q ? `No results for "${q}"` : "No appointments scheduled today."}
-                </td>
-              </tr>
-            ) : rows.map((a) => {
-              const badge = STATUS[a.status] ?? { cls: "bg-gray-100 text-gray-600", label: a.status };
-              return (
-                <tr key={a.id} className="hover:bg-[var(--color-primary-50)] transition-colors">
-                  <td className="px-4 py-3 whitespace-nowrap font-semibold text-[var(--color-ink-800)]">
-                    {format(new Date(a.dateTime), "h:mm a")}
-                  </td>
-                  <td className="px-4 py-3">
-                    <p className="font-semibold text-[var(--color-ink-900)] text-sm">{a.patient.name}</p>
-                    <p className="text-[11px] text-[var(--color-ink-400)]">{a.patient.age}y · {a.patient.sex.charAt(0).toUpperCase() + a.patient.sex.slice(1).toLowerCase()}</p>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className="font-mono text-[11px] bg-[var(--color-primary-50)] text-[var(--color-primary-700)] px-2 py-0.5 rounded-md">
-                      {a.patient.udid}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-[var(--color-ink-600)] whitespace-nowrap">
-                    {a.doctor ? `Dr. ${a.doctor.name}` : "—"}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-[var(--color-ink-500)] whitespace-nowrap">
-                    {a.visitType}
-                    {a.isWalkIn && (
-                      <span className="ml-1.5 text-[9px] font-bold bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full align-middle">
-                        WALK-IN
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap">
-                    <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full ${badge.cls}`}>
-                      {badge.label}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap">
-                    <Link
-                      href={`/patients/registered/${a.patient.udid}`}
-                      className="inline-flex items-center gap-1 text-xs font-medium text-[var(--color-primary-600)] hover:text-[var(--color-primary-800)] hover:underline"
-                    >
-                      View →
-                    </Link>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
-
-/* ══════════════════════════════════════════════════════════════════════════
-   Charts
-══════════════════════════════════════════════════════════════════════════ */
-
-export function DashboardCharts({ trend, statusDist }: { trend: TrendPoint[]; statusDist: StatusPoint[] }) {
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => { const t = setTimeout(() => setMounted(true), 80); return () => clearTimeout(t); }, []);
-
-  const maxBar = Math.max(...trend.map((d) => d.count), 1);
-  const totalAppts = statusDist.reduce((s, d) => s + d.count, 0);
-
-  return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-
-      {/* ── Trend bar chart ─────────────────────────────────────────── */}
-      <div className="surface-card p-6">
-        <div className="flex items-center justify-between mb-5">
-          <div>
-            <h3 className="text-base font-semibold text-[var(--color-ink-900)]">Appointment Trend</h3>
-            <p className="text-xs text-[var(--color-ink-400)] mt-0.5">Last 7 days</p>
-          </div>
-          <span className="text-[11px] font-semibold bg-[var(--color-primary-50)] text-[var(--color-primary-700)] px-2.5 py-1 rounded-full">
-            This Week
+      <div className="w-px self-stretch bg-[var(--color-border)]" />
+      <div className="flex-1 min-w-0">
+        <p className="font-semibold text-sm text-[var(--color-ink-900)] truncate">{s.patient.name}</p>
+        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+          <span className="font-mono text-[10px] text-[#115E59] bg-[#F0F8F6] px-1.5 py-0.5 rounded">
+            {s.patient.udid}
           </span>
-        </div>
-
-        <div className="flex items-end gap-2" style={{ height: 140 }}>
-          {trend.map((d, i) => {
-            const pct   = maxBar > 0 ? (d.count / maxBar) * 100 : 0;
-            const isNow = i === trend.length - 1;
-            return (
-              <div key={d.date} className="flex-1 flex flex-col items-center gap-1.5">
-                {d.count > 0 && (
-                  <span className={`text-[11px] font-bold ${isNow ? "text-[var(--color-primary-600)]" : "text-[var(--color-ink-400)]"}`}>
-                    {d.count}
-                  </span>
-                )}
-                <div className="w-full flex items-end" style={{ height: 110 }}>
-                  <div
-                    className={`w-full rounded-t-lg transition-all duration-700 ease-out ${isNow ? "bg-[var(--color-primary-600)]" : "bg-[var(--color-primary-200)]"}`}
-                    style={{ height: mounted ? `${Math.max(pct, 3)}%` : "0%", minHeight: "4px" }}
-                  />
-                </div>
-                <span className={`text-[10px] font-medium ${isNow ? "text-[var(--color-primary-600)] font-bold" : "text-[var(--color-ink-400)]"}`}>
-                  {d.label}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* ── Status distribution ─────────────────────────────────────── */}
-      <div className="surface-card p-6">
-        <div className="flex items-center justify-between mb-5">
-          <div>
-            <h3 className="text-base font-semibold text-[var(--color-ink-900)]">Today's Breakdown</h3>
-            <p className="text-xs text-[var(--color-ink-400)] mt-0.5">{totalAppts} total appointments</p>
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-4">
-          {statusDist.filter((s) => s.count > 0).map((s) => {
-            const pct = totalAppts > 0 ? (s.count / totalAppts) * 100 : 0;
-            return (
-              <div key={s.label}>
-                <div className="flex items-center justify-between text-sm mb-1.5">
-                  <div className="flex items-center gap-2">
-                    <div className={`w-2.5 h-2.5 rounded-full ${s.dot}`} />
-                    <span className="font-medium text-[var(--color-ink-700)]">{s.label}</span>
-                  </div>
-                  <span className="text-[var(--color-ink-500)] font-semibold tabular-nums">{s.count}</span>
-                </div>
-                <div className="h-2 bg-[var(--color-surface-sunken)] rounded-full overflow-hidden">
-                  <div
-                    className={`h-full rounded-full ${s.bar} transition-all duration-700 ease-out`}
-                    style={{ width: mounted ? `${pct}%` : "0%" }}
-                  />
-                </div>
-              </div>
-            );
-          })}
-          {statusDist.every((s) => s.count === 0) && (
-            <p className="text-sm text-[var(--color-ink-400)] text-center py-6">No appointments today</p>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ══════════════════════════════════════════════════════════════════════════
-   Notifications + Activity
-══════════════════════════════════════════════════════════════════════════ */
-
-export function DashboardSidebar({
-  pending,
-  recent,
-  newToday,
-}: {
-  pending:    PendingNotif[];
-  recent:     ScheduleAppt[];
-  newToday:   number;
-}) {
-  const [tab, setTab] = useState<"notif" | "activity">("notif");
-
-  return (
-    <div className="surface-card overflow-hidden flex flex-col">
-      {/* Panel header */}
-      <div className="flex border-b border-[var(--color-border)]">
-        <button
-          onClick={() => setTab("notif")}
-          className={`flex-1 flex items-center justify-center gap-2 px-4 py-3.5 text-sm font-semibold transition-colors ${
-            tab === "notif"
-              ? "text-[var(--color-primary-700)] border-b-2 border-[var(--color-primary-600)] bg-[var(--color-primary-50)]"
-              : "text-[var(--color-ink-500)] hover:bg-[var(--color-surface-sunken)]"
-          }`}
-        >
-          <Bell size={14} />
-          Alerts
-          {pending.length > 0 && (
-            <span className="ml-1 text-[10px] font-bold bg-red-500 text-white px-1.5 py-0.5 rounded-full">
-              {pending.length}
+          {subLabel && role === "DOCTOR" && (
+            <span className="inline-flex items-center gap-1 text-[11px] text-[var(--color-ink-400)]">
+              <Building2 size={10} /> {subLabel}
             </span>
           )}
-        </button>
-        <button
-          onClick={() => setTab("activity")}
-          className={`flex-1 flex items-center justify-center gap-2 px-4 py-3.5 text-sm font-semibold transition-colors ${
-            tab === "activity"
-              ? "text-[var(--color-primary-700)] border-b-2 border-[var(--color-primary-600)] bg-[var(--color-primary-50)]"
-              : "text-[var(--color-ink-500)] hover:bg-[var(--color-surface-sunken)]"
-          }`}
+          {subLabel && role === "HOSPITAL" && (
+            <span className="text-[11px] text-[var(--color-ink-400)]">{subLabel}</span>
+          )}
+        </div>
+      </div>
+      <span className="shrink-0 text-xs font-medium text-purple-700 bg-purple-50 px-2.5 py-1 rounded-full truncate max-w-[160px]">
+        {s.surgeryType}
+      </span>
+      <span className="shrink-0 text-[10px] text-[var(--color-ink-400)]">
+        {s.rightEye && s.leftEye ? "OU" : s.rightEye ? "RE" : "LE"}
+      </span>
+    </div>
+  );
+}
+
+/* ── Appointment row ────────────────────────────────────────────────────── */
+function ApptRow({ appt, role }: { appt: Appt; role: "DOCTOR" | "HOSPITAL" }) {
+  const cfg  = STATUS_CFG[appt.status] ?? STATUS_CFG["REQUESTED"];
+  const time = format(new Date(appt.dateTime), "hh:mm a");
+
+  return (
+    <Link
+      href={`/patients/${appt.patient.udid}`}
+      className="flex items-center gap-3 px-4 py-3 rounded-xl border border-[var(--color-border)] bg-white hover:bg-[var(--color-primary-50)] hover:border-[var(--color-primary-200)] transition-colors group"
+    >
+      <div className="w-16 shrink-0 text-center">
+        <p className="text-sm font-bold text-[var(--color-ink-900)]">{time}</p>
+      </div>
+      <div className="w-px self-stretch bg-[var(--color-border)]" />
+      <div className="flex-1 min-w-0">
+        <p className="font-semibold text-[var(--color-ink-900)] text-sm truncate">{appt.patient.name}</p>
+        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+          <span className="font-mono text-[10px] text-[#115E59] bg-[#F0F8F6] px-1.5 py-0.5 rounded">
+            {appt.patient.udid}
+          </span>
+          <span className="text-[11px] text-[var(--color-ink-400)]">
+            {appt.patient.age}y / {appt.patient.sex === "MALE" ? "M" : appt.patient.sex === "FEMALE" ? "F" : "O"}
+          </span>
+          {role === "DOCTOR" && appt.patient.mobile && (
+            <span className="inline-flex items-center gap-0.5 text-[11px] text-[var(--color-ink-400)]">
+              <Phone size={9} /> {appt.patient.mobile}
+            </span>
+          )}
+          {role === "DOCTOR" && appt.hospital && (
+            <span className="inline-flex items-center gap-0.5 text-[11px] text-[var(--color-ink-400)]">
+              <Building2 size={9} /> {appt.hospital.name}
+            </span>
+          )}
+          {role === "HOSPITAL" && appt.doctor && (
+            <span className="text-[11px] text-[var(--color-ink-400)]">
+              Dr. {appt.doctor.name}
+            </span>
+          )}
+        </div>
+      </div>
+      <span className="hidden md:block text-[11px] text-[var(--color-ink-400)] shrink-0 max-w-[120px] truncate">
+        {appt.visitType}
+      </span>
+      <span className={clsx("inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold shrink-0", cfg.color)}>
+        <span className={clsx("w-1.5 h-1.5 rounded-full shrink-0", cfg.dot)} />
+        {cfg.label}
+      </span>
+      {role === "HOSPITAL" && appt.visitId && (
+        <Link
+          href={`/emr/${appt.patient.udid}?visit=${appt.visitId}`}
+          onClick={(e) => e.stopPropagation()}
+          className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--color-primary-50)] text-[var(--color-primary-700)] text-xs font-semibold hover:bg-[var(--color-primary-100)] transition-colors"
         >
-          <Activity size={14} />
-          Activity
-        </button>
+          <ClipboardList size={13} /> EMR
+        </Link>
+      )}
+    </Link>
+  );
+}
+
+/* ── Main component ─────────────────────────────────────────────────────── */
+export function DashboardClient({
+  role, displayName, todayLabel, appts, surgeries, filterOptions,
+  newEncounterHref, newEncounterLabel,
+}: DashboardProps) {
+  const router = useRouter();
+  const [selectedFilter, setSelectedFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter]     = useState<string>("ALL");
+  const [movingId, setMovingId]             = useState<string | null>(null);
+  const [greetHour, setGreetHour]           = useState<number | null>(null);
+  const [, startMove]                       = useTransition();
+
+  useEffect(() => { setGreetHour(new Date().getHours()); }, []);
+  useEffect(() => {
+    const id = setInterval(() => router.refresh(), 60_000);
+    return () => clearInterval(id);
+  }, [router]);
+
+  /* Filter appts by selected hospital (DOCTOR) or doctor (HOSPITAL) */
+  const filteredAppts = useMemo(() => {
+    if (selectedFilter === "all") return appts;
+    return role === "DOCTOR"
+      ? appts.filter((a) => a.hospital?.id === selectedFilter)
+      : appts.filter((a) => a.doctor?.id === selectedFilter);
+  }, [appts, selectedFilter, role]);
+
+  /* Today's Queue: non-REQUESTED, grouped by hospital (DOCTOR) or single card (HOSPITAL) */
+  const queueGroups = useMemo(() => {
+    const queue = filteredAppts.filter((a) => a.status !== "REQUESTED");
+    if (role === "DOCTOR") {
+      const hospitalsToShow = selectedFilter === "all"
+        ? filterOptions
+        : filterOptions.filter((h) => h.id === selectedFilter);
+      const map = new Map<string, { name: string; appts: Appt[] }>();
+      for (const h of hospitalsToShow) map.set(h.id, { name: h.name, appts: [] });
+      for (const a of queue) {
+        const key = a.hospital?.id ?? "unknown";
+        if (!map.has(key)) map.set(key, { name: a.hospital?.name ?? "Unknown", appts: [] });
+        map.get(key)!.appts.push(a);
+      }
+      return Array.from(map.entries())
+        .map(([id, { name, appts: gAppts }]) => ({ id, name, appts: gAppts }))
+        .sort((a, b) => a.name.localeCompare(b.name));
+    } else {
+      return [{ id: "self", name: displayName, appts: queue }];
+    }
+  }, [filteredAppts, role, displayName, filterOptions, selectedFilter]);
+
+  const totalQueue = queueGroups.reduce((s, g) => s + g.appts.length, 0);
+
+  /* Booked (REQUESTED) — for Visit time section, grouped by hospital for DOCTOR */
+  const bookedGroups = useMemo(() => {
+    const booked = filteredAppts.filter((a) => a.status === "REQUESTED");
+    if (role === "DOCTOR") {
+      const map = new Map<string, { name: string; appts: Appt[] }>();
+      for (const a of booked) {
+        const key = a.hospital?.id ?? "unknown";
+        if (!map.has(key)) map.set(key, { name: a.hospital?.name ?? "Unknown", appts: [] });
+        map.get(key)!.appts.push(a);
+      }
+      return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
+    } else {
+      return booked.length > 0 ? [{ name: displayName, appts: booked }] : [];
+    }
+  }, [filteredAppts, role, displayName]);
+
+  /* Surgeries — optionally filtered by selected hospital when DOCTOR */
+  const filteredSurgeries = useMemo(() => {
+    if (role === "DOCTOR" && selectedFilter !== "all") {
+      const hName = filterOptions.find((h) => h.id === selectedFilter)?.name;
+      return surgeries.filter((s) => s.hospital?.name === hName);
+    }
+    return surgeries;
+  }, [surgeries, role, selectedFilter, filterOptions]);
+
+  /* Greeting */
+  const h           = greetHour ?? 8;
+  const isEvening   = h >= 18;
+  const isAfternoon = h >= 12;
+  const greeting    = isEvening ? "Good Evening" : isAfternoon ? "Good Afternoon" : "Good Morning";
+  const GreetIcon   = isEvening ? Moon : isAfternoon ? Sunset : Sun;
+  const iconColor   = isEvening ? "text-indigo-300" : isAfternoon ? "text-orange-300" : "text-amber-300";
+  const bannerTitle = role === "DOCTOR" ? `Dr. ${displayName}` : displayName;
+  const filterLabel = role === "DOCTOR" ? "All Hospitals" : "All Doctors";
+
+  return (
+    <div className="fade-in space-y-5">
+
+      {/* ── Greeting Banner ──────────────────────────────────────────────── */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[var(--color-primary-900)] via-[var(--color-primary-700)] to-[var(--color-primary-500)] p-5 sm:p-6 text-white shadow-lg">
+        <div className="pointer-events-none absolute -top-10 -right-10 h-48 w-48 rounded-full bg-white/5" />
+        <div className="pointer-events-none absolute -bottom-12 -right-20 h-64 w-64 rounded-full bg-white/5" />
+        <div className="pointer-events-none absolute top-4 right-32 h-16 w-16 rounded-full bg-white/5" />
+
+        <div className="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <GreetIcon size={17} className={iconColor} />
+              <span className="text-sm font-medium text-white/70 tracking-wide">{greeting}</span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">{bannerTitle}</h1>
+            <p className="mt-1 text-sm text-white/60">{todayLabel}</p>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <Link
+              href={newEncounterHref}
+              className="inline-flex items-center gap-2 bg-white text-[var(--color-primary-800)] text-sm font-semibold px-4 py-2 rounded-xl hover:bg-white/90 transition-colors shadow-sm"
+            >
+              <Plus size={15} /> {newEncounterLabel}
+            </Link>
+            {filterOptions.length > 0 && (
+              <div className="relative">
+                <select
+                  value={selectedFilter}
+                  onChange={(e) => setSelectedFilter(e.target.value)}
+                  className="appearance-none pl-3 pr-8 py-2 rounded-xl border border-white/20 bg-white/10 text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-white/40 cursor-pointer backdrop-blur-sm"
+                >
+                  <option value="all" className="text-[var(--color-ink-800)]">{filterLabel}</option>
+                  {filterOptions.map((opt) => (
+                    <option key={opt.id} value={opt.id} className="text-[var(--color-ink-800)]">
+                      {role === "HOSPITAL" ? `Dr. ${opt.name}` : opt.name}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-white/70" />
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
-      {/* Notifications tab */}
-      {tab === "notif" && (
-        <div className="flex-1 overflow-y-auto">
-          {newToday > 0 && (
-            <div className="flex items-start gap-3 p-4 bg-[var(--color-primary-50)] border-b border-[var(--color-primary-100)]">
-              <div className="mt-0.5 w-8 h-8 rounded-full bg-[var(--color-primary-600)] flex items-center justify-center shrink-0">
-                <User size={14} className="text-white" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-[var(--color-ink-900)]">{newToday} new patient{newToday !== 1 ? "s" : ""} registered</p>
-                <p className="text-xs text-[var(--color-ink-500)] mt-0.5">Today</p>
-              </div>
-            </div>
-          )}
-
-          {pending.length === 0 && newToday === 0 ? (
-            <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
-              <CheckCircle2 size={32} className="text-[var(--color-success-600)] mb-3" />
-              <p className="text-sm font-medium text-[var(--color-ink-700)]">All caught up!</p>
-              <p className="text-xs text-[var(--color-ink-400)] mt-1">No pending alerts</p>
-            </div>
-          ) : (
-            <ul className="divide-y divide-[var(--color-border)]">
-              {pending.map((n) => (
-                <li key={n.id}>
-                  <Link
-                    href="/appointments"
-                    className="flex items-start gap-3 p-4 hover:bg-[var(--color-surface-sunken)] transition-colors"
-                  >
-                    <div className="mt-0.5 w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
-                      <AlertCircle size={14} className="text-amber-600" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold text-[var(--color-ink-900)] truncate">{n.patientName}</p>
-                      <p className="text-xs text-[var(--color-ink-500)] mt-0.5">
-                        Appointment request · {n.visitType}
-                      </p>
-                      <p className="text-[11px] text-amber-600 font-medium mt-0.5">
-                        {format(new Date(n.dateTime), "h:mm a, d MMM")}
-                      </p>
-                    </div>
-                    <span className="shrink-0 text-[10px] font-bold bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
-                      Pending
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      )}
-
-      {/* Activity tab */}
-      {tab === "activity" && (
-        <div className="flex-1 overflow-y-auto p-4">
-          {recent.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-10 text-center">
-              <Clock size={28} className="text-[var(--color-ink-300)] mb-3" />
-              <p className="text-sm text-[var(--color-ink-400)]">No activity yet today</p>
-            </div>
-          ) : (
-            <ol className="relative border-l border-[var(--color-border)] ml-3 space-y-0">
-              {recent.map((a, i) => {
-                const dotColor =
-                  a.status === "COMPLETED" ? "bg-emerald-500" :
-                  a.status === "CONFIRMED" ? "bg-[var(--color-primary-600)]" :
-                  a.status === "REQUESTED" ? "bg-amber-500" :
-                  a.status === "CANCELLED" ? "bg-red-500" : "bg-[var(--color-ink-300)]";
-
-                const icon =
-                  a.status === "COMPLETED" ? <CheckCircle2 size={10} className="text-white" /> :
-                  a.status === "CONFIRMED" ? <CalendarPlus size={10} className="text-white" /> :
-                  a.status === "CANCELLED" ? <X size={10} className="text-white" /> :
-                  <Clock size={10} className="text-white" />;
-
+      {/* ── Today's Queue ────────────────────────────────────────────────── */}
+      <div>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
+          <h2 className="text-base font-semibold text-[var(--color-ink-900)]">
+            Today's Queue
+            <span className="ml-2 text-sm font-normal text-[var(--color-ink-400)]">{totalQueue} total</span>
+          </h2>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1 flex-wrap">
+              {STATUS_FILTERS.map(({ key, label }) => {
+                const queueAppts = filteredAppts.filter((a) => a.status !== "REQUESTED");
+                const count = key === "ALL"
+                  ? queueAppts.length
+                  : queueAppts.filter((a) => a.status === key).length;
                 return (
-                  <li key={a.id} className={`pl-6 pb-5 ${i === recent.length - 1 ? "" : ""}`}>
-                    <span className={`absolute -left-[9px] flex items-center justify-center w-4.5 h-4.5 rounded-full ${dotColor}`}
-                      style={{ width: 18, height: 18, top: i * 0 }}>
-                      {icon}
-                    </span>
-                    <p className="text-sm font-semibold text-[var(--color-ink-900)]">{a.patient.name}</p>
-                    <p className="text-xs text-[var(--color-ink-500)] mt-0.5">
-                      {STATUS[a.status]?.label ?? a.status} · {format(new Date(a.dateTime), "h:mm a")}
-                    </p>
-                    {a.doctor && (
-                      <p className="text-[11px] text-[var(--color-ink-400)] mt-0.5">Dr. {a.doctor.name}</p>
+                  <button
+                    key={key}
+                    onClick={() => setStatusFilter(key)}
+                    className={clsx(
+                      "px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors",
+                      statusFilter === key
+                        ? "bg-[var(--color-primary-600)] text-white"
+                        : "bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)] hover:bg-[var(--color-primary-50)] hover:text-[var(--color-primary-700)]"
                     )}
-                  </li>
+                  >
+                    {label}
+                    <span className={clsx("ml-1.5 font-bold", statusFilter === key ? "text-white/80" : "text-[var(--color-ink-400)]")}>
+                      {count}
+                    </span>
+                  </button>
                 );
               })}
-            </ol>
-          )}
+            </div>
+            <Link href="/appointments" className="text-xs font-semibold text-[var(--color-primary-600)] hover:underline whitespace-nowrap">
+              View all →
+            </Link>
+          </div>
         </div>
-      )}
+
+        <div className="grid grid-cols-1 gap-4">
+          {queueGroups.map(({ id, name, appts: gAppts }) => {
+            const displayed = statusFilter === "ALL" ? gAppts : gAppts.filter((a) => a.status === statusFilter);
+            const dispensed = gAppts.filter((a) => a.status === "DISPENSED").length;
+            return (
+              <div key={id} className="surface-card p-4 flex flex-col gap-3">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="shrink-0 p-1.5 rounded-lg bg-[var(--color-primary-50)]">
+                      <Building2 size={15} className="text-[var(--color-primary-700)]" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-bold text-[var(--color-ink-900)] truncate">{name}</p>
+                      <p className="text-[11px] text-[var(--color-ink-400)]">
+                        {gAppts.length} in queue · {dispensed} Dispensed
+                      </p>
+                    </div>
+                  </div>
+                  <span className="shrink-0 text-[11px] font-bold px-2.5 py-1 rounded-full bg-[var(--color-primary-50)] text-[var(--color-primary-700)]">
+                    {gAppts.length}
+                  </span>
+                </div>
+                {displayed.length === 0 ? (
+                  <p className="text-center text-xs text-[var(--color-ink-400)] py-4">No patients in queue yet</p>
+                ) : (
+                  <div className="space-y-2">
+                    {displayed.map((a) => <ApptRow key={a.id} appt={a} role={role} />)}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ── Surgeries + Visit time ────────────────────────────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+
+          {/* Scheduled OT */}
+          <div className="surface-card p-5">
+            <h2 className="text-base font-semibold text-[var(--color-ink-900)] mb-4">
+              Scheduled OT
+              {filteredSurgeries.length > 0 && (
+                <span className="ml-2 text-xs font-normal text-[var(--color-ink-400)]">{filteredSurgeries.length} upcoming</span>
+              )}
+            </h2>
+            {filteredSurgeries.length === 0 && (
+              <p className="text-center text-xs text-[var(--color-ink-400)] py-6">No patients scheduled for OT</p>
+            )}
+            {filteredSurgeries.length > 0 && (
+              <div className="space-y-2">
+                {filteredSurgeries.map((s) => <SurgeryRow key={s.id} s={s} role={role} />)}
+              </div>
+            )}
+          </div>
+
+          {/* Visit time */}
+          <div className="surface-card p-5">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-base font-semibold text-[var(--color-ink-900)]">
+                Visit time
+                {bookedGroups.length > 0 && (
+                  <span className="ml-2 text-xs font-normal text-[var(--color-ink-400)]">
+                    {bookedGroups.reduce((s, g) => s + g.appts.length, 0)} booked
+                  </span>
+                )}
+              </h2>
+              <Link href="/appointments" className="text-xs font-semibold text-[var(--color-primary-600)] hover:underline">View all →</Link>
+            </div>
+            {bookedGroups.length === 0 && (
+              <p className="text-center text-xs text-[var(--color-ink-400)] py-6">No patients booked for visit</p>
+            )}
+            {bookedGroups.length > 0 && (
+              <div className="space-y-4">
+                {bookedGroups.map(({ name, appts: gAppts }) => (
+                  <div key={name}>
+                    {role === "DOCTOR" && (
+                      <div className="flex items-center gap-1.5 mb-2">
+                        <div className="shrink-0 p-1 rounded-md bg-[var(--color-primary-50)]">
+                          <Building2 size={11} className="text-[var(--color-primary-700)]" />
+                        </div>
+                        <p className="text-xs font-bold text-[var(--color-ink-700)] uppercase tracking-wide">{name}</p>
+                        <span className="text-[10px] text-[var(--color-ink-400)]">· {gAppts.length}</span>
+                      </div>
+                    )}
+                    <div className={clsx("space-y-1.5", role === "DOCTOR" && "pl-1")}>
+                      {gAppts.map((a) => {
+                        const cfg      = STATUS_CFG[a.status] ?? STATUS_CFG["REQUESTED"];
+                        const isMoving = movingId === a.id;
+                        return (
+                          <div key={a.id} className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-[var(--color-border)] bg-white">
+                            <span className="text-sm font-bold text-[var(--color-ink-900)] w-16 shrink-0">
+                              {format(new Date(a.dateTime), "h:mm a")}
+                            </span>
+                            <div className="w-px self-stretch bg-[var(--color-border)]" />
+                            <Link href={`/patients/${a.patient.udid}`} className="flex-1 min-w-0 hover:opacity-80 transition-opacity">
+                              <p className="text-sm font-semibold text-[var(--color-ink-900)] truncate">{a.patient.name}</p>
+                              <span className="font-mono text-[10px] text-[#115E59] bg-[#F0F8F6] px-1.5 py-0.5 rounded">
+                                {a.patient.udid}
+                              </span>
+                            </Link>
+                            <span className={clsx("text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0", cfg.color)}>
+                              {cfg.label}
+                            </span>
+                            {role === "DOCTOR" && (
+                              <button
+                                disabled={isMoving}
+                                title="Move to Today's Queue"
+                                onClick={() => {
+                                  setMovingId(a.id);
+                                  startMove(async () => {
+                                    await doctorConfirmAppointment(a.id);
+                                    setMovingId(null);
+                                    router.refresh();
+                                  });
+                                }}
+                                className="shrink-0 flex items-center justify-center w-7 h-7 rounded-lg bg-[var(--color-primary-50)] text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] disabled:opacity-50 transition-colors"
+                              >
+                                {isMoving ? <Loader2 size={13} className="animate-spin" /> : <LogIn size={13} />}
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+        </div>
+
     </div>
   );
 }

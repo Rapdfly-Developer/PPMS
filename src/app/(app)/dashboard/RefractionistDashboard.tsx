@@ -12,7 +12,7 @@ export async function RefractionistDashboard({ user, hospitalId }: { user: Sessi
   endOfDay.setHours(23, 59, 59, 999);
 
   const todayAppts = await prisma.appointment.findMany({
-    where: { hospitalId, dateTime: { gte: startOfDay, lte: endOfDay }, status: { in: ["CONFIRMED", "REQUESTED", "COMPLETED"] } },
+    where: { hospitalId, dateTime: { gte: startOfDay, lte: endOfDay }, status: { in: ["CONFIRMED", "REQUESTED", "DISPENSED"] } },
     include: {
       patient: true,
       visit: {

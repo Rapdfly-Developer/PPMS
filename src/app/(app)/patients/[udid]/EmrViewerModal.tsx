@@ -234,7 +234,7 @@ export function EmrViewerButton({ visitId, visitNumber }: { visitId: string; vis
         className="shrink-0 inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-orange-100 text-orange-700 hover:bg-orange-500 hover:text-white transition-colors disabled:opacity-60"
       >
         {pending ? <Loader2 size={12} className="animate-spin" /> : <FileText size={12} />}
-        View EMR
+        View Summary
       </button>
 
       {open && (

@@ -7,6 +7,7 @@ import { format } from "date-fns";
 import {
   Search, UserPlus, Download, Filter, X, Users, CalendarCheck,
   CalendarClock, ShieldCheck, ClipboardList, ChevronLeft, ChevronRight, Eye,
+  Phone, Building2,
 } from "lucide-react";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -21,6 +22,7 @@ export interface PatientRow {
   createdAt: string;
   hospitalName: string | null;
   lastVisit: string | null;
+  chiefComplaint: string | null;
 }
 export interface TrendPoint { label: string; count: number; isToday: boolean; }
 export interface CatPoint   { category: string; count: number; }
@@ -250,6 +252,7 @@ interface Props {
   categoryFilter: string;
   sexFilter: string;
   hospitalFilter: string;
+  opStatusFilter: string;
   doctorHospitals: { id: string; name: string }[];
   sortBy: string;
   isHospital: boolean;
@@ -260,13 +263,13 @@ interface Props {
 }
 
 export function PatientsClient({
-  patients, total, page, pageSize, q, categoryFilter, sexFilter, hospitalFilter,
+  patients, total, page, pageSize, q, categoryFilter, sexFilter, hospitalFilter, opStatusFilter,
   doctorHospitals, sortBy, kpis, trendData, catDist, recentReg,
 }: Props) {
   const router = useRouter();
   const [searchVal, setSearchVal] = useState(q);
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [showFilters, setShowFilters] = useState(!!(categoryFilter || sexFilter || hospitalFilter));
+  const [showFilters, setShowFilters] = useState(!!(categoryFilter || sexFilter || hospitalFilter || opStatusFilter));
   const [, startTransition] = useTransition();
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -275,13 +278,14 @@ export function PatientsClient({
   const to   = Math.min(page * pageSize, total);
 
   function navigate(overrides: Record<string, string>) {
-    const base = { q, category: categoryFilter, sex: sexFilter, hospital: hospitalFilter, sort: sortBy, size: String(pageSize), page: String(page) };
+    const base = { q, category: categoryFilter, sex: sexFilter, hospital: hospitalFilter, opStatus: opStatusFilter, sort: sortBy, size: String(pageSize), page: String(page) };
     const merged = { ...base, ...overrides };
     const params = new URLSearchParams();
     if (merged.q)                         params.set("q",        merged.q);
     if (merged.category)                  params.set("category", merged.category);
     if (merged.sex)                       params.set("sex",      merged.sex);
-    if (merged.hospital)                  params.set("hospital", merged.hospital);
+    if (merged.hospital)                  params.set("hospital",  merged.hospital);
+    if (merged.opStatus)                  params.set("opStatus",  merged.opStatus);
     if (merged.sort && merged.sort !== "newest") params.set("sort", merged.sort);
     if (merged.size && merged.size !== "25")     params.set("size", merged.size);
     if (merged.page && merged.page !== "1")      params.set("page", merged.page);
@@ -330,7 +334,7 @@ export function PatientsClient({
     setSelected(next);
   }
 
-  const activeFilters = [categoryFilter, sexFilter, hospitalFilter].filter(Boolean).length;
+  const activeFilters = [categoryFilter, sexFilter, hospitalFilter, opStatusFilter].filter(Boolean).length;
 
   return (
     <div>
@@ -358,12 +362,11 @@ export function PatientsClient({
       </div>
 
       {/* ── KPI Cards ──────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-5">
-        <KpiCard icon={<Users size={17} />}         label="Total Patients"        value={kpis.totalPatients}     color="teal"   />
-        <KpiCard icon={<CalendarCheck size={17} />} label="Today's Registrations" value={kpis.todayReg}          color="blue"   sub="New today" />
-        <KpiCard icon={<CalendarClock size={17} />} label="Follow-up Appts"       value={kpis.followUpCount}     color="green"  sub="Upcoming" />
-        <KpiCard icon={<ShieldCheck size={17} />}   label="Insurance / ECHS"      value={kpis.insurancePatients} color="purple" />
-        <KpiCard icon={<ClipboardList size={17} />} label="Pending Requests"      value={kpis.pendingRequests}   color="amber"  sub="Awaiting confirmation" />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
+        <KpiCard icon={<Users size={17} />}         label="Total Patients"    value={kpis.totalPatients}  color="teal"  />
+        <KpiCard icon={<CalendarCheck size={17} />} label="Total Operated"    value={kpis.todayReg}       color="blue"  sub="New today" />
+        <KpiCard icon={<CalendarClock size={17} />} label="Lost to Follow Up" value={kpis.followUpCount}  color="green" sub="Upcoming" />
+        <KpiCard icon={<ClipboardList size={17} />} label="Pending Requests"  value={kpis.pendingRequests} color="amber" sub="Awaiting confirmation" />
       </div>
 
       {/* ── Table + Analytics ──────────────────────────────────────────── */}
@@ -393,17 +396,6 @@ export function PatientsClient({
                   </button>
                 )}
               </div>
-
-              {/* Page size */}
-              <select
-                value={pageSize}
-                onChange={e => navigate({ size: e.target.value, page: "1" })}
-                className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-3 py-2 text-sm text-[var(--color-ink-700)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] flex-shrink-0"
-              >
-                <option value="10">10 / page</option>
-                <option value="25">25 / page</option>
-                <option value="50">50 / page</option>
-              </select>
 
               {/* Sort */}
               <select
@@ -436,22 +428,7 @@ export function PatientsClient({
 
             {/* Advanced filter row */}
             {showFilters && (
-              <div className="mt-3 pt-3 border-t border-[var(--color-border)] flex flex-wrap items-center gap-3">
-                <div className="flex items-center gap-2">
-                  <label className="text-xs font-medium text-[var(--color-ink-500)]">Category</label>
-                  <select
-                    value={categoryFilter}
-                    onChange={e => navigate({ category: e.target.value, page: "1" })}
-                    className="rounded-lg border border-[var(--color-border)] bg-white px-2.5 py-1.5 text-xs text-[var(--color-ink-700)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
-                  >
-                    <option value="">All categories</option>
-                    <option value="GENERAL">General</option>
-                    <option value="BPL">BPL</option>
-                    <option value="SUBSIDISED">Subsidised</option>
-                    <option value="ECHS">ECHS</option>
-                    <option value="INSURANCE">Insurance</option>
-                  </select>
-                </div>
+              <div className="mt-3 flex flex-wrap items-center gap-3">
                 <div className="flex items-center gap-2">
                   <label className="text-xs font-medium text-[var(--color-ink-500)]">Sex</label>
                   <select
@@ -480,9 +457,23 @@ export function PatientsClient({
                     </select>
                   </div>
                 )}
+                <div className="flex items-center gap-2">
+                  <label className="text-xs font-medium text-[var(--color-ink-500)]">Operation</label>
+                  <select
+                    value={opStatusFilter}
+                    onChange={e => navigate({ opStatus: e.target.value, page: "1" })}
+                    className="rounded-lg border border-[var(--color-border)] bg-white px-2.5 py-1.5 text-xs text-[var(--color-ink-700)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
+                  >
+                    <option value="">All</option>
+                    <option value="surgery">Surgery Scheduled</option>
+                    <option value="admitted">Admitted</option>
+                    <option value="discharged">Discharged</option>
+                  </select>
+                </div>
+
                 {activeFilters > 0 && (
                   <button
-                    onClick={() => navigate({ category: "", sex: "", hospital: "", page: "1" })}
+                    onClick={() => navigate({ category: "", sex: "", hospital: "", opStatus: "", page: "1" })}
                     className="inline-flex items-center gap-1 text-xs text-red-600 hover:text-red-800 font-medium"
                   >
                     <X size={11} /> Clear filters
@@ -515,159 +506,164 @@ export function PatientsClient({
             </div>
           )}
 
-          {/* Table card */}
-          <div className="bg-white rounded-2xl border border-[var(--color-border)] shadow-sm overflow-hidden">
-            {total > 0 && (
-              <div className="px-4 py-2.5 border-b border-[var(--color-border)] bg-[var(--color-surface-sunken)] flex items-center justify-between">
-                <p className="text-xs text-[var(--color-ink-500)]">
-                  Showing{" "}
-                  <span className="font-semibold text-[var(--color-ink-800)]">{from}–{to}</span>
-                  {" "}of{" "}
-                  <span className="font-semibold text-[var(--color-ink-800)]">{total}</span>
-                  {" "}patients
-                  {(q || categoryFilter || sexFilter || hospitalFilter) && (
-                    <span className="text-[var(--color-ink-400)]"> (filtered)</span>
-                  )}
+          {/* Patient list — queue style */}
+          <div className="surface-card overflow-hidden">
+            {patients.length === 0 ? (
+              <div className="py-16 text-center">
+                <Users size={36} className="mx-auto text-[var(--color-ink-300)] mb-3" />
+                <p className="text-sm font-medium text-[var(--color-ink-500)]">
+                  {q || categoryFilter || sexFilter || hospitalFilter || opStatusFilter
+                    ? "No patients match the current filters."
+                    : "No patients registered yet."}
                 </p>
-                {selected.size > 0 && (
-                  <span className="text-xs font-medium text-[var(--color-primary-600)]">
-                    {selected.size} selected
-                  </span>
+                {!q && !categoryFilter && !sexFilter && !hospitalFilter && !opStatusFilter && (
+                  <Link href="/patients/new" className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-[var(--color-primary-600)] hover:underline">
+                    <UserPlus size={13} /> Register your first patient
+                  </Link>
+                )}
+                {(q || categoryFilter || sexFilter || hospitalFilter || opStatusFilter) && (
+                  <button
+                    onClick={() => navigate({ q: "", category: "", sex: "", hospital: "", opStatus: "", page: "1" })}
+                    className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-[var(--color-ink-500)] hover:text-[var(--color-ink-700)]"
+                  >
+                    <X size={13} /> Clear all filters
+                  </button>
                 )}
               </div>
-            )}
+            ) : (
+              <>
+              {/* Column headers */}
+              <div className="hidden lg:flex items-center gap-4 px-5 py-2.5 border-b border-[var(--color-border)] bg-[var(--color-surface-sunken)]">
+                <div className="w-3.5 shrink-0" />
+                <div className="w-8 shrink-0" />
+                <div className="w-44 shrink-0">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">Patient</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">Chief Complaint</span>
+                </div>
+                <div className="w-24 shrink-0">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">Age / Sex</span>
+                </div>
+                <div className="w-28 shrink-0">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">Mobile</span>
+                </div>
+                <div className="w-36 shrink-0">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">Hospital</span>
+                </div>
+                <div className="w-28 shrink-0">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">Last Visit</span>
+                </div>
+                <div className="w-28 shrink-0" />
+              </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-[var(--color-border)] bg-[var(--color-surface-sunken)]">
-                    <th className="px-3 py-2 w-10">
+              <ul className="divide-y divide-[var(--color-border)]">
+                {patients.map((p, idx) => {
+                  const av  = avatarColor(p.name);
+                  const sel = selected.has(p.id);
+                  const cat = CAT[p.category] ?? { label: p.category, cls: "bg-slate-100 text-slate-700" };
+                  const token = (page - 1) * pageSize + idx + 1;
+                  const lastVisitStr = p.lastVisit ? format(new Date(p.lastVisit), "dd MMM yyyy") : null;
+                  const sexLabel = p.sex.charAt(0).toUpperCase() + p.sex.slice(1).toLowerCase();
+                  return (
+                    <li
+                      key={p.id}
+                      className={`px-5 py-3.5 flex items-center gap-4 transition-colors ${sel ? "bg-[var(--color-primary-50)]" : "hover:bg-[var(--color-surface-sunken)]"}`}
+                    >
+                      {/* Checkbox */}
                       <input
                         type="checkbox"
-                        checked={allSel}
-                        ref={el => { if (el) el.indeterminate = someSel; }}
-                        onChange={toggleAll}
-                        className="w-3.5 h-3.5 rounded accent-[var(--color-primary-600)] cursor-pointer"
-                        aria-label="Select all"
+                        checked={sel}
+                        onChange={() => toggleOne(p.id)}
+                        className="w-3.5 h-3.5 rounded accent-[var(--color-primary-600)] cursor-pointer shrink-0"
                       />
-                    </th>
-                    {["Patient", "UHID", "Age / Sex", "Mobile", "Hospital", "Last Visit"].map(h => (
-                      <th key={h} className="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[var(--color-border)]">
-                  {patients.map(p => {
-                    const av  = avatarColor(p.name);
-                    const sel = selected.has(p.id);
-                    return (
-                      <tr
-                        key={p.id}
-                        className={`hover:bg-[var(--color-ink-50)] transition-colors ${sel ? "bg-[var(--color-primary-50)]" : ""}`}
+
+                      {/* Token */}
+                      <div
+                        className="size-8 rounded-xl flex items-center justify-center shrink-0 text-sm font-bold"
+                        style={{ background: "var(--color-primary-100)", color: "var(--color-primary-700)" }}
                       >
-                        {/* Checkbox */}
-                        <td className="px-3 py-2">
-                          <input
-                            type="checkbox"
-                            checked={sel}
-                            onChange={() => toggleOne(p.id)}
-                            className="w-3.5 h-3.5 rounded accent-[var(--color-primary-600)] cursor-pointer"
-                          />
-                        </td>
+                        {token}
+                      </div>
 
-                        {/* Patient avatar + name */}
-                        <td className="px-3 py-2">
-                          <div className="flex items-center gap-2.5">
-                            <div
-                              className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0 select-none"
-                              style={{ background: av.bg, color: av.text }}
-                            >
-                              {initials(p.name)}
-                            </div>
-                            <Link
-                              href={`/patients/${p.udid}`}
-                              className="min-w-0 hover:underline"
-                            >
-                              <div className="font-semibold text-[var(--color-ink-900)] text-sm leading-tight truncate max-w-[150px] hover:text-[var(--color-primary-600)] transition-colors">
-                                {p.name}
-                              </div>
-                              <div className="font-mono text-[10px] text-[#115E59] bg-[#F0F8F6] px-1.5 py-0.5 rounded mt-0.5 inline-block">
-                                {p.udid}
-                              </div>
-                            </Link>
-                          </div>
-                        </td>
-
-                        {/* UHID */}
-                        <td className="px-3 py-2">
-                          <Link
-                            href={`/patients/${p.udid}`}
-                            className="font-mono text-xs bg-[#F0F8F6] text-[#115E59] px-2 py-0.5 rounded-md hover:bg-[#DCEFEC] transition-colors whitespace-nowrap"
-                          >
+                      {/* Avatar + name + UHID — fixed width */}
+                      <div className="flex items-center gap-3 w-44 shrink-0 min-w-0">
+                        <div
+                          className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0 select-none"
+                          style={{ background: av.bg, color: av.text }}
+                        >
+                          {initials(p.name)}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-[var(--color-ink-900)] truncate">{p.name}</p>
+                          <span className="font-mono text-[10px] bg-[#F0F8F6] text-[#115E59] px-1.5 py-0.5 rounded">
                             {p.udid}
-                          </Link>
-                        </td>
+                          </span>
+                        </div>
+                      </div>
 
-                        {/* Age / Sex */}
-                        <td className="px-3 py-2 text-sm text-[var(--color-ink-600)] whitespace-nowrap">
-                          {p.age}y &middot; {p.sex.charAt(0).toUpperCase() + p.sex.slice(1).toLowerCase()}
-                        </td>
-
-                        {/* Mobile */}
-                        <td className="px-3 py-2 text-sm text-[var(--color-ink-600)] whitespace-nowrap font-mono text-xs">
-                          {p.mobile}
-                        </td>
-
-                        {/* Hospital */}
-                        <td className="px-3 py-2 text-xs text-[var(--color-ink-600)] whitespace-nowrap max-w-[140px] truncate">
-                          {p.hospitalName ?? "—"}
-                        </td>
-
-                        {/* Last Visit */}
-                        <td className="px-3 py-2 text-xs text-[var(--color-ink-500)] whitespace-nowrap">
-                          {p.lastVisit ? format(new Date(p.lastVisit), "dd MMM yyyy") : "—"}
-                        </td>
-                      </tr>
-                    );
-                  })}
-
-                  {patients.length === 0 && (
-                    <tr>
-                      <td colSpan={7} className="px-4 py-16 text-center">
-                        <Users size={36} className="mx-auto text-[var(--color-ink-300)] mb-3" />
-                        <p className="text-sm font-medium text-[var(--color-ink-500)]">
-                          {q || categoryFilter || sexFilter || hospitalFilter
-                            ? "No patients match the current filters."
-                            : "No patients registered yet."}
-                        </p>
-                        {!q && !categoryFilter && !sexFilter && !hospitalFilter && (
-                          <Link
-                            href="/patients/new"
-                            className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-[var(--color-primary-600)] hover:underline"
-                          >
-                            <UserPlus size={13} /> Register your first patient
-                          </Link>
+                      {/* Chief Complaint — fills space, shown on lg+ */}
+                      <div className="hidden lg:block flex-1 min-w-0">
+                        {p.chiefComplaint ? (
+                          <p className="text-sm text-[var(--color-ink-700)] truncate">{p.chiefComplaint}</p>
+                        ) : (
+                          <span className="text-[11px] italic text-[var(--color-ink-300)]">Not recorded</span>
                         )}
-                        {(q || categoryFilter || sexFilter || hospitalFilter) && (
-                          <button
-                            onClick={() => navigate({ q: "", category: "", sex: "", hospital: "", page: "1" })}
-                            className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-[var(--color-ink-500)] hover:text-[var(--color-ink-700)]"
-                          >
-                            <X size={13} /> Clear all filters
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+                      </div>
+
+                      {/* Age / Sex — fixed width */}
+                      <div className="hidden sm:block w-24 shrink-0">
+                        <p className="text-sm text-[var(--color-ink-700)]">{p.age}y · {sexLabel.charAt(0)}</p>
+                      </div>
+
+                      {/* Mobile — fixed width */}
+                      <div className="hidden md:block w-28 shrink-0">
+                        <p className="text-sm text-[var(--color-ink-700)]">{p.mobile || <span className="text-[var(--color-ink-300)]">—</span>}</p>
+                      </div>
+
+                      {/* Hospital — fixed width */}
+                      <div className="hidden lg:block w-36 shrink-0">
+                        <p className="text-sm text-[var(--color-ink-700)] truncate">{p.hospitalName || <span className="text-[var(--color-ink-300)]">—</span>}</p>
+                      </div>
+
+                      {/* Last Visit — fixed width */}
+                      <div className="hidden lg:block w-28 shrink-0">
+                        <p className="text-sm text-[var(--color-ink-700)]">{lastVisitStr || <span className="text-[var(--color-ink-300)]">—</span>}</p>
+                      </div>
+
+                      {/* Category + View — fixed width */}
+                      <div className="flex items-center gap-2 w-28 shrink-0 justify-end">
+                        <span className={`hidden sm:inline-flex text-[10px] font-semibold px-2 py-0.5 rounded-full ${cat.cls}`}>
+                          {cat.label}
+                        </span>
+                        <Link
+                          href={`/patients/${p.udid}`}
+                          className="text-xs font-medium px-3 py-1.5 rounded-lg bg-[var(--color-primary-100)] text-[var(--color-primary-700)] hover:bg-[var(--color-primary-200)] transition-colors whitespace-nowrap"
+                        >
+                          View
+                        </Link>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+              </>
+            )}
 
             {/* Pagination */}
             {total > 0 && (
-              <div className="flex items-center justify-between px-4 py-3 border-t border-[var(--color-border)] bg-[var(--color-surface-sunken)]">
+              <div className="flex items-center justify-between px-4 py-3 border-t border-[var(--color-border)]">
+                <div className="flex items-center gap-2">
+                  <select
+                    value={pageSize}
+                    onChange={e => navigate({ size: e.target.value, page: "1" })}
+                    className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-2.5 py-1.5 text-xs text-[var(--color-ink-700)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
+                  >
+                    <option value="10">10 / page</option>
+                    <option value="25">25 / page</option>
+                    <option value="50">50 / page</option>
+                  </select>
+                </div>
                 <div className="flex items-center gap-1">
                   {page > 1 ? (
                     <Link href={pageUrl(page - 1)} className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-[var(--color-border)] bg-white text-[var(--color-ink-600)] hover:bg-[var(--color-ink-50)] transition-colors">
@@ -701,20 +697,15 @@ export function PatientsClient({
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-[var(--color-ink-500)]">
-                  Page <span className="font-medium text-[var(--color-ink-700)]">{page}</span> of{" "}
-                  <span className="font-medium text-[var(--color-ink-700)]">{totalPages}</span>
+                <p className="text-sm text-[var(--color-ink-500)]">
+                  Showing <span className="font-semibold text-[var(--color-primary-700)]">{from}–{to}</span> of {total} patients
+                  {(q || categoryFilter || sexFilter || hospitalFilter || opStatusFilter) && (
+                    <span className="text-[var(--color-ink-400)] font-normal"> (filtered)</span>
+                  )}
                 </p>
               </div>
             )}
           </div>
-        </div>
-
-        {/* ── Analytics below table ─────────────────────────────────────── */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <CategoryChart catDist={catDist} total={kpis.totalPatients} />
-          <TrendChart trendData={trendData} />
-          <RecentPanel recentReg={recentReg} />
         </div>
 
       </div>

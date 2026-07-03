@@ -5,12 +5,12 @@ import { NewPatientForm } from "./NewPatientForm";
 export default async function NewPatientPage() {
   const user = await requirePermission("patients.create");
 
-  // Doctor: show all hospitals that have a staff account (i.e. visible in User Management).
+  // Doctor: all hospitals linked via DoctorHospitalLink (regardless of staff).
   // Hospital: only their own hospital.
   const hospitals =
     user.role === "DOCTOR"
       ? await prisma.hospital.findMany({
-          where: { staff: { some: {} } },
+          where: { doctorLinks: { some: { doctorId: user.profileId } } },
           orderBy: { name: "asc" },
         })
       : await prisma.hospital.findMany({

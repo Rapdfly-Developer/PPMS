@@ -133,19 +133,16 @@ export function EmrActionBar({ visit, udid, patientName }: { visit: any; udid: s
               <div className="border-t border-[var(--color-border)]" />
 
               {/* 3. Print Short Summary */}
-              <a
-                href={summaryBase}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => setPrintOpen(false)}
-                className="flex items-center gap-3 px-4 py-3 text-sm text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] transition-colors"
+              <button
+                onClick={() => { setPrintOpen(false); window.print(); }}
+                className="flex items-center gap-3 px-4 py-3 w-full text-left text-sm text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] transition-colors"
               >
                 <FileText size={15} className="text-[var(--color-primary-600)] shrink-0" />
                 <div>
                   <p className="font-medium">Print Short Summary</p>
                   <p className="text-[10px] text-[var(--color-ink-400)]">Plan, Rx &amp; advice only</p>
                 </div>
-              </a>
+              </button>
             </div>
           )}
         </div>

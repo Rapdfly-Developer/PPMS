@@ -34,7 +34,7 @@ export default async function EMRQueuePage({
     where: {
       ...roleWhere,
       dateTime: { gte: start, lte: end },
-      status: { in: ["REQUESTED", "SCHEDULED", "CONFIRMED", "COMPLETED"] },
+      status: { in: ["REQUESTED", "SCHEDULED", "CONFIRMED", "DISPENSED"] },
       ...(q
         ? { patient: { OR: [{ name: { contains: q } }, { udid: { contains: q } }] } }
         : {}),
@@ -55,7 +55,7 @@ export default async function EMRQueuePage({
   });
 
   const statusOf = (a: (typeof appts)[number]): "WAITING" | "IN_PROGRESS" | "COMPLETED" => {
-    if (a.visit?.status === "CLOSED" || a.status === "COMPLETED") return "COMPLETED";
+    if (a.visit?.status === "CLOSED" || a.status === "DISPENSED") return "COMPLETED";
     if (a.visit?.status === "IN_PROGRESS") return "IN_PROGRESS";
     return "WAITING";
   };

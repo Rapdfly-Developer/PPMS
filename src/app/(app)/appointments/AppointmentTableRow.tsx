@@ -10,7 +10,7 @@ import { ScheduleNextSlotModal } from "./ScheduleNextSlotModal";
 const STATUS_BADGE: Record<string, { label: string; cls: string }> = {
   REQUESTED:   { label: "REQUESTED",   cls: "bg-amber-500 text-white"  },
   CONFIRMED:   { label: "CONFIRMED",   cls: "bg-blue-500 text-white"   },
-  COMPLETED:   { label: "CONSULTED",   cls: "bg-emerald-500 text-white" },
+  DISPENSED:   { label: "DISPENSED",   cls: "bg-emerald-500 text-white" },
   CANCELLED:   { label: "CANCELLED",   cls: "bg-red-500 text-white"    },
   NO_SHOW:     { label: "NO SHOW",     cls: "bg-red-400 text-white"    },
   RESCHEDULED: { label: "RESCHEDULED", cls: "bg-slate-400 text-white"  },
@@ -32,7 +32,7 @@ export function AppointmentTableRow({
   const badge  = STATUS_BADGE[appt.status] ?? { label: appt.status, cls: "bg-gray-400 text-white" };
   const dept   = appt.doctor?.specialty ?? "General OPD";
   const type   = appt.visitType ?? "Consultation";
-  const isComp = appt.status === "COMPLETED";
+  const isComp = appt.status === "DISPENSED";
 
   function hospitalSet(s: "CONFIRMED" | "CANCELLED") {
     startTransition(() => hospitalUpdateAppointmentStatus(appt.id, s));
@@ -159,15 +159,6 @@ export function AppointmentTableRow({
             </button>
           )}
 
-          {/* Doctor → Open EMR */}
-          {role === "DOCTOR" && appt.visit && (
-            <Link
-              href={`/emr/${p.udid}?visit=${appt.visit.id}`}
-              className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg bg-orange-100 text-orange-700 hover:bg-orange-500 hover:text-white transition-colors"
-            >
-              <Eye size={12} /> Open EMR
-            </Link>
-          )}
 
           {/* 3-dot menu */}
           {role === "HOSPITAL" && (

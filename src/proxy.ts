@@ -5,8 +5,9 @@ import { roleHome } from "@/lib/rbac";
 export default auth((req) => {
   const isLoggedIn = !!req.auth;
   const isLoginPage = req.nextUrl.pathname.startsWith("/login");
+  const isLandingPage = req.nextUrl.pathname === "/";
 
-  if (!isLoggedIn && !isLoginPage) {
+  if (!isLoggedIn && !isLoginPage && !isLandingPage) {
     const url = new URL("/login", req.nextUrl.origin);
     return NextResponse.redirect(url);
   }

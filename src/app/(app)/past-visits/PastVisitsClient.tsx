@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { useRouter } from "next/navigation";
+import { createPastVisit, updatePastVisit } from "./actions";
 
 type Patient = { id: string; name: string; udid: string };
 type Visit = {
@@ -93,7 +94,6 @@ export function PastVisitsClient({
       if (!uploadRes.ok) throw new Error(uploadJson.error ?? "Upload failed.");
 
       // 2. Create PastExternalVisit record via server action
-      const { createPastVisit } = await import("./actions");
       await createPastVisit({
         patientId,
         savedName: uploadJson.savedName,
@@ -334,7 +334,6 @@ function VisitCard({ visit, canVerify }: { visit: Visit; canVerify: boolean }) {
 
   const doVerify = (status: "VERIFIED" | "REJECTED", corrected?: Record<string, string>) => {
     act(async () => {
-      const { updatePastVisit } = await import("./actions");
       await updatePastVisit(visit.id, status, corrected);
     });
   };

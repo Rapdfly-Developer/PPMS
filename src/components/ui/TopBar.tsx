@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Bell, Search, LogOut } from "lucide-react";
+import { Bell, Search, LogOut, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { signOut } from "next-auth/react";
 
@@ -51,8 +51,18 @@ export function TopBar({ name, role }: { name: string; role: string }) {
         <span className="text-sm font-bold text-[var(--color-ink-900)] tracking-tight">PPMS</span>
       </div>
 
-      {/* Search — desktop only */}
-      <form onSubmit={handleSearch} className="hidden md:flex items-center">
+      {/* Back + Search — desktop only */}
+      <div className="hidden md:flex items-center gap-1">
+        <button
+          onClick={() => router.back()}
+          className="flex items-center justify-center p-1.5 text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)] rounded-lg hover:bg-[var(--color-surface-sunken)] transition-colors"
+          title="Go back"
+          aria-label="Go back"
+        >
+          <ArrowLeft size={17} />
+        </button>
+
+      <form onSubmit={handleSearch} className="flex items-center">
         <div className="relative">
           <Search
             size={14}
@@ -70,6 +80,7 @@ export function TopBar({ name, role }: { name: string; role: string }) {
           </kbd>
         </div>
       </form>
+      </div>
 
       {/* Right actions */}
       <div className="flex items-center gap-3">

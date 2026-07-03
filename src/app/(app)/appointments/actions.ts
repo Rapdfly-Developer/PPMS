@@ -103,7 +103,7 @@ export async function cancelAllAppointmentsOnDate(dateString: string): Promise<v
 
 export async function doctorUpdateAppointmentStatus(
   appointmentId: string,
-  status: "COMPLETED" | "NO_SHOW" | "RESCHEDULED"
+  status: "DISPENSED" | "NO_SHOW" | "RESCHEDULED"
 ): Promise<void> {
   const user = await requireRole("DOCTOR");
 
@@ -115,6 +115,55 @@ export async function doctorUpdateAppointmentStatus(
   if (appt.status !== "CONFIRMED") throw new Error("Only confirmed appointments can be updated.");
 
   await prisma.appointment.update({ where: { id: appointmentId }, data: { status } });
+
+  revalidatePath("/appointments");
+  revalidatePath("/dashboard");
+}
+
+// ── Doctor: move appointment from Visit time into Today's Queue (CONFIRMED) ────
+export async function doctorConfirmAppointment(appointmentId: string): Promise<void> {
+  const user = await requireRole("DOCTOR");
+
+  const appt = await prisma.appointment.findUnique({
+    where: { id: appointmentId },
+    include: { patient: true, hospital: true },
+  });
+  if (!appt || appt.doctorId !== scopeDoctorId(user)) throw new Error("Forbidden");
+  if (appt.status !== "REQUESTED") throw new Error("Only REQUESTED appointments can be moved to queue.");
+
+  await prisma.appointment.update({ where: { id: appointmentId }, data: { status: "CONFIRMED" } });
+
+  // Create Visit so EMR is available
+  const existing = await prisma.visit.findUnique({ where: { appointmentId } });
+  if (!existing) {
+    const isFirst = (await prisma.visit.count({ where: { patientId: appt.patientId } })) === 0;
+    const visit = await prisma.visit.create({
+      data: {
+        patientId: appt.patientId,
+        doctorId: appt.doctorId!,
+        hospitalId: appt.hospitalId,
+        appointmentId: appt.id,
+      },
+    });
+    if (isFirst && appt.patient.complaint) {
+      await prisma.generalExamination.create({
+        data: { visitId: visit.id, chiefComplaint: appt.patient.complaint },
+      });
+    }
+  }
+
+  revalidatePath("/appointments");
+  revalidatePath("/dashboard");
+}
+
+// ── Doctor: cancel/reject an appointment ─────────────────────────────────────
+export async function doctorCancelAppointment(appointmentId: string): Promise<void> {
+  const user = await requireRole("DOCTOR");
+
+  const appt = await prisma.appointment.findUnique({ where: { id: appointmentId } });
+  if (!appt || appt.doctorId !== scopeDoctorId(user)) throw new Error("Forbidden");
+
+  await prisma.appointment.update({ where: { id: appointmentId }, data: { status: "CANCELLED" } });
 
   revalidatePath("/appointments");
   revalidatePath("/dashboard");

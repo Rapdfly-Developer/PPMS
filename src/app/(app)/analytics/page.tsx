@@ -122,7 +122,7 @@ export default async function AnalyticsPage() {
     const dk = format(new Date(a.dateTime), "yyyy-MM-dd");
     if (!trendMap[dk]) trendMap[dk] = { total: 0, completed: 0 };
     trendMap[dk].total++;
-    if (a.status === "COMPLETED") trendMap[dk].completed++;
+    if (a.status === "DISPENSED") trendMap[dk].completed++;
   }
   const trendDays = Array.from({ length: 7 }, (_, i) => {
     const d  = subDays(now, 6 - i);
@@ -136,7 +136,7 @@ export default async function AnalyticsPage() {
   for (const s of statusCounts) statusMap[s.status] = s._count.status;
   const statusTotal = Object.values(statusMap).reduce((a, b) => a + b, 0);
   const statusRows = [
-    { label: "Completed",  count: statusMap["COMPLETED"]  ?? 0, color: "bg-emerald-500" },
+    { label: "Dispensed",  count: statusMap["DISPENSED"]  ?? 0, color: "bg-emerald-500" },
     { label: "Confirmed",  count: statusMap["CONFIRMED"]  ?? 0, color: "bg-blue-500"    },
     { label: "Requested",  count: statusMap["REQUESTED"]  ?? 0, color: "bg-amber-500"   },
     { label: "Cancelled",  count: statusMap["CANCELLED"]  ?? 0, color: "bg-red-500"     },
@@ -158,7 +158,7 @@ export default async function AnalyticsPage() {
     : 0;
 
   /* ── Completion rate ──────────────────────────────────────────────────── */
-  const completionRate = pct(statusMap["COMPLETED"] ?? 0, statusTotal);
+  const completionRate = pct(statusMap["DISPENSED"] ?? 0, statusTotal);
   const cancellationRate = pct((statusMap["CANCELLED"] ?? 0) + (statusMap["NO_SHOW"] ?? 0), statusTotal);
 
   return (
@@ -344,7 +344,7 @@ export default async function AnalyticsPage() {
             <tbody className="divide-y divide-[var(--color-border)]">
               {[
                 { metric: "Total Appointments", cur: thisMonthAppts, prev: lastMonthAppts },
-                { metric: "Completed",          cur: statusMap["COMPLETED"] ?? 0, prev: null },
+                { metric: "Dispensed",          cur: statusMap["DISPENSED"] ?? 0, prev: null },
                 { metric: "Cancellations",      cur: (statusMap["CANCELLED"] ?? 0) + (statusMap["NO_SHOW"] ?? 0), prev: null },
                 { metric: "New Patients",        cur: newPatientsThisMonth, prev: null },
                 { metric: "Surgeries",           cur: totalSurgeriesThisMonth, prev: null },

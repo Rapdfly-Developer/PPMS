@@ -3,6 +3,16 @@ import { prisma } from "@/lib/prisma";
 import { startOfDay } from "date-fns";
 import { AppointmentsClient } from "./AppointmentsClient";
 
+async function expireStaleRequested() {
+  await prisma.appointment.updateMany({
+    where: {
+      status: "REQUESTED",
+      dateTime: { lt: startOfDay(new Date()) },
+    },
+    data: { status: "NO_SHOW" },
+  });
+}
+
 export default async function AppointmentsPage({
   searchParams,
 }: {
@@ -10,6 +20,9 @@ export default async function AppointmentsPage({
 }) {
   const sp   = await searchParams;
   const user = await requirePermission("appointments.view");
+
+  // Silently expire any REQUESTED appointments from previous days
+  await expireStaleRequested();
 
   const dateParam     = sp.date ?? "";
   const statusParam   = sp.status ?? "ALL";
@@ -34,7 +47,11 @@ export default async function AppointmentsPage({
       dateFilter = { gte: s, lte: e };
     }
   }
-  if (!dateFilter) dateFilter = { gte: startOfDay(new Date()) };
+  if (!dateFilter) {
+    const s = startOfDay(new Date());
+    const e = new Date(s); e.setHours(23, 59, 59, 999);
+    dateFilter = { gte: s, lte: e };
+  }
 
   // ── Build where clause ─────────────────────────────────────────────────
   const where: any = {};
@@ -42,7 +59,7 @@ export default async function AppointmentsPage({
   if (user.role === "DOCTOR") {
     where.doctorId = scopeDoctorId(user);
     where.dateTime = dateFilter;
-    if (statusParam === "ALL") where.status = { in: ["REQUESTED", "SCHEDULED", "CONFIRMED", "COMPLETED"] };
+    if (statusParam === "ALL") where.status = { in: ["REQUESTED", "SCHEDULED", "CONFIRMED", "DISPENSED"] };
   } else if (user.role === "HOSPITAL") {
     where.hospitalId = user.hospitalId;
     where.dateTime = dateParam ? dateFilter : { gte: startOfDay(new Date()) };

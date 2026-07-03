@@ -5,7 +5,7 @@ import { useCallback, useTransition, useState, useRef, useEffect } from "react";
 import { format, isToday, isTomorrow } from "date-fns";
 import {
   Search, X, ChevronDown, ChevronRight,
-  Filter, Calendar, Plus,
+  Filter, Calendar, Plus, Building2,
 } from "lucide-react";
 import Link from "next/link";
 import clsx from "clsx";
@@ -18,13 +18,13 @@ const STATUSES = [
   { value: "SCHEDULED",   label: "Scheduled"    },
   { value: "REQUESTED",   label: "Requested"    },
   { value: "CONFIRMED",   label: "Confirmed"    },
-  { value: "COMPLETED",   label: "Completed"    },
+  { value: "DISPENSED",   label: "Dispensed"    },
   { value: "CANCELLED",   label: "Cancelled"    },
   { value: "NO_SHOW",     label: "No Show"      },
   { value: "RESCHEDULED", label: "Rescheduled"  },
 ];
 
-const VISIT_TYPES = ["Chief Complaint", "Specialist OPD", "Emergency", "Follow-up", "Post-op Review"];
+const VISIT_TYPES = ["General OPD", "Emergency", "Follow-up", "Post-op Review"];
 const PAGE_SIZES  = [10, 25, 50, 100];
 
 function dayHeading(dk: string) {
@@ -82,12 +82,13 @@ export function AppointmentsClient({
   const pathname = usePathname();
   const [isPending, startTransition] = useTransition();
 
-  // filter panel toggle (default open)
-  const [showFilters, setShowFilters] = useState(true);
+  // filter panel toggle (default closed)
+  const [showFilters, setShowFilters] = useState(false);
 
   // search debounce
   const [searchInput, setSearchInput] = useState(search);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const debounceRef  = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const dateInputRef = useRef<HTMLInputElement>(null);
   useEffect(() => { setSearchInput(search); }, [search]);
 
   // ── group data ──────────────────────────────────────────────────────────
@@ -110,6 +111,18 @@ export function AppointmentsClient({
   // all slot keys  e.g. "2026-06-26:8"
   const allSlotKeys = dateKeys.flatMap((dk) =>
     Object.keys(byDateHour[dk]).map((hk) => `${dk}:${hk}`)
+  );
+
+  // hospital grouping for doctor role
+  const byHospital: Record<string, { name: string; appts: any[] }> = {};
+  for (const a of appointments) {
+    const hid   = a.hospital?.id   ?? "unknown";
+    const hname = a.hospital?.name ?? "Unknown Hospital";
+    if (!byHospital[hid]) byHospital[hid] = { name: hname, appts: [] };
+    byHospital[hid].appts.push(a);
+  }
+  const hospitalKeys = Object.keys(byHospital).sort((a, b) =>
+    byHospital[a].name.localeCompare(byHospital[b].name)
   );
 
   // default: expand first slot only
@@ -198,7 +211,7 @@ export function AppointmentsClient({
     return out;
   }
 
-  const hasFilters = search || statusParam !== "ALL" || doctorIdParam || visitTypeParam || deptParam || hospitalParam;
+  const hasFilters = search || statusParam !== "ALL" || doctorIdParam || visitTypeParam || deptParam || hospitalParam || dateParam;
 
   const displayDate = dateParam
     ? format(new Date(dateParam + "T00:00:00"), "d MMM yyyy")
@@ -273,7 +286,7 @@ export function AppointmentsClient({
               href="/appointments/availability"
               className="inline-flex items-center gap-2 bg-[var(--color-primary-600)] text-white text-sm font-semibold px-4 py-2.5 rounded-xl hover:bg-[var(--color-primary-700)] transition-colors shadow-sm"
             >
-              Doctor Appointment
+              Hospital Appointment
             </Link>
           )}
           {(isHospital || role === "DOCTOR") && (
@@ -284,14 +297,6 @@ export function AppointmentsClient({
               <Plus size={15} /> {role === "DOCTOR" ? "Patient Appointment" : "Book Appointment"}
             </Link>
           )}
-          {/* Date chip */}
-          <button
-            onClick={() => navigate({ date: "", page: 1 })}
-            className="inline-flex items-center gap-2 border border-[var(--color-border)] bg-white text-sm font-medium px-3.5 py-2.5 rounded-xl hover:bg-[var(--color-surface-sunken)] transition-colors"
-          >
-            <Calendar size={14} className="text-[var(--color-ink-400)]" />
-            <span className="text-[var(--color-ink-700)]">{displayDate}</span>
-          </button>
           {/* Filter toggle */}
           <button
             onClick={() => setShowFilters((v) => !v)}
@@ -311,6 +316,26 @@ export function AppointmentsClient({
       {showFilters && (
         <div className="surface-card p-4 mb-4">
           <div className="flex flex-wrap items-end gap-3">
+            {/* Date */}
+            <div className="flex flex-col gap-1">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Date</span>
+              <div className="relative inline-flex items-center gap-2 border border-[var(--color-border)] bg-white rounded-lg pl-3 pr-4 py-2 select-none">
+                <Calendar size={13} className="text-[var(--color-ink-400)] shrink-0 pointer-events-none" />
+                <span className="text-sm text-[var(--color-ink-700)] pointer-events-none">{displayDate}</span>
+                {/* Full-size overlay — the input itself receives every click and opens the native picker */}
+                <input
+                  ref={dateInputRef}
+                  type="date"
+                  value={dateParam || format(new Date(), "yyyy-MM-dd")}
+                  onChange={(e) => {
+                    if (e.target.value) navigate({ date: e.target.value, page: 1 });
+                  }}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer rounded-lg"
+                  style={{ colorScheme: "light" }}
+                />
+              </div>
+            </div>
+
             {/* Search */}
             <div className="flex flex-col gap-1 flex-1 min-w-[180px] max-w-xs">
               <label className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Search Patient</label>
@@ -385,7 +410,7 @@ export function AppointmentsClient({
             {/* Clear */}
             {hasFilters && (
               <button
-                onClick={() => navigate({ search: "", status: "ALL", doctor: "", visitType: "", dept: "", hospital: "", page: 1 })}
+                onClick={() => navigate({ search: "", status: "ALL", doctor: "", visitType: "", dept: "", hospital: "", date: "", page: 1 })}
                 className="text-sm font-medium text-[var(--color-primary-600)] hover:text-[var(--color-primary-800)] whitespace-nowrap pb-2"
               >
                 Clear all
@@ -395,36 +420,6 @@ export function AppointmentsClient({
         </div>
       )}
 
-      {/* ── View controls + top pagination ────────────────────────────────── */}
-      <div className="flex items-center flex-wrap gap-3 mb-4">
-
-        {/* Page size */}
-        <div className="flex items-center gap-2 text-sm text-[var(--color-ink-600)]">
-          <span>Show</span>
-          <div className="relative">
-            <select
-              value={pageSize}
-              onChange={(e) => navigate({ pageSize: e.target.value, page: 1 })}
-              className="border border-[var(--color-border)] rounded-lg pl-3 pr-6 py-1.5 text-sm bg-white focus:outline-none appearance-none cursor-pointer"
-            >
-              {PAGE_SIZES.map((n) => <option key={n} value={n}>{n}</option>)}
-            </select>
-            <ChevronDown size={12} className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] pointer-events-none" />
-          </div>
-          <span>per page</span>
-        </div>
-
-        {/* Count */}
-        {total > 0 && (
-          <span className="text-sm text-[var(--color-ink-500)]">
-            Showing <span className="font-semibold text-[var(--color-ink-700)]">{from}–{to}</span> of{" "}
-            <span className="font-semibold text-[var(--color-ink-700)]">{total}</span> appointment{total !== 1 ? "s" : ""}
-          </span>
-        )}
-
-        <div className="flex-1" />
-        <PaginationRow />
-      </div>
 
       {/* ── Empty state ───────────────────────────────────────────────────── */}
       {appointments.length === 0 && (
@@ -443,8 +438,53 @@ export function AppointmentsClient({
         </div>
       )}
 
-      {/* ── Date sections ─────────────────────────────────────────────────── */}
-      {appointments.length > 0 && (
+      {/* ── Hospital sections (Doctor role) ───────────────────────────────── */}
+      {appointments.length > 0 && role === "DOCTOR" && (
+        <div className="flex flex-col gap-5">
+          {hospitalKeys.map((hid) => {
+            const { name: hname, appts: happts } = byHospital[hid];
+            const inQueue   = happts.filter((a: any) => a.status === "CONFIRMED" || a.status === "REQUESTED" || a.status === "SCHEDULED").length;
+            const dispensed = happts.filter((a: any) => a.status === "DISPENSED").length;
+
+            return (
+              <div key={hid} className="surface-card p-4 flex flex-col gap-3">
+                {/* Hospital heading */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="flex items-center justify-center w-8 h-8 rounded-lg"
+                      style={{ background: "var(--color-primary-100)" }}>
+                      <Building2 size={15} style={{ color: "var(--color-primary-600)" }} />
+                    </div>
+                    <div>
+                      <h2 className="text-base font-semibold text-[var(--color-ink-800)]">{hname}</h2>
+                      <p className="text-xs text-[var(--color-ink-400)]">
+                        {inQueue} in queue{dispensed > 0 ? ` · ${dispensed} dispensed` : ""}
+                      </p>
+                    </div>
+                  </div>
+                  <span className="flex items-center justify-center w-7 h-7 rounded-full text-sm font-bold"
+                    style={{ background: "var(--color-primary-100)", color: "var(--color-primary-700)" }}>
+                    {happts.length}
+                  </span>
+                </div>
+
+                {/* Appointment rows */}
+                <div className="flex flex-col gap-3">
+                  {happts
+                    .slice()
+                    .sort((a: any, b: any) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime())
+                    .map((appt: any) => (
+                      <AppointmentRow key={appt.id} appt={appt} role={role} token={tokenMap[appt.id]} />
+                    ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* ── Date sections (Hospital / other roles) ────────────────────────── */}
+      {appointments.length > 0 && role !== "DOCTOR" && (
         <div className="flex flex-col gap-5">
           {dateKeys.map((dk) => {
             const dateAppts = byDate[dk];
@@ -453,9 +493,9 @@ export function AppointmentsClient({
             const dateAllExp = hourKeys.every((hk) => expandedSlots.has(`${dk}:${hk}`));
 
             return (
-              <div key={dk}>
-                {/* Date header */}
-                <div className="flex items-center justify-between mb-3">
+              <div key={dk} className="surface-card p-4 flex flex-col gap-3">
+                {/* Date heading */}
+                <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <h2 className="text-base font-semibold text-[var(--color-ink-800)]">
                       {dayHeading(dk)}
@@ -464,27 +504,23 @@ export function AppointmentsClient({
                       ({dateAppts.length} Appointment{dateAppts.length !== 1 ? "s" : ""})
                     </span>
                   </div>
-                  {role !== "DOCTOR" && (
-                    <button
-                      onClick={() => toggleDateAll(dk)}
-                      className="inline-flex items-center gap-1.5 text-sm font-medium text-[var(--color-primary-600)] hover:text-[var(--color-primary-800)] transition-colors"
-                    >
-                      <ChevronDown
-                        size={15}
-                        className={clsx("transition-transform", !dateAllExp && "-rotate-90")}
-                      />
-                      {dateAllExp ? "Collapse All" : "Expand All"}
-                    </button>
-                  )}
+                  <button
+                    onClick={() => toggleDateAll(dk)}
+                    className="inline-flex items-center gap-1.5 text-sm font-medium text-[var(--color-primary-600)] hover:text-[var(--color-primary-800)] transition-colors"
+                  >
+                    <ChevronDown
+                      size={15}
+                      className={clsx("transition-transform", !dateAllExp && "-rotate-90")}
+                    />
+                    {dateAllExp ? "Collapse All" : "Expand All"}
+                  </button>
                 </div>
 
-                {/* Flat list for all roles */}
-                <div className="rounded-xl border border-[var(--color-border)] bg-white shadow-sm overflow-hidden">
-                  <ul className="divide-y divide-[var(--color-border)] px-5">
-                    {dateAppts.map((appt: any) => (
-                      <AppointmentRow key={appt.id} appt={appt} role={role} token={tokenMap[appt.id]} />
-                    ))}
-                  </ul>
+                {/* Appointment rows */}
+                <div className="flex flex-col gap-3">
+                  {dateAppts.map((appt: any) => (
+                    <AppointmentRow key={appt.id} appt={appt} role={role} token={tokenMap[appt.id]} />
+                  ))}
                 </div>
               </div>
             );
@@ -492,8 +528,8 @@ export function AppointmentsClient({
         </div>
       )}
 
-      {/* ── Bottom pagination ─────────────────────────────────────────────── */}
-      {total > 0 && totalPages > 1 && (
+      {/* ── Bottom — Show / count / pagination ───────────────────────────── */}
+      {total > 0 && (
         <div className="flex items-center justify-between mt-6 flex-wrap gap-3">
           <div className="flex items-center gap-2 text-sm text-[var(--color-ink-500)]">
             <span>Show</span>

@@ -121,15 +121,16 @@ export async function saveRolePermissions(roleName: string, keys: string[]) {
   const oldKeys = oldPerms.map((rp) => rp.permission.key).sort().join(",");
   const newKeys = keys.sort().join(",");
 
-  await prisma.$transaction(async (tx) => {
-    await tx.rolePermission.deleteMany({ where: { role: roleName } });
-    if (perms.length > 0) {
-      await tx.rolePermission.createMany({
-        data: perms.map((p) => ({ role: roleName, permissionId: p.id })),
-        skipDuplicates: true,
-      });
-    }
-  });
+  const txOps: any[] = [
+    prisma.rolePermission.deleteMany({ where: { role: roleName } }),
+    ...(perms.length > 0
+      ? [prisma.rolePermission.createMany({
+          data: perms.map((p) => ({ role: roleName, permissionId: p.id })),
+          skipDuplicates: true,
+        })]
+      : []),
+  ];
+  await prisma.$transaction(txOps);
 
   // Audit log
   await prisma.auditLog.create({

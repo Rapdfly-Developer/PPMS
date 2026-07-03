@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import { format } from "date-fns";
 import Link from "next/link";
 import {
-  X, ChevronRight, Hospital, Stethoscope, FileText,
+  ChevronRight, ChevronDown, Hospital, Stethoscope, FileText,
   CheckCircle2, Clock, AlertCircle, Filter, ClipboardCheck,
 } from "lucide-react";
 import { EmrViewerButton } from "./EmrViewerModal";
@@ -118,18 +118,8 @@ function VisitCard({ visit, udid }: { visit: SerialVisit; udid: string }) {
   );
 }
 
-/* ── Previous Visits Drawer ──────────────────────────────────────────────────── */
-function PreviousVisitsDrawer({
-  open,
-  onClose,
-  visits,
-  udid,
-}: {
-  open: boolean;
-  onClose: () => void;
-  visits: SerialVisit[];
-  udid: string;
-}) {
+/* ── Previous Visits Inline Panel ───────────────────────────────────────────── */
+function PreviousVisitsPanel({ visits, udid }: { visits: SerialVisit[]; udid: string }) {
   const hospitals = useMemo(() => {
     const names = [...new Set(visits.map((v) => v.hospital?.name).filter(Boolean) as string[])];
     return names.sort();
@@ -143,69 +133,42 @@ function PreviousVisitsDrawer({
   }, [visits, hospitalFilter]);
 
   return (
-    <>
-      {/* Backdrop */}
-      {open && (
-        <div
-          className="fixed inset-0 bg-black/30 z-40 transition-opacity"
-          onClick={onClose}
-        />
+    <div className="mt-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-3 bg-[var(--color-primary-800)] text-white">
+        <p className="font-semibold text-sm">Previous Visits</p>
+        <span className="text-xs text-white/60">{visits.length} visit{visits.length !== 1 ? "s" : ""}</span>
+      </div>
+
+      {/* Hospital filter */}
+      {hospitals.length > 1 && (
+        <div className="px-4 py-2.5 bg-white border-b border-[var(--color-border)] flex items-center gap-2">
+          <Filter size={12} className="text-[var(--color-ink-400)] shrink-0" />
+          <select
+            value={hospitalFilter}
+            onChange={(e) => setHospitalFilter(e.target.value)}
+            className="flex-1 text-sm text-[var(--color-ink-700)] bg-transparent outline-none cursor-pointer"
+          >
+            <option value="ALL">All Hospitals</option>
+            {hospitals.map((h) => (
+              <option key={h} value={h}>{h}</option>
+            ))}
+          </select>
+        </div>
       )}
 
-      {/* Drawer */}
-      <div
-        className={`fixed top-0 right-0 h-full w-full sm:w-[480px] bg-[var(--color-surface-sunken)] z-50 shadow-2xl flex flex-col transition-transform duration-300 ${
-          open ? "translate-x-0" : "translate-x-full"
-        }`}
-      >
-        {/* Drawer header */}
-        <div className="flex items-center justify-between px-5 py-4 bg-[var(--color-primary-800)] text-white shrink-0">
-          <div>
-            <p className="font-bold text-base">Previous Visits</p>
-            <p className="text-xs text-white/60 mt-0.5">{filtered.length} of {visits.length} visit{visits.length !== 1 ? "s" : ""}</p>
+      {/* Cards */}
+      <div className="p-4 flex flex-col gap-3">
+        {filtered.length === 0 ? (
+          <div className="text-center py-8">
+            <AlertCircle size={28} className="mx-auto text-[var(--color-ink-300)] mb-2" />
+            <p className="text-sm text-[var(--color-ink-400)]">No visits found.</p>
           </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-lg hover:bg-white/15 transition-colors"
-          >
-            <X size={18} />
-          </button>
-        </div>
-
-        {/* Hospital filter */}
-        {hospitals.length > 1 && (
-          <div className="px-4 py-3 bg-white border-b border-[var(--color-border)] shrink-0">
-            <div className="flex items-center gap-2">
-              <Filter size={13} className="text-[var(--color-ink-400)] shrink-0" />
-              <select
-                value={hospitalFilter}
-                onChange={(e) => setHospitalFilter(e.target.value)}
-                className="flex-1 text-sm text-[var(--color-ink-700)] bg-transparent outline-none cursor-pointer"
-              >
-                <option value="ALL">All Hospitals</option>
-                {hospitals.map((h) => (
-                  <option key={h} value={h}>{h}</option>
-                ))}
-              </select>
-            </div>
-          </div>
+        ) : (
+          filtered.map((v) => <VisitCard key={v.id} visit={v} udid={udid} />)
         )}
-
-        {/* Visit list */}
-        <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3">
-          {filtered.length === 0 ? (
-            <div className="text-center py-16">
-              <AlertCircle size={32} className="mx-auto text-[var(--color-ink-300)] mb-3" />
-              <p className="text-sm text-[var(--color-ink-400)]">No visits found.</p>
-            </div>
-          ) : (
-            filtered.map((v) => (
-              <VisitCard key={v.id} visit={v} udid={udid} />
-            ))
-          )}
-        </div>
       </div>
-    </>
+    </div>
   );
 }
 
@@ -225,7 +188,7 @@ export function PatientProfileClient({
   userRole: string;
   timelineEntries?: TimelineEntry[];
 }) {
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [visitsOpen, setVisitsOpen] = useState(false);
 
   const hasToday = todayVisit !== null;
   const hasPendingAppointment = !hasToday && !!todayAppointmentId;
@@ -236,11 +199,11 @@ export function PatientProfileClient({
       <div className="flex flex-col sm:flex-row gap-3">
         {/* Previous Visits */}
         <button
-          onClick={() => setDrawerOpen(true)}
+          onClick={() => setVisitsOpen((v) => !v)}
           disabled={visits.length === 0}
           className="flex-1 flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-xl font-semibold text-sm bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors shadow-sm"
         >
-          <ChevronRight size={16} />
+          {visitsOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
           Previous Visits
           {visits.length > 0 && (
             <span className="ml-1 bg-white/20 text-white text-[11px] font-bold px-2 py-0.5 rounded-full">
@@ -312,13 +275,10 @@ export function PatientProfileClient({
         </div>
       )}
 
-      {/* ── Drawer ──────────────────────────────────────────────────────── */}
-      <PreviousVisitsDrawer
-        open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
-        visits={visits}
-        udid={udid}
-      />
+      {/* ── Inline Previous Visits ───────────────────────────────────── */}
+      {visitsOpen && visits.length > 0 && (
+        <PreviousVisitsPanel visits={visits} udid={udid} />
+      )}
     </>
   );
 }

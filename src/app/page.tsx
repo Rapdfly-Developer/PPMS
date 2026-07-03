@@ -1,7 +1,10 @@
 import { redirect } from "next/navigation";
-import { requireUser, roleHome } from "@/lib/rbac";
+import { auth } from "@/auth";
+import { roleHome } from "@/lib/rbac";
+import { LandingClient } from "./LandingClient";
 
 export default async function Home() {
-  const user = await requireUser();
-  redirect(roleHome(user.role));
+  const session = await auth();
+  if (session?.user) redirect(roleHome((session.user as any).role));
+  return <LandingClient />;
 }

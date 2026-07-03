@@ -8,55 +8,69 @@ import bcrypt from "bcryptjs";
 export async function createUser(formData: FormData): Promise<{ error?: string }> {
   await requireRole("DOCTOR");
 
-  const username = (formData.get("username") as string)?.trim();
-  const password = formData.get("password") as string;
-  const role = (formData.get("role") as string)?.trim().toUpperCase();
-  const name = (formData.get("name") as string)?.trim();
-  const email = (formData.get("email") as string)?.trim() || undefined;
-  const mobile = (formData.get("mobile") as string)?.trim() || null;
-  const hospitalId = (formData.get("hospitalId") as string)?.trim();
-  const doctorId = formData.get("doctorId") as string;
+  const username  = (formData.get("username") as string)?.trim();
+  const password  = formData.get("password") as string;
+  const userType  = (formData.get("userType") as string)?.trim().toUpperCase(); // HOSPITAL | RECEPTIONIST | REFRACTIONIST | STAFF
+  const name      = (formData.get("name") as string)?.trim();
+  const email     = (formData.get("email") as string)?.trim() || undefined;
+  const mobile    = (formData.get("mobile") as string)?.trim() || null;
+  const hospitalId= (formData.get("hospitalId") as string)?.trim() || null;
+  const doctorId  = (formData.get("doctorId") as string)?.trim() || null;
+  const active    = formData.get("active") !== "false";
 
-  if (!username || !password || !role || !name || !hospitalId) {
+  if (!username || !password || !userType || !name) {
     return { error: "All required fields must be filled." };
-  }
-  if (role !== "HOSPITAL" && role !== "REFRACTIONIST") {
-    return { error: "Role must be HOSPITAL or REFRACTIONIST." };
   }
   if (mobile && !/^\d{10}$/.test(mobile)) {
     return { error: "Mobile number must be exactly 10 digits." };
   }
+  if (password.length < 6) {
+    return { error: "Password must be at least 6 characters." };
+  }
 
-  const hospital = await prisma.hospital.findUnique({ where: { id: hospitalId } });
-  if (!hospital) {
-    return { error: "Selected hospital not found." };
+  // Types that need a hospital association
+  const needsHospital = userType !== "HOSPITAL";
+  if (needsHospital && !hospitalId) {
+    return { error: "Hospital is required for this user type." };
+  }
+
+  if (hospitalId) {
+    const hospital = await prisma.hospital.findUnique({ where: { id: hospitalId } });
+    if (!hospital) return { error: "Selected hospital not found." };
   }
 
   const existing = await prisma.user.findUnique({ where: { username } });
   if (existing) return { error: "Username already taken." };
 
+  // Map userType → DB role
+  const role = userType === "REFRACTIONIST" ? "REFRACTIONIST" : "HOSPITAL";
+
   const passwordHash = await bcrypt.hash(password, 10);
 
   try {
     const user = await prisma.user.create({
-      data: { username, passwordHash, role, email, active: true },
+      data: { username, passwordHash, role, email: email || null, active },
     });
 
-    if (role === "HOSPITAL") {
-      await (prisma.hospitalStaff as any).create({
-        data: { userId: user.id, hospitalId, name, mobile },
-      });
-    } else {
-      await (prisma.refractionist as any).create({
-        data: { userId: user.id, hospitalId, doctorId, name, mobile },
-      });
+    if (hospitalId) {
+      if (role === "REFRACTIONIST") {
+        await (prisma.refractionist as any).create({
+          data: { userId: user.id, hospitalId, doctorId, name, mobile },
+        });
+      } else {
+        await (prisma.hospitalStaff as any).create({
+          data: { userId: user.id, hospitalId, name, mobile },
+        });
+      }
     }
+    // If HOSPITAL type with no hospitalId: standalone hospital-level account (no staff record)
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "Unknown error";
     return { error: `Failed to create user: ${msg}` };
   }
 
   revalidatePath("/users");
+  revalidatePath("/settings");
   return {};
 }
 

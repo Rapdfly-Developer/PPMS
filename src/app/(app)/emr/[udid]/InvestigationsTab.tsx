@@ -78,7 +78,9 @@ export function InvestigationsTab({
   udid: string;
   readOnly: boolean;
 }) {
-  // Flatten all orders across all visits (current + prior), newest first
+  const todayStr = format(new Date(), "yyyy-MM-dd");
+
+  // All orders flattened, newest first
   const allOrders: any[] = [
     ...(visit.investigationOrders ?? []),
     ...priorVisits.flatMap((v: any) =>
@@ -86,8 +88,11 @@ export function InvestigationsTab({
     ),
   ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-  const hasHistory = allOrders.length > 0;
-  const [activeTab, setActiveTab] = useState<"previous" | "new">(hasHistory ? "previous" : "new");
+  // Today's orders stay in the New Investigations tab until EOD
+  const todayOrders = allOrders.filter((o) => format(new Date(o.createdAt), "yyyy-MM-dd") === todayStr);
+  const previousOrders = allOrders.filter((o) => format(new Date(o.createdAt), "yyyy-MM-dd") !== todayStr);
+
+  const [activeTab, setActiveTab] = useState<"previous" | "new">("new");
 
   const tabCls = (id: "previous" | "new") =>
     clsx(
@@ -103,24 +108,31 @@ export function InvestigationsTab({
       <div className="flex gap-3 flex-wrap">
         <button className={tabCls("previous")} onClick={() => setActiveTab("previous")}>
           <History size={15} /> Previous Investigations
-          {allOrders.length > 0 && (
+          {previousOrders.length > 0 && (
             <span className={clsx("rounded-full text-[10px] font-semibold px-1.5 py-0.5",
               activeTab === "previous" ? "bg-white/20 text-white" : "bg-[var(--color-primary-100)] text-[var(--color-primary-700)]"
             )}>
-              {allOrders.length}
+              {previousOrders.length}
             </span>
           )}
         </button>
         <button className={tabCls("new")} onClick={() => setActiveTab("new")}>
           <Plus size={15} /> New Investigations
+          {todayOrders.length > 0 && (
+            <span className={clsx("rounded-full text-[10px] font-semibold px-1.5 py-0.5",
+              activeTab === "new" ? "bg-white/20 text-white" : "bg-[var(--color-primary-100)] text-[var(--color-primary-700)]"
+            )}>
+              {todayOrders.length}
+            </span>
+          )}
         </button>
       </div>
 
       {activeTab === "previous" && (
-        <PreviousInvestigations orders={allOrders} udid={udid} readOnly={readOnly} />
+        <PreviousInvestigations orders={previousOrders} udid={udid} readOnly={readOnly} />
       )}
       {activeTab === "new" && !readOnly && (
-        <NewInvestigations visit={visit} udid={udid} onOrdered={() => setActiveTab("previous")} />
+        <NewInvestigations visit={visit} udid={udid} todayOrders={todayOrders} onOrdered={() => {}} />
       )}
       {activeTab === "new" && readOnly && (
         <p className="text-sm text-[var(--color-ink-400)] text-center py-8">This visit is closed — no new orders can be placed.</p>
@@ -316,12 +328,12 @@ function UploadButton({ orderId, udid }: { orderId: string; udid: string }) {
   );
 }
 
-// ── New Investigations (order form) ──────────────────────────────────────
+// ── New Investigations (order form + today's orders) ─────────────────────
 
 function NewInvestigations({
-  visit, udid, onOrdered,
+  visit, udid, todayOrders, onOrdered,
 }: {
-  visit: any; udid: string; onOrdered: () => void;
+  visit: any; udid: string; todayOrders: any[]; onOrdered: () => void;
 }) {
   const [activeCategory, setActiveCategory] = useState(Object.keys(INV_CATALOG)[0]);
   const [selected, setSelected] = useState<string[]>([]);
@@ -342,109 +354,159 @@ function NewInvestigations({
       }
       setSelected([]);
       setNotes("");
-      onOrdered();
     });
   };
 
+  const allFlat = Object.values(INV_CATALOG).flat();
   const categories = Object.keys(INV_CATALOG);
   const currentItems = INV_CATALOG[activeCategory] ?? [];
+  const todayTotal = todayOrders.reduce((sum, o) => sum + (allFlat.find((i) => i.name === o.testName)?.price ?? 0), 0);
 
   return (
-    <Card className="p-0 overflow-hidden">
-      {/* Priority + Laterality */}
-      <div className="px-5 pt-5 pb-4 flex flex-wrap gap-32 border-b border-[var(--color-border)]">
-        <div>
-          <p className="text-xs font-semibold tracking-widest text-[var(--color-ink-400)] uppercase mb-2">Priority</p>
-          <SingleChipSelect options={ORDER_PRIORITIES} value={priority} onChange={setPriority} />
+    <div className="flex flex-col gap-4">
+      {/* Order form */}
+      <Card className="p-0 overflow-hidden">
+        {/* Priority + Laterality */}
+        <div className="px-5 pt-5 pb-4 flex flex-wrap gap-32 border-b border-[var(--color-border)]">
+          <div>
+            <p className="text-xs font-semibold tracking-widest text-[var(--color-ink-400)] uppercase mb-2">Priority</p>
+            <SingleChipSelect options={ORDER_PRIORITIES} value={priority} onChange={setPriority} />
+          </div>
+          <div>
+            <p className="text-xs font-semibold tracking-widest text-[var(--color-ink-400)] uppercase mb-2">Laterality</p>
+            <SingleChipSelect options={LATERALITY} value={laterality} onChange={setLaterality} />
+          </div>
         </div>
-        <div>
-          <p className="text-xs font-semibold tracking-widest text-[var(--color-ink-400)] uppercase mb-2">Laterality</p>
-          <SingleChipSelect options={LATERALITY} value={laterality} onChange={setLaterality} />
-        </div>
-      </div>
 
-      {/* Category sub-tabs */}
-      <div className="flex overflow-x-auto scrollbar-thin border-b border-[var(--color-border)]">
-        {categories.map((cat) => (
-          <button
-            key={cat}
-            onClick={() => setActiveCategory(cat)}
-            className={clsx(
-              "px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-colors border-b-2",
-              activeCategory === cat
-                ? "border-[var(--color-primary-600)] text-[var(--color-primary-700)]"
-                : "border-transparent text-[var(--color-ink-500)] hover:text-[var(--color-ink-700)]"
-            )}
-          >
-            {cat}
-          </button>
-        ))}
-      </div>
-
-      {/* Test checkboxes */}
-      <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
-        {currentItems.map((item) => {
-          const checked = selected.includes(item.name);
-          return (
-            <label
-              key={item.name}
+        {/* Category sub-tabs */}
+        <div className="flex overflow-x-auto scrollbar-thin border-b border-[var(--color-border)]">
+          {categories.map((cat) => (
+            <button
+              key={cat}
+              onClick={() => setActiveCategory(cat)}
               className={clsx(
-                "flex items-center justify-between px-3 py-2.5 rounded-xl border cursor-pointer transition-colors",
-                checked
-                  ? "border-[var(--color-primary-400)] bg-[var(--color-primary-50)]"
-                  : "border-[var(--color-border)] hover:border-[var(--color-primary-300)] hover:bg-[var(--color-surface-sunken)]"
+                "px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-colors border-b-2",
+                activeCategory === cat
+                  ? "border-[var(--color-primary-600)] text-[var(--color-primary-700)]"
+                  : "border-transparent text-[var(--color-ink-500)] hover:text-[var(--color-ink-700)]"
               )}
             >
-              <span className="flex items-center gap-2.5 text-sm text-[var(--color-ink-700)]">
-                <input
-                  type="checkbox"
-                  checked={checked}
-                  onChange={() => toggleTest(item.name)}
-                  className="accent-[var(--color-primary-600)]"
-                />
-                {item.name}
-              </span>
-              <span className="text-xs font-medium text-[var(--color-ink-400)] shrink-0 ml-2">
-                ₹{item.price.toLocaleString("en-IN")}
-              </span>
-            </label>
-          );
-        })}
-      </div>
-
-      {/* Notes + place order */}
-      <div className="px-4 pb-4 flex flex-col gap-3 border-t border-[var(--color-border)] pt-3">
-        <textarea
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          placeholder="Clinical notes / special instructions..."
-          rows={2}
-          className="w-full rounded-xl border border-[var(--color-border)] px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
-        />
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-[var(--color-ink-400)]">
-            {selected.length} test{selected.length !== 1 ? "s" : ""} selected
-            {selected.length > 0 && (
-              <span className="ml-2">
-                · Est. ₹{
-                  Object.values(INV_CATALOG).flat()
-                    .filter((i) => selected.includes(i.name))
-                    .reduce((sum, i) => sum + i.price, 0)
-                    .toLocaleString("en-IN")
-                }
-              </span>
-            )}
-          </span>
-          <button
-            disabled={pending || selected.length === 0}
-            onClick={placeOrders}
-            className="rounded-xl bg-[var(--color-primary-600)] text-white text-sm font-medium px-5 py-2 hover:bg-[var(--color-primary-700)] disabled:opacity-50"
-          >
-            Place Order{selected.length > 1 ? "s" : ""}
-          </button>
+              {cat}
+            </button>
+          ))}
         </div>
-      </div>
-    </Card>
+
+        {/* Test checkboxes */}
+        <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {currentItems.map((item) => {
+            const checked = selected.includes(item.name);
+            return (
+              <label
+                key={item.name}
+                className={clsx(
+                  "flex items-center justify-between px-3 py-2.5 rounded-xl border cursor-pointer transition-colors",
+                  checked
+                    ? "border-[var(--color-primary-400)] bg-[var(--color-primary-50)]"
+                    : "border-[var(--color-border)] hover:border-[var(--color-primary-300)] hover:bg-[var(--color-surface-sunken)]"
+                )}
+              >
+                <span className="flex items-center gap-2.5 text-sm text-[var(--color-ink-700)]">
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => toggleTest(item.name)}
+                    className="accent-[var(--color-primary-600)]"
+                  />
+                  {item.name}
+                </span>
+                <span className="text-xs font-medium text-[var(--color-ink-400)] shrink-0 ml-2">
+                  ₹{item.price.toLocaleString("en-IN")}
+                </span>
+              </label>
+            );
+          })}
+        </div>
+
+        {/* Notes + place order */}
+        <div className="px-4 pb-4 flex flex-col gap-3 border-t border-[var(--color-border)] pt-3">
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="Clinical notes / special instructions..."
+            rows={2}
+            className="w-full rounded-xl border border-[var(--color-border)] px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
+          />
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-[var(--color-ink-400)]">
+              {selected.length} test{selected.length !== 1 ? "s" : ""} selected
+              {selected.length > 0 && (
+                <span className="ml-2">
+                  · Est. ₹{allFlat.filter((i) => selected.includes(i.name)).reduce((s, i) => s + i.price, 0).toLocaleString("en-IN")}
+                </span>
+              )}
+            </span>
+            <button
+              disabled={pending || selected.length === 0}
+              onClick={placeOrders}
+              className="rounded-xl bg-[var(--color-primary-600)] text-white text-sm font-medium px-5 py-2 hover:bg-[var(--color-primary-700)] disabled:opacity-50"
+            >
+              {pending ? "Placing…" : `Place Order${selected.length > 1 ? "s" : ""}`}
+            </button>
+          </div>
+        </div>
+      </Card>
+
+      {/* Today's placed orders — stay here until EOD */}
+      {todayOrders.length > 0 && (
+        <Card className="p-0 overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--color-border)]">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 size={15} className="text-[var(--color-success-600)]" />
+              <p className="text-sm font-semibold text-[var(--color-ink-800)]">
+                Today&apos;s Orders
+              </p>
+              <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-[var(--color-primary-100)] text-[var(--color-primary-700)]">
+                {todayOrders.length}
+              </span>
+            </div>
+            <span className="text-xs text-[var(--color-ink-400)]">Moves to Previous Investigations at end of day</span>
+          </div>
+
+          <table className="w-full text-sm border-collapse">
+            <thead>
+              <tr className="bg-[var(--color-surface-sunken)] text-xs text-[var(--color-ink-500)] uppercase tracking-wide">
+                <th className="text-left px-4 py-2.5 font-medium">Test</th>
+                <th className="text-left px-4 py-2.5 font-medium">Category</th>
+                <th className="text-left px-4 py-2.5 font-medium">Priority</th>
+                <th className="text-left px-4 py-2.5 font-medium">Laterality</th>
+                <th className="text-left px-4 py-2.5 font-medium">Status</th>
+                <th className="text-right px-4 py-2.5 font-medium">Price</th>
+              </tr>
+            </thead>
+            <tbody>
+              {todayOrders.map((o) => (
+                <tr key={o.id} className="border-t border-[var(--color-border)] hover:bg-[var(--color-surface-sunken)]">
+                  <td className="px-4 py-2.5 font-medium text-[var(--color-ink-800)]">{o.testName}</td>
+                  <td className="px-4 py-2.5 text-[var(--color-ink-500)]">{o.category ?? "—"}</td>
+                  <td className="px-4 py-2.5"><PriorityPill priority={o.priority} /></td>
+                  <td className="px-4 py-2.5 text-[var(--color-ink-600)]">{o.laterality || "—"}</td>
+                  <td className="px-4 py-2.5"><StatusBadge status={o.status} resultRef={o.resultRef} /></td>
+                  <td className="px-4 py-2.5 text-right text-[var(--color-ink-600)]">
+                    ₹{(allFlat.find((i) => i.name === o.testName)?.price ?? 0).toLocaleString("en-IN")}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr className="border-t border-[var(--color-border)] bg-[var(--color-surface-sunken)]">
+                <td colSpan={5} className="px-4 py-2.5 text-xs font-semibold text-[var(--color-ink-500)]">Total Estimate</td>
+                <td className="px-4 py-2.5 text-right text-sm font-bold text-[var(--color-ink-800)]">₹{todayTotal.toLocaleString("en-IN")}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </Card>
+      )}
+    </div>
   );
 }
 

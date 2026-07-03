@@ -4,6 +4,16 @@ import React, { useState, useMemo } from "react";
 import Link from "next/link";
 import { format, formatDistanceToNow } from "date-fns";
 import {
+  createHospitalWithUser,
+  updateHospital,
+  toggleHospitalLink,
+  updateUser as updateUserAction,
+  deleteUser as deleteUserAction,
+  toggleUserActive as toggleUserActiveAction,
+  saveDoctorProfile,
+} from "@/app/(app)/settings/actions";
+import { createUser } from "@/app/(app)/users/actions";
+import {
   Users, Shield, Building2, Calendar, Bell,
   Activity, Download, Terminal,
   Search, ChevronDown, Plus, Eye, Edit, Trash2, Check, X,
@@ -26,6 +36,7 @@ type Section =
 interface UserRow {
   id: string; username: string; role: string; email: string;
   name: string; createdAt: string; hospital: string | null;
+  hospitalId: string | null; active: boolean; mobile: string;
 }
 interface AuditRow {
   id: string; entityType: string; action: string;
@@ -33,6 +44,7 @@ interface AuditRow {
 }
 interface HospitalRow {
   id: string; name: string; shortCode: string; address: string; contact: string;
+  active: boolean;
 }
 
 interface DoctorProfile {
@@ -62,17 +74,15 @@ const SIDEBAR_GROUPS: {
   {
     id: "user-mgmt", label: "User Management", icon: Users,
     items: [
-      { id: "users",       label: "Users",              icon: Users2,   badge: "Users" },
-      { id: "roles",       label: "Roles & Permissions", icon: Shield              },
-      { id: "departments", label: "Departments",         icon: Layers              },
+      { id: "users", label: "Users",               icon: Users2, badge: "Users" },
+      { id: "roles", label: "Roles & Permissions", icon: Shield                 },
     ],
   },
   {
     id: "hospital-settings", label: "Hospital Settings", icon: Building2,
     items: [
-      { id: "hospital",       label: "Hospital Information",  icon: Building  },
-      { id: "appointments",   label: "Appointment Settings",  icon: Calendar  },
-      { id: "notifications",  label: "Notifications",         icon: Bell, badge: "5 New" },
+      { id: "hospital",      label: "Hospital Information", icon: Building                    },
+      { id: "notifications", label: "Notifications",        icon: Bell, badge: "5 New" },
     ],
   },
   {
@@ -94,7 +104,7 @@ const SIDEBAR_GROUPS: {
 
 const ROLE_META: Record<string, { label: string; cls: string }> = {
   DOCTOR:        { label: "Doctor",       cls: "bg-[var(--color-primary-100)] text-[var(--color-primary-700)]" },
-  HOSPITAL:      { label: "Staff",        cls: "bg-emerald-100 text-emerald-700" },
+  HOSPITAL:      { label: "Hospital",      cls: "bg-emerald-100 text-emerald-700" },
   REFRACTIONIST: { label: "Refractionist",cls: "bg-amber-100 text-amber-700"    },
 };
 
@@ -306,11 +316,528 @@ function Sidebar({
 
 // ── SECTION: USERS ───────────────────────────────────────────────────────────
 
-function UsersSection({ users }: { users: UserRow[] }) {
+function AddHospitalModal({ doctorId, onClose }: { doctorId: string | null; onClose: () => void }) {
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setPending(true); setError("");
+    const fd = new FormData(e.currentTarget);
+    const res = await createHospitalWithUser({
+      name: fd.get("name") as string,
+      shortCode: fd.get("shortCode") as string,
+      address: fd.get("address") as string,
+      contact: fd.get("contact") as string,
+      username: fd.get("username") as string,
+      password: fd.get("password") as string,
+      staffName: fd.get("staffName") as string,
+      mobile: fd.get("mobile") as string,
+    });
+    setPending(false);
+    if (res.error) { setError(res.error); return; }
+    setSuccess(true);
+    setTimeout(() => { onClose(); window.location.reload(); }, 1200);
+  }
+
+  const INP = "mt-1 w-full rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]";
+  const LBL = "text-xs font-semibold text-[var(--color-ink-500)] uppercase tracking-wide";
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)] shrink-0">
+          <div>
+            <h2 className="text-base font-semibold text-[var(--color-ink-900)]">Add Hospital</h2>
+            <p className="text-xs text-[var(--color-ink-400)] mt-0.5">Creates the hospital and its login account</p>
+          </div>
+          <button onClick={onClose} className="p-1 rounded-lg text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]"><X size={16} /></button>
+        </div>
+        {success ? (
+          <div className="px-6 py-10 flex flex-col items-center gap-2 text-center">
+            <Check size={36} className="text-emerald-500" />
+            <p className="text-sm font-semibold text-[var(--color-ink-800)]">Hospital created!</p>
+            <p className="text-xs text-[var(--color-ink-400)]">The hospital can now log in with its credentials.</p>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="overflow-y-auto px-6 py-5 flex flex-col gap-5">
+            {error && <p className="text-xs text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
+
+            {/* Hospital details */}
+            <div>
+              <p className="text-xs font-bold text-[var(--color-ink-400)] uppercase tracking-widest mb-3">Hospital Details</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="col-span-2"><label className={LBL}>Hospital Name *</label><input name="name" required placeholder="e.g. Sunrise Eye Hospital" className={INP} /></div>
+                <div><label className={LBL}>Short Code *</label><input name="shortCode" required placeholder="SEH" maxLength={8} className={INP} /></div>
+                <div><label className={LBL}>Contact</label><input name="contact" placeholder="9876543210" className={INP} /></div>
+                <div className="col-span-2"><label className={LBL}>Address</label><input name="address" placeholder="123, Main Road, City" className={INP} /></div>
+              </div>
+            </div>
+
+            {/* Login account */}
+            <div>
+              <p className="text-xs font-bold text-[var(--color-ink-400)] uppercase tracking-widest mb-3">Hospital Login Account</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="col-span-2"><label className={LBL}>Contact Person Name *</label><input name="staffName" required placeholder="e.g. Admin Staff" className={INP} /></div>
+                <div><label className={LBL}>Username *</label><input name="username" required placeholder="sunrise.admin" className={INP} /></div>
+                <div><label className={LBL}>Password *</label><input name="password" type="password" required placeholder="Min 6 chars" className={INP} /></div>
+                <div><label className={LBL}>Mobile</label><input name="mobile" placeholder="10-digit number" maxLength={10} className={INP} /></div>
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-1 shrink-0">
+              <button type="button" onClick={onClose} className="flex-1 rounded-xl border border-[var(--color-border)] px-4 py-2 text-sm font-medium text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]">Cancel</button>
+              <button type="submit" disabled={pending} className="flex-1 rounded-xl bg-[var(--color-primary-600)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--color-primary-700)] disabled:opacity-50">
+                {pending ? "Creating…" : "Create Hospital"}
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function AddUserModal({ hospitals, doctorId, onClose, presetHospitalId, presetUserType }: {
+  hospitals: HospitalRow[]; doctorId: string | null; onClose: () => void;
+  presetHospitalId?: string; presetUserType?: string;
+}) {
+  const [userType, setUserType] = useState(presetUserType ?? "HOSPITAL");
+  const [status, setStatus] = useState<"ACTIVE" | "INACTIVE">("ACTIVE");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [pwMismatch, setPwMismatch] = useState(false);
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
+
+  const isHospitalType = userType === "HOSPITAL";
+  const presetHospital = hospitals.find((h) => h.id === presetHospitalId);
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (password !== confirmPassword) { setPwMismatch(true); return; }
+    setPwMismatch(false);
+    setPending(true); setError("");
+    const fd = new FormData(e.currentTarget);
+
+    let res: { error?: string };
+
+    if (isHospitalType) {
+      // Create hospital entity + user account
+      res = await createHospitalWithUser({
+        name:      fd.get("hospitalName") as string,
+        shortCode: (fd.get("hospitalName") as string)
+          .trim().toUpperCase().split(/\s+/).map((w) => w[0]).join("").slice(0, 6) || "H",
+        address:   "",
+        contact:   fd.get("mobile") as string,
+        username:  fd.get("username") as string,
+        password:  fd.get("password") as string,
+        staffName: fd.get("name") as string,
+        mobile:    fd.get("mobile") as string,
+      });
+    } else {
+      // Create staff user under an existing hospital
+      fd.set("userType", userType);
+      fd.set("active", status === "ACTIVE" ? "true" : "false");
+      if (doctorId) fd.set("doctorId", doctorId);
+      res = await createUser(fd);
+    }
+
+    setPending(false);
+    if (res.error) { setError(res.error); return; }
+    setSuccess(true);
+    setTimeout(() => { onClose(); window.location.reload(); }, 1200);
+  }
+
+  const F = "mt-1 w-full rounded-lg border border-[var(--color-border)] px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] bg-white";
+  const L = "block text-xs font-semibold text-[var(--color-ink-500)] uppercase tracking-wide mb-0";
+
+  const USER_TYPES = [
+    { value: "HOSPITAL",      label: "Hospital",      desc: "Top-level hospital account" },
+    { value: "REFRACTIONIST", label: "Refractionist", desc: "Pre-test / refraction"      },
+  ];
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden max-h-[92vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)] shrink-0">
+          <div>
+            <h2 className="text-base font-semibold text-[var(--color-ink-900)]">
+              {isHospitalType ? "Add Hospital" : "Create User"}
+            </h2>
+            {!isHospitalType && presetHospital && (
+              <p className="text-xs text-[var(--color-ink-400)] mt-0.5">{presetHospital.name}</p>
+            )}
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-lg text-[var(--color-ink-400)] hover:bg-[var(--color-surface-sunken)]"><X size={16} /></button>
+        </div>
+
+        {success ? (
+          <div className="px-6 py-12 flex flex-col items-center gap-3 text-center">
+            <div className="w-14 h-14 rounded-full bg-emerald-100 flex items-center justify-center">
+              <Check size={28} className="text-emerald-600" />
+            </div>
+            <p className="text-sm font-semibold text-[var(--color-ink-800)]">User created successfully!</p>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="overflow-y-auto px-6 py-5 flex flex-col gap-5">
+            {error && <p className="text-xs text-red-600 bg-red-50 border border-red-200 px-3 py-2 rounded-lg">{error}</p>}
+
+            {/* User Type */}
+            <div>
+              <label className={L}>User Type *</label>
+              <div className="mt-2 grid grid-cols-2 gap-2">
+                {USER_TYPES.map((t) => (
+                  <button
+                    key={t.value}
+                    type="button"
+                    onClick={() => setUserType(t.value)}
+                    className={`flex flex-col items-start gap-0.5 rounded-xl border-2 px-4 py-3 text-left transition-all ${
+                      userType === t.value
+                        ? "border-[var(--color-primary-500)] bg-[var(--color-primary-50)]"
+                        : "border-[var(--color-border)] hover:border-[var(--color-primary-300)]"
+                    }`}
+                  >
+                    <span className={`text-sm font-semibold ${userType === t.value ? "text-[var(--color-primary-700)]" : "text-[var(--color-ink-800)]"}`}>{t.label}</span>
+                    <span className="text-[11px] text-[var(--color-ink-400)]">{t.desc}</span>
+                  </button>
+                ))}
+              </div>
+              <input type="hidden" name="userType" value={userType} />
+            </div>
+
+            {/* Hospital Name */}
+            <div>
+              <label className={L}>Hospital Name {isHospitalType ? "*" : "*"}</label>
+              {isHospitalType ? (
+                /* Creating a new hospital — free text */
+                <input
+                  name="hospitalName"
+                  required
+                  placeholder="e.g. Sunrise Eye Hospital"
+                  className={F}
+                />
+              ) : presetHospitalId ? (
+                /* Pre-scoped from hospital card — locked */
+                <>
+                  <input type="hidden" name="hospitalId" value={presetHospitalId} />
+                  <div className="mt-1 flex items-center gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-3 py-2.5">
+                    <Building size={14} className="text-[var(--color-primary-600)] shrink-0" />
+                    <span className="text-sm text-[var(--color-ink-700)]">{presetHospital?.name}</span>
+                  </div>
+                </>
+              ) : (
+                /* Choose from existing hospitals */
+                <select name="hospitalId" required className={F}>
+                  <option value="">Select hospital…</option>
+                  {hospitals.map((h) => <option key={h.id} value={h.id}>{h.name}</option>)}
+                </select>
+              )}
+            </div>
+
+            {/* Full Name + Username */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="col-span-2">
+                <label className={L}>Full Name *</label>
+                <input name="name" required placeholder="e.g. Priya Sharma" className={F} />
+              </div>
+              <div className="col-span-2">
+                <label className={L}>Username *</label>
+                <input name="username" required placeholder="e.g. priya.sharma" className={F} />
+              </div>
+            </div>
+
+            {/* Mobile + Email */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className={L}>Mobile Number</label>
+                <input name="mobile" placeholder="10-digit number" maxLength={10} className={F} />
+              </div>
+              <div>
+                <label className={L}>Email Address</label>
+                <input name="email" type="email" placeholder="priya@hospital.com" className={F} />
+              </div>
+            </div>
+
+            {/* Password + Confirm Password */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className={L}>Password *</label>
+                <input
+                  name="password" type="password" required placeholder="Min 6 chars"
+                  value={password} onChange={(e) => { setPassword(e.target.value); setPwMismatch(false); }}
+                  className={`${F} ${pwMismatch ? "border-red-400 focus:ring-red-400" : ""}`}
+                />
+              </div>
+              <div>
+                <label className={L}>Confirm Password *</label>
+                <input
+                  type="password" required placeholder="Re-enter password"
+                  value={confirmPassword} onChange={(e) => { setConfirmPassword(e.target.value); setPwMismatch(false); }}
+                  className={`${F} ${pwMismatch ? "border-red-400 focus:ring-red-400" : ""}`}
+                />
+              </div>
+              {pwMismatch && <p className="col-span-2 text-xs text-red-600 -mt-2">Passwords do not match.</p>}
+            </div>
+
+            {/* Status */}
+            <div>
+              <label className={L}>Status</label>
+              <div className="mt-2 flex gap-3">
+                {(["ACTIVE", "INACTIVE"] as const).map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => setStatus(s)}
+                    className={`flex items-center gap-2 flex-1 rounded-xl border-2 px-4 py-2.5 text-sm font-semibold transition-all ${
+                      status === s
+                        ? s === "ACTIVE"
+                          ? "border-emerald-500 bg-emerald-50 text-emerald-700"
+                          : "border-red-400 bg-red-50 text-red-700"
+                        : "border-[var(--color-border)] text-[var(--color-ink-500)] hover:border-[var(--color-primary-300)]"
+                    }`}
+                  >
+                    <span className={`size-2 rounded-full ${s === "ACTIVE" ? "bg-emerald-500" : "bg-red-400"}`} />
+                    {s === "ACTIVE" ? "Active" : "Inactive"}
+                  </button>
+                ))}
+              </div>
+              <input type="hidden" name="active" value={status === "ACTIVE" ? "true" : "false"} />
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-3 pt-1 shrink-0">
+              <button type="button" onClick={onClose} className="flex-1 rounded-xl border border-[var(--color-border)] px-4 py-2.5 text-sm font-medium text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]">
+                Cancel
+              </button>
+              <button type="submit" disabled={pending} className="flex-1 rounded-xl bg-[var(--color-primary-600)] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[var(--color-primary-700)] disabled:opacity-50">
+                {pending ? "Creating…" : "Create User"}
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function EditHospitalModal({ hospital, onClose }: { hospital: HospitalRow; onClose: () => void }) {
+  const [form, setForm] = useState({
+    name: hospital.name, shortCode: hospital.shortCode,
+    address: hospital.address, contact: hospital.contact,
+  });
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
+  const [toggling, setToggling] = useState(false);
+
+  const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setPending(true); setError("");
+    const res = await updateHospital(hospital.id, form);
+    setPending(false);
+    if (res.error) { setError(res.error); return; }
+    setSuccess(true);
+    setTimeout(() => { onClose(); window.location.reload(); }, 1000);
+  }
+
+  async function handleToggle() {
+    setToggling(true);
+    await toggleHospitalLink(hospital.id, !hospital.active);
+    window.location.reload();
+  }
+
+  const F = "mt-1 w-full rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]";
+  const L = "text-xs font-semibold text-[var(--color-ink-500)] uppercase tracking-wide";
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
+          <div>
+            <h2 className="text-base font-semibold text-[var(--color-ink-900)]">Edit Hospital</h2>
+            <p className="text-xs text-[var(--color-ink-400)] mt-0.5">{hospital.name}</p>
+          </div>
+          <button onClick={onClose} className="p-1 rounded-lg text-[var(--color-ink-400)] hover:bg-[var(--color-surface-sunken)]"><X size={16} /></button>
+        </div>
+        {success ? (
+          <div className="px-6 py-10 flex flex-col items-center gap-2 text-center">
+            <Check size={36} className="text-emerald-500" />
+            <p className="text-sm font-semibold text-[var(--color-ink-800)]">Hospital updated!</p>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="px-6 py-5 flex flex-col gap-4">
+            {error && <p className="text-xs text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="col-span-2"><label className={L}>Hospital Name *</label><input value={form.name} onChange={(e) => set("name", e.target.value)} required className={F} /></div>
+              <div><label className={L}>Short Code *</label><input value={form.shortCode} onChange={(e) => set("shortCode", e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))} required maxLength={8} className={`${F} font-mono uppercase`} /></div>
+              <div><label className={L}>Contact</label><input value={form.contact} onChange={(e) => set("contact", e.target.value)} className={F} /></div>
+              <div className="col-span-2"><label className={L}>Address</label><input value={form.address} onChange={(e) => set("address", e.target.value)} className={F} /></div>
+            </div>
+
+            {/* Activate / Deactivate */}
+            <div className={`flex items-center justify-between rounded-xl px-4 py-3 ${hospital.active ? "bg-emerald-50 border border-emerald-200" : "bg-red-50 border border-red-200"}`}>
+              <div>
+                <p className="text-sm font-medium text-[var(--color-ink-800)]">Hospital Status</p>
+                <p className="text-xs text-[var(--color-ink-500)] mt-0.5">{hospital.active ? "Currently active — staff can log in" : "Deactivated — staff cannot log in"}</p>
+              </div>
+              <button
+                type="button"
+                onClick={handleToggle}
+                disabled={toggling}
+                className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50 ${hospital.active ? "bg-red-100 text-red-700 hover:bg-red-200" : "bg-emerald-100 text-emerald-700 hover:bg-emerald-200"}`}
+              >
+                {toggling ? "…" : hospital.active ? "Deactivate" : "Activate"}
+              </button>
+            </div>
+
+            <div className="flex gap-3 pt-1">
+              <button type="button" onClick={onClose} className="flex-1 rounded-xl border border-[var(--color-border)] px-4 py-2 text-sm font-medium text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]">Cancel</button>
+              <button type="submit" disabled={pending} className="flex-1 rounded-xl bg-[var(--color-primary-600)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--color-primary-700)] disabled:opacity-50">
+                {pending ? "Saving…" : "Save Changes"}
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function EditUserModal({ user, onClose }: { user: UserRow; onClose: () => void }) {
+  const [form, setForm] = useState({ name: user.name, email: user.email, mobile: user.mobile, newPassword: "" });
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [toggling, setToggling] = useState(false);
+
+  const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setPending(true); setError("");
+    const res = await updateUserAction(user.id, { name: form.name, email: form.email, mobile: form.mobile, newPassword: form.newPassword || undefined });
+    setPending(false);
+    if (res.error) { setError(res.error); return; }
+    setSuccess(true);
+    setTimeout(() => { onClose(); window.location.reload(); }, 1000);
+  }
+
+  async function handleDelete() {
+    setDeleting(true);
+    const res = await deleteUserAction(user.id);
+    if (res.error) { setError(res.error); setDeleting(false); setShowDeleteConfirm(false); return; }
+    window.location.reload();
+  }
+
+  async function handleToggleActive() {
+    setToggling(true);
+    await toggleUserActiveAction(user.id, !user.active);
+    window.location.reload();
+  }
+
+  const F = "mt-1 w-full rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]";
+  const L = "text-xs font-semibold text-[var(--color-ink-500)] uppercase tracking-wide";
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)] shrink-0">
+          <div>
+            <h2 className="text-base font-semibold text-[var(--color-ink-900)]">Edit User</h2>
+            <p className="text-xs text-[var(--color-ink-400)] mt-0.5">@{user.username} · {user.hospital ?? "No hospital"}</p>
+          </div>
+          <button onClick={onClose} className="p-1 rounded-lg text-[var(--color-ink-400)] hover:bg-[var(--color-surface-sunken)]"><X size={16} /></button>
+        </div>
+
+        {showDeleteConfirm ? (
+          <div className="px-6 py-8 flex flex-col items-center gap-4 text-center">
+            <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
+              <Trash2 size={20} className="text-red-600" />
+            </div>
+            <div>
+              <p className="font-semibold text-[var(--color-ink-900)]">Delete {user.name}?</p>
+              <p className="text-sm text-[var(--color-ink-500)] mt-1">This action cannot be undone. The user will lose all access.</p>
+            </div>
+            {error && <p className="text-xs text-red-600">{error}</p>}
+            <div className="flex gap-3 w-full">
+              <button onClick={() => setShowDeleteConfirm(false)} className="flex-1 rounded-xl border border-[var(--color-border)] px-4 py-2 text-sm font-medium text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]">Cancel</button>
+              <button onClick={handleDelete} disabled={deleting} className="flex-1 rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50">
+                {deleting ? "Deleting…" : "Yes, Delete"}
+              </button>
+            </div>
+          </div>
+        ) : success ? (
+          <div className="px-6 py-10 flex flex-col items-center gap-2 text-center">
+            <Check size={36} className="text-emerald-500" />
+            <p className="text-sm font-semibold text-[var(--color-ink-800)]">User updated!</p>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="overflow-y-auto px-6 py-5 flex flex-col gap-4">
+            {error && <p className="text-xs text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="col-span-2"><label className={L}>Full Name *</label><input value={form.name} onChange={(e) => set("name", e.target.value)} required className={F} /></div>
+              <div><label className={L}>Email</label><input type="email" value={form.email} onChange={(e) => set("email", e.target.value)} className={F} /></div>
+              <div><label className={L}>Mobile</label><input value={form.mobile} onChange={(e) => set("mobile", e.target.value)} maxLength={10} className={F} /></div>
+              <div className="col-span-2">
+                <label className={L}>New Password <span className="normal-case font-normal text-[var(--color-ink-400)]">(leave blank to keep current)</span></label>
+                <input type="password" value={form.newPassword} onChange={(e) => set("newPassword", e.target.value)} placeholder="••••••••" className={F} />
+              </div>
+            </div>
+
+            {/* Active toggle */}
+            <div className={`flex items-center justify-between rounded-xl px-4 py-3 ${user.active ? "bg-emerald-50 border border-emerald-200" : "bg-red-50 border border-red-200"}`}>
+              <div>
+                <p className="text-sm font-medium text-[var(--color-ink-800)]">Account Status</p>
+                <p className="text-xs text-[var(--color-ink-500)] mt-0.5">{user.active ? "Active — user can log in" : "Deactivated — login blocked"}</p>
+              </div>
+              <button
+                type="button"
+                onClick={handleToggleActive}
+                disabled={toggling}
+                className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50 ${user.active ? "bg-red-100 text-red-700 hover:bg-red-200" : "bg-emerald-100 text-emerald-700 hover:bg-emerald-200"}`}
+              >
+                {toggling ? "…" : user.active ? "Deactivate" : "Activate"}
+              </button>
+            </div>
+
+            <div className="flex gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setShowDeleteConfirm(true)}
+                className="rounded-xl border border-red-200 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
+              >
+                <Trash2 size={14} />
+              </button>
+              <button type="button" onClick={onClose} className="flex-1 rounded-xl border border-[var(--color-border)] px-4 py-2 text-sm font-medium text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]">Cancel</button>
+              <button type="submit" disabled={pending} className="flex-1 rounded-xl bg-[var(--color-primary-600)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--color-primary-700)] disabled:opacity-50">
+                {pending ? "Saving…" : "Save Changes"}
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function UsersSection({ users, hospitals, doctorId }: { users: UserRow[]; hospitals: HospitalRow[]; doctorId: string | null }) {
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [page, setPage] = useState(1);
+  const [editHospital, setEditHospital] = useState<HospitalRow | null>(null);
+  const [addUserCtx, setAddUserCtx] = useState<{ hospitalId: string; userType: string } | null>(null);
+  const [showCreateUser, setShowCreateUser] = useState(false);
+  const [editUser, setEditUser] = useState<UserRow | null>(null);
   const PAGE_SIZE = 8;
 
   const filtered = useMemo(() => {
@@ -344,10 +871,29 @@ function UsersSection({ users }: { users: UserRow[] }) {
 
   return (
     <div>
+      {editHospital && <EditHospitalModal hospital={editHospital} onClose={() => setEditHospital(null)} />}
+      {showCreateUser && (
+        <AddUserModal
+          hospitals={hospitals}
+          doctorId={doctorId}
+          presetUserType="HOSPITAL"
+          onClose={() => setShowCreateUser(false)}
+        />
+      )}
+      {addUserCtx && (
+        <AddUserModal
+          hospitals={hospitals}
+          doctorId={doctorId}
+          presetHospitalId={addUserCtx.hospitalId}
+          presetUserType={addUserCtx.userType}
+          onClose={() => setAddUserCtx(null)}
+        />
+      )}
+      {editUser && <EditUserModal user={editUser} onClose={() => setEditUser(null)} />}
       <SectionHeader
         title="Users"
-        desc={`${users.length} users across all linked hospitals`}
-        action={{ label: "Add User", icon: UserPlus }}
+        desc={`${users.length} users across ${hospitals.length} linked hospital${hospitals.length !== 1 ? "s" : ""}`}
+        action={{ label: "Add Hospital", icon: Building, onClick: () => setShowCreateUser(true) }}
       />
 
       <Card>
@@ -436,8 +982,8 @@ function UsersSection({ users }: { users: UserRow[] }) {
                     <td className="px-4 py-3.5 text-xs text-[var(--color-ink-500)]">{u.hospital ?? "—"}</td>
                     <td className="px-4 py-3.5">
                       <div className="flex items-center gap-1.5">
-                        <span className="size-2 rounded-full bg-emerald-500" />
-                        <span className="text-xs text-[var(--color-ink-600)]">Active</span>
+                        <span className={`size-2 rounded-full ${u.active ? "bg-emerald-500" : "bg-red-400"}`} />
+                        <span className={`text-xs ${u.active ? "text-[var(--color-ink-600)]" : "text-red-500"}`}>{u.active ? "Active" : "Inactive"}</span>
                       </div>
                     </td>
                     <td className="px-4 py-3.5 text-xs text-[var(--color-ink-500)]">
@@ -445,15 +991,22 @@ function UsersSection({ users }: { users: UserRow[] }) {
                     </td>
                     <td className="px-4 py-3.5">
                       <div className="flex items-center gap-1.5">
-                        <button className="rounded-lg p-1.5 hover:bg-[var(--color-surface-sunken)] text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)] transition-colors" title="View">
-                          <Eye size={14} />
-                        </button>
-                        <button className="rounded-lg p-1.5 hover:bg-[var(--color-surface-sunken)] text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)] transition-colors" title="Edit">
+                        <button
+                          onClick={() => setEditUser(u)}
+                          className="rounded-lg p-1.5 hover:bg-[var(--color-surface-sunken)] text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)] transition-colors"
+                          title="Edit"
+                        >
                           <Edit size={14} />
                         </button>
-                        <button className="rounded-lg p-1.5 hover:bg-red-50 text-[var(--color-ink-400)] hover:text-red-500 transition-colors" title="Remove">
-                          <Trash2 size={14} />
-                        </button>
+                        {u.role !== "DOCTOR" && (
+                          <button
+                            onClick={() => setEditUser(u)}
+                            className="rounded-lg p-1.5 hover:bg-red-50 text-[var(--color-ink-400)] hover:text-red-500 transition-colors"
+                            title="Delete"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -1307,7 +1860,6 @@ function ProfileSection({ doctor }: { doctor: DoctorProfile | null }) {
   const save = async () => {
     setSaving(true);
     setMsg(null);
-    const { saveDoctorProfile } = await import("./actions");
     const res = await saveDoctorProfile({ shortCode, specialty, contact, credentials });
     setSaving(false);
     setMsg(res.error ? { type: "err", text: res.error } : { type: "ok", text: "Profile saved." });
@@ -1389,7 +1941,7 @@ export function DoctorSettingsClient({ users, auditLogs, hospitals, doctor }: Pr
   const content = () => {
     switch (activeSection) {
       case "profile":      return <ProfileSection doctor={doctor} />;
-      case "users":        return <UsersSection users={users} />;
+      case "users":        return <UsersSection users={users} hospitals={hospitals} doctorId={doctor?.id ?? null} />;
       case "roles":        return <RolesSection />;
       case "departments":  return <DepartmentsSection />;
       case "hospital":     return <HospitalSection hospitals={hospitals} />;

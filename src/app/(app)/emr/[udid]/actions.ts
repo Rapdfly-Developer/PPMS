@@ -524,7 +524,7 @@ export async function closeVisit(visitId: string, udid: string) {
   if (appointmentId) {
     await prisma.appointment.update({
       where: { id: appointmentId },
-      data: { status: "COMPLETED" },
+      data: { status: "DISPENSED" },
     });
     const completedBy = visit.doctor?.name ?? user.name;
     await prisma.$executeRaw`

@@ -23,8 +23,8 @@ export default async function SettingsPage() {
   const [allUsers, auditLogs, doctorLinks, doctorProfile] = await Promise.all([
     prisma.user.findMany({
       include: {
-        hospitalStaff: { include: { hospital: { select: { name: true } } } },
-        refractionist:  { include: { hospital: { select: { name: true } } } },
+        hospitalStaff: { select: { name: true, mobile: true, hospitalId: true, hospital: { select: { name: true } } } },
+        refractionist:  { select: { name: true, mobile: true, hospitalId: true, hospital: { select: { name: true } } } },
         doctor:         { select: { name: true } },
       },
       orderBy: { createdAt: "desc" },
@@ -44,13 +44,16 @@ export default async function SettingsPage() {
   ]);
 
   const serializedUsers = allUsers.map((u) => ({
-    id:        u.id,
-    username:  u.username,
-    role:      u.role,
-    email:     u.email ?? "",
-    name:      u.doctor?.name ?? u.hospitalStaff?.name ?? u.refractionist?.name ?? u.username,
-    createdAt: u.createdAt.toISOString(),
-    hospital:  u.hospitalStaff?.hospital?.name ?? u.refractionist?.hospital?.name ?? null,
+    id:         u.id,
+    username:   u.username,
+    role:       u.role,
+    email:      u.email ?? "",
+    name:       u.doctor?.name ?? u.hospitalStaff?.name ?? u.refractionist?.name ?? u.username,
+    createdAt:  u.createdAt.toISOString(),
+    hospital:   u.hospitalStaff?.hospital?.name ?? u.refractionist?.hospital?.name ?? null,
+    hospitalId: (u.hospitalStaff as any)?.hospitalId ?? (u.refractionist as any)?.hospitalId ?? null,
+    active:     u.active,
+    mobile:     (u.hospitalStaff as any)?.mobile ?? (u.refractionist as any)?.mobile ?? "",
   }));
 
   const serializedAudit = auditLogs.map((a) => ({
@@ -67,6 +70,7 @@ export default async function SettingsPage() {
     shortCode: l.hospital.shortCode,
     address:   l.hospital.address ?? "",
     contact:   l.hospital.contact ?? "",
+    active:    l.active,
   }));
 
   return (

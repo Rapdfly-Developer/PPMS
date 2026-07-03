@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { bookAppointment, getBookedSlots } from "./actions";
 
-const VISIT_TYPES = ["Chief Complaint", "Specialist OPD", "Emergency", "Follow-up", "Post-op Review"];
+const VISIT_TYPES = ["General OPD", "Emergency", "Follow-up", "Post-op Review"];
 const SEXES = ["MALE", "FEMALE", "OTHER"];
 
 const FALLBACK_SLOTS = [
@@ -79,7 +79,7 @@ export function BookAppointmentForm({
   const [doctorId,   setDoctorId]   = useState(doctors[0]?.id ?? "");
   const [date, setDate] = useState(() => new Date().toISOString().split("T")[0]);
   const [time, setTime] = useState("09:00");
-  const [visitType,  setVisitType]  = useState("Chief Complaint");
+  const [visitType,  setVisitType]  = useState("General OPD");
   const [notes,      setNotes]      = useState("");
   const [bookedTimes, setBookedTimes] = useState<string[]>([]);
 
@@ -479,12 +479,12 @@ export function BookAppointmentForm({
                 />
               </div>
               <div className="sm:col-span-2">
-                <FieldLabel icon={<FileText size={12} />}>Chief Complaint</FieldLabel>
+                <FieldLabel icon={<FileText size={12} />}>Notes / Instructions</FieldLabel>
                 <textarea
                   value={npComplaint}
                   onChange={(e) => setNpComplaint(e.target.value)}
                   rows={2}
-                  placeholder="Patient's presenting complaint..."
+                  placeholder="Any special instructions or referral details..."
                   className={inputCls}
                 />
               </div>
@@ -500,48 +500,6 @@ export function BookAppointmentForm({
           </div>
 
           <div className="flex flex-col gap-5">
-            {/* Doctor */}
-            <div>
-              <FieldLabel icon={<Stethoscope size={12} />}>Doctor *</FieldLabel>
-              {doctors.length === 0 ? (
-                <div className="flex items-center gap-2 mt-2 text-sm text-[var(--color-danger-600)] bg-[var(--color-danger-100)] px-4 py-3 rounded-xl">
-                  <AlertCircle size={15} /> No doctors linked to this hospital.
-                </div>
-              ) : (
-                <div className="flex flex-col gap-2 mt-1">
-                  {doctors.filter((d, i, arr) => arr.findIndex((x) => x.id === d.id) === i).map((d) => (
-                    <label
-                      key={d.id}
-                      className="flex items-center gap-3 p-3.5 rounded-xl border cursor-pointer transition-all"
-                      style={doctorId === d.id ? {
-                        borderColor: "var(--color-primary-500)",
-                        background: "var(--color-primary-50)",
-                      } : {
-                        borderColor: "var(--color-border)",
-                        background: "var(--color-surface)",
-                      }}
-                    >
-                      <input
-                        type="radio"
-                        name="doctor"
-                        value={d.id}
-                        checked={doctorId === d.id}
-                        onChange={() => handleDoctorChange(d.id)}
-                        className="accent-[var(--color-primary-600)]"
-                      />
-                      <div className="size-8 rounded-full bg-[var(--color-primary-100)] flex items-center justify-center text-[var(--color-primary-700)] text-xs font-bold shrink-0">
-                        {d.name.charAt(0)}
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-[var(--color-ink-900)]">Dr. {d.name}</p>
-                        <p className="text-xs text-[var(--color-ink-400)]">{d.specialty}</p>
-                      </div>
-                    </label>
-                  ))}
-                </div>
-              )}
-            </div>
-
             {/* Hospital selector — DOCTOR role only (hospital role has fixed hospitalId) */}
             {!hospitalId && doctorHospitals.length >= 1 && (
               <div>
@@ -660,12 +618,12 @@ export function BookAppointmentForm({
 
             {/* Notes */}
             <div>
-              <FieldLabel icon={<FileText size={12} />}>Notes / Instructions</FieldLabel>
+              <FieldLabel icon={<FileText size={12} />}>Chief Complaint</FieldLabel>
               <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 rows={2}
-                placeholder="Any special instructions or referral details..."
+                placeholder="Describe the patient's chief complaint..."
                 className={inputCls}
               />
             </div>

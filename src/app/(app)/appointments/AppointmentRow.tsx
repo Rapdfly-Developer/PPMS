@@ -3,8 +3,8 @@
 import { format } from "date-fns";
 import Link from "next/link";
 import { useState, useTransition } from "react";
-import { Phone, Stethoscope, Tag, FileText, CalendarPlus, Printer } from "lucide-react";
-import { hospitalUpdateAppointmentStatus, doctorUpdateAppointmentStatus } from "./actions";
+import { Phone, Stethoscope, Tag, FileText, CalendarPlus, Printer, UserRound } from "lucide-react";
+import { hospitalUpdateAppointmentStatus, doctorUpdateAppointmentStatus, doctorConfirmAppointment, doctorCancelAppointment } from "./actions";
 import { ScheduleNextSlotModal } from "./ScheduleNextSlotModal";
 
 const STATUS_STYLES: Record<string, string> = {
@@ -12,7 +12,7 @@ const STATUS_STYLES: Record<string, string> = {
   REQUESTED:   "bg-amber-100 text-amber-700",
   CONFIRMED:   "bg-blue-100 text-blue-700",
   RESCHEDULED: "bg-[var(--color-info-100)] text-[var(--color-info-600)]",
-  COMPLETED:   "bg-emerald-100 text-emerald-700",
+  DISPENSED:   "bg-emerald-100 text-emerald-700",
   CANCELLED:   "bg-red-100 text-red-700",
   NO_SHOW:     "bg-red-100 text-red-700",
 };
@@ -23,23 +23,33 @@ export function AppointmentRow({ appt, role, token }: { appt: any; role: string;
   const p = appt.patient;
 
   function hospitalSetStatus(status: "CONFIRMED" | "CANCELLED") {
-    startTransition(() => hospitalUpdateAppointmentStatus(appt.id, status));
+    if (role === "DOCTOR") {
+      startTransition(() =>
+        status === "CONFIRMED"
+          ? doctorConfirmAppointment(appt.id)
+          : doctorCancelAppointment(appt.id)
+      );
+    } else {
+      startTransition(() => hospitalUpdateAppointmentStatus(appt.id, status));
+    }
   }
 
-  function doctorSetStatus(status: "COMPLETED" | "NO_SHOW" | "RESCHEDULED") {
+  function doctorSetStatus(status: "DISPENSED" | "NO_SHOW" | "RESCHEDULED") {
     startTransition(() => doctorUpdateAppointmentStatus(appt.id, status));
   }
 
-  const isCompleted = appt.status === "COMPLETED";
+  const isCompleted = appt.status === "DISPENSED";
 
   return (
-    <li className="py-3 flex flex-col sm:flex-row sm:items-center gap-3 relative">
+    <div className="flex items-center gap-3 px-5 py-4 rounded-xl border border-[var(--color-border)] bg-white hover:bg-[var(--color-primary-50)] hover:border-[var(--color-primary-200)] transition-colors">
 
       {/* Token badge */}
       <div className="flex items-center justify-center shrink-0 w-9 h-9 rounded-xl text-sm font-bold"
         style={{ background: "var(--color-primary-100)", color: "var(--color-primary-700)" }}>
         {token}
       </div>
+
+      <div className="w-px self-stretch bg-[var(--color-border)]" />
 
       {/* Patient info */}
       <div className="flex-1 min-w-0">
@@ -62,7 +72,7 @@ export function AppointmentRow({ appt, role, token }: { appt: any; role: string;
             <span className="flex items-center gap-1"><Phone size={11} /> {p.mobile}</span>
           )}
           {appt.doctor && (
-            <span className="flex items-center gap-1"><Stethoscope size={11} /> Dr. {appt.doctor.name}</span>
+            <span className="flex items-center gap-1"><UserRound size={11} /> Dr. {appt.doctor.name}</span>
           )}
           {appt.visitType && (
             <span className="flex items-center gap-1"><Tag size={11} /> {appt.visitType}</span>
@@ -73,8 +83,8 @@ export function AppointmentRow({ appt, role, token }: { appt: any; role: string;
         </div>
       </div>
 
-      {/* Right column — time, status, action buttons — always sharp */}
-      <div className="flex items-center gap-2 shrink-0 flex-wrap">
+      {/* Right column — time, status, action buttons */}
+      <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
         <p className="text-sm font-medium text-[var(--color-ink-700)]">
           {format(new Date(appt.dateTime), "h:mm a")}
         </p>
@@ -82,15 +92,6 @@ export function AppointmentRow({ appt, role, token }: { appt: any; role: string;
           {appt.status.replace(/_/g, " ")}
         </span>
 
-        {/* DOCTOR: Open EMR — always visible */}
-        {role === "DOCTOR" && (
-          <Link
-            href={appt.visit ? `/emr/${p.udid}?visit=${appt.visit.id}` : `/emr/${p.udid}`}
-            className="text-xs font-medium px-2.5 py-1 rounded-lg bg-orange-100 text-orange-700 hover:bg-orange-500 hover:text-white transition-colors"
-          >
-            {isCompleted ? "View EMR" : "Open EMR"}
-          </Link>
-        )}
 
         {/* View Prescription — for completed with a visit (both roles) */}
         {isCompleted && appt.visit && (
@@ -104,8 +105,8 @@ export function AppointmentRow({ appt, role, token }: { appt: any; role: string;
           </a>
         )}
 
-        {/* Hospital: Confirm / Reject — for both REQUESTED and SCHEDULED */}
-        {role === "HOSPITAL" && !isCompleted && (appt.status === "REQUESTED" || appt.status === "SCHEDULED") && !appt.isWalkIn && (
+        {/* Hospital / Doctor: Confirm / Reject — for both REQUESTED and SCHEDULED */}
+        {(role === "HOSPITAL" || role === "DOCTOR") && !isCompleted && (appt.status === "REQUESTED" || appt.status === "SCHEDULED") && !appt.isWalkIn && (
           <>
             <button
               disabled={pending}
@@ -155,6 +156,6 @@ export function AppointmentRow({ appt, role, token }: { appt: any; role: string;
           </button>
         )}
       </div>
-    </li>
+    </div>
   );
 }

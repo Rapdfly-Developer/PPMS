@@ -147,6 +147,65 @@ body {
 .scrollbar-thin::-webkit-scrollbar { height: 6px; width: 6px; }
 .scrollbar-thin::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 999px; }
 
+/* ── Print styles ─────────────────────────────────────────────────────── */
+@media print {
+  /* Hide all app chrome */
+  nav,
+  aside,
+  header,
+  [data-sidebar],
+  [data-no-print],
+  .no-print {
+    display: none !important;
+  }
+
+  /* Reset page background */
+  body {
+    background: white !important;
+    color: black !important;
+    font-size: 12pt;
+  }
+
+  /* Main content area: full width, no padding offset for sidebar */
+  main, [data-main-content] {
+    margin-left: 0 !important;
+    padding: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+
+  /* Remove shadows and decorative backgrounds */
+  * {
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  /* Page margins */
+  @page {
+    margin: 15mm 12mm;
+    size: A4 portrait;
+  }
+
+  /* Avoid breaking cards mid-page */
+  .surface-card, [class*="rounded-xl"] {
+    break-inside: avoid;
+    border: 1px solid #ccc !important;
+    background: white !important;
+  }
+
+  /* Show print-only elements */
+  .print-header,
+  .print-footer {
+    display: block !important;
+  }
+
+  /* Force color for status badges */
+  [class*="bg-"] {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
+
 .fade-in {
   animation: ppms-fade-in 280ms cubic-bezier(0.16, 1, 0.3, 1);
 }
