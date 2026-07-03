@@ -55,7 +55,7 @@ export function AppointmentRow({ appt, role, token }: { appt: any; role: string;
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap mb-1">
           <Link
-            href={appt.visit ? `/emr/${p.udid}?visit=${appt.visit.id}` : `/patients/${p.udid}`}
+            href={`/patients/${p.udid}`}
             className="text-sm font-semibold text-[var(--color-ink-900)] hover:text-[var(--color-primary-600)] transition-colors"
           >
             {p.name}
