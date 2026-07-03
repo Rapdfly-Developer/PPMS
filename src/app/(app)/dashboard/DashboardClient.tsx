@@ -9,7 +9,7 @@ import {
   Sun, Sunset, Moon, ClipboardList,
 } from "lucide-react";
 import clsx from "clsx";
-import { doctorConfirmAppointment } from "@/app/(app)/appointments/actions";
+import { doctorConfirmAppointment, hospitalUpdateAppointmentStatus } from "@/app/(app)/appointments/actions";
 
 /* ── Types ─────────────────────────────────────────────────────────────── */
 interface Appt {
@@ -431,23 +431,25 @@ export function DashboardClient({
                             <span className={clsx("text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0", cfg.color)}>
                               {cfg.label}
                             </span>
-                            {role === "DOCTOR" && (
-                              <button
-                                disabled={isMoving}
-                                title="Move to Today's Queue"
-                                onClick={() => {
-                                  setMovingId(a.id);
-                                  startMove(async () => {
+                            <button
+                              disabled={isMoving}
+                              title="Move to Today's Queue"
+                              onClick={() => {
+                                setMovingId(a.id);
+                                startMove(async () => {
+                                  if (role === "DOCTOR") {
                                     await doctorConfirmAppointment(a.id);
-                                    setMovingId(null);
-                                    router.refresh();
-                                  });
-                                }}
-                                className="shrink-0 flex items-center justify-center w-7 h-7 rounded-lg bg-[var(--color-primary-50)] text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] disabled:opacity-50 transition-colors"
-                              >
-                                {isMoving ? <Loader2 size={13} className="animate-spin" /> : <LogIn size={13} />}
-                              </button>
-                            )}
+                                  } else {
+                                    await hospitalUpdateAppointmentStatus(a.id, "CONFIRMED");
+                                  }
+                                  setMovingId(null);
+                                  router.refresh();
+                                });
+                              }}
+                              className="shrink-0 flex items-center justify-center w-7 h-7 rounded-lg bg-[var(--color-primary-50)] text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] disabled:opacity-50 transition-colors"
+                            >
+                              {isMoving ? <Loader2 size={13} className="animate-spin" /> : <LogIn size={13} />}
+                            </button>
                           </div>
                         );
                       })}
