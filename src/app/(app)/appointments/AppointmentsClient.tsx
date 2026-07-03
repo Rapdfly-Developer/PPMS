@@ -276,9 +276,22 @@ export function AppointmentsClient({
       <div className="flex items-start justify-between gap-3 mb-5 flex-wrap">
         <div>
           <h1 className="text-2xl font-bold text-[var(--color-ink-900)] tracking-tight">Appointments</h1>
-          <p className="text-sm text-[var(--color-ink-500)] mt-0.5">
-            {dateParam ? `Appointments for ${displayDate}` : `Today's appointments · ${displayDate}`}
-          </p>
+          <div className="relative inline-flex items-center gap-1.5 mt-0.5 cursor-pointer group">
+            <Calendar size={13} className="text-[var(--color-ink-400)] shrink-0 pointer-events-none" />
+            <span className="text-sm text-[var(--color-ink-500)] group-hover:text-[var(--color-primary-600)] transition-colors pointer-events-none">
+              {dateParam ? `Appointments for ${displayDate}` : `Today's appointments · ${displayDate}`}
+            </span>
+            <input
+              ref={dateInputRef}
+              type="date"
+              value={dateParam || format(new Date(), "yyyy-MM-dd")}
+              onChange={(e) => {
+                if (e.target.value) navigate({ date: e.target.value, page: 1 });
+              }}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer rounded"
+              style={{ colorScheme: "light" }}
+            />
+          </div>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           {role === "DOCTOR" && (
