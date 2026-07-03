@@ -568,13 +568,15 @@ export function PatientsClient({
                   return (
                     <li
                       key={p.id}
-                      className={`px-5 py-3.5 flex items-center gap-4 transition-colors ${sel ? "bg-[var(--color-primary-50)]" : "hover:bg-[var(--color-surface-sunken)]"}`}
+                      className={`px-5 py-3.5 flex items-center gap-4 transition-colors cursor-pointer ${sel ? "bg-[var(--color-primary-50)]" : "hover:bg-[var(--color-surface-sunken)]"}`}
+                      onClick={() => router.push(`/patients/${p.udid}`)}
                     >
                       {/* Checkbox */}
                       <input
                         type="checkbox"
                         checked={sel}
                         onChange={() => toggleOne(p.id)}
+                        onClick={(e) => e.stopPropagation()}
                         className="w-3.5 h-3.5 rounded accent-[var(--color-primary-600)] cursor-pointer shrink-0"
                       />
 
@@ -631,17 +633,11 @@ export function PatientsClient({
                         <p className="text-sm text-[var(--color-ink-700)]">{lastVisitStr || <span className="text-[var(--color-ink-300)]">—</span>}</p>
                       </div>
 
-                      {/* Category + View — fixed width */}
-                      <div className="flex items-center gap-2 w-28 shrink-0 justify-end">
+                      {/* Category — fixed width */}
+                      <div className="flex items-center gap-2 w-20 shrink-0 justify-end">
                         <span className={`hidden sm:inline-flex text-[10px] font-semibold px-2 py-0.5 rounded-full ${cat.cls}`}>
                           {cat.label}
                         </span>
-                        <Link
-                          href={`/patients/${p.udid}`}
-                          className="text-xs font-medium px-3 py-1.5 rounded-lg bg-[var(--color-primary-100)] text-[var(--color-primary-700)] hover:bg-[var(--color-primary-200)] transition-colors whitespace-nowrap"
-                        >
-                          View
-                        </Link>
                       </div>
                     </li>
                   );

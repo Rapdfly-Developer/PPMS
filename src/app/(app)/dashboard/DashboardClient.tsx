@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ChevronDown, Plus, Building2, Phone, LogIn, Loader2,
-  Sun, Sunset, Moon, ClipboardList,
+  Sun, Sunset, Moon,
 } from "lucide-react";
 import clsx from "clsx";
 import { doctorConfirmAppointment, hospitalUpdateAppointmentStatus } from "@/app/(app)/appointments/actions";
@@ -145,14 +145,6 @@ function ApptRow({ appt, role }: { appt: Appt; role: "DOCTOR" | "HOSPITAL" }) {
         <span className={clsx("w-1.5 h-1.5 rounded-full shrink-0", cfg.dot)} />
         {cfg.label}
       </span>
-      {role === "HOSPITAL" && appt.visitId && (
-        <Link
-          href={`/emr/${appt.patient.udid}?visit=${appt.visitId}`}
-          className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--color-primary-50)] text-[var(--color-primary-700)] text-xs font-semibold hover:bg-[var(--color-primary-100)] transition-colors"
-        >
-          <ClipboardList size={13} /> EMR
-        </Link>
-      )}
     </div>
   );
 }
