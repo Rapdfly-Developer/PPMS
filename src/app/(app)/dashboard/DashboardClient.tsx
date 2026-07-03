@@ -107,15 +107,12 @@ function ApptRow({ appt, role }: { appt: Appt; role: "DOCTOR" | "HOSPITAL" }) {
   const time = format(new Date(appt.dateTime), "hh:mm a");
 
   return (
-    <Link
-      href={`/patients/${appt.patient.udid}`}
-      className="flex items-center gap-3 px-4 py-3 rounded-xl border border-[var(--color-border)] bg-white hover:bg-[var(--color-primary-50)] hover:border-[var(--color-primary-200)] transition-colors group"
-    >
+    <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-[var(--color-border)] bg-white hover:bg-[var(--color-primary-50)] hover:border-[var(--color-primary-200)] transition-colors">
       <div className="w-16 shrink-0 text-center">
         <p className="text-sm font-bold text-[var(--color-ink-900)]">{time}</p>
       </div>
       <div className="w-px self-stretch bg-[var(--color-border)]" />
-      <div className="flex-1 min-w-0">
+      <Link href={`/patients/${appt.patient.udid}`} className="flex-1 min-w-0 hover:opacity-80 transition-opacity">
         <p className="font-semibold text-[var(--color-ink-900)] text-sm truncate">{appt.patient.name}</p>
         <div className="flex items-center gap-2 mt-0.5 flex-wrap">
           <span className="font-mono text-[10px] text-[#115E59] bg-[#F0F8F6] px-1.5 py-0.5 rounded">
@@ -140,7 +137,7 @@ function ApptRow({ appt, role }: { appt: Appt; role: "DOCTOR" | "HOSPITAL" }) {
             </span>
           )}
         </div>
-      </div>
+      </Link>
       <span className="hidden md:block text-[11px] text-[var(--color-ink-400)] shrink-0 max-w-[120px] truncate">
         {appt.visitType}
       </span>
@@ -151,13 +148,12 @@ function ApptRow({ appt, role }: { appt: Appt; role: "DOCTOR" | "HOSPITAL" }) {
       {role === "HOSPITAL" && appt.visitId && (
         <Link
           href={`/emr/${appt.patient.udid}?visit=${appt.visitId}`}
-          onClick={(e) => e.stopPropagation()}
           className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--color-primary-50)] text-[var(--color-primary-700)] text-xs font-semibold hover:bg-[var(--color-primary-100)] transition-colors"
         >
           <ClipboardList size={13} /> EMR
         </Link>
       )}
-    </Link>
+    </div>
   );
 }
 
