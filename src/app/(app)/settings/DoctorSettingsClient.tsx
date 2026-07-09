@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useRef } from "react";
+import React, { useState, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { format, formatDistanceToNow } from "date-fns";
@@ -1067,7 +1067,6 @@ function HospitalSection({ hospitals }: { hospitals: HospitalRow[] }) {
   const [logoPreview, setLogoPreview] = useState<string | null>(h?.logoUrl ?? null);
   const [logoUploading, setLogoUploading] = useState(false);
   const [logoMsg, setLogoMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
-  const logoInputRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState({
     name:    h?.name    ?? "",
     code:    h?.shortCode ?? "",
@@ -1124,7 +1123,6 @@ function HospitalSection({ hospitals }: { hospitals: HospitalRow[] }) {
       setLogoMsg({ type: "err", text: "Upload failed. Please try again." });
     } finally {
       setLogoUploading(false);
-      if (logoInputRef.current) logoInputRef.current.value = "";
     }
   }
 
@@ -1178,21 +1176,16 @@ function HospitalSection({ hospitals }: { hospitals: HospitalRow[] }) {
                 : (h?.shortCode ?? "H")}
             </div>
             <div>
-              <input
-                ref={logoInputRef}
-                type="file"
-                accept="image/png,image/jpeg"
-                className="hidden"
-                onChange={handleLogoUpload}
-              />
-              <button
-                type="button"
-                onClick={() => logoInputRef.current?.click()}
-                disabled={logoUploading}
-                className="flex items-center gap-2 rounded-xl border border-[var(--color-border)] px-4 py-2 text-sm font-medium hover:bg-[var(--color-surface-sunken)] transition-colors disabled:opacity-50"
-              >
+              <label className={`inline-flex items-center gap-2 rounded-xl border border-[var(--color-border)] px-4 py-2 text-sm font-medium cursor-pointer hover:bg-[var(--color-surface-sunken)] transition-colors ${logoUploading ? "opacity-50 pointer-events-none" : ""}`}>
                 <Upload size={14} /> {logoUploading ? "Uploading…" : "Upload Logo"}
-              </button>
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg"
+                  className="sr-only"
+                  onChange={handleLogoUpload}
+                  disabled={logoUploading}
+                />
+              </label>
               <p className="text-xs text-[var(--color-ink-400)] mt-1.5">PNG or JPG · Max 2MB · 512×512px recommended</p>
               {logoMsg && (
                 <p className={`text-xs mt-1 ${logoMsg.type === "ok" ? "text-emerald-600" : "text-red-500"}`}>

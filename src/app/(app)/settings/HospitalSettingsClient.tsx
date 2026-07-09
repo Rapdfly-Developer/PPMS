@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useTransition, useRef } from "react";
+import React, { useState, useTransition } from "react";
 import {
   Building2, Layers, Users, Calendar, Bell,
   Database, ClipboardList, CreditCard,
@@ -172,8 +172,6 @@ function HospitalInfoSection({ hospital, onSaved }: { hospital: Hospital; onSave
   const [logoPreview, setLogoPreview] = useState<string | null>(hospital.logoUrl ?? null);
   const [logoUploading, setLogoUploading] = useState(false);
   const [logoMsg, setLogoMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
-  const logoInputRef = useRef<HTMLInputElement>(null);
-
   async function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -200,7 +198,6 @@ function HospitalInfoSection({ hospital, onSaved }: { hospital: Hospital; onSave
       setLogoMsg({ type: "err", text: "Upload failed. Please try again." });
     } finally {
       setLogoUploading(false);
-      if (logoInputRef.current) logoInputRef.current.value = "";
     }
   }
 
@@ -227,21 +224,16 @@ function HospitalInfoSection({ hospital, onSaved }: { hospital: Hospital; onSave
               : <Building2 size={28} className="text-[var(--color-ink-300)]" />}
           </div>
           <div>
-            <input
-              ref={logoInputRef}
-              type="file"
-              accept="image/png,image/jpeg,image/svg+xml"
-              className="hidden"
-              onChange={handleLogoUpload}
-            />
-            <button
-              type="button"
-              onClick={() => logoInputRef.current?.click()}
-              disabled={logoUploading}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-[var(--color-border)] bg-white text-sm font-medium text-[var(--color-ink-700)] hover:bg-[var(--color-ink-50)] transition-colors disabled:opacity-50"
-            >
+            <label className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-[var(--color-border)] bg-white text-sm font-medium text-[var(--color-ink-700)] cursor-pointer hover:bg-[var(--color-ink-50)] transition-colors ${logoUploading ? "opacity-50 pointer-events-none" : ""}`}>
               <Upload size={14} /> {logoUploading ? "Uploading…" : "Upload Logo"}
-            </button>
+              <input
+                type="file"
+                accept="image/png,image/jpeg,image/svg+xml"
+                className="sr-only"
+                onChange={handleLogoUpload}
+                disabled={logoUploading}
+              />
+            </label>
             <p className="text-xs text-[var(--color-ink-400)] mt-1.5">PNG or SVG · max 2 MB · 200×200 px recommended</p>
             {logoMsg && (
               <p className={`text-xs mt-1 ${logoMsg.type === "ok" ? "text-emerald-600" : "text-red-500"}`}>
