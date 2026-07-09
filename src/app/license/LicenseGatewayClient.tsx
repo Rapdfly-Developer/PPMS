@@ -443,6 +443,11 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
                   style={{ background: isPending ? "#64748b" : "#157A73", boxShadow: isPending ? "none" : "0 4px 14px rgba(21,122,115,0.35)" }}>
                   {isPending ? <><Loader2 size={16} className="animate-spin" /> Activating…</> : <><Key size={16} /> Activate License</>}
                 </button>
+                <button
+                  onClick={() => router.push("/license/activate")}
+                  className="w-full py-3 rounded-xl border-2 border-slate-200 text-slate-700 text-sm font-semibold hover:bg-slate-50 transition-all">
+                  Buy License
+                </button>
                 <a href="mailto:support@ppms.in"
                   className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-slate-200 text-slate-700 text-sm font-semibold hover:bg-slate-50 transition-all">
                   Contact Sales
