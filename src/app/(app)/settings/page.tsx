@@ -20,8 +20,29 @@ export default async function SettingsPage() {
   // ── Doctor role ──────────────────────────────────────────────────────────
   const doctorId = scopeDoctorId(user);
 
-  const [allUsers, auditLogs, doctorLinks, doctorProfile] = await Promise.all([
+  // Fetch doctor's linked hospitals first so we can scope users to them
+  const doctorLinksEarly = await prisma.doctorHospitalLink.findMany({
+    where: { doctorId },
+    select: { hospitalId: true },
+  });
+  const linkedHospitalIds = doctorLinksEarly.map((l) => l.hospitalId);
+
+  const assignableRoles = await prisma.role.findMany({
+    where: { name: { not: "DOCTOR" }, isActive: true },
+    orderBy: { createdAt: "asc" },
+    select: { name: true, label: true, color: true },
+  });
+
+  const [allUsers, auditLogs, doctorLinks, doctorProfile, loginLogs, patientApptLogs] = await Promise.all([
+    // Only show: the doctor himself + staff/refractionists from his linked hospitals
     prisma.user.findMany({
+      where: {
+        OR: [
+          { doctor: { id: doctorId } },
+          { hospitalStaff: { hospitalId: { in: linkedHospitalIds } } },
+          { refractionist:  { hospitalId: { in: linkedHospitalIds } } },
+        ],
+      },
       include: {
         hospitalStaff: { select: { name: true, mobile: true, hospitalId: true, hospital: { select: { name: true } } } },
         refractionist:  { select: { name: true, mobile: true, hospitalId: true, hospital: { select: { name: true } } } },
@@ -39,7 +60,21 @@ export default async function SettingsPage() {
     }),
     prisma.doctor.findUnique({
       where: { id: doctorId },
-      select: { id: true, name: true, shortCode: true, specialty: true, contact: true, credentials: true },
+      select: { id: true, name: true, shortCode: true, specialty: true, contact: true, credentials: true, email: true, experience: true, medicalRegNumber: true, qualifications: true, signatureUrl: true },
+    }),
+    prisma.userLoginHistory.findMany({
+      orderBy: { loginAt: "desc" },
+      take: 100,
+    }),
+    prisma.auditLog.findMany({
+      where: {
+        OR: [
+          { moduleName: { in: ["Patient", "Appointment"] } },
+          { entityType: { in: ["Patient", "Appointment", "Medication", "InvestigationOrder", "Diagnosis"] } },
+        ],
+      },
+      orderBy: { timestamp: "desc" },
+      take: 300,
     }),
   ]);
 
@@ -71,6 +106,34 @@ export default async function SettingsPage() {
     address:   l.hospital.address ?? "",
     contact:   l.hospital.contact ?? "",
     active:    l.active,
+    logoUrl:   (l.hospital as any).logoUrl ?? null,
+  }));
+
+  const serializedLoginLogs = loginLogs.map((l) => ({
+    id:          l.id,
+    userName:    l.userName,
+    role:        l.role,
+    hospitalName: l.hospitalName ?? null,
+    loginAt:     l.loginAt.toISOString(),
+    logoutAt:    l.logoutAt?.toISOString() ?? null,
+    ipAddress:   l.ipAddress ?? null,
+    userAgent:   l.userAgent ?? null,
+    status:      l.status,
+    isActive:    l.isActive,
+  }));
+
+  const serializedPatientApptLogs = patientApptLogs.map((l) => ({
+    id:         l.id,
+    entityType: l.entityType,
+    entityId:   l.entityId,
+    action:     l.action,
+    actionType: l.actionType ?? null,
+    moduleName: l.moduleName ?? l.entityType,
+    userName:   l.userName ?? null,
+    hospitalId: l.hospitalId ?? null,
+    newValue:   l.newValue ?? null,
+    oldValue:   l.oldValue ?? null,
+    timestamp:  l.timestamp.toISOString(),
   }));
 
   return (
@@ -78,6 +141,9 @@ export default async function SettingsPage() {
       users={serializedUsers}
       auditLogs={serializedAudit}
       hospitals={serializedHospitals}
+      loginLogs={serializedLoginLogs}
+      patientApptLogs={serializedPatientApptLogs}
+      assignableRoles={assignableRoles}
       doctor={doctorProfile ? {
         id: doctorProfile.id,
         name: doctorProfile.name,
@@ -85,6 +151,11 @@ export default async function SettingsPage() {
         specialty: doctorProfile.specialty ?? "",
         contact: doctorProfile.contact ?? "",
         credentials: doctorProfile.credentials ?? "",
+        email: doctorProfile.email ?? "",
+        experience: doctorProfile.experience ?? "",
+        medicalRegNumber: doctorProfile.medicalRegNumber ?? "",
+        qualifications: doctorProfile.qualifications ?? "",
+        signatureUrl: doctorProfile.signatureUrl ?? "",
       } : null}
     />
   );

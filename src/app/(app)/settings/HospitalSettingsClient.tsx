@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useTransition } from "react";
+import React, { useState, useTransition, useRef } from "react";
 import {
   Building2, Layers, Users, Calendar, Bell,
   Database, ClipboardList, CreditCard,
@@ -9,7 +9,7 @@ import {
   Phone, MapPin, Mail, Globe, Clock,
   Download, RefreshCw,
 } from "lucide-react";
-import { updateHospitalSettings } from "./actions";
+import { updateHospitalSettings, saveHospitalLogo } from "./actions";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type Section =
@@ -19,6 +19,7 @@ type Section =
 type Hospital = {
   id: string; name: string; shortCode: string;
   address: string | null; contact: string | null; retentionYears: number;
+  logoUrl?: string | null;
 };
 
 // ── Sidebar nav ───────────────────────────────────────────────────────────────
@@ -168,6 +169,40 @@ function HospitalInfoSection({ hospital, onSaved }: { hospital: Hospital; onSave
   const [email,   setEmail]   = useState("");
   const [error,   setError]   = useState("");
   const [pending, startTransition] = useTransition();
+  const [logoPreview, setLogoPreview] = useState<string | null>(hospital.logoUrl ?? null);
+  const [logoUploading, setLogoUploading] = useState(false);
+  const [logoMsg, setLogoMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+  const logoInputRef = useRef<HTMLInputElement>(null);
+
+  async function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      setLogoMsg({ type: "err", text: "File too large — max 2 MB." });
+      return;
+    }
+    setLogoUploading(true);
+    setLogoMsg(null);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/uploads", { method: "POST", body: fd });
+      if (!res.ok) throw new Error("Upload failed");
+      const { url } = await res.json();
+      const result = await saveHospitalLogo(hospital.id, url);
+      if (result.error) {
+        setLogoMsg({ type: "err", text: result.error });
+      } else {
+        setLogoPreview(url);
+        setLogoMsg({ type: "ok", text: "Logo updated." });
+      }
+    } catch {
+      setLogoMsg({ type: "err", text: "Upload failed. Please try again." });
+    } finally {
+      setLogoUploading(false);
+      if (logoInputRef.current) logoInputRef.current.value = "";
+    }
+  }
 
   const save = () => {
     setError("");
@@ -186,14 +221,33 @@ function HospitalInfoSection({ hospital, onSaved }: { hospital: Hospital; onSave
       <Card className="mb-4 p-5">
         <p className="text-sm font-semibold text-[var(--color-ink-900)] mb-3">Hospital Logo</p>
         <div className="flex items-center gap-4">
-          <div className="w-20 h-20 rounded-2xl border-2 border-dashed border-[var(--color-border)] bg-[var(--color-surface-sunken)] flex items-center justify-center">
-            <Building2 size={28} className="text-[var(--color-ink-300)]" />
+          <div className="w-20 h-20 rounded-2xl border-2 border-dashed border-[var(--color-border)] bg-[var(--color-surface-sunken)] flex items-center justify-center overflow-hidden shrink-0">
+            {logoPreview
+              ? <img src={logoPreview} alt="Hospital logo" className="w-full h-full object-cover" />
+              : <Building2 size={28} className="text-[var(--color-ink-300)]" />}
           </div>
           <div>
-            <button className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-[var(--color-border)] bg-white text-sm font-medium text-[var(--color-ink-700)] hover:bg-[var(--color-ink-50)] transition-colors">
-              <Upload size={14} /> Upload Logo
+            <input
+              ref={logoInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/svg+xml"
+              className="hidden"
+              onChange={handleLogoUpload}
+            />
+            <button
+              type="button"
+              onClick={() => logoInputRef.current?.click()}
+              disabled={logoUploading}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-[var(--color-border)] bg-white text-sm font-medium text-[var(--color-ink-700)] hover:bg-[var(--color-ink-50)] transition-colors disabled:opacity-50"
+            >
+              <Upload size={14} /> {logoUploading ? "Uploading…" : "Upload Logo"}
             </button>
             <p className="text-xs text-[var(--color-ink-400)] mt-1.5">PNG or SVG · max 2 MB · 200×200 px recommended</p>
+            {logoMsg && (
+              <p className={`text-xs mt-1 ${logoMsg.type === "ok" ? "text-emerald-600" : "text-red-500"}`}>
+                {logoMsg.text}
+              </p>
+            )}
           </div>
         </div>
       </Card>
