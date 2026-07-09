@@ -62,7 +62,14 @@ export default async function SettingsPage() {
       where: { id: doctorId },
       select: { id: true, name: true, shortCode: true, specialty: true, contact: true, credentials: true, email: true, experience: true, medicalRegNumber: true, qualifications: true, signatureUrl: true },
     }),
+    // System logs scoped to: this doctor's own logins + logins at his linked hospitals
     prisma.userLoginHistory.findMany({
+      where: {
+        OR: [
+          { userId: user.id },
+          { hospitalId: { in: linkedHospitalIds } },
+        ],
+      },
       orderBy: { loginAt: "desc" },
       take: 100,
     }),

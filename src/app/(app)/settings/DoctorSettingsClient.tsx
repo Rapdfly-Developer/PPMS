@@ -1802,12 +1802,12 @@ function ExportSection({ hospitals }: { hospitals: HospitalRow[] }) {
   const [ageMax, setAgeMax]         = React.useState("");
   const [fromDate, setFromDate]     = React.useState("");
   const [toDate, setToDate]         = React.useState("");
-  const [exporting, setExporting]   = React.useState<"Excel" | "PDF" | null>(null);
+  const [exporting, setExporting]   = React.useState<"CSV" | "Excel" | "PDF" | null>(null);
   const [msg, setMsg]               = React.useState<{ type: "ok" | "err"; text: string } | null>(null);
 
   // OTP modal state
   const [otpModal, setOtpModal]         = React.useState(false);
-  const [pendingFormat, setPendingFormat] = React.useState<"Excel" | "PDF" | null>(null);
+  const [pendingFormat, setPendingFormat] = React.useState<"CSV" | "Excel" | "PDF" | null>(null);
   const [otpCode, setOtpCode]           = React.useState("");
   const [otpSentTo, setOtpSentTo]       = React.useState("");
   const [otpSending, setOtpSending]     = React.useState(false);
@@ -1826,7 +1826,7 @@ function ExportSection({ hospitals }: { hospitals: HospitalRow[] }) {
     URL.revokeObjectURL(url);
   }
 
-  async function handleExport(format: "Excel" | "PDF") {
+  async function handleExport(format: "CSV" | "Excel" | "PDF") {
     // Request OTP first
     setOtpErr(""); setOtpCode(""); setOtpSentTo(""); setOtpSending(true);
     setPendingFormat(format);
@@ -1847,7 +1847,7 @@ function ExportSection({ hospitals }: { hospitals: HospitalRow[] }) {
     await doExport(pendingFormat);
   }
 
-  async function doExport(format: "Excel" | "PDF") {
+  async function doExport(format: "CSV" | "Excel" | "PDF") {
     setExporting(format); setMsg(null);
 
     const dateSuffix = new Date().toISOString().slice(0, 10);
@@ -1870,7 +1870,7 @@ function ExportSection({ hospitals }: { hospitals: HospitalRow[] }) {
       return;
     }
 
-    // Excel
+    // CSV / Excel — both need the raw rows
     const res = await exportPatients({
       hospitalId, category: category || undefined,
       sex: sex || undefined,
@@ -1885,9 +1885,28 @@ function ExportSection({ hospitals }: { hospitals: HospitalRow[] }) {
 
     const hospitalName = hospitals.find((h) => h.id === hospitalId)?.name ?? "All Hospitals";
     const filename = `patients_${hospitalName.replace(/\s+/g,"_")}_${dateSuffix}`;
-
-    // Force all cells as text with mso-number-format so mobile/dates render correctly
     const COLS = ["#","Name","UDID","UHID","Age","Sex","Mobile","Category","Registered"];
+
+    if (format === "CSV") {
+      const esc = (v: string | number) => {
+        const s = String(v);
+        return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+      };
+      const lines = [
+        COLS.join(","),
+        ...res.data.map((r, i) => [
+          i + 1, r.name, r.udid, r.uhid, r.age, r.sex, r.mobile, r.category,
+          new Date(r.registeredAt).toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"}),
+        ].map(esc).join(",")),
+      ];
+      // BOM so Excel opens UTF-8 correctly
+      downloadBlob(String.fromCharCode(0xfeff) + lines.join("\r\n"), `${filename}.csv`, "text/csv;charset=utf-8");
+      setMsg({ type: "ok", text: `${res.data.length} patient${res.data.length!==1?"s":""} exported as CSV.` });
+      setExporting(null);
+      return;
+    }
+
+    // Excel — force all cells as text with mso-number-format so mobile/dates render correctly
     const td = `style="mso-number-format:'\\@';"`;
     const tableRows = res.data.map((r, i) => `<tr>
       <td ${td}>${i+1}</td><td ${td}>${r.name}</td><td ${td}>${r.udid}</td><td ${td}>${r.uhid}</td>
@@ -2039,7 +2058,7 @@ function ExportSection({ hospitals }: { hospitals: HospitalRow[] }) {
         )}
 
         <div className="flex gap-2">
-          {(["Excel", "PDF"] as const).map((fmt) => (
+          {(["CSV", "Excel", "PDF"] as const).map((fmt) => (
             <button key={fmt} onClick={() => handleExport(fmt)} disabled={!!exporting || otpSending || otpModal}
               className="flex-1 flex items-center justify-center gap-1.5 rounded-lg border border-[var(--color-border)] py-2 text-xs font-semibold text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)] hover:border-[var(--color-primary-300)] disabled:opacity-50 transition-colors">
               {otpSending && pendingFormat === fmt
