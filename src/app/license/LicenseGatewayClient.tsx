@@ -200,6 +200,9 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
   const [licKey, setLicKey]   = useState("");
   const [activating, setActivating] = useState(false);
 
+  // Buy-license plans modal
+  const [showPlans, setShowPlans] = useState(false);
+
   // Generate machine ID on first render
   useEffect(() => {
     if (!machineId) {
@@ -493,6 +496,10 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
                     className="w-full py-3 rounded-xl border-2 border-slate-200 text-slate-700 text-sm font-semibold hover:bg-slate-50 transition-all">
                     View License Details
                   </button>
+                  <button onClick={() => setShowPlans(true)}
+                    className="w-full py-3 rounded-xl border-2 border-slate-200 text-slate-700 text-sm font-semibold hover:bg-slate-50 transition-all">
+                    Buy License
+                  </button>
                 </div>
               ) : (
                 <div className="flex flex-col gap-2.5 mt-6">
@@ -527,6 +534,110 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
               </button>
             </div>
           </div>
+        </div>
+      </div>
+
+      {showPlans && <PlansModal onClose={() => setShowPlans(false)} onActivateKey={() => { setShowPlans(false); router.push("/license/activate"); }} />}
+    </div>
+  );
+}
+
+// ── Buy License: plans modal ──────────────────────────────────────────────────
+const PLANS = [
+  {
+    name: "Monthly",
+    price: "₹999",
+    per: "/ month",
+    tagline: "For getting started",
+    badge: null as string | null,
+    highlight: false,
+    features: ["Unlimited patients & EMR", "Appointments & queue", "Prescriptions & PDF reports", "Email support"],
+  },
+  {
+    name: "Annual",
+    price: "₹9,999",
+    per: "/ year",
+    tagline: "Save 17% vs monthly",
+    badge: "Most Popular",
+    highlight: true,
+    features: ["Everything in Monthly", "Multi-hospital support", "Data export (CSV / Excel / PDF)", "Priority support"],
+  },
+  {
+    name: "5-Year",
+    price: "₹39,999",
+    per: "/ 5 years",
+    tagline: "Save 20% vs annual",
+    badge: "Best Value",
+    highlight: false,
+    features: ["Everything in Annual", "All future updates included", "Free re-activation on new device", "Dedicated onboarding"],
+  },
+];
+
+function PlansModal({ onClose, onActivateKey }: { onClose: () => void; onActivateKey: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={onClose}>
+      <div
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl p-6 sm:p-8 max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-start justify-between mb-6">
+          <div>
+            <h2 className="text-xl font-black text-slate-900">Choose your PPMS plan</h2>
+            <p className="text-sm text-slate-500 mt-1">Pick a plan and we&apos;ll send your license key by email.</p>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors">
+            <XCircle size={20} />
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {PLANS.map((p) => (
+            <div
+              key={p.name}
+              className={`relative rounded-2xl border-2 p-5 flex flex-col ${
+                p.highlight ? "border-[#157A73] shadow-lg shadow-teal-100" : "border-slate-200"
+              }`}
+            >
+              {p.badge && (
+                <span className={`absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full text-[11px] font-bold text-white whitespace-nowrap ${
+                  p.highlight ? "bg-[#157A73]" : "bg-slate-700"
+                }`}>
+                  {p.badge}
+                </span>
+              )}
+              <p className="text-sm font-bold text-slate-900">{p.name}</p>
+              <p className="mt-2">
+                <span className="text-2xl font-black text-slate-900">{p.price}</span>
+                <span className="text-xs text-slate-400"> {p.per}</span>
+              </p>
+              <p className="text-xs text-slate-500 mt-0.5 mb-4">{p.tagline}</p>
+              <ul className="space-y-2 mb-5 flex-1">
+                {p.features.map((f) => (
+                  <li key={f} className="flex items-start gap-2 text-xs text-slate-600">
+                    <CheckCircle2 size={13} className="text-[#157A73] shrink-0 mt-0.5" /> {f}
+                  </li>
+                ))}
+              </ul>
+              <a
+                href={`mailto:support@ppms.in?subject=${encodeURIComponent(`PPMS License Purchase — ${p.name} plan (${p.price}${p.per})`)}&body=${encodeURIComponent("Hi,\n\nI would like to buy the " + p.name + " plan for PPMS. Please share the payment details and license key.\n\nThank you.")}`}
+                className={`w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-bold transition-all ${
+                  p.highlight
+                    ? "text-white"
+                    : "border-2 border-slate-200 text-slate-700 hover:bg-slate-50"
+                }`}
+                style={p.highlight ? { background: "#157A73", boxShadow: "0 4px 14px rgba(21,122,115,0.35)" } : undefined}
+              >
+                Buy {p.name}
+              </a>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-6 text-center text-xs text-slate-500">
+          Already have a license key?{" "}
+          <button onClick={onActivateKey} className="text-[#157A73] font-semibold hover:underline">
+            Activate it here →
+          </button>
         </div>
       </div>
     </div>
