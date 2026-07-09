@@ -30,18 +30,25 @@ model User {
   refractionist Refractionist?
   auditLogs     AuditLog[]
   notifications Notification[]
+  loginHistory  UserLoginHistory[]
+  exportOtps    ExportOtp[]
 }
 
 model Doctor {
-  id          String   @id @default(cuid())
-  userId      String   @unique
-  user        User     @relation(fields: [userId], references: [id])
-  name        String
-  shortCode   String?  @unique
-  specialty   String   @default("Ophthalmology")
-  contact     String?
-  credentials String?
-  createdAt   DateTime @default(now())
+  id                  String   @id @default(cuid())
+  userId              String   @unique
+  user                User     @relation(fields: [userId], references: [id])
+  name                String
+  shortCode           String?  @unique
+  specialty           String   @default("Ophthalmology")
+  contact             String?
+  credentials         String?
+  email               String?
+  experience          String?
+  medicalRegNumber    String?
+  qualifications      String?
+  signatureUrl        String?
+  createdAt           DateTime @default(now())
 
   hospitalLinks  DoctorHospitalLink[]
   refractionists Refractionist[]
@@ -49,14 +56,17 @@ model Doctor {
   appointments   Appointment[]
   visits         Visit[]
   availabilities DoctorAvailability[]
+  license        TenantLicense?
 }
 
 model Hospital {
   id             String   @id @default(cuid())
   name           String
   shortCode      String   @unique
+  email          String?
   address        String?
   contact        String?
+  logoUrl        String?
   retentionYears Int      @default(7)
   createdAt      DateTime @default(now())
 
@@ -68,6 +78,120 @@ model Hospital {
   visits         Visit[]
   availabilities DoctorAvailability[]
   chipOptions    ChipOption[]
+  integration    HospitalIntegration?
+  integrationLogs IntegrationLog[]
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// Hospital Integration Engine
+// PPMS keeps a standard internal clinical data model; each hospital gets an
+// adapter + mapping config so new hospitals are onboarded via configuration,
+// not core-code changes.
+// ──────────────────────────────────────────────────────────────────────────
+
+// integrationType: FHIR | HL7 | REST | CSV
+// authType: NONE | API_KEY | BEARER | BASIC | OAUTH2
+model HospitalIntegration {
+  id                  String   @id @default(cuid())
+  hospitalId          String   @unique
+  hospital            Hospital @relation(fields: [hospitalId], references: [id])
+  integrationType     String   @default("REST")
+  apiEndpoint         String?
+  authType            String   @default("NONE")
+  credentialsEncrypted String? // AES-256-GCM; API key / token / client secret
+  oauthTokenUrl       String?  // OAUTH2 only
+  fieldMappingJson    String?  // JSON: PPMS field -> hospital field overrides
+  transformationRules String?  // JSON: value-level transforms (e.g. sex M/F -> 1/2)
+  syncEnabled         Boolean  @default(false)
+  maxRetries          Int      @default(3)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  logs IntegrationLog[]
+}
+
+// status: PENDING | SUCCESS | FAILED
+// recordType: VISIT | PATIENT
+model IntegrationLog {
+  id              String   @id @default(cuid())
+  integrationId   String
+  integration     HospitalIntegration @relation(fields: [integrationId], references: [id])
+  hospitalId      String
+  hospital        Hospital @relation(fields: [hospitalId], references: [id])
+  patientId       String?
+  visitId         String?
+  recordType      String   @default("VISIT")
+  status          String   @default("PENDING")
+  requestPayload  String?  // what the adapter produced (truncated)
+  responsePayload String?  // hospital ack / error body (truncated)
+  errorMessage    String?
+  retryCount      Int      @default(0)
+  triggeredBy     String?  // AUTO | MANUAL | RETRY
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([hospitalId, status])
+  @@index([visitId])
+  @@index([createdAt])
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// Licensing & subscriptions
+// ──────────────────────────────────────────────────────────────────────────
+
+// paymentStatus: NONE | PENDING | PAID | FAILED
+// plan: MONTHLY | YEARLY
+// The DOCTOR is the licensee — one license covers the doctor and every
+// hospital they operate. (Renamed conceptually from per-hospital tenancy.)
+model TenantLicense {
+  id                   String    @id @default(cuid())
+  doctorId             String    @unique
+  doctor               Doctor    @relation(fields: [doctorId], references: [id])
+
+  // 30-day free trial
+  trialStartsAt        DateTime  @default(now())
+  trialEndsAt          DateTime
+
+  // Paid subscription (null until first payment)
+  plan                 String?
+  subscriptionStartsAt DateTime?
+  subscriptionEndsAt   DateTime?
+
+  // Razorpay
+  paymentStatus        String    @default("NONE")
+  razorpayOrderId      String?
+  razorpayPaymentId    String?
+  razorpaySignature    String?
+
+  // License key activation (offline/manual key)
+  licenseKey           String?
+  machineId            String?   // browser-generated UUID stored in cookie
+  deviceName           String?
+  lastVerifiedAt       DateTime?
+
+  // Reminder tracking (bitfield: 1=7day, 2=3day, 4=1day)
+  remindersSent        Int       @default(0)
+
+  isActive             Boolean   @default(true)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  @@index([trialEndsAt])
+  @@index([subscriptionEndsAt])
+}
+
+// License activation audit trail shown on /license/activate
+model LicenseEvent {
+  id          String   @id @default(cuid())
+  doctorId    String
+  action      String   // TRIAL_STARTED | ACTIVATED | REACTIVATED | VERIFIED
+  keyMasked   String?
+  performedBy String?
+  status      String   // SUCCESS | FAILED
+  detail      String?
+  createdAt   DateTime @default(now())
+
+  @@index([doctorId, createdAt])
 }
 
 // Scoped login for a Hospital, linked to exactly one Doctor-Hospital relationship
@@ -129,7 +253,8 @@ model DoctorAvailability {
 // Sex: MALE | FEMALE | OTHER
 model Patient {
   id              String   @id @default(cuid())
-  udid            String   @unique // Unique persistent patient identifier
+  uhid            String?  @unique // Hospital-based ID: PPMS-{HOSPITALCODE}-NNNN (nullable for legacy)
+  udid            String?  @unique // Doctor-based ID:   PPMS-{DOCTORCODE}-NNNN
   doctorId        String?
   doctor          Doctor?  @relation(fields: [doctorId], references: [id])
   registeredAtId  String?
@@ -496,6 +621,57 @@ model AuditLog {
   oldValue   String?
   newValue   String?
   timestamp  DateTime @default(now())
+
+  // Extended fields for richer audit context
+  hospitalId String?
+  moduleName String?
+  actionType String?   // CREATE | UPDATE | DELETE | VIEW | PRINT | DOWNLOAD
+  ipAddress  String?
+  userName   String?
+
+  @@index([userId, timestamp])
+  @@index([hospitalId, timestamp])
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// Login & session tracking
+// ──────────────────────────────────────────────────────────────────────────
+
+model UserLoginHistory {
+  id           String    @id @default(cuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id])
+  userName     String
+  role         String
+  hospitalId   String?
+  hospitalName String?
+  loginAt      DateTime  @default(now())
+  logoutAt     DateTime?
+  ipAddress    String?
+  userAgent    String?
+  status       String    @default("SUCCESS")  // SUCCESS | FAILED
+  isActive     Boolean   @default(true)
+  failReason   String?
+
+  @@index([userId, loginAt])
+  @@index([status, loginAt])
+  @@index([isActive])
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// Export OTP — short-lived codes for authorising data downloads
+// ──────────────────────────────────────────────────────────────────────────
+
+model ExportOtp {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  code      String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId, expiresAt])
 }
 
 // ──────────────────────────────────────────────────────────────────────────

@@ -3,42 +3,38 @@
 import { useState, useTransition, useRef, useEffect } from "react";
 import { Save, Printer, FileSignature, CheckCircle2, Download, ChevronDown, X, FileText } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { touchVisit, closeVisit } from "./actions";
 
-function SuccessModal({ visitId, onClose }: { visitId: string; onClose: () => void }) {
-  const pdfBase = `/api/prescription-pdf/${visitId}`;
+function SuccessModal({ udid, onClose }: { udid: string; onClose: () => void }) {
+  const router = useRouter();
+
+  const goToProfile = () => {
+    onClose();
+    router.push(`/patients/${udid}`);
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden">
-        {/* Header */}
-        <div className="bg-emerald-600 px-6 py-5 text-white text-center">
+    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/40 backdrop-blur-sm">
+      {/* X button above the card */}
+      <button
+        onClick={onClose}
+        className="mb-3 w-9 h-9 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/35 text-white transition-colors"
+      >
+        <X size={18} />
+      </button>
+
+      {/* Clickable card → patient profile */}
+      <div
+        onClick={goToProfile}
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden cursor-pointer hover:shadow-3xl hover:scale-[1.01] transition-all duration-150 active:scale-[0.99]"
+      >
+        <div className="bg-emerald-600 px-6 py-6 text-white text-center">
           <CheckCircle2 size={40} className="mx-auto mb-2" />
           <h2 className="text-lg font-bold">Consultation Completed</h2>
           <p className="text-sm text-emerald-100 mt-1">EMR has been finalized and signed.</p>
+          <p className="text-xs text-emerald-200 mt-3 opacity-80">Tap to view patient profile →</p>
         </div>
-        {/* Actions */}
-        <div className="px-6 py-5 flex flex-col gap-3">
-          <a
-            href={pdfBase}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-xl bg-[var(--color-primary-600)] text-white text-sm font-semibold hover:bg-[var(--color-primary-700)] transition-colors"
-          >
-            <Printer size={16} /> View Prescription
-          </a>
-          <Link
-            href="/appointments"
-            className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-xl border border-[var(--color-border)] text-sm font-semibold text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] transition-colors"
-          >
-            Back to Appointments
-          </Link>
-        </div>
-        <button
-          onClick={onClose}
-          className="absolute top-3 right-3 p-1.5 rounded-lg text-white/70 hover:text-white hover:bg-white/15 transition-colors"
-        >
-          <X size={16} />
-        </button>
       </div>
     </div>
   );
@@ -67,7 +63,7 @@ export function EmrActionBar({ visit, udid, patientName }: { visit: any; udid: s
 
   return (
     <>
-      {showSuccess && <SuccessModal visitId={visit.id} onClose={() => setShowSuccess(false)} />}
+      {showSuccess && <SuccessModal udid={udid} onClose={() => setShowSuccess(false)} />}
 
       <div className="fixed bottom-0 left-0 md:left-56 right-0 z-20 border-t border-[var(--color-border)] bg-white/95 backdrop-blur-sm px-6 md:px-8 py-3 flex items-center justify-end gap-3 shadow-[0_-4px_16px_rgba(20,36,43,0.06)]">
         {draftSaved && <span className="text-xs font-medium text-[var(--color-success-600)] mr-1">Draft saved</span>}
@@ -134,7 +130,7 @@ export function EmrActionBar({ visit, udid, patientName }: { visit: any; udid: s
 
               {/* 3. Print Short Summary */}
               <button
-                onClick={() => { setPrintOpen(false); window.print(); }}
+                onClick={() => { setPrintOpen(false); window.open(`/api/prescription-pdf/${visit.id}/summary`, "_blank"); }}
                 className="flex items-center gap-3 px-4 py-3 w-full text-left text-sm text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] transition-colors"
               >
                 <FileText size={15} className="text-[var(--color-primary-600)] shrink-0" />

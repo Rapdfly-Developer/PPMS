@@ -2,235 +2,229 @@ import { requireRole } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { Card } from "@/components/ui/Card";
 import { format, startOfDay } from "date-fns";
-import { ShieldCheck, Search, Calendar, Filter } from "lucide-react";
-import Link from "next/link";
+import {
+  ShieldCheck, Users, UserCheck, AlertTriangle,
+  Activity, Building2, TrendingUp,
+} from "lucide-react";
 
-const ENTITY_TYPES = [
-  "Visit", "GeneralExam", "InvestigationOrder", "PastExternalVisit",
-  "ProvisionalDx", "Diagnosis", "Admission", "Pharmacy",
-];
+export default async function AuditDashboardPage() {
+  await requireRole("DOCTOR");
 
-const ACTION_COLORS: Record<string, string> = {
-  ADD:             "bg-[var(--color-success-100)] text-[var(--color-success-700)]",
-  SAVE:            "bg-[var(--color-info-100)] text-[var(--color-info-700)]",
-  STATUS:          "bg-[var(--color-accent-100)] text-[var(--color-accent-700)]",
-  DISCHARGE:       "bg-[var(--color-primary-100)] text-[var(--color-primary-700)]",
-  PHARMACY_SENT:   "bg-purple-100 text-purple-700",
-  RESULT_ATTACHED: "bg-[var(--color-success-100)] text-[var(--color-success-700)]",
-  VERIFIED:        "bg-[var(--color-success-100)] text-[var(--color-success-700)]",
-  REJECTED:        "bg-[var(--color-danger-100)] text-[var(--color-danger-700)]",
-};
+  const now       = new Date();
+  const dayStart  = startOfDay(now);
 
-function ActionBadge({ action }: { action: string }) {
-  const cls = ACTION_COLORS[action] ?? "bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)]";
-  return (
-    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${cls}`}>
-      {action.replace(/_/g, " ")}
-    </span>
-  );
-}
+  const [
+    loggedInToday,
+    activeNow,
+    failedToday,
+    activitiesToday,
+    hospitalActivity,
+    userActivity,
+    recentLogs,
+  ] = await Promise.all([
+    // unique users who logged in today (successful)
+    prisma.userLoginHistory.groupBy({
+      by: ["userId"],
+      where: { status: "SUCCESS", loginAt: { gte: dayStart } },
+    }).then((r) => r.length),
 
-export default async function AuditPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ q?: string; entity?: string; date?: string; page?: string }>;
-}) {
-  const user = await requireRole("DOCTOR");
-  const { q, entity, date, page } = await searchParams;
+    // currently active sessions
+    prisma.userLoginHistory.count({ where: { isActive: true, status: "SUCCESS" } }),
 
-  const pageNum   = Math.max(1, parseInt(page ?? "1", 10));
-  const pageSize  = 50;
-  const skip      = (pageNum - 1) * pageSize;
+    // failed login attempts today
+    prisma.userLoginHistory.count({ where: { status: "FAILED", loginAt: { gte: dayStart } } }),
 
-  const selectedDate = date ?? new Date().toISOString().split("T")[0];
-  const dayStart = startOfDay(new Date(selectedDate));
-  const dayEnd   = new Date(dayStart); dayEnd.setHours(23, 59, 59, 999);
+    // total audit events today
+    prisma.auditLog.count({ where: { timestamp: { gte: dayStart } } }),
 
-  const where: any = {
-    userId: user.id,
-    timestamp: { gte: dayStart, lte: dayEnd },
-  };
-  if (entity) where.entityType = entity;
-  if (q?.trim()) {
-    where.OR = [
-      { entityId: { contains: q.trim() } },
-      { action:   { contains: q.trim().toUpperCase() } },
-      { newValue: { contains: q.trim() } },
-    ];
-  }
-
-  const [logs, total] = await Promise.all([
-    prisma.auditLog.findMany({
-      where,
-      orderBy: { timestamp: "desc" },
-      skip,
-      take: pageSize,
+    // activity grouped by hospitalId
+    prisma.auditLog.groupBy({
+      by: ["hospitalId"],
+      where: { timestamp: { gte: dayStart }, hospitalId: { not: null } },
+      _count: { _all: true },
+      orderBy: { _count: { hospitalId: "desc" } },
+      take: 5,
     }),
-    prisma.auditLog.count({ where }),
+
+    // activity grouped by userId
+    prisma.auditLog.groupBy({
+      by: ["userId", "userName"],
+      where: { timestamp: { gte: dayStart } },
+      _count: { _all: true },
+      orderBy: { _count: { userId: "desc" } },
+      take: 5,
+    }),
+
+    // recent 10 audit events
+    prisma.auditLog.findMany({
+      orderBy: { timestamp: "desc" },
+      take: 10,
+      select: {
+        id: true, entityType: true, action: true, actionType: true,
+        timestamp: true, userName: true, moduleName: true, hospitalId: true,
+      },
+    }),
   ]);
 
-  const totalPages = Math.ceil(total / pageSize);
-  const hasFilters = q || entity || date;
+  // Enrich hospital names
+  const hospitalIds = hospitalActivity.map((h) => h.hospitalId!).filter(Boolean);
+  const hospitals = hospitalIds.length
+    ? await prisma.hospital.findMany({
+        where: { id: { in: hospitalIds } },
+        select: { id: true, name: true },
+      })
+    : [];
+  const hospitalMap = Object.fromEntries(hospitals.map((h) => [h.id, h.name]));
+
+  const stats = [
+    { label: "Users Logged In Today",     value: loggedInToday,      icon: Users,         color: "text-blue-600",    bg: "bg-blue-50"    },
+    { label: "Currently Active Sessions", value: activeNow,          icon: UserCheck,     color: "text-emerald-600", bg: "bg-emerald-50" },
+    { label: "Failed Login Attempts",     value: failedToday,        icon: AlertTriangle, color: "text-red-600",     bg: "bg-red-50"     },
+    { label: "Activities Today",          value: activitiesToday,    icon: Activity,      color: "text-purple-600",  bg: "bg-purple-50"  },
+  ];
+
+  const ACTION_COLOR: Record<string, string> = {
+    CREATE:   "bg-emerald-100 text-emerald-700",
+    UPDATE:   "bg-blue-100 text-blue-700",
+    DELETE:   "bg-red-100 text-red-700",
+    VIEW:     "bg-slate-100 text-slate-600",
+    PRINT:    "bg-amber-100 text-amber-700",
+    DOWNLOAD: "bg-purple-100 text-purple-700",
+    ADD:      "bg-emerald-100 text-emerald-700",
+    SAVE:     "bg-blue-100 text-blue-700",
+    STATUS:   "bg-amber-100 text-amber-700",
+  };
 
   return (
-    <div className="fade-in">
-      <div className="flex items-center gap-3 mb-5">
+    <div>
+      {/* Header */}
+      <div className="flex items-center gap-3 mb-6">
         <div className="size-10 rounded-xl bg-[var(--color-primary-100)] flex items-center justify-center shrink-0">
           <ShieldCheck size={18} style={{ color: "var(--color-primary-700)" }} />
         </div>
         <div>
-          <h1 className="text-2xl font-semibold text-[var(--color-ink-900)] tracking-tight">Audit Trail</h1>
-          <p className="text-sm text-[var(--color-ink-500)] mt-0.5">Your clinical activity log</p>
+          <h1 className="text-2xl font-semibold text-[var(--color-ink-900)] tracking-tight">Audit Dashboard</h1>
+          <p className="text-sm text-[var(--color-ink-500)] mt-0.5">{format(now, "EEEE, d MMMM yyyy")}</p>
         </div>
       </div>
 
-      {/* Filters */}
-      <form method="GET" className="mb-6">
+      {/* KPI cards */}
+      <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+        {stats.map(({ label, value, icon: Icon, color, bg }) => (
+          <Card key={label} className="flex items-center gap-4">
+            <div className={`size-11 rounded-xl flex items-center justify-center shrink-0 ${bg}`}>
+              <Icon size={20} className={color} />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-[var(--color-ink-900)]">{value}</p>
+              <p className="text-xs text-[var(--color-ink-500)] leading-tight mt-0.5">{label}</p>
+            </div>
+          </Card>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
+        {/* Hospital-wise activity */}
         <Card>
-          <div className="flex flex-wrap gap-3 items-end">
-            <div className="flex-1 min-w-44">
-              <label className="text-xs font-semibold uppercase tracking-widest text-[var(--color-ink-500)] mb-1.5 flex items-center gap-1">
-                <Search size={11} /> Search
-              </label>
-              <div className="relative">
-                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)]" />
-                <input
-                  name="q"
-                  defaultValue={q ?? ""}
-                  placeholder="Entity ID or action…"
-                  className="w-full pl-9 pr-3 py-2 text-sm rounded-xl border border-[var(--color-border)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="text-xs font-semibold uppercase tracking-widest text-[var(--color-ink-500)] mb-1.5 flex items-center gap-1">
-                <Filter size={11} /> Entity
-              </label>
-              <select
-                name="entity"
-                defaultValue={entity ?? ""}
-                className="py-2 px-3 text-sm rounded-xl border border-[var(--color-border)] bg-white focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
-              >
-                <option value="">All types</option>
-                {ENTITY_TYPES.map((e) => <option key={e} value={e}>{e}</option>)}
-              </select>
-            </div>
-
-            <div>
-              <label className="text-xs font-semibold uppercase tracking-widest text-[var(--color-ink-500)] mb-1.5 flex items-center gap-1">
-                <Calendar size={11} /> Date
-              </label>
-              <input
-                type="date"
-                name="date"
-                defaultValue={selectedDate}
-                className="py-2 px-3 text-sm rounded-xl border border-[var(--color-border)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
-              />
-            </div>
-
-            <div className="flex gap-2">
-              <button
-                type="submit"
-                className="px-4 py-2 text-sm font-medium rounded-xl bg-[var(--color-primary-700)] text-white hover:bg-[var(--color-primary-800)] transition-colors"
-              >
-                Apply
-              </button>
-              {hasFilters && (
-                <Link
-                  href="/audit"
-                  className="px-4 py-2 text-sm font-medium rounded-xl border border-[var(--color-border)] text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)] transition-colors"
-                >
-                  Today
-                </Link>
-              )}
-            </div>
+          <div className="flex items-center gap-2 mb-4">
+            <Building2 size={15} className="text-[var(--color-ink-400)]" />
+            <h3 className="text-sm font-semibold text-[var(--color-ink-800)]">Hospital Activity Today</h3>
           </div>
+          {hospitalActivity.length === 0 ? (
+            <p className="text-xs text-[var(--color-ink-400)] py-4 text-center">No hospital activity recorded today</p>
+          ) : (
+            <div className="space-y-3">
+              {hospitalActivity.map((h) => {
+                const name = hospitalMap[h.hospitalId!] ?? h.hospitalId ?? "Unknown";
+                const count = h._count._all;
+                const max = hospitalActivity[0]._count._all;
+                return (
+                  <div key={h.hospitalId}>
+                    <div className="flex items-center justify-between text-xs mb-1">
+                      <span className="font-medium text-[var(--color-ink-700)] truncate max-w-[180px]">{name}</span>
+                      <span className="font-bold text-[var(--color-ink-900)] ml-2">{count}</span>
+                    </div>
+                    <div className="h-1.5 rounded-full bg-[var(--color-surface-sunken)]">
+                      <div
+                        className="h-1.5 rounded-full bg-[var(--color-primary-500)]"
+                        style={{ width: `${Math.round((count / max) * 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </Card>
-      </form>
 
-      {/* Count */}
-      <p className="text-xs text-[var(--color-ink-400)] mb-3">
-        {total} event{total !== 1 ? "s" : ""}
-        {total > pageSize && ` · page ${pageNum} of ${totalPages}`}
-      </p>
-
-      {/* Log table */}
-      <Card className="p-0 overflow-hidden">
-        {logs.length === 0 ? (
-          <div className="py-16 text-center">
-            <ShieldCheck size={32} className="mx-auto mb-3 text-[var(--color-ink-300)]" />
-            <p className="text-sm text-[var(--color-ink-400)]">No audit events found for this date.</p>
+        {/* User-wise activity */}
+        <Card>
+          <div className="flex items-center gap-2 mb-4">
+            <TrendingUp size={15} className="text-[var(--color-ink-400)]" />
+            <h3 className="text-sm font-semibold text-[var(--color-ink-800)]">Most Active Users Today</h3>
           </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)] border-b border-[var(--color-border)]">
-                  <th className="px-5 py-3">Time</th>
-                  <th className="px-3 py-3">Entity</th>
-                  <th className="px-3 py-3">ID</th>
-                  <th className="px-3 py-3">Action</th>
-                  <th className="px-5 py-3">Detail</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[var(--color-border)]">
-                {logs.map((log) => {
-                  let detail = "";
-                  try {
-                    const parsed = log.newValue ? JSON.parse(log.newValue) : null;
-                    if (parsed) detail = Object.entries(parsed).map(([k, v]) => `${k}: ${v}`).join(" · ");
-                  } catch { detail = log.newValue ?? ""; }
+          {userActivity.length === 0 ? (
+            <p className="text-xs text-[var(--color-ink-400)] py-4 text-center">No activity recorded today</p>
+          ) : (
+            <div className="space-y-3">
+              {userActivity.map((u) => {
+                const name = (u as any).userName ?? u.userId;
+                const count = u._count._all;
+                const max = userActivity[0]._count._all;
+                return (
+                  <div key={u.userId}>
+                    <div className="flex items-center justify-between text-xs mb-1">
+                      <span className="font-medium text-[var(--color-ink-700)] truncate max-w-[180px]">{name}</span>
+                      <span className="font-bold text-[var(--color-ink-900)] ml-2">{count}</span>
+                    </div>
+                    <div className="h-1.5 rounded-full bg-[var(--color-surface-sunken)]">
+                      <div
+                        className="h-1.5 rounded-full bg-purple-400"
+                        style={{ width: `${Math.round((count / max) * 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </Card>
+      </div>
 
-                  return (
-                    <tr key={log.id} className="hover:bg-[var(--color-surface-sunken)] transition-colors">
-                      <td className="px-5 py-3 text-xs text-[var(--color-ink-400)] whitespace-nowrap font-mono">
-                        {format(new Date(log.timestamp), "HH:mm:ss")}
-                      </td>
-                      <td className="px-3 py-3">
-                        <span className="text-xs font-medium text-[var(--color-ink-700)]">{log.entityType}</span>
-                      </td>
-                      <td className="px-3 py-3">
-                        <span className="text-[10px] font-mono text-[var(--color-ink-400)] truncate max-w-[100px] block">
-                          {log.entityId.slice(-8)}
-                        </span>
-                      </td>
-                      <td className="px-3 py-3">
-                        <ActionBadge action={log.action} />
-                      </td>
-                      <td className="px-5 py-3 text-xs text-[var(--color-ink-500)] max-w-[260px] truncate">
-                        {detail}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+      {/* Recent activity */}
+      <Card className="p-0 overflow-hidden">
+        <div className="px-5 py-3.5 border-b border-[var(--color-border)]">
+          <h3 className="text-sm font-semibold text-[var(--color-ink-800)]">Recent Activity</h3>
+        </div>
+        {recentLogs.length === 0 ? (
+          <p className="text-sm text-[var(--color-ink-400)] py-10 text-center">No activity yet today</p>
+        ) : (
+          <div className="divide-y divide-[var(--color-border)]">
+            {recentLogs.map((log) => {
+              const type = log.actionType ?? log.action;
+              const cls = ACTION_COLOR[type] ?? "bg-slate-100 text-slate-600";
+              return (
+                <div key={log.id} className="flex items-center gap-3 px-5 py-3">
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${cls}`}>
+                    {type}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <span className="text-sm text-[var(--color-ink-700)]">
+                      {log.moduleName ?? log.entityType}
+                    </span>
+                    {log.userName && (
+                      <span className="text-xs text-[var(--color-ink-400)] ml-2">by {log.userName}</span>
+                    )}
+                  </div>
+                  <time className="text-xs text-[var(--color-ink-400)] font-mono shrink-0">
+                    {format(new Date(log.timestamp), "HH:mm:ss")}
+                  </time>
+                </div>
+              );
+            })}
           </div>
         )}
       </Card>
-
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex justify-center gap-2 mt-4">
-          {pageNum > 1 && (
-            <Link
-              href={`/audit?${new URLSearchParams({ ...(q ? { q } : {}), ...(entity ? { entity } : {}), date: selectedDate, page: String(pageNum - 1) })}`}
-              className="px-4 py-2 text-sm rounded-xl border border-[var(--color-border)] hover:bg-[var(--color-surface-sunken)]"
-            >
-              ← Prev
-            </Link>
-          )}
-          {pageNum < totalPages && (
-            <Link
-              href={`/audit?${new URLSearchParams({ ...(q ? { q } : {}), ...(entity ? { entity } : {}), date: selectedDate, page: String(pageNum + 1) })}`}
-              className="px-4 py-2 text-sm rounded-xl border border-[var(--color-border)] hover:bg-[var(--color-surface-sunken)]"
-            >
-              Next →
-            </Link>
-          )}
-        </div>
-      )}
     </div>
   );
 }

@@ -14,6 +14,7 @@ import {
 export interface PatientRow {
   id: string;
   udid: string;
+  uhid: string;
   name: string;
   age: number;
   sex: string;
@@ -209,7 +210,7 @@ function RecentPanel({ recentReg }: { recentReg: RecentPat[] }) {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5">
                     <Link
-                      href={`/patients/${p.udid}`}
+                      href={`/patients/${p.udid}?returnTo=/patients`}
                       className="text-xs font-semibold text-[var(--color-ink-900)] hover:text-[var(--color-primary-600)] truncate transition-colors"
                     >
                       {p.name}
@@ -228,7 +229,7 @@ function RecentPanel({ recentReg }: { recentReg: RecentPat[] }) {
                   </div>
                 </div>
                 <Link
-                  href={`/patients/${p.udid}`}
+                  href={`/patients/${p.udid}?returnTo=/patients`}
                   className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 p-1.5 rounded-lg text-[var(--color-ink-400)] hover:bg-[var(--color-ink-100)] hover:text-[var(--color-ink-700)]"
                 >
                   <Eye size={12} />
@@ -268,7 +269,6 @@ export function PatientsClient({
 }: Props) {
   const router = useRouter();
   const [searchVal, setSearchVal] = useState(q);
-  const [selected, setSelected] = useState<Set<string>>(new Set());
   const [showFilters, setShowFilters] = useState(!!(categoryFilter || sexFilter || hospitalFilter || opStatusFilter));
   const [, startTransition] = useTransition();
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -317,22 +317,6 @@ export function PatientsClient({
     return nums;
   }
 
-  // bulk selection
-  const allIds  = patients.map(p => p.id);
-  const allSel  = allIds.length > 0 && allIds.every(id => selected.has(id));
-  const someSel = allIds.some(id => selected.has(id)) && !allSel;
-
-  function toggleAll() {
-    const next = new Set(selected);
-    if (allSel) allIds.forEach(id => next.delete(id));
-    else        allIds.forEach(id => next.add(id));
-    setSelected(next);
-  }
-  function toggleOne(id: string) {
-    const next = new Set(selected);
-    next.has(id) ? next.delete(id) : next.add(id);
-    setSelected(next);
-  }
 
   const activeFilters = [categoryFilter, sexFilter, hospitalFilter, opStatusFilter].filter(Boolean).length;
 
@@ -345,13 +329,7 @@ export function PatientsClient({
           <p className="text-sm text-[var(--color-ink-500)] mt-0.5">HMIS patient directory · UHID auto-assigned on registration</p>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
-          <button
-            onClick={() => exportCSV(patients, selected)}
-            className="inline-flex items-center gap-2 rounded-xl border border-[var(--color-border)] bg-white text-sm font-medium px-3.5 py-2 text-[var(--color-ink-700)] hover:bg-[var(--color-ink-50)] transition-colors shadow-sm"
-          >
-            <Download size={14} />
-            {selected.size > 0 ? `Export (${selected.size})` : "Export CSV"}
-          </button>
+
           <Link
             href="/patients/new"
             className="inline-flex items-center gap-2 rounded-xl bg-[var(--color-primary-600)] text-white text-sm font-medium px-4 py-2 hover:bg-[var(--color-primary-700)] transition-colors shadow-sm"
@@ -483,28 +461,6 @@ export function PatientsClient({
             )}
           </div>
 
-          {/* Bulk action bar */}
-          {selected.size > 0 && (
-            <div className="bg-[var(--color-primary-50)] border border-[var(--color-primary-200)] rounded-xl px-4 py-2.5 flex items-center justify-between">
-              <span className="text-sm font-medium text-[var(--color-primary-700)]">
-                {selected.size} patient{selected.size !== 1 ? "s" : ""} selected
-              </span>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => exportCSV(patients, selected)}
-                  className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] transition-colors"
-                >
-                  <Download size={12} /> Export Selected
-                </button>
-                <button
-                  onClick={() => setSelected(new Set())}
-                  className="inline-flex items-center gap-1 text-xs font-medium text-[var(--color-ink-500)] hover:text-[var(--color-ink-700)] px-2 py-1.5"
-                >
-                  <X size={12} /> Clear
-                </button>
-              </div>
-            </div>
-          )}
 
           {/* Patient list — queue style */}
           <div className="surface-card overflow-hidden">
@@ -532,10 +488,11 @@ export function PatientsClient({
               </div>
             ) : (
               <>
-              {/* Column headers */}
-              <div className="hidden lg:flex items-center gap-4 px-5 py-2.5 border-b border-[var(--color-border)] bg-[var(--color-surface-sunken)]">
-                <div className="w-3.5 shrink-0" />
-                <div className="w-8 shrink-0" />
+              {/* Column headers — padding and gaps match card rows exactly */}
+              <div className="hidden lg:flex items-center gap-4 px-7 py-2.5 border-b border-[var(--color-border)] bg-[var(--color-surface-sunken)]">
+                {/* token spacer */}
+                <div className="size-8 shrink-0" />
+                {/* patient col — avatar (w-9) + gap-3 + text = matches w-44 container */}
                 <div className="w-44 shrink-0">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">Patient</span>
                 </div>
@@ -548,19 +505,21 @@ export function PatientsClient({
                 <div className="w-28 shrink-0">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">Mobile</span>
                 </div>
+                <div className="hidden xl:block w-32 shrink-0">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">UHID</span>
+                </div>
                 <div className="w-36 shrink-0">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">Hospital</span>
                 </div>
                 <div className="w-28 shrink-0">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">Last Visit</span>
                 </div>
-                <div className="w-28 shrink-0" />
+                <div className="w-20 shrink-0" />
               </div>
 
-              <ul className="divide-y divide-[var(--color-border)]">
+              <ul className="px-3 py-3 space-y-3">
                 {patients.map((p, idx) => {
                   const av  = avatarColor(p.name);
-                  const sel = selected.has(p.id);
                   const cat = CAT[p.category] ?? { label: p.category, cls: "bg-slate-100 text-slate-700" };
                   const token = (page - 1) * pageSize + idx + 1;
                   const lastVisitStr = p.lastVisit ? format(new Date(p.lastVisit), "dd MMM yyyy") : null;
@@ -568,18 +527,9 @@ export function PatientsClient({
                   return (
                     <li
                       key={p.id}
-                      className={`px-5 py-3.5 flex items-center gap-4 transition-colors cursor-pointer ${sel ? "bg-[var(--color-primary-50)]" : "hover:bg-[var(--color-surface-sunken)]"}`}
-                      onClick={() => router.push(`/patients/${p.udid}`)}
+                      className="px-4 py-4 flex items-center gap-4 rounded-xl border border-[var(--color-border)] bg-white transition-colors cursor-pointer hover:bg-[var(--color-surface-sunken)] hover:border-[var(--color-primary-200)] hover:shadow-sm"
+                      onClick={() => router.push(`/patients/${p.udid}?returnTo=${encodeURIComponent(window.location.pathname + window.location.search)}`)}
                     >
-                      {/* Checkbox */}
-                      <input
-                        type="checkbox"
-                        checked={sel}
-                        onChange={() => toggleOne(p.id)}
-                        onClick={(e) => e.stopPropagation()}
-                        className="w-3.5 h-3.5 rounded accent-[var(--color-primary-600)] cursor-pointer shrink-0"
-                      />
-
                       {/* Token */}
                       <div
                         className="size-8 rounded-xl flex items-center justify-center shrink-0 text-sm font-bold"
@@ -621,6 +571,13 @@ export function PatientsClient({
                       {/* Mobile — fixed width */}
                       <div className="hidden md:block w-28 shrink-0">
                         <p className="text-sm text-[var(--color-ink-700)]">{p.mobile || <span className="text-[var(--color-ink-300)]">—</span>}</p>
+                      </div>
+
+                      {/* UHID — fixed width, xl+ only */}
+                      <div className="hidden xl:block w-32 shrink-0">
+                        <span className="font-mono text-[10px] bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded">
+                          {p.uhid || <span className="text-[var(--color-ink-300)]">—</span>}
+                        </span>
                       </div>
 
                       {/* Hospital — fixed width */}

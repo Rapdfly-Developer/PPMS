@@ -16,7 +16,7 @@ interface Appt {
   id: string;
   dateTime: string;
   status: string;
-  visitType: string;
+  complaint: string | null;
   patient: { name: string; udid: string; age: number; sex: string; mobile?: string };
   hospital?: { id: string; name: string };
   doctor?:   { id: string; name: string } | null;
@@ -112,7 +112,7 @@ function ApptRow({ appt, role }: { appt: Appt; role: "DOCTOR" | "HOSPITAL" }) {
         <p className="text-sm font-bold text-[var(--color-ink-900)]">{time}</p>
       </div>
       <div className="w-px self-stretch bg-[var(--color-border)]" />
-      <Link href={`/patients/${appt.patient.udid}`} className="flex-1 min-w-0 hover:opacity-80 transition-opacity">
+      <Link href={`/patients/${appt.patient.udid}?returnTo=/dashboard`} className="flex-1 min-w-0 hover:opacity-80 transition-opacity">
         <p className="font-semibold text-[var(--color-ink-900)] text-sm truncate">{appt.patient.name}</p>
         <div className="flex items-center gap-2 mt-0.5 flex-wrap">
           <span className="font-mono text-[10px] text-[#115E59] bg-[#F0F8F6] px-1.5 py-0.5 rounded">
@@ -138,9 +138,11 @@ function ApptRow({ appt, role }: { appt: Appt; role: "DOCTOR" | "HOSPITAL" }) {
           )}
         </div>
       </Link>
-      <span className="hidden md:block text-[11px] text-[var(--color-ink-400)] shrink-0 max-w-[120px] truncate">
-        {appt.visitType}
-      </span>
+      {appt.complaint && (
+        <span className="hidden md:block text-[11px] text-[var(--color-ink-400)] italic shrink-0 max-w-[140px] truncate">
+          {appt.complaint}
+        </span>
+      )}
       <span className={clsx("inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold shrink-0", cfg.color)}>
         <span className={clsx("w-1.5 h-1.5 rounded-full shrink-0", cfg.dot)} />
         {cfg.label}
@@ -199,8 +201,9 @@ export function DashboardClient({
 
   const totalQueue = queueGroups.reduce((s, g) => s + g.appts.length, 0);
 
-  /* Booked (REQUESTED) — for Visit time section, grouped by hospital for DOCTOR */
+  /* Visit time — all today's appointments (REQUESTED + CONFIRMED + IN_PROGRESS), grouped by hospital for DOCTOR */
   const bookedGroups = useMemo(() => {
+    // Only REQUESTED — once moved to today's queue (CONFIRMED+) the patient leaves Visit time
     const booked = filteredAppts.filter((a) => a.status === "REQUESTED");
     if (role === "DOCTOR") {
       const map = new Map<string, { name: string; appts: Appt[] }>();
@@ -414,7 +417,7 @@ export function DashboardClient({
                               {format(new Date(a.dateTime), "h:mm a")}
                             </span>
                             <div className="w-px self-stretch bg-[var(--color-border)]" />
-                            <Link href={`/patients/${a.patient.udid}`} className="flex-1 min-w-0 hover:opacity-80 transition-opacity">
+                            <Link href={`/patients/${a.patient.udid}?returnTo=/dashboard`} className="flex-1 min-w-0 hover:opacity-80 transition-opacity">
                               <p className="text-sm font-semibold text-[var(--color-ink-900)] truncate">{a.patient.name}</p>
                               <span className="font-mono text-[10px] text-[#115E59] bg-[#F0F8F6] px-1.5 py-0.5 rounded">
                                 {a.patient.udid}
@@ -423,25 +426,27 @@ export function DashboardClient({
                             <span className={clsx("text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0", cfg.color)}>
                               {cfg.label}
                             </span>
-                            <button
-                              disabled={isMoving}
-                              title="Move to Today's Queue"
-                              onClick={() => {
-                                setMovingId(a.id);
-                                startMove(async () => {
-                                  if (role === "DOCTOR") {
-                                    await doctorConfirmAppointment(a.id);
-                                  } else {
-                                    await hospitalUpdateAppointmentStatus(a.id, "CONFIRMED");
-                                  }
-                                  setMovingId(null);
-                                  router.refresh();
-                                });
-                              }}
-                              className="shrink-0 flex items-center justify-center w-7 h-7 rounded-lg bg-[var(--color-primary-50)] text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] disabled:opacity-50 transition-colors"
-                            >
-                              {isMoving ? <Loader2 size={13} className="animate-spin" /> : <LogIn size={13} />}
-                            </button>
+                            {a.status === "REQUESTED" && (
+                              <button
+                                disabled={isMoving}
+                                title="Move to Today's Queue"
+                                onClick={() => {
+                                  setMovingId(a.id);
+                                  startMove(async () => {
+                                    if (role === "DOCTOR") {
+                                      await doctorConfirmAppointment(a.id);
+                                    } else {
+                                      await hospitalUpdateAppointmentStatus(a.id, "CONFIRMED");
+                                    }
+                                    setMovingId(null);
+                                    router.refresh();
+                                  });
+                                }}
+                                className="shrink-0 flex items-center justify-center w-7 h-7 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 disabled:opacity-50 transition-colors"
+                              >
+                                {isMoving ? <Loader2 size={13} className="animate-spin" /> : <LogIn size={13} />}
+                              </button>
+                            )}
                           </div>
                         );
                       })}

@@ -3,5 +3,15 @@
     "src/app/api/dispense-pdf/[visitId]/route.ts": { "maxDuration": 30 },
     "src/app/api/prescription-pdf/[visitId]/route.ts": { "maxDuration": 30 },
     "src/app/api/ocr/route.ts": { "maxDuration": 30 }
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/cron/license-reminders",
+      "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/cron/close-visits",
+      "schedule": "0 0 * * *"
+    }
+  ]
 }

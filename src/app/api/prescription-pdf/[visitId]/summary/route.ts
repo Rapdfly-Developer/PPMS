@@ -33,7 +33,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
 
   const pdf = await generateShortSummaryPdf({
     patient: {
-      udid: visit.patient.udid,
+      udid: visit.patient.udid ?? "",
       name: visit.patient.name,
       age: visit.patient.age,
       sex: visit.patient.sex,
@@ -43,6 +43,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
       date: visit.date,
       visitType: visit.visitType ?? null,
       hospitalName: visit.hospital.name,
+      hospitalAddress: (visit.hospital as any).address ?? null,
+      hospitalContact: (visit.hospital as any).contact ?? null,
       doctorName: visit.doctor.name,
       followUpDate: (visit as any).followUpDate ?? null,
       referralEnabled: (visit as any).referralEnabled ?? false,

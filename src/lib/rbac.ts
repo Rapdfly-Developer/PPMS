@@ -32,9 +32,16 @@ export async function requireUser(): Promise<SessionUser> {
   return user;
 }
 
+/** Returns true for any role not built into the system (Receptionist, Nurse, etc.). */
+export function isCustomRole(role: string): boolean {
+  return !["DOCTOR", "HOSPITAL", "REFRACTIONIST"].includes(role);
+}
+
 export async function requireRole(...roles: Role[]): Promise<SessionUser> {
   const user = await requireUser();
   if (user.role === "DOCTOR" || roles.includes(user.role)) return user;
+  // Custom roles are hospital-affiliated staff — pass through when HOSPITAL is an accepted role
+  if (isCustomRole(user.role) && (roles as string[]).includes("HOSPITAL")) return user;
   redirect(roleHome(user.role));
 }
 
@@ -59,6 +66,7 @@ export function scopeDoctorId(user: SessionUser): string {
 
 export function roleHome(role: Role): string {
   if (role === "DOCTOR") return "/dashboard";
+  if (role === "HOSPITAL") return "/dashboard";
   if (role === "REFRACTIONIST") return "/queue";
-  return "/appointments";
+  return "/dashboard"; // custom roles always land on dashboard
 }

@@ -21,7 +21,7 @@ export function StartVisitButton({
     startTransition(async () => {
       const result = await startVisit(patientId, appointmentId, udid);
       if (result?.visitId) {
-        router.push(`/emr/${udid}?visit=${result.visitId}`);
+        router.push(`/emr/${udid}?visit=${result.visitId}&returnTo=/patients/${udid}`);
         router.refresh();
       }
     });

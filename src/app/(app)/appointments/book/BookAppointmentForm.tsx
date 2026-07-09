@@ -1,13 +1,15 @@
 "use client";
 
 import { useState, useTransition, useEffect } from "react";
-import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
-  ArrowLeft, Search, UserPlus, Stethoscope,
+  Search, UserPlus, Stethoscope,
   Calendar, Clock, FileText, ChevronRight,
   User, Phone, CreditCard, AlertCircle, CheckCircle2, Info, Building2,
 } from "lucide-react";
 import { bookAppointment, getBookedSlots } from "./actions";
+import { BackButton } from "@/components/ui/BackButton";
+import { PhotoUploadBox, type UploadedFile } from "@/components/ui/PhotoUploadBox";
 
 const VISIT_TYPES = ["General OPD", "Emergency", "Follow-up", "Post-op Review"];
 const SEXES = ["MALE", "FEMALE", "OTHER"];
@@ -27,6 +29,13 @@ type AvailSlot = { weekday: number; startTime: string; endTime: string; slotMins
 type Doctor  = { id: string; name: string; specialty: string };
 type Patient = { id: string; name: string; udid: string; age: number | null; sex: string; mobile: string };
 type Hospital = { id: string; name: string };
+
+function to12h(t: string): string {
+  const [h, m] = t.split(":").map(Number);
+  const period = h >= 12 ? "PM" : "AM";
+  const h12 = h % 12 || 12;
+  return `${h12}:${String(m).padStart(2, "0")} ${period}`;
+}
 
 function generateSlots(start: string, end: string, mins: number): string[] {
   const slots: string[] = [];
@@ -56,6 +65,8 @@ export function BookAppointmentForm({
   availabilityByDoctor?: Record<string, AvailSlot[]>;
   hospitalsByDoctor?: Record<string, Hospital[]>;
 }) {
+  const searchParams = useSearchParams();
+  const returnTo = searchParams.get("returnTo") ?? "/appointments";
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState("");
 
@@ -74,6 +85,9 @@ export function BookAppointmentForm({
   const [npMobile,    setNpMobile]    = useState("");
   const [npAadhaar,   setNpAadhaar]   = useState("");
   const [npComplaint, setNpComplaint] = useState("");
+  const [npCategory,  setNpCategory]  = useState("GENERAL");
+  const [aadhaarPhoto, setAadhaarPhoto] = useState<UploadedFile | null>(null);
+  const [patientPhoto, setPatientPhoto] = useState<UploadedFile | null>(null);
 
   /* ── Step 2: appointment details ── */
   const [doctorId,   setDoctorId]   = useState(doctors[0]?.id ?? "");
@@ -153,6 +167,7 @@ export function BookAppointmentForm({
     if (patientMode === "existing" && !selectedPatient) { setError("Please select a patient."); return; }
     if (!doctorId) { setError("Please select a doctor."); return; }
     if (!effectiveHospitalId) { setError("Please select a hospital."); return; }
+    if (!notes.trim()) { setError("Chief complaint is required."); return; }
     setError("");
 
     const fd = new FormData();
@@ -176,7 +191,8 @@ export function BookAppointmentForm({
         return h * 60 + m > nowMins;
       });
       if (!nextSlot) { setError("No available time slots left for today. Please book a scheduled appointment."); return; }
-      fd.set("date", now.toISOString().split("T")[0]);
+      const pad = (n: number) => String(n).padStart(2, "0");
+      fd.set("date", `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`);
       fd.set("time", nextSlot);
     } else {
       fd.set("date", date);
@@ -192,6 +208,10 @@ export function BookAppointmentForm({
       fd.set("mobile",    npMobile);
       fd.set("aadhaar",   npAadhaar);
       fd.set("complaint", npComplaint);
+      fd.set("category",  npCategory);
+      // Photos uploaded to blob storage; savedNames passed for future DB linking
+      if (aadhaarPhoto) fd.set("aadhaarPhotoFile", aadhaarPhoto.savedName);
+      if (patientPhoto) fd.set("patientPhotoFile",  patientPhoto.savedName);
     }
 
     startTransition(async () => {
@@ -206,12 +226,7 @@ export function BookAppointmentForm({
     <div className="max-w-3xl mx-auto fade-in">
       {/* Header */}
       <div className="flex items-center gap-2 mb-6">
-        <Link
-          href="/appointments"
-          className="inline-flex items-center gap-1.5 text-sm text-[var(--color-ink-500)] hover:text-[var(--color-primary-700)]"
-        >
-          <ArrowLeft size={14} /> Back to Appointments
-        </Link>
+        <BackButton href={returnTo} label="Back to Appointments" />
       </div>
 
       <div className="mb-6">
@@ -419,6 +434,7 @@ export function BookAppointmentForm({
           ) : (
             /* New patient form */
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Name */}
               <div className="sm:col-span-2">
                 <FieldLabel icon={<User size={12} />}>Full Name *</FieldLabel>
                 <input
@@ -429,6 +445,8 @@ export function BookAppointmentForm({
                   className={inputCls}
                 />
               </div>
+
+              {/* Age + Sex */}
               <div>
                 <FieldLabel>Age *</FieldLabel>
                 <input
@@ -455,6 +473,8 @@ export function BookAppointmentForm({
                   ))}
                 </select>
               </div>
+
+              {/* Phone + Aadhaar */}
               <div>
                 <FieldLabel icon={<Phone size={12} />}>Phone *</FieldLabel>
                 <input
@@ -478,15 +498,71 @@ export function BookAppointmentForm({
                   className={inputCls}
                 />
               </div>
+
+              {/* Category */}
               <div className="sm:col-span-2">
-                <FieldLabel icon={<FileText size={12} />}>Notes / Instructions</FieldLabel>
+                <FieldLabel>Category</FieldLabel>
+                <div className="flex flex-wrap gap-2 mt-0.5">
+                  {[
+                    { value: "GENERAL",   label: "General" },
+                    { value: "BPL",       label: "BPL" },
+                    { value: "ECHS",      label: "ECHS" },
+                    { value: "INSURANCE", label: "Insurance" },
+                  ].map((c) => (
+                    <button
+                      key={c.value}
+                      type="button"
+                      onClick={() => setNpCategory(c.value)}
+                      className="px-3.5 py-1.5 rounded-full text-sm font-medium border transition-colors"
+                      style={npCategory === c.value ? {
+                        background: "var(--color-primary-700)", color: "#fff",
+                        borderColor: "var(--color-primary-700)",
+                      } : {
+                        background: "#fff", color: "var(--color-ink-700)",
+                        borderColor: "var(--color-border)",
+                      }}
+                    >
+                      {c.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Chief Complaint */}
+              <div className="sm:col-span-2">
+                <FieldLabel icon={<FileText size={12} />}>Notes/Instructions</FieldLabel>
                 <textarea
                   value={npComplaint}
                   onChange={(e) => setNpComplaint(e.target.value)}
                   rows={2}
-                  placeholder="Any special instructions or referral details..."
+                  placeholder="Reason for visit, referral details..."
                   className={inputCls}
                 />
+              </div>
+
+              {/* Photos & Documents */}
+              <div className="sm:col-span-2">
+                <p className="text-xs font-semibold uppercase tracking-widest text-[var(--color-ink-400)] mb-3">
+                  Photos &amp; Documents
+                </p>
+                <div className="grid grid-cols-2 gap-4">
+                  <PhotoUploadBox
+                    label="Aadhaar Photocopy"
+                    hint="Image or PDF"
+                    icon={CreditCard}
+                    accept="image/*,application/pdf"
+                    value={aadhaarPhoto}
+                    onChange={setAadhaarPhoto}
+                  />
+                  <PhotoUploadBox
+                    label="Patient Photo"
+                    hint="JPG or PNG"
+                    icon={User}
+                    accept="image/*"
+                    value={patientPhoto}
+                    onChange={setPatientPhoto}
+                  />
+                </div>
               </div>
             </div>
           )}
@@ -577,7 +653,7 @@ export function BookAppointmentForm({
                           borderColor: "var(--color-border)",
                         }}
                       >
-                        {t}
+                        {to12h(t)}
                       </button>
                     ))}
                   </div>
@@ -618,8 +694,9 @@ export function BookAppointmentForm({
 
             {/* Notes */}
             <div>
-              <FieldLabel icon={<FileText size={12} />}>Chief Complaint</FieldLabel>
+              <FieldLabel icon={<FileText size={12} />}>Chief Complaint *</FieldLabel>
               <textarea
+                required
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 rows={2}

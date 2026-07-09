@@ -2,9 +2,9 @@ import { requirePermission } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import { format, startOfDay, endOfDay } from "date-fns";
-import Link from "next/link";
-import { ArrowLeft, Phone, MapPin, Calendar, Hash } from "lucide-react";
-import { PatientProfileClient, type SerialVisit, type TodayVisit } from "./PatientProfileClient";
+import { Phone, MapPin, Calendar, Hash } from "lucide-react";
+import { BackButton } from "@/components/ui/BackButton";
+import { PatientProfileClient, TransferButton, TimeStampButton, type SerialVisit, type TodayVisit, type LastVisitSummary } from "./PatientProfileClient";
 
 const CATEGORY_STYLES: Record<string, string> = {
   GENERAL:    "bg-white/20 text-white border border-white/30",
@@ -16,10 +16,13 @@ const CATEGORY_STYLES: Record<string, string> = {
 
 export default async function PatientProfilePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ udid: string }>;
+  searchParams: Promise<{ returnTo?: string }>;
 }) {
   const { udid } = await params;
+  const { returnTo } = await searchParams;
   const user = await requirePermission("patients.view");
 
   const patient = await prisma.patient.findUnique({
@@ -41,6 +44,15 @@ export default async function PatientProfilePage({
 
   if (!patient) notFound();
 
+  // Hospitals for the Transfer dropdown (Doctor only)
+  const allHospitals =
+    user.role === "DOCTOR"
+      ? await prisma.hospital.findMany({
+          select: { id: true, name: true },
+          orderBy: { name: "asc" },
+        })
+      : [];
+
   /* ── Derived ──────────────────────────────────────────────────────────── */
   const initials = patient.name
     .split(" ")
@@ -53,31 +65,46 @@ export default async function PatientProfilePage({
   const firstVisit  = patient.visits[patient.visits.length - 1];
   const lastVisit   = patient.visits[0];
 
-  /* ── Today's visit ────────────────────────────────────────────────────── */
+  /* ── Today's visit / appointment ─────────────────────────────────────── */
+  // Prefer the patient's CURRENT registered hospital: after a transfer, a
+  // leftover visit at the previous hospital must not hide a fresh appointment
+  // at the new hospital.
   const now   = new Date();
   const todayStart = startOfDay(now);
   const todayEnd   = endOfDay(now);
 
-  const todayVisitRecord = patient.visits.find((v) => {
+  const todayVisits = patient.visits.filter((v) => {
     const d = new Date(v.date);
     return d >= todayStart && d <= todayEnd;
   });
 
+  let todayVisitRecord =
+    todayVisits.find((v) => v.hospitalId === patient.registeredAtId) ?? null;
+  let todayAppointmentId: string | null = null;
+
+  if (!todayVisitRecord) {
+    const todayAppts = await prisma.appointment.findMany({
+      where: {
+        patientId: patient.id,
+        dateTime: { gte: todayStart, lte: todayEnd },
+        status: { in: ["CONFIRMED", "REQUESTED", "SCHEDULED"] },
+      },
+      orderBy: { dateTime: "asc" },
+      select: { id: true, hospitalId: true, visit: { select: { id: true } } },
+    });
+    const preferred =
+      todayAppts.find((a) => a.hospitalId === patient.registeredAtId && !a.visit) ??
+      (todayVisits.length === 0 ? todayAppts.find((a) => !a.visit) : undefined);
+    if (preferred) {
+      todayAppointmentId = preferred.id;
+    } else {
+      // No usable appointment — fall back to a visit at another hospital
+      todayVisitRecord = todayVisits[0] ?? null;
+    }
+  }
+
   const todayVisit: TodayVisit = todayVisitRecord
     ? { id: todayVisitRecord.id, appointmentId: todayVisitRecord.appointmentId }
-    : null;
-
-  /* ── Today's appointment (when no visit yet) ─────────────────────────── */
-  const todayAppointmentId: string | null = !todayVisit
-    ? (await prisma.appointment.findFirst({
-        where: {
-          patientId: patient.id,
-          dateTime: { gte: todayStart, lte: todayEnd },
-          status: { in: ["CONFIRMED", "REQUESTED", "SCHEDULED"] },
-        },
-        orderBy: { dateTime: "asc" },
-        select: { id: true },
-      }))?.id ?? null
     : null;
 
   /* ── Patient timeline — finalization audit entries ───────────────────── */
@@ -112,19 +139,61 @@ export default async function PatientProfilePage({
     };
   });
 
-  /* ── Serialise visits for client ─────────────────────────────────────── */
-  const serialVisits: SerialVisit[] = patient.visits.map((v, i) => ({
-    id:            v.id,
-    date:          v.date.toISOString(),
-    visitType:     v.visitType ?? null,
-    status:        v.status as "IN_PROGRESS" | "CLOSED",
-    visitNumber:   totalVisits - i,
-    hospital:      v.hospital ?? null,
-    doctor:        v.doctor   ?? null,
-    chiefComplaint: v.generalExam?.chiefComplaint ?? null,
-    diagnoses:     v.diagnoses,
-    hasEmrData:    !!v.generalExam,
-  }));
+  /* ── Serialise visits for client (previous = strictly before today) ──── */
+  const serialVisits: SerialVisit[] = patient.visits
+    .map((v, i) => ({
+      id:            v.id,
+      date:          v.date.toISOString(),
+      visitType:     v.visitType ?? null,
+      status:        v.status as "IN_PROGRESS" | "CLOSED",
+      visitNumber:   totalVisits - i,
+      hospital:      v.hospital ?? null,
+      doctor:        v.doctor   ?? null,
+      chiefComplaint: v.generalExam?.chiefComplaint ?? null,
+      diagnoses:     v.diagnoses,
+      hasEmrData:    !!v.generalExam,
+    }))
+    .filter((sv) => new Date(sv.date) < todayStart);
+
+  /* ── Last visit full detail (summary + investigations) ───────────────── */
+  // "Last visit" = the most recent visit BEFORE today; today's visit lives
+  // under the Today's Visit button, not in history.
+  const lastPastVisit = patient.visits.find((v) => v.date < todayStart) ?? null;
+  let lastVisitSummary: LastVisitSummary | null = null;
+  if (lastPastVisit) {
+    // Find the most recent PAST visit (not today) that has investigation orders
+    const lastPastVisitWithOrders = await prisma.visit.findFirst({
+      where: { patientId: patient.id, date: { lt: todayStart }, investigationOrders: { some: {} } },
+      orderBy: { date: "desc" },
+      select: { id: true },
+    });
+    const invVisitId = lastPastVisitWithOrders?.id ?? null;
+
+    const [hosp, doc, genExam, diags, meds, invOrders] = await Promise.all([
+      prisma.hospital.findUnique({ where: { id: lastPastVisit.hospitalId }, select: { name: true } }),
+      prisma.doctor.findUnique({ where: { id: lastPastVisit.doctorId }, select: { name: true } }),
+      prisma.generalExamination.findUnique({ where: { visitId: lastPastVisit.id }, select: { chiefComplaint: true } }),
+      prisma.diagnosis.findMany({ where: { visitId: lastPastVisit.id }, select: { id: true, description: true, icd10Code: true, laterality: true, status: true, provisional: true } }),
+      prisma.medication.findMany({ where: { visitId: lastPastVisit.id }, select: { id: true, drugName: true, dosage: true, frequency: true, duration: true, instructions: true } }),
+      invVisitId
+        ? prisma.investigationOrder.findMany({ where: { visitId: invVisitId, createdAt: { lt: todayStart } }, select: { id: true, category: true, testName: true, priority: true, laterality: true, status: true, notes: true, resultRef: true, createdAt: true }, orderBy: { createdAt: "asc" } })
+        : Promise.resolve([]),
+    ]);
+
+    const filteredOrders = invOrders;
+
+    lastVisitSummary = {
+      id:             lastPastVisit.id,
+      date:           lastPastVisit.date.toISOString(),
+      visitType:      lastPastVisit.visitType ?? null,
+      hospitalName:   hosp?.name ?? null,
+      doctorName:     doc?.name ?? null,
+      chiefComplaint: genExam?.chiefComplaint ?? null,
+      diagnoses:      diags,
+      medications:    meds,
+      investigations: filteredOrders.map((o) => ({ ...o, createdAt: o.createdAt.toISOString() })),
+    };
+  }
 
   /* ── Banner info ──────────────────────────────────────────────────────── */
   const bannerItems = [
@@ -145,12 +214,7 @@ export default async function PatientProfilePage({
   return (
     <div className="fade-in pb-12 max-w-2xl mx-auto">
       {/* Back */}
-      <Link
-        href="/patients"
-        className="inline-flex items-center gap-1.5 text-sm text-[var(--color-ink-500)] hover:text-[var(--color-ink-800)] mb-4 transition-colors"
-      >
-        <ArrowLeft size={14} /> Patients
-      </Link>
+      <BackButton href={returnTo || "/patients"} label="Back" className="mb-4" />
 
       {/* ── Patient banner ────────────────────────────────────────────── */}
       <div
@@ -169,9 +233,14 @@ export default async function PatientProfilePage({
               <div>
                 <h1 className="text-xl font-bold leading-tight">{patient.name}</h1>
                 <div className="flex items-center gap-2 mt-1 flex-wrap">
-                  <span className="font-mono text-[11px] bg-white/10 px-2 py-0.5 rounded">
-                    <Hash size={9} className="inline mr-0.5" />{patient.udid}
+                  <span className="font-mono text-[11px] bg-white/10 px-2 py-0.5 rounded" title="UDID (Doctor ID)">
+                    <Hash size={9} className="inline mr-0.5" />{patient.udid ?? "—"}
                   </span>
+                  {patient.uhid && (
+                    <span className="font-mono text-[11px] bg-white/10 px-2 py-0.5 rounded" title="UHID (Hospital ID)">
+                      <Hash size={9} className="inline mr-0.5" />{patient.uhid}
+                    </span>
+                  )}
                   <span className="text-sm text-white/80">
                     {patient.age}y · {patient.sex.charAt(0) + patient.sex.slice(1).toLowerCase()}
                   </span>
@@ -236,6 +305,20 @@ export default async function PatientProfilePage({
         </div>
       </div>
 
+      {/* ── Time Stamp & Transfer buttons ────────────────────────────── */}
+      <div className="flex items-center gap-2 mb-4">
+        <TimeStampButton patientId={patient.id} patientName={patient.name} />
+        {user.role === "DOCTOR" && (
+          <TransferButton
+            patientId={patient.id}
+            patientName={patient.name}
+            currentHospitalId={patient.registeredAtId}
+            currentHospitalName={patient.registeredAt?.name ?? null}
+            hospitals={allHospitals}
+          />
+        )}
+      </div>
+
       {/* ── Action buttons + drawer (client) ──────────────────────────── */}
       <PatientProfileClient
         udid={udid}
@@ -244,6 +327,7 @@ export default async function PatientProfilePage({
         todayAppointmentId={todayAppointmentId}
         userRole={user.role}
         timelineEntries={timelineEntries}
+        lastVisitSummary={lastVisitSummary}
       />
     </div>
   );

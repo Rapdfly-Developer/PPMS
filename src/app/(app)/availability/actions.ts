@@ -11,10 +11,11 @@ async function getDoctorId(userId: string) {
 
 export async function upsertAvailability(
   hospitalId: string,
-  weekday: number,
+  weekdays: number[],
   startTime: string,
   endTime: string,
-  slotMins: number
+  slotMins: number,
+  maxPatients: number = 5,
 ): Promise<{ error?: string }> {
   const user = await requireRole("DOCTOR");
   const doctorId = await getDoctorId(user.id);
@@ -24,15 +25,39 @@ export async function upsertAvailability(
     where: { doctorId_hospitalId: { doctorId, hospitalId } },
   });
   if (!link) return { error: "You are not linked to this hospital." };
-
   if (startTime >= endTime) return { error: "End time must be after start time." };
 
-  const existing = await prisma.doctorAvailability.findFirst({ where: { doctorId, hospitalId, weekday } });
-  if (existing) {
-    await prisma.doctorAvailability.update({ where: { id: existing.id }, data: { startTime, endTime, slotMins } });
-  } else {
-    await prisma.doctorAvailability.create({ data: { doctorId, hospitalId, weekday, startTime, endTime, slotMins } });
+  for (const weekday of weekdays) {
+    const existing = await prisma.doctorAvailability.findFirst({ where: { doctorId, hospitalId, weekday } });
+    if (existing) {
+      await prisma.doctorAvailability.update({
+        where: { id: existing.id },
+        data: { startTime, endTime, slotMins, maxPatients, status: "ACTIVE" },
+      });
+    } else {
+      await prisma.doctorAvailability.create({
+        data: { doctorId, hospitalId, weekday, startTime, endTime, slotMins, maxPatients, status: "ACTIVE" },
+      });
+    }
   }
+
+  revalidatePath("/availability");
+  revalidatePath("/appointments/book");
+  return {};
+}
+
+export async function toggleAvailabilityStatus(id: string): Promise<{ error?: string }> {
+  const user = await requireRole("DOCTOR");
+  const doctorId = await getDoctorId(user.id);
+  if (!doctorId) return { error: "Doctor profile not found." };
+
+  const slot = await prisma.doctorAvailability.findUnique({ where: { id } });
+  if (!slot || slot.doctorId !== doctorId) return { error: "Not found or forbidden." };
+
+  await prisma.doctorAvailability.update({
+    where: { id },
+    data: { status: slot.status === "ACTIVE" ? "INACTIVE" : "ACTIVE" },
+  });
 
   revalidatePath("/availability");
   revalidatePath("/appointments/book");

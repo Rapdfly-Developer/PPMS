@@ -6,6 +6,18 @@ import { Eye, EyeOff, User, Lock, Users, CalendarDays, ClipboardList, Receipt, S
 
 type FieldErrors = { username?: string; password?: string; mobile?: string; otp?: string };
 
+// Test login shortcuts — dev/test environments only, hidden in production.
+// NODE_ENV is inlined at build time; NEXT_PUBLIC_TEST_LOGINS=1 can force-enable on a deployed preview.
+const SHOW_TEST_ACCOUNTS =
+  process.env.NODE_ENV !== "production" || process.env.NEXT_PUBLIC_TEST_LOGINS === "1";
+
+const TEST_ACCOUNTS = [
+  { label: "Doctor",   username: "doctor",           password: "password123" },
+  { label: "Sunrise",  username: "hospital_a",       password: "password123" },
+  { label: "Lakeview", username: "hospital_b",       password: "password123" },
+  { label: "Supreme",  username: "supreme_hospital", password: "password123" },
+];
+
 function validate(fields: { username?: string; password?: string }): FieldErrors {
   const e: FieldErrors = {};
   const u = (fields.username ?? "").trim();
@@ -72,6 +84,14 @@ export default function LoginPage() {
     setTab(t);
     setOtpSent(false); setOtpMsg(""); setOtpErrors({}); setOtpTouched({});
     setFieldErrors({}); setTouched({});
+  }
+
+  function fillTestAccount(u: string, p: string) {
+    setTab("password");
+    setUsername(u);
+    setPassword(p);
+    setFieldErrors({});
+    setTouched({});
   }
 
   return (
@@ -226,6 +246,7 @@ export default function LoginPage() {
                       style={{ color: touched.username && fieldErrors.username ? "#B3261E" : "#8A9AA1" }} />
                     <input
                       name="username"
+                      autoComplete="username"
                       autoFocus
                       value={username}
                       onChange={e => {
@@ -271,6 +292,7 @@ export default function LoginPage() {
                       style={{ color: touched.password && fieldErrors.password ? "#B3261E" : "#8A9AA1" }} />
                     <input
                       name="password"
+                      autoComplete="current-password"
                       type={showPassword ? "text" : "password"}
                       value={password}
                       onChange={e => {
@@ -333,7 +355,7 @@ export default function LoginPage() {
                 <div>
                   <label className="text-xs font-semibold block mb-1.5" style={{ color: "#34474F" }}>Mobile Number</label>
                   <div className="flex gap-2">
-                    <div className="flex items-center px-3.5 rounded-xl border-2 text-sm font-semibold shrink-0"
+                    <div className="flex items-center px-3.5 py-3 rounded-xl border-2 text-sm font-semibold shrink-0"
                       style={{ borderColor: "#E2E6E8", background: "#F9FAFA", color: "#34474F" }}>
                       +91
                     </div>
@@ -446,13 +468,51 @@ export default function LoginPage() {
               </div>
             )}
 
+            {/* ── Test accounts (dev/test only) ── */}
+            {SHOW_TEST_ACCOUNTS && (
+              <div className="mt-5 rounded-2xl px-4 py-3.5" style={{ background: "#F6FAF9", border: "1px dashed #B8DCD6" }}>
+                <div className="flex items-center gap-1.5 mb-1">
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded font-mono" style={{ background: "#157A73", color: "#fff" }}>TEST</span>
+                  <p className="text-xs font-bold" style={{ color: "#34474F" }}>Test Accounts</p>
+                </div>
+                <p className="text-[11px] mb-2.5" style={{ color: "#8A9AA1" }}>
+                  Click any test account to auto-fill login credentials.
+                </p>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {TEST_ACCOUNTS.map((a) => (
+                    <button
+                      key={a.username}
+                      type="button"
+                      onClick={() => fillTestAccount(a.username, a.password)}
+                      className="flex items-center gap-2 px-2.5 py-2 rounded-xl text-left transition-all hover:shadow-sm"
+                      style={{
+                        background: username === a.username ? "#e8f5f2" : "#fff",
+                        border: `1px solid ${username === a.username ? "#157A73" : "#E2E6E8"}`,
+                      }}
+                    >
+                      <User size={13} className="shrink-0" style={{ color: "#157A73" }} />
+                      <span className="min-w-0">
+                        <span className="block text-xs font-semibold truncate" style={{ color: "#34474F" }}>{a.label}</span>
+                        <span className="block text-[10px] font-mono truncate" style={{ color: "#8A9AA1" }}>{a.username}</span>
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Footer */}
-            <div className="mt-5 pt-4 border-t flex items-center justify-center gap-2" style={{ borderColor: "#F0F4F4" }}>
-              <ShieldCheck size={14} style={{ color: "#157A73" }} />
-              <p className="text-xs font-medium" style={{ color: "#8A9AA1" }}>
-                Secure Login <span style={{ color: "#D0D8DC" }}>|</span>{" "}
-                <span style={{ color: "#5C6E76" }}>HIPAA Compliant</span>
-              </p>
+            <div className="mt-5 pt-4 border-t flex items-center justify-between gap-2" style={{ borderColor: "#F0F4F4" }}>
+              <div className="flex items-center gap-2">
+                <ShieldCheck size={14} style={{ color: "#157A73" }} />
+                <p className="text-xs font-medium" style={{ color: "#8A9AA1" }}>
+                  Secure Login <span style={{ color: "#D0D8DC" }}>|</span>{" "}
+                  <span style={{ color: "#5C6E76" }}>DPDP &amp; ABDM Ready</span>
+                </p>
+              </div>
+              <a href="/license" className="text-xs font-medium hover:underline" style={{ color: "#157A73" }}>
+                License
+              </a>
             </div>
           </div>
         </div>

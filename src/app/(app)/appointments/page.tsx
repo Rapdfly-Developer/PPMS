@@ -1,13 +1,14 @@
 import { requirePermission, scopeDoctorId } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
-import { startOfDay } from "date-fns";
+import { istDayRange, istTodayStr } from "@/lib/ist";
+import { autoCloseStaleVisits } from "@/lib/autoClose";
 import { AppointmentsClient } from "./AppointmentsClient";
 
 async function expireStaleRequested() {
   await prisma.appointment.updateMany({
     where: {
       status: "REQUESTED",
-      dateTime: { lt: startOfDay(new Date()) },
+      dateTime: { lt: istDayRange(istTodayStr()).dayStart },
     },
     data: { status: "NO_SHOW" },
   });
@@ -23,6 +24,8 @@ export default async function AppointmentsPage({
 
   // Silently expire any REQUESTED appointments from previous days
   await expireStaleRequested();
+  // EOD sweep: close IN_PROGRESS visits left over from previous days
+  await autoCloseStaleVisits();
 
   const dateParam     = sp.date ?? "";
   const statusParam   = sp.status ?? "ALL";
@@ -37,32 +40,28 @@ export default async function AppointmentsPage({
   const booked         = !!sp.booked;
   const isHospital     = user.role === "HOSPITAL";
 
-  // ── Date range ─────────────────────────────────────────────────────────
-  let dateFilter: any;
-  if (dateParam) {
-    const d = new Date(dateParam);
-    if (!isNaN(d.getTime())) {
-      const s = startOfDay(d);
-      const e = new Date(s); e.setHours(23, 59, 59, 999);
-      dateFilter = { gte: s, lte: e };
-    }
-  }
-  if (!dateFilter) {
-    const s = startOfDay(new Date());
-    const e = new Date(s); e.setHours(23, 59, 59, 999);
-    dateFilter = { gte: s, lte: e };
-  }
+  // ── Date range (IST calendar day) ──────────────────────────────────────
+  const today = istTodayStr();
+  const validDateParam = /^\d{4}-\d{2}-\d{2}$/.test(dateParam) ? dateParam : "";
+  const { dayStart, dayEnd } = istDayRange(validDateParam || today);
+  const dateFilter = { gte: dayStart, lte: dayEnd };
 
   // ── Build where clause ─────────────────────────────────────────────────
   const where: any = {};
 
+  const isPastDate = !!validDateParam && validDateParam < today;
+
   if (user.role === "DOCTOR") {
     where.doctorId = scopeDoctorId(user);
+    // Show only the selected day (defaults to today); other days via the date picker
     where.dateTime = dateFilter;
-    if (statusParam === "ALL") where.status = { in: ["REQUESTED", "SCHEDULED", "CONFIRMED", "DISPENSED"] };
+    // For past dates show everything; for today/future hide NO_SHOW/CANCELLED by default
+    if (statusParam === "ALL" && !isPastDate) {
+      where.status = { in: ["REQUESTED", "SCHEDULED", "CONFIRMED", "DISPENSED"] };
+    }
   } else if (user.role === "HOSPITAL") {
     where.hospitalId = user.hospitalId;
-    where.dateTime = dateParam ? dateFilter : { gte: startOfDay(new Date()) };
+    where.dateTime = dateFilter;
   } else {
     where.dateTime = dateFilter;
   }

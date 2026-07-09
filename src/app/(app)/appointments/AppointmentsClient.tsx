@@ -285,6 +285,7 @@ export function AppointmentsClient({
               ref={dateInputRef}
               type="date"
               value={dateParam || format(new Date(), "yyyy-MM-dd")}
+              onClick={(e) => { try { e.currentTarget.showPicker?.(); } catch {} }}
               onChange={(e) => {
                 if (e.target.value) navigate({ date: e.target.value, page: 1 });
               }}
@@ -337,9 +338,9 @@ export function AppointmentsClient({
                 <span className="text-sm text-[var(--color-ink-700)] pointer-events-none">{displayDate}</span>
                 {/* Full-size overlay — the input itself receives every click and opens the native picker */}
                 <input
-                  ref={dateInputRef}
                   type="date"
                   value={dateParam || format(new Date(), "yyyy-MM-dd")}
+                  onClick={(e) => { try { e.currentTarget.showPicker?.(); } catch {} }}
                   onChange={(e) => {
                     if (e.target.value) navigate({ date: e.target.value, page: 1 });
                   }}

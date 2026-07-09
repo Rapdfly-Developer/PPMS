@@ -36,7 +36,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
 
   const pdf = await generateDispensePdf({
     patient: {
-      udid: visit.patient.udid,
+      udid: visit.patient.udid ?? "",
       name: visit.patient.name,
       age: visit.patient.age,
       sex: visit.patient.sex,

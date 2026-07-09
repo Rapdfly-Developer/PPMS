@@ -56,6 +56,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           profileName = user.refractionist.name;
           hospitalId = user.refractionist.hospitalId;
           doctorId = user.refractionist.doctorId;
+        } else if (user.hospitalStaff) {
+          // Custom role (Receptionist, Nurse, etc.) — always stored in HospitalStaff
+          profileId = user.hospitalStaff.id;
+          profileName = user.hospitalStaff.name;
+          hospitalId = user.hospitalStaff.hospitalId;
         }
 
         // Fetch permissions for this role from DB (Doctor gets wildcard "*")
@@ -70,6 +75,18 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           permissions = rolePerms.map((rp) => rp.permission.key);
         }
 
+        // Record successful login (fire-and-forget; IP captured separately via /api/auth/track)
+        prisma.userLoginHistory.create({
+          data: {
+            userId: user.id,
+            userName: profileName,
+            role: user.role,
+            hospitalId,
+            status: "SUCCESS",
+            isActive: true,
+          },
+        }).catch(() => {});
+
         return {
           id: user.id,
           name: profileName,
@@ -82,6 +99,17 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       },
     }),
   ],
+  events: {
+    signOut: async (message: any) => {
+      const userId = message?.token?.sub ?? message?.session?.user?.id;
+      if (userId) {
+        prisma.userLoginHistory.updateMany({
+          where: { userId, isActive: true },
+          data: { isActive: false, logoutAt: new Date() },
+        }).catch(() => {});
+      }
+    },
+  },
   callbacks: {
     jwt: async ({ token, user }) => {
       if (user) {

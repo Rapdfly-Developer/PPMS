@@ -1,7 +1,7 @@
 "use client";
 
 import { format } from "date-fns";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { Phone, Stethoscope, Tag, FileText, CalendarPlus, Printer, UserRound } from "lucide-react";
 import { hospitalUpdateAppointmentStatus, doctorUpdateAppointmentStatus, doctorConfirmAppointment, doctorCancelAppointment } from "./actions";
@@ -18,6 +18,7 @@ const STATUS_STYLES: Record<string, string> = {
 };
 
 export function AppointmentRow({ appt, role, token }: { appt: any; role: string; token: number }) {
+  const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [showSlotModal, setShowSlotModal] = useState(false);
   const p = appt.patient;
@@ -41,7 +42,10 @@ export function AppointmentRow({ appt, role, token }: { appt: any; role: string;
   const isCompleted = appt.status === "DISPENSED";
 
   return (
-    <div className="flex items-center gap-3 px-5 py-4 rounded-xl border border-[var(--color-border)] bg-white hover:bg-[var(--color-primary-50)] hover:border-[var(--color-primary-200)] transition-colors">
+    <div
+      onClick={() => router.push(`/patients/${p.udid}?returnTo=${encodeURIComponent(window.location.pathname + window.location.search)}`)}
+      className="flex items-center gap-3 px-5 py-4 rounded-xl border border-[var(--color-border)] bg-white hover:bg-[var(--color-primary-50)] hover:border-[var(--color-primary-200)] transition-colors cursor-pointer"
+    >
 
       {/* Token badge */}
       <div className="flex items-center justify-center shrink-0 w-9 h-9 rounded-xl text-sm font-bold"
@@ -54,12 +58,12 @@ export function AppointmentRow({ appt, role, token }: { appt: any; role: string;
       {/* Patient info */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap mb-1">
-          <Link
-            href={`/patients/${p.udid}`}
+          <button
+            onClick={(e) => { e.stopPropagation(); router.push(`/patients/${p.udid}?returnTo=${encodeURIComponent(window.location.pathname + window.location.search)}`); }}
             className="text-sm font-semibold text-[var(--color-ink-900)] hover:text-[var(--color-primary-600)] transition-colors"
           >
             {p.name}
-          </Link>
+          </button>
           <span className="text-xs text-[var(--color-ink-400)]">
             {p.age}y · {p.sex.charAt(0).toUpperCase() + p.sex.slice(1).toLowerCase()}
           </span>
@@ -99,6 +103,7 @@ export function AppointmentRow({ appt, role, token }: { appt: any; role: string;
             href={`/api/prescription-pdf/${appt.visit.id}`}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
             className="flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors"
           >
             <Printer size={11} /> Prescription
@@ -110,14 +115,14 @@ export function AppointmentRow({ appt, role, token }: { appt: any; role: string;
           <>
             <button
               disabled={pending}
-              onClick={() => hospitalSetStatus("CONFIRMED")}
+              onClick={(e) => { e.stopPropagation(); hospitalSetStatus("CONFIRMED"); }}
               className="text-xs font-medium px-2.5 py-1 rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-50"
             >
               {pending ? "…" : "Confirm"}
             </button>
             <button
               disabled={pending}
-              onClick={() => hospitalSetStatus("CANCELLED")}
+              onClick={(e) => { e.stopPropagation(); hospitalSetStatus("CANCELLED"); }}
               className="text-xs font-medium px-2.5 py-1 rounded-lg bg-white border border-[var(--color-border)] text-[var(--color-danger-600)] hover:bg-[var(--color-danger-50)] disabled:opacity-50"
             >
               Reject
@@ -129,18 +134,20 @@ export function AppointmentRow({ appt, role, token }: { appt: any; role: string;
         {role === "HOSPITAL" && !isCompleted && appt.isWalkIn && appt.status === "CONFIRMED" && (
           <>
             <button
-              onClick={() => setShowSlotModal(true)}
+              onClick={(e) => { e.stopPropagation(); setShowSlotModal(true); }}
               className="flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-lg bg-[var(--color-primary-50)] border border-[var(--color-primary-200)] text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] transition-colors"
             >
               <CalendarPlus size={12} /> Schedule Next Slot
             </button>
             {showSlotModal && (
-              <ScheduleNextSlotModal
-                appointmentId={appt.id}
-                patientName={p.name}
-                doctorName={appt.doctor?.name ?? ""}
-                onClose={() => setShowSlotModal(false)}
-              />
+              <span onClick={(e) => e.stopPropagation()} className="contents">
+                <ScheduleNextSlotModal
+                  appointmentId={appt.id}
+                  patientName={p.name}
+                  doctorName={appt.doctor?.name ?? ""}
+                  onClose={() => setShowSlotModal(false)}
+                />
+              </span>
             )}
           </>
         )}
@@ -149,7 +156,7 @@ export function AppointmentRow({ appt, role, token }: { appt: any; role: string;
         {role === "HOSPITAL" && !isCompleted && appt.status === "CONFIRMED" && !appt.isWalkIn && (
           <button
             disabled={pending}
-            onClick={() => hospitalSetStatus("CANCELLED")}
+            onClick={(e) => { e.stopPropagation(); hospitalSetStatus("CANCELLED"); }}
             className="text-xs font-medium px-2.5 py-1 rounded-lg bg-white border border-[var(--color-border)] text-[var(--color-danger-600)] hover:bg-[var(--color-danger-50)] disabled:opacity-50"
           >
             Cancel

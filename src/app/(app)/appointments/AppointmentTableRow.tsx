@@ -50,7 +50,7 @@ export function AppointmentTableRow({
       {/* UHID */}
       <td className="px-4 py-3 whitespace-nowrap">
         <Link
-          href={`/patients/${p.udid}`}
+          href={`/patients/${p.udid}?returnTo=/appointments`}
           className="font-mono text-xs text-[var(--color-primary-600)] hover:underline"
         >
           {p.udid}
@@ -61,14 +61,14 @@ export function AppointmentTableRow({
       <td className="px-4 py-3">
         {appt.visit ? (
           <Link
-            href={`/emr/${p.udid}?visit=${appt.visit.id}`}
+            href={`/emr/${p.udid}?visit=${appt.visit.id}&returnTo=/appointments`}
             className="text-sm font-semibold text-[var(--color-ink-900)] hover:text-[var(--color-primary-600)] transition-colors"
           >
             {p.name}
           </Link>
         ) : (
           <Link
-            href={`/patients/${p.udid}`}
+            href={`/patients/${p.udid}?returnTo=/appointments`}
             className="text-sm font-semibold text-[var(--color-ink-900)] hover:text-[var(--color-primary-600)] transition-colors"
           >
             {p.name}
@@ -115,7 +115,7 @@ export function AppointmentTableRow({
           {role === "HOSPITAL" && appt.status === "CONFIRMED" && !appt.isWalkIn && (
             <>
               <Link
-                href={`/patients/${p.udid}`}
+                href={`/patients/${p.udid}?returnTo=/appointments`}
                 className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border border-[var(--color-border)] bg-white text-[var(--color-ink-700)] hover:bg-[var(--color-ink-50)] transition-colors"
               >
                 <Eye size={12} /> View

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Copy, Check } from "lucide-react";
 
-export function CopyUhidButton({ udid }: { udid: string }) {
+export function CopyUhidButton({ udid, label = "Copy" }: { udid: string; label?: string }) {
   const [copied, setCopied] = useState(false);
 
   async function handleCopy() {
@@ -18,7 +18,7 @@ export function CopyUhidButton({ udid }: { udid: string }) {
       className="inline-flex items-center gap-1.5 text-sm text-[var(--color-primary-600)] hover:text-[var(--color-primary-800)] font-medium transition-colors"
     >
       {copied ? <Check size={14} /> : <Copy size={14} />}
-      {copied ? "Copied!" : "Copy UHID"}
+      {copied ? "Copied!" : label}
     </button>
   );
 }

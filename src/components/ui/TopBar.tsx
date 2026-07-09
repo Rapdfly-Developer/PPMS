@@ -1,10 +1,40 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Bell, Search, LogOut, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { signOut } from "next-auth/react";
+
+function TopBarBackBtn() {
+  const router = useRouter();
+  const params = useSearchParams();
+  const returnTo = params.get("returnTo");
+
+  if (returnTo) {
+    return (
+      <Link
+        href={returnTo}
+        className="flex items-center justify-center p-1.5 text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)] rounded-lg hover:bg-[var(--color-surface-sunken)] transition-colors"
+        title="Go back"
+        aria-label="Go back"
+      >
+        <ArrowLeft size={17} />
+      </Link>
+    );
+  }
+
+  return (
+    <button
+      onClick={() => router.back()}
+      className="flex items-center justify-center p-1.5 text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)] rounded-lg hover:bg-[var(--color-surface-sunken)] transition-colors"
+      title="Go back"
+      aria-label="Go back"
+    >
+      <ArrowLeft size={17} />
+    </button>
+  );
+}
 
 function getInitials(name: string) {
   return name
@@ -53,14 +83,15 @@ export function TopBar({ name, role }: { name: string; role: string }) {
 
       {/* Back + Search — desktop only */}
       <div className="hidden md:flex items-center gap-1">
-        <button
-          onClick={() => router.back()}
-          className="flex items-center justify-center p-1.5 text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)] rounded-lg hover:bg-[var(--color-surface-sunken)] transition-colors"
-          title="Go back"
-          aria-label="Go back"
+        <Suspense
+          fallback={
+            <button disabled className="flex items-center justify-center p-1.5 text-[var(--color-ink-400)] rounded-lg opacity-60">
+              <ArrowLeft size={17} />
+            </button>
+          }
         >
-          <ArrowLeft size={17} />
-        </button>
+          <TopBarBackBtn />
+        </Suspense>
 
       <form onSubmit={handleSearch} className="flex items-center">
         <div className="relative">

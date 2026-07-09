@@ -37,7 +37,6 @@ export async function createWalkInEncounter(formData: FormData) {
   });
 
   // Create the visit immediately
-  const isFirstVisit = (await prisma.visit.count({ where: { patientId } })) === 0;
   const visit = await prisma.visit.create({
     data: {
       patientId,
@@ -48,8 +47,8 @@ export async function createWalkInEncounter(formData: FormData) {
     },
   });
 
-  // Seed chief complaint if first visit
-  if (isFirstVisit && patient.complaint) {
+  // Seed chief complaint from the patient's recorded complaint
+  if (patient.complaint) {
     await prisma.generalExamination.create({
       data: { visitId: visit.id, chiefComplaint: patient.complaint },
     });

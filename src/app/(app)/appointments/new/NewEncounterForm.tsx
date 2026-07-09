@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { ArrowLeft, Search, User, Stethoscope } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Search, User, Stethoscope } from "lucide-react";
+import { BackButton } from "@/components/ui/BackButton";
 import { createWalkInEncounter } from "./actions";
 
 const VISIT_TYPES = [
@@ -22,6 +22,8 @@ export function NewEncounterForm({
   hospitals: { id: string; name: string }[];
 }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const returnTo = searchParams.get("returnTo") ?? "/dashboard";
   const [pending, startTransition] = useTransition();
   const [search, setSearch] = useState("");
   const [selectedPatient, setSelectedPatient] = useState<(typeof patients)[0] | null>(null);
@@ -58,12 +60,7 @@ export function NewEncounterForm({
     <div className="max-w-2xl mx-auto fade-in">
       {/* Header */}
       <div className="flex items-center gap-2 mb-6">
-        <Link
-          href="/emr"
-          className="inline-flex items-center gap-1.5 text-sm text-[var(--color-ink-500)] hover:text-[var(--color-primary-700)]"
-        >
-          <ArrowLeft size={14} /> Back to OPD Queue
-        </Link>
+        <BackButton href={returnTo} label="Back" />
       </div>
 
       <h1 className="text-xl font-semibold text-[var(--color-ink-900)] mb-1">New Encounter</h1>

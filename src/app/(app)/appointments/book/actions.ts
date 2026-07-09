@@ -2,16 +2,15 @@
 
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/rbac";
-import { generateUDID } from "@/lib/udid";
+import { generateUDID, generateUHID } from "@/lib/udid";
 import { encryptAadhaar } from "@/lib/crypto";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { startOfDay } from "date-fns";
+import { istDateTime, istParts, istHHMM, istDayRange } from "@/lib/ist";
 
 export async function getBookedSlots(doctorId: string, dateStr: string, hospitalId: string): Promise<string[]> {
   await requireRole("HOSPITAL", "DOCTOR");
-  const dayStart = startOfDay(new Date(dateStr));
-  const dayEnd = new Date(dayStart); dayEnd.setHours(23, 59, 59, 999);
+  const { dayStart, dayEnd } = istDayRange(dateStr);
 
   const appts = await prisma.appointment.findMany({
     where: {
@@ -23,10 +22,7 @@ export async function getBookedSlots(doctorId: string, dateStr: string, hospital
     select: { dateTime: true },
   });
 
-  return appts.map((a) => {
-    const d = new Date(a.dateTime);
-    return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-  });
+  return appts.map((a) => istHHMM(new Date(a.dateTime)));
 }
 
 export async function bookAppointment(formData: FormData) {
@@ -43,8 +39,12 @@ export async function bookAppointment(formData: FormData) {
   if (!doctorId || !dateStr || !timeStr) {
     return { error: "Doctor, date and time are required." };
   }
+  if (!notes?.trim()) {
+    return { error: "Chief complaint is required." };
+  }
 
-  const dateTime = new Date(`${dateStr}T${timeStr}`);
+  // Interpret the requested slot as IST regardless of server timezone (Vercel runs UTC)
+  const dateTime = istDateTime(dateStr, timeStr);
   const hospitalId = user.role === "HOSPITAL" ? user.hospitalId! : (formData.get("hospitalId") as string | null);
   if (!hospitalId) return { error: "Hospital is required." };
 
@@ -61,6 +61,11 @@ export async function bookAppointment(formData: FormData) {
     const mobile = formData.get("mobile") as string;
     const aadhaar = (formData.get("aadhaar") as string) || "";
     const complaint = (formData.get("complaint") as string) || null;
+    const address  = (formData.get("address")  as string)?.trim() || null;
+    const city     = (formData.get("city")     as string)?.trim() || null;
+    const state    = (formData.get("state")    as string)?.trim() || null;
+    const pincode  = (formData.get("pincode")  as string)?.trim() || null;
+    const category = (formData.get("category") as string) || "GENERAL";
 
     if (!name || !age || !sex || !mobile) {
       return { error: "Patient name, age, sex and phone are required." };
@@ -68,15 +73,30 @@ export async function bookAppointment(formData: FormData) {
     if (aadhaar && !/^\d{12}$/.test(aadhaar.replace(/\s/g, ""))) {
       return { error: "Aadhaar must be 12 digits if provided." };
     }
+    if (pincode && !/^\d{6}$/.test(pincode)) {
+      return { error: "Pincode must be 6 digits if provided." };
+    }
 
     const hospital = hospitalId
       ? await prisma.hospital.findUnique({ where: { id: hospitalId }, select: { shortCode: true } })
       : null;
-    const shortCode = hospital?.shortCode ?? "GEN";
+    const hospitalShortCode = hospital?.shortCode ?? "GEN";
+
+    // Fetch doctor short code for UDID
+    const doctor = doctorId
+      ? await prisma.doctor.findUnique({ where: { id: doctorId }, select: { shortCode: true } })
+      : null;
+    const udidCode = doctor?.shortCode ?? hospitalShortCode;
+
+    const [udid, uhid] = await Promise.all([
+      generateUDID(udidCode),
+      generateUHID(hospitalShortCode),
+    ]);
 
     const patient = await prisma.patient.create({
       data: {
-        udid: await generateUDID(shortCode),
+        udid,
+        uhid,
         doctorId: doctorId || null,
         registeredAtId: hospitalId || null,
         name,
@@ -85,9 +105,31 @@ export async function bookAppointment(formData: FormData) {
         mobile,
         aadhaarEncrypted: aadhaar ? encryptAadhaar(aadhaar.replace(/\s/g, "")) : encryptAadhaar("000000000000"),
         complaint,
+        address,
+        city,
+        state,
+        pincode,
+        category,
       },
     });
     patientId = patient.id;
+  }
+
+  // Validate time falls within doctor's availability (skip for walk-ins)
+  if (!isWalkIn) {
+    const apptIst = istParts(dateTime);
+    const avail = await prisma.doctorAvailability.findFirst({
+      where: { doctorId, hospitalId, weekday: apptIst.weekday, status: "ACTIVE" },
+    });
+    if (avail) {
+      const toMins = (t: string) => { const [h, m] = t.split(":").map(Number); return h * 60 + m; };
+      const apptMins = apptIst.hours * 60 + apptIst.minutes;
+      const startMins = toMins(avail.startTime);
+      const endMins   = toMins(avail.endTime);
+      if (apptMins < startMins || apptMins >= endMins) {
+        return { error: `Selected time is outside the doctor's scheduled hours (${avail.startTime}–${avail.endTime}).` };
+      }
+    }
   }
 
   // Check for double-booking (same slot)
@@ -101,9 +143,8 @@ export async function bookAppointment(formData: FormData) {
   });
   if (clash) return { error: "That time slot is already booked for this doctor. Please choose another time." };
 
-  // Check for same patient same day
-  const dayStart = new Date(dateTime); dayStart.setHours(0, 0, 0, 0);
-  const dayEnd   = new Date(dateTime); dayEnd.setHours(23, 59, 59, 999);
+  // Check for same patient same day (IST calendar day)
+  const { dayStart, dayEnd } = istDayRange(dateStr);
   const sameDayAppt = await prisma.appointment.findFirst({
     where: {
       patientId,
@@ -114,8 +155,8 @@ export async function bookAppointment(formData: FormData) {
   });
   if (sameDayAppt) return { error: "This patient already has an appointment with this doctor today. Only one appointment per patient per day is allowed." };
 
-  // Doctor-booked appointments are auto-confirmed; hospital-booked non-walk-ins wait for confirmation
-  const status = user.role === "DOCTOR" ? "CONFIRMED" : isWalkIn ? "CONFIRMED" : "REQUESTED";
+  // Walk-ins go straight to queue; all other bookings start as REQUESTED (appear in Visit Time first)
+  const status = isWalkIn ? "CONFIRMED" : "REQUESTED";
 
   await prisma.appointment.create({
     data: {

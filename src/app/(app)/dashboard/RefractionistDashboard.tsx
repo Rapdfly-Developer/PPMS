@@ -3,13 +3,11 @@ import { StatCard, Card } from "@/components/ui/Card";
 import { ClipboardList, CheckCircle2, Clock } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
+import { toISTWall, istTodayRange } from "@/lib/ist";
 import type { SessionUser } from "@/lib/rbac";
 
 export async function RefractionistDashboard({ user, hospitalId }: { user: SessionUser; hospitalId: string }) {
-  const startOfDay = new Date();
-  startOfDay.setHours(0, 0, 0, 0);
-  const endOfDay = new Date();
-  endOfDay.setHours(23, 59, 59, 999);
+  const { dayStart: startOfDay, dayEnd: endOfDay } = istTodayRange();
 
   const todayAppts = await prisma.appointment.findMany({
     where: { hospitalId, dateTime: { gte: startOfDay, lte: endOfDay }, status: { in: ["CONFIRMED", "REQUESTED", "DISPENSED"] } },
@@ -41,7 +39,7 @@ export async function RefractionistDashboard({ user, hospitalId }: { user: Sessi
     <div className="fade-in">
       <div className="mb-7">
         <h1 className="text-2xl font-semibold text-[var(--color-ink-900)] tracking-tight">Good day, {user.name.split(" ")[0]}</h1>
-        <p className="text-sm text-[var(--color-ink-500)] mt-1">{format(new Date(), "EEEE, dd MMMM yyyy")}</p>
+        <p className="text-sm text-[var(--color-ink-500)] mt-1">{format(toISTWall(new Date()), "EEEE, dd MMMM yyyy")}</p>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
@@ -76,7 +74,7 @@ export async function RefractionistDashboard({ user, hospitalId }: { user: Sessi
                     {appt.patient.udid} · {appt.patient.age}y {appt.patient.sex}
                   </p>
                 </div>
-                <p className="text-sm font-medium text-[var(--color-ink-700)]">{format(appt.dateTime, "h:mm a")}</p>
+                <p className="text-sm font-medium text-[var(--color-ink-700)]">{format(toISTWall(appt.dateTime), "h:mm a")}</p>
               </li>
             ))}
           </ul>

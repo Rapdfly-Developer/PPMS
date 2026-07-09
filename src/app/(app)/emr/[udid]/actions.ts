@@ -3,13 +3,16 @@
 import { prisma } from "@/lib/prisma";
 import { requireRole, requireUser } from "@/lib/rbac";
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { notifyAdmission } from "@/lib/mailer";
 import { writeAudit } from "@/lib/audit";
+import { syncVisit } from "@/lib/integration/engine";
 
 async function assertVisitAccess(visitId: string) {
   const user = await requireUser();
   const visit = await prisma.visit.findUnique({ where: { id: visitId } });
   if (!visit) throw new Error("Visit not found");
+  if (visit.status === "CLOSED") throw new Error("This consultation has been finalized and is read-only.");
   if (user.role === "DOCTOR" && visit.doctorId !== user.profileId) throw new Error("Forbidden");
   if (user.role === "REFRACTIONIST" && visit.hospitalId !== user.hospitalId) throw new Error("Forbidden");
   return visit;
@@ -26,7 +29,7 @@ export async function startVisit(patientId: string, appointmentId: string, udid:
 
   const appointment = await prisma.appointment.findUnique({
     where: { id: appointmentId },
-    select: { id: true, doctorId: true, hospitalId: true, visitType: true, patientId: true },
+    select: { id: true, doctorId: true, hospitalId: true, visitType: true, patientId: true, notes: true },
   });
   if (!appointment) throw new Error("Appointment not found");
   if (appointment.doctorId !== user.profileId) throw new Error("Forbidden");
@@ -50,10 +53,12 @@ export async function startVisit(patientId: string, appointmentId: string, udid:
     },
   });
 
-  // Seed chief complaint if patient has one
-  if (patient?.complaint) {
+  // Seed chief complaint from the booking form (appointment notes),
+  // falling back to the complaint recorded at registration.
+  const seedComplaint = appointment.notes || patient?.complaint;
+  if (seedComplaint) {
     await prisma.generalExamination.create({
-      data: { visitId: visit.id, chiefComplaint: patient.complaint },
+      data: { visitId: visit.id, chiefComplaint: seedComplaint },
     });
   }
 
@@ -536,10 +541,37 @@ export async function closeVisit(visitId: string, udid: string) {
     `;
   }
 
+  // Sweep any remaining CONFIRMED/REQUESTED appointments for this patient+doctor today
+  {
+    const { startOfDay, endOfDay } = await import("date-fns");
+    const todayStart = startOfDay(now);
+    const todayEnd   = endOfDay(now);
+    await prisma.appointment.updateMany({
+      where: {
+        patientId: visit.patientId,
+        ...(visit.doctorId ? { doctorId: visit.doctorId } : {}),
+        status:   { in: ["CONFIRMED", "REQUESTED"] },
+        dateTime: { gte: todayStart, lte: todayEnd },
+        ...(appointmentId ? { id: { not: appointmentId } } : {}),
+      },
+      data: { status: "DISPENSED" },
+    });
+  }
+
   await writeAudit(user.id, "Appointment", appointmentId ?? visitId, "FINALIZE_CONSULTATION", {
     completedAt: now.toISOString(),
     completedBy: visit.doctor?.name ?? user.name,
     visitId,
+  });
+
+  // Push the finalized visit to the hospital's system after the response is
+  // sent; failures land in IntegrationLog, never block the consultation.
+  after(async () => {
+    try {
+      await syncVisit(visitId, "AUTO");
+    } catch {
+      // logged inside the engine
+    }
   });
 
   revalidate(udid);

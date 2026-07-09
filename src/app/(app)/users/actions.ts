@@ -28,9 +28,8 @@ export async function createUser(formData: FormData): Promise<{ error?: string }
     return { error: "Password must be at least 6 characters." };
   }
 
-  // Types that need a hospital association
-  const needsHospital = userType !== "HOSPITAL";
-  if (needsHospital && !hospitalId) {
+  // All non-doctor users need a hospital association
+  if (!hospitalId) {
     return { error: "Hospital is required for this user type." };
   }
 
@@ -42,8 +41,8 @@ export async function createUser(formData: FormData): Promise<{ error?: string }
   const existing = await prisma.user.findUnique({ where: { username } });
   if (existing) return { error: "Username already taken." };
 
-  // Map userType → DB role
-  const role = userType === "REFRACTIONIST" ? "REFRACTIONIST" : "HOSPITAL";
+  // Store the actual role name (REFRACTIONIST uses its own profile table; all others use HospitalStaff)
+  const role = userType;
 
   const passwordHash = await bcrypt.hash(password, 10);
 

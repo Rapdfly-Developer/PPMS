@@ -20,6 +20,12 @@ export function decryptAadhaar(payload: string): string {
   return Buffer.concat([decipher.update(enc), decipher.final()]).toString("utf8");
 }
 
+// Generic secret encryption (integration credentials, API keys) — same
+// AES-256-GCM scheme as Aadhaar but kept as separate exports so callers
+// signal intent.
+export const encryptSecret = encryptAadhaar;
+export const decryptSecret = decryptAadhaar;
+
 export function maskAadhaar(plain: string): string {
   const digits = plain.replace(/\D/g, "");
   if (digits.length < 4) return "XXXX XXXX XXXX";

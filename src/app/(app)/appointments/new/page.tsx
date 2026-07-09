@@ -19,5 +19,5 @@ export default async function NewEncounterPage() {
   });
   const hospitals = links.map((l) => l.hospital);
 
-  return <NewEncounterForm patients={patients} hospitals={hospitals} />;
+  return <NewEncounterForm patients={patients.map((p) => ({ ...p, udid: p.udid ?? "" }))} hospitals={hospitals} />;
 }

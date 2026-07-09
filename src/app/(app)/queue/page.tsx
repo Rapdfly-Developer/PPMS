@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { Card } from "@/components/ui/Card";
 import Link from "next/link";
 import { format } from "date-fns";
+import { toISTWall } from "@/lib/ist";
 import { CheckCircle2, Clock, Eye, Activity, Glasses, Palette } from "lucide-react";
 import clsx from "clsx";
 
@@ -139,7 +140,7 @@ export default async function QueuePage() {
                 {/* Time + action */}
                 <div className="flex flex-col items-end gap-2 shrink-0">
                   <p className="text-sm font-medium text-[var(--color-ink-700)]">
-                    {format(new Date(appt.dateTime), "h:mm a")}
+                    {format(toISTWall(new Date(appt.dateTime)), "h:mm a")}
                   </p>
                   {v ? (
                     <Link

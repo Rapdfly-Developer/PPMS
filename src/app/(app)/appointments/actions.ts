@@ -6,6 +6,8 @@ import { revalidatePath } from "next/cache";
 import { startOfDay } from "date-fns";
 import { notifyAppointmentRequested, notifyAppointmentStatus } from "@/lib/mailer";
 import { createNotification } from "@/lib/notify";
+import { writeAudit } from "@/lib/audit";
+import { istDateTime } from "@/lib/ist";
 
 // ── Hospital: confirm or reject a single appointment ─────────────────────────
 
@@ -26,11 +28,16 @@ export async function hospitalUpdateAppointmentStatus(
 
   await prisma.appointment.update({ where: { id: appointmentId }, data: { status } });
 
+  writeAudit(user.id, "Appointment", appointmentId,
+    status === "CONFIRMED" ? "CONFIRMED" : "CANCELLED",
+    { patient: appt.patient.name, hospital: appt.hospital.name, status },
+    { moduleName: "Appointment", actionType: status === "CONFIRMED" ? "UPDATE" : "UPDATE",
+      hospitalId: appt.hospitalId, userName: appt.patient.name });
+
   if (status === "CONFIRMED") {
     // Create the Visit so the doctor can open EMR immediately.
     const existing = await prisma.visit.findUnique({ where: { appointmentId } });
     if (!existing) {
-      const isFirst = (await prisma.visit.count({ where: { patientId: appt.patientId } })) === 0;
       if (!appt.doctorId) throw new Error("Appointment has no doctor assigned.");
       const visit = await prisma.visit.create({
         data: {
@@ -40,9 +47,12 @@ export async function hospitalUpdateAppointmentStatus(
           appointmentId: appt.id,
         },
       });
-      if (isFirst && appt.patient.complaint) {
+      // Seed chief complaint from the booking form (appointment notes),
+      // falling back to the complaint recorded at registration.
+      const seedComplaint = appt.notes || appt.patient.complaint;
+      if (seedComplaint) {
         await prisma.generalExamination.create({
-          data: { visitId: visit.id, chiefComplaint: appt.patient.complaint },
+          data: { visitId: visit.id, chiefComplaint: seedComplaint },
         });
       }
     }
@@ -116,6 +126,11 @@ export async function doctorUpdateAppointmentStatus(
 
   await prisma.appointment.update({ where: { id: appointmentId }, data: { status } });
 
+  writeAudit(user.id, "Appointment", appointmentId, status,
+    { patient: appt.patient.name, hospital: appt.hospital.name, status },
+    { moduleName: "Appointment", actionType: "UPDATE",
+      hospitalId: appt.hospitalId, userName: appt.patient.name });
+
   revalidatePath("/appointments");
   revalidatePath("/dashboard");
 }
@@ -133,10 +148,14 @@ export async function doctorConfirmAppointment(appointmentId: string): Promise<v
 
   await prisma.appointment.update({ where: { id: appointmentId }, data: { status: "CONFIRMED" } });
 
+  writeAudit(user.id, "Appointment", appointmentId, "CONFIRMED",
+    { patient: appt.patient.name, hospital: appt.hospital.name },
+    { moduleName: "Appointment", actionType: "UPDATE",
+      hospitalId: appt.hospitalId, userName: appt.patient.name });
+
   // Create Visit so EMR is available
   const existing = await prisma.visit.findUnique({ where: { appointmentId } });
   if (!existing) {
-    const isFirst = (await prisma.visit.count({ where: { patientId: appt.patientId } })) === 0;
     const visit = await prisma.visit.create({
       data: {
         patientId: appt.patientId,
@@ -145,9 +164,12 @@ export async function doctorConfirmAppointment(appointmentId: string): Promise<v
         appointmentId: appt.id,
       },
     });
-    if (isFirst && appt.patient.complaint) {
+    // Seed chief complaint from the booking form (appointment notes),
+    // falling back to the complaint recorded at registration.
+    const seedComplaint = appt.notes || appt.patient.complaint;
+    if (seedComplaint) {
       await prisma.generalExamination.create({
-        data: { visitId: visit.id, chiefComplaint: appt.patient.complaint },
+        data: { visitId: visit.id, chiefComplaint: seedComplaint },
       });
     }
   }
@@ -164,6 +186,10 @@ export async function doctorCancelAppointment(appointmentId: string): Promise<vo
   if (!appt || appt.doctorId !== scopeDoctorId(user)) throw new Error("Forbidden");
 
   await prisma.appointment.update({ where: { id: appointmentId }, data: { status: "CANCELLED" } });
+
+  writeAudit(user.id, "Appointment", appointmentId, "CANCELLED",
+    { status: "CANCELLED" },
+    { moduleName: "Appointment", actionType: "UPDATE" });
 
   revalidatePath("/appointments");
   revalidatePath("/dashboard");
@@ -185,7 +211,7 @@ export async function scheduleNextSlot(
   if (!source || source.hospitalId !== user.hospitalId) throw new Error("Forbidden");
   if (!source.doctorId) return { error: "No doctor linked to this appointment." };
 
-  const dateTime = new Date(`${date}T${time}`);
+  const dateTime = istDateTime(date, time);
   if (isNaN(dateTime.getTime())) return { error: "Invalid date or time." };
 
   const clash = await prisma.appointment.findFirst({
@@ -255,7 +281,7 @@ export async function requestAppointment(formData: FormData): Promise<{ error?: 
     return { error: "That time slot is already booked. Please choose a different time." };
   }
 
-  await prisma.appointment.create({
+  const newAppt = await prisma.appointment.create({
     data: {
       patientId,
       doctorId: patient.doctorId,
@@ -264,6 +290,11 @@ export async function requestAppointment(formData: FormData): Promise<{ error?: 
       status: "REQUESTED",
     },
   });
+
+  writeAudit(user.id, "Appointment", newAppt.id, "CREATE",
+    { patient: patient.name, hospital: hospital?.name, dateTime },
+    { moduleName: "Appointment", actionType: "CREATE",
+      hospitalId, userName: patient.name });
 
   if (!patient.doctor) return;
   await notifyAppointmentRequested(patient.doctor.user.email, {

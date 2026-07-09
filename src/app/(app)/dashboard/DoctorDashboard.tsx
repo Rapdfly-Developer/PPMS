@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
-import { format, startOfDay, endOfDay, startOfMonth } from "date-fns";
+import { format } from "date-fns";
 import type { SessionUser } from "@/lib/rbac";
+import { istTodayRange, istParts, toISTWall } from "@/lib/ist";
 import { DashboardClient } from "./DashboardClient";
 
 export async function DoctorDashboard({
@@ -9,16 +10,19 @@ export async function DoctorDashboard({
   user: SessionUser; doctorId: string; tab?: string;
 }) {
   const now        = new Date();
-  const dayStart   = startOfDay(now);
-  const dayEnd     = endOfDay(now);
-  const monthStart = startOfMonth(now);
-  const todayWeekday = now.getDay();
+  const { dayStart, dayEnd } = istTodayRange();
+  const todayWeekday = istParts(now).weekday;
+
+  const doctorProfile = await prisma.doctor.findUnique({
+    where: { id: doctorId },
+    select: { name: true },
+  });
 
   // Run sequentially to avoid exhausting Neon pgbouncer's connection pool
   const todayAppts = await prisma.appointment.findMany({
     where: { doctorId, dateTime: { gte: dayStart, lte: dayEnd } },
     include: {
-      patient:  { select: { name: true, udid: true, age: true, sex: true, mobile: true } },
+      patient:  { select: { name: true, udid: true, uhid: true, age: true, sex: true, mobile: true, complaint: true } },
       hospital: { select: { id: true, name: true } },
       visit:    { select: { id: true } },
     },
@@ -36,7 +40,7 @@ export async function DoctorDashboard({
       id: true, surgeryType: true, surgeryDate: true, rightEye: true, leftEye: true,
       visit: {
         select: {
-          patient:  { select: { name: true, udid: true } },
+          patient:  { select: { name: true, udid: true, uhid: true } },
           hospital: { select: { name: true } },
         },
       },
@@ -51,7 +55,7 @@ export async function DoctorDashboard({
       id: true, ward: true, createdAt: true, reason: true,
       visit: {
         select: {
-          patient:  { select: { name: true, udid: true } },
+          patient:  { select: { name: true, udid: true, uhid: true } },
           hospital: { select: { name: true } },
           surgicalCounselling: { select: { surgeryType: true } },
         },
@@ -81,8 +85,8 @@ export async function DoctorDashboard({
     id:          a.id,
     dateTime:    a.dateTime.toISOString(),
     status:      a.status,
-    visitType:   (a as any).visitType ?? "General OPD",
-    patient:     { name: a.patient.name, udid: a.patient.udid, age: a.patient.age, sex: a.patient.sex, mobile: a.patient.mobile },
+    complaint:   a.patient.complaint ?? null,
+    patient:     { name: a.patient.name, udid: a.patient.udid ?? "", uhid: a.patient.uhid ?? "", age: a.patient.age, sex: a.patient.sex, mobile: a.patient.mobile },
     hospital:    { id: a.hospital.id, name: a.hospital.name },
     visitId:     a.visit?.id ?? null,
   }));
@@ -93,7 +97,7 @@ export async function DoctorDashboard({
     surgeryDate: s.surgeryDate.toISOString(),
     rightEye:    s.rightEye,
     leftEye:     s.leftEye,
-    patient:     s.visit.patient,
+    patient:     { ...s.visit.patient, udid: s.visit.patient.udid ?? "", uhid: s.visit.patient.uhid ?? "" },
     hospital:    s.visit.hospital,
   }));
 
@@ -138,8 +142,8 @@ export async function DoctorDashboard({
   return (
     <DashboardClient
       role="DOCTOR"
-      displayName={user.name}
-      todayLabel={format(now, "EEEE, d MMM yyyy")}
+      displayName={doctorProfile?.name ?? user.name}
+      todayLabel={format(toISTWall(now), "EEEE, d MMM yyyy")}
       appts={appts}
       surgeries={surgeries}
       filterOptions={hospitals}

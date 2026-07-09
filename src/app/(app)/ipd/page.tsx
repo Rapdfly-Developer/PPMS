@@ -31,5 +31,9 @@ export default async function IpdPage() {
     },
   });
 
-  return <IpdClient admissions={admissions} todaySurgeriesCount={todaySurgeries} />;
+  const admissionsMapped = admissions.map((a) => ({
+    ...a,
+    visit: { ...a.visit, patient: { ...a.visit.patient, udid: a.visit.patient.udid ?? "" } },
+  }));
+  return <IpdClient admissions={admissionsMapped} todaySurgeriesCount={todaySurgeries} />;
 }

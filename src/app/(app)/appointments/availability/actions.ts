@@ -43,11 +43,12 @@ export async function upsertAvailability(data: {
 
   // Validate no overlap with same doctor + hospital + weekday (excluding self)
   const existing = await prisma.doctorAvailability.findMany({
-    where: { doctorId, hospitalId: data.hospitalId, weekday: data.weekday, id: data.id ? { not: data.id } : undefined },
+    where: { doctorId, weekday: data.weekday, id: data.id ? { not: data.id } : undefined },
+    include: { hospital: { select: { name: true } } },
   });
   for (const e of existing) {
     if (timesOverlap(data.startTime, data.endTime, e.startTime, e.endTime)) {
-      throw new Error(`Overlaps with existing slot ${e.startTime}–${e.endTime} at this hospital`);
+      throw new Error(`Time overlaps with ${e.startTime}–${e.endTime} already scheduled at ${(e as any).hospital.name}`);
     }
   }
 

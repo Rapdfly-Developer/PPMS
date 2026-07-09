@@ -4,8 +4,8 @@ import { notFound, redirect } from "next/navigation";
 import { Card } from "@/components/ui/Card";
 import { Tabs } from "@/components/ui/Tabs";
 import { format } from "date-fns";
-import Link from "next/link";
-import { ArrowLeft, User, Eye, Activity, Link2, FileText, FolderOpen, Lock } from "lucide-react";
+import { User, Eye, Activity, Link2, FileText, FolderOpen, Lock } from "lucide-react";
+import { BackButton } from "@/components/ui/BackButton";
 import { GeneralExamTab } from "./GeneralExamTab";
 import { PastExternalVisitsTab } from "./PastExternalVisitsTab";
 import { OphthalmicExamTab } from "./OphthalmicExamTab";
@@ -21,10 +21,10 @@ export default async function PatientDetailedEMR({
   searchParams,
 }: {
   params: Promise<{ udid: string }>;
-  searchParams: Promise<{ visit?: string }>;
+  searchParams: Promise<{ visit?: string; returnTo?: string }>;
 }) {
   const { udid } = await params;
-  const { visit: visitIdParam } = await searchParams;
+  const { visit: visitIdParam, returnTo } = await searchParams;
   const user = await requirePermission("emr.view");
 
   const patient = await prisma.patient.findUnique({
@@ -76,19 +76,39 @@ export default async function PatientDetailedEMR({
     }
   }
 
+  const requestedVisit = visitIdParam
+    ? patient.visits.find((v) => v.id === visitIdParam)
+    : undefined;
+
+  // Prefer today's visit; only fall back to older IN_PROGRESS visits if no today's visit exists
+  const todayStr = new Date().toDateString();
+  const isToday  = (d: Date) => new Date(d).toDateString() === todayStr;
+
   const activeVisit =
-    (visitIdParam && patient.visits.find((v) => v.id === visitIdParam)) ||
+    requestedVisit ||
+    patient.visits.find((v) => isToday(v.date) && v.status === "IN_PROGRESS" && v.hospitalId === patient.registeredAtId) ||
+    patient.visits.find((v) => isToday(v.date) && v.status === "IN_PROGRESS") ||
+    patient.visits.find((v) => isToday(v.date)) ||
+    patient.visits.find((v) => v.status === "IN_PROGRESS" && v.hospitalId === patient.registeredAtId) ||
     patient.visits.find((v) => v.status === "IN_PROGRESS") ||
     patient.visits[0];
 
-  // Auto-create visit when doctor opens EMR and there's a pending appointment
-  if (!activeVisit && user.role === "DOCTOR") {
+  // Auto-create visit when the doctor opens the EMR without picking a visit.
+  // Prefers the patient's CURRENT registered hospital: after a transfer, a
+  // pending appointment at the new hospital must win over an in-progress
+  // visit left behind at the previous hospital.
+  const activeVisitAtOtherHospital =
+    !!activeVisit && !!patient.registeredAtId && activeVisit.hospitalId !== patient.registeredAtId;
+
+  if (!requestedVisit && user.role === "DOCTOR" && (!activeVisit || activeVisitAtOtherHospital)) {
     const pendingAppointment = await prisma.appointment.findFirst({
       where: {
         patientId: patient.id,
         doctorId: user.profileId,
         status: { in: ["CONFIRMED", "REQUESTED", "SCHEDULED"] },
         visit: null,
+        // Only hijack an existing in-progress visit for the current hospital's appointment
+        ...(activeVisitAtOtherHospital ? { hospitalId: patient.registeredAtId! } : {}),
       },
       orderBy: { dateTime: "asc" },
     });
@@ -112,10 +132,15 @@ export default async function PatientDetailedEMR({
             visitType: (pendingAppointment as any).visitType ?? "General OPD",
           },
         });
-        if (patient.complaint) {
-          await prisma.generalExamination.create({
-            data: { visitId: newVisit.id, chiefComplaint: patient.complaint },
-          });
+        {
+          // Seed chief complaint from the booking form (appointment notes),
+          // falling back to the complaint recorded at registration.
+          const seedComplaint = pendingAppointment.notes || patient.complaint;
+          if (seedComplaint) {
+            await prisma.generalExamination.create({
+              data: { visitId: newVisit.id, chiefComplaint: seedComplaint },
+            });
+          }
         }
         await prisma.appointment.update({
           where: { id: pendingAppointment.id },
@@ -127,7 +152,19 @@ export default async function PatientDetailedEMR({
     }
   }
 
-  const priorVisits = patient.visits.filter((v) => v.id !== activeVisit?.id);
+  // Only include past visits that have real clinical data — skip empty auto-created visits
+  const priorVisits = patient.visits.filter(
+    (v) =>
+      v.id !== activeVisit?.id &&
+      (v.generalExam?.chiefComplaint ||
+        v.diagnoses.length > 0 ||
+        v.medications.length > 0 ||
+        v.iopReadings.length > 0 ||
+        v.investigationOrders.length > 0 ||
+        v.visualAcuity ||
+        v.anteriorSegment ||
+        v.posteriorSegment)
+  );
   const latestDiagnosis = patient.visits.flatMap((v) => v.diagnoses)[0];
 
   const chiefComplaintSummary = activeVisit?.generalExam?.chiefComplaint ?? latestDiagnosis?.description ?? null;
@@ -136,12 +173,12 @@ export default async function PatientDetailedEMR({
   // (Prisma client regenerates on restart; ChipOption table is seeded via /settings/chips)
   const customPmhChips: string[] = [];
 
-  // Allow editing today's closed visits; lock only past-day closed visits
-  const visitDate = activeVisit ? new Date(activeVisit.date) : null;
-  const isVisitFromToday = visitDate
-    ? visitDate.toDateString() === new Date().toDateString()
-    : false;
-  const readOnly = user.role !== "DOCTOR" || (activeVisit?.status === "CLOSED" && !isVisitFromToday);
+  // CLOSED visits are permanently read-only for everyone, including the doctor
+  const readOnly = user.role !== "DOCTOR" || activeVisit?.status === "CLOSED";
+
+  // Closed by the EOD sweep rather than finalized & signed by the doctor
+  const autoClosed =
+    activeVisit?.status === "CLOSED" && !!activeVisit.finalizedBy?.startsWith("SYSTEM");
 
   const hospital = activeVisit?.hospital;
   const doctorName = patient.doctor?.name;
@@ -154,7 +191,7 @@ export default async function PatientDetailedEMR({
         hospitalContact={hospital?.contact ?? undefined}
         doctorName={doctorName}
         patientName={patient.name}
-        patientUdid={patient.udid}
+        patientUdid={patient.udid ?? undefined}
         patientAge={patient.age}
         patientSex={patient.sex}
         visitDate={activeVisit?.date}
@@ -162,12 +199,10 @@ export default async function PatientDetailedEMR({
       />
       {/* Header bar */}
       <div className="flex items-center gap-2 mb-3 flex-wrap no-print">
-        <Link
-          href={user.role === "REFRACTIONIST" ? "/queue" : "/emr"}
-          className="inline-flex items-center gap-1.5 text-sm text-[var(--color-ink-500)] hover:text-[var(--color-primary-700)]"
-        >
-          <ArrowLeft size={14} /> Back to OPD Queue
-        </Link>
+        <BackButton
+          href={returnTo || (user.role === "REFRACTIONIST" ? "/queue" : `/patients/${udid}`)}
+          label={user.role === "REFRACTIONIST" ? "Back to OPD Queue" : "Back to Patient"}
+        />
         <span className="text-[var(--color-border)]">|</span>
         <h1 className="text-sm font-semibold text-[var(--color-ink-900)]">{patient.name}</h1>
         {activeVisit && (
@@ -176,26 +211,31 @@ export default async function PatientDetailedEMR({
           </span>
         )}
         {activeVisit?.status === "CLOSED" && (
-          <span className="flex items-center gap-1.5 text-xs font-medium text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-lg">
-            <Lock size={11} /> Finalized &amp; Signed — Read-only
+          <span
+            className={`flex items-center gap-1.5 text-xs font-medium px-2.5 py-0.5 rounded-lg ${
+              autoClosed ? "text-amber-700 bg-amber-100" : "text-emerald-700 bg-emerald-100"
+            }`}
+          >
+            <Lock size={11} /> {autoClosed ? "Auto-closed at EOD" : "Finalized & Signed"} — Read-only
           </span>
         )}
       </div>
 
       {/* Locked banner */}
-      {activeVisit?.status === "CLOSED" && user.role === "DOCTOR" && !isVisitFromToday && (
-        <div className="mb-4 px-4 py-3 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2 text-sm text-amber-800">
-            <Lock size={14} className="shrink-0" />
-            <span>This consultation has been finalized and signed. Editing is disabled.</span>
-          </div>
-          <RequestUnlockButton />
-        </div>
-      )}
-      {activeVisit?.status === "CLOSED" && user.role === "DOCTOR" && isVisitFromToday && (
-        <div className="mb-4 px-4 py-3 rounded-xl bg-blue-50 border border-blue-200 flex items-center gap-2 text-sm text-blue-800">
+      {activeVisit?.status === "CLOSED" && (
+        <div
+          className={`mb-4 px-4 py-3 rounded-xl border flex items-center gap-2 text-sm ${
+            autoClosed
+              ? "bg-amber-50 border-amber-200 text-amber-800"
+              : "bg-emerald-50 border-emerald-200 text-emerald-800"
+          }`}
+        >
           <Lock size={14} className="shrink-0" />
-          <span>Finalized today — editing available until end of day.</span>
+          <span>
+            {autoClosed
+              ? "This consultation was left open past end of day and closed automatically. The EMR is read-only."
+              : "This consultation has been finalized and signed. The EMR is read-only."}
+          </span>
         </div>
       )}
 
@@ -216,6 +256,9 @@ export default async function PatientDetailedEMR({
               )}
               {patient.registeredAt && (
                 <><span className="text-[var(--color-border)]">·</span><span>{patient.registeredAt.name}</span></>
+              )}
+              {doctorName && (
+                <><span className="text-[var(--color-border)]">·</span><span>Dr. {doctorName}</span></>
               )}
               {priorVisits[0] && (
                 <><span className="text-[var(--color-border)]">·</span>
@@ -242,7 +285,8 @@ export default async function PatientDetailedEMR({
           </div>
         </Card>
       ) : (
-        <>
+        <div>
+          <div>
           <Tabs
             tabs={[
               {
@@ -310,7 +354,7 @@ export default async function PatientDetailedEMR({
                 id: "inv",
                 label: "Investigations",
                 icon: <FileText size={14} />,
-                badge: activeVisit.investigationOrders.filter((o) => o.status !== "REVIEWED").length,
+                badge: activeVisit.investigationOrders.filter((o) => !o.resultRef && o.status !== "REVIEWED" && o.status !== "CANCELLED").length,
                 content:
                   user.role === "REFRACTIONIST" ? (
                     <p className="text-sm text-[var(--color-ink-400)]">Not accessible for this role.</p>
@@ -337,7 +381,8 @@ export default async function PatientDetailedEMR({
               <EmrActionBar visit={activeVisit} udid={udid} patientName={patient.name} />
             </div>
           )}
-        </>
+          </div>
+        </div>
       )}
       <PrintFooter
         hospitalName={hospital?.name}

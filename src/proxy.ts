@@ -4,21 +4,32 @@ import { roleHome } from "@/lib/rbac";
 
 export default auth((req) => {
   const isLoggedIn = !!req.auth;
-  const isLoginPage = req.nextUrl.pathname.startsWith("/login");
-  const isLandingPage = req.nextUrl.pathname === "/";
+  const { pathname } = req.nextUrl;
 
-  if (!isLoggedIn && !isLoginPage && !isLandingPage) {
-    const url = new URL("/login", req.nextUrl.origin);
-    return NextResponse.redirect(url);
+  const isLoginPage        = pathname.startsWith("/login");
+  const isLandingPage      = pathname === "/";
+  const isLicensePage      = pathname.startsWith("/license");
+  const isSetupPage        = pathname.startsWith("/setup");
+  const isSetupApi         = pathname.startsWith("/api/setup");
+  const isSubscriptionPage = pathname.startsWith("/subscription");
+  const isRazorpayApi      = pathname.startsWith("/api/razorpay");
+  const isCronApi          = pathname.startsWith("/api/cron");
+
+  if (!isLoggedIn && !isLoginPage && !isLandingPage && !isLicensePage && !isSetupPage && !isSetupApi) {
+    return NextResponse.redirect(new URL("/login", req.nextUrl.origin));
   }
   if (isLoggedIn && isLoginPage) {
     const role = (req.auth?.user as any)?.role;
     const home = role ? roleHome(role) : "/";
     return NextResponse.redirect(new URL(home, req.nextUrl.origin));
   }
-  return NextResponse.next();
+
+  // Forward pathname so Server Components (layout.tsx) can read it
+  const res = NextResponse.next();
+  res.headers.set("x-pathname", pathname);
+  return res;
 });
 
 export const config = {
-  matcher: ["/((?!api/auth|_next/static|_next/image|favicon.ico).*)"],
+  matcher: ["/((?!api/auth|_next/static|_next/image|favicon.ico|landing/).*)"],
 };

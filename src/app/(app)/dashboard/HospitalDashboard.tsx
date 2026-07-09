@@ -1,7 +1,10 @@
 import { prisma } from "@/lib/prisma";
 import { format } from "date-fns";
+import { istTodayRange, toISTWall } from "@/lib/ist";
 import type { SessionUser } from "@/lib/rbac";
+import { getLicenseForHospital } from "@/lib/license";
 import { DashboardClient } from "./DashboardClient";
+import { LicenseBanner } from "./LicenseBanner";
 
 export async function HospitalDashboard({
   user,
@@ -11,8 +14,7 @@ export async function HospitalDashboard({
   hospitalId: string;
 }) {
   const now       = new Date();
-  const dayStart  = new Date(now); dayStart.setHours(0, 0, 0, 0);
-  const dayEnd    = new Date(now); dayEnd.setHours(23, 59, 59, 999);
+  const { dayStart, dayEnd } = istTodayRange();
 
 
   // Run sequentially to avoid exhausting Neon pgbouncer's connection pool
@@ -21,10 +23,12 @@ export async function HospitalDashboard({
     select: { name: true },
   });
 
+  const license = await getLicenseForHospital(hospitalId);
+
   const todayAppts = await prisma.appointment.findMany({
     where: { hospitalId, dateTime: { gte: dayStart, lte: dayEnd } },
     include: {
-      patient: { select: { name: true, udid: true, age: true, sex: true } },
+      patient: { select: { name: true, udid: true, age: true, sex: true, complaint: true } },
       doctor:  { select: { id: true, name: true } },
       visit:   { select: { id: true } },
     },
@@ -74,8 +78,8 @@ export async function HospitalDashboard({
     id:        a.id,
     dateTime:  a.dateTime.toISOString(),
     status:    a.status,
-    visitType: (a as any).visitType ?? "General OPD",
-    patient:   { name: a.patient.name, udid: a.patient.udid, age: a.patient.age, sex: a.patient.sex },
+    complaint:  a.patient.complaint ?? null,
+    patient:   { name: a.patient.name, udid: a.patient.udid ?? "", age: a.patient.age, sex: a.patient.sex },
     doctor:    a.doctor ? { id: a.doctor.id, name: a.doctor.name } : null,
     visitId:   a.visit?.id ?? null,
   }));
@@ -86,7 +90,7 @@ export async function HospitalDashboard({
     surgeryDate: s.surgeryDate.toISOString(),
     rightEye:    s.rightEye,
     leftEye:     s.leftEye,
-    patient:     s.visit.patient,
+    patient:     { ...s.visit.patient, udid: s.visit.patient.udid ?? "" },
     doctor:      s.visit.doctor,
   }));
 
@@ -102,15 +106,18 @@ export async function HospitalDashboard({
   }));
 
   return (
-    <DashboardClient
-      role="HOSPITAL"
-      displayName={hospital?.name ?? "Hospital"}
-      todayLabel={format(now, "EEEE, d MMM yyyy")}
-      appts={appts}
-      surgeries={surgeries}
-      filterOptions={doctors}
-      newEncounterHref="/appointments/book"
-      newEncounterLabel="New Appointment"
-    />
+    <>
+      <LicenseBanner license={license} />
+      <DashboardClient
+        role="HOSPITAL"
+        displayName={hospital?.name ?? "Hospital"}
+        todayLabel={format(toISTWall(now), "EEEE, d MMM yyyy")}
+        appts={appts}
+        surgeries={surgeries}
+        filterOptions={doctors}
+        newEncounterHref="/appointments/book"
+        newEncounterLabel="New Appointment"
+      />
+    </>
   );
 }

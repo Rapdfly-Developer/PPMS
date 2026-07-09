@@ -8,7 +8,7 @@ import { addInvestigationOrder, updateInvestigationStatus, attachResult } from "
 import { format } from "date-fns";
 import {
   Paperclip, ExternalLink, Upload, Download, Eye, Clock,
-  CheckCircle2, XCircle, FlaskConical, Plus, History,
+  CheckCircle2, XCircle, FlaskConical, Plus, History, Camera,
 } from "lucide-react";
 import clsx from "clsx";
 
@@ -225,6 +225,8 @@ function InvestigationCard({
 }: {
   order: any; udid: string; readOnly: boolean; onView: (url: string) => void;
 }) {
+  const isImage = order.resultRef && /\.(jpg|jpeg|png|webp)$/i.test(order.resultRef);
+
   return (
     <Card className="p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -277,6 +279,30 @@ function InvestigationCard({
           )}
         </div>
       </div>
+
+      {/* Inline result preview */}
+      {order.resultRef && (
+        <div className="mt-3 pt-3 border-t border-[var(--color-border)]">
+          <p className="text-[11px] font-semibold text-[var(--color-ink-400)] uppercase tracking-wide mb-2">
+            {order.testName} — Result
+          </p>
+          {isImage ? (
+            <img
+              src={order.resultRef}
+              alt={`${order.testName} result`}
+              className="max-h-52 rounded-xl cursor-pointer object-contain border border-[var(--color-border)]"
+              onClick={() => onView(order.resultRef)}
+            />
+          ) : (
+            <button
+              onClick={() => onView(order.resultRef)}
+              className="flex items-center gap-2 text-xs text-[var(--color-primary-700)] bg-[var(--color-primary-50)] border border-[var(--color-primary-200)] px-3 py-2 rounded-lg hover:bg-[var(--color-primary-100)] transition-colors"
+            >
+              <Paperclip size={13} /> {order.testName} result file — click to view
+            </button>
+          )}
+        </div>
+      )}
     </Card>
   );
 }
@@ -285,7 +311,8 @@ function UploadButton({ orderId, udid }: { orderId: string; udid: string }) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
   const [, startTransition] = useTransition();
-  const inputRef = useRef<HTMLInputElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const cameraRef = useRef<HTMLInputElement>(null);
 
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -306,23 +333,38 @@ function UploadButton({ orderId, udid }: { orderId: string; udid: string }) {
       setError(err.message ?? "Upload failed");
     } finally {
       setUploading(false);
-      if (inputRef.current) inputRef.current.value = "";
+      if (fileRef.current) fileRef.current.value = "";
+      if (cameraRef.current) cameraRef.current.value = "";
     }
   };
 
   return (
-    <div className="flex flex-col items-end gap-0.5">
-      <input ref={inputRef} type="file" accept=".pdf,.jpg,.jpeg,.png,.docx"
+    <div className="flex flex-col items-end gap-1">
+      {/* Hidden inputs */}
+      <input ref={fileRef} type="file" accept=".pdf,.jpg,.jpeg,.png,.docx"
         className="hidden" onChange={handleFile} />
-      <button
-        type="button"
-        disabled={uploading}
-        onClick={() => inputRef.current?.click()}
-        className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border border-dashed border-[var(--color-primary-400)] text-[var(--color-primary-600)] hover:bg-[var(--color-primary-50)] disabled:opacity-50 transition-colors"
-      >
-        {uploading ? <Upload size={13} className="animate-pulse" /> : <Upload size={13} />}
-        {uploading ? "Uploading…" : "Upload Result"}
-      </button>
+      <input ref={cameraRef} type="file" accept="image/*" capture="environment"
+        className="hidden" onChange={handleFile} />
+
+      <div className="flex items-center gap-1.5">
+        <button
+          type="button"
+          disabled={uploading}
+          onClick={() => fileRef.current?.click()}
+          className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border border-dashed border-[var(--color-primary-400)] text-[var(--color-primary-600)] hover:bg-[var(--color-primary-50)] disabled:opacity-50 transition-colors"
+        >
+          {uploading ? <Upload size={13} className="animate-pulse" /> : <Upload size={13} />}
+          {uploading ? "Uploading…" : "Add File"}
+        </button>
+        <button
+          type="button"
+          disabled={uploading}
+          onClick={() => cameraRef.current?.click()}
+          className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border border-dashed border-[var(--color-accent-400)] text-[var(--color-accent-600)] hover:bg-[var(--color-accent-50)] disabled:opacity-50 transition-colors"
+        >
+          <Camera size={13} /> Camera
+        </button>
+      </div>
       {error && <p className="text-[10px] text-red-600">{error}</p>}
     </div>
   );
@@ -335,6 +377,7 @@ function NewInvestigations({
 }: {
   visit: any; udid: string; todayOrders: any[]; onOrdered: () => void;
 }) {
+  const [viewUrl, setViewUrl] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState(Object.keys(INV_CATALOG)[0]);
   const [selected, setSelected] = useState<string[]>([]);
   const [priority, setPriority] = useState("ROUTINE");
@@ -419,9 +462,6 @@ function NewInvestigations({
                   />
                   {item.name}
                 </span>
-                <span className="text-xs font-medium text-[var(--color-ink-400)] shrink-0 ml-2">
-                  ₹{item.price.toLocaleString("en-IN")}
-                </span>
               </label>
             );
           })}
@@ -439,11 +479,6 @@ function NewInvestigations({
           <div className="flex items-center justify-between">
             <span className="text-xs text-[var(--color-ink-400)]">
               {selected.length} test{selected.length !== 1 ? "s" : ""} selected
-              {selected.length > 0 && (
-                <span className="ml-2">
-                  · Est. ₹{allFlat.filter((i) => selected.includes(i.name)).reduce((s, i) => s + i.price, 0).toLocaleString("en-IN")}
-                </span>
-              )}
             </span>
             <button
               disabled={pending || selected.length === 0}
@@ -458,53 +493,51 @@ function NewInvestigations({
 
       {/* Today's placed orders — stay here until EOD */}
       {todayOrders.length > 0 && (
-        <Card className="p-0 overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--color-border)]">
+        <div className="flex flex-col gap-3">
+          {/* Section header */}
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <CheckCircle2 size={15} className="text-[var(--color-success-600)]" />
-              <p className="text-sm font-semibold text-[var(--color-ink-800)]">
-                Today&apos;s Orders
-              </p>
+              <p className="text-sm font-semibold text-[var(--color-ink-800)]">Today&apos;s Orders</p>
               <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-[var(--color-primary-100)] text-[var(--color-primary-700)]">
                 {todayOrders.length}
               </span>
             </div>
-            <span className="text-xs text-[var(--color-ink-400)]">Moves to Previous Investigations at end of day</span>
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-[var(--color-ink-400)]">Moves to Previous at end of day</span>
+            </div>
           </div>
 
-          <table className="w-full text-sm border-collapse">
-            <thead>
-              <tr className="bg-[var(--color-surface-sunken)] text-xs text-[var(--color-ink-500)] uppercase tracking-wide">
-                <th className="text-left px-4 py-2.5 font-medium">Test</th>
-                <th className="text-left px-4 py-2.5 font-medium">Category</th>
-                <th className="text-left px-4 py-2.5 font-medium">Priority</th>
-                <th className="text-left px-4 py-2.5 font-medium">Laterality</th>
-                <th className="text-left px-4 py-2.5 font-medium">Status</th>
-                <th className="text-right px-4 py-2.5 font-medium">Price</th>
-              </tr>
-            </thead>
-            <tbody>
-              {todayOrders.map((o) => (
-                <tr key={o.id} className="border-t border-[var(--color-border)] hover:bg-[var(--color-surface-sunken)]">
-                  <td className="px-4 py-2.5 font-medium text-[var(--color-ink-800)]">{o.testName}</td>
-                  <td className="px-4 py-2.5 text-[var(--color-ink-500)]">{o.category ?? "—"}</td>
-                  <td className="px-4 py-2.5"><PriorityPill priority={o.priority} /></td>
-                  <td className="px-4 py-2.5 text-[var(--color-ink-600)]">{o.laterality || "—"}</td>
-                  <td className="px-4 py-2.5"><StatusBadge status={o.status} resultRef={o.resultRef} /></td>
-                  <td className="px-4 py-2.5 text-right text-[var(--color-ink-600)]">
-                    ₹{(allFlat.find((i) => i.name === o.testName)?.price ?? 0).toLocaleString("en-IN")}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-            <tfoot>
-              <tr className="border-t border-[var(--color-border)] bg-[var(--color-surface-sunken)]">
-                <td colSpan={5} className="px-4 py-2.5 text-xs font-semibold text-[var(--color-ink-500)]">Total Estimate</td>
-                <td className="px-4 py-2.5 text-right text-sm font-bold text-[var(--color-ink-800)]">₹{todayTotal.toLocaleString("en-IN")}</td>
-              </tr>
-            </tfoot>
-          </table>
-        </Card>
+          {/* Order cards with inline result upload + preview */}
+          {todayOrders.map((o) => (
+            <InvestigationCard key={o.id} order={o} udid={udid} readOnly={false} onView={setViewUrl} />
+          ))}
+        </div>
+      )}
+
+      {/* Result viewer modal */}
+      {viewUrl && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setViewUrl(null)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl mx-4 max-h-[90vh] flex flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--color-border)]">
+              <p className="text-sm font-medium text-[var(--color-ink-700)]">Result Viewer</p>
+              <div className="flex items-center gap-2">
+                <a href={viewUrl} download target="_blank" rel="noreferrer"
+                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-[var(--color-border)] hover:border-[var(--color-primary-400)] text-[var(--color-ink-600)] transition-colors">
+                  <Download size={13} /> Download
+                </a>
+                <button onClick={() => setViewUrl(null)} className="text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)] text-lg font-bold px-2">×</button>
+              </div>
+            </div>
+            <div className="flex-1 overflow-auto p-2">
+              {viewUrl.match(/\.(jpg|jpeg|png|webp)$/i) ? (
+                <img src={viewUrl} alt="Result" className="max-w-full mx-auto rounded-lg" />
+              ) : (
+                <iframe src={viewUrl} className="w-full h-[75vh] rounded-lg" title="Result" />
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

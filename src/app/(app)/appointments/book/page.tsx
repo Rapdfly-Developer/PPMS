@@ -34,6 +34,7 @@ export default async function BookAppointmentPage() {
       : { doctorId: user.profileId },
     orderBy: { name: "asc" },
     select: { id: true, name: true, udid: true, age: true, sex: true, mobile: true },
+    // udid mapped below to coerce null → ""
   });
 
   // Doctor availability — keyed by doctorId, includes hospitalId for slot scoping
@@ -64,10 +65,12 @@ export default async function BookAppointmentPage() {
     }
   }
 
+  const patientsMapped = patients.map((p) => ({ ...p, udid: p.udid ?? "" }));
+
   return (
     <BookAppointmentForm
       doctors={doctors}
-      patients={patients}
+      patients={patientsMapped}
       hospitalId={hospitalId}
       availabilityByDoctor={availabilityByDoctor}
       hospitalsByDoctor={hospitalsByDoctor}

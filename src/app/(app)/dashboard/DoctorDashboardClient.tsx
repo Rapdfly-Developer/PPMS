@@ -18,7 +18,7 @@ interface Appt {
   dateTime: string;
   status: string;
   visitType: string;
-  patient: { name: string; udid: string; age: number; sex: string; mobile: string };
+  patient: { name: string; udid: string; uhid: string; age: number; sex: string; mobile: string };
   hospital: { id: string; name: string };
   visitId: string | null;
 }
@@ -29,7 +29,7 @@ interface Surgery {
   surgeryDate: string;
   rightEye: boolean;
   leftEye: boolean;
-  patient: { name: string; udid: string };
+  patient: { name: string; udid: string; uhid: string };
   hospital: { name: string } | null;
 }
 
@@ -38,7 +38,7 @@ interface Admission {
   ward: string;
   reason: string;
   createdAt: string;
-  patient: { name: string; udid: string };
+  patient: { name: string; udid: string; uhid: string };
   hospital: { name: string } | null;
   surgeryType: string | null;
 }
@@ -88,7 +88,7 @@ function ApptRow({ appt }: { appt: Appt }) {
 
   return (
     <Link
-      href={`/patients/${appt.patient.udid}`}
+      href={`/patients/${appt.patient.udid}?returnTo=/dashboard`}
       className="flex items-center gap-3 px-4 py-3 rounded-xl border border-[var(--color-border)] bg-white hover:bg-[var(--color-primary-50)] hover:border-[var(--color-primary-200)] transition-colors group"
     >
       {/* Time */}
@@ -436,10 +436,10 @@ export function DoctorDashboardClient({
                           {format(new Date(a.dateTime), "h:mm a")}
                         </span>
                         <div className="w-px self-stretch bg-[var(--color-border)]" />
-                        <Link href={`/patients/${a.patient.udid}`} className="flex-1 min-w-0 hover:opacity-80 transition-opacity">
+                        <Link href={`/patients/${a.patient.udid}?returnTo=/dashboard`} className="flex-1 min-w-0 hover:opacity-80 transition-opacity">
                           <p className="text-sm font-semibold text-[var(--color-ink-900)] truncate">{a.patient.name}</p>
                           <span className="font-mono text-[10px] text-[#115E59] bg-[#F0F8F6] px-1.5 py-0.5 rounded">
-                            {a.patient.udid}
+                            {a.patient.uhid || a.patient.udid}
                           </span>
                         </Link>
                         <span className={clsx("text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0", cfg.color)}>

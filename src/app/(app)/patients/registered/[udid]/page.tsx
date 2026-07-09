@@ -46,15 +46,29 @@ export default async function RegistrationSuccessPage({
           </div>
         )}
 
-        {/* UHID card */}
-        <div className="rounded-2xl border-2 border-dashed border-[var(--color-border)] bg-[var(--color-surface-sunken)] p-8 text-center">
-          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--color-ink-400)] mb-3">
-            Unique Health ID (UHID)
-          </p>
-          <p className="font-mono text-3xl font-bold tracking-widest text-[var(--color-ink-900)] mb-4">
-            {patient.udid}
-          </p>
-          <CopyUhidButton udid={patient.udid} />
+        {/* ID cards — UDID + UHID */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* UDID — doctor-based */}
+          <div className="rounded-2xl border-2 border-dashed border-[var(--color-primary-300)] bg-[var(--color-primary-50)] p-6 text-center">
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--color-primary-500)] mb-2">
+              UDID (Doctor ID)
+            </p>
+            <p className="font-mono text-xl font-bold tracking-wider text-[var(--color-ink-900)] mb-3">
+              {patient.udid ?? "—"}
+            </p>
+            {patient.udid && <CopyUhidButton udid={patient.udid} label="Copy UDID" />}
+          </div>
+
+          {/* UHID — hospital-based */}
+          <div className="rounded-2xl border-2 border-dashed border-[var(--color-border)] bg-[var(--color-surface-sunken)] p-6 text-center">
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--color-ink-400)] mb-2">
+              UHID (Hospital ID)
+            </p>
+            <p className="font-mono text-xl font-bold tracking-wider text-[var(--color-ink-900)] mb-3">
+              {patient.uhid ?? "—"}
+            </p>
+            {patient.uhid && <CopyUhidButton udid={patient.uhid} label="Copy UHID" />}
+          </div>
         </div>
 
         {/* Patient details */}

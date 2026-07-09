@@ -47,3 +47,4 @@ dev-out.log
 dev-err.log
 
 .vercel
+.env*

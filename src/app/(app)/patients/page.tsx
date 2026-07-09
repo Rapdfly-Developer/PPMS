@@ -72,7 +72,12 @@ export default async function PatientsPage({
 
   const today     = startOfDay(new Date());
   const weekStart = subDays(today, 6);
-  const apptScope = isHospital ? { hospitalId: user.hospitalId! } : {};
+  const doctorId  = user.role === "DOCTOR" ? scopeDoctorId(user) : null;
+  const apptScope = isHospital
+    ? { hospitalId: user.hospitalId! }
+    : doctorId
+    ? { doctorId }
+    : {};
 
   const [
     total,
@@ -129,7 +134,7 @@ export default async function PatientsPage({
       where:   scopeWhere,
       orderBy: { createdAt: "desc" },
       take:    6,
-      select:  { name: true, udid: true, sex: true, age: true, category: true, createdAt: true, mobile: true },
+      select:  { name: true, udid: true, uhid: true, sex: true, age: true, category: true, createdAt: true, mobile: true },
     }),
   ]);
 
@@ -147,7 +152,8 @@ export default async function PatientsPage({
 
   const serialized = patients.map(p => ({
     id:           p.id,
-    udid:         p.udid,
+    udid:         p.udid ?? "",
+    uhid:         p.uhid ?? "",
     name:         p.name,
     age:          p.age,
     sex:          p.sex,
@@ -161,7 +167,7 @@ export default async function PatientsPage({
 
   const recentSerialized = recentReg.map(p => ({
     name:      p.name,
-    udid:      p.udid,
+    udid:      p.udid ?? "",
     sex:       p.sex,
     age:       p.age,
     category:  p.category,

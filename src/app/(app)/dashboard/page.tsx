@@ -1,24 +1,29 @@
-import { requirePermission, scopeDoctorId } from "@/lib/rbac";
+import { requireUser, scopeDoctorId, isCustomRole } from "@/lib/rbac";
+import { autoCloseStaleVisits } from "@/lib/autoClose";
 import { DoctorDashboard } from "./DoctorDashboard";
 import { HospitalDashboard } from "./HospitalDashboard";
 import { RefractionistDashboard } from "./RefractionistDashboard";
+import { StaffDashboard } from "./StaffDashboard";
 
-// Dashboard is a common page reachable by all three roles, but each role
-// sees a different, appropriately scoped view rather than the Doctor's
-// cross-hospital aggregate.
 export default async function DashboardPage({
   searchParams,
 }: {
   searchParams: Promise<{ tab?: string }>;
 }) {
-  const user = await requirePermission("dashboard.view");
+  const user = await requireUser();
   const { tab } = await searchParams;
+
+  // EOD sweep: close IN_PROGRESS visits left over from previous days.
+  await autoCloseStaleVisits();
 
   if (user.role === "HOSPITAL") {
     return <HospitalDashboard user={user} hospitalId={user.hospitalId!} />;
   }
   if (user.role === "REFRACTIONIST") {
     return <RefractionistDashboard user={user} hospitalId={user.hospitalId!} />;
+  }
+  if (isCustomRole(user.role)) {
+    return <StaffDashboard user={user} hospitalId={user.hospitalId!} />;
   }
   return <DoctorDashboard user={user} doctorId={scopeDoctorId(user)} tab={tab} />;
 }

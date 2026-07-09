@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, CalendarDays, Users, Eye,
-  ClipboardList, BedDouble, Settings, Clock,
+  BedDouble, Settings, Clock,
   CalendarClock, BarChart2,
 } from "lucide-react";
 import clsx from "clsx";
@@ -24,7 +24,7 @@ const ALL_NAV: NavItem[] = [
   { href: "/appointments", label: "Appointments",  icon: CalendarDays,    permission: "appointments.view", shortLabel: "Appts",   roles: ["DOCTOR", "HOSPITAL"] },
   { href: "/queue",        label: "Today's Queue", icon: CalendarClock,   permission: "appointments.view", shortLabel: "Queue",   roles: ["REFRACTIONIST"] },
   { href: "/patients",     label: "Patients",      icon: Users,           permission: "patients.view",     shortLabel: "Patients" },
-  { href: "/emr",          label: "EMR",           icon: ClipboardList,   permission: "emr.view",          shortLabel: "EMR",     roles: ["HOSPITAL", "REFRACTIONIST"] },
+  { href: "/follow-ups",   label: "Follow Ups",    icon: CalendarClock,   permission: "patients.view",     shortLabel: "Follow",  roles: ["DOCTOR"] },
   { href: "/ipd",          label: "IPD",           icon: BedDouble,       permission: "ipd.view",          shortLabel: "IPD",     roles: ["DOCTOR"] },
   { href: "/analytics",    label: "Analytics",     icon: BarChart2,       permission: "reports.view",      shortLabel: "Reports"  },
   { href: "/settings",     label: "Settings",      icon: Settings,        permission: "settings.view",     shortLabel: "Settings" },
