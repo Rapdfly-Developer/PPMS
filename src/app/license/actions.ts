@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
 import { resignLicense } from "@/lib/license-sign";
+import { verifyLicenseKeyChecksum } from "@/lib/license-key";
 
 // ── Cookie helpers ────────────────────────────────────────────────────────────
 // ppms_org stores the licensee DOCTOR id — the doctor owns the license.
@@ -115,6 +116,30 @@ export async function activateLicenseKey(data: {
     const license = await prisma.tenantLicense.findUnique({ where: { doctorId: data.orgId } });
     if (!license) return { error: "Doctor not registered." };
 
+    // Grandfather: re-entering the key already on this doctor's record skips
+    // the checksum/registry checks (keys accepted before signing existed).
+    const isOwnExistingKey = license.licenseKey === key;
+
+    if (!isOwnExistingKey) {
+      // Signed-key check: the last group must be the HMAC checksum of the
+      // first three — rejects fabricated keys without touching the registry.
+      if (!verifyLicenseKeyChecksum(key)) {
+        await logEvent(data.orgId, "ACTIVATED", "FAILED", { key, detail: "Checksum verification failed" });
+        return { error: "The entered license key is invalid. Please verify and try again." };
+      }
+
+      // Registry check: the key must have been issued by us and still be unused.
+      const issued = await prisma.issuedLicenseKey.findUnique({ where: { key } });
+      if (!issued || issued.revoked) {
+        await logEvent(data.orgId, "ACTIVATED", "FAILED", { key, detail: issued ? "Key revoked" : "Key not issued" });
+        return { error: "This license key is not recognised. Please contact support." };
+      }
+      if (issued.usedAt && issued.usedByDoctorId !== data.orgId) {
+        await logEvent(data.orgId, "ACTIVATED", "FAILED", { key, detail: "Key already used by another organisation" });
+        return { error: "This license key has already been used. Contact your administrator." };
+      }
+    }
+
     // Prevent reuse of the same key on another org
     const alreadyUsed = await prisma.tenantLicense.findFirst({
       where: { licenseKey: key, doctorId: { not: data.orgId } },
@@ -124,16 +149,20 @@ export async function activateLicenseKey(data: {
       return { error: "This license is registered for a different machine. Contact your administrator." };
     }
 
-    // Activate for 1 year from today
+    // Activation period comes from the issued key (12 months by default)
+    const issuedMonths = isOwnExistingKey
+      ? 12
+      : (await prisma.issuedLicenseKey.findUnique({ where: { key }, select: { months: true } }))?.months ?? 12;
+
     const now = new Date();
     const subscriptionEndsAt = new Date(now);
-    subscriptionEndsAt.setFullYear(subscriptionEndsAt.getFullYear() + 1);
+    subscriptionEndsAt.setMonth(subscriptionEndsAt.getMonth() + issuedMonths);
 
     await prisma.tenantLicense.update({
       where: { doctorId: data.orgId },
       data: {
         licenseKey: key,
-        plan: "YEARLY",
+        plan: issuedMonths >= 12 ? "YEARLY" : "MONTHLY",
         subscriptionStartsAt: now,
         subscriptionEndsAt,
         paymentStatus: "MANUAL",
@@ -143,6 +172,14 @@ export async function activateLicenseKey(data: {
       },
     });
     await resignLicense(data.orgId);
+
+    // Mark the issued key as consumed by this organisation
+    if (!isOwnExistingKey) {
+      await prisma.issuedLicenseKey.update({
+        where: { key },
+        data: { usedAt: now, usedByDoctorId: data.orgId },
+      }).catch(() => {});
+    }
 
     await logEvent(data.orgId, "ACTIVATED", "SUCCESS", { key });
 

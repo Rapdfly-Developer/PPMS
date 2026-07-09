@@ -16,6 +16,8 @@ import {
   createUserDirect,
   getHospitalsWithLicense,
   activateLicenseManual,
+  generateLicenseKeys,
+  listIssuedKeys,
   getDoctorsByHospital,
   exportPatients,
   requestExportOtp,
@@ -33,7 +35,7 @@ import {
   Mail, Phone, MapPin, Save, Upload,
   Globe, HardDrive, BarChart2,
   CreditCard, Monitor, RefreshCw,
-  Stethoscope, Users2, Tag, History, Plug,
+  Stethoscope, Users2, Tag, History, Plug, Key,
 } from "lucide-react";
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -3437,6 +3439,127 @@ function LicensesSection({ hospitals }: { hospitals: { id: string; name: string 
           </tbody>
         </table>
       </div>
+
+      <LicenseKeysCard />
+    </div>
+  );
+}
+
+// ── License key registry (signed keys) ───────────────────────────────────────
+function LicenseKeysCard() {
+  const [months, setMonths]   = React.useState(12);
+  const [count, setCount]     = React.useState(1);
+  const [note, setNote]       = React.useState("");
+  const [minting, setMinting] = React.useState(false);
+  const [fresh, setFresh]     = React.useState<string[]>([]);
+  const [msg, setMsg]         = React.useState<{ type: "ok" | "err"; text: string } | null>(null);
+  const [issued, setIssued]   = React.useState<{
+    key: string; note: string | null; months: number;
+    createdAt: string; usedAt: string | null; usedBy: string | null; revoked: boolean;
+  }[]>([]);
+
+  const reload = React.useCallback(() => {
+    listIssuedKeys().then((res) => { if (res.keys) setIssued(res.keys); });
+  }, []);
+  React.useEffect(() => { reload(); }, [reload]);
+
+  async function handleGenerate() {
+    setMinting(true); setMsg(null); setFresh([]);
+    const res = await generateLicenseKeys(count, months, note);
+    if (res.error) setMsg({ type: "err", text: res.error });
+    else {
+      setFresh(res.keys ?? []);
+      setMsg({ type: "ok", text: `${res.keys?.length ?? 0} key(s) generated.` });
+      setNote("");
+      reload();
+    }
+    setMinting(false);
+  }
+
+  return (
+    <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 space-y-4">
+      <div>
+        <p className="text-sm font-semibold text-[var(--color-ink-700)]">License Keys</p>
+        <p className="text-xs text-[var(--color-ink-400)] mt-0.5">
+          Issue signed keys for customers. Each key is single-use and only keys generated here (or via the CLI) are accepted at activation.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div>
+          <label className="block text-xs font-medium text-[var(--color-ink-600)] mb-1">Validity (months)</label>
+          <input type="number" min={1} max={60} value={months} onChange={(e) => setMonths(Number(e.target.value))}
+            className="w-full rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-sm text-[var(--color-ink-900)]" />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-[var(--color-ink-600)] mb-1">How many</label>
+          <input type="number" min={1} max={20} value={count} onChange={(e) => setCount(Number(e.target.value))}
+            className="w-full rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-sm text-[var(--color-ink-900)]" />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-[var(--color-ink-600)] mb-1">Customer / note (optional)</label>
+          <input type="text" placeholder="e.g. Dr. Kumar — order #142" value={note} onChange={(e) => setNote(e.target.value)}
+            className="w-full rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-sm text-[var(--color-ink-900)]" />
+        </div>
+      </div>
+
+      {msg && (
+        <div className={`text-sm px-3 py-2 rounded-lg ${msg.type === "ok" ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700"}`}>
+          {msg.text}
+        </div>
+      )}
+
+      {fresh.length > 0 && (
+        <div className="rounded-lg bg-emerald-50 border border-emerald-200 p-3 space-y-1.5">
+          {fresh.map((k) => (
+            <div key={k} className="flex items-center justify-between gap-2">
+              <code className="text-sm font-mono font-semibold text-emerald-800">{k}</code>
+              <button onClick={() => navigator.clipboard.writeText(k)}
+                className="text-xs text-emerald-700 hover:underline shrink-0">Copy</button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <button onClick={handleGenerate} disabled={minting}
+        className="flex items-center gap-2 rounded-lg bg-[var(--color-primary-600)] hover:bg-[var(--color-primary-700)] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 transition-colors">
+        {minting ? <><RefreshCw size={14} className="animate-spin" /> Generating…</> : <><Key size={14} /> Generate Keys</>}
+      </button>
+
+      {issued.length > 0 && (
+        <div className="rounded-lg border border-[var(--color-border)] overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-[var(--color-surface-alt)] text-xs font-semibold text-[var(--color-ink-500)] uppercase tracking-wider">
+              <tr>
+                <th className="px-3 py-2 text-left">Key</th>
+                <th className="px-3 py-2 text-left">Months</th>
+                <th className="px-3 py-2 text-left">Note</th>
+                <th className="px-3 py-2 text-left">Issued</th>
+                <th className="px-3 py-2 text-left">Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[var(--color-border)]">
+              {issued.map((k) => (
+                <tr key={k.key} className="bg-white">
+                  <td className="px-3 py-2 font-mono text-xs text-[var(--color-ink-900)] whitespace-nowrap">{k.key}</td>
+                  <td className="px-3 py-2 text-[var(--color-ink-600)]">{k.months}</td>
+                  <td className="px-3 py-2 text-[var(--color-ink-600)]">{k.note ?? "—"}</td>
+                  <td className="px-3 py-2 text-[var(--color-ink-600)] whitespace-nowrap">
+                    {new Date(k.createdAt).toLocaleDateString("en-IN")}
+                  </td>
+                  <td className="px-3 py-2">
+                    {k.revoked
+                      ? <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-800">Revoked</span>
+                      : k.usedAt
+                        ? <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-700">Used{k.usedBy ? ` — ${k.usedBy}` : ""}</span>
+                        : <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">Available</span>}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }

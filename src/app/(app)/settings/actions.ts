@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/rbac";
 import { revalidatePath } from "next/cache";
 import { manualActivateLicense } from "@/lib/license";
+import { generateLicenseKey } from "@/lib/license-key";
 import { sendMail } from "@/lib/mailer";
 import { auth } from "@/auth";
 
@@ -503,6 +504,79 @@ export async function getHospitalsWithLicense(): Promise<{
       paymentStatus: lic.paymentStatus,
     },
   }];
+}
+
+// ── License key registry (signed keys) ──────────────────────────────────────
+
+/** When LICENSE_ADMIN_EMAILS is set (comma-separated), only those emails may
+ *  mint keys; unset, any DOCTOR may (matching activateLicenseManual's trust). */
+function licenseKeyAdminAllowed(email: string | null): boolean {
+  const allow = (process.env.LICENSE_ADMIN_EMAILS ?? "")
+    .split(",")
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean);
+  if (allow.length === 0) return true;
+  return !!email && allow.includes(email.toLowerCase());
+}
+
+export async function generateLicenseKeys(
+  count: number,
+  months: number,
+  note: string,
+): Promise<{ error?: string; keys?: string[] }> {
+  const authUser = await requireRole("DOCTOR");
+  const u = await prisma.user.findUnique({ where: { id: authUser.id }, select: { email: true } });
+  if (!licenseKeyAdminAllowed(u?.email ?? null)) {
+    return { error: "Not authorised to issue license keys." };
+  }
+
+  const n = Math.min(Math.max(Math.trunc(count) || 1, 1), 20);
+  const m = Math.min(Math.max(Math.trunc(months) || 12, 1), 60);
+
+  const keys: string[] = [];
+  for (let i = 0; i < n; i++) {
+    const key = generateLicenseKey();
+    await prisma.issuedLicenseKey.create({ data: { key, months: m, note: note.trim() || null } });
+    keys.push(key);
+  }
+  return { keys };
+}
+
+export async function listIssuedKeys(): Promise<{
+  error?: string;
+  keys?: {
+    key: string; note: string | null; months: number;
+    createdAt: string; usedAt: string | null; usedBy: string | null; revoked: boolean;
+  }[];
+}> {
+  const authUser = await requireRole("DOCTOR");
+  const u = await prisma.user.findUnique({ where: { id: authUser.id }, select: { email: true } });
+  if (!licenseKeyAdminAllowed(u?.email ?? null)) {
+    return { error: "Not authorised to view issued keys." };
+  }
+
+  const rows = await prisma.issuedLicenseKey.findMany({
+    orderBy: { createdAt: "desc" },
+    take: 50,
+  });
+
+  const doctorIds = [...new Set(rows.map((r) => r.usedByDoctorId).filter((x): x is string => !!x))];
+  const doctors = doctorIds.length
+    ? await prisma.doctor.findMany({ where: { id: { in: doctorIds } }, select: { id: true, name: true } })
+    : [];
+  const nameOf = new Map(doctors.map((d) => [d.id, d.name]));
+
+  return {
+    keys: rows.map((r) => ({
+      key: r.key,
+      note: r.note,
+      months: r.months,
+      createdAt: r.createdAt.toISOString(),
+      usedAt: r.usedAt?.toISOString() ?? null,
+      usedBy: r.usedByDoctorId ? (nameOf.get(r.usedByDoctorId) ?? r.usedByDoctorId) : null,
+      revoked: r.revoked,
+    })),
+  };
 }
 
 export async function activateLicenseManual(

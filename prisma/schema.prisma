@@ -183,6 +183,21 @@ model TenantLicense {
   @@index([subscriptionEndsAt])
 }
 
+// Keys minted by the product owner (CLI script or admin card). A key must
+// exist here, unused and unrevoked, before activateLicenseKey accepts it.
+model IssuedLicenseKey {
+  id             String    @id @default(cuid())
+  key            String    @unique
+  note           String?   // customer name / order reference
+  months         Int       @default(12)
+  createdAt      DateTime  @default(now())
+  usedAt         DateTime?
+  usedByDoctorId String?
+  revoked        Boolean   @default(false)
+
+  @@index([usedAt])
+}
+
 // License activation audit trail shown on /license/activate
 model LicenseEvent {
   id          String   @id @default(cuid())
