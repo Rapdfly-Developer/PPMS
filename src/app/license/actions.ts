@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
+import { resignLicense } from "@/lib/license-sign";
 
 // ── Cookie helpers ────────────────────────────────────────────────────────────
 // ppms_org stores the licensee DOCTOR id — the doctor owns the license.
@@ -80,6 +81,7 @@ export async function startTrial(data: {
     await prisma.tenantLicense.create({
       data: { doctorId: doctor.id, trialEndsAt, machineId: data.machineId },
     });
+    await resignLicense(doctor.id);
 
     // Persist licensee identity in cookies (doctor id)
     const jar = await cookies();
@@ -140,6 +142,7 @@ export async function activateLicenseKey(data: {
         ...(data.deviceName ? { deviceName: data.deviceName } : {}),
       },
     });
+    await resignLicense(data.orgId);
 
     await logEvent(data.orgId, "ACTIVATED", "SUCCESS", { key });
 
@@ -185,6 +188,7 @@ export async function reactivateLicense(data: {
         ...(data.deviceName ? { deviceName: data.deviceName } : {}),
       },
     });
+    await resignLicense(data.orgId);
 
     // Rebind the machine cookie
     const jar = await cookies();

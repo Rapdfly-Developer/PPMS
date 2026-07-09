@@ -9,13 +9,14 @@ export default auth((req) => {
   const isLoginPage        = pathname.startsWith("/login");
   const isLandingPage      = pathname === "/";
   const isLicensePage      = pathname.startsWith("/license");
+  const isLicenseApi       = pathname.startsWith("/api/license");
   const isSetupPage        = pathname.startsWith("/setup");
   const isSetupApi         = pathname.startsWith("/api/setup");
   const isSubscriptionPage = pathname.startsWith("/subscription");
   const isRazorpayApi      = pathname.startsWith("/api/razorpay");
   const isCronApi          = pathname.startsWith("/api/cron");
 
-  if (!isLoggedIn && !isLoginPage && !isLandingPage && !isLicensePage && !isSetupPage && !isSetupApi) {
+  if (!isLoggedIn && !isLoginPage && !isLandingPage && !isLicensePage && !isLicenseApi && !isSetupPage && !isSetupApi) {
     return NextResponse.redirect(new URL("/login", req.nextUrl.origin));
   }
   if (isLoggedIn && isLoginPage) {

@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { resignLicense } from "@/lib/license-sign";
 
 // The DOCTOR is the licensee: one license covers the doctor and every
 // hospital they operate. Staff/refractionist access is gated by the license
@@ -129,9 +130,11 @@ export async function createTrialLicense(doctorId: string) {
   const trialEndsAt = new Date();
   trialEndsAt.setDate(trialEndsAt.getDate() + 30);
 
-  return prisma.tenantLicense.create({
+  const license = await prisma.tenantLicense.create({
     data: { doctorId, trialEndsAt },
   });
+  await resignLicense(doctorId);
+  return license;
 }
 
 export async function activateLicense(
@@ -149,7 +152,7 @@ export async function activateLicense(
     subscriptionEndsAt.setFullYear(subscriptionEndsAt.getFullYear() + 1);
   }
 
-  return prisma.tenantLicense.upsert({
+  const license = await prisma.tenantLicense.upsert({
     where: { doctorId },
     update: {
       plan,
@@ -173,6 +176,8 @@ export async function activateLicense(
       razorpaySignature,
     },
   });
+  await resignLicense(doctorId);
+  return license;
 }
 
 /** Manually activate a license without a payment gateway (admin use). */
@@ -186,7 +191,7 @@ export async function manualActivateLicense(
   const subscriptionEndsAt = new Date(now);
   subscriptionEndsAt.setMonth(subscriptionEndsAt.getMonth() + months);
 
-  return prisma.tenantLicense.upsert({
+  const license = await prisma.tenantLicense.upsert({
     where: { doctorId },
     update: {
       plan,
@@ -207,4 +212,6 @@ export async function manualActivateLicense(
       razorpayOrderId: note || null,
     },
   });
+  await resignLicense(doctorId);
+  return license;
 }

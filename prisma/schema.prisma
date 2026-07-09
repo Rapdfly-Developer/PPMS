@@ -172,6 +172,9 @@ model TenantLicense {
   // Reminder tracking (bitfield: 1=7day, 2=3day, 4=1day)
   remindersSent        Int       @default(0)
 
+  // HMAC of core license fields — detects out-of-band tampering
+  signature            String?
+
   isActive             Boolean   @default(true)
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt

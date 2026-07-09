@@ -1,57 +1,19 @@
-import { headers } from "next/headers";
-import { redirect } from "next/navigation";
-import { requireUser, isCustomRole } from "@/lib/rbac";
+import { requireUser } from "@/lib/rbac";
 import { ROLE_DEFAULT_PERMISSIONS } from "@/lib/permissions";
 import { Sidebar, MobileNav } from "@/components/ui/Sidebar";
 import { TopBar } from "@/components/ui/TopBar";
 import { IdleTimeout } from "@/components/ui/IdleTimeout";
 import { AutoRefresh } from "@/components/ui/AutoRefresh";
-import { getLicenseForHospital } from "@/lib/license";
-import { prisma } from "@/lib/prisma";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
+  // requireUser runs the LicenseGuard: an invalid/expired license logs the
+  // user out and redirects to the license page before this layout renders.
   const user = await requireUser();
 
   const permissions: string[] =
     user.permissions && user.permissions.length > 0
       ? user.permissions
       : (ROLE_DEFAULT_PERMISSIONS[user.role] ?? []);
-
-  // ── License gate (all non-doctor users) ─────────────────────────────────
-  if (user.role !== "DOCTOR") {
-    const hdrs = await headers();
-    const pathname = hdrs.get("x-pathname") ?? "";
-    const isSubscriptionPage = pathname.startsWith("/subscription");
-
-    if (!isSubscriptionPage) {
-      let hospitalId: string | null = user.hospitalId ?? null;
-
-      // Fallback: resolve from DB if not in session
-      if (!hospitalId) {
-        if (user.role === "REFRACTIONIST") {
-          const ref = await (prisma.refractionist as any).findUnique({
-            where: { userId: user.id },
-            select: { hospitalId: true },
-          });
-          hospitalId = ref?.hospitalId ?? null;
-        } else {
-          // HOSPITAL + all custom roles use HospitalStaff
-          const staff = await prisma.hospitalStaff.findUnique({
-            where: { userId: user.id },
-            select: { hospitalId: true },
-          });
-          hospitalId = staff?.hospitalId ?? null;
-        }
-      }
-
-      if (hospitalId) {
-        const license = await getLicenseForHospital(hospitalId);
-        if (license.isBlocked) {
-          redirect("/subscription");
-        }
-      }
-    }
-  }
 
   return (
     <div className="min-h-screen flex">
