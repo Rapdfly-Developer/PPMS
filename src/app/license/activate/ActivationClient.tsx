@@ -247,13 +247,13 @@ export function ActivationClient({ initial }: { initial: ActivationPageData }) {
               <p className="text-sm text-slate-500 mb-6">
                 Your PPMS license has been verified and activated. You can now continue to the Login page.
               </p>
-              <button
-                onClick={() => router.push("/login")}
+              <a
+                href="/login"
                 className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold text-white"
                 style={{ background: TEAL, boxShadow: "0 4px 14px rgba(21,122,115,0.35)" }}
               >
                 <ArrowRight size={15} /> Continue to Login
-              </button>
+              </a>
             </div>
           </div>
         )}
