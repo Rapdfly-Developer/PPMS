@@ -501,8 +501,19 @@ export default function LoginPage() {
               </div>
             )}
 
+            {/* Already have a license key */}
+            <div className="mt-4 text-center">
+              <a
+                href="/license/activate"
+                className="text-xs font-semibold hover:underline"
+                style={{ color: "#157A73" }}
+              >
+                Already have a License key? Activate here →
+              </a>
+            </div>
+
             {/* Footer */}
-            <div className="mt-5 pt-4 border-t flex items-center justify-between gap-2" style={{ borderColor: "#F0F4F4" }}>
+            <div className="mt-4 pt-4 border-t flex items-center justify-between gap-2" style={{ borderColor: "#F0F4F4" }}>
               <div className="flex items-center gap-2">
                 <ShieldCheck size={14} style={{ color: "#157A73" }} />
                 <p className="text-xs font-medium" style={{ color: "#8A9AA1" }}>
