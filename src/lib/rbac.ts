@@ -1,12 +1,7 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
-import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import type { Role } from "@/lib/constants";
-import {
-  checkLicenseForUser,
-  isLicenseExemptPath,
-} from "@/lib/license-guard";
 
 export type SessionUser = {
   id: string;
@@ -32,19 +27,6 @@ export async function requireUser(): Promise<SessionUser> {
   const session = await auth();
   if (!session?.user) redirect("/login");
   const user = session.user as unknown as SessionUser;
-
-  // LicenseGuard: block every protected route / action / API when the
-  // licensee's license is no longer valid. Renewal paths stay exempt so the
-  // user can still pay or re-activate.
-  const hdrs = await headers();
-  const pathname = hdrs.get("x-pathname") ?? "";
-  if (!isLicenseExemptPath(pathname)) {
-    const license = await checkLicenseForUser(user);
-    if (license && !license.allowLogin) {
-      // Session protection: log out, clear tokens, land on the license page.
-      redirect(`/api/license/signout?reason=${license.status.toLowerCase()}`);
-    }
-  }
 
   // Always resolve fresh permissions so changes in Role Manager take effect immediately.
   user.permissions = await freshPermissions(user.role);

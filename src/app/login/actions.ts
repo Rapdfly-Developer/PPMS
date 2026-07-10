@@ -4,7 +4,6 @@ import { signIn } from "@/auth";
 import { AuthError } from "next-auth";
 import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
-import { checkLicenseFromCookies } from "@/lib/license-guard";
 
 function getIp(hdrs: Headers) {
   return (
@@ -23,13 +22,6 @@ export async function loginAction(_prev: { error?: string } | undefined, formDat
   const hdrs = await headers();
   const ip = getIp(hdrs);
   const ua = getUA(hdrs);
-
-  // LicenseGuard: never authenticate without a valid license — server-side
-  // check so the login form cannot be bypassed via direct POST.
-  const license = await checkLicenseFromCookies();
-  if (!license.allowLogin) {
-    return { error: license.message };
-  }
 
   try {
     await signIn("credentials", {
