@@ -212,6 +212,7 @@ function HospitalView({ onCreated }: { onCreated: () => void }) {
 type DoctorInfo = {
   id: string; name: string; username: string;
   specialty: string | null; contact: string | null; shortCode: string | null;
+  license: { hasKey: boolean; active: boolean; daysRemaining: number };
 };
 
 function DoctorLoginsView() {
@@ -279,6 +280,25 @@ function DoctorLoginsView() {
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-slate-800">{d.name}</p>
                   <p className="text-xs text-slate-400 mt-0.5">Username: <span className="font-mono text-slate-600">{d.username}</span></p>
+                </div>
+                {/* License status badge */}
+                <div className="shrink-0">
+                  {d.license.active ? (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
+                      Active · {d.license.daysRemaining}d
+                    </span>
+                  ) : d.license.hasKey ? (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-red-50 text-red-600 border border-red-200">
+                      <span className="w-1.5 h-1.5 rounded-full bg-red-500 inline-block" />
+                      Expired
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-500 border border-slate-200">
+                      <span className="w-1.5 h-1.5 rounded-full bg-slate-400 inline-block" />
+                      No License
+                    </span>
+                  )}
                 </div>
                 <div className="flex items-center gap-2">
                   <button
