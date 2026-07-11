@@ -139,7 +139,7 @@ function SlotFormModal({
 
           {/* Preview */}
           {startTime < endTime && totalSlots > 0 && (
-            <div className="rounded-xl bg-[var(--color-surface-sunken)] border border-[var(--color-border)] px-4 py-3 grid grid-cols-3 divide-x divide-[var(--color-border)]">
+            <div className="rounded-xl bg-[var(--color-surface-sunken)] border border-[var(--color-border)] px-4 py-3 grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-[var(--color-border)]">
               {[
                 { val: totalSlots,          label: "Slots" },
                 { val: totalSlots * maxPat, label: "Max Patients" },

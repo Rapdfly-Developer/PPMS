@@ -161,12 +161,12 @@ function DoctorView({ onCreated }: { onCreated: () => void }) {
         <Alert result={state} />
 
         <IconField label="Full Name" name="name" required placeholder="e.g. Dr. Arun Kumar" icon={User} />
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <IconField label="Username" name="username" required placeholder="e.g. dr.arun"
             hint="Lowercase, numbers, dots, dashes." icon={Hash} />
           <IconField label="Password" name="password" type="password" required placeholder="Min. 8 characters" icon={Lock} />
         </div>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <IconField label="Specialty" name="specialty" placeholder="Ophthalmology" icon={Briefcase} />
           <IconField label="Short Code" name="shortCode" placeholder="e.g. ARK"
             hint="2–8 chars. Patient UHID prefix." icon={Hash} />
@@ -196,7 +196,7 @@ function HospitalView({ onCreated }: { onCreated: () => void }) {
       <form action={action} className="flex flex-col gap-4">
         <Alert result={state} />
         <IconField label="Hospital Name" name="name" required placeholder="e.g. City Eye Hospital" icon={Building2} />
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <IconField label="Short Code" name="shortCode" required placeholder="e.g. CEH"
             hint="2–8 chars. Used in UHID prefix." icon={Hash} />
           <IconField label="Contact" name="contact" placeholder="Phone number" icon={Phone} />
@@ -273,7 +273,7 @@ function DoctorLoginsView() {
           {doctors.map((d, i) => (
             <div key={d.id} className="rounded-2xl bg-white border border-slate-200 overflow-hidden">
               {/* Row */}
-              <div className="flex items-center gap-4 px-5 py-4">
+              <div className="flex flex-wrap items-center gap-3 md:gap-4 px-4 md:px-5 py-4">
                 <div className="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center shrink-0 text-sm font-bold text-teal-700">
                   {i + 1}
                 </div>
@@ -323,7 +323,7 @@ function DoctorLoginsView() {
               {/* Edit form */}
               {editingId === d.id && (
                 <div className="px-5 pb-5 pt-1 border-t border-slate-100 flex flex-col gap-3">
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="flex flex-col gap-1">
                       <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest">Name</label>
                       <input value={editForm.name} onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))}
@@ -447,7 +447,7 @@ function HospitalLoginsView() {
           {hospitals.map((h, i) => (
             <div key={h.id} className="rounded-2xl bg-white border border-slate-200 overflow-hidden">
               {/* Hospital header */}
-              <div className="flex items-center gap-4 px-5 py-4 border-b border-slate-100">
+              <div className="flex flex-wrap items-center gap-3 md:gap-4 px-4 md:px-5 py-4 border-b border-slate-100">
                 <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center shrink-0 text-sm font-bold text-blue-700">
                   {i + 1}
                 </div>
@@ -481,8 +481,8 @@ function HospitalLoginsView() {
               {/* Edit form */}
               {editingId === h.id && (
                 <div className="px-5 pb-5 pt-3 border-b border-slate-100 flex flex-col gap-3">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="col-span-2 flex flex-col gap-1">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="sm:col-span-2 flex flex-col gap-1">
                       <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest">Hospital Name</label>
                       <input value={editForm.name} onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))}
                         className="px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-400/30 focus:border-teal-500" />
@@ -497,7 +497,7 @@ function HospitalLoginsView() {
                       <input value={editForm.contact} onChange={(e) => setEditForm((f) => ({ ...f, contact: e.target.value }))}
                         className="px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-400/30 focus:border-teal-500" />
                     </div>
-                    <div className="col-span-2 flex flex-col gap-1">
+                    <div className="sm:col-span-2 flex flex-col gap-1">
                       <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest">Address</label>
                       <input value={editForm.address} onChange={(e) => setEditForm((f) => ({ ...f, address: e.target.value }))}
                         className="px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-400/30 focus:border-teal-500" />
@@ -573,14 +573,14 @@ const NAV = [
 function Sidebar({ active, onNav }: { active: View; onNav: (v: View) => void }) {
   return (
     <aside
-      className="flex flex-col w-56 shrink-0 min-h-full"
+      className="flex flex-col w-full lg:w-56 shrink-0 lg:min-h-full"
       style={{
         background: "linear-gradient(180deg, #0f172a 0%, #0f1a2e 100%)",
         borderRight: "1px solid rgba(255,255,255,0.06)",
       }}
     >
       {/* Logo */}
-      <div className="flex items-center gap-3 px-5 py-6 border-b border-white/10">
+      <div className="flex items-center gap-3 px-5 py-4 lg:py-6 border-b border-white/10">
         <div
           className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
           style={{ background: "linear-gradient(135deg, #0f766e, #14b8a6)" }}
@@ -593,15 +593,15 @@ function Sidebar({ active, onNav }: { active: View; onNav: (v: View) => void }) 
         </div>
       </div>
 
-      {/* Nav */}
-      <nav className="flex flex-col gap-1 px-3 pt-4 flex-1">
+      {/* Nav — horizontal scroll strip on mobile, vertical column on desktop */}
+      <nav className="flex lg:flex-col gap-1 px-3 py-3 lg:pt-4 flex-1 overflow-x-auto lg:overflow-x-visible">
         {NAV.map(({ key, label, icon: Icon }) => {
           const isActive = active === key;
           return (
             <button
               key={key}
               onClick={() => onNav(key)}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 text-left w-full ${
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 text-left whitespace-nowrap shrink-0 lg:w-full ${
                 isActive
                   ? "text-white"
                   : "text-slate-400 hover:text-slate-200 hover:bg-white/5"
@@ -622,7 +622,7 @@ function Sidebar({ active, onNav }: { active: View; onNav: (v: View) => void }) 
       </nav>
 
       {/* Back to Login */}
-      <div className="px-3 pb-6">
+      <div className="px-3 pb-4 lg:pb-6">
         <Link
           href="/login"
           className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs text-slate-500 hover:text-slate-300 hover:bg-white/5 transition-all"
@@ -641,7 +641,7 @@ export default function SetupPage() {
 
   return (
     <div
-      className="min-h-screen flex"
+      className="min-h-screen flex flex-col lg:flex-row"
       style={{ background: "linear-gradient(135deg, #f0fdfa 0%, #e6fffa 30%, #f8fafc 70%, #ffffff 100%)" }}
     >
       {/* Sidebar */}
@@ -650,7 +650,7 @@ export default function SetupPage() {
       {/* Content */}
       <main className="flex-1 flex flex-col">
         {/* Top bar */}
-        <div className="flex items-center px-8 py-4 border-b border-slate-200/60 bg-white/40 backdrop-blur-sm">
+        <div className="flex items-center px-4 md:px-8 py-4 border-b border-slate-200/60 bg-white/40 backdrop-blur-sm">
           <div className="flex items-center gap-2 text-xs text-slate-400">
             <span className="font-semibold text-slate-600">
               {view === "dashboard" ? "Dashboard"
@@ -663,7 +663,7 @@ export default function SetupPage() {
         </div>
 
         {/* Page body */}
-        <div className="flex-1 px-8 py-8 overflow-y-auto">
+        <div className="flex-1 px-4 py-6 md:px-8 md:py-8 overflow-y-auto">
           {view === "dashboard" && (
             <DashboardView onGo={setView} />
           )}

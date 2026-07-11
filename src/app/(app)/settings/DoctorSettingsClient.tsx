@@ -266,7 +266,7 @@ function Sidebar({
   }, [search]);
 
   return (
-    <aside className="w-60 shrink-0 border-r border-[var(--color-border)] bg-white flex flex-col h-full">
+    <aside className="w-full lg:w-60 shrink-0 border-b lg:border-b-0 lg:border-r border-[var(--color-border)] bg-white flex flex-col lg:h-full">
       {/* Settings heading */}
       <div className="px-4 py-4 border-b border-[var(--color-border)]">
         <p className="text-xs font-bold uppercase tracking-widest text-[var(--color-ink-400)]">Settings</p>
@@ -285,8 +285,8 @@ function Sidebar({
         </div>
       </div>
 
-      {/* Nav groups */}
-      <nav className="flex-1 overflow-y-auto py-2 px-2">
+      {/* Nav groups — height-capped scroll box when stacked on mobile */}
+      <nav className="flex-1 overflow-y-auto py-2 px-2 max-h-60 lg:max-h-none">
         {filteredGroups.map((group) => {
           const isOpen = openGroups.has(group.id) || !!search.trim();
           const GroupIcon = group.icon;
@@ -3399,7 +3399,8 @@ function LicensesSection({ hospitals }: { hospitals: { id: string; name: string 
 
       {/* Hospital license status table */}
       <div className="rounded-xl border border-[var(--color-border)] overflow-hidden">
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto">
+        <table className="w-full text-sm min-w-[560px]">
           <thead className="bg-[var(--color-surface-alt)] text-xs font-semibold text-[var(--color-ink-500)] uppercase tracking-wider">
             <tr>
               <th className="px-4 py-3 text-left">Hospital</th>
@@ -3438,6 +3439,7 @@ function LicensesSection({ hospitals }: { hospitals: { id: string; name: string 
             })}
           </tbody>
         </table>
+        </div>
       </div>
 
       <LicenseKeysCard />
@@ -3587,9 +3589,9 @@ export function DoctorSettingsClient({ users, auditLogs, hospitals, loginLogs, p
   };
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] overflow-hidden rounded-xl border border-[var(--color-border)] shadow-sm">
+    <div className="flex flex-col lg:flex-row lg:h-[calc(100vh-4rem)] overflow-hidden rounded-xl border border-[var(--color-border)] shadow-sm">
       <Sidebar active={activeSection} onSelect={setActiveSection} userCount={users.length} />
-      <main className="flex-1 overflow-y-auto bg-[var(--color-surface-sunken)] p-6">
+      <main className="flex-1 overflow-y-auto bg-[var(--color-surface-sunken)] p-4 md:p-6">
         {content()}
       </main>
     </div>

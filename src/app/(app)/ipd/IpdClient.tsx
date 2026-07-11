@@ -133,7 +133,7 @@ export function IpdClient({
       </div>
 
       {/* ── Stat cards ─────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-5 gap-4 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 lg:gap-4 mb-6">
         <StatPill label="Total Beds"      value={TOTAL_BEDS}          color="text-[var(--color-ink-900)]" bg="bg-white border" />
         <StatPill label="Occupied"        value={occupied}            color="text-red-600"                bg="bg-red-50 border-red-100" />
         <StatPill label="Available"       value={available}           color="text-emerald-600"            bg="bg-emerald-50 border-emerald-100" />
