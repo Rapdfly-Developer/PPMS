@@ -147,6 +147,43 @@ export async function checkLicenseFromCookies(): Promise<LicenseGuardResult> {
   return evaluate(license, machineId, { enforceMachine: true });
 }
 
+/** Pre-login check by username: resolves the licensee doctor for the account
+ *  being signed in and validates THAT doctor's license — works on any device,
+ *  unlike the cookie-based check which only knows the activation browser. */
+export async function checkLicenseForLogin(username: string): Promise<LicenseGuardResult | null> {
+  let user;
+  try {
+    user = await prisma.user.findUnique({
+      where: { username },
+      select: {
+        doctor: { select: { id: true } },
+        refractionist: { select: { doctorId: true, hospitalId: true } },
+        hospitalStaff: { select: { hospitalId: true } },
+      },
+    });
+  } catch {
+    return blocked("NONE", "Unable to verify your license right now. Please check your connection and try again.");
+  }
+  // Unknown username — let signIn report invalid credentials instead of
+  // leaking whether the account exists via a license message.
+  if (!user) return null;
+
+  let doctorId = user.doctor?.id ?? user.refractionist?.doctorId ?? null;
+  if (!doctorId) {
+    const hospitalId = user.hospitalStaff?.hospitalId ?? user.refractionist?.hospitalId ?? null;
+    doctorId = hospitalId ? await doctorIdForHospital(hospitalId).catch(() => null) : null;
+  }
+  if (!doctorId) return null; // no license context resolvable — do not block
+
+  let license: LicenseRecord | null;
+  try {
+    license = await prisma.tenantLicense.findUnique({ where: { doctorId } });
+  } catch {
+    return blocked("NONE", "Unable to verify your license right now. Please check your connection and try again.");
+  }
+  return evaluate(license, null, { enforceMachine: false });
+}
+
 // user id → licensee doctor id. Hospital links rarely change; a short TTL
 // keeps the guard down to a single (cached) license query per request.
 const doctorIdCache = new Map<string, { at: number; doctorId: string | null }>();

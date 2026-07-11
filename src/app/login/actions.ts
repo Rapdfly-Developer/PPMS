@@ -4,7 +4,7 @@ import { signIn } from "@/auth";
 import { AuthError } from "next-auth";
 import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
-import { checkLicenseFromCookies } from "@/lib/license-guard";
+import { checkLicenseForLogin } from "@/lib/license-guard";
 
 function getIp(hdrs: Headers) {
   return (
@@ -24,8 +24,8 @@ export async function loginAction(_prev: { error?: string } | undefined, formDat
   const ip = getIp(hdrs);
   const ua = getUA(hdrs);
 
-  const license = await checkLicenseFromCookies();
-  if (!license.allowLogin) {
+  const license = await checkLicenseForLogin(username);
+  if (license && !license.allowLogin) {
     return { error: license.message };
   }
 
