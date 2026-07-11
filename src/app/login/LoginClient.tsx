@@ -375,7 +375,7 @@ export default function LoginPage() {
                         setOtpErrors(prev => ({ ...prev, mobile: errs.mobile }));
                       }}
                       placeholder="10-digit number"
-                      className="flex-1 px-4 py-3 text-sm rounded-xl border-2 outline-none transition-all"
+                      className="flex-1 min-w-0 px-4 py-3 text-sm rounded-xl border-2 outline-none transition-all"
                       style={{
                         borderColor: otpTouched.mobile && otpErrors.mobile ? "#B3261E" : "#E2E6E8",
                         color: "#0F172A", background: "#F9FAFA",
