@@ -28,7 +28,7 @@ export async function HospitalDashboard({
   const todayAppts = await prisma.appointment.findMany({
     where: { hospitalId, dateTime: { gte: dayStart, lte: dayEnd } },
     include: {
-      patient: { select: { name: true, udid: true, age: true, sex: true, complaint: true } },
+      patient: { select: { name: true, udid: true, uhid: true, age: true, sex: true, complaint: true } },
       doctor:  { select: { id: true, name: true } },
       visit:   { select: { id: true } },
     },
@@ -79,7 +79,7 @@ export async function HospitalDashboard({
     dateTime:  a.dateTime.toISOString(),
     status:    a.status,
     complaint:  a.patient.complaint ?? null,
-    patient:   { name: a.patient.name, udid: a.patient.udid ?? "", age: a.patient.age, sex: a.patient.sex },
+    patient:   { name: a.patient.name, udid: a.patient.udid ?? "", uhid: a.patient.uhid ?? "", age: a.patient.age, sex: a.patient.sex },
     doctor:    a.doctor ? { id: a.doctor.id, name: a.doctor.name } : null,
     visitId:   a.visit?.id ?? null,
   }));

@@ -17,7 +17,7 @@ interface Appt {
   dateTime: string;
   status: string;
   complaint: string | null;
-  patient: { name: string; udid: string; age: number; sex: string; mobile?: string };
+  patient: { name: string; udid: string; uhid?: string; age: number; sex: string; mobile?: string };
   hospital?: { id: string; name: string };
   doctor?:   { id: string; name: string } | null;
   visitId:   string | null;
@@ -419,8 +419,15 @@ export function DashboardClient({
                             <div className="w-px self-stretch bg-[var(--color-border)]" />
                             <Link href={`/patients/${a.patient.udid}?returnTo=/dashboard`} className="flex-1 min-w-0 hover:opacity-80 transition-opacity">
                               <p className="text-sm font-semibold text-[var(--color-ink-900)] truncate">{a.patient.name}</p>
-                              <span className="font-mono text-[10px] text-[#115E59] bg-[#F0F8F6] px-1.5 py-0.5 rounded">
-                                {a.patient.udid}
+                              <span className="inline-flex items-center gap-1 flex-wrap">
+                                <span title="UDID (Doctor ID)" className="font-mono text-[10px] text-[#115E59] bg-[#F0F8F6] px-1.5 py-0.5 rounded">
+                                  {a.patient.udid}
+                                </span>
+                                {a.patient.uhid && (
+                                  <span title="UHID (Hospital ID)" className="font-mono text-[10px] text-[#1E4B8F] bg-[#F0F4FA] px-1.5 py-0.5 rounded">
+                                    {a.patient.uhid}
+                                  </span>
+                                )}
                               </span>
                             </Link>
                             <span className={clsx("text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0", cfg.color)}>
