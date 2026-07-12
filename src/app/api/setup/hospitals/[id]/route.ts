@@ -3,7 +3,21 @@ import { prisma } from "@/lib/prisma";
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { name, shortCode, contact, address } = await req.json();
+  const { name, shortCode, contact, address, active } = await req.json();
+
+  // Pure activate/deactivate toggle — flips login access for every
+  // HOSPITAL-role account of this hospital without touching profile fields.
+  if (typeof active === "boolean") {
+    const staff = await prisma.hospitalStaff.findMany({
+      where: { hospitalId: id, user: { role: "HOSPITAL" } },
+      select: { userId: true },
+    });
+    await prisma.user.updateMany({
+      where: { id: { in: staff.map((s) => s.userId) } },
+      data: { active },
+    });
+    return NextResponse.json({ success: true });
+  }
 
   await prisma.hospital.update({
     where: { id },

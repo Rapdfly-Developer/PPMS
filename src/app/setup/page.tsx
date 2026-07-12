@@ -210,10 +210,29 @@ function HospitalView({ onCreated }: { onCreated: () => void }) {
 
 // ── Doctor Logins View ────────────────────────────────────────────────────
 type DoctorInfo = {
-  id: string; name: string; username: string;
+  id: string; name: string; username: string; active: boolean;
   specialty: string | null; contact: string | null; shortCode: string | null;
   license: { hasKey: boolean; active: boolean; daysRemaining: number };
 };
+
+// Shared Active/Inactive pill — click to flip whether the account can log in.
+function ActiveToggle({ active, onToggle }: { active: boolean; onToggle: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      title={active ? "Click to deactivate — blocks login" : "Click to activate — allows login"}
+      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-all ${
+        active
+          ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
+          : "bg-red-50 text-red-600 border-red-200 hover:bg-red-100"
+      }`}
+    >
+      <span className={`w-1.5 h-1.5 rounded-full inline-block ${active ? "bg-emerald-500" : "bg-red-500"}`} />
+      {active ? "Active" : "Inactive"}
+    </button>
+  );
+}
 
 function DoctorLoginsView() {
   const [doctors, setDoctors] = useState<DoctorInfo[]>([]);
@@ -254,6 +273,14 @@ function DoctorLoginsView() {
     setDoctors((prev) => prev.filter((d) => d.id !== id));
   };
 
+  const toggleActive = async (d: DoctorInfo) => {
+    setDoctors((prev) => prev.map((x) => x.id === d.id ? { ...x, active: !d.active } : x));
+    await fetch(`/api/setup/doctors/${d.id}`, {
+      method: "PUT", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ active: !d.active }),
+    }).catch(() => load());
+  };
+
   return (
     <div className="max-w-lg">
       <div className="mb-6">
@@ -281,6 +308,8 @@ function DoctorLoginsView() {
                   <p className="text-sm font-semibold text-slate-800">{d.name}</p>
                   <p className="text-xs text-slate-400 mt-0.5">Username: <span className="font-mono text-slate-600">{d.username}</span></p>
                 </div>
+                {/* Active / Inactive login toggle */}
+                <ActiveToggle active={d.active} onToggle={() => toggleActive(d)} />
                 {/* License status badge */}
                 <div className="shrink-0">
                   {d.license.active ? (
@@ -387,6 +416,7 @@ function DoctorLoginsView() {
 type HospitalInfo = {
   id: string; name: string; shortCode: string; contact: string | null; address?: string | null;
   username: string | null;
+  active: boolean | null; // null = hospital has no login account
   doctors: { name: string; username: string; specialty: string | null }[];
 };
 
@@ -429,6 +459,14 @@ function HospitalLoginsView() {
     setHospitals((prev) => prev.filter((h) => h.id !== id));
   };
 
+  const toggleActive = async (h: HospitalInfo) => {
+    setHospitals((prev) => prev.map((x) => x.id === h.id ? { ...x, active: !h.active } : x));
+    await fetch(`/api/setup/hospitals/${h.id}`, {
+      method: "PUT", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ active: !h.active }),
+    }).catch(() => load());
+  };
+
   return (
     <div className="max-w-xl">
       <div className="mb-6">
@@ -462,6 +500,10 @@ function HospitalLoginsView() {
                     {h.contact && <span className="ml-3">{h.contact}</span>}
                   </p>
                 </div>
+                {/* Active / Inactive login toggle — only when a login account exists */}
+                {h.active !== null && (
+                  <ActiveToggle active={h.active} onToggle={() => toggleActive(h)} />
+                )}
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => editingId === h.id ? setEditingId(null) : startEdit(h)}

@@ -5,7 +5,7 @@ export async function GET() {
   const doctors = await prisma.doctor.findMany({
     select: {
       id: true, name: true, specialty: true, contact: true, shortCode: true,
-      user: { select: { username: true } },
+      user: { select: { username: true, active: true } },
       license: {
         select: { licenseKey: true, subscriptionEndsAt: true, isActive: true },
       },
@@ -24,6 +24,7 @@ export async function GET() {
         : 0;
       return {
         id: d.id, name: d.name, username: d.user.username,
+        active: d.user.active,
         specialty: d.specialty, contact: d.contact, shortCode: d.shortCode,
         license: { hasKey, active, daysRemaining },
       };

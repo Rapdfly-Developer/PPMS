@@ -10,7 +10,7 @@ export async function GET() {
       contact: true,
       staff: {
         where: { user: { role: "HOSPITAL" } },
-        select: { user: { select: { username: true } } },
+        select: { user: { select: { username: true, active: true } } },
       },
       doctorLinks: {
         where: { active: true },
@@ -35,6 +35,7 @@ export async function GET() {
       shortCode: h.shortCode,
       contact: h.contact,
       username: h.staff[0]?.user.username ?? null,
+      active: h.staff[0]?.user.active ?? null,
       doctors: h.doctorLinks.map((l) => ({
         name: l.doctor.name,
         username: l.doctor.user.username,

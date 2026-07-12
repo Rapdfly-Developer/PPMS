@@ -4,7 +4,15 @@ import bcrypt from "bcryptjs";
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { name, specialty, contact, shortCode, password } = await req.json();
+  const { name, specialty, contact, shortCode, password, active } = await req.json();
+
+  // Pure activate/deactivate toggle — flips login access without touching profile fields.
+  if (typeof active === "boolean") {
+    const doctor = await prisma.doctor.findUnique({ where: { id }, select: { userId: true } });
+    if (!doctor) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    await prisma.user.update({ where: { id: doctor.userId }, data: { active } });
+    return NextResponse.json({ success: true });
+  }
 
   await prisma.doctor.update({
     where: { id },
