@@ -19,7 +19,10 @@ export default auth((req) => {
   if (!isLoggedIn && !isLoginPage && !isLandingPage && !isLicensePage && !isLicenseApi && !isSetupPage && !isSetupApi) {
     return NextResponse.redirect(new URL("/login", req.nextUrl.origin));
   }
-  if (isLoggedIn && isLoginPage) {
+  // Redirect logged-in users off the login page — but only for page
+  // navigations. Redirecting the login form's server-action POST corrupts
+  // the action response ("An unexpected response was received from the server").
+  if (isLoggedIn && isLoginPage && req.method === "GET") {
     const role = (req.auth?.user as any)?.role;
     const home = role ? roleHome(role) : "/";
     return NextResponse.redirect(new URL(home, req.nextUrl.origin));
