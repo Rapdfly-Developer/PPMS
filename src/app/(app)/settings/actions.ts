@@ -475,7 +475,14 @@ export async function exportPatients(filters: {
 // The DOCTOR is the licensee: one license covers all their hospitals.
 export async function getHospitalsWithLicense(): Promise<{
   id: string; name: string;
-  license: { status: string; plan: string | null; subscriptionEndsAt: string | null; trialEndsAt: string | null; paymentStatus: string } | null;
+  license: {
+    status: string; plan: string | null;
+    licenseKeyMasked: string | null;
+    subscriptionStartsAt: string | null;
+    subscriptionEndsAt: string | null; trialEndsAt: string | null;
+    remainingDays: number;
+    paymentStatus: string;
+  } | null;
 }[]> {
   const authUser = await requireRole("DOCTOR");
   const doctor = await prisma.doctor.findUnique({
@@ -493,14 +500,27 @@ export async function getHospitalsWithLicense(): Promise<{
   else if (lic.subscriptionEndsAt && lic.subscriptionEndsAt <= now) status = "SUBSCRIPTION_EXPIRED";
   else if (lic.trialEndsAt && lic.trialEndsAt <= now) status = "TRIAL_EXPIRED";
 
+  const expiresAt = lic.subscriptionEndsAt ?? lic.trialEndsAt;
+  const remainingDays = expiresAt && expiresAt > now
+    ? Math.ceil((expiresAt.getTime() - now.getTime()) / 86_400_000)
+    : 0;
+
+  // Mask all but the first two groups: PPMS-XXXX-****-****-****
+  const licenseKeyMasked = lic.licenseKey
+    ? lic.licenseKey.split("-").map((p, i) => (i < 2 ? p : "****")).join("-")
+    : null;
+
   return [{
     id: doctor.id,
     name: `Dr. ${doctor.name} — all hospitals`,
     license: {
       status,
       plan: lic.plan,
+      licenseKeyMasked,
+      subscriptionStartsAt: lic.subscriptionStartsAt?.toISOString() ?? null,
       subscriptionEndsAt: lic.subscriptionEndsAt?.toISOString() ?? null,
       trialEndsAt: lic.trialEndsAt?.toISOString() ?? null,
+      remainingDays,
       paymentStatus: lic.paymentStatus,
     },
   }];

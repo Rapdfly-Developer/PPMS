@@ -15,7 +15,6 @@ import {
   saveHospitalLogo,
   createUserDirect,
   getHospitalsWithLicense,
-  activateLicenseManual,
   generateLicenseKeys,
   listIssuedKeys,
   getDoctorsByHospital,
@@ -3310,142 +3309,81 @@ function HospitalSetupWizard({ assignableRoles = [] }: { assignableRoles?: Assig
 
 type HospitalLicRow = {
   id: string; name: string;
-  license: { status: string; plan: string | null; subscriptionEndsAt: string | null; trialEndsAt: string | null; paymentStatus: string } | null;
+  license: {
+    status: string; plan: string | null;
+    licenseKeyMasked: string | null;
+    subscriptionStartsAt: string | null;
+    subscriptionEndsAt: string | null; trialEndsAt: string | null;
+    remainingDays: number;
+    paymentStatus: string;
+  } | null;
 };
 
-function LicensesSection({ hospitals }: { hospitals: { id: string; name: string }[] }) {
+function LicensesSection() {
   const [rows, setRows] = React.useState<HospitalLicRow[]>([]);
   const [loading, setLoading] = React.useState(true);
-  const [selectedId, setSelectedId] = React.useState("");
-  const [plan, setPlan] = React.useState<"MONTHLY" | "YEARLY">("MONTHLY");
-  const [months, setMonths] = React.useState(1);
-  const [note, setNote] = React.useState("");
-  const [saving, setSaving] = React.useState(false);
-  const [msg, setMsg] = React.useState<{ type: "ok" | "err"; text: string } | null>(null);
 
   React.useEffect(() => {
     getHospitalsWithLicense().then((data) => { setRows(data); setLoading(false); });
   }, []);
 
-  const statusColor: Record<string, string> = {
-    SUBSCRIBED: "bg-emerald-100 text-emerald-800",
-    TRIAL_ACTIVE: "bg-amber-100 text-amber-800",
-    TRIAL_EXPIRED: "bg-red-100 text-red-800",
-    SUBSCRIPTION_EXPIRED: "bg-red-100 text-red-800",
-    NO_LICENSE: "bg-gray-100 text-gray-700",
+  const statusMeta: Record<string, { label: string; cls: string }> = {
+    SUBSCRIBED:           { label: "Active",             cls: "bg-emerald-100 text-emerald-800" },
+    TRIAL_ACTIVE:         { label: "Trial Active",       cls: "bg-amber-100 text-amber-800" },
+    TRIAL_EXPIRED:        { label: "Trial Expired",      cls: "bg-red-100 text-red-800" },
+    SUBSCRIPTION_EXPIRED: { label: "Expired",            cls: "bg-red-100 text-red-800" },
+    NO_LICENSE:           { label: "No License",         cls: "bg-gray-100 text-gray-700" },
   };
 
-  async function handleActivate() {
-    if (!selectedId) { setMsg({ type: "err", text: "Select a hospital." }); return; }
-    setSaving(true); setMsg(null);
-    const res = await activateLicenseManual(selectedId, plan, months, note);
-    if (res.error) { setMsg({ type: "err", text: res.error }); }
-    else {
-      setMsg({ type: "ok", text: "License activated successfully." });
-      const fresh = await getHospitalsWithLicense();
-      setRows(fresh);
-    }
-    setSaving(false);
-  }
+  const fmt = (iso: string | null) =>
+    iso ? new Date(iso).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "—";
+
+  const row = rows[0] ?? null;
+  const lic = row?.license ?? null;
+  const status = lic?.status ?? "NO_LICENSE";
+  const meta = statusMeta[status] ?? statusMeta.NO_LICENSE;
 
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-semibold text-[var(--color-ink-900)]">License Management</h2>
-        <p className="text-sm text-[var(--color-ink-500)] mt-0.5">Manually activate subscriptions for hospitals.</p>
+        <h2 className="text-lg font-semibold text-[var(--color-ink-900)]">License</h2>
+        <p className="text-sm text-[var(--color-ink-500)] mt-0.5">Details of your PPMS license key.</p>
       </div>
 
-      {/* Activate form */}
-      <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 space-y-4">
-        <p className="text-sm font-semibold text-[var(--color-ink-700)]">Activate License</p>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <label className="block text-xs font-medium text-[var(--color-ink-600)] mb-1">Hospital</label>
-            <select value={selectedId} onChange={(e) => setSelectedId(e.target.value)}
-              className="w-full rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-sm text-[var(--color-ink-900)]">
-              <option value="">— Select —</option>
-              {hospitals.map((h) => <option key={h.id} value={h.id}>{h.name}</option>)}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-xs font-medium text-[var(--color-ink-600)] mb-1">Plan</label>
-            <select value={plan} onChange={(e) => setPlan(e.target.value as any)}
-              className="w-full rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-sm text-[var(--color-ink-900)]">
-              <option value="MONTHLY">Monthly (₹999)</option>
-              <option value="YEARLY">Yearly (₹9,999)</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-xs font-medium text-[var(--color-ink-600)] mb-1">Duration (months)</label>
-            <input type="number" min={1} max={24} value={months} onChange={(e) => setMonths(Number(e.target.value))}
-              className="w-full rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-sm text-[var(--color-ink-900)]" />
-          </div>
-
-          <div>
-            <label className="block text-xs font-medium text-[var(--color-ink-600)] mb-1">Note / Reference (optional)</label>
-            <input type="text" placeholder="e.g. UPI txn ID" value={note} onChange={(e) => setNote(e.target.value)}
-              className="w-full rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-sm text-[var(--color-ink-900)]" />
-          </div>
-        </div>
-
-        {msg && (
-          <div className={`text-sm px-3 py-2 rounded-lg ${msg.type === "ok" ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700"}`}>
-            {msg.text}
-          </div>
+      {/* License key details */}
+      <div className="rounded-xl border border-[var(--color-border)] bg-white p-5">
+        {loading ? (
+          <p className="text-sm text-[var(--color-ink-400)] py-4 text-center">Loading…</p>
+        ) : !row ? (
+          <p className="text-sm text-[var(--color-ink-400)] py-4 text-center">No license found.</p>
+        ) : (
+          <>
+            <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
+              <p className="text-sm font-semibold text-[var(--color-ink-700)]">License Details</p>
+              <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold ${meta.cls}`}>
+                {meta.label}
+              </span>
+            </div>
+            <dl className="divide-y divide-[var(--color-border)] text-sm">
+              {[
+                { label: "Licensed To",    value: row.name },
+                { label: "License Key",    value: lic?.licenseKeyMasked ?? "—", mono: true },
+                { label: "Plan",           value: lic?.plan === "YEARLY" ? "Annual" : lic?.plan === "MONTHLY" ? "Monthly" : lic?.plan ?? "—" },
+                { label: "Activation Date", value: fmt(lic?.subscriptionStartsAt ?? null) },
+                { label: "Expiry Date",    value: fmt(lic?.subscriptionEndsAt ?? lic?.trialEndsAt ?? null) },
+                { label: "Days Remaining", value: lic ? `${lic.remainingDays} day${lic.remainingDays === 1 ? "" : "s"}` : "—" },
+                { label: "Payment",        value: lic?.paymentStatus ?? "—" },
+              ].map((item) => (
+                <div key={item.label} className="flex items-center justify-between gap-4 py-2.5">
+                  <dt className="text-[var(--color-ink-500)]">{item.label}</dt>
+                  <dd className={`text-[var(--color-ink-900)] font-medium text-right ${item.mono ? "font-mono text-xs" : ""}`}>
+                    {item.value}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </>
         )}
-
-        <button onClick={handleActivate} disabled={saving}
-          className="flex items-center gap-2 rounded-lg bg-[var(--color-primary-600)] hover:bg-[var(--color-primary-700)] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 transition-colors">
-          {saving ? <><RefreshCw size={14} className="animate-spin" /> Activating…</> : "Activate License"}
-        </button>
-      </div>
-
-      {/* Hospital license status table */}
-      <div className="rounded-xl border border-[var(--color-border)] overflow-hidden">
-        <div className="overflow-x-auto">
-        <table className="w-full text-sm min-w-[560px]">
-          <thead className="bg-[var(--color-surface-alt)] text-xs font-semibold text-[var(--color-ink-500)] uppercase tracking-wider">
-            <tr>
-              <th className="px-4 py-3 text-left">Hospital</th>
-              <th className="px-4 py-3 text-left">Status</th>
-              <th className="px-4 py-3 text-left">Plan</th>
-              <th className="px-4 py-3 text-left">Expires</th>
-              <th className="px-4 py-3 text-left">Payment</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-[var(--color-border)]">
-            {loading && (
-              <tr><td colSpan={5} className="px-4 py-6 text-center text-[var(--color-ink-400)]">Loading…</td></tr>
-            )}
-            {!loading && rows.length === 0 && (
-              <tr><td colSpan={5} className="px-4 py-6 text-center text-[var(--color-ink-400)]">No hospitals found.</td></tr>
-            )}
-            {rows.map((row) => {
-              const lic = row.license;
-              const status = lic?.status ?? "NO_LICENSE";
-              const expiresAt = lic?.subscriptionEndsAt ?? lic?.trialEndsAt;
-              return (
-                <tr key={row.id} className="bg-white hover:bg-[var(--color-surface)]">
-                  <td className="px-4 py-3 font-medium text-[var(--color-ink-900)]">{row.name}</td>
-                  <td className="px-4 py-3">
-                    <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold ${statusColor[status] ?? statusColor.NO_LICENSE}`}>
-                      {status.replace("_", " ")}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-[var(--color-ink-600)]">{lic?.plan ?? "—"}</td>
-                  <td className="px-4 py-3 text-[var(--color-ink-600)]">
-                    {expiresAt ? new Date(expiresAt).toLocaleDateString("en-IN") : "—"}
-                  </td>
-                  <td className="px-4 py-3 text-[var(--color-ink-600)]">{lic?.paymentStatus ?? "—"}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-        </div>
       </div>
 
       <LicenseKeysCard />
@@ -3589,7 +3527,7 @@ export function DoctorSettingsClient({ users, auditLogs, hospitals, loginLogs, p
       case "export":       return <ExportSection hospitals={hospitals} />;
       case "logs":              return <LogsSection loginLogs={loginLogs} />;
       case "patient-appt-logs": return <PatientApptLogsSection logs={patientApptLogs} />;
-      case "licenses":     return <LicensesSection hospitals={hospitals} />;
+      case "licenses":     return <LicensesSection />;
       case "integrations": return <IntegrationsSection />;
     }
   };
