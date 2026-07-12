@@ -33,7 +33,7 @@ export default async function BookAppointmentPage() {
       ? { registeredAtId: hospitalId }
       : { doctorId: user.profileId },
     orderBy: { name: "asc" },
-    select: { id: true, name: true, udid: true, uhid: true, age: true, sex: true, mobile: true },
+    select: { id: true, name: true, udid: true, uhid: true, age: true, sex: true, mobile: true, registeredAtId: true },
     // udid/uhid mapped below to coerce null → ""
   });
 

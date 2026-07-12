@@ -27,7 +27,7 @@ const FALLBACK_SLOTS = [
 
 type AvailSlot = { weekday: number; startTime: string; endTime: string; slotMins: number; hospitalId: string };
 type Doctor  = { id: string; name: string; specialty: string };
-type Patient = { id: string; name: string; udid: string; uhid: string; age: number | null; sex: string; mobile: string };
+type Patient = { id: string; name: string; udid: string; uhid: string; age: number | null; sex: string; mobile: string; registeredAtId: string | null };
 type Hospital = { id: string; name: string };
 
 function to12h(t: string): string {
@@ -109,6 +109,16 @@ export function BookAppointmentForm({
     setTime("09:00");
     const firstHosp = (hospitalsByDoctor[id] ?? [])[0]?.id ?? "";
     setSelectedHospitalId(firstHosp);
+  }
+
+  // Selecting a patient auto-picks the hospital where they are registered
+  // (doctor bookings only — hospital logins are already scoped to one hospital).
+  function selectPatient(p: Patient) {
+    setSelectedPatient(p);
+    if (!hospitalId && p.registeredAtId) {
+      const canUse = (hospitalsByDoctor[doctorId] ?? []).some((h) => h.id === p.registeredAtId);
+      if (canUse) setSelectedHospitalId(p.registeredAtId);
+    }
   }
 
   const todayStr = new Date().toISOString().split("T")[0];
@@ -413,7 +423,7 @@ export function BookAppointmentForm({
                       <li key={p.id}>
                         <button
                           type="button"
-                          onClick={() => setSelectedPatient(p)}
+                          onClick={() => selectPatient(p)}
                           className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-[var(--color-primary-50)] transition-colors"
                         >
                           <div className="flex items-center gap-3">
