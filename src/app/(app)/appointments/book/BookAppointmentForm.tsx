@@ -27,7 +27,7 @@ const FALLBACK_SLOTS = [
 
 type AvailSlot = { weekday: number; startTime: string; endTime: string; slotMins: number; hospitalId: string };
 type Doctor  = { id: string; name: string; specialty: string };
-type Patient = { id: string; name: string; udid: string; age: number | null; sex: string; mobile: string };
+type Patient = { id: string; name: string; udid: string; uhid: string; age: number | null; sex: string; mobile: string };
 type Hospital = { id: string; name: string };
 
 function to12h(t: string): string {
@@ -158,6 +158,7 @@ export function BookAppointmentForm({
         (p) =>
           p.name.toLowerCase().includes(search.toLowerCase()) ||
           p.udid.toLowerCase().includes(search.toLowerCase()) ||
+          p.uhid.toLowerCase().includes(search.toLowerCase()) ||
           p.mobile.includes(search)
       )
     : patients.slice(0, 8);
@@ -358,8 +359,15 @@ export function BookAppointmentForm({
                   </div>
                   <div>
                     <p className="text-sm font-semibold text-[var(--color-ink-900)]">{selectedPatient.name}</p>
-                    <div className="flex items-center gap-3 mt-0.5">
-                      <span className="text-xs text-[var(--color-ink-400)]">{selectedPatient.udid}</span>
+                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                      <span title="UDID (Doctor ID)" className="font-mono text-[10px] text-[#115E59] bg-[#F0F8F6] px-1.5 py-0.5 rounded">
+                        {selectedPatient.udid}
+                      </span>
+                      {selectedPatient.uhid && (
+                        <span title="UHID (Hospital ID)" className="font-mono text-[10px] text-[#1E4B8F] bg-[#F0F4FA] px-1.5 py-0.5 rounded">
+                          {selectedPatient.uhid}
+                        </span>
+                      )}
                       <span className="text-xs text-[var(--color-ink-400)]">
                         {selectedPatient.age ?? "?"}y · {selectedPatient.sex.charAt(0)}
                       </span>
@@ -414,9 +422,11 @@ export function BookAppointmentForm({
                             </div>
                             <div>
                               <p className="text-sm font-medium text-[var(--color-ink-900)]">{p.name}</p>
-                              <div className="flex items-center gap-2 mt-0.5">
-                                <span className="text-xs text-[var(--color-ink-400)]">{p.udid}</span>
-                                <span className="text-[var(--color-ink-300)] text-xs">·</span>
+                              <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                                <span title="UDID (Doctor ID)" className="font-mono text-[10px] text-[#115E59] bg-[#F0F8F6] px-1.5 py-0.5 rounded">{p.udid}</span>
+                                {p.uhid && (
+                                  <span title="UHID (Hospital ID)" className="font-mono text-[10px] text-[#1E4B8F] bg-[#F0F4FA] px-1.5 py-0.5 rounded">{p.uhid}</span>
+                                )}
                                 <span className="text-xs text-[var(--color-ink-400)]">{p.age ?? "?"}y {p.sex.charAt(0)}</span>
                                 <span className="text-[var(--color-ink-300)] text-xs">·</span>
                                 <span className="text-xs text-[var(--color-ink-400)]">{p.mobile}</span>
