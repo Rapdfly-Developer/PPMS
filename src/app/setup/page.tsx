@@ -386,6 +386,7 @@ function DoctorLoginsView() {
 // ── Hospital Logins View ──────────────────────────────────────────────────
 type HospitalInfo = {
   id: string; name: string; shortCode: string; contact: string | null; address?: string | null;
+  username: string | null;
   doctors: { name: string; username: string; specialty: string | null }[];
 };
 
@@ -453,6 +454,9 @@ function HospitalLoginsView() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-slate-800">{h.name}</p>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Username: <span className="font-mono text-slate-600">{h.username ?? "—"}</span>
+                  </p>
                   <p className="text-xs text-slate-400 mt-0.5">
                     Code: <span className="font-mono text-slate-600">{h.shortCode}</span>
                     {h.contact && <span className="ml-3">{h.contact}</span>}
