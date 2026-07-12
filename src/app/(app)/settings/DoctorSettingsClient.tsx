@@ -126,6 +126,12 @@ const SIDEBAR_GROUPS: {
     ],
   },
   {
+    id: "license-group", label: "License", icon: Key,
+    items: [
+      { id: "licenses", label: "License", icon: Key },
+    ],
+  },
+  {
     id: "advanced", label: "Advanced", icon: Settings2,
     items: [
       { id: "export",            label: "Data Export",              icon: Download  },
