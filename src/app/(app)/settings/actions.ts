@@ -7,6 +7,7 @@ import { manualActivateLicense } from "@/lib/license";
 import { generateLicenseKey } from "@/lib/license-key";
 import { sendMail } from "@/lib/mailer";
 import { auth } from "@/auth";
+import { generateUniqueShortCode } from "@/lib/doctor-utils";
 
 // ── Hospital settings (HOSPITAL role) ──────────────────────────────────────
 
@@ -275,7 +276,7 @@ export async function saveDoctorProfile(
   }
 ): Promise<{ error?: string }> {
   const user = await requireRole("DOCTOR");
-  const doctor = await prisma.doctor.findUnique({ where: { userId: user.id }, select: { id: true } });
+  const doctor = await prisma.doctor.findUnique({ where: { userId: user.id }, select: { id: true, name: true, shortCode: true } });
   if (!doctor) return { error: "Doctor profile not found." };
 
   const name = data.name?.trim() || undefined;
@@ -283,11 +284,17 @@ export async function saveDoctorProfile(
     return { error: "Name must be at least 2 characters." };
   }
 
+  // Auto-assign short code if doctor doesn't have one yet
+  const autoShortCode = !doctor.shortCode
+    ? await generateUniqueShortCode(name ?? doctor.name)
+    : undefined;
+
   try {
     await prisma.doctor.update({
       where: { id: doctor.id },
       data: {
         ...(name !== undefined ? { name } : {}),
+        ...(autoShortCode ? { shortCode: autoShortCode } : {}),
         ...(data.specialty !== undefined ? { specialty: data.specialty } : {}),
         ...(data.contact !== undefined ? { contact: data.contact } : {}),
         ...(data.credentials !== undefined ? { credentials: data.credentials } : {}),

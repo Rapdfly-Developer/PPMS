@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
 import { resignLicense } from "@/lib/license-sign";
 import { verifyLicenseKeyChecksum } from "@/lib/license-key";
+import { generateUniqueShortCode } from "@/lib/doctor-utils";
 
 // ── Cookie helpers ────────────────────────────────────────────────────────────
 // ppms_org stores the licensee DOCTOR id — the doctor owns the license.
@@ -71,9 +72,10 @@ export async function startTrial(data: {
       data: { username, passwordHash, role: "DOCTOR", email: data.email.trim() },
     });
 
-    // Create doctor profile
+    // Create doctor profile with auto-generated short code
+    const shortCode = await generateUniqueShortCode(data.adminName.trim());
     const doctor = await prisma.doctor.create({
-      data: { userId: user.id, name: data.adminName.trim(), email: data.email.trim(), contact: data.mobile.replace(/\D/g, "") },
+      data: { userId: user.id, name: data.adminName.trim(), email: data.email.trim(), contact: data.mobile.replace(/\D/g, ""), shortCode },
     });
 
     // Create 30-day trial license — owned by the DOCTOR
