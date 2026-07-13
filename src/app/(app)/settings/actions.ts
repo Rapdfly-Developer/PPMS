@@ -270,18 +270,13 @@ export async function toggleUserActive(userId: string, active: boolean): Promise
 
 export async function saveDoctorProfile(
   data: {
-    name?: string; shortCode?: string; specialty?: string; contact?: string; credentials?: string;
+    name?: string; specialty?: string; contact?: string; credentials?: string;
     email?: string; experience?: string; medicalRegNumber?: string; qualifications?: string; signatureUrl?: string;
   }
 ): Promise<{ error?: string }> {
   const user = await requireRole("DOCTOR");
   const doctor = await prisma.doctor.findUnique({ where: { userId: user.id }, select: { id: true } });
   if (!doctor) return { error: "Doctor profile not found." };
-
-  const shortCode = data.shortCode?.trim().toUpperCase().replace(/[^A-Z0-9]/g, "") || undefined;
-  if (shortCode && (shortCode.length < 2 || shortCode.length > 6)) {
-    return { error: "Short code must be 2–6 letters (A–Z, 0–9)." };
-  }
 
   const name = data.name?.trim() || undefined;
   if (name !== undefined && name.length < 2) {
@@ -293,7 +288,6 @@ export async function saveDoctorProfile(
       where: { id: doctor.id },
       data: {
         ...(name !== undefined ? { name } : {}),
-        ...(shortCode !== undefined ? { shortCode } : {}),
         ...(data.specialty !== undefined ? { specialty: data.specialty } : {}),
         ...(data.contact !== undefined ? { contact: data.contact } : {}),
         ...(data.credentials !== undefined ? { credentials: data.credentials } : {}),

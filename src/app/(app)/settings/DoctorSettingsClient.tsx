@@ -2311,7 +2311,7 @@ function ProfileSection({ doctor }: { doctor: DoctorProfile | null }) {
     setSaving(true);
     setMsg(null);
     const res = await saveDoctorProfile({
-      name, shortCode, specialty, contact, credentials,
+      name, specialty, contact, credentials,
       email, experience, medicalRegNumber, qualifications, signatureUrl,
     });
     setSaving(false);
@@ -2347,16 +2347,12 @@ function ProfileSection({ doctor }: { doctor: DoctorProfile | null }) {
               <INP value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Dr. Sai Dharshan" />
             </div>
             <div>
-              <LBL>Short Code <span className="text-[var(--color-primary-600)]">*</span></LBL>
-              <INP
-                value={shortCode}
-                maxLength={6}
-                onChange={(e) => setShortCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))}
-                placeholder="e.g. DRS"
-                className="font-mono uppercase"
-              />
+              <LBL>Short Code</LBL>
+              <div className="flex items-center gap-2 px-3 py-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] text-sm font-mono text-[var(--color-ink-700)]">
+                {shortCode || <span className="text-[var(--color-ink-400)]">Not set</span>}
+              </div>
               <p className="text-[10px] text-[var(--color-ink-400)] mt-1">
-                2–6 letters. New patients get UDID like <span className="font-mono text-[var(--color-primary-600)]">PPMS-{shortCode || "DRS"}-0001</span>
+                Auto-assigned at account creation. New patients get UDID like <span className="font-mono text-[var(--color-primary-600)]">PPMS-{shortCode || "????"}-0001</span>
               </p>
             </div>
             <div>

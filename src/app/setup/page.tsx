@@ -166,11 +166,7 @@ function DoctorView({ onCreated }: { onCreated: () => void }) {
             hint="Lowercase, numbers, dots, dashes." icon={Hash} />
           <IconField label="Password" name="password" type="password" required placeholder="Min. 8 characters" icon={Lock} />
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <IconField label="Specialty" name="specialty" placeholder="Ophthalmology" icon={Briefcase} />
-          <IconField label="Short Code" name="shortCode" placeholder="e.g. ARK"
-            hint="2–8 chars. Patient UHID prefix." icon={Hash} />
-        </div>
+        <IconField label="Specialty" name="specialty" placeholder="Ophthalmology" icon={Briefcase} />
         <IconField label="Contact" name="contact" placeholder="Phone number" icon={Phone} />
 
         <SubmitBtn pending={pending} label="Create Doctor Account" loadingLabel="Creating…" />
