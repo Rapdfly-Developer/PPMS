@@ -23,7 +23,7 @@ import {
   verifyExportOtp,
 } from "@/app/(app)/settings/actions";
 import { createUser } from "@/app/(app)/users/actions";
-import { saveRolePermissions } from "@/app/(app)/settings/roles/actions";
+import { saveRolePermissions, createRole } from "@/app/(app)/settings/roles/actions";
 import { PERMISSION_GROUPS } from "@/app/(app)/settings/roles/permission-groups";
 import {
   Users, Shield, Building2, Calendar, Bell,
@@ -2899,7 +2899,13 @@ function HospitalSetupWizard({ assignableRoles = [] }: { assignableRoles?: Assig
       if (r.error) { setCreateError(r.error); setCreating(false); return; }
     }
 
+    const existingRoleNames = new Set(assignableRoles.map((r) => r.name));
+    const systemRoles = new Set(["DOCTOR", "HOSPITAL", "REFRACTIONIST"]);
     for (const role of rolesUsed) {
+      if (!systemRoles.has(role) && !existingRoleNames.has(role)) {
+        const label = role.charAt(0) + role.slice(1).toLowerCase().replace(/_/g, " ");
+        await createRole({ name: role, label, color: "#6366f1" });
+      }
       await saveRolePermissions(role, getPerms(role));
     }
 
