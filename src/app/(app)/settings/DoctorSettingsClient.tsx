@@ -1020,7 +1020,7 @@ function RolesSection() {
           </p>
         </div>
         <Link
-          href="/settings/roles"
+          href="/settings/roles?returnTo=/settings"
           className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[var(--color-primary-600)] text-white text-sm font-semibold hover:bg-[var(--color-primary-700)] transition-colors"
         >
           <Shield size={15} />
