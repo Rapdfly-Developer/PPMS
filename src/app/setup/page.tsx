@@ -4,14 +4,14 @@ import { useActionState, useEffect, useState, useMemo } from "react";
 import {
   Building2, Eye, CheckCircle2, AlertCircle,
   User, Lock, Phone, Hash, MapPin, Briefcase, ArrowRight,
-  Stethoscope, LayoutDashboard, ArrowLeft, KeyRound, UserCheck,
-  Pencil, Trash2, X, Check, Key, ShieldCheck,
+  Stethoscope, LayoutDashboard, ArrowLeft, KeyRound, Key, ShieldCheck,
 } from "lucide-react";
 import { createDoctor, createHospital } from "./actions";
 import Link from "next/link";
 import { LicenseManagementView } from "./LicenseManagementView";
 import { SetupDashboard } from "./SetupDashboard";
 import { DoctorManagementView } from "./DoctorManagementView";
+import { HospitalManagementView } from "./HospitalManagementView";
 
 type View = "dashboard" | "doctor" | "hospital" | "doctor-logins" | "hospital-logins" | "license";
 
@@ -200,220 +200,6 @@ function HospitalView({ onCreated }: { onCreated: () => void }) {
   );
 }
 
-// Shared Active/Inactive pill — click to flip whether the account can log in.
-function ActiveToggle({ active, onToggle }: { active: boolean; onToggle: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onToggle}
-      title={active ? "Click to deactivate — blocks login" : "Click to activate — allows login"}
-      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-all ${
-        active
-          ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
-          : "bg-red-50 text-red-600 border-red-200 hover:bg-red-100"
-      }`}
-    >
-      <span className={`w-1.5 h-1.5 rounded-full inline-block ${active ? "bg-emerald-500" : "bg-red-500"}`} />
-      {active ? "Active" : "Inactive"}
-    </button>
-  );
-}
-
-// ── Hospital Logins View ──────────────────────────────────────────────────
-type HospitalInfo = {
-  id: string; name: string; shortCode: string; contact: string | null; address?: string | null;
-  username: string | null;
-  active: boolean | null; // null = hospital has no login account
-  doctors: { name: string; username: string; specialty: string | null }[];
-};
-
-function HospitalLoginsView() {
-  const [hospitals, setHospitals] = useState<HospitalInfo[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState({ name: "", shortCode: "", contact: "", address: "" });
-  const [saving, setSaving] = useState(false);
-
-  const load = () => {
-    fetch("/api/setup/hospitals-with-doctors")
-      .then((r) => r.json())
-      .then((d) => { setHospitals(d); setLoading(false); })
-      .catch(() => setLoading(false));
-  };
-  useEffect(() => { load(); }, []);
-
-  const startEdit = (h: HospitalInfo) => {
-    setDeletingId(null);
-    setEditingId(h.id);
-    setEditForm({ name: h.name, shortCode: h.shortCode, contact: h.contact || "", address: h.address || "" });
-  };
-
-  const saveEdit = async (id: string) => {
-    setSaving(true);
-    await fetch(`/api/setup/hospitals/${id}`, {
-      method: "PUT", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(editForm),
-    });
-    setSaving(false);
-    setEditingId(null);
-    load();
-  };
-
-  const confirmDelete = async (id: string) => {
-    await fetch(`/api/setup/hospitals/${id}`, { method: "DELETE" });
-    setDeletingId(null);
-    setHospitals((prev) => prev.filter((h) => h.id !== id));
-  };
-
-  const toggleActive = async (h: HospitalInfo) => {
-    setHospitals((prev) => prev.map((x) => x.id === h.id ? { ...x, active: !h.active } : x));
-    await fetch(`/api/setup/hospitals/${h.id}`, {
-      method: "PUT", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ active: !h.active }),
-    }).catch(() => load());
-  };
-
-  return (
-    <div className="max-w-xl">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-slate-900">Hospital's Login</h1>
-        <p className="text-sm text-slate-500 mt-1.5">All registered hospitals and the doctors linked to each.</p>
-      </div>
-
-      {loading ? (
-        <p className="text-sm text-slate-400">Loading…</p>
-      ) : hospitals.length === 0 ? (
-        <div className="flex items-center gap-3 px-5 py-4 rounded-2xl bg-amber-50 border border-amber-200">
-          <Building2 size={16} className="text-amber-600 shrink-0" />
-          <p className="text-sm text-amber-800">No hospitals created yet.</p>
-        </div>
-      ) : (
-        <div className="flex flex-col gap-4">
-          {hospitals.map((h, i) => (
-            <div key={h.id} className="rounded-2xl bg-white border border-slate-200 overflow-hidden">
-              {/* Hospital header */}
-              <div className="flex flex-wrap items-center gap-3 md:gap-4 px-4 md:px-5 py-4 border-b border-slate-100">
-                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center shrink-0 text-sm font-bold text-blue-700">
-                  {i + 1}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-slate-800">{h.name}</p>
-                  <p className="text-xs text-slate-400 mt-0.5">
-                    Username: <span className="font-mono text-slate-600">{h.username ?? "—"}</span>
-                  </p>
-                  <p className="text-xs text-slate-400 mt-0.5">
-                    Code: <span className="font-mono text-slate-600">{h.shortCode}</span>
-                    {h.contact && <span className="ml-3">{h.contact}</span>}
-                  </p>
-                </div>
-                {/* Active / Inactive login toggle — only when a login account exists */}
-                {h.active !== null && (
-                  <ActiveToggle active={h.active} onToggle={() => toggleActive(h)} />
-                )}
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => editingId === h.id ? setEditingId(null) : startEdit(h)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all
-                               border-slate-200 text-slate-600 hover:border-teal-400 hover:text-teal-700 hover:bg-teal-50"
-                  >
-                    {editingId === h.id ? <X size={12} /> : <Pencil size={12} />}
-                    {editingId === h.id ? "Cancel" : "Edit"}
-                  </button>
-                  <button
-                    onClick={() => { setEditingId(null); setDeletingId(deletingId === h.id ? null : h.id); }}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all
-                               border-slate-200 text-slate-600 hover:border-red-400 hover:text-red-600 hover:bg-red-50"
-                  >
-                    <Trash2 size={12} />
-                    Delete
-                  </button>
-                </div>
-              </div>
-
-              {/* Edit form */}
-              {editingId === h.id && (
-                <div className="px-5 pb-5 pt-3 border-b border-slate-100 flex flex-col gap-3">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="sm:col-span-2 flex flex-col gap-1">
-                      <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest">Hospital Name</label>
-                      <input value={editForm.name} onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))}
-                        className="px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-400/30 focus:border-teal-500" />
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest">Short Code</label>
-                      <input value={editForm.shortCode} onChange={(e) => setEditForm((f) => ({ ...f, shortCode: e.target.value }))}
-                        className="px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-400/30 focus:border-teal-500" />
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest">Contact</label>
-                      <input value={editForm.contact} onChange={(e) => setEditForm((f) => ({ ...f, contact: e.target.value }))}
-                        className="px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-400/30 focus:border-teal-500" />
-                    </div>
-                    <div className="sm:col-span-2 flex flex-col gap-1">
-                      <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest">Address</label>
-                      <input value={editForm.address} onChange={(e) => setEditForm((f) => ({ ...f, address: e.target.value }))}
-                        className="px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-400/30 focus:border-teal-500" />
-                    </div>
-                  </div>
-                  <div className="flex justify-end gap-2 pt-1">
-                    <button onClick={() => setEditingId(null)}
-                      className="px-4 py-2 text-xs font-medium text-slate-600 border border-slate-200 rounded-xl hover:bg-slate-50 transition-all">
-                      Cancel
-                    </button>
-                    <button onClick={() => saveEdit(h.id)} disabled={saving}
-                      className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium text-white rounded-xl disabled:opacity-60 transition-all"
-                      style={{ background: "linear-gradient(135deg,#0f766e,#14b8a6)" }}>
-                      <Check size={12} />
-                      {saving ? "Saving…" : "Save Changes"}
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Delete confirmation */}
-              {deletingId === h.id && (
-                <div className="flex items-center gap-3 px-5 py-3 border-b border-red-100 bg-red-50">
-                  <Trash2 size={13} className="text-red-500 shrink-0" />
-                  <p className="text-xs text-red-700 flex-1">Delete <strong>{h.name}</strong>? All doctor links will be removed.</p>
-                  <button onClick={() => setDeletingId(null)}
-                    className="px-3 py-1.5 text-xs font-medium text-slate-600 border border-slate-200 rounded-lg hover:bg-white transition-all">
-                    Cancel
-                  </button>
-                  <button onClick={() => confirmDelete(h.id)}
-                    className="px-3 py-1.5 text-xs font-medium text-white bg-red-500 hover:bg-red-600 rounded-lg transition-all">
-                    Delete
-                  </button>
-                </div>
-              )}
-
-              {/* Linked doctors */}
-              {h.doctors.length === 0 ? (
-                <div className="px-5 py-3">
-                  <p className="text-xs text-slate-400 italic">No doctors linked yet.</p>
-                </div>
-              ) : (
-                <div className="flex flex-col divide-y divide-slate-100">
-                  {h.doctors.map((d, j) => (
-                    <div key={j} className="flex items-center gap-3 px-5 py-3">
-                      <UserCheck size={14} className="text-teal-500 shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <span className="text-sm text-slate-700 font-medium">{d.name}</span>
-                        <span className="text-xs text-slate-400 ml-2">@{d.username}</span>
-                      </div>
-                      {d.specialty && <span className="text-[11px] text-slate-400">{d.specialty}</span>}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
 // ── Sidebar ────────────────────────────────────────────────────────────────
 const NAV = [
   { key: "dashboard"      as View, label: "Dashboard",       icon: LayoutDashboard },
@@ -555,7 +341,7 @@ export default function SetupPage() {
             <DoctorManagementView onAddDoctor={() => setView("doctor")} />
           )}
           {view === "hospital-logins" && (
-            <HospitalLoginsView />
+            <HospitalManagementView onAddHospital={() => setView("hospital")} />
           )}
           {view === "license" && (
             <LicenseManagementView />
