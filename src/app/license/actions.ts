@@ -5,6 +5,7 @@ import { cookies } from "next/headers";
 import { resignLicense } from "@/lib/license-sign";
 import { verifyLicenseKeyChecksum } from "@/lib/license-key";
 import { generateUniqueShortCode } from "@/lib/doctor-utils";
+import { sendTrialVerificationOtp } from "@/lib/mailer";
 
 // ── Cookie helpers ────────────────────────────────────────────────────────────
 // ppms_org stores the licensee DOCTOR id — the doctor owns the license.
@@ -40,6 +41,29 @@ function logEvent(doctorId: string, action: string, status: "SUCCESS" | "FAILED"
   }).catch(() => {});
 }
 
+// ── Send email verification OTP ───────────────────────────────────────────────
+export async function sendVerificationCode(email: string): Promise<{ success?: boolean; error?: string }> {
+  const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRe.test(email.trim())) return { error: "Enter a valid email address." };
+
+  // Invalidate any previous unused codes for this email
+  await prisma.emailVerification.updateMany({
+    where: { email: email.trim().toLowerCase(), used: false },
+    data: { used: true },
+  });
+
+  const code = String(Math.floor(100000 + Math.random() * 900000)); // 6-digit
+  const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+  await prisma.emailVerification.create({
+    data: { email: email.trim().toLowerCase(), code, expiresAt },
+  });
+
+  await sendTrialVerificationOtp(email.trim(), code);
+
+  return { success: true };
+}
+
 // ── Start 30-day free trial ───────────────────────────────────────────────────
 export async function startTrial(data: {
   adminName: string;
@@ -47,6 +71,7 @@ export async function startTrial(data: {
   mobile: string;
   password: string;
   machineId: string;
+  verificationCode: string;
 }): Promise<{ success?: boolean; error?: string }> {
   const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -54,6 +79,19 @@ export async function startTrial(data: {
   if (!emailRe.test(data.email.trim())) return { error: "Enter a valid email address." };
   if (!/^\d{10}$/.test(data.mobile.replace(/\D/g, ""))) return { error: "Enter a valid 10-digit mobile number." };
   if (data.password.length < 6) return { error: "Password must be at least 6 characters." };
+
+  // Verify OTP
+  const otp = await prisma.emailVerification.findFirst({
+    where: {
+      email: data.email.trim().toLowerCase(),
+      code: data.verificationCode.trim(),
+      used: false,
+      expiresAt: { gt: new Date() },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+  if (!otp) return { error: "Invalid or expired verification code. Please request a new one." };
+  await prisma.emailVerification.update({ where: { id: otp.id }, data: { used: true } });
 
   // Auto-generate username from email prefix
   const rawUsername = data.email.trim().toLowerCase().split("@")[0].replace(/[^a-z0-9._-]/g, "");

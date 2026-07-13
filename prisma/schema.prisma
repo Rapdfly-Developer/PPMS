@@ -677,6 +677,21 @@ model UserLoginHistory {
 }
 
 // ──────────────────────────────────────────────────────────────────────────
+// Email Verification OTP — for trial registration email confirmation
+// ──────────────────────────────────────────────────────────────────────────
+
+model EmailVerification {
+  id        String   @id @default(cuid())
+  email     String
+  code      String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([email])
+}
+
+// ──────────────────────────────────────────────────────────────────────────
 // Export OTP — short-lived codes for authorising data downloads
 // ──────────────────────────────────────────────────────────────────────────
 

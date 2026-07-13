@@ -8,7 +8,7 @@ import {
   XCircle, Clock, Key, ArrowRight, ArrowLeft, Loader2, Eye, EyeOff,
   Phone, Mail, Lock, Star, RefreshCw,
 } from "lucide-react";
-import { startTrial, activateLicenseKey, clearOrgCookie } from "./actions";
+import { startTrial, activateLicenseKey, clearOrgCookie, sendVerificationCode } from "./actions";
 import type { LicensePageData } from "./getLicenseData";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -196,6 +196,12 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
   const [password, setPassword]       = useState("");
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
+  // OTP verification step
+  const [otpStep, setOtpStep]       = useState(false);
+  const [otp, setOtp]               = useState("");
+  const [otpError, setOtpError]     = useState("");
+  const [resendCooldown, setResendCooldown] = useState(0);
+
   // Activate form state
   const [licKey, setLicKey]   = useState("");
   const [activating, setActivating] = useState(false);
@@ -235,13 +241,46 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
     return Object.keys(errs).length === 0;
   }
 
-  function handleStartTrial() {
+  function handleSendOtp() {
     if (!validateTrial()) return;
     setError("");
     startTransition(async () => {
-      const res = await startTrial({ adminName, email, mobile, password, machineId });
+      const res = await sendVerificationCode(email);
       if (res.error) { setError(res.error); return; }
-      setSuccess("Trial started! Redirecting to login…");
+      setOtpStep(true);
+      setOtp("");
+      setOtpError("");
+      setResendCooldown(60);
+    });
+  }
+
+  function handleResendOtp() {
+    if (resendCooldown > 0) return;
+    setOtpError("");
+    startTransition(async () => {
+      const res = await sendVerificationCode(email);
+      if (res.error) { setOtpError(res.error); return; }
+      setResendCooldown(60);
+    });
+  }
+
+  // Countdown timer for resend cooldown
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const t = setTimeout(() => setResendCooldown((c) => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [resendCooldown]);
+
+  function handleVerifyAndStartTrial() {
+    if (!otp.trim() || otp.trim().length !== 6) {
+      setOtpError("Enter the 6-digit code sent to your email.");
+      return;
+    }
+    setOtpError("");
+    startTransition(async () => {
+      const res = await startTrial({ adminName, email, mobile, password, machineId, verificationCode: otp.trim() });
+      if (res.error) { setOtpError(res.error); return; }
+      setSuccess("Email verified! Trial started. Redirecting to login…");
       setTimeout(() => router.push("/login"), 1800);
     });
   }
@@ -284,7 +323,7 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
           </div>
 
           {/* ── State 1: No License ── */}
-          {status === "NO_LICENSE" && (
+          {status === "NO_LICENSE" && !otpStep && (
             <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/60 border border-slate-100 p-8 animate-fade-in">
               <div className="text-center mb-7">
                 <div className="w-14 h-14 rounded-2xl bg-[#e8f5f2] flex items-center justify-center mx-auto mb-3">
@@ -319,19 +358,14 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
                   <XCircle size={16} className="shrink-0 mt-0.5" /> {error}
                 </div>
               )}
-              {success && (
-                <div className="mt-4 flex items-center gap-2 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-sm text-emerald-700">
-                  <CheckCircle2 size={16} /> {success}
-                </div>
-              )}
 
               <button
-                onClick={handleStartTrial}
+                onClick={handleSendOtp}
                 disabled={isPending}
                 className="mt-5 w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-bold text-white transition-all"
                 style={{ background: isPending ? "#64748b" : "#157A73", boxShadow: isPending ? "none" : "0 4px 14px rgba(21,122,115,0.35)" }}
               >
-                {isPending ? <><Loader2 size={16} className="animate-spin" /> Starting Trial…</> : <><Star size={16} /> Start Free Trial</>}
+                {isPending ? <><Loader2 size={16} className="animate-spin" /> Sending Code…</> : <><Mail size={16} /> Verify Email &amp; Continue</>}
               </button>
 
               <div className="mt-3 text-center flex flex-col items-center gap-2">
@@ -342,6 +376,72 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
                 <a href="/login" className="text-xs text-[#8A9AA1] hover:text-[#157A73] hover:underline transition-colors">
                   ← Back to Login
                 </a>
+              </div>
+            </div>
+          )}
+
+          {/* ── State 1b: OTP Verification ── */}
+          {status === "NO_LICENSE" && otpStep && (
+            <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/60 border border-slate-100 p-8 animate-fade-in">
+              <div className="text-center mb-7">
+                <div className="w-14 h-14 rounded-2xl bg-[#e8f5f2] flex items-center justify-center mx-auto mb-3">
+                  <Mail size={24} className="text-[#157A73]" />
+                </div>
+                <h2 className="text-2xl font-black text-slate-900">Check your email</h2>
+                <p className="text-sm text-slate-500 mt-1">
+                  We sent a 6-digit code to
+                </p>
+                <p className="text-sm font-semibold text-slate-800 mt-0.5">{email}</p>
+                <p className="text-xs text-slate-400 mt-1">Enter the code below to verify and start your trial.</p>
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-xs font-semibold text-slate-600 mb-1.5">Verification Code *</label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={6}
+                  placeholder="6-digit code"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                  className="w-full rounded-xl border-2 px-4 py-3 text-center text-2xl font-black tracking-[0.5em] outline-none transition-all border-slate-200 focus:border-[#157A73] focus:ring-2 focus:ring-[#d0ede8]"
+                />
+              </div>
+
+              {otpError && (
+                <div className="mb-4 flex items-start gap-2 rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+                  <XCircle size={15} className="shrink-0 mt-0.5" /> {otpError}
+                </div>
+              )}
+              {success && (
+                <div className="mb-4 flex items-center gap-2 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-sm text-emerald-700">
+                  <CheckCircle2 size={15} /> {success}
+                </div>
+              )}
+
+              <button
+                onClick={handleVerifyAndStartTrial}
+                disabled={isPending || otp.length !== 6}
+                className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-bold text-white transition-all"
+                style={{ background: (isPending || otp.length !== 6) ? "#64748b" : "#157A73", boxShadow: (isPending || otp.length !== 6) ? "none" : "0 4px 14px rgba(21,122,115,0.35)" }}
+              >
+                {isPending ? <><Loader2 size={16} className="animate-spin" /> Starting Trial…</> : <><Star size={16} /> Start Free Trial</>}
+              </button>
+
+              <div className="mt-4 text-center flex flex-col items-center gap-2">
+                <button
+                  onClick={handleResendOtp}
+                  disabled={resendCooldown > 0 || isPending}
+                  className="text-xs text-[#157A73] hover:underline disabled:text-slate-400 disabled:no-underline"
+                >
+                  {resendCooldown > 0 ? `Resend code in ${resendCooldown}s` : "Resend code"}
+                </button>
+                <button
+                  onClick={() => { setOtpStep(false); setOtp(""); setOtpError(""); }}
+                  className="text-xs text-[#8A9AA1] hover:text-[#157A73] hover:underline transition-colors"
+                >
+                  ← Back to registration
+                </button>
               </div>
             </div>
           )}

@@ -84,6 +84,22 @@ export async function notifyAppointmentReminder(
   );
 }
 
+export async function sendTrialVerificationOtp(to: string, code: string) {
+  const html = `
+  <div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;">
+    <div style="background:#115E59;color:white;padding:16px 20px;border-radius:12px 12px 0 0;font-size:16px;font-weight:700;">PPMS</div>
+    <div style="border:1px solid #E2E6E8;border-top:none;border-radius:0 0 12px 12px;padding:28px 24px;">
+      <h2 style="margin:0 0 8px;font-size:17px;color:#14242B;">Verify your email address</h2>
+      <p style="margin:0 0 20px;font-size:13px;color:#5C6E76;">Use the code below to complete your PPMS free trial registration. It expires in 10 minutes.</p>
+      <div style="text-align:center;background:#f0fcfa;border:2px solid #b8dcd6;border-radius:12px;padding:20px 0;margin-bottom:20px;">
+        <span style="font-size:36px;font-weight:900;letter-spacing:12px;color:#115E59;">${code}</span>
+      </div>
+      <p style="font-size:11px;color:#9aacb2;margin:0;">If you didn't request this, you can safely ignore this email.</p>
+    </div>
+  </div>`;
+  await sendMail(to, "Your PPMS verification code", html);
+}
+
 export async function notifyAdmission(to: string | undefined | null, opts: { patientName: string; ward: string; numberOfDays: number }) {
   await sendMail(
     to,
