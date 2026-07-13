@@ -143,27 +143,27 @@ function VisualAcuityCard({ visit, udid, editable }: { visit: any; udid: string;
       </div>
 
       {/* Distance VA — measurements as rows, RE/LE as columns */}
-      <p className="text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-widest mb-2">Distance</p>
-      <div className="overflow-x-auto mb-5">
+      <p className="text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-widest mb-3">Distance</p>
+      <div className="overflow-x-auto mb-8">
         <table className="text-xs table-fixed" style={{ width: "auto" }}>
           <colgroup>
-            <col style={{ width: 80 }} />
-            <col style={{ width: 100 }} />
-            <col style={{ width: 100 }} />
+            <col style={{ width: 110 }} />
+            <col style={{ width: 130 }} />
+            <col style={{ width: 130 }} />
           </colgroup>
           <thead>
             <tr>
-              <th className="pb-2 text-left text-[var(--color-ink-400)] font-medium" />
-              <th className="pb-2 text-center text-[var(--color-primary-700)] font-semibold">RE</th>
-              <th className="pb-2 text-center text-[var(--color-primary-700)] font-semibold">LE</th>
+              <th className="pb-3 text-left text-[var(--color-ink-400)] font-medium" />
+              <th className="pb-3 text-center text-[var(--color-primary-700)] font-semibold">RE</th>
+              <th className="pb-3 text-center text-[var(--color-primary-700)] font-semibold">LE</th>
             </tr>
           </thead>
           <tbody>
             {DIST_COLS.map((c) => (
               <tr key={c.key}>
-                <td className="py-2 pr-6 text-left text-[var(--color-ink-500)] font-medium">{c.label}</td>
-                <td className="py-2 px-6 text-center">{distSel(re, setRe, c.key)}</td>
-                <td className="py-2 px-6 text-center">{distSel(le, setLe, c.key)}</td>
+                <td className="py-3 pr-8 text-left text-[var(--color-ink-500)] font-medium">{c.label}</td>
+                <td className="py-3 px-8 text-center">{distSel(re, setRe, c.key)}</td>
+                <td className="py-3 px-8 text-center">{distSel(le, setLe, c.key)}</td>
               </tr>
             ))}
           </tbody>
@@ -171,27 +171,27 @@ function VisualAcuityCard({ visit, udid, editable }: { visit: any; udid: string;
       </div>
 
       {/* Near VA — measurements as rows, RE/LE as columns */}
-      <p className="text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-widest mb-2">Near</p>
+      <p className="text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-widest mb-3">Near</p>
       <div className="overflow-x-auto">
         <table className="text-xs table-fixed" style={{ width: "auto" }}>
           <colgroup>
-            <col style={{ width: 80 }} />
-            <col style={{ width: 100 }} />
-            <col style={{ width: 100 }} />
+            <col style={{ width: 110 }} />
+            <col style={{ width: 130 }} />
+            <col style={{ width: 130 }} />
           </colgroup>
           <thead>
             <tr>
-              <th className="pb-2 text-left text-[var(--color-ink-400)] font-medium" />
-              <th className="pb-2 text-center text-[var(--color-primary-700)] font-semibold">RE</th>
-              <th className="pb-2 text-center text-[var(--color-primary-700)] font-semibold">LE</th>
+              <th className="pb-3 text-left text-[var(--color-ink-400)] font-medium" />
+              <th className="pb-3 text-center text-[var(--color-primary-700)] font-semibold">RE</th>
+              <th className="pb-3 text-center text-[var(--color-primary-700)] font-semibold">LE</th>
             </tr>
           </thead>
           <tbody>
             {NEAR_COLS.map((c) => (
               <tr key={c.key}>
-                <td className="py-2 pr-6 text-left text-[var(--color-ink-500)] font-medium">{c.label}</td>
-                <td className="py-2 px-6 text-center">{nearSel(re, setRe, c.key)}</td>
-                <td className="py-2 px-6 text-center">{nearSel(le, setLe, c.key)}</td>
+                <td className="py-3 pr-8 text-left text-[var(--color-ink-500)] font-medium">{c.label}</td>
+                <td className="py-3 px-8 text-center">{nearSel(re, setRe, c.key)}</td>
+                <td className="py-3 px-8 text-center">{nearSel(le, setLe, c.key)}</td>
               </tr>
             ))}
           </tbody>
