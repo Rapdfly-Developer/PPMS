@@ -386,7 +386,7 @@ function ColourContrastTab({ visit, udid, editable, priorVisits = [] }: { visit:
 
       {/* Colour Vision */}
       <Card>
-        <div className="flex items-center gap-3 mb-3 flex-wrap">
+        <div className="flex items-center gap-3 mb-5 flex-wrap">
           <p className="text-sm font-medium text-[var(--color-ink-700)]">Colour Vision</p>
           <div className="flex items-center gap-2">
             <span className="text-xs text-[var(--color-ink-400)]">Method:</span>
@@ -400,12 +400,12 @@ function ColourContrastTab({ visit, udid, editable, priorVisits = [] }: { visit:
             </select>
           </div>
         </div>
-        <div className="flex flex-wrap gap-x-20 gap-y-6 mt-2">
+        <div className="flex flex-wrap gap-x-28 gap-y-8 mt-3">
           {[
             { label: "Right Eye", result: reResult, setResult: setReResult, notes: reNotes, setNotes: setReNotes },
             { label: "Left Eye",  result: leResult, setResult: setLeResult, notes: leNotes, setNotes: setLeNotes },
           ].map(({ label, result, setResult, notes, setNotes }) => (
-            <div key={label} className="flex flex-col gap-3 min-w-[220px]">
+            <div key={label} className="flex flex-col gap-4 min-w-[220px]">
               <p className="text-xs font-semibold text-[var(--color-primary-700)] uppercase tracking-wide">{label}</p>
               <div className="flex gap-2 flex-wrap">{resultBtns(result, setResult)}</div>
               <KeywordInput fieldKey={`cv_${label}`} value={notes} onChange={setNotes} disabled={!editable} placeholder="Notes..." className="w-56 rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-xs disabled:bg-[var(--color-surface-sunken)]" />
@@ -426,7 +426,7 @@ function ColourContrastTab({ visit, udid, editable, priorVisits = [] }: { visit:
 
       {/* Contrast Vision */}
       <Card>
-        <div className="flex items-center gap-3 mb-3 flex-wrap">
+        <div className="flex items-center gap-3 mb-5 flex-wrap">
           <p className="text-sm font-medium text-[var(--color-ink-700)]">Contrast Vision</p>
           <div className="flex items-center gap-2">
             <span className="text-xs text-[var(--color-ink-400)]">Method:</span>
@@ -440,12 +440,12 @@ function ColourContrastTab({ visit, udid, editable, priorVisits = [] }: { visit:
             </select>
           </div>
         </div>
-        <div className="flex flex-wrap gap-x-20 gap-y-6 mt-2">
+        <div className="flex flex-wrap gap-x-28 gap-y-8 mt-3">
           {[
             { label: "Right Eye", result: csReResult, setResult: setCsReResult, notes: csReNotes, setNotes: setCsReNotes },
             { label: "Left Eye",  result: csLeResult, setResult: setCsLeResult, notes: csLeNotes, setNotes: setCsLeNotes },
           ].map(({ label, result, setResult, notes, setNotes }) => (
-            <div key={label} className="flex flex-col gap-3 min-w-[220px]">
+            <div key={label} className="flex flex-col gap-4 min-w-[220px]">
               <p className="text-xs font-semibold text-[var(--color-primary-700)] uppercase tracking-wide">{label}</p>
               <div className="flex gap-2 flex-wrap">{resultBtns(result, setResult)}</div>
               <KeywordInput fieldKey={`cs_${label}`} value={notes} onChange={setNotes} disabled={!editable} placeholder="Notes..." className="w-56 rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-xs disabled:bg-[var(--color-surface-sunken)]" />
