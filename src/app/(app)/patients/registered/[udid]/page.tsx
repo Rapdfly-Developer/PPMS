@@ -5,7 +5,7 @@ import { format } from "date-fns";
 import Link from "next/link";
 import { CopyUhidButton } from "./CopyUhidButton";
 import { PrintButton } from "./PrintButton";
-import { UserPlus, Users, CalendarDays, CheckCircle2 } from "lucide-react";
+import { Users, CalendarDays, CheckCircle2 } from "lucide-react";
 
 export default async function RegistrationSuccessPage({
   params,
@@ -104,23 +104,13 @@ export default async function RegistrationSuccessPage({
         {/* Actions */}
         <div className="grid grid-cols-3 gap-3">
           <PrintButton />
-          {isFromBooking ? (
-            <Link
-              href="/appointments"
-              className="flex flex-col items-center justify-center gap-2 rounded-xl border border-[var(--color-border)] bg-white text-[var(--color-ink-700)] px-3 py-4 text-sm font-medium hover:bg-[var(--color-surface-sunken)] transition-colors text-center"
-            >
-              <CalendarDays size={18} />
-              <span className="text-xs leading-tight">View Appointments</span>
-            </Link>
-          ) : (
-            <Link
-              href="/patients/new"
-              className="flex flex-col items-center justify-center gap-2 rounded-xl border border-[var(--color-border)] bg-white text-[var(--color-ink-700)] px-3 py-4 text-sm font-medium hover:bg-[var(--color-surface-sunken)] transition-colors text-center"
-            >
-              <UserPlus size={18} />
-              <span className="text-xs leading-tight">Register Another Patient</span>
-            </Link>
-          )}
+          <Link
+            href="/appointments"
+            className="flex flex-col items-center justify-center gap-2 rounded-xl border border-[var(--color-border)] bg-white text-[var(--color-ink-700)] px-3 py-4 text-sm font-medium hover:bg-[var(--color-surface-sunken)] transition-colors text-center"
+          >
+            <CalendarDays size={18} />
+            <span className="text-xs leading-tight">View Appointments</span>
+          </Link>
           <Link
             href="/patients"
             className="flex flex-col items-center justify-center gap-2 rounded-xl border border-[var(--color-border)] bg-white text-[var(--color-ink-400)] px-3 py-4 text-sm font-medium hover:bg-[var(--color-surface-sunken)] transition-colors text-center"

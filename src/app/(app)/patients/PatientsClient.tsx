@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { format } from "date-fns";
 import {
-  Search, UserPlus, Download, Filter, X, Users, CalendarCheck,
+  Search, Download, Filter, X, Users, CalendarCheck,
   CalendarClock, ShieldCheck, ClipboardList, ChevronLeft, ChevronRight, Eye,
   Phone, Building2,
 } from "lucide-react";
@@ -329,13 +329,6 @@ export function PatientsClient({
           <p className="text-sm text-[var(--color-ink-500)] mt-0.5">HMIS patient directory · UHID auto-assigned on registration</p>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
-
-          <Link
-            href="/patients/new"
-            className="inline-flex items-center gap-2 rounded-xl bg-[var(--color-primary-600)] text-white text-sm font-medium px-4 py-2 hover:bg-[var(--color-primary-700)] transition-colors shadow-sm"
-          >
-            <UserPlus size={14} /> Register Patient
-          </Link>
         </div>
       </div>
 
@@ -473,9 +466,7 @@ export function PatientsClient({
                     : "No patients registered yet."}
                 </p>
                 {!q && !categoryFilter && !sexFilter && !hospitalFilter && !opStatusFilter && (
-                  <Link href="/patients/new" className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-[var(--color-primary-600)] hover:underline">
-                    <UserPlus size={13} /> Register your first patient
-                  </Link>
+                  <p className="mt-3 text-sm text-[var(--color-ink-400)]">No patients registered yet.</p>
                 )}
                 {(q || categoryFilter || sexFilter || hospitalFilter || opStatusFilter) && (
                   <button
