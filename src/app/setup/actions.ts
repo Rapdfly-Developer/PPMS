@@ -2,7 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
-import { generateUniqueShortCode } from "@/lib/doctor-utils";
+import { generateUniqueShortCode, generateUniqueHospitalShortCode } from "@/lib/doctor-utils";
 
 export type ActionResult = { success?: string; error?: string };
 
@@ -42,17 +42,13 @@ export async function createHospital(
   _prev: ActionResult,
   formData: FormData
 ): Promise<ActionResult> {
-  const name      = (formData.get("name") as string)?.trim();
-  const shortCode = (formData.get("shortCode") as string)?.trim().toUpperCase();
-  const address   = (formData.get("address") as string)?.trim() || null;
-  const contact   = (formData.get("contact") as string)?.trim() || null;
+  const name    = (formData.get("name") as string)?.trim();
+  const address = (formData.get("address") as string)?.trim() || null;
+  const contact = (formData.get("contact") as string)?.trim() || null;
 
-  if (!name || !shortCode) return { error: "Name and short code are required." };
-  if (!/^[A-Z0-9]{2,8}$/.test(shortCode))
-    return { error: "Short code must be 2–8 uppercase letters/numbers." };
+  if (!name) return { error: "Hospital name is required." };
 
-  const existing = await prisma.hospital.findUnique({ where: { shortCode } });
-  if (existing) return { error: `Short code "${shortCode}" is already in use.` };
+  const shortCode = await generateUniqueHospitalShortCode(name);
 
   await prisma.hospital.create({ data: { name, shortCode, address, contact } });
 

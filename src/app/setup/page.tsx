@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useState, useMemo } from "react";
 import {
   Building2, Eye, CheckCircle2, AlertCircle,
   User, Lock, Phone, Hash, MapPin, Briefcase, ArrowRight, ShieldCheck,
@@ -175,10 +175,22 @@ function DoctorView({ onCreated }: { onCreated: () => void }) {
   );
 }
 
+// ── Hospital short code preview (mirrors server logic) ────────────────────
+function hospitalShortCodePreview(name: string): string {
+  const words = name.trim().toUpperCase().replace(/[^A-Z0-9\s]/g, "").split(/\s+/).filter(Boolean);
+  if (words.length === 0) return "";
+  if (words.length === 1) return words[0].slice(0, 4);
+  const initials = words.map((w) => w[0]).join("");
+  return initials.length >= 2 ? initials.slice(0, 4) : words[0].slice(0, 4);
+}
+
 // ── Hospital Form ──────────────────────────────────────────────────────────
 function HospitalView({ onCreated }: { onCreated: () => void }) {
   const [state, action, pending] = useActionState(createHospital, INIT);
-  useEffect(() => { if (state.success) onCreated(); }, [state.success]);
+  const [hospitalName, setHospitalName] = useState("");
+  const shortCodePreview = useMemo(() => hospitalShortCodePreview(hospitalName), [hospitalName]);
+
+  useEffect(() => { if (state.success) { onCreated(); setHospitalName(""); } }, [state.success]);
 
   return (
     <div className="max-w-lg">
@@ -191,13 +203,48 @@ function HospitalView({ onCreated }: { onCreated: () => void }) {
 
       <form action={action} className="flex flex-col gap-4">
         <Alert result={state} />
-        <IconField label="Hospital Name" name="name" required placeholder="e.g. City Eye Hospital" icon={Building2} />
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <IconField label="Short Code" name="shortCode" required placeholder="e.g. CEH"
-            hint="2–8 chars. Used in UHID prefix." icon={Hash} />
-          <IconField label="Contact" name="contact" placeholder="Phone number" icon={Phone} />
+
+        {/* Hospital Name */}
+        <div className="flex flex-col gap-1.5">
+          <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-widest">
+            Hospital Name <span className="text-red-400">*</span>
+          </label>
+          <div className="relative">
+            <div className="absolute inset-y-0 left-3.5 flex items-center pointer-events-none text-teal-600">
+              <Building2 size={15} />
+            </div>
+            <input
+              name="name" required placeholder="e.g. City Eye Hospital"
+              value={hospitalName} onChange={(e) => setHospitalName(e.target.value)}
+              className="w-full pl-9 pr-3.5 py-3 text-sm border border-slate-200 rounded-[14px] bg-white/80
+                         focus:outline-none focus:ring-2 focus:ring-teal-400/30 focus:border-teal-500
+                         transition-all duration-200 placeholder:text-slate-300"
+            />
+          </div>
         </div>
-        <IconField label="Address" name="address" placeholder="Full hospital address" icon={MapPin} />
+
+        {/* Short Code (auto-generated, read-only) */}
+        <div className="flex flex-col gap-1.5">
+          <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-widest">
+            Short Code
+          </label>
+          <div className="relative">
+            <div className="absolute inset-y-0 left-3.5 flex items-center pointer-events-none text-teal-600">
+              <Hash size={15} />
+            </div>
+            <div className="w-full pl-9 pr-3.5 py-3 text-sm border border-slate-200 rounded-[14px] bg-slate-50
+                            text-slate-500 font-mono select-none">
+              {shortCodePreview || <span className="text-slate-300">Auto-generated from name</span>}
+            </div>
+          </div>
+          <p className="text-[11px] text-slate-400 pl-1">Auto-generated from hospital name. Used as UHID prefix.</p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <IconField label="Contact" name="contact" placeholder="Phone number" icon={Phone} />
+          <IconField label="Address" name="address" placeholder="Full hospital address" icon={MapPin} />
+        </div>
+
         <SubmitBtn pending={pending} label="Create Hospital" loadingLabel="Creating…" />
       </form>
     </div>
