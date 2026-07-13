@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   FileText, Calendar, Building2, UserCircle, Users,
   BarChart3, Cloud, Shield, CheckCircle2, AlertTriangle,
-  XCircle, Clock, Key, ArrowRight, Loader2, Eye, EyeOff,
+  XCircle, Clock, Key, ArrowRight, ArrowLeft, Loader2, Eye, EyeOff,
   Phone, Mail, Lock, Star, RefreshCw,
 } from "lucide-react";
 import { startTrial, activateLicenseKey, clearOrgCookie } from "./actions";
@@ -393,10 +393,8 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
               <DayProgressBar remaining={data.daysRemaining} total={30} />
 
               <div className="flex flex-col gap-2.5 mt-6">
-                <a href="/login"
-                  className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-bold text-white"
-                  style={{ background: "#157A73", boxShadow: "0 4px 14px rgba(21,122,115,0.35)" }}>
-                  <ArrowRight size={16} /> Continue to Login
+                <a href="/login" className="self-start inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-[#115E59] transition-colors">
+                  <ArrowLeft size={13} /> Back to Login
                 </a>
                 <button
                   onClick={() => router.push("/license/activate")}
@@ -490,10 +488,8 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
 
               {status === "SUBSCRIBED" ? (
                 <div className="flex flex-col gap-2.5 mt-6">
-                  <a href="/login"
-                    className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-bold text-white"
-                    style={{ background: "#157A73", boxShadow: "0 4px 14px rgba(21,122,115,0.35)" }}>
-                    <ArrowRight size={16} /> Continue to Login
+                  <a href="/login" className="self-start inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-[#115E59] transition-colors">
+                    <ArrowLeft size={13} /> Back to Login
                   </a>
                   <button onClick={() => router.push("/license/activate")}
                     className="w-full py-3 rounded-xl border-2 border-slate-200 text-slate-700 text-sm font-semibold hover:bg-slate-50 transition-all">
