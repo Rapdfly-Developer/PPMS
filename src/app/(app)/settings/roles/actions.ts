@@ -17,26 +17,12 @@ const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
     "reports.view", "reports.export",
     "settings.view", "settings.manage",
   ],
-  REFRACTIONIST: [
-    "dashboard.view",
-    "appointments.view",
-    "patients.view",
-    "emr.view", "refraction.view", "refraction.create", "refraction.edit",
-    "investigations.view", "investigations.create",
-  ],
-  RECEPTIONIST: [
-    "dashboard.view",
-    "appointments.view", "appointments.create", "appointments.edit",
-    "patients.view", "patients.create",
-  ],
 };
 
 // ── Default role definitions ───────────────────────────────────────────────
 const DEFAULT_ROLES = [
-  { name: "DOCTOR",        label: "Doctor",        description: "Super Admin — unrestricted access to all features", isSystem: true,  color: "#6366f1" },
-  { name: "HOSPITAL",      label: "Hospital Admin", description: "Front-desk — appointments, patients and basic settings", isSystem: true,  color: "#10b981" },
-  { name: "REFRACTIONIST", label: "Refractionist", description: "Clinical tech — queue, refraction and EMR entry", isSystem: true,  color: "#f59e0b" },
-  { name: "RECEPTIONIST",  label: "Receptionist",  description: "Front desk — register patients and book appointments", isSystem: false, color: "#3b82f6" },
+  { name: "DOCTOR",   label: "Doctor",        description: "Super Admin — unrestricted access to all features",          isSystem: true, color: "#6366f1" },
+  { name: "HOSPITAL", label: "Hospital Admin", description: "Front-desk — appointments, patients and basic settings", isSystem: true, color: "#10b981" },
 ];
 
 // ── Seed helpers (idempotent) ─────────────────────────────────────────────
