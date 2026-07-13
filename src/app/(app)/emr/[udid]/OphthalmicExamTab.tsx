@@ -400,21 +400,21 @@ function ColourContrastTab({ visit, udid, editable, priorVisits = [] }: { visit:
             </select>
           </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div className="flex flex-wrap gap-x-16 gap-y-4">
           {[
             { label: "Right Eye", result: reResult, setResult: setReResult, notes: reNotes, setNotes: setReNotes },
             { label: "Left Eye",  result: leResult, setResult: setLeResult, notes: leNotes, setNotes: setLeNotes },
           ].map(({ label, result, setResult, notes, setNotes }) => (
-            <div key={label} className="flex flex-col gap-2">
+            <div key={label} className="flex flex-col gap-2 min-w-[220px]">
               <p className="text-xs font-semibold text-[var(--color-primary-700)] uppercase tracking-wide">{label}</p>
               <div className="flex gap-2 flex-wrap">{resultBtns(result, setResult)}</div>
-              <KeywordInput fieldKey={`cv_${label}`} value={notes} onChange={setNotes} disabled={!editable} placeholder="Notes..." className="w-full rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-xs disabled:bg-[var(--color-surface-sunken)]" />
+              <KeywordInput fieldKey={`cv_${label}`} value={notes} onChange={setNotes} disabled={!editable} placeholder="Notes..." className="w-56 rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-xs disabled:bg-[var(--color-surface-sunken)]" />
             </div>
           ))}
         </div>
         {priorCv.length > 0 && (
-          <div className="mt-4 pt-3 border-t border-[var(--color-border)]">
-            <p className="text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-wide mb-2">Previous</p>
+          <div className="mt-3">
+            <p className="text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-wide mb-1">Previous</p>
             {priorCv.slice(0, 3).map((p, i) => (
               <p key={i} className="text-xs text-[var(--color-ink-400)]">
                 {format(new Date(p.date), "dd-MMM-yyyy")} – RE: {p.re.result || "—"} · LE: {p.le.result || "—"} ({p.re.cvMethod || cvMethod})
@@ -440,21 +440,21 @@ function ColourContrastTab({ visit, udid, editable, priorVisits = [] }: { visit:
             </select>
           </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div className="flex flex-wrap gap-x-16 gap-y-4">
           {[
             { label: "Right Eye", result: csReResult, setResult: setCsReResult, notes: csReNotes, setNotes: setCsReNotes },
             { label: "Left Eye",  result: csLeResult, setResult: setCsLeResult, notes: csLeNotes, setNotes: setCsLeNotes },
           ].map(({ label, result, setResult, notes, setNotes }) => (
-            <div key={label} className="flex flex-col gap-2">
+            <div key={label} className="flex flex-col gap-2 min-w-[220px]">
               <p className="text-xs font-semibold text-[var(--color-primary-700)] uppercase tracking-wide">{label}</p>
               <div className="flex gap-2 flex-wrap">{resultBtns(result, setResult)}</div>
-              <KeywordInput fieldKey={`cs_${label}`} value={notes} onChange={setNotes} disabled={!editable} placeholder="Notes..." className="w-full rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-xs disabled:bg-[var(--color-surface-sunken)]" />
+              <KeywordInput fieldKey={`cs_${label}`} value={notes} onChange={setNotes} disabled={!editable} placeholder="Notes..." className="w-56 rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-xs disabled:bg-[var(--color-surface-sunken)]" />
             </div>
           ))}
         </div>
         {priorCv.length > 0 && (
-          <div className="mt-4 pt-3 border-t border-[var(--color-border)]">
-            <p className="text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-wide mb-2">Previous</p>
+          <div className="mt-3">
+            <p className="text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-wide mb-1">Previous</p>
             {priorCv.slice(0, 3).map((p, i) => (
               <p key={i} className="text-xs text-[var(--color-ink-400)]">
                 {format(new Date(p.date), "dd-MMM-yyyy")} – RE: {p.re.csResult || "—"} · LE: {p.le.csResult || "—"} ({p.re.csMethod || csMethod})
