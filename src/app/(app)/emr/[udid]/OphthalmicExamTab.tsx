@@ -68,13 +68,13 @@ export function OphthalmicExamTab({ visit, priorVisits, udid, role }: { visit: a
 
 function EyeColumns({ children }: { children: [React.ReactNode, React.ReactNode] }) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
       <div>
-        <p className="text-xs font-semibold text-[var(--color-primary-700)] uppercase tracking-wide mb-2">Right Eye</p>
+        <p className="text-xs font-semibold text-[var(--color-primary-700)] uppercase tracking-wide mb-3">Right Eye</p>
         {children[0]}
       </div>
-      <div>
-        <p className="text-xs font-semibold text-[var(--color-primary-700)] uppercase tracking-wide mb-2">Left Eye</p>
+      <div className="md:pl-8 md:border-l md:border-[var(--color-border)] pt-6 mt-2 border-t border-[var(--color-border)] md:pt-0 md:mt-0 md:border-t-0">
+        <p className="text-xs font-semibold text-[var(--color-primary-700)] uppercase tracking-wide mb-3">Left Eye</p>
         {children[1]}
       </div>
     </div>
@@ -252,18 +252,22 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
   );
 
   const eyeFields = (val: typeof re, setVal: typeof setRe) => (
-    <div className="flex flex-col gap-4">
-      <p className="text-xs text-[var(--color-ink-400)] font-medium">Distance</p>
-      <div className="flex gap-3 flex-wrap">
+    <div className="flex flex-col gap-5">
+      <p className="text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-widest">Distance</p>
+      <div className="flex gap-5 flex-wrap">
         {smallInput("Sph",   val.sph,  (v) => setVal({ ...val, sph: v }))}
         {smallInput("Cyl",   val.cyl,  (v) => setVal({ ...val, cyl: v }))}
         {smallInput("Axis°", val.axis, (v) => setVal({ ...val, axis: v }))}
       </div>
       {vaSelect("Resulting VA", val.va, (v) => setVal({ ...val, va: v }))}
 
-      <p className="text-xs text-[var(--color-ink-400)] font-medium">Near</p>
-      {smallInput("Sph", val.nearSph, (v) => setVal({ ...val, nearSph: v }))}
-      {vaSelect("Resulting VA", val.nearVa, (v) => setVal({ ...val, nearVa: v }))}
+      <div className="pt-3 border-t border-[var(--color-border)]">
+        <p className="text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-widest mb-4">Near</p>
+        <div className="flex flex-col gap-4">
+          {smallInput("Sph", val.nearSph, (v) => setVal({ ...val, nearSph: v }))}
+          {vaSelect("Resulting VA", val.nearVa, (v) => setVal({ ...val, nearVa: v }))}
+        </div>
+      </div>
     </div>
   );
 
