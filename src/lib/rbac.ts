@@ -37,7 +37,7 @@ export async function requireUser(): Promise<SessionUser> {
 /** Restricts a route to the Super Admin only (username in SETUP_ADMIN_USERNAME env var). */
 export async function requireSuperAdmin(): Promise<SessionUser> {
   const user = await requireUser();
-  const adminUsername = process.env.SETUP_ADMIN_USERNAME ?? "doctor";
+  const adminUsername = process.env.SETUP_ADMIN_USERNAME ?? "developer";
   if (user.username !== adminUsername) redirect("/");
   return user;
 }
