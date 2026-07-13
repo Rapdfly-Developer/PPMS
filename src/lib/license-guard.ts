@@ -97,12 +97,7 @@ async function evaluate(
     return blocked("SUSPENDED", "This license has been suspended or deactivated. Please contact support.");
   }
 
-  // 5. License key required — no key means login is not permitted.
-  if (!license.licenseKey) {
-    return blocked("NONE", "A license key is required to log in. Please activate your PPMS license to continue.");
-  }
-
-  // 6. Expiry — active subscription wins; trial alone does not permit login.
+  // 5. Expiry — check active subscription or active trial; block otherwise.
   const now = new Date();
 
   if (license.subscriptionEndsAt && license.subscriptionEndsAt > now) {
@@ -117,6 +112,24 @@ async function evaluate(
       features: FEATURES,
       message: "License active.",
     };
+  }
+
+  if (!license.licenseKey && license.trialEndsAt && license.trialEndsAt > now) {
+    const days = Math.ceil((license.trialEndsAt.getTime() - now.getTime()) / 86_400_000);
+    return {
+      status: "ACTIVE",
+      allowLogin: true,
+      licenseType: "Trial",
+      expiryDate: license.trialEndsAt.toISOString(),
+      remainingDays: days,
+      machineMatched,
+      features: FEATURES,
+      message: "Trial license active.",
+    };
+  }
+
+  if (!license.licenseKey) {
+    return blocked("NONE", "A license key is required to log in. Please activate your PPMS license to continue.");
   }
 
   const expiredOn = license.subscriptionEndsAt ?? license.trialEndsAt;
