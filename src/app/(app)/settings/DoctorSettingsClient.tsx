@@ -838,7 +838,6 @@ function UsersSection({ users, hospitals, assignableRoles, doctorId }: { users: 
   const [page, setPage] = useState(1);
   const [editHospital, setEditHospital] = useState<HospitalRow | null>(null);
   const [addUserCtx, setAddUserCtx] = useState<{ hospitalId: string; userType: string } | null>(null);
-  const [showCreateUser, setShowCreateUser] = useState(false);
   const PAGE_SIZE = 8;
 
   const filtered = useMemo(() => {
@@ -869,14 +868,6 @@ function UsersSection({ users, hospitals, assignableRoles, doctorId }: { users: 
   return (
     <div>
       {editHospital && <EditHospitalModal hospital={editHospital} onClose={() => setEditHospital(null)} />}
-      {showCreateUser && (
-        <AddUserModal
-          hospitals={hospitals}
-          assignableRoles={assignableRoles}
-          doctorId={doctorId}
-          onClose={() => setShowCreateUser(false)}
-        />
-      )}
       {addUserCtx && (
         <AddUserModal
           hospitals={hospitals}
@@ -890,7 +881,7 @@ function UsersSection({ users, hospitals, assignableRoles, doctorId }: { users: 
       <SectionHeader
         title="Users"
         desc={`${users.length} users across ${hospitals.length} linked hospital${hospitals.length !== 1 ? "s" : ""}`}
-        action={{ label: "Add User", icon: UserPlus, onClick: () => setShowCreateUser(true) }}
+        action={{ label: "Add User", icon: UserPlus, onClick: () => router.push("/users/new?returnTo=/settings") }}
       />
 
       <Card>
