@@ -2879,7 +2879,7 @@ function HospitalSetupWizard({ assignableRoles = [] }: { assignableRoles?: Assig
     email:      !hosp.email.trim() ? "Hospital email is required." : !emailRe.test(hosp.email.trim()) ? "Enter a valid email." : undefined,
     address:    !hosp.address.trim() ? "Address is required." : undefined,
     staffName:  !hosp.staffName.trim() ? "Contact person name is required." : undefined,
-    username:   !hosp.username.trim() ? "Username is required." : !/^[a-z0-9._-]{3,}$/.test(hosp.username.trim()) ? "Min 3 chars (a–z, 0–9, . _ -)." : undefined,
+    username:   !hosp.username.trim() ? "Username is required." : !/^[a-z0-9._-]{3,}$/.test(hosp.username.trim()) ? "Lowercase letters only (a–z, 0–9, . _ -). No uppercase or spaces." : undefined,
     password:   hosp.password.length < 6 ? "Min 6 characters." : undefined,
     mobile:     !hosp.mobile.trim() ? "Mobile is required." : !/^\d{10}$/.test(hosp.mobile.trim()) ? "Must be 10 digits." : undefined,
     adminEmail: !hosp.adminEmail.trim() ? "Admin email is required." : !emailRe.test(hosp.adminEmail.trim()) ? "Enter a valid email." : undefined,
