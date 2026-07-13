@@ -5,12 +5,13 @@ import {
   Building2, Eye, CheckCircle2, AlertCircle,
   User, Lock, Phone, Hash, MapPin, Briefcase, ArrowRight, ShieldCheck,
   Stethoscope, LayoutDashboard, ArrowLeft, KeyRound, UserCheck,
-  Pencil, Trash2, X, Check, ExternalLink,
+  Pencil, Trash2, X, Check, ExternalLink, Key,
 } from "lucide-react";
 import { createDoctor, createHospital } from "./actions";
 import Link from "next/link";
+import { LicenseManagementView } from "./LicenseManagementView";
 
-type View = "dashboard" | "doctor" | "hospital" | "doctor-logins" | "hospital-logins";
+type View = "dashboard" | "doctor" | "hospital" | "doctor-logins" | "hospital-logins" | "license";
 
 const INIT = { success: undefined, error: undefined };
 
@@ -665,6 +666,7 @@ const NAV = [
   { key: "hospital"       as View, label: "Hospital",        icon: Building2       },
   { key: "doctor-logins"  as View, label: "Doctor's Login",  icon: KeyRound        },
   { key: "hospital-logins"as View, label: "Hospital's Login",icon: Building2       },
+  { key: "license"        as View, label: "License",         icon: Key             },
 ];
 
 function Sidebar({ active, onNav }: { active: View; onNav: (v: View) => void }) {
@@ -750,17 +752,18 @@ export default function SetupPage() {
         <div className="flex items-center px-4 md:px-8 py-4 border-b border-slate-200/60 bg-white/40 backdrop-blur-sm">
           <div className="flex items-center gap-2 text-xs text-slate-400">
             <span className="font-semibold text-slate-600">
-              {view === "dashboard" ? "Dashboard"
-                : view === "doctor" ? "Doctor"
-                : view === "hospital" ? "Hospital"
-                : view === "doctor-logins" ? "Doctor's Login"
-                : "Hospital's Login"}
+              {view === "dashboard"       ? "Dashboard"
+                : view === "doctor"         ? "Doctor"
+                : view === "hospital"       ? "Hospital"
+                : view === "doctor-logins"  ? "Doctor's Login"
+                : view === "hospital-logins"? "Hospital's Login"
+                : "License Management"}
             </span>
           </div>
         </div>
 
         {/* Page body */}
-        <div className="flex-1 px-4 py-6 md:px-8 md:py-8 overflow-y-auto">
+        <div className={`flex-1 py-6 md:py-8 overflow-y-auto ${view === "license" ? "px-4 md:px-6" : "px-4 md:px-8"}`}>
           {view === "dashboard" && (
             <DashboardView onGo={setView} />
           )}
@@ -775,6 +778,9 @@ export default function SetupPage() {
           )}
           {view === "hospital-logins" && (
             <HospitalLoginsView />
+          )}
+          {view === "license" && (
+            <LicenseManagementView />
           )}
         </div>
       </main>
