@@ -2822,6 +2822,18 @@ function HospitalSetupWizard({ assignableRoles = [] }: { assignableRoles?: Assig
     setHosp((h) => ({ ...h, [k]: e.target.value }));
   };
 
+  // Auto-generate short code from hospital name
+  React.useEffect(() => {
+    const words = hosp.name.trim().toUpperCase().replace(/[^A-Z0-9\s]/g, "").split(/\s+/).filter(Boolean);
+    let code = "";
+    if (words.length === 1) code = words[0].slice(0, 4);
+    else if (words.length > 1) {
+      const initials = words.map((w) => w[0]).join("");
+      code = initials.length >= 2 ? initials.slice(0, 4) : words[0].slice(0, 4);
+    }
+    setHosp((h) => ({ ...h, shortCode: code }));
+  }, [hosp.name]);
+
   const [users, setUsers] = useState<UserDraft[]>([]);
   const newUser = (): UserDraft => ({ localId: Math.random().toString(36).slice(2), name: "", username: "", password: "", mobile: "", role: "HOSPITAL" });
   const addUser = () => setUsers((u) => [...u, newUser()]);
@@ -2962,18 +2974,13 @@ function HospitalSetupWizard({ assignableRoles = [] }: { assignableRoles?: Assig
                 />
                 {touched.name && step1Errors.name && <p className="text-xs text-red-600 mt-1">{step1Errors.name}</p>}
               </div>
-              {/* Short Code */}
+              {/* Short Code — auto-generated, read-only */}
               <div>
-                <LBL>Short Code *</LBL>
-                <input
-                  value={hosp.shortCode}
-                  onChange={(e) => setHosp((h) => ({ ...h, shortCode: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "") }))}
-                  onBlur={() => touch("shortCode")}
-                  placeholder="SEH" maxLength={8}
-                  className={`${F} font-mono ${touched.shortCode && step1Errors.shortCode ? "border-red-400 focus:ring-red-400" : ""}`}
-                />
-                {touched.shortCode && step1Errors.shortCode && <p className="text-xs text-red-600 mt-1">{step1Errors.shortCode}</p>}
-                {!step1Errors.shortCode && <p className="text-[10px] text-[var(--color-ink-400)] mt-1">2–8 uppercase letters/numbers. Used in UHID generation.</p>}
+                <LBL>Short Code</LBL>
+                <div className={`${F} font-mono bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)] select-none cursor-default`}>
+                  {hosp.shortCode || <span className="text-[var(--color-ink-300)]">Auto-generated from name</span>}
+                </div>
+                <p className="text-[10px] text-[var(--color-ink-400)] mt-1">Auto-generated from hospital name. Used in UHID generation.</p>
               </div>
               {/* Contact */}
               <div>
