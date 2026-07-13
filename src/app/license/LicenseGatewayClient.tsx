@@ -369,6 +369,7 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
           {/* ── State 2: Trial Active ── */}
           {status === "TRIAL_ACTIVE" && (
             <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/60 border border-slate-100 p-8 animate-fade-in">
+              <h1 className="text-xs font-bold tracking-widest uppercase text-slate-400 text-center mb-5">License Overview</h1>
               {/* Badge */}
               <div className={`flex items-center justify-center gap-2 mb-6 px-4 py-2.5 rounded-xl border font-semibold text-sm ${
                 data.daysRemaining <= 5 ? "bg-amber-50 border-amber-300 text-amber-700" : "bg-emerald-50 border-emerald-300 text-emerald-700"
@@ -467,6 +468,7 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
           {/* ── State 4: Licensed / Subscribed ── */}
           {(status === "SUBSCRIBED" || status === "SUBSCRIPTION_EXPIRED") && (
             <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/60 border border-slate-100 p-8 animate-fade-in">
+              <h1 className="text-xs font-bold tracking-widest uppercase text-slate-400 text-center mb-5">License Overview</h1>
               {status === "SUBSCRIBED" ? (
                 <div className="flex items-center justify-center gap-2 mb-6 px-4 py-2.5 rounded-xl bg-emerald-50 border border-emerald-300 text-emerald-700 font-semibold text-sm">
                   <CheckCircle2 size={15} /> Professional License — Active
