@@ -3,13 +3,14 @@
 import { useActionState, useEffect, useState, useMemo } from "react";
 import {
   Building2, Eye, CheckCircle2, AlertCircle,
-  User, Lock, Phone, Hash, MapPin, Briefcase, ArrowRight, ShieldCheck,
+  User, Lock, Phone, Hash, MapPin, Briefcase, ArrowRight,
   Stethoscope, LayoutDashboard, ArrowLeft, KeyRound, UserCheck,
-  Pencil, Trash2, X, Check, ExternalLink, Key,
+  Pencil, Trash2, X, Check, ExternalLink, Key, ShieldCheck,
 } from "lucide-react";
 import { createDoctor, createHospital } from "./actions";
 import Link from "next/link";
 import { LicenseManagementView } from "./LicenseManagementView";
+import { SetupDashboard } from "./SetupDashboard";
 
 type View = "dashboard" | "doctor" | "hospital" | "doctor-logins" | "hospital-logins" | "license";
 
@@ -86,60 +87,6 @@ function SubmitBtn({ pending, label, loadingLabel }: { pending: boolean; label: 
         </>
       )}
     </button>
-  );
-}
-
-// ── Dashboard View ─────────────────────────────────────────────────────────
-function DashboardView({ onGo }: { onGo: (v: View) => void }) {
-  return (
-    <div className="flex flex-col gap-8 max-w-lg">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">Welcome to Setup</h1>
-        <p className="text-sm text-slate-500 mt-2 leading-relaxed">
-          Use this wizard to configure doctors and hospitals before the system goes live.
-          Follow the steps below to get started.
-        </p>
-      </div>
-
-      <div className="flex flex-col gap-4">
-        {/* Step 1 */}
-        <button
-          onClick={() => onGo("hospital")}
-          className="flex items-center gap-4 px-5 py-4 rounded-2xl border border-slate-200 bg-white/70 hover:border-teal-400 hover:bg-teal-50/40 transition-all group text-left"
-        >
-          <div className="w-11 h-11 rounded-2xl bg-blue-100 flex items-center justify-center shrink-0">
-            <Building2 size={20} className="text-blue-700" />
-          </div>
-          <div className="flex-1">
-            <p className="text-sm font-semibold text-slate-800">1. Create a Hospital</p>
-            <p className="text-xs text-slate-500 mt-0.5">Register your clinic or hospital first.</p>
-          </div>
-          <ArrowRight size={15} className="text-slate-300 group-hover:text-teal-600 transition-colors" />
-        </button>
-
-        {/* Step 2 */}
-        <button
-          onClick={() => onGo("doctor")}
-          className="flex items-center gap-4 px-5 py-4 rounded-2xl border border-slate-200 bg-white/70 hover:border-teal-400 hover:bg-teal-50/40 transition-all group text-left"
-        >
-          <div className="w-11 h-11 rounded-2xl bg-teal-100 flex items-center justify-center shrink-0">
-            <Stethoscope size={20} className="text-teal-700" />
-          </div>
-          <div className="flex-1">
-            <p className="text-sm font-semibold text-slate-800">2. Create a Doctor</p>
-            <p className="text-xs text-slate-500 mt-0.5">Add a doctor account and link them to a hospital.</p>
-          </div>
-          <ArrowRight size={15} className="text-slate-300 group-hover:text-teal-600 transition-colors" />
-        </button>
-      </div>
-
-      <div className="flex items-start gap-3 px-4 py-3.5 rounded-2xl bg-amber-50 border border-amber-200">
-        <ShieldCheck size={15} className="text-amber-600 shrink-0 mt-0.5" />
-        <p className="text-xs text-amber-800 leading-relaxed">
-          Create hospitals before doctors so you can link them during doctor setup.
-        </p>
-      </div>
-    </div>
   );
 }
 
@@ -672,9 +619,9 @@ const NAV = [
 function Sidebar({ active, onNav }: { active: View; onNav: (v: View) => void }) {
   return (
     <aside
-      className="flex flex-col w-full lg:w-56 shrink-0 lg:min-h-full"
+      className="flex flex-col w-full lg:w-60 shrink-0 lg:min-h-full backdrop-blur-md"
       style={{
-        background: "linear-gradient(180deg, #0f172a 0%, #0f1a2e 100%)",
+        background: "linear-gradient(180deg, rgba(15,23,42,0.98) 0%, rgba(15,26,46,0.98) 100%)",
         borderRight: "1px solid rgba(255,255,255,0.06)",
       }}
     >
@@ -682,13 +629,16 @@ function Sidebar({ active, onNav }: { active: View; onNav: (v: View) => void }) 
       <div className="flex items-center gap-3 px-5 py-4 lg:py-6 border-b border-white/10">
         <div
           className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-          style={{ background: "linear-gradient(135deg, #0f766e, #14b8a6)" }}
+          style={{
+            background: "linear-gradient(135deg, #2563EB, #06B6D4)",
+            boxShadow: "0 4px 14px rgba(37,99,235,0.4)",
+          }}
         >
           <Eye size={18} className="text-white" />
         </div>
         <div>
           <p className="font-bold text-white text-sm leading-none">PPMS</p>
-          <p className="text-[10px] text-slate-400 mt-0.5">Setup</p>
+          <p className="text-[10px] text-slate-400 mt-0.5">Setup Console</p>
         </div>
       </div>
 
@@ -700,28 +650,43 @@ function Sidebar({ active, onNav }: { active: View; onNav: (v: View) => void }) 
             <button
               key={key}
               onClick={() => onNav(key)}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 text-left whitespace-nowrap shrink-0 lg:w-full ${
+              className={`group flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 text-left whitespace-nowrap shrink-0 lg:w-full ${
                 isActive
                   ? "text-white"
-                  : "text-slate-400 hover:text-slate-200 hover:bg-white/5"
+                  : "text-slate-400 hover:text-slate-100 hover:bg-white/[0.06]"
               }`}
               style={isActive ? {
-                background: "rgba(20,184,166,0.15)",
-                boxShadow: "inset 2px 0 0 #14b8a6",
+                background: "linear-gradient(90deg, rgba(37,99,235,0.25), rgba(6,182,212,0.12))",
+                boxShadow: "inset 2px 0 0 #06B6D4, 0 0 20px rgba(6,182,212,0.15)",
               } : {}}
             >
-              <Icon size={16} className={isActive ? "text-teal-400" : ""} />
-              {label}
+              <Icon
+                size={16}
+                className={`transition-transform duration-200 group-hover:scale-110 ${isActive ? "text-cyan-400" : ""}`}
+              />
+              <span className="transition-transform duration-200 group-hover:translate-x-0.5">{label}</span>
               {isActive && (
-                <span className="ml-auto w-1.5 h-1.5 rounded-full bg-teal-400" />
+                <span className="ml-auto w-1.5 h-1.5 rounded-full bg-cyan-400" style={{ boxShadow: "0 0 8px #06B6D4" }} />
               )}
             </button>
           );
         })}
       </nav>
 
-      {/* Back to Login */}
-      <div className="px-3 pb-4 lg:pb-6">
+      {/* Profile + Back to Login */}
+      <div className="px-3 pb-4 lg:pb-5 flex flex-col gap-2">
+        <div className="flex items-center gap-3 px-3 py-3 rounded-2xl bg-white/[0.04] border border-white/[0.06]">
+          <div
+            className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
+            style={{ background: "linear-gradient(135deg, #2563EB, #06B6D4)" }}
+          >
+            <ShieldCheck size={16} className="text-white" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-xs font-semibold text-white leading-tight">Super Admin</p>
+            <p className="text-[10px] text-slate-400 mt-0.5">Administrator</p>
+          </div>
+        </div>
         <Link
           href="/login"
           className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs text-slate-500 hover:text-slate-300 hover:bg-white/5 transition-all"
@@ -741,7 +706,12 @@ export default function SetupPage() {
   return (
     <div
       className="min-h-screen flex flex-col lg:flex-row"
-      style={{ background: "linear-gradient(135deg, #f0fdfa 0%, #e6fffa 30%, #f8fafc 70%, #ffffff 100%)" }}
+      style={{
+        background:
+          "radial-gradient(ellipse 60% 40% at 80% 0%, rgba(6,182,212,0.08), transparent), " +
+          "radial-gradient(ellipse 50% 40% at 10% 90%, rgba(37,99,235,0.06), transparent), " +
+          "#F8FAFC",
+      }}
     >
       {/* Sidebar */}
       <Sidebar active={view} onNav={setView} />
@@ -765,7 +735,7 @@ export default function SetupPage() {
         {/* Page body */}
         <div className={`flex-1 py-6 md:py-8 overflow-y-auto ${view === "license" ? "px-4 md:px-6" : "px-4 md:px-8"}`}>
           {view === "dashboard" && (
-            <DashboardView onGo={setView} />
+            <SetupDashboard onGo={setView} />
           )}
           {view === "doctor" && (
             <DoctorView onCreated={() => {}} />
