@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { createUser } from "../actions";
+import { createUser, validateUserFields } from "../actions";
 import { saveRolePermissions, createRole } from "@/app/(app)/settings/roles/actions";
 import { PERMISSION_GROUPS } from "@/app/(app)/settings/roles/permission-groups";
 import { Check, AlertTriangle, RefreshCw } from "lucide-react";
@@ -63,8 +63,9 @@ export function NewUserForm({
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [done, setDone] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [validatingStep1, setValidatingStep1] = useState(false);
   const [createError, setCreateError] = useState("");
-  // Server-side field errors: jump back to the correct step
+  // Server-side field errors keyed by field name
   const [serverFieldErrors, setServerFieldErrors] = useState<Record<string, string>>({});
 
   // Step 1 — User details
@@ -116,6 +117,41 @@ export function NewUserForm({
     role:       !role.trim() ? "Role is required." : undefined,
   };
   const step2Valid = Object.values(step2Errors).every((e) => !e);
+
+  // ── Step 1 → Step 2 with server-side uniqueness check ───────────────────────
+
+  async function handleNextFromStep1() {
+    const allTouched = { name: true, username: true, mobile: true, email: true, password: true, confirmPw: true };
+    setTouched1(allTouched);
+
+    // Local validation first (format checks)
+    const localErrors = {
+      name:      !name.trim(),
+      username:  !username.trim() || !/^[a-z0-9._-]{3,}$/.test(username.trim()),
+      mobile:    !!(mobile.trim() && !/^\d{10}$/.test(mobile.trim())),
+      email:     !!(email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())),
+      password:  password.length < 6,
+      confirmPw: password !== confirmPw,
+    };
+    if (Object.values(localErrors).some(Boolean)) return;
+
+    // Server-side uniqueness check before advancing
+    setValidatingStep1(true);
+    const { errors } = await validateUserFields({
+      username: username.trim().toLowerCase(),
+      email:    email.trim() || undefined,
+      mobile:   mobile.trim() || undefined,
+    });
+    setValidatingStep1(false);
+
+    if (Object.keys(errors).length > 0) {
+      setServerFieldErrors(errors);
+      return;
+    }
+
+    setServerFieldErrors({});
+    setStep(2);
+  }
 
   // ── Submit ──────────────────────────────────────────────────────────────────
 
@@ -344,13 +380,13 @@ export function NewUserForm({
 
           <div className="flex justify-end">
             <button
-              onClick={() => {
-                setTouched1({ name: true, username: true, mobile: true, email: true, password: true, confirmPw: true });
-                if (step1Valid) setStep(2);
-              }}
-              className="rounded-xl bg-[var(--color-primary-600)] px-6 py-2.5 text-sm font-semibold text-white hover:bg-[var(--color-primary-700)] transition-colors"
+              onClick={handleNextFromStep1}
+              disabled={validatingStep1}
+              className="flex items-center gap-2 rounded-xl bg-[var(--color-primary-600)] px-6 py-2.5 text-sm font-semibold text-white hover:bg-[var(--color-primary-700)] disabled:opacity-60 transition-colors"
             >
-              Next: Hospital & Role →
+              {validatingStep1
+                ? <><RefreshCw size={14} className="animate-spin" /> Checking…</>
+                : "Next: Hospital & Role →"}
             </button>
           </div>
         </div>

@@ -151,3 +151,24 @@ export async function toggleUserActive(userId: string, active: boolean): Promise
   await prisma.user.update({ where: { id: userId }, data: { active } });
   revalidatePath("/users");
 }
+
+export async function validateUserFields(data: {
+  username: string;
+  email?: string;
+  mobile?: string;
+}): Promise<{ errors: Record<string, string> }> {
+  await requireRole("DOCTOR");
+  const errors: Record<string, string> = {};
+
+  const taken = await prisma.user.findUnique({ where: { username: data.username }, select: { id: true } });
+  if (taken) errors.username = "Username already taken.";
+
+  if (data.email) {
+    if (await isEmailTaken(data.email)) errors.email = "This email address is already registered to another account.";
+  }
+  if (data.mobile) {
+    if (await isMobileTaken(data.mobile)) errors.mobile = "This mobile number is already registered to another account.";
+  }
+
+  return { errors };
+}
