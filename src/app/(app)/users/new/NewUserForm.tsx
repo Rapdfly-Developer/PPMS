@@ -64,6 +64,8 @@ export function NewUserForm({
   const [done, setDone] = useState(false);
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState("");
+  // Server-side field errors: jump back to the correct step
+  const [serverFieldErrors, setServerFieldErrors] = useState<Record<string, string>>({});
 
   // Step 1 — User details
   const [name, setName]               = useState("");
@@ -101,16 +103,16 @@ export function NewUserForm({
 
   const step1Errors: Record<string, string | undefined> = {
     name:      !name.trim() ? "Name is required." : undefined,
-    username:  !username.trim() ? "Username is required." : !/^[a-z0-9._-]{3,}$/.test(username.trim()) ? "Lowercase letters only (a–z, 0–9, . _ -). No uppercase or spaces." : undefined,
-    mobile:    mobile.trim() && !/^\d{10}$/.test(mobile.trim()) ? "Must be exactly 10 digits." : undefined,
-    email:     email.trim() && !emailRe.test(email.trim()) ? "Enter a valid email." : undefined,
+    username:  !username.trim() ? "Username is required." : !/^[a-z0-9._-]{3,}$/.test(username.trim()) ? "Lowercase letters only (a–z, 0–9, . _ -). No uppercase or spaces." : serverFieldErrors.username,
+    mobile:    mobile.trim() && !/^\d{10}$/.test(mobile.trim()) ? "Must be exactly 10 digits." : serverFieldErrors.mobile,
+    email:     email.trim() && !emailRe.test(email.trim()) ? "Enter a valid email." : serverFieldErrors.email,
     password:  password.length < 6 ? "Min 6 characters." : undefined,
     confirmPw: password !== confirmPw ? "Passwords do not match." : undefined,
   };
   const step1Valid = Object.values(step1Errors).every((e) => !e);
 
   const step2Errors: Record<string, string | undefined> = {
-    hospitalId: !hospitalId ? "Please select a hospital." : undefined,
+    hospitalId: !hospitalId ? "Please select a hospital." : serverFieldErrors.hospitalId,
     role:       !role.trim() ? "Role is required." : undefined,
   };
   const step2Valid = Object.values(step2Errors).every((e) => !e);
@@ -133,7 +135,31 @@ export function NewUserForm({
     if (doctorId) fd.set("doctorId", doctorId);
 
     const res = await createUser(fd);
-    if (res.error) { setCreateError(res.error); setCreating(false); return; }
+    if (res.error) {
+      setCreating(false);
+      const msg = res.error;
+      // Route the error back to the step that owns the field
+      if (/mobile/i.test(msg)) {
+        setServerFieldErrors({ mobile: msg });
+        setTouched1((t) => ({ ...t, mobile: true }));
+        setStep(1);
+      } else if (/email/i.test(msg)) {
+        setServerFieldErrors({ email: msg });
+        setTouched1((t) => ({ ...t, email: true }));
+        setStep(1);
+      } else if (/username/i.test(msg)) {
+        setServerFieldErrors({ username: msg });
+        setTouched1((t) => ({ ...t, username: true }));
+        setStep(1);
+      } else if (/hospital/i.test(msg)) {
+        setServerFieldErrors({ hospitalId: msg });
+        setTouched2((t) => ({ ...t, hospitalId: true }));
+        setStep(2);
+      } else {
+        setCreateError(msg);
+      }
+      return;
+    }
 
     // Create custom role in DB if new
     const normalizedRole = role.trim().toUpperCase();
@@ -232,7 +258,8 @@ export function NewUserForm({
               <div className="sm:col-span-2">
                 <label className={LBL}>Username *</label>
                 <input
-                  value={username} onChange={(e) => setUsername(e.target.value)}
+                  value={username}
+                  onChange={(e) => { setUsername(e.target.value); setServerFieldErrors((s) => ({ ...s, username: "" })); }}
                   onBlur={() => setTouched1((t) => ({ ...t, username: true }))}
                   placeholder="e.g. priya.sharma"
                   autoComplete="off"
@@ -245,7 +272,8 @@ export function NewUserForm({
               <div>
                 <label className={LBL}>Mobile Number</label>
                 <input
-                  value={mobile} onChange={(e) => setMobile(e.target.value)}
+                  value={mobile}
+                  onChange={(e) => { setMobile(e.target.value); setServerFieldErrors((s) => ({ ...s, mobile: "" })); }}
                   onBlur={() => setTouched1((t) => ({ ...t, mobile: true }))}
                   placeholder="10-digit number" maxLength={10}
                   className={`${F} ${touched1.mobile && step1Errors.mobile ? "border-red-400 focus:ring-red-400" : ""}`}
@@ -257,7 +285,8 @@ export function NewUserForm({
               <div>
                 <label className={LBL}>Email Address</label>
                 <input
-                  type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+                  type="email" value={email}
+                  onChange={(e) => { setEmail(e.target.value); setServerFieldErrors((s) => ({ ...s, email: "" })); }}
                   onBlur={() => setTouched1((t) => ({ ...t, email: true }))}
                   placeholder="priya@hospital.com"
                   className={`${F} ${touched1.email && step1Errors.email ? "border-red-400 focus:ring-red-400" : ""}`}
