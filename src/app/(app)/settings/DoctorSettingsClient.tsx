@@ -3384,6 +3384,125 @@ function LicensesSection() {
         )}
       </div>
 
+      {/* Renewal Details */}
+      {!loading && lic && (() => {
+        const isExpired   = status === "SUBSCRIPTION_EXPIRED" || status === "TRIAL_EXPIRED";
+        const isTrial     = status === "TRIAL_ACTIVE";
+        const isActive    = status === "SUBSCRIBED";
+        const days        = lic.remainingDays ?? 0;
+        const urgent      = days <= 7;
+        const warning     = !urgent && days <= 30;
+        const expiryDate  = fmt(lic.subscriptionEndsAt ?? lic.trialEndsAt ?? null);
+
+        const bannerCls = isExpired
+          ? "bg-red-50 border-red-200 text-red-800"
+          : urgent
+            ? "bg-red-50 border-red-200 text-red-800"
+            : warning
+              ? "bg-amber-50 border-amber-200 text-amber-800"
+              : isTrial
+                ? "bg-blue-50 border-blue-200 text-blue-800"
+                : "bg-emerald-50 border-emerald-200 text-emerald-800";
+
+        const bannerIcon = isExpired || urgent ? "🔴" : warning ? "🟡" : "🟢";
+
+        const bannerMsg = isExpired
+          ? `Your ${isTrial ? "trial" : "subscription"} has expired. Activate a license key to restore full access.`
+          : urgent
+            ? `Your license expires in ${days} day${days === 1 ? "" : "s"} on ${expiryDate}. Renew immediately to avoid service interruption.`
+            : warning
+              ? `Your license expires in ${days} days on ${expiryDate}. Consider renewing soon.`
+              : isTrial
+                ? `You're on a free trial — it ends on ${expiryDate} (${days} day${days === 1 ? "" : "s"} left). Activate a paid license before then to continue without interruption.`
+                : `Your license is active and renews on ${expiryDate} (${days} day${days === 1 ? "" : "s"} remaining).`;
+
+        return (
+          <div className="rounded-xl border border-[var(--color-border)] bg-white p-5 space-y-5">
+            <p className="text-sm font-semibold text-[var(--color-ink-700)]">Renewal Details</p>
+
+            {/* Status banner */}
+            <div className={`flex items-start gap-3 rounded-xl border px-4 py-3 ${bannerCls}`}>
+              <span className="text-base mt-0.5">{bannerIcon}</span>
+              <p className="text-sm font-medium leading-relaxed">{bannerMsg}</p>
+            </div>
+
+            {/* Key dates */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {[
+                {
+                  label: "Plan",
+                  value: isTrial ? "Free Trial" : isActive ? (lic.plan === "YEARLY" ? "Annual" : "Monthly") : "—",
+                  sub: isTrial ? "30-day evaluation" : isActive && lic.plan === "YEARLY" ? "Billed annually" : isActive ? "Billed monthly" : "",
+                },
+                {
+                  label: isExpired ? "Expired On" : "Expires On",
+                  value: expiryDate,
+                  sub: isExpired ? "Renewal required" : `${days} day${days === 1 ? "" : "s"} remaining`,
+                },
+                {
+                  label: "Payment",
+                  value: lic.paymentStatus === "MANUAL" ? "Manual" : lic.paymentStatus ?? "—",
+                  sub: "Contact support to renew",
+                },
+              ].map((c) => (
+                <div key={c.label} className="rounded-lg bg-[var(--color-surface-sunken)] px-4 py-3">
+                  <p className="text-xs text-[var(--color-ink-400)] font-medium uppercase tracking-wide">{c.label}</p>
+                  <p className="text-sm font-semibold text-[var(--color-ink-900)] mt-1">{c.value}</p>
+                  {c.sub && <p className="text-xs text-[var(--color-ink-400)] mt-0.5">{c.sub}</p>}
+                </div>
+              ))}
+            </div>
+
+            {/* What happens on expiry */}
+            <div className="rounded-lg border border-[var(--color-border)] p-4 space-y-2">
+              <p className="text-xs font-semibold text-[var(--color-ink-600)] uppercase tracking-wide">What happens when a license expires</p>
+              <ul className="space-y-1.5 text-sm text-[var(--color-ink-600)]">
+                <li className="flex items-start gap-2"><span className="mt-0.5 shrink-0 text-red-500">✕</span>Staff and hospital logins are blocked</li>
+                <li className="flex items-start gap-2"><span className="mt-0.5 shrink-0 text-red-500">✕</span>Patient records remain safe but cannot be accessed</li>
+                <li className="flex items-start gap-2"><span className="mt-0.5 shrink-0 text-amber-500">⚠</span>All data is preserved — nothing is deleted</li>
+                <li className="flex items-start gap-2"><span className="mt-0.5 shrink-0 text-emerald-500">✓</span>Full access resumes immediately upon license activation</li>
+              </ul>
+            </div>
+
+            {/* How to renew */}
+            <div className="space-y-3">
+              <p className="text-xs font-semibold text-[var(--color-ink-600)] uppercase tracking-wide">How to renew</p>
+              <ol className="space-y-3">
+                {[
+                  { step: "1", title: "Contact Support", desc: "Reach out to PPMS support to purchase or renew your license plan." },
+                  { step: "2", title: "Receive Your License Key", desc: "You'll receive a key in the format PPMS-XXXX-XXXX-XXXX-XXXX via email." },
+                  { step: "3", title: "Activate the Key", desc: "Go to your License page (the startup screen) and enter the key under \"Activate License\"." },
+                ].map((s) => (
+                  <li key={s.step} className="flex items-start gap-3">
+                    <span className="shrink-0 w-6 h-6 rounded-full bg-[var(--color-primary-100)] text-[var(--color-primary-700)] text-xs font-bold flex items-center justify-center mt-0.5">
+                      {s.step}
+                    </span>
+                    <div>
+                      <p className="text-sm font-semibold text-[var(--color-ink-800)]">{s.title}</p>
+                      <p className="text-xs text-[var(--color-ink-500)] mt-0.5">{s.desc}</p>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            </div>
+
+            {/* Support CTA */}
+            <div className="flex items-center gap-3 rounded-xl bg-[var(--color-primary-50)] border border-[var(--color-primary-100)] px-4 py-3">
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-[var(--color-primary-800)]">Need help with renewal?</p>
+                <p className="text-xs text-[var(--color-primary-600)] mt-0.5">Contact our support team and we'll get you back up and running quickly.</p>
+              </div>
+              <a
+                href="mailto:support@ppmsai.com"
+                className="shrink-0 rounded-xl bg-[var(--color-primary-600)] text-white text-xs font-semibold px-4 py-2 hover:bg-[var(--color-primary-700)] transition-colors"
+              >
+                Contact Support
+              </a>
+            </div>
+          </div>
+        );
+      })()}
+
     </div>
   );
 }
