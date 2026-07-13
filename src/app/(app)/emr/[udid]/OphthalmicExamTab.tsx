@@ -68,12 +68,12 @@ export function OphthalmicExamTab({ visit, priorVisits, udid, role }: { visit: a
 
 function EyeColumns({ children }: { children: [React.ReactNode, React.ReactNode] }) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
       <div>
         <p className="text-xs font-semibold text-[var(--color-primary-700)] uppercase tracking-wide mb-3">Right Eye</p>
         {children[0]}
       </div>
-      <div className="md:pl-8 md:border-l md:border-[var(--color-border)] pt-6 mt-2 border-t border-[var(--color-border)] md:pt-0 md:mt-0 md:border-t-0">
+      <div>
         <p className="text-xs font-semibold text-[var(--color-primary-700)] uppercase tracking-wide mb-3">Left Eye</p>
         {children[1]}
       </div>
@@ -261,7 +261,7 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
       </div>
       {vaSelect("Resulting VA", val.va, (v) => setVal({ ...val, va: v }))}
 
-      <div className="pt-3 border-t border-[var(--color-border)]">
+      <div className="pt-2">
         <p className="text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-widest mb-4">Near</p>
         <div className="flex flex-col gap-4">
           {smallInput("Sph", val.nearSph, (v) => setVal({ ...val, nearSph: v }))}
