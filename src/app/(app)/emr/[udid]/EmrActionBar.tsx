@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useTransition, useRef, useEffect } from "react";
-import { Save, Printer, FileSignature, CheckCircle2, Download, ChevronDown, X, FileText } from "lucide-react";
+import { useState, useTransition, useRef, useEffect, ReactNode } from "react";
+import { ChevronRight, Printer, FileSignature, CheckCircle2, Download, ChevronDown, X, FileText } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { touchVisit, closeVisit } from "./actions";
+import { closeVisit } from "./actions";
 
 function SuccessModal({ udid, onClose }: { udid: string; onClose: () => void }) {
   const router = useRouter();
@@ -40,13 +40,18 @@ function SuccessModal({ udid, onClose }: { udid: string; onClose: () => void }) 
   );
 }
 
-export function EmrActionBar({ visit, udid, patientName }: { visit: any; udid: string; patientName?: string }) {
+export function EmrActionBar({
+  visit, udid, patientName, currentTabIndex = 0, totalTabs = 1, onNextSection,
+}: {
+  visit: any; udid: string; patientName?: string;
+  currentTabIndex?: number; totalTabs?: number; onNextSection?: () => void;
+}) {
   const [pending, startTransition] = useTransition();
-  const [draftSaved, setDraftSaved] = useState(false);
   const [printOpen, setPrintOpen] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
   const closed = visit.status === "CLOSED";
+  const isLastTab = currentTabIndex >= totalTabs - 1;
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -66,21 +71,12 @@ export function EmrActionBar({ visit, udid, patientName }: { visit: any; udid: s
       {showSuccess && <SuccessModal udid={udid} onClose={() => setShowSuccess(false)} />}
 
       <div className="fixed bottom-0 left-0 md:left-56 right-0 z-20 border-t border-[var(--color-border)] bg-white/95 backdrop-blur-sm px-6 md:px-8 py-3 flex items-center justify-end gap-3 shadow-[0_-4px_16px_rgba(20,36,43,0.06)]">
-        {draftSaved && <span className="text-xs font-medium text-[var(--color-success-600)] mr-1">Draft saved</span>}
-
-        {!closed && (
+        {!closed && !isLastTab && (
           <button
-            disabled={pending}
-            onClick={() =>
-              startTransition(async () => {
-                await touchVisit(visit.id, udid);
-                setDraftSaved(true);
-                setTimeout(() => setDraftSaved(false), 2500);
-              })
-            }
-            className="flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-xl bg-white border border-[var(--color-border)] hover:border-[var(--color-primary-500)] text-[var(--color-ink-700)] disabled:opacity-60"
+            onClick={onNextSection}
+            className="flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-xl bg-white border border-[var(--color-border)] hover:border-[var(--color-primary-500)] text-[var(--color-ink-700)]"
           >
-            <Save size={15} /> Save Draft
+            Next Section <ChevronRight size={15} />
           </button>
         )}
 

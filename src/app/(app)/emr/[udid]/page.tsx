@@ -2,7 +2,6 @@ import { requirePermission } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { notFound, redirect } from "next/navigation";
 import { Card } from "@/components/ui/Card";
-import { Tabs } from "@/components/ui/Tabs";
 import { format } from "date-fns";
 import { User, Eye, Activity, Link2, FileText, FolderOpen, Lock } from "lucide-react";
 import { BackButton } from "@/components/ui/BackButton";
@@ -12,7 +11,7 @@ import { OphthalmicExamTab } from "./OphthalmicExamTab";
 import { InvestigationsTab } from "./InvestigationsTab";
 import { AssessmentTab } from "./AssessmentTab";
 import { PlanTab } from "./PlanTab";
-import { EmrActionBar } from "./EmrActionBar";
+import { EmrTabsShell } from "./EmrTabsShell";
 import { RequestUnlockButton } from "./RequestUnlockButton";
 import { PrintHeader, PrintFooter } from "@/components/ui/PrintLayout";
 
@@ -286,8 +285,11 @@ export default async function PatientDetailedEMR({
         </Card>
       ) : (
         <div>
-          <div>
-          <Tabs
+          <EmrTabsShell
+            visit={activeVisit}
+            udid={udid}
+            patientName={patient.name}
+            showActionBar={user.role === "DOCTOR"}
             tabs={[
               {
                 id: "general",
@@ -375,13 +377,6 @@ export default async function PatientDetailedEMR({
               },
             ]}
           />
-
-          {user.role === "DOCTOR" && (
-            <div className="no-print">
-              <EmrActionBar visit={activeVisit} udid={udid} patientName={patient.name} />
-            </div>
-          )}
-          </div>
         </div>
       )}
       <PrintFooter

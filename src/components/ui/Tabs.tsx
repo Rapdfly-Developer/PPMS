@@ -7,11 +7,22 @@ import clsx from "clsx";
 export function Tabs({
   tabs,
   defaultTab,
+  activeTab: controlledActive,
+  onTabChange,
 }: {
   tabs: { id: string; label: string; icon?: ReactNode; badge?: number; content: ReactNode }[];
   defaultTab?: string;
+  activeTab?: string;
+  onTabChange?: (id: string) => void;
 }) {
-  const [active, setActive] = useState(defaultTab ?? tabs[0]?.id);
+  const [internalActive, setInternalActive] = useState(defaultTab ?? tabs[0]?.id);
+  const active = controlledActive ?? internalActive;
+
+  function handleTabChange(id: string) {
+    if (controlledActive === undefined) setInternalActive(id);
+    onTabChange?.(id);
+  }
+
   const activeTab = tabs.find((t) => t.id === active);
 
   return (
@@ -20,7 +31,7 @@ export function Tabs({
         {tabs.map((tab) => (
           <button
             key={tab.id}
-            onClick={() => setActive(tab.id)}
+            onClick={() => handleTabChange(tab.id)}
             className={clsx(
               "relative px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-colors",
               active === tab.id
