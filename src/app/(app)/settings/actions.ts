@@ -543,6 +543,115 @@ export async function getHospitalsWithLicense(): Promise<{
   }];
 }
 
+export type LicenseFullData = {
+  doctorId: string;
+  doctorName: string;
+  doctorEmail: string | null;
+  doctorContact: string | null;
+  primaryHospital: string | null;
+  shortId: string;
+  status: "SUBSCRIBED" | "TRIAL_ACTIVE" | "TRIAL_EXPIRED" | "SUBSCRIPTION_EXPIRED" | "NO_LICENSE";
+  plan: string | null;
+  licenseKeyMasked: string | null;
+  subscriptionStartsAt: string | null;
+  subscriptionEndsAt: string | null;
+  trialStartsAt: string | null;
+  trialEndsAt: string | null;
+  remainingDays: number;
+  paymentStatus: string;
+  machineId: string | null;
+  deviceName: string | null;
+  lastVerifiedAt: string | null;
+  razorpayOrderId: string | null;
+  razorpayPaymentId: string | null;
+  isActive: boolean;
+  events: {
+    id: string;
+    date: string;
+    action: string;
+    keyMasked: string | null;
+    performedBy: string | null;
+    status: "SUCCESS" | "FAILED";
+    detail: string | null;
+  }[];
+};
+
+export async function getLicenseFullDetails(): Promise<LicenseFullData | null> {
+  const authUser = await requireRole("DOCTOR");
+  const now = new Date();
+
+  const doctor = await prisma.doctor.findUnique({
+    where: { userId: authUser.id },
+    include: {
+      license: true,
+      hospitalLinks: {
+        where: { active: true },
+        take: 1,
+        select: { hospital: { select: { name: true } } },
+      },
+    },
+  });
+  if (!doctor) return null;
+
+  const lic = doctor.license;
+
+  let status: LicenseFullData["status"] = "NO_LICENSE";
+  if (lic) {
+    if (lic.subscriptionEndsAt && lic.subscriptionEndsAt > now) status = "SUBSCRIBED";
+    else if (lic.subscriptionEndsAt && lic.subscriptionEndsAt <= now) status = "SUBSCRIPTION_EXPIRED";
+    else if (lic.trialEndsAt && lic.trialEndsAt > now) status = "TRIAL_ACTIVE";
+    else if (lic.trialEndsAt) status = "TRIAL_EXPIRED";
+  }
+
+  const expiresAt = lic?.subscriptionEndsAt ?? lic?.trialEndsAt;
+  const remainingDays = expiresAt && expiresAt > now
+    ? Math.ceil((expiresAt.getTime() - now.getTime()) / 86_400_000)
+    : 0;
+
+  const licenseKeyMasked = lic?.licenseKey
+    ? lic.licenseKey.split("-").map((p, i) => (i < 2 ? p : "****")).join("-")
+    : null;
+
+  const events = await prisma.licenseEvent.findMany({
+    where: { doctorId: doctor.id },
+    orderBy: { createdAt: "desc" },
+    take: 100,
+  });
+
+  return {
+    doctorId: doctor.id,
+    doctorName: doctor.name,
+    doctorEmail: doctor.email ?? null,
+    doctorContact: doctor.contact ?? null,
+    primaryHospital: doctor.hospitalLinks[0]?.hospital.name ?? null,
+    shortId: doctor.id.slice(-8).toUpperCase(),
+    status,
+    plan: lic?.plan ?? null,
+    licenseKeyMasked,
+    subscriptionStartsAt: lic?.subscriptionStartsAt?.toISOString() ?? null,
+    subscriptionEndsAt: lic?.subscriptionEndsAt?.toISOString() ?? null,
+    trialStartsAt: lic?.trialStartsAt?.toISOString() ?? null,
+    trialEndsAt: lic?.trialEndsAt?.toISOString() ?? null,
+    remainingDays,
+    paymentStatus: lic?.paymentStatus ?? "NONE",
+    machineId: lic?.machineId ?? null,
+    deviceName: lic?.deviceName ?? null,
+    lastVerifiedAt: lic?.lastVerifiedAt?.toISOString() ?? null,
+    razorpayOrderId: lic?.razorpayOrderId ?? null,
+    razorpayPaymentId: lic?.razorpayPaymentId ?? null,
+    isActive: lic?.isActive ?? false,
+    events: events.map((e) => ({
+      id: e.id,
+      date: e.createdAt.toISOString(),
+      action: e.action,
+      keyMasked: e.keyMasked,
+      performedBy: e.performedBy,
+      status: e.status as "SUCCESS" | "FAILED",
+      detail: e.detail,
+    })),
+  };
+}
+
 // ── License key registry (signed keys) ──────────────────────────────────────
 
 /** When LICENSE_ADMIN_EMAILS is set (comma-separated), only those emails may
