@@ -334,11 +334,14 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
                 {isPending ? <><Loader2 size={16} className="animate-spin" /> Starting Trial…</> : <><Star size={16} /> Start Free Trial</>}
               </button>
 
-              <div className="mt-3 text-center">
+              <div className="mt-3 text-center flex flex-col items-center gap-2">
                 <button onClick={() => { setError(""); setData((d) => ({ ...d, status: "ACTIVATE_ONLY" })); }}
                   className="text-xs text-[#157A73] hover:underline">
                   Already have a License Key?
                 </button>
+                <a href="/login" className="text-xs text-[#8A9AA1] hover:text-[#157A73] hover:underline transition-colors">
+                  ← Back to Login
+                </a>
               </div>
             </div>
           )}
