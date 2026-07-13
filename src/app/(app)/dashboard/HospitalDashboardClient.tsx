@@ -66,7 +66,6 @@ const STATUS_FILTERS = [
   { key: "CONFIRMED", label: "Waiting"   },
   { key: "DISPENSED", label: "Dispensed" },
   { key: "CANCELLED", label: "Cancelled" },
-  { key: "NO_SHOW",   label: "No Show"   },
 ] as const;
 
 /* ── Single appointment row ─────────────────────────────────────────────── */
