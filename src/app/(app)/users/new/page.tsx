@@ -12,10 +12,11 @@ export default async function NewUserPage({
   const doctor = await requireRole("DOCTOR");
   const { returnTo } = await searchParams;
 
-  const [hospitals, assignableRoles] = await Promise.all([
-    prisma.hospital.findMany({
-      select: { id: true, name: true },
-      orderBy: { name: "asc" },
+  const [linkedHospitals, assignableRoles] = await Promise.all([
+    prisma.doctorHospitalLink.findMany({
+      where: { doctorId: doctor.profileId, active: true },
+      select: { hospital: { select: { id: true, name: true } } },
+      orderBy: { hospital: { name: "asc" } },
     }),
     prisma.role.findMany({
       where: { name: { not: "DOCTOR" }, isActive: true },
@@ -24,6 +25,7 @@ export default async function NewUserPage({
     }),
   ]);
 
+  const hospitals = linkedHospitals.map((l) => l.hospital);
   const backHref = returnTo ?? "/users";
 
   return (
