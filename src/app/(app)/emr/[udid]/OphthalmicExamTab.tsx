@@ -68,12 +68,12 @@ export function OphthalmicExamTab({ visit, priorVisits, udid, role }: { visit: a
 
 function EyeColumns({ children }: { children: [React.ReactNode, React.ReactNode] }) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
-      <div>
+    <div className="flex flex-wrap gap-x-16 gap-y-8">
+      <div className="min-w-[220px]">
         <p className="text-xs font-semibold text-[var(--color-primary-700)] uppercase tracking-wide mb-3">Right Eye</p>
         {children[0]}
       </div>
-      <div>
+      <div className="min-w-[220px]">
         <p className="text-xs font-semibold text-[var(--color-primary-700)] uppercase tracking-wide mb-3">Left Eye</p>
         {children[1]}
       </div>
