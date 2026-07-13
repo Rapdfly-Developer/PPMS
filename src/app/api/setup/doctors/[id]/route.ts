@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
+import { requireSuperAdmin } from "@/lib/rbac";
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  try { await requireSuperAdmin(); } catch { return NextResponse.json({ error: "Forbidden" }, { status: 403 }); }
   const { id } = await params;
   const { name, specialty, contact, shortCode, password, active } = await req.json();
 
@@ -36,6 +38,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 }
 
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+  try { await requireSuperAdmin(); } catch { return NextResponse.json({ error: "Forbidden" }, { status: 403 }); }
   const { id } = await params;
   const doctor = await prisma.doctor.findUnique({ where: { id }, select: { userId: true } });
   if (!doctor) return NextResponse.json({ error: "Not found" }, { status: 404 });

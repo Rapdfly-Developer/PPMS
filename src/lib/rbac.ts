@@ -6,6 +6,7 @@ import type { Role } from "@/lib/constants";
 export type SessionUser = {
   id: string;
   name: string;
+  username: string;
   role: Role;
   profileId: string;
   hospitalId?: string;
@@ -30,6 +31,14 @@ export async function requireUser(): Promise<SessionUser> {
 
   // Always resolve fresh permissions so changes in Role Manager take effect immediately.
   user.permissions = await freshPermissions(user.role);
+  return user;
+}
+
+/** Restricts a route to the Super Admin only (username in SETUP_ADMIN_USERNAME env var). */
+export async function requireSuperAdmin(): Promise<SessionUser> {
+  const user = await requireUser();
+  const adminUsername = process.env.SETUP_ADMIN_USERNAME ?? "doctor";
+  if (user.username !== adminUsername) redirect("/");
   return user;
 }
 

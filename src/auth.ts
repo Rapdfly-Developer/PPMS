@@ -91,6 +91,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         return {
           id: user.id,
           name: profileName,
+          username: user.username,
           role: user.role as Role,
           profileId,
           hospitalId,
@@ -115,6 +116,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     jwt: async ({ token, user }) => {
       if (user) {
         token.role = (user as any).role;
+        token.username = (user as any).username;
         token.profileId = (user as any).profileId;
         token.hospitalId = (user as any).hospitalId;
         token.doctorId = (user as any).doctorId;
@@ -125,6 +127,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     session: async ({ session, token }) => {
       (session.user as any).id = token.sub;
       (session.user as any).role = token.role;
+      (session.user as any).username = token.username;
       (session.user as any).profileId = token.profileId;
       (session.user as any).hospitalId = token.hospitalId;
       (session.user as any).doctorId = token.doctorId;
