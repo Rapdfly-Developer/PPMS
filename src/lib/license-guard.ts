@@ -166,8 +166,8 @@ export async function checkLicenseFromCookies(): Promise<LicenseGuardResult> {
 export async function checkLicenseForLogin(username: string): Promise<LicenseGuardResult | null> {
   let user;
   try {
-    user = await prisma.user.findUnique({
-      where: { username },
+    user = await prisma.user.findFirst({
+      where: { OR: [{ username }, { email: username }] },
       select: {
         doctor: { select: { id: true } },
         refractionist: { select: { doctorId: true, hospitalId: true } },

@@ -240,7 +240,7 @@ export default function LoginPage() {
               >
                 {/* Username */}
                 <div>
-                  <label className="text-xs font-semibold block mb-1.5" style={{ color: "#34474F" }}>Username</label>
+                  <label className="text-xs font-semibold block mb-1.5" style={{ color: "#34474F" }}>Username / Email</label>
                   <div className="relative">
                     <User size={15} className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none"
                       style={{ color: touched.username && fieldErrors.username ? "#B3261E" : "#8A9AA1" }} />
@@ -258,7 +258,7 @@ export default function LoginPage() {
                         const errs = validate({ username, password });
                         setFieldErrors(prev => ({ ...prev, username: errs.username }));
                       }}
-                      placeholder="e.g. doctor, nurse, admin..."
+                      placeholder="Username or email address"
                       className="w-full pl-11 pr-4 py-3 text-sm rounded-xl border-2 outline-none transition-all"
                       style={{
                         borderColor: touched.username && fieldErrors.username ? "#B3261E" : "#E2E6E8",

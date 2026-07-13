@@ -36,7 +36,7 @@ export async function loginAction(_prev: { error?: string } | undefined, formDat
       redirectTo: "/",
     });
     // Update the latest login record for this user with IP/UA
-    const user = await prisma.user.findUnique({ where: { username }, select: { id: true } });
+    const user = await prisma.user.findFirst({ where: { OR: [{ username }, { email: username }] }, select: { id: true } });
     if (user) {
       prisma.userLoginHistory.updateMany({
         where: { userId: user.id, isActive: true },
@@ -47,8 +47,8 @@ export async function loginAction(_prev: { error?: string } | undefined, formDat
   } catch (err) {
     if (err instanceof AuthError) {
       // Record failed attempt
-      const user = await prisma.user.findUnique({
-        where: { username },
+      const user = await prisma.user.findFirst({
+        where: { OR: [{ username }, { email: username }] },
         select: { id: true, role: true, hospitalStaff: { select: { hospitalId: true } } },
       }).catch(() => null);
 

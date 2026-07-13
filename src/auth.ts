@@ -23,8 +23,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         let user: any;
         for (let attempt = 1; attempt <= 2; attempt++) {
           try {
-            user = await prisma.user.findUnique({
-              where: { username },
+            user = await prisma.user.findFirst({
+              where: { OR: [{ username }, { email: username }] },
               include: { doctor: true, hospitalStaff: { include: { hospital: true } }, refractionist: true },
             });
             break;
