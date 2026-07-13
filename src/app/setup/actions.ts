@@ -13,7 +13,7 @@ export async function createDoctor(
   const name      = (formData.get("name") as string)?.trim();
   const username  = (formData.get("username") as string)?.trim().toLowerCase();
   const password  = (formData.get("password") as string);
-  const specialty = (formData.get("specialty") as string)?.trim() || "Ophthalmology";
+  const specialty = (formData.get("specialty") as string)?.trim() || "";
   const contact   = (formData.get("contact") as string)?.trim() || null;
 
   if (!name || !username || !password)

@@ -20,7 +20,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     where: { id },
     data: {
       name: name?.trim() || undefined,
-      specialty: specialty?.trim() || "Ophthalmology",
+      specialty: specialty?.trim() ?? "",
       contact: contact?.trim() || null,
       shortCode: shortCode?.trim().toUpperCase() || null,
     },
