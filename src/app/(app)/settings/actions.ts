@@ -8,6 +8,7 @@ import { generateLicenseKey } from "@/lib/license-key";
 import { sendMail } from "@/lib/mailer";
 import { auth } from "@/auth";
 import { generateUniqueShortCode } from "@/lib/doctor-utils";
+import { isEmailTaken, isMobileTaken } from "@/lib/uniqueness";
 
 // ── Hospital settings (HOSPITAL role) ──────────────────────────────────────
 
@@ -67,6 +68,9 @@ export async function createHospitalWithUser(data: {
 
   const existing = await prisma.user.findUnique({ where: { username: data.username.trim() } });
   if (existing) return { error: "Username already taken." };
+
+  if (await isEmailTaken(data.adminEmail.trim())) return { error: "This email address is already registered to another account." };
+  if (await isMobileTaken(data.mobile.trim())) return { error: "This mobile number is already registered to another account." };
 
   const bcrypt = await import("bcryptjs");
   const passwordHash = await bcrypt.hash(data.password, 10);
@@ -284,6 +288,16 @@ export async function saveDoctorProfile(
     return { error: "Name must be at least 2 characters." };
   }
 
+  // Uniqueness checks (skip empty values)
+  if (data.email?.trim()) {
+    if (await isEmailTaken(data.email.trim(), { excludeDoctorId: doctor.id }))
+      return { error: "This email address is already registered to another account." };
+  }
+  if (data.contact?.trim()) {
+    if (await isMobileTaken(data.contact.trim(), { excludeDoctorId: doctor.id }))
+      return { error: "This mobile number is already registered to another account." };
+  }
+
   // Auto-assign short code if doctor doesn't have one yet
   const autoShortCode = !doctor.shortCode
     ? await generateUniqueShortCode(name ?? doctor.name)
@@ -340,6 +354,8 @@ export async function createUserDirect(data: {
 
   const existing = await prisma.user.findUnique({ where: { username: data.username.trim() } });
   if (existing) return { error: `Username "${data.username}" is already taken.` };
+
+  if (data.mobile && await isMobileTaken(data.mobile)) return { error: "This mobile number is already registered to another account." };
 
   const hospital = await prisma.hospital.findUnique({ where: { id: data.hospitalId } });
   if (!hospital) return { error: "Hospital not found." };

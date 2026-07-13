@@ -6,6 +6,7 @@ import { resignLicense } from "@/lib/license-sign";
 import { verifyLicenseKeyChecksum } from "@/lib/license-key";
 import { generateUniqueShortCode } from "@/lib/doctor-utils";
 import { sendTrialVerificationOtp } from "@/lib/mailer";
+import { isEmailTaken, isMobileTaken } from "@/lib/uniqueness";
 
 // ── Cookie helpers ────────────────────────────────────────────────────────────
 // ppms_org stores the licensee DOCTOR id — the doctor owns the license.
@@ -79,6 +80,10 @@ export async function startTrial(data: {
   if (!emailRe.test(data.email.trim())) return { error: "Enter a valid email address." };
   if (!/^\d{10}$/.test(data.mobile.replace(/\D/g, ""))) return { error: "Enter a valid 10-digit mobile number." };
   if (data.password.length < 6) return { error: "Password must be at least 6 characters." };
+
+  // Uniqueness checks
+  if (await isEmailTaken(data.email.trim())) return { error: "An account with this email address already exists." };
+  if (await isMobileTaken(data.mobile.replace(/\D/g, ""))) return { error: "This mobile number is already registered." };
 
   // Verify OTP
   const otp = await prisma.emailVerification.findFirst({

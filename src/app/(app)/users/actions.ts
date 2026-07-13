@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/rbac";
 import { revalidatePath } from "next/cache";
 import bcrypt from "bcryptjs";
+import { isEmailTaken, isMobileTaken } from "@/lib/uniqueness";
 
 export async function createUser(formData: FormData): Promise<{ error?: string }> {
   await requireRole("DOCTOR");
@@ -40,6 +41,9 @@ export async function createUser(formData: FormData): Promise<{ error?: string }
 
   const existing = await prisma.user.findUnique({ where: { username } });
   if (existing) return { error: "Username already taken." };
+
+  if (email && await isEmailTaken(email)) return { error: "This email address is already registered to another account." };
+  if (mobile && await isMobileTaken(mobile)) return { error: "This mobile number is already registered to another account." };
 
   // Store the actual role name (REFRACTIONIST uses its own profile table; all others use HospitalStaff)
   const role = userType;
@@ -87,6 +91,11 @@ export async function updateUser(userId: string, formData: FormData): Promise<{ 
   if (mobile && !/^\d{10}$/.test(mobile)) {
     return { error: "Mobile number must be exactly 10 digits." };
   }
+
+  if (email && await isEmailTaken(email, { excludeUserId: userId }))
+    return { error: "This email address is already registered to another account." };
+  if (mobile && await isMobileTaken(mobile, { excludeUserId: userId }))
+    return { error: "This mobile number is already registered to another account." };
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
