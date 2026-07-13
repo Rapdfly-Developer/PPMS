@@ -5,12 +5,13 @@ import {
   Building2, Eye, CheckCircle2, AlertCircle,
   User, Lock, Phone, Hash, MapPin, Briefcase, ArrowRight,
   Stethoscope, LayoutDashboard, ArrowLeft, KeyRound, UserCheck,
-  Pencil, Trash2, X, Check, ExternalLink, Key, ShieldCheck,
+  Pencil, Trash2, X, Check, Key, ShieldCheck,
 } from "lucide-react";
 import { createDoctor, createHospital } from "./actions";
 import Link from "next/link";
 import { LicenseManagementView } from "./LicenseManagementView";
 import { SetupDashboard } from "./SetupDashboard";
+import { DoctorManagementView } from "./DoctorManagementView";
 
 type View = "dashboard" | "doctor" | "hospital" | "doctor-logins" | "hospital-logins" | "license";
 
@@ -199,13 +200,6 @@ function HospitalView({ onCreated }: { onCreated: () => void }) {
   );
 }
 
-// ── Doctor Logins View ────────────────────────────────────────────────────
-type DoctorInfo = {
-  id: string; name: string; username: string; active: boolean;
-  specialty: string | null; contact: string | null; shortCode: string | null;
-  license: { hasKey: boolean; active: boolean; daysRemaining: number };
-};
-
 // Shared Active/Inactive pill — click to flip whether the account can log in.
 function ActiveToggle({ active, onToggle }: { active: boolean; onToggle: () => void }) {
   return (
@@ -222,192 +216,6 @@ function ActiveToggle({ active, onToggle }: { active: boolean; onToggle: () => v
       <span className={`w-1.5 h-1.5 rounded-full inline-block ${active ? "bg-emerald-500" : "bg-red-500"}`} />
       {active ? "Active" : "Inactive"}
     </button>
-  );
-}
-
-function DoctorLoginsView() {
-  const [doctors, setDoctors] = useState<DoctorInfo[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState({ name: "", specialty: "", contact: "", shortCode: "", password: "" });
-  const [saving, setSaving] = useState(false);
-
-  const load = () => {
-    fetch("/api/setup/doctors")
-      .then((r) => r.json())
-      .then((d) => { setDoctors(d); setLoading(false); })
-      .catch(() => setLoading(false));
-  };
-  useEffect(() => { load(); }, []);
-
-  const startEdit = (d: DoctorInfo) => {
-    setDeletingId(null);
-    setEditingId(d.id);
-    setEditForm({ name: d.name, specialty: d.specialty || "", contact: d.contact || "", shortCode: d.shortCode || "", password: "" });
-  };
-
-  const saveEdit = async (id: string) => {
-    setSaving(true);
-    await fetch(`/api/setup/doctors/${id}`, {
-      method: "PUT", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(editForm),
-    });
-    setSaving(false);
-    setEditingId(null);
-    load();
-  };
-
-  const confirmDelete = async (id: string) => {
-    await fetch(`/api/setup/doctors/${id}`, { method: "DELETE" });
-    setDeletingId(null);
-    setDoctors((prev) => prev.filter((d) => d.id !== id));
-  };
-
-  const toggleActive = async (d: DoctorInfo) => {
-    setDoctors((prev) => prev.map((x) => x.id === d.id ? { ...x, active: !d.active } : x));
-    await fetch(`/api/setup/doctors/${d.id}`, {
-      method: "PUT", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ active: !d.active }),
-    }).catch(() => load());
-  };
-
-  return (
-    <div className="max-w-lg">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-slate-900">Doctor's Login</h1>
-        <p className="text-sm text-slate-500 mt-1.5">All registered doctor accounts and their login credentials.</p>
-      </div>
-
-      {loading ? (
-        <p className="text-sm text-slate-400">Loading…</p>
-      ) : doctors.length === 0 ? (
-        <div className="flex items-center gap-3 px-5 py-4 rounded-2xl bg-amber-50 border border-amber-200">
-          <Stethoscope size={16} className="text-amber-600 shrink-0" />
-          <p className="text-sm text-amber-800">No doctors created yet.</p>
-        </div>
-      ) : (
-        <div className="flex flex-col gap-3">
-          {doctors.map((d, i) => (
-            <div key={d.id} className="rounded-2xl bg-white border border-slate-200 overflow-hidden">
-              {/* Row */}
-              <div className="flex flex-wrap items-center gap-3 md:gap-4 px-4 md:px-5 py-4">
-                <div className="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center shrink-0 text-sm font-bold text-teal-700">
-                  {i + 1}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-slate-800">{d.name}</p>
-                  <p className="text-xs text-slate-400 mt-0.5">Username: <span className="font-mono text-slate-600">{d.username}</span></p>
-                </div>
-                {/* Active / Inactive login toggle */}
-                <ActiveToggle active={d.active} onToggle={() => toggleActive(d)} />
-                {/* License status badge */}
-                <div className="shrink-0">
-                  {d.license.active ? (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
-                      Active · {d.license.daysRemaining}d
-                    </span>
-                  ) : d.license.hasKey ? (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-red-50 text-red-600 border border-red-200">
-                      <span className="w-1.5 h-1.5 rounded-full bg-red-500 inline-block" />
-                      Expired
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-500 border border-slate-200">
-                      <span className="w-1.5 h-1.5 rounded-full bg-slate-400 inline-block" />
-                      No License
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-center gap-2">
-                  <Link
-                    href={`/setup/doctors/${d.id}`}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all
-                               border-teal-200 text-teal-700 bg-teal-50 hover:bg-teal-100 hover:border-teal-400"
-                  >
-                    <ExternalLink size={12} />
-                    View
-                  </Link>
-                  <button
-                    onClick={() => editingId === d.id ? setEditingId(null) : startEdit(d)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all
-                               border-slate-200 text-slate-600 hover:border-teal-400 hover:text-teal-700 hover:bg-teal-50"
-                  >
-                    {editingId === d.id ? <X size={12} /> : <Pencil size={12} />}
-                    {editingId === d.id ? "Cancel" : "Edit"}
-                  </button>
-                  <button
-                    onClick={() => { setEditingId(null); setDeletingId(deletingId === d.id ? null : d.id); }}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all
-                               border-slate-200 text-slate-600 hover:border-red-400 hover:text-red-600 hover:bg-red-50"
-                  >
-                    <Trash2 size={12} />
-                    Delete
-                  </button>
-                </div>
-              </div>
-
-              {/* Edit form */}
-              {editingId === d.id && (
-                <div className="px-5 pb-5 pt-1 border-t border-slate-100 flex flex-col gap-3">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="flex flex-col gap-1">
-                      <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest">Name</label>
-                      <input value={editForm.name} onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))}
-                        className="px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-400/30 focus:border-teal-500" />
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest">Specialty</label>
-                      <input value={editForm.specialty} onChange={(e) => setEditForm((f) => ({ ...f, specialty: e.target.value }))}
-                        className="px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-400/30 focus:border-teal-500" />
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest">Contact</label>
-                      <input value={editForm.contact} onChange={(e) => setEditForm((f) => ({ ...f, contact: e.target.value }))}
-                        className="px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-400/30 focus:border-teal-500" />
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest">New Password <span className="normal-case">(optional)</span></label>
-                      <input type="password" value={editForm.password} onChange={(e) => setEditForm((f) => ({ ...f, password: e.target.value }))}
-                        placeholder="Leave blank to keep" className="px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-400/30 focus:border-teal-500 placeholder:text-slate-300" />
-                    </div>
-                  </div>
-                  <div className="flex justify-end gap-2 pt-1">
-                    <button onClick={() => setEditingId(null)}
-                      className="px-4 py-2 text-xs font-medium text-slate-600 border border-slate-200 rounded-xl hover:bg-slate-50 transition-all">
-                      Cancel
-                    </button>
-                    <button onClick={() => saveEdit(d.id)} disabled={saving}
-                      className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium text-white rounded-xl disabled:opacity-60 transition-all"
-                      style={{ background: "linear-gradient(135deg,#0f766e,#14b8a6)" }}>
-                      <Check size={12} />
-                      {saving ? "Saving…" : "Save Changes"}
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Delete confirmation */}
-              {deletingId === d.id && (
-                <div className="flex items-center gap-3 px-5 py-3 border-t border-red-100 bg-red-50">
-                  <Trash2 size={13} className="text-red-500 shrink-0" />
-                  <p className="text-xs text-red-700 flex-1">Delete <strong>{d.name}</strong>? This cannot be undone.</p>
-                  <button onClick={() => setDeletingId(null)}
-                    className="px-3 py-1.5 text-xs font-medium text-slate-600 border border-slate-200 rounded-lg hover:bg-white transition-all">
-                    Cancel
-                  </button>
-                  <button onClick={() => confirmDelete(d.id)}
-                    className="px-3 py-1.5 text-xs font-medium text-white bg-red-500 hover:bg-red-600 rounded-lg transition-all">
-                    Delete
-                  </button>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
   );
 }
 
@@ -744,7 +552,7 @@ export default function SetupPage() {
             <HospitalView onCreated={() => {}} />
           )}
           {view === "doctor-logins" && (
-            <DoctorLoginsView />
+            <DoctorManagementView onAddDoctor={() => setView("doctor")} />
           )}
           {view === "hospital-logins" && (
             <HospitalLoginsView />
