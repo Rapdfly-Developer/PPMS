@@ -368,6 +368,10 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
 
           {/* ── State 2: Trial Active ── */}
           {status === "TRIAL_ACTIVE" && (
+            <>
+            <a href="/login" className="self-start inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-[#115E59] transition-colors mb-4">
+              <ArrowLeft size={13} /> Back to Login
+            </a>
             <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/60 border border-slate-100 p-8 animate-fade-in">
               <div className="flex flex-col items-center text-center mb-6">
                 <div className="flex items-center gap-3 mb-3">
@@ -410,9 +414,6 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
               <DayProgressBar remaining={data.daysRemaining} total={30} />
 
               <div className="flex flex-col gap-2.5 mt-6">
-                <a href="/login" className="self-start inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-[#115E59] transition-colors">
-                  <ArrowLeft size={13} /> Back to Login
-                </a>
                 <button
                   onClick={() => router.push("/license/activate")}
                   className="w-full py-3 rounded-xl border-2 border-slate-200 text-slate-700 text-sm font-semibold hover:bg-slate-50 transition-all">
@@ -420,6 +421,7 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
                 </button>
               </div>
             </div>
+            </>
           )}
 
           {/* ── State 3: Trial Expired ── */}
@@ -483,6 +485,10 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
 
           {/* ── State 4: Licensed / Subscribed ── */}
           {(status === "SUBSCRIBED" || status === "SUBSCRIPTION_EXPIRED") && (
+            <>
+            <a href="/login" className="self-start inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-[#115E59] transition-colors mb-4">
+              <ArrowLeft size={13} /> Back to Login
+            </a>
             <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/60 border border-slate-100 p-8 animate-fade-in">
               <div className="flex flex-col items-center text-center mb-6">
                 <div className="flex items-center gap-3 mb-3">
@@ -522,9 +528,6 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
 
               {status === "SUBSCRIBED" ? (
                 <div className="flex flex-col gap-2.5 mt-6">
-                  <a href="/login" className="self-start inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-[#115E59] transition-colors">
-                    <ArrowLeft size={13} /> Back to Login
-                  </a>
                   <button onClick={() => router.push("/license/activate")}
                     className="w-full py-3 rounded-xl border-2 border-slate-200 text-slate-700 text-sm font-semibold hover:bg-slate-50 transition-all">
                     View License Details
@@ -553,6 +556,7 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
                 </div>
               )}
             </div>
+            </>
           )}
 
           {/* Footer */}
