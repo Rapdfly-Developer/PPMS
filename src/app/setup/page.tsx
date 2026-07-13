@@ -5,7 +5,7 @@ import {
   Building2, Eye, CheckCircle2, AlertCircle,
   User, Lock, Phone, Hash, MapPin, Briefcase, ArrowRight, ShieldCheck,
   Stethoscope, LayoutDashboard, ArrowLeft, KeyRound, UserCheck,
-  Pencil, Trash2, X, Check,
+  Pencil, Trash2, X, Check, ExternalLink,
 } from "lucide-react";
 import { createDoctor, createHospital } from "./actions";
 import Link from "next/link";
@@ -373,6 +373,14 @@ function DoctorLoginsView() {
                   )}
                 </div>
                 <div className="flex items-center gap-2">
+                  <Link
+                    href={`/setup/doctors/${d.id}`}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all
+                               border-teal-200 text-teal-700 bg-teal-50 hover:bg-teal-100 hover:border-teal-400"
+                  >
+                    <ExternalLink size={12} />
+                    View
+                  </Link>
                   <button
                     onClick={() => editingId === d.id ? setEditingId(null) : startEdit(d)}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all
