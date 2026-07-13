@@ -369,7 +369,23 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
           {/* ── State 2: Trial Active ── */}
           {status === "TRIAL_ACTIVE" && (
             <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/60 border border-slate-100 p-8 animate-fade-in">
-              <h1 className="text-xs font-bold tracking-widest uppercase text-slate-400 text-center mb-5">License Overview</h1>
+              <div className="flex flex-col items-center text-center mb-6">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0" style={{ background: "#157A73" }}>
+                    <svg width="22" height="22" viewBox="0 0 52 52" fill="none">
+                      <rect x="20" y="4" width="12" height="44" rx="5" fill="white" />
+                      <rect x="4" y="20" width="44" height="12" rx="5" fill="white" />
+                    </svg>
+                  </div>
+                  <div className="text-left">
+                    <h1 className="text-2xl font-black text-slate-900 leading-none">License Overview</h1>
+                    <p className="text-xs text-slate-500 mt-1">Your PPMS license details and status.</p>
+                  </div>
+                </div>
+                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/70 border border-[#b8dcd6] text-xs font-semibold" style={{ color: "#157A73" }}>
+                  <Shield size={13} /> Secure License Verification
+                </div>
+              </div>
               {/* Badge */}
               <div className={`flex items-center justify-center gap-2 mb-6 px-4 py-2.5 rounded-xl border font-semibold text-sm ${
                 data.daysRemaining <= 5 ? "bg-amber-50 border-amber-300 text-amber-700" : "bg-emerald-50 border-emerald-300 text-emerald-700"
@@ -468,7 +484,23 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
           {/* ── State 4: Licensed / Subscribed ── */}
           {(status === "SUBSCRIBED" || status === "SUBSCRIPTION_EXPIRED") && (
             <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/60 border border-slate-100 p-8 animate-fade-in">
-              <h1 className="text-xs font-bold tracking-widest uppercase text-slate-400 text-center mb-5">License Overview</h1>
+              <div className="flex flex-col items-center text-center mb-6">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0" style={{ background: "#157A73" }}>
+                    <svg width="22" height="22" viewBox="0 0 52 52" fill="none">
+                      <rect x="20" y="4" width="12" height="44" rx="5" fill="white" />
+                      <rect x="4" y="20" width="44" height="12" rx="5" fill="white" />
+                    </svg>
+                  </div>
+                  <div className="text-left">
+                    <h1 className="text-2xl font-black text-slate-900 leading-none">License Overview</h1>
+                    <p className="text-xs text-slate-500 mt-1">Your PPMS license details and status.</p>
+                  </div>
+                </div>
+                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/70 border border-[#b8dcd6] text-xs font-semibold" style={{ color: "#157A73" }}>
+                  <Shield size={13} /> Secure License Verification
+                </div>
+              </div>
               {status === "SUBSCRIBED" ? (
                 <div className="flex items-center justify-center gap-2 mb-6 px-4 py-2.5 rounded-xl bg-emerald-50 border border-emerald-300 text-emerald-700 font-semibold text-sm">
                   <CheckCircle2 size={15} /> Professional License — Active
