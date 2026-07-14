@@ -6,13 +6,16 @@ import Link from "next/link";
 import {
   Stethoscope, Search, Eye, Pencil, Trash2, X, Check,
   LayoutGrid, List, ChevronLeft, ChevronRight, UserPlus,
-  FileBadge, Activity, UserX, Phone,
+  FileBadge, Activity, UserX, Phone, Clock, AlertTriangle,
 } from "lucide-react";
 
 type DoctorInfo = {
   id: string; name: string; username: string; active: boolean;
   specialty: string | null; contact: string | null; shortCode: string | null;
-  license: { hasKey: boolean; active: boolean; daysRemaining: number };
+  license: {
+    hasKey: boolean; active: boolean; daysRemaining: number;
+    isTrial: boolean; trialDaysRemaining: number; trialEndsAt: string | null;
+  };
 };
 
 /* ── Helpers ──────────────────────────────────────────────────────────── */
@@ -89,6 +92,19 @@ function LicenseChip({ lic }: { lic: DoctorInfo["license"] }) {
       <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-200">
         <FileBadge size={11} />
         Licensed · {lic.daysRemaining}d
+      </span>
+    );
+  }
+  if (lic.isTrial) {
+    const urgent = lic.trialDaysRemaining <= 7;
+    return (
+      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border ${
+        urgent
+          ? "bg-orange-50 text-orange-700 border-orange-300"
+          : "bg-amber-50 text-amber-700 border-amber-200"
+      }`}>
+        <Clock size={11} />
+        Trial · {lic.trialDaysRemaining}d left
       </span>
     );
   }
@@ -190,7 +206,7 @@ export function DoctorManagementView({ onAddDoctor }: { onAddDoctor: () => void 
 
   const [q, setQ] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
-  const [licFilter, setLicFilter] = useState<"all" | "licensed" | "expired" | "none">("all");
+  const [licFilter, setLicFilter] = useState<"all" | "licensed" | "trial" | "trial-urgent" | "expired" | "none">("all");
   const [sort, setSort] = useState<"name-asc" | "name-desc" | "status" | "license">("name-asc");
   const [layout, setLayout] = useState<"grid" | "list">("grid");
   const [page, setPage] = useState(1);
@@ -245,7 +261,9 @@ export function DoctorManagementView({ onAddDoctor }: { onAddDoctor: () => void 
     const total = doctors.length;
     const active = doctors.filter((d) => d.active).length;
     const licensed = doctors.filter((d) => d.license.active).length;
-    return { total, active, licensed, inactive: total - active };
+    const onTrial = doctors.filter((d) => d.license.isTrial).length;
+    const trialExpiringSoon = doctors.filter((d) => d.license.isTrial && d.license.trialDaysRemaining <= 7).length;
+    return { total, active, licensed, inactive: total - active, onTrial, trialExpiringSoon };
   }, [doctors]);
 
   const filtered = useMemo(() => {
@@ -261,9 +279,11 @@ export function DoctorManagementView({ onAddDoctor }: { onAddDoctor: () => void 
     if (statusFilter !== "all") list = list.filter((d) => d.active === (statusFilter === "active"));
     if (licFilter !== "all") {
       list = list.filter((d) =>
-        licFilter === "licensed" ? d.license.active
-        : licFilter === "expired" ? d.license.hasKey && !d.license.active
-        : !d.license.hasKey
+        licFilter === "licensed"      ? d.license.active
+        : licFilter === "trial"       ? d.license.isTrial
+        : licFilter === "trial-urgent"? d.license.isTrial && d.license.trialDaysRemaining <= 7
+        : licFilter === "expired"     ? d.license.hasKey && !d.license.active
+        : !d.license.hasKey && !d.license.isTrial
       );
     }
     const sorted = [...list];
@@ -317,12 +337,14 @@ export function DoctorManagementView({ onAddDoctor }: { onAddDoctor: () => void 
       </motion.div>
 
       {/* ── Stats ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         <StatCard icon={<Stethoscope size={18} />} value={stats.total} label="Doctors" sub="All registered accounts" tint="#2563EB" />
         <StatCard icon={<Activity size={18} />} value={stats.active} label="Active"
           sub={stats.total ? `${Math.round((stats.active / stats.total) * 100)}% of accounts` : "—"} tint="#10B981" />
         <StatCard icon={<FileBadge size={18} />} value={stats.licensed} label="Licensed"
           sub={stats.total ? `${Math.round((stats.licensed / stats.total) * 100)}% licensed` : "—"} tint="#06B6D4" />
+        <StatCard icon={<Clock size={18} />} value={stats.onTrial} label="On Trial"
+          sub={stats.trialExpiringSoon > 0 ? `${stats.trialExpiringSoon} expiring soon` : "Free trial active"} tint="#F59E0B" />
         <StatCard icon={<UserX size={18} />} value={stats.inactive} label="Inactive"
           sub={stats.inactive > 0 ? "Needs attention" : "All accounts active"} tint="#EF4444" />
       </div>
@@ -350,6 +372,8 @@ export function DoctorManagementView({ onAddDoctor }: { onAddDoctor: () => void 
         <select value={licFilter} onChange={(e) => setLicFilter(e.target.value as any)} className={selectCls}>
           <option value="all">License: All</option>
           <option value="licensed">Licensed</option>
+          <option value="trial">On Trial</option>
+          <option value="trial-urgent">Trial ≤ 7 days</option>
           <option value="expired">Expired</option>
           <option value="none">No License</option>
         </select>
@@ -456,6 +480,32 @@ export function DoctorManagementView({ onAddDoctor }: { onAddDoctor: () => void 
                 <StatusChip active={d.active} onToggle={() => toggleActive(d)} />
                 <LicenseChip lic={d.license} />
               </div>
+
+              {/* Trial expiry bar */}
+              {d.license.isTrial && (
+                <div className={`relative mt-3 rounded-xl px-3 py-2 flex items-center gap-2 ${
+                  d.license.trialDaysRemaining <= 7
+                    ? "bg-orange-50 border border-orange-200"
+                    : "bg-amber-50 border border-amber-100"
+                }`}>
+                  {d.license.trialDaysRemaining <= 7 && <AlertTriangle size={12} className="text-orange-500 shrink-0" />}
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-[11px] font-semibold ${d.license.trialDaysRemaining <= 7 ? "text-orange-700" : "text-amber-700"}`}>
+                      Trial ends {d.license.trialEndsAt ? new Date(d.license.trialEndsAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "—"}
+                    </p>
+                    <div className="mt-1 h-1.5 rounded-full bg-amber-100 overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all ${d.license.trialDaysRemaining <= 7 ? "bg-orange-400" : "bg-amber-400"}`}
+                        style={{ width: `${Math.min(100, (d.license.trialDaysRemaining / 30) * 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                  <span className={`text-[11px] font-bold tabular-nums shrink-0 ${d.license.trialDaysRemaining <= 7 ? "text-orange-600" : "text-amber-600"}`}>
+                    {d.license.trialDaysRemaining}d
+                  </span>
+                </div>
+              )}
+
               {d.contact && (
                 <p className="relative flex items-center gap-1.5 text-xs text-slate-400 mt-3">
                   <Phone size={11} /> {d.contact}
@@ -507,6 +557,16 @@ export function DoctorManagementView({ onAddDoctor }: { onAddDoctor: () => void 
               </div>
               <StatusChip active={d.active} onToggle={() => toggleActive(d)} />
               <LicenseChip lic={d.license} />
+              {d.license.isTrial && (
+                <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold border ${
+                  d.license.trialDaysRemaining <= 7
+                    ? "bg-orange-50 text-orange-700 border-orange-200"
+                    : "bg-amber-50 text-amber-600 border-amber-100"
+                }`}>
+                  {d.license.trialDaysRemaining <= 7 && <AlertTriangle size={10} />}
+                  Ends {d.license.trialEndsAt ? new Date(d.license.trialEndsAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short" }) : "—"}
+                </span>
+              )}
               <div className="flex items-center gap-1">
                 <Link
                   href={`/setup/doctors/${d.id}`}
