@@ -894,10 +894,10 @@ const TABS: { id: LicTab; label: string; icon: React.ElementType }[] = [
   { id: "history",   label: "History",   icon: History      },
 ];
 
-export function LicenseSection() {
+export function LicenseSection({ initialTab = "overview" }: { initialTab?: LicTab }) {
   const [data, setData]       = useState<LicenseFullData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab]         = useState<LicTab>("overview");
+  const [tab, setTab]         = useState<LicTab>(initialTab);
 
   function load() {
     setLoading(true);

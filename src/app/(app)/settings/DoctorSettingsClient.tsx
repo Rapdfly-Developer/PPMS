@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { format, formatDistanceToNow } from "date-fns";
 import {
   createHospitalWithUser,
@@ -3294,8 +3294,16 @@ function HospitalSetupWizard({ assignableRoles = [] }: { assignableRoles?: Assig
 
 // ── License Management — handled by LicenseSection component ─────────────────
 
+const LICENSE_SUBTABS = ["overview", "activate", "plans", "renewal", "history"] as const;
+type LicSubTab = typeof LICENSE_SUBTABS[number];
+
 export function DoctorSettingsClient({ users, auditLogs, hospitals, loginLogs, patientApptLogs, assignableRoles, doctor }: Props) {
-  const [activeSection, setActiveSection] = useState<Section>("profile");
+  const searchParams = useSearchParams();
+  const urlTab = searchParams.get("tab") ?? "";
+  const isLicenseTab = (LICENSE_SUBTABS as readonly string[]).includes(urlTab) || urlTab === "license";
+  const licInitialTab: LicSubTab = (LICENSE_SUBTABS as readonly string[]).includes(urlTab) ? urlTab as LicSubTab : "overview";
+
+  const [activeSection, setActiveSection] = useState<Section>(isLicenseTab ? "licenses" : "profile");
 
   const content = () => {
     switch (activeSection) {
@@ -3311,7 +3319,7 @@ export function DoctorSettingsClient({ users, auditLogs, hospitals, loginLogs, p
       case "export":       return <ExportSection hospitals={hospitals} />;
       case "logs":              return <LogsSection loginLogs={loginLogs} />;
       case "patient-appt-logs": return <PatientApptLogsSection logs={patientApptLogs} />;
-      case "licenses":     return <LicenseSection />;
+      case "licenses":     return <LicenseSection initialTab={licInitialTab} />;
       case "integrations": return <IntegrationsSection />;
     }
   };
