@@ -1,10 +1,12 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { Search, Stethoscope, UserPlus, Users } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import {
+  Search, Stethoscope, UserPlus, Users,
+  User, Phone, FileText, CalendarDays,
+} from "lucide-react";
 import { BackButton } from "@/components/ui/BackButton";
-import { SmartUploadBox, type UploadedFile } from "@/components/ui/SmartUploadBox";
 import { createWalkInEncounter } from "./actions";
 
 const VISIT_TYPES = [
@@ -22,9 +24,19 @@ const CATEGORIES = [
   { value: "INSURANCE", label: "Insurance" },
 ];
 
-const SEX_OPTIONS = ["Male", "Female", "Other"];
-
 type Patient = { id: string; name: string; udid: string; age: number | null; sex: string };
+
+function FieldLabel({ children, icon }: { children: React.ReactNode; icon?: React.ReactNode }) {
+  return (
+    <label className="flex items-center gap-1.5 text-xs font-semibold tracking-widest text-[var(--color-ink-500)] uppercase mb-1.5">
+      {icon && <span className="text-[var(--color-ink-400)]">{icon}</span>}
+      {children}
+    </label>
+  );
+}
+
+const inputCls =
+  "mt-0.5 w-full rounded-xl border border-[var(--color-border)] bg-white px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] transition-shadow";
 
 export function NewEncounterForm({
   patients,
@@ -46,13 +58,12 @@ export function NewEncounterForm({
 
   // ── new patient fields ───────────────────────────────────────────────────
   const [name, setName] = useState("");
-  const [age, setAge] = useState("");
+  const [dob, setDob] = useState("");
   const [sex, setSex] = useState("Male");
   const [mobile, setMobile] = useState("");
   const [category, setCategory] = useState("GENERAL");
   const [complaint, setComplaint] = useState("");
-  const [aadhaarPhoto, setAadhaarPhoto] = useState<UploadedFile | null>(null);
-  const [patientPhoto, setPatientPhoto] = useState<UploadedFile | null>(null);
+
   // ── shared ───────────────────────────────────────────────────────────────
   const [visitType, setVisitType] = useState("General OPD");
   const [hospitalId, setHospitalId] = useState(hospitals[0]?.id ?? "");
@@ -81,13 +92,16 @@ export function NewEncounterForm({
       if (!selectedPatient) { setError("Please select a patient."); return; }
       fd.set("patientId", selectedPatient.id);
     } else {
-      if (!name.trim())         { setError("Patient name is required."); return; }
-      if (!age.trim())          { setError("Age is required."); return; }
-      if (!mobile.trim())       { setError("Phone number is required."); return; }
-      if (!complaint.trim())    { setError("Chief complaint is required."); return; }
-      if (!patientPhoto)        { setError("Patient photo is required."); return; }
+      if (!name.trim())      { setError("Patient name is required."); return; }
+      if (!dob)              { setError("Date of birth is required."); return; }
+      if (!mobile.trim())    { setError("Phone number is required."); return; }
+      if (!complaint.trim()) { setError("Chief complaint is required."); return; }
+
+      const dobAge = Math.floor(
+        (Date.now() - new Date(dob).getTime()) / (365.25 * 86_400_000)
+      );
       fd.set("name", name.trim());
-      fd.set("age", age);
+      fd.set("age", String(dobAge));
       fd.set("sex", sex);
       fd.set("mobile", mobile.trim());
       fd.set("category", category);
@@ -115,11 +129,15 @@ export function NewEncounterForm({
 
         {/* ── Patient card ───────────────────────────────────────────────── */}
         <div className="surface-card p-5">
-          {/* Toggle */}
-          <div className="flex items-center justify-between mb-4">
-            <label className="text-xs font-semibold tracking-widest text-[var(--color-ink-500)] uppercase">
-              Patient
-            </label>
+          {/* Section header with numbered badge */}
+          <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center gap-2.5">
+              <span className="size-6 rounded-full bg-[var(--color-primary-700)] text-white text-xs font-bold flex items-center justify-center shrink-0">
+                1
+              </span>
+              <span className="text-sm font-semibold text-[var(--color-ink-800)]">Patient Details</span>
+            </div>
+            {/* Existing / New toggle */}
             <div className="flex rounded-lg border border-[var(--color-border)] overflow-hidden text-xs font-semibold">
               <button
                 type="button"
@@ -141,7 +159,7 @@ export function NewEncounterForm({
                     : "bg-white text-[var(--color-ink-500)] hover:bg-[var(--color-surface-hover)]"
                 }`}
               >
-                <UserPlus size={13} /> New Patient
+                <UserPlus size={13} /> New
               </button>
             </div>
           </div>
@@ -211,77 +229,69 @@ export function NewEncounterForm({
 
           {/* ── New patient form ────────────────────────────────────────── */}
           {patientMode === "new" && (
-            <div className="flex flex-col gap-4">
-              {/* Name */}
+            <div className="flex flex-col gap-5">
+
+              {/* Full Name */}
               <div>
-                <label className="text-xs font-medium text-[var(--color-ink-600)] mb-1 block">Full Name *</label>
+                <FieldLabel icon={<User size={12} />}>Full Name *</FieldLabel>
                 <input
                   type="text"
                   placeholder="Patient full name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full px-3 py-2.5 text-sm rounded-xl border border-[var(--color-border)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
+                  className={inputCls}
                 />
               </div>
 
-              {/* Age + Sex */}
-              <div className="grid grid-cols-2 gap-3">
+              {/* DOB + Sex */}
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs font-medium text-[var(--color-ink-600)] mb-1 block">Age *</label>
+                  <FieldLabel icon={<CalendarDays size={12} />}>Date of Birth *</FieldLabel>
                   <input
-                    type="number"
-                    placeholder="Years"
-                    min={0}
-                    max={120}
-                    value={age}
-                    onChange={(e) => setAge(e.target.value)}
-                    className="w-full px-3 py-2.5 text-sm rounded-xl border border-[var(--color-border)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
+                    type="date"
+                    value={dob}
+                    onChange={(e) => setDob(e.target.value)}
+                    max={new Date().toISOString().split("T")[0]}
+                    className={inputCls}
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-[var(--color-ink-600)] mb-1 block">Sex *</label>
-                  <div className="flex rounded-xl border border-[var(--color-border)] overflow-hidden">
-                    {SEX_OPTIONS.map((s) => (
-                      <button
-                        key={s}
-                        type="button"
-                        onClick={() => setSex(s)}
-                        className={`flex-1 py-2.5 text-xs font-semibold transition-colors ${
-                          sex === s
-                            ? "bg-[var(--color-primary-700)] text-white"
-                            : "bg-white text-[var(--color-ink-600)] hover:bg-[var(--color-surface-hover)]"
-                        }`}
-                      >
-                        {s.charAt(0)}
-                      </button>
-                    ))}
-                  </div>
+                  <FieldLabel>Sex *</FieldLabel>
+                  <select
+                    value={sex}
+                    onChange={(e) => setSex(e.target.value)}
+                    className={inputCls}
+                  >
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                  </select>
                 </div>
               </div>
 
               {/* Phone */}
               <div>
-                <label className="text-xs font-medium text-[var(--color-ink-600)] mb-1 block">Phone *</label>
+                <FieldLabel icon={<Phone size={12} />}>Phone *</FieldLabel>
                 <input
                   type="tel"
                   placeholder="10-digit mobile number"
                   value={mobile}
                   onChange={(e) => setMobile(e.target.value)}
                   maxLength={10}
-                  className="w-full px-3 py-2.5 text-sm rounded-xl border border-[var(--color-border)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
+                  className={inputCls}
                 />
               </div>
 
               {/* Category */}
               <div>
-                <label className="text-xs font-medium text-[var(--color-ink-600)] mb-2 block">Category</label>
-                <div className="flex flex-wrap gap-2">
+                <FieldLabel>Category</FieldLabel>
+                <div className="flex flex-wrap gap-2 mt-0.5">
                   {CATEGORIES.map((c) => (
                     <button
                       key={c.value}
                       type="button"
                       onClick={() => setCategory(c.value)}
-                      className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
+                      className={`px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
                         category === c.value
                           ? "bg-[var(--color-primary-700)] text-white border-[var(--color-primary-700)]"
                           : "bg-white text-[var(--color-ink-600)] border-[var(--color-border)] hover:border-[var(--color-primary-400)]"
@@ -293,43 +303,16 @@ export function NewEncounterForm({
                 </div>
               </div>
 
-              {/* Chief complaint */}
+              {/* Chief Complaint */}
               <div>
-                <label className="text-xs font-medium text-[var(--color-ink-600)] mb-1 block">
-                  Chief Complaint *
-                </label>
+                <FieldLabel icon={<FileText size={12} />}>Chief Complaint *</FieldLabel>
                 <textarea
                   placeholder="Presenting complaint or reason for visit..."
                   value={complaint}
                   onChange={(e) => setComplaint(e.target.value)}
                   rows={2}
-                  className="w-full px-3 py-2.5 text-sm rounded-xl border border-[var(--color-border)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] resize-none"
+                  className={`${inputCls} resize-none`}
                 />
-              </div>
-
-              {/* Photos */}
-              <div>
-                <p className="text-xs font-medium text-[var(--color-ink-600)] mb-2">
-                  Photos *
-                </p>
-                <div className="grid grid-cols-2 gap-3">
-                  <SmartUploadBox
-                    label="Aadhaar Photocopy"
-                    uploadLabel="Upload Aadhaar Photo"
-                    subtitle="Tap to upload or capture (Image/PDF)"
-                    accept="image/*,application/pdf"
-                    value={aadhaarPhoto}
-                    onChange={setAadhaarPhoto}
-                  />
-                  <SmartUploadBox
-                    label="Patient Photo"
-                    uploadLabel="Upload Patient Photo"
-                    subtitle="Tap to upload or capture (JPG/PNG)"
-                    accept="image/jpeg,image/jpg,image/png"
-                    value={patientPhoto}
-                    onChange={setPatientPhoto}
-                  />
-                </div>
               </div>
 
             </div>
@@ -338,9 +321,12 @@ export function NewEncounterForm({
 
         {/* ── Visit type ─────────────────────────────────────────────────── */}
         <div className="surface-card p-5">
-          <label className="text-xs font-semibold tracking-widest text-[var(--color-ink-500)] uppercase mb-3 block">
-            Visit Type
-          </label>
+          <div className="flex items-center gap-2.5 mb-4">
+            <span className="size-6 rounded-full bg-[var(--color-primary-700)] text-white text-xs font-bold flex items-center justify-center shrink-0">
+              2
+            </span>
+            <span className="text-sm font-semibold text-[var(--color-ink-800)]">Visit Type</span>
+          </div>
           <div className="flex flex-wrap gap-2">
             {VISIT_TYPES.map((vt) => (
               <button
@@ -362,13 +348,16 @@ export function NewEncounterForm({
         {/* ── Hospital ───────────────────────────────────────────────────── */}
         {hospitals.length >= 1 && (
           <div className="surface-card p-5">
-            <label className="text-xs font-semibold tracking-widest text-[var(--color-ink-500)] uppercase mb-3 block">
-              Hospital
-            </label>
+            <div className="flex items-center gap-2.5 mb-4">
+              <span className="size-6 rounded-full bg-[var(--color-primary-700)] text-white text-xs font-bold flex items-center justify-center shrink-0">
+                3
+              </span>
+              <span className="text-sm font-semibold text-[var(--color-ink-800)]">Hospital</span>
+            </div>
             <select
               value={hospitalId}
               onChange={(e) => setHospitalId(e.target.value)}
-              className="w-full rounded-xl border border-[var(--color-border)] px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
+              className={inputCls}
             >
               {hospitals.map((h) => (
                 <option key={h.id} value={h.id}>{h.name}</option>
