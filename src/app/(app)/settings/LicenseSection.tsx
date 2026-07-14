@@ -504,11 +504,13 @@ const PLAN_FEATURES = [
 
 const PLANS = [
   {
-    id: "trial",
-    name: "Free Trial",
-    price: "₹0",
-    duration: "30 days",
-    features: [true, true, true, true, true, true, true, false, false, false, false, false],
+    id: "biannual",
+    name: "Professional",
+    sub: "6 Months",
+    price: "₹14,999",
+    duration: "6 months",
+    savings: "Save ₹2,995",
+    features: [true, true, true, true, true, true, true, true, true, false, false, false],
     badge: null,
     highlight: false,
   },
@@ -536,7 +538,7 @@ const PLANS = [
 ];
 
 function PlansTab({ data }: { data: LicenseFullData }) {
-  const currentPlanId = data.status === "TRIAL_ACTIVE" ? "trial"
+  const currentPlanId = data.plan === "BIANNUAL" ? "biannual"
     : data.plan === "MONTHLY" ? "monthly"
     : data.plan === "YEARLY" ? "annual"
     : null;
@@ -545,7 +547,7 @@ function PlansTab({ data }: { data: LicenseFullData }) {
     <div className="space-y-5">
       <div>
         <p className="text-sm font-semibold text-[var(--color-ink-800)]">Subscription Plans</p>
-        <p className="text-xs text-[var(--color-ink-500)] mt-0.5">Choose the plan that fits your practice. All plans include a 30-day free trial.</p>
+        <p className="text-xs text-[var(--color-ink-500)] mt-0.5">Choose the plan that fits your practice. Contact us to activate after selecting a plan.</p>
       </div>
 
       {/* Plan cards */}
@@ -610,7 +612,7 @@ function PlansTab({ data }: { data: LicenseFullData }) {
                       bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)]"
                   >
                     <Crown size={12} />
-                    {plan.id === "trial" ? "Start Trial" : "Upgrade"}
+                    Upgrade
                   </a>
                 )}
               </div>
