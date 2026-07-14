@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireRole } from "@/lib/rbac";
+import { requireUser } from "@/lib/rbac";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 import crypto from "crypto";
@@ -9,7 +9,7 @@ const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/webp", "application/pdf
 const MAX_SIZE = 20 * 1024 * 1024; // 20MB
 
 export async function POST(req: NextRequest) {
-  await requireRole("DOCTOR", "HOSPITAL");
+  await requireUser();
 
   const formData = await req.formData();
   const file = formData.get("file");
