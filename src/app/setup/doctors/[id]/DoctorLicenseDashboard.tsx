@@ -1059,7 +1059,6 @@ export function DoctorLicenseDashboard({ data }: { data: DoctorLicensePageData }
 
         {/* RIGHT — sticky sidebar */}
         <div className="flex flex-col gap-5 xl:sticky xl:top-[120px]">
-          <QuickActionsPanel lic={lic} doctor={doctor} />
           <DoctorIdentityCard doc={doctor} hospitals={hospitals} />
 
           {/* Support */}
