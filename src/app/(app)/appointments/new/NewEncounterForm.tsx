@@ -2,16 +2,9 @@
 
 import { useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import {
-  Search,
-  Stethoscope,
-  UserPlus,
-  Users,
-  CreditCard,
-  User,
-} from "lucide-react";
+import { Search, Stethoscope, UserPlus, Users } from "lucide-react";
 import { BackButton } from "@/components/ui/BackButton";
-import { PhotoUploadBox, type UploadedFile } from "@/components/ui/PhotoUploadBox";
+import { SmartUploadBox, type UploadedFile } from "@/components/ui/SmartUploadBox";
 import { createWalkInEncounter } from "./actions";
 
 const VISIT_TYPES = [
@@ -338,19 +331,19 @@ export function NewEncounterForm({
                   Photos &amp; Documents *
                 </p>
                 <div className="grid grid-cols-2 gap-3">
-                  <PhotoUploadBox
+                  <SmartUploadBox
                     label="Aadhaar Photocopy"
-                    hint="Image or PDF"
-                    icon={CreditCard}
+                    uploadLabel="Upload Aadhaar Photocopy"
+                    subtitle="Tap to upload or capture (Image/PDF)"
                     accept="image/*,application/pdf"
                     value={aadhaarPhoto}
                     onChange={setAadhaarPhoto}
                   />
-                  <PhotoUploadBox
+                  <SmartUploadBox
                     label="Patient Photo"
-                    hint="JPG or PNG"
-                    icon={User}
-                    accept="image/*"
+                    uploadLabel="Upload Patient Photo"
+                    subtitle="Tap to upload or capture (JPG/PNG)"
+                    accept="image/jpeg,image/jpg,image/png"
                     value={patientPhoto}
                     onChange={setPatientPhoto}
                   />
