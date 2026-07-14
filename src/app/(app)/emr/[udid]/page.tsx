@@ -98,7 +98,7 @@ export default async function PatientDetailedEMR({
   const activeVisitAtOtherHospital =
     !!activeVisit && !!patient.registeredAtId && activeVisit.hospitalId !== patient.registeredAtId;
 
-  if (!requestedVisit && user.role === "DOCTOR" && (!activeVisit || activeVisitAtOtherHospital)) {
+  if (!requestedVisit && user.role === "DOCTOR" && (!activeVisit || activeVisitAtOtherHospital || activeVisit.status === "CLOSED")) {
     const pendingAppointment = await prisma.appointment.findFirst({
       where: {
         patientId: patient.id,
