@@ -49,10 +49,8 @@ export function NewEncounterForm({
   const [age, setAge] = useState("");
   const [sex, setSex] = useState("Male");
   const [mobile, setMobile] = useState("");
-  const [aadhaar, setAadhaar] = useState("");
   const [category, setCategory] = useState("GENERAL");
   const [complaint, setComplaint] = useState("");
-  const [aadhaarPhoto, setAadhaarPhoto] = useState<UploadedFile | null>(null);
   const [patientPhoto, setPatientPhoto] = useState<UploadedFile | null>(null);
   // ── shared ───────────────────────────────────────────────────────────────
   const [visitType, setVisitType] = useState("General OPD");
@@ -86,13 +84,11 @@ export function NewEncounterForm({
       if (!age.trim())          { setError("Age is required."); return; }
       if (!mobile.trim())       { setError("Phone number is required."); return; }
       if (!complaint.trim())    { setError("Chief complaint is required."); return; }
-      if (!aadhaarPhoto)        { setError("Aadhaar photocopy is required."); return; }
       if (!patientPhoto)        { setError("Patient photo is required."); return; }
       fd.set("name", name.trim());
       fd.set("age", age);
       fd.set("sex", sex);
       fd.set("mobile", mobile.trim());
-      fd.set("aadhaar", aadhaar.replace(/\s/g, ""));
       fd.set("category", category);
       fd.set("complaint", complaint.trim());
     }
@@ -275,21 +271,6 @@ export function NewEncounterForm({
                 />
               </div>
 
-              {/* Aadhaar */}
-              <div>
-                <label className="text-xs font-medium text-[var(--color-ink-600)] mb-1 block">
-                  Aadhaar Number <span className="text-[var(--color-ink-400)] font-normal">(optional)</span>
-                </label>
-                <input
-                  type="text"
-                  placeholder="12-digit Aadhaar"
-                  value={aadhaar}
-                  onChange={(e) => setAadhaar(e.target.value)}
-                  maxLength={12}
-                  className="w-full px-3 py-2.5 text-sm rounded-xl border border-[var(--color-border)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
-                />
-              </div>
-
               {/* Category */}
               <div>
                 <label className="text-xs font-medium text-[var(--color-ink-600)] mb-2 block">Category</label>
@@ -328,17 +309,9 @@ export function NewEncounterForm({
               {/* Photos */}
               <div>
                 <p className="text-xs font-medium text-[var(--color-ink-600)] mb-2">
-                  Photos &amp; Documents *
+                  Patient Photo *
                 </p>
-                <div className="grid grid-cols-2 gap-3">
-                  <SmartUploadBox
-                    label="Aadhaar Photocopy"
-                    uploadLabel="Upload Aadhaar Photocopy"
-                    subtitle="Tap to upload or capture (Image/PDF)"
-                    accept="image/*,application/pdf"
-                    value={aadhaarPhoto}
-                    onChange={setAadhaarPhoto}
-                  />
+                <div>
                   <SmartUploadBox
                     label="Patient Photo"
                     uploadLabel="Upload Patient Photo"
