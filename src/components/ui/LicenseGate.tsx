@@ -87,14 +87,14 @@ export function LicenseGate({ active, status, expiryDate, remainingDays, childre
       {/* Actions */}
       <div className="flex flex-wrap justify-center gap-3">
         <Link
-          href="/settings?tab=license"
+          href="/settings?tab=plans"
           className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors"
           style={{ background: "#157A73" }}
         >
           <Key size={14} /> Activate License
         </Link>
         <Link
-          href="/settings?tab=license"
+          href="/settings?tab=plans"
           className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors"
           style={{ border: "1px solid var(--color-border,#E2E6E8)", color: "var(--color-text,#111827)" }}
         >
