@@ -13,7 +13,8 @@ export default async function UsersPage() {
     orderBy: { createdAt: "desc" },
   });
 
-  const allUsers = staffUsers.map((u: any) => ({
+  type StaffRow = { id: string; username: string; role: string; active: boolean; name: string; mobile: string; hospital: string };
+  const allUsers: StaffRow[] = staffUsers.map((u: any) => ({
     id: u.id,
     username: u.username,
     role: u.role,
