@@ -57,9 +57,30 @@ export function SmartUploadBox({
         "file",
         file instanceof File ? file : new File([file], name, { type: "image/jpeg" }),
       );
-      const res  = await fetch("/api/upload", { method: "POST", body: fd });
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: fd,
+        credentials: "same-origin",
+      });
+
+      if (!res.ok) {
+        // Try to read a JSON error message; fall back to HTTP status text
+        let errMsg = `Upload failed (${res.status}).`;
+        try {
+          const j = await res.json();
+          errMsg = j.error ?? errMsg;
+        } catch {
+          const t = await res.text().catch(() => "");
+          // If we got an HTML page (e.g. session expired redirect), say so clearly
+          if (t.includes("<!DOCTYPE") || t.includes("<html")) {
+            errMsg = "Session expired. Please refresh the page and log in again.";
+          }
+        }
+        setErr(errMsg);
+        return;
+      }
+
       const json = await res.json();
-      if (!res.ok) { setErr(json.error ?? "Upload failed."); return; }
       const mimeType   = file instanceof File ? file.type : "image/jpeg";
       const previewUrl = mimeType.startsWith("image/") ? URL.createObjectURL(file) : undefined;
       onChange({
@@ -68,8 +89,9 @@ export function SmartUploadBox({
         mimeType:         json.mimeType ?? mimeType,
         previewUrl,
       });
-    } catch {
-      setErr("Upload failed. Please try again.");
+    } catch (e) {
+      console.error("[SmartUploadBox] upload error:", e);
+      setErr("Upload failed. Check your connection and try again.");
     } finally {
       setUploading(false);
     }
