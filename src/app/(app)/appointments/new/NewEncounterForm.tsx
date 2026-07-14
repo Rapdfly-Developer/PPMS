@@ -110,6 +110,8 @@ export function NewEncounterForm({
       fd.set("mobile", mobile.trim());
       fd.set("category", category);
       fd.set("complaint", complaint.trim());
+      if (patientPhoto) fd.set("patientPhoto", patientPhoto.savedName);
+      if (aadhaarPhoto) fd.set("aadhaarPhoto", aadhaarPhoto.savedName);
     }
 
     startTransition(async () => {

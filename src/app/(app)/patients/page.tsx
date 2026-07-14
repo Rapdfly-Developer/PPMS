@@ -134,7 +134,7 @@ export default async function PatientsPage({
       where:   scopeWhere,
       orderBy: { createdAt: "desc" },
       take:    6,
-      select:  { name: true, udid: true, uhid: true, sex: true, age: true, category: true, createdAt: true, mobile: true },
+      select:  { name: true, udid: true, uhid: true, sex: true, age: true, category: true, createdAt: true, mobile: true, photoUrl: true },
     }),
   ]);
 
@@ -163,6 +163,7 @@ export default async function PatientsPage({
     hospitalName:  p.registeredAt?.name ?? null,
     lastVisit:     p.visits[0]?.date.toISOString() ?? null,
     chiefComplaint: p.visits[0]?.generalExam?.chiefComplaint ?? null,
+    photoUrl:      p.photoUrl ?? null,
   }));
 
   const recentSerialized = recentReg.map(p => ({
@@ -173,6 +174,7 @@ export default async function PatientsPage({
     category:  p.category,
     createdAt: p.createdAt.toISOString(),
     mobile:    p.mobile,
+    photoUrl:  p.photoUrl ?? null,
   }));
 
   return (

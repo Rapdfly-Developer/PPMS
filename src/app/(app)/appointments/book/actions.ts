@@ -65,7 +65,8 @@ export async function bookAppointment(formData: FormData) {
     const city     = (formData.get("city")     as string)?.trim() || null;
     const state    = (formData.get("state")    as string)?.trim() || null;
     const pincode  = (formData.get("pincode")  as string)?.trim() || null;
-    const category = (formData.get("category") as string) || "GENERAL";
+    const category    = (formData.get("category")        as string) || "GENERAL";
+    const photoUrl    = (formData.get("patientPhotoFile") as string)?.trim() || null;
 
     if (!name || !age || !sex || !mobile) {
       return { error: "Patient name, age, sex and phone are required." };
@@ -110,6 +111,7 @@ export async function bookAppointment(formData: FormData) {
         state,
         pincode,
         category,
+        photoUrl,
       },
     });
     patientId = patient.id;

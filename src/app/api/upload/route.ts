@@ -1,12 +1,40 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireUser } from "@/lib/rbac";
-import { writeFile, mkdir } from "fs/promises";
+import { readFile, writeFile, mkdir } from "fs/promises";
 import path from "path";
 import crypto from "crypto";
 
 const UPLOAD_DIR = path.join(process.cwd(), "uploads", "past-visits");
 const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/webp", "application/pdf"];
 const MAX_SIZE = 20 * 1024 * 1024; // 20MB
+
+const MIME: Record<string, string> = {
+  ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
+  ".png": "image/png",  ".webp": "image/webp",
+  ".pdf": "application/pdf",
+};
+
+export async function GET(req: NextRequest) {
+  await requireUser();
+  const file = req.nextUrl.searchParams.get("file");
+  if (!file || file.includes("..") || file.includes("/")) {
+    return NextResponse.json({ error: "Invalid file name" }, { status: 400 });
+  }
+  const filePath = path.join(UPLOAD_DIR, file);
+  try {
+    const buffer = await readFile(filePath);
+    const ext = path.extname(file).toLowerCase();
+    const contentType = MIME[ext] ?? "application/octet-stream";
+    return new NextResponse(buffer, {
+      headers: {
+        "Content-Type": contentType,
+        "Cache-Control": "private, max-age=31536000, immutable",
+      },
+    });
+  } catch {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+}
 
 export async function POST(req: NextRequest) {
   await requireUser();

@@ -288,6 +288,7 @@ model Patient {
   state           String?
   pincode         String?
   complaint       String?
+  photoUrl        String?
   createdAt       DateTime @default(now())
 
   appointments    Appointment[]

@@ -41,7 +41,8 @@ export async function createWalkInEncounter(formData: FormData) {
     const mobile   = (formData.get("mobile")   as string)?.trim();
     const aadhaar  = (formData.get("aadhaar")  as string)?.trim() || "";
     const category = (formData.get("category") as string) || "GENERAL";
-    complaint       = (formData.get("complaint") as string)?.trim() || null;
+    complaint      = (formData.get("complaint") as string)?.trim() || null;
+    const photoUrl = (formData.get("patientPhoto") as string)?.trim() || null;
 
     if (!name || !ageRaw || !sex || !mobile || !complaint) {
       return { error: "Patient name, age, sex, phone and chief complaint are required." };
@@ -84,6 +85,7 @@ export async function createWalkInEncounter(formData: FormData) {
           : encryptAadhaar("000000000000"),
         complaint,
         category,
+        photoUrl,
       },
     });
     patientId = newPatient.id;

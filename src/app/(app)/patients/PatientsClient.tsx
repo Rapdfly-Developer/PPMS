@@ -24,12 +24,13 @@ export interface PatientRow {
   hospitalName: string | null;
   lastVisit: string | null;
   chiefComplaint: string | null;
+  photoUrl: string | null;
 }
 export interface TrendPoint { label: string; count: number; isToday: boolean; }
 export interface CatPoint   { category: string; count: number; }
 export interface RecentPat  {
   name: string; udid: string; sex: string; age: number;
-  category: string; createdAt: string; mobile: string;
+  category: string; createdAt: string; mobile: string; photoUrl?: string | null;
 }
 export interface Kpis {
   totalPatients: number; todayReg: number;
@@ -201,12 +202,20 @@ function RecentPanel({ recentReg }: { recentReg: RecentPat[] }) {
             const cat = CAT[p.category] ?? { label: p.category, cls: "bg-slate-100 text-slate-700" };
             return (
               <div key={i} className="flex items-center gap-2.5 group">
-                <div
-                  className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
-                  style={{ background: av.bg, color: av.text }}
-                >
-                  {initials(p.name)}
-                </div>
+                {p.photoUrl ? (
+                  <img
+                    src={`/api/upload?file=${encodeURIComponent(p.photoUrl)}`}
+                    alt={p.name}
+                    className="w-9 h-9 rounded-full object-cover flex-shrink-0"
+                  />
+                ) : (
+                  <div
+                    className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
+                    style={{ background: av.bg, color: av.text }}
+                  >
+                    {initials(p.name)}
+                  </div>
+                )}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5">
                     <Link
@@ -531,12 +540,20 @@ export function PatientsClient({
 
                       {/* Avatar + name + UHID — fixed width */}
                       <div className="flex items-center gap-3 w-44 shrink-0 min-w-0">
-                        <div
-                          className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0 select-none"
-                          style={{ background: av.bg, color: av.text }}
-                        >
-                          {initials(p.name)}
-                        </div>
+                        {p.photoUrl ? (
+                          <img
+                            src={`/api/upload?file=${encodeURIComponent(p.photoUrl)}`}
+                            alt={p.name}
+                            className="w-9 h-9 rounded-full object-cover shrink-0"
+                          />
+                        ) : (
+                          <div
+                            className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0 select-none"
+                            style={{ background: av.bg, color: av.text }}
+                          >
+                            {initials(p.name)}
+                          </div>
+                        )}
                         <div className="min-w-0">
                           <p className="text-sm font-semibold text-[var(--color-ink-900)] truncate">{p.name}</p>
                           <span className="font-mono text-[10px] bg-[#F0F8F6] text-[#115E59] px-1.5 py-0.5 rounded">
