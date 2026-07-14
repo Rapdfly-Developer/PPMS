@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, CalendarDays, Users, Eye,
   BedDouble, Settings,
-  CalendarClock, BarChart2,
+  CalendarClock, BarChart2, Lock,
 } from "lucide-react";
 import clsx from "clsx";
 import type { Role } from "@/lib/constants";
@@ -54,8 +54,23 @@ function initialsOf(name: string) {
     : name.slice(0, 2).toUpperCase();
 }
 
-function NavLink({ item, active }: { item: NavItem; active: boolean }) {
+function NavLink({ item, active, locked = false }: { item: NavItem; active: boolean; locked?: boolean }) {
   const Icon = item.icon;
+
+  if (locked) {
+    return (
+      <div
+        title="License required to access this module"
+        className="relative flex items-center gap-3 pl-3.5 pr-3 py-[9px] rounded-xl text-[13px] cursor-not-allowed select-none opacity-35"
+      >
+        <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-0 rounded-r-full" />
+        <Icon size={17} strokeWidth={1.8} className="shrink-0 text-[#7FAAA3]" />
+        <span className="truncate tracking-[0.01em] text-[#9DC4BE] flex-1">{item.label}</span>
+        <Lock size={11} className="shrink-0 text-[#7FAAA3]" />
+      </div>
+    );
+  }
+
   return (
     <Link
       href={item.href}
@@ -92,7 +107,7 @@ function NavLink({ item, active }: { item: NavItem; active: boolean }) {
   );
 }
 
-export function Sidebar({ role, name, permissions }: { role: Role; name: string; permissions: string[] }) {
+export function Sidebar({ role, name, permissions, licenseActive = true }: { role: Role; name: string; permissions: string[]; licenseActive?: boolean }) {
   const pathname = usePathname();
   const items = filterNav(role, permissions);
   const mainItems = items.filter((i) => i.href !== "/settings");
@@ -151,7 +166,7 @@ export function Sidebar({ role, name, permissions }: { role: Role; name: string;
           Overview
         </p>
         {mainItems.map((item) => (
-          <NavLink key={item.href} item={item} active={isActive(item.href)} />
+          <NavLink key={item.href} item={item} active={isActive(item.href)} locked={!licenseActive} />
         ))}
       </nav>
 
@@ -187,7 +202,7 @@ export function Sidebar({ role, name, permissions }: { role: Role; name: string;
   );
 }
 
-export function MobileNav({ role, permissions }: { role: Role; permissions: string[] }) {
+export function MobileNav({ role, permissions, licenseActive = true }: { role: Role; permissions: string[]; licenseActive?: boolean }) {
   const pathname = usePathname();
   const items = filterNav(role, permissions).slice(0, 5);
 
@@ -202,6 +217,25 @@ export function MobileNav({ role, permissions }: { role: Role; permissions: stri
       {items.map((item) => {
         const active = pathname === item.href || pathname?.startsWith(item.href + "/");
         const Icon = item.icon;
+        const isSettings = item.href === "/settings";
+        const locked = !licenseActive && !isSettings;
+
+        if (locked) {
+          return (
+            <div
+              key={item.href}
+              title="License required"
+              className="relative flex-1 flex flex-col items-center gap-1 py-2 px-1 text-[10px] font-medium text-[#7FAAA3] opacity-35 cursor-not-allowed select-none"
+            >
+              <span className="grid place-items-center size-8 rounded-xl relative">
+                <Icon size={19} strokeWidth={1.8} className="shrink-0" />
+                <Lock size={8} className="absolute -bottom-0.5 -right-0.5 text-[#7FAAA3]" />
+              </span>
+              <span className="truncate w-full text-center">{item.shortLabel ?? item.label}</span>
+            </div>
+          );
+        }
+
         return (
           <Link
             key={item.href}
