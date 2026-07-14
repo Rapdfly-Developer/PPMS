@@ -83,7 +83,6 @@ export function BookAppointmentForm({
   const [npAge,       setNpAge]       = useState("");
   const [npSex,       setNpSex]       = useState("MALE");
   const [npMobile,    setNpMobile]    = useState("");
-  const [npAadhaar,   setNpAadhaar]   = useState("");
   const [npComplaint, setNpComplaint] = useState("");
   const [npCategory,  setNpCategory]  = useState("GENERAL");
   const [aadhaarPhoto, setAadhaarPhoto] = useState<UploadedFile | null>(null);
@@ -217,7 +216,6 @@ export function BookAppointmentForm({
       fd.set("age",       npAge);
       fd.set("sex",       npSex);
       fd.set("mobile",    npMobile);
-      fd.set("aadhaar",   npAadhaar);
       fd.set("complaint", npComplaint);
       fd.set("category",  npCategory);
       // Photos uploaded to blob storage; savedNames passed for future DB linking
@@ -506,19 +504,6 @@ export function BookAppointmentForm({
                   className={inputCls}
                 />
               </div>
-              <div>
-                <FieldLabel icon={<CreditCard size={12} />}>
-                  Aadhaar <span className="font-normal text-[var(--color-ink-400)]">(optional)</span>
-                </FieldLabel>
-                <input
-                  value={npAadhaar}
-                  onChange={(e) => setNpAadhaar(e.target.value)}
-                  placeholder="12-digit Aadhaar"
-                  maxLength={14}
-                  className={inputCls}
-                />
-              </div>
-
               {/* Category */}
               <div className="sm:col-span-2">
                 <FieldLabel>Category</FieldLabel>
