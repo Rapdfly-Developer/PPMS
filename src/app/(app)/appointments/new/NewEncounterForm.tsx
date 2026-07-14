@@ -51,6 +51,7 @@ export function NewEncounterForm({
   const [mobile, setMobile] = useState("");
   const [category, setCategory] = useState("GENERAL");
   const [complaint, setComplaint] = useState("");
+  const [aadhaarPhoto, setAadhaarPhoto] = useState<UploadedFile | null>(null);
   const [patientPhoto, setPatientPhoto] = useState<UploadedFile | null>(null);
   // ── shared ───────────────────────────────────────────────────────────────
   const [visitType, setVisitType] = useState("General OPD");
@@ -309,9 +310,17 @@ export function NewEncounterForm({
               {/* Photos */}
               <div>
                 <p className="text-xs font-medium text-[var(--color-ink-600)] mb-2">
-                  Patient Photo *
+                  Photos *
                 </p>
-                <div>
+                <div className="grid grid-cols-2 gap-3">
+                  <SmartUploadBox
+                    label="Aadhaar Photocopy"
+                    uploadLabel="Upload Aadhaar Photo"
+                    subtitle="Tap to upload or capture (Image/PDF)"
+                    accept="image/*,application/pdf"
+                    value={aadhaarPhoto}
+                    onChange={setAadhaarPhoto}
+                  />
                   <SmartUploadBox
                     label="Patient Photo"
                     uploadLabel="Upload Patient Photo"
