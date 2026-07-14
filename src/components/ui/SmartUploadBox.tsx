@@ -60,7 +60,6 @@ export function SmartUploadBox({
       const res  = await fetch("/api/upload", { method: "POST", body: fd });
       const json = await res.json();
       if (!res.ok) { setErr(json.error ?? "Upload failed."); return; }
-
       const mimeType   = file instanceof File ? file.type : "image/jpeg";
       const previewUrl = mimeType.startsWith("image/") ? URL.createObjectURL(file) : undefined;
       onChange({
@@ -80,9 +79,7 @@ export function SmartUploadBox({
     setSheetOpen(false);
     setErr("");
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment" },
-      });
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
       streamRef.current = stream;
       setCamOpen(true);
     } catch {
@@ -121,12 +118,69 @@ export function SmartUploadBox({
 
   return (
     <>
-      <div className="flex flex-col gap-1.5">
-        {/* ── Upload card / preview ───────────────────────────────────────── */}
+      {/* ── Wrapper with popover anchor ─────────────────────────────────── */}
+      <div className="relative flex flex-col gap-1.5">
+
+        {/* Popover — positioned above the card, shown for both states */}
+        {sheetOpen && (
+          <>
+            {/* Click-away layer (below popover) */}
+            <div className="fixed inset-0 z-30" onClick={() => setSheetOpen(false)} />
+
+            <div className="absolute bottom-full left-0 right-0 mb-2 z-40 bg-white rounded-2xl shadow-xl border border-[var(--color-border)] overflow-hidden ppms-slide-up">
+              <button
+                type="button"
+                onClick={openCam}
+                className="flex items-center gap-3 w-full px-4 py-3 text-left hover:bg-[var(--color-primary-50)] active:bg-[var(--color-primary-100)] transition-colors"
+              >
+                <Camera size={16} className="text-[var(--color-primary-700)] shrink-0" />
+                <span className="text-sm font-medium text-[var(--color-ink-900)]">Take Photo</span>
+              </button>
+
+              <div className="h-px bg-[var(--color-border)]" />
+
+              <button
+                type="button"
+                onClick={() => { setSheetOpen(false); galleryRef.current?.click(); }}
+                className="flex items-center gap-3 w-full px-4 py-3 text-left hover:bg-[var(--color-primary-50)] active:bg-[var(--color-primary-100)] transition-colors"
+              >
+                <span className="text-base leading-none shrink-0">🖼️</span>
+                <span className="text-sm font-medium text-[var(--color-ink-900)]">Choose from Gallery</span>
+              </button>
+
+              {hasPDF && (
+                <>
+                  <div className="h-px bg-[var(--color-border)]" />
+                  <button
+                    type="button"
+                    onClick={() => { setSheetOpen(false); filesRef.current?.click(); }}
+                    className="flex items-center gap-3 w-full px-4 py-3 text-left hover:bg-[var(--color-primary-50)] active:bg-[var(--color-primary-100)] transition-colors"
+                  >
+                    <FolderOpen size={16} className="text-[var(--color-primary-700)] shrink-0" />
+                    <span className="text-sm font-medium text-[var(--color-ink-900)]">Browse Files</span>
+                  </button>
+                </>
+              )}
+
+              <div className="h-px bg-[var(--color-border)]" />
+
+              <button
+                type="button"
+                onClick={() => setSheetOpen(false)}
+                className="flex items-center gap-3 w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors"
+              >
+                <X size={16} className="text-[var(--color-ink-400)] shrink-0" />
+                <span className="text-sm font-medium text-[var(--color-ink-500)]">Cancel</span>
+              </button>
+            </div>
+          </>
+        )}
+
+        {/* ── Upload card ─────────────────────────────────────────────────── */}
         {!value ? (
           <button
             type="button"
-            onClick={() => { setErr(""); setSheetOpen(true); }}
+            onClick={() => { setErr(""); setSheetOpen((o) => !o); }}
             disabled={uploading}
             style={{ borderRadius: 20 }}
             className="group w-full border-2 border-dashed border-[var(--color-primary-300)] bg-gradient-to-b from-[var(--color-primary-50)] to-white hover:from-[var(--color-primary-100)] hover:border-[var(--color-primary-500)] active:scale-[0.97] transition-all duration-200 p-7 flex flex-col items-center gap-3 shadow-sm hover:shadow-md disabled:opacity-50 cursor-pointer"
@@ -147,7 +201,9 @@ export function SmartUploadBox({
               <p className="text-xs text-[var(--color-ink-400)] mt-0.5">{subtitle}</p>
             </div>
           </button>
+
         ) : (
+          /* ── Preview card ─────────────────────────────────────────────── */
           <div
             style={{ borderRadius: 20 }}
             className="border border-[var(--color-success-300)] bg-[var(--color-success-50)] overflow-hidden shadow-sm"
@@ -158,9 +214,7 @@ export function SmartUploadBox({
                   <FileText size={24} className="text-red-600" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-[var(--color-ink-900)] truncate">
-                    {value.originalFileName}
-                  </p>
+                  <p className="text-sm font-semibold text-[var(--color-ink-900)] truncate">{value.originalFileName}</p>
                   <p className="text-xs text-[var(--color-ink-400)] mt-0.5">PDF Document</p>
                 </div>
                 <div className="size-8 rounded-full bg-[var(--color-success-500)] flex items-center justify-center shrink-0 shadow">
@@ -170,11 +224,7 @@ export function SmartUploadBox({
             ) : (
               value.previewUrl && (
                 <div className="relative">
-                  <img
-                    src={value.previewUrl}
-                    alt={label}
-                    className="w-full h-44 object-cover"
-                  />
+                  <img src={value.previewUrl} alt={label} className="w-full h-44 object-cover" />
                   <div className="absolute top-3 right-3 size-8 rounded-full bg-[var(--color-success-500)] flex items-center justify-center shadow-lg">
                     <CheckCircle2 size={16} className="text-white" />
                   </div>
@@ -189,26 +239,17 @@ export function SmartUploadBox({
               </p>
               <div className="flex items-center gap-3">
                 {value.previewUrl && (
-                  <button
-                    type="button"
-                    onClick={() => setPreviewOpen(true)}
-                    className="flex items-center gap-1 text-xs font-semibold text-[var(--color-primary-600)] hover:text-[var(--color-primary-800)] transition-colors"
-                  >
+                  <button type="button" onClick={() => setPreviewOpen(true)}
+                    className="flex items-center gap-1 text-xs font-semibold text-[var(--color-primary-600)] hover:text-[var(--color-primary-800)] transition-colors">
                     <Eye size={13} /> Preview
                   </button>
                 )}
-                <button
-                  type="button"
-                  onClick={() => setSheetOpen(true)}
-                  className="flex items-center gap-1 text-xs font-semibold text-[var(--color-ink-500)] hover:text-[var(--color-ink-800)] transition-colors"
-                >
+                <button type="button" onClick={() => { setErr(""); setSheetOpen((o) => !o); }}
+                  className="flex items-center gap-1 text-xs font-semibold text-[var(--color-ink-500)] hover:text-[var(--color-ink-800)] transition-colors">
                   <RefreshCw size={13} /> Replace
                 </button>
-                <button
-                  type="button"
-                  onClick={remove}
-                  className="flex items-center gap-1 text-xs font-semibold text-[var(--color-danger-500)] hover:text-[var(--color-danger-700)] transition-colors"
-                >
+                <button type="button" onClick={remove}
+                  className="flex items-center gap-1 text-xs font-semibold text-[var(--color-danger-500)] hover:text-[var(--color-danger-700)] transition-colors">
                   <Trash2 size={13} /> Remove
                 </button>
               </div>
@@ -216,146 +257,27 @@ export function SmartUploadBox({
           </div>
         )}
 
-        {err && (
-          <p className="text-xs text-[var(--color-danger-600)] px-1">{err}</p>
-        )}
+        {err && <p className="text-xs text-[var(--color-danger-600)] px-1">{err}</p>}
       </div>
 
       {/* ── Hidden file inputs ────────────────────────────────────────────── */}
-      <input
-        ref={galleryRef}
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={(e) => {
-          const f = e.target.files?.[0];
-          if (f) upload(f, f.name);
-          e.target.value = "";
-        }}
-      />
-      <input
-        ref={filesRef}
-        type="file"
-        accept={accept}
-        className="hidden"
-        onChange={(e) => {
-          const f = e.target.files?.[0];
-          if (f) upload(f, f.name);
-          e.target.value = "";
-        }}
-      />
-
-      {/* ── Bottom sheet ──────────────────────────────────────────────────── */}
-      {sheetOpen && (
-        <div
-          className="fixed inset-0 z-50 flex flex-col justify-end"
-          onClick={() => setSheetOpen(false)}
-        >
-          <div className="absolute inset-0 bg-black/40" style={{ backdropFilter: "blur(4px)" }} />
-          <div
-            className="ppms-slide-up relative bg-white overflow-hidden shadow-2xl"
-            style={{ borderRadius: "28px 28px 0 0" }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Handle pill */}
-            <div className="flex justify-center pt-3 pb-1">
-              <div className="w-10 h-1 rounded-full bg-gray-200" />
-            </div>
-
-            {/* Sheet header */}
-            <div className="px-6 py-3 border-b border-gray-100">
-              <p className="text-base font-bold text-[var(--color-ink-900)]">{label}</p>
-              <p className="text-xs text-[var(--color-ink-400)] mt-0.5">{subtitle}</p>
-            </div>
-
-            {/* Options */}
-            <div className="px-4 pt-3 pb-2 flex flex-col gap-2">
-              {/* Take Photo */}
-              <button
-                type="button"
-                onClick={openCam}
-                className="flex items-center gap-4 w-full px-4 py-3.5 rounded-2xl bg-gray-50 hover:bg-[var(--color-primary-50)] active:scale-[0.97] transition-all text-left"
-              >
-                <div className="size-10 rounded-xl bg-[var(--color-primary-100)] flex items-center justify-center shrink-0">
-                  <Camera size={20} className="text-[var(--color-primary-700)]" />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-[var(--color-ink-900)]">📷 Take Photo</p>
-                  <p className="text-xs text-[var(--color-ink-400)]">Open camera</p>
-                </div>
-              </button>
-
-              {/* Choose from Gallery */}
-              <button
-                type="button"
-                onClick={() => { setSheetOpen(false); galleryRef.current?.click(); }}
-                className="flex items-center gap-4 w-full px-4 py-3.5 rounded-2xl bg-gray-50 hover:bg-[var(--color-primary-50)] active:scale-[0.97] transition-all text-left"
-              >
-                <div className="size-10 rounded-xl bg-[var(--color-primary-100)] flex items-center justify-center shrink-0">
-                  <span className="text-xl leading-none">🖼️</span>
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-[var(--color-ink-900)]">🖼️ Choose from Gallery</p>
-                  <p className="text-xs text-[var(--color-ink-400)]">Select an image</p>
-                </div>
-              </button>
-
-              {/* Browse Files — only for Aadhaar (PDF allowed) */}
-              {hasPDF && (
-                <button
-                  type="button"
-                  onClick={() => { setSheetOpen(false); filesRef.current?.click(); }}
-                  className="flex items-center gap-4 w-full px-4 py-3.5 rounded-2xl bg-gray-50 hover:bg-[var(--color-primary-50)] active:scale-[0.97] transition-all text-left"
-                >
-                  <div className="size-10 rounded-xl bg-[var(--color-primary-100)] flex items-center justify-center shrink-0">
-                    <FolderOpen size={20} className="text-[var(--color-primary-700)]" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-[var(--color-ink-900)]">📄 Browse Files</p>
-                    <p className="text-xs text-[var(--color-ink-400)]">PDF or image files</p>
-                  </div>
-                </button>
-              )}
-            </div>
-
-            {/* Cancel */}
-            <div className="px-4 pb-8">
-              <button
-                type="button"
-                onClick={() => setSheetOpen(false)}
-                className="flex items-center justify-center gap-2 w-full px-4 py-3.5 rounded-2xl border border-gray-200 bg-white hover:bg-gray-50 active:scale-[0.97] transition-all"
-              >
-                <span className="text-sm font-semibold text-[var(--color-ink-600)]">❌ Cancel</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <input ref={galleryRef} type="file" accept="image/*" className="hidden"
+        onChange={(e) => { const f = e.target.files?.[0]; if (f) upload(f, f.name); e.target.value = ""; }} />
+      <input ref={filesRef} type="file" accept={accept} className="hidden"
+        onChange={(e) => { const f = e.target.files?.[0]; if (f) upload(f, f.name); e.target.value = ""; }} />
 
       {/* ── Camera overlay ────────────────────────────────────────────────── */}
       {camOpen && (
         <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black p-4">
           <div className="relative w-full max-w-lg">
-            <button
-              type="button"
-              onClick={stopCam}
-              className="absolute top-3 right-3 z-10 size-10 flex items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/30 transition-colors"
-            >
+            <button type="button" onClick={stopCam}
+              className="absolute top-3 right-3 z-10 size-10 flex items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/30 transition-colors">
               <X size={18} />
             </button>
-            <video
-              ref={videoRef}
-              autoPlay
-              playsInline
-              muted
-              className="w-full rounded-2xl bg-black"
-            />
+            <video ref={videoRef} autoPlay playsInline muted className="w-full rounded-2xl bg-black" />
             <div className="flex justify-center mt-5">
-              <button
-                type="button"
-                onClick={capture}
-                className="flex items-center gap-2.5 px-8 py-3.5 rounded-full bg-white text-[var(--color-ink-900)] font-bold text-sm hover:bg-gray-100 active:scale-95 shadow-xl transition-all"
-              >
+              <button type="button" onClick={capture}
+                className="flex items-center gap-2.5 px-8 py-3.5 rounded-full bg-white text-[var(--color-ink-900)] font-bold text-sm hover:bg-gray-100 active:scale-95 shadow-xl transition-all">
                 <Aperture size={18} /> Capture Photo
               </button>
             </div>
@@ -365,29 +287,15 @@ export function SmartUploadBox({
 
       {/* ── Image preview overlay ─────────────────────────────────────────── */}
       {previewOpen && value?.previewUrl && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4"
-          onClick={() => setPreviewOpen(false)}
-        >
-          <div
-            className="relative max-w-2xl w-full"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              type="button"
-              onClick={() => setPreviewOpen(false)}
-              className="absolute -top-4 -right-4 z-10 size-10 flex items-center justify-center rounded-full bg-white text-gray-800 shadow-lg hover:bg-gray-100 transition-colors"
-            >
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4"
+          onClick={() => setPreviewOpen(false)}>
+          <div className="relative max-w-2xl w-full" onClick={(e) => e.stopPropagation()}>
+            <button type="button" onClick={() => setPreviewOpen(false)}
+              className="absolute -top-4 -right-4 z-10 size-10 flex items-center justify-center rounded-full bg-white text-gray-800 shadow-lg hover:bg-gray-100 transition-colors">
               <X size={18} />
             </button>
-            <img
-              src={value.previewUrl}
-              alt={label}
-              className="w-full rounded-2xl shadow-2xl"
-            />
-            <p className="text-center text-white/60 text-xs mt-3 font-medium">
-              {value.originalFileName}
-            </p>
+            <img src={value.previewUrl} alt={label} className="w-full rounded-2xl shadow-2xl" />
+            <p className="text-center text-white/60 text-xs mt-3 font-medium">{value.originalFileName}</p>
           </div>
         </div>
       )}
