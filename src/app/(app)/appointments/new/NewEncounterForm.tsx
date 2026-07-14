@@ -93,6 +93,8 @@ export function NewEncounterForm({
       if (!age.trim())          { setError("Age is required."); return; }
       if (!mobile.trim())       { setError("Phone number is required."); return; }
       if (!complaint.trim())    { setError("Chief complaint is required."); return; }
+      if (!aadhaarPhoto)        { setError("Aadhaar photocopy is required."); return; }
+      if (!patientPhoto)        { setError("Patient photo is required."); return; }
       fd.set("name", name.trim());
       fd.set("age", age);
       fd.set("sex", sex);
@@ -333,7 +335,7 @@ export function NewEncounterForm({
               {/* Photos */}
               <div>
                 <p className="text-xs font-medium text-[var(--color-ink-600)] mb-2">
-                  Photos &amp; Documents <span className="text-[var(--color-ink-400)] font-normal">(optional)</span>
+                  Photos &amp; Documents *
                 </p>
                 <div className="grid grid-cols-2 gap-3">
                   <PhotoUploadBox
