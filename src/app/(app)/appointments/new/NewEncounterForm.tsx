@@ -7,6 +7,7 @@ import {
   User, Phone, FileText, CalendarDays,
 } from "lucide-react";
 import { BackButton } from "@/components/ui/BackButton";
+import { SmartUploadBox, type UploadedFile } from "@/components/ui/SmartUploadBox";
 import { createWalkInEncounter } from "./actions";
 
 const VISIT_TYPES = [
@@ -63,6 +64,8 @@ export function NewEncounterForm({
   const [mobile, setMobile] = useState("");
   const [category, setCategory] = useState("GENERAL");
   const [complaint, setComplaint] = useState("");
+  const [aadhaarPhoto, setAadhaarPhoto] = useState<UploadedFile | null>(null);
+  const [patientPhoto, setPatientPhoto] = useState<UploadedFile | null>(null);
 
   // ── shared ───────────────────────────────────────────────────────────────
   const [visitType, setVisitType] = useState("General OPD");
@@ -96,6 +99,7 @@ export function NewEncounterForm({
       if (!dob)              { setError("Date of birth is required."); return; }
       if (!mobile.trim())    { setError("Phone number is required."); return; }
       if (!complaint.trim()) { setError("Chief complaint is required."); return; }
+      if (!patientPhoto)    { setError("Patient photo is required."); return; }
 
       const dobAge = Math.floor(
         (Date.now() - new Date(dob).getTime()) / (365.25 * 86_400_000)
@@ -313,6 +317,29 @@ export function NewEncounterForm({
                   rows={2}
                   className={`${inputCls} resize-none`}
                 />
+              </div>
+
+              {/* Photos */}
+              <div>
+                <FieldLabel>Photos *</FieldLabel>
+                <div className="grid grid-cols-2 gap-3 mt-0.5">
+                  <SmartUploadBox
+                    label="Aadhaar Photocopy"
+                    uploadLabel="Upload Aadhaar"
+                    subtitle="Image or PDF"
+                    accept="image/*,application/pdf"
+                    value={aadhaarPhoto}
+                    onChange={setAadhaarPhoto}
+                  />
+                  <SmartUploadBox
+                    label="Patient Photo *"
+                    uploadLabel="Upload Photo"
+                    subtitle="JPG / PNG"
+                    accept="image/jpeg,image/jpg,image/png"
+                    value={patientPhoto}
+                    onChange={setPatientPhoto}
+                  />
+                </div>
               </div>
 
             </div>
