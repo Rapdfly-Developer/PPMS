@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireUser } from "@/lib/rbac";
+import { auth } from "@/auth";
 import { readFile, writeFile, mkdir } from "fs/promises";
 import path from "path";
 import crypto from "crypto";
@@ -14,8 +14,17 @@ const MIME: Record<string, string> = {
   ".pdf": "application/pdf",
 };
 
+async function requireAuth(req: NextRequest): Promise<NextResponse | null> {
+  const session = await auth();
+  if (!session?.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  return null;
+}
+
 export async function GET(req: NextRequest) {
-  await requireUser();
+  const unauth = await requireAuth(req);
+  if (unauth) return unauth;
   const file = req.nextUrl.searchParams.get("file");
   if (!file || file.includes("..") || file.includes("/")) {
     return NextResponse.json({ error: "Invalid file name" }, { status: 400 });
@@ -37,7 +46,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  await requireUser();
+  const unauth = await requireAuth(req);
+  if (unauth) return unauth;
 
   const formData = await req.formData();
   const file = formData.get("file");
