@@ -2,12 +2,12 @@
 
 import { useState, useMemo, useEffect } from "react";
 import {
-  Shield, Clock, Monitor, Users, CheckCircle2, CreditCard,
+  Shield, Clock, Users, CheckCircle2, CreditCard,
   Key, Building2, Calendar, AlertTriangle, Copy, Download,
   RefreshCw, Mail, ChevronRight, ChevronLeft, Check,
-  Filter, Search, Server, Globe, Activity, BarChart2, Zap,
+  Filter, Search, Globe, Activity, BarChart2, Zap,
   Lock, AlertCircle, Info, LogIn, LogOut, ShieldCheck,
-  ShieldOff, RotateCcw, FileText, BellRing, Cpu,
+  ShieldOff, RotateCcw, FileText, BellRing,
   HardDrive, Wifi, XCircle, Eye, EyeOff, Unlock,
   TrendingUp, Award, Phone, ExternalLink, ArrowUpRight,
 } from "lucide-react";
@@ -27,8 +27,6 @@ const LICENSE = {
   gracePeriod:      7,
   lastValidation:   "Today  09:42 AM",
   nextValidation:   "Tomorrow  09:42 AM",
-  machineCount:     1,
-  machineLimit:     2,
   userCount:        42,
   userLimit:        50,
   doctorCount:      8,
@@ -40,31 +38,6 @@ const LICENSE = {
   storageUsed:      125,
   storageTotal:     250,
 };
-
-const MACHINES = [
-  {
-    id:           "SRV-001",
-    name:         "SERVER-01",
-    tag:          "Current Machine",
-    os:           "Windows Server 2022",
-    machineId:    "MID-7F3A-9C2E-1B8D",
-    activatedAt:  "Today",
-    lastValidated:"09:42 AM",
-    ip:           "192.168.1.101",
-    status:       "Active" as const,
-  },
-  {
-    id:           "SRV-002",
-    name:         "SERVER-BACKUP",
-    tag:          null,
-    os:           "Windows Server",
-    machineId:    "MID-4E2B-8A1F-3C9D",
-    activatedAt:  "12 Jun 2026",
-    lastValidated:"—",
-    ip:           "192.168.1.102",
-    status:       "Inactive" as const,
-  },
-];
 
 const ACTIVATION_HISTORY = [
   { id: 1, date: "13 Jul 2026", time: "09:42", user: "Dr. Arun Kumar", machine: "SERVER-01",   ip: "192.168.1.101", action: "Verification",  status: "Success", remarks: "Periodic validation" },
@@ -184,14 +157,6 @@ const OVERVIEW_CARDS = [
     icon: Clock,
     color: "from-blue-500 to-indigo-600",
     dot: "info" as const,
-  },
-  {
-    title: "Connected Machines",
-    value: "1 / 2",
-    sub: "1 active, 1 inactive",
-    icon: Monitor,
-    color: "from-violet-500 to-purple-600",
-    dot: "success" as const,
   },
   {
     title: "Licensed Users",
@@ -389,95 +354,6 @@ function LicensedFeatures({ loading }: { loading: boolean }) {
   );
 }
 
-// ── SECTION 5: CONNECTED MACHINES ─────────────────────────────────────────
-
-function ConnectedMachines({ loading }: { loading: boolean }) {
-  const [deactivating, setDeactivating] = useState<string | null>(null);
-
-  return (
-    <div className="flex flex-col gap-3">
-      {loading
-        ? [0, 1].map((i) => <Skeleton key={i} className="h-32" />)
-        : MACHINES.map((m) => (
-            <div
-              key={m.id}
-              className={`rounded-xl border p-4 flex flex-col sm:flex-row sm:items-start gap-4 transition-all ${
-                m.status === "Active"
-                  ? "border-emerald-200 bg-emerald-50/40"
-                  : "border-slate-200 bg-white opacity-80"
-              }`}
-            >
-              {/* Icon */}
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
-                m.status === "Active" ? "bg-emerald-100" : "bg-slate-100"
-              }`}>
-                <Server size={18} className={m.status === "Active" ? "text-emerald-600" : "text-slate-400"} />
-              </div>
-
-              {/* Info */}
-              <div className="flex-1 min-w-0">
-                <div className="flex flex-wrap items-center gap-2 mb-1">
-                  <span className="text-sm font-bold text-[#111827]">{m.name}</span>
-                  {m.tag && (
-                    <span className="text-[10px] font-bold bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">{m.tag}</span>
-                  )}
-                  <Badge variant={m.status === "Active" ? "success" : "neutral"}>
-                    <StatusDot ok={m.status === "Active"} /> {m.status}
-                  </Badge>
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-1 mt-2">
-                  {[
-                    { label: "OS",           val: m.os },
-                    { label: "Machine ID",   val: m.machineId },
-                    { label: "Activated",    val: m.activatedAt },
-                    { label: "Last Verified",val: m.lastValidated },
-                    { label: "Public IP",    val: m.ip },
-                  ].map(({ label, val }) => (
-                    <div key={label}>
-                      <p className="text-[9px] font-semibold text-[#9CA3AF] uppercase tracking-wider">{label}</p>
-                      <p className="text-[11px] font-medium text-[#374151] font-mono">{val}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Actions */}
-              <div className="flex items-center gap-2 shrink-0">
-                {m.status === "Active" ? (
-                  <button
-                    onClick={() => setDeactivating(m.id)}
-                    className="text-xs font-medium text-red-600 hover:text-red-800 border border-red-200 hover:border-red-400 px-3 py-1.5 rounded-lg bg-white hover:bg-red-50 transition-all"
-                  >
-                    Deactivate
-                  </button>
-                ) : (
-                  <button className="text-xs font-medium text-teal-700 border border-teal-200 px-3 py-1.5 rounded-lg bg-teal-50 hover:bg-teal-100 transition-all">
-                    Activate
-                  </button>
-                )}
-              </div>
-
-              {/* Deactivation confirm */}
-              {deactivating === m.id && (
-                <div className="sm:col-span-full w-full flex items-center gap-3 px-4 py-3 rounded-lg bg-red-50 border border-red-200 mt-2">
-                  <AlertTriangle size={14} className="text-red-600 shrink-0" />
-                  <p className="text-xs text-red-800 flex-1">Deactivate <strong>{m.name}</strong>? This machine will lose license access.</p>
-                  <button onClick={() => setDeactivating(null)}
-                    className="text-xs px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50">
-                    Cancel
-                  </button>
-                  <button onClick={() => setDeactivating(null)}
-                    className="text-xs px-3 py-1.5 rounded-lg bg-red-600 text-white hover:bg-red-700">
-                    Deactivate
-                  </button>
-                </div>
-              )}
-            </div>
-          ))}
-    </div>
-  );
-}
-
 // ── SECTION 6: ACTIVATION HISTORY ─────────────────────────────────────────
 
 const ACTION_ICONS: Record<string, React.ElementType> = {
@@ -659,7 +535,6 @@ const AUDIT_ACTION_ICONS: Record<string, React.ElementType> = {
   Activation: Key, Deactivation: Lock, Validation: ShieldCheck,
   Login: LogIn, Logout: LogOut, Renewal: RefreshCw,
   Suspension: ShieldOff, Revocation: XCircle, Reactivation: Unlock,
-  "Machine Change": Cpu,
 };
 
 function AuditLogs({ loading }: { loading: boolean }) {
@@ -982,7 +857,7 @@ export function LicenseManagementView() {
           <div className="flex-1 min-w-0">
             <h1 className="text-xl font-bold text-[#111827] leading-tight">License Management</h1>
             <p className="text-xs text-[#6B7280] mt-0.5 leading-relaxed">
-              Manage your organization's subscription, license activation, connected machines, validations, and feature access.
+              Manage your organization's subscription, license activation, validations, and feature access.
             </p>
           </div>
 
@@ -1045,12 +920,6 @@ export function LicenseManagementView() {
           {/* Section 4: Licensed Features */}
           <SectionCard title="Licensed Features" icon={Zap}>
             <LicensedFeatures loading={loading} />
-          </SectionCard>
-
-          {/* Section 5: Connected Machines */}
-          <SectionCard title="Connected Machines" icon={Monitor}
-            action={<Badge variant="info">{LICENSE.machineCount} / {LICENSE.machineLimit} Slots Used</Badge>}>
-            <ConnectedMachines loading={loading} />
           </SectionCard>
 
           {/* Section 6: Activation History */}

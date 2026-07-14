@@ -2,12 +2,12 @@
 
 import React, { useState, useEffect, useMemo, useTransition } from "react";
 import {
-  Key, ShieldCheck, AlertTriangle, Clock, CreditCard, Monitor,
-  History, CheckCircle2, XCircle, RefreshCw, Crown, Users2,
-  Building2, BarChart2, FileText, Lock, Download, Zap,
+  Key, ShieldCheck, AlertTriangle, Clock, CreditCard,
+  History, CheckCircle2, XCircle, RefreshCw, Crown,
+  BarChart2, FileText, Lock, Zap,
   Loader2, Search, ChevronLeft, ChevronRight, Mail, Phone,
-  BadgeCheck, Server, Package, Copy, Check, Eye, EyeOff,
-  Shield, Info, Cpu,
+  BadgeCheck, Package, Eye, EyeOff,
+  Shield, Info,
 } from "lucide-react";
 import { getLicenseFullDetails, type LicenseFullData } from "./actions";
 import { activateLicenseKey, reactivateLicense, verifyLicense } from "@/app/license/actions";
@@ -328,23 +328,17 @@ function ActivateTab({ data, onRefresh }: { data: LicenseFullData; onRefresh: ()
   const [info, setInfo]     = useState("");
   const [success, setSuccess] = useState(false);
   const [busy, setBusy]     = useState<"" | "activate" | "reactivate" | "verify">("");
-  const [machineId, setMachineId] = useState(data.machineId ?? "");
   const [deviceLabel, setDeviceLabel] = useState(data.deviceName ?? "");
   const [showKey, setShowKey] = useState(false);
 
   useEffect(() => {
-    if (!machineId) {
-      const s = localStorage.getItem("ppms_mid") ?? crypto.randomUUID();
-      localStorage.setItem("ppms_mid", s);
-      setMachineId(s);
-    }
     if (!deviceLabel) {
       const ua = navigator.userAgent;
       const os = ua.includes("Windows") ? "Windows PC" : ua.includes("Mac") ? "Mac" : ua.includes("Android") ? "Android" : "Device";
       const br = ua.includes("Edg") ? "Edge" : ua.includes("Chrome") ? "Chrome" : ua.includes("Firefox") ? "Firefox" : "Browser";
       setDeviceLabel(`${os} — ${br}`);
     }
-  }, [machineId, deviceLabel]);
+  }, [deviceLabel]);
 
   function handleKeyInput(v: string) {
     const clean = v.toUpperCase().replace(/^PPMS-?/, "").replace(/[^A-Z0-9]/g, "");
@@ -365,7 +359,7 @@ function ActivateTab({ data, onRefresh }: { data: LicenseFullData; onRefresh: ()
     startTransition(async () => {
       let res: { success?: boolean; message?: string; error?: string };
       if (kind === "activate")        res = await activateLicenseKey({ orgId: data.doctorId, licenseKey: licKey, deviceName: deviceLabel });
-      else if (kind === "reactivate") res = await reactivateLicense({ orgId: data.doctorId, licenseKey: licKey, machineId, deviceName: deviceLabel });
+      else if (kind === "reactivate") res = await reactivateLicense({ orgId: data.doctorId, licenseKey: licKey, deviceName: deviceLabel });
       else                            res = await verifyLicense(data.doctorId);
       setBusy("");
       if (res.error) { setError(res.error); return; }
@@ -424,17 +418,10 @@ function ActivateTab({ data, onRefresh }: { data: LicenseFullData; onRefresh: ()
               )}
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-semibold text-[var(--color-ink-500)] uppercase tracking-wide mb-1.5">Machine ID</label>
-                <input readOnly value={maskId(machineId)}
-                  className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-3 py-2 text-[11px] font-mono text-[var(--color-ink-400)] cursor-default" />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-[var(--color-ink-500)] uppercase tracking-wide mb-1.5">Device</label>
-                <input readOnly value={deviceLabel}
-                  className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-3 py-2 text-xs text-[var(--color-ink-400)] cursor-default truncate" />
-              </div>
+            <div>
+              <label className="block text-xs font-semibold text-[var(--color-ink-500)] uppercase tracking-wide mb-1.5">Device</label>
+              <input readOnly value={deviceLabel}
+                className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-3 py-2 text-xs text-[var(--color-ink-400)] cursor-default truncate" />
             </div>
 
             {isPending && (
@@ -760,91 +747,6 @@ function RenewalTab({ data }: { data: LicenseFullData }) {
   );
 }
 
-// ── TAB: MACHINES ─────────────────────────────────────────────────────────────
-
-function MachinesTab({ data }: { data: LicenseFullData }) {
-  const [copied, setCopied] = useState(false);
-  const [localMid, setLocalMid] = useState<string | null>(null);
-
-  useEffect(() => {
-    setLocalMid(localStorage.getItem("ppms_mid") ?? null);
-  }, []);
-
-  function copyMid() {
-    const id = data.machineId ?? localMid ?? "";
-    if (id) {
-      navigator.clipboard.writeText(id).then(() => {
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      });
-    }
-  }
-
-  const mid = data.machineId ?? localMid;
-
-  return (
-    <div className="space-y-5">
-      <SCard title="Connected Machine" icon={Monitor}>
-        {mid ? (
-          <div className="space-y-4">
-            <div className="flex items-center gap-4 p-4 rounded-xl bg-[var(--color-primary-50)] border border-[var(--color-primary-200)]">
-              <div className="w-12 h-12 rounded-2xl bg-[var(--color-primary-100)] flex items-center justify-center shrink-0">
-                <Monitor size={22} className="text-[var(--color-primary-600)]" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-[var(--color-ink-900)] truncate">{data.deviceName ?? "Unknown Device"}</p>
-                <p className="text-xs font-mono text-[var(--color-ink-400)] mt-0.5 truncate">{maskId(mid)}</p>
-                <div className="flex items-center gap-1 mt-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                  <span className="text-[10px] text-emerald-600 font-semibold">Active &amp; Bound</span>
-                </div>
-              </div>
-              <button onClick={copyMid} className="shrink-0 p-2 rounded-lg border border-[var(--color-border)] text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)] hover:bg-white transition-colors">
-                {copied ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
-              </button>
-            </div>
-
-            <div className="divide-y divide-[var(--color-border)]">
-              <InfoRow label="Device Name"        value={data.deviceName ?? "—"} />
-              <InfoRow label="Machine ID"          value={maskId(mid)} mono />
-              <InfoRow label="Full Machine ID"     value={mid} mono />
-              <InfoRow label="Last Verified"       value={fmtDt(data.lastVerifiedAt)} />
-              <InfoRow label="License Bound Since" value={fmt(data.subscriptionStartsAt)} />
-            </div>
-          </div>
-        ) : (
-          <div className="flex flex-col items-center py-10 text-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center">
-              <Monitor size={22} className="text-slate-400" />
-            </div>
-            <p className="text-sm font-semibold text-[var(--color-ink-500)]">No machine bound</p>
-            <p className="text-xs text-[var(--color-ink-400)]">Activate a license key from this device to bind it.</p>
-          </div>
-        )}
-      </SCard>
-
-      <SCard title="About Machine Binding" icon={Info}>
-        <ul className="space-y-3">
-          {[
-            { icon: ShieldCheck, text: "Your license is bound to a single machine for security. This prevents unauthorized use across multiple devices." },
-            { icon: RefreshCw,   text: "To switch to a new machine, use the Reactivate option with the same license key from the new device." },
-            { icon: Cpu,         text: "The Machine ID is a unique identifier generated from your browser environment and stored locally." },
-            { icon: Monitor,     text: "The license server verifies your machine ID on each login to ensure the license is being used on the authorized device." },
-          ].map((item, i) => {
-            const Icon = item.icon;
-            return (
-              <li key={i} className="flex items-start gap-2.5">
-                <Icon size={14} className="text-[var(--color-primary-500)] shrink-0 mt-0.5" />
-                <span className="text-xs text-[var(--color-ink-600)] leading-relaxed">{item.text}</span>
-              </li>
-            );
-          })}
-        </ul>
-      </SCard>
-    </div>
-  );
-}
-
 // ── TAB: HISTORY ─────────────────────────────────────────────────────────────
 
 const ACTION_META: Record<string, { label: string; cls: string; Icon: React.ElementType }> = {
@@ -980,14 +882,13 @@ function HistoryTab({ data }: { data: LicenseFullData }) {
 
 // ── MAIN LICENSE SECTION ──────────────────────────────────────────────────────
 
-type LicTab = "overview" | "activate" | "plans" | "renewal" | "machines" | "history";
+type LicTab = "overview" | "activate" | "plans" | "renewal" | "history";
 
 const TABS: { id: LicTab; label: string; icon: React.ElementType }[] = [
   { id: "overview",  label: "Overview",  icon: BarChart2    },
   { id: "activate",  label: "Activate",  icon: Key          },
   { id: "plans",     label: "Plans",     icon: Crown        },
   { id: "renewal",   label: "Renewal",   icon: RefreshCw    },
-  { id: "machines",  label: "Machines",  icon: Monitor      },
   { id: "history",   label: "History",   icon: History      },
 ];
 
@@ -1066,7 +967,6 @@ export function LicenseSection() {
           {tab === "activate"  && <ActivateTab  data={data} onRefresh={load} />}
           {tab === "plans"     && <PlansTab     data={data} />}
           {tab === "renewal"   && <RenewalTab   data={data} />}
-          {tab === "machines"  && <MachinesTab  data={data} />}
           {tab === "history"   && <HistoryTab   data={data} />}
         </>
       )}

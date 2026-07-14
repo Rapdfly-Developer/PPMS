@@ -5,10 +5,9 @@
 //
 //   1. License exists          → NONE
 //   2. Integrity (signature)   → INVALID
-//   3. Machine ID match        → MISMATCH   (pre-login, on the licensed device)
-//   4. Suspended / deactivated → SUSPENDED
-//   5. Expiry                  → EXPIRED
-//   6. Otherwise               → ACTIVE (Trial or Professional)
+//   3. Suspended / deactivated → SUSPENDED
+//   4. Expiry                  → EXPIRED
+//   5. Otherwise               → ACTIVE (Trial or Professional)
 //
 // The DOCTOR is the licensee. Pre-login the licensee is resolved from the
 // ppms_org cookie; post-login from the session user's doctor/hospital link.
@@ -24,14 +23,12 @@ import {
 import type { SessionUser } from "@/lib/rbac";
 
 const ORG_COOKIE = "ppms_org";
-const MID_COOKIE = "ppms_mid";
 
 export type GuardStatus =
   | "ACTIVE"    // valid license or trial — login allowed
   | "NONE"      // no license activated
   | "EXPIRED"   // trial or subscription ended
   | "INVALID"   // signature check failed (corrupted / modified)
-  | "MISMATCH"  // license belongs to another machine
   | "SUSPENDED"; // isActive = false (revoked / deactivated)
 
 export interface LicenseGuardResult {
@@ -40,7 +37,7 @@ export interface LicenseGuardResult {
   licenseType: "Trial" | "Professional" | null;
   expiryDate: string | null; // ISO
   remainingDays: number;
-  machineMatched: boolean;
+  machineMatched: true;
   features: string[];
   message: string;
 }
@@ -65,11 +62,7 @@ function blocked(status: GuardStatus, message: string, extra?: Partial<LicenseGu
   };
 }
 
-async function evaluate(
-  license: LicenseRecord | null,
-  machineIdCookie: string | null,
-  opts: { enforceMachine: boolean },
-): Promise<LicenseGuardResult> {
+async function evaluate(license: LicenseRecord | null): Promise<LicenseGuardResult> {
   // 1. License exists
   if (!license) {
     return blocked("NONE", "No license has been activated. Please activate your PPMS license to continue.");
@@ -83,21 +76,12 @@ async function evaluate(
     return blocked("INVALID", "License verification failed. Your license appears to be corrupted or modified. Please reactivate your license.");
   }
 
-  // 3. Machine binding — only meaningful on the device that activated
-  //    (staff log in from their own machines and are gated by expiry/status).
-  const machineMatched = !license.machineId || !opts.enforceMachine
-    ? true
-    : license.machineId === machineIdCookie;
-  if (!machineMatched) {
-    return blocked("MISMATCH", "This license belongs to another device. Please contact your administrator or reactivate your license.", { machineMatched: false });
-  }
-
-  // 4. Suspended / revoked / deactivated
+  // 3. Suspended / revoked / deactivated
   if (!license.isActive) {
     return blocked("SUSPENDED", "This license has been suspended or deactivated. Please contact support.");
   }
 
-  // 5. Expiry — check active subscription or active trial; block otherwise.
+  // 4. Expiry — check active subscription or active trial; block otherwise.
   const now = new Date();
 
   if (license.subscriptionEndsAt && license.subscriptionEndsAt > now) {
@@ -108,7 +92,7 @@ async function evaluate(
       licenseType: "Professional",
       expiryDate: license.subscriptionEndsAt.toISOString(),
       remainingDays: days,
-      machineMatched,
+      machineMatched: true,
       features: FEATURES,
       message: "License active.",
     };
@@ -122,7 +106,7 @@ async function evaluate(
       licenseType: "Trial",
       expiryDate: license.trialEndsAt.toISOString(),
       remainingDays: days,
-      machineMatched,
+      machineMatched: true,
       features: FEATURES,
       message: "Trial license active.",
     };
@@ -140,14 +124,12 @@ async function evaluate(
 
 // ── Entry points ─────────────────────────────────────────────────────────────
 
-/** Pre-login check: licensee resolved from the ppms_org cookie, machine
- *  binding enforced against the ppms_mid cookie. */
+/** Pre-login check: licensee resolved from the ppms_org cookie. */
 export async function checkLicenseFromCookies(): Promise<LicenseGuardResult> {
   const jar = await cookies();
   const orgId = jar.get(ORG_COOKIE)?.value ?? null;
-  const machineId = jar.get(MID_COOKIE)?.value ?? null;
 
-  if (!orgId) return evaluate(null, machineId, { enforceMachine: true });
+  if (!orgId) return evaluate(null);
 
   // A DB failure must not read as "no license" — fail closed with an honest
   // message so a transient outage never looks like a missing activation.
@@ -157,7 +139,7 @@ export async function checkLicenseFromCookies(): Promise<LicenseGuardResult> {
   } catch {
     return blocked("NONE", "Unable to verify your license right now. Please check your connection and try again.");
   }
-  return evaluate(license, machineId, { enforceMachine: true });
+  return evaluate(license);
 }
 
 /** Pre-login check by username: resolves the licensee doctor for the account
@@ -194,7 +176,7 @@ export async function checkLicenseForLogin(username: string): Promise<LicenseGua
   } catch {
     return blocked("NONE", "Unable to verify your license right now. Please check your connection and try again.");
   }
-  return evaluate(license, null, { enforceMachine: false });
+  return evaluate(license);
 }
 
 // user id → licensee doctor id. Hospital links rarely change; a short TTL
@@ -250,9 +232,7 @@ export async function checkLicenseForUser(user: SessionUser): Promise<LicenseGua
     }
   }
 
-  const jar = await cookies();
-  const machineId = jar.get(MID_COOKIE)?.value ?? null;
-  return evaluate(license, machineId, { enforceMachine: false });
+  return evaluate(license);
 }
 
 /** Where a blocked visitor should land. */
@@ -260,7 +240,6 @@ export function licenseRedirectTarget(result: LicenseGuardResult): string {
   switch (result.status) {
     case "EXPIRED":   return "/license?reason=expired";
     case "INVALID":   return "/license/activate?reason=invalid";
-    case "MISMATCH":  return "/license/activate?reason=machine";
     case "SUSPENDED": return "/license/activate?reason=suspended";
     default:          return "/license?reason=none";
   }

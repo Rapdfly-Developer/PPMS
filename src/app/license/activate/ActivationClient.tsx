@@ -126,7 +126,6 @@ export function ActivationClient({ initial }: { initial: ActivationPageData }) {
   const [info, setInfo] = useState("");
   const [showSuccess, setShowSuccess] = useState(false);
   const [deviceName, setDeviceName] = useState("This Device");
-  const [machineId, setMachineId] = useState(data.machineId ?? "");
   const [busy, setBusy] = useState<"" | "activate" | "reactivate" | "verify">("");
 
   // History table state
@@ -140,13 +139,7 @@ export function ActivationClient({ initial }: { initial: ActivationPageData }) {
     const os = ua.includes("Windows") ? "Windows PC" : ua.includes("Mac") ? "Mac" : ua.includes("Android") ? "Android Device" : ua.includes("iPhone") || ua.includes("iPad") ? "iOS Device" : "Device";
     const browser = ua.includes("Edg") ? "Edge" : ua.includes("Chrome") ? "Chrome" : ua.includes("Firefox") ? "Firefox" : ua.includes("Safari") ? "Safari" : "Browser";
     setDeviceName(data.deviceName ?? `${os} — ${browser}`);
-
-    if (!machineId) {
-      const stored = localStorage.getItem("ppms_mid") ?? crypto.randomUUID();
-      localStorage.setItem("ppms_mid", stored);
-      setMachineId(stored);
-    }
-  }, [data.deviceName, machineId]);
+  }, [data.deviceName]);
 
   function handleKeyInput(v: string) {
     const clean = v.toUpperCase().replace(/^PPMS/, "").replace(/[^A-Z0-9]/g, "");
@@ -170,7 +163,7 @@ export function ActivationClient({ initial }: { initial: ActivationPageData }) {
     startTransition(async () => {
       let res: { success?: boolean; message?: string; error?: string };
       if (kind === "activate")       res = await activateLicenseKey({ orgId: data.orgId!, licenseKey: licKey, deviceName });
-      else if (kind === "reactivate") res = await reactivateLicense({ orgId: data.orgId!, licenseKey: licKey, machineId, deviceName });
+      else if (kind === "reactivate") res = await reactivateLicense({ orgId: data.orgId!, licenseKey: licKey, deviceName });
       else                            res = await verifyLicense(data.orgId!);
       setBusy("");
       if (res.error) { setError(res.error); return; }
@@ -301,12 +294,6 @@ export function ActivationClient({ initial }: { initial: ActivationPageData }) {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1.5">Machine ID</label>
-                <input readOnly value={shortMachineId(machineId)}
-                  className="w-full rounded-xl border-2 border-slate-100 bg-slate-50 px-3.5 py-2.5 text-xs font-mono text-slate-500 cursor-default outline-none" />
-              </div>
-
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-slate-600 mb-1.5">Device Name</label>
@@ -374,14 +361,7 @@ export function ActivationClient({ initial }: { initial: ActivationPageData }) {
 
         {/* ── Footer ── */}
         <Card>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="flex items-center gap-2.5">
-              <Monitor size={16} className="text-slate-400 shrink-0" />
-              <div className="min-w-0">
-                <p className="text-[10px] text-slate-400 uppercase tracking-wide font-semibold">Machine ID</p>
-                <p className="text-xs font-mono text-slate-700 truncate">{shortMachineId(machineId)}</p>
-              </div>
-            </div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <div className="flex items-center gap-2.5">
               <Server size={16} className="text-slate-400 shrink-0" />
               <div>

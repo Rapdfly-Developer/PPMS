@@ -559,7 +559,6 @@ export type LicenseFullData = {
   trialEndsAt: string | null;
   remainingDays: number;
   paymentStatus: string;
-  machineId: string | null;
   deviceName: string | null;
   lastVerifiedAt: string | null;
   razorpayOrderId: string | null;
@@ -634,7 +633,6 @@ export async function getLicenseFullDetails(): Promise<LicenseFullData | null> {
     trialEndsAt: lic?.trialEndsAt?.toISOString() ?? null,
     remainingDays,
     paymentStatus: lic?.paymentStatus ?? "NONE",
-    machineId: lic?.machineId ?? null,
     deviceName: lic?.deviceName ?? null,
     lastVerifiedAt: lic?.lastVerifiedAt?.toISOString() ?? null,
     razorpayOrderId: lic?.razorpayOrderId ?? null,

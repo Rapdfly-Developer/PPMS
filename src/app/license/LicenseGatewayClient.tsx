@@ -26,14 +26,6 @@ function mask(key: string | null) {
   return parts.map((p, i) => (i < 2 ? p : "****")).join("-");
 }
 
-function generateMachineId() {
-  if (typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID();
-  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
-    const r = (Math.random() * 16) | 0;
-    return (c === "x" ? r : (r & 0x3) | 0x8).toString(16);
-  });
-}
-
 // ── Feature list ──────────────────────────────────────────────────────────────
 const FEATURES = [
   { icon: FileText,   label: "Electronic Medical Records (EMR)" },
@@ -187,7 +179,6 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
   const [data, setData] = useState<LicenseData>(initial);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [machineId, setMachineId] = useState(initial.machineId ?? "");
 
   // Trial form state
   const [adminName, setAdminName]     = useState("");
@@ -208,15 +199,6 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
 
   // Buy-license plans modal
   const [showPlans, setShowPlans] = useState(false);
-
-  // Generate machine ID on first render
-  useEffect(() => {
-    if (!machineId) {
-      const stored = localStorage.getItem("ppms_mid") ?? generateMachineId();
-      localStorage.setItem("ppms_mid", stored);
-      setMachineId(stored);
-    }
-  }, [machineId]);
 
   // Auto-format license key as user types
   function handleKeyInput(v: string) {
@@ -278,7 +260,7 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
     }
     setOtpError("");
     startTransition(async () => {
-      const res = await startTrial({ adminName, email, mobile, password, machineId, verificationCode: otp.trim() });
+      const res = await startTrial({ adminName, email, mobile, password, verificationCode: otp.trim() });
       if (res.error) { setOtpError(res.error); return; }
       setSuccess("Email verified! Trial started. Redirecting to login…");
       setTimeout(() => router.push("/login"), 1800);
@@ -508,7 +490,6 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
                 },
                 { label: "Trial Start Date", value: fmt(data.trialStartDate) },
                 { label: "Trial Expiry Date", value: fmt(data.trialEndDate) },
-                { label: "Machine ID", value: data.machineId ?? "—", mono: true, small: true },
               ]} />
 
               <DayProgressBar remaining={data.daysRemaining} total={30} />
@@ -541,7 +522,6 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
               <InfoGrid rows={[
                 { label: "Licensed To", value: data.orgName ?? "—" },
                 { label: "Trial Expired On", value: fmt(data.trialEndDate), highlight: "red" },
-                { label: "Machine ID", value: data.machineId ?? "—", mono: true, small: true },
               ]} />
 
               <div className="mt-6">
@@ -623,7 +603,6 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
                 { label: "Activation Date", value: fmt(data.activationDate) },
                 { label: "Expiry Date", value: fmt(data.expiryDate), highlight: status === "SUBSCRIPTION_EXPIRED" ? "red" : "green" },
                 { label: "License Key", value: mask(data.licenseKey), mono: true, small: true },
-                { label: "Machine ID", value: data.machineId ?? "—", mono: true, small: true },
               ]} />
 
               {status === "SUBSCRIBED" ? (

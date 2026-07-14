@@ -11,7 +11,6 @@ import { isEmailTaken, isMobileTaken } from "@/lib/uniqueness";
 // ── Cookie helpers ────────────────────────────────────────────────────────────
 // ppms_org stores the licensee DOCTOR id — the doctor owns the license.
 const ORG_COOKIE = "ppms_org";
-const MID_COOKIE = "ppms_mid";
 const COOKIE_OPTS = {
   httpOnly: true,
   secure: process.env.NODE_ENV === "production",
@@ -71,7 +70,6 @@ export async function startTrial(data: {
   email: string;
   mobile: string;
   password: string;
-  machineId: string;
   verificationCode: string;
 }): Promise<{ success?: boolean; error?: string }> {
   const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -125,14 +123,13 @@ export async function startTrial(data: {
     const trialEndsAt = new Date();
     trialEndsAt.setDate(trialEndsAt.getDate() + 30);
     await prisma.tenantLicense.create({
-      data: { doctorId: doctor.id, trialEndsAt, machineId: data.machineId },
+      data: { doctorId: doctor.id, trialEndsAt },
     });
     await resignLicense(doctor.id);
 
     // Persist licensee identity in cookies (doctor id)
     const jar = await cookies();
     jar.set(ORG_COOKIE, doctor.id, COOKIE_OPTS);
-    jar.set(MID_COOKIE, data.machineId, COOKIE_OPTS);
 
     await logEvent(doctor.id, "TRIAL_STARTED", "SUCCESS", { performedBy: data.adminName.trim() });
 
@@ -234,11 +231,10 @@ export async function activateLicenseKey(data: {
   }
 }
 
-// ── Re-activate an existing license on this machine ──────────────────────────
+// ── Re-activate an existing license ──────────────────────────────────────────
 export async function reactivateLicense(data: {
   orgId: string;
   licenseKey: string;
-  machineId: string;
   deviceName?: string;
 }): Promise<{ success?: boolean; error?: string }> {
   const key = data.licenseKey.trim().toUpperCase();
@@ -265,16 +261,11 @@ export async function reactivateLicense(data: {
     await prisma.tenantLicense.update({
       where: { doctorId: data.orgId },
       data: {
-        machineId: data.machineId,
         lastVerifiedAt: new Date(),
         ...(data.deviceName ? { deviceName: data.deviceName } : {}),
       },
     });
     await resignLicense(data.orgId);
-
-    // Rebind the machine cookie
-    const jar = await cookies();
-    jar.set(MID_COOKIE, data.machineId, COOKIE_OPTS);
 
     await logEvent(data.orgId, "REACTIVATED", "SUCCESS", { key });
 
@@ -321,5 +312,4 @@ export async function verifyLicense(orgId: string): Promise<{
 export async function clearOrgCookie(): Promise<void> {
   const jar = await cookies();
   jar.delete(ORG_COOKIE);
-  jar.delete(MID_COOKIE);
 }

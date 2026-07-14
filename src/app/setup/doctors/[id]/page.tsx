@@ -16,11 +16,6 @@ function maskKey(key: string | null | undefined) {
   return key.slice(0, 4) + "****-****-****-" + key.slice(-4);
 }
 
-function fmtMachineId(mid: string | null | undefined) {
-  if (!mid) return null;
-  if (mid.length <= 16) return mid;
-  return mid.slice(0, 8) + "…" + mid.slice(-8);
-}
 
 export default async function DoctorDetailPage({
   params,
@@ -107,8 +102,6 @@ export default async function DoctorDetailPage({
           plan: lic.plan ?? null,
           isActive: lic.isActive,
           licenseKeyMasked: maskKey(lic.licenseKey),
-          machineId: lic.machineId ?? null,
-          machineIdFormatted: fmtMachineId(lic.machineId),
           deviceName: lic.deviceName ?? null,
           lastVerifiedAt: lic.lastVerifiedAt?.toISOString() ?? null,
           subscriptionStartsAt: lic.subscriptionStartsAt?.toISOString() ?? null,

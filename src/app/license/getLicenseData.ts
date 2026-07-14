@@ -8,11 +8,9 @@ import { prisma } from "@/lib/prisma";
 import { getLicenseForDoctor, doctorIdForHospital } from "@/lib/license";
 
 const ORG_COOKIE = "ppms_org";
-const MID_COOKIE = "ppms_mid";
 
 export interface LicensePageData {
   orgId: string | null;        // licensee doctor id
-  machineId: string | null;
   orgName: string | null;      // "Dr. <name>"
   licenseKey: string | null;
   status: string;
@@ -45,25 +43,23 @@ export interface ActivationPageData extends LicensePageData {
 
 /** Resolve the licensee doctor id from the cookie; tolerates legacy cookies
  *  that stored a hospital id from the previous per-hospital license model. */
-async function resolveDoctorId(): Promise<{ doctorId: string | null; machineId: string | null }> {
+async function resolveDoctorId(): Promise<string | null> {
   const jar = await cookies();
   const raw = jar.get(ORG_COOKIE)?.value ?? null;
-  const machineId = jar.get(MID_COOKIE)?.value ?? null;
-  if (!raw) return { doctorId: null, machineId };
+  if (!raw) return null;
 
   const doctor = await prisma.doctor.findUnique({ where: { id: raw }, select: { id: true } }).catch(() => null);
-  if (doctor) return { doctorId: doctor.id, machineId };
+  if (doctor) return doctor.id;
 
   // Legacy cookie: hospital id → its doctor
-  const viaHospital = await doctorIdForHospital(raw).catch(() => null);
-  return { doctorId: viaHospital, machineId };
+  return doctorIdForHospital(raw).catch(() => null);
 }
 
 export async function getLicenseData(): Promise<LicensePageData> {
-  const { doctorId, machineId } = await resolveDoctorId();
+  const doctorId = await resolveDoctorId();
 
   const empty: LicensePageData = {
-    orgId: null, machineId, orgName: null, licenseKey: null,
+    orgId: null, orgName: null, licenseKey: null,
     status: "NO_LICENSE", daysRemaining: 0,
     trialStartDate: null, trialEndDate: null,
     activationDate: null, expiryDate: null, plan: null,
@@ -82,7 +78,6 @@ export async function getLicenseData(): Promise<LicensePageData> {
 
   return {
     orgId: doctorId,
-    machineId: doctor.license?.machineId ?? machineId,
     orgName: `Dr. ${doctor.name}`,
     licenseKey: doctor.license?.licenseKey ?? null,
     status: info.status,

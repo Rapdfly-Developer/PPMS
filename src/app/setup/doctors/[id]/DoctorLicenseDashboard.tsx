@@ -5,10 +5,10 @@ import Link from "next/link";
 import {
   ArrowLeft, Eye, Building2, Stethoscope, KeyRound,
   ShieldCheck, ShieldOff, Clock, AlertTriangle, CheckCircle2,
-  XCircle, CreditCard, Monitor, Users, Award, Activity,
+  XCircle, CreditCard, Users, Award, Activity,
   BarChart2, Zap, Lock, LogIn, LogOut, RefreshCw,
   RotateCcw, Download, Copy, Check, Mail, Phone,
-  FileText, Server, Cpu, ChevronLeft, ChevronRight,
+  FileText, ChevronLeft, ChevronRight,
   Search, BellRing, CalendarDays, Hash, BadgeCheck,
   ArrowUpRight, Unlock, Eye as EyeIcon, EyeOff,
 } from "lucide-react";
@@ -31,8 +31,7 @@ export type DoctorLicensePageData = {
   }[];
   license: {
     plan: string | null; isActive: boolean;
-    licenseKeyMasked: string | null; machineId: string | null;
-    machineIdFormatted: string | null; deviceName: string | null;
+    licenseKeyMasked: string | null; deviceName: string | null;
     lastVerifiedAt: string | null; subscriptionStartsAt: string | null;
     subscriptionEndsAt: string | null; trialStartsAt: string | null;
     trialEndsAt: string | null; paymentStatus: string;
@@ -261,14 +260,6 @@ function OverviewCards({ lic, data }: { lic: DoctorLicensePageData["license"]; d
       ok: !urgent,
     },
     {
-      title: "Connected Machine",
-      value: lic?.machineId ? "1 / 1" : "0 / 1",
-      sub: lic?.deviceName ?? (lic?.machineId ? "Device bound" : "No machine bound"),
-      icon: Monitor,
-      gradient: "from-violet-500 to-purple-600",
-      ok: !!lic?.machineId,
-    },
-    {
       title: "Linked Hospitals",
       value: `${data.hospitals.filter(h => h.active).length} / ${data.hospitals.length}`,
       sub: `${data.hospitals.length} hospital${data.hospitals.length !== 1 ? "s" : ""} linked`,
@@ -463,82 +454,6 @@ function LicensedFeatures({ lic }: { lic: DoctorLicensePageData["license"] }) {
   );
 }
 
-// ── Section 5: Connected Machine ──────────────────────────────────────────
-
-function ConnectedMachines({ lic }: { lic: DoctorLicensePageData["license"] }) {
-  const [deactivateOpen, setDeactivateOpen] = useState(false);
-
-  if (!lic?.machineId) return (
-    <div className="flex flex-col items-center py-8 gap-3 text-center">
-      <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center">
-        <Monitor size={22} className="text-slate-400" />
-      </div>
-      <p className="text-sm font-semibold text-slate-500">No machine bound</p>
-      <p className="text-xs text-slate-400">Activate the license from a device to bind a machine.</p>
-    </div>
-  );
-
-  return (
-    <div className="flex flex-col gap-3">
-      {/* Primary machine */}
-      <div className="rounded-xl border border-emerald-200 bg-emerald-50/40 p-4 flex flex-col sm:flex-row sm:items-start gap-4">
-        <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center shrink-0">
-          <Server size={18} className="text-emerald-600" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex flex-wrap items-center gap-2 mb-2">
-            <span className="text-sm font-bold text-[#111827]">{lic.deviceName ?? "Primary Device"}</span>
-            <span className="text-[10px] font-bold bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">Current Machine</span>
-            <StatusBadge variant="success"><Dot ok /> Active</StatusBadge>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2">
-            {[
-              { label: "Machine ID",    val: lic.machineIdFormatted ?? lic.machineId },
-              { label: "Last Verified", val: fmtDt(lic.lastVerifiedAt) },
-              { label: "Bound Since",   val: fmt(lic.subscriptionStartsAt ?? lic.trialStartsAt) },
-            ].map(({ label, val }) => (
-              <div key={label}>
-                <p className="text-[9px] font-semibold text-[#9CA3AF] uppercase tracking-wider">{label}</p>
-                <p className="text-[11px] font-medium text-[#374151] font-mono">{val}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-        <button
-          onClick={() => setDeactivateOpen(true)}
-          className="shrink-0 text-xs font-medium text-red-600 hover:text-red-800 border border-red-200 hover:border-red-400 px-3 py-1.5 rounded-lg bg-white hover:bg-red-50 transition-all"
-        >
-          Deactivate
-        </button>
-      </div>
-
-      {/* Confirm deactivate */}
-      {deactivateOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
-            <div className="w-12 h-12 bg-red-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <Monitor size={22} className="text-red-600" />
-            </div>
-            <h3 className="text-base font-bold text-[#111827] text-center">Deactivate Machine?</h3>
-            <p className="text-xs text-[#6B7280] text-center mt-2 leading-relaxed">
-              This machine will immediately lose license access. You'll need to re-activate from a device to restore access.
-            </p>
-            <div className="flex gap-2 mt-6">
-              <button onClick={() => setDeactivateOpen(false)}
-                className="flex-1 py-2.5 rounded-xl border border-[#E5E7EB] text-sm font-medium text-[#374151] hover:bg-slate-50 transition-all">
-                Cancel
-              </button>
-              <button onClick={() => setDeactivateOpen(false)}
-                className="flex-1 py-2.5 rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition-all">
-                Deactivate
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
 
 // ── Section 6: Activation History ─────────────────────────────────────────
 
@@ -1128,17 +1043,6 @@ export function DoctorLicenseDashboard({ data }: { data: DoctorLicensePageData }
           {/* Licensed Features */}
           <Card title="Licensed Features" icon={Zap}>
             <LicensedFeatures lic={lic} />
-          </Card>
-
-          {/* Connected Machine */}
-          <Card
-            title="Connected Machine"
-            icon={Monitor}
-            badge={<StatusBadge variant={lic?.machineId ? "info" : "neutral"}>
-              {lic?.machineId ? "1 / 1 Bound" : "0 / 1 Bound"}
-            </StatusBadge>}
-          >
-            <ConnectedMachines lic={lic} />
           </Card>
 
           {/* Activation History */}
