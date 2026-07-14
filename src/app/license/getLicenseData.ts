@@ -55,8 +55,8 @@ async function resolveDoctorId(): Promise<string | null> {
   return doctorIdForHospital(raw).catch(() => null);
 }
 
-export async function getLicenseData(): Promise<LicensePageData> {
-  const doctorId = await resolveDoctorId();
+export async function getLicenseData(overrideDoctorId?: string): Promise<LicensePageData> {
+  const doctorId = overrideDoctorId ?? await resolveDoctorId();
 
   const empty: LicensePageData = {
     orgId: null, orgName: null, licenseKey: null,

@@ -6,9 +6,9 @@ import {
   FileText, Calendar, Building2, UserCircle, Users,
   BarChart3, Cloud, Shield, CheckCircle2, AlertTriangle,
   XCircle, Clock, Key, ArrowRight, ArrowLeft, Loader2, Eye, EyeOff,
-  Phone, Mail, Lock, Star, RefreshCw,
+  Phone, Mail, Lock, Star,
 } from "lucide-react";
-import { startTrial, activateLicenseKey, clearOrgCookie, sendVerificationCode } from "./actions";
+import { startTrial, activateLicenseKey, sendVerificationCode } from "./actions";
 import type { LicensePageData } from "./getLicenseData";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -641,14 +641,7 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
           {/* Footer */}
           <div className="mt-6 flex items-center justify-between text-xs text-slate-400">
             <span>PPMS v2.0 &nbsp;·&nbsp; <span className="text-slate-300">Build 2025</span></span>
-            <div className="flex items-center gap-3">
-              <a href="mailto:support@ppms.in" className="hover:text-slate-600 transition-colors">Support</a>
-              <span>·</span>
-              <button onClick={async () => { await clearOrgCookie(); router.refresh(); }}
-                className="flex items-center gap-1 hover:text-slate-600 transition-colors">
-                <RefreshCw size={10} /> Reset
-              </button>
-            </div>
+            <a href="mailto:support@ppms.in" className="hover:text-slate-600 transition-colors">Support</a>
           </div>
         </div>
       </div>
