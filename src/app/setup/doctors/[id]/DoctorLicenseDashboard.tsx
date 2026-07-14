@@ -11,6 +11,7 @@ import {
   FileText, ChevronLeft, ChevronRight,
   Search, BellRing, CalendarDays, Hash, BadgeCheck,
   ArrowUpRight, Unlock, Eye as EyeIcon, EyeOff,
+  Sparkles, Plus,
 } from "lucide-react";
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -718,123 +719,406 @@ function ProfileSection({ doc }: { doc: DoctorLicensePageData["doctor"] }) {
   );
 }
 
-// ── Quick Actions Panel ────────────────────────────────────────────────────
+// ── License Actions Panel ──────────────────────────────────────────────────
 
-function QuickActionsPanel({ lic, doctor }: {
+type LicActionModal = "generate" | "activate" | "deactivate" | "renew" | "extend" | null;
+
+function LicenseActionsPanel({ lic, doctor }: {
   lic: DoctorLicensePageData["license"]; doctor: DoctorLicensePageData["doctor"];
 }) {
-  const [copied, setCopied]         = useState(false);
-  const [revokeOpen, setRevokeOpen] = useState(false);
-  const [resetOpen, setResetOpen]   = useState(false);
-  const [showKey, setShowKey]       = useState(false);
+  const [modal, setModal]       = useState<LicActionModal>(null);
+  const [days, setDays]         = useState(180);
+  const [customDays, setCustomDays] = useState("");
+  const [reason, setReason]     = useState("");
+  const [loading, setLoading]   = useState(false);
+  const [toast, setToast]       = useState<{ type: "success" | "error"; msg: string } | null>(null);
 
-  function copyKey() {
-    if (lic?.licenseKeyMasked) {
-      navigator.clipboard.writeText(lic.licenseKeyMasked).catch(() => {});
-    }
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const hasLicense = !!lic;
+  const isActive   = lic?.isActive ?? false;
+  const effectiveDays = customDays ? Math.max(1, parseInt(customDays) || 0) : days;
+
+  function showToast(type: "success" | "error", msg: string) {
+    setToast({ type, msg });
+    setTimeout(() => setToast(null), 4000);
   }
 
-  const actions = [
-    { label: "Activate License",      icon: KeyRound,     cls: "bg-teal-600 text-white hover:bg-teal-700 shadow-sm" },
-    { label: "Refresh License",       icon: RefreshCw,    cls: "bg-white border border-[#E5E7EB] text-[#374151] hover:bg-slate-50" },
-    { label: "Renew Subscription",    icon: CreditCard,   cls: "bg-white border border-[#E5E7EB] text-[#374151] hover:bg-slate-50" },
-    { label: "Transfer License",      icon: ArrowUpRight, cls: "bg-white border border-[#E5E7EB] text-[#374151] hover:bg-slate-50" },
-    { label: "Download License",      icon: Download,     cls: "bg-white border border-[#E5E7EB] text-[#374151] hover:bg-slate-50" },
-    { label: copied ? "Copied!" : "Copy License Key", icon: copied ? Check : Copy,
-      cls: "bg-white border border-[#E5E7EB] text-[#374151] hover:bg-slate-50", fn: copyKey },
-    { label: "View Invoice",          icon: FileText,     cls: "bg-white border border-[#E5E7EB] text-[#374151] hover:bg-slate-50" },
-    { label: "Contact Support",       icon: Phone,        cls: "bg-blue-50 border border-blue-200 text-blue-700 hover:bg-blue-100" },
-  ];
+  async function callAction(action: string, extra: Record<string, unknown> = {}) {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/setup/licenses/${doctor.id}/action`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, performedBy: "superadmin", ...extra }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Action failed");
+      showToast("success", "Done — refreshing…");
+      setModal(null);
+      setTimeout(() => window.location.reload(), 1200);
+    } catch (err: unknown) {
+      showToast("error", err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function closeModal() { if (!loading) { setModal(null); setCustomDays(""); setReason(""); setDays(180); } }
+
+  /* ── new expiry preview for Renew modal ── */
+  function renewedExpiry(d: number) {
+    const base = lic?.subscriptionEndsAt && new Date(lic.subscriptionEndsAt) > new Date()
+      ? new Date(lic.subscriptionEndsAt)
+      : new Date();
+    return fmt(new Date(base.getTime() + d * 86_400_000).toISOString());
+  }
 
   return (
     <>
-      <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-sm overflow-hidden">
-        <div className="flex items-center gap-2.5 px-5 py-4 border-b border-[#E5E7EB]">
-          <div className="w-7 h-7 rounded-lg bg-teal-50 flex items-center justify-center">
-            <Zap size={14} className="text-teal-600" />
-          </div>
-          <h3 className="text-sm font-semibold text-[#111827]">Quick Actions</h3>
+      {/* ── Toast ── */}
+      {toast && (
+        <div className={`fixed top-5 right-5 z-[100] flex items-center gap-2.5 px-4 py-3 rounded-2xl shadow-2xl text-sm font-semibold animate-fade-in ${
+          toast.type === "success" ? "bg-emerald-600 text-white" : "bg-red-600 text-white"
+        }`}>
+          {toast.type === "success" ? <CheckCircle2 size={16} /> : <XCircle size={16} />}
+          {toast.msg}
         </div>
-        <div className="px-4 py-4 flex flex-col gap-2">
-          {actions.map(({ label, icon: Icon, cls, fn }) => (
-            <button key={label} onClick={fn}
-              className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all duration-150 w-full text-left ${cls}`}>
-              <Icon size={13} className="shrink-0" /> {label}
-            </button>
-          ))}
-          <button onClick={() => setShowKey(v => !v)}
-            className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-medium bg-white border border-[#E5E7EB] text-[#374151] hover:bg-slate-50 transition-all w-full text-left">
-            {showKey ? <EyeOff size={13} className="shrink-0" /> : <EyeIcon size={13} className="shrink-0" />}
-            {showKey ? "Hide Key" : "Reveal License Key"}
-          </button>
+      )}
+
+      {/* ── Panel ── */}
+      <div className="rounded-2xl overflow-hidden border border-[#E5E7EB] shadow-sm">
+
+        {/* Header — deep indigo gradient */}
+        <div className="px-5 pt-5 pb-4" style={{ background: "linear-gradient(135deg, #1e1b4b 0%, #3730a3 55%, #4f46e5 100%)" }}>
+          <div className="flex items-center gap-2.5 mb-1">
+            <div className="w-7 h-7 bg-white/15 rounded-xl flex items-center justify-center">
+              <Sparkles size={13} className="text-indigo-200" />
+            </div>
+            <span className="text-sm font-bold text-white tracking-tight">License Actions</span>
+          </div>
+          <p className="text-[11px] text-indigo-300 pl-9">Dr. {doctor.name.split(" ").slice(0, 2).join(" ")}</p>
         </div>
 
-        {/* Danger Zone */}
-        <div className="px-4 pb-4 border-t border-red-50 pt-3">
-          <p className="text-[9px] font-bold uppercase tracking-widest text-red-400 mb-2 px-0.5">Danger Zone</p>
-          <div className="flex flex-col gap-1.5">
-            <button onClick={() => setRevokeOpen(true)}
-              className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-medium bg-red-50 border border-red-200 text-red-700 hover:bg-red-100 transition-all w-full text-left">
-              <ShieldOff size={13} className="shrink-0" /> Revoke License
+        {/* Buttons */}
+        <div className="bg-[#F8FAFC] p-3 flex flex-col gap-2">
+
+          {/* Generate — full-width hero button */}
+          <button
+            onClick={() => setModal("generate")}
+            className="group relative flex items-center gap-3 w-full px-4 py-3.5 rounded-xl overflow-hidden transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0"
+            style={{ background: "linear-gradient(135deg, #7c3aed 0%, #6d28d9 50%, #4c1d95 100%)" }}
+          >
+            <div className="w-8 h-8 bg-white/20 rounded-xl flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-200">
+              <Sparkles size={15} className="text-white" />
+            </div>
+            <div className="text-left flex-1">
+              <p className="text-sm font-bold text-white leading-tight">Generate License</p>
+              <p className="text-[10px] text-violet-300 mt-0.5">
+                {hasLicense ? "Regenerate new key" : "Issue 30-day trial"}
+              </p>
+            </div>
+            <ArrowUpRight size={14} className="text-violet-300 group-hover:text-white transition-colors shrink-0" />
+            {/* shimmer */}
+            <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-in-out pointer-events-none" />
+          </button>
+
+          {/* 2 × 2 grid */}
+          <div className="grid grid-cols-2 gap-2">
+
+            {/* Activate */}
+            <button
+              onClick={() => setModal("activate")}
+              disabled={isActive}
+              className={`group flex flex-col items-center gap-2 py-4 px-3 rounded-xl border-2 text-center transition-all duration-200 ${
+                isActive
+                  ? "border-emerald-100 bg-emerald-50/60 opacity-50 cursor-not-allowed"
+                  : "border-emerald-200 bg-white hover:bg-emerald-50 hover:border-emerald-400 hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
+              }`}
+            >
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-transform duration-200 ${
+                isActive ? "bg-emerald-100" : "bg-emerald-500 shadow-sm shadow-emerald-200 group-hover:scale-110"
+              }`}>
+                <ShieldCheck size={18} className={isActive ? "text-emerald-400" : "text-white"} />
+              </div>
+              <div>
+                <p className="text-xs font-bold text-emerald-900 leading-tight">Activate</p>
+                <p className="text-[9px] text-emerald-600 mt-0.5">Enable access</p>
+              </div>
             </button>
-            <button onClick={() => setResetOpen(true)}
-              className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-medium bg-red-50 border border-red-200 text-red-700 hover:bg-red-100 transition-all w-full text-left">
-              <RotateCcw size={13} className="shrink-0" /> Reset Activations
+
+            {/* Deactivate */}
+            <button
+              onClick={() => setModal("deactivate")}
+              disabled={!isActive}
+              className={`group flex flex-col items-center gap-2 py-4 px-3 rounded-xl border-2 text-center transition-all duration-200 ${
+                !isActive
+                  ? "border-amber-100 bg-amber-50/60 opacity-50 cursor-not-allowed"
+                  : "border-amber-200 bg-white hover:bg-amber-50 hover:border-amber-400 hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
+              }`}
+            >
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-transform duration-200 ${
+                !isActive ? "bg-amber-100" : "bg-amber-500 shadow-sm shadow-amber-200 group-hover:scale-110"
+              }`}>
+                <ShieldOff size={18} className={!isActive ? "text-amber-400" : "text-white"} />
+              </div>
+              <div>
+                <p className="text-xs font-bold text-amber-900 leading-tight">Deactivate</p>
+                <p className="text-[9px] text-amber-600 mt-0.5">Pause access</p>
+              </div>
             </button>
+
+            {/* Renew */}
+            <button
+              onClick={() => setModal("renew")}
+              className="group flex flex-col items-center gap-2 py-4 px-3 rounded-xl border-2 border-blue-200 bg-white text-center transition-all duration-200 hover:bg-blue-50 hover:border-blue-400 hover:shadow-md hover:-translate-y-0.5 active:translate-y-0"
+            >
+              <div className="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center shadow-sm shadow-blue-200 group-hover:scale-110 transition-transform duration-200">
+                <CreditCard size={18} className="text-white" />
+              </div>
+              <div>
+                <p className="text-xs font-bold text-blue-900 leading-tight">Renew</p>
+                <p className="text-[9px] text-blue-600 mt-0.5">Extend from expiry</p>
+              </div>
+            </button>
+
+            {/* Extend */}
+            <button
+              onClick={() => setModal("extend")}
+              className="group flex flex-col items-center gap-2 py-4 px-3 rounded-xl border-2 border-teal-200 bg-white text-center transition-all duration-200 hover:bg-teal-50 hover:border-teal-400 hover:shadow-md hover:-translate-y-0.5 active:translate-y-0"
+            >
+              <div className="w-10 h-10 bg-teal-500 rounded-xl flex items-center justify-center shadow-sm shadow-teal-200 group-hover:scale-110 transition-transform duration-200">
+                <Plus size={18} className="text-white" />
+              </div>
+              <div>
+                <p className="text-xs font-bold text-teal-900 leading-tight">Extend</p>
+                <p className="text-[9px] text-teal-600 mt-0.5">Add extra days</p>
+              </div>
+            </button>
+
           </div>
         </div>
       </div>
 
-      {/* License Key Reveal */}
-      {showKey && lic?.licenseKeyMasked && (
-        <div className="bg-white rounded-2xl border border-teal-200 shadow-sm p-4">
-          <p className="text-[10px] font-bold text-[#6B7280] uppercase tracking-wider mb-2">License Key</p>
-          <p className="text-xs font-mono text-teal-700 break-all bg-teal-50 rounded-lg px-3 py-2.5 border border-teal-100">
-            {lic.licenseKeyMasked}
-          </p>
-        </div>
-      )}
+      {/* ── Modals ── */}
 
-      {/* Revoke confirm */}
-      {revokeOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
-            <div className="w-12 h-12 bg-red-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <ShieldOff size={22} className="text-red-600" />
+      {/* Generate */}
+      {modal === "generate" && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
+            <div className="px-6 pt-8 pb-6 text-center" style={{ background: "linear-gradient(160deg, #ede9fe 0%, #ddd6fe 100%)" }}>
+              <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg"
+                style={{ background: "linear-gradient(135deg, #7c3aed, #4c1d95)" }}>
+                <Sparkles size={28} className="text-white" />
+              </div>
+              <h3 className="text-base font-bold text-[#1e1b4b]">
+                {hasLicense ? "Regenerate License Key" : "Generate Trial License"}
+              </h3>
+              <p className="text-xs text-violet-500 mt-1 font-medium">Dr. {doctor.name}</p>
             </div>
-            <h3 className="text-base font-bold text-[#111827] text-center">Revoke License?</h3>
-            <p className="text-sm font-medium text-[#374151] text-center mt-1">Dr. {doctor.name}</p>
-            <p className="text-xs text-[#6B7280] text-center mt-2 leading-relaxed">
-              This will immediately deactivate all machines and block all logins for this doctor. This action cannot be undone.
-            </p>
-            <div className="flex gap-2 mt-6">
-              <button onClick={() => setRevokeOpen(false)}
-                className="flex-1 py-2.5 rounded-xl border border-[#E5E7EB] text-sm font-medium hover:bg-slate-50 transition-all">Cancel</button>
-              <button onClick={() => setRevokeOpen(false)}
-                className="flex-1 py-2.5 rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition-all">Revoke</button>
+            <div className="p-6">
+              <p className="text-sm text-[#374151] text-center leading-relaxed">
+                {hasLicense
+                  ? "A brand-new license key will be generated and the previous key will be invalidated immediately."
+                  : "A 30-day trial license will be issued. The doctor can start using PPMS right away."}
+              </p>
+              <div className="flex gap-2 mt-6">
+                <button onClick={closeModal} disabled={loading}
+                  className="flex-1 py-2.5 rounded-xl border border-[#E5E7EB] text-sm font-medium text-[#374151] hover:bg-slate-50 transition-all disabled:opacity-50">
+                  Cancel
+                </button>
+                <button onClick={() => callAction(hasLicense ? "regenerate" : "generate-trial")} disabled={loading}
+                  className="flex-1 py-2.5 rounded-xl text-white text-sm font-bold transition-all disabled:opacity-60 shadow-md"
+                  style={{ background: "linear-gradient(135deg, #7c3aed, #4c1d95)" }}>
+                  {loading ? "Processing…" : hasLicense ? "Regenerate" : "Generate Trial"}
+                </button>
+              </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Reset confirm */}
-      {resetOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
-            <div className="w-12 h-12 bg-amber-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <RotateCcw size={22} className="text-amber-600" />
+      {/* Activate */}
+      {modal === "activate" && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
+            <div className="px-6 pt-8 pb-6 text-center bg-gradient-to-b from-emerald-50 to-white">
+              <div className="w-16 h-16 bg-emerald-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-emerald-200">
+                <ShieldCheck size={28} className="text-white" />
+              </div>
+              <h3 className="text-base font-bold text-[#111827]">Activate License</h3>
+              <p className="text-xs text-emerald-600 mt-1 font-medium">Dr. {doctor.name}</p>
             </div>
-            <h3 className="text-base font-bold text-[#111827] text-center">Reset Activations?</h3>
-            <p className="text-xs text-[#6B7280] text-center mt-2 leading-relaxed">
-              All machine activations will be cleared for this doctor. Data is preserved. Re-activation will be required.
-            </p>
-            <div className="flex gap-2 mt-6">
-              <button onClick={() => setResetOpen(false)}
-                className="flex-1 py-2.5 rounded-xl border border-[#E5E7EB] text-sm font-medium hover:bg-slate-50 transition-all">Cancel</button>
-              <button onClick={() => setResetOpen(false)}
-                className="flex-1 py-2.5 rounded-xl bg-amber-500 text-white text-sm font-semibold hover:bg-amber-600 transition-all">Reset</button>
+            <div className="p-6">
+              <p className="text-sm text-[#374151] text-center leading-relaxed">
+                The license will be reactivated and the doctor will regain full access to PPMS immediately.
+              </p>
+              <div className="flex gap-2 mt-6">
+                <button onClick={closeModal} disabled={loading}
+                  className="flex-1 py-2.5 rounded-xl border border-[#E5E7EB] text-sm font-medium text-[#374151] hover:bg-slate-50 transition-all disabled:opacity-50">
+                  Cancel
+                </button>
+                <button onClick={() => callAction("resume")} disabled={loading}
+                  className="flex-1 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-bold hover:bg-emerald-700 transition-all disabled:opacity-60 shadow-md shadow-emerald-200">
+                  {loading ? "Activating…" : "Activate Now"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Deactivate */}
+      {modal === "deactivate" && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
+            <div className="px-6 pt-8 pb-6 text-center bg-gradient-to-b from-amber-50 to-white">
+              <div className="w-16 h-16 bg-amber-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-amber-200">
+                <ShieldOff size={28} className="text-white" />
+              </div>
+              <h3 className="text-base font-bold text-[#111827]">Deactivate License</h3>
+              <p className="text-xs text-amber-600 mt-1 font-medium">Dr. {doctor.name}</p>
+            </div>
+            <div className="p-6 flex flex-col gap-4">
+              <p className="text-sm text-[#374151] text-center leading-relaxed">
+                The doctor&apos;s access will be paused. They cannot log in until the license is reactivated.
+              </p>
+              <div>
+                <label className="text-xs font-bold text-[#374151] block mb-2 uppercase tracking-wide">Reason (optional)</label>
+                <select value={reason} onChange={e => setReason(e.target.value)}
+                  className="w-full text-sm border-2 border-[#E5E7EB] rounded-xl px-3 py-2.5 text-[#374151] focus:outline-none focus:border-amber-400 bg-white transition-colors">
+                  <option value="">Select a reason…</option>
+                  <option value="Non-payment">Non-payment</option>
+                  <option value="Account review">Account review</option>
+                  <option value="Violation of terms">Violation of terms</option>
+                  <option value="Doctor request">Doctor request</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              <div className="flex gap-2">
+                <button onClick={closeModal} disabled={loading}
+                  className="flex-1 py-2.5 rounded-xl border border-[#E5E7EB] text-sm font-medium text-[#374151] hover:bg-slate-50 transition-all disabled:opacity-50">
+                  Cancel
+                </button>
+                <button onClick={() => callAction("suspend", { reason: reason || undefined })} disabled={loading}
+                  className="flex-1 py-2.5 rounded-xl bg-amber-500 text-white text-sm font-bold hover:bg-amber-600 transition-all disabled:opacity-60 shadow-md shadow-amber-200">
+                  {loading ? "Deactivating…" : "Deactivate"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Renew */}
+      {modal === "renew" && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
+            <div className="px-6 pt-8 pb-6 text-center bg-gradient-to-b from-blue-50 to-white">
+              <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-blue-200">
+                <CreditCard size={28} className="text-white" />
+              </div>
+              <h3 className="text-base font-bold text-[#111827]">Renew License</h3>
+              <p className="text-xs text-blue-600 mt-1 font-medium">Extends from current expiry date</p>
+            </div>
+            <div className="p-6 flex flex-col gap-4">
+              <div>
+                <label className="text-xs font-bold text-[#374151] block mb-2 uppercase tracking-wide">Select Duration</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { d: 30, label: "1 Month" },
+                    { d: 90, label: "3 Months" },
+                    { d: 180, label: "6 Months" },
+                    { d: 365, label: "1 Year" },
+                  ].map(({ d, label }) => (
+                    <button key={d}
+                      onClick={() => { setDays(d); setCustomDays(""); }}
+                      className={`py-3 rounded-xl text-xs font-bold border-2 transition-all duration-150 ${
+                        days === d && !customDays
+                          ? "border-blue-500 bg-blue-500 text-white shadow-md"
+                          : "border-[#E5E7EB] text-[#374151] hover:border-blue-300 bg-white"
+                      }`}>
+                      {label}
+                      <span className="block text-[9px] font-normal opacity-70 mt-0.5">{d} days</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="text-xs font-bold text-[#374151] block mb-1.5 uppercase tracking-wide">Or Custom Days</label>
+                <input type="number" min={1} value={customDays} onChange={e => setCustomDays(e.target.value)}
+                  placeholder="e.g. 45"
+                  className="w-full text-sm border-2 border-[#E5E7EB] rounded-xl px-3 py-2.5 text-[#374151] focus:outline-none focus:border-blue-400 placeholder:text-slate-300 transition-colors" />
+              </div>
+              {effectiveDays > 0 && (
+                <div className="bg-blue-50 border border-blue-100 rounded-xl px-4 py-2.5 flex items-center justify-between">
+                  <span className="text-[11px] text-blue-600 font-medium">New expiry</span>
+                  <span className="text-sm font-bold text-blue-800">{renewedExpiry(effectiveDays)}</span>
+                </div>
+              )}
+              <div className="flex gap-2">
+                <button onClick={closeModal} disabled={loading}
+                  className="flex-1 py-2.5 rounded-xl border border-[#E5E7EB] text-sm font-medium text-[#374151] hover:bg-slate-50 transition-all disabled:opacity-50">
+                  Cancel
+                </button>
+                <button onClick={() => callAction("renew", { days: effectiveDays })} disabled={loading || effectiveDays <= 0}
+                  className="flex-1 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-bold hover:bg-blue-700 transition-all disabled:opacity-60 shadow-md shadow-blue-200">
+                  {loading ? "Renewing…" : `Renew · ${effectiveDays}d`}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Extend */}
+      {modal === "extend" && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
+            <div className="px-6 pt-8 pb-6 text-center bg-gradient-to-b from-teal-50 to-white">
+              <div className="w-16 h-16 bg-teal-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-teal-200">
+                <Plus size={28} className="text-white" />
+              </div>
+              <h3 className="text-base font-bold text-[#111827]">Extend License</h3>
+              <p className="text-xs text-teal-600 mt-1 font-medium">Add extra days on top of current period</p>
+            </div>
+            <div className="p-6 flex flex-col gap-4">
+              <div>
+                <label className="text-xs font-bold text-[#374151] block mb-2 uppercase tracking-wide">Add Days</label>
+                <div className="grid grid-cols-4 gap-1.5">
+                  {[7, 15, 30, 60].map((d) => (
+                    <button key={d}
+                      onClick={() => { setDays(d); setCustomDays(""); }}
+                      className={`py-2.5 rounded-xl text-xs font-bold border-2 transition-all duration-150 ${
+                        days === d && !customDays
+                          ? "border-teal-500 bg-teal-500 text-white shadow-md"
+                          : "border-[#E5E7EB] text-[#374151] hover:border-teal-300 bg-white"
+                      }`}>
+                      {d}d
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="text-xs font-bold text-[#374151] block mb-1.5 uppercase tracking-wide">Or Custom Days</label>
+                <input type="number" min={1} value={customDays} onChange={e => setCustomDays(e.target.value)}
+                  placeholder="e.g. 45"
+                  className="w-full text-sm border-2 border-[#E5E7EB] rounded-xl px-3 py-2.5 text-[#374151] focus:outline-none focus:border-teal-400 placeholder:text-slate-300 transition-colors" />
+              </div>
+              {effectiveDays > 0 && (
+                <div className="bg-teal-50 border border-teal-100 rounded-xl px-4 py-2.5 flex items-center justify-between">
+                  <span className="text-[11px] text-teal-600 font-medium">Adding</span>
+                  <span className="text-sm font-bold text-teal-800">+{effectiveDays} days</span>
+                </div>
+              )}
+              <div className="flex gap-2">
+                <button onClick={closeModal} disabled={loading}
+                  className="flex-1 py-2.5 rounded-xl border border-[#E5E7EB] text-sm font-medium text-[#374151] hover:bg-slate-50 transition-all disabled:opacity-50">
+                  Cancel
+                </button>
+                <button onClick={() => callAction("renew", { days: effectiveDays })} disabled={loading || effectiveDays <= 0}
+                  className="flex-1 py-2.5 rounded-xl bg-teal-600 text-white text-sm font-bold hover:bg-teal-700 transition-all disabled:opacity-60 shadow-md shadow-teal-200">
+                  {loading ? "Extending…" : `+${effectiveDays} Days`}
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -1059,6 +1343,7 @@ export function DoctorLicenseDashboard({ data }: { data: DoctorLicensePageData }
 
         {/* RIGHT — sticky sidebar */}
         <div className="flex flex-col gap-5 xl:sticky xl:top-[120px]">
+          <LicenseActionsPanel lic={lic} doctor={doctor} />
           <DoctorIdentityCard doc={doctor} hospitals={hospitals} />
 
           {/* Support */}
