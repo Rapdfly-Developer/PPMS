@@ -62,14 +62,29 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "File too large (max 20 MB)." }, { status: 400 });
   }
 
-  await mkdir(UPLOAD_DIR, { recursive: true });
-
   const ext = path.extname(file.name) || ".bin";
   const savedName = `${crypto.randomUUID()}${ext}`;
-  const savedPath = path.join(UPLOAD_DIR, savedName);
-
   const buffer = Buffer.from(await file.arrayBuffer());
-  await writeFile(savedPath, buffer);
+
+  // Production (Vercel): filesystem is read-only — store in Vercel Blob.
+  // savedName becomes the full blob URL, which callers can use directly.
+  if (process.env.BLOB_READ_WRITE_TOKEN) {
+    const { put } = await import("@vercel/blob");
+    const blob = await put(`past-visits/${savedName}`, buffer, {
+      access: "public",
+      contentType: file.type,
+    });
+    return NextResponse.json({
+      savedName: blob.url,
+      originalFileName: file.name,
+      mimeType: file.type,
+      sizeBytes: file.size,
+    });
+  }
+
+  // Local dev fallback — write to uploads/past-visits on disk.
+  await mkdir(UPLOAD_DIR, { recursive: true });
+  await writeFile(path.join(UPLOAD_DIR, savedName), buffer);
 
   return NextResponse.json({
     savedName,

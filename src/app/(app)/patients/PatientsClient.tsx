@@ -61,6 +61,12 @@ const CAT: Record<string, { label: string; cls: string; color: string }> = {
 function avatarColor(name: string) {
   return AVATAR_COLORS[name.charCodeAt(0) % AVATAR_COLORS.length];
 }
+function photoSrc(photoUrl: string) {
+  // Production uploads store the full Vercel Blob URL; local dev stores a bare filename.
+  return photoUrl.startsWith("http")
+    ? photoUrl
+    : `/api/upload?file=${encodeURIComponent(photoUrl)}`;
+}
 function initials(name: string) {
   const parts = name.trim().split(/\s+/);
   if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
@@ -204,7 +210,7 @@ function RecentPanel({ recentReg }: { recentReg: RecentPat[] }) {
               <div key={i} className="flex items-center gap-2.5 group">
                 {p.photoUrl ? (
                   <img
-                    src={`/api/upload?file=${encodeURIComponent(p.photoUrl)}`}
+                    src={photoSrc(p.photoUrl)}
                     alt={p.name}
                     className="w-9 h-9 rounded-full object-cover flex-shrink-0"
                   />
@@ -542,7 +548,7 @@ export function PatientsClient({
                       <div className="flex items-center gap-3 w-44 shrink-0 min-w-0">
                         {p.photoUrl ? (
                           <img
-                            src={`/api/upload?file=${encodeURIComponent(p.photoUrl)}`}
+                            src={photoSrc(p.photoUrl)}
                             alt={p.name}
                             className="w-9 h-9 rounded-full object-cover shrink-0"
                           />
