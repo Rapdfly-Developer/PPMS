@@ -39,7 +39,7 @@ export default async function QueuePage() {
     where: {
       ...(user.hospitalId ? { hospitalId: user.hospitalId } : {}),
       dateTime: { gte: start, lte: end },
-      status: { in: ["CONFIRMED", "REQUESTED", "DISPENSED"] },
+      status: { in: ["CONFIRMED", "REQUESTED"] },
     },
     include: {
       patient: true,
