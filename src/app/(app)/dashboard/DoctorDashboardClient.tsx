@@ -403,7 +403,7 @@ export function DoctorDashboardClient({
         <div className="surface-card p-5">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-base font-semibold text-[var(--color-ink-900)]">
-              Visit time
+              Appointment time
               <span className="ml-2 text-xs font-normal text-[var(--color-ink-400)]">
                 {bookedByHospital.reduce((s, g) => s + g.appts.length, 0)} booked
               </span>
