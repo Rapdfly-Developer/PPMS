@@ -43,8 +43,8 @@ export async function createWalkInEncounter(formData: FormData) {
     const category = (formData.get("category") as string) || "GENERAL";
     complaint       = (formData.get("complaint") as string)?.trim() || null;
 
-    if (!name || !ageRaw || !sex || !mobile) {
-      return { error: "Patient name, age, sex and phone are required." };
+    if (!name || !ageRaw || !sex || !mobile || !complaint) {
+      return { error: "Patient name, age, sex, phone and chief complaint are required." };
     }
     const age = parseInt(ageRaw, 10);
     if (isNaN(age) || age < 0 || age > 120) return { error: "Invalid age." };

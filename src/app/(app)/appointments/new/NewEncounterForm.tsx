@@ -7,8 +7,11 @@ import {
   Stethoscope,
   UserPlus,
   Users,
+  CreditCard,
+  User,
 } from "lucide-react";
 import { BackButton } from "@/components/ui/BackButton";
+import { PhotoUploadBox, type UploadedFile } from "@/components/ui/PhotoUploadBox";
 import { createWalkInEncounter } from "./actions";
 
 const VISIT_TYPES = [
@@ -56,6 +59,8 @@ export function NewEncounterForm({
   const [aadhaar, setAadhaar] = useState("");
   const [category, setCategory] = useState("GENERAL");
   const [complaint, setComplaint] = useState("");
+  const [aadhaarPhoto, setAadhaarPhoto] = useState<UploadedFile | null>(null);
+  const [patientPhoto, setPatientPhoto] = useState<UploadedFile | null>(null);
   // ── shared ───────────────────────────────────────────────────────────────
   const [visitType, setVisitType] = useState("General OPD");
   const [hospitalId, setHospitalId] = useState(hospitals[0]?.id ?? "");
@@ -84,9 +89,10 @@ export function NewEncounterForm({
       if (!selectedPatient) { setError("Please select a patient."); return; }
       fd.set("patientId", selectedPatient.id);
     } else {
-      if (!name.trim())   { setError("Patient name is required."); return; }
-      if (!age.trim())    { setError("Age is required."); return; }
-      if (!mobile.trim()) { setError("Phone number is required."); return; }
+      if (!name.trim())         { setError("Patient name is required."); return; }
+      if (!age.trim())          { setError("Age is required."); return; }
+      if (!mobile.trim())       { setError("Phone number is required."); return; }
+      if (!complaint.trim())    { setError("Chief complaint is required."); return; }
       fd.set("name", name.trim());
       fd.set("age", age);
       fd.set("sex", sex);
@@ -313,7 +319,7 @@ export function NewEncounterForm({
               {/* Chief complaint */}
               <div>
                 <label className="text-xs font-medium text-[var(--color-ink-600)] mb-1 block">
-                  Chief Complaint <span className="text-[var(--color-ink-400)] font-normal">(optional)</span>
+                  Chief Complaint *
                 </label>
                 <textarea
                   placeholder="Presenting complaint or reason for visit..."
@@ -322,6 +328,31 @@ export function NewEncounterForm({
                   rows={2}
                   className="w-full px-3 py-2.5 text-sm rounded-xl border border-[var(--color-border)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] resize-none"
                 />
+              </div>
+
+              {/* Photos */}
+              <div>
+                <p className="text-xs font-medium text-[var(--color-ink-600)] mb-2">
+                  Photos &amp; Documents <span className="text-[var(--color-ink-400)] font-normal">(optional)</span>
+                </p>
+                <div className="grid grid-cols-2 gap-3">
+                  <PhotoUploadBox
+                    label="Aadhaar Photocopy"
+                    hint="Image or PDF"
+                    icon={CreditCard}
+                    accept="image/*,application/pdf"
+                    value={aadhaarPhoto}
+                    onChange={setAadhaarPhoto}
+                  />
+                  <PhotoUploadBox
+                    label="Patient Photo"
+                    hint="JPG or PNG"
+                    icon={User}
+                    accept="image/*"
+                    value={patientPhoto}
+                    onChange={setPatientPhoto}
+                  />
+                </div>
               </div>
 
             </div>
