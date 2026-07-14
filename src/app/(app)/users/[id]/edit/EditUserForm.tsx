@@ -113,7 +113,6 @@ export function EditUserForm({
               className={`${INPUT} bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)] cursor-not-allowed`}
             >
               <option value="HOSPITAL">Hospital</option>
-              <option value="REFRACTIONIST">Refractionist</option>
             </select>
           </Field>
 

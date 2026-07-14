@@ -36,7 +36,7 @@ import { format } from "date-fns";
 import { ChipGroup } from "@/components/ui/Chip";
 
 export function OphthalmicExamTab({ visit, priorVisits, udid, role }: { visit: any; priorVisits: any[]; udid: string; role: string }) {
-  const refractionistCanEdit = role === "REFRACTIONIST" || role === "DOCTOR";
+  const refractionistCanEdit = role === "DOCTOR";
   const doctorOnly = role === "DOCTOR";
 
   useEffect(() => {

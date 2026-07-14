@@ -10,7 +10,6 @@ const PAGE_SIZE = 50;
 const ROLE_LABEL: Record<string, string> = {
   DOCTOR:        "Doctor",
   HOSPITAL:      "Hospital Admin",
-  REFRACTIONIST: "Refractionist",
   STAFF:         "Staff",
 };
 

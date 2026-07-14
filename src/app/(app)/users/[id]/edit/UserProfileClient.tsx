@@ -11,7 +11,6 @@ import { updateUser, deleteUser, toggleUserActive } from "../../actions";
 
 const ROLE_LABEL: Record<string, { label: string; color: string; ring: string }> = {
   HOSPITAL:      { label: "Hospital",      color: "bg-emerald-100 text-emerald-800", ring: "ring-emerald-300" },
-  REFRACTIONIST: { label: "Refractionist", color: "bg-teal-100 text-teal-800",       ring: "ring-teal-300"    },
   DOCTOR:        { label: "Doctor",        color: "bg-green-100 text-green-800",     ring: "ring-green-300"   },
 };
 

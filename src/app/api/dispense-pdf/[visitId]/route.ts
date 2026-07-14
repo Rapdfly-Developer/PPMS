@@ -28,9 +28,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
   if (user.role === "HOSPITAL" && visit.hospitalId !== user.hospitalId) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
-  if (user.role === "REFRACTIONIST") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
 
   const mobileMasked = user.role === "DOCTOR" ? visit.patient.mobile : `XXXXXX${visit.patient.mobile.slice(-4)}`;
 

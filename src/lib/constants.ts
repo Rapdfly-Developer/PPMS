@@ -1,7 +1,7 @@
 // Centralised enum-like constants (SQLite has no native enum support in Prisma,
 // so these are validated/typed at the application layer instead).
 
-export const ROLES = ["DOCTOR", "HOSPITAL", "REFRACTIONIST", "RECEPTIONIST"] as const;
+export const ROLES = ["DOCTOR", "HOSPITAL", "RECEPTIONIST"] as const;
 export type Role = string; // dynamic roles from DB; ROLES array used for validation
 
 export const SEXES = ["MALE", "FEMALE", "OTHER"] as const;

@@ -328,7 +328,7 @@ function DepartmentsSection() {
 // ── Section: Users & Roles ────────────────────────────────────────────────────
 const PERM_MATRIX = [
   { cat: "Appointments", perms: [
-    { label: "View Appointments",    desc: "See the full appointment list",             roles: ["DOCTOR","HOSPITAL","REFRACTIONIST"] },
+    { label: "View Appointments",    desc: "See the full appointment list",             roles: ["DOCTOR","HOSPITAL"] },
     { label: "Book Appointments",    desc: "Schedule new appointments",                 roles: ["DOCTOR","HOSPITAL"] },
     { label: "Confirm Appointments", desc: "Move appointment Requested → Confirmed",    roles: ["DOCTOR","HOSPITAL"] },
     { label: "Cancel Appointments",  desc: "Cancel an existing appointment",            roles: ["DOCTOR","HOSPITAL"] },
@@ -339,9 +339,9 @@ const PERM_MATRIX = [
     { label: "Edit Patient Info", desc: "Update demographics and contact details",      roles: ["DOCTOR","HOSPITAL"] },
   ]},
   { cat: "EMR / Clinical", perms: [
-    { label: "View EMR",             desc: "Read visit history and clinical notes",     roles: ["DOCTOR","HOSPITAL","REFRACTIONIST"] },
+    { label: "View EMR",             desc: "Read visit history and clinical notes",     roles: ["DOCTOR","HOSPITAL"] },
     { label: "Write Clinical Notes", desc: "Add or edit doctor examination notes",      roles: ["DOCTOR"] },
-    { label: "Record Refraction",    desc: "Enter VA, IOP and refraction results",      roles: ["DOCTOR","REFRACTIONIST"] },
+    { label: "Record Refraction",    desc: "Enter VA, IOP and refraction results",      roles: ["DOCTOR"] },
   ]},
   { cat: "Administration", perms: [
     { label: "Hospital Settings", desc: "Edit hospital profile and configuration",      roles: ["DOCTOR","HOSPITAL"] },
@@ -353,7 +353,6 @@ const PERM_MATRIX = [
 const ROLES_DEF = [
   { key: "DOCTOR",        label: "Doctor",       short: "Dr",  bg: "bg-[var(--color-primary-600)]" },
   { key: "HOSPITAL",      label: "Hospital Staff",short: "HS", bg: "bg-emerald-600" },
-  { key: "REFRACTIONIST", label: "Refractionist", short: "Rf", bg: "bg-amber-500" },
 ];
 
 function UsersRolesSection() {

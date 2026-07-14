@@ -2,7 +2,6 @@ import { requireUser, scopeDoctorId, isCustomRole } from "@/lib/rbac";
 import { autoCloseStaleVisits } from "@/lib/autoClose";
 import { DoctorDashboard } from "./DoctorDashboard";
 import { HospitalDashboard } from "./HospitalDashboard";
-import { RefractionistDashboard } from "./RefractionistDashboard";
 import { StaffDashboard } from "./StaffDashboard";
 
 export default async function DashboardPage({
@@ -18,9 +17,6 @@ export default async function DashboardPage({
 
   if (user.role === "HOSPITAL") {
     return <HospitalDashboard user={user} hospitalId={user.hospitalId!} />;
-  }
-  if (user.role === "REFRACTIONIST") {
-    return <RefractionistDashboard user={user} hospitalId={user.hospitalId!} />;
   }
   if (isCustomRole(user.role)) {
     return <StaffDashboard user={user} hospitalId={user.hospitalId!} />;

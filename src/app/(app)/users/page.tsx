@@ -7,38 +7,21 @@ import { DeleteUserButton } from "./DeleteUserButton";
 export default async function UsersPage() {
   await requireRole("DOCTOR");
 
-  const hospitalUsers = await (prisma.user as any).findMany({
-    where: { role: "HOSPITAL" },
+  const staffUsers = await (prisma.user as any).findMany({
+    where: { role: { not: "DOCTOR" } },
     include: { hospitalStaff: { include: { hospital: true } } },
     orderBy: { createdAt: "desc" },
   });
 
-  const refractionistUsers = await (prisma.user as any).findMany({
-    where: { role: "REFRACTIONIST" },
-    include: { refractionist: { include: { hospital: true } } },
-    orderBy: { createdAt: "desc" },
-  });
-
-  const allUsers = [
-    ...hospitalUsers.map((u: any) => ({
-      id: u.id,
-      username: u.username,
-      role: u.role,
-      active: u.active,
-      name: u.hospitalStaff?.name ?? "—",
-      mobile: u.hospitalStaff?.mobile ?? "—",
-      hospital: u.hospitalStaff?.hospital?.name ?? "—",
-    })),
-    ...refractionistUsers.map((u: any) => ({
-      id: u.id,
-      username: u.username,
-      role: u.role,
-      active: u.active,
-      name: u.refractionist?.name ?? "—",
-      mobile: u.refractionist?.mobile ?? "—",
-      hospital: u.refractionist?.hospital?.name ?? "—",
-    })),
-  ];
+  const allUsers = staffUsers.map((u: any) => ({
+    id: u.id,
+    username: u.username,
+    role: u.role,
+    active: u.active,
+    name: u.hospitalStaff?.name ?? "—",
+    mobile: u.hospitalStaff?.mobile ?? "—",
+    hospital: u.hospitalStaff?.hospital?.name ?? "—",
+  }));
 
   return (
     <div className="fade-in">
@@ -48,7 +31,7 @@ export default async function UsersPage() {
             User Management
           </h1>
           <p className="text-sm text-[var(--color-ink-500)] mt-1">
-            Manage Hospital and Refractionist accounts
+            Manage staff accounts
           </p>
         </div>
         <Link
@@ -93,7 +76,7 @@ export default async function UsersPage() {
                           : "bg-[var(--color-success-100)] text-[var(--color-success-700)]"
                       }`}
                     >
-                      {u.role === "HOSPITAL" ? "Hospital" : "Refractionist"}
+                      {u.role}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-[var(--color-ink-600)] font-mono text-xs">

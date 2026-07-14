@@ -14,7 +14,6 @@ async function assertVisitAccess(visitId: string) {
   if (!visit) throw new Error("Visit not found");
   if (visit.status === "CLOSED") throw new Error("This consultation has been finalized and is read-only.");
   if (user.role === "DOCTOR" && visit.doctorId !== user.profileId) throw new Error("Forbidden");
-  if (user.role === "REFRACTIONIST" && visit.hospitalId !== user.hospitalId) throw new Error("Forbidden");
   return visit;
 }
 
@@ -130,7 +129,7 @@ export async function verifyPastExternalVisit(id: string, udid: string, status: 
 // ── Ophthalmic Examination sub-modules ───────────────────────────────────
 
 export async function saveVisualAcuity(visitId: string, udid: string, data: { testMethod: string; re: string; le: string }) {
-  const user = await requireRole("DOCTOR", "REFRACTIONIST");
+  const user = await requireRole("DOCTOR");
   await assertVisitAccess(visitId);
   const reviewedByDoctor = user.role === "DOCTOR";
   await prisma.visualAcuity.upsert({
@@ -143,7 +142,7 @@ export async function saveVisualAcuity(visitId: string, udid: string, data: { te
 }
 
 export async function saveRefraction(visitId: string, udid: string, data: { re: string; le: string }) {
-  const user = await requireRole("DOCTOR", "REFRACTIONIST");
+  const user = await requireRole("DOCTOR");
   await assertVisitAccess(visitId);
   const reviewedByDoctor = user.role === "DOCTOR";
   await prisma.refractiveCorrection.upsert({
@@ -187,7 +186,7 @@ export async function sendToOpticals(visitId: string, udid: string) {
 }
 
 export async function saveColourVision(visitId: string, udid: string, data: { re: string; le: string }) {
-  const user = await requireRole("DOCTOR", "REFRACTIONIST");
+  const user = await requireRole("DOCTOR");
   await assertVisitAccess(visitId);
   const reviewedByDoctor = user.role === "DOCTOR";
   await prisma.colourVisionContrastSensitivity.upsert({
@@ -200,7 +199,7 @@ export async function saveColourVision(visitId: string, udid: string, data: { re
 }
 
 export async function addIOPReading(visitId: string, udid: string, data: { re?: number; le?: number; method: string }) {
-  const user = await requireRole("DOCTOR", "REFRACTIONIST");
+  const user = await requireRole("DOCTOR");
   await assertVisitAccess(visitId);
   await prisma.iOPReading.create({
     data: { visitId, re: data.re, le: data.le, method: data.method, source: user.role, reviewedByDoctor: user.role === "DOCTOR" },
@@ -210,7 +209,7 @@ export async function addIOPReading(visitId: string, udid: string, data: { re?: 
 }
 
 export async function removeIOPReading(id: string, udid: string) {
-  const user = await requireRole("DOCTOR", "REFRACTIONIST");
+  const user = await requireRole("DOCTOR");
   await prisma.iOPReading.delete({ where: { id } });
   await writeAudit(user.id, "IOPReading", id, "DELETE", {});
   revalidate(udid);

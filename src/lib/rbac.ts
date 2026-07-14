@@ -44,7 +44,7 @@ export async function requireSuperAdmin(): Promise<SessionUser> {
 
 /** Returns true for any role not built into the system (Receptionist, Nurse, etc.). */
 export function isCustomRole(role: string): boolean {
-  return !["DOCTOR", "HOSPITAL", "REFRACTIONIST"].includes(role);
+  return !["DOCTOR", "HOSPITAL"].includes(role);
 }
 
 export async function requireRole(...roles: Role[]): Promise<SessionUser> {
@@ -77,6 +77,5 @@ export function scopeDoctorId(user: SessionUser): string {
 export function roleHome(role: Role): string {
   if (role === "DOCTOR") return "/dashboard";
   if (role === "HOSPITAL") return "/dashboard";
-  if (role === "REFRACTIONIST") return "/queue";
   return "/dashboard"; // custom roles always land on dashboard
 }

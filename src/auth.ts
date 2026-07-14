@@ -52,11 +52,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           profileId = user.hospitalStaff.id;
           profileName = user.hospitalStaff.name;
           hospitalId = user.hospitalStaff.hospitalId;
-        } else if (user.role === "REFRACTIONIST" && user.refractionist) {
-          profileId = user.refractionist.id;
-          profileName = user.refractionist.name;
-          hospitalId = user.refractionist.hospitalId;
-          doctorId = user.refractionist.doctorId;
         } else if (user.hospitalStaff) {
           // Custom role (Receptionist, Nurse, etc.) — always stored in HospitalStaff
           profileId = user.hospitalStaff.id;

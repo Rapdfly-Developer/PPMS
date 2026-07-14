@@ -61,7 +61,6 @@ export default async function PatientDetailedEMR({
 
   if (!patient) notFound();
 
-  if (user.role === "REFRACTIONIST" && patient.doctorId !== user.doctorId) notFound();
   if (user.role === "DOCTOR") {
     // Allow access if patient is registered to this doctor, OR if this doctor has any appointment/visit with them
     const hasLink =
@@ -199,8 +198,8 @@ export default async function PatientDetailedEMR({
       {/* Header bar */}
       <div className="flex items-center gap-2 mb-3 flex-wrap no-print">
         <BackButton
-          href={returnTo || (user.role === "REFRACTIONIST" ? "/queue" : `/patients/${udid}`)}
-          label={user.role === "REFRACTIONIST" ? "Back to OPD Queue" : "Back to Patient"}
+          href={returnTo || `/patients/${udid}`}
+          label="Back to Patient"
         />
         <span className="text-[var(--color-border)]">|</span>
         <h1 className="text-sm font-semibold text-[var(--color-ink-900)]">{patient.name}</h1>
@@ -358,11 +357,7 @@ export default async function PatientDetailedEMR({
                 icon: <FileText size={14} />,
                 badge: activeVisit.investigationOrders.filter((o) => !o.resultRef && o.status !== "REVIEWED" && o.status !== "CANCELLED").length,
                 content:
-                  user.role === "REFRACTIONIST" ? (
-                    <p className="text-sm text-[var(--color-ink-400)]">Not accessible for this role.</p>
-                  ) : (
-                    <InvestigationsTab visit={activeVisit} priorVisits={priorVisits} udid={udid} readOnly={readOnly} />
-                  ),
+                  <InvestigationsTab visit={activeVisit} priorVisits={priorVisits} udid={udid} readOnly={readOnly} />,
               },
               {
                 id: "plan",

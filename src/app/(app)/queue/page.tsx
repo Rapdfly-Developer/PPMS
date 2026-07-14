@@ -1,4 +1,4 @@
-import { requireRole } from "@/lib/rbac";
+import { requirePermission } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { Card } from "@/components/ui/Card";
 import Link from "next/link";
@@ -30,7 +30,7 @@ function TestBadge({ done, label, icon }: { done: boolean; label: string; icon: 
 }
 
 export default async function QueuePage() {
-  const user = await requireRole("REFRACTIONIST");
+  const user = await requirePermission("appointments.view");
 
   const start = new Date(); start.setHours(0, 0, 0, 0);
   const end   = new Date(); end.setHours(23, 59, 59, 999);
@@ -48,7 +48,7 @@ export default async function QueuePage() {
           visualAcuity:  { select: { id: true } },
           refraction:    { select: { id: true } },
           colourVisionCS:{ select: { id: true } },
-          iopReadings:   { where: { source: "REFRACTIONIST" }, select: { id: true } },
+          iopReadings:   { select: { id: true } },
         },
       },
     },

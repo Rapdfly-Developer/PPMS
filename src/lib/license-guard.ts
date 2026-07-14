@@ -212,19 +212,11 @@ export async function licenseeDoctorIdForUser(user: SessionUser): Promise<string
 
   let hospitalId: string | null = user.hospitalId ?? null;
   if (!hospitalId) {
-    if (user.role === "REFRACTIONIST") {
-      const ref = await prisma.refractionist.findUnique({
-        where: { userId: user.id },
-        select: { hospitalId: true },
-      }).catch(() => null);
-      hospitalId = ref?.hospitalId ?? null;
-    } else {
-      const staff = await prisma.hospitalStaff.findUnique({
-        where: { userId: user.id },
-        select: { hospitalId: true },
-      }).catch(() => null);
-      hospitalId = staff?.hospitalId ?? null;
-    }
+    const staff = await prisma.hospitalStaff.findUnique({
+      where: { userId: user.id },
+      select: { hospitalId: true },
+    }).catch(() => null);
+    hospitalId = staff?.hospitalId ?? null;
   }
   const doctorId = hospitalId ? await doctorIdForHospital(hospitalId) : null;
   doctorIdCache.set(user.id, { at: Date.now(), doctorId });

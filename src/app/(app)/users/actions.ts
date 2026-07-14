@@ -45,7 +45,6 @@ export async function createUser(formData: FormData): Promise<{ error?: string }
   if (email && await isEmailTaken(email)) return { error: "This email address is already registered to another account." };
   if (mobile && await isMobileTaken(mobile)) return { error: "This mobile number is already registered to another account." };
 
-  // Store the actual role name (REFRACTIONIST uses its own profile table; all others use HospitalStaff)
   const role = userType;
 
   const passwordHash = await bcrypt.hash(password, 10);
@@ -56,15 +55,9 @@ export async function createUser(formData: FormData): Promise<{ error?: string }
     });
 
     if (hospitalId) {
-      if (role === "REFRACTIONIST") {
-        await (prisma.refractionist as any).create({
-          data: { userId: user.id, hospitalId, doctorId, name, mobile },
-        });
-      } else {
-        await (prisma.hospitalStaff as any).create({
-          data: { userId: user.id, hospitalId, name, mobile },
-        });
-      }
+      await (prisma.hospitalStaff as any).create({
+        data: { userId: user.id, hospitalId, name, mobile },
+      });
     }
     // If HOSPITAL type with no hospitalId: standalone hospital-level account (no staff record)
   } catch (err: unknown) {

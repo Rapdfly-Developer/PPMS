@@ -7,7 +7,6 @@ import { Monitor, Wifi, WifiOff } from "lucide-react";
 const ROLE_LABEL: Record<string, string> = {
   DOCTOR:        "Doctor",
   HOSPITAL:      "Hospital Admin",
-  REFRACTIONIST: "Refractionist",
   STAFF:         "Staff",
 };
 

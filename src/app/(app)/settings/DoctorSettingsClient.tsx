@@ -142,7 +142,6 @@ const SIDEBAR_GROUPS: {
 const ROLE_META: Record<string, { label: string; cls: string }> = {
   DOCTOR:        { label: "Doctor",       cls: "bg-[var(--color-primary-100)] text-[var(--color-primary-700)]" },
   HOSPITAL:      { label: "Hospital",      cls: "bg-emerald-100 text-emerald-700" },
-  REFRACTIONIST: { label: "Refractionist",cls: "bg-amber-100 text-amber-700"    },
 };
 
 const AUDIT_ENTITY_COLOR: Record<string, string> = {
@@ -442,7 +441,7 @@ function AddUserModal({ hospitals, assignableRoles, doctorId, onClose, presetHos
   hospitals: HospitalRow[]; assignableRoles: AssignableRole[]; doctorId: string | null; onClose: () => void;
   presetHospitalId?: string; presetUserType?: string;
 }) {
-  const [userType, setUserType] = useState(presetUserType ?? assignableRoles[0]?.name ?? "REFRACTIONIST");
+  const [userType, setUserType] = useState(presetUserType ?? assignableRoles[0]?.name ?? "HOSPITAL");
   const [status, setStatus] = useState<"ACTIVE" | "INACTIVE">("ACTIVE");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -912,7 +911,6 @@ function UsersSection({ users, hospitals, assignableRoles, doctorId }: { users: 
             <option value="">All Roles</option>
             <option value="DOCTOR">Doctor</option>
             <option value="HOSPITAL">Staff</option>
-            <option value="REFRACTIONIST">Refractionist</option>
           </select>
         </div>
 
@@ -2124,7 +2122,6 @@ function ExportSection({ hospitals }: { hospitals: HospitalRow[] }) {
 const ROLE_LABEL: Record<string, string> = {
   DOCTOR:        "Doctor",
   HOSPITAL:      "Hospital Admin",
-  REFRACTIONIST: "Refractionist",
   STAFF:         "Staff",
 };
 
@@ -2761,13 +2758,6 @@ const DEFAULT_PERMS_BY_ROLE: Record<string, string[]> = {
     "reports.view", "reports.export",
     "settings.view", "settings.manage",
   ],
-  REFRACTIONIST: [
-    "dashboard.view",
-    "appointments.view",
-    "patients.view",
-    "emr.view", "refraction.view", "refraction.create", "refraction.edit",
-    "investigations.view", "investigations.create",
-  ],
   RECEPTIONIST: [
     "dashboard.view",
     "appointments.view", "appointments.create", "appointments.edit",
@@ -2786,7 +2776,6 @@ interface UserDraft {
 
 const WIZARD_ROLES = [
   { value: "HOSPITAL",      label: "Hospital Admin",  desc: "Appointments, patients, billing, settings" },
-  { value: "REFRACTIONIST", label: "Refractionist",   desc: "Queue, refraction and EMR entry" },
   { value: "RECEPTIONIST",  label: "Receptionist",    desc: "Register patients, book appointments" },
 ];
 
@@ -2889,7 +2878,7 @@ function HospitalSetupWizard({ assignableRoles = [] }: { assignableRoles?: Assig
     }
 
     const existingRoleNames = new Set(assignableRoles.map((r) => r.name));
-    const systemRoles = new Set(["DOCTOR", "HOSPITAL", "REFRACTIONIST"]);
+    const systemRoles = new Set(["DOCTOR", "HOSPITAL"]);
     for (const role of rolesUsed) {
       if (!systemRoles.has(role) && !existingRoleNames.has(role)) {
         const label = role.charAt(0) + role.slice(1).toLowerCase().replace(/_/g, " ");

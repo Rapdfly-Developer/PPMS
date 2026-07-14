@@ -15,7 +15,7 @@ const STEPS = [
   { n: 3 as const, label: "Permissions" },
 ];
 
-const SYSTEM_ROLES = new Set(["DOCTOR", "HOSPITAL", "REFRACTIONIST"]);
+const SYSTEM_ROLES = new Set(["DOCTOR", "HOSPITAL"]);
 
 const DEFAULT_PERMS: Record<string, string[]> = {
   HOSPITAL: [
@@ -27,13 +27,6 @@ const DEFAULT_PERMS: Record<string, string[]> = {
     "billing.view", "billing.create", "billing.edit", "billing.print",
     "reports.view", "reports.export",
     "settings.view", "settings.manage",
-  ],
-  REFRACTIONIST: [
-    "dashboard.view",
-    "appointments.view",
-    "patients.view",
-    "emr.view", "refraction.view", "refraction.create", "refraction.edit",
-    "investigations.view", "investigations.create",
   ],
   RECEPTIONIST: [
     "dashboard.view",

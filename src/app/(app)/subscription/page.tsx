@@ -14,13 +14,6 @@ export default async function SubscriptionPage() {
     // The doctor is the licensee
     if (user.doctorId) license = await getLicenseForDoctor(user.doctorId);
     hospitalName = user.name;
-  } else if (user.role === "REFRACTIONIST") {
-    const ref = await (prisma.refractionist as any).findUnique({
-      where: { userId: user.id },
-      include: { hospital: { select: { id: true, name: true } } },
-    });
-    hospitalId = ref?.hospital?.id ?? null;
-    hospitalName = ref?.hospital?.name ?? "";
   } else {
     // HOSPITAL and custom staff roles
     const staff = await prisma.hospitalStaff.findUnique({
