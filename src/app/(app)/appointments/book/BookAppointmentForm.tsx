@@ -80,7 +80,7 @@ export function BookAppointmentForm({
 
   // new patient fields
   const [npName,      setNpName]      = useState("");
-  const [npAge,       setNpAge]       = useState("");
+  const [npDob,       setNpDob]       = useState("");
   const [npSex,       setNpSex]       = useState("MALE");
   const [npMobile,    setNpMobile]    = useState("");
   const [npComplaint, setNpComplaint] = useState("");
@@ -213,7 +213,10 @@ export function BookAppointmentForm({
       fd.set("patientId", selectedPatient!.id);
     } else {
       fd.set("name",      npName);
-      fd.set("age",       npAge);
+      const dobAge = npDob
+        ? Math.floor((Date.now() - new Date(npDob).getTime()) / (365.25 * 86_400_000))
+        : 0;
+      fd.set("age", String(dobAge));
       fd.set("sex",       npSex);
       fd.set("mobile",    npMobile);
       fd.set("complaint", npComplaint);
@@ -464,17 +467,15 @@ export function BookAppointmentForm({
                 />
               </div>
 
-              {/* Age + Sex */}
+              {/* DOB + Sex */}
               <div>
-                <FieldLabel>Age *</FieldLabel>
+                <FieldLabel>Date of Birth *</FieldLabel>
                 <input
                   required
-                  type="number"
-                  min={0}
-                  max={120}
-                  value={npAge}
-                  onChange={(e) => setNpAge(e.target.value)}
-                  placeholder="Years"
+                  type="date"
+                  max={new Date().toISOString().slice(0, 10)}
+                  value={npDob}
+                  onChange={(e) => setNpDob(e.target.value)}
                   className={inputCls}
                 />
               </div>
