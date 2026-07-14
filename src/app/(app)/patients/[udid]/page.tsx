@@ -222,10 +222,22 @@ export default async function PatientProfilePage({
         style={{ background: "linear-gradient(135deg, var(--color-primary-800) 0%, var(--color-primary-600) 100%)" }}
       >
         <div className="flex items-start gap-4">
-          {/* Avatar */}
-          <div className="w-14 h-14 rounded-2xl bg-white/15 flex items-center justify-center text-xl font-bold shrink-0">
-            {initials}
-          </div>
+          {/* Avatar — photo when uploaded, initials otherwise */}
+          {patient.photoUrl ? (
+            <img
+              src={
+                patient.photoUrl.startsWith("http")
+                  ? patient.photoUrl
+                  : `/api/upload?file=${encodeURIComponent(patient.photoUrl)}`
+              }
+              alt={patient.name}
+              className="w-14 h-14 rounded-2xl object-cover shrink-0 ring-2 ring-white/30"
+            />
+          ) : (
+            <div className="w-14 h-14 rounded-2xl bg-white/15 flex items-center justify-center text-xl font-bold shrink-0">
+              {initials}
+            </div>
+          )}
 
           {/* Info */}
           <div className="flex-1 min-w-0">
