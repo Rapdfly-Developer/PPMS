@@ -1040,11 +1040,6 @@ export function DoctorLicenseDashboard({ data }: { data: DoctorLicensePageData }
             <UsageLimits data={data} />
           </Card>
 
-          {/* Licensed Features */}
-          <Card title="Licensed Features" icon={Zap}>
-            <LicensedFeatures lic={lic} />
-          </Card>
-
           {/* Activation History */}
           <Card title={`Activation History (${events.length})`} icon={CalendarDays}>
             <ActivationHistory events={events} />
