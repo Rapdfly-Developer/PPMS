@@ -5,11 +5,11 @@ import { useSearchParams } from "next/navigation";
 import {
   Search, UserPlus, Stethoscope,
   Calendar, Clock, FileText, ChevronRight,
-  User, Phone, CreditCard, AlertCircle, CheckCircle2, Info, Building2,
+  User, Phone, AlertCircle, CheckCircle2, Info, Building2,
 } from "lucide-react";
 import { bookAppointment, getBookedSlots } from "./actions";
 import { BackButton } from "@/components/ui/BackButton";
-import { PhotoUploadBox, type UploadedFile } from "@/components/ui/PhotoUploadBox";
+import { SmartUploadBox, type UploadedFile } from "@/components/ui/SmartUploadBox";
 
 const VISIT_TYPES = ["General OPD", "Emergency", "Follow-up", "Post-op Review"];
 const SEXES = ["MALE", "FEMALE", "OTHER"];
@@ -548,23 +548,21 @@ export function BookAppointmentForm({
 
               {/* Photos & Documents */}
               <div className="sm:col-span-2">
-                <p className="text-xs font-semibold uppercase tracking-widest text-[var(--color-ink-400)] mb-3">
-                  Photos &amp; Documents
-                </p>
-                <div className="grid grid-cols-2 gap-4">
-                  <PhotoUploadBox
+                <FieldLabel>Photos</FieldLabel>
+                <div className="grid grid-cols-2 gap-3 mt-0.5">
+                  <SmartUploadBox
                     label="Aadhaar Photocopy"
-                    hint="Image or PDF"
-                    icon={CreditCard}
+                    uploadLabel="Upload Aadhaar"
+                    subtitle="Image or PDF"
                     accept="image/*,application/pdf"
                     value={aadhaarPhoto}
                     onChange={setAadhaarPhoto}
                   />
-                  <PhotoUploadBox
+                  <SmartUploadBox
                     label="Patient Photo"
-                    hint="JPG or PNG"
-                    icon={User}
-                    accept="image/*"
+                    uploadLabel="Upload Photo"
+                    subtitle="JPG / PNG"
+                    accept="image/jpeg,image/jpg,image/png"
                     value={patientPhoto}
                     onChange={setPatientPhoto}
                   />
