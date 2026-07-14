@@ -35,5 +35,7 @@ export default auth((req) => {
 });
 
 export const config = {
-  matcher: ["/((?!api/auth|_next/static|_next/image|favicon.ico|landing/).*)"],
+  // Exclude upload routes — they authenticate themselves via requireRole(),
+  // and running edge middleware on file uploads causes a 413 body-size error.
+  matcher: ["/((?!api/auth|api/upload|api/uploads|_next/static|_next/image|favicon.ico|landing/).*)"],
 };
