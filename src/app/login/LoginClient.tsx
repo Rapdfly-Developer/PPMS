@@ -1130,9 +1130,9 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {/* Right column: PPMS brand logo — only at xl+ where there's room */}
-            <div className="hidden xl:flex lp-a2 lp-logo shrink-0 items-center justify-center"
-              style={{ filter: "drop-shadow(0 14px 40px rgba(15,118,110,0.22))" }}>
+            {/* Right column: PPMS brand logo — anchored to the top white space */}
+            <div className="hidden xl:flex lp-a2 lp-logo shrink-0 items-start justify-center self-start"
+              style={{ filter: "drop-shadow(0 14px 40px rgba(15,118,110,0.22))", marginTop: "-12px" }}>
               <PpmsLogo size={240} />
             </div>
 
