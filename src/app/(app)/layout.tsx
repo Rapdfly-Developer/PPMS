@@ -42,6 +42,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               status={licenseResult?.status ?? "NONE"}
               expiryDate={licenseResult?.expiryDate ?? null}
               remainingDays={licenseResult?.remainingDays ?? 0}
+              userRole={user.role}
             >
               {children}
             </LicenseGate>

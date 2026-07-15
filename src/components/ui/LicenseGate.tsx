@@ -9,6 +9,7 @@ interface Props {
   status: string;
   expiryDate: string | null;
   remainingDays: number;
+  userRole: string;
   children: React.ReactNode;
 }
 
@@ -24,12 +25,13 @@ const STATUS_LABEL: Record<string, string> = {
   SUSPENDED: "Suspended",
 };
 
-export function LicenseGate({ active, status, expiryDate, remainingDays, children }: Props) {
+export function LicenseGate({ active, status, expiryDate, remainingDays, userRole, children }: Props) {
   const pathname = usePathname() ?? "";
 
   if (active || isExempt(pathname)) return <>{children}</>;
 
   const isExpired = ["EXPIRED", "SUSPENDED", "INVALID"].includes(status);
+  const isDoctor = userRole === "DOCTOR";
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] px-4 py-12 text-center">
@@ -46,8 +48,10 @@ export function LicenseGate({ active, status, expiryDate, remainingDays, childre
         License Required
       </h1>
       <p className="text-sm text-[var(--color-text-muted,#6B7280)] max-w-md mb-6 leading-relaxed">
-        Your PPMS license has {isExpired ? "expired or been deactivated" : "not been activated"}.
-        Activate or renew your license to continue using this module.
+        {isDoctor
+          ? <>Your PPMS license has {isExpired ? "expired or been deactivated" : "not been activated"}. Activate or renew your license to continue.</>
+          : <>Your clinic&apos;s PPMS license has {isExpired ? "expired or been deactivated" : "not been activated"}. Please contact your doctor to renew the license.</>
+        }
       </p>
 
       {/* Status card */}
@@ -79,35 +83,47 @@ export function LicenseGate({ active, status, expiryDate, remainingDays, childre
         </div>
       </div>
 
-      {/* Go to settings note */}
-      <p className="text-xs text-[var(--color-text-muted,#6B7280)] mb-4">
-        Go to <strong>Settings → License Management</strong> to manage your license.
-      </p>
-
       {/* Actions */}
-      <div className="flex flex-wrap justify-center gap-3">
-        <Link
-          href="/settings?tab=plans"
-          className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors"
-          style={{ background: "#157A73" }}
-        >
-          <Key size={14} /> Activate License
-        </Link>
-        <Link
-          href="/settings?tab=plans"
-          className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors"
-          style={{ border: "1px solid var(--color-border,#E2E6E8)", color: "var(--color-text,#111827)" }}
-        >
-          <CreditCard size={14} /> Renew License
-        </Link>
-        <a
-          href="mailto:support@ppms.in"
-          className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors"
-          style={{ border: "1px solid var(--color-border,#E2E6E8)", color: "var(--color-text-muted,#6B7280)" }}
-        >
-          Contact Support
-        </a>
-      </div>
+      {isDoctor ? (
+        <>
+          <p className="text-xs text-[var(--color-text-muted,#6B7280)] mb-4">
+            Go to <strong>Settings → License Management</strong> to manage your license.
+          </p>
+          <div className="flex flex-wrap justify-center gap-3">
+            <Link
+              href="/settings?tab=plans"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors"
+              style={{ background: "#157A73" }}
+            >
+              <Key size={14} /> Activate License
+            </Link>
+            <Link
+              href="/settings?tab=plans"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors"
+              style={{ border: "1px solid var(--color-border,#E2E6E8)", color: "var(--color-text,#111827)" }}
+            >
+              <CreditCard size={14} /> Renew License
+            </Link>
+            <a
+              href="mailto:support@ppms.in"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors"
+              style={{ border: "1px solid var(--color-border,#E2E6E8)", color: "var(--color-text-muted,#6B7280)" }}
+            >
+              Contact Support
+            </a>
+          </div>
+        </>
+      ) : (
+        <div className="flex flex-wrap justify-center gap-3">
+          <a
+            href="mailto:support@ppms.in"
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors"
+            style={{ border: "1px solid var(--color-border,#E2E6E8)", color: "var(--color-text-muted,#6B7280)" }}
+          >
+            Contact Support
+          </a>
+        </div>
+      )}
     </div>
   );
 }
