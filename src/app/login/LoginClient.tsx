@@ -479,123 +479,95 @@ function ForgotPasswordModal({ onClose }: { onClose: () => void }) {
   );
 }
 
-/* ── PPMS Healthcare Logo SVG ───────────────────────────────────────────── */
+/* ── PPMS Brand Logo SVG — P letterform + wordmark ──────────────────────── */
 function PpmsLogo({ size = 220 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg" style={{ display: "block" }}>
+    <svg width={size} height={size} viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg" style={{ display: "block" }}>
       <defs>
-        <linearGradient id="plg-teal" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#2DCEAA"/>
-          <stop offset="100%" stopColor="#0F766E"/>
-        </linearGradient>
         <linearGradient id="plg-blue" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stopColor="#2563EB"/>
           <stop offset="100%" stopColor="#1E3A8A"/>
         </linearGradient>
-        <linearGradient id="plg-tb" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#14B8A6"/>
-          <stop offset="100%" stopColor="#2563EB"/>
+        <linearGradient id="plg-green" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#4ADE80"/>
+          <stop offset="100%" stopColor="#059669"/>
         </linearGradient>
-        <linearGradient id="plg-bars" x1="0%" y1="100%" x2="0%" y2="0%">
-          <stop offset="0%" stopColor="#1E65C8"/>
+        <linearGradient id="plg-swoosh" x1="0%" y1="100%" x2="100%" y2="0%">
+          <stop offset="0%" stopColor="#10B981"/>
+          <stop offset="55%" stopColor="#14B8A6"/>
+          <stop offset="100%" stopColor="#0EA5E9"/>
+        </linearGradient>
+        <linearGradient id="plg-stem" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor="#1E3A8A"/>
+          <stop offset="60%" stopColor="#2563EB"/>
           <stop offset="100%" stopColor="#14B8A6"/>
         </linearGradient>
+        <linearGradient id="plg-word" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stopColor="#1E3A8A"/>
+          <stop offset="45%" stopColor="#2563EB"/>
+          <stop offset="70%" stopColor="#14B8A6"/>
+          <stop offset="100%" stopColor="#059669"/>
+        </linearGradient>
         <filter id="plg-shadow" x="-20%" y="-20%" width="140%" height="140%">
-          <feDropShadow dx="2" dy="3" stdDeviation="4" floodColor="rgba(15,118,110,0.25)"/>
+          <feDropShadow dx="1.5" dy="2.5" stdDeviation="3" floodColor="rgba(30,58,138,0.25)"/>
         </filter>
-        <filter id="plg-shadow-blue" x="-20%" y="-20%" width="140%" height="140%">
-          <feDropShadow dx="2" dy="3" stdDeviation="4" floodColor="rgba(30,58,138,0.3)"/>
-        </filter>
-        <clipPath id="plg-circle-clip">
-          <circle cx="110" cy="110" r="104"/>
-        </clipPath>
       </defs>
 
-      {/* ── Outer circle ring ── */}
-      <circle cx="110" cy="110" r="104" fill="rgba(240,253,250,0.6)" stroke="rgba(20,184,166,0.2)" strokeWidth="1.5"/>
-
-      {/* ── Medical cross (teal, top-left) ── */}
+      {/* ── Green medical cross (left of the P) ── */}
       <g filter="url(#plg-shadow)">
-        <rect x="42" y="22" width="44" height="90" rx="12" fill="url(#plg-teal)"/>
-        <rect x="22" y="44" width="84" height="44" rx="12" fill="url(#plg-teal)"/>
-        {/* Cross highlight */}
-        <rect x="54" y="22" width="16" height="42" rx="6" fill="rgba(255,255,255,0.25)"/>
-        <rect x="22" y="54" width="36" height="14" rx="4" fill="rgba(255,255,255,0.18)"/>
+        <rect x="42" y="42" width="20" height="64" rx="5" fill="url(#plg-green)"/>
+        <rect x="20" y="64" width="64" height="20" rx="5" fill="url(#plg-green)"/>
+        <rect x="46" y="44" width="6" height="28" rx="3" fill="rgba(255,255,255,0.3)"/>
       </g>
 
-      {/* ── Pixel / digital dots (lower-left) ── */}
-      {[
-        [20,115,10], [10,103,8], [24,130,12], [12,122,9],
-        [30,144,8],  [18,138,11],[36,158,7],  [10,148,7],
-      ].map(([x,y,s],i) => (
-        <rect key={i} x={x} y={y} width={s} height={s} rx="2"
-          fill={i%2===0 ? "#14B8A6" : "#0F766E"}
-          opacity={0.55 - i*0.035}/>
-      ))}
-
-      {/* ── Bar chart (lower-left) ── */}
+      {/* ── Letter P ── */}
       <g filter="url(#plg-shadow)">
-        <rect x="42" y="158" width="15" height="30" rx="4" fill="url(#plg-bars)" opacity="0.88"/>
-        <rect x="61" y="144" width="15" height="44" rx="4" fill="url(#plg-bars)" opacity="0.88"/>
-        <rect x="80" y="128" width="15" height="60" rx="4" fill="url(#plg-bars)" opacity="0.88"/>
+        {/* Stem — blue fading to teal at the base */}
+        <path d="M 92 16 L 116 16 L 116 148 Q 116 154 110 154 L 98 154 Q 92 154 92 148 Z" fill="url(#plg-stem)"/>
+        {/* Bowl — outer minus inner hole */}
+        <path fillRule="evenodd" fill="url(#plg-blue)"
+          d="M 116 16 L 156 16 C 194 16 214 40 214 68 C 214 96 194 120 156 120 L 116 120 L 116 94 L 152 94 C 176 94 188 84 188 68 C 188 52 176 42 152 42 L 116 42 Z"/>
+        {/* Top-left notch highlight on the P */}
+        <path d="M 92 16 L 116 16 L 116 24 Q 104 28 92 24 Z" fill="rgba(255,255,255,0.22)"/>
       </g>
 
-      {/* ── Flowing green wave / body connecting element ── */}
-      <path d="M 96 65 C 115 75, 112 110, 100 135 C 92 155, 108 175, 128 178"
-            stroke="url(#plg-teal)" strokeWidth="22" fill="none"
-            strokeLinecap="round" opacity="0.75"/>
+      {/* ── Teal swoosh sweeping through the P ── */}
+      <path d="M 26 128 C 66 118 92 74 126 54 C 146 42 168 44 178 58 C 160 50 144 55 130 66 C 98 92 72 126 26 128 Z"
+        fill="url(#plg-swoosh)" opacity="0.92" filter="url(#plg-shadow)"/>
 
-      {/* ── Adult figure (teal) ── */}
-      <g filter="url(#plg-shadow)">
-        {/* Head */}
-        <circle cx="118" cy="70" r="16" fill="url(#plg-teal)"/>
-        <circle cx="113" cy="66" r="6" fill="rgba(255,255,255,0.2)"/>
-        {/* Body */}
-        <path d="M 100 112 Q 118 88 136 112 L 133 152 Q 118 158 103 152 Z" fill="url(#plg-teal)"/>
+      {/* ── Patient figure inside the bowl ── */}
+      <g fill="url(#plg-blue)">
+        <circle cx="152" cy="60" r="9"/>
+        {/* torso + raised arm */}
+        <path d="M 138 92 C 138 78 144 72 152 73 C 160 74 164 80 162 92 Q 150 97 138 92 Z"/>
+        <path d="M 160 74 Q 170 64 177 69 Q 172 76 163 80 Z"/>
       </g>
 
-      {/* ── Child figure (blue, slightly lower/right) ── */}
-      <g filter="url(#plg-shadow-blue)">
-        {/* Head */}
-        <circle cx="150" cy="102" r="11" fill="url(#plg-blue)"/>
-        <circle cx="146" cy="99" r="4" fill="rgba(255,255,255,0.22)"/>
-        {/* Body */}
-        <path d="M 138 128 Q 150 114 162 128 L 160 156 Q 150 161 140 156 Z" fill="url(#plg-blue)"/>
-      </g>
+      {/* ── Wordmark: PPMS ── */}
+      <text x="120" y="192" textAnchor="middle" fill="url(#plg-word)"
+        style={{ font: "800 44px Arial, Helvetica, sans-serif", letterSpacing: "3px" }}>
+        PPMS
+      </text>
 
-      {/* ── Stethoscope (blue, wrapping arc) ── */}
-      <g filter="url(#plg-shadow-blue)">
-        {/* Tube */}
-        <path d="M 88 44 C 180 18, 206 90, 202 130 C 198 166, 172 192, 150 198"
-              stroke="url(#plg-blue)" strokeWidth="8" fill="none"
-              strokeLinecap="round" strokeLinejoin="round"/>
-        {/* Earpieces (top) */}
-        <circle cx="88" cy="42" r="6" fill="#1E3A8A"/>
-        <circle cx="88" cy="42" r="3" fill="#3B82F6"/>
-        {/* Chest piece (bottom) */}
-        <circle cx="150" cy="199" r="11" fill="#1E3A8A" stroke="white" strokeWidth="2.5"/>
-        <circle cx="150" cy="199" r="6" fill="#3B82F6"/>
-        <circle cx="150" cy="199" r="2.5" fill="white"/>
-      </g>
+      {/* ── Tagline ── */}
+      <text x="120" y="207" textAnchor="middle" fill="#475569"
+        style={{ font: "700 8px Arial, Helvetica, sans-serif", letterSpacing: "1.6px" }}>
+        PATIENT PRACTICE MANAGEMENT SYSTEM
+      </text>
 
-      {/* ── Supporting hand (blue, bottom) ── */}
-      <g filter="url(#plg-shadow-blue)">
-        {/* Palm */}
-        <path d="M 74 188 Q 96 180 124 184 Q 148 186 170 180 Q 180 188 172 196 Q 148 205 118 204 Q 88 204 74 196 Z"
-              fill="url(#plg-blue)" opacity="0.9"/>
-        {/* Fingers */}
-        <path d="M 98 184 Q 96 173 101 167 Q 107 162 111 169"
-              stroke="url(#plg-blue)" strokeWidth="9" fill="none" strokeLinecap="round"/>
-        <path d="M 115 183 Q 113 170 118 163 Q 124 157 129 164"
-              stroke="url(#plg-blue)" strokeWidth="9" fill="none" strokeLinecap="round"/>
-        <path d="M 132 181 Q 130 170 135 164 Q 140 159 144 166"
-              stroke="url(#plg-blue)" strokeWidth="9" fill="none" strokeLinecap="round"/>
-        {/* Thumb */}
-        <path d="M 80 190 Q 76 182 80 176 Q 86 170 91 177"
-              stroke="url(#plg-blue)" strokeWidth="9" fill="none" strokeLinecap="round"/>
-        {/* Hand highlight */}
-        <path d="M 100 185 Q 130 183 162 181" stroke="rgba(255,255,255,0.2)" strokeWidth="4" fill="none" strokeLinecap="round"/>
-      </g>
+      {/* ── Divider with heart + ECG ── */}
+      <line x1="30" y1="217" x2="104" y2="217" stroke="#CBD5E1" strokeWidth="1"/>
+      <line x1="136" y1="217" x2="210" y2="217" stroke="#CBD5E1" strokeWidth="1"/>
+      <path d="M 120 224 C 114 218 110 215 110 211 C 110 207 114 205 117 208 L 120 211 L 123 208 C 126 205 130 207 130 211 C 130 215 126 218 120 224 Z" fill="#10B981"/>
+      <path d="M 112 213 L 116 213 L 118 209 L 121 217 L 123 213 L 128 213" stroke="white" strokeWidth="1.2" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+
+      {/* ── Motto ── */}
+      <text x="120" y="238" textAnchor="middle"
+        style={{ font: "800 10.5px Arial, Helvetica, sans-serif", letterSpacing: "1.4px" }}>
+        <tspan fill="#1E3A8A">MANAGE. </tspan>
+        <tspan fill="#10B981">CARE. </tspan>
+        <tspan fill="#1E3A8A">GROW.</tspan>
+      </text>
     </svg>
   );
 }
