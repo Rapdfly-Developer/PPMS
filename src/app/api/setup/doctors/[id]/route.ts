@@ -8,7 +8,6 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   const { id } = await params;
   const { name, specialty, contact, shortCode, password, active } = await req.json();
 
-  // Pure activate/deactivate toggle — flips login access without touching profile fields.
   if (typeof active === "boolean") {
     const doctor = await prisma.doctor.findUnique({ where: { id }, select: { userId: true } });
     if (!doctor) return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -41,23 +40,49 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
   try { await requireSuperAdmin(); } catch { return NextResponse.json({ error: "Forbidden" }, { status: 403 }); }
   const { id } = await params;
 
-  const doctor = await prisma.doctor.findUnique({
-    where: { id },
-    select: {
-      userId: true,
-      _count: { select: { visits: true, patients: true } },
-    },
-  });
+  const doctor = await prisma.doctor.findUnique({ where: { id }, select: { userId: true } });
   if (!doctor) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  // Block deletion if medical records exist — deactivate instead
-  if (doctor._count.visits > 0 || doctor._count.patients > 0) {
-    return NextResponse.json({
-      error: `Cannot delete: this doctor has ${doctor._count.patients} patient(s) and ${doctor._count.visits} visit record(s). Use the Deactivate toggle to block login instead.`,
-    }, { status: 409 });
+  // ── 1. Delete all visits by this doctor with every sub-record ────────────
+  const visits = await prisma.visit.findMany({ where: { doctorId: id }, select: { id: true } });
+  const visitIds = visits.map((v) => v.id);
+
+  if (visitIds.length > 0) {
+    await prisma.generalExamination.deleteMany({ where: { visitId: { in: visitIds } } });
+    await prisma.medication.deleteMany({ where: { visitId: { in: visitIds } } });
+    await prisma.visualAcuity.deleteMany({ where: { visitId: { in: visitIds } } });
+    await prisma.refractiveCorrection.deleteMany({ where: { visitId: { in: visitIds } } });
+    await prisma.colourVisionContrastSensitivity.deleteMany({ where: { visitId: { in: visitIds } } });
+    await prisma.iOPReading.deleteMany({ where: { visitId: { in: visitIds } } });
+    await prisma.anteriorSegment.deleteMany({ where: { visitId: { in: visitIds } } });
+    await prisma.posteriorSegment.deleteMany({ where: { visitId: { in: visitIds } } });
+    await prisma.diplopiaChart.deleteMany({ where: { visitId: { in: visitIds } } });
+    await prisma.hessChart.deleteMany({ where: { visitId: { in: visitIds } } });
+    await prisma.retinoscopy.deleteMany({ where: { visitId: { in: visitIds } } });
+    await prisma.tearFilm.deleteMany({ where: { visitId: { in: visitIds } } });
+    await prisma.lacrimalSacSyringing.deleteMany({ where: { visitId: { in: visitIds } } });
+    await prisma.investigationOrder.deleteMany({ where: { visitId: { in: visitIds } } });
+    await prisma.diagnosis.deleteMany({ where: { visitId: { in: visitIds } } });
+    await prisma.dispense.deleteMany({ where: { visitId: { in: visitIds } } });
+    await prisma.admission.deleteMany({ where: { visitId: { in: visitIds } } });
+    await prisma.surgicalCounselling.deleteMany({ where: { visitId: { in: visitIds } } });
+    await prisma.visit.deleteMany({ where: { id: { in: visitIds } } });
   }
 
-  // Delete each refractionist linked to this doctor (and their user accounts)
+  // ── 2. Delete this doctor's patients and their remaining records ─────────
+  const patients = await prisma.patient.findMany({ where: { doctorId: id }, select: { id: true } });
+  const patientIds = patients.map((p) => p.id);
+
+  if (patientIds.length > 0) {
+    await prisma.pastExternalVisit.deleteMany({ where: { patientId: { in: patientIds } } });
+    await prisma.appointment.deleteMany({ where: { patientId: { in: patientIds } } });
+    await prisma.patient.deleteMany({ where: { id: { in: patientIds } } });
+  }
+
+  // Null out doctorId on any remaining appointments from other patients
+  await prisma.appointment.updateMany({ where: { doctorId: id }, data: { doctorId: null } });
+
+  // ── 3. Delete refractionists linked to this doctor ───────────────────────
   const refractionists = await prisma.refractionist.findMany({ where: { doctorId: id }, select: { userId: true, id: true } });
   for (const r of refractionists) {
     await prisma.auditLog.deleteMany({ where: { userId: r.userId } });
@@ -68,11 +93,7 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
     await prisma.user.delete({ where: { id: r.userId } });
   }
 
-  // Null out nullable FKs on patients and appointments so records are preserved
-  await prisma.patient.updateMany({ where: { doctorId: id }, data: { doctorId: null } });
-  await prisma.appointment.updateMany({ where: { doctorId: id }, data: { doctorId: null } });
-
-  // Delete doctor's own dependent records in safe order
+  // ── 4. Doctor's own dependent records ────────────────────────────────────
   await prisma.auditLog.deleteMany({ where: { userId: doctor.userId } });
   await prisma.notification.deleteMany({ where: { userId: doctor.userId } });
   await prisma.userLoginHistory.deleteMany({ where: { userId: doctor.userId } });
