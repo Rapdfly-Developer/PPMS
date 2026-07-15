@@ -62,6 +62,27 @@ export async function sendTrialVerificationOtp(to: string, code: string) {
   await sendMail(to, "Your PPMS verification code", html);
 }
 
+export async function sendPasswordResetOtp(to: string, code: string) {
+  const html = `
+  <div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;">
+    <div style="background:#115E59;color:white;padding:16px 20px;border-radius:12px 12px 0 0;font-size:16px;font-weight:700;">🔒 PPMS Password Reset</div>
+    <div style="border:1px solid #E2E6E8;border-top:none;border-radius:0 0 12px 12px;padding:28px 24px;">
+      <h2 style="margin:0 0 8px;font-size:17px;color:#14242B;">Reset your password</h2>
+      <p style="margin:0 0 20px;font-size:13px;color:#5C6E76;">
+        You requested a password reset for your PPMS account. Use the code below — it expires in <strong>5 minutes</strong>.
+      </p>
+      <div style="text-align:center;background:#f0fcfa;border:2px solid #b8dcd6;border-radius:12px;padding:20px 0;margin-bottom:20px;">
+        <span style="font-size:36px;font-weight:900;letter-spacing:12px;color:#115E59;">${code}</span>
+      </div>
+      <p style="font-size:12px;color:#5C6E76;margin:0 0 8px;">
+        If you didn't request this, someone may have entered your email by mistake. Your password will <strong>not</strong> be changed unless you complete the process.
+      </p>
+      <p style="font-size:11px;color:#9aacb2;margin:0;">For security, never share this code with anyone.</p>
+    </div>
+  </div>`;
+  await sendMail(to, "Your PPMS password reset code", html);
+}
+
 export async function notifyAppointmentRequested(to: string | undefined | null, opts: { patientName: string; hospitalName: string; dateTime: Date }) {
   await sendMail(
     to,

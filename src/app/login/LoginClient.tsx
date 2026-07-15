@@ -1,10 +1,10 @@
 "use client";
 
-import { useActionState, useState, useRef } from "react";
+import { useActionState, useState, useRef, useEffect, useCallback } from "react";
 import { loginAction } from "./actions";
 import {
   Eye, EyeOff, User, Lock, Phone, AlertCircle, CheckCircle2,
-  ShieldCheck, ArrowRight, Loader2, Check,
+  ShieldCheck, ArrowRight, Loader2, Check, Mail, X, KeyRound, RotateCcw,
 } from "lucide-react";
 
 /* ── Types ─────────────────────────────────────────────────────────────── */
@@ -150,6 +150,331 @@ function FloatingInput({
           <AlertCircle size={11} /> {error}
         </p>
       )}
+    </div>
+  );
+}
+
+/* ── Forgot Password Modal ───────────────────────────────────────────────── */
+type FpStep = "email" | "otp" | "password" | "done";
+
+function ForgotPasswordModal({ onClose }: { onClose: () => void }) {
+  const [step, setStep]               = useState<FpStep>("email");
+  const [email, setEmail]             = useState("");
+  const [otp, setOtp]                 = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPw, setConfirmPw]     = useState("");
+  const [showPw, setShowPw]           = useState(false);
+  const [showConfirmPw, setShowConfirmPw] = useState(false);
+  const [loading, setLoading]         = useState(false);
+  const [error, setError]             = useState("");
+  const [resetToken, setResetToken]   = useState("");
+
+  // 60-second resend cooldown
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const startCooldown = useCallback(() => {
+    setResendCooldown(60);
+    timerRef.current = setInterval(() => {
+      setResendCooldown(s => {
+        if (s <= 1) { clearInterval(timerRef.current!); return 0; }
+        return s - 1;
+      });
+    }, 1000);
+  }, []);
+
+  useEffect(() => () => { if (timerRef.current) clearInterval(timerRef.current); }, []);
+
+  // Close on Escape
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [onClose]);
+
+  async function handleSendOtp(isResend = false) {
+    setError("");
+    const trimmed = email.trim().toLowerCase();
+    if (!trimmed || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      setError("Enter a valid email address."); return;
+    }
+    setLoading(true);
+    try {
+      const res = await fetch("/api/auth/forgot-password", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: trimmed }),
+      });
+      const data = await res.json();
+      if (!data.success) { setError(data.error || "Failed to send OTP."); return; }
+      startCooldown();
+      if (!isResend) setStep("otp");
+      else setError(""); // clear errors on resend
+    } catch { setError("Network error. Please try again."); }
+    finally { setLoading(false); }
+  }
+
+  async function handleVerifyOtp() {
+    setError("");
+    if (!/^\d{6}$/.test(otp)) { setError("Enter the 6-digit OTP sent to your email."); return; }
+    setLoading(true);
+    try {
+      const res = await fetch("/api/auth/verify-reset-otp", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim().toLowerCase(), otp }),
+      });
+      const data = await res.json();
+      if (!data.success) { setError(data.error || "Invalid OTP."); return; }
+      setResetToken(data.resetToken);
+      setStep("password");
+    } catch { setError("Network error. Please try again."); }
+    finally { setLoading(false); }
+  }
+
+  async function handleResetPassword() {
+    setError("");
+    if (newPassword.length < 8) { setError("Password must be at least 8 characters."); return; }
+    if (newPassword !== confirmPw) { setError("Passwords do not match."); return; }
+    setLoading(true);
+    try {
+      const res = await fetch("/api/auth/reset-password", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ resetToken, newPassword, confirmPassword: confirmPw }),
+      });
+      const data = await res.json();
+      if (!data.success) { setError(data.error || "Reset failed."); return; }
+      setStep("done");
+    } catch { setError("Network error. Please try again."); }
+    finally { setLoading(false); }
+  }
+
+  const stepLabel: Record<FpStep, string> = {
+    email: "Forgot Password",
+    otp: "Enter OTP",
+    password: "New Password",
+    done: "Password Reset",
+  };
+
+  const steps: FpStep[] = ["email", "otp", "password", "done"];
+  const stepIndex = steps.indexOf(step);
+
+  return (
+    /* Backdrop */
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: "rgba(15,23,42,.55)", backdropFilter: "blur(6px)", animation: "lp-fadein .2s both" }}
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+
+      {/* Modal card */}
+      <div className="relative w-full max-w-[420px] rounded-3xl overflow-hidden"
+        style={{
+          background: "rgba(255,255,255,.96)",
+          boxShadow: "0 32px 80px rgba(15,23,42,.22), 0 8px 24px rgba(15,23,42,.1)",
+          border: "1px solid rgba(255,255,255,.9)",
+          animation: "lp-cardin .35s cubic-bezier(.22,1,.36,1) both",
+        }}>
+
+        {/* Top accent */}
+        <div style={{ height: "2px", background: "linear-gradient(90deg,transparent,#14B8A6 40%,#0F766E 60%,transparent)" }} />
+
+        <div className="px-7 py-6">
+          {/* Header */}
+          <div className="flex items-start justify-between mb-5">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0"
+                style={{ background: "linear-gradient(135deg,#F0FDFA,#CCFBF1)", border: "1px solid #CCFBF1" }}>
+                {step === "done"
+                  ? <CheckCircle2 size={18} style={{ color: "#0F766E" }} />
+                  : <KeyRound size={18} style={{ color: "#0F766E" }} />}
+              </div>
+              <div>
+                <h3 className="font-bold" style={{ fontSize: "17px", color: "#0F172A", letterSpacing: "-0.015em" }}>
+                  {stepLabel[step]}
+                </h3>
+                <p style={{ fontSize: "12px", color: "#94A3B8" }}>
+                  {step === "email" && "We'll send a 6-digit code to your email"}
+                  {step === "otp"   && `Code sent to ${email}`}
+                  {step === "password" && "Choose a strong new password"}
+                  {step === "done" && "Your password has been updated"}
+                </p>
+              </div>
+            </div>
+            <button onClick={onClose} className="p-1.5 rounded-xl transition-colors hover:bg-slate-100" style={{ color: "#94A3B8" }}>
+              <X size={16} />
+            </button>
+          </div>
+
+          {/* Step progress dots */}
+          {step !== "done" && (
+            <div className="flex items-center gap-1.5 mb-5">
+              {[0, 1, 2].map(i => (
+                <div key={i} className="rounded-full transition-all duration-300" style={{
+                  height: "4px",
+                  flex: i === stepIndex ? 3 : 1,
+                  background: i <= stepIndex ? "#0F766E" : "#E2E8F0",
+                }} />
+              ))}
+            </div>
+          )}
+
+          {/* ── Step 1: Email ── */}
+          {step === "email" && (
+            <div className="flex flex-col gap-4">
+              <FloatingInput
+                label="Registered email address"
+                type="email"
+                value={email}
+                autoFocus
+                autoComplete="email"
+                icon={<Mail size={15} />}
+                onChange={v => { setEmail(v); setError(""); }}
+                onKeyDown={e => { if (e.key === "Enter") handleSendOtp(); }}
+                error={error}
+              />
+              <button onClick={() => handleSendOtp()} disabled={loading}
+                className="lp-btn w-full font-bold text-white rounded-2xl flex items-center justify-center gap-2"
+                style={{ height: "48px", fontSize: "14px",
+                  background: loading ? "#94A3B8" : "linear-gradient(135deg,#0F766E,#0C6C62)",
+                  boxShadow: loading ? "none" : "0 8px 22px rgba(15,118,110,.28)" }}>
+                {loading ? <><Loader2 size={15} className="animate-spin" /> Sending…</> : <><span>Send OTP</span><ArrowRight size={15} /></>}
+              </button>
+            </div>
+          )}
+
+          {/* ── Step 2: OTP ── */}
+          {step === "otp" && (
+            <div className="flex flex-col gap-4">
+              <div>
+                <FloatingInput
+                  label="6-digit OTP"
+                  type="text"
+                  maxLength={6}
+                  value={otp}
+                  autoFocus
+                  autoComplete="one-time-code"
+                  icon={<KeyRound size={15} />}
+                  onChange={v => { setOtp(v.replace(/\D/g, "").slice(0, 6)); setError(""); }}
+                  onKeyDown={e => { if (e.key === "Enter") handleVerifyOtp(); }}
+                  error={error}
+                />
+                <div className="flex items-center justify-between mt-2">
+                  <p style={{ fontSize: "11px", color: "#94A3B8" }}>Valid for 5 minutes</p>
+                  <button onClick={() => handleSendOtp(true)} disabled={resendCooldown > 0 || loading}
+                    className="flex items-center gap-1 text-xs font-semibold transition-colors"
+                    style={{ color: resendCooldown > 0 ? "#CBD5E1" : "#0F766E" }}>
+                    <RotateCcw size={11} />
+                    {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : "Resend OTP"}
+                  </button>
+                </div>
+              </div>
+              <button onClick={handleVerifyOtp} disabled={loading || otp.length < 6}
+                className="lp-btn w-full font-bold text-white rounded-2xl flex items-center justify-center gap-2"
+                style={{ height: "48px", fontSize: "14px",
+                  background: loading || otp.length < 6 ? "#E2E8F0" : "linear-gradient(135deg,#0F766E,#0C6C62)",
+                  color: otp.length < 6 ? "#94A3B8" : "#fff",
+                  boxShadow: otp.length < 6 ? "none" : "0 8px 22px rgba(15,118,110,.28)" }}>
+                {loading ? <><Loader2 size={15} className="animate-spin" /> Verifying…</> : <><span>Verify OTP</span><ArrowRight size={15} /></>}
+              </button>
+              <button onClick={() => { setStep("email"); setOtp(""); setError(""); }}
+                className="text-center text-sm font-medium transition-colors hover:text-[#0F766E]"
+                style={{ color: "#94A3B8" }}>
+                ← Use a different email
+              </button>
+            </div>
+          )}
+
+          {/* ── Step 3: New password ── */}
+          {step === "password" && (
+            <div className="flex flex-col gap-3">
+              {error && (
+                <div className="flex items-center gap-2 rounded-xl px-3.5 py-2.5"
+                  style={{ background: "#FEF2F2", color: "#DC2626", border: "1px solid #FECACA", fontSize: "12.5px" }}>
+                  <AlertCircle size={13} className="shrink-0" /> {error}
+                </div>
+              )}
+              <FloatingInput
+                label="New password"
+                type={showPw ? "text" : "password"}
+                value={newPassword}
+                autoFocus
+                autoComplete="new-password"
+                icon={<Lock size={15} />}
+                onChange={v => { setNewPassword(v); setError(""); }}
+                onKeyDown={e => { if (e.key === "Enter") handleResetPassword(); }}
+                rightSlot={
+                  <button type="button" onClick={() => setShowPw(!showPw)} style={{ color: "#94A3B8" }}>
+                    {showPw ? <EyeOff size={14} /> : <Eye size={14} />}
+                  </button>
+                }
+              />
+              {/* Password strength bar */}
+              {newPassword.length > 0 && (() => {
+                const strength = [newPassword.length >= 8, /[A-Z]/.test(newPassword), /[0-9]/.test(newPassword), /[^A-Za-z0-9]/.test(newPassword)].filter(Boolean).length;
+                const colors = ["#EF4444","#F59E0B","#10B981","#0F766E"];
+                const labels = ["Weak","Fair","Good","Strong"];
+                return (
+                  <div className="flex items-center gap-2 -mt-1">
+                    <div className="flex gap-1 flex-1">
+                      {[0,1,2,3].map(i => (
+                        <div key={i} className="h-1 flex-1 rounded-full transition-colors duration-300"
+                          style={{ background: i < strength ? colors[strength - 1] : "#E2E8F0" }} />
+                      ))}
+                    </div>
+                    <span style={{ fontSize: "10px", fontWeight: 600, color: colors[strength - 1] ?? "#94A3B8" }}>
+                      {strength > 0 ? labels[strength - 1] : ""}
+                    </span>
+                  </div>
+                );
+              })()}
+              <FloatingInput
+                label="Confirm new password"
+                type={showConfirmPw ? "text" : "password"}
+                value={confirmPw}
+                autoComplete="new-password"
+                icon={<Lock size={15} />}
+                onChange={v => { setConfirmPw(v); setError(""); }}
+                onKeyDown={e => { if (e.key === "Enter") handleResetPassword(); }}
+                error={confirmPw.length > 0 && confirmPw !== newPassword ? "Passwords do not match" : undefined}
+                rightSlot={
+                  <button type="button" onClick={() => setShowConfirmPw(!showConfirmPw)} style={{ color: "#94A3B8" }}>
+                    {showConfirmPw ? <EyeOff size={14} /> : <Eye size={14} />}
+                  </button>
+                }
+              />
+              <button onClick={handleResetPassword}
+                disabled={loading || newPassword.length < 8 || newPassword !== confirmPw}
+                className="lp-btn w-full font-bold text-white rounded-2xl flex items-center justify-center gap-2 mt-1"
+                style={{ height: "48px", fontSize: "14px",
+                  background: loading || newPassword.length < 8 || newPassword !== confirmPw ? "#E2E8F0" : "linear-gradient(135deg,#0F766E,#0C6C62)",
+                  color: newPassword.length < 8 || newPassword !== confirmPw ? "#94A3B8" : "#fff",
+                  boxShadow: newPassword.length < 8 || newPassword !== confirmPw ? "none" : "0 8px 22px rgba(15,118,110,.28)" }}>
+                {loading ? <><Loader2 size={15} className="animate-spin" /> Updating…</> : <><span>Reset Password</span><ArrowRight size={15} /></>}
+              </button>
+            </div>
+          )}
+
+          {/* ── Step 4: Done ── */}
+          {step === "done" && (
+            <div className="flex flex-col items-center gap-4 py-2">
+              <div className="w-16 h-16 rounded-2xl flex items-center justify-center"
+                style={{ background: "linear-gradient(135deg,#F0FDFA,#CCFBF1)", border: "2px solid #CCFBF1" }}>
+                <CheckCircle2 size={30} style={{ color: "#0F766E" }} />
+              </div>
+              <div className="text-center">
+                <p className="font-bold mb-1" style={{ fontSize: "15px", color: "#0F172A" }}>Password updated!</p>
+                <p style={{ fontSize: "13px", color: "#64748B" }}>
+                  You can now sign in with your new password.
+                </p>
+              </div>
+              <button onClick={onClose}
+                className="lp-btn w-full font-bold text-white rounded-2xl flex items-center justify-center gap-2"
+                style={{ height: "48px", fontSize: "14px",
+                  background: "linear-gradient(135deg,#0F766E,#0C6C62)",
+                  boxShadow: "0 8px 22px rgba(15,118,110,.28)" }}>
+                Sign In Now <ArrowRight size={15} />
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
@@ -388,6 +713,7 @@ export default function LoginPage() {
   const [capsLock, setCapsLock]         = useState(false);
   const [rememberMe, setRememberMe]     = useState(false);
   const [tab, setTab]                   = useState<"password" | "otp">("password");
+  const [showForgotPw, setShowForgotPw] = useState(false);
 
   // Password tab
   const [username, setUsername]     = useState("");
@@ -443,6 +769,7 @@ export default function LoginPage() {
 
   return (
     <div className="fixed inset-0 flex overflow-hidden" style={{ background: "#F8FAFC" }}>
+      {showForgotPw && <ForgotPasswordModal onClose={() => setShowForgotPw(false)} />}
       <style>{`
         /* ── Keyframes ────────────────────────────────────────────────── */
         @keyframes lp-blob1   { 0%,100%{transform:translate(0,0) scale(1)} 40%{transform:translate(30px,-20px) scale(1.07)} 70%{transform:translate(-18px,14px) scale(0.96)} }
@@ -713,18 +1040,12 @@ export default function LoginPage() {
                         </button>
                       }
                     />
-                    <div className="flex items-center justify-between mt-1.5">
-                      {capsLock ? (
-                        <p className="flex items-center gap-1.5" style={{ fontSize: "11px", color: "#F59E0B", animation: "lp-slide-up .22s both" }}>
-                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                          Caps Lock is on
-                        </p>
-                      ) : <span />}
-                      <button type="button" style={{ fontSize: "11px", fontWeight: 600, color: "#0F766E" }}
-                        className="hover:underline transition-colors">
-                        Forgot password?
-                      </button>
-                    </div>
+                    {capsLock && (
+                      <p className="flex items-center gap-1.5 mt-1.5" style={{ fontSize: "11px", color: "#F59E0B", animation: "lp-slide-up .22s both" }}>
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                        Caps Lock is on
+                      </p>
+                    )}
                   </div>
 
                   {/* Remember me */}
@@ -777,6 +1098,17 @@ export default function LoginPage() {
                     </span>
                   </button>
                 </form>
+              )}
+
+              {/* Forgot password — outside form so click fires cleanly */}
+              {tab === "password" && (
+                <div className="flex justify-end -mt-1">
+                  <button type="button" onClick={() => setShowForgotPw(true)}
+                    style={{ fontSize: "11px", fontWeight: 600, color: "#0F766E" }}
+                    className="hover:underline transition-colors">
+                    Forgot password?
+                  </button>
+                </div>
               )}
 
               {/* ── OTP form ── */}

@@ -31,7 +31,8 @@ model User {
   auditLogs     AuditLog[]
   notifications Notification[]
   loginHistory  UserLoginHistory[]
-  exportOtps    ExportOtp[]
+  exportOtps         ExportOtp[]
+  passwordResetTokens PasswordResetToken[]
 }
 
 model Doctor {
@@ -706,6 +707,23 @@ model ExportOtp {
   createdAt DateTime @default(now())
 
   @@index([userId, expiresAt])
+}
+
+model PasswordResetToken {
+  id         String    @id @default(cuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id])
+  email      String
+  otpHash    String
+  resetToken String?   @unique  // populated after OTP verified; used in final step
+  expiresAt  DateTime            // OTP expires 5 min after creation
+  tokenExpAt DateTime?           // resetToken expires 10 min after OTP verify
+  usedAt     DateTime?
+  ipAddress  String?
+  createdAt  DateTime  @default(now())
+
+  @@index([email, createdAt])
+  @@index([resetToken])
 }
 
 // ──────────────────────────────────────────────────────────────────────────
