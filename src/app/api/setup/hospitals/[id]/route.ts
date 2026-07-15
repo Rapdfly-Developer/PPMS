@@ -7,8 +7,6 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   const { id } = await params;
   const { name, shortCode, contact, address, active } = await req.json();
 
-  // Pure activate/deactivate toggle — flips login access for every
-  // HOSPITAL-role account of this hospital without touching profile fields.
   if (typeof active === "boolean") {
     const staff = await prisma.hospitalStaff.findMany({
       where: { hospitalId: id, user: { role: "HOSPITAL" } },
@@ -38,20 +36,39 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
   try { await requireSuperAdmin(); } catch { return NextResponse.json({ error: "Forbidden" }, { status: 403 }); }
   const { id } = await params;
 
-  const hospital = await prisma.hospital.findUnique({
-    where: { id },
-    select: { _count: { select: { visits: true, appointments: true } } },
-  });
+  const hospital = await prisma.hospital.findUnique({ where: { id } });
   if (!hospital) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  // Block deletion if clinical data exists — deactivate the login instead
-  if (hospital._count.visits > 0 || hospital._count.appointments > 0) {
-    return NextResponse.json({
-      error: `Cannot delete: this hospital has ${hospital._count.appointments} appointment(s) and ${hospital._count.visits} visit record(s). Use the Deactivate toggle to block login instead.`,
-    }, { status: 409 });
+  // ── 1. Delete all visits at this hospital with every sub-record ──────────
+  const visits = await prisma.visit.findMany({ where: { hospitalId: id }, select: { id: true } });
+  const visitIds = visits.map((v) => v.id);
+
+  if (visitIds.length > 0) {
+    await prisma.generalExamination.deleteMany({ where: { visitId: { in: visitIds } } });
+    await prisma.medication.deleteMany({ where: { visitId: { in: visitIds } } });
+    await prisma.visualAcuity.deleteMany({ where: { visitId: { in: visitIds } } });
+    await prisma.refractiveCorrection.deleteMany({ where: { visitId: { in: visitIds } } });
+    await prisma.colourVisionContrastSensitivity.deleteMany({ where: { visitId: { in: visitIds } } });
+    await prisma.iOPReading.deleteMany({ where: { visitId: { in: visitIds } } });
+    await prisma.anteriorSegment.deleteMany({ where: { visitId: { in: visitIds } } });
+    await prisma.posteriorSegment.deleteMany({ where: { visitId: { in: visitIds } } });
+    await prisma.diplopiaChart.deleteMany({ where: { visitId: { in: visitIds } } });
+    await prisma.hessChart.deleteMany({ where: { visitId: { in: visitIds } } });
+    await prisma.retinoscopy.deleteMany({ where: { visitId: { in: visitIds } } });
+    await prisma.tearFilm.deleteMany({ where: { visitId: { in: visitIds } } });
+    await prisma.lacrimalSacSyringing.deleteMany({ where: { visitId: { in: visitIds } } });
+    await prisma.investigationOrder.deleteMany({ where: { visitId: { in: visitIds } } });
+    await prisma.diagnosis.deleteMany({ where: { visitId: { in: visitIds } } });
+    await prisma.dispense.deleteMany({ where: { visitId: { in: visitIds } } });
+    await prisma.admission.deleteMany({ where: { visitId: { in: visitIds } } });
+    await prisma.surgicalCounselling.deleteMany({ where: { visitId: { in: visitIds } } });
+    await prisma.visit.deleteMany({ where: { id: { in: visitIds } } });
   }
 
-  // Delete hospital staff user accounts
+  // ── 2. Delete all appointments at this hospital ──────────────────────────
+  await prisma.appointment.deleteMany({ where: { hospitalId: id } });
+
+  // ── 3. Delete hospital staff user accounts ───────────────────────────────
   const staff = await prisma.hospitalStaff.findMany({ where: { hospitalId: id }, select: { userId: true, id: true } });
   for (const s of staff) {
     await prisma.auditLog.deleteMany({ where: { userId: s.userId } });
@@ -62,7 +79,7 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
     await prisma.user.delete({ where: { id: s.userId } });
   }
 
-  // Delete refractionists assigned to this hospital
+  // ── 4. Delete refractionists assigned to this hospital ───────────────────
   const refractionists = await prisma.refractionist.findMany({ where: { hospitalId: id }, select: { userId: true, id: true } });
   for (const r of refractionists) {
     await prisma.auditLog.deleteMany({ where: { userId: r.userId } });
@@ -73,10 +90,10 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
     await prisma.user.delete({ where: { id: r.userId } });
   }
 
-  // Null out nullable patient registration FK
+  // ── 5. Null out nullable patient registration FK ─────────────────────────
   await prisma.patient.updateMany({ where: { registeredAtId: id }, data: { registeredAtId: null } });
 
-  // Delete other dependent records
+  // ── 6. Other dependent records ───────────────────────────────────────────
   await prisma.doctorAvailability.deleteMany({ where: { hospitalId: id } });
   await prisma.chipOption.deleteMany({ where: { hospitalId: id } });
   await prisma.integrationLog.deleteMany({ where: { hospitalId: id } });
