@@ -227,7 +227,7 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
     if (!validateTrial()) return;
     setError("");
     startTransition(async () => {
-      const res = await sendVerificationCode(email);
+      const res = await sendVerificationCode(email, mobile);
       if (res.error) { setError(res.error); return; }
       setOtpStep(true);
       setOtp("");

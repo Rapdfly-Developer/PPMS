@@ -42,9 +42,13 @@ function logEvent(doctorId: string, action: string, status: "SUCCESS" | "FAILED"
 }
 
 // ── Send email verification OTP ───────────────────────────────────────────────
-export async function sendVerificationCode(email: string): Promise<{ success?: boolean; error?: string }> {
+export async function sendVerificationCode(email: string, mobile?: string): Promise<{ success?: boolean; error?: string }> {
   const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRe.test(email.trim())) return { error: "Enter a valid email address." };
+
+  // Uniqueness checks before sending OTP — surface errors on the registration form, not the OTP page
+  if (await isEmailTaken(email.trim())) return { error: "An account with this email address already exists." };
+  if (mobile && await isMobileTaken(mobile.replace(/\D/g, ""))) return { error: "This mobile number is already registered." };
 
   // Invalidate any previous unused codes for this email
   await prisma.emailVerification.updateMany({
