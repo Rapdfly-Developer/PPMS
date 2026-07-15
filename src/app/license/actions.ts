@@ -75,7 +75,7 @@ export async function startTrial(data: {
   mobile: string;
   password: string;
   verificationCode: string;
-}): Promise<{ success?: boolean; error?: string }> {
+}): Promise<{ success?: boolean; username?: string; error?: string }> {
   const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
   if (!data.adminName.trim())  return { error: "Doctor name is required." };
@@ -137,7 +137,7 @@ export async function startTrial(data: {
 
     await logEvent(doctor.id, "TRIAL_STARTED", "SUCCESS", { performedBy: data.adminName.trim() });
 
-    return { success: true };
+    return { success: true, username };
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
     if (msg.includes("Unique constraint")) return { error: "An account with this email already exists." };

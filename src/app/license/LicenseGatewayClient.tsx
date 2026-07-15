@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { signIn } from "next-auth/react";
 import {
   FileText, Calendar, Building2, UserCircle, Users,
   BarChart3, Cloud, Shield, CheckCircle2, AlertTriangle,
@@ -262,8 +263,20 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
     startTransition(async () => {
       const res = await startTrial({ adminName, email, mobile, password, verificationCode: otp.trim() });
       if (res.error) { setOtpError(res.error); return; }
-      setSuccess("Email verified! Trial started. Redirecting to login…");
-      setTimeout(() => router.push("/login"), 1800);
+      setSuccess("Email verified! Signing you in…");
+      // Auto sign-in with the credentials used during registration
+      const loginResult = await signIn("credentials", {
+        username: res.username ?? email,
+        password,
+        redirect: false,
+      });
+      if (loginResult?.ok) {
+        router.push("/dashboard");
+      } else {
+        // Sign-in failed for some reason — fall back to login page
+        setSuccess("Trial started! Please sign in to continue.");
+        setTimeout(() => router.push("/login"), 1500);
+      }
     });
   }
 
