@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ChevronDown, Plus, Building2, Phone, LogIn, Loader2,
-  Sun, Sunset, Moon,
+  Sun, Sunset, Moon, CalendarX2,
 } from "lucide-react";
 import clsx from "clsx";
 import { doctorConfirmAppointment, hospitalUpdateAppointmentStatus } from "@/app/(app)/appointments/actions";
@@ -197,6 +197,7 @@ export function DashboardClient({
       }
       return Array.from(map.entries())
         .map(([id, { name, appts: gAppts }]) => ({ id, name, appts: gAppts }))
+        .filter((g) => g.appts.length > 0)
         .sort((a, b) => a.name.localeCompare(b.name));
     } else {
       return [{ id: "self", name: displayName, appts: queue }];
@@ -326,39 +327,57 @@ export function DashboardClient({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-4">
-          {queueGroups.map(({ id, name, appts: gAppts }) => {
-            const displayed = statusFilter === "ALL" ? gAppts : gAppts.filter((a) => a.status === statusFilter);
-            const dispensed = gAppts.filter((a) => a.status === "DISPENSED").length;
-            return (
-              <div key={id} className="surface-card p-4 flex flex-col gap-3">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <div className="shrink-0 p-1.5 rounded-lg bg-[var(--color-primary-50)]">
-                      <Building2 size={15} className="text-[var(--color-primary-700)]" />
+        {queueGroups.length === 0 ? (
+          <div className="surface-card flex flex-col items-center justify-center py-16 gap-4 text-center">
+            <div className="w-16 h-16 rounded-2xl flex items-center justify-center bg-[var(--color-surface-sunken)]">
+              <CalendarX2 size={28} className="text-[var(--color-ink-300)]" />
+            </div>
+            <div>
+              <p className="text-base font-semibold text-[var(--color-ink-700)]">No appointments today</p>
+              <p className="text-sm text-[var(--color-ink-400)] mt-1 max-w-xs mx-auto">
+                Confirmed appointments will appear here once patients are moved into the queue.
+              </p>
+            </div>
+            <Link
+              href={newEncounterHref}
+              className="inline-flex items-center gap-2 text-sm font-semibold text-[var(--color-primary-600)] hover:underline"
+            >
+              <Plus size={14} /> {newEncounterLabel}
+            </Link>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-4">
+            {queueGroups.map(({ id, name, appts: gAppts }) => {
+              const displayed = statusFilter === "ALL" ? gAppts : gAppts.filter((a) => a.status === statusFilter);
+              const dispensed = gAppts.filter((a) => a.status === "DISPENSED").length;
+              return (
+                <div key={id} className="surface-card p-4 flex flex-col gap-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="shrink-0 p-1.5 rounded-lg bg-[var(--color-primary-50)]">
+                        <Building2 size={15} className="text-[var(--color-primary-700)]" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-bold text-[var(--color-ink-900)] truncate">{name}</p>
+                        <p className="text-[11px] text-[var(--color-ink-400)]">
+                          {gAppts.length} in queue · {dispensed} Dispensed
+                        </p>
+                      </div>
                     </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-bold text-[var(--color-ink-900)] truncate">{name}</p>
-                      <p className="text-[11px] text-[var(--color-ink-400)]">
-                        {gAppts.length} in queue · {dispensed} Dispensed
-                      </p>
-                    </div>
+                    <span className="shrink-0 text-[11px] font-bold px-2.5 py-1 rounded-full bg-[var(--color-primary-50)] text-[var(--color-primary-700)]">
+                      {gAppts.length}
+                    </span>
                   </div>
-                  <span className="shrink-0 text-[11px] font-bold px-2.5 py-1 rounded-full bg-[var(--color-primary-50)] text-[var(--color-primary-700)]">
-                    {gAppts.length}
-                  </span>
+                  {displayed.length > 0 && (
+                    <div className="space-y-2">
+                      {displayed.map((a) => <ApptRow key={a.id} appt={a} role={role} />)}
+                    </div>
+                  )}
                 </div>
-                {displayed.length === 0 ? (
-                  <p className="text-center text-xs text-[var(--color-ink-400)] py-4">No patients in queue yet</p>
-                ) : (
-                  <div className="space-y-2">
-                    {displayed.map((a) => <ApptRow key={a.id} appt={a} role={role} />)}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* ── Surgeries + Visit time ────────────────────────────────────────── */}
