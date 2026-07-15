@@ -501,18 +501,70 @@ export default function LoginPage() {
               </div>
             )}
 
-            {/* Footer */}
-            <div className="mt-4 pt-4 border-t flex items-center justify-between gap-2" style={{ borderColor: "#F0F4F4" }}>
-              <div className="flex items-center gap-2">
-                <ShieldCheck size={14} style={{ color: "#157A73" }} />
-                <p className="text-xs font-medium" style={{ color: "#8A9AA1" }}>
-                  Secure Login <span style={{ color: "#D0D8DC" }}>|</span>{" "}
-                  <span style={{ color: "#5C6E76" }}>DPDP &amp; ABDM Ready</span>
-                </p>
+            {/* Free Trial Banner */}
+            <style>{`
+              @keyframes trialShimmer {
+                0%   { background-position: -300% center; }
+                100% { background-position: 300% center; }
+              }
+              @keyframes trialPulse {
+                0%, 100% { box-shadow: 0 0 0 0 rgba(21,122,115,0.35), 0 3px 12px rgba(21,122,115,0.35); }
+                50%       { box-shadow: 0 0 0 5px rgba(21,122,115,0.08), 0 3px 18px rgba(21,122,115,0.55); }
+              }
+              @keyframes trialBadgePop {
+                0%   { transform: scale(0.92); opacity: 0; }
+                60%  { transform: scale(1.03); opacity: 1; }
+                100% { transform: scale(1); }
+              }
+              .trial-banner {
+                animation: trialBadgePop 0.5s cubic-bezier(.34,1.56,.64,1) both;
+              }
+              @media (prefers-reduced-motion: reduce) {
+                .trial-banner, .trial-banner * { animation: none !important; }
+              }
+            `}</style>
+            <a
+              href="/license"
+              className="trial-banner mt-4 flex items-center justify-between gap-3 rounded-2xl px-4 py-3 no-underline group"
+              style={{
+                background: "linear-gradient(105deg, #0d6e68 0%, #157A73 35%, #1aaa9e 65%, #0d6e68 100%)",
+                backgroundSize: "300% auto",
+                animation: "trialBadgePop 0.5s cubic-bezier(.34,1.56,.64,1) both, trialShimmer 4s linear 0.6s infinite, trialPulse 2.4s ease-in-out 0.6s infinite",
+              }}
+            >
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
+                  style={{ background: "rgba(255,255,255,0.18)" }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                    <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"
+                      fill="white" stroke="white" strokeWidth="0.5" strokeLinejoin="round" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-[13px] font-black leading-tight" style={{ color: "#fff", letterSpacing: "-0.01em" }}>
+                    15 Days Free Trial
+                  </p>
+                  <p className="text-[10px] font-medium leading-tight mt-0.5" style={{ color: "rgba(255,255,255,0.78)" }}>
+                    Full access · No credit card needed
+                  </p>
+                </div>
               </div>
-              <a href="/license" className="text-xs font-medium hover:underline" style={{ color: "#157A73" }}>
-                License
-              </a>
+              <div className="flex items-center gap-1 shrink-0 rounded-lg px-2.5 py-1 transition-all group-hover:translate-x-0.5"
+                style={{ background: "rgba(255,255,255,0.18)" }}>
+                <span className="text-[11px] font-bold" style={{ color: "#fff" }}>Start</span>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" style={{ color: "#fff" }}>
+                  <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </div>
+            </a>
+
+            {/* Footer */}
+            <div className="mt-3 pt-3 border-t flex items-center justify-center gap-2" style={{ borderColor: "#F0F4F4" }}>
+              <ShieldCheck size={13} style={{ color: "#157A73" }} />
+              <p className="text-xs font-medium" style={{ color: "#8A9AA1" }}>
+                Secure Login <span style={{ color: "#D0D8DC" }}>|</span>{" "}
+                <span style={{ color: "#5C6E76" }}>DPDP &amp; ABDM Ready</span>
+              </p>
             </div>
           </div>
         </div>
