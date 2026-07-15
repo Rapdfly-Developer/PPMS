@@ -253,16 +253,65 @@ const PARTICLES = [
   { l: "30%", t: "58%", s: 4,  d: 5 },   { l: "94%", t: "60%", s: 6,  d: 1 },
 ];
 
-function Hero() {
+/* Rotating keyword in the sub-headline */
+const ROTATE_WORDS = ["patients", "appointments", "EMR", "billing", "hospital operations"];
+
+function RotatingWord() {
+  const [i, setI] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setI(v => (v + 1) % ROTATE_WORDS.length), 2200);
+    return () => clearInterval(t);
+  }, []);
   return (
-    <section className="relative overflow-hidden pt-[120px] pb-20 md:pt-[150px] md:pb-28"
+    <span className="inline-block" style={{ color: "#00915D" }}>
+      <span key={i} className="sp-rot inline-block border-b-[3px]" style={{ borderColor: `${EMERALD}55` }}>
+        {ROTATE_WORDS[i]}
+      </span>
+    </span>
+  );
+}
+
+const H1_WORDS = ["The", "Future", "of", "Healthcare", "Practice", "Management"];
+
+function Hero() {
+  const secRef = useRef<HTMLElement>(null);
+
+  // Mouse-parallax: expose cursor position as CSS vars consumed by
+  // the blobs, spotlight and dashboard tilt.
+  useEffect(() => {
+    const el = secRef.current;
+    if (!el) return;
+    let raf = 0;
+    const onMove = (e: MouseEvent) => {
+      const r = el.getBoundingClientRect();
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        el.style.setProperty("--mx", String((e.clientX - r.left) / r.width - 0.5));
+        el.style.setProperty("--my", String((e.clientY - r.top) / r.height - 0.5));
+        el.style.setProperty("--sx", `${e.clientX - r.left}px`);
+        el.style.setProperty("--sy", `${e.clientY - r.top}px`);
+      });
+    };
+    el.addEventListener("mousemove", onMove);
+    return () => { el.removeEventListener("mousemove", onMove); cancelAnimationFrame(raf); };
+  }, []);
+
+  return (
+    <section ref={secRef} className="sp-hero relative overflow-hidden pt-[120px] pb-20 md:pt-[150px] md:pb-28"
       style={{ background: "linear-gradient(150deg, #ECFDF5 0%, #F8FAFC 42%, #E7F6F3 100%)" }}>
 
-      {/* Ambient glows + particles */}
-      <div className="sp-blob1 absolute -top-40 -left-40 w-[560px] h-[560px] rounded-full opacity-30 pointer-events-none"
-        style={{ background: `radial-gradient(circle, ${EMERALD}33, transparent 65%)` }} />
-      <div className="sp-blob2 absolute -bottom-52 -right-32 w-[640px] h-[640px] rounded-full opacity-40 pointer-events-none"
-        style={{ background: `radial-gradient(circle, ${TEAL}2e, transparent 65%)` }} />
+      {/* Cursor spotlight */}
+      <div className="sp-spotlight absolute inset-0 pointer-events-none" />
+
+      {/* Ambient glows (parallax wrappers) + particles */}
+      <div className="sp-par-a absolute -top-40 -left-40 w-[560px] h-[560px] pointer-events-none">
+        <div className="sp-blob1 w-full h-full rounded-full opacity-30"
+          style={{ background: `radial-gradient(circle, ${EMERALD}33, transparent 65%)` }} />
+      </div>
+      <div className="sp-par-b absolute -bottom-52 -right-32 w-[640px] h-[640px] pointer-events-none">
+        <div className="sp-blob2 w-full h-full rounded-full opacity-40"
+          style={{ background: `radial-gradient(circle, ${TEAL}2e, transparent 65%)` }} />
+      </div>
       {PARTICLES.map((p, i) => (
         <span key={i} className="sp-particle" style={{
           left: p.l, top: p.t, width: p.s, height: p.s, animationDelay: `${p.d}s`,
@@ -280,18 +329,20 @@ function Hero() {
             </div>
           </Reveal>
 
-          <Reveal delay={80}>
-            <h1 className="sp-head text-[2.4rem] leading-[1.08] md:text-[3.3rem] font-black tracking-tight" style={{ color: NAVY }}>
-              The Future of Healthcare Practice Management{" "}
+          <h1 className="sp-head text-[2.4rem] leading-[1.08] md:text-[3.3rem] font-black tracking-tight" style={{ color: NAVY }}>
+            {H1_WORDS.map((w, i) => (
+              <span key={w + i} className="sp-word" style={{ animationDelay: `${120 + i * 90}ms` }}>{w}&nbsp;</span>
+            ))}
+            <span className="sp-word" style={{ animationDelay: `${120 + H1_WORDS.length * 90}ms` }}>
               <span className="sp-shimmer" style={{ background: `linear-gradient(120deg, ${TEAL}, ${EMERALD}, #3DDC97, ${TEAL})`, backgroundSize: "220% auto", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
                 Starts Here.
               </span>
-            </h1>
-          </Reveal>
+            </span>
+          </h1>
 
           <Reveal delay={160}>
             <p className="sp-head mt-5 text-lg md:text-xl font-semibold leading-snug" style={{ color: "#33475C" }}>
-              One intelligent platform to manage patients, appointments, EMR, billing, and hospital operations.
+              One intelligent platform to manage <RotatingWord />.
             </p>
           </Reveal>
 
@@ -333,7 +384,9 @@ function Hero() {
 
         {/* ── Right — dashboard mockup + floating cards ── */}
         <Reveal delay={200} className="relative hidden sm:block">
-          <DashboardMockup />
+          <div className="sp-par-c">
+            <DashboardMockup />
+          </div>
         </Reveal>
       </div>
     </section>
@@ -1137,10 +1190,38 @@ function PageStyles() {
       .sp-float-btn { animation: spPulse 2.6s ease-in-out infinite; transition: transform .2s ease; }
       .sp-float-btn:hover { transform: translateY(-3px); }
 
-      .sp-tilt { transition: transform .4s ease; }
+      .sp-tilt { transition: transform .25s ease-out; }
       @media (min-width: 1024px) {
-        .sp-tilt { transform: perspective(1400px) rotateY(-7deg) rotateX(2.5deg); }
-        .sp-tilt:hover { transform: perspective(1400px) rotateY(-3deg) rotateX(1deg); }
+        /* Tilt follows the cursor via --mx/--my set on .sp-hero */
+        .sp-tilt {
+          transform: perspective(1400px)
+            rotateY(calc(-7deg + var(--mx, 0) * 9deg))
+            rotateX(calc(2.5deg + var(--my, 0) * -9deg));
+        }
+      }
+
+      /* Hero interactivity */
+      .sp-hero { --mx: 0; --my: 0; --sx: 70%; --sy: 30%; }
+      .sp-spotlight {
+        background: radial-gradient(620px circle at var(--sx) var(--sy), rgba(0,168,107,0.10), transparent 65%);
+      }
+      .sp-par-a { transform: translate3d(calc(var(--mx, 0) * 36px), calc(var(--my, 0) * 28px), 0); transition: transform .3s ease-out; }
+      .sp-par-b { transform: translate3d(calc(var(--mx, 0) * -30px), calc(var(--my, 0) * -22px), 0); transition: transform .3s ease-out; }
+      .sp-par-c { transform: translate3d(calc(var(--mx, 0) * -16px), calc(var(--my, 0) * -12px), 0); transition: transform .25s ease-out; }
+
+      /* Staggered headline words */
+      .sp-word {
+        display: inline-block; opacity: 0;
+        transform: translateY(30px); filter: blur(6px);
+        animation: spWordIn .7s cubic-bezier(.16,1,.3,1) forwards;
+      }
+      @keyframes spWordIn { to { opacity: 1; transform: none; filter: none; } }
+
+      /* Rotating keyword */
+      .sp-rot { animation: spRotIn .55s cubic-bezier(.16,1,.3,1); }
+      @keyframes spRotIn {
+        from { opacity: 0; transform: translateY(60%); filter: blur(5px); }
+        to   { opacity: 1; transform: none; filter: none; }
       }
 
       /* Marquee ticker */
@@ -1190,9 +1271,13 @@ function PageStyles() {
       /* Respect reduced-motion preference */
       @media (prefers-reduced-motion: reduce) {
         .sp-marquee, .sp-shimmer, .sp-beat, .sp-float, .sp-particle,
-        .sp-bar, .sp-float-btn, .sp-blob1, .sp-blob2 { animation: none !important; }
+        .sp-bar, .sp-float-btn, .sp-blob1, .sp-blob2, .sp-rot { animation: none !important; }
         .sp-shine::after { display: none; }
         .sp-reveal { opacity: 1; transform: none; transition: none; }
+        .sp-word { animation: none !important; opacity: 1; transform: none; filter: none; }
+        .sp-par-a, .sp-par-b, .sp-par-c { transform: none !important; }
+        .sp-tilt { transform: none !important; }
+        .sp-spotlight { display: none; }
       }
     `}</style>
   );
