@@ -126,7 +126,7 @@ function FloatingInput({
             paddingRight: rightSlot ? "44px" : "16px",
             paddingTop: floating ? "18px" : "13px",
             paddingBottom: floating ? "4px" : "13px",
-            height: "50px",
+            height: "56px",
             fontSize: "14px",
             fontWeight: 500,
             color: "#0F172A",
@@ -562,10 +562,60 @@ function MedicalBackground() {
   );
 }
 
+/* ── Cycling notification toast ────────────────────────────────────────── */
+const NOTIFICATIONS = [
+  { icon: "✅", text: "Appointment confirmed", sub: "Priya Suresh · 09:00" },
+  { icon: "🧪", text: "Lab results ready",     sub: "Patient #1042 · Rajan Kumar" },
+  { icon: "💊", text: "Prescription issued",   sub: "Dr. Mehta · Ward B" },
+  { icon: "📋", text: "New patient registered",sub: "Meena Pillai · OPD" },
+];
+
+function NotificationToast() {
+  const [idx, setIdx]     = useState(0);
+  const [visible, setVisible] = useState(true);
+
+  useEffect(() => {
+    const cycle = setInterval(() => {
+      setVisible(false);
+      setTimeout(() => {
+        setIdx(i => (i + 1) % NOTIFICATIONS.length);
+        setVisible(true);
+      }, 400);
+    }, 5000);
+    return () => clearInterval(cycle);
+  }, []);
+
+  const n = NOTIFICATIONS[idx];
+  return visible ? (
+    <div className="lp-notify-toast absolute z-10 flex items-center gap-2.5 rounded-2xl px-3 py-2.5"
+      style={{
+        top: "-18px", left: "50%", transform: "translateX(-50%)",
+        minWidth: "230px", maxWidth: "300px",
+        background: "rgba(255,255,255,.95)",
+        backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)",
+        border: "1px solid rgba(15,118,110,.18)",
+        boxShadow: "0 12px 36px rgba(15,118,110,.14), 0 3px 8px rgba(0,0,0,.06)",
+      }}>
+      <div className="shrink-0 w-8 h-8 rounded-xl flex items-center justify-center text-base"
+        style={{ background: "linear-gradient(135deg,#F0FDFA,#CCFBF1)" }}>
+        {n.icon}
+      </div>
+      <div className="min-w-0">
+        <p style={{ fontSize: "10.5px", fontWeight: 700, color: "#0F172A", lineHeight: 1.3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{n.text}</p>
+        <p style={{ fontSize: "9px", color: "#64748B", marginTop: "1px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{n.sub}</p>
+      </div>
+      <div className="lp-live-dot-anim shrink-0" style={{ width: 6, height: 6, borderRadius: "50%", background: "#10B981" }} />
+    </div>
+  ) : null;
+}
+
 /* ── Premium dashboard illustration ─────────────────────────────────────── */
 function DashboardIllustration() {
   return (
-    <div className="relative w-full select-none" style={{ height: "308px" }}>
+    <div className="relative w-full select-none" style={{ height: "308px", paddingTop: "28px" }}>
+      {/* Floating notification */}
+      <NotificationToast />
+
       {/* Ambient glow */}
       <div className="absolute bottom-0 inset-x-0 mx-auto" style={{
         width: "60%", height: "80px",
@@ -600,7 +650,7 @@ function DashboardIllustration() {
             </div>
           </div>
           <div className="flex items-center gap-1.5">
-            <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#10B981" }} />
+            <div className="lp-live-dot-anim" style={{ width: 7, height: 7, borderRadius: "50%", background: "#10B981" }} />
             <div className="w-7 h-7 rounded-full flex items-center justify-center text-[9px] font-bold text-white"
               style={{ background: "linear-gradient(135deg,#0F766E,#14B8A6)" }}>DR</div>
           </div>
@@ -629,10 +679,11 @@ function DashboardIllustration() {
           </div>
           <div className="flex items-end gap-[2px]" style={{ height: "30px" }}>
             {[45,62,38,85,55,78,65,92,58,74,48,88].map((h, i) => (
-              <div key={i} style={{
+              <div key={i} className="lp-bar" style={{
                 flex: 1, borderRadius: "2px 2px 0 0",
                 height: `${h}%`,
                 background: i === 11 ? "linear-gradient(180deg,#14B8A6,#0F766E)" : `rgba(15,118,110,${0.1 + i * 0.018})`,
+                animationDelay: `${0.6 + i * 0.06}s`,
               }} />
             ))}
           </div>
@@ -777,7 +828,7 @@ export default function LoginPage() {
         @keyframes lp-blob3   { 0%,100%{transform:translate(0,0)} 50%{transform:translate(15px,-26px)} }
         @keyframes lp-blob4   { 0%,100%{transform:translate(0,0)} 50%{transform:translate(-12px,18px)} }
         @keyframes lp-cross   { 0%,100%{transform:translateY(0) rotate(0deg)} 50%{transform:translateY(-14px) rotate(10deg)} }
-        @keyframes lp-particle{ 0%,100%{opacity:.35;transform:scale(1)} 50%{opacity:1;transform:scale(2)} }
+        @keyframes lp-particle{ 0%,100%{opacity:.35;transform:scale(1)} 50%{opacity:1;transform:scale(2.2)} }
         @keyframes lp-ecg     { from{transform:translateX(0)} to{transform:translateX(-50%)} }
         @keyframes lp-fadein  { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
         @keyframes lp-cardin  { from{opacity:0;transform:translateY(30px) scale(.97)} to{opacity:1;transform:translateY(0) scale(1)} }
@@ -793,6 +844,17 @@ export default function LoginPage() {
         @keyframes lp-slide-up{ from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
         @keyframes lp-arrow   { 0%,100%{transform:translateX(0)} 50%{transform:translateX(4px)} }
 
+        /* ── NEW: Extra animation keyframes ───────────────────────── */
+        @keyframes lp-bar-in  { from{transform:scaleY(0)} to{transform:scaleY(1)} }
+        @keyframes lp-live-dot{ 0%,100%{box-shadow:0 0 0 0 rgba(16,185,129,.7)} 60%{box-shadow:0 0 0 6px rgba(16,185,129,0)} }
+        @keyframes lp-notify  { 0%{opacity:0;transform:translateY(16px) scale(.94)} 12%{opacity:1;transform:translateY(0) scale(1)} 80%{opacity:1;transform:translateY(0) scale(1)} 100%{opacity:0;transform:translateY(-10px) scale(.96)} }
+        @keyframes lp-card-levitate { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-5px)} }
+        @keyframes lp-scan    { 0%{top:0;opacity:.7} 100%{top:100%;opacity:0} }
+        @keyframes lp-field-in{ from{opacity:0;transform:translateX(16px)} to{opacity:1;transform:translateX(0)} }
+        @keyframes lp-sparkle { 0%,100%{opacity:0;transform:scale(0) rotate(0deg)} 50%{opacity:1;transform:scale(1) rotate(180deg)} }
+        @keyframes lp-num-pop { 0%{transform:scale(1)} 40%{transform:scale(1.18)} 100%{transform:scale(1)} }
+        @keyframes lp-border-glow { 0%,100%{opacity:.45} 50%{opacity:1} }
+
         /* ── Entrance ──────────────────────────────────────────────── */
         .lp-a0{animation:lp-fadein .65s cubic-bezier(.22,1,.36,1) 0ms   both}
         .lp-a1{animation:lp-fadein .65s cubic-bezier(.22,1,.36,1) 90ms  both}
@@ -800,6 +862,13 @@ export default function LoginPage() {
         .lp-a3{animation:lp-fadein .65s cubic-bezier(.22,1,.36,1) 250ms both}
         .lp-a4{animation:lp-fadein .65s cubic-bezier(.22,1,.36,1) 330ms both}
         .lp-card{animation:lp-cardin .85s cubic-bezier(.22,1,.36,1) 80ms both}
+
+        /* ── Staggered right-card field entrances ──────────────────── */
+        .lp-f1{animation:lp-field-in .55s cubic-bezier(.22,1,.36,1) 320ms both}
+        .lp-f2{animation:lp-field-in .55s cubic-bezier(.22,1,.36,1) 420ms both}
+        .lp-f3{animation:lp-field-in .55s cubic-bezier(.22,1,.36,1) 510ms both}
+        .lp-f4{animation:lp-field-in .55s cubic-bezier(.22,1,.36,1) 590ms both}
+        .lp-f5{animation:lp-field-in .55s cubic-bezier(.22,1,.36,1) 660ms both}
 
         /* ── Continuous ────────────────────────────────────────────── */
         .lp-blob1{animation:lp-blob1 18s ease-in-out infinite}
@@ -813,6 +882,20 @@ export default function LoginPage() {
         .lp-dash-side1{animation:lp-float2 9s ease-in-out 1.6s infinite}
         .lp-dash-side2{animation:lp-float3 8s ease-in-out .9s  infinite}
         .lp-trial{animation:lp-shimmer 5s linear 1s infinite, lp-pulse 2.8s ease-in-out 1s infinite}
+        .lp-card-levitate{animation:lp-card-levitate 14s ease-in-out 1.2s infinite}
+        .lp-live-dot-anim{animation:lp-live-dot 1.8s ease-out infinite}
+        .lp-border-glow{animation:lp-border-glow 3s ease-in-out infinite}
+
+        /* ── Bar chart entry ───────────────────────────────────────── */
+        .lp-bar{transform-origin:bottom;animation:lp-bar-in .7s cubic-bezier(.22,1,.36,1) both}
+
+        /* ── Notification toast ────────────────────────────────────── */
+        .lp-notify-toast{animation:lp-notify 4.5s cubic-bezier(.22,1,.36,1) both}
+
+        /* ── Sparkles ──────────────────────────────────────────────── */
+        .lp-sparkle-1{animation:lp-sparkle 2.2s ease-in-out 1.4s infinite}
+        .lp-sparkle-2{animation:lp-sparkle 2.8s ease-in-out 2.1s infinite}
+        .lp-sparkle-3{animation:lp-sparkle 2.5s ease-in-out 0.8s infinite}
 
         /* ── Gradient headline ─────────────────────────────────────── */
         .lp-grad-text{
@@ -843,7 +926,11 @@ export default function LoginPage() {
           .lp-blob1,.lp-blob2,.lp-blob3,.lp-blob4,
           .lp-ecg,.lp-logo,.lp-shield-anim,
           .lp-dash-main,.lp-dash-side1,.lp-dash-side2,
-          .lp-trial,.lp-btn,.lp-chip { animation:none!important; transition:none!important; }
+          .lp-trial,.lp-btn,.lp-chip,.lp-card-levitate,
+          .lp-live-dot-anim,.lp-bar,.lp-notify-toast,
+          .lp-sparkle-1,.lp-sparkle-2,.lp-sparkle-3,
+          .lp-f1,.lp-f2,.lp-f3,.lp-f4,.lp-f5
+          { animation:none!important; transition:none!important; }
           .lp-grad-text{-webkit-text-fill-color:#0F766E;background:none;}
         }
       `}</style>
@@ -932,7 +1019,7 @@ export default function LoginPage() {
         {/* ══ RIGHT PANEL — Frosted glass card ══════════════════════════════ */}
         <div className="w-full lg:w-[500px] xl:w-[540px] shrink-0 flex items-center justify-center py-2 px-4 lg:py-4 lg:px-6 xl:pr-14 overflow-y-auto">
           <div
-            className="lp-card w-full"
+            className="lp-card lp-card-levitate w-full"
             style={{
               background: "rgba(255,255,255,.82)",
               backdropFilter: "blur(28px)",
@@ -941,15 +1028,23 @@ export default function LoginPage() {
               border: "1px solid rgba(255,255,255,.72)",
               boxShadow: "0 32px 80px rgba(15,23,42,.1), 0 8px 24px rgba(15,23,42,.06), inset 0 1px 0 rgba(255,255,255,.96)",
               overflow: "hidden",
+              position: "relative",
             }}
           >
-            {/* Glass top edge */}
-            <div style={{ height: "1.5px", background: "linear-gradient(90deg,transparent,rgba(20,184,166,.65) 50%,transparent)" }} />
+            {/* Animated top edge */}
+            <div className="lp-border-glow" style={{ height: "2px", background: "linear-gradient(90deg,transparent,#14B8A6 30%,#0F766E 50%,#14B8A6 70%,transparent)" }} />
 
-            <div className="px-6 py-3">
+            {/* One-time scan-line sweep on entrance */}
+            <div style={{
+              position: "absolute", left: 0, right: 0, height: "3px", zIndex: 10, pointerEvents: "none",
+              background: "linear-gradient(90deg,transparent,rgba(20,184,166,.55),transparent)",
+              animation: "lp-scan 1.4s cubic-bezier(.4,0,.2,1) 0.9s both",
+            }} />
+
+            <div className="px-8 py-7">
 
               {/* Mobile logo */}
-              <div className="flex lg:hidden items-center gap-2.5 justify-center mb-1">
+              <div className="flex lg:hidden items-center gap-2.5 justify-center mb-5">
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center"
                   style={{ background: "linear-gradient(135deg,#0F766E,#14B8A6)", boxShadow: "0 6px 18px rgba(15,118,110,.32)" }}>
                   <svg width="18" height="18" viewBox="0 0 22 22" fill="none">
@@ -961,11 +1056,18 @@ export default function LoginPage() {
               </div>
 
               {/* Welcome */}
-              <div className="text-center mb-2">
+              <div className="text-center mb-6">
                 <div className="flex items-center justify-center gap-2.5 mb-2">
-                  <div className="lp-shield-anim w-8 h-8 rounded-xl flex items-center justify-center"
-                    style={{ background: "linear-gradient(135deg,#F0FDFA,#CCFBF1)", border: "1px solid #CCFBF1" }}>
-                    <ShieldCheck size={16} style={{ color: "#0F766E" }} />
+                  {/* Shield with sparkles */}
+                  <div className="relative">
+                    <div className="lp-shield-anim w-8 h-8 rounded-xl flex items-center justify-center"
+                      style={{ background: "linear-gradient(135deg,#F0FDFA,#CCFBF1)", border: "1px solid #CCFBF1" }}>
+                      <ShieldCheck size={16} style={{ color: "#0F766E" }} />
+                    </div>
+                    {/* Sparkle dots */}
+                    <div className="lp-sparkle-1 absolute" style={{ width: 5, height: 5, borderRadius: "50%", background: "#14B8A6", top: "-3px", right: "-3px" }} />
+                    <div className="lp-sparkle-2 absolute" style={{ width: 4, height: 4, borderRadius: "50%", background: "#10B981", bottom: "-2px", left: "-4px" }} />
+                    <div className="lp-sparkle-3 absolute" style={{ width: 3, height: 3, borderRadius: "50%", background: "#0F766E", top: "50%", left: "-5px" }} />
                   </div>
                   <h2 className="text-[26px] font-bold" style={{ color: "#0F172A", letterSpacing: "-0.022em" }}>
                     Welcome Back
@@ -975,7 +1077,7 @@ export default function LoginPage() {
               </div>
 
               {/* ── Segmented tab control ── */}
-              <div className="relative flex rounded-2xl p-1 mb-3" style={{ background: "#F1F5F9" }}>
+              <div className="relative flex rounded-2xl p-1 mb-5" style={{ background: "#F1F5F9" }}>
                 {/* Sliding pill */}
                 <div className="lp-tab-pill absolute top-1 bottom-1 rounded-[14px]" style={{
                   left: tab === "password" ? "4px" : "calc(50%)",
@@ -985,7 +1087,7 @@ export default function LoginPage() {
                 }} />
                 {(["password", "otp"] as const).map((t) => (
                   <button key={t} type="button" onClick={() => switchTab(t)}
-                    className="relative flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-semibold z-10"
+                    className="relative flex-1 flex items-center justify-center gap-2 py-3 text-sm font-semibold z-10"
                     style={{
                       color: tab === t ? "#0F172A" : "#94A3B8",
                       transition: "color .25s",
@@ -1007,21 +1109,23 @@ export default function LoginPage() {
                     setFieldErrors(errs);
                     if (Object.keys(errs).length > 0) e.preventDefault();
                   }}
-                  className="flex flex-col gap-3"
+                  className="flex flex-col gap-5"
                 >
-                  <FloatingInput
-                    name="username"
-                    label="Username or Email"
-                    value={username}
-                    autoComplete="username"
-                    autoFocus
-                    icon={<User size={15} />}
-                    error={touched.username ? fieldErrors.username : undefined}
-                    onChange={v => { setUsername(v); if (touched.username) setFieldErrors(p => ({ ...p, username: undefined })); }}
-                    onBlur={() => { setTouched(t => ({ ...t, username: true })); setFieldErrors(p => ({ ...p, username: validate({ username, password }).username })); }}
-                  />
+                  <div className="lp-f1">
+                    <FloatingInput
+                      name="username"
+                      label="Username or Email"
+                      value={username}
+                      autoComplete="username"
+                      autoFocus
+                      icon={<User size={15} />}
+                      error={touched.username ? fieldErrors.username : undefined}
+                      onChange={v => { setUsername(v); if (touched.username) setFieldErrors(p => ({ ...p, username: undefined })); }}
+                      onBlur={() => { setTouched(t => ({ ...t, username: true })); setFieldErrors(p => ({ ...p, username: validate({ username, password }).username })); }}
+                    />
+                  </div>
 
-                  <div>
+                  <div className="lp-f2">
                     <FloatingInput
                       name="password"
                       label="Password"
@@ -1048,21 +1152,28 @@ export default function LoginPage() {
                     )}
                   </div>
 
-                  {/* Remember me */}
-                  <label className="flex items-center gap-2.5 cursor-pointer select-none">
-                    <div onClick={() => setRememberMe(!rememberMe)}
-                      className="flex items-center justify-center rounded-md shrink-0"
-                      style={{
-                        width: 18, height: 18,
-                        background: rememberMe ? "#0F766E" : "#fff",
-                        border: `2px solid ${rememberMe ? "#0F766E" : "#CBD5E1"}`,
-                        boxShadow: rememberMe ? "0 0 0 3px rgba(15,118,110,.15)" : "none",
-                        transition: "all .18s cubic-bezier(.34,1.56,.64,1)",
-                      }}>
-                      {rememberMe && <Check size={10} color="white" strokeWidth={3} />}
-                    </div>
-                    <span style={{ fontSize: "13.5px", color: "#475569" }}>Remember me for 30 days</span>
-                  </label>
+                  {/* Remember me + Forgot password */}
+                  <div className="lp-f3 flex items-center justify-between">
+                    <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                      <div onClick={() => setRememberMe(!rememberMe)}
+                        className="flex items-center justify-center rounded-md shrink-0"
+                        style={{
+                          width: 18, height: 18,
+                          background: rememberMe ? "#0F766E" : "#fff",
+                          border: `2px solid ${rememberMe ? "#0F766E" : "#CBD5E1"}`,
+                          boxShadow: rememberMe ? "0 0 0 3px rgba(15,118,110,.15)" : "none",
+                          transition: "all .18s cubic-bezier(.34,1.56,.64,1)",
+                        }}>
+                        {rememberMe && <Check size={10} color="white" strokeWidth={3} />}
+                      </div>
+                      <span style={{ fontSize: "13px", color: "#475569" }}>Remember me</span>
+                    </label>
+                    <button type="button" onClick={() => setShowForgotPw(true)}
+                      style={{ fontSize: "13px", fontWeight: 600, color: "#0F766E" }}
+                      className="hover:underline transition-colors">
+                      Forgot password?
+                    </button>
+                  </div>
 
                   {state?.error && (
                     <div className="flex items-center gap-2.5 rounded-2xl px-4 py-3"
@@ -1077,9 +1188,9 @@ export default function LoginPage() {
                     type="submit"
                     disabled={pending}
                     onClick={handleBtnClick}
-                    className="lp-btn relative overflow-hidden w-full font-bold text-white rounded-2xl"
+                    className="lp-btn lp-f4 relative overflow-hidden w-full font-bold text-white rounded-2xl"
                     style={{
-                      height: "48px",
+                      height: "52px",
                       fontSize: "15px",
                       letterSpacing: "0.01em",
                       background: pending ? "#94A3B8" : "linear-gradient(135deg,#0F766E 0%,#0C6C62 100%)",
@@ -1100,16 +1211,6 @@ export default function LoginPage() {
                 </form>
               )}
 
-              {/* Forgot password — outside form so click fires cleanly */}
-              {tab === "password" && (
-                <div className="flex justify-end -mt-1">
-                  <button type="button" onClick={() => setShowForgotPw(true)}
-                    style={{ fontSize: "11px", fontWeight: 600, color: "#0F766E" }}
-                    className="hover:underline transition-colors">
-                    Forgot password?
-                  </button>
-                </div>
-              )}
 
               {/* ── OTP form ── */}
               {tab === "otp" && (
