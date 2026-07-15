@@ -18,6 +18,26 @@ const NAVY    = "#0F172A";
 const DEMO_MAIL = "mailto:rapdfly@gmail.com?subject=PPMS%20Free%20Demo%20Request";
 const EXPERT_TEL = "tel:+919629051083";
 
+/* ── Scroll progress bar ─────────────────────────────────────────────────── */
+function ScrollProgress() {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const onScroll = () => {
+      const h = document.documentElement;
+      const p = h.scrollTop / Math.max(1, h.scrollHeight - h.clientHeight);
+      if (ref.current) ref.current.style.transform = `scaleX(${p})`;
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+  return (
+    <div className="fixed top-0 inset-x-0 h-[3px] z-[60] pointer-events-none">
+      <div ref={ref} className="h-full origin-left" style={{ transform: "scaleX(0)", background: `linear-gradient(90deg, ${TEAL}, ${EMERALD})` }} />
+    </div>
+  );
+}
+
 /* ── Scroll-reveal wrapper ───────────────────────────────────────────────── */
 function Reveal({ children, delay = 0, className = "" }: {
   children: React.ReactNode; delay?: number; className?: string;
@@ -104,6 +124,7 @@ export function SubPageClient() {
   return (
     <div className="sp-root min-h-screen" style={{ background: "#F8FAFC", color: NAVY }}>
       <PageStyles />
+      <ScrollProgress />
 
       {/* ── Sticky navigation ─────────────────────────────────────────────── */}
       <header
@@ -140,7 +161,7 @@ export function SubPageClient() {
               Login
             </a>
             <a href={DEMO_MAIL}
-              className="px-5 py-2.5 rounded-xl text-sm font-bold text-white shadow-lg transition-transform hover:-translate-y-0.5"
+              className="sp-shine px-5 py-2.5 rounded-xl text-sm font-bold text-white shadow-lg transition-transform hover:-translate-y-0.5"
               style={{ background: `linear-gradient(135deg, ${TEAL}, ${EMERALD})`, boxShadow: "0 8px 24px rgba(0,168,107,0.35)" }}>
               Book Demo
             </a>
@@ -168,6 +189,7 @@ export function SubPageClient() {
 
       <main id="top">
         <Hero />
+        <TickerStrip />
         <TrustStats />
         <WhyDoctors />
         <FeatureShowcase />
@@ -194,6 +216,32 @@ export function SubPageClient() {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
+   FEATURE TICKER — infinite marquee strip
+═══════════════════════════════════════════════════════════════════════════ */
+const TICKER = [
+  "Patient Registration", "Smart Appointments", "Electronic Medical Records",
+  "Digital Prescription", "Billing & Invoices", "Real-Time Analytics",
+  "Multi-Hospital Support", "Queue Management", "Cloud Sync",
+  "Enterprise Security", "License Management", "Role Based Access",
+];
+
+function TickerStrip() {
+  const items = [...TICKER, ...TICKER]; // duplicated for a seamless loop
+  return (
+    <div className="relative overflow-hidden py-4" style={{ background: NAVY }}>
+      <div className="sp-marquee flex items-center w-max">
+        {items.map((t, i) => (
+          <span key={i} className="flex items-center shrink-0">
+            <span className="text-[13px] font-bold tracking-wide whitespace-nowrap text-white/85">{t}</span>
+            <span className="mx-6 w-1.5 h-1.5 rounded-full shrink-0" style={{ background: EMERALD }} />
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
    HERO
 ═══════════════════════════════════════════════════════════════════════════ */
 const PARTICLES = [
@@ -211,9 +259,9 @@ function Hero() {
       style={{ background: "linear-gradient(150deg, #ECFDF5 0%, #F8FAFC 42%, #E7F6F3 100%)" }}>
 
       {/* Ambient glows + particles */}
-      <div className="absolute -top-40 -left-40 w-[560px] h-[560px] rounded-full opacity-30 pointer-events-none"
+      <div className="sp-blob1 absolute -top-40 -left-40 w-[560px] h-[560px] rounded-full opacity-30 pointer-events-none"
         style={{ background: `radial-gradient(circle, ${EMERALD}33, transparent 65%)` }} />
-      <div className="absolute -bottom-52 -right-32 w-[640px] h-[640px] rounded-full opacity-40 pointer-events-none"
+      <div className="sp-blob2 absolute -bottom-52 -right-32 w-[640px] h-[640px] rounded-full opacity-40 pointer-events-none"
         style={{ background: `radial-gradient(circle, ${TEAL}2e, transparent 65%)` }} />
       {PARTICLES.map((p, i) => (
         <span key={i} className="sp-particle" style={{
@@ -228,14 +276,14 @@ function Hero() {
           <Reveal>
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold mb-6"
               style={{ background: "rgba(0,168,107,0.1)", color: TEAL, border: "1px solid rgba(0,168,107,0.25)" }}>
-              <HeartPulse size={13} /> Healthcare Practice Management Platform
+              <span className="sp-beat inline-flex"><HeartPulse size={13} /></span> Healthcare Practice Management Platform
             </div>
           </Reveal>
 
           <Reveal delay={80}>
             <h1 className="sp-head text-[2.4rem] leading-[1.08] md:text-[3.3rem] font-black tracking-tight" style={{ color: NAVY }}>
               The Future of Healthcare Practice Management{" "}
-              <span style={{ background: `linear-gradient(120deg, ${TEAL}, ${EMERALD})`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+              <span className="sp-shimmer" style={{ background: `linear-gradient(120deg, ${TEAL}, ${EMERALD}, #3DDC97, ${TEAL})`, backgroundSize: "220% auto", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
                 Starts Here.
               </span>
             </h1>
@@ -259,7 +307,7 @@ function Hero() {
           <Reveal delay={320}>
             <div className="flex flex-wrap gap-3.5 mt-8">
               <a href={DEMO_MAIL}
-                className="group flex items-center gap-2 px-7 py-3.5 rounded-2xl text-[15px] font-bold text-white transition-all hover:-translate-y-0.5"
+                className="sp-shine group flex items-center gap-2 px-7 py-3.5 rounded-2xl text-[15px] font-bold text-white transition-all hover:-translate-y-0.5"
                 style={{ background: `linear-gradient(135deg, ${EMERALD}, #00915D)`, boxShadow: "0 14px 34px rgba(0,168,107,0.4)" }}>
                 Schedule Free Demo
                 <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
@@ -966,7 +1014,7 @@ function FinalCta() {
         <Reveal delay={220}>
           <div className="flex flex-wrap justify-center gap-4 mt-9">
             <a href={DEMO_MAIL}
-              className="group flex items-center gap-2 px-8 py-4 rounded-2xl text-[15px] font-black transition-all hover:-translate-y-0.5"
+              className="sp-shine group flex items-center gap-2 px-8 py-4 rounded-2xl text-[15px] font-black transition-all hover:-translate-y-0.5"
               style={{ background: "#fff", color: TEAL, boxShadow: "0 16px 40px rgba(0,0,0,0.25)" }}>
               Book a Live Demo
               <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
@@ -1093,6 +1141,58 @@ function PageStyles() {
       @media (min-width: 1024px) {
         .sp-tilt { transform: perspective(1400px) rotateY(-7deg) rotateX(2.5deg); }
         .sp-tilt:hover { transform: perspective(1400px) rotateY(-3deg) rotateX(1deg); }
+      }
+
+      /* Marquee ticker */
+      @keyframes spMarquee { to { transform: translateX(-50%); } }
+      .sp-marquee { animation: spMarquee 32s linear infinite; }
+      .sp-marquee:hover { animation-play-state: paused; }
+
+      /* Shimmering gradient headline */
+      @keyframes spShimmer { to { background-position: 220% center; } }
+      .sp-shimmer { animation: spShimmer 3.5s linear infinite; }
+
+      /* Heartbeat icon */
+      @keyframes spBeat {
+        0%, 100% { transform: scale(1); }
+        14%      { transform: scale(1.3); }
+        28%      { transform: scale(1); }
+        42%      { transform: scale(1.22); }
+        56%      { transform: scale(1); }
+      }
+      .sp-beat { animation: spBeat 1.8s ease-in-out infinite; transform-origin: center; }
+
+      /* CTA shine sweep */
+      .sp-shine { position: relative; overflow: hidden; }
+      .sp-shine::after {
+        content: ""; position: absolute; top: 0; left: -70%; width: 45%; height: 100%;
+        background: linear-gradient(100deg, transparent, rgba(255,255,255,0.5), transparent);
+        transform: skewX(-20deg);
+        animation: spShine 3.4s ease-in-out infinite;
+      }
+      @keyframes spShine {
+        0%       { left: -70%; }
+        55%, 100% { left: 140%; }
+      }
+
+      /* Drifting ambient blobs */
+      @keyframes spBlob1 {
+        0%, 100% { transform: translate(0, 0) scale(1); }
+        50%      { transform: translate(70px, 50px) scale(1.15); }
+      }
+      @keyframes spBlob2 {
+        0%, 100% { transform: translate(0, 0) scale(1); }
+        50%      { transform: translate(-60px, -45px) scale(1.12); }
+      }
+      .sp-blob1 { animation: spBlob1 16s ease-in-out infinite; }
+      .sp-blob2 { animation: spBlob2 19s ease-in-out infinite; }
+
+      /* Respect reduced-motion preference */
+      @media (prefers-reduced-motion: reduce) {
+        .sp-marquee, .sp-shimmer, .sp-beat, .sp-float, .sp-particle,
+        .sp-bar, .sp-float-btn, .sp-blob1, .sp-blob2 { animation: none !important; }
+        .sp-shine::after { display: none; }
+        .sp-reveal { opacity: 1; transform: none; transition: none; }
       }
     `}</style>
   );
