@@ -1063,7 +1063,13 @@ export default function LoginPage() {
       <div className="relative flex w-full h-full overflow-hidden">
 
         {/* ══ LEFT PANEL ══════════════════════════════════════════════════ */}
-        <div className="hidden lg:flex flex-col justify-between flex-1 px-12 xl:px-20 py-12 min-w-0">
+        <div className="hidden lg:flex flex-col justify-between flex-1 px-12 xl:px-20 py-12 min-w-0 relative">
+
+          {/* PPMS brand logo — pinned to the top-right white space (xl+) */}
+          <div className="hidden xl:block lp-a2 lp-logo absolute pointer-events-none select-none"
+            style={{ top: "30px", right: "44px", filter: "drop-shadow(0 14px 40px rgba(15,118,110,0.22))" }}>
+            <PpmsLogo size={230} />
+          </div>
 
           {/* Logo */}
           <div className="lp-a0 lp-logo">
@@ -1128,12 +1134,6 @@ export default function LoginPage() {
                   ))}
                 </div>
               </div>
-            </div>
-
-            {/* Right column: PPMS brand logo — anchored to the top white space */}
-            <div className="hidden xl:flex lp-a2 lp-logo shrink-0 items-start justify-center self-start"
-              style={{ filter: "drop-shadow(0 14px 40px rgba(15,118,110,0.22))", marginTop: "-12px" }}>
-              <PpmsLogo size={240} />
             </div>
 
           </div>
