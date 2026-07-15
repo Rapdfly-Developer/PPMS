@@ -40,10 +40,47 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   try { await requireSuperAdmin(); } catch { return NextResponse.json({ error: "Forbidden" }, { status: 403 }); }
   const { id } = await params;
-  const doctor = await prisma.doctor.findUnique({ where: { id }, select: { userId: true } });
+
+  const doctor = await prisma.doctor.findUnique({
+    where: { id },
+    select: {
+      userId: true,
+      _count: { select: { visits: true, patients: true } },
+    },
+  });
   if (!doctor) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
+  // Block deletion if medical records exist — deactivate instead
+  if (doctor._count.visits > 0 || doctor._count.patients > 0) {
+    return NextResponse.json({
+      error: `Cannot delete: this doctor has ${doctor._count.patients} patient(s) and ${doctor._count.visits} visit record(s). Use the Deactivate toggle to block login instead.`,
+    }, { status: 409 });
+  }
+
+  // Delete each refractionist linked to this doctor (and their user accounts)
+  const refractionists = await prisma.refractionist.findMany({ where: { doctorId: id }, select: { userId: true, id: true } });
+  for (const r of refractionists) {
+    await prisma.auditLog.deleteMany({ where: { userId: r.userId } });
+    await prisma.notification.deleteMany({ where: { userId: r.userId } });
+    await prisma.userLoginHistory.deleteMany({ where: { userId: r.userId } });
+    await prisma.exportOtp.deleteMany({ where: { userId: r.userId } });
+    await prisma.refractionist.delete({ where: { id: r.id } });
+    await prisma.user.delete({ where: { id: r.userId } });
+  }
+
+  // Null out nullable FKs on patients and appointments so records are preserved
+  await prisma.patient.updateMany({ where: { doctorId: id }, data: { doctorId: null } });
+  await prisma.appointment.updateMany({ where: { doctorId: id }, data: { doctorId: null } });
+
+  // Delete doctor's own dependent records in safe order
+  await prisma.auditLog.deleteMany({ where: { userId: doctor.userId } });
+  await prisma.notification.deleteMany({ where: { userId: doctor.userId } });
+  await prisma.userLoginHistory.deleteMany({ where: { userId: doctor.userId } });
+  await prisma.exportOtp.deleteMany({ where: { userId: doctor.userId } });
+  await prisma.doctorAvailability.deleteMany({ where: { doctorId: id } });
+  await prisma.tenantLicense.deleteMany({ where: { doctorId: id } });
   await prisma.doctorHospitalLink.deleteMany({ where: { doctorId: id } });
+
   await prisma.doctor.delete({ where: { id } });
   await prisma.user.delete({ where: { id: doctor.userId } });
 

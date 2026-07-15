@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Building2, Search, Pencil, Trash2, X, Check, Stethoscope,
   LayoutGrid, List, ChevronLeft, ChevronRight, Plus,
-  Phone, MapPin, KeyRound, Users, Activity,
+  Phone, MapPin, KeyRound, Users, Activity, AlertTriangle, Loader2,
 } from "lucide-react";
 
 type HospitalInfo = {
@@ -221,6 +221,8 @@ export function HospitalManagementView({ onAddHospital }: { onAddHospital: () =>
 
   const [editing, setEditing] = useState<HospitalInfo | null>(null);
   const [deleting, setDeleting] = useState<HospitalInfo | null>(null);
+  const [deleteError, setDeleteError] = useState("");
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const [editForm, setEditForm] = useState({ name: "", shortCode: "", contact: "", address: "" });
   const [saving, setSaving] = useState(false);
 
@@ -251,9 +253,18 @@ export function HospitalManagementView({ onAddHospital }: { onAddHospital: () =>
 
   const confirmDelete = async () => {
     if (!deleting) return;
-    await fetch(`/api/setup/hospitals/${deleting.id}`, { method: "DELETE" });
+    setDeleteLoading(true);
+    setDeleteError("");
+    const res = await fetch(`/api/setup/hospitals/${deleting.id}`, { method: "DELETE" });
+    const json = await res.json().catch(() => ({}));
+    setDeleteLoading(false);
+    if (!res.ok) {
+      setDeleteError(json.error ?? "Delete failed. Please try again.");
+      return;
+    }
     setHospitals((prev) => prev.filter((h) => h.id !== deleting.id));
     setDeleting(null);
+    setDeleteError("");
   };
 
   const toggleActive = async (h: HospitalInfo) => {
@@ -654,24 +665,30 @@ export function HospitalManagementView({ onAddHospital }: { onAddHospital: () =>
       {/* ── Delete modal ── */}
       <AnimatePresence>
         {deleting && (
-          <Modal onClose={() => setDeleting(null)}>
+          <Modal onClose={() => { setDeleting(null); setDeleteError(""); }}>
             <div className="flex flex-col items-center text-center">
               <div className="w-14 h-14 rounded-2xl bg-red-50 flex items-center justify-center text-red-500 mb-4">
                 <Trash2 size={22} />
               </div>
               <p className="text-base font-bold text-slate-900">Delete {deleting.name}?</p>
               <p className="text-sm text-slate-400 mt-1.5 max-w-xs">
-                All doctor links will be removed. This cannot be undone.
+                All doctor links and staff accounts will be removed. This cannot be undone.
               </p>
-              <div className="flex gap-2 mt-6 w-full">
-                <button onClick={() => setDeleting(null)}
+              {deleteError && (
+                <div className="mt-4 w-full flex items-start gap-2 rounded-xl bg-red-50 border border-red-200 px-3.5 py-3 text-left">
+                  <AlertTriangle size={15} className="text-red-500 shrink-0 mt-0.5" />
+                  <p className="text-xs text-red-700">{deleteError}</p>
+                </div>
+              )}
+              <div className="flex gap-2 mt-5 w-full">
+                <button onClick={() => { setDeleting(null); setDeleteError(""); }}
                   className="flex-1 px-4 py-2.5 text-sm font-medium text-slate-600 border border-slate-200 rounded-xl hover:bg-slate-50 transition-all">
                   Cancel
                 </button>
-                <button onClick={confirmDelete}
-                  className="flex-1 px-4 py-2.5 text-sm font-semibold text-white bg-red-500 hover:bg-red-600 rounded-xl transition-all"
+                <button onClick={confirmDelete} disabled={deleteLoading}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-red-500 hover:bg-red-600 disabled:opacity-60 rounded-xl transition-all"
                   style={{ boxShadow: "0 6px 18px -4px rgba(239,68,68,0.45)" }}>
-                  Delete
+                  {deleteLoading ? <><Loader2 size={14} className="animate-spin" /> Deleting…</> : "Delete"}
                 </button>
               </div>
             </div>
