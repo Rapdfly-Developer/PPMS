@@ -479,6 +479,127 @@ function ForgotPasswordModal({ onClose }: { onClose: () => void }) {
   );
 }
 
+/* ── PPMS Healthcare Logo SVG ───────────────────────────────────────────── */
+function PpmsLogo({ size = 220 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg" style={{ display: "block" }}>
+      <defs>
+        <linearGradient id="plg-teal" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#2DCEAA"/>
+          <stop offset="100%" stopColor="#0F766E"/>
+        </linearGradient>
+        <linearGradient id="plg-blue" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#2563EB"/>
+          <stop offset="100%" stopColor="#1E3A8A"/>
+        </linearGradient>
+        <linearGradient id="plg-tb" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#14B8A6"/>
+          <stop offset="100%" stopColor="#2563EB"/>
+        </linearGradient>
+        <linearGradient id="plg-bars" x1="0%" y1="100%" x2="0%" y2="0%">
+          <stop offset="0%" stopColor="#1E65C8"/>
+          <stop offset="100%" stopColor="#14B8A6"/>
+        </linearGradient>
+        <filter id="plg-shadow" x="-20%" y="-20%" width="140%" height="140%">
+          <feDropShadow dx="2" dy="3" stdDeviation="4" floodColor="rgba(15,118,110,0.25)"/>
+        </filter>
+        <filter id="plg-shadow-blue" x="-20%" y="-20%" width="140%" height="140%">
+          <feDropShadow dx="2" dy="3" stdDeviation="4" floodColor="rgba(30,58,138,0.3)"/>
+        </filter>
+        <clipPath id="plg-circle-clip">
+          <circle cx="110" cy="110" r="104"/>
+        </clipPath>
+      </defs>
+
+      {/* ── Outer circle ring ── */}
+      <circle cx="110" cy="110" r="104" fill="rgba(240,253,250,0.6)" stroke="rgba(20,184,166,0.2)" strokeWidth="1.5"/>
+
+      {/* ── Medical cross (teal, top-left) ── */}
+      <g filter="url(#plg-shadow)">
+        <rect x="42" y="22" width="44" height="90" rx="12" fill="url(#plg-teal)"/>
+        <rect x="22" y="44" width="84" height="44" rx="12" fill="url(#plg-teal)"/>
+        {/* Cross highlight */}
+        <rect x="54" y="22" width="16" height="42" rx="6" fill="rgba(255,255,255,0.25)"/>
+        <rect x="22" y="54" width="36" height="14" rx="4" fill="rgba(255,255,255,0.18)"/>
+      </g>
+
+      {/* ── Pixel / digital dots (lower-left) ── */}
+      {[
+        [20,115,10], [10,103,8], [24,130,12], [12,122,9],
+        [30,144,8],  [18,138,11],[36,158,7],  [10,148,7],
+      ].map(([x,y,s],i) => (
+        <rect key={i} x={x} y={y} width={s} height={s} rx="2"
+          fill={i%2===0 ? "#14B8A6" : "#0F766E"}
+          opacity={0.55 - i*0.035}/>
+      ))}
+
+      {/* ── Bar chart (lower-left) ── */}
+      <g filter="url(#plg-shadow)">
+        <rect x="42" y="158" width="15" height="30" rx="4" fill="url(#plg-bars)" opacity="0.88"/>
+        <rect x="61" y="144" width="15" height="44" rx="4" fill="url(#plg-bars)" opacity="0.88"/>
+        <rect x="80" y="128" width="15" height="60" rx="4" fill="url(#plg-bars)" opacity="0.88"/>
+      </g>
+
+      {/* ── Flowing green wave / body connecting element ── */}
+      <path d="M 96 65 C 115 75, 112 110, 100 135 C 92 155, 108 175, 128 178"
+            stroke="url(#plg-teal)" strokeWidth="22" fill="none"
+            strokeLinecap="round" opacity="0.75"/>
+
+      {/* ── Adult figure (teal) ── */}
+      <g filter="url(#plg-shadow)">
+        {/* Head */}
+        <circle cx="118" cy="70" r="16" fill="url(#plg-teal)"/>
+        <circle cx="113" cy="66" r="6" fill="rgba(255,255,255,0.2)"/>
+        {/* Body */}
+        <path d="M 100 112 Q 118 88 136 112 L 133 152 Q 118 158 103 152 Z" fill="url(#plg-teal)"/>
+      </g>
+
+      {/* ── Child figure (blue, slightly lower/right) ── */}
+      <g filter="url(#plg-shadow-blue)">
+        {/* Head */}
+        <circle cx="150" cy="102" r="11" fill="url(#plg-blue)"/>
+        <circle cx="146" cy="99" r="4" fill="rgba(255,255,255,0.22)"/>
+        {/* Body */}
+        <path d="M 138 128 Q 150 114 162 128 L 160 156 Q 150 161 140 156 Z" fill="url(#plg-blue)"/>
+      </g>
+
+      {/* ── Stethoscope (blue, wrapping arc) ── */}
+      <g filter="url(#plg-shadow-blue)">
+        {/* Tube */}
+        <path d="M 88 44 C 180 18, 206 90, 202 130 C 198 166, 172 192, 150 198"
+              stroke="url(#plg-blue)" strokeWidth="8" fill="none"
+              strokeLinecap="round" strokeLinejoin="round"/>
+        {/* Earpieces (top) */}
+        <circle cx="88" cy="42" r="6" fill="#1E3A8A"/>
+        <circle cx="88" cy="42" r="3" fill="#3B82F6"/>
+        {/* Chest piece (bottom) */}
+        <circle cx="150" cy="199" r="11" fill="#1E3A8A" stroke="white" strokeWidth="2.5"/>
+        <circle cx="150" cy="199" r="6" fill="#3B82F6"/>
+        <circle cx="150" cy="199" r="2.5" fill="white"/>
+      </g>
+
+      {/* ── Supporting hand (blue, bottom) ── */}
+      <g filter="url(#plg-shadow-blue)">
+        {/* Palm */}
+        <path d="M 74 188 Q 96 180 124 184 Q 148 186 170 180 Q 180 188 172 196 Q 148 205 118 204 Q 88 204 74 196 Z"
+              fill="url(#plg-blue)" opacity="0.9"/>
+        {/* Fingers */}
+        <path d="M 98 184 Q 96 173 101 167 Q 107 162 111 169"
+              stroke="url(#plg-blue)" strokeWidth="9" fill="none" strokeLinecap="round"/>
+        <path d="M 115 183 Q 113 170 118 163 Q 124 157 129 164"
+              stroke="url(#plg-blue)" strokeWidth="9" fill="none" strokeLinecap="round"/>
+        <path d="M 132 181 Q 130 170 135 164 Q 140 159 144 166"
+              stroke="url(#plg-blue)" strokeWidth="9" fill="none" strokeLinecap="round"/>
+        {/* Thumb */}
+        <path d="M 80 190 Q 76 182 80 176 Q 86 170 91 177"
+              stroke="url(#plg-blue)" strokeWidth="9" fill="none" strokeLinecap="round"/>
+        {/* Hand highlight */}
+        <path d="M 100 185 Q 130 183 162 181" stroke="rgba(255,255,255,0.2)" strokeWidth="4" fill="none" strokeLinecap="round"/>
+      </g>
+    </svg>
+  );
+}
+
 /* ── Animated medical background ────────────────────────────────────────── */
 function MedicalBackground() {
   const crosses = [
@@ -968,42 +1089,53 @@ export default function LoginPage() {
           </div>
 
           {/* Hero content */}
-          <div className="flex-1 flex flex-col justify-center max-w-[520px] py-5">
-            {/* Headline */}
-            <div className="lp-a1 mb-5">
-              <h1 className="font-black leading-[1.06] mb-3"
-                style={{ fontSize: "clamp(38px,3.6vw,52px)", color: "#0F172A", letterSpacing: "-0.025em" }}>
-                Better{" "}
-                <span className="lp-grad-text">Healthcare.</span>
-                <br />Better Management.
-              </h1>
-              <p className="leading-relaxed" style={{ fontSize: "15px", color: "#64748B", maxWidth: "380px" }}>
-                A secure enterprise healthcare platform for hospitals, clinics, diagnostics,
-                pharmacies, and healthcare networks.
-              </p>
-            </div>
+          <div className="flex-1 flex items-center gap-10 py-5 min-w-0">
 
-            {/* Dashboard illustration */}
-            <div className="lp-a2 mb-6">
-              <DashboardIllustration />
-            </div>
+            {/* Left column: headline, dashboard, chips */}
+            <div className="flex flex-col min-w-0 max-w-[520px]">
+              {/* Headline */}
+              <div className="lp-a1 mb-5">
+                <h1 className="font-black leading-[1.06] mb-3"
+                  style={{ fontSize: "clamp(38px,3.6vw,52px)", color: "#0F172A", letterSpacing: "-0.025em" }}>
+                  Better{" "}
+                  <span className="lp-grad-text">Healthcare.</span>
+                  <br />Better Management.
+                </h1>
+                <p className="leading-relaxed" style={{ fontSize: "15px", color: "#64748B", maxWidth: "380px" }}>
+                  A secure enterprise healthcare platform for hospitals, clinics, diagnostics,
+                  pharmacies, and healthcare networks.
+                </p>
+              </div>
 
-            {/* Feature chips */}
-            <div className="lp-a3">
-              <div className="flex flex-wrap gap-2">
-                {FEATURES.map((f, i) => (
-                  <div key={i} className="lp-chip flex items-center gap-2 px-3.5 py-2 rounded-full cursor-default" style={{
-                    background: "rgba(255,255,255,.72)",
-                    backdropFilter: "blur(8px)",
-                    border: "1px solid rgba(255,255,255,.88)",
-                    boxShadow: "0 4px 12px rgba(15,118,110,.06), 0 1px 3px rgba(0,0,0,.04)",
-                  }}>
-                    <span style={{ fontSize: "13px" }}>{f.icon}</span>
-                    <span style={{ fontSize: "12px", fontWeight: 600, color: "#334155" }}>{f.label}</span>
-                  </div>
-                ))}
+              {/* Dashboard illustration */}
+              <div className="lp-a2 mb-6">
+                <DashboardIllustration />
+              </div>
+
+              {/* Feature chips */}
+              <div className="lp-a3">
+                <div className="flex flex-wrap gap-2">
+                  {FEATURES.map((f, i) => (
+                    <div key={i} className="lp-chip flex items-center gap-2 px-3.5 py-2 rounded-full cursor-default" style={{
+                      background: "rgba(255,255,255,.72)",
+                      backdropFilter: "blur(8px)",
+                      border: "1px solid rgba(255,255,255,.88)",
+                      boxShadow: "0 4px 12px rgba(15,118,110,.06), 0 1px 3px rgba(0,0,0,.04)",
+                    }}>
+                      <span style={{ fontSize: "13px" }}>{f.icon}</span>
+                      <span style={{ fontSize: "12px", fontWeight: 600, color: "#334155" }}>{f.label}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
+
+            {/* Right column: PPMS brand logo — only at xl+ where there's room */}
+            <div className="hidden xl:flex lp-a2 lp-logo shrink-0 items-center justify-center"
+              style={{ filter: "drop-shadow(0 14px 40px rgba(15,118,110,0.22))" }}>
+              <PpmsLogo size={240} />
+            </div>
+
           </div>
 
           {/* Footer trust row */}
