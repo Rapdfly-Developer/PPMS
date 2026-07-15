@@ -124,9 +124,9 @@ function FloatingInput({
           style={{
             paddingLeft: icon ? "44px" : "16px",
             paddingRight: rightSlot ? "44px" : "16px",
-            paddingTop: floating ? "22px" : "14px",
-            paddingBottom: floating ? "6px" : "14px",
-            height: "56px",
+            paddingTop: floating ? "18px" : "13px",
+            paddingBottom: floating ? "4px" : "13px",
+            height: "50px",
             fontSize: "14px",
             fontWeight: 500,
             color: "#0F172A",
@@ -525,7 +525,7 @@ export default function LoginPage() {
       <MedicalBackground />
 
       {/* ── Page layout ──────────────────────────────────────────────────── */}
-      <div className="relative flex w-full overflow-y-auto min-h-0">
+      <div className="relative flex w-full h-full overflow-hidden">
 
         {/* ══ LEFT PANEL ══════════════════════════════════════════════════ */}
         <div className="hidden lg:flex flex-col justify-between flex-1 px-12 xl:px-20 py-12 min-w-0">
@@ -603,7 +603,7 @@ export default function LoginPage() {
         </div>
 
         {/* ══ RIGHT PANEL — Frosted glass card ══════════════════════════════ */}
-        <div className="w-full lg:w-[500px] xl:w-[540px] shrink-0 flex items-center justify-center p-5 lg:p-8 xl:pr-16 my-auto">
+        <div className="w-full lg:w-[500px] xl:w-[540px] shrink-0 flex items-center justify-center py-2 px-4 lg:py-4 lg:px-6 xl:pr-14 overflow-y-auto">
           <div
             className="lp-card w-full"
             style={{
@@ -619,10 +619,10 @@ export default function LoginPage() {
             {/* Glass top edge */}
             <div style={{ height: "1.5px", background: "linear-gradient(90deg,transparent,rgba(20,184,166,.65) 50%,transparent)" }} />
 
-            <div className="px-7 py-8">
+            <div className="px-6 py-3">
 
               {/* Mobile logo */}
-              <div className="flex lg:hidden items-center gap-2.5 justify-center mb-6">
+              <div className="flex lg:hidden items-center gap-2.5 justify-center mb-1">
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center"
                   style={{ background: "linear-gradient(135deg,#0F766E,#14B8A6)", boxShadow: "0 6px 18px rgba(15,118,110,.32)" }}>
                   <svg width="18" height="18" viewBox="0 0 22 22" fill="none">
@@ -634,7 +634,7 @@ export default function LoginPage() {
               </div>
 
               {/* Welcome */}
-              <div className="text-center mb-6">
+              <div className="text-center mb-2">
                 <div className="flex items-center justify-center gap-2.5 mb-2">
                   <div className="lp-shield-anim w-8 h-8 rounded-xl flex items-center justify-center"
                     style={{ background: "linear-gradient(135deg,#F0FDFA,#CCFBF1)", border: "1px solid #CCFBF1" }}>
@@ -648,7 +648,7 @@ export default function LoginPage() {
               </div>
 
               {/* ── Segmented tab control ── */}
-              <div className="relative flex rounded-2xl p-1 mb-6" style={{ background: "#F1F5F9" }}>
+              <div className="relative flex rounded-2xl p-1 mb-3" style={{ background: "#F1F5F9" }}>
                 {/* Sliding pill */}
                 <div className="lp-tab-pill absolute top-1 bottom-1 rounded-[14px]" style={{
                   left: tab === "password" ? "4px" : "calc(50%)",
@@ -680,7 +680,7 @@ export default function LoginPage() {
                     setFieldErrors(errs);
                     if (Object.keys(errs).length > 0) e.preventDefault();
                   }}
-                  className="flex flex-col gap-4"
+                  className="flex flex-col gap-3"
                 >
                   <FloatingInput
                     name="username"
@@ -695,13 +695,6 @@ export default function LoginPage() {
                   />
 
                   <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span style={{ fontSize: "11px", fontWeight: 700, color: "#475569", letterSpacing: "0.04em" }}>PASSWORD</span>
-                      <button type="button" style={{ fontSize: "11px", fontWeight: 600, color: "#0F766E" }}
-                        className="hover:underline transition-colors">
-                        Forgot password?
-                      </button>
-                    </div>
                     <FloatingInput
                       name="password"
                       label="Password"
@@ -720,12 +713,18 @@ export default function LoginPage() {
                         </button>
                       }
                     />
-                    {capsLock && (
-                      <p className="flex items-center gap-1.5 mt-1.5" style={{ fontSize: "11px", color: "#F59E0B", animation: "lp-slide-up .22s both" }}>
-                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                        Caps Lock is on
-                      </p>
-                    )}
+                    <div className="flex items-center justify-between mt-1.5">
+                      {capsLock ? (
+                        <p className="flex items-center gap-1.5" style={{ fontSize: "11px", color: "#F59E0B", animation: "lp-slide-up .22s both" }}>
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                          Caps Lock is on
+                        </p>
+                      ) : <span />}
+                      <button type="button" style={{ fontSize: "11px", fontWeight: 600, color: "#0F766E" }}
+                        className="hover:underline transition-colors">
+                        Forgot password?
+                      </button>
+                    </div>
                   </div>
 
                   {/* Remember me */}
@@ -759,7 +758,7 @@ export default function LoginPage() {
                     onClick={handleBtnClick}
                     className="lp-btn relative overflow-hidden w-full font-bold text-white rounded-2xl"
                     style={{
-                      height: "54px",
+                      height: "48px",
                       fontSize: "15px",
                       letterSpacing: "0.01em",
                       background: pending ? "#94A3B8" : "linear-gradient(135deg,#0F766E 0%,#0C6C62 100%)",
@@ -786,7 +785,7 @@ export default function LoginPage() {
                   <div>
                     <div className="flex gap-2 items-start">
                       <div className="flex items-center justify-center rounded-[16px] border-2 shrink-0 font-semibold"
-                        style={{ height: "56px", width: "58px", borderColor: "#E2E8F0", background: "rgba(248,250,252,.8)", color: "#475569", fontSize: "14px" }}>
+                        style={{ height: "50px", width: "52px", borderColor: "#E2E8F0", background: "rgba(248,250,252,.8)", color: "#475569", fontSize: "14px" }}>
                         +91
                       </div>
                       <div className="flex-1 min-w-0">
@@ -803,8 +802,8 @@ export default function LoginPage() {
                       <button type="button" onClick={handleSendOtp}
                         className="lp-btn shrink-0 px-4 rounded-[16px] text-sm font-semibold text-white"
                         style={mobile.length === 10
-                          ? { height: "56px", background: "linear-gradient(135deg,#0F766E,#0C6C62)", boxShadow: "0 6px 18px rgba(15,118,110,.28)" }
-                          : { height: "56px", background: "#E2E8F0", color: "#94A3B8", cursor: "not-allowed" }}>
+                          ? { height: "50px", background: "linear-gradient(135deg,#0F766E,#0C6C62)", boxShadow: "0 6px 18px rgba(15,118,110,.28)" }
+                          : { height: "50px", background: "#E2E8F0", color: "#94A3B8", cursor: "not-allowed" }}>
                         Send OTP
                       </button>
                     </div>
@@ -835,8 +834,8 @@ export default function LoginPage() {
                     disabled={!otpSent || otpValue.length < 6}
                     className="lp-btn relative overflow-hidden w-full font-bold text-white rounded-2xl flex items-center justify-center gap-2"
                     style={otpSent && otpValue.length >= 6
-                      ? { height: "54px", fontSize: "15px", background: "linear-gradient(135deg,#0F766E,#0C6C62)", boxShadow: "0 10px 28px rgba(15,118,110,.3)" }
-                      : { height: "54px", fontSize: "15px", background: "#E2E8F0", color: "#94A3B8", cursor: "not-allowed" }}>
+                      ? { height: "48px", fontSize: "15px", background: "linear-gradient(135deg,#0F766E,#0C6C62)", boxShadow: "0 10px 28px rgba(15,118,110,.3)" }
+                      : { height: "48px", fontSize: "15px", background: "#E2E8F0", color: "#94A3B8", cursor: "not-allowed" }}>
                     <span>Verify & Sign In</span>
                     {otpSent && otpValue.length >= 6 && <ArrowRight size={16} className="lp-arrow-icon" />}
                   </button>
@@ -845,7 +844,7 @@ export default function LoginPage() {
 
               {/* ── Test accounts ── */}
               {SHOW_TEST_ACCOUNTS && (
-                <div className="mt-5 rounded-2xl px-4 py-3.5" style={{ background: "#F8FAFC", border: "1px dashed #CBD5E1" }}>
+                <div className="mt-3 rounded-2xl px-4 py-3" style={{ background: "#F8FAFC", border: "1px dashed #CBD5E1" }}>
                   <div className="flex items-center gap-1.5 mb-2">
                     <span className="font-mono text-[9px] font-bold px-1.5 py-0.5 rounded"
                       style={{ background: "#0F766E", color: "#fff", letterSpacing: "0.05em" }}>TEST</span>
@@ -870,7 +869,7 @@ export default function LoginPage() {
 
               {/* ── Premium trial promo card ── */}
               <a href="/license"
-                className="lp-trial mt-4 flex items-center justify-between gap-3 rounded-2xl px-4 py-3.5 no-underline group"
+                className="lp-trial mt-3 flex items-center justify-between gap-3 rounded-2xl px-4 py-2 no-underline group"
                 style={{
                   background: "linear-gradient(105deg,#0a5c57 0%,#0F766E 28%,#14B8A6 62%,#0a5c57 100%)",
                   backgroundSize: "300% auto",
@@ -899,23 +898,6 @@ export default function LoginPage() {
                 </div>
               </a>
 
-              {/* ── Trust indicators ── */}
-              <div className="mt-4 pt-4" style={{ borderTop: "1px solid rgba(15,23,42,.07)" }}>
-                <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5">
-                  {[
-                    { icon: "🔒", label: "256-bit SSL"  },
-                    { icon: "🏥", label: "HIPAA Ready"  },
-                    { icon: "📄", label: "ABDM"          },
-                    { icon: "🛡", label: "DPDP"          },
-                    { icon: "☁",  label: "ISO 27001"    },
-                  ].map((t, i) => (
-                    <div key={i} className="flex items-center gap-1">
-                      <span style={{ fontSize: "12px" }}>{t.icon}</span>
-                      <span style={{ fontSize: "10.5px", fontWeight: 600, color: "#94A3B8" }}>{t.label}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
 
             </div>
           </div>
