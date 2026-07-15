@@ -1,11 +1,16 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useState, useRef } from "react";
 import { loginAction } from "./actions";
-import { Eye, EyeOff, User, Lock, Phone, AlertCircle, CheckCircle2, ShieldCheck } from "lucide-react";
+import {
+  Eye, EyeOff, User, Lock, Phone, AlertCircle, CheckCircle2,
+  ShieldCheck, ArrowRight, Loader2, Check,
+} from "lucide-react";
 
+/* ── Types ─────────────────────────────────────────────────────────────── */
 type FieldErrors = { username?: string; password?: string; mobile?: string; otp?: string };
 
+/* ── Constants ──────────────────────────────────────────────────────────── */
 const SHOW_TEST_ACCOUNTS =
   process.env.NODE_ENV !== "production" || process.env.NEXT_PUBLIC_TEST_LOGINS === "1";
 
@@ -16,6 +21,17 @@ const TEST_ACCOUNTS = [
   { label: "Supreme",  username: "supreme_hospital", password: "password123" },
 ];
 
+const FEATURES = [
+  { icon: "📋", label: "Electronic Medical Records" },
+  { icon: "📅", label: "Appointment Scheduling"    },
+  { icon: "💳", label: "Billing & Insurance"       },
+  { icon: "🧑‍⚕️", label: "Patient Registration"    },
+  { icon: "💊", label: "Pharmacy Management"       },
+  { icon: "🧪", label: "Lab Integration"           },
+  { icon: "☁",  label: "Secure Cloud Access"       },
+];
+
+/* ── Validation ─────────────────────────────────────────────────────────── */
 function validate(fields: { username?: string; password?: string }): FieldErrors {
   const e: FieldErrors = {};
   const u = (fields.username ?? "").trim();
@@ -40,28 +56,358 @@ function validateOtp(fields: { mobile?: string; otp?: string; otpSent?: boolean 
   return e;
 }
 
+/* ── Floating label input ────────────────────────────────────────────────── */
+function FloatingInput({
+  name, label, type = "text", value, onChange, onBlur, onKeyDown,
+  icon, error, autoFocus, autoComplete, rightSlot, maxLength,
+}: {
+  name?: string; label: string; type?: string; value: string;
+  onChange: (v: string) => void; onBlur?: () => void;
+  onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
+  icon?: React.ReactNode; error?: string; autoFocus?: boolean;
+  autoComplete?: string; rightSlot?: React.ReactNode; maxLength?: number;
+}) {
+  const [focused, setFocused] = useState(false);
+  const floating = focused || value.length > 0;
+
+  return (
+    <div>
+      <div className="relative" style={{
+        borderRadius: "16px",
+        border: `2px solid ${error ? "#EF4444" : focused ? "#0F766E" : "#E2E8F0"}`,
+        background: error ? "rgba(254,242,242,.6)" : focused ? "#fff" : "rgba(248,250,252,.8)",
+        boxShadow: error
+          ? "0 0 0 4px rgba(239,68,68,.08)"
+          : focused
+          ? "0 0 0 4px rgba(15,118,110,.09)"
+          : "none",
+        transition: "border-color .18s, box-shadow .18s, background .18s",
+        overflow: "hidden",
+      }}>
+        {/* Left icon */}
+        {icon && (
+          <span className="absolute top-1/2 -translate-y-1/2 pointer-events-none z-10"
+            style={{ left: "16px", color: error ? "#EF4444" : focused ? "#0F766E" : "#94A3B8", transition: "color .18s" }}>
+            {icon}
+          </span>
+        )}
+
+        {/* Floating label */}
+        <label className="absolute pointer-events-none z-10 origin-left" style={{
+          left: icon ? "44px" : "16px",
+          top: floating ? "9px" : "50%",
+          transform: floating ? "translateY(0) scale(0.74)" : "translateY(-50%) scale(1)",
+          transition: "top .2s cubic-bezier(.4,0,.2,1), transform .2s cubic-bezier(.4,0,.2,1), color .18s",
+          color: error ? "#EF4444" : focused ? "#0F766E" : "#94A3B8",
+          fontSize: "14px",
+          fontWeight: floating ? 700 : 400,
+          letterSpacing: floating ? "0.05em" : "0",
+          lineHeight: 1,
+          whiteSpace: "nowrap",
+        }}>
+          {label}
+        </label>
+
+        {/* Input */}
+        <input
+          name={name}
+          type={type}
+          autoComplete={autoComplete}
+          autoFocus={autoFocus}
+          maxLength={maxLength}
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          onFocus={() => setFocused(true)}
+          onBlur={() => { setFocused(false); if (onBlur) onBlur(); }}
+          onKeyDown={onKeyDown}
+          className="w-full bg-transparent outline-none"
+          style={{
+            paddingLeft: icon ? "44px" : "16px",
+            paddingRight: rightSlot ? "44px" : "16px",
+            paddingTop: floating ? "22px" : "14px",
+            paddingBottom: floating ? "6px" : "14px",
+            height: "56px",
+            fontSize: "14px",
+            fontWeight: 500,
+            color: "#0F172A",
+            letterSpacing: "0.01em",
+            transition: "padding-top .2s cubic-bezier(.4,0,.2,1), padding-bottom .2s cubic-bezier(.4,0,.2,1)",
+          }}
+        />
+
+        {/* Right slot */}
+        {rightSlot && (
+          <div className="absolute right-4 top-1/2 -translate-y-1/2 z-10">{rightSlot}</div>
+        )}
+      </div>
+
+      {/* Error */}
+      {error && (
+        <p className="flex items-center gap-1 mt-1.5" style={{
+          fontSize: "11px", color: "#EF4444",
+          animation: "lp-slide-up .22s cubic-bezier(.22,1,.36,1) both",
+        }}>
+          <AlertCircle size={11} /> {error}
+        </p>
+      )}
+    </div>
+  );
+}
+
+/* ── Animated medical background ────────────────────────────────────────── */
+function MedicalBackground() {
+  const crosses = [
+    { x: "4%",  y: "8%",  s: 18, o: 0.09, d: 13, dl: 0   },
+    { x: "92%", y: "7%",  s: 14, o: 0.07, d: 17, dl: 2   },
+    { x: "12%", y: "78%", s: 22, o: 0.08, d: 15, dl: 4   },
+    { x: "87%", y: "72%", s: 16, o: 0.06, d: 19, dl: 1   },
+    { x: "50%", y: "4%",  s: 11, o: 0.07, d: 11, dl: 3   },
+    { x: "72%", y: "88%", s: 20, o: 0.08, d: 14, dl: 5.5 },
+    { x: "28%", y: "52%", s: 10, o: 0.05, d: 21, dl: 7   },
+    { x: "60%", y: "93%", s: 15, o: 0.06, d: 16, dl: 2.5 },
+  ];
+  const particles = [
+    { x: "11%", y: "34%", d: 8  }, { x: "79%", y: "24%", d: 12 },
+    { x: "44%", y: "64%", d: 10 }, { x: "89%", y: "56%", d: 14 },
+    { x: "21%", y: "89%", d: 9  }, { x: "66%", y: "14%", d: 11 },
+    { x: "36%", y: "43%", d: 13 },
+  ];
+  return (
+    <div className="absolute inset-0 pointer-events-none overflow-hidden">
+      {/* Mesh gradient */}
+      <div className="absolute inset-0" style={{ background: "linear-gradient(135deg,#F0FDFA 0%,#F8FAFC 40%,#EFF6FF 72%,#F8FAFC 100%)" }} />
+
+      {/* Ambient blobs */}
+      <div className="lp-blob1 absolute rounded-full" style={{ top: "-220px", left: "-160px", width: "620px", height: "620px", background: "radial-gradient(circle,rgba(20,184,166,.14) 0%,transparent 65%)", filter: "blur(64px)" }} />
+      <div className="lp-blob2 absolute rounded-full" style={{ bottom: "-200px", right: "-120px", width: "720px", height: "720px", background: "radial-gradient(circle,rgba(15,118,110,.1) 0%,transparent 65%)", filter: "blur(72px)" }} />
+      <div className="lp-blob3 absolute rounded-full" style={{ top: "28%", right: "24%", width: "420px", height: "420px", background: "radial-gradient(circle,rgba(99,102,241,.06) 0%,transparent 65%)", filter: "blur(52px)" }} />
+      <div className="lp-blob4 absolute rounded-full" style={{ bottom: "18%", left: "18%", width: "360px", height: "360px", background: "radial-gradient(circle,rgba(16,185,129,.07) 0%,transparent 65%)", filter: "blur(44px)" }} />
+
+      {/* Subtle grid */}
+      <svg className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <pattern id="lp-g1" width="40" height="40" patternUnits="userSpaceOnUse">
+            <path d="M40 0L0 0 0 40" fill="none" stroke="#0F766E" strokeWidth=".4" strokeOpacity=".05" />
+          </pattern>
+          <pattern id="lp-g2" width="200" height="200" patternUnits="userSpaceOnUse">
+            <rect width="200" height="200" fill="url(#lp-g1)" />
+            <path d="M200 0L0 0 0 200" fill="none" stroke="#0F766E" strokeWidth=".8" strokeOpacity=".038" />
+          </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#lp-g2)" />
+      </svg>
+
+      {/* Floating medical crosses */}
+      {crosses.map((c, i) => (
+        <div key={i} className="absolute" style={{
+          left: c.x, top: c.y, opacity: c.o,
+          animation: `lp-cross ${c.d}s ease-in-out ${c.dl}s infinite`,
+        }}>
+          <svg width={c.s} height={c.s} viewBox="0 0 24 24" fill="none">
+            <rect x="8" y="1" width="8" height="22" rx="3" fill="#0F766E" />
+            <rect x="1" y="8" width="22" height="8" rx="3" fill="#0F766E" />
+          </svg>
+        </div>
+      ))}
+
+      {/* ECG heartbeat line */}
+      <div className="absolute overflow-hidden" style={{ bottom: "22%", left: 0, right: 0, height: "60px", opacity: 0.065 }}>
+        <svg className="lp-ecg" style={{ width: "2000px", height: "60px" }} viewBox="0 0 2000 60" preserveAspectRatio="none">
+          <path d="M0,30 L100,30 L125,30 L145,10 L162,52 L178,4 L196,56 L212,30 L250,30
+                   L350,30 L375,30 L395,10 L412,52 L428,4 L446,56 L462,30 L500,30
+                   L600,30 L625,30 L645,10 L662,52 L678,4 L696,56 L712,30 L750,30
+                   L850,30 L875,30 L895,10 L912,52 L928,4 L946,56 L962,30 L1000,30
+                   L1100,30 L1125,30 L1145,10 L1162,52 L1178,4 L1196,56 L1212,30 L1250,30
+                   L1350,30 L1375,30 L1395,10 L1412,52 L1428,4 L1446,56 L1462,30 L1500,30
+                   L1600,30 L1625,30 L1645,10 L1662,52 L1678,4 L1696,56 L1712,30 L1750,30
+                   L1850,30 L1875,30 L1895,10 L1912,52 L1928,4 L1946,56 L1962,30 L2000,30"
+            stroke="#0F766E" strokeWidth="1.5" fill="none" strokeLinecap="round" />
+        </svg>
+      </div>
+
+      {/* Glowing particles */}
+      {particles.map((p, i) => (
+        <div key={i} className="absolute rounded-full" style={{
+          left: p.x, top: p.y, width: "5px", height: "5px",
+          background: "radial-gradient(circle, rgba(20,184,166,.65), transparent)",
+          animation: `lp-particle ${p.d}s ease-in-out ${i * 1.1}s infinite`,
+        }} />
+      ))}
+    </div>
+  );
+}
+
+/* ── Premium dashboard illustration ─────────────────────────────────────── */
+function DashboardIllustration() {
+  return (
+    <div className="relative w-full select-none" style={{ height: "308px" }}>
+      {/* Ambient glow */}
+      <div className="absolute bottom-0 inset-x-0 mx-auto" style={{
+        width: "60%", height: "80px",
+        background: "radial-gradient(ellipse,rgba(20,184,166,.22) 0%,transparent 72%)",
+        filter: "blur(28px)",
+      }} />
+
+      {/* ── Main dashboard card ── */}
+      <div className="lp-dash-main absolute" style={{
+        left: "50%", transform: "translateX(-50%)",
+        width: "min(430px, 98%)", top: 0, zIndex: 2,
+        background: "rgba(255,255,255,.7)",
+        backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)",
+        border: "1px solid rgba(255,255,255,.88)",
+        borderRadius: "20px",
+        boxShadow: "0 20px 60px rgba(15,118,110,.11), 0 4px 16px rgba(0,0,0,.05), inset 0 1px 0 rgba(255,255,255,.96)",
+        padding: "16px",
+      }}>
+        {/* Header */}
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-xl flex items-center justify-center shrink-0"
+              style={{ background: "linear-gradient(135deg,#0F766E,#14B8A6)", boxShadow: "0 4px 10px rgba(15,118,110,.3)" }}>
+              <svg width="13" height="13" viewBox="0 0 22 22" fill="none">
+                <rect x="8.5" y="2" width="5" height="18" rx="2" fill="white" />
+                <rect x="2" y="8.5" width="18" height="5" rx="2" fill="white" />
+              </svg>
+            </div>
+            <div>
+              <p style={{ fontSize: "11px", fontWeight: 700, color: "#0F172A", lineHeight: 1.1 }}>PPMS Enterprise</p>
+              <p style={{ fontSize: "8px", color: "#94A3B8", letterSpacing: "0.04em" }}>LIVE DASHBOARD</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#10B981" }} />
+            <div className="w-7 h-7 rounded-full flex items-center justify-center text-[9px] font-bold text-white"
+              style={{ background: "linear-gradient(135deg,#0F766E,#14B8A6)" }}>DR</div>
+          </div>
+        </div>
+
+        {/* Stats row */}
+        <div className="grid grid-cols-3 gap-2 mb-3">
+          {[
+            { label: "Today's Patients", val: "48", trend: "+6", c: "#0F766E", bg: "#F0FDFA", bdr: "#CCFBF1" },
+            { label: "Appointments",     val: "32", trend: "+3", c: "#2563EB", bg: "#EFF6FF", bdr: "#BFDBFE" },
+            { label: "Revenue",          val: "₹24K", trend: "+18%", c: "#7C3AED", bg: "#F5F3FF", bdr: "#DDD6FE" },
+          ].map((s, i) => (
+            <div key={i} style={{ background: s.bg, border: `1px solid ${s.bdr}`, borderRadius: "10px", padding: "9px 8px" }}>
+              <p style={{ fontSize: "7.5px", color: "#94A3B8", marginBottom: "3px", lineHeight: 1 }}>{s.label}</p>
+              <p style={{ fontSize: "16px", fontWeight: 800, color: s.c, letterSpacing: "-0.025em", lineHeight: 1 }}>{s.val}</p>
+              <p style={{ fontSize: "7.5px", color: s.c, marginTop: "2px", opacity: 0.7 }}>{s.trend} today</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Bar chart */}
+        <div style={{ background: "rgba(15,118,110,.04)", borderRadius: "10px", padding: "9px 10px 7px", marginBottom: "10px" }}>
+          <div className="flex items-center justify-between mb-1.5">
+            <p style={{ fontSize: "9px", fontWeight: 700, color: "#0F172A" }}>Patient Visits — Jul 2026</p>
+            <span style={{ fontSize: "7.5px", fontWeight: 700, color: "#0F766E", background: "#F0FDFA", padding: "1px 6px", borderRadius: "99px", border: "1px solid #CCFBF1" }}>+12%</span>
+          </div>
+          <div className="flex items-end gap-[2px]" style={{ height: "30px" }}>
+            {[45,62,38,85,55,78,65,92,58,74,48,88].map((h, i) => (
+              <div key={i} style={{
+                flex: 1, borderRadius: "2px 2px 0 0",
+                height: `${h}%`,
+                background: i === 11 ? "linear-gradient(180deg,#14B8A6,#0F766E)" : `rgba(15,118,110,${0.1 + i * 0.018})`,
+              }} />
+            ))}
+          </div>
+        </div>
+
+        {/* Patient rows */}
+        {[
+          { name: "Priya Suresh", time: "09:00", st: "Waiting",    sc: "#D97706", sb: "#FFF7ED" },
+          { name: "Rajan Kumar",  time: "09:30", st: "Consulting", sc: "#0F766E", sb: "#F0FDFA" },
+          { name: "Meena Pillai", time: "10:00", st: "Scheduled",  sc: "#2563EB", sb: "#EFF6FF" },
+        ].map((p, i) => (
+          <div key={i} className="flex items-center gap-2" style={{
+            paddingTop: i > 0 ? "7px" : 0,
+            marginTop:  i > 0 ? "7px" : 0,
+            borderTop:  i > 0 ? "1px solid rgba(15,23,42,.05)" : "none",
+          }}>
+            <div className="shrink-0 rounded-full flex items-center justify-center text-white" style={{
+              width: 23, height: 23, fontSize: "9px", fontWeight: 700,
+              background: `hsl(${174 + i * 26}, 52%, 42%)`,
+            }}>
+              {p.name.charAt(0)}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p style={{ fontSize: "10px", fontWeight: 600, color: "#0F172A", lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</p>
+              <p style={{ fontSize: "8px", color: "#94A3B8" }}>{p.time}</p>
+            </div>
+            <span style={{ fontSize: "8px", fontWeight: 700, color: p.sc, background: p.sb, padding: "2px 8px", borderRadius: "99px", whiteSpace: "nowrap" }}>{p.st}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* ── Floating card — OT schedule ── */}
+      <div className="lp-dash-side1 absolute" style={{
+        right: "1%", top: "14px", width: "128px", zIndex: 3,
+        background: "rgba(255,255,255,.74)",
+        backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)",
+        border: "1px solid rgba(255,255,255,.92)",
+        borderRadius: "16px",
+        boxShadow: "0 14px 38px rgba(0,0,0,.07), inset 0 1px 0 rgba(255,255,255,.95)",
+        padding: "12px 10px",
+      }}>
+        <p style={{ fontSize: "9px", fontWeight: 700, color: "#0F172A", marginBottom: "8px", letterSpacing: "0.02em" }}>Today's OT</p>
+        {["10:00 · Cataract", "11:30 · Retina", "14:00 · Glaucoma"].map((s, i) => (
+          <div key={i} className="flex items-center gap-1.5" style={{ marginBottom: i < 2 ? "6px" : 0 }}>
+            <div style={{ width: 6, height: 6, borderRadius: "50%", background: i === 0 ? "#10B981" : i === 1 ? "#F59E0B" : "#6366F1", flexShrink: 0 }} />
+            <p style={{ fontSize: "8px", color: "#64748B", lineHeight: 1.3 }}>{s}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* ── Floating card — revenue ── */}
+      <div className="lp-dash-side2 absolute" style={{
+        left: "1%", bottom: "16px", width: "112px", zIndex: 3,
+        background: "linear-gradient(135deg, rgba(15,118,110,.92), rgba(20,184,166,.85))",
+        backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)",
+        border: "1px solid rgba(255,255,255,.18)",
+        borderRadius: "16px",
+        boxShadow: "0 16px 40px rgba(15,118,110,.28)",
+        padding: "12px 10px",
+      }}>
+        <p style={{ fontSize: "8px", color: "rgba(255,255,255,.7)", marginBottom: "3px" }}>Monthly Revenue</p>
+        <p style={{ fontSize: "19px", fontWeight: 800, color: "#fff", letterSpacing: "-0.025em", lineHeight: 1 }}>₹2.4L</p>
+        <div className="flex items-center gap-1" style={{ marginTop: "4px" }}>
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
+            <path d="M7 17l5-5 5 5M7 12l5-5 5 5" stroke="rgba(255,255,255,.85)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          <p style={{ fontSize: "7.5px", color: "rgba(255,255,255,.8)" }}>+18% MoM</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Main page ───────────────────────────────────────────────────────────── */
 export default function LoginPage() {
   const [state, formAction, pending] = useActionState(loginAction, {});
   const [showPassword, setShowPassword] = useState(false);
-  const [tab, setTab] = useState<"password" | "otp">("password");
+  const [capsLock, setCapsLock]         = useState(false);
+  const [rememberMe, setRememberMe]     = useState(false);
+  const [tab, setTab]                   = useState<"password" | "otp">("password");
 
   // Password tab
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
+  const [username, setUsername]     = useState("");
+  const [password, setPassword]     = useState("");
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
-  const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const [touched, setTouched]       = useState<Record<string, boolean>>({});
 
   // OTP tab
-  const [mobile, setMobile] = useState("");
-  const [otpSent, setOtpSent] = useState(false);
-  const [otpValue, setOtpValue] = useState("");
-  const [otpMsg, setOtpMsg] = useState("");
-  const [otpErrors, setOtpErrors] = useState<FieldErrors>({});
+  const [mobile, setMobile]         = useState("");
+  const [otpSent, setOtpSent]       = useState(false);
+  const [otpValue, setOtpValue]     = useState("");
+  const [otpMsg, setOtpMsg]         = useState("");
+  const [otpErrors, setOtpErrors]   = useState<FieldErrors>({});
   const [otpTouched, setOtpTouched] = useState<Record<string, boolean>>({});
 
-  function touchOtpField(field: string) {
-    setOtpTouched((prev) => ({ ...prev, [field]: true }));
-  }
+  // Button ripple
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const [ripple, setRipple] = useState<{ x: number; y: number; k: number } | null>(null);
+
+  function touchOtpField(f: string) { setOtpTouched(p => ({ ...p, [f]: true })); }
 
   function handleSendOtp() {
     touchOtpField("mobile");
@@ -74,8 +420,7 @@ export default function LoginPage() {
 
   function handleVerifyOtp() {
     setOtpTouched({ mobile: true, otp: true });
-    const errs = validateOtp({ mobile, otp: otpValue, otpSent: true });
-    setOtpErrors(errs);
+    setOtpErrors(validateOtp({ mobile, otp: otpValue, otpSent: true }));
   }
 
   function switchTab(t: "password" | "otp") {
@@ -85,241 +430,247 @@ export default function LoginPage() {
   }
 
   function fillTestAccount(u: string, p: string) {
-    setTab("password");
-    setUsername(u);
-    setPassword(p);
-    setFieldErrors({});
-    setTouched({});
+    setTab("password"); setUsername(u); setPassword(p);
+    setFieldErrors({}); setTouched({});
+  }
+
+  function handleBtnClick(e: React.MouseEvent<HTMLButtonElement>) {
+    if (!btnRef.current) return;
+    const r = btnRef.current.getBoundingClientRect();
+    setRipple({ x: e.clientX - r.left, y: e.clientY - r.top, k: Date.now() });
+    setTimeout(() => setRipple(null), 700);
   }
 
   return (
     <div className="fixed inset-0 flex overflow-hidden" style={{ background: "#F8FAFC" }}>
       <style>{`
-        @keyframes lp-blob1  { 0%,100%{transform:translate(0,0) scale(1)} 40%{transform:translate(28px,-18px) scale(1.05)} 70%{transform:translate(-16px,12px) scale(0.97)} }
-        @keyframes lp-blob2  { 0%,100%{transform:translate(0,0) scale(1)} 35%{transform:translate(-22px,18px) scale(1.04)} 65%{transform:translate(18px,-12px) scale(0.96)} }
-        @keyframes lp-fadein { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
-        @keyframes lp-cardin { from{opacity:0;transform:translateY(28px) scale(.985)} to{opacity:1;transform:translateY(0) scale(1)} }
-        @keyframes lp-float  { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-7px)} }
+        /* ── Keyframes ────────────────────────────────────────────────── */
+        @keyframes lp-blob1   { 0%,100%{transform:translate(0,0) scale(1)} 40%{transform:translate(30px,-20px) scale(1.07)} 70%{transform:translate(-18px,14px) scale(0.96)} }
+        @keyframes lp-blob2   { 0%,100%{transform:translate(0,0) scale(1)} 35%{transform:translate(-24px,20px) scale(1.05)} 65%{transform:translate(20px,-14px) scale(0.97)} }
+        @keyframes lp-blob3   { 0%,100%{transform:translate(0,0)} 50%{transform:translate(15px,-26px)} }
+        @keyframes lp-blob4   { 0%,100%{transform:translate(0,0)} 50%{transform:translate(-12px,18px)} }
+        @keyframes lp-cross   { 0%,100%{transform:translateY(0) rotate(0deg)} 50%{transform:translateY(-14px) rotate(10deg)} }
+        @keyframes lp-particle{ 0%,100%{opacity:.35;transform:scale(1)} 50%{opacity:1;transform:scale(2)} }
+        @keyframes lp-ecg     { from{transform:translateX(0)} to{transform:translateX(-50%)} }
+        @keyframes lp-fadein  { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes lp-cardin  { from{opacity:0;transform:translateY(30px) scale(.97)} to{opacity:1;transform:translateY(0) scale(1)} }
+        @keyframes lp-float   { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+        @keyframes lp-float2  { 0%,100%{transform:translateY(-5px)} 50%{transform:translateY(5px)} }
+        @keyframes lp-float3  { 0%,100%{transform:translateY(0) rotate(-1.2deg)} 50%{transform:translateY(-7px) rotate(1.2deg)} }
+        @keyframes lp-logo    { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-5px)} }
+        @keyframes lp-shield  { 0%,100%{transform:scale(1) rotate(0deg)} 50%{transform:scale(1.1) rotate(3deg)} }
+        @keyframes lp-grad    { 0%,100%{background-position:0% 50%} 50%{background-position:100% 50%} }
         @keyframes lp-shimmer { 0%{background-position:-300% center} 100%{background-position:300% center} }
-        @keyframes lp-pulse  { 0%,100%{box-shadow:0 0 0 0 rgba(15,118,110,.28),0 4px 18px rgba(15,118,110,.22)} 50%{box-shadow:0 0 0 5px rgba(15,118,110,.06),0 4px 24px rgba(15,118,110,.38)} }
-        .lp-a0  { animation: lp-fadein .65s cubic-bezier(.22,1,.36,1)  0ms   both; }
-        .lp-a1  { animation: lp-fadein .65s cubic-bezier(.22,1,.36,1)  90ms  both; }
-        .lp-a2  { animation: lp-fadein .65s cubic-bezier(.22,1,.36,1) 170ms  both; }
-        .lp-a3  { animation: lp-fadein .65s cubic-bezier(.22,1,.36,1) 250ms  both; }
-        .lp-a4  { animation: lp-fadein .65s cubic-bezier(.22,1,.36,1) 330ms  both; }
-        .lp-card { animation: lp-cardin .8s cubic-bezier(.22,1,.36,1) 80ms both; }
-        .lp-float { animation: lp-float 7s ease-in-out 1.2s infinite; }
-        .lp-blob1 { animation: lp-blob1 16s ease-in-out infinite; }
-        .lp-blob2 { animation: lp-blob2 20s ease-in-out infinite; }
-        .lp-input { transition: border-color .16s, box-shadow .16s, background .16s; }
-        .lp-input:focus { outline: none; border-color: #0F766E !important; box-shadow: 0 0 0 4px rgba(15,118,110,.1) !important; background: #fff !important; }
-        .lp-btn  { transition: transform .14s, box-shadow .14s; }
-        .lp-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 14px 32px rgba(15,118,110,.32) !important; }
-        .lp-btn:active:not(:disabled) { transform: translateY(0); }
-        .lp-trial { animation: lp-shimmer 4.5s linear .8s infinite, lp-pulse 2.6s ease-in-out .8s infinite; }
+        @keyframes lp-pulse   { 0%,100%{box-shadow:0 0 0 0 rgba(15,118,110,.3),0 6px 24px rgba(15,118,110,.22)} 50%{box-shadow:0 0 0 7px rgba(15,118,110,.06),0 6px 32px rgba(15,118,110,.36)} }
+        @keyframes lp-ripple  { from{opacity:.32;transform:scale(0)} to{opacity:0;transform:scale(4.5)} }
+        @keyframes lp-slide-up{ from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes lp-arrow   { 0%,100%{transform:translateX(0)} 50%{transform:translateX(4px)} }
+
+        /* ── Entrance ──────────────────────────────────────────────── */
+        .lp-a0{animation:lp-fadein .65s cubic-bezier(.22,1,.36,1) 0ms   both}
+        .lp-a1{animation:lp-fadein .65s cubic-bezier(.22,1,.36,1) 90ms  both}
+        .lp-a2{animation:lp-fadein .65s cubic-bezier(.22,1,.36,1) 170ms both}
+        .lp-a3{animation:lp-fadein .65s cubic-bezier(.22,1,.36,1) 250ms both}
+        .lp-a4{animation:lp-fadein .65s cubic-bezier(.22,1,.36,1) 330ms both}
+        .lp-card{animation:lp-cardin .85s cubic-bezier(.22,1,.36,1) 80ms both}
+
+        /* ── Continuous ────────────────────────────────────────────── */
+        .lp-blob1{animation:lp-blob1 18s ease-in-out infinite}
+        .lp-blob2{animation:lp-blob2 22s ease-in-out infinite}
+        .lp-blob3{animation:lp-blob3 16s ease-in-out infinite}
+        .lp-blob4{animation:lp-blob4 20s ease-in-out infinite}
+        .lp-ecg  {animation:lp-ecg   7s  linear    infinite}
+        .lp-logo {animation:lp-logo  9s  ease-in-out infinite}
+        .lp-shield-anim{animation:lp-shield 3.5s ease-in-out infinite}
+        .lp-dash-main {animation:lp-float  7s ease-in-out .4s  infinite}
+        .lp-dash-side1{animation:lp-float2 9s ease-in-out 1.6s infinite}
+        .lp-dash-side2{animation:lp-float3 8s ease-in-out .9s  infinite}
+        .lp-trial{animation:lp-shimmer 5s linear 1s infinite, lp-pulse 2.8s ease-in-out 1s infinite}
+
+        /* ── Gradient headline ─────────────────────────────────────── */
+        .lp-grad-text{
+          background:linear-gradient(90deg,#0F766E,#14B8A6,#10B981,#14B8A6,#0F766E);
+          background-size:300% auto;
+          -webkit-background-clip:text;
+          -webkit-text-fill-color:transparent;
+          background-clip:text;
+          animation:lp-grad 5s ease infinite;
+        }
+
+        /* ── Chips ─────────────────────────────────────────────────── */
+        .lp-chip{transition:transform .2s cubic-bezier(.34,1.56,.64,1),box-shadow .2s}
+        .lp-chip:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(15,118,110,.13)!important}
+
+        /* ── Tab sliding pill ──────────────────────────────────────── */
+        .lp-tab-pill{transition:left .3s cubic-bezier(.34,1.56,.64,1)}
+
+        /* ── Premium button ────────────────────────────────────────── */
+        .lp-btn{transition:transform .18s cubic-bezier(.34,1.56,.64,1),box-shadow .18s}
+        .lp-btn:hover:not(:disabled){transform:translateY(-3px);box-shadow:0 18px 44px rgba(15,118,110,.38)!important}
+        .lp-btn:active:not(:disabled){transform:translateY(-1px)}
+        .lp-btn .lp-arrow-icon{animation:lp-arrow 1.8s ease-in-out .6s infinite}
+
+        /* ── Reduced motion ────────────────────────────────────────── */
         @media (prefers-reduced-motion:reduce) {
-          .lp-a0,.lp-a1,.lp-a2,.lp-a3,.lp-a4,.lp-card,.lp-float,.lp-blob1,.lp-blob2,.lp-trial { animation:none !important; }
+          .lp-a0,.lp-a1,.lp-a2,.lp-a3,.lp-a4,.lp-card,
+          .lp-blob1,.lp-blob2,.lp-blob3,.lp-blob4,
+          .lp-ecg,.lp-logo,.lp-shield-anim,
+          .lp-dash-main,.lp-dash-side1,.lp-dash-side2,
+          .lp-trial,.lp-btn,.lp-chip { animation:none!important; transition:none!important; }
+          .lp-grad-text{-webkit-text-fill-color:#0F766E;background:none;}
         }
       `}</style>
 
-      {/* ── Background ───────────────────────────────────────────────────────── */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute inset-0" style={{ background: "linear-gradient(135deg,#F0FDFA 0%,#F8FAFC 55%,#F0F9FF 100%)" }} />
-        <svg className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <pattern id="lp-g" width="48" height="48" patternUnits="userSpaceOnUse">
-              <path d="M48 0L0 0 0 48" fill="none" stroke="#0F766E" strokeWidth=".6" strokeOpacity=".055" />
-            </pattern>
-            <pattern id="lp-G" width="240" height="240" patternUnits="userSpaceOnUse">
-              <rect width="240" height="240" fill="url(#lp-g)" />
-              <path d="M240 0L0 0 0 240" fill="none" stroke="#0F766E" strokeWidth="1" strokeOpacity=".035" />
-            </pattern>
-          </defs>
-          <rect width="100%" height="100%" fill="url(#lp-G)" />
-        </svg>
-        <div className="lp-blob1 absolute -top-56 -left-56 w-[700px] h-[700px] rounded-full"
-          style={{ background: "radial-gradient(circle,rgba(20,184,166,.13) 0%,transparent 68%)", filter: "blur(48px)" }} />
-        <div className="lp-blob2 absolute bottom-[-160px] left-[28%] w-[580px] h-[580px] rounded-full"
-          style={{ background: "radial-gradient(circle,rgba(15,118,110,.09) 0%,transparent 68%)", filter: "blur(60px)" }} />
-        <div className="absolute -top-20 right-[-80px] w-[400px] h-[400px] rounded-full"
-          style={{ background: "radial-gradient(circle,rgba(56,189,248,.06) 0%,transparent 65%)", filter: "blur(40px)" }} />
-      </div>
+      {/* ── Animated background ──────────────────────────────────────────── */}
+      <MedicalBackground />
 
-      {/* ── Page layout ──────────────────────────────────────────────────────── */}
+      {/* ── Page layout ──────────────────────────────────────────────────── */}
       <div className="relative flex w-full overflow-y-auto min-h-0">
 
-        {/* ── LEFT PANEL ───────────────────────────────────────────────────── */}
+        {/* ══ LEFT PANEL ══════════════════════════════════════════════════ */}
         <div className="hidden lg:flex flex-col justify-between flex-1 px-12 xl:px-20 py-12 min-w-0">
 
           {/* Logo */}
-          <div className="lp-a0">
+          <div className="lp-a0 lp-logo">
             <div className="flex items-center gap-3.5">
-              <div className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0"
-                style={{ background: "linear-gradient(135deg,#0F766E,#14B8A6)", boxShadow: "0 8px 22px rgba(15,118,110,.32)" }}>
-                <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+              <div className="w-12 h-12 rounded-[18px] flex items-center justify-center shrink-0"
+                style={{ background: "linear-gradient(135deg,#0F766E,#14B8A6)", boxShadow: "0 10px 28px rgba(15,118,110,.35)" }}>
+                <svg width="24" height="24" viewBox="0 0 22 22" fill="none">
                   <rect x="8.5" y="2" width="5" height="18" rx="2.2" fill="white" />
                   <rect x="2" y="8.5" width="18" height="5" rx="2.2" fill="white" />
                 </svg>
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="text-[26px] font-black" style={{ color: "#0F172A", letterSpacing: "-0.03em" }}>PPMS</span>
+                  <span className="text-[28px] font-black" style={{ color: "#0F172A", letterSpacing: "-0.035em" }}>PPMS</span>
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-                    style={{ background: "#F0FDFA", color: "#0F766E", border: "1px solid #CCFBF1", letterSpacing: "0.02em" }}>
-                    v2.0 Cloud
-                  </span>
+                    style={{ background: "#F0FDFA", color: "#0F766E", border: "1px solid #CCFBF1", letterSpacing: "0.04em" }}>v2.0 Cloud</span>
                 </div>
-                <p className="text-[11px] font-semibold" style={{ color: "#64748B", letterSpacing: "0.04em" }}>
+                <p className="text-[11px] font-semibold" style={{ color: "#64748B", letterSpacing: "0.06em" }}>
                   ENTERPRISE HEALTHCARE PLATFORM
                 </p>
               </div>
             </div>
           </div>
 
-          {/* Hero + dashboard */}
-          <div className="flex-1 flex flex-col justify-center max-w-[520px] py-8">
+          {/* Hero content */}
+          <div className="flex-1 flex flex-col justify-center max-w-[520px] py-5">
             {/* Headline */}
             <div className="lp-a1 mb-5">
-              <h1 className="font-black leading-[1.06] mb-3" style={{
-                fontSize: "clamp(40px,3.8vw,56px)",
-                color: "#0F172A",
-                letterSpacing: "-0.025em",
-              }}>
+              <h1 className="font-black leading-[1.06] mb-3"
+                style={{ fontSize: "clamp(38px,3.6vw,52px)", color: "#0F172A", letterSpacing: "-0.025em" }}>
                 Better{" "}
-                <span style={{ background: "linear-gradient(90deg,#0F766E,#14B8A6)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Healthcare.</span>
-                <br />
-                Better{" "}
-                <span style={{ color: "#0F172A" }}>Management.</span>
+                <span className="lp-grad-text">Healthcare.</span>
+                <br />Better Management.
               </h1>
-              <p className="text-[15px] leading-relaxed max-w-[400px]" style={{ color: "#64748B" }}>
-                A comprehensive clinical platform built for multi-hospital networks — EMR, scheduling, billing, and analytics in one workspace.
+              <p className="leading-relaxed" style={{ fontSize: "15px", color: "#64748B", maxWidth: "380px" }}>
+                A secure enterprise healthcare platform for hospitals, clinics, diagnostics,
+                pharmacies, and healthcare networks.
               </p>
             </div>
 
-            {/* Dashboard preview */}
+            {/* Dashboard illustration */}
             <div className="lp-a2 mb-6">
-              <div className="rounded-2xl overflow-hidden" style={{
-                border: "1px solid rgba(15,118,110,.13)",
-                background: "rgba(255,255,255,.55)",
-                backdropFilter: "blur(8px)",
-                boxShadow: "0 8px 32px rgba(15,23,42,.06)",
-              }}>
-                <DashboardPreview />
-              </div>
+              <DashboardIllustration />
             </div>
 
-            {/* Feature checklist */}
-            <div className="lp-a3 mb-7">
-              <div className="grid grid-cols-2 gap-x-6 gap-y-2.5">
-                {[
-                  "Electronic Medical Records",
-                  "Appointment Scheduler",
-                  "Prescription Management",
-                  "Billing & Analytics",
-                  "Multi-Hospital Support",
-                  "ABDM Integration",
-                ].map((f, i) => (
-                  <div key={i} className="flex items-center gap-2.5">
-                    <div className="w-[18px] h-[18px] rounded-full flex items-center justify-center shrink-0"
-                      style={{ background: "rgba(15,118,110,.1)" }}>
-                      <svg width="9" height="9" viewBox="0 0 9 9" fill="none">
-                        <path d="M1.8 4.5l1.8 1.8 3.6-3.6" stroke="#0F766E" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    </div>
-                    <span className="text-[12.5px] font-medium" style={{ color: "#475569" }}>{f}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Stats */}
-            <div className="lp-a4">
-              <div className="flex items-stretch rounded-2xl overflow-hidden"
-                style={{ border: "1px solid #E2E8F0", background: "rgba(255,255,255,.6)" }}>
-                {[
-                  { value: "1,200+", label: "Doctors" },
-                  { value: "35+",    label: "Hospitals" },
-                  { value: "99.98%", label: "Uptime" },
-                  { value: "3M+",    label: "Records" },
-                ].map((s, i) => (
-                  <div key={i} className="flex-1 px-4 py-3 text-center" style={{
-                    borderLeft: i > 0 ? "1px solid #E2E8F0" : "none",
+            {/* Feature chips */}
+            <div className="lp-a3">
+              <div className="flex flex-wrap gap-2">
+                {FEATURES.map((f, i) => (
+                  <div key={i} className="lp-chip flex items-center gap-2 px-3.5 py-2 rounded-full cursor-default" style={{
+                    background: "rgba(255,255,255,.72)",
+                    backdropFilter: "blur(8px)",
+                    border: "1px solid rgba(255,255,255,.88)",
+                    boxShadow: "0 4px 12px rgba(15,118,110,.06), 0 1px 3px rgba(0,0,0,.04)",
                   }}>
-                    <p className="text-[18px] font-black" style={{ color: "#0F172A", letterSpacing: "-0.025em", lineHeight: 1.1 }}>{s.value}</p>
-                    <p className="text-[10px] font-bold uppercase tracking-widest mt-0.5" style={{ color: "#94A3B8" }}>{s.label}</p>
+                    <span style={{ fontSize: "13px" }}>{f.icon}</span>
+                    <span style={{ fontSize: "12px", fontWeight: 600, color: "#334155" }}>{f.label}</span>
                   </div>
                 ))}
               </div>
             </div>
           </div>
 
-          {/* Trust badges footer */}
+          {/* Footer trust row */}
           <div className="lp-a4">
             <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
               {["🔒 HIPAA Ready", "🏥 NABH Workflow", "📄 ABDM Compatible", "☁ Cloud Hosted", "⚡ 99.98% Uptime"].map((t, i) => (
-                <span key={i} className="text-[11px] font-medium" style={{ color: "#94A3B8" }}>{t}</span>
+                <span key={i} style={{ fontSize: "11px", fontWeight: 500, color: "#94A3B8" }}>{t}</span>
               ))}
             </div>
           </div>
         </div>
 
-        {/* ── RIGHT PANEL — Login Card ─────────────────────────────────────── */}
-        <div className="w-full lg:w-[480px] xl:w-[520px] shrink-0 flex items-center justify-center p-5 lg:p-8 xl:pr-16 my-auto">
+        {/* ══ RIGHT PANEL — Frosted glass card ══════════════════════════════ */}
+        <div className="w-full lg:w-[500px] xl:w-[540px] shrink-0 flex items-center justify-center p-5 lg:p-8 xl:pr-16 my-auto">
           <div
-            className="lp-card lp-float w-full"
+            className="lp-card w-full"
             style={{
-              background: "#ffffff",
-              borderRadius: "24px",
-              border: "1px solid #E2E8F0",
-              boxShadow: "0 30px 80px rgba(15,23,42,.08), 0 8px 24px rgba(15,23,42,.04)",
+              background: "rgba(255,255,255,.82)",
+              backdropFilter: "blur(28px)",
+              WebkitBackdropFilter: "blur(28px)",
+              borderRadius: "28px",
+              border: "1px solid rgba(255,255,255,.72)",
+              boxShadow: "0 32px 80px rgba(15,23,42,.1), 0 8px 24px rgba(15,23,42,.06), inset 0 1px 0 rgba(255,255,255,.96)",
               overflow: "hidden",
             }}
           >
-            {/* Glass highlight edge */}
-            <div style={{ height: "2px", background: "linear-gradient(90deg,transparent 0%,rgba(20,184,166,.55) 50%,transparent 100%)" }} />
+            {/* Glass top edge */}
+            <div style={{ height: "1.5px", background: "linear-gradient(90deg,transparent,rgba(20,184,166,.65) 50%,transparent)" }} />
 
-            <div className="px-7 py-7">
+            <div className="px-7 py-8">
 
               {/* Mobile logo */}
               <div className="flex lg:hidden items-center gap-2.5 justify-center mb-6">
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center"
-                  style={{ background: "linear-gradient(135deg,#0F766E,#14B8A6)", boxShadow: "0 4px 14px rgba(15,118,110,.3)" }}>
+                  style={{ background: "linear-gradient(135deg,#0F766E,#14B8A6)", boxShadow: "0 6px 18px rgba(15,118,110,.32)" }}>
                   <svg width="18" height="18" viewBox="0 0 22 22" fill="none">
                     <rect x="8.5" y="2" width="5" height="18" rx="2.2" fill="white" />
                     <rect x="2" y="8.5" width="18" height="5" rx="2.2" fill="white" />
                   </svg>
                 </div>
-                <span className="text-2xl font-black" style={{ color: "#0F172A", letterSpacing: "-0.03em" }}>PPMS</span>
+                <span className="text-[23px] font-black" style={{ color: "#0F172A", letterSpacing: "-0.03em" }}>PPMS</span>
               </div>
 
-              {/* Card header */}
+              {/* Welcome */}
               <div className="text-center mb-6">
-                <h2 className="text-[26px] font-bold mb-1" style={{ color: "#0F172A", letterSpacing: "-0.02em" }}>Welcome Back</h2>
-                <p className="text-sm" style={{ color: "#64748B" }}>Sign in to your PPMS workspace</p>
+                <div className="flex items-center justify-center gap-2.5 mb-2">
+                  <div className="lp-shield-anim w-8 h-8 rounded-xl flex items-center justify-center"
+                    style={{ background: "linear-gradient(135deg,#F0FDFA,#CCFBF1)", border: "1px solid #CCFBF1" }}>
+                    <ShieldCheck size={16} style={{ color: "#0F766E" }} />
+                  </div>
+                  <h2 className="text-[26px] font-bold" style={{ color: "#0F172A", letterSpacing: "-0.022em" }}>
+                    Welcome Back
+                  </h2>
+                </div>
+                <p style={{ fontSize: "14px", color: "#64748B" }}>Access your secure PPMS workspace</p>
               </div>
 
-              {/* Tab switcher */}
-              <div className="flex rounded-[18px] p-1 mb-6" style={{ background: "#F1F5F9" }}>
+              {/* ── Segmented tab control ── */}
+              <div className="relative flex rounded-2xl p-1 mb-6" style={{ background: "#F1F5F9" }}>
+                {/* Sliding pill */}
+                <div className="lp-tab-pill absolute top-1 bottom-1 rounded-[14px]" style={{
+                  left: tab === "password" ? "4px" : "calc(50%)",
+                  width: "calc(50% - 4px)",
+                  background: "#fff",
+                  boxShadow: "0 2px 10px rgba(15,23,42,.1)",
+                }} />
                 {(["password", "otp"] as const).map((t) => (
-                  <button
-                    key={t}
-                    type="button"
-                    onClick={() => switchTab(t)}
-                    className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-[14px] text-sm font-semibold transition-all"
-                    style={tab === t
-                      ? { background: "#fff", color: "#0F172A", boxShadow: "0 2px 8px rgba(15,23,42,.09)" }
-                      : { color: "#94A3B8" }}
-                  >
-                    {t === "password" ? (
-                      <><LockMini />{" "}Password</>
-                    ) : (
-                      <><Phone size={13} />{" "}Mobile OTP</>
-                    )}
+                  <button key={t} type="button" onClick={() => switchTab(t)}
+                    className="relative flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-semibold z-10"
+                    style={{
+                      color: tab === t ? "#0F172A" : "#94A3B8",
+                      transition: "color .25s",
+                    }}>
+                    {t === "password"
+                      ? <><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><rect x="5" y="11" width="14" height="10" rx="2.5" stroke="currentColor" strokeWidth="2"/><path d="M8 11V7a4 4 0 018 0v4" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg> Password</>
+                      : <><Phone size={13} /> Mobile OTP</>}
                   </button>
                 ))}
               </div>
 
-              {/* ── Password tab ── */}
+              {/* ── Password form ── */}
               {tab === "password" && (
                 <form
                   action={formAction}
@@ -331,225 +682,163 @@ export default function LoginPage() {
                   }}
                   className="flex flex-col gap-4"
                 >
-                  {/* Username */}
-                  <div>
-                    <label className="text-[11.5px] font-semibold block mb-1.5" style={{ color: "#475569", letterSpacing: "0.02em" }}>
-                      USERNAME OR EMAIL
-                    </label>
-                    <div className="relative">
-                      <span className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none"
-                        style={{ color: touched.username && fieldErrors.username ? "#EF4444" : "#94A3B8" }}>
-                        <User size={15} />
-                      </span>
-                      <input
-                        name="username"
-                        autoComplete="username"
-                        autoFocus
-                        value={username}
-                        onChange={e => {
-                          setUsername(e.target.value);
-                          if (touched.username) setFieldErrors(p => ({ ...p, username: undefined }));
-                        }}
-                        onBlur={() => {
-                          setTouched(t => ({ ...t, username: true }));
-                          setFieldErrors(p => ({ ...p, username: validate({ username, password }).username }));
-                        }}
-                        placeholder="Enter your username or email"
-                        className="lp-input w-full pl-11 pr-4 text-sm rounded-[18px] border-2"
-                        style={{
-                          height: "52px",
-                          borderColor: touched.username && fieldErrors.username ? "#EF4444" : "#E2E8F0",
-                          color: "#0F172A",
-                          background: "#F8FAFC",
-                          boxShadow: touched.username && fieldErrors.username ? "0 0 0 4px rgba(239,68,68,.08)" : "none",
-                        }}
-                      />
-                    </div>
-                    {touched.username && fieldErrors.username && (
-                      <p className="flex items-center gap-1 text-xs mt-1.5" style={{ color: "#EF4444" }}>
-                        <AlertCircle size={11} /> {fieldErrors.username}
-                      </p>
-                    )}
-                  </div>
+                  <FloatingInput
+                    name="username"
+                    label="Username or Email"
+                    value={username}
+                    autoComplete="username"
+                    autoFocus
+                    icon={<User size={15} />}
+                    error={touched.username ? fieldErrors.username : undefined}
+                    onChange={v => { setUsername(v); if (touched.username) setFieldErrors(p => ({ ...p, username: undefined })); }}
+                    onBlur={() => { setTouched(t => ({ ...t, username: true })); setFieldErrors(p => ({ ...p, username: validate({ username, password }).username })); }}
+                  />
 
-                  {/* Password */}
                   <div>
-                    <div className="flex items-center justify-between mb-1.5">
-                      <label className="text-[11.5px] font-semibold" style={{ color: "#475569", letterSpacing: "0.02em" }}>PASSWORD</label>
-                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded font-mono"
-                        style={{ background: "#F0FDF4", color: "#16A34A", border: "1px solid #BBF7D0" }}>dev</span>
-                    </div>
-                    <div className="relative">
-                      <span className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none"
-                        style={{ color: touched.password && fieldErrors.password ? "#EF4444" : "#94A3B8" }}>
-                        <Lock size={15} />
-                      </span>
-                      <input
-                        name="password"
-                        autoComplete="current-password"
-                        type={showPassword ? "text" : "password"}
-                        value={password}
-                        onChange={e => {
-                          setPassword(e.target.value);
-                          if (touched.password) setFieldErrors(p => ({ ...p, password: undefined }));
-                        }}
-                        onBlur={() => {
-                          setTouched(t => ({ ...t, password: true }));
-                          setFieldErrors(p => ({ ...p, password: validate({ username, password }).password }));
-                        }}
-                        placeholder="Enter your password"
-                        className="lp-input w-full pl-11 pr-11 text-sm rounded-[18px] border-2"
-                        style={{
-                          height: "52px",
-                          borderColor: touched.password && fieldErrors.password ? "#EF4444" : "#E2E8F0",
-                          color: "#0F172A",
-                          background: "#F8FAFC",
-                          boxShadow: touched.password && fieldErrors.password ? "0 0 0 4px rgba(239,68,68,.08)" : "none",
-                        }}
-                      />
-                      <button type="button" onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 transition-colors"
-                        style={{ color: "#94A3B8" }}>
-                        {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                    <div className="flex items-center justify-between mb-2">
+                      <span style={{ fontSize: "11px", fontWeight: 700, color: "#475569", letterSpacing: "0.04em" }}>PASSWORD</span>
+                      <button type="button" style={{ fontSize: "11px", fontWeight: 600, color: "#0F766E" }}
+                        className="hover:underline transition-colors">
+                        Forgot password?
                       </button>
                     </div>
-                    {touched.password && fieldErrors.password && (
-                      <p className="flex items-center gap-1 text-xs mt-1.5" style={{ color: "#EF4444" }}>
-                        <AlertCircle size={11} /> {fieldErrors.password}
+                    <FloatingInput
+                      name="password"
+                      label="Password"
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      autoComplete="current-password"
+                      icon={<Lock size={15} />}
+                      error={touched.password ? fieldErrors.password : undefined}
+                      onChange={v => { setPassword(v); if (touched.password) setFieldErrors(p => ({ ...p, password: undefined })); }}
+                      onBlur={() => { setTouched(t => ({ ...t, password: true })); setFieldErrors(p => ({ ...p, password: validate({ username, password }).password })); }}
+                      onKeyDown={e => setCapsLock(e.getModifierState("CapsLock"))}
+                      rightSlot={
+                        <button type="button" onClick={() => setShowPassword(!showPassword)}
+                          style={{ color: "#94A3B8" }} className="transition-colors hover:text-[#475569]">
+                          {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                        </button>
+                      }
+                    />
+                    {capsLock && (
+                      <p className="flex items-center gap-1.5 mt-1.5" style={{ fontSize: "11px", color: "#F59E0B", animation: "lp-slide-up .22s both" }}>
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                        Caps Lock is on
                       </p>
                     )}
                   </div>
 
+                  {/* Remember me */}
+                  <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                    <div onClick={() => setRememberMe(!rememberMe)}
+                      className="flex items-center justify-center rounded-md shrink-0"
+                      style={{
+                        width: 18, height: 18,
+                        background: rememberMe ? "#0F766E" : "#fff",
+                        border: `2px solid ${rememberMe ? "#0F766E" : "#CBD5E1"}`,
+                        boxShadow: rememberMe ? "0 0 0 3px rgba(15,118,110,.15)" : "none",
+                        transition: "all .18s cubic-bezier(.34,1.56,.64,1)",
+                      }}>
+                      {rememberMe && <Check size={10} color="white" strokeWidth={3} />}
+                    </div>
+                    <span style={{ fontSize: "13.5px", color: "#475569" }}>Remember me for 30 days</span>
+                  </label>
+
                   {state?.error && (
-                    <div className="flex items-center gap-2.5 text-sm rounded-2xl px-4 py-3"
-                      style={{ background: "#FEF2F2", color: "#DC2626", border: "1px solid #FECACA" }}>
+                    <div className="flex items-center gap-2.5 rounded-2xl px-4 py-3"
+                      style={{ background: "#FEF2F2", color: "#DC2626", border: "1px solid #FECACA", fontSize: "13.5px", animation: "lp-slide-up .25s both" }}>
                       <AlertCircle size={15} className="shrink-0" /> {state.error}
                     </div>
                   )}
 
+                  {/* Sign In button */}
                   <button
+                    ref={btnRef}
                     type="submit"
                     disabled={pending}
-                    className="lp-btn w-full font-bold text-sm text-white rounded-2xl"
+                    onClick={handleBtnClick}
+                    className="lp-btn relative overflow-hidden w-full font-bold text-white rounded-2xl"
                     style={{
-                      height: "52px",
-                      background: pending
-                        ? "#94A3B8"
-                        : "linear-gradient(135deg,#0F766E 0%,#0C6C62 100%)",
-                      boxShadow: pending ? "none" : "0 8px 22px rgba(15,118,110,.28)",
+                      height: "54px",
+                      fontSize: "15px",
                       letterSpacing: "0.01em",
+                      background: pending ? "#94A3B8" : "linear-gradient(135deg,#0F766E 0%,#0C6C62 100%)",
+                      boxShadow: pending ? "none" : "0 10px 28px rgba(15,118,110,.3)",
                     }}
                   >
-                    {pending ? "Signing in…" : "Sign In →"}
+                    {/* Ripple */}
+                    {ripple && (
+                      <span key={ripple.k} className="absolute rounded-full bg-white pointer-events-none"
+                        style={{ width: 120, height: 120, left: ripple.x - 60, top: ripple.y - 60, animation: "lp-ripple .65s ease-out both" }} />
+                    )}
+                    <span className="relative flex items-center justify-center gap-2">
+                      {pending
+                        ? <><Loader2 size={16} className="animate-spin" /> Signing in…</>
+                        : <><span>Sign In</span><ArrowRight size={16} className="lp-arrow-icon" /></>}
+                    </span>
                   </button>
                 </form>
               )}
 
-              {/* ── OTP tab ── */}
+              {/* ── OTP form ── */}
               {tab === "otp" && (
                 <div className="flex flex-col gap-4">
                   <div>
-                    <label className="text-[11.5px] font-semibold block mb-1.5" style={{ color: "#475569", letterSpacing: "0.02em" }}>
-                      MOBILE NUMBER
-                    </label>
-                    <div className="flex gap-2">
-                      <div className="flex items-center justify-center rounded-[18px] border-2 text-sm font-semibold shrink-0 px-4"
-                        style={{ height: "52px", borderColor: "#E2E8F0", background: "#F8FAFC", color: "#475569" }}>
+                    <div className="flex gap-2 items-start">
+                      <div className="flex items-center justify-center rounded-[16px] border-2 shrink-0 font-semibold"
+                        style={{ height: "56px", width: "58px", borderColor: "#E2E8F0", background: "rgba(248,250,252,.8)", color: "#475569", fontSize: "14px" }}>
                         +91
                       </div>
-                      <input
-                        type="tel"
-                        maxLength={10}
-                        value={mobile}
-                        onChange={e => {
-                          const v = e.target.value.replace(/\D/g, "");
-                          setMobile(v);
-                          setOtpMsg("");
-                          if (otpTouched.mobile) setOtpErrors(p => ({ ...p, mobile: undefined }));
-                        }}
-                        onBlur={() => {
-                          setOtpTouched(t => ({ ...t, mobile: true }));
-                          setOtpErrors(p => ({ ...p, mobile: validateOtp({ mobile, otpSent: false }).mobile }));
-                        }}
-                        placeholder="10-digit number"
-                        className="lp-input flex-1 min-w-0 px-4 text-sm rounded-[18px] border-2"
-                        style={{
-                          height: "52px",
-                          borderColor: otpTouched.mobile && otpErrors.mobile ? "#EF4444" : "#E2E8F0",
-                          color: "#0F172A",
-                          background: "#F8FAFC",
-                        }}
-                      />
-                      <button
-                        type="button"
-                        onClick={handleSendOtp}
-                        className="lp-btn shrink-0 px-4 rounded-[18px] text-sm font-semibold text-white"
+                      <div className="flex-1 min-w-0">
+                        <FloatingInput
+                          label="Mobile Number"
+                          type="tel"
+                          maxLength={10}
+                          value={mobile}
+                          onChange={v => { const c = v.replace(/\D/g, ""); setMobile(c); setOtpMsg(""); if (otpTouched.mobile) setOtpErrors(p => ({ ...p, mobile: undefined })); }}
+                          onBlur={() => { touchOtpField("mobile"); setOtpErrors(p => ({ ...p, mobile: validateOtp({ mobile, otpSent: false }).mobile })); }}
+                          error={otpTouched.mobile ? otpErrors.mobile : undefined}
+                        />
+                      </div>
+                      <button type="button" onClick={handleSendOtp}
+                        className="lp-btn shrink-0 px-4 rounded-[16px] text-sm font-semibold text-white"
                         style={mobile.length === 10
-                          ? { height: "52px", background: "linear-gradient(135deg,#0F766E,#0C6C62)", boxShadow: "0 4px 14px rgba(15,118,110,.28)" }
-                          : { height: "52px", background: "#E2E8F0", color: "#94A3B8", cursor: "not-allowed" }}
-                      >
+                          ? { height: "56px", background: "linear-gradient(135deg,#0F766E,#0C6C62)", boxShadow: "0 6px 18px rgba(15,118,110,.28)" }
+                          : { height: "56px", background: "#E2E8F0", color: "#94A3B8", cursor: "not-allowed" }}>
                         Send OTP
                       </button>
                     </div>
-                    {otpTouched.mobile && otpErrors.mobile && (
-                      <p className="flex items-center gap-1 text-xs mt-1.5" style={{ color: "#EF4444" }}>
-                        <AlertCircle size={11} /> {otpErrors.mobile}
-                      </p>
-                    )}
                   </div>
 
                   {otpSent && (
                     <div>
-                      <label className="text-[11.5px] font-semibold block mb-1.5" style={{ color: "#475569", letterSpacing: "0.02em" }}>
-                        ENTER OTP
-                      </label>
-                      <input
+                      <FloatingInput
+                        label="6-digit OTP"
                         type="text"
                         maxLength={6}
                         value={otpValue}
-                        onChange={e => {
-                          const v = e.target.value.replace(/\D/g, "");
-                          setOtpValue(v);
-                          if (otpTouched.otp) setOtpErrors(p => ({ ...p, otp: undefined }));
-                        }}
-                        onBlur={() => {
-                          setOtpTouched(t => ({ ...t, otp: true }));
-                          setOtpErrors(p => ({ ...p, otp: validateOtp({ mobile, otp: otpValue, otpSent: true }).otp }));
-                        }}
-                        placeholder="6-digit OTP"
-                        className="lp-input w-full px-4 text-2xl font-black text-center tracking-[0.45em] rounded-[18px] border-2"
-                        style={{
-                          height: "60px",
-                          borderColor: otpTouched.otp && otpErrors.otp ? "#EF4444" : "#E2E8F0",
-                          color: "#0F172A",
-                          background: "#F8FAFC",
-                        }}
+                        onChange={v => { const c = v.replace(/\D/g, "").slice(0, 6); setOtpValue(c); if (otpTouched.otp) setOtpErrors(p => ({ ...p, otp: undefined })); }}
+                        onBlur={() => { setOtpTouched(t => ({ ...t, otp: true })); setOtpErrors(p => ({ ...p, otp: validateOtp({ mobile, otp: otpValue, otpSent: true }).otp })); }}
+                        error={otpTouched.otp ? otpErrors.otp : undefined}
                       />
-                      {otpTouched.otp && otpErrors.otp && (
-                        <p className="flex items-center gap-1 text-xs mt-1.5" style={{ color: "#EF4444" }}>
-                          <AlertCircle size={11} /> {otpErrors.otp}
-                        </p>
-                      )}
                     </div>
                   )}
 
                   {otpMsg && (
-                    <p className="flex items-center gap-2 text-xs rounded-xl px-3.5 py-2.5"
-                      style={{ background: "#F0FDFA", color: "#0F766E", border: "1px solid #CCFBF1" }}>
+                    <p className="flex items-center gap-2 rounded-xl px-3.5 py-2.5"
+                      style={{ fontSize: "12px", background: "#F0FDFA", color: "#0F766E", border: "1px solid #CCFBF1", animation: "lp-slide-up .22s both" }}>
                       <CheckCircle2 size={13} /> {otpMsg} (demo — not implemented)
                     </p>
                   )}
 
-                  <button
-                    type="button"
-                    onClick={handleVerifyOtp}
+                  <button type="button" onClick={handleVerifyOtp}
                     disabled={!otpSent || otpValue.length < 6}
-                    className="lp-btn w-full font-bold text-sm text-white rounded-2xl"
+                    className="lp-btn relative overflow-hidden w-full font-bold text-white rounded-2xl flex items-center justify-center gap-2"
                     style={otpSent && otpValue.length >= 6
-                      ? { height: "52px", background: "linear-gradient(135deg,#0F766E,#0C6C62)", boxShadow: "0 8px 22px rgba(15,118,110,.28)" }
-                      : { height: "52px", background: "#E2E8F0", color: "#94A3B8", cursor: "not-allowed" }}
-                  >
-                    Verify & Sign In →
+                      ? { height: "54px", fontSize: "15px", background: "linear-gradient(135deg,#0F766E,#0C6C62)", boxShadow: "0 10px 28px rgba(15,118,110,.3)" }
+                      : { height: "54px", fontSize: "15px", background: "#E2E8F0", color: "#94A3B8", cursor: "not-allowed" }}>
+                    <span>Verify & Sign In</span>
+                    {otpSent && otpValue.length >= 6 && <ArrowRight size={16} className="lp-arrow-icon" />}
                   </button>
                 </div>
               )}
@@ -558,27 +847,20 @@ export default function LoginPage() {
               {SHOW_TEST_ACCOUNTS && (
                 <div className="mt-5 rounded-2xl px-4 py-3.5" style={{ background: "#F8FAFC", border: "1px dashed #CBD5E1" }}>
                   <div className="flex items-center gap-1.5 mb-2">
-                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded font-mono"
+                    <span className="font-mono text-[9px] font-bold px-1.5 py-0.5 rounded"
                       style={{ background: "#0F766E", color: "#fff", letterSpacing: "0.05em" }}>TEST</span>
-                    <p className="text-xs font-bold" style={{ color: "#475569" }}>Test Accounts</p>
-                    <p className="text-[11px] ml-1" style={{ color: "#94A3B8" }}>— click to fill</p>
+                    <p style={{ fontSize: "12px", fontWeight: 700, color: "#475569" }}>Test Accounts</p>
+                    <p style={{ fontSize: "11px", color: "#94A3B8", marginLeft: "2px" }}>— click to fill</p>
                   </div>
                   <div className="grid grid-cols-2 gap-1.5">
                     {TEST_ACCOUNTS.map((a) => (
-                      <button
-                        key={a.username}
-                        type="button"
-                        onClick={() => fillTestAccount(a.username, a.password)}
+                      <button key={a.username} type="button" onClick={() => fillTestAccount(a.username, a.password)}
                         className="flex items-center gap-2 px-2.5 py-2 rounded-xl text-left transition-all"
-                        style={{
-                          background: username === a.username ? "#F0FDFA" : "#fff",
-                          border: `1px solid ${username === a.username ? "#0F766E" : "#E2E8F0"}`,
-                        }}
-                      >
+                        style={{ background: username === a.username ? "#F0FDFA" : "#fff", border: `1px solid ${username === a.username ? "#0F766E" : "#E2E8F0"}` }}>
                         <User size={12} className="shrink-0" style={{ color: "#0F766E" }} />
                         <span className="min-w-0">
-                          <span className="block text-xs font-semibold truncate" style={{ color: "#334155" }}>{a.label}</span>
-                          <span className="block text-[10px] font-mono truncate" style={{ color: "#94A3B8" }}>{a.username}</span>
+                          <span className="block truncate" style={{ fontSize: "12px", fontWeight: 600, color: "#334155" }}>{a.label}</span>
+                          <span className="block font-mono truncate" style={{ fontSize: "10px", color: "#94A3B8" }}>{a.username}</span>
                         </span>
                       </button>
                     ))}
@@ -586,118 +868,59 @@ export default function LoginPage() {
                 </div>
               )}
 
-              {/* ── Free Trial Banner ── */}
-              <a
-                href="/license"
-                className="lp-trial mt-4 flex items-center justify-between gap-3 rounded-2xl px-4 py-3 no-underline group"
+              {/* ── Premium trial promo card ── */}
+              <a href="/license"
+                className="lp-trial mt-4 flex items-center justify-between gap-3 rounded-2xl px-4 py-3.5 no-underline group"
                 style={{
-                  background: "linear-gradient(105deg,#0b5e58 0%,#0F766E 30%,#14B8A6 65%,#0b5e58 100%)",
+                  background: "linear-gradient(105deg,#0a5c57 0%,#0F766E 28%,#14B8A6 62%,#0a5c57 100%)",
                   backgroundSize: "300% auto",
                   display: "flex",
-                }}
-              >
+                }}>
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
                     style={{ background: "rgba(255,255,255,.18)" }}>
-                    <svg width="17" height="17" viewBox="0 0 24 24" fill="white">
-                      <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
+                    <svg width="19" height="19" viewBox="0 0 24 24" fill="white">
+                      <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
                     </svg>
                   </div>
                   <div>
-                    <p className="text-[13.5px] font-black leading-tight" style={{ color: "#fff", letterSpacing: "-0.015em" }}>
+                    <p style={{ fontSize: "14px", fontWeight: 900, color: "#fff", letterSpacing: "-0.015em", lineHeight: 1.2 }}>
                       Start Your Free Trial
                     </p>
-                    <p className="text-[10.5px] font-medium leading-tight mt-0.5" style={{ color: "rgba(255,255,255,.75)" }}>
-                      Full access · 15 days · No credit card
+                    <p style={{ fontSize: "11px", color: "rgba(255,255,255,.72)", marginTop: "2px" }}>
+                      15 Days · Unlimited Modules · No Credit Card
                     </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0 rounded-lg px-3 py-1.5 transition-transform group-hover:translate-x-0.5"
                   style={{ background: "rgba(255,255,255,.2)" }}>
-                  <span className="text-[11px] font-bold" style={{ color: "#fff" }}>Create Workspace</span>
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M5 12h14M13 6l6 6-6 6" />
-                  </svg>
+                  <span style={{ fontSize: "11px", fontWeight: 700, color: "#fff" }}>Create Workspace</span>
+                  <ArrowRight size={12} color="white" />
                 </div>
               </a>
 
-              {/* Trust footer */}
-              <div className="mt-4 pt-4" style={{ borderTop: "1px solid #F1F5F9" }}>
-                <div className="flex items-center justify-center gap-1.5 flex-wrap">
-                  <ShieldCheck size={12} style={{ color: "#0F766E" }} />
-                  <p className="text-[11px] text-center" style={{ color: "#94A3B8" }}>
-                    256-bit SSL &nbsp;·&nbsp; HIPAA Ready &nbsp;·&nbsp; ABDM Compatible &nbsp;·&nbsp; DPDP Compliant
-                  </p>
+              {/* ── Trust indicators ── */}
+              <div className="mt-4 pt-4" style={{ borderTop: "1px solid rgba(15,23,42,.07)" }}>
+                <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5">
+                  {[
+                    { icon: "🔒", label: "256-bit SSL"  },
+                    { icon: "🏥", label: "HIPAA Ready"  },
+                    { icon: "📄", label: "ABDM"          },
+                    { icon: "🛡", label: "DPDP"          },
+                    { icon: "☁",  label: "ISO 27001"    },
+                  ].map((t, i) => (
+                    <div key={i} className="flex items-center gap-1">
+                      <span style={{ fontSize: "12px" }}>{t.icon}</span>
+                      <span style={{ fontSize: "10.5px", fontWeight: 600, color: "#94A3B8" }}>{t.label}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
+
             </div>
           </div>
         </div>
       </div>
-    </div>
-  );
-}
-
-/* ── Lock icon ───────────────────────────────────────────────────────────── */
-function LockMini() {
-  return (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
-      <rect x="5" y="11" width="14" height="10" rx="2.5" stroke="currentColor" strokeWidth="2" />
-      <path d="M8 11V7a4 4 0 0 1 8 0v4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-/* ── Dashboard preview ───────────────────────────────────────────────────── */
-function DashboardPreview() {
-  return (
-    <div className="px-3 pt-2.5 pb-3" style={{ opacity: 0.13 }}>
-      {/* Header bar */}
-      <div className="flex items-center justify-between mb-2.5">
-        <div className="flex items-center gap-2">
-          <div className="w-14 h-2 rounded-full" style={{ background: "#0F172A" }} />
-          <div className="w-8 h-1.5 rounded-full" style={{ background: "#94A3B8" }} />
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-5 h-5 rounded-full" style={{ background: "#0F766E" }} />
-          <div className="w-5 h-5 rounded-md" style={{ background: "#E2E8F0" }} />
-        </div>
-      </div>
-
-      {/* Stat cards */}
-      <div className="grid grid-cols-4 gap-1.5 mb-2.5">
-        {[
-          { color: "#0F766E" },
-          { color: "#2563EB" },
-          { color: "#7C3AED" },
-          { color: "#D97706" },
-        ].map((c, i) => (
-          <div key={i} className="rounded-lg p-2" style={{ background: "rgba(15,23,42,.035)", border: "1px solid rgba(15,23,42,.06)" }}>
-            <div className="w-4 h-4 rounded-md mb-1.5" style={{ background: c.color }} />
-            <div className="w-full h-2 rounded mb-1" style={{ background: "#0F172A" }} />
-            <div className="w-3/4 h-1.5 rounded" style={{ background: "#94A3B8" }} />
-          </div>
-        ))}
-      </div>
-
-      {/* Bar chart */}
-      <div className="rounded-lg p-2 mb-2" style={{ background: "rgba(15,23,42,.03)", border: "1px solid rgba(15,23,42,.055)" }}>
-        <div className="flex items-end gap-[3px]" style={{ height: "32px" }}>
-          {[38,60,45,80,52,90,68,84,58,72,46,94].map((h, i) => (
-            <div key={i} className="flex-1 rounded-sm" style={{ height: `${h}%`, background: "#0F766E" }} />
-          ))}
-        </div>
-      </div>
-
-      {/* Patient rows */}
-      {[1, 2, 3].map(i => (
-        <div key={i} className="flex items-center gap-2 mb-1.5">
-          <div className="w-4 h-4 rounded-full shrink-0" style={{ background: "#CBD5E1" }} />
-          <div className="flex-1 h-1.5 rounded" style={{ background: "#E2E8F0" }} />
-          <div className="w-8 h-1.5 rounded" style={{ background: "#CCFBF1" }} />
-          <div className="w-5 h-1.5 rounded" style={{ background: "#E2E8F0" }} />
-        </div>
-      ))}
     </div>
   );
 }
