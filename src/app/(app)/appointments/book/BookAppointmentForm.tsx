@@ -236,10 +236,7 @@ export function BookAppointmentForm({
 
   return (
     <div className="max-w-3xl mx-auto fade-in">
-      {/* Header */}
-      <div className="flex items-center gap-2 mb-6">
-        <BackButton href={returnTo} label="Back to Appointments" />
-      </div>
+
 
       <div className="mb-6">
         <h1 className="text-xl font-semibold text-[var(--color-ink-900)]">Book Appointment</h1>
