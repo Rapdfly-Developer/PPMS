@@ -2,6 +2,7 @@
 
 import { signIn } from "@/auth";
 import { AuthError } from "next-auth";
+
 import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 
@@ -17,6 +18,20 @@ function getUA(hdrs: Headers) {
   return hdrs.get("user-agent") ?? undefined;
 }
 
+/* ── Mobile OTP login ────────────────────────────────────────────────── */
+export async function mobileOtpLoginAction(loginToken: string): Promise<{ error?: string }> {
+  try {
+    await signIn("mobile-otp", { token: loginToken, redirectTo: "/" });
+    return {};
+  } catch (err) {
+    if (err instanceof AuthError) {
+      return { error: "Sign-in failed. Please try again." };
+    }
+    throw err;
+  }
+}
+
+/* ── Password login ──────────────────────────────────────────────────── */
 export async function loginAction(_prev: { error?: string } | undefined, formData: FormData) {
   const username = (formData.get("username") as string | null) ?? "";
   const hdrs = await headers();

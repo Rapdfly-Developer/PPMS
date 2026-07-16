@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState, useRef, useEffect, useCallback } from "react";
-import { loginAction } from "./actions";
+import { loginAction, mobileOtpLoginAction } from "./actions";
 import {
   Eye, EyeOff, User, Lock, Phone, AlertCircle, CheckCircle2,
   ShieldCheck, ArrowRight, Loader2, Check, Mail, X, KeyRound, RotateCcw,
@@ -866,12 +866,15 @@ export default function LoginPage() {
   const [touched, setTouched]       = useState<Record<string, boolean>>({});
 
   // OTP tab
-  const [mobile, setMobile]         = useState("");
-  const [otpSent, setOtpSent]       = useState(false);
-  const [otpValue, setOtpValue]     = useState("");
-  const [otpMsg, setOtpMsg]         = useState("");
-  const [otpErrors, setOtpErrors]   = useState<FieldErrors>({});
-  const [otpTouched, setOtpTouched] = useState<Record<string, boolean>>({});
+  const [mobile, setMobile]                       = useState("");
+  const [otpSent, setOtpSent]                     = useState(false);
+  const [otpValue, setOtpValue]                   = useState("");
+  const [otpMsg, setOtpMsg]                       = useState("");
+  const [otpErrors, setOtpErrors]                 = useState<FieldErrors>({});
+  const [otpTouched, setOtpTouched]               = useState<Record<string, boolean>>({});
+  const [otpLoading, setOtpLoading]               = useState(false);
+  const [otpResendCooldown, setOtpResendCooldown] = useState(0);
+  const otpResendTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Button ripple
   const btnRef = useRef<HTMLButtonElement>(null);
@@ -879,23 +882,81 @@ export default function LoginPage() {
 
   function touchOtpField(f: string) { setOtpTouched(p => ({ ...p, [f]: true })); }
 
-  function handleSendOtp() {
-    touchOtpField("mobile");
-    const errs = validateOtp({ mobile, otpSent: false });
-    setOtpErrors(errs);
-    if (errs.mobile) return;
-    setOtpSent(true);
-    setOtpMsg(`OTP sent to +91 ${mobile}`);
+  function startOtpResendCountdown() {
+    setOtpResendCooldown(60);
+    if (otpResendTimer.current) clearInterval(otpResendTimer.current);
+    otpResendTimer.current = setInterval(() => {
+      setOtpResendCooldown(s => {
+        if (s <= 1) { clearInterval(otpResendTimer.current!); return 0; }
+        return s - 1;
+      });
+    }, 1000);
   }
 
-  function handleVerifyOtp() {
+  async function handleSendOtp(isResend = false) {
+    if (!isResend) touchOtpField("mobile");
+    const errs = validateOtp({ mobile, otpSent: false });
+    if (!isResend) setOtpErrors(errs);
+    if (errs.mobile) return;
+
+    setOtpLoading(true);
+    setOtpMsg("");
+    try {
+      const res = await fetch("/api/auth/send-mobile-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mobile }),
+      });
+      const data = await res.json();
+      if (!data.success) {
+        setOtpErrors(p => ({ ...p, mobile: data.error ?? "Failed to send OTP." }));
+        return;
+      }
+      setOtpSent(true);
+      startOtpResendCountdown();
+      setOtpMsg(`OTP sent to +91 ${mobile}`);
+    } catch {
+      setOtpErrors(p => ({ ...p, mobile: "Network error. Please try again." }));
+    } finally {
+      setOtpLoading(false);
+    }
+  }
+
+  async function handleVerifyOtp() {
     setOtpTouched({ mobile: true, otp: true });
-    setOtpErrors(validateOtp({ mobile, otp: otpValue, otpSent: true }));
+    const errs = validateOtp({ mobile, otp: otpValue, otpSent: true });
+    setOtpErrors(errs);
+    if (Object.keys(errs).length > 0) return;
+
+    setOtpLoading(true);
+    try {
+      const res = await fetch("/api/auth/verify-mobile-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mobile, otp: otpValue }),
+      });
+      const data = await res.json();
+      if (!data.success) {
+        setOtpErrors(p => ({ ...p, otp: data.error ?? "Verification failed." }));
+        return;
+      }
+      // OTP verified — exchange the one-time token for a real session
+      const result = await mobileOtpLoginAction(data.loginToken);
+      if (result?.error) {
+        setOtpErrors(p => ({ ...p, otp: result.error }));
+      }
+    } catch {
+      setOtpErrors(p => ({ ...p, otp: "Network error. Please try again." }));
+    } finally {
+      setOtpLoading(false);
+    }
   }
 
   function switchTab(t: "password" | "otp") {
     setTab(t);
     setOtpSent(false); setOtpMsg(""); setOtpErrors({}); setOtpTouched({});
+    setOtpLoading(false); setOtpResendCooldown(0);
+    if (otpResendTimer.current) clearInterval(otpResendTimer.current);
     setFieldErrors({}); setTouched({});
   }
 
@@ -1319,10 +1380,11 @@ export default function LoginPage() {
               {/* ── OTP form ── */}
               {tab === "otp" && (
                 <div className="flex flex-col gap-4">
+                  {/* Mobile input + Send OTP */}
                   <div>
                     <div className="flex gap-2 items-start">
                       <div className="flex items-center justify-center rounded-[16px] border-2 shrink-0 font-semibold"
-                        style={{ height: "50px", width: "52px", borderColor: "#E2E8F0", background: "rgba(248,250,252,.8)", color: "#475569", fontSize: "14px" }}>
+                        style={{ height: "56px", width: "56px", borderColor: "#E2E8F0", background: "rgba(248,250,252,.8)", color: "#475569", fontSize: "14px" }}>
                         +91
                       </div>
                       <div className="flex-1 min-w-0">
@@ -1331,50 +1393,80 @@ export default function LoginPage() {
                           type="tel"
                           maxLength={10}
                           value={mobile}
+                          autoFocus
+                          autoComplete="tel"
                           onChange={v => { const c = v.replace(/\D/g, ""); setMobile(c); setOtpMsg(""); if (otpTouched.mobile) setOtpErrors(p => ({ ...p, mobile: undefined })); }}
                           onBlur={() => { touchOtpField("mobile"); setOtpErrors(p => ({ ...p, mobile: validateOtp({ mobile, otpSent: false }).mobile })); }}
+                          onKeyDown={e => { if (e.key === "Enter" && mobile.length === 10 && !otpSent) handleSendOtp(); }}
                           error={otpTouched.mobile ? otpErrors.mobile : undefined}
                         />
                       </div>
-                      <button type="button" onClick={handleSendOtp}
-                        className="lp-btn shrink-0 px-4 rounded-[16px] text-sm font-semibold text-white"
-                        style={mobile.length === 10
-                          ? { height: "50px", background: "linear-gradient(135deg,#0F766E,#0C6C62)", boxShadow: "0 6px 18px rgba(15,118,110,.28)" }
-                          : { height: "50px", background: "#E2E8F0", color: "#94A3B8", cursor: "not-allowed" }}>
-                        Send OTP
+                      <button
+                        type="button"
+                        disabled={otpLoading || mobile.length !== 10}
+                        onClick={() => handleSendOtp()}
+                        className="lp-btn shrink-0 rounded-[16px] text-sm font-semibold flex items-center justify-center gap-1.5"
+                        style={mobile.length === 10 && !otpLoading
+                          ? { height: "56px", width: "96px", background: "linear-gradient(135deg,#0F766E,#0C6C62)", color: "#fff", boxShadow: "0 6px 18px rgba(15,118,110,.28)" }
+                          : { height: "56px", width: "96px", background: "#E2E8F0", color: "#94A3B8", cursor: "not-allowed" }}>
+                        {otpLoading && !otpSent
+                          ? <Loader2 size={14} className="animate-spin" />
+                          : "Send OTP"}
                       </button>
                     </div>
                   </div>
 
+                  {/* OTP input — shown after OTP is sent */}
                   {otpSent && (
                     <div>
                       <FloatingInput
                         label="6-digit OTP"
                         type="text"
                         maxLength={6}
+                        autoFocus
+                        autoComplete="one-time-code"
+                        icon={<KeyRound size={15} />}
                         value={otpValue}
                         onChange={v => { const c = v.replace(/\D/g, "").slice(0, 6); setOtpValue(c); if (otpTouched.otp) setOtpErrors(p => ({ ...p, otp: undefined })); }}
                         onBlur={() => { setOtpTouched(t => ({ ...t, otp: true })); setOtpErrors(p => ({ ...p, otp: validateOtp({ mobile, otp: otpValue, otpSent: true }).otp })); }}
+                        onKeyDown={e => { if (e.key === "Enter" && otpValue.length === 6) handleVerifyOtp(); }}
                         error={otpTouched.otp ? otpErrors.otp : undefined}
                       />
+                      <div className="flex items-center justify-between mt-2">
+                        <p style={{ fontSize: "11px", color: "#94A3B8" }}>Valid for 5 minutes</p>
+                        <button
+                          type="button"
+                          disabled={otpResendCooldown > 0 || otpLoading}
+                          onClick={() => handleSendOtp(true)}
+                          className="flex items-center gap-1 text-xs font-semibold transition-colors"
+                          style={{ color: otpResendCooldown > 0 ? "#CBD5E1" : "#0F766E" }}>
+                          <RotateCcw size={11} />
+                          {otpResendCooldown > 0 ? `Resend in ${otpResendCooldown}s` : "Resend OTP"}
+                        </button>
+                      </div>
                     </div>
                   )}
 
+                  {/* Success message */}
                   {otpMsg && (
                     <p className="flex items-center gap-2 rounded-xl px-3.5 py-2.5"
                       style={{ fontSize: "12px", background: "#F0FDFA", color: "#0F766E", border: "1px solid #CCFBF1", animation: "lp-slide-up .22s both" }}>
-                      <CheckCircle2 size={13} /> {otpMsg} (demo — not implemented)
+                      <CheckCircle2 size={13} /> {otpMsg}
                     </p>
                   )}
 
-                  <button type="button" onClick={handleVerifyOtp}
-                    disabled={!otpSent || otpValue.length < 6}
+                  {/* Verify & Sign In */}
+                  <button
+                    type="button"
+                    disabled={!otpSent || otpValue.length < 6 || otpLoading}
+                    onClick={handleVerifyOtp}
                     className="lp-btn relative overflow-hidden w-full font-bold text-white rounded-2xl flex items-center justify-center gap-2"
-                    style={otpSent && otpValue.length >= 6
-                      ? { height: "48px", fontSize: "15px", background: "linear-gradient(135deg,#0F766E,#0C6C62)", boxShadow: "0 10px 28px rgba(15,118,110,.3)" }
-                      : { height: "48px", fontSize: "15px", background: "#E2E8F0", color: "#94A3B8", cursor: "not-allowed" }}>
-                    <span>Verify & Sign In</span>
-                    {otpSent && otpValue.length >= 6 && <ArrowRight size={16} className="lp-arrow-icon" />}
+                    style={otpSent && otpValue.length >= 6 && !otpLoading
+                      ? { height: "52px", fontSize: "15px", background: "linear-gradient(135deg,#0F766E,#0C6C62)", boxShadow: "0 10px 28px rgba(15,118,110,.3)" }
+                      : { height: "52px", fontSize: "15px", background: "#E2E8F0", color: "#94A3B8", cursor: "not-allowed" }}>
+                    {otpLoading && otpSent
+                      ? <><Loader2 size={16} className="animate-spin" /> Verifying…</>
+                      : <><span>Verify & Sign In</span>{otpSent && otpValue.length >= 6 && <ArrowRight size={16} className="lp-arrow-icon" />}</>}
                   </button>
                 </div>
               )}
