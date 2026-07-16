@@ -399,6 +399,8 @@ export function AvailabilityClient({
         </div>
       ) : (
         <div className="bg-white rounded-2xl border border-[var(--color-border)] overflow-hidden">
+          <div className="overflow-x-auto">
+          <div className="min-w-[700px]">
           {/* Day headers */}
           <div className="grid grid-cols-7 border-b border-[var(--color-border)]">
             {COL_ORDER.map((wd) => {
@@ -460,6 +462,8 @@ export function AvailabilityClient({
                 </div>
               );
             })}
+          </div>
+          </div>
           </div>
         </div>
       )}
