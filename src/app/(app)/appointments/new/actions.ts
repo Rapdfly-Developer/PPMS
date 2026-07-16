@@ -26,13 +26,16 @@ export async function createWalkInEncounter(formData: FormData) {
   let patientId: string;
   let complaint: string | null = null;
 
+  const formComplaint = (formData.get("complaint") as string)?.trim() || null;
+
   if (mode === "existing") {
     patientId = formData.get("patientId") as string;
     if (!patientId) return { error: "Please select a patient." };
+    if (!formComplaint) return { error: "Chief complaint is required." };
 
     const patient = await prisma.patient.findUnique({ where: { id: patientId } });
     if (!patient) return { error: "Patient not found." };
-    complaint = patient.complaint;
+    complaint = formComplaint;
   } else {
     // Register new patient on the fly
     const name     = (formData.get("name")     as string)?.trim();
@@ -41,7 +44,7 @@ export async function createWalkInEncounter(formData: FormData) {
     const mobile   = (formData.get("mobile")   as string)?.trim();
     const aadhaar  = (formData.get("aadhaar")  as string)?.trim() || "";
     const category = (formData.get("category") as string) || "GENERAL";
-    complaint      = (formData.get("complaint") as string)?.trim() || null;
+    complaint      = formComplaint;
     const photoUrl = (formData.get("patientPhoto") as string)?.trim() || null;
 
     if (!name || !ageRaw || !sex || !mobile || !complaint) {

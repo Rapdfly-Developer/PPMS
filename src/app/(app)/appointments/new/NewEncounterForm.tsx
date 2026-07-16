@@ -91,15 +91,18 @@ export function NewEncounterForm({
     fd.set("visitType", visitType);
     fd.set("hospitalId", hospitalId);
 
+    if (!complaint.trim()) { setError("Chief complaint is required."); return; }
+
+    fd.set("complaint", complaint.trim());
+
     if (patientMode === "existing") {
       if (!selectedPatient) { setError("Please select a patient."); return; }
       fd.set("patientId", selectedPatient.id);
     } else {
-      if (!name.trim())      { setError("Patient name is required."); return; }
-      if (!dob)              { setError("Date of birth is required."); return; }
-      if (!mobile.trim())    { setError("Phone number is required."); return; }
-      if (!complaint.trim()) { setError("Chief complaint is required."); return; }
-      if (!patientPhoto)    { setError("Patient photo is required."); return; }
+      if (!name.trim())   { setError("Patient name is required."); return; }
+      if (!dob)           { setError("Date of birth is required."); return; }
+      if (!mobile.trim()) { setError("Phone number is required."); return; }
+      if (!patientPhoto)  { setError("Patient photo is required."); return; }
 
       const dobAge = Math.floor(
         (Date.now() - new Date(dob).getTime()) / (365.25 * 86_400_000)
@@ -305,18 +308,6 @@ export function NewEncounterForm({
                 </div>
               </div>
 
-              {/* Chief Complaint */}
-              <div>
-                <FieldLabel icon={<FileText size={12} />}>Chief Complaint *</FieldLabel>
-                <textarea
-                  placeholder="Presenting complaint or reason for visit..."
-                  value={complaint}
-                  onChange={(e) => setComplaint(e.target.value)}
-                  rows={2}
-                  className={`${inputCls} resize-none`}
-                />
-              </div>
-
               {/* Photos */}
               <div>
                 <FieldLabel>Photos *</FieldLabel>
@@ -352,7 +343,7 @@ export function NewEncounterForm({
             </span>
             <span className="text-sm font-semibold text-[var(--color-ink-800)]">Visit Type</span>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 mb-5">
             {VISIT_TYPES.map((vt) => (
               <button
                 key={vt}
@@ -367,6 +358,16 @@ export function NewEncounterForm({
                 {vt}
               </button>
             ))}
+          </div>
+          <div>
+            <FieldLabel icon={<FileText size={12} />}>Chief Complaint *</FieldLabel>
+            <textarea
+              placeholder="Presenting complaint or reason for visit..."
+              value={complaint}
+              onChange={(e) => setComplaint(e.target.value)}
+              rows={2}
+              className={`${inputCls} resize-none`}
+            />
           </div>
         </div>
 
