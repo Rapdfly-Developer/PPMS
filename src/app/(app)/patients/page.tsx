@@ -17,7 +17,7 @@ export default async function PatientsPage({
   const sexFilter      = sp.sex       ?? "";
   const hospitalFilter = sp.hospital  ?? "";
   const opStatusFilter = sp.opStatus  ?? "";
-  const sortBy         = sp.sort      ?? "newest";
+  const sortBy         = sp.sort      ?? "lastvisit";
   const registered     = sp.registered ?? "";
   const page     = Math.max(1, parseInt(sp.page ?? "1", 10) || 1);
   const pageSize = ([10, 25, 50] as number[]).includes(parseInt(sp.size ?? "25", 10))

@@ -301,7 +301,7 @@ export function PatientsClient({
     if (merged.sex)                       params.set("sex",      merged.sex);
     if (merged.hospital)                  params.set("hospital",  merged.hospital);
     if (merged.opStatus)                  params.set("opStatus",  merged.opStatus);
-    if (merged.sort && merged.sort !== "newest") params.set("sort", merged.sort);
+    if (merged.sort && merged.sort !== "lastvisit") params.set("sort", merged.sort);
     if (merged.size && merged.size !== "25")     params.set("size", merged.size);
     if (merged.page && merged.page !== "1")      params.set("page", merged.page);
     startTransition(() => router.push(`/patients${params.toString() ? `?${params}` : ""}`));
@@ -319,7 +319,7 @@ export function PatientsClient({
     if (categoryFilter) params.set("category", categoryFilter);
     if (sexFilter)      params.set("sex",      sexFilter);
     if (hospitalFilter) params.set("hospital", hospitalFilter);
-    if (sortBy !== "newest")    params.set("sort", sortBy);
+    if (sortBy !== "lastvisit")    params.set("sort", sortBy);
     if (pageSize !== 25)        params.set("size", String(pageSize));
     if (p !== 1)                params.set("page", String(p));
     return `/patients${params.toString() ? `?${params}` : ""}`;
