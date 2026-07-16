@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import {
   Search, Stethoscope, UserPlus, Users,
   User, Phone, FileText, CalendarDays,
-  Calendar, Clock, Info, Building2,
+  Calendar, Building2,
 } from "lucide-react";
 import { BackButton } from "@/components/ui/BackButton";
 import { SmartUploadBox, type UploadedFile } from "@/components/ui/SmartUploadBox";
@@ -17,24 +17,6 @@ const VISIT_TYPES = [
   "Follow-up",
   "Post-op Review",
 ];
-
-const FALLBACK_SLOTS = [
-  "08:00","08:15","08:30","08:45",
-  "09:00","09:15","09:30","09:45",
-  "10:00","10:15","10:30","10:45",
-  "11:00","11:15","11:30","11:45",
-  "14:00","14:15","14:30","14:45",
-  "15:00","15:15","15:30","15:45",
-  "16:00","16:15","16:30","16:45",
-  "17:00","17:15","17:30","17:45",
-];
-
-function to12h(t: string): string {
-  const [h, m] = t.split(":").map(Number);
-  const period = h >= 12 ? "PM" : "AM";
-  const h12 = h % 12 || 12;
-  return `${h12}:${String(m).padStart(2, "0")} ${period}`;
-}
 
 const CATEGORIES = [
   { value: "GENERAL",   label: "General" },
@@ -92,12 +74,6 @@ export function NewEncounterForm({
 
   const todayStr = new Date().toISOString().split("T")[0];
   const [date, setDate] = useState(todayStr);
-  const nowMins = new Date().getHours() * 60 + new Date().getMinutes();
-  const availableSlots = FALLBACK_SLOTS.filter((t) => {
-    const [h, m] = t.split(":").map(Number);
-    return !(date === todayStr && h * 60 + m <= nowMins);
-  });
-  const [time, setTime] = useState(() => availableSlots[0] ?? FALLBACK_SLOTS[0]);
 
   const filtered = search.trim()
     ? patients.filter(
@@ -118,7 +94,6 @@ export function NewEncounterForm({
     fd.set("visitType", visitType);
     fd.set("hospitalId", hospitalId);
     fd.set("date", date);
-    fd.set("time", time);
 
     if (!complaint.trim()) { setError("Chief complaint is required."); return; }
 
@@ -400,51 +375,17 @@ export function NewEncounterForm({
               </div>
             )}
 
-            {/* Date + Time */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-              <div>
-                <FieldLabel icon={<Calendar size={12} />}>Date *</FieldLabel>
-                <input
-                  type="date"
-                  value={date}
-                  min={todayStr}
-                  max={todayStr}
-                  onChange={(e) => setDate(e.target.value)}
-                  className={inputCls}
-                />
-              </div>
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <FieldLabel icon={<Clock size={12} />}>Time *</FieldLabel>
-                  <span className="flex items-center gap-1 text-[10px] text-[var(--color-ink-400)]">
-                    <Info size={10} /> No schedule set — showing all slots
-                  </span>
-                </div>
-                <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto pr-1">
-                  {availableSlots.length === 0 && (
-                    <p className="text-xs text-[var(--color-ink-400)] italic py-1">No slots available.</p>
-                  )}
-                  {availableSlots.map((t) => (
-                    <button
-                      key={t}
-                      type="button"
-                      onClick={() => setTime(t)}
-                      className="px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors"
-                      style={time === t ? {
-                        background: "var(--color-primary-700)",
-                        color: "#fff",
-                        borderColor: "var(--color-primary-700)",
-                      } : {
-                        background: "#fff",
-                        color: "var(--color-ink-700)",
-                        borderColor: "var(--color-border)",
-                      }}
-                    >
-                      {to12h(t)}
-                    </button>
-                  ))}
-                </div>
-              </div>
+            {/* Date */}
+            <div>
+              <FieldLabel icon={<Calendar size={12} />}>Date *</FieldLabel>
+              <input
+                type="date"
+                value={date}
+                min={todayStr}
+                max={todayStr}
+                onChange={(e) => setDate(e.target.value)}
+                className={inputCls}
+              />
             </div>
 
             {/* Visit Type */}
