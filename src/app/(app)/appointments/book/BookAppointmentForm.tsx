@@ -175,6 +175,8 @@ export function BookAppointmentForm({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (patientMode === "existing" && !selectedPatient) { setError("Please select a patient."); return; }
+    if (patientMode === "new" && !aadhaarPhoto) { setError("Aadhaar photocopy is required for new patients."); return; }
+    if (patientMode === "new" && !patientPhoto) { setError("Patient photo is required for new patients."); return; }
     if (!doctorId) { setError("Please select a doctor."); return; }
     if (!effectiveHospitalId) { setError("Please select a hospital."); return; }
     if (!notes.trim()) { setError("Chief complaint is required."); return; }
@@ -232,7 +234,9 @@ export function BookAppointmentForm({
     });
   };
 
-  const patientReady = patientMode === "new" ? npName.trim().length > 0 : !!selectedPatient;
+  const patientReady = patientMode === "new"
+    ? npName.trim().length > 0 && !!aadhaarPhoto && !!patientPhoto
+    : !!selectedPatient;
 
   return (
     <div className="max-w-3xl mx-auto fade-in">
@@ -545,20 +549,20 @@ export function BookAppointmentForm({
 
               {/* Photos & Documents */}
               <div className="sm:col-span-2">
-                <FieldLabel>Photos</FieldLabel>
+                <FieldLabel>Photos & Documents *</FieldLabel>
                 <div className="grid grid-cols-2 gap-3 mt-0.5">
                   <SmartUploadBox
-                    label="Aadhaar Photocopy"
+                    label="Aadhaar Photocopy *"
                     uploadLabel="Upload Aadhaar"
-                    subtitle="Image or PDF"
+                    subtitle="Image or PDF · Required"
                     accept="image/*,application/pdf"
                     value={aadhaarPhoto}
                     onChange={setAadhaarPhoto}
                   />
                   <SmartUploadBox
-                    label="Patient Photo"
+                    label="Patient Photo *"
                     uploadLabel="Upload Photo"
-                    subtitle="JPG / PNG"
+                    subtitle="JPG / PNG · Required"
                     accept="image/jpeg,image/jpg,image/png"
                     value={patientPhoto}
                     onChange={setPatientPhoto}
