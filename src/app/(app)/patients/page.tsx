@@ -66,10 +66,39 @@ export default async function PatientsPage({
 
   const listWhere: any = listConds.length > 0 ? { AND: listConds } : {};
   const orderBy: any   =
-    sortBy === "oldest"    ? { createdAt: "asc"  } :
-    sortBy === "name"      ? { name:      "asc"  } :
-    sortBy === "lastvisit" ? { visits: { _max: { date: "desc" } } } :
-                             { createdAt: "desc" };
+    sortBy === "oldest" ? { createdAt: "asc"  } :
+    sortBy === "name"   ? { name:      "asc"  } :
+                          { createdAt: "desc" };
+
+  const patientInclude = {
+    registeredAt: { select: { name: true } },
+    visits: {
+      orderBy: { date: "desc" as const },
+      take: 1,
+      select: { date: true, generalExam: { select: { chiefComplaint: true } } },
+    },
+  };
+
+  // For lastvisit sort: fetch all IDs+dates, sort in JS, then paginate
+  let total: number;
+  let patients: Awaited<ReturnType<typeof prisma.patient.findMany<{ include: typeof patientInclude }>>>;
+
+  if (sortBy === "lastvisit") {
+    const allSlim = await prisma.patient.findMany({
+      where:  listWhere,
+      select: { id: true, visits: { orderBy: { date: "desc" }, take: 1, select: { date: true } } },
+    });
+    allSlim.sort((a, b) => (b.visits[0]?.date?.getTime() ?? 0) - (a.visits[0]?.date?.getTime() ?? 0));
+    total = allSlim.length;
+    const pageIds = allSlim.slice((page - 1) * pageSize, page * pageSize).map(p => p.id);
+    const pageRows = await prisma.patient.findMany({ where: { id: { in: pageIds } }, include: patientInclude });
+    patients = pageIds.map(id => pageRows.find(p => p.id === id)!).filter(Boolean) as typeof pageRows;
+  } else {
+    [total, patients] = await Promise.all([
+      prisma.patient.count({ where: listWhere }),
+      prisma.patient.findMany({ where: listWhere, orderBy, include: patientInclude, skip: (page - 1) * pageSize, take: pageSize }),
+    ]);
+  }
 
   const today     = startOfDay(new Date());
   const weekStart = subDays(today, 6);
@@ -81,8 +110,6 @@ export default async function PatientsPage({
     : {};
 
   const [
-    total,
-    patients,
     totalPatients,
     todayReg,
     insurancePatients,
@@ -92,21 +119,6 @@ export default async function PatientsPage({
     trendRaw,
     recentReg,
   ] = await Promise.all([
-    prisma.patient.count({ where: listWhere }),
-    prisma.patient.findMany({
-      where:   listWhere,
-      orderBy,
-      include: {
-        registeredAt: { select: { name: true } },
-        visits: {
-          orderBy: { date: "desc" },
-          take: 1,
-          select: { date: true, generalExam: { select: { chiefComplaint: true } } },
-        },
-      },
-      skip:    (page - 1) * pageSize,
-      take:    pageSize,
-    }),
     prisma.patient.count({ where: scopeWhere }),
     prisma.patient.count({ where: { AND: [...scopeConds, { createdAt: { gte: today } }] } }),
     prisma.patient.count({ where: { AND: [...scopeConds, { category: { in: ["ECHS", "INSURANCE"] } }] } }),
