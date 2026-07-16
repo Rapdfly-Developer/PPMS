@@ -1,14 +1,12 @@
 "use client";
 
 import { useState, useTransition, useMemo } from "react";
-import { useSearchParams } from "next/navigation";
 import {
   Plus, Pencil, Trash2, Clock, Building2, CalendarDays,
   Users, Loader2, AlertTriangle, X, Save, ToggleLeft, ToggleRight,
   ChevronDown,
 } from "lucide-react";
 import { upsertAvailability, deleteAvailability, toggleAvailabilityStatus } from "./actions";
-import { BackButton } from "@/components/ui/BackButton";
 
 /* ── Constants ─────────────────────────────────────────────────────────────── */
 const WEEKDAYS     = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -399,8 +397,6 @@ export function AvailabilityClient({
   slots: Slot[];
   hospitals: Hospital[];
 }) {
-  const searchParams = useSearchParams();
-  const returnTo = searchParams.get("returnTo") ?? "/appointments";
   const [slots]     = useState(initial);
   const [modal,     setModal]     = useState<{ type: "add"; hospitalId: string; weekday?: number } | { type: "edit"; slot: Slot } | null>(null);
   const [delTarget, setDelTarget] = useState<Slot | null>(null);
@@ -424,7 +420,6 @@ export function AvailabilityClient({
 
       {/* Header */}
       <div className="flex items-center gap-3">
-        <BackButton href={returnTo} className="p-2 rounded-lg hover:bg-[var(--color-surface-sunken)]" />
         <div className="flex-1">
           <h1 className="text-xl font-semibold text-[var(--color-ink-900)]">My Availability</h1>
           <p className="text-sm text-[var(--color-ink-400)] mt-0.5">Configure weekly schedules per hospital</p>
