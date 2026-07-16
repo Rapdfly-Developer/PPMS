@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import {
   Search, Stethoscope, UserPlus, Users,
   User, Phone, FileText, CalendarDays,
+  Calendar, Clock, Info, Building2,
 } from "lucide-react";
 import { BackButton } from "@/components/ui/BackButton";
 import { SmartUploadBox, type UploadedFile } from "@/components/ui/SmartUploadBox";
@@ -12,11 +13,28 @@ import { createWalkInEncounter } from "./actions";
 
 const VISIT_TYPES = [
   "General OPD",
-  "Specialist OPD",
   "Emergency",
   "Follow-up",
   "Post-op Review",
 ];
+
+const FALLBACK_SLOTS = [
+  "08:00","08:15","08:30","08:45",
+  "09:00","09:15","09:30","09:45",
+  "10:00","10:15","10:30","10:45",
+  "11:00","11:15","11:30","11:45",
+  "14:00","14:15","14:30","14:45",
+  "15:00","15:15","15:30","15:45",
+  "16:00","16:15","16:30","16:45",
+  "17:00","17:15","17:30","17:45",
+];
+
+function to12h(t: string): string {
+  const [h, m] = t.split(":").map(Number);
+  const period = h >= 12 ? "PM" : "AM";
+  const h12 = h % 12 || 12;
+  return `${h12}:${String(m).padStart(2, "0")} ${period}`;
+}
 
 const CATEGORIES = [
   { value: "GENERAL",   label: "General" },
@@ -72,6 +90,15 @@ export function NewEncounterForm({
   const [hospitalId, setHospitalId] = useState(hospitals[0]?.id ?? "");
   const [error, setError] = useState("");
 
+  const todayStr = new Date().toISOString().split("T")[0];
+  const [date, setDate] = useState(todayStr);
+  const nowMins = new Date().getHours() * 60 + new Date().getMinutes();
+  const availableSlots = FALLBACK_SLOTS.filter((t) => {
+    const [h, m] = t.split(":").map(Number);
+    return !(date === todayStr && h * 60 + m <= nowMins);
+  });
+  const [time, setTime] = useState(() => availableSlots[0] ?? FALLBACK_SLOTS[0]);
+
   const filtered = search.trim()
     ? patients.filter(
         (p) =>
@@ -90,6 +117,8 @@ export function NewEncounterForm({
     fd.set("mode", patientMode);
     fd.set("visitType", visitType);
     fd.set("hospitalId", hospitalId);
+    fd.set("date", date);
+    fd.set("time", time);
 
     if (!complaint.trim()) { setError("Chief complaint is required."); return; }
 
@@ -335,60 +364,126 @@ export function NewEncounterForm({
           )}
         </div>
 
-        {/* ── Hospital ───────────────────────────────────────────────────── */}
-        {hospitals.length >= 1 && (
-          <div className="surface-card p-5">
-            <div className="flex items-center gap-2.5 mb-4">
-              <span className="size-6 rounded-full bg-[var(--color-primary-700)] text-white text-xs font-bold flex items-center justify-center shrink-0">
-                2
-              </span>
-              <span className="text-sm font-semibold text-[var(--color-ink-800)]">Hospital</span>
-            </div>
-            <select
-              value={hospitalId}
-              onChange={(e) => setHospitalId(e.target.value)}
-              className={inputCls}
-            >
-              {hospitals.map((h) => (
-                <option key={h.id} value={h.id}>{h.name}</option>
-              ))}
-            </select>
-          </div>
-        )}
-
-        {/* ── Visit type ─────────────────────────────────────────────────── */}
+        {/* ── Appointment Details ────────────────────────────────────────── */}
         <div className="surface-card p-5">
-          <div className="flex items-center gap-2.5 mb-4">
+          <div className="flex items-center gap-2.5 mb-5">
             <span className="size-6 rounded-full bg-[var(--color-primary-700)] text-white text-xs font-bold flex items-center justify-center shrink-0">
-              3
+              2
             </span>
-            <span className="text-sm font-semibold text-[var(--color-ink-800)]">Visit Type</span>
+            <span className="text-sm font-semibold text-[var(--color-ink-800)]">Appointment Details</span>
           </div>
-          <div className="flex flex-wrap gap-2 mb-5">
-            {VISIT_TYPES.map((vt) => (
-              <button
-                key={vt}
-                type="button"
-                onClick={() => setVisitType(vt)}
-                className={`px-4 py-2 rounded-full text-sm font-medium border transition-colors ${
-                  visitType === vt
-                    ? "bg-[var(--color-primary-700)] text-white border-[var(--color-primary-700)]"
-                    : "bg-white text-[var(--color-ink-700)] border-[var(--color-border)] hover:border-[var(--color-primary-400)]"
-                }`}
-              >
-                {vt}
-              </button>
-            ))}
-          </div>
-          <div>
-            <FieldLabel icon={<FileText size={12} />}>Chief Complaint *</FieldLabel>
-            <textarea
-              placeholder="Presenting complaint or reason for visit..."
-              value={complaint}
-              onChange={(e) => setComplaint(e.target.value)}
-              rows={2}
-              className={`${inputCls} resize-none`}
-            />
+
+          <div className="flex flex-col gap-5">
+            {/* Hospital — radio grid */}
+            {hospitals.length >= 1 && (
+              <div>
+                <FieldLabel icon={<Building2 size={12} />}>Hospital *</FieldLabel>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {hospitals.map((h) => (
+                    <label key={h.id} className={`flex items-center gap-2 px-4 py-3 rounded-xl border cursor-pointer transition-all ${
+                      hospitalId === h.id
+                        ? "border-[var(--color-primary-600)] bg-[var(--color-primary-50)]"
+                        : "border-[var(--color-border)] bg-white hover:bg-[var(--color-surface-sunken)]"
+                    }`}>
+                      <input
+                        type="radio"
+                        name="hospital"
+                        value={h.id}
+                        checked={hospitalId === h.id}
+                        onChange={() => setHospitalId(h.id)}
+                        className="accent-[var(--color-primary-600)]"
+                      />
+                      <span className="text-sm font-medium text-[var(--color-ink-900)]">{h.name}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Date + Time */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <div>
+                <FieldLabel icon={<Calendar size={12} />}>Date *</FieldLabel>
+                <input
+                  type="date"
+                  value={date}
+                  min={todayStr}
+                  max={todayStr}
+                  onChange={(e) => setDate(e.target.value)}
+                  className={inputCls}
+                />
+              </div>
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <FieldLabel icon={<Clock size={12} />}>Time *</FieldLabel>
+                  <span className="flex items-center gap-1 text-[10px] text-[var(--color-ink-400)]">
+                    <Info size={10} /> No schedule set — showing all slots
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto pr-1">
+                  {availableSlots.length === 0 && (
+                    <p className="text-xs text-[var(--color-ink-400)] italic py-1">No slots available.</p>
+                  )}
+                  {availableSlots.map((t) => (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => setTime(t)}
+                      className="px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors"
+                      style={time === t ? {
+                        background: "var(--color-primary-700)",
+                        color: "#fff",
+                        borderColor: "var(--color-primary-700)",
+                      } : {
+                        background: "#fff",
+                        color: "var(--color-ink-700)",
+                        borderColor: "var(--color-border)",
+                      }}
+                    >
+                      {to12h(t)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Visit Type */}
+            <div>
+              <FieldLabel>Visit Type</FieldLabel>
+              <div className="flex flex-wrap gap-2 mt-1">
+                {VISIT_TYPES.map((vt) => (
+                  <button
+                    key={vt}
+                    type="button"
+                    onClick={() => setVisitType(vt)}
+                    className="px-3.5 py-1.5 rounded-full text-sm font-medium border transition-colors"
+                    style={visitType === vt ? {
+                      background: "var(--color-primary-700)",
+                      color: "#fff",
+                      borderColor: "var(--color-primary-700)",
+                    } : {
+                      background: "#fff",
+                      color: "var(--color-ink-700)",
+                      borderColor: "var(--color-border)",
+                    }}
+                  >
+                    {vt}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Chief Complaint */}
+            <div>
+              <FieldLabel icon={<FileText size={12} />}>Chief Complaint *</FieldLabel>
+              <textarea
+                placeholder="Describe the patient's chief complaint..."
+                value={complaint}
+                onChange={(e) => setComplaint(e.target.value)}
+                rows={3}
+                className={`${inputCls} resize-none`}
+              />
+            </div>
           </div>
         </div>
 

@@ -101,7 +101,12 @@ export async function createWalkInEncounter(formData: FormData) {
   });
   if (!patient) return { error: "Patient not found." };
 
-  const now = new Date();
+  const dateStr = (formData.get("date") as string) || new Date().toISOString().split("T")[0];
+  const timeStr = (formData.get("time") as string) || `${String(new Date().getHours()).padStart(2,"0")}:${String(new Date().getMinutes()).padStart(2,"0")}`;
+  const [year, month, day] = dateStr.split("-").map(Number);
+  const [hours, mins] = timeStr.split(":").map(Number);
+  const now = new Date(year, month - 1, day, hours, mins, 0);
+
   const appointment = await prisma.appointment.create({
     data: {
       patientId,
