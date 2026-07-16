@@ -392,6 +392,7 @@ export function PatientsClient({
                 <option value="newest">Newest first</option>
                 <option value="oldest">Oldest first</option>
                 <option value="name">Name A–Z</option>
+                <option value="lastvisit">Last Visit</option>
               </select>
 
               {/* Filter toggle */}

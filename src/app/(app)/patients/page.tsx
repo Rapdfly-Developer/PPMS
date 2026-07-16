@@ -66,9 +66,10 @@ export default async function PatientsPage({
 
   const listWhere: any = listConds.length > 0 ? { AND: listConds } : {};
   const orderBy: any   =
-    sortBy === "oldest" ? { createdAt: "asc"  } :
-    sortBy === "name"   ? { name:      "asc"  } :
-                          { createdAt: "desc" };
+    sortBy === "oldest"    ? { createdAt: "asc"  } :
+    sortBy === "name"      ? { name:      "asc"  } :
+    sortBy === "lastvisit" ? { visits: { _max: { date: "desc" } } } :
+                             { createdAt: "desc" };
 
   const today     = startOfDay(new Date());
   const weekStart = subDays(today, 6);
