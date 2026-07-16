@@ -2,10 +2,11 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import type { Role } from "@/lib/constants";
 
 /* ── Shared: fetch user with all profile relations ────────────────────── */
-async function fetchUserWithRelations(where: Parameters<typeof prisma.user.findFirst>[0]["where"]) {
+async function fetchUserWithRelations(where: Prisma.UserWhereInput) {
   return prisma.user.findFirst({
     where,
     include: {
