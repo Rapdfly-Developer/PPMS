@@ -122,12 +122,10 @@ export default async function PatientsPage({
     prisma.patient.count({ where: scopeWhere }),
     prisma.patient.count({ where: { AND: [...scopeConds, { createdAt: { gte: today } }] } }),
     prisma.patient.count({ where: { AND: [...scopeConds, { category: { in: ["ECHS", "INSURANCE"] } }] } }),
-    prisma.appointment.count({
+    prisma.visit.count({
       where: {
         ...apptScope,
-        visitType: { contains: "follow", mode: "insensitive" as const },
-        status:    { notIn: ["CANCELLED", "NO_SHOW"] },
-        dateTime:  { gte: today },
+        followUpDate: { not: null, lt: today },
       },
     }),
     prisma.appointment.count({

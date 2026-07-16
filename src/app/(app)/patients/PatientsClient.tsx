@@ -351,7 +351,7 @@ export function PatientsClient({
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
         <KpiCard icon={<Users size={17} />}         label="Total Patients"    value={kpis.totalPatients}  color="teal"  />
         <KpiCard icon={<CalendarCheck size={17} />} label="Total Operated"    value={kpis.todayReg}       color="blue"  sub="New today" />
-        <KpiCard icon={<CalendarClock size={17} />} label="Lost to Follow Up" value={kpis.followUpCount}  color="green" sub="Upcoming" />
+        <KpiCard icon={<CalendarClock size={17} />} label="Lost to Follow Up" value={kpis.followUpCount}  color="green" sub="Overdue" />
         <KpiCard icon={<ClipboardList size={17} />} label="Pending Requests"  value={kpis.pendingRequests} color="amber" sub="Awaiting confirmation" />
       </div>
 
