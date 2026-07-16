@@ -335,11 +335,32 @@ export function NewEncounterForm({
           )}
         </div>
 
+        {/* ── Hospital ───────────────────────────────────────────────────── */}
+        {hospitals.length >= 1 && (
+          <div className="surface-card p-5">
+            <div className="flex items-center gap-2.5 mb-4">
+              <span className="size-6 rounded-full bg-[var(--color-primary-700)] text-white text-xs font-bold flex items-center justify-center shrink-0">
+                2
+              </span>
+              <span className="text-sm font-semibold text-[var(--color-ink-800)]">Hospital</span>
+            </div>
+            <select
+              value={hospitalId}
+              onChange={(e) => setHospitalId(e.target.value)}
+              className={inputCls}
+            >
+              {hospitals.map((h) => (
+                <option key={h.id} value={h.id}>{h.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
+
         {/* ── Visit type ─────────────────────────────────────────────────── */}
         <div className="surface-card p-5">
           <div className="flex items-center gap-2.5 mb-4">
             <span className="size-6 rounded-full bg-[var(--color-primary-700)] text-white text-xs font-bold flex items-center justify-center shrink-0">
-              2
+              3
             </span>
             <span className="text-sm font-semibold text-[var(--color-ink-800)]">Visit Type</span>
           </div>
@@ -370,27 +391,6 @@ export function NewEncounterForm({
             />
           </div>
         </div>
-
-        {/* ── Hospital ───────────────────────────────────────────────────── */}
-        {hospitals.length >= 1 && (
-          <div className="surface-card p-5">
-            <div className="flex items-center gap-2.5 mb-4">
-              <span className="size-6 rounded-full bg-[var(--color-primary-700)] text-white text-xs font-bold flex items-center justify-center shrink-0">
-                3
-              </span>
-              <span className="text-sm font-semibold text-[var(--color-ink-800)]">Hospital</span>
-            </div>
-            <select
-              value={hospitalId}
-              onChange={(e) => setHospitalId(e.target.value)}
-              className={inputCls}
-            >
-              {hospitals.map((h) => (
-                <option key={h.id} value={h.id}>{h.name}</option>
-              ))}
-            </select>
-          </div>
-        )}
 
         {error && (
           <p className="text-sm text-[var(--color-danger-600)] bg-[var(--color-danger-50)] border border-[var(--color-danger-200)] px-4 py-2.5 rounded-xl">
