@@ -1,7 +1,87 @@
 "use client";
 
-import { Check, Shield, Clock, AlertTriangle, Crown, Zap, Phone, MessageCircle } from "lucide-react";
+import { Check, Clock, AlertTriangle, Crown, Zap, Phone, MessageCircle } from "lucide-react";
 import type { LicenseInfo } from "@/lib/license";
+
+function PpmsLogo({ size = 110 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg" style={{ display: "block" }}>
+      <defs>
+        <linearGradient id="sl-blue" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#2563EB"/>
+          <stop offset="100%" stopColor="#1E3A8A"/>
+        </linearGradient>
+        <linearGradient id="sl-green" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#4ADE80"/>
+          <stop offset="100%" stopColor="#059669"/>
+        </linearGradient>
+        <linearGradient id="sl-swoosh" x1="0%" y1="100%" x2="100%" y2="0%">
+          <stop offset="0%" stopColor="#10B981"/>
+          <stop offset="55%" stopColor="#14B8A6"/>
+          <stop offset="100%" stopColor="#0EA5E9"/>
+        </linearGradient>
+        <linearGradient id="sl-stem" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor="#1E3A8A"/>
+          <stop offset="60%" stopColor="#2563EB"/>
+          <stop offset="100%" stopColor="#14B8A6"/>
+        </linearGradient>
+        <linearGradient id="sl-word" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stopColor="#1E3A8A"/>
+          <stop offset="45%" stopColor="#2563EB"/>
+          <stop offset="70%" stopColor="#14B8A6"/>
+          <stop offset="100%" stopColor="#059669"/>
+        </linearGradient>
+        <filter id="sl-shadow" x="-20%" y="-20%" width="140%" height="140%">
+          <feDropShadow dx="1.5" dy="2.5" stdDeviation="3" floodColor="rgba(30,58,138,0.25)"/>
+        </filter>
+      </defs>
+      {/* Green medical cross */}
+      <g filter="url(#sl-shadow)">
+        <rect x="42" y="42" width="20" height="64" rx="5" fill="url(#sl-green)"/>
+        <rect x="20" y="64" width="64" height="20" rx="5" fill="url(#sl-green)"/>
+        <rect x="46" y="44" width="6" height="28" rx="3" fill="rgba(255,255,255,0.3)"/>
+      </g>
+      {/* Letter P */}
+      <g filter="url(#sl-shadow)">
+        <path d="M 92 16 L 116 16 L 116 148 Q 116 154 110 154 L 98 154 Q 92 154 92 148 Z" fill="url(#sl-stem)"/>
+        <path fillRule="evenodd" fill="url(#sl-blue)"
+          d="M 116 16 L 156 16 C 194 16 214 40 214 68 C 214 96 194 120 156 120 L 116 120 L 116 94 L 152 94 C 176 94 188 84 188 68 C 188 52 176 42 152 42 L 116 42 Z"/>
+        <path d="M 92 16 L 116 16 L 116 24 Q 104 28 92 24 Z" fill="rgba(255,255,255,0.22)"/>
+      </g>
+      {/* Teal swoosh */}
+      <path d="M 26 128 C 66 118 92 74 126 54 C 146 42 168 44 178 58 C 160 50 144 55 130 66 C 98 92 72 126 26 128 Z"
+        fill="url(#sl-swoosh)" opacity="0.92" filter="url(#sl-shadow)"/>
+      {/* Patient figure */}
+      <g fill="url(#sl-blue)">
+        <circle cx="152" cy="60" r="9"/>
+        <path d="M 138 92 C 138 78 144 72 152 73 C 160 74 164 80 162 92 Q 150 97 138 92 Z"/>
+        <path d="M 160 74 Q 170 64 177 69 Q 172 76 163 80 Z"/>
+      </g>
+      {/* PPMS wordmark */}
+      <text x="120" y="192" textAnchor="middle" fill="url(#sl-word)"
+        style={{ font: "800 44px Arial, Helvetica, sans-serif", letterSpacing: "3px" }}>
+        PPMS
+      </text>
+      {/* Tagline */}
+      <text x="120" y="207" textAnchor="middle" fill="#475569"
+        style={{ font: "700 8px Arial, Helvetica, sans-serif", letterSpacing: "1.6px" }}>
+        PATIENT PRACTICE MANAGEMENT SYSTEM
+      </text>
+      {/* Divider with heart+ECG */}
+      <line x1="30" y1="217" x2="104" y2="217" stroke="#CBD5E1" strokeWidth="1"/>
+      <line x1="136" y1="217" x2="210" y2="217" stroke="#CBD5E1" strokeWidth="1"/>
+      <path d="M 120 224 C 114 218 110 215 110 211 C 110 207 114 205 117 208 L 120 211 L 123 208 C 126 205 130 207 130 211 C 130 215 126 218 120 224 Z" fill="#10B981"/>
+      <path d="M 112 213 L 116 213 L 118 209 L 121 217 L 123 213 L 128 213" stroke="white" strokeWidth="1.2" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+      {/* Motto */}
+      <text x="120" y="238" textAnchor="middle"
+        style={{ font: "800 10.5px Arial, Helvetica, sans-serif", letterSpacing: "1.4px" }}>
+        <tspan fill="#1E3A8A">MANAGE. </tspan>
+        <tspan fill="#10B981">CARE. </tspan>
+        <tspan fill="#1E3A8A">GROW.</tspan>
+      </text>
+    </svg>
+  );
+}
 
 interface Props {
   hospitalId: string | null;
@@ -66,8 +146,8 @@ export function SubscriptionClient({ hospitalId, hospitalName, license }: Props)
     <div className="min-h-[80vh] flex flex-col items-center justify-center py-12 px-4">
       {/* Header */}
       <div className="text-center mb-10 max-w-lg">
-        <div className="w-14 h-14 rounded-2xl bg-[var(--color-primary-100)] flex items-center justify-center mx-auto mb-4">
-          <Shield size={28} className="text-[var(--color-primary-600)]" />
+        <div className="flex items-center justify-center mx-auto mb-4">
+          <PpmsLogo size={110} />
         </div>
 
         {isExpired && (
