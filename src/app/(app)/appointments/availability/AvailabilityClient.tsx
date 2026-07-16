@@ -391,13 +391,12 @@ function StatsRow({ slots }: { slots: Slot[] }) {
 
 /* ── Main client ───────────────────────────────────────────────────────────── */
 export function AvailabilityClient({
-  slots: initial,
+  slots,
   hospitals,
 }: {
   slots: Slot[];
   hospitals: Hospital[];
 }) {
-  const [slots]     = useState(initial);
   const [modal,     setModal]     = useState<{ type: "add"; hospitalId: string; weekday?: number } | { type: "edit"; slot: Slot } | null>(null);
   const [delTarget, setDelTarget] = useState<Slot | null>(null);
 
