@@ -59,6 +59,7 @@ export function AppointmentsClient({
   doctors,
   hospitals,
   booked,
+  pendingCount,
 }: {
   appointments:   any[];
   total:          number;
@@ -77,6 +78,7 @@ export function AppointmentsClient({
   doctors:        { id: string; name: string; specialty: string | null }[];
   hospitals:      { id: string; name: string }[];
   booked:         boolean;
+  pendingCount:   number;
 }) {
   const router   = useRouter();
   const pathname = usePathname();
@@ -293,6 +295,13 @@ export function AppointmentsClient({
               style={{ colorScheme: "light" }}
             />
           </div>
+          {pendingCount > 0 && (
+            <div className="flex items-center gap-1.5 mt-1.5">
+              <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-700">
+                {pendingCount} pending {pendingCount === 1 ? "request" : "requests"}
+              </span>
+            </div>
+          )}
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           {role === "DOCTOR" && (

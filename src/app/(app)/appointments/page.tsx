@@ -92,7 +92,13 @@ export default async function AppointmentsPage({
     where.hospitalId = hospitalParam;
   }
 
-  const [total, appts, doctors, hospitals] = await Promise.all([
+  // Pending requests for today (always today's range, ignoring dateParam)
+  const { dayStart: todayStart, dayEnd: todayEnd } = istDayRange(today);
+  const pendingWhere: any = { status: "REQUESTED", dateTime: { gte: todayStart, lte: todayEnd } };
+  if (user.role === "DOCTOR")   pendingWhere.doctorId   = scopeDoctorId(user);
+  if (user.role === "HOSPITAL") pendingWhere.hospitalId = user.hospitalId;
+
+  const [total, appts, doctors, hospitals, pendingCount] = await Promise.all([
     prisma.appointment.count({ where }),
     prisma.appointment.findMany({
       where,
@@ -119,6 +125,7 @@ export default async function AppointmentsPage({
           include: { hospital: { select: { id: true, name: true } } },
         }).then(links => links.map(l => l.hospital))
       : Promise.resolve([]),
+    prisma.appointment.count({ where: pendingWhere }),
   ]);
 
   return (
@@ -141,6 +148,7 @@ export default async function AppointmentsPage({
         doctors={doctors}
         hospitals={hospitals}
         booked={booked}
+        pendingCount={pendingCount}
       />
     </div>
   );
