@@ -1,7 +1,6 @@
 "use client";
 
 import { useActionState, useState, useRef, useEffect, useCallback } from "react";
-import Image from "next/image";
 import { loginAction, mobileOtpLoginAction } from "./actions";
 import {
   Eye, EyeOff, User, Lock, Phone, AlertCircle, CheckCircle2,
@@ -822,25 +821,8 @@ export default function LoginPage() {
                 </p>
               </div>
 
-              {/* Brand logo — hero visual (replaces the old dashboard) */}
-              <div className="lp-a2 flex justify-center select-none py-1">
-                <Image
-                  src="/landing/logo-ppms-ai.png"
-                  alt="PPMS-AI — Personal Patient Management System"
-                  width={400}
-                  height={400}
-                  priority
-                  style={{
-                    width: "clamp(240px, 24vh, 340px)",
-                    height: "auto",
-                    mixBlendMode: "multiply",
-                    filter: "drop-shadow(0 24px 48px rgba(15,118,110,.14))",
-                  }}
-                />
-              </div>
-
               {/* Feature chips */}
-              <div className="lp-a3">
+              <div className="lp-a3 mt-8">
                 <div className="flex flex-wrap gap-2">
                   {FEATURES.map((f, i) => (
                     <div key={i} className="lp-chip flex items-center gap-2 px-3.5 py-2 rounded-full cursor-default" style={{
