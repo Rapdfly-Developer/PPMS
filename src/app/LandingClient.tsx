@@ -1249,7 +1249,7 @@ export function LandingClient() {
                         <span className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: "rgba(20,241,217,0.08)" }}>
                           <MapPin size={16} style={{ color: C.teal }} />
                         </span>
-                        <span style={{ color: C.inkDim }}>Partner hospitals across Tamil Nadu</span>
+                        <span style={{ color: C.inkDim }}>Partner hospitals across India</span>
                       </li>
                     </ul>
                   </Reveal>

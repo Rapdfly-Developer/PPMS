@@ -1516,7 +1516,7 @@ export default function LoginPage() {
                       Start Your Free Trial
                     </p>
                     <p style={{ fontSize: "11px", color: "rgba(255,255,255,.72)", marginTop: "2px" }}>
-                      15 Days · Unlimited Modules · No Credit Card
+                      30 Days · Unlimited Modules · No Credit Card
                     </p>
                   </div>
                 </div>

@@ -22,9 +22,9 @@ type NavItem = {
 const ALL_NAV: NavItem[] = [
   { href: "/dashboard",    label: "Dashboard",     icon: LayoutDashboard, permission: "dashboard.view",    shortLabel: "Home"     },
   { href: "/appointments", label: "Appointments",  icon: CalendarDays,    permission: "appointments.view", shortLabel: "Appts",   roles: ["DOCTOR", "HOSPITAL"] },
-  { href: "/queue",        label: "Today's Queue", icon: CalendarClock,   permission: "appointments.view", shortLabel: "Queue",   roles: ["HOSPITAL"] },
+  { href: "/queue",        label: "Today's Queue", icon: CalendarClock,   permission: "appointments.view", shortLabel: "Queue",   roles: ["DOCTOR"] },
   { href: "/patients",     label: "Patients",      icon: Users,           permission: "patients.view",     shortLabel: "Patients" },
-  { href: "/follow-ups",   label: "Follow Ups",    icon: CalendarClock,   permission: "patients.view",     shortLabel: "Follow",  roles: ["DOCTOR"] },
+  { href: "/follow-ups",   label: "Follow Ups",    icon: CalendarClock,   permission: "patients.view",     shortLabel: "Follow",  roles: ["DOCTOR", "HOSPITAL"] },
   { href: "/ipd",          label: "IPD",           icon: BedDouble,       permission: "ipd.view",          shortLabel: "IPD",     roles: ["DOCTOR"] },
   { href: "/analytics",    label: "Analytics",     icon: BarChart2,       permission: "reports.view",      shortLabel: "Reports"  },
   { href: "/settings",     label: "Settings",      icon: Settings,        permission: "settings.view",     shortLabel: "Settings" },

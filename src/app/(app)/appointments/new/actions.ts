@@ -36,6 +36,7 @@ export async function createWalkInEncounter(formData: FormData) {
     const patient = await prisma.patient.findUnique({ where: { id: patientId } });
     if (!patient) return { error: "Patient not found." };
     complaint = formComplaint;
+    await prisma.patient.update({ where: { id: patientId }, data: { complaint: formComplaint } });
   } else {
     // Register new patient on the fly
     const name     = (formData.get("name")     as string)?.trim();

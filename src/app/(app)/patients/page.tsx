@@ -173,7 +173,7 @@ export default async function PatientsPage({
     createdAt:     p.createdAt.toISOString(),
     hospitalName:  p.registeredAt?.name ?? null,
     lastVisit:     p.visits[0]?.date.toISOString() ?? null,
-    chiefComplaint: p.visits[0]?.generalExam?.chiefComplaint ?? null,
+    chiefComplaint: p.visits[0]?.generalExam?.chiefComplaint ?? p.complaint ?? null,
     photoUrl:      p.photoUrl ?? null,
   }));
 
