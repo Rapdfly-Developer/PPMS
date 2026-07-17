@@ -892,9 +892,30 @@ export default function LoginPage() {
         </div>
 
         {/* ══ RIGHT PANEL — Frosted glass card ══════════════════════════════ */}
-        <div className="w-full lg:w-[500px] xl:w-[540px] shrink-0 flex items-center justify-center py-2 px-4 lg:py-4 lg:px-6 xl:pr-14 overflow-y-auto">
+        <div className="w-full lg:w-[500px] xl:w-[540px] shrink-0 flex flex-col items-center justify-start lg:justify-center pt-6 pb-4 px-4 lg:py-4 lg:px-6 xl:pr-14 overflow-y-auto">
+
+          {/* Mobile hero — centered logo + concise headline (below lg only) */}
+          <div className="lg:hidden lp-a0 shrink-0 flex flex-col items-center text-center mb-6">
+            <div className="flex items-center gap-3 mb-1.5">
+              <div className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0"
+                style={{ background: "linear-gradient(135deg,#14B8A6,#0F766E)", boxShadow: "0 10px 26px rgba(20,184,166,.35)" }}>
+                <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+                  <rect x="8.5" y="2" width="5" height="18" rx="2.2" fill="white" />
+                  <rect x="2" y="8.5" width="18" height="5" rx="2.2" fill="white" />
+                </svg>
+              </div>
+              <span className="text-[26px] font-black" style={{ color: "#0F172A", letterSpacing: "-0.03em" }}>PPMS-AI</span>
+            </div>
+            <p style={{ fontSize: "9.5px", fontWeight: 700, letterSpacing: "0.16em", color: "#64748B" }}>
+              PERSONAL PATIENT MANAGEMENT SYSTEM
+            </p>
+            <h1 className="font-black leading-snug mt-3" style={{ fontSize: "21px", color: "#0F172A", letterSpacing: "-0.02em" }}>
+              Better <span className="lp-grad-text">Healthcare.</span> Better Management.
+            </h1>
+          </div>
+
           <div
-            className="lp-card lp-card-levitate w-full"
+            className="lp-card lp-card-levitate w-full max-w-[420px] lg:max-w-none shrink-0"
             style={{
               background: "rgba(255,255,255,.82)",
               backdropFilter: "blur(28px)",
@@ -910,18 +931,6 @@ export default function LoginPage() {
             <div className="lp-border-glow" style={{ height: "2px", background: "linear-gradient(90deg,transparent,#14B8A6 30%,#0F766E 50%,#14B8A6 70%,transparent)" }} />
 
             <div className="px-8 py-7">
-
-              {/* Mobile logo */}
-              <div className="flex lg:hidden items-center gap-2.5 justify-center mb-5">
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center"
-                  style={{ background: "linear-gradient(135deg,#0F766E,#14B8A6)", boxShadow: "0 6px 18px rgba(15,118,110,.32)" }}>
-                  <svg width="18" height="18" viewBox="0 0 22 22" fill="none">
-                    <rect x="8.5" y="2" width="5" height="18" rx="2.2" fill="white" />
-                    <rect x="2" y="8.5" width="18" height="5" rx="2.2" fill="white" />
-                  </svg>
-                </div>
-                <span className="text-[23px] font-black" style={{ color: "#0F172A", letterSpacing: "-0.03em" }}>PPMS-AI</span>
-              </div>
 
               {/* Welcome */}
               <div className="text-center mb-6">
@@ -949,7 +958,7 @@ export default function LoginPage() {
                 }} />
                 {(["password", "otp"] as const).map((t) => (
                   <button key={t} type="button" onClick={() => switchTab(t)}
-                    className="relative flex-1 flex items-center justify-center gap-2 py-3 text-sm font-semibold z-10"
+                    className="relative flex-1 flex items-center justify-center gap-2 py-3.5 lg:py-3 text-sm font-semibold z-10"
                     style={{
                       color: tab === t ? "#0F172A" : "#94A3B8",
                       transition: "color .25s",
@@ -1050,13 +1059,12 @@ export default function LoginPage() {
                     type="submit"
                     disabled={pending}
                     onClick={handleBtnClick}
-                    className="lp-btn lp-f4 relative overflow-hidden w-full font-bold text-white rounded-2xl"
+                    className="lp-btn lp-f4 relative overflow-hidden w-full font-bold text-white rounded-2xl h-14 lg:h-[52px]"
                     style={{
-                      height: "52px",
                       fontSize: "15px",
                       letterSpacing: "0.01em",
-                      background: pending ? "#94A3B8" : "linear-gradient(135deg,#0F766E 0%,#0C6C62 100%)",
-                      boxShadow: pending ? "none" : "0 10px 28px rgba(15,118,110,.3)",
+                      background: pending ? "#94A3B8" : "linear-gradient(135deg,#14B8A6 0%,#0F766E 100%)",
+                      boxShadow: pending ? "none" : "0 10px 32px rgba(20,184,166,.35), 0 4px 12px rgba(15,118,110,.25)",
                     }}
                   >
                     {/* Ripple */}
@@ -1157,10 +1165,10 @@ export default function LoginPage() {
                     type="button"
                     disabled={!otpSent || otpValue.length < 6 || otpLoading}
                     onClick={handleVerifyOtp}
-                    className="lp-btn relative overflow-hidden w-full font-bold text-white rounded-2xl flex items-center justify-center gap-2"
+                    className="lp-btn relative overflow-hidden w-full font-bold text-white rounded-2xl flex items-center justify-center gap-2 h-14 lg:h-[52px]"
                     style={otpSent && otpValue.length >= 6 && !otpLoading
-                      ? { height: "52px", fontSize: "15px", background: "linear-gradient(135deg,#0F766E,#0C6C62)", boxShadow: "0 10px 28px rgba(15,118,110,.3)" }
-                      : { height: "52px", fontSize: "15px", background: "#E2E8F0", color: "#94A3B8", cursor: "not-allowed" }}>
+                      ? { fontSize: "15px", background: "linear-gradient(135deg,#14B8A6,#0F766E)", boxShadow: "0 10px 32px rgba(20,184,166,.35), 0 4px 12px rgba(15,118,110,.25)" }
+                      : { fontSize: "15px", background: "#E2E8F0", color: "#94A3B8", cursor: "not-allowed" }}>
                     {otpLoading && otpSent
                       ? <><Loader2 size={16} className="animate-spin" /> Verifying…</>
                       : <><span>Verify & Sign In</span>{otpSent && otpValue.length >= 6 && <ArrowRight size={16} className="lp-arrow-icon" />}</>}
@@ -1217,14 +1225,36 @@ export default function LoginPage() {
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-1.5 shrink-0 rounded-lg px-3 py-1.5 transition-transform group-hover:translate-x-0.5"
+                <div className="flex items-center gap-1.5 shrink-0 rounded-lg px-2.5 sm:px-3 py-1.5 transition-transform group-hover:translate-x-0.5"
                   style={{ background: "rgba(255,255,255,.2)" }}>
-                  <span style={{ fontSize: "11px", fontWeight: 700, color: "#fff" }}>Create Workspace</span>
+                  <span className="hidden sm:inline" style={{ fontSize: "11px", fontWeight: 700, color: "#fff" }}>Create Workspace</span>
                   <ArrowRight size={12} color="white" />
                 </div>
               </a>
 
 
+            </div>
+          </div>
+
+          {/* Mobile trust footer (below lg only) */}
+          <div className="lg:hidden lp-a4 shrink-0 flex flex-col items-center gap-2.5 mt-6 mb-2">
+            <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5">
+              {[
+                { icon: <ShieldCheck size={12} />, label: "HIPAA Ready"   },
+                { icon: <Lock size={12} />,        label: "Secure Login"  },
+                { icon: <Zap size={12} />,         label: "99.98% Uptime" },
+              ].map((t, i) => (
+                <span key={i} className="flex items-center gap-1.5" style={{ fontSize: "11px", fontWeight: 600, color: "#64748B" }}>
+                  <span style={{ color: "#14B8A6" }}>{t.icon}</span> {t.label}
+                </span>
+              ))}
+            </div>
+            <div className="flex items-center gap-2.5 w-full max-w-[280px]">
+              <div className="flex-1" style={{ height: "1px", background: "linear-gradient(90deg,transparent,rgba(15,118,110,.2))" }} />
+              <p style={{ fontSize: "10.5px", fontWeight: 600, color: "#94A3B8", letterSpacing: "0.04em", whiteSpace: "nowrap" }}>
+                Trusted by 500+ Hospitals
+              </p>
+              <div className="flex-1" style={{ height: "1px", background: "linear-gradient(90deg,rgba(15,118,110,.2),transparent)" }} />
             </div>
           </div>
         </div>
