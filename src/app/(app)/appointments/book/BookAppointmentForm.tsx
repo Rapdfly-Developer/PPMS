@@ -83,7 +83,6 @@ export function BookAppointmentForm({
   const [npDob,       setNpDob]       = useState("");
   const [npSex,       setNpSex]       = useState("MALE");
   const [npMobile,    setNpMobile]    = useState("");
-  const [npComplaint, setNpComplaint] = useState("");
   const [npCategory,  setNpCategory]  = useState("GENERAL");
   const [aadhaarPhoto, setAadhaarPhoto] = useState<UploadedFile | null>(null);
   const [patientPhoto, setPatientPhoto] = useState<UploadedFile | null>(null);
@@ -221,7 +220,6 @@ export function BookAppointmentForm({
       fd.set("age", String(dobAge));
       fd.set("sex",       npSex);
       fd.set("mobile",    npMobile);
-      fd.set("complaint", npComplaint);
       fd.set("category",  npCategory);
       // Photos uploaded to blob storage; savedNames passed for future DB linking
       if (aadhaarPhoto) fd.set("aadhaarPhotoFile", aadhaarPhoto.savedName);
@@ -533,18 +531,6 @@ export function BookAppointmentForm({
                     </button>
                   ))}
                 </div>
-              </div>
-
-              {/* Chief Complaint */}
-              <div className="sm:col-span-2">
-                <FieldLabel icon={<FileText size={12} />}>Notes/Instructions</FieldLabel>
-                <textarea
-                  value={npComplaint}
-                  onChange={(e) => setNpComplaint(e.target.value)}
-                  rows={2}
-                  placeholder="Reason for visit, referral details..."
-                  className={inputCls}
-                />
               </div>
 
               {/* Photos & Documents */}
