@@ -24,12 +24,12 @@ const TEST_ACCOUNTS = [
 ];
 
 const FEATURES = [
-  { icon: <FileText size={13} />,     label: "Electronic Medical Records" },
-  { icon: <CalendarDays size={13} />, label: "Appointment Scheduling"    },
-  { icon: <CreditCard size={13} />,   label: "Billing & Insurance"       },
-  { icon: <UserPlus size={13} />,     label: "Patient Registration"      },
-  { icon: <Pill size={13} />,         label: "Pharmacy Management"       },
-  { icon: <FlaskConical size={13} />, label: "Lab Integration"           },
+  { icon: <FileText size={15} />,     label: "Electronic Medical Records", desc: "Complete ophthalmic EMR workflow"  },
+  { icon: <CalendarDays size={15} />, label: "Appointment Scheduling",     desc: "Multi-hospital slot management"    },
+  { icon: <CreditCard size={15} />,   label: "Billing & Insurance",        desc: "Categories, ECHS & insurance"      },
+  { icon: <UserPlus size={15} />,     label: "Patient Registration",       desc: "UDID & UHID auto-assigned"         },
+  { icon: <Pill size={15} />,         label: "Pharmacy Management",        desc: "Prescriptions & dispensing"        },
+  { icon: <FlaskConical size={15} />, label: "Lab Integration",            desc: "Orders, results & reports"         },
 ];
 
 /* ── Validation ─────────────────────────────────────────────────────────── */
@@ -711,6 +711,7 @@ export default function LoginPage() {
         @keyframes lp-card-levitate { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-5px)} }
         @keyframes lp-field-in{ from{opacity:0;transform:translateX(16px)} to{opacity:1;transform:translateX(0)} }
         @keyframes lp-border-glow { 0%,100%{opacity:.45} 50%{opacity:1} }
+        @keyframes lp-dot { 0%,100%{box-shadow:0 0 0 0 rgba(20,184,166,.45)} 60%{box-shadow:0 0 0 6px rgba(20,184,166,0)} }
 
         /* ── Entrance ──────────────────────────────────────────────── */
         .lp-a0{animation:lp-fadein .65s cubic-bezier(.22,1,.36,1) 0ms   both}
@@ -748,9 +749,10 @@ export default function LoginPage() {
           animation:lp-grad 5s ease infinite;
         }
 
-        /* ── Chips ─────────────────────────────────────────────────── */
-        .lp-chip{transition:transform .2s cubic-bezier(.34,1.56,.64,1),box-shadow .2s}
-        .lp-chip:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(15,118,110,.13)!important}
+        /* ── Feature rows ──────────────────────────────────────────── */
+        .lp-dot{animation:lp-dot 2.2s ease-out infinite}
+        .lp-feat{transition:background .2s ease,transform .2s cubic-bezier(.34,1.56,.64,1)}
+        .lp-feat:hover{background:rgba(255,255,255,.65);transform:translateY(-2px)}
 
         /* ── Tab sliding pill ──────────────────────────────────────── */
         .lp-tab-pill{transition:left .3s cubic-bezier(.34,1.56,.64,1)}
@@ -766,7 +768,7 @@ export default function LoginPage() {
           .lp-a0,.lp-a1,.lp-a2,.lp-a3,.lp-a4,.lp-card,
           .lp-blob1,.lp-blob2,.lp-blob3,.lp-blob4,
           .lp-ecg,.lp-shield-anim,
-          .lp-trial,.lp-btn,.lp-chip,.lp-card-levitate,
+          .lp-trial,.lp-btn,.lp-feat,.lp-dot,.lp-card-levitate,
           .lp-f1,.lp-f2,.lp-f3,.lp-f4,.lp-f5
           { animation:none!important; transition:none!important; }
           .lp-grad-text{-webkit-text-fill-color:#0F766E;background:none;}
@@ -805,43 +807,74 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* Hero content — headline, brand logo, chips */}
-          <div className="flex-1 flex items-center py-5 min-w-0">
-            <div className="flex flex-col min-w-0 w-full max-w-[560px]">
-              <div className="lp-a1 mb-2">
-                <h1 className="font-black leading-[1.06] mb-4"
-                  style={{ fontSize: "clamp(36px,3.2vw,48px)", color: "#0F172A", letterSpacing: "-0.025em" }}>
+          {/* Hero content */}
+          <div className="flex-1 flex items-center py-6 min-w-0">
+            <div className="flex flex-col min-w-0 w-full max-w-[600px]">
+
+              {/* Eyebrow badge */}
+              <div className="lp-a1 mb-5">
+                <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full" style={{
+                  background: "rgba(255,255,255,.75)",
+                  backdropFilter: "blur(8px)",
+                  border: "1px solid rgba(20,184,166,.25)",
+                  boxShadow: "0 2px 10px rgba(15,118,110,.07)",
+                }}>
+                  <span className="lp-dot" style={{ width: 6, height: 6, borderRadius: "50%", background: "#14B8A6" }} />
+                  <span style={{ fontSize: "10.5px", fontWeight: 800, letterSpacing: "0.14em", color: "#0F766E" }}>
+                    ENTERPRISE HEALTHCARE PLATFORM
+                  </span>
+                </span>
+              </div>
+
+              {/* Headline */}
+              <div className="lp-a1 mb-3">
+                <h1 className="font-black leading-[1.05]"
+                  style={{ fontSize: "clamp(40px,3.6vw,56px)", color: "#0F172A", letterSpacing: "-0.028em" }}>
                   Better{" "}
                   <span className="lp-grad-text">Healthcare.</span>
                   <br />Better Management.
                 </h1>
-                <p className="leading-relaxed" style={{ fontSize: "15px", color: "#64748B", maxWidth: "400px" }}>
-                  A secure enterprise healthcare platform for hospitals, clinics, diagnostics,
-                  pharmacies, and healthcare networks.
-                </p>
               </div>
 
-              {/* Feature chips */}
-              <div className="lp-a3 mt-8">
-                <div className="flex flex-wrap gap-2">
-                  {FEATURES.map((f, i) => (
-                    <div key={i} className="lp-chip flex items-center gap-2 px-3.5 py-2 rounded-full cursor-default" style={{
-                      background: "rgba(255,255,255,.72)",
-                      backdropFilter: "blur(8px)",
-                      border: "1px solid rgba(255,255,255,.88)",
-                      boxShadow: "0 4px 12px rgba(15,118,110,.06), 0 1px 3px rgba(0,0,0,.04)",
+              {/* Subcopy */}
+              <p className="lp-a2 leading-relaxed mb-4" style={{ fontSize: "15.5px", color: "#64748B", maxWidth: "420px" }}>
+                A secure enterprise healthcare platform for hospitals, clinics,
+                diagnostics, pharmacies, and healthcare networks.
+              </p>
+
+              {/* Brand motto */}
+              <p className="lp-a2 mb-9" style={{
+                fontSize: "12px", fontWeight: 700, letterSpacing: "0.16em",
+                color: "#0F766E", textTransform: "uppercase",
+              }}>
+                One Doctor&nbsp;&nbsp;·&nbsp;&nbsp;Multiple Hospitals&nbsp;&nbsp;·&nbsp;&nbsp;One Smart System
+              </p>
+
+              {/* Feature grid — 2 columns */}
+              <div className="lp-a3 grid grid-cols-1 sm:grid-cols-2 gap-x-7 gap-y-4">
+                {FEATURES.map((f, i) => (
+                  <div key={i} className="lp-feat flex items-start gap-3 rounded-2xl px-3 py-2.5 -mx-3 cursor-default">
+                    <div className="shrink-0 w-9 h-9 rounded-xl flex items-center justify-center" style={{
+                      background: "linear-gradient(135deg,#F0FDFA,#CCFBF1)",
+                      border: "1px solid rgba(20,184,166,.22)",
+                      color: "#0F766E",
+                      boxShadow: "0 2px 8px rgba(15,118,110,.08)",
                     }}>
-                      <span style={{ color: "#0F766E", display: "flex" }}>{f.icon}</span>
-                      <span style={{ fontSize: "12px", fontWeight: 600, color: "#334155" }}>{f.label}</span>
+                      {f.icon}
                     </div>
-                  ))}
-                </div>
+                    <div className="min-w-0">
+                      <p style={{ fontSize: "13.5px", fontWeight: 700, color: "#1E293B", letterSpacing: "-0.01em" }}>{f.label}</p>
+                      <p style={{ fontSize: "11.5px", color: "#94A3B8", marginTop: "1px" }}>{f.desc}</p>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
 
           {/* Footer trust row */}
           <div className="lp-a4">
+            <div className="mb-4" style={{ height: "1px", maxWidth: "600px", background: "linear-gradient(90deg,rgba(15,118,110,.18),rgba(15,118,110,.04) 70%,transparent)" }} />
             <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
               {[
                 { icon: <ShieldCheck size={12} />, label: "HIPAA Ready"     },
