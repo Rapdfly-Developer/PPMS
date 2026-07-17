@@ -1,10 +1,13 @@
 "use client";
 
 import { useActionState, useState, useRef, useEffect, useCallback } from "react";
+import Image from "next/image";
 import { loginAction, mobileOtpLoginAction } from "./actions";
 import {
   Eye, EyeOff, User, Lock, Phone, AlertCircle, CheckCircle2,
   ShieldCheck, ArrowRight, Loader2, Check, Mail, X, KeyRound, RotateCcw,
+  FileText, CalendarDays, CreditCard, UserPlus, Pill, FlaskConical,
+  Building2, Cloud, Zap,
 } from "lucide-react";
 
 /* ── Types ─────────────────────────────────────────────────────────────── */
@@ -22,13 +25,12 @@ const TEST_ACCOUNTS = [
 ];
 
 const FEATURES = [
-  { icon: "📋", label: "Electronic Medical Records" },
-  { icon: "📅", label: "Appointment Scheduling"    },
-  { icon: "💳", label: "Billing & Insurance"       },
-  { icon: "🧑‍⚕️", label: "Patient Registration"    },
-  { icon: "💊", label: "Pharmacy Management"       },
-  { icon: "🧪", label: "Lab Integration"           },
-  { icon: "☁",  label: "Secure Cloud Access"       },
+  { icon: <FileText size={13} />,     label: "Electronic Medical Records" },
+  { icon: <CalendarDays size={13} />, label: "Appointment Scheduling"    },
+  { icon: <CreditCard size={13} />,   label: "Billing & Insurance"       },
+  { icon: <UserPlus size={13} />,     label: "Patient Registration"      },
+  { icon: <Pill size={13} />,         label: "Pharmacy Management"       },
+  { icon: <FlaskConical size={13} />, label: "Lab Integration"           },
 ];
 
 /* ── Validation ─────────────────────────────────────────────────────────── */
@@ -479,99 +481,6 @@ function ForgotPasswordModal({ onClose }: { onClose: () => void }) {
   );
 }
 
-/* ── PPMS Brand Logo SVG — P letterform + wordmark ──────────────────────── */
-function PpmsLogo({ size = 220 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg" style={{ display: "block" }}>
-      <defs>
-        <linearGradient id="plg-blue" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#2563EB"/>
-          <stop offset="100%" stopColor="#1E3A8A"/>
-        </linearGradient>
-        <linearGradient id="plg-green" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#4ADE80"/>
-          <stop offset="100%" stopColor="#059669"/>
-        </linearGradient>
-        <linearGradient id="plg-swoosh" x1="0%" y1="100%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor="#10B981"/>
-          <stop offset="55%" stopColor="#14B8A6"/>
-          <stop offset="100%" stopColor="#0EA5E9"/>
-        </linearGradient>
-        <linearGradient id="plg-stem" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor="#1E3A8A"/>
-          <stop offset="60%" stopColor="#2563EB"/>
-          <stop offset="100%" stopColor="#14B8A6"/>
-        </linearGradient>
-        <linearGradient id="plg-word" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor="#1E3A8A"/>
-          <stop offset="45%" stopColor="#2563EB"/>
-          <stop offset="70%" stopColor="#14B8A6"/>
-          <stop offset="100%" stopColor="#059669"/>
-        </linearGradient>
-        <filter id="plg-shadow" x="-20%" y="-20%" width="140%" height="140%">
-          <feDropShadow dx="1.5" dy="2.5" stdDeviation="3" floodColor="rgba(30,58,138,0.25)"/>
-        </filter>
-      </defs>
-
-      {/* ── Green medical cross (left of the P) ── */}
-      <g filter="url(#plg-shadow)">
-        <rect x="42" y="42" width="20" height="64" rx="5" fill="url(#plg-green)"/>
-        <rect x="20" y="64" width="64" height="20" rx="5" fill="url(#plg-green)"/>
-        <rect x="46" y="44" width="6" height="28" rx="3" fill="rgba(255,255,255,0.3)"/>
-      </g>
-
-      {/* ── Letter P ── */}
-      <g filter="url(#plg-shadow)">
-        {/* Stem — blue fading to teal at the base */}
-        <path d="M 92 16 L 116 16 L 116 148 Q 116 154 110 154 L 98 154 Q 92 154 92 148 Z" fill="url(#plg-stem)"/>
-        {/* Bowl — outer minus inner hole */}
-        <path fillRule="evenodd" fill="url(#plg-blue)"
-          d="M 116 16 L 156 16 C 194 16 214 40 214 68 C 214 96 194 120 156 120 L 116 120 L 116 94 L 152 94 C 176 94 188 84 188 68 C 188 52 176 42 152 42 L 116 42 Z"/>
-        {/* Top-left notch highlight on the P */}
-        <path d="M 92 16 L 116 16 L 116 24 Q 104 28 92 24 Z" fill="rgba(255,255,255,0.22)"/>
-      </g>
-
-      {/* ── Teal swoosh sweeping through the P ── */}
-      <path d="M 26 128 C 66 118 92 74 126 54 C 146 42 168 44 178 58 C 160 50 144 55 130 66 C 98 92 72 126 26 128 Z"
-        fill="url(#plg-swoosh)" opacity="0.92" filter="url(#plg-shadow)"/>
-
-      {/* ── Patient figure inside the bowl ── */}
-      <g fill="url(#plg-blue)">
-        <circle cx="152" cy="60" r="9"/>
-        {/* torso + raised arm */}
-        <path d="M 138 92 C 138 78 144 72 152 73 C 160 74 164 80 162 92 Q 150 97 138 92 Z"/>
-        <path d="M 160 74 Q 170 64 177 69 Q 172 76 163 80 Z"/>
-      </g>
-
-      {/* ── Wordmark: PPMS ── */}
-      <text x="120" y="192" textAnchor="middle" fill="url(#plg-word)"
-        style={{ font: "800 44px Arial, Helvetica, sans-serif", letterSpacing: "3px" }}>
-        PPMS
-      </text>
-
-      {/* ── Tagline ── */}
-      <text x="120" y="207" textAnchor="middle" fill="#475569"
-        style={{ font: "700 8px Arial, Helvetica, sans-serif", letterSpacing: "1.6px" }}>
-        PATIENT PRACTICE MANAGEMENT SYSTEM
-      </text>
-
-      {/* ── Divider with heart + ECG ── */}
-      <line x1="30" y1="217" x2="104" y2="217" stroke="#CBD5E1" strokeWidth="1"/>
-      <line x1="136" y1="217" x2="210" y2="217" stroke="#CBD5E1" strokeWidth="1"/>
-      <path d="M 120 224 C 114 218 110 215 110 211 C 110 207 114 205 117 208 L 120 211 L 123 208 C 126 205 130 207 130 211 C 130 215 126 218 120 224 Z" fill="#10B981"/>
-      <path d="M 112 213 L 116 213 L 118 209 L 121 217 L 123 213 L 128 213" stroke="white" strokeWidth="1.2" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
-
-      {/* ── Motto ── */}
-      <text x="120" y="238" textAnchor="middle"
-        style={{ font: "800 10.5px Arial, Helvetica, sans-serif", letterSpacing: "1.4px" }}>
-        <tspan fill="#1E3A8A">MANAGE. </tspan>
-        <tspan fill="#10B981">CARE. </tspan>
-        <tspan fill="#1E3A8A">GROW.</tspan>
-      </text>
-    </svg>
-  );
-}
-
 /* ── Animated medical background ────────────────────────────────────────── */
 function MedicalBackground() {
   const crosses = [
@@ -651,201 +560,6 @@ function MedicalBackground() {
           animation: `lp-particle ${p.d}s ease-in-out ${i * 1.1}s infinite`,
         }} />
       ))}
-    </div>
-  );
-}
-
-/* ── Cycling notification toast ────────────────────────────────────────── */
-const NOTIFICATIONS = [
-  { icon: "✅", text: "Appointment confirmed", sub: "Priya Suresh · 09:00" },
-  { icon: "🧪", text: "Lab results ready",     sub: "Patient #1042 · Rajan Kumar" },
-  { icon: "💊", text: "Prescription issued",   sub: "Dr. Mehta · Ward B" },
-  { icon: "📋", text: "New patient registered",sub: "Meena Pillai · OPD" },
-];
-
-function NotificationToast() {
-  const [idx, setIdx]     = useState(0);
-  const [visible, setVisible] = useState(true);
-
-  useEffect(() => {
-    const cycle = setInterval(() => {
-      setVisible(false);
-      setTimeout(() => {
-        setIdx(i => (i + 1) % NOTIFICATIONS.length);
-        setVisible(true);
-      }, 400);
-    }, 5000);
-    return () => clearInterval(cycle);
-  }, []);
-
-  const n = NOTIFICATIONS[idx];
-  return visible ? (
-    <div className="lp-notify-toast absolute z-10 flex items-center gap-2.5 rounded-2xl px-3 py-2.5"
-      style={{
-        top: "-18px", left: "50%", transform: "translateX(-50%)",
-        minWidth: "230px", maxWidth: "300px",
-        background: "rgba(255,255,255,.95)",
-        backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)",
-        border: "1px solid rgba(15,118,110,.18)",
-        boxShadow: "0 12px 36px rgba(15,118,110,.14), 0 3px 8px rgba(0,0,0,.06)",
-      }}>
-      <div className="shrink-0 w-8 h-8 rounded-xl flex items-center justify-center text-base"
-        style={{ background: "linear-gradient(135deg,#F0FDFA,#CCFBF1)" }}>
-        {n.icon}
-      </div>
-      <div className="min-w-0">
-        <p style={{ fontSize: "10.5px", fontWeight: 700, color: "#0F172A", lineHeight: 1.3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{n.text}</p>
-        <p style={{ fontSize: "9px", color: "#64748B", marginTop: "1px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{n.sub}</p>
-      </div>
-      <div className="lp-live-dot-anim shrink-0" style={{ width: 6, height: 6, borderRadius: "50%", background: "#10B981" }} />
-    </div>
-  ) : null;
-}
-
-/* ── Premium dashboard illustration ─────────────────────────────────────── */
-function DashboardIllustration() {
-  return (
-    <div className="relative w-full select-none" style={{ height: "308px", paddingTop: "28px" }}>
-      {/* Floating notification */}
-      <NotificationToast />
-
-      {/* Ambient glow */}
-      <div className="absolute bottom-0 inset-x-0 mx-auto" style={{
-        width: "60%", height: "80px",
-        background: "radial-gradient(ellipse,rgba(20,184,166,.22) 0%,transparent 72%)",
-        filter: "blur(28px)",
-      }} />
-
-      {/* ── Main dashboard card ── */}
-      <div className="lp-dash-main absolute" style={{
-        left: "50%", transform: "translateX(-50%)",
-        width: "min(430px, 98%)", top: 0, zIndex: 2,
-        background: "rgba(255,255,255,.7)",
-        backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)",
-        border: "1px solid rgba(255,255,255,.88)",
-        borderRadius: "20px",
-        boxShadow: "0 20px 60px rgba(15,118,110,.11), 0 4px 16px rgba(0,0,0,.05), inset 0 1px 0 rgba(255,255,255,.96)",
-        padding: "16px",
-      }}>
-        {/* Header */}
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-xl flex items-center justify-center shrink-0"
-              style={{ background: "linear-gradient(135deg,#0F766E,#14B8A6)", boxShadow: "0 4px 10px rgba(15,118,110,.3)" }}>
-              <svg width="13" height="13" viewBox="0 0 22 22" fill="none">
-                <rect x="8.5" y="2" width="5" height="18" rx="2" fill="white" />
-                <rect x="2" y="8.5" width="18" height="5" rx="2" fill="white" />
-              </svg>
-            </div>
-            <div>
-              <p style={{ fontSize: "11px", fontWeight: 700, color: "#0F172A", lineHeight: 1.1 }}>PPMS Enterprise</p>
-              <p style={{ fontSize: "8px", color: "#94A3B8", letterSpacing: "0.04em" }}>LIVE DASHBOARD</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="lp-live-dot-anim" style={{ width: 7, height: 7, borderRadius: "50%", background: "#10B981" }} />
-            <div className="w-7 h-7 rounded-full flex items-center justify-center text-[9px] font-bold text-white"
-              style={{ background: "linear-gradient(135deg,#0F766E,#14B8A6)" }}>DR</div>
-          </div>
-        </div>
-
-        {/* Stats row */}
-        <div className="grid grid-cols-3 gap-2 mb-3">
-          {[
-            { label: "Today's Patients", val: "48", trend: "+6", c: "#0F766E", bg: "#F0FDFA", bdr: "#CCFBF1" },
-            { label: "Appointments",     val: "32", trend: "+3", c: "#2563EB", bg: "#EFF6FF", bdr: "#BFDBFE" },
-            { label: "Revenue",          val: "₹24K", trend: "+18%", c: "#7C3AED", bg: "#F5F3FF", bdr: "#DDD6FE" },
-          ].map((s, i) => (
-            <div key={i} style={{ background: s.bg, border: `1px solid ${s.bdr}`, borderRadius: "10px", padding: "9px 8px" }}>
-              <p style={{ fontSize: "7.5px", color: "#94A3B8", marginBottom: "3px", lineHeight: 1 }}>{s.label}</p>
-              <p style={{ fontSize: "16px", fontWeight: 800, color: s.c, letterSpacing: "-0.025em", lineHeight: 1 }}>{s.val}</p>
-              <p style={{ fontSize: "7.5px", color: s.c, marginTop: "2px", opacity: 0.7 }}>{s.trend} today</p>
-            </div>
-          ))}
-        </div>
-
-        {/* Bar chart */}
-        <div style={{ background: "rgba(15,118,110,.04)", borderRadius: "10px", padding: "9px 10px 7px", marginBottom: "10px" }}>
-          <div className="flex items-center justify-between mb-1.5">
-            <p style={{ fontSize: "9px", fontWeight: 700, color: "#0F172A" }}>Patient Visits — Jul 2026</p>
-            <span style={{ fontSize: "7.5px", fontWeight: 700, color: "#0F766E", background: "#F0FDFA", padding: "1px 6px", borderRadius: "99px", border: "1px solid #CCFBF1" }}>+12%</span>
-          </div>
-          <div className="flex items-end gap-[2px]" style={{ height: "30px" }}>
-            {[45,62,38,85,55,78,65,92,58,74,48,88].map((h, i) => (
-              <div key={i} className="lp-bar" style={{
-                flex: 1, borderRadius: "2px 2px 0 0",
-                height: `${h}%`,
-                background: i === 11 ? "linear-gradient(180deg,#14B8A6,#0F766E)" : `rgba(15,118,110,${0.1 + i * 0.018})`,
-                animationDelay: `${0.6 + i * 0.06}s`,
-              }} />
-            ))}
-          </div>
-        </div>
-
-        {/* Patient rows */}
-        {[
-          { name: "Priya Suresh", time: "09:00", st: "Waiting",    sc: "#D97706", sb: "#FFF7ED" },
-          { name: "Rajan Kumar",  time: "09:30", st: "Consulting", sc: "#0F766E", sb: "#F0FDFA" },
-          { name: "Meena Pillai", time: "10:00", st: "Scheduled",  sc: "#2563EB", sb: "#EFF6FF" },
-        ].map((p, i) => (
-          <div key={i} className="flex items-center gap-2" style={{
-            paddingTop: i > 0 ? "7px" : 0,
-            marginTop:  i > 0 ? "7px" : 0,
-            borderTop:  i > 0 ? "1px solid rgba(15,23,42,.05)" : "none",
-          }}>
-            <div className="shrink-0 rounded-full flex items-center justify-center text-white" style={{
-              width: 23, height: 23, fontSize: "9px", fontWeight: 700,
-              background: `hsl(${174 + i * 26}, 52%, 42%)`,
-            }}>
-              {p.name.charAt(0)}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p style={{ fontSize: "10px", fontWeight: 600, color: "#0F172A", lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</p>
-              <p style={{ fontSize: "8px", color: "#94A3B8" }}>{p.time}</p>
-            </div>
-            <span style={{ fontSize: "8px", fontWeight: 700, color: p.sc, background: p.sb, padding: "2px 8px", borderRadius: "99px", whiteSpace: "nowrap" }}>{p.st}</span>
-          </div>
-        ))}
-      </div>
-
-      {/* ── Floating card — OT schedule ── */}
-      <div className="lp-dash-side1 absolute" style={{
-        right: "1%", top: "14px", width: "128px", zIndex: 3,
-        background: "rgba(255,255,255,.74)",
-        backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)",
-        border: "1px solid rgba(255,255,255,.92)",
-        borderRadius: "16px",
-        boxShadow: "0 14px 38px rgba(0,0,0,.07), inset 0 1px 0 rgba(255,255,255,.95)",
-        padding: "12px 10px",
-      }}>
-        <p style={{ fontSize: "9px", fontWeight: 700, color: "#0F172A", marginBottom: "8px", letterSpacing: "0.02em" }}>Today's OT</p>
-        {["10:00 · Cataract", "11:30 · Retina", "14:00 · Glaucoma"].map((s, i) => (
-          <div key={i} className="flex items-center gap-1.5" style={{ marginBottom: i < 2 ? "6px" : 0 }}>
-            <div style={{ width: 6, height: 6, borderRadius: "50%", background: i === 0 ? "#10B981" : i === 1 ? "#F59E0B" : "#6366F1", flexShrink: 0 }} />
-            <p style={{ fontSize: "8px", color: "#64748B", lineHeight: 1.3 }}>{s}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* ── Floating card — revenue ── */}
-      <div className="lp-dash-side2 absolute" style={{
-        left: "1%", bottom: "16px", width: "112px", zIndex: 3,
-        background: "linear-gradient(135deg, rgba(15,118,110,.92), rgba(20,184,166,.85))",
-        backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)",
-        border: "1px solid rgba(255,255,255,.18)",
-        borderRadius: "16px",
-        boxShadow: "0 16px 40px rgba(15,118,110,.28)",
-        padding: "12px 10px",
-      }}>
-        <p style={{ fontSize: "8px", color: "rgba(255,255,255,.7)", marginBottom: "3px" }}>Monthly Revenue</p>
-        <p style={{ fontSize: "19px", fontWeight: 800, color: "#fff", letterSpacing: "-0.025em", lineHeight: 1 }}>₹2.4L</p>
-        <div className="flex items-center gap-1" style={{ marginTop: "4px" }}>
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
-            <path d="M7 17l5-5 5 5M7 12l5-5 5 5" stroke="rgba(255,255,255,.85)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-          <p style={{ fontSize: "7.5px", color: "rgba(255,255,255,.8)" }}>+18% MoM</p>
-        </div>
-      </div>
     </div>
   );
 }
@@ -986,10 +700,6 @@ export default function LoginPage() {
         @keyframes lp-ecg     { from{transform:translateX(0)} to{transform:translateX(-50%)} }
         @keyframes lp-fadein  { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
         @keyframes lp-cardin  { from{opacity:0;transform:translateY(30px) scale(.97)} to{opacity:1;transform:translateY(0) scale(1)} }
-        @keyframes lp-float   { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
-        @keyframes lp-float2  { 0%,100%{transform:translateY(-5px)} 50%{transform:translateY(5px)} }
-        @keyframes lp-float3  { 0%,100%{transform:translateY(0) rotate(-1.2deg)} 50%{transform:translateY(-7px) rotate(1.2deg)} }
-        @keyframes lp-logo    { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-5px)} }
         @keyframes lp-shield  { 0%,100%{transform:scale(1) rotate(0deg)} 50%{transform:scale(1.1) rotate(3deg)} }
         @keyframes lp-grad    { 0%,100%{background-position:0% 50%} 50%{background-position:100% 50%} }
         @keyframes lp-shimmer { 0%{background-position:-300% center} 100%{background-position:300% center} }
@@ -998,15 +708,9 @@ export default function LoginPage() {
         @keyframes lp-slide-up{ from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
         @keyframes lp-arrow   { 0%,100%{transform:translateX(0)} 50%{transform:translateX(4px)} }
 
-        /* ── NEW: Extra animation keyframes ───────────────────────── */
-        @keyframes lp-bar-in  { from{transform:scaleY(0)} to{transform:scaleY(1)} }
-        @keyframes lp-live-dot{ 0%,100%{box-shadow:0 0 0 0 rgba(16,185,129,.7)} 60%{box-shadow:0 0 0 6px rgba(16,185,129,0)} }
-        @keyframes lp-notify  { 0%{opacity:0;transform:translateY(16px) scale(.94)} 12%{opacity:1;transform:translateY(0) scale(1)} 80%{opacity:1;transform:translateY(0) scale(1)} 100%{opacity:0;transform:translateY(-10px) scale(.96)} }
+        /* ── Extra animation keyframes ────────────────────────────── */
         @keyframes lp-card-levitate { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-5px)} }
-        @keyframes lp-scan    { 0%{top:0;opacity:.7} 100%{top:100%;opacity:0} }
         @keyframes lp-field-in{ from{opacity:0;transform:translateX(16px)} to{opacity:1;transform:translateX(0)} }
-        @keyframes lp-sparkle { 0%,100%{opacity:0;transform:scale(0) rotate(0deg)} 50%{opacity:1;transform:scale(1) rotate(180deg)} }
-        @keyframes lp-num-pop { 0%{transform:scale(1)} 40%{transform:scale(1.18)} 100%{transform:scale(1)} }
         @keyframes lp-border-glow { 0%,100%{opacity:.45} 50%{opacity:1} }
 
         /* ── Entrance ──────────────────────────────────────────────── */
@@ -1030,26 +734,10 @@ export default function LoginPage() {
         .lp-blob3{animation:lp-blob3 16s ease-in-out infinite}
         .lp-blob4{animation:lp-blob4 20s ease-in-out infinite}
         .lp-ecg  {animation:lp-ecg   7s  linear    infinite}
-        .lp-logo {animation:lp-logo  9s  ease-in-out infinite}
         .lp-shield-anim{animation:lp-shield 3.5s ease-in-out infinite}
-        .lp-dash-main {animation:lp-float  7s ease-in-out .4s  infinite}
-        .lp-dash-side1{animation:lp-float2 9s ease-in-out 1.6s infinite}
-        .lp-dash-side2{animation:lp-float3 8s ease-in-out .9s  infinite}
         .lp-trial{animation:lp-shimmer 5s linear 1s infinite, lp-pulse 2.8s ease-in-out 1s infinite}
         .lp-card-levitate{animation:lp-card-levitate 14s ease-in-out 1.2s infinite}
-        .lp-live-dot-anim{animation:lp-live-dot 1.8s ease-out infinite}
         .lp-border-glow{animation:lp-border-glow 3s ease-in-out infinite}
-
-        /* ── Bar chart entry ───────────────────────────────────────── */
-        .lp-bar{transform-origin:bottom;animation:lp-bar-in .7s cubic-bezier(.22,1,.36,1) both}
-
-        /* ── Notification toast ────────────────────────────────────── */
-        .lp-notify-toast{animation:lp-notify 4.5s cubic-bezier(.22,1,.36,1) both}
-
-        /* ── Sparkles ──────────────────────────────────────────────── */
-        .lp-sparkle-1{animation:lp-sparkle 2.2s ease-in-out 1.4s infinite}
-        .lp-sparkle-2{animation:lp-sparkle 2.8s ease-in-out 2.1s infinite}
-        .lp-sparkle-3{animation:lp-sparkle 2.5s ease-in-out 0.8s infinite}
 
         /* ── Gradient headline ─────────────────────────────────────── */
         .lp-grad-text{
@@ -1078,11 +766,8 @@ export default function LoginPage() {
         @media (prefers-reduced-motion:reduce) {
           .lp-a0,.lp-a1,.lp-a2,.lp-a3,.lp-a4,.lp-card,
           .lp-blob1,.lp-blob2,.lp-blob3,.lp-blob4,
-          .lp-ecg,.lp-logo,.lp-shield-anim,
-          .lp-dash-main,.lp-dash-side1,.lp-dash-side2,
+          .lp-ecg,.lp-shield-anim,
           .lp-trial,.lp-btn,.lp-chip,.lp-card-levitate,
-          .lp-live-dot-anim,.lp-bar,.lp-notify-toast,
-          .lp-sparkle-1,.lp-sparkle-2,.lp-sparkle-3,
           .lp-f1,.lp-f2,.lp-f3,.lp-f4,.lp-f5
           { animation:none!important; transition:none!important; }
           .lp-grad-text{-webkit-text-fill-color:#0F766E;background:none;}
@@ -1098,14 +783,8 @@ export default function LoginPage() {
         {/* ══ LEFT PANEL ══════════════════════════════════════════════════ */}
         <div className="hidden lg:flex flex-col justify-between flex-1 px-12 xl:px-20 py-12 min-w-0 relative">
 
-          {/* PPMS brand logo — pinned to the top-right white space (xl+) */}
-          <div className="hidden xl:block lp-a2 lp-logo absolute pointer-events-none select-none"
-            style={{ top: "30px", right: "44px", filter: "drop-shadow(0 14px 40px rgba(15,118,110,0.22))" }}>
-            <PpmsLogo size={230} />
-          </div>
-
-          {/* Logo */}
-          <div className="lp-a0 lp-logo">
+          {/* Logo lockup */}
+          <div className="lp-a0">
             <div className="flex items-center gap-3.5">
               <div className="w-12 h-12 rounded-[18px] flex items-center justify-center shrink-0"
                 style={{ background: "linear-gradient(135deg,#0F766E,#14B8A6)", boxShadow: "0 10px 28px rgba(15,118,110,.35)" }}>
@@ -1116,39 +795,48 @@ export default function LoginPage() {
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="text-[28px] font-black" style={{ color: "#0F172A", letterSpacing: "-0.035em" }}>PPMS</span>
+                  <span className="text-[28px] font-black" style={{ color: "#0F172A", letterSpacing: "-0.035em" }}>PPMS-AI</span>
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
                     style={{ background: "#F0FDFA", color: "#0F766E", border: "1px solid #CCFBF1", letterSpacing: "0.04em" }}>v2.0 Cloud</span>
                 </div>
                 <p className="text-[11px] font-semibold" style={{ color: "#64748B", letterSpacing: "0.06em" }}>
-                  ENTERPRISE HEALTHCARE PLATFORM
+                  PERSONAL PATIENT MANAGEMENT SYSTEM
                 </p>
               </div>
             </div>
           </div>
 
-          {/* Hero content */}
-          <div className="flex-1 flex items-center gap-10 py-5 min-w-0">
-
-            {/* Left column: headline, dashboard, chips */}
-            <div className="flex flex-col min-w-0 max-w-[520px]">
-              {/* Headline */}
-              <div className="lp-a1 mb-5">
-                <h1 className="font-black leading-[1.06] mb-3"
-                  style={{ fontSize: "clamp(38px,3.6vw,52px)", color: "#0F172A", letterSpacing: "-0.025em" }}>
+          {/* Hero content — headline, brand logo, chips */}
+          <div className="flex-1 flex items-center py-5 min-w-0">
+            <div className="flex flex-col min-w-0 w-full max-w-[560px]">
+              <div className="lp-a1 mb-2">
+                <h1 className="font-black leading-[1.06] mb-4"
+                  style={{ fontSize: "clamp(36px,3.2vw,48px)", color: "#0F172A", letterSpacing: "-0.025em" }}>
                   Better{" "}
                   <span className="lp-grad-text">Healthcare.</span>
                   <br />Better Management.
                 </h1>
-                <p className="leading-relaxed" style={{ fontSize: "15px", color: "#64748B", maxWidth: "380px" }}>
+                <p className="leading-relaxed" style={{ fontSize: "15px", color: "#64748B", maxWidth: "400px" }}>
                   A secure enterprise healthcare platform for hospitals, clinics, diagnostics,
                   pharmacies, and healthcare networks.
                 </p>
               </div>
 
-              {/* Dashboard illustration */}
-              <div className="lp-a2 mb-6">
-                <DashboardIllustration />
+              {/* Brand logo — hero visual (replaces the old dashboard) */}
+              <div className="lp-a2 flex justify-center select-none py-1">
+                <Image
+                  src="/landing/logo-ppms-ai.png"
+                  alt="PPMS-AI — Personal Patient Management System"
+                  width={400}
+                  height={400}
+                  priority
+                  style={{
+                    width: "clamp(240px, 24vh, 340px)",
+                    height: "auto",
+                    mixBlendMode: "multiply",
+                    filter: "drop-shadow(0 24px 48px rgba(15,118,110,.14))",
+                  }}
+                />
               </div>
 
               {/* Feature chips */}
@@ -1161,21 +849,28 @@ export default function LoginPage() {
                       border: "1px solid rgba(255,255,255,.88)",
                       boxShadow: "0 4px 12px rgba(15,118,110,.06), 0 1px 3px rgba(0,0,0,.04)",
                     }}>
-                      <span style={{ fontSize: "13px" }}>{f.icon}</span>
+                      <span style={{ color: "#0F766E", display: "flex" }}>{f.icon}</span>
                       <span style={{ fontSize: "12px", fontWeight: 600, color: "#334155" }}>{f.label}</span>
                     </div>
                   ))}
                 </div>
               </div>
             </div>
-
           </div>
 
           {/* Footer trust row */}
           <div className="lp-a4">
             <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-              {["🔒 HIPAA Ready", "🏥 NABH Workflow", "📄 ABDM Compatible", "☁ Cloud Hosted", "⚡ 99.98% Uptime"].map((t, i) => (
-                <span key={i} style={{ fontSize: "11px", fontWeight: 500, color: "#94A3B8" }}>{t}</span>
+              {[
+                { icon: <ShieldCheck size={12} />, label: "HIPAA Ready"     },
+                { icon: <Building2 size={12} />,   label: "NABH Workflow"   },
+                { icon: <FileText size={12} />,    label: "ABDM Compatible" },
+                { icon: <Cloud size={12} />,       label: "Cloud Hosted"    },
+                { icon: <Zap size={12} />,         label: "99.98% Uptime"   },
+              ].map((t, i) => (
+                <span key={i} className="flex items-center gap-1.5" style={{ fontSize: "11px", fontWeight: 500, color: "#94A3B8" }}>
+                  <span style={{ color: "#14B8A6" }}>{t.icon}</span> {t.label}
+                </span>
               ))}
             </div>
           </div>
@@ -1199,13 +894,6 @@ export default function LoginPage() {
             {/* Animated top edge */}
             <div className="lp-border-glow" style={{ height: "2px", background: "linear-gradient(90deg,transparent,#14B8A6 30%,#0F766E 50%,#14B8A6 70%,transparent)" }} />
 
-            {/* One-time scan-line sweep on entrance */}
-            <div style={{
-              position: "absolute", left: 0, right: 0, height: "3px", zIndex: 10, pointerEvents: "none",
-              background: "linear-gradient(90deg,transparent,rgba(20,184,166,.55),transparent)",
-              animation: "lp-scan 1.4s cubic-bezier(.4,0,.2,1) 0.9s both",
-            }} />
-
             <div className="px-8 py-7">
 
               {/* Mobile logo */}
@@ -1217,22 +905,16 @@ export default function LoginPage() {
                     <rect x="2" y="8.5" width="18" height="5" rx="2.2" fill="white" />
                   </svg>
                 </div>
-                <span className="text-[23px] font-black" style={{ color: "#0F172A", letterSpacing: "-0.03em" }}>PPMS</span>
+                <span className="text-[23px] font-black" style={{ color: "#0F172A", letterSpacing: "-0.03em" }}>PPMS-AI</span>
               </div>
 
               {/* Welcome */}
               <div className="text-center mb-6">
                 <div className="flex items-center justify-center gap-2.5 mb-2">
-                  {/* Shield with sparkles */}
-                  <div className="relative">
-                    <div className="lp-shield-anim w-8 h-8 rounded-xl flex items-center justify-center"
-                      style={{ background: "linear-gradient(135deg,#F0FDFA,#CCFBF1)", border: "1px solid #CCFBF1" }}>
-                      <ShieldCheck size={16} style={{ color: "#0F766E" }} />
-                    </div>
-                    {/* Sparkle dots */}
-                    <div className="lp-sparkle-1 absolute" style={{ width: 5, height: 5, borderRadius: "50%", background: "#14B8A6", top: "-3px", right: "-3px" }} />
-                    <div className="lp-sparkle-2 absolute" style={{ width: 4, height: 4, borderRadius: "50%", background: "#10B981", bottom: "-2px", left: "-4px" }} />
-                    <div className="lp-sparkle-3 absolute" style={{ width: 3, height: 3, borderRadius: "50%", background: "#0F766E", top: "50%", left: "-5px" }} />
+                  {/* Shield */}
+                  <div className="lp-shield-anim w-8 h-8 rounded-xl flex items-center justify-center"
+                    style={{ background: "linear-gradient(135deg,#F0FDFA,#CCFBF1)", border: "1px solid #CCFBF1" }}>
+                    <ShieldCheck size={16} style={{ color: "#0F766E" }} />
                   </div>
                   <h2 className="text-[26px] font-bold" style={{ color: "#0F172A", letterSpacing: "-0.022em" }}>
                     Welcome Back
