@@ -6,7 +6,7 @@ import {
   Eye, EyeOff, User, Lock, Phone, AlertCircle, CheckCircle2,
   ShieldCheck, ArrowRight, Loader2, Check, Mail, X, KeyRound, RotateCcw,
   FileText, CalendarDays, CreditCard, UserPlus, Pill, FlaskConical,
-  Building2, Cloud, Zap,
+  Building2, Cloud, Zap, Stethoscope, HeartPulse, Sparkles, Users, BedDouble,
 } from "lucide-react";
 
 /* ── Types ─────────────────────────────────────────────────────────────── */
@@ -55,6 +55,170 @@ function validateOtp(fields: { mobile?: string; otp?: string; otpSent?: boolean 
     else if (!/^\d{6}$/.test(o)) e.otp = "Enter the 6-digit OTP sent to your number.";
   }
   return e;
+}
+
+/* ── Count-up hook (trust metrics) ──────────────────────────────────────── */
+function useCountUp(target: number, decimals = 0, duration = 1800) {
+  const [val, setVal] = useState(0);
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setVal(target);
+      return;
+    }
+    const t0 = performance.now();
+    const id = setInterval(() => {
+      const p = Math.min(1, (performance.now() - t0) / duration);
+      const eased = 1 - Math.pow(1 - p, 3);
+      setVal(target * eased);
+      if (p >= 1) clearInterval(id);
+    }, 32);
+    return () => clearInterval(id);
+  }, [target, decimals, duration]);
+  return decimals > 0 ? val.toFixed(decimals) : Math.round(val).toLocaleString("en-IN");
+}
+
+function TrustStat({ icon, value, decimals = 0, suffix, label, floatDelay }: {
+  icon: React.ReactNode; value: number; decimals?: number;
+  suffix: string; label: string; floatDelay: string;
+}) {
+  const v = useCountUp(value, decimals);
+  return (
+    <div className="lp-floaty rounded-2xl px-3.5 py-3 flex items-center gap-2.5"
+      style={{
+        animationDelay: floatDelay,
+        background: "rgba(255,255,255,.6)",
+        backdropFilter: "blur(14px)",
+        border: "1px solid rgba(255,255,255,.75)",
+        boxShadow: "0 8px 28px rgba(15,118,110,.09), 0 2px 6px rgba(15,23,42,.04)",
+      }}>
+      <div className="shrink-0 w-8 h-8 rounded-xl flex items-center justify-center"
+        style={{ background: "linear-gradient(135deg,#F0FDFA,#CCFBF1)", border: "1px solid rgba(20,184,166,.22)", color: "#0F766E" }}>
+        {icon}
+      </div>
+      <div className="min-w-0">
+        <p style={{ fontSize: "16px", fontWeight: 900, color: "#0F172A", letterSpacing: "-0.02em", lineHeight: 1.1 }}>
+          {v}{suffix}
+        </p>
+        <p style={{ fontSize: "9.5px", fontWeight: 600, color: "#64748B", letterSpacing: "0.03em", whiteSpace: "nowrap" }}>{label}</p>
+      </div>
+    </div>
+  );
+}
+
+/* ── Decorative glass analytics cluster (wide screens, background) ──────── */
+function AnalyticsCluster() {
+  const bars = [42, 63, 48, 78, 58, 88, 70];
+  const days = ["M", "T", "W", "T", "F", "S", "S"];
+  const journey = ["Register", "Consult", "Lab", "Pharmacy"];
+  return (
+    <div
+      aria-hidden="true"
+      className="hidden min-[1600px]:flex flex-col gap-3.5 absolute pointer-events-none select-none"
+      style={{ right: "36px", top: "50%", transform: "translateY(-50%)", width: "300px", zIndex: 0 }}
+    >
+      {/* Mini live dashboard */}
+      <div className="lp-floaty rounded-3xl p-4"
+        style={{
+          background: "rgba(255,255,255,.55)",
+          backdropFilter: "blur(18px)",
+          border: "1px solid rgba(255,255,255,.7)",
+          boxShadow: "0 16px 48px rgba(15,118,110,.1), 0 4px 12px rgba(15,23,42,.05)",
+        }}>
+        {/* Header */}
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-1.5">
+            <span className="lp-dot" style={{ width: 5, height: 5, borderRadius: "50%", background: "#14B8A6" }} />
+            <span style={{ fontSize: "9px", fontWeight: 800, letterSpacing: "0.13em", color: "#0F766E" }}>LIVE HOSPITAL OVERVIEW</span>
+          </div>
+          <HeartPulse size={12} style={{ color: "#14B8A6" }} />
+        </div>
+
+        {/* KPI row */}
+        <div className="grid grid-cols-3 gap-2 mb-3">
+          {[
+            { v: "128", l: "OPD Today",   icon: <Users size={10} /> },
+            { v: "46",  l: "On Duty",     icon: <Stethoscope size={10} /> },
+            { v: "82%", l: "Beds",        icon: <BedDouble size={10} /> },
+          ].map((k, i) => (
+            <div key={i} className="rounded-xl px-2 py-1.5 text-center" style={{ background: "rgba(240,253,250,.8)", border: "1px solid rgba(20,184,166,.15)" }}>
+              <p style={{ fontSize: "13px", fontWeight: 900, color: "#0F172A", lineHeight: 1.15 }}>{k.v}</p>
+              <p className="flex items-center justify-center gap-1" style={{ fontSize: "8px", fontWeight: 600, color: "#64748B" }}>
+                <span style={{ color: "#14B8A6" }}>{k.icon}</span>{k.l}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        {/* Appointments chart */}
+        <p style={{ fontSize: "8.5px", fontWeight: 700, letterSpacing: "0.08em", color: "#94A3B8", marginBottom: "5px" }}>APPOINTMENTS · THIS WEEK</p>
+        <div className="flex items-end gap-1.5 h-12 mb-1">
+          {bars.map((h, i) => (
+            <div key={i} className="lp-bargrow flex-1 rounded-t-md"
+              style={{
+                height: `${h}%`,
+                animationDelay: `${0.5 + i * 0.09}s`,
+                background: i === 5 ? "linear-gradient(180deg,#14B8A6,#0F766E)" : "rgba(20,184,166,.28)",
+              }} />
+          ))}
+        </div>
+        <div className="flex gap-1.5 mb-3">
+          {days.map((d, i) => (
+            <span key={i} className="flex-1 text-center" style={{ fontSize: "7.5px", fontWeight: 700, color: i === 5 ? "#0F766E" : "#CBD5E1" }}>{d}</span>
+          ))}
+        </div>
+
+        {/* Bed occupancy */}
+        <div className="flex items-center justify-between mb-1">
+          <span style={{ fontSize: "8.5px", fontWeight: 700, letterSpacing: "0.08em", color: "#94A3B8" }}>BED OCCUPANCY</span>
+          <span style={{ fontSize: "9px", fontWeight: 800, color: "#0F766E" }}>82%</span>
+        </div>
+        <div className="rounded-full mb-3.5 overflow-hidden" style={{ height: "5px", background: "rgba(15,118,110,.1)" }}>
+          <div className="lp-bargrow-x h-full rounded-full" style={{ width: "82%", background: "linear-gradient(90deg,#14B8A6,#0F766E)" }} />
+        </div>
+
+        {/* Patient journey */}
+        <p style={{ fontSize: "8.5px", fontWeight: 700, letterSpacing: "0.08em", color: "#94A3B8", marginBottom: "7px" }}>PATIENT JOURNEY</p>
+        <div className="flex items-center">
+          {journey.map((s, i) => (
+            <div key={s} className="flex items-center" style={{ flex: i < journey.length - 1 ? 1 : "none" }}>
+              <div className="flex flex-col items-center gap-1">
+                <span className={i === 1 ? "lp-dot" : ""} style={{
+                  width: 7, height: 7, borderRadius: "50%",
+                  background: i <= 1 ? "#14B8A6" : "rgba(20,184,166,.25)",
+                  border: i <= 1 ? "none" : "1px solid rgba(20,184,166,.35)",
+                }} />
+                <span style={{ fontSize: "7.5px", fontWeight: 700, color: i <= 1 ? "#0F766E" : "#94A3B8", whiteSpace: "nowrap" }}>{s}</span>
+              </div>
+              {i < journey.length - 1 && (
+                <div className="flex-1 mx-1 mb-3" style={{ height: "1.5px", background: i < 1 ? "#14B8A6" : "rgba(20,184,166,.2)" }} />
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Trust metric cards — count-up */}
+      <div className="grid grid-cols-2 gap-2.5">
+        <TrustStat icon={<Building2 size={14} />}   value={500}   suffix="+"  label="Hospitals Connected"  floatDelay="0.6s" />
+        <TrustStat icon={<Stethoscope size={14} />} value={12500} suffix="+"  label="Active Doctors"       floatDelay="1.4s" />
+        <TrustStat icon={<FileText size={14} />}    value={2}     suffix="M+" label="Patient Records"      floatDelay="2.1s" />
+        <TrustStat icon={<Zap size={14} />}         value={99.98} decimals={2} suffix="%" label="Uptime SLA" floatDelay="0.9s" />
+      </div>
+
+      {/* AI insight chip */}
+      <div className="lp-floaty flex items-center gap-2 rounded-2xl px-3.5 py-2.5"
+        style={{
+          animationDelay: "1.8s",
+          background: "linear-gradient(105deg,rgba(15,118,110,.92),rgba(20,184,166,.88))",
+          boxShadow: "0 10px 30px rgba(15,118,110,.25)",
+        }}>
+        <Sparkles size={13} color="white" className="shrink-0" />
+        <p style={{ fontSize: "10px", fontWeight: 600, color: "rgba(255,255,255,.95)", lineHeight: 1.35 }}>
+          <span style={{ fontWeight: 800 }}>AI Insight:</span> OPD load peaks 10–11 AM — smart slots auto-balance bookings
+        </p>
+      </div>
+    </div>
+  );
 }
 
 /* ── Floating label input ────────────────────────────────────────────────── */
@@ -559,6 +723,45 @@ function MedicalBackground() {
           animation: `lp-particle ${p.d}s ease-in-out ${i * 1.1}s infinite`,
         }} />
       ))}
+
+      {/* Healthcare network constellation — icons + flowing data lines (lg+) */}
+      <div className="hidden lg:block absolute inset-0">
+        <svg className="lp-flow absolute inset-0 w-full h-full" viewBox="0 0 1440 900" preserveAspectRatio="none" style={{ opacity: 0.15 }}>
+          <defs>
+            <linearGradient id="lpfl" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#14B8A6" stopOpacity=".55" />
+              <stop offset="100%" stopColor="#0F766E" stopOpacity=".2" />
+            </linearGradient>
+          </defs>
+          {[
+            "M202,72 Q130,160 115,270",
+            "M115,270 Q190,470 317,630",
+            "M317,630 Q400,730 490,792",
+            "M490,792 Q720,780 922,702",
+            "M576,72 Q710,110 835,180",
+            "M115,270 Q420,380 691,495",
+            "M691,495 Q820,600 922,702",
+            "M576,72 Q640,300 691,495",
+          ].map((d, i) => (
+            <path key={i} d={d} fill="none" stroke="url(#lpfl)" strokeWidth="1.3"
+              strokeDasharray="5 9" strokeLinecap="round" style={{ animationDelay: `${i * 0.7}s` }} />
+          ))}
+        </svg>
+        {[
+          { Icon: User,         x: "14%", y: "8%"  },
+          { Icon: Building2,    x: "8%",  y: "30%" },
+          { Icon: Stethoscope,  x: "22%", y: "70%" },
+          { Icon: HeartPulse,   x: "40%", y: "8%"  },
+          { Icon: FileText,     x: "58%", y: "20%" },
+          { Icon: Cloud,        x: "48%", y: "55%" },
+          { Icon: Pill,         x: "34%", y: "88%" },
+          { Icon: FlaskConical, x: "64%", y: "78%" },
+        ].map(({ Icon, x, y }, i) => (
+          <div key={i} className="lp-floaty absolute" style={{ left: x, top: y, opacity: 0.13, color: "#0F766E", animationDelay: `${i * 0.9}s` }}>
+            <Icon size={22} strokeWidth={1.7} />
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -712,6 +915,10 @@ export default function LoginPage() {
         @keyframes lp-field-in{ from{opacity:0;transform:translateX(16px)} to{opacity:1;transform:translateX(0)} }
         @keyframes lp-border-glow { 0%,100%{opacity:.45} 50%{opacity:1} }
         @keyframes lp-dot { 0%,100%{box-shadow:0 0 0 0 rgba(20,184,166,.45)} 60%{box-shadow:0 0 0 6px rgba(20,184,166,0)} }
+        @keyframes lp-floaty  { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-7px)} }
+        @keyframes lp-bargrow { from{transform:scaleY(0)} to{transform:scaleY(1)} }
+        @keyframes lp-bargrow-x { from{transform:scaleX(0)} to{transform:scaleX(1)} }
+        @keyframes lp-flowdash { to{stroke-dashoffset:-140} }
 
         /* ── Entrance ──────────────────────────────────────────────── */
         .lp-a0{animation:lp-fadein .65s cubic-bezier(.22,1,.36,1) 0ms   both}
@@ -754,6 +961,12 @@ export default function LoginPage() {
         .lp-feat{transition:background .2s ease,transform .2s cubic-bezier(.34,1.56,.64,1)}
         .lp-feat:hover{background:rgba(255,255,255,.65);transform:translateY(-2px)}
 
+        /* ── Background analytics decor ────────────────────────────── */
+        .lp-floaty{animation:lp-floaty 7s ease-in-out infinite}
+        .lp-bargrow{transform-origin:bottom;animation:lp-bargrow .8s cubic-bezier(.22,1,.36,1) both}
+        .lp-bargrow-x{transform-origin:left;animation:lp-bargrow-x 1.1s cubic-bezier(.22,1,.36,1) .6s both}
+        .lp-flow path{animation:lp-flowdash 9s linear infinite}
+
         /* ── Tab sliding pill ──────────────────────────────────────── */
         .lp-tab-pill{transition:left .3s cubic-bezier(.34,1.56,.64,1)}
 
@@ -769,6 +982,7 @@ export default function LoginPage() {
           .lp-blob1,.lp-blob2,.lp-blob3,.lp-blob4,
           .lp-ecg,.lp-shield-anim,
           .lp-trial,.lp-btn,.lp-feat,.lp-dot,.lp-card-levitate,
+          .lp-floaty,.lp-bargrow,.lp-bargrow-x,.lp-flow path,
           .lp-f1,.lp-f2,.lp-f3,.lp-f4,.lp-f5
           { animation:none!important; transition:none!important; }
           .lp-grad-text{-webkit-text-fill-color:#0F766E;background:none;}
@@ -871,6 +1085,9 @@ export default function LoginPage() {
               </div>
             </div>
           </div>
+
+          {/* Decorative analytics cluster — fills right whitespace on wide screens */}
+          <AnalyticsCluster />
 
           {/* Footer trust row */}
           <div className="lp-a4">
