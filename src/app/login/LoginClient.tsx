@@ -1001,13 +1001,12 @@ export default function LoginPage() {
           {/* Logo lockup */}
           <div className="lp-a0">
             <div className="flex items-center gap-3.5">
-              <div className="w-12 h-12 rounded-[18px] flex items-center justify-center shrink-0"
-                style={{ background: "linear-gradient(135deg,#0F766E,#14B8A6)", boxShadow: "0 10px 28px rgba(15,118,110,.35)" }}>
-                <svg width="24" height="24" viewBox="0 0 22 22" fill="none">
-                  <rect x="8.5" y="2" width="5" height="18" rx="2.2" fill="white" />
-                  <rect x="2" y="8.5" width="18" height="5" rx="2.2" fill="white" />
-                </svg>
-              </div>
+              <img
+                src="/landing/logo-ppms-new.png"
+                alt="PPMS-AI"
+                className="shrink-0"
+                style={{ width: "52px", height: "52px", objectFit: "contain" }}
+              />
               <div>
                 <div className="flex items-center gap-2">
                   <span className="text-[28px] font-black" style={{ color: "#0F172A", letterSpacing: "-0.035em" }}>PPMS-AI</span>
@@ -1114,13 +1113,12 @@ export default function LoginPage() {
           {/* Mobile hero — centered logo + concise headline (below lg only) */}
           <div className="lg:hidden lp-a0 shrink-0 flex flex-col items-center text-center mb-6">
             <div className="flex items-center gap-3 mb-1.5">
-              <div className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0"
-                style={{ background: "linear-gradient(135deg,#14B8A6,#0F766E)", boxShadow: "0 10px 26px rgba(20,184,166,.35)" }}>
-                <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-                  <rect x="8.5" y="2" width="5" height="18" rx="2.2" fill="white" />
-                  <rect x="2" y="8.5" width="18" height="5" rx="2.2" fill="white" />
-                </svg>
-              </div>
+              <img
+                src="/landing/logo-ppms-new.png"
+                alt="PPMS-AI"
+                className="shrink-0"
+                style={{ width: "44px", height: "44px", objectFit: "contain" }}
+              />
               <span className="text-[26px] font-black" style={{ color: "#0F172A", letterSpacing: "-0.03em" }}>PPMS-AI</span>
             </div>
             <p style={{ fontSize: "9.5px", fontWeight: 700, letterSpacing: "0.16em", color: "#64748B" }}>
