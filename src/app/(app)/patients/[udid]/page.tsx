@@ -4,7 +4,6 @@ import { notFound } from "next/navigation";
 import { format, startOfDay, endOfDay } from "date-fns";
 import { Phone, MapPin, Calendar, Hash, IdCard } from "lucide-react";
 import { decryptAadhaar, maskAadhaar } from "@/lib/crypto";
-import { BackButton } from "@/components/ui/BackButton";
 import { PatientProfileClient, TransferButton, TimeStampButton, type SerialVisit, type TodayVisit, type LastVisitSummary } from "./PatientProfileClient";
 
 const CATEGORY_STYLES: Record<string, string> = {
@@ -23,7 +22,6 @@ export default async function PatientProfilePage({
   searchParams: Promise<{ returnTo?: string }>;
 }) {
   const { udid } = await params;
-  const { returnTo } = await searchParams;
   const user = await requirePermission("patients.view");
 
   const patient = await prisma.patient.findUnique({
@@ -226,9 +224,6 @@ export default async function PatientProfilePage({
 
   return (
     <div className="fade-in pb-12 max-w-2xl mx-auto">
-      {/* Back */}
-      <BackButton href={returnTo || "/patients"} label="Back" className="mb-4" />
-
       {/* ── Patient banner ────────────────────────────────────────────── */}
       <div
         className="rounded-2xl px-6 py-6 mb-4 text-white"
