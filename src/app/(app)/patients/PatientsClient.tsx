@@ -496,7 +496,7 @@ export function PatientsClient({
             ) : (
               <>
               {/* Column headers — padding and gaps match card rows exactly */}
-              <div className="hidden lg:flex items-center gap-4 px-7 py-2.5 border-b border-[var(--color-border)] bg-[var(--color-surface-sunken)]">
+              <div className="hidden xl:flex items-center gap-4 px-7 py-2.5 border-b border-[var(--color-border)] bg-[var(--color-surface-sunken)]">
                 {/* token spacer */}
                 <div className="size-8 shrink-0" />
                 {/* patient col — avatar (w-9) + gap-3 + text = matches w-44 container */}
@@ -512,7 +512,7 @@ export function PatientsClient({
                 <div className="w-28 shrink-0">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">Mobile</span>
                 </div>
-                <div className="hidden xl:block w-32 shrink-0">
+                <div className="w-32 shrink-0">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">UHID</span>
                 </div>
                 <div className="w-36 shrink-0">
@@ -596,12 +596,12 @@ export function PatientsClient({
                       </div>
 
                       {/* Hospital — fixed width */}
-                      <div className="hidden lg:block w-36 shrink-0">
+                      <div className="hidden xl:block w-36 shrink-0">
                         <p className="text-sm text-[var(--color-ink-700)] truncate">{p.hospitalName || <span className="text-[var(--color-ink-300)]">—</span>}</p>
                       </div>
 
                       {/* Last Visit — fixed width */}
-                      <div className="hidden lg:block w-28 shrink-0">
+                      <div className="hidden xl:block w-28 shrink-0">
                         <p className="text-sm text-[var(--color-ink-700)]">{lastVisitStr || <span className="text-[var(--color-ink-300)]">—</span>}</p>
                       </div>
 
