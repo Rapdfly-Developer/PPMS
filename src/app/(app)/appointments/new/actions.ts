@@ -47,6 +47,7 @@ export async function createWalkInEncounter(formData: FormData) {
     const category = (formData.get("category") as string) || "GENERAL";
     complaint      = formComplaint;
     const photoUrl = (formData.get("patientPhoto") as string)?.trim() || null;
+    const aadhaarPhotoUrl = (formData.get("aadhaarPhoto") as string)?.trim() || null;
 
     if (!name || !ageRaw || !sex || !mobile || !complaint) {
       return { error: "Patient name, age, sex, phone and chief complaint are required." };
@@ -90,6 +91,7 @@ export async function createWalkInEncounter(formData: FormData) {
         complaint,
         category,
         photoUrl,
+        aadhaarPhotoUrl,
       },
     });
     patientId = newPatient.id;

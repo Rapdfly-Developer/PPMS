@@ -70,6 +70,7 @@ export async function bookAppointment(formData: FormData) {
     const pincode  = (formData.get("pincode")  as string)?.trim() || null;
     const category    = (formData.get("category")        as string) || "GENERAL";
     const photoUrl    = (formData.get("patientPhotoFile") as string)?.trim() || null;
+    const aadhaarPhotoUrl = (formData.get("aadhaarPhotoFile") as string)?.trim() || null;
 
     if (!name || !age || !sex || !mobile) {
       return { error: "Patient name, age, sex and phone are required." };
@@ -115,6 +116,7 @@ export async function bookAppointment(formData: FormData) {
         pincode,
         category,
         photoUrl,
+        aadhaarPhotoUrl,
       },
     });
     patientId = patient.id;

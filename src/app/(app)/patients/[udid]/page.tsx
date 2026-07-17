@@ -272,7 +272,7 @@ export default async function PatientProfilePage({
             </div>
 
             {/* Extra info chips */}
-            {bannerItems.length > 0 && (
+            {(bannerItems.length > 0 || patient.aadhaarPhotoUrl) && (
               <div className="flex flex-wrap gap-x-4 gap-y-1.5 mt-3 text-xs text-white/70">
                 {bannerItems.map((item, i) => (
                   <span key={i} className="flex items-center gap-1.5">
@@ -280,6 +280,21 @@ export default async function PatientProfilePage({
                     {item.label}
                   </span>
                 ))}
+                {patient.aadhaarPhotoUrl && (
+                  <a
+                    href={
+                      patient.aadhaarPhotoUrl.startsWith("http")
+                        ? patient.aadhaarPhotoUrl
+                        : `/api/upload?file=${encodeURIComponent(patient.aadhaarPhotoUrl)}`
+                    }
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 underline underline-offset-2 hover:text-white transition-colors"
+                  >
+                    <span className="text-white/50"><IdCard size={13} /></span>
+                    View Aadhaar Card
+                  </a>
+                )}
               </div>
             )}
           </div>
