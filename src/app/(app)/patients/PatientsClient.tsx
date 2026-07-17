@@ -6,7 +6,7 @@ import Link from "next/link";
 import { format } from "date-fns";
 import {
   Search, Download, Filter, X, Users, CalendarCheck,
-  CalendarClock, ShieldCheck, ClipboardList, ChevronLeft, ChevronRight, Eye,
+  CalendarClock, ShieldCheck, ClipboardList, ChevronLeft, ChevronRight, ChevronDown, Eye,
   Phone, Building2,
 } from "lucide-react";
 
@@ -333,17 +333,34 @@ export function PatientsClient({
   }
 
 
-  const activeFilters = [categoryFilter, sexFilter, hospitalFilter, opStatusFilter].filter(Boolean).length;
+  const activeFilters = [q, categoryFilter, sexFilter, hospitalFilter, opStatusFilter].filter(Boolean).length;
+
+  const SEL = "border border-[var(--color-border)] bg-white rounded-lg pl-3 pr-8 py-2 text-sm text-[var(--color-ink-700)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] appearance-none cursor-pointer";
 
   return (
     <div>
       {/* ── Header ─────────────────────────────────────────────────────── */}
-      <div className="flex items-start justify-between gap-3 mb-5">
+      <div className="flex items-start justify-between gap-3 mb-5 flex-wrap">
         <div>
-          <h1 className="text-2xl font-semibold text-[var(--color-ink-900)] tracking-tight">Patients</h1>
+          <h1 className="text-2xl font-bold text-[var(--color-ink-900)] tracking-tight">Patients</h1>
           <p className="text-sm text-[var(--color-ink-500)] mt-0.5">HMIS patient directory · UHID auto-assigned on registration</p>
         </div>
-        <div className="flex items-center gap-2 flex-shrink-0">
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={() => setShowFilters(v => !v)}
+            className={`inline-flex items-center gap-2 text-sm font-medium px-3.5 py-2.5 rounded-xl border transition-colors ${
+              showFilters
+                ? "border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)]"
+                : "border-[var(--color-border)] bg-white text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]"
+            }`}
+          >
+            <Filter size={14} /> Filter
+            {activeFilters > 0 && (
+              <span className="w-4 h-4 rounded-full bg-[var(--color-primary-600)] text-white text-[9px] font-bold flex items-center justify-center">
+                {activeFilters}
+              </span>
+            )}
+          </button>
         </div>
       </div>
 
@@ -361,114 +378,117 @@ export function PatientsClient({
         {/* ── Table column ─────────────────────────────────────────────── */}
         <div className="space-y-3">
 
-          {/* Filter toolbar */}
-          <div className="bg-white rounded-2xl border border-[var(--color-border)] p-3 shadow-sm">
-            <div className="flex items-center gap-2">
-              {/* Search */}
-              <div className="relative flex-1 min-w-0">
-                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)]" />
-                <input
-                  value={searchVal}
-                  onChange={e => handleSearch(e.target.value)}
-                  placeholder="Search name, UHID or phone…"
-                  className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] pl-8 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] focus:border-transparent"
-                />
-                {searchVal && (
-                  <button
-                    onClick={() => handleSearch("")}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)]"
-                  >
-                    <X size={13} />
-                  </button>
-                )}
-              </div>
+          {/* ── Filter panel ────────────────────────────────────────────── */}
+          {showFilters && (
+            <div className="surface-card p-4 mb-1">
+              <div className="flex flex-wrap items-end gap-3">
 
-              {/* Sort */}
-              <select
-                value={sortBy}
-                onChange={e => navigate({ sort: e.target.value, page: "1" })}
-                className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-3 py-2 text-sm text-[var(--color-ink-700)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] flex-shrink-0"
-              >
-                <option value="newest">Newest first</option>
-                <option value="oldest">Oldest first</option>
-                <option value="name">Name A–Z</option>
-                <option value="lastvisit">Last Visit</option>
-              </select>
-
-              {/* Filter toggle */}
-              <button
-                onClick={() => setShowFilters(f => !f)}
-                className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-2 text-sm font-medium transition-colors flex-shrink-0 ${
-                  showFilters || activeFilters
-                    ? "border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)]"
-                    : "border-[var(--color-border)] bg-[var(--color-surface-sunken)] text-[var(--color-ink-600)]"
-                }`}
-              >
-                <Filter size={13} /> Filters
-                {activeFilters > 0 && (
-                  <span className="w-4 h-4 rounded-full bg-[var(--color-primary-600)] text-white text-[9px] font-bold flex items-center justify-center">
-                    {activeFilters}
-                  </span>
-                )}
-              </button>
-            </div>
-
-            {/* Advanced filter row */}
-            {showFilters && (
-              <div className="mt-3 flex flex-wrap items-center gap-3">
-                <div className="flex items-center gap-2">
-                  <label className="text-xs font-medium text-[var(--color-ink-500)]">Sex</label>
-                  <select
-                    value={sexFilter}
-                    onChange={e => navigate({ sex: e.target.value, page: "1" })}
-                    className="rounded-lg border border-[var(--color-border)] bg-white px-2.5 py-1.5 text-xs text-[var(--color-ink-700)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
-                  >
-                    <option value="">All</option>
-                    <option value="MALE">Male</option>
-                    <option value="FEMALE">Female</option>
-                    <option value="OTHER">Other</option>
-                  </select>
+                {/* Search */}
+                <div className="flex flex-col gap-1 flex-1 min-w-[180px] max-w-xs">
+                  <label className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Search Patient</label>
+                  <div className="relative">
+                    <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)]" />
+                    <input
+                      type="text"
+                      value={searchVal}
+                      onChange={e => handleSearch(e.target.value)}
+                      placeholder="Name, UHID or phone…"
+                      className="w-full pl-9 pr-8 py-2 text-sm rounded-lg border border-[var(--color-border)] bg-white focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)]"
+                    />
+                    {searchVal && (
+                      <button onClick={() => handleSearch("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-300)] hover:text-[var(--color-ink-600)]">
+                        <X size={13} />
+                      </button>
+                    )}
+                  </div>
                 </div>
-                {doctorHospitals.length > 1 && (
-                  <div className="flex items-center gap-2">
-                    <label className="text-xs font-medium text-[var(--color-ink-500)]">Hospital</label>
-                    <select
-                      value={hospitalFilter}
-                      onChange={e => navigate({ hospital: e.target.value, page: "1" })}
-                      className="rounded-lg border border-[var(--color-border)] bg-white px-2.5 py-1.5 text-xs text-[var(--color-ink-700)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
-                    >
-                      <option value="">All hospitals</option>
-                      {doctorHospitals.map(h => (
-                        <option key={h.id} value={h.id}>{h.name}</option>
-                      ))}
+
+                {/* Sort */}
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Sort By</label>
+                  <div className="relative">
+                    <select value={sortBy} onChange={e => navigate({ sort: e.target.value, page: "1" })} className={SEL}>
+                      <option value="newest">Newest first</option>
+                      <option value="oldest">Oldest first</option>
+                      <option value="name">Name A–Z</option>
+                      <option value="lastvisit">Last Visit</option>
                     </select>
+                    <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] pointer-events-none" />
+                  </div>
+                </div>
+
+                {/* Sex */}
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Sex</label>
+                  <div className="relative">
+                    <select value={sexFilter} onChange={e => navigate({ sex: e.target.value, page: "1" })} className={SEL}>
+                      <option value="">All</option>
+                      <option value="MALE">Male</option>
+                      <option value="FEMALE">Female</option>
+                      <option value="OTHER">Other</option>
+                    </select>
+                    <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] pointer-events-none" />
+                  </div>
+                </div>
+
+                {/* Category */}
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Category</label>
+                  <div className="relative">
+                    <select value={categoryFilter} onChange={e => navigate({ category: e.target.value, page: "1" })} className={SEL}>
+                      <option value="">All Categories</option>
+                      <option value="GENERAL">General</option>
+                      <option value="BPL">BPL</option>
+                      <option value="SUBSIDISED">Subsidised</option>
+                      <option value="ECHS">ECHS</option>
+                      <option value="INSURANCE">Insurance</option>
+                    </select>
+                    <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] pointer-events-none" />
+                  </div>
+                </div>
+
+                {/* Hospital (multi-hospital doctors only) */}
+                {doctorHospitals.length > 1 && (
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Hospital</label>
+                    <div className="relative">
+                      <select value={hospitalFilter} onChange={e => navigate({ hospital: e.target.value, page: "1" })} className={SEL}>
+                        <option value="">All Hospitals</option>
+                        {doctorHospitals.map(h => (
+                          <option key={h.id} value={h.id}>{h.name}</option>
+                        ))}
+                      </select>
+                      <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] pointer-events-none" />
+                    </div>
                   </div>
                 )}
-                <div className="flex items-center gap-2">
-                  <label className="text-xs font-medium text-[var(--color-ink-500)]">Operation</label>
-                  <select
-                    value={opStatusFilter}
-                    onChange={e => navigate({ opStatus: e.target.value, page: "1" })}
-                    className="rounded-lg border border-[var(--color-border)] bg-white px-2.5 py-1.5 text-xs text-[var(--color-ink-700)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
-                  >
-                    <option value="">All</option>
-                    <option value="surgery">Surgery Scheduled</option>
-                    <option value="admitted">Admitted</option>
-                    <option value="discharged">Discharged</option>
-                  </select>
+
+                {/* Operation Status */}
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Operation</label>
+                  <div className="relative">
+                    <select value={opStatusFilter} onChange={e => navigate({ opStatus: e.target.value, page: "1" })} className={SEL}>
+                      <option value="">All</option>
+                      <option value="surgery">Surgery Scheduled</option>
+                      <option value="admitted">Admitted</option>
+                      <option value="discharged">Discharged</option>
+                    </select>
+                    <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] pointer-events-none" />
+                  </div>
                 </div>
 
+                {/* Clear all */}
                 {activeFilters > 0 && (
                   <button
-                    onClick={() => navigate({ category: "", sex: "", hospital: "", opStatus: "", page: "1" })}
-                    className="inline-flex items-center gap-1 text-xs text-red-600 hover:text-red-800 font-medium"
+                    onClick={() => { handleSearch(""); navigate({ q: "", category: "", sex: "", hospital: "", opStatus: "", page: "1" }); }}
+                    className="text-sm font-medium text-[var(--color-primary-600)] hover:text-[var(--color-primary-800)] whitespace-nowrap pb-2"
                   >
-                    <X size={11} /> Clear filters
+                    Clear all
                   </button>
                 )}
               </div>
-            )}
-          </div>
+            </div>
+          )}
 
 
           {/* Patient list — queue style */}
