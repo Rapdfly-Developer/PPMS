@@ -2,7 +2,8 @@ import { requirePermission } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import { format, startOfDay, endOfDay } from "date-fns";
-import { Phone, MapPin, Calendar, Hash } from "lucide-react";
+import { Phone, MapPin, Calendar, Hash, IdCard } from "lucide-react";
+import { decryptAadhaar, maskAadhaar } from "@/lib/crypto";
 import { BackButton } from "@/components/ui/BackButton";
 import { PatientProfileClient, TransferButton, TimeStampButton, type SerialVisit, type TodayVisit, type LastVisitSummary } from "./PatientProfileClient";
 
@@ -196,9 +197,21 @@ export default async function PatientProfilePage({
   }
 
   /* ── Banner info ──────────────────────────────────────────────────────── */
+  // Aadhaar — decrypt and mask; skip the all-zeros placeholder (no Aadhaar given)
+  let aadhaarMasked: string | null = null;
+  try {
+    const aadhaarPlain = decryptAadhaar(patient.aadhaarEncrypted);
+    if (aadhaarPlain && aadhaarPlain !== "000000000000") {
+      aadhaarMasked = maskAadhaar(aadhaarPlain);
+    }
+  } catch {}
+
   const bannerItems = [
     patient.mobile
       ? { icon: <Phone size={13} />, label: patient.mobile }
+      : null,
+    aadhaarMasked
+      ? { icon: <IdCard size={13} />, label: `Aadhaar: ${aadhaarMasked}` }
       : null,
     patient.registeredAt
       ? { icon: <MapPin size={13} />, label: patient.registeredAt.name }
