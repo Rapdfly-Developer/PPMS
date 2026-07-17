@@ -77,6 +77,11 @@ export default async function PatientsPage({
       take: 1,
       select: { date: true, generalExam: { select: { chiefComplaint: true } } },
     },
+    appointments: {
+      orderBy: { dateTime: "desc" as const },
+      take: 1,
+      select: { notes: true },
+    },
   };
 
   // For lastvisit sort: fetch all IDs+dates, sort in JS, then paginate
@@ -173,7 +178,7 @@ export default async function PatientsPage({
     createdAt:     p.createdAt.toISOString(),
     hospitalName:  p.registeredAt?.name ?? null,
     lastVisit:     p.visits[0]?.date.toISOString() ?? null,
-    chiefComplaint: p.visits[0]?.generalExam?.chiefComplaint ?? p.complaint ?? null,
+    chiefComplaint: p.visits[0]?.generalExam?.chiefComplaint ?? p.complaint ?? (p as any).appointments?.[0]?.notes ?? null,
     photoUrl:      p.photoUrl ?? null,
   }));
 

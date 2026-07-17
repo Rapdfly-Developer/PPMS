@@ -53,6 +53,9 @@ export async function bookAppointment(formData: FormData) {
   if (mode === "existing") {
     patientId = formData.get("patientId") as string;
     if (!patientId) return { error: "Please select an existing patient." };
+    if (notes?.trim()) {
+      await prisma.patient.update({ where: { id: patientId }, data: { complaint: notes.trim() } });
+    }
   } else {
     // Create new patient
     const name = formData.get("name") as string;
