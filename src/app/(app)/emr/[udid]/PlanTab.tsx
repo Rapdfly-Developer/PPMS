@@ -1,13 +1,14 @@
 "use client";
 
-import { useState, useTransition, useEffect } from "react";
+import { useState, useTransition, useEffect, useRef, useMemo } from "react";
 import { Card } from "@/components/ui/Card";
 import { History } from "lucide-react";
 import { parseJSON } from "@/lib/json";
 import { useAutoSave, SaveIndicator } from "@/lib/useAutoSave";
 import { addMedication, removeMedication, saveRefraction } from "./actions";
 import { DispositionToggle, AdmitPanel, SurgicalPanel, FollowUpdatesPanel } from "./DispositionPanel";
-import { Plus, X, BedDouble, Stethoscope, ChevronDown, Pencil, Trash2, RefreshCw } from "lucide-react";
+import { Plus, X, BedDouble, Stethoscope, ChevronDown, Pencil, Trash2, RefreshCw, Search, Pill } from "lucide-react";
+import { type MedEntry, searchMedications, categoryColor } from "@/lib/ophthalmic-medications";
 
 /* ── Preset types & storage ──────────────────────────────────────────────── */
 
@@ -210,12 +211,6 @@ export function PlanTab({ visit, udid, patientSex }: { visit: any; udid: string;
   );
 }
 
-const QUICK_DRUGS = [
-  "Timolol 0.5%", "Latanoprost 0.005%", "Prednisolone 1%",
-  "Ciprofloxacin 0.3%", "Tobramycin 0.3%", "Moxifloxacin 0.5%",
-  "Sodium hyaluronate", "Carboxymethylcellulose",
-];
-
 const FREQUENCY_OPTIONS = [
   "OD (Once daily)", "BD (Twice daily)", "TID (Three times daily)",
   "QID (Four times daily)", "QHS (At bedtime)", "PRN (As needed)",
@@ -239,17 +234,50 @@ function PrescriptionCard({ visit, udid }: { visit: any; udid: string }) {
   const [tapDurationNum, setTapDurationNum] = useState("");
   const [tapDurationUnit, setTapDurationUnit] = useState("days");
   const [instructions, setInstructions]   = useState("");
-  const [rxCount, setRxCount]             = useState(0);
+
+  // Medication search state
+  const [searchQuery, setSearchQuery]     = useState("");
+  const [activeIndex, setActiveIndex]     = useState(-1);
+  const [showDropdown, setShowDropdown]   = useState(false);
+  const searchRef  = useRef<HTMLInputElement>(null);
+  const blurTimer  = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const medications: any[] = visit.medications ?? [];
 
-  const openWithDrug = (name: string) => {
+  const suggestions = useMemo(() => searchMedications(searchQuery), [searchQuery]);
+
+  const openWithDrug = (name: string, defaultRoute?: string, defaultDose?: string) => {
     setDrugName(name);
-    setDose(""); setFrequency(""); setDurationNum(""); setDurationUnit("days");
+    setDose(defaultDose ?? "");
+    setRoute(defaultRoute ?? "Topical");
+    setFrequency(""); setDurationNum(""); setDurationUnit("days");
     setTapering(false); setTapFrequency(""); setTapDurationNum(""); setTapDurationUnit("days");
     setInstructions("");
     setShowAddDrug(true);
-    setRxCount((c) => c + 1);
+  };
+
+  const selectMed = (med: MedEntry) => {
+    setSearchQuery(med.name);
+    setShowDropdown(false);
+    setActiveIndex(-1);
+    openWithDrug(med.name, med.route, med.defaultDose);
+  };
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!showDropdown || suggestions.length === 0) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setActiveIndex((i) => Math.min(i + 1, suggestions.length - 1));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActiveIndex((i) => Math.max(i - 1, -1));
+    } else if (e.key === "Enter" && activeIndex >= 0) {
+      e.preventDefault();
+      selectMed(suggestions[activeIndex]);
+    } else if (e.key === "Escape") {
+      setShowDropdown(false);
+      setActiveIndex(-1);
+    }
   };
 
   const applyPreset = (drugs: PresetDrug[]) => {
@@ -271,56 +299,95 @@ function PrescriptionCard({ visit, udid }: { visit: any; udid: string }) {
       setTapering(false); setTapFrequency(""); setTapDurationNum(""); setTapDurationUnit("days");
       setInstructions("");
       setShowAddDrug(false);
+      setSearchQuery("");
+      setShowDropdown(false);
+      setTimeout(() => searchRef.current?.focus(), 80);
     });
   };
 
-  const inputCls = "w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)]";
+  const inputCls = "w-full rounded-lg border border-[var(--color-border)] bg-white px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)]";
 
   return (
     <Card>
       <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
         <p className="text-sm font-medium text-[var(--color-ink-700)]">Prescription / Medications</p>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setShowPresets((v) => !v)}
-            className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg bg-white border border-[var(--color-border)] hover:border-[var(--color-primary-500)]"
-          >
-            <ChevronDown size={13} className={showPresets ? "rotate-180 transition-transform" : "transition-transform"} /> Presets
-          </button>
-          <button
-            onClick={() => { setDrugName(""); setShowAddDrug((v) => !v); setRxCount((c) => c + 1); }}
-            className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg bg-[var(--color-ink-800)] text-white hover:bg-[var(--color-ink-700)] transition-colors"
-          >
-            <Plus size={13} /> Add Drug
-          </button>
-        </div>
+        <button
+          onClick={() => setShowPresets((v) => !v)}
+          className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg bg-white border border-[var(--color-border)] hover:border-[var(--color-primary-500)] transition-colors"
+        >
+          <ChevronDown size={13} className={showPresets ? "rotate-180 transition-transform" : "transition-transform"} /> Presets
+        </button>
       </div>
 
-      {/* Quick drug chips */}
-      <div className="flex flex-wrap gap-1.5 mb-3">
-        {QUICK_DRUGS.map((drug) => (
-          <button
-            key={drug}
-            disabled={pending}
-            onClick={() => openWithDrug(drug)}
-            className={`px-2.5 py-1 rounded-full text-xs border transition-colors disabled:opacity-40 ${
-              drugName === drug && showAddDrug
-                ? "border-[var(--color-primary-500)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)] font-medium"
-                : "border-[var(--color-border)] bg-white text-[var(--color-ink-600)] hover:border-[var(--color-primary-400)] hover:bg-[var(--color-primary-50)]"
-            }`}
-          >
-            + {drug}
-          </button>
-        ))}
+      {/* Medication search */}
+      <div className="relative mb-3">
+        <div className="relative">
+          <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] pointer-events-none" />
+          <input
+            ref={searchRef}
+            value={searchQuery}
+            onChange={(e) => { setSearchQuery(e.target.value); setActiveIndex(-1); setShowDropdown(true); }}
+            onFocus={() => { if (blurTimer.current) clearTimeout(blurTimer.current); if (searchQuery.length >= 2) setShowDropdown(true); }}
+            onBlur={() => { blurTimer.current = setTimeout(() => setShowDropdown(false), 150); }}
+            onKeyDown={handleSearchKeyDown}
+            placeholder="Search medication by generic name, brand name, or strength..."
+            className="w-full rounded-xl border border-[var(--color-border)] bg-white pl-10 pr-9 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] focus:border-[var(--color-primary-500)] transition-colors placeholder:text-[var(--color-ink-300)]"
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onMouseDown={(e) => { e.preventDefault(); setSearchQuery(""); setShowDropdown(false); setShowAddDrug(false); }}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)] transition-colors"
+            >
+              <X size={14} />
+            </button>
+          )}
+        </div>
+
+        {showDropdown && suggestions.length > 0 && (
+          <ul className="absolute z-30 left-0 right-0 mt-1.5 rounded-xl border border-[var(--color-border)] bg-white shadow-2xl overflow-hidden max-h-72 overflow-y-auto divide-y divide-[var(--color-border)]">
+            {suggestions.map((med, i) => (
+              <li key={med.id}>
+                <button
+                  type="button"
+                  onMouseDown={(e) => { e.preventDefault(); selectMed(med); }}
+                  className={`w-full text-left px-3.5 py-2.5 flex items-center gap-3 transition-colors ${
+                    i === activeIndex ? "bg-[var(--color-primary-50)]" : "hover:bg-[var(--color-surface-sunken)]"
+                  }`}
+                >
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
+                    i === activeIndex ? "bg-[var(--color-primary-100)]" : "bg-[var(--color-surface-sunken)]"
+                  }`}>
+                    <Pill size={15} className="text-[var(--color-primary-600)]" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm font-medium text-[var(--color-ink-900)]">{med.name}</span>
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full border font-medium shrink-0 ${categoryColor(med.category)}`}>
+                        {med.category}
+                      </span>
+                    </div>
+                    <p className="text-xs text-[var(--color-ink-400)] mt-0.5">{med.form} · {med.route}</p>
+                  </div>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
 
       {showPresets && <PresetPanel onApply={applyPreset} onClose={() => setShowPresets(false)} />}
 
       {/* Add Drug form */}
       {showAddDrug && (
-        <div className="mb-4 p-3 rounded-xl border border-[var(--color-border)] bg-white">
-          <div className="flex items-center justify-between mb-2 max-w-3xl">
-            <p className="text-xs font-semibold text-[var(--color-ink-600)]">Rx #{medications.length + 1}</p>
+        <div className="mb-4 p-3.5 rounded-xl border border-[var(--color-primary-200)] bg-[var(--color-primary-50)] shadow-sm">
+          <div className="flex items-center justify-between mb-3 max-w-3xl">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-md bg-[var(--color-primary-600)] flex items-center justify-center">
+                <Pill size={13} className="text-white" />
+              </div>
+              <p className="text-xs font-semibold text-[var(--color-primary-700)]">Rx #{medications.length + 1}</p>
+            </div>
             <button onClick={() => setShowAddDrug(false)} className="text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)]"><X size={13} /></button>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-2 max-w-3xl">
@@ -419,22 +486,41 @@ function PrescriptionCard({ visit, udid }: { visit: any; udid: string }) {
       )}
 
       {medications.length === 0 ? (
-        <p className="text-sm text-[var(--color-ink-400)] py-4 text-center">No medications added. Use quick buttons above or &quot;Add Drug&quot;.</p>
+        <div className="flex flex-col items-center gap-2 py-8 text-center">
+          <div className="w-10 h-10 rounded-xl bg-[var(--color-surface-sunken)] flex items-center justify-center">
+            <Pill size={20} className="text-[var(--color-ink-300)]" />
+          </div>
+          <p className="text-sm text-[var(--color-ink-400)]">Search for a medication above to add it to the prescription.</p>
+        </div>
       ) : (
-        <ul className="flex flex-col gap-1.5">
-          {medications.map((m) => (
-            <li key={m.id} className="flex items-center justify-between rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm">
-              <span>
-                <span className="font-medium text-[var(--color-ink-900)]">{m.drugName}</span>
-                {(m.dosage || m.frequency || m.duration) && (
-                  <span className="text-[var(--color-ink-400)] ml-2 text-xs">
-                    {[m.dosage, m.frequency, m.duration].filter(Boolean).join(" · ")}
-                  </span>
-                )}
-              </span>
-              <button onClick={() => removeMedication(m.id, udid)} className="text-[var(--color-ink-400)] hover:text-[var(--color-danger-600)]">
-                <X size={14} />
-              </button>
+        <ul className="flex flex-col gap-2 mt-1">
+          {medications.map((m, idx) => (
+            <li key={m.id} className="rounded-xl border border-[var(--color-border)] bg-white p-3 shadow-sm hover:shadow-md transition-shadow">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-8 h-8 rounded-lg bg-[var(--color-primary-50)] flex items-center justify-center shrink-0">
+                    <Pill size={14} className="text-[var(--color-primary-600)]" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-bold text-[var(--color-ink-400)] uppercase tracking-wide">Rx {idx + 1}</p>
+                    <p className="text-sm font-semibold text-[var(--color-ink-900)] truncate">{m.drugName}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => removeMedication(m.id, udid)}
+                  className="text-[var(--color-ink-300)] hover:text-red-500 transition-colors shrink-0 mt-0.5"
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
+              {(m.dosage || m.frequency || m.duration || m.instructions) && (
+                <div className="mt-2.5 pt-2.5 border-t border-[var(--color-border)] flex flex-wrap gap-x-4 gap-y-1">
+                  {m.dosage     && <span className="text-xs text-[var(--color-ink-600)] font-medium">{m.dosage}</span>}
+                  {m.frequency  && <span className="text-xs text-[var(--color-ink-500)]">{m.frequency}</span>}
+                  {m.duration   && <span className="text-xs text-[var(--color-ink-500)]">{m.duration}</span>}
+                  {m.instructions && <span className="text-xs text-[var(--color-ink-400)] italic w-full mt-0.5">{m.instructions}</span>}
+                </div>
+              )}
             </li>
           ))}
         </ul>
