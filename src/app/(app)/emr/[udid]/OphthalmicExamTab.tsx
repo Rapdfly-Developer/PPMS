@@ -34,6 +34,8 @@ import {
 } from "./actions";
 import { format } from "date-fns";
 import { ChipGroup } from "@/components/ui/Chip";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { Toast } from "@/components/ui/Toast";
 
 export function OphthalmicExamTab({ visit, priorVisits, udid, role }: { visit: any; priorVisits: any[]; udid: string; role: string }) {
   const refractionistCanEdit = role === "DOCTOR";
@@ -221,6 +223,8 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
   const [re, setRe] = useState(parseJSON(rc?.re, { sph: "", cyl: "", axis: "", va: "", nearSph: "", nearVa: "" }));
   const [le, setLe] = useState(parseJSON(rc?.le, { sph: "", cyl: "", axis: "", va: "", nearSph: "", nearVa: "" }));
   const [showHistory, setShowHistory] = useState(false);
+  const [confirmRx, setConfirmRx] = useState<typeof priorRefractions[0] | null>(null);
+  const [rxToast, setRxToast] = useState(false);
 
   type RxFields = { sph: string; cyl: string; axis: string; nearSph: string; va: string; nearVa: string };
   const emptyRx: RxFields = { sph: "", cyl: "", axis: "", nearSph: "", va: "", nearVa: "" };
@@ -274,7 +278,7 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
     );
   };
 
-  const vaSelect = (label: string, value: string, onChange: (v: string) => void, options = VA_SNELLEN_VALUES) => (
+  const vaSelect = (label: string, value: string, onChange: (v: string) => void, options: readonly string[] = VA_SNELLEN_VALUES) => (
     <div className="flex flex-col gap-0.5">
       <label className="text-[10px] text-[var(--color-ink-400)] font-medium">{label}</label>
       <select disabled={!editable} value={value || "-"} onChange={(e) => onChange(e.target.value)} className={`w-28 ${SEL}`}>
@@ -317,6 +321,23 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
     </div>
   );
 
+  const hasRxData = (rx: typeof re) => Object.values(rx).some(Boolean);
+
+  const loadRx = (pr: typeof priorRefractions[0]) => {
+    setRe(pr.re);
+    setLe(pr.le);
+    setShowHistory(false);
+    setRxToast(true);
+  };
+
+  const handleHistoryDoubleClick = (pr: typeof priorRefractions[0]) => {
+    if (hasRxData(re) || hasRxData(le)) {
+      setConfirmRx(pr);
+    } else {
+      loadRx(pr);
+    }
+  };
+
   return (
     <Card>
       <div className="flex items-center justify-between mb-3">
@@ -341,9 +362,17 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
 
       {showHistory && priorRefractions.length > 0 && (
         <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 space-y-4">
-          <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide">Previous Spectacles</p>
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide">Previous Spectacles</p>
+            <p className="text-[10px] text-amber-600">Double-click a record to load it</p>
+          </div>
           {priorRefractions.map((pr, i) => (
-            <div key={i}>
+            <div
+              key={i}
+              onDoubleClick={() => handleHistoryDoubleClick(pr)}
+              title="Double-click to load this prescription"
+              className="cursor-pointer rounded-xl p-2 -mx-2 hover:bg-amber-100 transition-colors select-none"
+            >
               <p className="text-[11px] font-bold text-amber-800 mb-2">{format(new Date(pr.date), "dd-MMM-yyyy")}</p>
               <table className="w-full text-xs border-collapse">
                 <thead>
@@ -374,6 +403,18 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
             </div>
           ))}
         </div>
+      )}
+
+      {confirmRx && (
+        <ConfirmDialog
+          title="Load Previous Record?"
+          message="Loading this history will replace the current unsaved values. Do you want to continue?"
+          onConfirm={() => { loadRx(confirmRx); setConfirmRx(null); }}
+          onCancel={() => setConfirmRx(null)}
+        />
+      )}
+      {rxToast && (
+        <Toast message="Previous record loaded successfully." onDone={() => setRxToast(false)} />
       )}
     </Card>
   );

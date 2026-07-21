@@ -7,6 +7,8 @@ import { ICD10_OPHTHALMOLOGY, DIAGNOSIS_STATUSES, LATERALITY } from "@/lib/const
 import { saveProvisionalDiagnosis, addDiagnosis, updateDiagnosisStatus, removeDiagnosis } from "./actions";
 import { useAutoSave, SaveIndicator } from "@/lib/useAutoSave";
 import { X, History, ChevronDown } from "lucide-react";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { Toast } from "@/components/ui/Toast";
 import { format } from "date-fns";
 
 export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; udid: string; priorVisits?: any[] }) {
@@ -15,6 +17,8 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
   const [laterality, setLaterality] = useState("OU");
   const [pending, startTransition] = useTransition();
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [confirmDxGroup, setConfirmDxGroup] = useState<any[] | null>(null);
+  const [dxToast, setDxToast] = useState(false);
   const diagnoses: any[] = visit.diagnoses ?? [];
 
   const priorDxGroups = priorVisits
@@ -49,7 +53,27 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
     });
   };
 
+  const loadDxGroup = (dxList: any[]) => {
+    const missing = dxList.filter((d: any) => !existingCodes.has(d.icd10Code));
+    startTransition(async () => {
+      for (const d of missing) {
+        await addDiagnosis(visit.id, udid, { icd10Code: d.icd10Code, description: d.description, laterality: d.laterality ?? "OU" });
+      }
+    });
+    setHistoryOpen(false);
+    setDxToast(true);
+  };
+
+  const handleDxGroupDoubleClick = (dxList: any[]) => {
+    if (diagnoses.length > 0) {
+      setConfirmDxGroup(dxList);
+    } else {
+      loadDxGroup(dxList);
+    }
+  };
+
   return (
+    <>
     <div className="flex flex-col gap-5">
       <Card>
         <div className="flex items-center justify-between mb-2">
@@ -82,10 +106,18 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
         </div>
         {historyOpen && (
           <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-3">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-amber-700 mb-2">Previous Diagnoses</p>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-amber-700">Previous Diagnoses</p>
+              <p className="text-[10px] text-amber-600">Double-click a visit to load its diagnoses</p>
+            </div>
             <div className="space-y-3 max-h-56 overflow-y-auto scrollbar-thin">
               {priorDxGroups.map((g, gi) => (
-                <div key={gi}>
+                <div
+                  key={gi}
+                  onDoubleClick={() => handleDxGroupDoubleClick(g.diagnoses)}
+                  title="Double-click to add these diagnoses"
+                  className="cursor-pointer rounded-lg p-1.5 -mx-1.5 hover:bg-amber-100 transition-colors select-none"
+                >
                   <p className="text-[10px] font-semibold text-[var(--color-ink-400)] mb-1">{format(new Date(g.date), "d MMM yyyy")}</p>
                   {g.diagnoses.map((d: any, di: number) => (
                     <div key={di} className="flex items-center gap-2 text-xs text-[var(--color-ink-700)] border-l-2 border-amber-400 pl-2 mb-0.5">
@@ -175,5 +207,18 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
         )}
       </Card>
     </div>
+
+      {confirmDxGroup && (
+        <ConfirmDialog
+          title="Load Previous Record?"
+          message="Loading this history will replace the current unsaved values. Do you want to continue?"
+          onConfirm={() => { loadDxGroup(confirmDxGroup); setConfirmDxGroup(null); }}
+          onCancel={() => setConfirmDxGroup(null)}
+        />
+      )}
+      {dxToast && (
+        <Toast message="Previous record loaded successfully." onDone={() => setDxToast(false)} />
+      )}
+    </>
   );
 }

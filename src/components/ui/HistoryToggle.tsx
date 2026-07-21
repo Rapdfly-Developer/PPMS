@@ -4,6 +4,8 @@ import { useState } from "react";
 import { History, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
+import { ConfirmDialog } from "./ConfirmDialog";
+import { Toast } from "./Toast";
 
 export type HistoryEntry = {
   date: string | Date;
@@ -16,13 +18,39 @@ export function FieldWithHistory({
   history,
   children,
   headerExtra,
+  onLoad,
+  currentValue,
 }: {
   label: string;
   history: HistoryEntry[];
   children: React.ReactNode;
   headerExtra?: React.ReactNode;
+  onLoad?: (value: string) => void;
+  currentValue?: string;
 }) {
   const [open, setOpen] = useState(false);
+  const [pending, setPending] = useState<string | null>(null);
+  const [toast, setToast] = useState(false);
+
+  const handleDoubleClick = (value: string) => {
+    if (!onLoad) return;
+    if (currentValue?.trim()) {
+      setPending(value);
+    } else {
+      onLoad(value);
+      setOpen(false);
+      setToast(true);
+    }
+  };
+
+  const confirm = () => {
+    if (pending !== null && onLoad) {
+      onLoad(pending);
+      setOpen(false);
+      setToast(true);
+    }
+    setPending(null);
+  };
 
   return (
     <div className="relative">
@@ -42,7 +70,9 @@ export function FieldWithHistory({
           </button>
         )}
       </div>
+
       {children}
+
       <AnimatePresence>
         {open && (
           <motion.div
@@ -53,7 +83,7 @@ export function FieldWithHistory({
             className="overflow-hidden"
           >
             <div className="mt-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-primary-50)] p-3">
-              <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center justify-between mb-1.5">
                 <p className="text-xs font-semibold text-[var(--color-primary-700)] uppercase tracking-wide">
                   Prior values
                 </p>
@@ -61,15 +91,29 @@ export function FieldWithHistory({
                   <X size={14} />
                 </button>
               </div>
-              <ol className="space-y-2 max-h-56 overflow-y-auto scrollbar-thin">
+              {onLoad && (
+                <p className="text-[10px] text-[var(--color-ink-400)] mb-2">
+                  Double-click any entry to load it into the form.
+                </p>
+              )}
+              <ol className="space-y-1.5 max-h-56 overflow-y-auto scrollbar-thin">
                 {history.map((h, i) => (
-                  <li key={i} className="text-sm flex gap-3 border-l-2 border-[var(--color-primary-500)] pl-3">
+                  <li
+                    key={i}
+                    onDoubleClick={() => handleDoubleClick(h.value)}
+                    title={onLoad ? "Double-click to load" : undefined}
+                    className={`text-sm flex gap-3 border-l-2 border-[var(--color-primary-500)] pl-3 py-1 rounded-r-lg transition-colors ${
+                      onLoad ? "cursor-pointer hover:bg-[var(--color-primary-100)] select-none" : ""
+                    }`}
+                  >
                     <span className="text-[var(--color-ink-400)] whitespace-nowrap text-xs mt-0.5">
                       {format(new Date(h.date), "dd MMM yyyy")}
                     </span>
                     <span className="text-[var(--color-ink-700)]">
                       {h.value}
-                      {h.hospitalName && <span className="text-[var(--color-ink-400)]"> · {h.hospitalName}</span>}
+                      {h.hospitalName && (
+                        <span className="text-[var(--color-ink-400)]"> · {h.hospitalName}</span>
+                      )}
                     </span>
                   </li>
                 ))}
@@ -78,6 +122,19 @@ export function FieldWithHistory({
           </motion.div>
         )}
       </AnimatePresence>
+
+      {pending !== null && (
+        <ConfirmDialog
+          title="Load Previous Record?"
+          message="Loading this history will replace the current unsaved values. Do you want to continue?"
+          onConfirm={confirm}
+          onCancel={() => setPending(null)}
+        />
+      )}
+
+      {toast && (
+        <Toast message="Previous record loaded successfully." onDone={() => setToast(false)} />
+      )}
     </div>
   );
 }

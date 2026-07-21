@@ -110,6 +110,14 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, customPmhCh
         <FieldWithHistory
           label="CHIEF COMPLAINT"
           history={histFor((g) => g.chiefComplaint)}
+          currentValue={chiefComplaint}
+          onLoad={(v) => {
+            const { lat, sinceNum: sn, sinceUnit: su, body } = parseComplaintPrefixes(v);
+            setLaterality(lat);
+            setSinceNum(sn);
+            setSinceUnit(su);
+            setChiefComplaint(body);
+          }}
           headerExtra={
             <div className="flex items-center gap-1.5">
               <span className="text-xs font-semibold text-[var(--color-ink-400)]">Since</span>
@@ -169,7 +177,7 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, customPmhCh
 
       {/* HISTORY OF PRESENT ILLNESS */}
       <Card>
-        <FieldWithHistory label="HISTORY OF PRESENT ILLNESS" history={histFor((g) => g.hpi)}>
+        <FieldWithHistory label="HISTORY OF PRESENT ILLNESS" history={histFor((g) => g.hpi)} currentValue={hpi} onLoad={readOnly ? undefined : setHpi}>
           <KeywordTextarea fieldKey="ge_hpi" value={hpi} onChange={setHpi} disabled={readOnly} rows={3} placeholder="Onset, character, duration, aggravating/relieving factors..." />
         </FieldWithHistory>
       </Card>
@@ -191,7 +199,7 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, customPmhCh
 
       {/* CURRENT MEDICATIONS */}
       <Card>
-        <FieldWithHistory label="CURRENT MEDICATIONS" history={histFor((g) => g.medications)}>
+        <FieldWithHistory label="CURRENT MEDICATIONS" history={histFor((g) => g.medications)} currentValue={medications} onLoad={readOnly ? undefined : setMedications}>
           <KeywordTextarea fieldKey="ge_medications" value={medications} onChange={setMedications} disabled={readOnly} rows={2} placeholder="Drug, dosage, frequency" />
         </FieldWithHistory>
       </Card>
@@ -225,22 +233,22 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, customPmhCh
         </button>
         {vitalsOpen && (
           <div className="px-4 pb-4 pt-1 grid grid-cols-2 md:grid-cols-4 gap-4 border-t border-[var(--color-border)]">
-            <FieldWithHistory label="BP" history={histFor((g) => g.bp)}>
+            <FieldWithHistory label="BP" history={histFor((g) => g.bp)} currentValue={bp} onLoad={readOnly ? undefined : setBp}>
               <input disabled={readOnly} value={bp} onChange={(e) => setBp(e.target.value)} placeholder="120/80"
                 className="mt-1 w-full rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] disabled:bg-[var(--color-surface-sunken)]" />
               {bpWarning(bp) && <VitalWarning message={bpWarning(bp)} />}
             </FieldWithHistory>
-            <FieldWithHistory label="Pulse" history={histFor((g) => g.pulse)}>
+            <FieldWithHistory label="Pulse" history={histFor((g) => g.pulse)} currentValue={pulse} onLoad={readOnly ? undefined : setPulse}>
               <input disabled={readOnly} value={pulse} onChange={(e) => setPulse(e.target.value)} placeholder="bpm"
                 className="mt-1 w-full rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] disabled:bg-[var(--color-surface-sunken)]" />
               {numWarning(pulse, VITAL_RANGES.pulse, "pulse") && <VitalWarning message={numWarning(pulse, VITAL_RANGES.pulse, "pulse")} />}
             </FieldWithHistory>
-            <FieldWithHistory label="Temperature (°C)" history={histFor((g) => g.temperature)}>
+            <FieldWithHistory label="Temperature (°C)" history={histFor((g) => g.temperature)} currentValue={temperature} onLoad={readOnly ? undefined : setTemperature}>
               <input disabled={readOnly} value={temperature} onChange={(e) => setTemperature(e.target.value)} placeholder="37.0"
                 className="mt-1 w-full rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] disabled:bg-[var(--color-surface-sunken)]" />
               {numWarning(temperature, VITAL_RANGES.temperature, "temperature") && <VitalWarning message={numWarning(temperature, VITAL_RANGES.temperature, "temperature")} />}
             </FieldWithHistory>
-            <FieldWithHistory label="Weight (kg)" history={histFor((g) => g.weight)}>
+            <FieldWithHistory label="Weight (kg)" history={histFor((g) => g.weight)} currentValue={weight} onLoad={readOnly ? undefined : setWeight}>
               <input disabled={readOnly} value={weight} onChange={(e) => setWeight(e.target.value)} placeholder="kg"
                 className="mt-1 w-full rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] disabled:bg-[var(--color-surface-sunken)]" />
               {numWarning(weight, VITAL_RANGES.weight, "weight") && <VitalWarning message={numWarning(weight, VITAL_RANGES.weight, "weight")} />}
