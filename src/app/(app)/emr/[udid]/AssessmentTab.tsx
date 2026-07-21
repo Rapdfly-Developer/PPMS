@@ -91,7 +91,7 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
 
       <Card>
         <div className="flex items-center justify-between mb-3">
-          <p className="text-sm font-medium text-[var(--color-ink-700)]">Confirmed Diagnosis (ICD-10)</p>
+          <p className="text-sm font-medium text-[var(--color-ink-700)]">Diagnosis (ICD-10)</p>
           {priorDxGroups.length > 0 && (
             <button
               type="button"
