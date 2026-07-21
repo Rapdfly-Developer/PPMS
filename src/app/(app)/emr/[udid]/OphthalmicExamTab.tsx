@@ -36,6 +36,7 @@ import { format } from "date-fns";
 import { ChipGroup } from "@/components/ui/Chip";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Toast } from "@/components/ui/Toast";
+import { FieldWithHistory, type HistoryEntry } from "@/components/ui/HistoryToggle";
 
 export function OphthalmicExamTab({ visit, priorVisits, udid, role }: { visit: any; priorVisits: any[]; udid: string; role: string }) {
   const refractionistCanEdit = role === "DOCTOR";
@@ -716,6 +717,7 @@ function SegmentEyeInput({
   value,
   onChange,
   disabled,
+  history,
 }: {
   structureKey: string;
   options: string[];
@@ -724,6 +726,7 @@ function SegmentEyeInput({
   value: string;
   onChange: (v: string) => void;
   disabled: boolean;
+  history?: HistoryEntry[];
 }) {
   const lsKey = CUSTOM_KW_KEY(structureKey, eye);
   const [customKws, setCustomKws] = useState<string[]>([]);
@@ -756,7 +759,7 @@ function SegmentEyeInput({
 
   const ph = placeholder ?? `${toLabel(structureKey)} ${eye}...`;
 
-  return (
+  const content = (
     <div className="flex flex-col gap-1.5">
       <input
         disabled={disabled}
@@ -802,6 +805,20 @@ function SegmentEyeInput({
       )}
     </div>
   );
+
+  if (history) {
+    return (
+      <FieldWithHistory
+        history={history}
+        currentValue={value}
+        onLoad={disabled ? undefined : onChange}
+      >
+        {content}
+      </FieldWithHistory>
+    );
+  }
+
+  return content;
 }
 
 function SegmentHistory({ priorVisits, dataKey }: { priorVisits: any[]; dataKey: "anteriorSegment" | "posteriorSegment" }) {
@@ -958,6 +975,16 @@ function PosteriorSegmentCard({ visit, udid, editable, priorVisits = [] }: { vis
     await savePosteriorSegment(visit.id, udid, d);
   });
 
+  const histFor = (key: string, eyeKey: "re" | "le"): HistoryEntry[] =>
+    priorVisits
+      .filter((v) => v.posteriorSegment)
+      .map((v) => ({
+        date: v.date,
+        value: parseJSON<Record<string, string>>(v.posteriorSegment?.[eyeKey], {})[key] ?? "",
+        hospitalName: v.hospital?.name,
+      }))
+      .filter((h) => h.value);
+
   return (
     <Card>
       <div className="flex items-center justify-between mb-4">
@@ -986,6 +1013,7 @@ function PosteriorSegmentCard({ visit, udid, editable, priorVisits = [] }: { vis
               value={re[key] ?? ""}
               onChange={(v) => setRe({ ...re, [key]: v })}
               disabled={!editable}
+              history={histFor(key, "re")}
             />
             <SegmentEyeInput
               structureKey={key}
@@ -995,6 +1023,7 @@ function PosteriorSegmentCard({ visit, udid, editable, priorVisits = [] }: { vis
               value={le[key] ?? ""}
               onChange={(v) => setLe({ ...le, [key]: v })}
               disabled={!editable}
+              history={histFor(key, "le")}
             />
           </div>
         ))}
