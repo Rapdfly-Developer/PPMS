@@ -231,17 +231,23 @@ function PrescriptionCard({ visit, udid }: { visit: any; udid: string }) {
   const [drugName, setDrugName]       = useState("");
   const [dose, setDose]               = useState("");
   const [route, setRoute]             = useState("Topical");
-  const [frequency, setFrequency]     = useState("");
-  const [durationNum, setDurationNum] = useState("");
-  const [durationUnit, setDurationUnit] = useState("days");
-  const [instructions, setInstructions] = useState("");
-  const [rxCount, setRxCount]         = useState(0);
+  const [frequency, setFrequency]         = useState("");
+  const [durationNum, setDurationNum]     = useState("");
+  const [durationUnit, setDurationUnit]   = useState("days");
+  const [tapering, setTapering]           = useState(false);
+  const [tapFrequency, setTapFrequency]   = useState("");
+  const [tapDurationNum, setTapDurationNum] = useState("");
+  const [tapDurationUnit, setTapDurationUnit] = useState("days");
+  const [instructions, setInstructions]   = useState("");
+  const [rxCount, setRxCount]             = useState(0);
 
   const medications: any[] = visit.medications ?? [];
 
   const openWithDrug = (name: string) => {
     setDrugName(name);
-    setDose(""); setFrequency(""); setDurationNum(""); setDurationUnit("days"); setInstructions("");
+    setDose(""); setFrequency(""); setDurationNum(""); setDurationUnit("days");
+    setTapering(false); setTapFrequency(""); setTapDurationNum(""); setTapDurationUnit("days");
+    setInstructions("");
     setShowAddDrug(true);
     setRxCount((c) => c + 1);
   };
@@ -257,8 +263,13 @@ function PrescriptionCard({ visit, udid }: { visit: any; udid: string }) {
     if (!drugName.trim()) return;
     startTransition(async () => {
       const duration = durationNum ? `${durationNum} ${durationUnit}` : "";
-      await addMedication(visit.id, udid, { drugName, dosage: dose, frequency, duration, instructions } as any);
-      setDrugName(""); setDose(""); setRoute("Topical"); setFrequency(""); setDurationNum(""); setDurationUnit("days"); setInstructions("");
+      const tapNote = tapering && tapFrequency && tapDurationNum
+        ? `Tapering: ${tapFrequency} × ${tapDurationNum} ${tapDurationUnit}` : "";
+      const finalInstructions = [instructions, tapNote].filter(Boolean).join(" | ");
+      await addMedication(visit.id, udid, { drugName, dosage: dose, frequency, duration, instructions: finalInstructions } as any);
+      setDrugName(""); setDose(""); setRoute("Topical"); setFrequency(""); setDurationNum(""); setDurationUnit("days");
+      setTapering(false); setTapFrequency(""); setTapDurationNum(""); setTapDurationUnit("days");
+      setInstructions("");
       setShowAddDrug(false);
     });
   };
@@ -338,19 +349,28 @@ function PrescriptionCard({ visit, udid }: { visit: any; udid: string }) {
             </div>
             <div>
               <label className="text-[10px] font-medium text-[var(--color-ink-400)] uppercase tracking-wide block mb-0.5">Duration</label>
-              <div className="flex gap-1">
-                <select value={durationNum} onChange={(e) => setDurationNum(e.target.value)} className={inputCls}>
+              <div className="flex items-center gap-1">
+                <select value={durationNum} onChange={(e) => setDurationNum(e.target.value)} className={inputCls + " flex-1 min-w-0"}>
                   <option value="">—</option>
                   {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
                     <option key={n} value={String(n)}>{n}</option>
                   ))}
                 </select>
-                <select value={durationUnit} onChange={(e) => setDurationUnit(e.target.value)} className={inputCls}>
+                <select value={durationUnit} onChange={(e) => setDurationUnit(e.target.value)} className={inputCls + " flex-1 min-w-0"}>
                   {["days", "weeks", "months", "years"].map((u) => (
                     <option key={u} value={u}>{u}</option>
                   ))}
                 </select>
               </div>
+              <label className="flex items-center gap-1 cursor-pointer mt-1">
+                <input
+                  type="checkbox"
+                  checked={tapering}
+                  onChange={(e) => setTapering(e.target.checked)}
+                  className="accent-[var(--color-primary-600)] w-3 h-3"
+                />
+                <span className="text-[10px] font-medium text-[var(--color-ink-500)]">Tapering</span>
+              </label>
             </div>
             <div className="flex flex-col justify-end">
               <button onClick={submitDrug} disabled={pending} className="w-full rounded-lg bg-[var(--color-primary-600)] text-white text-xs font-medium py-1.5 hover:bg-[var(--color-primary-700)] transition-colors disabled:opacity-60">
@@ -358,6 +378,39 @@ function PrescriptionCard({ visit, udid }: { visit: any; udid: string }) {
               </button>
             </div>
           </div>
+          {tapering && (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-2 max-w-3xl">
+              <div className="flex items-end pb-0.5">
+                <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--color-primary-700)] bg-[var(--color-primary-50)] border border-[var(--color-primary-200)] rounded-md px-2 py-1">
+                  ↓ Tapering
+                </span>
+              </div>
+              <div>
+                <label className="text-[10px] font-medium text-[var(--color-ink-400)] uppercase tracking-wide block mb-0.5">Frequency</label>
+                <select value={tapFrequency} onChange={(e) => setTapFrequency(e.target.value)} className={inputCls}>
+                  <option value="">— Select —</option>
+                  {FREQUENCY_OPTIONS.map((f) => <option key={f}>{f}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-[10px] font-medium text-[var(--color-ink-400)] uppercase tracking-wide block mb-0.5">Duration</label>
+                <div className="flex gap-1">
+                  <select value={tapDurationNum} onChange={(e) => setTapDurationNum(e.target.value)} className={inputCls + " flex-1 min-w-0"}>
+                    <option value="">—</option>
+                    {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
+                      <option key={n} value={String(n)}>{n}</option>
+                    ))}
+                  </select>
+                  <select value={tapDurationUnit} onChange={(e) => setTapDurationUnit(e.target.value)} className={inputCls + " flex-1 min-w-0"}>
+                    {["days", "weeks", "months", "years"].map((u) => (
+                      <option key={u} value={u}>{u}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div />
+            </div>
+          )}
           <div className="max-w-3xl">
             <label className="text-[10px] font-medium text-[var(--color-ink-400)] uppercase tracking-wide block mb-0.5">Instructions</label>
             <input value={instructions} onChange={(e) => setInstructions(e.target.value)} placeholder="e.g. Apply 1 drop in RE at bedtime, shake well before use" className={inputCls} />
