@@ -3,7 +3,7 @@
 import { useState, useTransition, useRef } from "react";
 import { Card } from "@/components/ui/Card";
 import { format } from "date-fns";
-import { FileScan, CheckCircle2, XCircle, Upload, Camera, Pencil, Loader2, FileText, ZoomIn, X } from "lucide-react";
+import { FileScan, CheckCircle2, XCircle, Upload, Camera, Pencil, Loader2, FileText, ZoomIn, X, Images, FolderOpen } from "lucide-react";
 import { addPastExternalVisit, verifyPastExternalVisit } from "./actions";
 
 export function PastExternalVisitsTab({
@@ -22,7 +22,9 @@ export function PastExternalVisitsTab({
   const [pending, startTransition] = useTransition();
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [showSheet, setShowSheet] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
   const handleUpload = async (file: File) => {
@@ -66,60 +68,34 @@ export function PastExternalVisitsTab({
     <div className="flex flex-col gap-4">
       {canUpload && (
         <Card>
-          <p className="text-xs font-semibold uppercase tracking-widest text-[var(--color-ink-500)] mb-3">
-            Add Document
-          </p>
-
-          <div className="flex gap-3">
-            {/* File / Gallery */}
-            <button
-              type="button"
-              disabled={uploading}
-              onClick={() => fileInputRef.current?.click()}
-              className="flex-1 flex flex-col items-center justify-center gap-2 border-2 border-dashed border-[var(--color-border)] rounded-xl py-6 cursor-pointer hover:border-[var(--color-primary-500)] hover:bg-[var(--color-primary-50)] transition-colors disabled:opacity-50"
-            >
-              {uploading ? (
-                <Loader2 className="text-[var(--color-primary-600)] animate-spin" size={22} />
-              ) : (
-                <Upload className="text-[var(--color-primary-600)]" size={22} />
-              )}
-              <p className="text-sm font-medium text-[var(--color-ink-700)]">
-                {uploading ? "Processing…" : "Upload File"}
+          {/* Drop-zone trigger */}
+          <button
+            type="button"
+            disabled={uploading}
+            onClick={() => setShowSheet(true)}
+            className="w-full flex flex-col items-center justify-center gap-3 border-2 border-dashed border-[var(--color-border)] rounded-2xl py-8 transition-colors hover:border-[var(--color-primary-400)] hover:bg-[var(--color-primary-50)] disabled:opacity-50"
+          >
+            <div className="w-14 h-14 rounded-2xl flex items-center justify-center"
+              style={{ background: "var(--color-primary-50)", border: "1.5px solid var(--color-primary-100)" }}>
+              {uploading
+                ? <Loader2 className="text-[var(--color-primary-600)] animate-spin" size={26} />
+                : <Upload className="text-[var(--color-primary-600)]" size={26} />}
+            </div>
+            <div className="text-center">
+              <p className="text-sm font-semibold text-[var(--color-ink-700)]">
+                {uploading ? "Processing…" : "Upload Aadhaar"}
               </p>
-              <p className="text-xs text-[var(--color-ink-400)] text-center px-2">Image or PDF</p>
-            </button>
-
-            {/* Camera */}
-            <button
-              type="button"
-              disabled={uploading}
-              onClick={() => cameraInputRef.current?.click()}
-              className="flex-1 flex flex-col items-center justify-center gap-2 border-2 border-dashed border-[var(--color-border)] rounded-xl py-6 cursor-pointer hover:border-[var(--color-primary-500)] hover:bg-[var(--color-primary-50)] transition-colors disabled:opacity-50"
-            >
-              <Camera className="text-[var(--color-primary-600)]" size={22} />
-              <p className="text-sm font-medium text-[var(--color-ink-700)]">Take Photo</p>
-              <p className="text-xs text-[var(--color-ink-400)] text-center px-2">Capture with camera</p>
-            </button>
-          </div>
+              <p className="text-xs text-[var(--color-ink-400)] mt-0.5">Image or PDF · Required</p>
+            </div>
+          </button>
 
           {/* Hidden inputs */}
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/png,image/jpeg,image/webp,application/pdf"
-            className="hidden"
-            disabled={uploading}
-            onChange={(e) => { if (e.target.files?.[0]) handleUpload(e.target.files[0]); e.target.value = ""; }}
-          />
-          <input
-            ref={cameraInputRef}
-            type="file"
-            accept="image/*"
-            capture="environment"
-            className="hidden"
-            disabled={uploading}
-            onChange={(e) => { if (e.target.files?.[0]) handleUpload(e.target.files[0]); e.target.value = ""; }}
-          />
+          <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="hidden"
+            onChange={(e) => { if (e.target.files?.[0]) handleUpload(e.target.files[0]); e.target.value = ""; }} />
+          <input ref={galleryInputRef} type="file" accept="image/png,image/jpeg,image/webp" className="hidden"
+            onChange={(e) => { if (e.target.files?.[0]) handleUpload(e.target.files[0]); e.target.value = ""; }} />
+          <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/webp,application/pdf" className="hidden"
+            onChange={(e) => { if (e.target.files?.[0]) handleUpload(e.target.files[0]); e.target.value = ""; }} />
 
           {uploading && (
             <p className="text-xs text-[var(--color-primary-600)] mt-3 text-center animate-pulse">
@@ -132,6 +108,35 @@ export function PastExternalVisitsTab({
             </p>
           )}
         </Card>
+      )}
+
+      {/* Action sheet */}
+      {showSheet && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center" onClick={() => setShowSheet(false)}>
+          <div className="absolute inset-0 bg-black/30" />
+          <div
+            className="relative w-full max-w-md mb-4 mx-4 rounded-2xl overflow-hidden shadow-2xl"
+            style={{ background: "rgba(255,255,255,0.97)", backdropFilter: "blur(20px)" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {[
+              { icon: <Camera size={20} />, label: "Take Photo",           action: () => { setShowSheet(false); cameraInputRef.current?.click(); } },
+              { icon: <Images size={20} />, label: "Choose from Gallery",  action: () => { setShowSheet(false); galleryInputRef.current?.click(); } },
+              { icon: <FolderOpen size={20} />, label: "Browse Files",     action: () => { setShowSheet(false); fileInputRef.current?.click(); } },
+            ].map(({ icon, label, action }, i) => (
+              <button key={i} type="button" onClick={action}
+                className="w-full flex items-center gap-4 px-6 py-4 text-sm font-medium text-[var(--color-ink-800)] hover:bg-[var(--color-primary-50)] transition-colors border-b border-[var(--color-border)]">
+                <span className="text-[var(--color-primary-600)]">{icon}</span>
+                {label}
+              </button>
+            ))}
+            <button type="button" onClick={() => setShowSheet(false)}
+              className="w-full flex items-center gap-4 px-6 py-4 text-sm font-medium text-[var(--color-ink-500)] hover:bg-gray-50 transition-colors">
+              <X size={20} />
+              Cancel
+            </button>
+          </div>
+        </div>
       )}
 
       {entries.length === 0 && (
