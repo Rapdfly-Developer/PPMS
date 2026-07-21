@@ -535,23 +535,30 @@ function OpticalPrescriptionCard({ visit }: { visit: any; udid: string }) {
   const re = parseJSON(rc?.re, { sph: "", cyl: "", axis: "", nearSph: "" });
   const le = parseJSON(rc?.le, { sph: "", cyl: "", axis: "", nearSph: "" });
 
-  const cell = (value: string) => (
+  const labelCell = (label: string) => (
+    <th className="px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-[var(--color-ink-500)] text-left border border-[var(--color-border)] bg-[var(--color-surface-sunken)] w-28">
+      {label}
+    </th>
+  );
+
+  const eyeHeader = (label: string) => (
+    <th className="px-3 py-2 text-[10px] font-semibold uppercase tracking-wide text-[var(--color-primary-700)] bg-[var(--color-primary-50)] border border-[var(--color-border)] text-center w-32">
+      {label}
+    </th>
+  );
+
+  const valCell = (value: string) => (
     <td className="px-3 py-2 text-center text-xs text-[var(--color-ink-700)] border border-[var(--color-border)]">
       <span className={value ? "font-mono" : "text-[var(--color-ink-300)]"}>{value || "—"}</span>
     </td>
   );
 
-  const th = (label: string) => (
-    <th className="px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-[var(--color-ink-500)] border border-[var(--color-border)] bg-[var(--color-surface-sunken)]">
-      {label}
-    </th>
-  );
-
-  const eyeCell = (label: string, color: string) => (
-    <td className={`px-3 py-2 text-[10px] font-semibold uppercase tracking-wide border border-[var(--color-border)] ${color}`}>
-      {label}
-    </td>
-  );
+  const rows: [string, string, string][] = [
+    ["SPH",          re.sph,    le.sph],
+    ["CYL",          re.cyl,    le.cyl],
+    ["AXIS",         re.axis,   le.axis],
+    ["Resulting VA", re.nearSph, le.nearSph],
+  ];
 
   return (
     <Card>
@@ -561,31 +568,22 @@ function OpticalPrescriptionCard({ visit }: { visit: any; udid: string }) {
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full border-collapse text-sm">
+        <table className="border-collapse text-sm">
           <thead>
             <tr>
-              {th("Eye")}
-              {th("SPH")}
-              {th("CYL")}
-              {th("AXIS")}
-              {th("ADD")}
+              {labelCell("")}
+              {eyeHeader("RE")}
+              {eyeHeader("LE")}
             </tr>
           </thead>
           <tbody>
-            <tr>
-              {eyeCell("RE", "text-[var(--color-primary-700)] bg-[var(--color-primary-50)]")}
-              {cell(re.sph)}
-              {cell(re.cyl)}
-              {cell(re.axis)}
-              {cell(re.nearSph)}
-            </tr>
-            <tr>
-              {eyeCell("LE", "text-[var(--color-primary-700)] bg-[var(--color-primary-50)]")}
-              {cell(le.sph)}
-              {cell(le.cyl)}
-              {cell(le.axis)}
-              {cell(le.nearSph)}
-            </tr>
+            {rows.map(([label, reVal, leVal]) => (
+              <tr key={label}>
+                {labelCell(label)}
+                {valCell(reVal)}
+                {valCell(leVal)}
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
