@@ -289,7 +289,7 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
   );
 
   const eyeFields = (val: typeof re, setVal: typeof setRe) => (
-    <div className="flex gap-6 flex-wrap">
+    <div className="flex gap-12 flex-wrap">
       {/* Left — refraction fields */}
       <div className="flex flex-col gap-4">
         <div>
