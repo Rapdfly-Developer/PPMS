@@ -1184,14 +1184,14 @@ function TearFilmCard({ visit, udid, editable, priorVisits = [] }: { visit: any;
       </div>
       <EyeColumns>
         <div className="flex flex-col gap-2">
-          <LabeledInput label="TBUT (seconds)" value={data.tbutRe} onChange={upd("tbutRe")} disabled={!editable} />
-          <LabeledInput label="Schirmer's 1 – no anaesthetic (mm)" value={data.schirmer1Re} onChange={upd("schirmer1Re")} disabled={!editable} />
-          <LabeledInput label="Schirmer's 2 – with anaesthetic (mm)" value={data.schirmer2Re} onChange={upd("schirmer2Re")} disabled={!editable} />
+          <LabeledInput label="TBUT (seconds)" value={data.tbutRe} onChange={upd("tbutRe")} disabled={!editable} numeric />
+          <LabeledInput label="Schirmer's 1 – no anaesthetic (mm)" value={data.schirmer1Re} onChange={upd("schirmer1Re")} disabled={!editable} numeric />
+          <LabeledInput label="Schirmer's 2 – with anaesthetic (mm)" value={data.schirmer2Re} onChange={upd("schirmer2Re")} disabled={!editable} numeric />
         </div>
         <div className="flex flex-col gap-2">
-          <LabeledInput label="TBUT (seconds)" value={data.tbutLe} onChange={upd("tbutLe")} disabled={!editable} />
-          <LabeledInput label="Schirmer's 1 – no anaesthetic (mm)" value={data.schirmer1Le} onChange={upd("schirmer1Le")} disabled={!editable} />
-          <LabeledInput label="Schirmer's 2 – with anaesthetic (mm)" value={data.schirmer2Le} onChange={upd("schirmer2Le")} disabled={!editable} />
+          <LabeledInput label="TBUT (seconds)" value={data.tbutLe} onChange={upd("tbutLe")} disabled={!editable} numeric />
+          <LabeledInput label="Schirmer's 1 – no anaesthetic (mm)" value={data.schirmer1Le} onChange={upd("schirmer1Le")} disabled={!editable} numeric />
+          <LabeledInput label="Schirmer's 2 – with anaesthetic (mm)" value={data.schirmer2Le} onChange={upd("schirmer2Le")} disabled={!editable} numeric />
         </div>
       </EyeColumns>
 
@@ -1271,17 +1271,24 @@ function LacrimalSacCard({ visit, udid, editable }: { visit: any; udid: string; 
 /* ── Shared helpers ──────────────────────────────────────────────────────── */
 
 function LabeledInput({
-  label, value, onChange, disabled, compact,
+  label, value, onChange, disabled, compact, numeric,
 }: {
-  label: string; value: string; onChange: (v: string) => void; disabled?: boolean; compact?: boolean;
+  label: string; value: string; onChange: (v: string) => void; disabled?: boolean; compact?: boolean; numeric?: boolean;
 }) {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const v = e.target.value;
+    if (numeric && v !== "" && !/^\d*\.?\d*$/.test(v)) return;
+    onChange(v);
+  };
+
   return (
     <div className={compact ? "flex items-center gap-2" : ""}>
       <label className="text-xs text-[var(--color-ink-400)] block">{label}</label>
       <input
         disabled={disabled}
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={handleChange}
+        inputMode={numeric ? "decimal" : undefined}
         className="mt-1 w-full rounded-lg border border-[var(--color-border)] bg-white px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] disabled:bg-[var(--color-surface-sunken)]"
       />
     </div>
