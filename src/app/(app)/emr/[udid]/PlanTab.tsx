@@ -604,7 +604,7 @@ function DispositionCard({ visit, udid, patientSex }: { visit: any; udid: string
       <div className="flex gap-3 flex-wrap mb-2">
         <DispositionToggle icon={<BedDouble size={16} />}    label="Admit"                active={activePanels.includes("admit")}   onClick={() => togglePanel("admit")} />
         <DispositionToggle icon={<Stethoscope size={16} />}  label="Surgical Counselling" active={activePanels.includes("surgery")} onClick={() => togglePanel("surgery")} />
-        <DispositionToggle icon={<RefreshCw size={16} />}    label="Follow Updates"       active={activePanels.includes("follow")}  onClick={() => togglePanel("follow")} />
+        <DispositionToggle icon={<RefreshCw size={16} />}    label="Follow Up Dates"       active={activePanels.includes("follow")}  onClick={() => togglePanel("follow")} />
       </div>
       <p className="text-xs text-[var(--color-ink-400)] mb-4">These are not mutually exclusive — a patient may be both Admitted and have Surgical Counselling recorded.</p>
       <div className="flex flex-col gap-4">
