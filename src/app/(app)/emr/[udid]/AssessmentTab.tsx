@@ -231,7 +231,7 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
               className="w-full rounded-xl border border-[var(--color-border)] px-3.5 py-2.5 text-sm"
             />
             {matches.length > 0 && (
-              <ul className="absolute z-10 left-0 right-0 mt-1 surface-card-lifted overflow-hidden">
+              <ul className="absolute z-20 left-0 right-0 mt-1 rounded-xl border border-[var(--color-border)] bg-white shadow-xl overflow-hidden max-h-60 overflow-y-auto">
                 {matches.map((m) => (
                   <li key={m.code}>
                     <button
