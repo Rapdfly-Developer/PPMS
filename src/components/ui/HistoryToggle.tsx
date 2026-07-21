@@ -15,17 +15,22 @@ export function FieldWithHistory({
   label,
   history,
   children,
+  headerExtra,
 }: {
   label: string;
   history: HistoryEntry[];
   children: React.ReactNode;
+  headerExtra?: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
 
   return (
     <div className="relative">
-      <div className="flex items-center justify-between mb-1.5">
-        <label className="text-xs font-semibold tracking-widest text-[var(--color-ink-500)] uppercase">{label}</label>
+      <div className="flex items-center justify-between mb-1.5 gap-2 flex-wrap">
+        <div className="flex items-center gap-3 flex-wrap">
+          <label className="text-xs font-semibold tracking-widest text-[var(--color-ink-500)] uppercase">{label}</label>
+          {headerExtra}
+        </div>
         {history.length > 0 && (
           <button
             type="button"

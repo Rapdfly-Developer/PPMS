@@ -54,12 +54,22 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, customPmhCh
   const [weight, setWeight] = useState(ge?.weight ?? "");
   const LATERALITY_OPTIONS = ["RE", "LE", "OU"] as const;
   type Laterality = typeof LATERALITY_OPTIONS[number];
-  function parseLaterality(text: string): { lat: Laterality | null; body: string } {
-    const m = text.match(/^\[(RE|LE|OU)\]\s*/);
-    return m ? { lat: m[1] as Laterality, body: text.slice(m[0].length) } : { lat: null, body: text };
+  const SINCE_UNITS = ["days", "weeks", "months", "years"] as const;
+  function parseComplaintPrefixes(text: string): { lat: Laterality | null; sinceNum: string; sinceUnit: string; body: string } {
+    let rest = text;
+    const latM = rest.match(/^\[(RE|LE|OU)\]\s*/);
+    const lat = latM ? (latM[1] as Laterality) : null;
+    if (latM) rest = rest.slice(latM[0].length);
+    const sinceM = rest.match(/^\[(\d+)\s+(days|weeks|months|years)\]\s*/);
+    const sinceNum = sinceM ? sinceM[1] : "";
+    const sinceUnit = sinceM ? sinceM[2] : "days";
+    if (sinceM) rest = rest.slice(sinceM[0].length);
+    return { lat, sinceNum, sinceUnit, body: rest };
   }
-  const { lat: initLat, body: initComplaint } = parseLaterality(ge?.chiefComplaint ?? "");
+  const { lat: initLat, sinceNum: initSinceNum, sinceUnit: initSinceUnit, body: initComplaint } = parseComplaintPrefixes(ge?.chiefComplaint ?? "");
   const [laterality, setLaterality] = useState<Laterality | null>(initLat);
+  const [sinceNum, setSinceNum] = useState(initSinceNum);
+  const [sinceUnit, setSinceUnit] = useState(initSinceUnit);
   const [chiefComplaint, setChiefComplaint] = useState(initComplaint);
   const [hpi, setHpi] = useState(ge?.hpi ?? "");
   const [pmh, setPmh] = useState<string[]>(parseJSON(ge?.pastMedicalHistory, [] as string[]));
@@ -72,7 +82,9 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, customPmhCh
   const priorPmh = priorVisits.flatMap((v) => parseJSON<string[]>(v.generalExam?.pastMedicalHistory, []));
   const cumulativePmh = Array.from(new Set([...priorPmh, ...pmh]));
 
-  const chiefComplaintFull = laterality ? `[${laterality}] ${chiefComplaint}` : chiefComplaint;
+  const sincePart = sinceNum ? `[${sinceNum} ${sinceUnit}]` : "";
+  const latPart   = laterality ? `[${laterality}]` : "";
+  const chiefComplaintFull = [latPart, sincePart, chiefComplaint].filter(Boolean).join(" ");
   const data = { bp, pulse, temperature, weight, chiefComplaint: chiefComplaintFull, hpi, pastMedicalHistory: JSON.stringify(cumulativePmh), pmhOtherText: pmhOther, medications, allergies, nkda };
 
   const state = useAutoSave(data, async (d) => {
@@ -93,7 +105,36 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, customPmhCh
 
       {/* CHIEF COMPLAINT */}
       <Card>
-        <FieldWithHistory label="CHIEF COMPLAINT" history={histFor((g) => g.chiefComplaint)}>
+        <FieldWithHistory
+          label="CHIEF COMPLAINT"
+          history={histFor((g) => g.chiefComplaint)}
+          headerExtra={
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs font-semibold text-[var(--color-ink-400)]">Since</span>
+              <select
+                value={sinceNum}
+                onChange={(e) => setSinceNum(e.target.value)}
+                disabled={readOnly}
+                className="text-xs border border-[var(--color-border)] rounded-lg px-2 py-0.5 bg-white text-[var(--color-ink-700)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] disabled:opacity-50"
+              >
+                <option value="">—</option>
+                {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
+                  <option key={n} value={String(n)}>{n}</option>
+                ))}
+              </select>
+              <select
+                value={sinceUnit}
+                onChange={(e) => setSinceUnit(e.target.value)}
+                disabled={readOnly || !sinceNum}
+                className="text-xs border border-[var(--color-border)] rounded-lg px-2 py-0.5 bg-white text-[var(--color-ink-700)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] disabled:opacity-50"
+              >
+                {SINCE_UNITS.map((u) => (
+                  <option key={u} value={u}>{u}</option>
+                ))}
+              </select>
+            </div>
+          }
+        >
           {/* Laterality selector */}
           <div className="flex items-center gap-2 mb-2">
             {LATERALITY_OPTIONS.map((opt) => {
