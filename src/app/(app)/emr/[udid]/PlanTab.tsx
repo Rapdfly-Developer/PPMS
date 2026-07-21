@@ -310,14 +310,14 @@ function PrescriptionCard({ visit, udid }: { visit: any; udid: string }) {
             <p className="text-xs font-semibold text-[var(--color-ink-600)]">Rx #{medications.length + 1}</p>
             <button onClick={() => setShowAddDrug(false)} className="text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)]"><X size={14} /></button>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
-            <div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+            <div className="col-span-2">
               <label className="text-xs text-[var(--color-ink-500)] block mb-1">Drug Name</label>
               <input value={drugName} onChange={(e) => setDrugName(e.target.value)} placeholder="Drug name" className={inputCls} />
             </div>
             <div>
               <label className="text-xs text-[var(--color-ink-500)] block mb-1">Dose</label>
-              <input value={dose} onChange={(e) => setDose(e.target.value)} placeholder="e.g. 1 drop, 500 mg" className={inputCls} />
+              <input value={dose} onChange={(e) => setDose(e.target.value)} placeholder="e.g. 1 drop" className={inputCls} />
             </div>
             <div>
               <label className="text-xs text-[var(--color-ink-500)] block mb-1">Route</label>
@@ -326,8 +326,8 @@ function PrescriptionCard({ visit, udid }: { visit: any; udid: string }) {
               </select>
             </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-            <div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+            <div className="col-span-2">
               <label className="text-xs text-[var(--color-ink-500)] block mb-1">Frequency</label>
               <select value={frequency} onChange={(e) => setFrequency(e.target.value)} className={inputCls}>
                 <option value="">— Select —</option>
@@ -338,14 +338,16 @@ function PrescriptionCard({ visit, udid }: { visit: any; udid: string }) {
               <label className="text-xs text-[var(--color-ink-500)] block mb-1">Duration (days)</label>
               <input value={duration} onChange={(e) => setDuration(e.target.value)} placeholder="e.g. 7" className={inputCls} />
             </div>
+            <div className="flex flex-col justify-end">
+              <button onClick={submitDrug} disabled={pending} className="w-full rounded-xl bg-[var(--color-primary-600)] text-white text-xs font-medium py-2.5 hover:bg-[var(--color-primary-700)] transition-colors disabled:opacity-60">
+                Add to Prescription
+              </button>
+            </div>
           </div>
           <div className="mb-3">
             <label className="text-xs text-[var(--color-ink-500)] block mb-1">Instructions</label>
             <input value={instructions} onChange={(e) => setInstructions(e.target.value)} placeholder="e.g. Apply 1 drop in RE at bedtime, shake well before use" className={inputCls} />
           </div>
-          <button onClick={submitDrug} disabled={pending} className="w-full rounded-xl bg-[var(--color-primary-600)] text-white text-xs font-medium py-2 hover:bg-[var(--color-primary-700)] transition-colors disabled:opacity-60">
-            Add to Prescription
-          </button>
         </div>
       )}
 
