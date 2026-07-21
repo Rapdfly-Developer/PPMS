@@ -9,6 +9,7 @@ import { useAutoSave, SaveIndicator } from "@/lib/useAutoSave";
 import { X, History, ChevronDown } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Toast } from "@/components/ui/Toast";
+import { FieldWithHistory } from "@/components/ui/HistoryToggle";
 import { format } from "date-fns";
 
 export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; udid: string; priorVisits?: any[] }) {
@@ -65,60 +66,74 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
     <>
     <div className="flex flex-col gap-5">
       <Card>
-        <div className="flex items-center justify-between mb-2">
-          <label className="text-sm font-medium text-[var(--color-ink-700)]">Provisional Diagnosis</label>
+        <div className="flex items-start justify-between gap-2 mb-2">
+          <div className="flex-1">
+            <FieldWithHistory
+              label="Provisional Diagnosis"
+              history={priorVisits
+                .filter((v) => v.generalExam?.provisionalDx)
+                .map((v) => ({ date: v.date, value: v.generalExam.provisionalDx }))}
+              currentValue={provisionalDx}
+              onLoad={setProvisionalDx}
+            >
+              <textarea
+                value={provisionalDx}
+                onChange={(e) => setProvisionalDx(e.target.value)}
+                rows={2}
+                placeholder="Working diagnosis prior to formal coding..."
+                className="w-full rounded-xl border border-[var(--color-border)] px-3.5 py-2.5 text-sm mt-1"
+              />
+            </FieldWithHistory>
+          </div>
           <SaveIndicator state={state} />
         </div>
-        <textarea
-          value={provisionalDx}
-          onChange={(e) => setProvisionalDx(e.target.value)}
-          rows={2}
-          placeholder="Working diagnosis prior to formal coding..."
-          className="w-full rounded-xl border border-[var(--color-border)] px-3.5 py-2.5 text-sm"
-        />
       </Card>
 
       <Card>
         <div className="flex items-center justify-between mb-3">
           <p className="text-sm font-medium text-[var(--color-ink-700)]">Diagnosis (ICD-10)</p>
-          {priorDxGroups.length > 0 && (
-            <button
-              type="button"
-              onClick={() => setHistoryOpen((v) => !v)}
-              className="flex items-center gap-1 text-xs text-amber-700 bg-amber-50 hover:bg-amber-100 font-medium px-2.5 py-0.5 rounded-full border border-amber-200 transition-colors"
-            >
-              <History size={11} />
-              History ({priorDxGroups.length})
-              <ChevronDown size={11} className={historyOpen ? "rotate-180 transition-transform" : "transition-transform"} />
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={() => setHistoryOpen((v) => !v)}
+            className="flex items-center gap-1 text-xs text-amber-700 bg-amber-50 hover:bg-amber-100 font-medium px-2.5 py-0.5 rounded-full border border-amber-200 transition-colors"
+          >
+            <History size={11} />
+            History {priorDxGroups.length > 0 && `(${priorDxGroups.length})`}
+            <ChevronDown size={11} className={historyOpen ? "rotate-180 transition-transform" : "transition-transform"} />
+          </button>
         </div>
         {historyOpen && (
           <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-3">
             <div className="flex items-center justify-between mb-2">
               <p className="text-[10px] font-bold uppercase tracking-widest text-amber-700">Previous Diagnoses</p>
-              <p className="text-[10px] text-amber-600">Double-click a visit to load its diagnoses</p>
+              {priorDxGroups.length > 0 && (
+                <p className="text-[10px] text-amber-600">Double-click a visit to load its diagnoses</p>
+              )}
             </div>
-            <div className="space-y-3 max-h-56 overflow-y-auto scrollbar-thin">
-              {priorDxGroups.map((g, gi) => (
-                <div
-                  key={gi}
-                  onDoubleClick={() => handleDxGroupDoubleClick(g.diagnoses)}
-                  title="Double-click to add these diagnoses"
-                  className="cursor-pointer rounded-lg p-1.5 -mx-1.5 hover:bg-amber-100 transition-colors select-none"
-                >
-                  <p className="text-[10px] font-semibold text-[var(--color-ink-400)] mb-1">{format(new Date(g.date), "d MMM yyyy")}</p>
-                  {g.diagnoses.map((d: any, di: number) => (
-                    <div key={di} className="flex items-center gap-2 text-xs text-[var(--color-ink-700)] border-l-2 border-amber-400 pl-2 mb-0.5">
-                      <span className="font-medium">{d.description}</span>
-                      {d.laterality && <span className="text-[var(--color-ink-400)]">{d.laterality}</span>}
-                      <span className="font-mono text-[var(--color-ink-400)]">{d.icd10Code}</span>
-                      <span className="ml-auto text-[10px] text-[var(--color-ink-400)]">{d.status}</span>
-                    </div>
-                  ))}
-                </div>
-              ))}
-            </div>
+            {priorDxGroups.length === 0 ? (
+              <p className="text-xs text-[var(--color-ink-400)] py-2 text-center">No previous records found.</p>
+            ) : (
+              <div className="space-y-3 max-h-56 overflow-y-auto scrollbar-thin">
+                {priorDxGroups.map((g, gi) => (
+                  <div
+                    key={gi}
+                    onDoubleClick={() => handleDxGroupDoubleClick(g.diagnoses)}
+                    title="Double-click to add these diagnoses"
+                    className="cursor-pointer rounded-lg p-1.5 -mx-1.5 hover:bg-amber-100 transition-colors select-none"
+                  >
+                    <p className="text-[10px] font-semibold text-[var(--color-ink-400)] mb-1">{format(new Date(g.date), "d MMM yyyy")}</p>
+                    {g.diagnoses.map((d: any, di: number) => (
+                      <div key={di} className="flex items-center gap-2 text-xs text-[var(--color-ink-700)] border-l-2 border-amber-400 pl-2 mb-0.5">
+                        <span className="font-medium">{d.description}</span>
+                        {d.laterality && <span className="text-[var(--color-ink-400)]">{d.laterality}</span>}
+                        <span className="font-mono text-[var(--color-ink-400)]">{d.icd10Code}</span>
+                        <span className="ml-auto text-[10px] text-[var(--color-ink-400)]">{d.status}</span>
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
