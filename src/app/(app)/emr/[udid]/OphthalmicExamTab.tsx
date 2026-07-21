@@ -284,19 +284,36 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
   );
 
   const eyeFields = (val: typeof re, setVal: typeof setRe) => (
-    <div className="flex flex-col gap-5">
-      <p className="text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-widest">Distance</p>
-      <div className="flex gap-4 flex-wrap items-end">
-        {signedSelect("Sph",   val.sph,  (v) => setVal({ ...val, sph: v }),  SPH_MAGS)}
-        {signedSelect("Cyl",   val.cyl,  (v) => setVal({ ...val, cyl: v }),  CYL_MAGS)}
-        {signedSelect("Axis°", val.axis, (v) => setVal({ ...val, axis: v }), AXIS_OPTS)}
-        {vaSelect("Resulting VA", val.va, (v) => setVal({ ...val, va: v }))}
+    <div className="flex gap-6 flex-wrap">
+      {/* Left — refraction fields */}
+      <div className="flex flex-col gap-4">
+        <div>
+          <p className="text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-widest mb-3">Distance</p>
+          <div className="flex gap-4 flex-wrap items-end">
+            {signedSelect("Sph",   val.sph,  (v) => setVal({ ...val, sph: v }),  SPH_MAGS)}
+            {signedSelect("Cyl",   val.cyl,  (v) => setVal({ ...val, cyl: v }),  CYL_MAGS)}
+            {signedSelect("Axis°", val.axis, (v) => setVal({ ...val, axis: v }), AXIS_OPTS)}
+          </div>
+        </div>
+        <div>
+          <p className="text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-widest mb-3">Near</p>
+          <div className="flex gap-4 flex-wrap items-end">
+            {signedSelect("Sph (Add)", val.nearSph, (v) => setVal({ ...val, nearSph: v }), ADD_MAGS)}
+          </div>
+        </div>
       </div>
 
-      <div className="pt-2">
-        <p className="text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-widest mb-3">Near</p>
-        <div className="flex gap-4 flex-wrap items-end">
-          {signedSelect("Sph (Add)", val.nearSph, (v) => setVal({ ...val, nearSph: v }), ADD_MAGS)}
+      {/* Divider */}
+      <div className="w-px self-stretch bg-[var(--color-border)] mx-2" />
+
+      {/* Right — VA column aligned with Distance / Near */}
+      <div className="flex flex-col gap-4">
+        <div>
+          <p className="text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-widest mb-3 opacity-0 select-none">VA</p>
+          {vaSelect("Resulting VA", val.va, (v) => setVal({ ...val, va: v }))}
+        </div>
+        <div>
+          <p className="text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-widest mb-3 opacity-0 select-none">VA</p>
           {vaSelect("Resulting VA", val.nearVa, (v) => setVal({ ...val, nearVa: v }))}
         </div>
       </div>
