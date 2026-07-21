@@ -340,25 +340,37 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
       </EyeColumns>
 
       {showHistory && priorRefractions.length > 0 && (
-        <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 space-y-3">
+        <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 space-y-4">
           <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide">Previous Spectacles</p>
           {priorRefractions.map((pr, i) => (
-            <div key={i} className="text-xs text-[var(--color-ink-700)]">
-              <p className="font-semibold text-[var(--color-ink-500)] mb-1">{format(new Date(pr.date), "dd-MMM-yyyy")}</p>
-              <div className="grid grid-cols-2 gap-x-4">
-                <div>
-                  <span className="font-medium text-[var(--color-primary-700)]">RE: </span>
-                  {pr.re.sph && `${pr.re.sph} DS`}{pr.re.cyl && ` / ${pr.re.cyl} DC`}{pr.re.axis && ` × ${pr.re.axis}`}
-                  {pr.re.nearSph && ` Add: ${pr.re.nearSph}`}
-                  {!pr.re.sph && "—"}
-                </div>
-                <div>
-                  <span className="font-medium text-[var(--color-primary-700)]">LE: </span>
-                  {pr.le.sph && `${pr.le.sph} DS`}{pr.le.cyl && ` / ${pr.le.cyl} DC`}{pr.le.axis && ` × ${pr.le.axis}`}
-                  {pr.le.nearSph && ` Add: ${pr.le.nearSph}`}
-                  {!pr.le.sph && "—"}
-                </div>
-              </div>
+            <div key={i}>
+              <p className="text-[11px] font-bold text-amber-800 mb-2">{format(new Date(pr.date), "dd-MMM-yyyy")}</p>
+              <table className="w-full text-xs border-collapse">
+                <thead>
+                  <tr>
+                    <th className="text-left text-[var(--color-ink-400)] font-medium pb-1.5 w-28" />
+                    <th className="text-center text-[var(--color-primary-700)] font-semibold pb-1.5 w-28">RE</th>
+                    <th className="text-center text-[var(--color-primary-700)] font-semibold pb-1.5 w-28">LE</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-amber-100">
+                  {[
+                    { label: "Sph",          re: pr.re.sph,    le: pr.le.sph },
+                    { label: "Cyl",          re: pr.re.cyl,    le: pr.le.cyl },
+                    { label: "Axis°",        re: pr.re.axis,   le: pr.le.axis },
+                    { label: "Resulting VA", re: pr.re.va,     le: pr.le.va },
+                    { label: "Add",          re: pr.re.nearSph,le: pr.le.nearSph },
+                    { label: "Resulting NV", re: pr.re.nearVa, le: pr.le.nearVa },
+                  ].map(({ label, re, le }) => (
+                    <tr key={label}>
+                      <td className="py-1 text-[var(--color-ink-500)] font-medium">{label}</td>
+                      <td className="py-1 text-center text-[var(--color-ink-800)]">{re || "—"}</td>
+                      <td className="py-1 text-center text-[var(--color-ink-800)]">{le || "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {i < priorRefractions.length - 1 && <div className="mt-3 border-t border-amber-200" />}
             </div>
           ))}
         </div>
