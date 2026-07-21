@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useRef } from "react";
 import { Card } from "@/components/ui/Card";
 import { SingleChipSelect } from "@/components/ui/Chip";
 import { ICD10_OPHTHALMOLOGY, DIAGNOSIS_STATUSES, LATERALITY } from "@/lib/constants";
 import { saveProvisionalDiagnosis, addDiagnosis, updateDiagnosisStatus, removeDiagnosis } from "./actions";
 import { useAutoSave, SaveIndicator } from "@/lib/useAutoSave";
-import { X, History, ChevronDown } from "lucide-react";
+import { X, History, ChevronDown, Search } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Toast } from "@/components/ui/Toast";
 import { FieldWithHistory } from "@/components/ui/HistoryToggle";
@@ -14,6 +14,9 @@ import { format } from "date-fns";
 
 export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; udid: string; priorVisits?: any[] }) {
   const [provisionalDx, setProvisionalDx] = useState(visit.generalExam?.provisionalDx ?? "");
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [suggestionIndex, setSuggestionIndex] = useState(-1);
+  const blurTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [query, setQuery] = useState("");
   const [laterality, setLaterality] = useState("OU");
   const [pending, startTransition] = useTransition();
@@ -31,6 +34,44 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
   });
 
   const existingCodes = new Set(diagnoses.map((d: any) => d.icd10Code));
+
+  const provisionalSuggestions = provisionalDx.length >= 2
+    ? ICD10_OPHTHALMOLOGY.filter(
+        (d) =>
+          d.description.toLowerCase().includes(provisionalDx.toLowerCase()) ||
+          d.code.toLowerCase().includes(provisionalDx.toLowerCase())
+      )
+        .sort((a, b) => {
+          const q = provisionalDx.toLowerCase();
+          const aStart = a.description.toLowerCase().startsWith(q) ? -1 : 0;
+          const bStart = b.description.toLowerCase().startsWith(q) ? -1 : 0;
+          return aStart - bStart;
+        })
+        .slice(0, 8)
+    : [];
+
+  const selectSuggestion = (description: string) => {
+    setProvisionalDx(description);
+    setShowSuggestions(false);
+    setSuggestionIndex(-1);
+  };
+
+  const handleProvisionalKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!showSuggestions || provisionalSuggestions.length === 0) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setSuggestionIndex((i) => Math.min(i + 1, provisionalSuggestions.length - 1));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setSuggestionIndex((i) => Math.max(i - 1, -1));
+    } else if (e.key === "Enter" && suggestionIndex >= 0) {
+      e.preventDefault();
+      selectSuggestion(provisionalSuggestions[suggestionIndex].description);
+    } else if (e.key === "Escape") {
+      setShowSuggestions(false);
+      setSuggestionIndex(-1);
+    }
+  };
 
   const matches = query.length > 0 ? ICD10_OPHTHALMOLOGY.filter(
     (d) => d.code.toLowerCase().includes(query.toLowerCase()) || d.description.toLowerCase().includes(query.toLowerCase())
@@ -76,13 +117,51 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
               currentValue={provisionalDx}
               onLoad={setProvisionalDx}
             >
-              <textarea
-                value={provisionalDx}
-                onChange={(e) => setProvisionalDx(e.target.value)}
-                rows={2}
-                placeholder="Working diagnosis prior to formal coding..."
-                className="w-full rounded-xl border border-[var(--color-border)] px-3.5 py-2.5 text-sm mt-1"
-              />
+              <div className="relative mt-1">
+                <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] pointer-events-none" />
+                <input
+                  value={provisionalDx}
+                  onChange={(e) => {
+                    setProvisionalDx(e.target.value);
+                    setShowSuggestions(true);
+                    setSuggestionIndex(-1);
+                  }}
+                  onFocus={() => { if (blurTimerRef.current) clearTimeout(blurTimerRef.current); setShowSuggestions(true); }}
+                  onBlur={() => { blurTimerRef.current = setTimeout(() => setShowSuggestions(false), 150); }}
+                  onKeyDown={handleProvisionalKeyDown}
+                  placeholder="Type to search diagnosis or enter free text..."
+                  className="w-full rounded-xl border border-[var(--color-border)] pl-9 pr-8 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
+                />
+                {provisionalDx && (
+                  <button
+                    type="button"
+                    onMouseDown={(e) => { e.preventDefault(); setProvisionalDx(""); setShowSuggestions(false); setSuggestionIndex(-1); }}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)] transition-colors"
+                  >
+                    <X size={14} />
+                  </button>
+                )}
+                {showSuggestions && provisionalSuggestions.length > 0 && (
+                  <ul className="absolute z-20 left-0 right-0 mt-1 rounded-xl border border-[var(--color-border)] bg-white shadow-xl overflow-hidden max-h-64 overflow-y-auto">
+                    {provisionalSuggestions.map((s, i) => (
+                      <li key={s.code}>
+                        <button
+                          type="button"
+                          onMouseDown={(e) => { e.preventDefault(); selectSuggestion(s.description); }}
+                          className={`w-full text-left px-3.5 py-2.5 text-sm flex items-center justify-between gap-4 transition-colors ${
+                            i === suggestionIndex
+                              ? "bg-[var(--color-primary-50)] text-[var(--color-primary-700)]"
+                              : "hover:bg-[var(--color-surface-sunken)]"
+                          }`}
+                        >
+                          <span className="flex-1 min-w-0 truncate">{s.description}</span>
+                          <span className="text-xs font-mono text-[var(--color-ink-400)] shrink-0">{s.code}</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             </FieldWithHistory>
           </div>
           <SaveIndicator state={state} />
