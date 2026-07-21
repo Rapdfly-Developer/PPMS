@@ -11,6 +11,22 @@ import { useAutoSave, SaveIndicator } from "@/lib/useAutoSave";
 import { KeywordTextarea } from "@/components/emr/KeywordField";
 import { saveGeneralExam } from "./actions";
 
+const LATERALITY_OPTIONS = ["RE", "LE", "OU"] as const;
+type Laterality = typeof LATERALITY_OPTIONS[number];
+const SINCE_UNITS = ["days", "weeks", "months", "years"] as const;
+
+function parseComplaintPrefixes(text: string): { lat: Laterality | null; sinceNum: string; sinceUnit: string; body: string } {
+  let rest = text;
+  const latM = rest.match(/^\[(RE|LE|OU)\]\s*/);
+  const lat = latM ? (latM[1] as Laterality) : null;
+  if (latM) rest = rest.slice(latM[0].length);
+  const sinceM = rest.match(/^\[(\d+)\s+(days|weeks|months|years)\]\s*/);
+  const sinceNum = sinceM ? sinceM[1] : "";
+  const sinceUnit = sinceM ? sinceM[2] : "days";
+  if (sinceM) rest = rest.slice(sinceM[0].length);
+  return { lat, sinceNum, sinceUnit, body: rest };
+}
+
 function parseBP(value: string): { sys: number; dia: number } | null {
   const m = value.replace(/\s/g, "").match(/^(\d{2,3})\/(\d{2,3})$/);
   if (!m) return null;
@@ -52,20 +68,6 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, customPmhCh
   const [pulse, setPulse] = useState(ge?.pulse ?? "");
   const [temperature, setTemperature] = useState(ge?.temperature ?? "");
   const [weight, setWeight] = useState(ge?.weight ?? "");
-  const LATERALITY_OPTIONS = ["RE", "LE", "OU"] as const;
-  type Laterality = typeof LATERALITY_OPTIONS[number];
-  const SINCE_UNITS = ["days", "weeks", "months", "years"] as const;
-  function parseComplaintPrefixes(text: string): { lat: Laterality | null; sinceNum: string; sinceUnit: string; body: string } {
-    let rest = text;
-    const latM = rest.match(/^\[(RE|LE|OU)\]\s*/);
-    const lat = latM ? (latM[1] as Laterality) : null;
-    if (latM) rest = rest.slice(latM[0].length);
-    const sinceM = rest.match(/^\[(\d+)\s+(days|weeks|months|years)\]\s*/);
-    const sinceNum = sinceM ? sinceM[1] : "";
-    const sinceUnit = sinceM ? sinceM[2] : "days";
-    if (sinceM) rest = rest.slice(sinceM[0].length);
-    return { lat, sinceNum, sinceUnit, body: rest };
-  }
   const { lat: initLat, sinceNum: initSinceNum, sinceUnit: initSinceUnit, body: initComplaint } = parseComplaintPrefixes(ge?.chiefComplaint ?? "");
   const [laterality, setLaterality] = useState<Laterality | null>(initLat);
   const [sinceNum, setSinceNum] = useState(initSinceNum);
