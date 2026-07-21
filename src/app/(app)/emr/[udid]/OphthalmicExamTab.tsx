@@ -202,6 +202,17 @@ function VisualAcuityCard({ visit, udid, editable }: { visit: any; udid: string;
   );
 }
 
+/* ── Refraction value option lists ─────────────────────────────────────── */
+const SPH_MAGS  = ["", ...Array.from({ length: 81 }, (_, i) => (i * 0.25).toFixed(2))];
+const CYL_MAGS  = ["", ...Array.from({ length: 41 }, (_, i) => (i * 0.25).toFixed(2))];
+const ADD_MAGS  = ["", ...Array.from({ length: 16 }, (_, i) => ((i + 1) * 0.25).toFixed(2))];
+const AXIS_OPTS = ["", ...Array.from({ length: 180 }, (_, i) => String(i + 1))];
+
+function parseSignedVal(v: string): { sign: "+" | "-"; mag: string } {
+  if (!v) return { sign: "+", mag: "" };
+  return v.startsWith("-") ? { sign: "-", mag: v.slice(1) } : { sign: "+", mag: v.replace(/^\+/, "") };
+}
+
 /* ── Refraction ────────────────────────────────────────────────────────── */
 
 function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: any; udid: string; editable: boolean; priorVisits?: any[] }) {
@@ -225,28 +236,55 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
     await saveRefraction(visit.id, udid, d);
   });
 
-  const smallInput = (label: string, value: string, onChange: (v: string) => void) => (
+  const SEL = "rounded border border-[var(--color-border)] bg-white px-1.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-400)] disabled:bg-[var(--color-surface-sunken)]";
+
+  const signedSelect = (label: string, value: string, onChange: (v: string) => void, mags: string[]) => {
+    const { sign, mag } = parseSignedVal(value);
+    const toggle = () => {
+      const ns = sign === "+" ? "-" : "+";
+      onChange(mag ? `${ns}${mag}` : "");
+    };
+    return (
+      <div className="flex flex-col gap-0.5">
+        <label className="text-[10px] text-[var(--color-ink-400)] font-medium">{label}</label>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            disabled={!editable}
+            onClick={toggle}
+            className="w-6 h-6 rounded flex items-center justify-center text-xs font-bold border transition-colors disabled:opacity-40"
+            style={sign === "-"
+              ? { background: "var(--color-primary-600)", color: "#fff", borderColor: "var(--color-primary-600)" }
+              : { background: "#fff", color: "var(--color-ink-600)", borderColor: "var(--color-border)" }}
+          >
+            {sign}
+          </button>
+          <select
+            disabled={!editable}
+            value={mag}
+            onChange={(e) => onChange(e.target.value ? `${sign}${e.target.value}` : "")}
+            className={`w-20 ${SEL}`}
+          >
+            {mags.map((m) => <option key={m} value={m}>{m || "—"}</option>)}
+          </select>
+        </div>
+      </div>
+    );
+  };
+
+  const axisSelect = (label: string, value: string, onChange: (v: string) => void) => (
     <div className="flex flex-col gap-0.5">
       <label className="text-[10px] text-[var(--color-ink-400)] font-medium">{label}</label>
-      <input
-        type="text"
-        disabled={!editable}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-20 rounded border border-[var(--color-border)] bg-white px-2 py-1 text-xs disabled:bg-[var(--color-surface-sunken)]"
-      />
+      <select disabled={!editable} value={value} onChange={(e) => onChange(e.target.value)} className={`w-20 ${SEL}`}>
+        {AXIS_OPTS.map((a) => <option key={a} value={a}>{a || "—"}</option>)}
+      </select>
     </div>
   );
 
   const vaSelect = (label: string, value: string, onChange: (v: string) => void) => (
     <div className="flex flex-col gap-0.5">
       <label className="text-[10px] text-[var(--color-ink-400)] font-medium">{label}</label>
-      <select
-        disabled={!editable}
-        value={value || "-"}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-28 rounded border border-[var(--color-border)] bg-white px-1.5 py-1 text-xs disabled:bg-[var(--color-surface-sunken)]"
-      >
+      <select disabled={!editable} value={value || "-"} onChange={(e) => onChange(e.target.value)} className={`w-28 ${SEL}`}>
         {VA_SNELLEN_VALUES.map((v) => <option key={v} value={v}>{v}</option>)}
       </select>
     </div>
@@ -255,17 +293,17 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
   const eyeFields = (val: typeof re, setVal: typeof setRe) => (
     <div className="flex flex-col gap-5">
       <p className="text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-widest">Distance</p>
-      <div className="flex gap-5 flex-wrap">
-        {smallInput("Sph",   val.sph,  (v) => setVal({ ...val, sph: v }))}
-        {smallInput("Cyl",   val.cyl,  (v) => setVal({ ...val, cyl: v }))}
-        {smallInput("Axis°", val.axis, (v) => setVal({ ...val, axis: v }))}
+      <div className="flex gap-4 flex-wrap items-end">
+        {signedSelect("Sph",   val.sph,  (v) => setVal({ ...val, sph: v }),  SPH_MAGS)}
+        {signedSelect("Cyl",   val.cyl,  (v) => setVal({ ...val, cyl: v }),  CYL_MAGS)}
+        {axisSelect("Axis°", val.axis, (v) => setVal({ ...val, axis: v }))}
       </div>
       {vaSelect("Resulting VA", val.va, (v) => setVal({ ...val, va: v }))}
 
       <div className="pt-2">
         <p className="text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-widest mb-4">Near</p>
         <div className="flex flex-col gap-4">
-          {smallInput("Sph", val.nearSph, (v) => setVal({ ...val, nearSph: v }))}
+          {signedSelect("Sph (Add)", val.nearSph, (v) => setVal({ ...val, nearSph: v }), ADD_MAGS)}
           {vaSelect("Resulting VA", val.nearVa, (v) => setVal({ ...val, nearVa: v }))}
         </div>
       </div>
