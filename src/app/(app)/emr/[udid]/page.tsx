@@ -240,28 +240,43 @@ export default async function PatientDetailedEMR({
       {/* Patient banner */}
       <div className="surface-card mb-5 px-4 py-3">
         <div className="flex items-start justify-between gap-3 flex-wrap">
-          <div>
-            <h2 className="text-base font-bold text-[var(--color-ink-900)]">
-              {patient.name}
-              <span className="ml-2 text-sm font-normal text-[var(--color-ink-500)]">
-                {patient.age}y / {patient.sex.charAt(0).toUpperCase()}
-              </span>
-            </h2>
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5 text-xs text-[var(--color-ink-500)]">
-              <span>UHID: <span className="font-mono text-[var(--color-primary-700)]">{patient.udid}</span></span>
-              {patient.mobile && (
-                <><span className="text-[var(--color-border)]">·</span><span>Mobile: {patient.mobile}</span></>
+          <div className="flex items-center gap-3">
+            {/* Avatar */}
+            <div className="shrink-0 w-11 h-11 rounded-full overflow-hidden bg-[var(--color-primary-100)] flex items-center justify-center ring-2 ring-[var(--color-primary-200)]">
+              {patient.photoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={patient.photoUrl.startsWith("http") ? patient.photoUrl : `/api/upload?file=${encodeURIComponent(patient.photoUrl)}`}
+                  alt={patient.name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <User size={20} className="text-[var(--color-primary-400)]" />
               )}
-              {patient.registeredAt && (
-                <><span className="text-[var(--color-border)]">·</span><span>{patient.registeredAt.name}</span></>
-              )}
-              {doctorName && (
-                <><span className="text-[var(--color-border)]">·</span><span>Dr. {doctorName}</span></>
-              )}
-              {priorVisits[0] && (
-                <><span className="text-[var(--color-border)]">·</span>
-                <span>Last visit: {format(new Date(priorVisits[0].date), "d MMM yyyy")}</span></>
-              )}
+            </div>
+            <div>
+              <h2 className="text-base font-bold text-[var(--color-ink-900)]">
+                {patient.name}
+                <span className="ml-2 text-sm font-normal text-[var(--color-ink-500)]">
+                  {patient.age}y / {patient.sex.charAt(0).toUpperCase()}
+                </span>
+              </h2>
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5 text-xs text-[var(--color-ink-500)]">
+                <span>UHID: <span className="font-mono text-[var(--color-primary-700)]">{patient.udid}</span></span>
+                {patient.mobile && (
+                  <><span className="text-[var(--color-border)]">·</span><span>Mobile: {patient.mobile}</span></>
+                )}
+                {patient.registeredAt && (
+                  <><span className="text-[var(--color-border)]">·</span><span>{patient.registeredAt.name}</span></>
+                )}
+                {doctorName && (
+                  <><span className="text-[var(--color-border)]">·</span><span>Dr. {doctorName}</span></>
+                )}
+                {priorVisits[0] && (
+                  <><span className="text-[var(--color-border)]">·</span>
+                  <span>Last visit: {format(new Date(priorVisits[0].date), "d MMM yyyy")}</span></>
+                )}
+              </div>
             </div>
           </div>
         </div>
