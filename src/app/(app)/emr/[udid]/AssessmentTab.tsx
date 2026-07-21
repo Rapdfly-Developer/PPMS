@@ -29,17 +29,6 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
     await saveProvisionalDiagnosis(visit.id, udid, text);
   });
 
-  const DIAGNOSIS_PRESETS = [
-    { code: "H26.9", description: "Cataract" },
-    { code: "H40.9", description: "Glaucoma" },
-    { code: "H04.1", description: "Dry Eye" },
-    { code: "H36.0", description: "Diabetic Retinopathy" },
-    { code: "H35.3", description: "Macular Degeneration" },
-    { code: "H49.9", description: "Squint" },
-    { code: "H11.0", description: "Pterygium" },
-    { code: "H10.9", description: "Conjunctivitis" },
-  ];
-
   const existingCodes = new Set(diagnoses.map((d: any) => d.icd10Code));
 
   const matches = query.length > 0 ? ICD10_OPHTHALMOLOGY.filter(
@@ -134,18 +123,6 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
         )}
 
 
-        <div className="flex flex-wrap gap-1.5 mb-4">
-          {DIAGNOSIS_PRESETS.map((p) => (
-            <button
-              key={p.code}
-              disabled={pending || existingCodes.has(p.code)}
-              onClick={() => add(p.code, p.description)}
-              className="px-2.5 py-1 rounded-lg text-xs font-medium border border-[var(--color-border)] bg-white hover:border-[var(--color-primary-400)] hover:bg-[var(--color-primary-50)] disabled:opacity-40 disabled:cursor-default transition-colors"
-            >
-              + {p.description}
-            </button>
-          ))}
-        </div>
 
         <div className="flex items-end gap-3 flex-wrap mb-4">
           <div>
