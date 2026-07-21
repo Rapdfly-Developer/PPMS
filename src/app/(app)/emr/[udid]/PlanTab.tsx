@@ -232,7 +232,8 @@ function PrescriptionCard({ visit, udid }: { visit: any; udid: string }) {
   const [dose, setDose]               = useState("");
   const [route, setRoute]             = useState("Topical");
   const [frequency, setFrequency]     = useState("");
-  const [duration, setDuration]       = useState("");
+  const [durationNum, setDurationNum] = useState("");
+  const [durationUnit, setDurationUnit] = useState("days");
   const [instructions, setInstructions] = useState("");
   const [rxCount, setRxCount]         = useState(0);
 
@@ -240,7 +241,7 @@ function PrescriptionCard({ visit, udid }: { visit: any; udid: string }) {
 
   const openWithDrug = (name: string) => {
     setDrugName(name);
-    setDose(""); setFrequency(""); setDuration(""); setInstructions("");
+    setDose(""); setFrequency(""); setDurationNum(""); setDurationUnit("days"); setInstructions("");
     setShowAddDrug(true);
     setRxCount((c) => c + 1);
   };
@@ -255,8 +256,9 @@ function PrescriptionCard({ visit, udid }: { visit: any; udid: string }) {
   const submitDrug = () => {
     if (!drugName.trim()) return;
     startTransition(async () => {
+      const duration = durationNum ? `${durationNum} ${durationUnit}` : "";
       await addMedication(visit.id, udid, { drugName, dosage: dose, frequency, duration, instructions } as any);
-      setDrugName(""); setDose(""); setRoute("Topical"); setFrequency(""); setDuration(""); setInstructions("");
+      setDrugName(""); setDose(""); setRoute("Topical"); setFrequency(""); setDurationNum(""); setDurationUnit("days"); setInstructions("");
       setShowAddDrug(false);
     });
   };
@@ -335,8 +337,20 @@ function PrescriptionCard({ visit, udid }: { visit: any; udid: string }) {
               </select>
             </div>
             <div>
-              <label className="text-xs text-[var(--color-ink-500)] block mb-1">Duration (days)</label>
-              <input value={duration} onChange={(e) => setDuration(e.target.value)} placeholder="e.g. 7" className={inputCls} />
+              <label className="text-xs text-[var(--color-ink-500)] block mb-1">Duration</label>
+              <div className="flex gap-1.5">
+                <select value={durationNum} onChange={(e) => setDurationNum(e.target.value)} className={inputCls}>
+                  <option value="">—</option>
+                  {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
+                    <option key={n} value={String(n)}>{n}</option>
+                  ))}
+                </select>
+                <select value={durationUnit} onChange={(e) => setDurationUnit(e.target.value)} className={inputCls}>
+                  {["days", "weeks", "months", "years"].map((u) => (
+                    <option key={u} value={u}>{u}</option>
+                  ))}
+                </select>
+              </div>
             </div>
             <div className="flex flex-col justify-end">
               <button onClick={submitDrug} disabled={pending} className="w-full rounded-xl bg-[var(--color-primary-600)] text-white text-xs font-medium py-2 hover:bg-[var(--color-primary-700)] transition-colors disabled:opacity-60">
