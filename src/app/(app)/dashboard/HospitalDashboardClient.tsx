@@ -64,7 +64,6 @@ const STATUS_CFG: Record<string, { label: string; color: string; dot: string }> 
 const STATUS_FILTERS = [
   { key: "ALL",       label: "All"       },
   { key: "CONFIRMED", label: "Waiting"   },
-  { key: "DISPENSED", label: "Dispensed" },
   { key: "CANCELLED", label: "Cancelled" },
 ] as const;
 
@@ -149,9 +148,14 @@ export function HospitalDashboardClient({ hospitalName, kpis, appointments, surg
     [appointments, selectedDoctor]
   );
 
-  /* Queue: non-REQUESTED appointments */
+  /* Queue: active only (non-REQUESTED, non-DISPENSED). Dispensed patients leave
+     the queue once done — tracked separately as a completion count. */
   const queueAppts = useMemo(
-    () => filtered.filter((a) => a.status !== "REQUESTED"),
+    () => filtered.filter((a) => a.status !== "REQUESTED" && a.status !== "DISPENSED"),
+    [filtered]
+  );
+  const dispensedCount = useMemo(
+    () => filtered.filter((a) => a.status === "DISPENSED").length,
     [filtered]
   );
 
@@ -277,7 +281,7 @@ export function HospitalDashboardClient({ hospitalName, kpis, appointments, surg
               <div className="min-w-0">
                 <p className="text-sm font-bold text-[var(--color-ink-900)] truncate">{hospitalName}</p>
                 <p className="text-[11px] text-[var(--color-ink-400)]">
-                  {queueAppts.length} in queue · {queueAppts.filter((a) => a.status === "DISPENSED").length} Dispensed
+                  {queueAppts.length} in queue{dispensedCount > 0 ? ` · ${dispensedCount} Dispensed` : ""}
                 </p>
               </div>
             </div>

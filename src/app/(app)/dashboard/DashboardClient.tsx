@@ -58,7 +58,6 @@ const STATUS_CFG: Record<string, { label: string; color: string; dot: string }> 
 const STATUS_FILTERS = [
   { key: "ALL",       label: "All"       },
   { key: "CONFIRMED", label: "Waiting"   },
-  { key: "DISPENSED", label: "Dispensed" },
   { key: "CANCELLED", label: "Cancelled" },
 ] as const;
 
@@ -181,26 +180,32 @@ export function DashboardClient({
       : appts.filter((a) => a.doctor?.id === selectedFilter);
   }, [appts, selectedFilter, role]);
 
-  /* Today's Queue: non-REQUESTED, grouped by hospital (DOCTOR) or single card (HOSPITAL) */
+  /* Today's Queue: active only (non-REQUESTED, non-DISPENSED). Dispensed patients
+     leave the queue once done — tracked separately as a completion count. */
   const queueGroups = useMemo(() => {
-    const queue = filteredAppts.filter((a) => a.status !== "REQUESTED");
+    const queue     = filteredAppts.filter((a) => a.status !== "REQUESTED" && a.status !== "DISPENSED");
+    const dispensed = filteredAppts.filter((a) => a.status === "DISPENSED");
     if (role === "DOCTOR") {
       const hospitalsToShow = selectedFilter === "all"
         ? filterOptions
         : filterOptions.filter((h) => h.id === selectedFilter);
-      const map = new Map<string, { name: string; appts: Appt[] }>();
-      for (const h of hospitalsToShow) map.set(h.id, { name: h.name, appts: [] });
+      const map = new Map<string, { name: string; appts: Appt[]; dispensed: number }>();
+      for (const h of hospitalsToShow) map.set(h.id, { name: h.name, appts: [], dispensed: 0 });
       for (const a of queue) {
         const key = a.hospital?.id ?? "unknown";
-        if (!map.has(key)) map.set(key, { name: a.hospital?.name ?? "Unknown", appts: [] });
+        if (!map.has(key)) map.set(key, { name: a.hospital?.name ?? "Unknown", appts: [], dispensed: 0 });
         map.get(key)!.appts.push(a);
       }
+      for (const a of dispensed) {
+        const key = a.hospital?.id ?? "unknown";
+        if (map.has(key)) map.get(key)!.dispensed++;
+      }
       return Array.from(map.entries())
-        .map(([id, { name, appts: gAppts }]) => ({ id, name, appts: gAppts }))
+        .map(([id, { name, appts: gAppts, dispensed: d }]) => ({ id, name, appts: gAppts, dispensed: d }))
         .filter((g) => g.appts.length > 0)
         .sort((a, b) => a.name.localeCompare(b.name));
     } else {
-      return [{ id: "self", name: displayName, appts: queue }];
+      return [{ id: "self", name: displayName, appts: queue, dispensed: dispensed.length }];
     }
   }, [filteredAppts, role, displayName, filterOptions, selectedFilter]);
 
@@ -298,7 +303,7 @@ export function DashboardClient({
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1 flex-wrap">
               {STATUS_FILTERS.map(({ key, label }) => {
-                const queueAppts = filteredAppts.filter((a) => a.status !== "REQUESTED");
+                const queueAppts = filteredAppts.filter((a) => a.status !== "REQUESTED" && a.status !== "DISPENSED");
                 const count = key === "ALL"
                   ? queueAppts.length
                   : queueAppts.filter((a) => a.status === key).length;
@@ -347,9 +352,8 @@ export function DashboardClient({
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-4">
-            {queueGroups.map(({ id, name, appts: gAppts }) => {
+            {queueGroups.map(({ id, name, appts: gAppts, dispensed }) => {
               const displayed = statusFilter === "ALL" ? gAppts : gAppts.filter((a) => a.status === statusFilter);
-              const dispensed = gAppts.filter((a) => a.status === "DISPENSED").length;
               return (
                 <div key={id} className="surface-card p-4 flex flex-col gap-3">
                   <div className="flex items-center justify-between gap-2">
@@ -360,7 +364,7 @@ export function DashboardClient({
                       <div className="min-w-0">
                         <p className="text-sm font-bold text-[var(--color-ink-900)] truncate">{name}</p>
                         <p className="text-[11px] text-[var(--color-ink-400)]">
-                          {gAppts.length} in queue · {dispensed} Dispensed
+                          {gAppts.length} in queue{dispensed > 0 ? ` · ${dispensed} Dispensed` : ""}
                         </p>
                       </div>
                     </div>
