@@ -116,6 +116,10 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
         </div>
 
         <div className="flex items-end gap-3 flex-wrap mb-4">
+          <div>
+            <p className="text-xs font-medium text-[var(--color-ink-500)] mb-1.5">Laterality</p>
+            <SingleChipSelect options={LATERALITY} value={laterality} onChange={setLaterality} />
+          </div>
           <div className="relative flex-1 min-w-[240px]">
             <input
               value={query}
@@ -138,10 +142,6 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
                 ))}
               </ul>
             )}
-          </div>
-          <div>
-            <p className="text-xs font-medium text-[var(--color-ink-500)] mb-1.5">Laterality</p>
-            <SingleChipSelect options={LATERALITY} value={laterality} onChange={setLaterality} />
           </div>
         </div>
 
