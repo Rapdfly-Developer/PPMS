@@ -263,7 +263,7 @@ function PrescriptionCard({ visit, udid }: { visit: any; udid: string }) {
     });
   };
 
-  const inputCls = "w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]";
+  const inputCls = "w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)]";
 
   return (
     <Card>
@@ -307,38 +307,38 @@ function PrescriptionCard({ visit, udid }: { visit: any; udid: string }) {
 
       {/* Add Drug form */}
       {showAddDrug && (
-        <div className="mb-4 p-4 rounded-2xl border border-[var(--color-border)] bg-white">
-          <div className="flex items-center justify-between mb-3 max-w-3xl">
+        <div className="mb-4 p-3 rounded-xl border border-[var(--color-border)] bg-white">
+          <div className="flex items-center justify-between mb-2 max-w-3xl">
             <p className="text-xs font-semibold text-[var(--color-ink-600)]">Rx #{medications.length + 1}</p>
-            <button onClick={() => setShowAddDrug(false)} className="text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)]"><X size={14} /></button>
+            <button onClick={() => setShowAddDrug(false)} className="text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)]"><X size={13} /></button>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3 max-w-3xl">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-2 max-w-3xl">
             <div className="col-span-2">
-              <label className="text-xs text-[var(--color-ink-500)] block mb-1">Drug Name</label>
+              <label className="text-[10px] font-medium text-[var(--color-ink-400)] uppercase tracking-wide block mb-0.5">Drug Name</label>
               <input value={drugName} onChange={(e) => setDrugName(e.target.value)} placeholder="Drug name" className={inputCls} />
             </div>
             <div>
-              <label className="text-xs text-[var(--color-ink-500)] block mb-1">Dose</label>
+              <label className="text-[10px] font-medium text-[var(--color-ink-400)] uppercase tracking-wide block mb-0.5">Dose</label>
               <input value={dose} onChange={(e) => setDose(e.target.value)} placeholder="e.g. 1 drop" className={inputCls} />
             </div>
             <div>
-              <label className="text-xs text-[var(--color-ink-500)] block mb-1">Route</label>
+              <label className="text-[10px] font-medium text-[var(--color-ink-400)] uppercase tracking-wide block mb-0.5">Route</label>
               <select value={route} onChange={(e) => setRoute(e.target.value)} className={inputCls}>
                 {ROUTE_OPTIONS.map((r) => <option key={r}>{r}</option>)}
               </select>
             </div>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3 max-w-3xl">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-2 max-w-3xl">
             <div className="col-span-2">
-              <label className="text-xs text-[var(--color-ink-500)] block mb-1">Frequency</label>
+              <label className="text-[10px] font-medium text-[var(--color-ink-400)] uppercase tracking-wide block mb-0.5">Frequency</label>
               <select value={frequency} onChange={(e) => setFrequency(e.target.value)} className={inputCls}>
                 <option value="">— Select —</option>
                 {FREQUENCY_OPTIONS.map((f) => <option key={f}>{f}</option>)}
               </select>
             </div>
             <div>
-              <label className="text-xs text-[var(--color-ink-500)] block mb-1">Duration</label>
-              <div className="flex gap-1.5">
+              <label className="text-[10px] font-medium text-[var(--color-ink-400)] uppercase tracking-wide block mb-0.5">Duration</label>
+              <div className="flex gap-1">
                 <select value={durationNum} onChange={(e) => setDurationNum(e.target.value)} className={inputCls}>
                   <option value="">—</option>
                   {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
@@ -353,13 +353,13 @@ function PrescriptionCard({ visit, udid }: { visit: any; udid: string }) {
               </div>
             </div>
             <div className="flex flex-col justify-end">
-              <button onClick={submitDrug} disabled={pending} className="w-full rounded-xl bg-[var(--color-primary-600)] text-white text-xs font-medium py-2 hover:bg-[var(--color-primary-700)] transition-colors disabled:opacity-60">
+              <button onClick={submitDrug} disabled={pending} className="w-full rounded-lg bg-[var(--color-primary-600)] text-white text-xs font-medium py-1.5 hover:bg-[var(--color-primary-700)] transition-colors disabled:opacity-60">
                 Add to Prescription
               </button>
             </div>
           </div>
-          <div className="mb-3 max-w-3xl">
-            <label className="text-xs text-[var(--color-ink-500)] block mb-1">Instructions</label>
+          <div className="max-w-3xl">
+            <label className="text-[10px] font-medium text-[var(--color-ink-400)] uppercase tracking-wide block mb-0.5">Instructions</label>
             <input value={instructions} onChange={(e) => setInstructions(e.target.value)} placeholder="e.g. Apply 1 drop in RE at bedtime, shake well before use" className={inputCls} />
           </div>
         </div>
