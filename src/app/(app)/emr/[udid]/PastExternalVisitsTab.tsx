@@ -83,7 +83,7 @@ export function PastExternalVisitsTab({
             </div>
             <div className="text-center">
               <p className="text-sm font-semibold text-[var(--color-ink-700)]">
-                {uploading ? "Processing…" : "Upload Aadhaar"}
+                {uploading ? "Processing…" : "Upload Files"}
               </p>
               <p className="text-xs text-[var(--color-ink-400)] mt-0.5">Image or PDF · Required</p>
             </div>
