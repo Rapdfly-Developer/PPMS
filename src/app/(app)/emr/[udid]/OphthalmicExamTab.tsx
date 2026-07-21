@@ -274,11 +274,11 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
     );
   };
 
-  const vaSelect = (label: string, value: string, onChange: (v: string) => void) => (
+  const vaSelect = (label: string, value: string, onChange: (v: string) => void, options = VA_SNELLEN_VALUES) => (
     <div className="flex flex-col gap-0.5">
       <label className="text-[10px] text-[var(--color-ink-400)] font-medium">{label}</label>
       <select disabled={!editable} value={value || "-"} onChange={(e) => onChange(e.target.value)} className={`w-28 ${SEL}`}>
-        {VA_SNELLEN_VALUES.map((v) => <option key={v} value={v}>{v}</option>)}
+        {options.map((v) => <option key={v} value={v}>{v}</option>)}
       </select>
     </div>
   );
@@ -303,18 +303,15 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
         </div>
       </div>
 
-      {/* Divider */}
-      <div className="w-px self-stretch bg-[var(--color-border)] mx-2" />
-
-      {/* Right — VA column aligned with Distance / Near */}
+      {/* Right — VA / NV column */}
       <div className="flex flex-col gap-4">
         <div>
           <p className="text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-widest mb-3 opacity-0 select-none">VA</p>
           {vaSelect("Resulting VA", val.va, (v) => setVal({ ...val, va: v }))}
         </div>
         <div>
-          <p className="text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-widest mb-3 opacity-0 select-none">VA</p>
-          {vaSelect("Resulting VA", val.nearVa, (v) => setVal({ ...val, nearVa: v }))}
+          <p className="text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-widest mb-3 opacity-0 select-none">NV</p>
+          {vaSelect("Resulting NV", val.nearVa, (v) => setVal({ ...val, nearVa: v }), VA_NEAR_VALUES)}
         </div>
       </div>
     </div>
