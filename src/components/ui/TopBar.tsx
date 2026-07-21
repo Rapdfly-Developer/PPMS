@@ -6,6 +6,16 @@ import { Bell, Search, LogOut, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { signOut } from "next-auth/react";
 
+const BACK_BTN_CLS =
+  "group inline-flex items-center gap-1.5 h-8 pl-2 pr-3 rounded-lg border border-[var(--color-border)] bg-white text-sm font-medium text-[var(--color-ink-600)] hover:text-[var(--color-primary-700)] hover:border-[var(--color-primary-300)] hover:bg-[var(--color-primary-50)] active:scale-[0.97] transition-all duration-150";
+
+const BackBtnContent = () => (
+  <>
+    <ArrowLeft size={15} className="transition-transform duration-150 group-hover:-translate-x-0.5" />
+    Back
+  </>
+);
+
 function TopBarBackBtn() {
   const router = useRouter();
   const params = useSearchParams();
@@ -13,25 +23,15 @@ function TopBarBackBtn() {
 
   if (returnTo) {
     return (
-      <Link
-        href={returnTo}
-        className="flex items-center justify-center p-1.5 text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)] rounded-lg hover:bg-[var(--color-surface-sunken)] transition-colors"
-        title="Go back"
-        aria-label="Go back"
-      >
-        <ArrowLeft size={17} />
+      <Link href={returnTo} className={BACK_BTN_CLS} title="Go back" aria-label="Go back">
+        <BackBtnContent />
       </Link>
     );
   }
 
   return (
-    <button
-      onClick={() => router.back()}
-      className="flex items-center justify-center p-1.5 text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)] rounded-lg hover:bg-[var(--color-surface-sunken)] transition-colors"
-      title="Go back"
-      aria-label="Go back"
-    >
-      <ArrowLeft size={17} />
+    <button onClick={() => router.back()} className={BACK_BTN_CLS} title="Go back" aria-label="Go back">
+      <BackBtnContent />
     </button>
   );
 }
@@ -85,9 +85,9 @@ export function TopBar({ name, role }: { name: string; role: string }) {
       <div className="hidden md:flex items-center gap-1">
         <Suspense
           fallback={
-            <button disabled className="flex items-center justify-center p-1.5 text-[var(--color-ink-400)] rounded-lg opacity-60">
-              <ArrowLeft size={17} />
-            </button>
+            <span className={`${BACK_BTN_CLS} opacity-60 pointer-events-none`}>
+              <ArrowLeft size={15} /> Back
+            </span>
           }
         >
           <TopBarBackBtn />
