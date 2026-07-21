@@ -209,7 +209,8 @@ const ADD_MAGS  = ["", ...Array.from({ length: 16 }, (_, i) => ((i + 1) * 0.25).
 const AXIS_OPTS = ["", ...Array.from({ length: 180 }, (_, i) => String(i + 1))];
 
 function parseSignedVal(v: string): { sign: "+" | "-"; mag: string } {
-  if (!v) return { sign: "+", mag: "" };
+  if (!v || v === "+") return { sign: "+", mag: "" };
+  if (v === "-") return { sign: "-", mag: "" };
   return v.startsWith("-") ? { sign: "-", mag: v.slice(1) } : { sign: "+", mag: v.replace(/^\+/, "") };
 }
 
@@ -242,7 +243,8 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
     const { sign, mag } = parseSignedVal(value);
     const toggle = () => {
       const ns = sign === "+" ? "-" : "+";
-      onChange(mag ? `${ns}${mag}` : "");
+      // Always persist the new sign, even when no magnitude selected yet
+      onChange(mag ? `${ns}${mag}` : ns);
     };
     return (
       <div className="flex flex-col gap-0.5">
@@ -262,7 +264,7 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
           <select
             disabled={!editable}
             value={mag}
-            onChange={(e) => onChange(e.target.value ? `${sign}${e.target.value}` : "")}
+            onChange={(e) => onChange(e.target.value ? `${sign}${e.target.value}` : sign)}
             className={`w-20 ${SEL}`}
           >
             {mags.map((m) => <option key={m} value={m}>{m || "—"}</option>)}
@@ -271,15 +273,6 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
       </div>
     );
   };
-
-  const axisSelect = (label: string, value: string, onChange: (v: string) => void) => (
-    <div className="flex flex-col gap-0.5">
-      <label className="text-[10px] text-[var(--color-ink-400)] font-medium">{label}</label>
-      <select disabled={!editable} value={value} onChange={(e) => onChange(e.target.value)} className={`w-20 ${SEL}`}>
-        {AXIS_OPTS.map((a) => <option key={a} value={a}>{a || "—"}</option>)}
-      </select>
-    </div>
-  );
 
   const vaSelect = (label: string, value: string, onChange: (v: string) => void) => (
     <div className="flex flex-col gap-0.5">
@@ -296,13 +289,13 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
       <div className="flex gap-4 flex-wrap items-end">
         {signedSelect("Sph",   val.sph,  (v) => setVal({ ...val, sph: v }),  SPH_MAGS)}
         {signedSelect("Cyl",   val.cyl,  (v) => setVal({ ...val, cyl: v }),  CYL_MAGS)}
-        {axisSelect("Axis°", val.axis, (v) => setVal({ ...val, axis: v }))}
+        {signedSelect("Axis°", val.axis, (v) => setVal({ ...val, axis: v }), AXIS_OPTS)}
+        {vaSelect("Resulting VA", val.va, (v) => setVal({ ...val, va: v }))}
       </div>
-      {vaSelect("Resulting VA", val.va, (v) => setVal({ ...val, va: v }))}
 
       <div className="pt-2">
-        <p className="text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-widest mb-4">Near</p>
-        <div className="flex flex-col gap-4">
+        <p className="text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-widest mb-3">Near</p>
+        <div className="flex gap-4 flex-wrap items-end">
           {signedSelect("Sph (Add)", val.nearSph, (v) => setVal({ ...val, nearSph: v }), ADD_MAGS)}
           {vaSelect("Resulting VA", val.nearVa, (v) => setVal({ ...val, nearVa: v }))}
         </div>
