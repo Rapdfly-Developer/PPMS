@@ -48,6 +48,7 @@ export function OphthalmicExamTab({ visit, priorVisits, udid, role }: { visit: a
 
   return (
     <Tabs
+      variant="sub"
       defaultTab="va"
       tabs={[
         { id: "va",        label: "Visual Acuity",    content: <VisualAcuityCard visit={visit} udid={udid} editable={refractionistCanEdit} /> },
