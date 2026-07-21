@@ -416,7 +416,7 @@ function PrescriptionCard({ visit, udid }: { visit: any; udid: string }) {
             </div>
             <div>
               <label className="text-[10px] font-medium text-[var(--color-ink-400)] uppercase tracking-wide block mb-0.5">Duration</label>
-              <div className="flex items-center gap-1">
+              <div className="flex gap-1">
                 <select value={durationNum} onChange={(e) => setDurationNum(e.target.value)} className={inputCls + " flex-1 min-w-0"}>
                   <option value="">—</option>
                   {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
@@ -429,15 +429,6 @@ function PrescriptionCard({ visit, udid }: { visit: any; udid: string }) {
                   ))}
                 </select>
               </div>
-              <label className="flex items-center gap-1 cursor-pointer mt-1">
-                <input
-                  type="checkbox"
-                  checked={tapering}
-                  onChange={(e) => setTapering(e.target.checked)}
-                  className="accent-[var(--color-primary-600)] w-3 h-3"
-                />
-                <span className="text-[10px] font-medium text-[var(--color-ink-500)]">Tapering</span>
-              </label>
             </div>
             <div className="flex flex-col justify-end">
               <button onClick={submitDrug} disabled={pending} className="w-full rounded-lg bg-[var(--color-primary-600)] text-white text-xs font-medium py-1.5 hover:bg-[var(--color-primary-700)] transition-colors disabled:opacity-60">
@@ -445,37 +436,47 @@ function PrescriptionCard({ visit, udid }: { visit: any; udid: string }) {
               </button>
             </div>
           </div>
+
+          {/* Tapering toggle — own row, aligned left */}
+          <div className="mb-2 max-w-3xl">
+            <label className="flex items-center gap-1.5 cursor-pointer w-fit">
+              <input
+                type="checkbox"
+                checked={tapering}
+                onChange={(e) => setTapering(e.target.checked)}
+                className="accent-[var(--color-primary-600)] w-3.5 h-3.5 rounded"
+              />
+              <span className="text-xs font-medium text-[var(--color-ink-600)]">Tapering dose</span>
+            </label>
+          </div>
           {tapering && (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-2 max-w-3xl">
-              <div className="flex items-end pb-0.5">
-                <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--color-primary-700)] bg-[var(--color-primary-50)] border border-[var(--color-primary-200)] rounded-md px-2 py-1">
-                  ↓ Tapering
-                </span>
-              </div>
-              <div>
-                <label className="text-[10px] font-medium text-[var(--color-ink-400)] uppercase tracking-wide block mb-0.5">Frequency</label>
-                <select value={tapFrequency} onChange={(e) => setTapFrequency(e.target.value)} className={inputCls}>
-                  <option value="">— Select —</option>
-                  {FREQUENCY_OPTIONS.map((f) => <option key={f}>{f}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="text-[10px] font-medium text-[var(--color-ink-400)] uppercase tracking-wide block mb-0.5">Duration</label>
-                <div className="flex gap-1">
-                  <select value={tapDurationNum} onChange={(e) => setTapDurationNum(e.target.value)} className={inputCls + " flex-1 min-w-0"}>
-                    <option value="">—</option>
-                    {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
-                      <option key={n} value={String(n)}>{n}</option>
-                    ))}
-                  </select>
-                  <select value={tapDurationUnit} onChange={(e) => setTapDurationUnit(e.target.value)} className={inputCls + " flex-1 min-w-0"}>
-                    {["days", "weeks", "months", "years"].map((u) => (
-                      <option key={u} value={u}>{u}</option>
-                    ))}
+            <div className="mb-2 max-w-3xl pl-3 border-l-2 border-[var(--color-primary-300)]">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-primary-600)] mb-1.5">↓ Tapering dose</p>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-[10px] font-medium text-[var(--color-ink-400)] uppercase tracking-wide block mb-0.5">Frequency</label>
+                  <select value={tapFrequency} onChange={(e) => setTapFrequency(e.target.value)} className={inputCls}>
+                    <option value="">— Select —</option>
+                    {FREQUENCY_OPTIONS.map((f) => <option key={f}>{f}</option>)}
                   </select>
                 </div>
+                <div>
+                  <label className="text-[10px] font-medium text-[var(--color-ink-400)] uppercase tracking-wide block mb-0.5">Duration</label>
+                  <div className="flex gap-1">
+                    <select value={tapDurationNum} onChange={(e) => setTapDurationNum(e.target.value)} className={inputCls + " flex-1 min-w-0"}>
+                      <option value="">—</option>
+                      {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
+                        <option key={n} value={String(n)}>{n}</option>
+                      ))}
+                    </select>
+                    <select value={tapDurationUnit} onChange={(e) => setTapDurationUnit(e.target.value)} className={inputCls + " flex-1 min-w-0"}>
+                      {["days", "weeks", "months", "years"].map((u) => (
+                        <option key={u} value={u}>{u}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
               </div>
-              <div />
             </div>
           )}
           <div className="max-w-3xl">
