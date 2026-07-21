@@ -52,7 +52,15 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, customPmhCh
   const [pulse, setPulse] = useState(ge?.pulse ?? "");
   const [temperature, setTemperature] = useState(ge?.temperature ?? "");
   const [weight, setWeight] = useState(ge?.weight ?? "");
-  const [chiefComplaint, setChiefComplaint] = useState(ge?.chiefComplaint ?? "");
+  const LATERALITY_OPTIONS = ["RE", "LE", "OU"] as const;
+  type Laterality = typeof LATERALITY_OPTIONS[number];
+  function parseLaterality(text: string): { lat: Laterality | null; body: string } {
+    const m = text.match(/^\[(RE|LE|OU)\]\s*/);
+    return m ? { lat: m[1] as Laterality, body: text.slice(m[0].length) } : { lat: null, body: text };
+  }
+  const { lat: initLat, body: initComplaint } = parseLaterality(ge?.chiefComplaint ?? "");
+  const [laterality, setLaterality] = useState<Laterality | null>(initLat);
+  const [chiefComplaint, setChiefComplaint] = useState(initComplaint);
   const [hpi, setHpi] = useState(ge?.hpi ?? "");
   const [pmh, setPmh] = useState<string[]>(parseJSON(ge?.pastMedicalHistory, [] as string[]));
   const [pmhOther, setPmhOther] = useState(ge?.pmhOtherText ?? "");
@@ -64,7 +72,8 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, customPmhCh
   const priorPmh = priorVisits.flatMap((v) => parseJSON<string[]>(v.generalExam?.pastMedicalHistory, []));
   const cumulativePmh = Array.from(new Set([...priorPmh, ...pmh]));
 
-  const data = { bp, pulse, temperature, weight, chiefComplaint, hpi, pastMedicalHistory: JSON.stringify(cumulativePmh), pmhOtherText: pmhOther, medications, allergies, nkda };
+  const chiefComplaintFull = laterality ? `[${laterality}] ${chiefComplaint}` : chiefComplaint;
+  const data = { bp, pulse, temperature, weight, chiefComplaint: chiefComplaintFull, hpi, pastMedicalHistory: JSON.stringify(cumulativePmh), pmhOtherText: pmhOther, medications, allergies, nkda };
 
   const state = useAutoSave(data, async (d) => {
     if (readOnly) return;
@@ -85,6 +94,32 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, customPmhCh
       {/* CHIEF COMPLAINT */}
       <Card>
         <FieldWithHistory label="CHIEF COMPLAINT" history={histFor((g) => g.chiefComplaint)}>
+          {/* Laterality selector */}
+          <div className="flex items-center gap-2 mb-2">
+            {LATERALITY_OPTIONS.map((opt) => {
+              const active = laterality === opt;
+              return (
+                <button
+                  key={opt}
+                  type="button"
+                  disabled={readOnly}
+                  onClick={() => setLaterality(active ? null : opt)}
+                  className="px-3.5 py-1 rounded-full text-[12px] font-bold transition-all"
+                  style={active ? {
+                    background: "var(--color-primary-600)",
+                    color: "#fff",
+                    boxShadow: "0 2px 8px rgba(15,118,110,.25)",
+                  } : {
+                    background: "var(--color-surface-1, #F1F5F9)",
+                    color: "var(--color-ink-500, #64748B)",
+                    border: "1px solid var(--color-border, #E2E8F0)",
+                  }}
+                >
+                  {opt}
+                </button>
+              );
+            })}
+          </div>
           <KeywordTextarea fieldKey="ge_chiefComplaint" value={chiefComplaint} onChange={setChiefComplaint} disabled={readOnly} rows={2} />
         </FieldWithHistory>
       </Card>
