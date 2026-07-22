@@ -367,50 +367,50 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
             <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide">Previous Spectacles</p>
             <p className="text-[10px] text-amber-600">Double-click a date to load it</p>
           </div>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto rounded-lg border border-amber-200">
             <table className="w-full text-xs border-collapse">
               <thead>
                 {/* Date row — each date spans RE + LE; double-click loads that Rx */}
-                <tr>
-                  <th className="text-left text-[var(--color-ink-400)] font-medium py-1 pr-3 w-24 border-b border-amber-200" />
+                <tr className="bg-amber-100/70">
+                  <th className="text-left text-[var(--color-ink-500)] font-semibold py-1.5 px-3 w-20 border-r border-amber-200 border-b border-b-amber-200" />
                   {priorRefractions.map((pr, i) => (
                     <th
                       key={i}
                       colSpan={2}
                       onDoubleClick={() => handleHistoryDoubleClick(pr)}
                       title="Double-click to load this prescription"
-                      className="text-center text-[11px] font-bold text-amber-800 py-1 px-2 border-b border-amber-200 cursor-pointer hover:bg-amber-100 select-none transition-colors"
+                      className="text-center text-[11px] font-bold text-amber-800 py-1.5 px-2 border-b border-amber-200 border-r border-r-amber-200 last:border-r-0 cursor-pointer hover:bg-amber-200/60 select-none transition-colors"
                     >
                       {format(new Date(pr.date), "dd MMM yy")}
                     </th>
                   ))}
                 </tr>
                 {/* RE / LE sub-headers */}
-                <tr>
-                  <th className="border-b border-amber-200" />
+                <tr className="bg-amber-50">
+                  <th className="border-r border-amber-200 border-b border-b-amber-200" />
                   {priorRefractions.map((_, i) => (
                     [
-                      <th key={`${i}-re`} className="text-center text-[10px] font-semibold text-[var(--color-primary-700)] py-1 px-2 w-14 border-b border-amber-200">RE</th>,
-                      <th key={`${i}-le`} className="text-center text-[10px] font-semibold text-[var(--color-primary-700)] py-1 px-2 w-14 border-b border-amber-200">LE</th>,
+                      <th key={`${i}-re`} className="text-center text-[10px] font-bold text-[var(--color-primary-700)] py-1 px-3 border-b border-amber-200 border-r border-r-amber-100">RE</th>,
+                      <th key={`${i}-le`} className="text-center text-[10px] font-bold text-[var(--color-primary-700)] py-1 px-3 border-b border-amber-200 border-r border-r-amber-200 last:border-r-0">LE</th>,
                     ]
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {[
-                  { label: "Sph",         key: "sph",     near: false },
-                  { label: "Cyl",         key: "cyl",     near: false },
-                  { label: "Axis°",       key: "axis",    near: false },
-                  { label: "VA",          key: "va",      near: false },
-                  { label: "Add",         key: "nearSph", near: true  },
-                  { label: "NV",          key: "nearVa",  near: true  },
-                ].map(({ label, key }) => (
-                  <tr key={label} className="border-b border-amber-100 last:border-0">
-                    <td className="py-1 pr-3 text-[var(--color-ink-500)] font-medium whitespace-nowrap">{label}</td>
+                  { label: "Sph",   key: "sph"     },
+                  { label: "Cyl",   key: "cyl"     },
+                  { label: "Axis°", key: "axis"    },
+                  { label: "VA",    key: "va"      },
+                  { label: "Add",   key: "nearSph" },
+                  { label: "NV",    key: "nearVa"  },
+                ].map(({ label, key }, rowIdx) => (
+                  <tr key={label} className={rowIdx % 2 === 0 ? "bg-white/60" : "bg-amber-50/40"}>
+                    <td className="py-1.5 px-3 text-[var(--color-ink-600)] font-semibold whitespace-nowrap border-r border-amber-200 border-b border-b-amber-100 last-row:border-b-0">{label}</td>
                     {priorRefractions.map((pr, i) => (
                       [
-                        <td key={`${i}-re`} className="py-1 px-2 text-center text-[var(--color-ink-800)] tabular-nums">{(pr.re as any)[key] || "—"}</td>,
-                        <td key={`${i}-le`} className="py-1 px-2 text-center text-[var(--color-ink-800)] tabular-nums">{(pr.le as any)[key] || "—"}</td>,
+                        <td key={`${i}-re`} className="py-1.5 px-3 text-center text-[var(--color-ink-800)] tabular-nums border-r border-amber-100 border-b border-b-amber-100">{(pr.re as any)[key] || "—"}</td>,
+                        <td key={`${i}-le`} className="py-1.5 px-3 text-center text-[var(--color-ink-800)] tabular-nums border-r border-amber-200 border-b border-b-amber-100 last:border-r-0">{(pr.le as any)[key] || "—"}</td>,
                       ]
                     ))}
                   </tr>
