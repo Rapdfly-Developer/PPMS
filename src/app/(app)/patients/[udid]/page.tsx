@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { format, startOfDay, endOfDay } from "date-fns";
 import { Phone, MapPin, Calendar, Hash, IdCard } from "lucide-react";
 import { decryptAadhaar, maskAadhaar } from "@/lib/crypto";
-import { PatientProfileClient, TransferButton, TimeStampButton, LastVisitSummaryCard, type SerialVisit, type TodayVisit, type LastVisitSummary } from "./PatientProfileClient";
+import { PatientProfileClient, TransferButton, TimeStampButton, type SerialVisit, type TodayVisit, type LastVisitSummary } from "./PatientProfileClient";
 
 const CATEGORY_STYLES: Record<string, string> = {
   GENERAL:    "bg-white/20 text-white border border-white/30",
@@ -340,8 +340,8 @@ export default async function PatientProfilePage({
         </div>
       </div>
 
-      {/* ── Time Stamp, Transfer & Last Visit Summary ────────────────── */}
-      <div className="flex items-center gap-2 flex-wrap mb-2">
+      {/* ── Time Stamp & Transfer buttons ────────────────────────────── */}
+      <div className="flex items-center gap-2 mb-4">
         <TimeStampButton patientId={patient.id} patientName={patient.name} />
         {user.role === "DOCTOR" && (
           <TransferButton
@@ -353,9 +353,6 @@ export default async function PatientProfilePage({
           />
         )}
       </div>
-      {lastVisitSummary && (
-        <LastVisitSummaryCard summary={lastVisitSummary} udid={udid} />
-      )}
 
       {/* ── Action buttons + drawer (client) ──────────────────────────── */}
       <PatientProfileClient
