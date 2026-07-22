@@ -1165,7 +1165,7 @@ function TearFilmCard({ visit, udid, editable, priorVisits = [] }: { visit: any;
     schirmer1Re: tf?.schirmer1Re ?? "", schirmer1Le: tf?.schirmer1Le ?? "",
     schirmer2Re: tf?.schirmer2Re ?? "", schirmer2Le: tf?.schirmer2Le ?? "",
   });
-  const [showHistory, setShowHistory] = useState(false);
+  const [openHistory, setOpenHistory] = useState<string | null>(null);
 
   const priorTf = priorVisits.filter((v) => v.tearFilm);
 
@@ -1177,63 +1177,100 @@ function TearFilmCard({ visit, udid, editable, priorVisits = [] }: { visit: any;
 
   const upd = (k: keyof typeof data) => (v: string) => setData({ ...data, [k]: v });
 
+  const toggleHistory = (key: string) =>
+    setOpenHistory((prev) => (prev === key ? null : key));
+
+  const FIELDS = [
+    { key: "tbut",      label: "TBUT",        unit: "sec",  reKey: "tbutRe",      leKey: "tbutLe"      },
+    { key: "schirmer1", label: "Schirmer's 1", unit: "mm",   reKey: "schirmer1Re", leKey: "schirmer1Le" },
+    { key: "schirmer2", label: "Schirmer's 2", unit: "mm",   reKey: "schirmer2Re", leKey: "schirmer2Le" },
+  ] as const;
+
+  const INP = "w-20 rounded border border-[var(--color-border)] bg-white px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-400)] disabled:bg-[var(--color-surface-sunken)]";
+
   return (
     <Card>
       <div className="flex items-center justify-between mb-3">
         <p className="text-sm font-medium text-[var(--color-ink-700)]">Tear Film — TBUT &amp; Schirmer&apos;s</p>
-        <div className="flex items-center gap-2">
-          {priorTf.length > 0 && (
-            <button
-              type="button"
-              onClick={() => setShowHistory((v) => !v)}
-              className="text-xs text-amber-700 bg-amber-50 hover:bg-amber-100 font-medium px-2.5 py-0.5 rounded-full border border-amber-200 transition-colors"
-            >
-              History ({priorTf.length})
-            </button>
-          )}
-          <SaveIndicator state={state} />
-        </div>
+        <SaveIndicator state={state} />
       </div>
-      <EyeColumns>
-        <div className="flex flex-col gap-2">
-          <LabeledInput label="TBUT (seconds)" value={data.tbutRe} onChange={upd("tbutRe")} disabled={!editable} numeric />
-          <LabeledInput label="Schirmer's 1 – no anaesthetic (mm)" value={data.schirmer1Re} onChange={upd("schirmer1Re")} disabled={!editable} numeric />
-          <LabeledInput label="Schirmer's 2 – with anaesthetic (mm)" value={data.schirmer2Re} onChange={upd("schirmer2Re")} disabled={!editable} numeric />
-        </div>
-        <div className="flex flex-col gap-2">
-          <LabeledInput label="TBUT (seconds)" value={data.tbutLe} onChange={upd("tbutLe")} disabled={!editable} numeric />
-          <LabeledInput label="Schirmer's 1 – no anaesthetic (mm)" value={data.schirmer1Le} onChange={upd("schirmer1Le")} disabled={!editable} numeric />
-          <LabeledInput label="Schirmer's 2 – with anaesthetic (mm)" value={data.schirmer2Le} onChange={upd("schirmer2Le")} disabled={!editable} numeric />
-        </div>
-      </EyeColumns>
 
-      {showHistory && priorTf.length > 0 && (
-        <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3">
-          <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide mb-2">Previous Tear Film</p>
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs min-w-[360px]">
-              <thead>
-                <tr className="text-left text-[var(--color-ink-400)] border-b border-amber-200">
-                  <th className="pb-1.5">Date</th>
-                  <th>TBUT RE</th><th>TBUT LE</th>
-                  <th>Sch1 RE</th><th>Sch1 LE</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-amber-100">
-                {priorTf.map((v, i) => (
-                  <tr key={i}>
-                    <td className="py-1.5">{format(new Date(v.date), "dd-MMM-yyyy")}</td>
-                    <td>{v.tearFilm.tbutRe ?? "—"}</td>
-                    <td>{v.tearFilm.tbutLe ?? "—"}</td>
-                    <td>{v.tearFilm.schirmer1Re ?? "—"}</td>
-                    <td>{v.tearFilm.schirmer1Le ?? "—"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
+      {/* Header row */}
+      <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-4 items-center mb-1 px-1">
+        <span />
+        <span className="text-[10px] font-bold text-[var(--color-primary-700)] uppercase w-20 text-center">RE</span>
+        <span className="text-[10px] font-bold text-[var(--color-primary-700)] uppercase w-20 text-center">LE</span>
+        <span className="w-14" />
+      </div>
+
+      <div className="flex flex-col divide-y divide-[var(--color-border)] border border-[var(--color-border)] rounded-lg overflow-hidden">
+        {FIELDS.map(({ key, label, unit, reKey, leKey }) => {
+          const hasPrior = priorTf.some((v) => v.tearFilm[reKey] != null || v.tearFilm[leKey] != null);
+          const isOpen = openHistory === key;
+          return (
+            <div key={key}>
+              <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-4 items-center px-3 py-2 bg-[var(--color-surface-card)]">
+                <span className="text-xs font-medium text-[var(--color-ink-600)]">
+                  {label} <span className="text-[var(--color-ink-400)] font-normal">({unit})</span>
+                </span>
+                <input
+                  type="number"
+                  disabled={!editable}
+                  value={data[reKey]}
+                  onChange={(e) => upd(reKey)(e.target.value)}
+                  className={INP}
+                  placeholder="—"
+                />
+                <input
+                  type="number"
+                  disabled={!editable}
+                  value={data[leKey]}
+                  onChange={(e) => upd(leKey)(e.target.value)}
+                  className={INP}
+                  placeholder="—"
+                />
+                <button
+                  type="button"
+                  disabled={!hasPrior}
+                  onClick={() => toggleHistory(key)}
+                  className={`w-14 text-[10px] font-semibold px-1.5 py-0.5 rounded-full border transition-colors ${
+                    isOpen
+                      ? "bg-amber-100 text-amber-800 border-amber-300"
+                      : hasPrior
+                        ? "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100"
+                        : "text-[var(--color-ink-300)] border-[var(--color-border)] cursor-not-allowed"
+                  }`}
+                >
+                  {isOpen ? "Close" : "History"}
+                </button>
+              </div>
+
+              {isOpen && hasPrior && (
+                <div className="bg-amber-50 border-t border-amber-200 px-3 py-2">
+                  <table className="text-xs border-collapse">
+                    <thead>
+                      <tr className="text-[var(--color-ink-400)]">
+                        <th className="text-left font-medium pb-1 pr-4">Date</th>
+                        <th className="text-center font-bold text-[var(--color-primary-700)] pb-1 px-3 w-14">RE</th>
+                        <th className="text-center font-bold text-[var(--color-primary-700)] pb-1 px-3 w-14">LE</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-amber-100">
+                      {priorTf.filter((v) => v.tearFilm[reKey] != null || v.tearFilm[leKey] != null).map((v, i) => (
+                        <tr key={i}>
+                          <td className="py-1 pr-4 text-[var(--color-ink-600)] whitespace-nowrap">{format(new Date(v.date), "dd MMM yy")}</td>
+                          <td className="py-1 px-3 text-center font-semibold text-[var(--color-ink-800)] tabular-nums">{v.tearFilm[reKey] ?? "—"}</td>
+                          <td className="py-1 px-3 text-center font-semibold text-[var(--color-ink-800)] tabular-nums">{v.tearFilm[leKey] ?? "—"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
     </Card>
   );
 }
