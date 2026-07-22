@@ -278,7 +278,7 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
             disabled={!editable}
             value={mag}
             onChange={(e) => onChange(e.target.value ? `${sign}${e.target.value}` : sign)}
-            className={`w-20 ${SEL}`}
+            className={`w-full min-w-0 ${SEL}`}
           >
             {mags.map((m) => <option key={m} value={m}>{m || "—"}</option>)}
           </select>
@@ -287,33 +287,48 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
     );
   };
 
-  const vaSelect = (label: string, value: string, onChange: (v: string) => void, options: readonly string[] = VA_SNELLEN_VALUES) => (
-    <div className="flex flex-col gap-0.5">
+  // Axis is 0–180°, never signed — no +/- toggle. parseSignedVal still reads the
+  // stored value so rows saved earlier as "+90" render as 90 rather than blank.
+  const axisSelect = (label: string, value: string, onChange: (v: string) => void) => (
+    <div className="flex flex-col gap-0.5 min-w-0">
       <label className="text-[10px] text-[var(--color-ink-400)] font-medium">{label}</label>
-      <select disabled={!editable} value={value || "-"} onChange={(e) => onChange(e.target.value)} className={`w-28 ${SEL}`}>
+      <select
+        disabled={!editable}
+        value={parseSignedVal(value).mag}
+        onChange={(e) => onChange(e.target.value)}
+        className={`w-full min-w-0 ${SEL}`}
+      >
+        {AXIS_OPTS.map((a) => <option key={a} value={a}>{a || "—"}</option>)}
+      </select>
+    </div>
+  );
+
+  const vaSelect = (label: string, value: string, onChange: (v: string) => void, options: readonly string[] = VA_SNELLEN_VALUES, className = "") => (
+    <div className={`flex flex-col gap-0.5 min-w-0 ${className}`}>
+      <label className="text-[10px] text-[var(--color-ink-400)] font-medium">{label}</label>
+      <select disabled={!editable} value={value || "-"} onChange={(e) => onChange(e.target.value)} className={`w-full min-w-0 ${SEL}`}>
         {options.map((v) => <option key={v} value={v}>{v}</option>)}
       </select>
     </div>
   );
 
+  // One grid spans both Distance and Near so the columns line up: Resulting NV
+  // sits in the same column as Resulting VA. That holds in either track count —
+  // last column at 4-up, second column at 2-up (where VA wraps to row 2).
+  // Axis and VA get wider tracks than Sph/Cyl, which lose width to the +/- toggle.
+  const SECTION_LABEL = "col-span-2 xl:col-span-4 text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-widest";
+
   const eyeFields = (val: typeof re, setVal: typeof setRe) => (
-    <div className="flex flex-col gap-4">
-      <div>
-        <p className="text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-widest mb-3">Distance</p>
-        <div className="flex gap-3 flex-wrap items-end">
-          {signedSelect("Sph",   val.sph,  (v) => setVal({ ...val, sph: v }),  SPH_MAGS)}
-          {signedSelect("Cyl",   val.cyl,  (v) => setVal({ ...val, cyl: v }),  CYL_MAGS)}
-          {signedSelect("Axis°", val.axis, (v) => setVal({ ...val, axis: v }), AXIS_OPTS)}
-          {vaSelect("Resulting VA", val.va, (v) => setVal({ ...val, va: v }))}
-        </div>
-      </div>
-      <div>
-        <p className="text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-widest mb-3">Near</p>
-        <div className="flex gap-3 flex-wrap items-end">
-          {signedSelect("Sph (Add)", val.nearSph, (v) => setVal({ ...val, nearSph: v }), ADD_MAGS)}
-          {vaSelect("Resulting NV", val.nearVa, (v) => setVal({ ...val, nearVa: v }), VA_NEAR_VALUES)}
-        </div>
-      </div>
+    <div className="grid grid-cols-2 xl:grid-cols-[1fr_1fr_1.15fr_1.35fr] gap-x-3 gap-y-2 items-end">
+      <p className={SECTION_LABEL}>Distance</p>
+      {signedSelect("Sph",   val.sph,  (v) => setVal({ ...val, sph: v }),  SPH_MAGS)}
+      {signedSelect("Cyl",   val.cyl,  (v) => setVal({ ...val, cyl: v }),  CYL_MAGS)}
+      {axisSelect("Axis°",   val.axis, (v) => setVal({ ...val, axis: v }))}
+      {vaSelect("Resulting VA", val.va, (v) => setVal({ ...val, va: v }))}
+
+      <p className={`${SECTION_LABEL} mt-2`}>Near</p>
+      {signedSelect("Sph (Add)", val.nearSph, (v) => setVal({ ...val, nearSph: v }), ADD_MAGS)}
+      {vaSelect("Resulting NV", val.nearVa, (v) => setVal({ ...val, nearVa: v }), VA_NEAR_VALUES, "col-start-2 xl:col-start-4")}
     </div>
   );
 
