@@ -68,12 +68,14 @@ export async function bookAppointment(formData: FormData) {
     const city     = (formData.get("city")     as string)?.trim() || null;
     const state    = (formData.get("state")    as string)?.trim() || null;
     const pincode  = (formData.get("pincode")  as string)?.trim() || null;
-    const category    = (formData.get("category")        as string) || "GENERAL";
-    const photoUrl    = (formData.get("patientPhotoFile") as string)?.trim() || null;
+    const category     = (formData.get("category")        as string) || "GENERAL";
+    const occupation   = (formData.get("occupation")      as string)?.trim() || null;
+    const patientNotes = (formData.get("patientNotes")    as string)?.trim() || null;
+    const photoUrl     = (formData.get("patientPhotoFile") as string)?.trim() || null;
     const aadhaarPhotoUrl = (formData.get("aadhaarPhotoFile") as string)?.trim() || null;
 
-    if (!name || !age || !sex || !mobile) {
-      return { error: "Patient name, age, sex and phone are required." };
+    if (!name || !age || !sex || !mobile || !occupation) {
+      return { error: "Patient name, age, sex, phone and occupation are required." };
     }
     if (aadhaar && !/^\d{12}$/.test(aadhaar.replace(/\s/g, ""))) {
       return { error: "Aadhaar must be 12 digits if provided." };
@@ -110,6 +112,8 @@ export async function bookAppointment(formData: FormData) {
         mobile,
         aadhaarEncrypted: aadhaar ? encryptAadhaar(aadhaar.replace(/\s/g, "")) : encryptAadhaar("000000000000"),
         complaint,
+        occupation,
+        notes: patientNotes,
         address,
         city,
         state,

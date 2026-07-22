@@ -79,11 +79,13 @@ export function BookAppointmentForm({
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
 
   // new patient fields
-  const [npName,      setNpName]      = useState("");
-  const [npDob,       setNpDob]       = useState("");
-  const [npSex,       setNpSex]       = useState("MALE");
-  const [npMobile,    setNpMobile]    = useState("");
-  const [npCategory,  setNpCategory]  = useState("GENERAL");
+  const [npName,         setNpName]         = useState("");
+  const [npDob,          setNpDob]          = useState("");
+  const [npSex,          setNpSex]          = useState("MALE");
+  const [npMobile,       setNpMobile]       = useState("");
+  const [npCategory,     setNpCategory]     = useState("GENERAL");
+  const [npOccupation,   setNpOccupation]   = useState("");
+  const [npInstructions, setNpInstructions] = useState("");
   const [aadhaarPhoto, setAadhaarPhoto] = useState<UploadedFile | null>(null);
   const [patientPhoto, setPatientPhoto] = useState<UploadedFile | null>(null);
 
@@ -174,6 +176,7 @@ export function BookAppointmentForm({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (patientMode === "existing" && !selectedPatient) { setError("Please select a patient."); return; }
+    if (patientMode === "new" && !npOccupation.trim()) { setError("Occupation is required for new patients."); return; }
     if (patientMode === "new" && !aadhaarPhoto) { setError("Aadhaar photocopy is required for new patients."); return; }
     if (patientMode === "new" && !patientPhoto) { setError("Patient photo is required for new patients."); return; }
     if (!doctorId) { setError("Please select a doctor."); return; }
@@ -218,9 +221,11 @@ export function BookAppointmentForm({
         ? Math.floor((Date.now() - new Date(npDob).getTime()) / (365.25 * 86_400_000))
         : 0;
       fd.set("age", String(dobAge));
-      fd.set("sex",       npSex);
-      fd.set("mobile",    npMobile);
-      fd.set("category",  npCategory);
+      fd.set("sex",         npSex);
+      fd.set("mobile",      npMobile);
+      fd.set("category",    npCategory);
+      fd.set("occupation",  npOccupation.trim());
+      if (npInstructions.trim()) fd.set("patientNotes", npInstructions.trim());
       // Photos uploaded to blob storage; savedNames passed for future DB linking
       if (aadhaarPhoto) fd.set("aadhaarPhotoFile", aadhaarPhoto.savedName);
       if (patientPhoto) fd.set("patientPhotoFile",  patientPhoto.savedName);
@@ -531,6 +536,30 @@ export function BookAppointmentForm({
                     </button>
                   ))}
                 </div>
+              </div>
+
+              {/* Occupation */}
+              <div className="sm:col-span-2">
+                <FieldLabel icon={<Building2 size={12} />}>Occupation *</FieldLabel>
+                <input
+                  type="text"
+                  placeholder="e.g. Farmer, Teacher, Software Engineer"
+                  value={npOccupation}
+                  onChange={(e) => setNpOccupation(e.target.value)}
+                  className={inputCls}
+                />
+              </div>
+
+              {/* Notes / Instructions */}
+              <div className="sm:col-span-2">
+                <FieldLabel icon={<FileText size={12} />}>Notes / Instructions</FieldLabel>
+                <textarea
+                  rows={3}
+                  placeholder="Any additional notes or instructions for this patient…"
+                  value={npInstructions}
+                  onChange={(e) => setNpInstructions(e.target.value)}
+                  className={`${inputCls} resize-none`}
+                />
               </div>
 
               {/* Photos & Documents */}
