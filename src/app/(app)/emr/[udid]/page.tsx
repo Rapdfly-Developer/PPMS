@@ -365,7 +365,7 @@ export default async function PatientDetailedEMR({
                     {activeVisit.appointment?.dateTime && (
                       <div className="flex items-center gap-1 text-[11px] text-[var(--color-ink-400)]">
                         <Clock size={10} className="shrink-0" />
-                        {format(new Date(activeVisit.appointment.dateTime), "h:mm a")}
+                        {new Date(activeVisit.appointment.dateTime).toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit", hour12: true, timeZone: "Asia/Kolkata" })}
                       </div>
                     )}
                   </div>
