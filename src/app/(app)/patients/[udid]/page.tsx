@@ -2,7 +2,7 @@ import { requirePermission } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import { format, startOfDay, endOfDay } from "date-fns";
-import { Phone, MapPin, Calendar, Hash, IdCard } from "lucide-react";
+import { Phone, MapPin, Calendar, Hash, IdCard, Briefcase, FileText } from "lucide-react";
 import { decryptAadhaar, maskAadhaar } from "@/lib/crypto";
 import { PatientProfileClient, TransferButton, TimeStampButton, type SerialVisit, type TodayVisit, type LastVisitSummary } from "./PatientProfileClient";
 
@@ -208,6 +208,9 @@ export default async function PatientProfilePage({
     patient.mobile
       ? { icon: <Phone size={13} />, label: patient.mobile }
       : null,
+    patient.occupation
+      ? { icon: <Briefcase size={13} />, label: patient.occupation }
+      : null,
     aadhaarMasked
       ? { icon: <IdCard size={13} />, label: `Aadhaar: ${aadhaarMasked}` }
       : null,
@@ -295,6 +298,12 @@ export default async function PatientProfilePage({
                     View Aadhaar Card
                   </a>
                 )}
+              </div>
+            )}
+            {patient.notes && (
+              <div className="flex items-start gap-1.5 mt-2 text-xs text-white/70">
+                <span className="text-white/50 mt-0.5 shrink-0"><FileText size={13} /></span>
+                <span>{patient.notes}</span>
               </div>
             )}
           </div>
