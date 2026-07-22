@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, AlertTriangle } from "lucide-react";
+import { ChevronDown, AlertTriangle, Plus, X } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { FieldWithHistory } from "@/components/ui/HistoryToggle";
 import { ChipGroup } from "@/components/ui/Chip";
@@ -25,6 +25,35 @@ function parseComplaintPrefixes(text: string): { lat: Laterality | null; sinceNu
   const sinceUnit = sinceM ? sinceM[2] : "days";
   if (sinceM) rest = rest.slice(sinceM[0].length);
   return { lat, sinceNum, sinceUnit, body: rest };
+}
+
+/* Multiple chief complaints share the single chiefComplaint column, stored as
+   "[RE] [3 days] Redness | [LE] Watering" so every downstream reader (PDFs,
+   FHIR export, patient list, AI summary) keeps rendering all of them. */
+const COMPLAINT_SEP = " | ";
+
+type Complaint = { lat: Laterality | null; sinceNum: string; sinceUnit: string; text: string };
+
+const emptyComplaint = (): Complaint => ({ lat: null, sinceNum: "", sinceUnit: "days", text: "" });
+
+function parseComplaints(raw: string): Complaint[] {
+  const segments = raw.split("|").map((s) => s.trim()).filter(Boolean);
+  if (segments.length === 0) return [emptyComplaint()];
+  return segments.map((seg) => {
+    const { lat, sinceNum, sinceUnit, body } = parseComplaintPrefixes(seg);
+    return { lat, sinceNum, sinceUnit, text: body };
+  });
+}
+
+function serializeComplaints(list: Complaint[]): string {
+  return list
+    .filter((c) => c.text.trim())
+    .map((c) =>
+      [c.lat ? `[${c.lat}]` : "", c.sinceNum ? `[${c.sinceNum} ${c.sinceUnit}]` : "", c.text.trim()]
+        .filter(Boolean)
+        .join(" ")
+    )
+    .join(COMPLAINT_SEP);
 }
 
 function parseBP(value: string): { sys: number; dia: number } | null {
@@ -68,11 +97,7 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, customPmhCh
   const [pulse, setPulse] = useState(ge?.pulse ?? "");
   const [temperature, setTemperature] = useState(ge?.temperature ?? "");
   const [weight, setWeight] = useState(ge?.weight ?? "");
-  const { lat: initLat, sinceNum: initSinceNum, sinceUnit: initSinceUnit, body: initComplaint } = parseComplaintPrefixes(ge?.chiefComplaint ?? "");
-  const [laterality, setLaterality] = useState<Laterality | null>(initLat);
-  const [sinceNum, setSinceNum] = useState(initSinceNum);
-  const [sinceUnit, setSinceUnit] = useState(initSinceUnit);
-  const [chiefComplaint, setChiefComplaint] = useState(initComplaint);
+  const [complaints, setComplaints] = useState<Complaint[]>(() => parseComplaints(ge?.chiefComplaint ?? ""));
   const [hpi, setHpi] = useState(ge?.hpi ?? "");
   const [pmh, setPmh] = useState<string[]>(parseJSON(ge?.pastMedicalHistory, [] as string[]));
   const [pmhOther, setPmhOther] = useState(ge?.pmhOtherText ?? "");
@@ -84,10 +109,14 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, customPmhCh
   const priorPmh = priorVisits.flatMap((v) => parseJSON<string[]>(v.generalExam?.pastMedicalHistory, []));
   const cumulativePmh = Array.from(new Set([...priorPmh, ...pmh]));
 
-  const sincePart = sinceNum ? `[${sinceNum} ${sinceUnit}]` : "";
-  const latPart   = laterality ? `[${laterality}]` : "";
-  const chiefComplaintFull = [latPart, sincePart, chiefComplaint].filter(Boolean).join(" ");
+  const chiefComplaintFull = serializeComplaints(complaints);
   const data = { bp, pulse, temperature, weight, chiefComplaint: chiefComplaintFull, hpi, pastMedicalHistory: JSON.stringify(cumulativePmh), pmhOtherText: pmhOther, medications, allergies, nkda };
+
+  const patchComplaint = (i: number, patch: Partial<Complaint>) =>
+    setComplaints((prev) => prev.map((c, idx) => (idx === i ? { ...c, ...patch } : c)));
+  const addComplaint    = () => setComplaints((prev) => [...prev, emptyComplaint()]);
+  const removeComplaint = (i: number) =>
+    setComplaints((prev) => (prev.length === 1 ? [emptyComplaint()] : prev.filter((_, idx) => idx !== i)));
 
   const state = useAutoSave(data, async (d) => {
     if (readOnly) return;
@@ -110,68 +139,105 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, customPmhCh
         <FieldWithHistory
           label="CHIEF COMPLAINT"
           history={histFor((g) => g.chiefComplaint)}
-          currentValue={chiefComplaint}
-          onLoad={(v) => {
-            const { lat, sinceNum: sn, sinceUnit: su, body } = parseComplaintPrefixes(v);
-            setLaterality(lat);
-            setSinceNum(sn);
-            setSinceUnit(su);
-            setChiefComplaint(body);
-          }}
-          headerExtra={
-            <div className="flex items-center gap-1.5">
-              <span className="text-xs font-semibold text-[var(--color-ink-400)]">Since</span>
-              <select
-                value={sinceNum}
-                onChange={(e) => setSinceNum(e.target.value)}
-                disabled={readOnly}
-                className="text-xs border border-[var(--color-border)] rounded-lg px-2 py-0.5 bg-white text-[var(--color-ink-700)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] disabled:opacity-50"
-              >
-                <option value="">—</option>
-                {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
-                  <option key={n} value={String(n)}>{n}</option>
-                ))}
-              </select>
-              <select
-                value={sinceUnit}
-                onChange={(e) => setSinceUnit(e.target.value)}
-                disabled={readOnly || !sinceNum}
-                className="text-xs border border-[var(--color-border)] rounded-lg px-2 py-0.5 bg-white text-[var(--color-ink-700)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] disabled:opacity-50"
-              >
-                {SINCE_UNITS.map((u) => (
-                  <option key={u} value={u}>{u}</option>
-                ))}
-              </select>
-            </div>
-          }
+          currentValue={chiefComplaintFull}
+          onLoad={(v) => setComplaints(parseComplaints(v))}
         >
-          {/* Laterality selector */}
-          <div className="flex items-center gap-2 mb-2">
-            {LATERALITY_OPTIONS.map((opt) => {
-              const active = laterality === opt;
-              return (
-                <button
-                  key={opt}
-                  type="button"
+          <div className="flex flex-col gap-3">
+            {complaints.map((c, i) => (
+              <div
+                key={i}
+                className={i > 0 ? "pt-3 border-t border-dashed border-[var(--color-border)]" : ""}
+              >
+                {/* Controls row: number + laterality · since + remove */}
+                <div className="flex items-start justify-between gap-x-3 gap-y-2 flex-wrap mb-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {complaints.length > 1 && (
+                      <span className="text-[11px] font-bold tracking-wider text-[var(--color-ink-400)] uppercase">
+                        Chief Complaint {i + 1}
+                      </span>
+                    )}
+                    {LATERALITY_OPTIONS.map((opt) => {
+                      const active = c.lat === opt;
+                      return (
+                        <button
+                          key={opt}
+                          type="button"
+                          disabled={readOnly}
+                          onClick={() => patchComplaint(i, { lat: active ? null : opt })}
+                          className="px-3.5 py-1 rounded-full text-[12px] font-bold transition-all"
+                          style={active ? {
+                            background: "var(--color-primary-600)",
+                            color: "#fff",
+                            boxShadow: "0 2px 8px rgba(15,118,110,.25)",
+                          } : {
+                            background: "var(--color-surface-1, #F1F5F9)",
+                            color: "var(--color-ink-500, #64748B)",
+                            border: "1px solid var(--color-border, #E2E8F0)",
+                          }}
+                        >
+                          {opt}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-semibold text-[var(--color-ink-400)]">Since</span>
+                    <select
+                      value={c.sinceNum}
+                      onChange={(e) => patchComplaint(i, { sinceNum: e.target.value })}
+                      disabled={readOnly}
+                      className="text-xs border border-[var(--color-border)] rounded-lg px-2 py-0.5 bg-white text-[var(--color-ink-700)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] disabled:opacity-50"
+                    >
+                      <option value="">—</option>
+                      {Array.from({ length: 10 }, (_, n) => n + 1).map((n) => (
+                        <option key={n} value={String(n)}>{n}</option>
+                      ))}
+                    </select>
+                    <select
+                      value={c.sinceUnit}
+                      onChange={(e) => patchComplaint(i, { sinceUnit: e.target.value })}
+                      disabled={readOnly || !c.sinceNum}
+                      className="text-xs border border-[var(--color-border)] rounded-lg px-2 py-0.5 bg-white text-[var(--color-ink-700)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] disabled:opacity-50"
+                    >
+                      {SINCE_UNITS.map((u) => (
+                        <option key={u} value={u}>{u}</option>
+                      ))}
+                    </select>
+                    {!readOnly && complaints.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeComplaint(i)}
+                        title={`Remove Chief Complaint ${i + 1}`}
+                        className="ml-0.5 p-1 rounded-lg text-[var(--color-ink-400)] hover:text-red-600 hover:bg-red-50 transition-colors"
+                      >
+                        <X size={13} strokeWidth={2.5} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <KeywordTextarea
+                  fieldKey="ge_chiefComplaint"
+                  value={c.text}
+                  onChange={(v) => patchComplaint(i, { text: v.replace(/\|/g, "/") })}
                   disabled={readOnly}
-                  onClick={() => setLaterality(active ? null : opt)}
-                  className="px-3.5 py-1 rounded-full text-[12px] font-bold transition-all"
-                  style={active ? {
-                    background: "var(--color-primary-600)",
-                    color: "#fff",
-                    boxShadow: "0 2px 8px rgba(15,118,110,.25)",
-                  } : {
-                    background: "var(--color-surface-1, #F1F5F9)",
-                    color: "var(--color-ink-500, #64748B)",
-                    border: "1px solid var(--color-border, #E2E8F0)",
-                  }}
-                >
-                  {opt}
-                </button>
-              );
-            })}
+                  rows={2}
+                />
+              </div>
+            ))}
           </div>
-          <KeywordTextarea fieldKey="ge_chiefComplaint" value={chiefComplaint} onChange={setChiefComplaint} disabled={readOnly} rows={2} />
+
+          {!readOnly && (
+            <button
+              type="button"
+              onClick={addComplaint}
+              className="mt-3 inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-dashed border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-[11px] font-semibold text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] transition-colors"
+            >
+              <Plus size={12} strokeWidth={2.5} />
+              Add Chief Complaint
+            </button>
+          )}
         </FieldWithHistory>
       </Card>
 
