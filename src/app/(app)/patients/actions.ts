@@ -380,21 +380,153 @@ export async function updatePatientDetails(patientId: string, data: Record<strin
   revalidatePath("/patients");
 }
 
-// ── AI Visit Summary ─────────────────────────────────────────────────────────
+// ── Visit Summary generation ─────────────────────────────────────────────────
+//
+// Two engines behind one action. Without ANTHROPIC_API_KEY the summary is built
+// locally from the stored fields — no cost, and no patient data leaves the
+// server. With a key set, Claude writes the prose instead. A failed API call
+// falls back to the local narrative rather than showing the user an error.
 
-export async function generateAiSummary(visitId: string): Promise<{ text?: string; error?: string }> {
-  await requireRole("DOCTOR", "HOSPITAL", "REFRACTIONIST");
+const LATERALITY_WORDS: Record<string, string> = {
+  RE: "right eye",
+  LE: "left eye",
+  OU: "both eyes",
+};
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    return { error: "AI Summary is not configured. Please add ANTHROPIC_API_KEY to your environment." };
+/** "[RE] [3 days] Redness | [LE] Watering" → ["right eye redness for 3 days", "left eye watering"] */
+function humanizeComplaints(raw: string): string[] {
+  return raw
+    .split("|")
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .map((segment) => {
+      let rest = segment;
+      let lat = "";
+      const latM = rest.match(/^\[(RE|LE|OU)\]\s*/);
+      if (latM) {
+        lat = LATERALITY_WORDS[latM[1]] ?? "";
+        rest = rest.slice(latM[0].length);
+      }
+      let since = "";
+      const sinceM = rest.match(/^\[(\d+)\s+(days|weeks|months|years)\]\s*/);
+      if (sinceM) {
+        const n = Number(sinceM[1]);
+        const unit = n === 1 ? sinceM[2].replace(/s$/, "") : sinceM[2];
+        since = `for ${n} ${unit}`;
+        rest = rest.slice(sinceM[0].length);
+      }
+      return [lat, rest.trim().toLowerCase(), since].filter(Boolean).join(" ");
+    })
+    .filter(Boolean);
+}
+
+/** ["a", "b", "c"] → "a, b and c" */
+function joinList(items: string[]): string {
+  if (items.length <= 1) return items[0] ?? "";
+  return `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}`;
+}
+
+const capitalize = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
+
+function sexWord(sex?: string | null): string {
+  const s = (sex ?? "").toLowerCase();
+  if (s.startsWith("m")) return "male";
+  if (s.startsWith("f")) return "female";
+  return "patient";
+}
+
+type SummaryVisit = {
+  date: Date;
+  visitType: string | null;
+  hospital: { name: string } | null;
+  doctor: { name: string } | null;
+  patient: { age: number | null; sex: string | null } | null;
+  generalExam: { chiefComplaint: string | null; bp: string | null; pulse: string | null; weight: string | null; temperature: string | null; hpi: string | null } | null;
+  diagnoses: { description: string; icd10Code: string; laterality: string | null; provisional: boolean; status: string }[];
+  medications: { drugName: string; dosage: string | null; frequency: string | null; duration: string | null; instructions: string | null }[];
+  investigationOrders: { testName: string; category: string; status: string }[];
+};
+
+/** Deterministic narrative assembled from stored fields. No model, no network. */
+function buildLocalSummary(visit: SummaryVisit): string {
+  const g = visit.generalExam;
+  const sentences: string[] = [];
+  const dateStr = visit.date.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+
+  // Who, where, when
+  const age = visit.patient?.age;
+  const who = age ? `${age}-year-old ${sexWord(visit.patient?.sex)}` : sexWord(visit.patient?.sex);
+  let opening = `${capitalize(who)} seen on ${dateStr}`;
+  if (visit.hospital?.name) opening += ` at ${visit.hospital.name}`;
+  if (visit.doctor?.name) opening += ` under Dr. ${visit.doctor.name}`;
+  if (visit.visitType) opening += ` (${visit.visitType})`;
+  sentences.push(`${opening}.`);
+
+  // Presenting complaints
+  const complaints = g?.chiefComplaint ? humanizeComplaints(g.chiefComplaint) : [];
+  if (complaints.length) {
+    sentences.push(`Presented with ${joinList(complaints)}.`);
   }
+
+  // Vitals
+  const vitals = [
+    g?.bp && `BP ${g.bp}`,
+    g?.pulse && `pulse ${g.pulse}`,
+    g?.temperature && `temperature ${g.temperature}`,
+    g?.weight && `weight ${g.weight}`,
+  ].filter(Boolean) as string[];
+  if (vitals.length) sentences.push(`Vitals recorded: ${joinList(vitals)}.`);
+
+  // Assessment
+  if (visit.diagnoses.length) {
+    const dx = visit.diagnoses.map((d) => {
+      const qualifiers = [
+        d.laterality ? (LATERALITY_WORDS[d.laterality] ?? d.laterality) : null,
+        d.provisional ? "provisional" : null,
+        d.status ? d.status.toLowerCase() : null,
+      ].filter(Boolean);
+      return qualifiers.length ? `${d.description} (${qualifiers.join(", ")})` : d.description;
+    });
+    sentences.push(`Assessment: ${joinList(dx)}.`);
+  }
+
+  // Plan — medications
+  if (visit.medications.length) {
+    const meds = visit.medications.map((m) =>
+      [m.drugName, m.dosage, m.frequency, m.duration && `for ${m.duration}`].filter(Boolean).join(" ")
+    );
+    sentences.push(
+      `Prescribed ${visit.medications.length} medication${visit.medications.length > 1 ? "s" : ""}: ${joinList(meds)}.`
+    );
+  }
+
+  // Plan — investigations
+  if (visit.investigationOrders.length) {
+    const pending = visit.investigationOrders.filter((o) => o.status !== "COMPLETED" && o.status !== "CANCELLED");
+    let line = `${visit.investigationOrders.length} investigation${visit.investigationOrders.length > 1 ? "s" : ""} ordered (${joinList(visit.investigationOrders.map((o) => o.testName))})`;
+    if (pending.length) line += `, ${pending.length} awaiting results`;
+    sentences.push(`${line}.`);
+  }
+
+  if (g?.hpi?.trim()) sentences.push(`History noted: ${g.hpi.trim()}`);
+
+  if (sentences.length === 1) {
+    sentences.push("No clinical findings, diagnoses or prescriptions were recorded for this visit.");
+  }
+  return sentences.join(" ");
+}
+
+export async function generateAiSummary(
+  visitId: string
+): Promise<{ text?: string; source?: "claude" | "local"; notice?: string; error?: string }> {
+  await requireRole("DOCTOR", "HOSPITAL", "REFRACTIONIST");
 
   const visit = await prisma.visit.findUnique({
     where: { id: visitId },
     include: {
       hospital:            { select: { name: true } },
       doctor:              { select: { name: true } },
+      patient:             { select: { age: true, sex: true } },
       generalExam:         { select: { chiefComplaint: true, bp: true, pulse: true, weight: true, temperature: true, hpi: true } },
       diagnoses:           { select: { description: true, icd10Code: true, laterality: true, provisional: true, status: true } },
       medications:         { select: { drugName: true, dosage: true, frequency: true, duration: true, instructions: true } },
@@ -403,6 +535,11 @@ export async function generateAiSummary(visitId: string): Promise<{ text?: strin
   });
 
   if (!visit) return { error: "Visit not found." };
+
+  const localText = buildLocalSummary(visit as SummaryVisit);
+
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) return { text: localText, source: "local" };
 
   const g = visit.generalExam;
   const lines: string[] = [
@@ -445,8 +582,15 @@ export async function generateAiSummary(visitId: string): Promise<{ text?: strin
       messages: [{ role: "user", content: prompt }],
     });
     const textBlock = response.content.find((b) => b.type === "text") as { type: "text"; text: string } | undefined;
-    return { text: textBlock?.text ?? "No summary generated." };
+    const text = textBlock?.text?.trim();
+    if (!text) return { text: localText, source: "local", notice: "Claude returned an empty response." };
+    return { text, source: "claude" };
   } catch (err: any) {
-    return { error: err?.message ?? "Failed to generate AI summary." };
+    // Never fail the tab — show the locally built summary and say why.
+    return {
+      text: localText,
+      source: "local",
+      notice: `Claude unavailable (${err?.message ?? "unknown error"}) — showing an auto-generated summary.`,
+    };
   }
 }

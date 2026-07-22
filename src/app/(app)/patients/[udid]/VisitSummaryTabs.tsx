@@ -21,6 +21,8 @@ export function VisitSummaryTabs({ visitId, complaint, diagnoses, shortContent, 
   const [tab, setTab] = useState<Tab>("short");
   const [emrData, setEmrData] = useState<any>(null);
   const [aiText, setAiText] = useState<string | null>(null);
+  const [aiSource, setAiSource] = useState<"claude" | "local">("local");
+  const [aiNotice, setAiNotice] = useState<string | null>(null);
   const [aiError, setAiError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -35,7 +37,11 @@ export function VisitSummaryTabs({ visitId, complaint, diagnoses, shortContent, 
         if (newTab === "ai" && !aiText && !aiError) {
           const res = await generateAiSummary(visitId);
           if (res.error) setAiError(res.error);
-          else setAiText(res.text ?? null);
+          else {
+            setAiText(res.text ?? null);
+            setAiSource(res.source ?? "local");
+            setAiNotice(res.notice ?? null);
+          }
         }
       } else if (newTab === "ai" && !aiText && !aiError) {
         setLoading(true);
@@ -93,7 +99,7 @@ export function VisitSummaryTabs({ visitId, complaint, diagnoses, shortContent, 
         <div className="animate-fade-in">
           {tab === "short" && (shortContent ?? <ShortContent complaint={complaint} diagText={diagText} />)}
           {tab === "long" && <LongContent data={emrData} complaint={complaint} diagText={diagText} />}
-          {tab === "ai" && <AIContent text={aiText} error={aiError} />}
+          {tab === "ai" && <AIContent text={aiText} error={aiError} source={aiSource} notice={aiNotice} />}
         </div>
       )}
     </div>
@@ -250,7 +256,17 @@ function LongContent({
 }
 
 /* ─── AI ─── */
-function AIContent({ text, error }: { text: string | null; error: string | null }) {
+function AIContent({
+  text,
+  error,
+  source,
+  notice,
+}: {
+  text: string | null;
+  error: string | null;
+  source: "claude" | "local";
+  notice: string | null;
+}) {
   if (error) {
     return (
       <div className="flex items-start gap-2 p-3 rounded-xl bg-red-50 border border-red-100 text-[11px] text-red-700">
@@ -268,9 +284,14 @@ function AIContent({ text, error }: { text: string | null; error: string | null 
           <div className="p-1 rounded-md bg-violet-100">
             <Sparkles size={10} className="text-violet-600" />
           </div>
-          <span className="text-[10px] font-bold uppercase tracking-widest text-violet-600">Claude AI Summary</span>
+          <span className="text-[10px] font-bold uppercase tracking-widest text-violet-600">
+            {source === "claude" ? "Claude AI Summary" : "Auto-Generated Summary"}
+          </span>
         </div>
         <p className="text-[11px] text-[var(--color-ink-700)] leading-relaxed">{text}</p>
+        {notice && (
+          <p className="mt-2.5 pt-2 border-t border-violet-100 text-[10px] text-amber-700">{notice}</p>
+        )}
       </div>
     </div>
   );
