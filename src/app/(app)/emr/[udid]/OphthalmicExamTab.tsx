@@ -332,6 +332,29 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
     </div>
   );
 
+  // Read-only mirror of eyeFields for history entries — same grid tracks and
+  // labels, value boxes instead of selects, so a previous Rx reads exactly
+  // like the live form above it.
+  const fmtSigned = (v: string) => { const { sign, mag } = parseSignedVal(v); return mag ? `${sign}${mag}` : "—"; };
+  const roBox = (label: string, value: string, className = "") => (
+    <div className={`flex flex-col gap-0.5 min-w-0 ${className}`}>
+      <span className="text-[10px] text-[var(--color-ink-400)] font-medium">{label}</span>
+      <div className="w-full min-w-0 rounded border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-1.5 py-1 text-xs text-[var(--color-ink-800)] tabular-nums">{value}</div>
+    </div>
+  );
+  const historyEyeFields = (rx: RxFields) => (
+    <div className="grid grid-cols-2 xl:grid-cols-[1fr_1fr_1.15fr_1.35fr] gap-x-3 gap-y-2 items-end">
+      <p className={SECTION_LABEL}>Distance</p>
+      {roBox("Sph", fmtSigned(rx.sph))}
+      {roBox("Cyl", fmtSigned(rx.cyl))}
+      {roBox("Axis°", parseSignedVal(rx.axis).mag || "—")}
+      {roBox("Resulting VA", rx.va || "—")}
+      <p className={`${SECTION_LABEL} mt-2`}>Near</p>
+      {roBox("Sph (Add)", fmtSigned(rx.nearSph))}
+      {roBox("Resulting NV", rx.nearVa || "—", "col-start-2 xl:col-start-4")}
+    </div>
+  );
+
   const hasRxData = (rx: typeof re) => Object.values(rx).some(Boolean);
 
   const loadRx = (pr: typeof priorRefractions[0]) => {
@@ -375,58 +398,23 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
         <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3">
           <div className="flex items-center justify-between mb-2">
             <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide">Previous Spectacles</p>
-            <p className="text-[10px] text-amber-600">Double-click a date to load it</p>
+            <p className="text-[10px] text-amber-600">Double-click an entry to load it</p>
           </div>
-          <div className="overflow-x-auto rounded-lg border border-amber-200">
-            <table className="w-full text-xs border-collapse">
-              <thead>
-                {/* Date row — each date spans RE + LE; double-click loads that Rx */}
-                <tr className="bg-amber-100/70">
-                  <th className="text-left text-[var(--color-ink-500)] font-semibold py-1.5 px-3 w-20 border-r border-amber-200 border-b border-b-amber-200" />
-                  {priorRefractions.map((pr, i) => (
-                    <th
-                      key={i}
-                      colSpan={2}
-                      onDoubleClick={() => handleHistoryDoubleClick(pr)}
-                      title="Double-click to load this prescription"
-                      className="text-center text-[11px] font-bold text-amber-800 py-1.5 px-2 border-b border-amber-200 border-r border-r-amber-200 last:border-r-0 cursor-pointer hover:bg-amber-200/60 select-none transition-colors"
-                    >
-                      {format(new Date(pr.date), "dd MMM yy")}
-                    </th>
-                  ))}
-                </tr>
-                {/* RE / LE sub-headers */}
-                <tr className="bg-amber-50">
-                  <th className="border-r border-amber-200 border-b border-b-amber-200" />
-                  {priorRefractions.map((_, i) => (
-                    [
-                      <th key={`${i}-re`} className="text-center text-[10px] font-bold text-[var(--color-primary-700)] py-1 px-3 border-b border-amber-200 border-r border-r-amber-100">RE</th>,
-                      <th key={`${i}-le`} className="text-center text-[10px] font-bold text-[var(--color-primary-700)] py-1 px-3 border-b border-amber-200 border-r border-r-amber-200 last:border-r-0">LE</th>,
-                    ]
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {[
-                  { label: "Sph",   key: "sph"     },
-                  { label: "Cyl",   key: "cyl"     },
-                  { label: "Axis°", key: "axis"    },
-                  { label: "VA",    key: "va"      },
-                  { label: "Add",   key: "nearSph" },
-                  { label: "NV",    key: "nearVa"  },
-                ].map(({ label, key }, rowIdx) => (
-                  <tr key={label} className={rowIdx % 2 === 0 ? "bg-white/60" : "bg-amber-50/40"}>
-                    <td className="py-1.5 px-3 text-[var(--color-ink-600)] font-semibold whitespace-nowrap border-r border-amber-200 border-b border-b-amber-100 last-row:border-b-0">{label}</td>
-                    {priorRefractions.map((pr, i) => (
-                      [
-                        <td key={`${i}-re`} className="py-1.5 px-3 text-center text-[var(--color-ink-800)] tabular-nums border-r border-amber-100 border-b border-b-amber-100">{(pr.re as any)[key] || "—"}</td>,
-                        <td key={`${i}-le`} className="py-1.5 px-3 text-center text-[var(--color-ink-800)] tabular-nums border-r border-amber-200 border-b border-b-amber-100 last:border-r-0">{(pr.le as any)[key] || "—"}</td>,
-                      ]
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="flex flex-col gap-3">
+            {priorRefractions.map((pr, i) => (
+              <div
+                key={i}
+                onDoubleClick={() => handleHistoryDoubleClick(pr)}
+                title="Double-click to load this prescription"
+                className="rounded-lg border border-amber-200 bg-white p-4 cursor-pointer select-none transition-all hover:border-amber-400 hover:shadow-sm"
+              >
+                <p className="text-[11px] font-bold text-amber-800 mb-3">{format(new Date(pr.date), "dd MMM yyyy")}</p>
+                <EyeColumns>
+                  {historyEyeFields(pr.re)}
+                  {historyEyeFields(pr.le)}
+                </EyeColumns>
+              </div>
+            ))}
           </div>
         </div>
       )}
