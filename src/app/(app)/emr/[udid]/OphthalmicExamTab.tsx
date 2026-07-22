@@ -362,47 +362,62 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
       </EyeColumns>
 
       {showHistory && priorRefractions.length > 0 && (
-        <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 space-y-4">
-          <div className="flex items-center justify-between">
+        <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3">
+          <div className="flex items-center justify-between mb-2">
             <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide">Previous Spectacles</p>
-            <p className="text-[10px] text-amber-600">Double-click a record to load it</p>
+            <p className="text-[10px] text-amber-600">Double-click a date to load it</p>
           </div>
-          {priorRefractions.map((pr, i) => (
-            <div
-              key={i}
-              onDoubleClick={() => handleHistoryDoubleClick(pr)}
-              title="Double-click to load this prescription"
-              className="cursor-pointer rounded-xl p-2 -mx-2 hover:bg-amber-100 transition-colors select-none"
-            >
-              <p className="text-[11px] font-bold text-amber-800 mb-2">{format(new Date(pr.date), "dd-MMM-yyyy")}</p>
-              <table className="w-full text-xs border-collapse">
-                <thead>
-                  <tr>
-                    <th className="text-left text-[var(--color-ink-400)] font-medium pb-1.5 w-28" />
-                    <th className="text-center text-[var(--color-primary-700)] font-semibold pb-1.5 w-28">RE</th>
-                    <th className="text-center text-[var(--color-primary-700)] font-semibold pb-1.5 w-28">LE</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-amber-100">
-                  {[
-                    { label: "Sph",          re: pr.re.sph,    le: pr.le.sph },
-                    { label: "Cyl",          re: pr.re.cyl,    le: pr.le.cyl },
-                    { label: "Axis°",        re: pr.re.axis,   le: pr.le.axis },
-                    { label: "Resulting VA", re: pr.re.va,     le: pr.le.va },
-                    { label: "Add",          re: pr.re.nearSph,le: pr.le.nearSph },
-                    { label: "Resulting NV", re: pr.re.nearVa, le: pr.le.nearVa },
-                  ].map(({ label, re, le }) => (
-                    <tr key={label}>
-                      <td className="py-1 text-[var(--color-ink-500)] font-medium">{label}</td>
-                      <td className="py-1 text-center text-[var(--color-ink-800)]">{re || "—"}</td>
-                      <td className="py-1 text-center text-[var(--color-ink-800)]">{le || "—"}</td>
-                    </tr>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs border-collapse">
+              <thead>
+                {/* Date row — each date spans RE + LE; double-click loads that Rx */}
+                <tr>
+                  <th className="text-left text-[var(--color-ink-400)] font-medium py-1 pr-3 w-24 border-b border-amber-200" />
+                  {priorRefractions.map((pr, i) => (
+                    <th
+                      key={i}
+                      colSpan={2}
+                      onDoubleClick={() => handleHistoryDoubleClick(pr)}
+                      title="Double-click to load this prescription"
+                      className="text-center text-[11px] font-bold text-amber-800 py-1 px-2 border-b border-amber-200 cursor-pointer hover:bg-amber-100 select-none transition-colors"
+                    >
+                      {format(new Date(pr.date), "dd MMM yy")}
+                    </th>
                   ))}
-                </tbody>
-              </table>
-              {i < priorRefractions.length - 1 && <div className="mt-3 border-t border-amber-200" />}
-            </div>
-          ))}
+                </tr>
+                {/* RE / LE sub-headers */}
+                <tr>
+                  <th className="border-b border-amber-200" />
+                  {priorRefractions.map((_, i) => (
+                    [
+                      <th key={`${i}-re`} className="text-center text-[10px] font-semibold text-[var(--color-primary-700)] py-1 px-2 w-14 border-b border-amber-200">RE</th>,
+                      <th key={`${i}-le`} className="text-center text-[10px] font-semibold text-[var(--color-primary-700)] py-1 px-2 w-14 border-b border-amber-200">LE</th>,
+                    ]
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  { label: "Sph",         key: "sph",     near: false },
+                  { label: "Cyl",         key: "cyl",     near: false },
+                  { label: "Axis°",       key: "axis",    near: false },
+                  { label: "VA",          key: "va",      near: false },
+                  { label: "Add",         key: "nearSph", near: true  },
+                  { label: "NV",          key: "nearVa",  near: true  },
+                ].map(({ label, key }) => (
+                  <tr key={label} className="border-b border-amber-100 last:border-0">
+                    <td className="py-1 pr-3 text-[var(--color-ink-500)] font-medium whitespace-nowrap">{label}</td>
+                    {priorRefractions.map((pr, i) => (
+                      [
+                        <td key={`${i}-re`} className="py-1 px-2 text-center text-[var(--color-ink-800)] tabular-nums">{(pr.re as any)[key] || "—"}</td>,
+                        <td key={`${i}-le`} className="py-1 px-2 text-center text-[var(--color-ink-800)] tabular-nums">{(pr.le as any)[key] || "—"}</td>,
+                      ]
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
