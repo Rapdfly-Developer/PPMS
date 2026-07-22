@@ -5,6 +5,7 @@ import { requireRole } from "@/lib/rbac";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { writeAudit } from "@/lib/audit";
+import Anthropic from "@anthropic-ai/sdk";
 
 // ── Patient History Timeline ─────────────────────────────────────────────────
 
@@ -377,4 +378,75 @@ export async function updatePatientDetails(patientId: string, data: Record<strin
     oldValue: before, userName: before?.name,
   });
   revalidatePath("/patients");
+}
+
+// ── AI Visit Summary ─────────────────────────────────────────────────────────
+
+export async function generateAiSummary(visitId: string): Promise<{ text?: string; error?: string }> {
+  await requireRole("DOCTOR", "HOSPITAL", "REFRACTIONIST");
+
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    return { error: "AI Summary is not configured. Please add ANTHROPIC_API_KEY to your environment." };
+  }
+
+  const visit = await prisma.visit.findUnique({
+    where: { id: visitId },
+    include: {
+      hospital:            { select: { name: true } },
+      doctor:              { select: { name: true } },
+      generalExam:         { select: { chiefComplaint: true, bp: true, pulse: true, weight: true, temperature: true, hpi: true } },
+      diagnoses:           { select: { description: true, icd10Code: true, laterality: true, provisional: true, status: true } },
+      medications:         { select: { drugName: true, dosage: true, frequency: true, duration: true, instructions: true } },
+      investigationOrders: { select: { testName: true, category: true, status: true } },
+    },
+  });
+
+  if (!visit) return { error: "Visit not found." };
+
+  const g = visit.generalExam;
+  const lines: string[] = [
+    "You are a clinical documentation assistant. Write a concise, professional clinical summary of this patient visit in 2–4 sentences. Use clear flowing prose — no bullet points, no markdown, no headings. Be medically precise and clinically relevant.",
+    "",
+    `Date: ${visit.date.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}`,
+    visit.visitType    ? `Visit Type: ${visit.visitType}`          : "",
+    visit.hospital?.name ? `Hospital: ${visit.hospital.name}`     : "",
+    visit.doctor?.name   ? `Doctor: Dr. ${visit.doctor.name}`     : "",
+    g?.chiefComplaint  ? `Chief Complaint: ${g.chiefComplaint}`   : "",
+    g?.bp              ? `Blood Pressure: ${g.bp}`                : "",
+    g?.pulse           ? `Pulse: ${g.pulse}`                      : "",
+    g?.weight          ? `Weight: ${g.weight}`                    : "",
+    g?.temperature     ? `Temperature: ${g.temperature}`          : "",
+    g?.hpi             ? `History of present illness: ${g.hpi}`  : "",
+  ];
+
+  if (visit.diagnoses.length) {
+    lines.push(`Diagnoses: ${visit.diagnoses.map((d) =>
+      [d.description, d.laterality && `(${d.laterality})`, d.provisional && "[provisional]", d.icd10Code && `[${d.icd10Code}]`]
+        .filter(Boolean).join(" ")
+    ).join("; ")}`);
+  }
+  if (visit.medications.length) {
+    lines.push(`Medications: ${visit.medications.map((m) =>
+      [m.drugName, m.dosage, m.frequency, m.duration && `for ${m.duration}`, m.instructions].filter(Boolean).join(" ")
+    ).join("; ")}`);
+  }
+  if (visit.investigationOrders.length) {
+    lines.push(`Investigations ordered: ${visit.investigationOrders.map((o) => o.testName).join(", ")}`);
+  }
+
+  const prompt = lines.filter(Boolean).join("\n");
+
+  try {
+    const client = new Anthropic({ apiKey });
+    const response = await client.messages.create({
+      model: "claude-opus-4-8",
+      max_tokens: 600,
+      messages: [{ role: "user", content: prompt }],
+    });
+    const textBlock = response.content.find((b) => b.type === "text") as { type: "text"; text: string } | undefined;
+    return { text: textBlock?.text ?? "No summary generated." };
+  } catch (err: any) {
+    return { error: err?.message ?? "Failed to generate AI summary." };
+  }
 }

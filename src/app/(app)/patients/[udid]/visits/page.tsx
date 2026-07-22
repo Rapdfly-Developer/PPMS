@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { format, startOfDay } from "date-fns";
 import { Download } from "lucide-react";
 import { EmrViewerButton, VisitDownloadButton } from "../EmrViewerModal";
+import { VisitSummaryTabs } from "./VisitSummaryTabs";
 
 export default async function PatientVisitsPage({
   params,
@@ -126,18 +127,11 @@ export default async function PatientVisitsPage({
                   )}
                 </div>
 
-                {v.generalExam?.chiefComplaint && (
-                  <p className="text-xs text-[var(--color-ink-500)] border-t border-[var(--color-border)] pt-2.5">
-                    <span className="font-medium text-[var(--color-ink-400)]">Complaint: </span>
-                    {v.generalExam.chiefComplaint}
-                  </p>
-                )}
-                {diagText && (
-                  <p className="text-xs text-[var(--color-ink-500)]">
-                    <span className="font-medium text-[var(--color-ink-400)]">Diagnosis: </span>
-                    {diagText}
-                  </p>
-                )}
+                <VisitSummaryTabs
+                  visitId={v.id}
+                  complaint={v.generalExam?.chiefComplaint ?? null}
+                  diagnoses={v.diagnoses.map((d) => d.description)}
+                />
               </div>
             );
           })}
