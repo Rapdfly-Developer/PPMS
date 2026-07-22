@@ -645,6 +645,27 @@ function LastVisitSummarySection({ summary, udid }: { summary: LastVisitSummary;
   );
 }
 
+/* ── Last Visit Summary Card (exported toggle button + inline panel) ─────────── */
+export function LastVisitSummaryCard({ summary, udid }: { summary: LastVisitSummary; udid: string }) {
+  const [show, setShow] = useState(false);
+  return (
+    <div className="mb-4">
+      <button
+        onClick={() => setShow((s) => !s)}
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-[var(--color-border)] text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)] transition-colors"
+      >
+        <Activity size={13} />
+        Last Visit Summary
+        <ChevronDown
+          size={13}
+          className={`transition-transform duration-200 ${show ? "rotate-180" : ""}`}
+        />
+      </button>
+      {show && <LastVisitSummarySection summary={summary} udid={udid} />}
+    </div>
+  );
+}
+
 /* ── Main export ─────────────────────────────────────────────────────────────── */
 export function PatientProfileClient({
   udid,
@@ -755,10 +776,7 @@ export function PatientProfileClient({
         </div>
       )}
 
-      {/* ── Last Visit Summary + Investigations ─────────────────────── */}
-      {lastVisitSummary && (
-        <LastVisitSummarySection summary={lastVisitSummary} udid={udid} />
-      )}
+      {/* Last Visit Summary is toggled via LastVisitSummaryCard in the page header */}
     </>
   );
 }
