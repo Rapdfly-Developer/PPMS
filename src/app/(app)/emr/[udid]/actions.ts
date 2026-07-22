@@ -271,7 +271,7 @@ export async function saveRetinoscopy(visitId: string, udid: string, data: { re:
 
 export async function getRefractionForVisit(visitId: string) {
   await requireUser();
-  const rx = await prisma.refraction.findFirst({ where: { visitId } });
+  const rx = await prisma.refractiveCorrection.findFirst({ where: { visitId } });
   return rx ? { re: rx.re ?? "", le: rx.le ?? "" } : null;
 }
 
