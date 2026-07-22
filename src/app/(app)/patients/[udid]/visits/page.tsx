@@ -2,8 +2,7 @@ import { requirePermission } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import { format, startOfDay } from "date-fns";
-import Link from "next/link";
-import { ArrowLeft, Download } from "lucide-react";
+import { Download } from "lucide-react";
 import { EmrViewerButton, VisitDownloadButton } from "../EmrViewerModal";
 
 export default async function PatientVisitsPage({
@@ -45,14 +44,6 @@ export default async function PatientVisitsPage({
 
   return (
     <div className="fade-in pb-12 max-w-2xl mx-auto">
-      {/* Back */}
-      <Link
-        href={`/patients/${udid}`}
-        className="inline-flex items-center gap-1.5 text-sm text-[var(--color-ink-500)] hover:text-[var(--color-ink-800)] mb-4 transition-colors"
-      >
-        <ArrowLeft size={14} /> {patient.name}
-      </Link>
-
       {/* Header */}
       <div className="flex items-center justify-between mb-5">
         <div>
