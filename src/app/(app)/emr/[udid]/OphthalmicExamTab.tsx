@@ -316,10 +316,10 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
   // sits in the same column as Resulting VA. That holds in either track count —
   // last column at 4-up, second column at 2-up (where VA wraps to row 2).
   // Axis and VA get wider tracks than Sph/Cyl, which lose width to the +/- toggle.
-  const SECTION_LABEL = "col-span-2 xl:col-span-4 text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-widest";
+  const SECTION_LABEL = "col-span-2 sm:col-span-4 text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-widest";
 
   const eyeFields = (val: typeof re, setVal: typeof setRe) => (
-    <div className="grid grid-cols-2 xl:grid-cols-[1fr_1fr_1.15fr_1.35fr] gap-x-3 gap-y-2 items-end">
+    <div className="grid grid-cols-2 sm:grid-cols-[88px_88px_64px_80px] gap-x-2 gap-y-2 items-end">
       <p className={SECTION_LABEL}>Distance</p>
       {signedSelect("Sph",   val.sph,  (v) => setVal({ ...val, sph: v }),  SPH_MAGS)}
       {signedSelect("Cyl",   val.cyl,  (v) => setVal({ ...val, cyl: v }),  CYL_MAGS)}
@@ -328,7 +328,7 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
 
       <p className={`${SECTION_LABEL} mt-2`}>Near</p>
       {signedSelect("Sph (Add)", val.nearSph, (v) => setVal({ ...val, nearSph: v }), ADD_MAGS)}
-      {vaSelect("Resulting NV", val.nearVa, (v) => setVal({ ...val, nearVa: v }), VA_NEAR_VALUES, "col-start-2 xl:col-start-4")}
+      {vaSelect("Resulting NV", val.nearVa, (v) => setVal({ ...val, nearVa: v }), VA_NEAR_VALUES, "col-start-2 sm:col-start-4")}
     </div>
   );
 
@@ -343,7 +343,7 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
     </div>
   );
   const historyEyeFields = (rx: RxFields) => (
-    <div className="grid grid-cols-2 xl:grid-cols-[1fr_1fr_1.15fr_1.35fr] gap-x-3 gap-y-2 items-end">
+    <div className="grid grid-cols-2 sm:grid-cols-[88px_88px_64px_80px] gap-x-2 gap-y-2 items-end">
       <p className={SECTION_LABEL}>Distance</p>
       {roBox("Sph", fmtSigned(rx.sph))}
       {roBox("Cyl", fmtSigned(rx.cyl))}
@@ -351,7 +351,7 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
       {roBox("Resulting VA", rx.va || "—")}
       <p className={`${SECTION_LABEL} mt-2`}>Near</p>
       {roBox("Sph (Add)", fmtSigned(rx.nearSph))}
-      {roBox("Resulting NV", rx.nearVa || "—", "col-start-2 xl:col-start-4")}
+      {roBox("Resulting NV", rx.nearVa || "—", "col-start-2 sm:col-start-4")}
     </div>
   );
 
