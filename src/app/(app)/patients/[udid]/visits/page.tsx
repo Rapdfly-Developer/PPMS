@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { format, startOfDay } from "date-fns";
 import { Download } from "lucide-react";
 import { EmrViewerButton, VisitDownloadButton } from "../EmrViewerModal";
-import { VisitSummaryTabs } from "./VisitSummaryTabs";
+import { VisitSummaryTabs } from "../VisitSummaryTabs";
 
 export default async function PatientVisitsPage({
   params,

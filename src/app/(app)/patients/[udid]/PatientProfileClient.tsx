@@ -11,6 +11,7 @@ import {
   Pill, FlaskConical, Activity, Microscope, Eye, Paperclip, Upload, Camera,
 } from "lucide-react";
 import { EmrViewerButton, VisitDownloadButton } from "./EmrViewerModal";
+import { VisitSummaryTabs } from "./VisitSummaryTabs";
 import { transferPatient } from "../actions";
 import { attachResult } from "../../emr/[udid]/actions";
 export { TimeStampButton } from "./PatientTimeline";
@@ -507,6 +508,13 @@ function LastVisitSummarySection({ summary, udid }: { summary: LastVisitSummary;
             {summary.doctorName && <span className="flex items-center gap-1"><Stethoscope size={11} />Dr. {summary.doctorName}</span>}
           </div>
 
+          <VisitSummaryTabs
+            bare
+            visitId={summary.id}
+            complaint={summary.chiefComplaint}
+            diagnoses={summary.diagnoses.map((d) => d.description)}
+            shortContent={
+              <div className="space-y-3">
           {/* Chief Complaint */}
           {summary.chiefComplaint && (
             <div>
@@ -555,6 +563,9 @@ function LastVisitSummarySection({ summary, udid }: { summary: LastVisitSummary;
           {!summary.chiefComplaint && summary.diagnoses.length === 0 && summary.medications.length === 0 && (
             <p className="text-xs italic text-[var(--color-ink-300)]">No clinical data recorded for this visit.</p>
           )}
+              </div>
+            }
+          />
         </div>
       </div>
 

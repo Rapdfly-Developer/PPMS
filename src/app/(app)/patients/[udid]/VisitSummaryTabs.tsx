@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Sparkles, Loader2, Activity, Pill, FlaskConical, AlertCircle } from "lucide-react";
-import { getVisitEmrData } from "../emr-viewer-action";
+import { getVisitEmrData } from "./emr-viewer-action";
 import { generateAiSummary } from "@/app/(app)/patients/actions";
 
 type Tab = "short" | "long" | "ai";
@@ -11,9 +11,13 @@ interface Props {
   visitId: string;
   complaint: string | null;
   diagnoses: string[];
+  /** Optional richer short view (used by the patient profile's Last Visit Summary). */
+  shortContent?: React.ReactNode;
+  /** Omit the top divider when the host card already provides one. */
+  bare?: boolean;
 }
 
-export function VisitSummaryTabs({ visitId, complaint, diagnoses }: Props) {
+export function VisitSummaryTabs({ visitId, complaint, diagnoses, shortContent, bare }: Props) {
   const [tab, setTab] = useState<Tab>("short");
   const [emrData, setEmrData] = useState<any>(null);
   const [aiText, setAiText] = useState<string | null>(null);
@@ -49,7 +53,7 @@ export function VisitSummaryTabs({ visitId, complaint, diagnoses }: Props) {
   const diagText = diagnoses.filter(Boolean).join(", ");
 
   return (
-    <div className="border-t border-[var(--color-border)] pt-3">
+    <div className={bare ? "" : "border-t border-[var(--color-border)] pt-3"}>
       {/* Segmented tab selector */}
       <div className="inline-flex items-center gap-0.5 p-0.5 rounded-lg bg-[var(--color-surface-sunken)] mb-3">
         {(["short", "long", "ai"] as const).map((t) => (
@@ -87,7 +91,7 @@ export function VisitSummaryTabs({ visitId, complaint, diagnoses }: Props) {
         </div>
       ) : (
         <div className="animate-fade-in">
-          {tab === "short" && <ShortContent complaint={complaint} diagText={diagText} />}
+          {tab === "short" && (shortContent ?? <ShortContent complaint={complaint} diagText={diagText} />)}
           {tab === "long" && <LongContent data={emrData} complaint={complaint} diagText={diagText} />}
           {tab === "ai" && <AIContent text={aiText} error={aiError} />}
         </div>
