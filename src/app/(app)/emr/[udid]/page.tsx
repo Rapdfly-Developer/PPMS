@@ -2,7 +2,7 @@ import { requirePermission } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { notFound, redirect } from "next/navigation";
 import { Card } from "@/components/ui/Card";
-import { format } from "date-fns";
+import { format, isSameDay } from "date-fns";
 import {
   User, Eye, Activity, Link2, FileText, FolderOpen, Lock,
   Phone, Building2, Stethoscope, Calendar, AlertTriangle,
@@ -176,8 +176,12 @@ export default async function PatientDetailedEMR({
   // (Prisma client regenerates on restart; ChipOption table is seeded via /settings/chips)
   const customPmhChips: string[] = [];
 
-  // CLOSED visits are permanently read-only for everyone, including the doctor
-  const readOnly = user.role !== "DOCTOR" || activeVisit?.status === "CLOSED";
+  // CLOSED visits remain editable until midnight on the day of finalization,
+  // then become permanently read-only for everyone including the doctor.
+  const finalizedToday = activeVisit?.finalizedAt
+    ? isSameDay(new Date(activeVisit.finalizedAt), new Date())
+    : false;
+  const readOnly = user.role !== "DOCTOR" || (activeVisit?.status === "CLOSED" && !finalizedToday);
 
   // Closed by the EOD sweep rather than finalized & signed by the doctor
   const autoClosed =

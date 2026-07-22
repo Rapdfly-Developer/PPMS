@@ -7,12 +7,18 @@ import { after } from "next/server";
 import { notifyAdmission } from "@/lib/mailer";
 import { writeAudit } from "@/lib/audit";
 import { syncVisit } from "@/lib/integration/engine";
+import { isSameDay } from "date-fns";
 
 async function assertVisitAccess(visitId: string) {
   const user = await requireUser();
   const visit = await prisma.visit.findUnique({ where: { id: visitId } });
   if (!visit) throw new Error("Visit not found");
-  if (visit.status === "CLOSED") throw new Error("This consultation has been finalized and is read-only.");
+  if (visit.status === "CLOSED") {
+    const finAt = visit.finalizedAt ?? visit.date;
+    if (!isSameDay(finAt, new Date())) {
+      throw new Error("This consultation has been finalized and is read-only.");
+    }
+  }
   if (user.role === "DOCTOR" && visit.doctorId !== user.profileId) throw new Error("Forbidden");
   return visit;
 }
@@ -509,7 +515,7 @@ export async function closeVisit(visitId: string, udid: string) {
 
   await prisma.visit.update({
     where: { id: visitId },
-    data: { status: "CLOSED" },
+    data: { status: "CLOSED", finalizedAt: now },
   });
 
   // Resolve appointmentId — visits created via old flow may not have it linked
