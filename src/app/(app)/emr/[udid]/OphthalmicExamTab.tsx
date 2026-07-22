@@ -246,26 +246,19 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
 
   const signedSelect = (label: string, value: string, onChange: (v: string) => void, mags: string[]) => {
     const { sign, mag } = parseSignedVal(value);
-    const toggle = () => {
-      const ns = sign === "+" ? "-" : "+";
-      // Always persist the new sign, even when no magnitude selected yet
-      onChange(mag ? `${ns}${mag}` : ns);
-    };
     return (
       <div className="flex flex-col gap-0.5">
         <label className="text-[10px] text-[var(--color-ink-400)] font-medium">{label}</label>
         <div className="flex items-center gap-1">
-          <button
-            type="button"
+          <select
             disabled={!editable}
-            onClick={toggle}
-            className="w-6 h-6 rounded flex items-center justify-center text-xs font-bold border transition-colors disabled:opacity-40"
-            style={sign === "-"
-              ? { background: "var(--color-primary-600)", color: "#fff", borderColor: "var(--color-primary-600)" }
-              : { background: "#fff", color: "var(--color-ink-600)", borderColor: "var(--color-border)" }}
+            value={sign}
+            onChange={(e) => onChange(mag ? `${e.target.value}${mag}` : e.target.value)}
+            className={`w-12 ${SEL} font-bold text-center`}
           >
-            {sign}
-          </button>
+            <option value="+">+</option>
+            <option value="-">-</option>
+          </select>
           <select
             disabled={!editable}
             value={mag}
