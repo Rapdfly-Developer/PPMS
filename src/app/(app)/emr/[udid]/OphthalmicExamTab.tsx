@@ -78,14 +78,14 @@ function EyeColumns({ children }: { children: [React.ReactNode, React.ReactNode]
   return (
     // Padding is split evenly across the two cells (pr-8 / pl-8) with no column
     // gap, so both content boxes end up the same width and full-width fields
-    // line up across the divider. A gap plus one-sided padding would make the
+    // line up between the eyes. A gap plus one-sided padding would make the
     // left column 32px narrower than the right.
     <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6">
       <div className="min-w-0 md:pr-8">
         <p className="text-xs font-semibold text-[var(--color-primary-700)] uppercase tracking-wide mb-3">Right Eye</p>
         {children[0]}
       </div>
-      <div className="min-w-0 md:pl-8 md:border-l md:border-[var(--color-border)]">
+      <div className="min-w-0 md:pl-8">
         <p className="text-xs font-semibold text-[var(--color-primary-700)] uppercase tracking-wide mb-3">Left Eye</p>
         {children[1]}
       </div>
