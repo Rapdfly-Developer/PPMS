@@ -4,7 +4,6 @@ import { useState } from "react";
 import { History, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
-import { ConfirmDialog } from "./ConfirmDialog";
 import { Toast } from "./Toast";
 
 export type HistoryEntry = {
@@ -19,7 +18,7 @@ export function FieldWithHistory({
   children,
   headerExtra,
   onLoad,
-  currentValue,
+  currentValue: _currentValue,
 }: {
   label?: string;
   history: HistoryEntry[];
@@ -29,27 +28,13 @@ export function FieldWithHistory({
   currentValue?: string;
 }) {
   const [open, setOpen] = useState(false);
-  const [pending, setPending] = useState<string | null>(null);
   const [toast, setToast] = useState(false);
 
   const handleDoubleClick = (value: string) => {
     if (!onLoad) return;
-    if (currentValue?.trim()) {
-      setPending(value);
-    } else {
-      onLoad(value);
-      setOpen(false);
-      setToast(true);
-    }
-  };
-
-  const confirm = () => {
-    if (pending !== null && onLoad) {
-      onLoad(pending);
-      setOpen(false);
-      setToast(true);
-    }
-    setPending(null);
+    onLoad(value);
+    setOpen(false);
+    setToast(true);
   };
 
   return (
@@ -122,15 +107,6 @@ export function FieldWithHistory({
           </motion.div>
         )}
       </AnimatePresence>
-
-      {pending !== null && (
-        <ConfirmDialog
-          title="Load Previous Record?"
-          message="Loading this history will replace the current unsaved values. Do you want to continue?"
-          onConfirm={confirm}
-          onCancel={() => setPending(null)}
-        />
-      )}
 
       {toast && (
         <Toast message="Previous record loaded successfully." onDone={() => setToast(false)} />
