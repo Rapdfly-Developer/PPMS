@@ -72,8 +72,8 @@ export const ANTERIOR_SEGMENT_STRUCTURES: Record<string, string[]> = {
 
 export const POSTERIOR_SEGMENT_OPTIONS: Record<string, string[]> = {
   media:          ["Clear", "Vitreous haze", "Vitreous haemorrhage", "Asteroid hyalosis", "Synchysis scintillans"],
-  discSize:       [],
-  discShape:      [],
+  discSize:       ["Normal", "Small", "Large", "Megalopapilla"],
+  discShape:      ["Round", "Oval", "Tilted", "Oblique insertion", "Irregular"],
   discColour:     ["Normal", "Pale", "Hyperaemic", "Cupped", "Drusen", "Disc oedema", "Tilted disc"],
   discVessels:    [],
   discMargin:     [],
