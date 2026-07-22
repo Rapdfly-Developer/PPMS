@@ -70,14 +70,22 @@ export function OphthalmicExamTab({ visit, priorVisits, udid, role }: { visit: a
   );
 }
 
+// Grid rather than flex-wrap: the eyes stay side by side at every width above
+// the mobile breakpoint, instead of collapsing to stacked whenever the fields
+// inside happen to be wide. min-w-0 lets each cell shrink so its own content
+// wraps within the column rather than forcing the pair apart.
 function EyeColumns({ children }: { children: [React.ReactNode, React.ReactNode] }) {
   return (
-    <div className="flex flex-wrap gap-x-16 gap-y-8">
-      <div className="min-w-[220px]">
+    // Padding is split evenly across the two cells (pr-8 / pl-8) with no column
+    // gap, so both content boxes end up the same width and full-width fields
+    // line up across the divider. A gap plus one-sided padding would make the
+    // left column 32px narrower than the right.
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6">
+      <div className="min-w-0 md:pr-8">
         <p className="text-xs font-semibold text-[var(--color-primary-700)] uppercase tracking-wide mb-3">Right Eye</p>
         {children[0]}
       </div>
-      <div className="min-w-[220px]">
+      <div className="min-w-0 md:pl-8 md:border-l md:border-[var(--color-border)]">
         <p className="text-xs font-semibold text-[var(--color-primary-700)] uppercase tracking-wide mb-3">Left Eye</p>
         {children[1]}
       </div>
@@ -289,33 +297,20 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
   );
 
   const eyeFields = (val: typeof re, setVal: typeof setRe) => (
-    <div className="flex gap-12 flex-wrap">
-      {/* Left — refraction fields */}
-      <div className="flex flex-col gap-4">
-        <div>
-          <p className="text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-widest mb-3">Distance</p>
-          <div className="flex gap-4 flex-wrap items-end">
-            {signedSelect("Sph",   val.sph,  (v) => setVal({ ...val, sph: v }),  SPH_MAGS)}
-            {signedSelect("Cyl",   val.cyl,  (v) => setVal({ ...val, cyl: v }),  CYL_MAGS)}
-            {signedSelect("Axis°", val.axis, (v) => setVal({ ...val, axis: v }), AXIS_OPTS)}
-          </div>
-        </div>
-        <div>
-          <p className="text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-widest mb-3">Near</p>
-          <div className="flex gap-4 flex-wrap items-end">
-            {signedSelect("Sph (Add)", val.nearSph, (v) => setVal({ ...val, nearSph: v }), ADD_MAGS)}
-          </div>
-        </div>
-      </div>
-
-      {/* Right — VA / NV column */}
-      <div className="flex flex-col gap-4">
-        <div>
-          <p className="text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-widest mb-3 opacity-0 select-none">VA</p>
+    <div className="flex flex-col gap-4">
+      <div>
+        <p className="text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-widest mb-3">Distance</p>
+        <div className="flex gap-3 flex-wrap items-end">
+          {signedSelect("Sph",   val.sph,  (v) => setVal({ ...val, sph: v }),  SPH_MAGS)}
+          {signedSelect("Cyl",   val.cyl,  (v) => setVal({ ...val, cyl: v }),  CYL_MAGS)}
+          {signedSelect("Axis°", val.axis, (v) => setVal({ ...val, axis: v }), AXIS_OPTS)}
           {vaSelect("Resulting VA", val.va, (v) => setVal({ ...val, va: v }))}
         </div>
-        <div>
-          <p className="text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-widest mb-3 opacity-0 select-none">NV</p>
+      </div>
+      <div>
+        <p className="text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-widest mb-3">Near</p>
+        <div className="flex gap-3 flex-wrap items-end">
+          {signedSelect("Sph (Add)", val.nearSph, (v) => setVal({ ...val, nearSph: v }), ADD_MAGS)}
           {vaSelect("Resulting NV", val.nearVa, (v) => setVal({ ...val, nearVa: v }), VA_NEAR_VALUES)}
         </div>
       </div>
