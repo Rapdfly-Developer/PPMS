@@ -208,15 +208,9 @@ export default async function PatientDetailedEMR({
         visitDate={activeVisit?.date}
         visitType={activeVisit?.visitType}
       />
-      {/* Header bar */}
-      <div className="flex items-center gap-2 mb-3 flex-wrap no-print">
-        <h1 className="text-sm font-semibold text-[var(--color-ink-900)]">{patient.name}</h1>
-        {activeVisit && (
-          <span className="text-xs font-medium text-[var(--color-info-600)] bg-[var(--color-info-100)] px-2 py-0.5 rounded-lg">
-            {activeVisit.visitType}
-          </span>
-        )}
-        {activeVisit?.status === "CLOSED" && (
+      {/* Header bar — only show read-only badge when visit is closed */}
+      {activeVisit?.status === "CLOSED" && (
+        <div className="flex items-center gap-2 mb-3 flex-wrap no-print">
           <span
             className={`flex items-center gap-1.5 text-xs font-medium px-2.5 py-0.5 rounded-lg ${
               autoClosed ? "text-amber-700 bg-amber-100" : "text-emerald-700 bg-emerald-100"
@@ -224,8 +218,8 @@ export default async function PatientDetailedEMR({
           >
             <Lock size={11} /> {autoClosed ? "Auto-closed at EOD" : "Finalized & Signed"} — Read-only
           </span>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Locked banner */}
       {activeVisit?.status === "CLOSED" && (
