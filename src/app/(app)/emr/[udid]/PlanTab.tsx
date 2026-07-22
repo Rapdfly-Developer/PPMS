@@ -9,6 +9,7 @@ import { addMedication, removeMedication, saveRefraction } from "./actions";
 import { DispositionToggle, AdmitPanel, SurgicalPanel, FollowUpdatesPanel } from "./DispositionPanel";
 import { Plus, X, BedDouble, Stethoscope, ChevronDown, Pencil, Trash2, RefreshCw, Search, Pill } from "lucide-react";
 import { type MedEntry, searchMedications, categoryColor } from "@/lib/ophthalmic-medications";
+import { VA_SNELLEN_VALUES } from "@/lib/constants";
 
 /* ── Preset types & storage ──────────────────────────────────────────────── */
 
@@ -218,6 +219,34 @@ const FREQUENCY_OPTIONS = [
 ];
 
 const ROUTE_OPTIONS = ["Topical", "Oral", "IM", "IV", "Subconjunctival", "Intravitreal", "Subtenon"];
+
+/* ── Optical Prescription helpers ────────────────────────────────────────── */
+const OPT_SPH_MAGS  = ["", ...Array.from({ length: 81 }, (_, i) => (i * 0.25).toFixed(2))];
+const OPT_CYL_MAGS  = ["", ...Array.from({ length: 41 }, (_, i) => (i * 0.25).toFixed(2))];
+const OPT_ADD_MAGS  = ["", ...Array.from({ length: 16 }, (_, i) => ((i + 1) * 0.25).toFixed(2))];
+const OPT_AXIS_OPTS = ["", ...Array.from({ length: 180 }, (_, i) => String(i + 1))];
+const OPT_VA_NEAR   = ["-", "N6", "N8", "N10", "N12", "N18", "N24", "N36", "CF", "HM", "PL", "NPL"];
+
+function parseOptSignedVal(v: string): { sign: "+" | "-"; mag: string } {
+  if (!v || v === "+") return { sign: "+", mag: "" };
+  if (v === "-") return { sign: "-", mag: "" };
+  return v.startsWith("-") ? { sign: "-", mag: v.slice(1) } : { sign: "+", mag: v.replace(/^\+/, "") };
+}
+
+function OptEyeColumns({ children }: { children: [React.ReactNode, React.ReactNode] }) {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6">
+      <div className="min-w-0 md:pr-8">
+        <p className="text-xs font-semibold text-[var(--color-primary-700)] uppercase tracking-wide mb-3">Right Eye</p>
+        {children[0]}
+      </div>
+      <div className="min-w-0 md:pl-8">
+        <p className="text-xs font-semibold text-[var(--color-primary-700)] uppercase tracking-wide mb-3">Left Eye</p>
+        {children[1]}
+      </div>
+    </div>
+  );
+}
 
 function PrescriptionCard({ visit, udid }: { visit: any; udid: string }) {
   const [pending, startTransition] = useTransition();
@@ -563,63 +592,96 @@ function PrescriptionCard({ visit, udid }: { visit: any; udid: string }) {
   );
 }
 
-function OpticalPrescriptionCard({ visit }: { visit: any; udid: string }) {
+function OpticalPrescriptionCard({ visit, udid }: { visit: any; udid: string }) {
   const rc = visit.refraction;
-  const re = parseJSON(rc?.re, { sph: "", cyl: "", axis: "", nearSph: "" });
-  const le = parseJSON(rc?.le, { sph: "", cyl: "", axis: "", nearSph: "" });
+  type RxFields = { sph: string; cyl: string; axis: string; nearSph: string; va: string; nearVa: string };
+  const emptyRx: RxFields = { sph: "", cyl: "", axis: "", nearSph: "", va: "", nearVa: "" };
+  const [re, setRe] = useState<RxFields>(() => parseJSON(rc?.re, emptyRx));
+  const [le, setLe] = useState<RxFields>(() => parseJSON(rc?.le, emptyRx));
 
-  const labelCell = (label: string) => (
-    <th className="px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-[var(--color-ink-500)] text-left border border-[var(--color-border)] bg-[var(--color-surface-sunken)] w-28">
-      {label}
-    </th>
+  const state = useAutoSave({ re: JSON.stringify(re), le: JSON.stringify(le) }, async (d) => {
+    await saveRefraction(visit.id, udid, d);
+  });
+
+  const SEL = "rounded border border-[var(--color-border)] bg-white px-1.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-400)]";
+
+  const signedSelect = (label: string, value: string, onChange: (v: string) => void, mags: string[]) => {
+    const { sign, mag } = parseOptSignedVal(value);
+    const toggle = () => { const ns = sign === "+" ? "-" : "+"; onChange(mag ? `${ns}${mag}` : ns); };
+    return (
+      <div className="flex flex-col gap-0.5">
+        <label className="text-[10px] text-[var(--color-ink-400)] font-medium">{label}</label>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={toggle}
+            className="w-6 h-6 rounded flex items-center justify-center text-xs font-bold border transition-colors"
+            style={sign === "-"
+              ? { background: "var(--color-primary-600)", color: "#fff", borderColor: "var(--color-primary-600)" }
+              : { background: "#fff", color: "var(--color-ink-600)", borderColor: "var(--color-border)" }}
+          >
+            {sign}
+          </button>
+          <select
+            value={mag}
+            onChange={(e) => onChange(e.target.value ? `${sign}${e.target.value}` : sign)}
+            className={`w-full min-w-0 ${SEL}`}
+          >
+            {mags.map((m) => <option key={m} value={m}>{m || "—"}</option>)}
+          </select>
+        </div>
+      </div>
+    );
+  };
+
+  const axisSelect = (label: string, value: string, onChange: (v: string) => void) => (
+    <div className="flex flex-col gap-0.5 min-w-0">
+      <label className="text-[10px] text-[var(--color-ink-400)] font-medium">{label}</label>
+      <select
+        value={parseOptSignedVal(value).mag}
+        onChange={(e) => onChange(e.target.value)}
+        className={`w-full min-w-0 ${SEL}`}
+      >
+        {OPT_AXIS_OPTS.map((a) => <option key={a} value={a}>{a || "—"}</option>)}
+      </select>
+    </div>
   );
 
-  const eyeHeader = (label: string) => (
-    <th className="px-3 py-2 text-[10px] font-semibold uppercase tracking-wide text-[var(--color-primary-700)] bg-[var(--color-primary-50)] border border-[var(--color-border)] text-center w-32">
-      {label}
-    </th>
+  const vaSelect = (label: string, value: string, onChange: (v: string) => void, options: readonly string[] = VA_SNELLEN_VALUES, className = "") => (
+    <div className={`flex flex-col gap-0.5 min-w-0 ${className}`}>
+      <label className="text-[10px] text-[var(--color-ink-400)] font-medium">{label}</label>
+      <select value={value || "-"} onChange={(e) => onChange(e.target.value)} className={`w-full min-w-0 ${SEL}`}>
+        {options.map((v) => <option key={v} value={v}>{v}</option>)}
+      </select>
+    </div>
   );
 
-  const valCell = (value: string) => (
-    <td className="px-3 py-2 text-center text-xs text-[var(--color-ink-700)] border border-[var(--color-border)]">
-      <span className={value ? "font-mono" : "text-[var(--color-ink-300)]"}>{value || "—"}</span>
-    </td>
-  );
+  const SECTION_LABEL = "col-span-2 sm:col-span-5 text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-widest";
 
-  const rows: [string, string, string][] = [
-    ["SPH",          re.sph,    le.sph],
-    ["CYL",          re.cyl,    le.cyl],
-    ["AXIS",         re.axis,   le.axis],
-    ["Resulting VA", re.nearSph, le.nearSph],
-  ];
+  const eyeFields = (val: RxFields, setVal: (v: RxFields) => void) => (
+    <div className="grid grid-cols-2 sm:grid-cols-[88px_88px_64px_20px_80px] gap-x-2 gap-y-2 items-end">
+      <p className={SECTION_LABEL}>Distance</p>
+      {signedSelect("Sph",       val.sph,     (v) => setVal({ ...val, sph: v }),     OPT_SPH_MAGS)}
+      {signedSelect("Cyl",       val.cyl,     (v) => setVal({ ...val, cyl: v }),     OPT_CYL_MAGS)}
+      {axisSelect("Axis°",       val.axis,    (v) => setVal({ ...val, axis: v }))}
+      <div aria-hidden="true" className="hidden sm:block" />
+      {vaSelect("Resulting VA",  val.va,      (v) => setVal({ ...val, va: v }))}
+      <p className={`${SECTION_LABEL} mt-2`}>Near</p>
+      {signedSelect("Sph (Add)", val.nearSph, (v) => setVal({ ...val, nearSph: v }), OPT_ADD_MAGS)}
+      {vaSelect("Resulting NV",  val.nearVa,  (v) => setVal({ ...val, nearVa: v }), OPT_VA_NEAR, "col-start-2 sm:col-start-5")}
+    </div>
+  );
 
   return (
     <Card>
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-3">
         <p className="text-sm font-medium text-[var(--color-ink-700)]">Optical Prescription</p>
-        <p className="text-[10px] text-[var(--color-ink-400)]">Imported from Refractive Correction</p>
+        <SaveIndicator state={state} />
       </div>
-
-      <div className="overflow-x-auto">
-        <table className="border-collapse text-sm">
-          <thead>
-            <tr>
-              {labelCell("")}
-              {eyeHeader("RE")}
-              {eyeHeader("LE")}
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map(([label, reVal, leVal]) => (
-              <tr key={label}>
-                {labelCell(label)}
-                {valCell(reVal)}
-                {valCell(leVal)}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <OptEyeColumns>
+        {eyeFields(re, setRe)}
+        {eyeFields(le, setLe)}
+      </OptEyeColumns>
     </Card>
   );
 }
