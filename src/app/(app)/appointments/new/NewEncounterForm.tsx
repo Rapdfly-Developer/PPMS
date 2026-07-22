@@ -105,10 +105,11 @@ export function NewEncounterForm({
       if (!selectedPatient) { setError("Please select a patient."); return; }
       fd.set("patientId", selectedPatient.id);
     } else {
-      if (!name.trim())   { setError("Patient name is required."); return; }
-      if (!dob)           { setError("Date of birth is required."); return; }
-      if (!mobile.trim()) { setError("Phone number is required."); return; }
-      if (!patientPhoto)  { setError("Patient photo is required."); return; }
+      if (!name.trim())        { setError("Patient name is required."); return; }
+      if (!dob)                { setError("Date of birth is required."); return; }
+      if (!mobile.trim())      { setError("Phone number is required."); return; }
+      if (!occupation.trim())  { setError("Occupation is required."); return; }
+      if (!patientPhoto)       { setError("Patient photo is required."); return; }
 
       const dobAge = Math.floor(
         (Date.now() - new Date(dob).getTime()) / (365.25 * 86_400_000)
@@ -118,7 +119,7 @@ export function NewEncounterForm({
       fd.set("sex", sex);
       fd.set("mobile", mobile.trim());
       fd.set("category", category);
-      if (occupation.trim()) fd.set("occupation", occupation.trim());
+      fd.set("occupation", occupation.trim());
       if (notes.trim()) fd.set("notes", notes.trim());
       fd.set("complaint", complaint.trim());
       if (patientPhoto) fd.set("patientPhoto", patientPhoto.savedName);
@@ -318,7 +319,7 @@ export function NewEncounterForm({
 
               {/* Occupation */}
               <div>
-                <FieldLabel icon={<Building2 size={12} />}>Occupation</FieldLabel>
+                <FieldLabel icon={<Building2 size={12} />}>Occupation *</FieldLabel>
                 <input
                   type="text"
                   placeholder="e.g. Farmer, Teacher, Software Engineer"

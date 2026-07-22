@@ -51,8 +51,8 @@ export async function createWalkInEncounter(formData: FormData) {
     const photoUrl = (formData.get("patientPhoto") as string)?.trim() || null;
     const aadhaarPhotoUrl = (formData.get("aadhaarPhoto") as string)?.trim() || null;
 
-    if (!name || !ageRaw || !sex || !mobile || !complaint) {
-      return { error: "Patient name, age, sex, phone and chief complaint are required." };
+    if (!name || !ageRaw || !sex || !mobile || !complaint || !occupation) {
+      return { error: "Patient name, age, sex, phone, occupation and chief complaint are required." };
     }
     const age = parseInt(ageRaw, 10);
     if (isNaN(age) || age < 0 || age > 120) return { error: "Invalid age." };
