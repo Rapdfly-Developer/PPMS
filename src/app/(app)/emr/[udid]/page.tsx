@@ -210,11 +210,6 @@ export default async function PatientDetailedEMR({
       />
       {/* Header bar */}
       <div className="flex items-center gap-2 mb-3 flex-wrap no-print">
-        <BackButton
-          href={returnTo || `/patients/${udid}`}
-          label="Back to Patient"
-        />
-        <span className="text-[var(--color-border)]">|</span>
         <h1 className="text-sm font-semibold text-[var(--color-ink-900)]">{patient.name}</h1>
         {activeVisit && (
           <span className="text-xs font-medium text-[var(--color-info-600)] bg-[var(--color-info-100)] px-2 py-0.5 rounded-lg">
@@ -380,52 +375,6 @@ export default async function PatientDetailedEMR({
           </div>
         </div>
 
-        {/* ── Stats bar ── */}
-        <div className="border-t border-[var(--color-border)] grid grid-cols-2 sm:grid-cols-4 gap-px bg-[var(--color-border)]">
-          {/* Total Visits */}
-          <div className="flex items-center gap-2.5 px-4 py-3 bg-[var(--color-surface-card)] hover:bg-[var(--color-surface-sunken)] transition-colors">
-            <div className="w-8 h-8 rounded-lg bg-[var(--color-primary-100)] flex items-center justify-center shrink-0">
-              <Activity size={15} className="text-[var(--color-primary-600)]" />
-            </div>
-            <div>
-              <div className="text-base font-bold text-[var(--color-ink-900)] leading-none tabular-nums">{totalVisits}</div>
-              <div className="text-[10px] text-[var(--color-ink-400)] mt-0.5">Total Visits</div>
-            </div>
-          </div>
-
-          {/* Prescriptions */}
-          <div className="flex items-center gap-2.5 px-4 py-3 bg-[var(--color-surface-card)] hover:bg-[var(--color-surface-sunken)] transition-colors">
-            <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
-              <Pill size={15} className="text-blue-600" />
-            </div>
-            <div>
-              <div className="text-base font-bold text-[var(--color-ink-900)] leading-none tabular-nums">{activePrescriptions}</div>
-              <div className="text-[10px] text-[var(--color-ink-400)] mt-0.5">Prescriptions</div>
-            </div>
-          </div>
-
-          {/* Prior Records */}
-          <div className="flex items-center gap-2.5 px-4 py-3 bg-[var(--color-surface-card)] hover:bg-[var(--color-surface-sunken)] transition-colors">
-            <div className="w-8 h-8 rounded-lg bg-violet-50 flex items-center justify-center shrink-0">
-              <FileText size={15} className="text-violet-600" />
-            </div>
-            <div>
-              <div className="text-base font-bold text-[var(--color-ink-900)] leading-none tabular-nums">{uploadedReports}</div>
-              <div className="text-[10px] text-[var(--color-ink-400)] mt-0.5">Prior Records</div>
-            </div>
-          </div>
-
-          {/* Follow-ups */}
-          <div className="flex items-center gap-2.5 px-4 py-3 bg-[var(--color-surface-card)] hover:bg-[var(--color-surface-sunken)] transition-colors">
-            <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center shrink-0">
-              <CalendarCheck size={15} className="text-amber-600" />
-            </div>
-            <div>
-              <div className="text-base font-bold text-[var(--color-ink-900)] leading-none tabular-nums">{pendingFollowUps}</div>
-              <div className="text-[10px] text-[var(--color-ink-400)] mt-0.5">Follow-ups</div>
-            </div>
-          </div>
-        </div>
       </div>
 
       {!activeVisit ? (
