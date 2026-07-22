@@ -244,135 +244,265 @@ export default async function PatientDetailedEMR({
       )}
 
       {/* ── Premium Patient Banner ── */}
-      <div className="bg-[var(--color-surface-card)] rounded-2xl border border-[var(--color-border)] shadow-sm mb-5 overflow-hidden">
+      <div
+        className="relative rounded-[22px] overflow-hidden mb-5"
+        style={{
+          background: "linear-gradient(135deg, #F0F9FF 0%, #F8FAFC 45%, #ECFDF5 100%)",
+          boxShadow: "0 15px 40px rgba(0,0,0,0.08)",
+          border: "1px solid rgba(255,255,255,0.65)",
+        }}
+      >
+        {/* Blurred gradient orbs */}
+        <div className="absolute -top-20 -right-20 w-72 h-72 rounded-full pointer-events-none" style={{ background: "radial-gradient(circle, rgba(37,99,235,0.13) 0%, transparent 65%)", filter: "blur(40px)" }} />
+        <div className="absolute -bottom-20 -left-20 w-72 h-72 rounded-full pointer-events-none" style={{ background: "radial-gradient(circle, rgba(16,185,129,0.11) 0%, transparent 65%)", filter: "blur(40px)" }} />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-40 pointer-events-none" style={{ background: "radial-gradient(ellipse, rgba(14,165,233,0.06) 0%, transparent 70%)", filter: "blur(24px)" }} />
 
-        {/* Main info section */}
-        <div className="p-4 sm:p-5">
-          <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
+        {/* Subtle dot grid + medical cross pattern */}
+        <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ opacity: 0.035 }} xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <pattern id="emr-dots" x="0" y="0" width="28" height="28" patternUnits="userSpaceOnUse">
+              <circle cx="2" cy="2" r="1.4" fill="#1E40AF" />
+            </pattern>
+            <pattern id="emr-cross" x="6" y="6" width="56" height="56" patternUnits="userSpaceOnUse">
+              <line x1="28" y1="22" x2="28" y2="34" stroke="#059669" strokeWidth="2" strokeLinecap="round" />
+              <line x1="22" y1="28" x2="34" y2="28" stroke="#059669" strokeWidth="2" strokeLinecap="round" />
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#emr-dots)" />
+          <rect width="100%" height="100%" fill="url(#emr-cross)" />
+        </svg>
 
-            {/* Left block: avatar + info */}
-            <div className="flex gap-3 sm:gap-4 flex-1 min-w-0">
+        {/* Main content */}
+        <div className="relative z-10 p-5 sm:p-6 lg:p-7">
+          <div className="flex flex-col lg:flex-row gap-5 lg:gap-8">
 
-              {/* Avatar */}
-              <div className="shrink-0">
+            {/* ─ Left: avatar + patient details ─ */}
+            <div className="flex gap-4 sm:gap-5 flex-1 min-w-0">
+
+              {/* Avatar with gradient ring */}
+              <div className="shrink-0 mt-0.5">
                 <div className="relative">
-                  <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full overflow-hidden ring-[3px] ring-[var(--color-primary-300)] shadow-md bg-[var(--color-primary-100)] flex items-center justify-center">
-                    {patient.photoUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={patient.photoUrl.startsWith("http") ? patient.photoUrl : `/api/upload?file=${encodeURIComponent(patient.photoUrl)}`}
-                        alt={patient.name}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <User size={26} className="text-[var(--color-primary-400)]" />
-                    )}
+                  <div
+                    className="rounded-full p-[3px]"
+                    style={{
+                      background: "linear-gradient(135deg, #2563EB 0%, #0EA5E9 50%, #10B981 100%)",
+                      boxShadow: "0 4px 20px rgba(37,99,235,0.22)",
+                      width: 88, height: 88,
+                    }}
+                  >
+                    <div className="w-full h-full rounded-full overflow-hidden bg-white flex items-center justify-center">
+                      {patient.photoUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={patient.photoUrl.startsWith("http") ? patient.photoUrl : `/api/upload?file=${encodeURIComponent(patient.photoUrl)}`}
+                          alt={patient.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <User size={34} style={{ color: "#2563EB" }} />
+                      )}
+                    </div>
                   </div>
                   {activeVisit && (
-                    <span className={`absolute bottom-0.5 right-0.5 w-3.5 h-3.5 rounded-full border-2 border-[var(--color-surface-card)] shadow-sm ${
-                      activeVisit.status === "IN_PROGRESS" ? "bg-emerald-500" : "bg-slate-400"
-                    }`} />
+                    <span
+                      className="absolute bottom-0.5 right-0.5 w-5 h-5 rounded-full border-[3px] border-white"
+                      style={{
+                        background: activeVisit.status === "IN_PROGRESS" ? "#10B981" : "#94A3B8",
+                        boxShadow: activeVisit.status === "IN_PROGRESS"
+                          ? "0 0 0 3px rgba(16,185,129,0.2), 0 0 10px rgba(16,185,129,0.35)"
+                          : undefined,
+                      }}
+                    />
                   )}
                 </div>
               </div>
 
-              {/* Patient details */}
+              {/* Patient text details */}
               <div className="flex-1 min-w-0">
-                {/* Name row */}
-                <div className="flex flex-wrap items-center gap-1.5 mb-2">
-                  <h2 className="text-lg sm:text-xl font-bold text-[var(--color-ink-900)] leading-tight">{patient.name}</h2>
-                  <span className="text-sm text-[var(--color-ink-400)]">{patient.age}y · {patient.sex.charAt(0).toUpperCase()}</span>
+                {/* Name + age/sex + category + diagnosis */}
+                <div className="flex flex-wrap items-baseline gap-2 mb-2.5">
+                  <h2
+                    className="leading-tight"
+                    style={{ fontSize: 26, fontWeight: 800, color: "#111827", letterSpacing: "-0.3px" }}
+                  >
+                    {patient.name}
+                  </h2>
+                  <span className="text-[15px] font-medium" style={{ color: "#6B7280" }}>
+                    {patient.age}y · {patient.sex.charAt(0).toUpperCase()}
+                  </span>
                   {patient.category !== "GENERAL" && (
-                    <span className={`text-[10px] font-bold tracking-wide px-2 py-0.5 rounded-full ${
-                      patient.category === "BPL"        ? "bg-amber-100 text-amber-700" :
-                      patient.category === "SUBSIDISED" ? "bg-sky-100 text-sky-700" :
-                      patient.category === "ECHS"       ? "bg-green-100 text-green-700" :
-                      patient.category === "INSURANCE"  ? "bg-violet-100 text-violet-700" :
-                      "bg-slate-100 text-slate-600"
-                    }`}>{patient.category}</span>
+                    <span
+                      className="text-[10px] font-bold tracking-wide px-2 py-0.5 rounded-full"
+                      style={{
+                        background: patient.category === "BPL" ? "#FEF3C7" :
+                          patient.category === "SUBSIDISED" ? "#E0F2FE" :
+                          patient.category === "ECHS"       ? "#D1FAE5" :
+                          patient.category === "INSURANCE"  ? "#EDE9FE" : "#F1F5F9",
+                        color: patient.category === "BPL" ? "#92400E" :
+                          patient.category === "SUBSIDISED" ? "#0369A1" :
+                          patient.category === "ECHS"       ? "#065F46" :
+                          patient.category === "INSURANCE"  ? "#5B21B6" : "#475569",
+                      }}
+                    >
+                      {patient.category}
+                    </span>
                   )}
                   {latestDiagnosis && (
-                    <span className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-[var(--color-primary-50)] text-[var(--color-primary-700)] border border-[var(--color-primary-200)]">
+                    <span
+                      className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full"
+                      style={{ background: "#EFF6FF", color: "#1D4ED8", border: "1px solid #BFDBFE" }}
+                    >
                       {latestDiagnosis.description}{latestDiagnosis.laterality ? ` · ${latestDiagnosis.laterality}` : ""}
                     </span>
                   )}
                 </div>
 
-                {/* Info chips */}
-                <div className="flex flex-wrap gap-1.5">
-                  <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-[var(--color-primary-50)] text-[var(--color-primary-700)] border border-[var(--color-primary-200)] font-mono font-semibold">
+                {/* Patient ID — premium gradient pill */}
+                <div className="mb-3">
+                  <span
+                    className="inline-flex items-center gap-1.5 text-[11px] font-bold font-mono px-2.5 py-1 rounded-full"
+                    style={{
+                      background: "linear-gradient(135deg, #EFF6FF, #DBEAFE)",
+                      color: "#1D4ED8",
+                      border: "1px solid #BFDBFE",
+                      boxShadow: "0 1px 6px rgba(37,99,235,0.14)",
+                    }}
+                  >
                     <Hash size={10} />{patient.udid ?? "—"}
                   </span>
+                </div>
+
+                {/* Info chips */}
+                <div className="flex flex-wrap gap-2">
                   {patient.mobile && (
-                    <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-[var(--color-surface-sunken)] text-[var(--color-ink-600)] border border-[var(--color-border)]">
-                      <Phone size={10} />{patient.mobile}
+                    <span
+                      className="inline-flex items-center gap-1.5 text-[11px] font-medium px-3 py-1.5 rounded-full transition-all duration-200 cursor-default"
+                      style={{ background: "rgba(14,165,233,0.08)", color: "#0369A1", border: "1px solid rgba(14,165,233,0.22)" }}
+                    >
+                      <Phone size={11} />{patient.mobile}
                     </span>
                   )}
                   {patient.registeredAt && (
-                    <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-[var(--color-surface-sunken)] text-[var(--color-ink-600)] border border-[var(--color-border)]">
-                      <Building2 size={10} />{patient.registeredAt.name}
+                    <span
+                      className="inline-flex items-center gap-1.5 text-[11px] font-medium px-3 py-1.5 rounded-full transition-all duration-200 cursor-default"
+                      style={{ background: "rgba(16,185,129,0.08)", color: "#065F46", border: "1px solid rgba(16,185,129,0.22)" }}
+                    >
+                      <Building2 size={11} />{patient.registeredAt.name}
                     </span>
                   )}
                   {doctorName && (
-                    <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-[var(--color-surface-sunken)] text-[var(--color-ink-600)] border border-[var(--color-border)]">
-                      <Stethoscope size={10} />Dr. {doctorName}
+                    <span
+                      className="inline-flex items-center gap-1.5 text-[11px] font-medium px-3 py-1.5 rounded-full transition-all duration-200 cursor-default"
+                      style={{ background: "rgba(139,92,246,0.08)", color: "#5B21B6", border: "1px solid rgba(139,92,246,0.22)" }}
+                    >
+                      <Stethoscope size={11} />Dr. {doctorName}
                     </span>
                   )}
                   {priorVisits[0] && (
-                    <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-[var(--color-surface-sunken)] text-[var(--color-ink-600)] border border-[var(--color-border)]">
-                      <Calendar size={10} />Last: {format(new Date(priorVisits[0].date), "d MMM yyyy")}
+                    <span
+                      className="inline-flex items-center gap-1.5 text-[11px] font-medium px-3 py-1.5 rounded-full transition-all duration-200 cursor-default"
+                      style={{ background: "rgba(245,158,11,0.08)", color: "#92400E", border: "1px solid rgba(245,158,11,0.22)" }}
+                    >
+                      <Calendar size={11} />Last: {format(new Date(priorVisits[0].date), "d MMM yyyy")}
                     </span>
                   )}
                   {activeVisit?.generalExam?.nkda ? (
-                    <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                      <CheckCircle2 size={10} />NKDA
+                    <span
+                      className="inline-flex items-center gap-1.5 text-[11px] font-medium px-3 py-1.5 rounded-full"
+                      style={{ background: "rgba(16,185,129,0.08)", color: "#065F46", border: "1px solid rgba(16,185,129,0.28)" }}
+                    >
+                      <CheckCircle2 size={11} />NKDA
                     </span>
                   ) : activeVisit?.generalExam?.allergies ? (
-                    <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
-                      <AlertTriangle size={10} />{activeVisit.generalExam.allergies}
+                    <span
+                      className="inline-flex items-center gap-1.5 text-[11px] font-medium px-3 py-1.5 rounded-full"
+                      style={{ background: "rgba(239,68,68,0.08)", color: "#991B1B", border: "1px solid rgba(239,68,68,0.22)" }}
+                    >
+                      <AlertTriangle size={11} />{activeVisit.generalExam.allergies}
                     </span>
                   ) : null}
                 </div>
-
-                {/* Chief complaint */}
-                {activeVisit?.generalExam?.chiefComplaint && (
-                  <p className="text-[11px] italic text-[var(--color-ink-400)] mt-2">
-                    CC: {activeVisit.generalExam.chiefComplaint}
-                  </p>
-                )}
               </div>
             </div>
 
-            {/* Right: active visit status panel */}
+            {/* ─ Right: Visit Status Card ─ */}
             {activeVisit && (
               <div className="shrink-0 lg:w-52 xl:w-56">
-                <div className="rounded-xl border border-[var(--color-primary-200)] bg-[var(--color-primary-50)] p-3 h-full">
-                  <div className="flex items-center gap-2 mb-2.5">
-                    <span className={`w-2 h-2 rounded-full shrink-0 ${
-                      activeVisit.status === "IN_PROGRESS" ? "bg-emerald-500" : "bg-slate-400"
-                    }`} />
-                    <span className="text-xs font-bold text-[var(--color-primary-700)] uppercase tracking-wide">
-                      {activeVisit.status === "IN_PROGRESS" ? "Active Visit" : "Closed Visit"}
-                    </span>
-                  </div>
-                  <div className="space-y-1">
-                    <div className="text-xs font-semibold text-[var(--color-ink-800)]">{activeVisit.visitType}</div>
-                    <div className="text-[11px] text-[var(--color-ink-400)]">
-                      {format(new Date(activeVisit.date), "EEE, d MMM yyyy")}
-                    </div>
-                    {activeVisit.appointment?.dateTime && (
-                      <div className="flex items-center gap-1 text-[11px] text-[var(--color-ink-400)]">
-                        <Clock size={10} className="shrink-0" />
-                        {new Date(activeVisit.appointment.dateTime).toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit", hour12: true, timeZone: "Asia/Kolkata" })}
+                <div
+                  className="rounded-2xl p-4 h-full relative overflow-hidden"
+                  style={{
+                    background: activeVisit.status === "IN_PROGRESS"
+                      ? "linear-gradient(135deg, #1D4ED8 0%, #2563EB 55%, #0EA5E9 100%)"
+                      : "linear-gradient(135deg, #047857 0%, #10B981 60%, #34D399 100%)",
+                    boxShadow: activeVisit.status === "IN_PROGRESS"
+                      ? "0 8px 28px rgba(37,99,235,0.28)"
+                      : "0 8px 28px rgba(16,185,129,0.28)",
+                  }}
+                >
+                  <div className="absolute -top-8 -right-8 w-28 h-28 rounded-full pointer-events-none" style={{ background: "rgba(255,255,255,0.07)" }} />
+                  <div className="absolute -bottom-6 -left-6 w-20 h-20 rounded-full pointer-events-none" style={{ background: "rgba(255,255,255,0.05)" }} />
+                  <div className="relative z-10">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0" style={{ background: "rgba(255,255,255,0.18)" }}>
+                        {activeVisit.status === "IN_PROGRESS"
+                          ? <Activity size={14} className="text-white" />
+                          : <CheckCircle2 size={14} className="text-white" />}
                       </div>
-                    )}
+                      <span className="text-[10px] font-bold text-white uppercase tracking-widest">
+                        {activeVisit.status === "IN_PROGRESS" ? "Active Visit" : "Closed Visit"}
+                      </span>
+                    </div>
+                    <p className="text-[15px] font-bold text-white mb-3">{activeVisit.visitType}</p>
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-2">
+                        <Calendar size={11} style={{ color: "rgba(255,255,255,0.65)" }} />
+                        <span className="text-[11px]" style={{ color: "rgba(255,255,255,0.85)" }}>
+                          {format(new Date(activeVisit.date), "EEE, d MMM yyyy")}
+                        </span>
+                      </div>
+                      {activeVisit.appointment?.dateTime && (
+                        <div className="flex items-center gap-2">
+                          <Clock size={11} style={{ color: "rgba(255,255,255,0.65)" }} />
+                          <span className="text-[11px]" style={{ color: "rgba(255,255,255,0.85)" }}>
+                            {new Date(activeVisit.appointment.dateTime).toLocaleTimeString("en-IN", {
+                              hour: "numeric", minute: "2-digit", hour12: true, timeZone: "Asia/Kolkata",
+                            })}
+                          </span>
+                        </div>
+                      )}
+                      {doctorName && (
+                        <div className="flex items-center gap-2">
+                          <Stethoscope size={11} style={{ color: "rgba(255,255,255,0.65)" }} />
+                          <span className="text-[11px]" style={{ color: "rgba(255,255,255,0.85)" }}>Dr. {doctorName}</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
             )}
           </div>
-        </div>
 
+          {/* Chief Complaint — premium accent container */}
+          {activeVisit?.generalExam?.chiefComplaint && (
+            <div
+              className="mt-5 rounded-xl px-4 py-3"
+              style={{ background: "rgba(37,99,235,0.04)", borderLeft: "3px solid #2563EB" }}
+            >
+              <p className="text-[9px] font-bold uppercase tracking-[0.12em] mb-1" style={{ color: "#9CA3AF" }}>Chief Complaint</p>
+              <p className="text-[13px] leading-relaxed" style={{ color: "#374151" }}>
+                {activeVisit.generalExam.chiefComplaint
+                  .split(/(\[RE\]|\[LE\]|\[OU\])/g)
+                  .map((part, i) =>
+                    part === "[RE]" ? <span key={i} className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-bold rounded mx-0.5 align-middle" style={{ background: "#DBEAFE", color: "#1D4ED8" }}>RE</span> :
+                    part === "[LE]" ? <span key={i} className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-bold rounded mx-0.5 align-middle" style={{ background: "#E0F2FE", color: "#0369A1" }}>LE</span> :
+                    part === "[OU]" ? <span key={i} className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-bold rounded mx-0.5 align-middle" style={{ background: "#F3E8FF", color: "#6D28D9" }}>OU</span> :
+                    part
+                  )}
+              </p>
+            </div>
+          )}
+        </div>
       </div>
 
       {!activeVisit ? (
