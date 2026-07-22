@@ -643,44 +643,41 @@ function IOPCard({ visit, udid, editable, priorVisits }: { visit: any; udid: str
         </div>
       )}
 
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm min-w-[320px]">
+      <div className="overflow-x-auto rounded-lg border border-[var(--color-border)]">
+        <table className="w-full text-xs border-collapse">
           <thead>
-            <tr className="text-left text-xs text-[var(--color-ink-400)] uppercase border-b border-[var(--color-border)]">
-              <th className="py-1.5 pr-3">Eye</th>
-              <th className="pr-3">Method</th>
-              <th className="pr-3">Value (mmHg)</th>
-              <th className="pr-3">Time</th>
-              <th></th>
+            <tr className="bg-[var(--color-surface-sunken)] text-[var(--color-ink-400)] uppercase tracking-wide border-b border-[var(--color-border)]">
+              <th className="py-1.5 px-3 text-left font-semibold">Method · Time</th>
+              <th className="py-1.5 px-3 text-center font-semibold text-[var(--color-primary-700)]">RE</th>
+              <th className="py-1.5 px-3 text-center font-semibold text-[var(--color-primary-700)]">LE</th>
+              {editable && <th className="py-1.5 px-2" />}
             </tr>
           </thead>
           <tbody className="divide-y divide-[var(--color-border)]">
-            {readings.flatMap((r) => {
-              const rows = [];
-              if (r.re != null) rows.push({ id: r.id, eye: "RE", value: r.re, method: r.method, takenAt: r.takenAt, isFirst: true, r });
-              if (r.le != null) rows.push({ id: r.id + "_le", eye: "LE", value: r.le, method: r.method, takenAt: r.takenAt, isFirst: r.re == null, r });
-              return rows;
-            }).map((row) => (
-              <tr key={row.id}>
-                <td className="py-1.5 pr-3 font-semibold text-[var(--color-primary-700)]">{row.eye}</td>
-                <td className="pr-3">{row.method}</td>
-                <td className="pr-3 font-medium">{row.value}</td>
-                <td className="text-xs text-[var(--color-ink-400)] pr-3">{format(new Date(row.takenAt), "h:mm a, dd MMM")}</td>
-                <td className="py-1.5">
-                  {editable && row.isFirst && (
-                    <button disabled={deletePending}
-                      onClick={() => startDelete(() => removeIOPReading(row.r.id, udid))}
+            {readings.length === 0 ? (
+              <tr><td colSpan={editable ? 4 : 3} className="py-4 text-center text-[var(--color-ink-400)]">No readings yet.</td></tr>
+            ) : readings.map((r: any) => (
+              <tr key={r.id} className="hover:bg-[var(--color-surface-sunken)] transition-colors">
+                <td className="py-2 px-3">
+                  <span className="font-medium text-[var(--color-ink-700)]">{r.method}</span>
+                  <span className="text-[var(--color-ink-400)] ml-1.5">· {format(new Date(r.takenAt), "h:mm a, dd MMM")}</span>
+                </td>
+                <td className="py-2 px-3 text-center font-semibold text-[var(--color-ink-800)] tabular-nums">{r.re ?? "—"}</td>
+                <td className="py-2 px-3 text-center font-semibold text-[var(--color-ink-800)] tabular-nums">{r.le ?? "—"}</td>
+                {editable && (
+                  <td className="py-2 px-2 text-center">
+                    <button
+                      disabled={deletePending}
+                      onClick={() => startDelete(() => removeIOPReading(r.id, udid))}
                       className="text-[var(--color-ink-300)] hover:text-[var(--color-danger-600)] disabled:opacity-40"
-                      title="Delete reading">
+                      title="Delete reading"
+                    >
                       <Trash2 size={13} />
                     </button>
-                  )}
-                </td>
+                  </td>
+                )}
               </tr>
             ))}
-            {readings.length === 0 && (
-              <tr><td colSpan={5} className="py-4 text-center text-[var(--color-ink-400)]">No readings yet.</td></tr>
-            )}
           </tbody>
         </table>
       </div>
