@@ -285,6 +285,89 @@ export async function transferPatient(patientId: string, toHospitalId: string, r
   return { success: true, toHospital: toHospital.name };
 }
 
+// ── Patient History Drawers ──────────────────────────────────────────────────
+
+export async function getPatientInvestigations(patientId: string) {
+  await requireRole("DOCTOR", "HOSPITAL");
+  const visits = await prisma.visit.findMany({
+    where: { patientId },
+    orderBy: { date: "desc" },
+    select: {
+      id: true,
+      date: true,
+      hospital: { select: { name: true } },
+      investigationOrders: {
+        select: { id: true, category: true, testName: true, laterality: true, priority: true, status: true, notes: true, resultRef: true },
+        orderBy: { createdAt: "asc" },
+      },
+    },
+  });
+  return visits
+    .filter((v) => v.investigationOrders.length > 0)
+    .map((v) => ({
+      visitId: v.id,
+      date: v.date.toISOString(),
+      hospitalName: v.hospital?.name ?? null,
+      orders: v.investigationOrders,
+    }));
+}
+
+export async function getPatientTreatmentHistory(patientId: string) {
+  await requireRole("DOCTOR", "HOSPITAL");
+  const visits = await prisma.visit.findMany({
+    where: { patientId },
+    orderBy: { date: "desc" },
+    select: {
+      id: true,
+      date: true,
+      hospital: { select: { name: true } },
+      medications: {
+        select: { id: true, drugName: true, dosage: true, frequency: true, duration: true, instructions: true },
+        orderBy: { createdAt: "asc" },
+      },
+      diagnoses: {
+        select: { description: true, icd10Code: true, laterality: true, status: true },
+        orderBy: { createdAt: "asc" },
+      },
+    },
+  });
+  return visits
+    .filter((v) => v.medications.length > 0 || v.diagnoses.length > 0)
+    .map((v) => ({
+      visitId: v.id,
+      date: v.date.toISOString(),
+      hospitalName: v.hospital?.name ?? null,
+      medications: v.medications,
+      diagnoses: v.diagnoses,
+    }));
+}
+
+export async function getPatientSpectacleHistory(patientId: string) {
+  await requireRole("DOCTOR", "HOSPITAL");
+  const visits = await prisma.visit.findMany({
+    where: { patientId },
+    orderBy: { date: "desc" },
+    select: {
+      id: true,
+      date: true,
+      hospital: { select: { name: true } },
+      refraction: {
+        select: { re: true, le: true, sentToOpticals: true },
+      },
+    },
+  });
+  return visits
+    .filter((v) => v.refraction && (v.refraction.re || v.refraction.le))
+    .map((v) => ({
+      visitId: v.id,
+      date: v.date.toISOString(),
+      hospitalName: v.hospital?.name ?? null,
+      re: v.refraction!.re,
+      le: v.refraction!.le,
+      sentToOpticals: v.refraction!.sentToOpticals,
+    }));
+}
+
 export async function updatePatientDetails(patientId: string, data: Record<string, unknown>) {
   const user = await requireRole("DOCTOR", "HOSPITAL");
   const before = await prisma.patient.findUnique({ where: { id: patientId }, select: { name: true, age: true, mobile: true, complaint: true } });
