@@ -325,11 +325,11 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
       {signedSelect("Sph",   val.sph,  (v) => setVal({ ...val, sph: v }),  SPH_MAGS)}
       {signedSelect("Cyl",   val.cyl,  (v) => setVal({ ...val, cyl: v }),  CYL_MAGS)}
       {axisSelect("Axis°",   val.axis, (v) => setVal({ ...val, axis: v }))}
-      {vaSelect("Resulting VA", val.va, (v) => setVal({ ...val, va: v }), VA_SNELLEN_VALUES, "ml-3")}
+      {vaSelect("Resulting VA", val.va, (v) => setVal({ ...val, va: v }), VA_SNELLEN_VALUES, "ml-6")}
 
       <p className={`${SECTION_LABEL} mt-2`}>Near</p>
       {signedSelect("Sph (Add)", val.nearSph, (v) => setVal({ ...val, nearSph: v }), ADD_MAGS)}
-      {vaSelect("Resulting NV", val.nearVa, (v) => setVal({ ...val, nearVa: v }), VA_NEAR_VALUES, "col-start-2 sm:col-start-4 ml-3")}
+      {vaSelect("Resulting NV", val.nearVa, (v) => setVal({ ...val, nearVa: v }), VA_NEAR_VALUES, "col-start-2 sm:col-start-4 ml-6")}
     </div>
   );
 
@@ -349,10 +349,10 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
       {roBox("Sph", fmtSigned(rx.sph))}
       {roBox("Cyl", fmtSigned(rx.cyl))}
       {roBox("Axis°", parseSignedVal(rx.axis).mag || "—")}
-      {roBox("Resulting VA", rx.va || "—", "ml-3")}
+      {roBox("Resulting VA", rx.va || "—", "ml-6")}
       <p className={`${SECTION_LABEL} mt-2`}>Near</p>
       {roBox("Sph (Add)", fmtSigned(rx.nearSph))}
-      {roBox("Resulting NV", rx.nearVa || "—", "col-start-2 sm:col-start-4 ml-3")}
+      {roBox("Resulting NV", rx.nearVa || "—", "col-start-2 sm:col-start-4 ml-6")}
     </div>
   );
 
@@ -1233,10 +1233,10 @@ function RetinoscopyCard({ visit, udid, editable }: { visit: any; udid: string; 
       {signedSelect("Sph",      val.sph,    (v) => setVal({ ...val, sph: v }),    SPH_MAGS)}
       {signedSelect("Cyl",      val.cyl,    (v) => setVal({ ...val, cyl: v }),    CYL_MAGS)}
       {axisSelect("Axis°",      val.axis,   (v) => setVal({ ...val, axis: v }))}
-      {vaSelect("Resulting VA", val.va,     (v) => setVal({ ...val, va: v }),     VA_SNELLEN_VALUES, "ml-3")}
+      {vaSelect("Resulting VA", val.va,     (v) => setVal({ ...val, va: v }),     VA_SNELLEN_VALUES, "ml-6")}
       <p className={`${SECTION_LABEL} mt-2`}>Near</p>
       {signedSelect("Sph (Add)", val.nearSph, (v) => setVal({ ...val, nearSph: v }), ADD_MAGS)}
-      {vaSelect("Resulting NV",  val.nearVa,  (v) => setVal({ ...val, nearVa: v }),  VA_NEAR_VALUES, "col-start-2 sm:col-start-4 ml-3")}
+      {vaSelect("Resulting NV",  val.nearVa,  (v) => setVal({ ...val, nearVa: v }),  VA_NEAR_VALUES, "col-start-2 sm:col-start-4 ml-6")}
     </div>
   );
 
