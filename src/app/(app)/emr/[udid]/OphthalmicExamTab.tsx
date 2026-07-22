@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useTransition } from "react";
-import { Trash2, Plus, X } from "lucide-react";
+import { Trash2, Plus, X, Copy, Loader2 } from "lucide-react";
 import { KeywordInput, KeywordTextarea } from "@/components/emr/KeywordField";
 import { Card } from "@/components/ui/Card";
 import { Tabs } from "@/components/ui/Tabs";
@@ -28,6 +28,7 @@ import {
   saveDiplopia,
   saveHess,
   saveRetinoscopy,
+  getRefractionForVisit,
   saveTearFilm,
   saveLacrimalSac,
   markOphthalmicReviewed,
@@ -1131,27 +1132,141 @@ function HessCard({ visit, udid, editable }: { visit: any; udid: string; editabl
 }
 
 function RetinoscopyCard({ visit, udid, editable }: { visit: any; udid: string; editable: boolean }) {
-  const r = visit.retinoscopy;
-  const [re, setRe] = useState(r?.re ?? "");
-  const [le, setLe] = useState(r?.le ?? "");
+  type RxFields = { sph: string; cyl: string; axis: string; nearSph: string; va: string; nearVa: string };
+  const emptyRx: RxFields = { sph: "", cyl: "", axis: "", nearSph: "", va: "", nearVa: "" };
 
-  const state = useAutoSave({ re, le }, async (d) => {
+  const r = visit.retinoscopy;
+  const [re, setRe] = useState<RxFields>(() => parseJSON(r?.re, emptyRx));
+  const [le, setLe] = useState<RxFields>(() => parseJSON(r?.le, emptyRx));
+  const [copying, setCopying] = useState(false);
+  const [copyToast, setCopyToast] = useState(false);
+  const [noDataToast, setNoDataToast] = useState(false);
+
+  const state = useAutoSave({ re: JSON.stringify(re), le: JSON.stringify(le) }, async (d) => {
     if (!editable) return;
     await saveRetinoscopy(visit.id, udid, d);
   });
+
+  const copyFromRefraction = async () => {
+    setCopying(true);
+    try {
+      const rx = await getRefractionForVisit(visit.id);
+      if (!rx) { setNoDataToast(true); return; }
+      const newRe = parseJSON<RxFields>(rx.re, emptyRx);
+      const newLe = parseJSON<RxFields>(rx.le, emptyRx);
+      if (!Object.values(newRe).some(Boolean) && !Object.values(newLe).some(Boolean)) {
+        setNoDataToast(true);
+        return;
+      }
+      setRe(newRe);
+      setLe(newLe);
+      setCopyToast(true);
+    } finally {
+      setCopying(false);
+    }
+  };
+
+  const SEL = "rounded border border-[var(--color-border)] bg-white px-1.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-400)] disabled:bg-[var(--color-surface-sunken)]";
+
+  const signedSelect = (label: string, value: string, onChange: (v: string) => void, mags: string[]) => {
+    const { sign, mag } = parseSignedVal(value);
+    const toggle = () => {
+      const ns = sign === "+" ? "-" : "+";
+      onChange(mag ? `${ns}${mag}` : ns);
+    };
+    return (
+      <div className="flex flex-col gap-0.5">
+        <label className="text-[10px] text-[var(--color-ink-400)] font-medium">{label}</label>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            disabled={!editable}
+            onClick={toggle}
+            className="w-6 h-6 rounded flex items-center justify-center text-xs font-bold border transition-colors disabled:opacity-40"
+            style={sign === "-"
+              ? { background: "var(--color-primary-600)", color: "#fff", borderColor: "var(--color-primary-600)" }
+              : { background: "#fff", color: "var(--color-ink-600)", borderColor: "var(--color-border)" }}
+          >
+            {sign}
+          </button>
+          <select
+            disabled={!editable}
+            value={mag}
+            onChange={(e) => onChange(e.target.value ? `${sign}${e.target.value}` : sign)}
+            className={`w-full min-w-0 ${SEL}`}
+          >
+            {mags.map((m) => <option key={m} value={m}>{m || "—"}</option>)}
+          </select>
+        </div>
+      </div>
+    );
+  };
+
+  const axisSelect = (label: string, value: string, onChange: (v: string) => void) => (
+    <div className="flex flex-col gap-0.5 min-w-0">
+      <label className="text-[10px] text-[var(--color-ink-400)] font-medium">{label}</label>
+      <select
+        disabled={!editable}
+        value={parseSignedVal(value).mag}
+        onChange={(e) => onChange(e.target.value)}
+        className={`w-full min-w-0 ${SEL}`}
+      >
+        {AXIS_OPTS.map((a) => <option key={a} value={a}>{a || "—"}</option>)}
+      </select>
+    </div>
+  );
+
+  const vaSelect = (label: string, value: string, onChange: (v: string) => void, options: readonly string[] = VA_SNELLEN_VALUES, className = "") => (
+    <div className={`flex flex-col gap-0.5 min-w-0 ${className}`}>
+      <label className="text-[10px] text-[var(--color-ink-400)] font-medium">{label}</label>
+      <select disabled={!editable} value={value || "-"} onChange={(e) => onChange(e.target.value)} className={`w-full min-w-0 ${SEL}`}>
+        {options.map((v) => <option key={v} value={v}>{v}</option>)}
+      </select>
+    </div>
+  );
+
+  const SECTION_LABEL = "col-span-2 sm:col-span-4 text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-widest";
+
+  const eyeFields = (val: RxFields, setVal: (v: RxFields) => void) => (
+    <div className="grid grid-cols-2 sm:grid-cols-[88px_88px_64px_80px] gap-x-2 gap-y-2 items-end">
+      <p className={SECTION_LABEL}>Distance</p>
+      {signedSelect("Sph",      val.sph,    (v) => setVal({ ...val, sph: v }),    SPH_MAGS)}
+      {signedSelect("Cyl",      val.cyl,    (v) => setVal({ ...val, cyl: v }),    CYL_MAGS)}
+      {axisSelect("Axis°",      val.axis,   (v) => setVal({ ...val, axis: v }))}
+      {vaSelect("Resulting VA", val.va,     (v) => setVal({ ...val, va: v }),     VA_SNELLEN_VALUES, "ml-3")}
+      <p className={`${SECTION_LABEL} mt-2`}>Near</p>
+      {signedSelect("Sph (Add)", val.nearSph, (v) => setVal({ ...val, nearSph: v }), ADD_MAGS)}
+      {vaSelect("Resulting NV",  val.nearVa,  (v) => setVal({ ...val, nearVa: v }),  VA_NEAR_VALUES, "col-start-2 sm:col-start-4 ml-3")}
+    </div>
+  );
 
   return (
     <Card>
       <div className="flex items-center justify-between mb-3">
         <p className="text-sm font-medium text-[var(--color-ink-700)]">Retinoscopy</p>
-        <SaveIndicator state={state} />
+        <div className="flex items-center gap-2">
+          {editable && (
+            <button
+              type="button"
+              onClick={copyFromRefraction}
+              disabled={copying}
+              className="flex items-center gap-1.5 text-xs font-medium px-3 py-1 rounded-lg border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] transition-colors disabled:opacity-50"
+            >
+              {copying
+                ? <Loader2 size={11} className="animate-spin" />
+                : <Copy size={11} />}
+              Copy from Refraction
+            </button>
+          )}
+          <SaveIndicator state={state} />
+        </div>
       </div>
       <EyeColumns>
-        <input disabled={!editable} value={re} onChange={(e) => setRe(e.target.value)} placeholder="e.g. +1.50 / -0.50 x 90"
-          className="w-full rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm" />
-        <input disabled={!editable} value={le} onChange={(e) => setLe(e.target.value)} placeholder="e.g. +1.50 / -0.50 x 90"
-          className="w-full rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm" />
+        {eyeFields(re, setRe)}
+        {eyeFields(le, setLe)}
       </EyeColumns>
+      {copyToast    && <Toast message="Refraction data imported successfully." onDone={() => setCopyToast(false)} />}
+      {noDataToast  && <Toast message="No Refraction data available."          onDone={() => setNoDataToast(false)} />}
     </Card>
   );
 }

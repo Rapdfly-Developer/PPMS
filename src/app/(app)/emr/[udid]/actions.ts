@@ -269,6 +269,12 @@ export async function saveRetinoscopy(visitId: string, udid: string, data: { re:
   revalidate(udid);
 }
 
+export async function getRefractionForVisit(visitId: string) {
+  await requireUser();
+  const rx = await prisma.refraction.findFirst({ where: { visitId } });
+  return rx ? { re: rx.re ?? "", le: rx.le ?? "" } : null;
+}
+
 export async function saveTearFilm(visitId: string, udid: string, data: Record<string, number | undefined>) {
   const user = await requireRole("DOCTOR");
   await assertVisitAccess(visitId);
