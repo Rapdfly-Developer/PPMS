@@ -43,8 +43,10 @@ export async function createWalkInEncounter(formData: FormData) {
     const ageRaw   = formData.get("age") as string;
     const sex      = formData.get("sex") as string;
     const mobile   = (formData.get("mobile")   as string)?.trim();
-    const aadhaar  = (formData.get("aadhaar")  as string)?.trim() || "";
-    const category = (formData.get("category") as string) || "GENERAL";
+    const aadhaar     = (formData.get("aadhaar")     as string)?.trim() || "";
+    const category    = (formData.get("category")    as string) || "GENERAL";
+    const occupation  = (formData.get("occupation")  as string)?.trim() || null;
+    const notes       = (formData.get("notes")       as string)?.trim() || null;
     complaint      = formComplaint;
     const photoUrl = (formData.get("patientPhoto") as string)?.trim() || null;
     const aadhaarPhotoUrl = (formData.get("aadhaarPhoto") as string)?.trim() || null;
@@ -90,6 +92,8 @@ export async function createWalkInEncounter(formData: FormData) {
           : encryptAadhaar("000000000000"),
         complaint,
         category,
+        occupation,
+        notes,
         photoUrl,
         aadhaarPhotoUrl,
       },

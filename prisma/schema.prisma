@@ -289,6 +289,8 @@ model Patient {
   state           String?
   pincode         String?
   complaint       String?
+  occupation      String?
+  notes           String?
   photoUrl        String?
   aadhaarPhotoUrl String?  // uploaded Aadhaar card scan (blob storage file name)
   createdAt       DateTime @default(now())

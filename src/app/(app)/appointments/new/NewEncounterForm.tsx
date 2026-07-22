@@ -63,6 +63,8 @@ export function NewEncounterForm({
   const [sex, setSex] = useState("Male");
   const [mobile, setMobile] = useState("");
   const [category, setCategory] = useState("GENERAL");
+  const [occupation, setOccupation] = useState("");
+  const [notes, setNotes] = useState("");
   const [complaint, setComplaint] = useState("");
   const [aadhaarPhoto, setAadhaarPhoto] = useState<UploadedFile | null>(null);
   const [patientPhoto, setPatientPhoto] = useState<UploadedFile | null>(null);
@@ -116,6 +118,8 @@ export function NewEncounterForm({
       fd.set("sex", sex);
       fd.set("mobile", mobile.trim());
       fd.set("category", category);
+      if (occupation.trim()) fd.set("occupation", occupation.trim());
+      if (notes.trim()) fd.set("notes", notes.trim());
       fd.set("complaint", complaint.trim());
       if (patientPhoto) fd.set("patientPhoto", patientPhoto.savedName);
       if (aadhaarPhoto) fd.set("aadhaarPhoto", aadhaarPhoto.savedName);
@@ -310,6 +314,30 @@ export function NewEncounterForm({
                     </button>
                   ))}
                 </div>
+              </div>
+
+              {/* Occupation */}
+              <div>
+                <FieldLabel icon={<Building2 size={12} />}>Occupation</FieldLabel>
+                <input
+                  type="text"
+                  placeholder="e.g. Farmer, Teacher, Software Engineer"
+                  value={occupation}
+                  onChange={(e) => setOccupation(e.target.value)}
+                  className={inputCls}
+                />
+              </div>
+
+              {/* Notes / Instructions */}
+              <div>
+                <FieldLabel icon={<FileText size={12} />}>Notes / Instructions</FieldLabel>
+                <textarea
+                  rows={3}
+                  placeholder="Any additional notes or instructions for this patient…"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  className={`${inputCls} resize-none`}
+                />
               </div>
 
               {/* Photos */}
