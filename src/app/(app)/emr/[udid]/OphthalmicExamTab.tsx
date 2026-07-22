@@ -61,7 +61,7 @@ export function OphthalmicExamTab({ visit, priorVisits, udid, role }: { visit: a
         { id: "anterior",  label: "Anterior Segment",  content: <AnteriorSegmentCard visit={visit} udid={udid} editable={doctorOnly} priorVisits={priorVisits} /> },
         { id: "posterior", label: "Posterior Segment", content: <PosteriorSegmentCard visit={visit} udid={udid} editable={doctorOnly} priorVisits={priorVisits} /> },
         { id: "tear",      label: "Tear Film",          content: <TearFilmCard visit={visit} udid={udid} editable={doctorOnly} priorVisits={priorVisits} /> },
-        { id: "lacrimal",  label: "Lacrimal Sac",       content: <LacrimalSacCard visit={visit} udid={udid} editable={doctorOnly} /> },
+        { id: "lacrimal",  label: "Lacrimal Sac",       content: <LacrimalSacCard visit={visit} udid={udid} editable={doctorOnly} priorVisits={priorVisits} /> },
         { id: "retino",    label: "Retinoscopy",        content: <RetinoscopyCard visit={visit} udid={udid} editable={doctorOnly} /> },
         { id: "diplopia",  label: "Diplopia Chart",    content: <DiplopiaCard visit={visit} udid={udid} editable={doctorOnly} /> },
         { id: "hess",      label: "Hess Chart",        content: <HessCard visit={visit} udid={udid} editable={doctorOnly} /> },
@@ -1240,15 +1240,26 @@ function TearFilmCard({ visit, udid, editable, priorVisits = [] }: { visit: any;
 
 /* ── Lacrimal Sac ─────────────────────────────────────────────────────────── */
 
-function LacrimalSacCard({ visit, udid, editable }: { visit: any; udid: string; editable: boolean }) {
+function LacrimalSacCard({ visit, udid, editable, priorVisits = [] }: { visit: any; udid: string; editable: boolean; priorVisits?: any[] }) {
   const ls = visit.lacrimalSac;
   const storedRe = parseJSON(ls?.re, {}) as any;
   const storedLe = parseJSON(ls?.le, {}) as any;
 
-  const [reChips, setReChips]     = useState<string[]>(Array.isArray(storedRe) ? storedRe : (storedRe.chips ?? []));
-  const [leChips, setLeChips]     = useState<string[]>(Array.isArray(storedLe) ? storedLe : (storedLe.chips ?? []));
+  const [reChips, setReChips]       = useState<string[]>(Array.isArray(storedRe) ? storedRe : (storedRe.chips ?? []));
+  const [leChips, setLeChips]       = useState<string[]>(Array.isArray(storedLe) ? storedLe : (storedLe.chips ?? []));
   const [reFindings, setReFindings] = useState<string>(Array.isArray(storedRe) ? "" : (storedRe.findings ?? ""));
   const [leFindings, setLeFindings] = useState<string>(Array.isArray(storedLe) ? "" : (storedLe.findings ?? ""));
+  const [openHistory, setOpenHistory] = useState<"re" | "le" | null>(null);
+
+  const priorLs = priorVisits.filter((v) => v.lacrimalSac);
+
+  const getPrior = (eye: "re" | "le") =>
+    priorLs.map((v) => {
+      const raw = parseJSON(v.lacrimalSac[eye], {}) as any;
+      const findings = Array.isArray(raw) ? "" : (raw.findings ?? "");
+      const chips: string[] = Array.isArray(raw) ? raw : (raw.chips ?? []);
+      return { date: v.date, findings, chips };
+    }).filter((r) => r.findings || r.chips.length > 0);
 
   const state = useAutoSave(
     {
@@ -1258,6 +1269,47 @@ function LacrimalSacCard({ visit, udid, editable }: { visit: any; udid: string; 
     async (d) => { if (!editable) return; await saveLacrimalSac(visit.id, udid, d); }
   );
 
+  const HistoryPanel = ({ eye }: { eye: "re" | "le" }) => {
+    const rows = getPrior(eye);
+    if (!rows.length) return null;
+    return (
+      <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50 p-2.5 space-y-2">
+        {rows.map((r, i) => (
+          <div key={i} className="text-xs">
+            <p className="font-semibold text-amber-800 mb-0.5">{format(new Date(r.date), "dd MMM yyyy")}</p>
+            {r.chips.length > 0 && (
+              <div className="flex flex-wrap gap-1 mb-0.5">
+                {r.chips.map((c) => (
+                  <span key={c} className="px-1.5 py-0.5 rounded-full bg-amber-100 border border-amber-200 text-amber-800 text-[10px]">{c}</span>
+                ))}
+              </div>
+            )}
+            {r.findings && <p className="text-[var(--color-ink-600)] italic">{r.findings}</p>}
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  const HistoryBtn = ({ eye }: { eye: "re" | "le" }) => {
+    const count = getPrior(eye).length;
+    if (!count) return null;
+    const isOpen = openHistory === eye;
+    return (
+      <button
+        type="button"
+        onClick={() => setOpenHistory(isOpen ? null : eye)}
+        className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border transition-colors ${
+          isOpen
+            ? "bg-amber-100 text-amber-800 border-amber-300"
+            : "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100"
+        }`}
+      >
+        {isOpen ? "Close" : `History (${count})`}
+      </button>
+    );
+  };
+
   return (
     <Card>
       <div className="flex items-center justify-between mb-3">
@@ -1266,13 +1318,21 @@ function LacrimalSacCard({ visit, udid, editable }: { visit: any; udid: string; 
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         <div className="flex flex-col gap-3">
-          <p className="text-xs font-semibold text-[var(--color-primary-700)] uppercase tracking-wide">Right Eye</p>
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-semibold text-[var(--color-primary-700)] uppercase tracking-wide">Right Eye</p>
+            <HistoryBtn eye="re" />
+          </div>
           <KeywordInput fieldKey="lacrimal_re_findings" value={reFindings} onChange={setReFindings} disabled={!editable} placeholder="Enter findings..." />
+          {openHistory === "re" && <HistoryPanel eye="re" />}
           <ChipGroup options={LACRIMAL_SAC_CHIPS} value={reChips} onChange={editable ? setReChips : () => {}} chipClassName="chip-sm" />
         </div>
         <div className="flex flex-col gap-3">
-          <p className="text-xs font-semibold text-[var(--color-primary-700)] uppercase tracking-wide">Left Eye</p>
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-semibold text-[var(--color-primary-700)] uppercase tracking-wide">Left Eye</p>
+            <HistoryBtn eye="le" />
+          </div>
           <KeywordInput fieldKey="lacrimal_le_findings" value={leFindings} onChange={setLeFindings} disabled={!editable} placeholder="Enter findings..." />
+          {openHistory === "le" && <HistoryPanel eye="le" />}
           <ChipGroup options={LACRIMAL_SAC_CHIPS} value={leChips} onChange={editable ? setLeChips : () => {}} chipClassName="chip-sm" />
         </div>
       </div>
