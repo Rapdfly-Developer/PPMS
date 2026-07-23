@@ -998,53 +998,6 @@ function SegmentEyeInput({
 
 }
 
-function SegmentHistory({ priorVisits, dataKey }: { priorVisits: any[]; dataKey: "anteriorSegment" | "posteriorSegment" }) {
-  const [open, setOpen] = useState(false);
-  const rows = priorVisits.filter((v) => {
-    const d = v[dataKey];
-    if (!d) return false;
-    const re = parseJSON<Record<string, string>>(d.re, {});
-    const le = parseJSON<Record<string, string>>(d.le, {});
-    return Object.values(re).some(Boolean) || Object.values(le).some(Boolean);
-  });
-  if (!rows.length) return null;
-  return (
-    <div className="mt-4 pt-4 border-t border-[var(--color-border)]">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-1.5 text-xs text-[#0F766E] bg-[#EEF8F7] hover:bg-[#DCF3F1] font-medium px-2.5 py-0.5 rounded-full border border-[#B2DEDA] transition-colors mb-2"
-      >
-        <span>History ({rows.length})</span>
-      </button>
-      {open && (
-        <div className="rounded-xl border border-[#B2DEDA] bg-[#EEF8F7] p-3 space-y-3 max-h-64 overflow-y-auto scrollbar-thin">
-          {rows.map((v, i) => {
-            const d = v[dataKey];
-            const re = parseJSON<Record<string, string>>(d.re, {});
-            const le = parseJSON<Record<string, string>>(d.le, {});
-            return (
-              <div key={i}>
-                <p className="text-[10px] font-bold text-[#0F766E] mb-1">{format(new Date(v.date), "d MMM yyyy")}{v.hospital?.name ? ` · ${v.hospital.name}` : ""}</p>
-                {Object.entries(re).filter(([, val]) => val).map(([k, val]) => (
-                  <p key={`re-${k}`} className="text-xs text-[var(--color-ink-700)] mb-0.5">
-                    <span className="font-medium text-[var(--color-ink-500)]">RE {toLabel(k)}: </span>{val}
-                  </p>
-                ))}
-                {Object.entries(le).filter(([, val]) => val).map(([k, val]) => (
-                  <p key={`le-${k}`} className="text-xs text-[var(--color-ink-700)] mb-0.5">
-                    <span className="font-medium text-[var(--color-ink-500)]">LE {toLabel(k)}: </span>{val}
-                  </p>
-                ))}
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-}
-
 function AnteriorSegmentCard({ visit, udid, editable, priorVisits = [] }: { visit: any; udid: string; editable: boolean; priorVisits?: any[] }) {
   const as_ = visit.anteriorSegment;
   const [re, setRe] = useState<Record<string, string>>(parseJSON(as_?.re, {}));
@@ -1115,7 +1068,6 @@ function AnteriorSegmentCard({ visit, udid, editable, priorVisits = [] }: { visi
         </div>
       </div>
 
-      <SegmentHistory priorVisits={priorVisits} dataKey="anteriorSegment" />
     </Card>
   );
 }
@@ -1242,7 +1194,6 @@ function PosteriorSegmentCard({ visit, udid, editable, priorVisits = [] }: { vis
         </div>
       </div>
 
-      <SegmentHistory priorVisits={priorVisits} dataKey="posteriorSegment" />
     </Card>
   );
 }
