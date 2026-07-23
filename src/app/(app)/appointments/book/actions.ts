@@ -8,7 +8,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { istDateTime, istParts, istHHMM, istDayRange } from "@/lib/ist";
 
-export async function getBookedSlots(doctorId: string, dateStr: string, hospitalId: string): Promise<string[]> {
+export async function getBookedSlots(doctorId: string, dateStr: string, hospitalId: string): Promise<Record<string, number>> {
   await requireRole("HOSPITAL", "DOCTOR");
   const { dayStart, dayEnd } = istDayRange(dateStr);
 
@@ -22,7 +22,12 @@ export async function getBookedSlots(doctorId: string, dateStr: string, hospital
     select: { dateTime: true },
   });
 
-  return appts.map((a) => istHHMM(new Date(a.dateTime)));
+  const counts: Record<string, number> = {};
+  for (const a of appts) {
+    const t = istHHMM(new Date(a.dateTime));
+    counts[t] = (counts[t] ?? 0) + 1;
+  }
+  return counts;
 }
 
 export async function bookAppointment(formData: FormData) {
@@ -126,25 +131,29 @@ export async function bookAppointment(formData: FormData) {
     patientId = patient.id;
   }
 
-  // Validate time falls within doctor's availability (skip for walk-ins)
-  if (!isWalkIn) {
-    const apptIst = istParts(dateTime);
-    const avail = await prisma.doctorAvailability.findFirst({
-      where: { doctorId, hospitalId, weekday: apptIst.weekday, status: "ACTIVE" },
-    });
-    if (avail) {
-      const toMins = (t: string) => { const [h, m] = t.split(":").map(Number); return h * 60 + m; };
-      const apptMins = apptIst.hours * 60 + apptIst.minutes;
-      const startMins = toMins(avail.startTime);
-      const endMins   = toMins(avail.endTime);
-      if (apptMins < startMins || apptMins >= endMins) {
-        return { error: `Selected time is outside the doctor's scheduled hours (${avail.startTime}–${avail.endTime}).` };
-      }
+  // Fetch availability (used for window validation + slot capacity)
+  const apptIst = istParts(dateTime);
+  const avail = await prisma.doctorAvailability.findFirst({
+    where: { doctorId, hospitalId, weekday: apptIst.weekday, status: "ACTIVE" },
+  });
+
+  // Validate time falls within availability window (non-walk-ins only)
+  if (!isWalkIn && avail) {
+    const toMins = (t: string) => { const [h, m] = t.split(":").map(Number); return h * 60 + m; };
+    const apptMins = apptIst.hours * 60 + apptIst.minutes;
+    const startMins = toMins(avail.startTime);
+    const endMins   = toMins(avail.endTime);
+    if (apptMins < startMins || apptMins >= endMins) {
+      return { error: `Selected time is outside the doctor's scheduled hours (${avail.startTime}–${avail.endTime}).` };
     }
   }
 
-  // Check for double-booking (same slot)
-  const clash = await prisma.appointment.findFirst({
+  // Determine per-slot capacity from slot duration (30-min slots allow 2 patients)
+  const slotMins = avail?.slotMins ?? 15;
+  const capacity = slotMins === 30 ? 2 : 1;
+
+  // Check slot capacity
+  const slotCount = await prisma.appointment.count({
     where: {
       doctorId,
       hospitalId,
@@ -152,7 +161,13 @@ export async function bookAppointment(formData: FormData) {
       status: { notIn: ["CANCELLED", "NO_SHOW"] },
     },
   });
-  if (clash) return { error: "That time slot is already booked for this doctor. Please choose another time." };
+  if (slotCount >= capacity) {
+    return {
+      error: capacity > 1
+        ? `This time slot is fully booked (${slotCount}/${capacity} patients). Please choose another time.`
+        : "That time slot is already booked for this doctor. Please choose another time.",
+    };
+  }
 
   // Check for same patient same day (IST calendar day)
   const { dayStart, dayEnd } = istDayRange(dateStr);

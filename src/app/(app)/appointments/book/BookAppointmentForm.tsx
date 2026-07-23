@@ -95,7 +95,7 @@ export function BookAppointmentForm({
   const [time, setTime] = useState("09:00");
   const [visitType,  setVisitType]  = useState("General OPD");
   const [notes,      setNotes]      = useState("");
-  const [bookedTimes, setBookedTimes] = useState<string[]>([]);
+  const [bookedCounts, setBookedCounts] = useState<Record<string, number>>({});
 
   // For DOCTOR role: selected hospital (since hospitalId is null)
   const doctorHospitals = hospitalsByDoctor[doctorId] ?? [];
@@ -136,25 +136,32 @@ export function BookAppointmentForm({
     ? generateSlots(todayAvail.startTime, todayAvail.endTime, todayAvail.slotMins)
     : FALLBACK_SLOTS;
 
+  const slotMins = todayAvail?.slotMins ?? 15;
+  const slotCapacity = slotMins === 30 ? 2 : 1;
+
   const nowMins = new Date().getHours() * 60 + new Date().getMinutes();
   const availableSlots = baseSlots.filter((t) => {
     const [h, m] = t.split(":").map(Number);
     if (date === todayStr && h * 60 + m <= nowMins) return false;
-    if (bookedTimes.includes(t)) return false;
+    // Non-30-min slots: existing behavior — hide once any booking exists
+    if (slotCapacity === 1 && (bookedCounts[t] ?? 0) >= 1) return false;
     return true;
   });
 
-  // Fetch booked slots whenever doctor, date or hospital changes
+  // Fetch booked slot counts whenever doctor, date or hospital changes
   useEffect(() => {
     if (!doctorId || !date || !effectiveHospitalId) return;
-    getBookedSlots(doctorId, date, effectiveHospitalId).then(setBookedTimes).catch(() => {});
+    getBookedSlots(doctorId, date, effectiveHospitalId).then(setBookedCounts).catch(() => {});
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [doctorId, date, effectiveHospitalId]);
 
-  // Keep selected time valid when slots change
+  // Keep selected time pointing at a bookable slot when slots change
   useEffect(() => {
-    if (availableSlots.length > 0 && !availableSlots.includes(time)) {
-      setTime(availableSlots[0]);
+    const firstBookable = availableSlots.find((t) => (bookedCounts[t] ?? 0) < slotCapacity);
+    if (!availableSlots.includes(time) && firstBookable) {
+      setTime(firstBookable);
+    } else if (firstBookable && (bookedCounts[time] ?? 0) >= slotCapacity) {
+      setTime(firstBookable);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [availableSlots.join(",")]);
@@ -199,7 +206,7 @@ export function BookAppointmentForm({
       const slots = baseSlots.length > 0 ? baseSlots : FALLBACK_SLOTS;
       const nextSlot = slots.find((t) => {
         const [h, m] = t.split(":").map(Number);
-        return h * 60 + m > nowMins && !bookedTimes.includes(t);
+        return h * 60 + m > nowMins && (bookedCounts[t] ?? 0) < slotCapacity;
       }) ?? slots.find((t) => {
         const [h, m] = t.split(":").map(Number);
         return h * 60 + m > nowMins;
@@ -657,25 +664,39 @@ export function BookAppointmentForm({
                           : "No slots available for today. Please select a future date."}
                       </p>
                     )}
-                    {availableSlots.map((t) => (
-                      <button
-                        key={t}
-                        type="button"
-                        onClick={() => setTime(t)}
-                        className="px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors"
-                        style={time === t ? {
-                          background: "var(--color-primary-700)",
-                          color: "#fff",
-                          borderColor: "var(--color-primary-700)",
-                        } : {
-                          background: "#fff",
-                          color: "var(--color-ink-700)",
-                          borderColor: "var(--color-border)",
-                        }}
-                      >
-                        {to12h(t)}
-                      </button>
-                    ))}
+                    {availableSlots.map((t) => {
+                      const count = bookedCounts[t] ?? 0;
+                      const remaining = slotCapacity - count;
+                      const isFull = remaining <= 0;
+                      const isSelected = time === t;
+
+                      let bg: string, fg: string, border: string;
+                      if (isSelected) {
+                        bg = "var(--color-primary-700)"; fg = "#fff"; border = "var(--color-primary-700)";
+                      } else if (slotCapacity > 1) {
+                        if (isFull)       { bg = "#FEF2F2"; fg = "#DC2626"; border = "#FECACA"; }
+                        else if (remaining === 1) { bg = "#FFF7ED"; fg = "#EA580C"; border = "#FED7AA"; }
+                        else              { bg = "#F0FDF4"; fg = "#16A34A"; border = "#BBF7D0"; }
+                      } else {
+                        bg = "#fff"; fg = "var(--color-ink-700)"; border = "var(--color-border)";
+                      }
+
+                      return (
+                        <button
+                          key={t}
+                          type="button"
+                          disabled={isFull}
+                          onClick={() => !isFull && setTime(t)}
+                          className="px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors disabled:cursor-not-allowed disabled:opacity-80"
+                          style={{ background: bg, color: fg, borderColor: border }}
+                        >
+                          {to12h(t)}
+                          {slotCapacity > 1 && (
+                            <span className="ml-1 text-[10px] opacity-70">{remaining}/{slotCapacity}</span>
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
