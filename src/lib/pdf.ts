@@ -970,9 +970,9 @@ function renderShortSummaryHtml(d: ShortSummaryData): string {
   td.mono { font-family: monospace; }
   .empty { color: #9AA9B2; font-style: italic; margin: 6px 0; text-align:center; padding:10px; }
 
-  .sig-box { margin-top: 40px; border-top: 1px solid #E2E6E8; padding-top: 16px; display: flex; justify-content: flex-end; }
+  .sig-box { margin-top: 40px; padding-top: 16px; display: flex; justify-content: flex-end; }
   .sig-line { text-align: center; }
-  .sig-line .line { width: 200px; border-top: 1px solid #14242B; margin: 0 auto 6px; }
+  .sig-line .line { display: none; }
   .sig-line p { font-size: 11px; color: #5C6E76; }
   .sig-line strong { font-size: 12px; color: #0B3D3A; display: block; }
 
