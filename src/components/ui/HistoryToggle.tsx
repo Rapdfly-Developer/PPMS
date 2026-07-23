@@ -80,7 +80,7 @@ export function FieldWithHistory({
             <div className="mt-2 rounded-xl border border-[#B2DEDA] bg-[#EEF8F7] p-3">
               <div className="flex items-center justify-between mb-1.5">
                 <p className="text-xs font-semibold text-[var(--color-primary-700)] uppercase tracking-wide">
-                  Prior values
+                  {label || "Prior Values"}
                 </p>
                 <button onClick={() => setOpen(false)} className="text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)]">
                   <X size={14} />
