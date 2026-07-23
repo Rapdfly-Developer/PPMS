@@ -5,9 +5,15 @@ import { Card } from "@/components/ui/Card";
 import { History } from "lucide-react";
 import { parseJSON } from "@/lib/json";
 import { useAutoSave, SaveIndicator } from "@/lib/useAutoSave";
-import { addMedication, removeMedication, saveRefraction } from "./actions";
+import { addMedication, removeMedication, saveRefraction, saveFollowUp } from "./actions";
 import { DispositionToggle, AdmitPanel, SurgicalPanel, FollowUpdatesPanel } from "./DispositionPanel";
-import { Plus, X, BedDouble, Stethoscope, ChevronDown, Pencil, Trash2, RefreshCw, Search, Pill } from "lucide-react";
+import { Plus, X, BedDouble, Stethoscope, ChevronDown, Pencil, Trash2, RefreshCw, Search, Pill, Sparkles, AlertTriangle, CheckCircle2, ChevronRight } from "lucide-react";
+import {
+  type TreatmentPreset, type PresetMatch, type AppliedPreset,
+  getTreatmentPresets, matchPresets, mergeMeds,
+  getApplied, setApplied, clearApplied,
+  getDiagnosisSnapshot, setDiagnosisSnapshot,
+} from "./treatmentPresets";
 import { type MedEntry, searchMedications, categoryColor } from "@/lib/ophthalmic-medications";
 import { VA_SNELLEN_VALUES } from "@/lib/constants";
 
@@ -202,12 +208,385 @@ function PresetPanel({ onApply, onClose }: { onApply: (drugs: PresetDrug[]) => v
   );
 }
 
+/* ── Diagnosis-based treatment preset UI components ─────────────────── */
+
+function PresetAvailableBanner({
+  matches,
+  onApply,
+  onDismiss,
+}: {
+  matches: PresetMatch[];
+  onApply: () => void;
+  onDismiss: () => void;
+}) {
+  const diagNames = [...new Set(matches.map((m) => m.diagnosisDesc))];
+  return (
+    <div className="rounded-2xl border border-[#B2DEDA] bg-[#EEF8F7] px-4 py-3.5 flex items-start gap-3">
+      <div className="w-8 h-8 rounded-xl bg-[#0F766E] flex items-center justify-center shrink-0 mt-0.5">
+        <Sparkles size={15} className="text-white" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-semibold text-[#0F766E]">
+          Treatment preset{matches.length > 1 ? "s" : ""} available
+        </p>
+        <p className="text-xs text-[#0F766E]/80 mt-0.5 leading-relaxed">
+          {diagNames.slice(0, 2).join(", ")}{diagNames.length > 2 ? ` +${diagNames.length - 2} more` : ""} — {matches.length} preset{matches.length > 1 ? "s" : ""} found
+        </p>
+      </div>
+      <div className="flex items-center gap-2 shrink-0">
+        <button
+          type="button"
+          onClick={onDismiss}
+          className="text-xs font-medium text-[#0F766E]/60 hover:text-[#0F766E] px-2 py-1.5 rounded-lg hover:bg-[#DCF3F1] transition-colors"
+        >
+          Dismiss
+        </button>
+        <button
+          type="button"
+          onClick={onApply}
+          className="text-xs font-semibold px-3.5 py-1.5 rounded-lg bg-[#0F766E] text-white hover:bg-[#0D6862] transition-colors flex items-center gap-1.5"
+        >
+          <Sparkles size={11} /> Apply Preset
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function PresetAppliedBadge({
+  applied,
+  onRemove,
+  onChange,
+}: {
+  applied: AppliedPreset[];
+  onRemove: () => void;
+  onChange: () => void;
+}) {
+  return (
+    <div className="rounded-2xl border border-[#B2DEDA] bg-[#EEF8F7] px-4 py-3 flex items-center gap-3 flex-wrap">
+      <CheckCircle2 size={15} className="text-[#0F766E] shrink-0" />
+      <div className="flex-1 min-w-0">
+        <span className="text-xs font-semibold text-[#0F766E]">Preset Applied: </span>
+        <span className="text-xs text-[#0F766E]/80">
+          {applied.map((a) => a.presetName).join(", ")}
+        </span>
+      </div>
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={onChange}
+          className="text-xs font-medium text-[#0F766E] hover:text-[#0D6862] px-2.5 py-1 rounded-lg border border-[#B2DEDA] hover:bg-[#DCF3F1] transition-colors"
+        >
+          Change
+        </button>
+        <button
+          type="button"
+          onClick={onRemove}
+          className="text-xs font-medium text-[#0F766E]/60 hover:text-red-600 px-2.5 py-1 rounded-lg border border-[#B2DEDA] hover:border-red-200 hover:bg-red-50 transition-colors"
+        >
+          Remove
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function DiagnosisChangedBanner({
+  onUpdate,
+  onDismiss,
+}: {
+  onUpdate: () => void;
+  onDismiss: () => void;
+}) {
+  return (
+    <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3.5 flex items-start gap-3">
+      <div className="w-8 h-8 rounded-xl bg-amber-100 flex items-center justify-center shrink-0 mt-0.5">
+        <AlertTriangle size={15} className="text-amber-600" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-semibold text-amber-800">Diagnoses have changed</p>
+        <p className="text-xs text-amber-700/80 mt-0.5">The assessment diagnoses were updated. Would you like to load a new matching preset?</p>
+      </div>
+      <div className="flex items-center gap-2 shrink-0">
+        <button
+          type="button"
+          onClick={onDismiss}
+          className="text-xs font-medium text-amber-700/60 hover:text-amber-800 px-2 py-1.5 rounded-lg hover:bg-amber-100 transition-colors"
+        >
+          Keep current
+        </button>
+        <button
+          type="button"
+          onClick={onUpdate}
+          className="text-xs font-semibold px-3.5 py-1.5 rounded-lg bg-amber-600 text-white hover:bg-amber-700 transition-colors flex items-center gap-1.5"
+        >
+          <ChevronRight size={11} /> Update
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function PresetSelectDialog({
+  matches,
+  onApply,
+  onClose,
+  applying,
+}: {
+  matches: PresetMatch[];
+  onApply: (selected: TreatmentPreset[]) => void;
+  onClose: () => void;
+  applying: boolean;
+}) {
+  const [selected, setSelected] = useState<Set<string>>(new Set([matches[0]?.preset.id]));
+
+  const toggle = (id: string) =>
+    setSelected((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+
+  const selectedPresets = matches.filter((m) => selected.has(m.preset.id)).map((m) => m.preset);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: "rgba(0,0,0,0.45)" }}
+      onClick={onClose}
+    >
+      <div
+        className="relative w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden"
+        style={{ background: "var(--color-surface)" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div
+          className="px-5 py-4 flex items-center justify-between"
+          style={{ background: "linear-gradient(135deg, #0F766E 0%, #0D9488 100%)" }}
+        >
+          <div className="flex items-center gap-2.5">
+            <Sparkles size={17} className="text-white/80" />
+            <p className="text-sm font-semibold text-white">Select Treatment Preset</p>
+          </div>
+          <button type="button" onClick={onClose} className="text-white/60 hover:text-white p-1">
+            <X size={16} />
+          </button>
+        </div>
+
+        {/* Preset list */}
+        <div className="p-5 flex flex-col gap-3 max-h-[65vh] overflow-y-auto">
+          <p className="text-xs text-[var(--color-ink-400)]">
+            Select one or more presets to apply. Duplicate medications will be automatically skipped.
+          </p>
+          {matches.map(({ preset, diagnosisDesc }) => {
+            const checked = selected.has(preset.id);
+            return (
+              <label
+                key={preset.id}
+                className={`flex items-start gap-3 p-3.5 rounded-xl border cursor-pointer transition-colors ${
+                  checked
+                    ? "border-[#B2DEDA] bg-[#EEF8F7]"
+                    : "border-[var(--color-border)] hover:border-[#B2DEDA] hover:bg-[#EEF8F7]/40"
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  onChange={() => toggle(preset.id)}
+                  className="mt-0.5 accent-[#0F766E]"
+                />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="text-sm font-semibold text-[var(--color-ink-800)]">{preset.name}</p>
+                    {preset.followUpDays && (
+                      <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-[#EEF8F7] text-[#0F766E] border border-[#B2DEDA] shrink-0">
+                        F/U {preset.followUpDays}d
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-[#0F766E]/70 mt-0.5 mb-2">
+                    Matched: {diagnosisDesc}
+                  </p>
+                  <ul className="space-y-0.5">
+                    {preset.medications.map((m, i) => (
+                      <li key={i} className="text-xs text-[var(--color-ink-600)]">
+                        · {m.drugName}{m.dosage ? ` ${m.dosage}` : ""}{m.frequency ? ` · ${m.frequency}` : ""}{m.duration ? ` · ${m.duration}` : ""}
+                      </li>
+                    ))}
+                  </ul>
+                  {preset.investigations && preset.investigations.length > 0 && (
+                    <p className="text-[11px] text-[var(--color-ink-400)] mt-1.5">
+                      Suggested investigations: {preset.investigations.join(", ")}
+                    </p>
+                  )}
+                  {preset.advice && (
+                    <p className="text-[11px] text-[var(--color-ink-400)] italic mt-1">
+                      Advice: {preset.advice}
+                    </p>
+                  )}
+                </div>
+              </label>
+            );
+          })}
+        </div>
+
+        {/* Footer */}
+        <div className="px-5 py-4 border-t border-[var(--color-border)] flex items-center justify-between gap-3">
+          <span className="text-xs text-[var(--color-ink-400)]">
+            {selected.size} preset{selected.size !== 1 ? "s" : ""} selected
+          </span>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 rounded-xl border border-[var(--color-border)] text-sm font-medium text-[var(--color-ink-500)] hover:bg-[var(--color-surface-sunken)] transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              disabled={selected.size === 0 || applying}
+              onClick={() => onApply(selectedPresets)}
+              className="px-5 py-2 rounded-xl bg-[#0F766E] text-white text-sm font-semibold hover:bg-[#0D6862] transition-colors disabled:opacity-40 flex items-center gap-2"
+            >
+              {applying ? (
+                <><RefreshCw size={13} className="animate-spin" /> Applying…</>
+              ) : (
+                <><Sparkles size={13} /> Apply Selected</>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── PlanTab ─────────────────────────────────────────────────────────────── */
+
 export function PlanTab({ visit, udid, patientSex }: { visit: any; udid: string; patientSex: string }) {
+  const [presetMatches, setPresetMatches]   = useState<PresetMatch[]>([]);
+  const [appliedPresets, setAppliedPresets] = useState<AppliedPreset[]>([]);
+  const [diagChanged, setDiagChanged]       = useState(false);
+  const [dismissed, setDismissed]           = useState(false);
+  const [showDialog, setShowDialog]         = useState(false);
+  const [applying, startApply]              = useTransition();
+
+  const diagnoses: { icd10Code: string; description: string }[] = visit.diagnoses ?? [];
+  const medications: any[] = visit.medications ?? [];
+
+  // On mount: load presets, detect matches, check if diagnoses changed since last apply
+  useEffect(() => {
+    const allPresets  = getTreatmentPresets();
+    const matches     = matchPresets(diagnoses, allPresets);
+    setPresetMatches(matches);
+
+    const alreadyApplied = getApplied(visit.id);
+    setAppliedPresets(alreadyApplied);
+
+    if (alreadyApplied.length > 0) {
+      const snapshot     = getDiagnosisSnapshot(visit.id);
+      const currentCodes = [...diagnoses.map((d) => d.icd10Code)].sort().join(",");
+      if (snapshot.sort().join(",") !== currentCodes) {
+        setDiagChanged(true);
+      }
+    }
+
+    // Update snapshot to current diagnoses
+    setDiagnosisSnapshot(visit.id, diagnoses.map((d) => d.icd10Code));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleApplyPresets = (selected: TreatmentPreset[]) => {
+    startApply(async () => {
+      // Add non-duplicate medications
+      const newMeds = mergeMeds(selected, medications);
+      for (const med of newMeds) {
+        await addMedication(visit.id, udid, med);
+      }
+
+      // Follow-up: use the shortest follow-up among selected presets
+      const followUpDaysList = selected.map((p) => p.followUpDays).filter((d): d is number => !!d);
+      if (followUpDaysList.length > 0) {
+        const minDays   = Math.min(...followUpDaysList);
+        const fuDate    = new Date();
+        fuDate.setDate(fuDate.getDate() + minDays);
+        await saveFollowUp(visit.id, udid, {
+          followUpDate:    fuDate.toISOString(),
+          referralEnabled: visit.referralEnabled ?? false,
+          referralNote:    visit.referralNote ?? null,
+        });
+      }
+
+      // Persist applied state
+      const records: AppliedPreset[] = selected.map((p) => ({
+        presetId:     p.id,
+        presetName:   p.name,
+        appliedAt:    new Date().toISOString(),
+        diagnosisDesc: presetMatches.find((m) => m.preset.id === p.id)?.diagnosisDesc ?? "",
+      }));
+      setApplied(visit.id, records);
+      setAppliedPresets(records);
+      setDiagChanged(false);
+      setDismissed(false);
+      setShowDialog(false);
+    });
+  };
+
+  const handleRemovePreset = () => {
+    clearApplied(visit.id);
+    setAppliedPresets([]);
+    setDiagChanged(false);
+    setDismissed(false);
+  };
+
+  const showAvailableBanner =
+    !dismissed &&
+    appliedPresets.length === 0 &&
+    !diagChanged &&
+    presetMatches.length > 0;
+
   return (
     <div className="flex flex-col gap-5">
+      {/* Diagnosis changed — prompt to update preset */}
+      {diagChanged && (
+        <DiagnosisChangedBanner
+          onUpdate={() => { setDiagChanged(false); setShowDialog(true); }}
+          onDismiss={() => setDiagChanged(false)}
+        />
+      )}
+
+      {/* Preset available — offer to apply */}
+      {showAvailableBanner && (
+        <PresetAvailableBanner
+          matches={presetMatches}
+          onApply={() => presetMatches.length === 1 ? handleApplyPresets([presetMatches[0].preset]) : setShowDialog(true)}
+          onDismiss={() => setDismissed(true)}
+        />
+      )}
+
+      {/* Preset applied indicator */}
+      {appliedPresets.length > 0 && !diagChanged && (
+        <PresetAppliedBadge
+          applied={appliedPresets}
+          onRemove={handleRemovePreset}
+          onChange={() => setShowDialog(true)}
+        />
+      )}
+
       <PrescriptionCard visit={visit} udid={udid} />
       <OpticalPrescriptionCard visit={visit} />
       <DispositionCard visit={visit} udid={udid} patientSex={patientSex} />
+
+      {showDialog && (
+        <PresetSelectDialog
+          matches={presetMatches}
+          onApply={handleApplyPresets}
+          onClose={() => setShowDialog(false)}
+          applying={applying}
+        />
+      )}
     </div>
   );
 }
