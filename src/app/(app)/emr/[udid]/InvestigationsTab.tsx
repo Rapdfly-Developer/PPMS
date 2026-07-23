@@ -428,10 +428,10 @@ function NewInvestigations({
               key={cat}
               onClick={() => setActiveCategory(cat)}
               className={clsx(
-                "px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-colors border-b-2",
+                "px-4 py-2.5 text-sm whitespace-nowrap transition-colors border-b-2",
                 activeCategory === cat
-                  ? "border-[var(--color-primary-600)] text-[var(--color-primary-700)]"
-                  : "border-transparent text-[var(--color-ink-500)] hover:text-[var(--color-ink-700)]"
+                  ? "border-[var(--color-primary-600)] text-[var(--color-primary-700)] font-semibold bg-[var(--color-primary-50)]"
+                  : "border-transparent text-[var(--color-ink-500)] font-medium hover:text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]"
               )}
             >
               {cat}
