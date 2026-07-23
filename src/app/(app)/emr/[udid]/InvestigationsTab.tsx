@@ -12,7 +12,8 @@ import {
   X, Search, Star,
 } from "lucide-react";
 
-const FAVES_KEY = "ppms_inv_favorites";
+const FAVES_KEY   = "ppms_inv_favorites";
+const SESSION_KEY = "ppms_inv_session_customs";
 import clsx from "clsx";
 
 // ── Investigation catalog ─────────────────────────────────────────────────
@@ -542,11 +543,18 @@ function NewInvestigations({
   const [pending, startTransition] = useTransition();
   const [showAddModal, setShowAddModal] = useState(false);
 
-  // Custom tests: favorites from localStorage + session additions
+  // Custom tests: favorites (localStorage) + session additions (sessionStorage)
   const [customTests, setCustomTests] = useState<{ name: string; category: string }[]>(() => {
     if (typeof window === "undefined") return [];
-    try { return JSON.parse(localStorage.getItem(FAVES_KEY) ?? "[]"); }
-    catch { return []; }
+    try {
+      const favs: { name: string; category: string }[] = JSON.parse(localStorage.getItem(FAVES_KEY) ?? "[]");
+      const session: { name: string; category: string }[] = JSON.parse(sessionStorage.getItem(SESSION_KEY) ?? "[]");
+      const merged = [...favs];
+      for (const t of session) {
+        if (!merged.some((f) => f.name === t.name)) merged.push(t);
+      }
+      return merged;
+    } catch { return []; }
   });
 
   const toggleTest = (name: string) =>
@@ -562,7 +570,14 @@ function NewInvestigations({
     }
     // New custom test — add to session list
     setCustomTests((prev) => prev.some((t) => t.name === name) ? prev : [...prev, { name, category }]);
-    // Persist if save as favorite
+    // Always persist to sessionStorage so it survives server-action rerenders
+    try {
+      const session: { name: string; category: string }[] = JSON.parse(sessionStorage.getItem(SESSION_KEY) ?? "[]");
+      if (!session.some((t) => t.name === name)) {
+        sessionStorage.setItem(SESSION_KEY, JSON.stringify([...session, { name, category }]));
+      }
+    } catch {}
+    // Also persist to localStorage if save as favorite
     if (saveAsFav) {
       try {
         const stored: { name: string; category: string }[] = JSON.parse(localStorage.getItem(FAVES_KEY) ?? "[]");
