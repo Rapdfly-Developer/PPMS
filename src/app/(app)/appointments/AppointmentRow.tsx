@@ -3,7 +3,7 @@
 import { format } from "date-fns";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { Phone, Stethoscope, Tag, FileText, CalendarPlus, Printer, UserRound } from "lucide-react";
+import { Phone, Stethoscope, Tag, FileText, CalendarPlus, Printer, UserRound, Clock, Timer } from "lucide-react";
 import { hospitalUpdateAppointmentStatus, doctorUpdateAppointmentStatus, doctorConfirmAppointment, doctorCancelAppointment } from "./actions";
 import { ScheduleNextSlotModal } from "./ScheduleNextSlotModal";
 
@@ -113,6 +113,31 @@ export function AppointmentRow({ appt, role, token }: { appt: any; role: string;
           {(appt.notes || p.complaint) && (
             <span className="flex items-center gap-1 italic"><FileText size={11} /> {appt.notes || p.complaint}</span>
           )}
+        </div>
+
+        {/* Row 3 (timestamps): booked at · appt time · wait time */}
+        <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-[11px] text-[var(--color-ink-400)] mt-1">
+          <span className="flex items-center gap-1">
+            <Clock size={10} />
+            Booked {format(new Date(appt.createdAt), "d MMM, h:mm a")}
+          </span>
+          <span className="flex items-center gap-1">
+            <Clock size={10} />
+            Appt {format(new Date(appt.dateTime), "h:mm a")}
+          </span>
+          {appt.completedAt && (() => {
+            const mins = Math.round(
+              (new Date(appt.completedAt).getTime() - new Date(appt.dateTime).getTime()) / 60000
+            );
+            const waitStr = mins < 60
+              ? `${mins} min`
+              : `${Math.floor(mins / 60)}h ${mins % 60}m`;
+            return (
+              <span className="flex items-center gap-1 text-emerald-600">
+                <Timer size={10} /> Waited {waitStr}
+              </span>
+            );
+          })()}
         </div>
 
         {/* Row 3: action buttons — only when needed */}

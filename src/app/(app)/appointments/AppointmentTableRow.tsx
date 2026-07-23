@@ -1,6 +1,7 @@
 "use client";
 
 import { format } from "date-fns";
+import { Timer } from "lucide-react";
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { Check, X, CalendarPlus, Eye, Calendar, MoreVertical } from "lucide-react";
@@ -42,9 +43,25 @@ export function AppointmentTableRow({
     <tr className={`hover:bg-[var(--color-ink-50)] transition-colors ${isComp ? "opacity-60" : ""}`}>
       {/* Time */}
       <td className="px-4 py-3 whitespace-nowrap">
-        <span className="text-sm font-medium text-[var(--color-ink-700)]">
-          {format(new Date(appt.dateTime), "h:mm a")}
-        </span>
+        <div className="flex flex-col gap-0.5">
+          <span className="text-sm font-medium text-[var(--color-ink-700)]">
+            {format(new Date(appt.dateTime), "h:mm a")}
+          </span>
+          <span className="text-[10px] text-[var(--color-ink-400)]">
+            Booked {format(new Date(appt.createdAt), "d MMM, h:mm a")}
+          </span>
+          {appt.completedAt && (() => {
+            const mins = Math.round(
+              (new Date(appt.completedAt).getTime() - new Date(appt.dateTime).getTime()) / 60000
+            );
+            const waitStr = mins < 60 ? `${mins} min` : `${Math.floor(mins / 60)}h ${mins % 60}m`;
+            return (
+              <span className="text-[10px] text-emerald-600 flex items-center gap-0.5">
+                <Timer size={9} /> Waited {waitStr}
+              </span>
+            );
+          })()}
+        </div>
       </td>
 
       {/* UHID */}
