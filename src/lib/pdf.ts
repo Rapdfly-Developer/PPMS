@@ -847,6 +847,7 @@ export type ShortSummaryData = {
   visit: { date: Date; visitType?: string | null; hospitalName: string; hospitalAddress?: string | null; hospitalContact?: string | null; doctorName: string; followUpDate?: Date | null; referralEnabled?: boolean; referralNote?: string | null };
   diagnoses: { description: string; icd10Code: string; status: string; laterality?: string | null }[];
   medications: { drugName: string; dosage?: string | null; frequency?: string | null; duration?: string | null; instructions?: string | null }[];
+  investigations: { testName: string; category: string; priority: string; laterality?: string | null; status: string }[];
   opticalRx?: {
     re: { sph?: string; cyl?: string; axis?: string; nearSph?: string };
     le: { sph?: string; cyl?: string; axis?: string; nearSph?: string };
@@ -877,6 +878,18 @@ function renderShortSummaryHtml(d: ShortSummaryData): string {
           <td>${val(m.instructions)}</td>
         </tr>`).join("")
     : `<tr><td colspan="6" class="empty">No medications prescribed</td></tr>`;
+
+  const invHtml = d.investigations.length
+    ? d.investigations.map((inv, i) =>
+        `<tr>
+          <td>${i + 1}</td>
+          <td><strong>${val(inv.testName)}</strong></td>
+          <td>${val(inv.category)}</td>
+          <td>${val(inv.priority)}</td>
+          <td>${val(inv.laterality)}</td>
+          <td>${escapeHtml(inv.status)}</td>
+        </tr>`).join("")
+    : `<tr><td colspan="6" class="empty">No investigations ordered</td></tr>`;
 
   const hasOpticalRx = d.opticalRx && (
     d.opticalRx.re.sph || d.opticalRx.re.cyl || d.opticalRx.re.axis ||
@@ -1016,6 +1029,12 @@ function renderShortSummaryHtml(d: ShortSummaryData): string {
   </table>
 
   ${opticalSection}
+
+  <div class="section-title">Investigations</div>
+  <table>
+    <thead><tr><th>#</th><th>Test</th><th>Category</th><th>Priority</th><th>Laterality</th><th>Status</th></tr></thead>
+    <tbody>${invHtml}</tbody>
+  </table>
 
   ${adviceSection}
 

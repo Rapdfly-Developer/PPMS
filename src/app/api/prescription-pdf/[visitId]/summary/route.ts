@@ -18,6 +18,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
       refraction: true,
       diagnoses: { orderBy: { createdAt: "asc" } },
       medications: { orderBy: { createdAt: "asc" } },
+      investigationOrders: { orderBy: { createdAt: "asc" } },
       surgicalCounselling: true,
     },
   });
@@ -62,6 +63,13 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
       frequency: m.frequency,
       duration: m.duration,
       instructions: m.instructions ?? null,
+    })),
+    investigations: visit.investigationOrders.map((inv: any) => ({
+      testName: inv.testName,
+      category: inv.category,
+      priority: inv.priority,
+      laterality: inv.laterality ?? null,
+      status: inv.status,
     })),
     opticalRx: hasOptical ? { re, le } : null,
     surgicalCounselling: visit.surgicalCounselling ? {
