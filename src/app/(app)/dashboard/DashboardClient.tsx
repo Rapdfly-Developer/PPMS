@@ -140,11 +140,6 @@ function ApptRow({ appt, role }: { appt: Appt; role: "DOCTOR" | "HOSPITAL" }) {
               <Phone size={9} /> {appt.patient.mobile}
             </span>
           )}
-          {role === "DOCTOR" && appt.hospital && (
-            <span className="inline-flex items-center gap-0.5 text-[11px] text-[var(--color-ink-400)]">
-              <Building2 size={9} /> {appt.hospital.name}
-            </span>
-          )}
           {role === "HOSPITAL" && appt.doctor && (
             <span className="text-[11px] text-[var(--color-ink-400)]">
               Dr. {appt.doctor.name}
