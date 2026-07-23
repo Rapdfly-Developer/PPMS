@@ -4,9 +4,15 @@ import { useState, useTransition, useRef } from "react";
 import { Card } from "@/components/ui/Card";
 import { SingleChipSelect } from "@/components/ui/Chip";
 import { ICD10_OPHTHALMOLOGY, DIAGNOSIS_STATUSES, LATERALITY } from "@/lib/constants";
-import { saveProvisionalDiagnosis, addDiagnosis, updateDiagnosisStatus, removeDiagnosis } from "./actions";
+import { saveProvisionalDiagnosis, addDiagnosis, updateDiagnosisStatus, removeDiagnosis, addMedication, saveFollowUp } from "./actions";
 import { useAutoSave, SaveIndicator } from "@/lib/useAutoSave";
 import { X, History, ChevronDown, Search } from "lucide-react";
+import {
+  getTreatmentPresets, matchPresets, mergeMeds,
+  getApplied, setApplied,
+  getDismissedPresets,
+  type AppliedPreset,
+} from "./treatmentPresets";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Toast } from "@/components/ui/Toast";
 import { FieldWithHistory } from "@/components/ui/HistoryToggle";
@@ -23,6 +29,7 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
   const [historyOpen, setHistoryOpen] = useState(false);
   const [confirmDxGroup, setConfirmDxGroup] = useState<any[] | null>(null);
   const [dxToast, setDxToast] = useState(false);
+  const [presetToast, setPresetToast] = useState<string[]>([]);
   const diagnoses: any[] = visit.diagnoses ?? [];
 
   const priorDxGroups = priorVisits
@@ -77,10 +84,62 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
     (d) => d.code.toLowerCase().includes(query.toLowerCase()) || d.description.toLowerCase().includes(query.toLowerCase())
   ).slice(0, 6) : [];
 
+  // After adding one or more diagnoses, auto-apply matching treatment presets to Plan
+  const autoApplyPresets = async (newDiagnoses: { icd10Code: string; description: string }[]) => {
+    const allPresets   = getTreatmentPresets();
+    const allDiagnoses = [
+      ...diagnoses.map((d: any) => ({ icd10Code: d.icd10Code, description: d.description })),
+      ...newDiagnoses,
+    ];
+    const matches      = matchPresets(allDiagnoses, allPresets);
+    const alreadyApplied = getApplied(visit.id);
+    const dismissedIds   = getDismissedPresets(visit.id);
+    const appliedIds     = new Set(alreadyApplied.map((a) => a.presetId));
+    const dismissedSet   = new Set(dismissedIds);
+    const toApply        = matches.filter((m) => !appliedIds.has(m.preset.id) && !dismissedSet.has(m.preset.id));
+
+    if (toApply.length === 0) return;
+
+    // Mark applied in localStorage immediately to prevent double-apply in PlanTab
+    const newRecords: AppliedPreset[] = toApply.map((m) => ({
+      presetId:      m.preset.id,
+      presetName:    m.preset.name,
+      appliedAt:     new Date().toISOString(),
+      diagnosisDesc: m.diagnosisDesc,
+    }));
+    setApplied(visit.id, [...alreadyApplied, ...newRecords]);
+
+    // Apply medications to Plan (server actions)
+    const presetsToApply = toApply.map((m) => m.preset);
+    const currentMeds: { drugName: string }[] = visit.medications ?? [];
+    const newMeds = mergeMeds(presetsToApply, currentMeds);
+    for (const med of newMeds) {
+      await addMedication(visit.id, udid, med);
+    }
+
+    // Auto-set follow-up if not already set
+    if (!visit.followUpDate) {
+      const days = presetsToApply.map((p) => p.followUpDays).filter((d): d is number => !!d);
+      if (days.length > 0) {
+        const fuDate = new Date();
+        fuDate.setDate(fuDate.getDate() + Math.min(...days));
+        await saveFollowUp(visit.id, udid, {
+          followUpDate:    fuDate.toISOString(),
+          referralEnabled: visit.referralEnabled ?? false,
+          referralNote:    visit.referralNote ?? null,
+        });
+      }
+    }
+
+    setPresetToast(presetsToApply.map((p) => p.name));
+    setTimeout(() => setPresetToast([]), 5000);
+  };
+
   const add = (code: string, description: string) => {
     startTransition(async () => {
       await addDiagnosis(visit.id, udid, { icd10Code: code, description, laterality });
       setQuery("");
+      await autoApplyPresets([{ icd10Code: code, description }]);
     });
   };
 
@@ -90,6 +149,7 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
       for (const d of missing) {
         await addDiagnosis(visit.id, udid, { icd10Code: d.icd10Code, description: d.description, laterality: d.laterality ?? "OU" });
       }
+      await autoApplyPresets(missing.map((d: any) => ({ icd10Code: d.icd10Code, description: d.description })));
     });
     setHistoryOpen(false);
     setDxToast(true);
@@ -295,6 +355,12 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
       )}
       {dxToast && (
         <Toast message="Previous record loaded successfully." onDone={() => setDxToast(false)} />
+      )}
+      {presetToast.length > 0 && (
+        <Toast
+          message={`✨ Plan updated: ${presetToast.join(", ")}`}
+          onDone={() => setPresetToast([])}
+        />
       )}
     </>
   );
