@@ -1419,7 +1419,7 @@ function TearFilmCard({ visit, udid, editable, priorVisits = [] }: { visit: any;
     schirmer1Re: tf?.schirmer1Re ?? "", schirmer1Le: tf?.schirmer1Le ?? "",
     schirmer2Re: tf?.schirmer2Re ?? "", schirmer2Le: tf?.schirmer2Le ?? "",
   });
-  const [showHistory, setShowHistory] = useState(false);
+  const [openHist, setOpenHist] = useState<string | null>(null);
 
   const priorTf = priorVisits.filter((v) => v.tearFilm);
 
@@ -1429,65 +1429,120 @@ function TearFilmCard({ visit, udid, editable, priorVisits = [] }: { visit: any;
     await saveTearFilm(visit.id, udid, numeric);
   });
 
-  const upd = (k: keyof typeof data) => (v: string) => setData({ ...data, [k]: v });
+  const upd = (k: keyof typeof data) => (v: string) => setData((prev) => ({ ...prev, [k]: v }));
+
+  const getHist = (key: string): HistoryEntry[] =>
+    priorTf
+      .filter((v) => v.tearFilm?.[key] != null && v.tearFilm[key] !== "")
+      .map((v) => ({ date: v.date, value: String(v.tearFilm[key]) }));
+
+  const FIELD_LABELS: Record<string, string> = {
+    tbutRe: "TBUT · RE", tbutLe: "TBUT · LE",
+    schirmer1Re: "Schirmer's 1 · RE", schirmer1Le: "Schirmer's 1 · LE",
+    schirmer2Re: "Schirmer's 2 · RE", schirmer2Le: "Schirmer's 2 · LE",
+  };
+
+  const histBtn = (key: string) => {
+    const active = openHist === key;
+    return (
+      <button
+        type="button"
+        title="History"
+        onClick={() => setOpenHist(active ? null : key)}
+        className={`w-5 h-5 rounded flex items-center justify-center shrink-0 transition-colors ${
+          active
+            ? "text-[var(--color-primary-600)] bg-[var(--color-primary-100)]"
+            : "text-[var(--color-ink-300)] hover:text-[var(--color-primary-500)] hover:bg-[var(--color-primary-50)]"
+        }`}
+      >
+        <History size={11} />
+      </button>
+    );
+  };
+
+  const histPanel = (() => {
+    if (!openHist) return null;
+    const entries = getHist(openHist);
+    return (
+      <div className="mt-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-primary-50)] px-3 py-2.5">
+        <div className="flex items-center justify-between mb-1.5">
+          <p className="text-[10px] font-semibold text-[var(--color-primary-700)] uppercase tracking-wide">
+            {FIELD_LABELS[openHist] ?? openHist} — Prior values
+          </p>
+          <button onClick={() => setOpenHist(null)} className="text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)]">
+            <X size={13} />
+          </button>
+        </div>
+        {editable && entries.length > 0 && (
+          <p className="text-[10px] text-[var(--color-ink-400)] mb-2">Double-click any entry to load it.</p>
+        )}
+        {entries.length === 0 ? (
+          <p className="text-xs text-[var(--color-ink-400)]">No prior values recorded.</p>
+        ) : (
+          <ol className="space-y-1">
+            {entries.map((e, i) => (
+              <li
+                key={i}
+                onDoubleClick={() => {
+                  if (!editable || !openHist) return;
+                  setData((prev) => ({ ...prev, [openHist]: e.value }));
+                  setOpenHist(null);
+                }}
+                className={`flex gap-3 border-l-2 border-[var(--color-primary-500)] pl-3 py-0.5 rounded-r transition-colors ${
+                  editable ? "cursor-pointer hover:bg-[var(--color-primary-100)] select-none" : ""
+                }`}
+              >
+                <span className="text-[var(--color-ink-400)] whitespace-nowrap text-xs mt-0.5">
+                  {format(new Date(e.date), "dd MMM yyyy")}
+                </span>
+                <span className="text-[var(--color-ink-700)] font-medium text-xs">{e.value}</span>
+              </li>
+            ))}
+          </ol>
+        )}
+      </div>
+    );
+  })();
+
+  const tfInput = (label: string, key: keyof typeof data) => (
+    <div>
+      <label className="text-xs text-[var(--color-ink-400)] block mb-1">{label}</label>
+      <div className="flex items-center gap-1.5">
+        <input
+          disabled={!editable}
+          value={data[key]}
+          onChange={(e) => {
+            const v = e.target.value;
+            if (v !== "" && !/^\d*\.?\d*$/.test(v)) return;
+            upd(key)(v);
+          }}
+          inputMode="decimal"
+          className="w-28 rounded-lg border border-[var(--color-border)] bg-white px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] disabled:bg-[var(--color-surface-sunken)]"
+        />
+        {histBtn(key)}
+      </div>
+    </div>
+  );
 
   return (
     <Card>
       <div className="flex items-center justify-between mb-3">
         <p className="text-sm font-medium text-[var(--color-ink-700)]">Tear Film — TBUT &amp; Schirmer&apos;s</p>
-        <div className="flex items-center gap-2">
-          {priorTf.length > 0 && (
-            <button
-              type="button"
-              onClick={() => setShowHistory((v) => !v)}
-              className="text-xs text-amber-700 bg-amber-50 hover:bg-amber-100 font-medium px-2.5 py-0.5 rounded-full border border-amber-200 transition-colors"
-            >
-              History ({priorTf.length})
-            </button>
-          )}
-          <SaveIndicator state={state} />
-        </div>
+        <SaveIndicator state={state} />
       </div>
       <EyeColumns>
-        <div className="flex flex-col gap-2">
-          <LabeledInput label="TBUT (seconds)" value={data.tbutRe} onChange={upd("tbutRe")} disabled={!editable} numeric />
-          <LabeledInput label="Schirmer's 1 – no anaesthetic (mm)" value={data.schirmer1Re} onChange={upd("schirmer1Re")} disabled={!editable} numeric />
-          <LabeledInput label="Schirmer's 2 – with anaesthetic (mm)" value={data.schirmer2Re} onChange={upd("schirmer2Re")} disabled={!editable} numeric />
+        <div className="flex flex-col gap-3">
+          {tfInput("TBUT (seconds)", "tbutRe")}
+          {tfInput("Schirmer's 1 – no anaesthetic (mm)", "schirmer1Re")}
+          {tfInput("Schirmer's 2 – with anaesthetic (mm)", "schirmer2Re")}
         </div>
-        <div className="flex flex-col gap-2">
-          <LabeledInput label="TBUT (seconds)" value={data.tbutLe} onChange={upd("tbutLe")} disabled={!editable} numeric />
-          <LabeledInput label="Schirmer's 1 – no anaesthetic (mm)" value={data.schirmer1Le} onChange={upd("schirmer1Le")} disabled={!editable} numeric />
-          <LabeledInput label="Schirmer's 2 – with anaesthetic (mm)" value={data.schirmer2Le} onChange={upd("schirmer2Le")} disabled={!editable} numeric />
+        <div className="flex flex-col gap-3">
+          {tfInput("TBUT (seconds)", "tbutLe")}
+          {tfInput("Schirmer's 1 – no anaesthetic (mm)", "schirmer1Le")}
+          {tfInput("Schirmer's 2 – with anaesthetic (mm)", "schirmer2Le")}
         </div>
       </EyeColumns>
-
-      {showHistory && priorTf.length > 0 && (
-        <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3">
-          <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide mb-2">Previous Tear Film</p>
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs min-w-[360px]">
-              <thead>
-                <tr className="text-left text-[var(--color-ink-400)] border-b border-amber-200">
-                  <th className="pb-1.5">Date</th>
-                  <th>TBUT RE</th><th>TBUT LE</th>
-                  <th>Sch1 RE</th><th>Sch1 LE</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-amber-100">
-                {priorTf.map((v, i) => (
-                  <tr key={i}>
-                    <td className="py-1.5">{format(new Date(v.date), "dd-MMM-yyyy")}</td>
-                    <td>{v.tearFilm.tbutRe ?? "—"}</td>
-                    <td>{v.tearFilm.tbutLe ?? "—"}</td>
-                    <td>{v.tearFilm.schirmer1Re ?? "—"}</td>
-                    <td>{v.tearFilm.schirmer1Le ?? "—"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
+      {histPanel}
     </Card>
   );
 }
