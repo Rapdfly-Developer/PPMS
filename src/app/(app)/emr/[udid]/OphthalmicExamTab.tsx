@@ -620,7 +620,7 @@ function ColourContrastTab({ visit, udid, editable, priorVisits = [] }: { visit:
               <p className="text-[10px] font-bold text-[#0F766E] uppercase tracking-widest">Previous</p>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full text-xs min-w-[340px]">
+              <table className="text-xs">
                 <thead>
                   <tr className="border-b border-[#B2DEDA]">
                     <th className="py-1.5 px-3 text-left font-semibold text-[var(--color-ink-400)] uppercase tracking-wide whitespace-nowrap">Date</th>
@@ -683,7 +683,7 @@ function ColourContrastTab({ visit, udid, editable, priorVisits = [] }: { visit:
               <p className="text-[10px] font-bold text-[#0F766E] uppercase tracking-widest">Previous</p>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full text-xs min-w-[340px]">
+              <table className="text-xs">
                 <thead>
                   <tr className="border-b border-[#B2DEDA]">
                     <th className="py-1.5 px-3 text-left font-semibold text-[var(--color-ink-400)] uppercase tracking-wide whitespace-nowrap">Date</th>
