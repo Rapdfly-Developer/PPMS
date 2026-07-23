@@ -55,15 +55,21 @@ export default async function AppointmentsPage({
     where.doctorId = scopeDoctorId(user);
     // Show only the selected day (defaults to today); other days via the date picker
     where.dateTime = dateFilter;
-    // For past dates show everything; for today/future hide NO_SHOW/CANCELLED by default
+    // For past dates show everything; for today/future hide DISPENSED/NO_SHOW/CANCELLED by default
     if (statusParam === "ALL" && !isPastDate) {
-      where.status = { in: ["REQUESTED", "SCHEDULED", "CONFIRMED", "DISPENSED"] };
+      where.status = { in: ["REQUESTED", "SCHEDULED", "CONFIRMED"] };
     }
   } else if (user.role === "HOSPITAL") {
     where.hospitalId = user.hospitalId;
     where.dateTime = dateFilter;
+    if (statusParam === "ALL" && !isPastDate) {
+      where.status = { notIn: ["DISPENSED", "CANCELLED", "NO_SHOW"] };
+    }
   } else {
     where.dateTime = dateFilter;
+    if (statusParam === "ALL" && !isPastDate) {
+      where.status = { notIn: ["DISPENSED", "CANCELLED", "NO_SHOW"] };
+    }
   }
 
   if (statusParam !== "ALL") where.status = statusParam;
