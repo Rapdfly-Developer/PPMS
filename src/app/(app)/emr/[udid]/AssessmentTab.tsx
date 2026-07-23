@@ -177,7 +177,7 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
           <button
             type="button"
             onClick={() => setHistoryOpen((v) => !v)}
-            className="flex items-center gap-1 text-xs text-amber-700 bg-amber-50 hover:bg-amber-100 font-medium px-2.5 py-0.5 rounded-full border border-amber-200 transition-colors"
+            className="flex items-center gap-1 text-xs text-[#0F766E] bg-[#EEF8F7] hover:bg-[#DCF3F1] font-medium px-2.5 py-0.5 rounded-full border border-[#B2DEDA] transition-colors"
           >
             <History size={11} />
             History {priorDxGroups.length > 0 && `(${priorDxGroups.length})`}
@@ -185,11 +185,11 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
           </button>
         </div>
         {historyOpen && (
-          <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-3">
+          <div className="mb-4 rounded-xl border border-[#B2DEDA] bg-[#EEF8F7] p-3">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-amber-700">Previous Diagnoses</p>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-[#0F766E]">Previous Diagnoses</p>
               {priorDxGroups.length > 0 && (
-                <p className="text-[10px] text-amber-600">Double-click a visit to load its diagnoses</p>
+                <p className="text-[10px] text-[#0D9488]">Double-click a visit to load its diagnoses</p>
               )}
             </div>
             {priorDxGroups.length === 0 ? (
@@ -201,11 +201,11 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
                     key={gi}
                     onDoubleClick={() => handleDxGroupDoubleClick(g.diagnoses)}
                     title="Double-click to add these diagnoses"
-                    className="cursor-pointer rounded-lg p-1.5 -mx-1.5 hover:bg-amber-100 transition-colors select-none"
+                    className="cursor-pointer rounded-lg p-1.5 -mx-1.5 hover:bg-[#DCF3F1] transition-colors select-none"
                   >
                     <p className="text-[10px] font-semibold text-[var(--color-ink-400)] mb-1">{format(new Date(g.date), "d MMM yyyy")}</p>
                     {g.diagnoses.map((d: any, di: number) => (
-                      <div key={di} className="flex items-center gap-2 text-xs text-[var(--color-ink-700)] border-l-2 border-amber-400 pl-2 mb-0.5">
+                      <div key={di} className="flex items-center gap-2 text-xs text-[var(--color-ink-700)] border-l-2 border-[#0F766E]/50 pl-2 mb-0.5">
                         <span className="font-medium">{d.description}</span>
                         {d.laterality && <span className="text-[var(--color-ink-400)]">{d.laterality}</span>}
                         <span className="font-mono text-[var(--color-ink-400)]">{d.icd10Code}</span>

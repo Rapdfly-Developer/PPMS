@@ -43,7 +43,7 @@ export function FieldWithHistory({
     <button
       type="button"
       onClick={() => setOpen((v) => !v)}
-      className="flex items-center gap-1 text-xs text-amber-700 bg-amber-50 hover:bg-amber-100 font-medium px-2.5 py-0.5 rounded-full border border-amber-200 transition-colors"
+      className="flex items-center gap-1 text-xs text-[#0F766E] bg-[#EEF8F7] hover:bg-[#DCF3F1] font-medium px-2.5 py-0.5 rounded-full border border-[#B2DEDA] transition-colors"
     >
       <History size={11} />
       History ({history.length})
@@ -77,7 +77,7 @@ export function FieldWithHistory({
             transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
             className="overflow-hidden"
           >
-            <div className="mt-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-primary-50)] p-3">
+            <div className="mt-2 rounded-xl border border-[#B2DEDA] bg-[#EEF8F7] p-3">
               <div className="flex items-center justify-between mb-1.5">
                 <p className="text-xs font-semibold text-[var(--color-primary-700)] uppercase tracking-wide">
                   Prior values

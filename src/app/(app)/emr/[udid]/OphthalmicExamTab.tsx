@@ -470,7 +470,7 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
             <button
               type="button"
               onClick={() => setShowHistory((v) => !v)}
-              className="text-xs text-amber-700 bg-amber-50 hover:bg-amber-100 font-medium px-2.5 py-0.5 rounded-full border border-amber-200 transition-colors"
+              className="text-xs text-[#0F766E] bg-[#EEF8F7] hover:bg-[#DCF3F1] font-medium px-2.5 py-0.5 rounded-full border border-[#B2DEDA] transition-colors"
             >
               History ({priorRefractions.length})
             </button>
@@ -484,10 +484,10 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
       </EyeColumns>
 
       {showHistory && priorRefractions.length > 0 && (
-        <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3">
+        <div className="mt-4 rounded-xl border border-[#B2DEDA] bg-[#EEF8F7] p-3">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide">Previous Spectacles</p>
-            <p className="text-[10px] text-amber-600">Double-click an entry to load it</p>
+            <p className="text-xs font-semibold text-[#0F766E] uppercase tracking-wide">Previous Spectacles</p>
+            <p className="text-[10px] text-[#0D9488]">Double-click an entry to load it</p>
           </div>
           <div className="flex flex-col gap-3">
             {priorRefractions.map((pr, i) => (
@@ -495,9 +495,9 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
                 key={i}
                 onDoubleClick={() => handleHistoryDoubleClick(pr)}
                 title="Double-click to load this prescription"
-                className="rounded-lg border border-amber-200 bg-white p-4 cursor-pointer select-none transition-all hover:border-amber-400 hover:shadow-sm"
+                className="rounded-lg border border-[#B2DEDA] bg-white p-4 cursor-pointer select-none transition-all hover:border-[#0F766E]/40 hover:shadow-sm"
               >
-                <p className="text-[11px] font-bold text-amber-800 mb-3">{format(new Date(pr.date), "dd MMM yyyy")}</p>
+                <p className="text-[11px] font-bold text-[#0F766E] mb-3">{format(new Date(pr.date), "dd MMM yyyy")}</p>
                 <EyeColumns>
                   {historyEyeFields(pr.re)}
                   {historyEyeFields(pr.le)}
@@ -704,7 +704,7 @@ function IOPCard({ visit, udid, editable, priorVisits }: { visit: any; udid: str
           <button
             type="button"
             onClick={() => setShowHistory((v) => !v)}
-            className="flex items-center gap-1 text-xs text-amber-700 bg-amber-50 hover:bg-amber-100 font-medium px-2.5 py-0.5 rounded-full border border-amber-200 transition-colors"
+            className="flex items-center gap-1 text-xs text-[#0F766E] bg-[#EEF8F7] hover:bg-[#DCF3F1] font-medium px-2.5 py-0.5 rounded-full border border-[#B2DEDA] transition-colors"
           >
             History ({priorIOPRows.length} prior readings)
           </button>
@@ -770,14 +770,14 @@ function IOPCard({ visit, udid, editable, priorVisits }: { visit: any; udid: str
       </div>
 
       {showHistory && priorIOPRows.length > 0 && (
-        <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 overflow-hidden">
-          <div className="px-4 pt-3 pb-2 border-b border-amber-200">
-            <p className="text-[11px] font-bold text-amber-700 uppercase tracking-widest">Prior IOP Readings</p>
+        <div className="mt-4 rounded-xl border border-[#B2DEDA] bg-[#EEF8F7] overflow-hidden">
+          <div className="px-4 pt-3 pb-2 border-b border-[#B2DEDA]">
+            <p className="text-[11px] font-bold text-[#0F766E] uppercase tracking-widest">Prior IOP Readings</p>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm min-w-[460px]">
               <thead>
-                <tr className="border-b border-amber-200">
+                <tr className="border-b border-[#B2DEDA]">
                   <th className="py-2 px-4 text-left text-[11px] font-semibold text-[var(--color-ink-400)] uppercase tracking-wide whitespace-nowrap">Visit Date</th>
                   <th className="py-2 px-4 text-left text-[11px] font-semibold text-[var(--color-primary-700)] uppercase tracking-wide w-16">RE</th>
                   <th className="py-2 px-4 text-left text-[11px] font-semibold text-[var(--color-primary-700)] uppercase tracking-wide w-16">LE</th>
@@ -785,9 +785,9 @@ function IOPCard({ visit, udid, editable, priorVisits }: { visit: any; udid: str
                   <th className="py-2 px-4 text-left text-[11px] font-semibold text-[var(--color-ink-400)] uppercase tracking-wide">Hospital</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-amber-100">
+              <tbody className="divide-y divide-[#D5EFED]">
                 {priorIOPRows.map((r, i) => (
-                  <tr key={i} className="hover:bg-amber-100/60 transition-colors">
+                  <tr key={i} className="hover:bg-[#DCF3F1]/60 transition-colors">
                     <td className="py-2.5 px-4 text-sm text-[var(--color-ink-800)] whitespace-nowrap">{format(new Date(r.date), "d MMM yyyy")}</td>
                     <td className="py-2.5 px-4 text-sm font-semibold text-[var(--color-ink-900)] tabular-nums">{r.re ?? "—"}</td>
                     <td className="py-2.5 px-4 text-sm font-semibold text-[var(--color-ink-900)] tabular-nums">{r.le ?? "—"}</td>
@@ -870,7 +870,7 @@ function SegmentEyeInput({
     <button
       type="button"
       onClick={() => setHistOpen((v) => !v)}
-      className="inline-flex items-center gap-1 text-xs text-amber-700 bg-amber-50 hover:bg-amber-100 font-medium px-2.5 py-0.5 rounded-full border border-amber-200 transition-colors whitespace-nowrap"
+      className="inline-flex items-center gap-1 text-xs text-[#0F766E] bg-[#EEF8F7] hover:bg-[#DCF3F1] font-medium px-2.5 py-0.5 rounded-full border border-[#B2DEDA] transition-colors whitespace-nowrap"
     >
       <History size={11} />
       History ({history.length})
@@ -878,7 +878,7 @@ function SegmentEyeInput({
   ) : null;
 
   const histPanel = histOpen && hasHistory ? (
-    <div className="mt-1 rounded-xl border border-[var(--color-border)] bg-[var(--color-primary-50)] p-3">
+    <div className="mt-1 rounded-xl border border-[#B2DEDA] bg-[#EEF8F7] p-3">
       <div className="flex items-center justify-between mb-1.5">
         <p className="text-xs font-semibold text-[var(--color-primary-700)] uppercase tracking-wide">Prior values</p>
         <button onClick={() => setHistOpen(false)} className="text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)]">
@@ -977,26 +977,26 @@ function SegmentHistory({ priorVisits, dataKey }: { priorVisits: any[]; dataKey:
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-1.5 text-xs text-amber-700 bg-amber-50 hover:bg-amber-100 font-medium px-2.5 py-0.5 rounded-full border border-amber-200 transition-colors mb-2"
+        className="flex items-center gap-1.5 text-xs text-[#0F766E] bg-[#EEF8F7] hover:bg-[#DCF3F1] font-medium px-2.5 py-0.5 rounded-full border border-[#B2DEDA] transition-colors mb-2"
       >
         <span>History ({rows.length})</span>
       </button>
       {open && (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 space-y-3 max-h-64 overflow-y-auto scrollbar-thin">
+        <div className="rounded-xl border border-[#B2DEDA] bg-[#EEF8F7] p-3 space-y-3 max-h-64 overflow-y-auto scrollbar-thin">
           {rows.map((v, i) => {
             const d = v[dataKey];
             const re = parseJSON<Record<string, string>>(d.re, {});
             const le = parseJSON<Record<string, string>>(d.le, {});
             return (
               <div key={i}>
-                <p className="text-[10px] font-bold text-amber-700 mb-1">{format(new Date(v.date), "d MMM yyyy")}{v.hospital?.name ? ` · ${v.hospital.name}` : ""}</p>
+                <p className="text-[10px] font-bold text-[#0F766E] mb-1">{format(new Date(v.date), "d MMM yyyy")}{v.hospital?.name ? ` · ${v.hospital.name}` : ""}</p>
                 {Object.entries(re).filter(([, val]) => val).map(([k, val]) => (
-                  <p key={`re-${k}`} className="text-xs text-[var(--color-ink-700)] border-l-2 border-amber-400 pl-2 mb-0.5">
+                  <p key={`re-${k}`} className="text-xs text-[var(--color-ink-700)] border-l-2 border-[#0F766E]/50 pl-2 mb-0.5">
                     <span className="font-medium text-[var(--color-ink-500)]">RE {toLabel(k)}: </span>{val}
                   </p>
                 ))}
                 {Object.entries(le).filter(([, val]) => val).map(([k, val]) => (
-                  <p key={`le-${k}`} className="text-xs text-[var(--color-ink-700)] border-l-2 border-amber-300 pl-2 mb-0.5">
+                  <p key={`le-${k}`} className="text-xs text-[var(--color-ink-700)] border-l-2 border-[#0F766E]/30 pl-2 mb-0.5">
                     <span className="font-medium text-[var(--color-ink-500)]">LE {toLabel(k)}: </span>{val}
                   </p>
                 ))}
@@ -1582,14 +1582,14 @@ function LacrimalSacCard({ visit, udid, editable, priorVisits = [] }: { visit: a
     const rows = getPrior(eye);
     if (!rows.length) return null;
     return (
-      <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50 p-2.5 space-y-2">
+      <div className="mt-2 rounded-lg border border-[#B2DEDA] bg-[#EEF8F7] p-2.5 space-y-2">
         {rows.map((r, i) => (
           <div key={i} className="text-xs">
-            <p className="font-semibold text-amber-800 mb-0.5">{format(new Date(r.date), "dd MMM yyyy")}</p>
+            <p className="font-semibold text-[#0F766E] mb-0.5">{format(new Date(r.date), "dd MMM yyyy")}</p>
             {r.chips.length > 0 && (
               <div className="flex flex-wrap gap-1 mb-0.5">
                 {r.chips.map((c) => (
-                  <span key={c} className="px-1.5 py-0.5 rounded-full bg-amber-100 border border-amber-200 text-amber-800 text-[10px]">{c}</span>
+                  <span key={c} className="px-1.5 py-0.5 rounded-full bg-[#DCF3F1] border border-[#B2DEDA] text-[#0F766E] text-[10px]">{c}</span>
                 ))}
               </div>
             )}
@@ -1610,8 +1610,8 @@ function LacrimalSacCard({ visit, udid, editable, priorVisits = [] }: { visit: a
         onClick={() => setOpenHistory(isOpen ? null : eye)}
         className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border transition-colors ${
           isOpen
-            ? "bg-amber-100 text-amber-800 border-amber-300"
-            : "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100"
+            ? "bg-[#DCF3F1] text-[#0F766E] border-[#99CEC8]"
+            : "bg-[#EEF8F7] text-[#0F766E] border-[#B2DEDA] hover:bg-[#DCF3F1]"
         }`}
       >
         {isOpen ? "Close" : `History (${count})`}
