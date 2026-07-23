@@ -136,18 +136,18 @@ function VisualAcuityCard({ visit, udid, editable, priorVisits = [] }: { visit: 
   const histBtn = (section: string, eye: "re" | "le", fieldKey: string) => {
     const k = `${section}:${eye}:${fieldKey}`;
     const active = openHist === k;
+    const count = getHistory(section, eye, fieldKey).length;
     return (
       <button
         type="button"
         onClick={() => setOpenHist(active ? null : k)}
-        className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded shrink-0 transition-colors ${
+        className={`px-2.5 py-0.5 rounded-full text-xs font-medium shrink-0 transition-colors ${
           active
-            ? "text-[var(--color-primary-600)] bg-[var(--color-primary-100)]"
-            : "text-[var(--color-ink-300)] hover:text-[var(--color-primary-500)] hover:bg-[var(--color-primary-50)]"
+            ? "bg-[var(--color-primary-600)] text-white"
+            : "bg-[var(--color-primary-100)] text-[var(--color-primary-700)] hover:bg-[var(--color-primary-200)]"
         }`}
       >
-        <History size={10} />
-        <span className="text-[10px] font-medium">History</span>
+        History{count > 0 ? ` (${count})` : ""}
       </button>
     );
   };
@@ -1474,18 +1474,18 @@ function TearFilmCard({ visit, udid, editable, priorVisits = [] }: { visit: any;
 
   const histBtn = (key: string) => {
     const active = openHist === key;
+    const count = getHist(key).length;
     return (
       <button
         type="button"
         onClick={() => setOpenHist(active ? null : key)}
-        className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded shrink-0 transition-colors ${
+        className={`px-2.5 py-0.5 rounded-full text-xs font-medium shrink-0 transition-colors ${
           active
-            ? "text-[var(--color-primary-600)] bg-[var(--color-primary-100)]"
-            : "text-[var(--color-ink-300)] hover:text-[var(--color-primary-500)] hover:bg-[var(--color-primary-50)]"
+            ? "bg-[var(--color-primary-600)] text-white"
+            : "bg-[var(--color-primary-100)] text-[var(--color-primary-700)] hover:bg-[var(--color-primary-200)]"
         }`}
       >
-        <History size={10} />
-        <span className="text-[10px] font-medium">History</span>
+        History{count > 0 ? ` (${count})` : ""}
       </button>
     );
   };
