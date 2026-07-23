@@ -1511,7 +1511,7 @@ function TearFilmCard({ visit, udid, editable, priorVisits = [] }: { visit: any;
           {histBtn(key)}
         </div>
         {active && (
-          <div className="mt-1 rounded-lg border border-[var(--color-primary-200)] bg-[var(--color-primary-50)] px-2 py-1.5">
+          <div className="mt-1 w-fit rounded-lg border border-[var(--color-primary-200)] bg-[var(--color-primary-50)] px-2 py-1.5">
             {entries.length === 0 ? (
               <p className="text-[10px] text-[var(--color-ink-400)]">No prior values.</p>
             ) : (
@@ -1524,7 +1524,7 @@ function TearFilmCard({ visit, udid, editable, priorVisits = [] }: { visit: any;
                       setData((prev) => ({ ...prev, [key]: e.value }));
                       setOpenHist(null);
                     }}
-                    className={`flex gap-2 text-[10px] border-l-2 border-[var(--color-primary-400)] pl-1.5 py-0.5 rounded-r ${
+                    className={`flex gap-2 text-[10px] px-1 py-0.5 rounded ${
                       editable ? "cursor-pointer hover:bg-[var(--color-primary-100)]" : ""
                     }`}
                   >
