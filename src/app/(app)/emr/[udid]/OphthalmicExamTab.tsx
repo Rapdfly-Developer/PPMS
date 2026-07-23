@@ -172,7 +172,7 @@ function VisualAcuityCard({ visit, udid, editable, priorVisits = [] }: { visit: 
               <li
                 key={i}
                 onDoubleClick={() => { if (!editable) return; setEye((prev: any) => ({ ...prev, [key]: e.value })); setOpenHist(null); }}
-                className={`flex gap-2 text-[10px] border-l-2 border-[var(--color-primary-400)] pl-1.5 py-0.5 rounded-r ${editable ? "cursor-pointer hover:bg-[var(--color-primary-100)]" : ""}`}
+                className={`flex gap-2 text-[10px] py-0.5 ${editable ? "cursor-pointer hover:bg-[var(--color-primary-100)]" : ""}`}
               >
                 <span className="text-[var(--color-ink-400)] whitespace-nowrap">{format(new Date(e.date), "d MMM yy")}</span>
                 <span className="text-[var(--color-ink-700)] font-medium">{e.value}</span>
@@ -917,7 +917,7 @@ function SegmentEyeInput({
   const histPanel = histOpen && hasHistory ? (
     <div className="mt-1 rounded-xl border border-[#B2DEDA] bg-[#EEF8F7] p-3">
       <div className="flex items-center justify-between mb-1.5">
-        <p className="text-xs font-semibold text-[var(--color-primary-700)] uppercase tracking-wide">Prior values</p>
+        <p className="text-xs font-semibold text-[var(--color-primary-700)] uppercase tracking-wide">{toLabel(structureKey)} · {eye}</p>
         <button onClick={() => setHistOpen(false)} className="text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)]">
           <X size={14} />
         </button>
@@ -931,7 +931,7 @@ function SegmentEyeInput({
             key={i}
             onDoubleClick={() => { if (!disabled) { onChange(h.value); setHistOpen(false); } }}
             title={!disabled ? "Double-click to load" : undefined}
-            className={`text-sm flex gap-3 border-l-2 border-[var(--color-primary-500)] pl-3 py-1 rounded-r-lg transition-colors ${!disabled ? "cursor-pointer hover:bg-[var(--color-primary-100)] select-none" : ""}`}
+            className={`text-sm flex gap-3 py-1 transition-colors ${!disabled ? "cursor-pointer hover:bg-[var(--color-primary-100)] select-none" : ""}`}
           >
             <span className="text-[var(--color-ink-400)] whitespace-nowrap text-xs mt-0.5">
               {format(new Date(h.date), "dd MMM yyyy")}
@@ -1027,12 +1027,12 @@ function SegmentHistory({ priorVisits, dataKey }: { priorVisits: any[]; dataKey:
               <div key={i}>
                 <p className="text-[10px] font-bold text-[#0F766E] mb-1">{format(new Date(v.date), "d MMM yyyy")}{v.hospital?.name ? ` · ${v.hospital.name}` : ""}</p>
                 {Object.entries(re).filter(([, val]) => val).map(([k, val]) => (
-                  <p key={`re-${k}`} className="text-xs text-[var(--color-ink-700)] border-l-2 border-[#0F766E]/50 pl-2 mb-0.5">
+                  <p key={`re-${k}`} className="text-xs text-[var(--color-ink-700)] mb-0.5">
                     <span className="font-medium text-[var(--color-ink-500)]">RE {toLabel(k)}: </span>{val}
                   </p>
                 ))}
                 {Object.entries(le).filter(([, val]) => val).map(([k, val]) => (
-                  <p key={`le-${k}`} className="text-xs text-[var(--color-ink-700)] border-l-2 border-[#0F766E]/30 pl-2 mb-0.5">
+                  <p key={`le-${k}`} className="text-xs text-[var(--color-ink-700)] mb-0.5">
                     <span className="font-medium text-[var(--color-ink-500)]">LE {toLabel(k)}: </span>{val}
                   </p>
                 ))}

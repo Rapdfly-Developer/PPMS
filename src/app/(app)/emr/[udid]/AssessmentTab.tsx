@@ -268,7 +268,7 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
                   >
                     <p className="text-[10px] font-semibold text-[var(--color-ink-400)] mb-1">{format(new Date(g.date), "d MMM yyyy")}</p>
                     {g.diagnoses.map((d: any, di: number) => (
-                      <div key={di} className="flex items-center gap-2 text-xs text-[var(--color-ink-700)] border-l-2 border-[#0F766E]/50 pl-2 mb-0.5">
+                      <div key={di} className="flex items-center gap-2 text-xs text-[var(--color-ink-700)] mb-0.5">
                         <span className="font-medium">{d.description}</span>
                         {d.laterality && <span className="text-[var(--color-ink-400)]">{d.laterality}</span>}
                         <span className="font-mono text-[var(--color-ink-400)]">{d.icd10Code}</span>
