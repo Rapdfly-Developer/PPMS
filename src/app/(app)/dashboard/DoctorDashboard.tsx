@@ -85,6 +85,7 @@ export async function DoctorDashboard({
     id:          a.id,
     dateTime:    a.dateTime.toISOString(),
     status:      a.status,
+    isWalkIn:    a.isWalkIn,
     complaint:   a.patient.complaint ?? null,
     patient:     { name: a.patient.name, udid: a.patient.udid ?? "", uhid: a.patient.uhid ?? "", age: a.patient.age, sex: a.patient.sex, mobile: a.patient.mobile },
     hospital:    { id: a.hospital.id, name: a.hospital.name },

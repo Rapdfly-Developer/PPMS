@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ChevronDown, Plus, Building2, Phone, LogIn, Loader2,
-  Sun, Sunset, Moon, CalendarX2,
+  Sun, Sunset, Moon, CalendarX2, Calendar, PersonStanding,
 } from "lucide-react";
 import clsx from "clsx";
 import { doctorConfirmAppointment, hospitalUpdateAppointmentStatus } from "@/app/(app)/appointments/actions";
@@ -16,6 +16,7 @@ interface Appt {
   id: string;
   dateTime: string;
   status: string;
+  isWalkIn: boolean;
   complaint: string | null;
   patient: { name: string; udid: string; uhid?: string; age: number; sex: string; mobile?: string };
   hospital?: { id: string; name: string };
@@ -102,12 +103,22 @@ function SurgeryRow({ s, role }: { s: Surgery; role: "DOCTOR" | "HOSPITAL" }) {
 /* ── Appointment row ────────────────────────────────────────────────────── */
 function ApptRow({ appt, role }: { appt: Appt; role: "DOCTOR" | "HOSPITAL" }) {
   const cfg  = STATUS_CFG[appt.status] ?? STATUS_CFG["REQUESTED"];
-  const time = format(new Date(appt.dateTime), "hh:mm a");
+  const time = format(new Date(appt.dateTime), "h:mm a");
 
   return (
     <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-[var(--color-border)] bg-white hover:bg-[var(--color-primary-50)] hover:border-[var(--color-primary-200)] transition-colors">
-      <div className="w-16 shrink-0 text-center">
+      {/* Time + visit-type column */}
+      <div className="w-20 shrink-0 text-center">
         <p className="text-sm font-bold text-[var(--color-ink-900)]">{time}</p>
+        {appt.isWalkIn ? (
+          <span className="inline-flex items-center gap-0.5 mt-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-orange-50 text-orange-600">
+            <PersonStanding size={9} /> Walk-in
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-0.5 mt-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-600">
+            <Calendar size={9} /> Appt
+          </span>
+        )}
       </div>
       <div className="w-px self-stretch bg-[var(--color-border)]" />
       <Link href={`/patients/${appt.patient.udid}?returnTo=/dashboard`} className="flex-1 min-w-0 hover:opacity-80 transition-opacity">
