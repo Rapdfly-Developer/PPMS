@@ -131,7 +131,7 @@ function ApptRow({ appt, role }: { appt: Appt; role: "DOCTOR" | "HOSPITAL" }) {
 
   return (
     <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-[var(--color-border)] bg-white hover:bg-[var(--color-primary-50)] hover:border-[var(--color-primary-200)] transition-colors">
-      {/* Time + visit-type + live wait timer column */}
+      {/* Time + visit-type column */}
       <div className="w-20 shrink-0 flex flex-col items-center gap-0.5">
         <p className="text-sm font-bold text-[var(--color-ink-900)]">{time}</p>
         {appt.isWalkIn ? (
@@ -143,7 +143,6 @@ function ApptRow({ appt, role }: { appt: Appt; role: "DOCTOR" | "HOSPITAL" }) {
             <Calendar size={9} /> Appt
           </span>
         )}
-        <LiveTimer since={appt.dateTime} />
       </div>
       <div className="w-px self-stretch bg-[var(--color-border)]" />
       <Link href={`/patients/${appt.patient.udid}?returnTo=/dashboard`} className="flex-1 min-w-0 hover:opacity-80 transition-opacity">
@@ -177,10 +176,13 @@ function ApptRow({ appt, role }: { appt: Appt; role: "DOCTOR" | "HOSPITAL" }) {
           {appt.complaint}
         </span>
       )}
-      <span className={clsx("inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold shrink-0", cfg.color)}>
-        <span className={clsx("w-1.5 h-1.5 rounded-full shrink-0", cfg.dot)} />
-        {cfg.label}
-      </span>
+      <div className="flex flex-col items-end gap-0.5 shrink-0">
+        <span className={clsx("inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold", cfg.color)}>
+          <span className={clsx("w-1.5 h-1.5 rounded-full shrink-0", cfg.dot)} />
+          {cfg.label}
+        </span>
+        <LiveTimer since={appt.dateTime} />
+      </div>
     </div>
   );
 }
