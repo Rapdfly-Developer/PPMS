@@ -115,7 +115,7 @@ export async function addPastExternalVisit(
       extractedDiagnosis: data.extractedDiagnosis ?? null,
       extractedTreatment: data.extractedTreatment ?? null,
       scanFileRef: data.scanFileUrl ?? data.originalFileName,
-      verificationStatus: "PENDING_REVIEW",
+      verificationStatus: "VERIFIED",
     },
   });
   await writeAudit(user.id, "PastExternalVisit", patientId, "ADD", { sourceHospital: data.sourceHospital });

@@ -60,7 +60,7 @@ export default async function PatientDetailedEMR({
           appointment: { select: { dateTime: true } },
         },
       },
-      pastExternalVisits: { orderBy: { sourceDate: "desc" } },
+      pastExternalVisits: { orderBy: { createdAt: "desc" } },
     },
   });
 
