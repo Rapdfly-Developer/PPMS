@@ -1512,6 +1512,9 @@ function TearFilmCard({ visit, udid, editable, priorVisits = [] }: { visit: any;
         </div>
         {active && (
           <div className="mt-1 w-fit rounded-lg border border-[var(--color-primary-200)] bg-[var(--color-primary-50)] px-2 py-1.5">
+            <p className="text-[10px] font-semibold text-[var(--color-primary-600)] uppercase tracking-wide mb-1">
+              {FIELD_LABELS[key as string] ?? label}
+            </p>
             {entries.length === 0 ? (
               <p className="text-[10px] text-[var(--color-ink-400)]">No prior values.</p>
             ) : (
