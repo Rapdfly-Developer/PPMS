@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useTransition } from "react";
-import { Trash2, Plus, X, Copy, Loader2 } from "lucide-react";
+import { Trash2, Plus, X, Copy, Loader2, History } from "lucide-react";
 import { KeywordInput, KeywordTextarea } from "@/components/emr/KeywordField";
 import { Card } from "@/components/ui/Card";
 import { Tabs } from "@/components/ui/Tabs";
@@ -55,7 +55,7 @@ export function OphthalmicExamTab({ visit, priorVisits, udid, role }: { visit: a
       variant="sub"
       defaultTab="va"
       tabs={[
-        { id: "va",        label: "Visual Acuity",    content: <VisualAcuityCard visit={visit} udid={udid} editable={refractionistCanEdit} /> },
+        { id: "va",        label: "Visual Acuity",    content: <VisualAcuityCard visit={visit} udid={udid} editable={refractionistCanEdit} priorVisits={priorVisits} /> },
         { id: "refraction",label: "Refraction",        content: <RefractionCard visit={visit} udid={udid} editable={refractionistCanEdit} priorVisits={priorVisits} /> },
         { id: "cv",        label: "Colour / Contrast", content: <ColourContrastTab visit={visit} udid={udid} editable={refractionistCanEdit} priorVisits={priorVisits} /> },
         { id: "iop",       label: "IOP",               content: <IOPCard visit={visit} udid={udid} editable={refractionistCanEdit} priorVisits={priorVisits} /> },
@@ -108,7 +108,7 @@ const NEAR_COLS = [
   { key: "nearBestCorrected", label: "Aided"   },
 ];
 
-function VisualAcuityCard({ visit, udid, editable }: { visit: any; udid: string; editable: boolean }) {
+function VisualAcuityCard({ visit, udid, editable, priorVisits = [] }: { visit: any; udid: string; editable: boolean; priorVisits?: any[] }) {
   const va = visit.visualAcuity;
   const [testMethod, setTestMethod] = useState(va?.testMethod ?? "Snellen");
   const [re, setRe] = useState(
@@ -117,33 +117,117 @@ function VisualAcuityCard({ visit, udid, editable }: { visit: any; udid: string;
   const [le, setLe] = useState(
     parseJSON(va?.le, { unaided: "", pinhole: "", bestCorrected: "", nearUnaided: "", nearPinhole: "", nearBestCorrected: "" })
   );
+  const [openHist, setOpenHist] = useState<string | null>(null);
 
   const state = useAutoSave({ testMethod, re: JSON.stringify(re), le: JSON.stringify(le) }, async (d) => {
     if (!editable) return;
     await saveVisualAcuity(visit.id, udid, d);
   });
 
-  const distSel = (eye: any, setEye: any, key: string) => (
-    <select
-      disabled={!editable}
-      value={eye[key] ?? "-"}
-      onChange={(e) => setEye({ ...eye, [key]: e.target.value })}
-      className="rounded border border-[var(--color-border)] bg-white px-1.5 py-1 text-xs disabled:bg-[var(--color-surface-sunken)] w-20"
-    >
-      {VA_SNELLEN_VALUES.map((v) => <option key={v} value={v}>{v}</option>)}
-    </select>
+  const getHistory = (section: string, eye: "re" | "le", fieldKey: string): HistoryEntry[] =>
+    priorVisits
+      .filter((v) => v.visualAcuity)
+      .map((v) => ({
+        date: v.date,
+        value: (parseJSON(eye === "re" ? v.visualAcuity.re : v.visualAcuity.le, {}) as any)[fieldKey] ?? "",
+      }))
+      .filter((e) => e.value && e.value !== "-" && e.value !== "");
+
+  const histBtn = (section: string, eye: "re" | "le", fieldKey: string) => {
+    const k = `${section}:${eye}:${fieldKey}`;
+    const active = openHist === k;
+    return (
+      <button
+        type="button"
+        title="History"
+        onClick={() => setOpenHist(active ? null : k)}
+        className={`w-5 h-5 rounded flex items-center justify-center shrink-0 transition-colors ${
+          active
+            ? "text-[var(--color-primary-600)] bg-[var(--color-primary-100)]"
+            : "text-[var(--color-ink-300)] hover:text-[var(--color-primary-500)] hover:bg-[var(--color-primary-50)]"
+        }`}
+      >
+        <History size={11} />
+      </button>
+    );
+  };
+
+  const distSel = (eyeKey: "re" | "le", eye: any, setEye: any, key: string) => (
+    <div className="inline-flex items-center gap-0.5 justify-center">
+      <select
+        disabled={!editable}
+        value={eye[key] ?? "-"}
+        onChange={(e) => setEye({ ...eye, [key]: e.target.value })}
+        className="rounded border border-[var(--color-border)] bg-white px-1.5 py-1 text-xs disabled:bg-[var(--color-surface-sunken)] w-20"
+      >
+        {VA_SNELLEN_VALUES.map((v) => <option key={v} value={v}>{v}</option>)}
+      </select>
+      {histBtn("dist", eyeKey, key)}
+    </div>
   );
 
-  const nearSel = (eye: any, setEye: any, key: string) => (
-    <select
-      disabled={!editable}
-      value={eye[key] ?? "-"}
-      onChange={(e) => setEye({ ...eye, [key]: e.target.value })}
-      className="rounded border border-[var(--color-border)] bg-white px-1.5 py-1 text-xs disabled:bg-[var(--color-surface-sunken)] w-20"
-    >
-      {VA_NEAR_VALUES.map((v) => <option key={v} value={v}>{v}</option>)}
-    </select>
+  const nearSel = (eyeKey: "re" | "le", eye: any, setEye: any, key: string) => (
+    <div className="inline-flex items-center gap-0.5 justify-center">
+      <select
+        disabled={!editable}
+        value={eye[key] ?? "-"}
+        onChange={(e) => setEye({ ...eye, [key]: e.target.value })}
+        className="rounded border border-[var(--color-border)] bg-white px-1.5 py-1 text-xs disabled:bg-[var(--color-surface-sunken)] w-20"
+      >
+        {VA_NEAR_VALUES.map((v) => <option key={v} value={v}>{v}</option>)}
+      </select>
+      {histBtn("near", eyeKey, key)}
+    </div>
   );
+
+  const histPanel = (() => {
+    if (!openHist) return null;
+    const [section, eyeStr, fieldKey] = openHist.split(":");
+    const eye = eyeStr as "re" | "le";
+    const allCols = section === "dist" ? DIST_COLS : NEAR_COLS;
+    const col = allCols.find((c) => c.key === fieldKey);
+    const entries = getHistory(section, eye, fieldKey);
+    const setEye = eye === "re" ? setRe : setLe;
+    return (
+      <div className="mt-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-primary-50)] px-3 py-2.5">
+        <div className="flex items-center justify-between mb-1.5">
+          <p className="text-[10px] font-semibold text-[var(--color-primary-700)] uppercase tracking-wide">
+            {section === "dist" ? "Distance" : "Near"} · {col?.label} · {eye.toUpperCase()} — Prior values
+          </p>
+          <button onClick={() => setOpenHist(null)} className="text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)]">
+            <X size={13} />
+          </button>
+        </div>
+        {editable && entries.length > 0 && (
+          <p className="text-[10px] text-[var(--color-ink-400)] mb-2">Double-click any entry to load it.</p>
+        )}
+        {entries.length === 0 ? (
+          <p className="text-xs text-[var(--color-ink-400)]">No prior values recorded.</p>
+        ) : (
+          <ol className="space-y-1">
+            {entries.map((e, i) => (
+              <li
+                key={i}
+                onDoubleClick={() => {
+                  if (!editable) return;
+                  setEye((prev: any) => ({ ...prev, [fieldKey]: e.value }));
+                  setOpenHist(null);
+                }}
+                className={`flex gap-3 border-l-2 border-[var(--color-primary-500)] pl-3 py-0.5 rounded-r transition-colors ${
+                  editable ? "cursor-pointer hover:bg-[var(--color-primary-100)] select-none" : ""
+                }`}
+              >
+                <span className="text-[var(--color-ink-400)] whitespace-nowrap text-xs mt-0.5">
+                  {format(new Date(e.date), "dd MMM yyyy")}
+                </span>
+                <span className="text-[var(--color-ink-700)] font-medium text-xs">{e.value}</span>
+              </li>
+            ))}
+          </ol>
+        )}
+      </div>
+    );
+  })();
 
   return (
     <Card>
@@ -161,8 +245,8 @@ function VisualAcuityCard({ visit, udid, editable }: { visit: any; udid: string;
         <table className="text-xs table-fixed" style={{ width: "auto" }}>
           <colgroup>
             <col style={{ width: 110 }} />
-            <col style={{ width: 130 }} />
-            <col style={{ width: 130 }} />
+            <col style={{ width: 155 }} />
+            <col style={{ width: 155 }} />
           </colgroup>
           <thead>
             <tr>
@@ -175,8 +259,8 @@ function VisualAcuityCard({ visit, udid, editable }: { visit: any; udid: string;
             {DIST_COLS.map((c) => (
               <tr key={c.key}>
                 <td className="py-3 pr-8 text-left text-[var(--color-ink-500)] font-medium">{c.label}</td>
-                <td className="py-3 px-8 text-center">{distSel(re, setRe, c.key)}</td>
-                <td className="py-3 px-8 text-center">{distSel(le, setLe, c.key)}</td>
+                <td className="py-3 px-8 text-center">{distSel("re", re, setRe, c.key)}</td>
+                <td className="py-3 px-8 text-center">{distSel("le", le, setLe, c.key)}</td>
               </tr>
             ))}
           </tbody>
@@ -189,8 +273,8 @@ function VisualAcuityCard({ visit, udid, editable }: { visit: any; udid: string;
         <table className="text-xs table-fixed" style={{ width: "auto" }}>
           <colgroup>
             <col style={{ width: 110 }} />
-            <col style={{ width: 130 }} />
-            <col style={{ width: 130 }} />
+            <col style={{ width: 155 }} />
+            <col style={{ width: 155 }} />
           </colgroup>
           <thead>
             <tr>
@@ -203,13 +287,15 @@ function VisualAcuityCard({ visit, udid, editable }: { visit: any; udid: string;
             {NEAR_COLS.map((c) => (
               <tr key={c.key}>
                 <td className="py-3 pr-8 text-left text-[var(--color-ink-500)] font-medium">{c.label}</td>
-                <td className="py-3 px-8 text-center">{nearSel(re, setRe, c.key)}</td>
-                <td className="py-3 px-8 text-center">{nearSel(le, setLe, c.key)}</td>
+                <td className="py-3 px-8 text-center">{nearSel("re", re, setRe, c.key)}</td>
+                <td className="py-3 px-8 text-center">{nearSel("le", le, setLe, c.key)}</td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+
+      {histPanel}
     </Card>
   );
 }
