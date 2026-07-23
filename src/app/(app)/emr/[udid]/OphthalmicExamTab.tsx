@@ -770,23 +770,29 @@ function IOPCard({ visit, udid, editable, priorVisits }: { visit: any; udid: str
       </div>
 
       {showHistory && priorIOPRows.length > 0 && (
-        <div className="mt-4 rounded-xl border border-[var(--color-border)] bg-amber-50 p-3">
-          <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide mb-2">Prior IOP Readings</p>
+        <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 overflow-hidden">
+          <div className="px-4 pt-3 pb-2 border-b border-amber-200">
+            <p className="text-[11px] font-bold text-amber-700 uppercase tracking-widest">Prior IOP Readings</p>
+          </div>
           <div className="overflow-x-auto">
-            <table className="w-full text-sm min-w-[320px]">
+            <table className="w-full text-sm min-w-[460px]">
               <thead>
-                <tr className="text-left text-xs text-[var(--color-ink-400)] uppercase border-b border-amber-200">
-                  <th className="py-1.5">Visit date</th><th>RE</th><th>LE</th><th>Method</th><th>Hospital</th>
+                <tr className="border-b border-amber-200">
+                  <th className="py-2 px-4 text-left text-[11px] font-semibold text-[var(--color-ink-400)] uppercase tracking-wide whitespace-nowrap">Visit Date</th>
+                  <th className="py-2 px-4 text-left text-[11px] font-semibold text-[var(--color-primary-700)] uppercase tracking-wide w-16">RE</th>
+                  <th className="py-2 px-4 text-left text-[11px] font-semibold text-[var(--color-primary-700)] uppercase tracking-wide w-16">LE</th>
+                  <th className="py-2 px-4 text-left text-[11px] font-semibold text-[var(--color-ink-400)] uppercase tracking-wide">Method</th>
+                  <th className="py-2 px-4 text-left text-[11px] font-semibold text-[var(--color-ink-400)] uppercase tracking-wide">Hospital</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-amber-100">
                 {priorIOPRows.map((r, i) => (
-                  <tr key={i}>
-                    <td className="py-1.5">{format(new Date(r.date), "dd MMM yyyy")}</td>
-                    <td>{r.re ?? "—"}</td>
-                    <td>{r.le ?? "—"}</td>
-                    <td>{r.method}</td>
-                    <td className="text-xs text-[var(--color-ink-400)]">{r.hospitalName ?? "—"}</td>
+                  <tr key={i} className="hover:bg-amber-100/60 transition-colors">
+                    <td className="py-2.5 px-4 text-sm text-[var(--color-ink-800)] whitespace-nowrap">{format(new Date(r.date), "d MMM yyyy")}</td>
+                    <td className="py-2.5 px-4 text-sm font-semibold text-[var(--color-ink-900)] tabular-nums">{r.re ?? "—"}</td>
+                    <td className="py-2.5 px-4 text-sm font-semibold text-[var(--color-ink-900)] tabular-nums">{r.le ?? "—"}</td>
+                    <td className="py-2.5 px-4 text-sm text-[var(--color-ink-700)]">{r.method}</td>
+                    <td className="py-2.5 px-4 text-sm text-[var(--color-ink-400)]">{r.hospitalName ?? "—"}</td>
                   </tr>
                 ))}
               </tbody>
