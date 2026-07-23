@@ -136,7 +136,7 @@ export function PastExternalVisitsTab({
       {entries.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {entries.map((entry) => {
-            const fileUrl: string | null = entry.scanFileRef?.startsWith("/uploads/") ? entry.scanFileRef : null;
+            const fileUrl: string | null = entry.scanFileRef || null;
             const isImage = fileUrl && /\.(png|jpe?g|webp)$/i.test(fileUrl);
             const isPdf   = fileUrl && /\.pdf$/i.test(fileUrl);
             const fileName = fileUrl ? decodeURIComponent(fileUrl.split("/").pop() ?? "Document") : null;
