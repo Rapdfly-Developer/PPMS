@@ -560,7 +560,8 @@ function ColourContrastTab({ visit, udid, editable, priorVisits = [] }: { visit:
   const priorCv = priorVisits
     .filter((v) => v.colourVisionCS)
     .map((v) => ({
-      date: v.date,
+      date:      v.date,
+      updatedAt: v.colourVisionCS?.updatedAt ?? null,
       re: parseJSON(v.colourVisionCS?.re, {}) as any,
       le: parseJSON(v.colourVisionCS?.le, {}) as any,
     }));
@@ -623,8 +624,9 @@ function ColourContrastTab({ visit, udid, editable, priorVisits = [] }: { visit:
               <table className="text-xs">
                 <thead>
                   <tr className="border-b border-[#B2DEDA]">
+                    <th className="py-1.5 px-3 text-left font-semibold text-[var(--color-ink-400)] uppercase tracking-wide whitespace-nowrap">Method</th>
                     <th className="py-1.5 px-3 text-left font-semibold text-[var(--color-ink-400)] uppercase tracking-wide whitespace-nowrap">Date</th>
-                    <th className="py-1.5 px-3 text-left font-semibold text-[var(--color-ink-400)] uppercase tracking-wide">Method</th>
+                    <th className="py-1.5 px-3 text-left font-semibold text-[var(--color-ink-400)] uppercase tracking-wide whitespace-nowrap">Time</th>
                     <th className="py-1.5 px-3 text-center font-semibold text-[#0F766E] uppercase tracking-wide w-24">RE</th>
                     <th className="py-1.5 px-3 text-center font-semibold text-[#0F766E] uppercase tracking-wide w-24">LE</th>
                   </tr>
@@ -632,8 +634,9 @@ function ColourContrastTab({ visit, udid, editable, priorVisits = [] }: { visit:
                 <tbody className="divide-y divide-[#D5EFED]">
                   {priorCv.slice(0, 5).map((p, i) => (
                     <tr key={i} className="hover:bg-[#DCF3F1]/60 transition-colors">
+                      <td className="py-2 px-3 text-[var(--color-ink-500)] whitespace-nowrap">{p.re.cvMethod || cvMethod}</td>
                       <td className="py-2 px-3 text-[var(--color-ink-600)] whitespace-nowrap">{format(new Date(p.date), "d MMM yyyy")}</td>
-                      <td className="py-2 px-3 text-[var(--color-ink-500)]">{p.re.cvMethod || cvMethod}</td>
+                      <td className="py-2 px-3 text-[var(--color-ink-400)] whitespace-nowrap">{p.updatedAt ? format(new Date(p.updatedAt), "h:mm a") : "—"}</td>
                       <td className={`py-2 px-3 text-center font-medium ${!p.re.result ? "text-[var(--color-ink-400)]" : p.re.result === "Normal" ? "text-emerald-700" : p.re.result === "Defective" ? "text-red-600" : "text-[var(--color-ink-500)]"}`}>
                         {p.re.result || "—"}
                       </td>
@@ -686,8 +689,9 @@ function ColourContrastTab({ visit, udid, editable, priorVisits = [] }: { visit:
               <table className="text-xs">
                 <thead>
                   <tr className="border-b border-[#B2DEDA]">
+                    <th className="py-1.5 px-3 text-left font-semibold text-[var(--color-ink-400)] uppercase tracking-wide whitespace-nowrap">Method</th>
                     <th className="py-1.5 px-3 text-left font-semibold text-[var(--color-ink-400)] uppercase tracking-wide whitespace-nowrap">Date</th>
-                    <th className="py-1.5 px-3 text-left font-semibold text-[var(--color-ink-400)] uppercase tracking-wide">Method</th>
+                    <th className="py-1.5 px-3 text-left font-semibold text-[var(--color-ink-400)] uppercase tracking-wide whitespace-nowrap">Time</th>
                     <th className="py-1.5 px-3 text-center font-semibold text-[#0F766E] uppercase tracking-wide w-24">RE</th>
                     <th className="py-1.5 px-3 text-center font-semibold text-[#0F766E] uppercase tracking-wide w-24">LE</th>
                   </tr>
@@ -695,8 +699,9 @@ function ColourContrastTab({ visit, udid, editable, priorVisits = [] }: { visit:
                 <tbody className="divide-y divide-[#D5EFED]">
                   {priorCv.slice(0, 5).map((p, i) => (
                     <tr key={i} className="hover:bg-[#DCF3F1]/60 transition-colors">
+                      <td className="py-2 px-3 text-[var(--color-ink-500)] whitespace-nowrap">{p.re.csMethod || csMethod}</td>
                       <td className="py-2 px-3 text-[var(--color-ink-600)] whitespace-nowrap">{format(new Date(p.date), "d MMM yyyy")}</td>
-                      <td className="py-2 px-3 text-[var(--color-ink-500)]">{p.re.csMethod || csMethod}</td>
+                      <td className="py-2 px-3 text-[var(--color-ink-400)] whitespace-nowrap">{p.updatedAt ? format(new Date(p.updatedAt), "h:mm a") : "—"}</td>
                       <td className={`py-2 px-3 text-center font-medium ${!p.re.csResult ? "text-[var(--color-ink-400)]" : p.re.csResult === "Normal" ? "text-emerald-700" : p.re.csResult === "Defective" ? "text-red-600" : "text-[var(--color-ink-500)]"}`}>
                         {p.re.csResult || "—"}
                       </td>
