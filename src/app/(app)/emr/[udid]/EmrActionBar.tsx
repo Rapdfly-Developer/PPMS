@@ -91,7 +91,7 @@ export function EmrActionBar({
 
           {printOpen && (
             <div className="absolute bottom-full mb-2 right-0 w-56 rounded-xl border border-[var(--color-border)] bg-white shadow-lg overflow-hidden z-30">
-              {/* 1. Open & Print */}
+              {/* 1. Print Long Summary */}
               <a
                 href={pdfBase}
                 target="_blank"
@@ -101,7 +101,7 @@ export function EmrActionBar({
               >
                 <Printer size={15} className="text-[var(--color-primary-600)] shrink-0" />
                 <div>
-                  <p className="font-medium">Open &amp; Print</p>
+                  <p className="font-medium">Print Long Summary</p>
                   <p className="text-[10px] text-[var(--color-ink-400)]">Full Rx in browser</p>
                 </div>
               </a>
