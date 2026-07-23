@@ -780,7 +780,8 @@ function IOPCard({ visit, udid, editable, priorVisits }: { visit: any; udid: str
         <table className="text-xs border-collapse">
           <thead>
             <tr className="bg-[var(--color-surface-sunken)] text-[var(--color-ink-400)] uppercase tracking-wide border-b border-[var(--color-border)]">
-              <th className="py-1.5 px-3 text-left font-semibold whitespace-nowrap">Method · Time</th>
+              <th className="py-1.5 px-3 text-left font-semibold whitespace-nowrap">Method</th>
+              <th className="py-1.5 px-3 text-left font-semibold whitespace-nowrap">Date & Time</th>
               <th className="py-1.5 px-4 text-center font-semibold text-[var(--color-primary-700)] w-14">RE</th>
               <th className="py-1.5 px-4 text-center font-semibold text-[var(--color-primary-700)] w-14">LE</th>
               {editable && <th className="py-1.5 px-2 w-7" />}
@@ -788,13 +789,11 @@ function IOPCard({ visit, udid, editable, priorVisits }: { visit: any; udid: str
           </thead>
           <tbody className="divide-y divide-[var(--color-border)]">
             {readings.length === 0 ? (
-              <tr><td colSpan={editable ? 4 : 3} className="py-3 px-3 text-center text-[var(--color-ink-400)]">No readings yet.</td></tr>
+              <tr><td colSpan={editable ? 5 : 4} className="py-3 px-3 text-center text-[var(--color-ink-400)]">No readings yet.</td></tr>
             ) : readings.map((r: any) => (
               <tr key={r.id} className="hover:bg-[var(--color-surface-sunken)] transition-colors">
-                <td className="py-1.5 px-3 whitespace-nowrap">
-                  <span className="font-medium text-[var(--color-ink-700)]">{r.method}</span>
-                  <span className="text-[var(--color-ink-400)] ml-1.5">· {format(new Date(r.takenAt), "h:mm a, dd MMM")}</span>
-                </td>
+                <td className="py-1.5 px-3 font-medium text-[var(--color-ink-700)] whitespace-nowrap">{r.method}</td>
+                <td className="py-1.5 px-3 text-[var(--color-ink-400)] whitespace-nowrap">{format(new Date(r.takenAt), "h:mm a, d MMM yyyy")}</td>
                 <td className="py-1.5 px-4 text-center font-semibold text-[var(--color-ink-800)] tabular-nums">{r.re ?? "—"}</td>
                 <td className="py-1.5 px-4 text-center font-semibold text-[var(--color-ink-800)] tabular-nums">{r.le ?? "—"}</td>
                 {editable && (
