@@ -139,95 +139,78 @@ function VisualAcuityCard({ visit, udid, editable, priorVisits = [] }: { visit: 
     return (
       <button
         type="button"
-        title="History"
         onClick={() => setOpenHist(active ? null : k)}
-        className={`w-5 h-5 rounded flex items-center justify-center shrink-0 transition-colors ${
+        className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded shrink-0 transition-colors ${
           active
             ? "text-[var(--color-primary-600)] bg-[var(--color-primary-100)]"
             : "text-[var(--color-ink-300)] hover:text-[var(--color-primary-500)] hover:bg-[var(--color-primary-50)]"
         }`}
       >
-        <History size={11} />
+        <History size={10} />
+        <span className="text-[10px] font-medium">History</span>
       </button>
     );
   };
 
-  const distSel = (eyeKey: "re" | "le", eye: any, setEye: any, key: string) => (
-    <div className="inline-flex items-center gap-0.5 justify-center">
-      <select
-        disabled={!editable}
-        value={eye[key] ?? "-"}
-        onChange={(e) => setEye({ ...eye, [key]: e.target.value })}
-        className="rounded border border-[var(--color-border)] bg-white px-1.5 py-1 text-xs disabled:bg-[var(--color-surface-sunken)] w-20"
-      >
-        {VA_SNELLEN_VALUES.map((v) => <option key={v} value={v}>{v}</option>)}
-      </select>
-      {histBtn("dist", eyeKey, key)}
-    </div>
-  );
-
-  const nearSel = (eyeKey: "re" | "le", eye: any, setEye: any, key: string) => (
-    <div className="inline-flex items-center gap-0.5 justify-center">
-      <select
-        disabled={!editable}
-        value={eye[key] ?? "-"}
-        onChange={(e) => setEye({ ...eye, [key]: e.target.value })}
-        className="rounded border border-[var(--color-border)] bg-white px-1.5 py-1 text-xs disabled:bg-[var(--color-surface-sunken)] w-20"
-      >
-        {VA_NEAR_VALUES.map((v) => <option key={v} value={v}>{v}</option>)}
-      </select>
-      {histBtn("near", eyeKey, key)}
-    </div>
-  );
-
-  const histPanel = (() => {
-    if (!openHist) return null;
-    const [section, eyeStr, fieldKey] = openHist.split(":");
-    const eye = eyeStr as "re" | "le";
-    const allCols = section === "dist" ? DIST_COLS : NEAR_COLS;
-    const col = allCols.find((c) => c.key === fieldKey);
-    const entries = getHistory(section, eye, fieldKey);
-    const setEye = eye === "re" ? setRe : setLe;
+  const vaInlineHist = (section: string, eyeKey: "re" | "le", key: string, setEye: any) => {
+    const k = `${section}:${eyeKey}:${key}`;
+    if (openHist !== k) return null;
+    const entries = getHistory(section, eyeKey, key);
     return (
-      <div className="mt-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-primary-50)] px-3 py-2.5">
-        <div className="flex items-center justify-between mb-1.5">
-          <p className="text-[10px] font-semibold text-[var(--color-primary-700)] uppercase tracking-wide">
-            {section === "dist" ? "Distance" : "Near"} · {col?.label} · {eye.toUpperCase()} — Prior values
-          </p>
-          <button onClick={() => setOpenHist(null)} className="text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)]">
-            <X size={13} />
-          </button>
-        </div>
-        {editable && entries.length > 0 && (
-          <p className="text-[10px] text-[var(--color-ink-400)] mb-2">Double-click any entry to load it.</p>
-        )}
+      <div className="mt-1 rounded-lg border border-[var(--color-primary-200)] bg-[var(--color-primary-50)] px-2 py-1.5 w-full text-left">
         {entries.length === 0 ? (
-          <p className="text-xs text-[var(--color-ink-400)]">No prior values recorded.</p>
+          <p className="text-[10px] text-[var(--color-ink-400)]">No prior values.</p>
         ) : (
-          <ol className="space-y-1">
+          <ol className="space-y-0.5">
             {entries.map((e, i) => (
               <li
                 key={i}
-                onDoubleClick={() => {
-                  if (!editable) return;
-                  setEye((prev: any) => ({ ...prev, [fieldKey]: e.value }));
-                  setOpenHist(null);
-                }}
-                className={`flex gap-3 border-l-2 border-[var(--color-primary-500)] pl-3 py-0.5 rounded-r transition-colors ${
-                  editable ? "cursor-pointer hover:bg-[var(--color-primary-100)] select-none" : ""
-                }`}
+                onDoubleClick={() => { if (!editable) return; setEye((prev: any) => ({ ...prev, [key]: e.value })); setOpenHist(null); }}
+                className={`flex gap-2 text-[10px] border-l-2 border-[var(--color-primary-400)] pl-1.5 py-0.5 rounded-r ${editable ? "cursor-pointer hover:bg-[var(--color-primary-100)]" : ""}`}
               >
-                <span className="text-[var(--color-ink-400)] whitespace-nowrap text-xs mt-0.5">
-                  {format(new Date(e.date), "dd MMM yyyy")}
-                </span>
-                <span className="text-[var(--color-ink-700)] font-medium text-xs">{e.value}</span>
+                <span className="text-[var(--color-ink-400)] whitespace-nowrap">{format(new Date(e.date), "d MMM yy")}</span>
+                <span className="text-[var(--color-ink-700)] font-medium">{e.value}</span>
               </li>
             ))}
           </ol>
         )}
       </div>
     );
-  })();
+  };
+
+  const distSel = (eyeKey: "re" | "le", eye: any, setEye: any, key: string) => (
+    <div className="flex flex-col items-center gap-0.5">
+      <div className="inline-flex items-center gap-0.5 justify-center">
+        <select
+          disabled={!editable}
+          value={eye[key] ?? "-"}
+          onChange={(e) => setEye({ ...eye, [key]: e.target.value })}
+          className="rounded border border-[var(--color-border)] bg-white px-1.5 py-1 text-xs disabled:bg-[var(--color-surface-sunken)] w-20"
+        >
+          {VA_SNELLEN_VALUES.map((v) => <option key={v} value={v}>{v}</option>)}
+        </select>
+        {histBtn("dist", eyeKey, key)}
+      </div>
+      {vaInlineHist("dist", eyeKey, key, setEye)}
+    </div>
+  );
+
+  const nearSel = (eyeKey: "re" | "le", eye: any, setEye: any, key: string) => (
+    <div className="flex flex-col items-center gap-0.5">
+      <div className="inline-flex items-center gap-0.5 justify-center">
+        <select
+          disabled={!editable}
+          value={eye[key] ?? "-"}
+          onChange={(e) => setEye({ ...eye, [key]: e.target.value })}
+          className="rounded border border-[var(--color-border)] bg-white px-1.5 py-1 text-xs disabled:bg-[var(--color-surface-sunken)] w-20"
+        >
+          {VA_NEAR_VALUES.map((v) => <option key={v} value={v}>{v}</option>)}
+        </select>
+        {histBtn("near", eyeKey, key)}
+      </div>
+      {vaInlineHist("near", eyeKey, key, setEye)}
+    </div>
+  );
 
   return (
     <Card>
@@ -294,8 +277,6 @@ function VisualAcuityCard({ visit, udid, editable, priorVisits = [] }: { visit: 
           </tbody>
         </table>
       </div>
-
-      {histPanel}
     </Card>
   );
 }
@@ -1496,82 +1477,68 @@ function TearFilmCard({ visit, udid, editable, priorVisits = [] }: { visit: any;
     return (
       <button
         type="button"
-        title="History"
         onClick={() => setOpenHist(active ? null : key)}
-        className={`w-5 h-5 rounded flex items-center justify-center shrink-0 transition-colors ${
+        className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded shrink-0 transition-colors ${
           active
             ? "text-[var(--color-primary-600)] bg-[var(--color-primary-100)]"
             : "text-[var(--color-ink-300)] hover:text-[var(--color-primary-500)] hover:bg-[var(--color-primary-50)]"
         }`}
       >
-        <History size={11} />
+        <History size={10} />
+        <span className="text-[10px] font-medium">History</span>
       </button>
     );
   };
 
-  const histPanel = (() => {
-    if (!openHist) return null;
-    const entries = getHist(openHist);
+  const tfInput = (label: string, key: keyof typeof data) => {
+    const active = openHist === key;
+    const entries = active ? getHist(key) : [];
     return (
-      <div className="mt-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-primary-50)] px-3 py-2.5">
-        <div className="flex items-center justify-between mb-1.5">
-          <p className="text-[10px] font-semibold text-[var(--color-primary-700)] uppercase tracking-wide">
-            {FIELD_LABELS[openHist] ?? openHist} — Prior values
-          </p>
-          <button onClick={() => setOpenHist(null)} className="text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)]">
-            <X size={13} />
-          </button>
+      <div>
+        <label className="text-xs text-[var(--color-ink-400)] block mb-1">{label}</label>
+        <div className="flex items-center gap-1.5">
+          <input
+            disabled={!editable}
+            value={data[key]}
+            onChange={(e) => {
+              const v = e.target.value;
+              if (v !== "" && !/^\d*\.?\d*$/.test(v)) return;
+              upd(key)(v);
+            }}
+            inputMode="decimal"
+            className="w-28 rounded-lg border border-[var(--color-border)] bg-white px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] disabled:bg-[var(--color-surface-sunken)]"
+          />
+          {histBtn(key)}
         </div>
-        {editable && entries.length > 0 && (
-          <p className="text-[10px] text-[var(--color-ink-400)] mb-2">Double-click any entry to load it.</p>
-        )}
-        {entries.length === 0 ? (
-          <p className="text-xs text-[var(--color-ink-400)]">No prior values recorded.</p>
-        ) : (
-          <ol className="space-y-1">
-            {entries.map((e, i) => (
-              <li
-                key={i}
-                onDoubleClick={() => {
-                  if (!editable || !openHist) return;
-                  setData((prev) => ({ ...prev, [openHist]: e.value }));
-                  setOpenHist(null);
-                }}
-                className={`flex gap-3 border-l-2 border-[var(--color-primary-500)] pl-3 py-0.5 rounded-r transition-colors ${
-                  editable ? "cursor-pointer hover:bg-[var(--color-primary-100)] select-none" : ""
-                }`}
-              >
-                <span className="text-[var(--color-ink-400)] whitespace-nowrap text-xs mt-0.5">
-                  {format(new Date(e.date), "dd MMM yyyy")}
-                </span>
-                <span className="text-[var(--color-ink-700)] font-medium text-xs">{e.value}</span>
-              </li>
-            ))}
-          </ol>
+        {active && (
+          <div className="mt-1 rounded-lg border border-[var(--color-primary-200)] bg-[var(--color-primary-50)] px-2 py-1.5">
+            {entries.length === 0 ? (
+              <p className="text-[10px] text-[var(--color-ink-400)]">No prior values.</p>
+            ) : (
+              <ol className="space-y-0.5">
+                {entries.map((e, i) => (
+                  <li
+                    key={i}
+                    onDoubleClick={() => {
+                      if (!editable) return;
+                      setData((prev) => ({ ...prev, [key]: e.value }));
+                      setOpenHist(null);
+                    }}
+                    className={`flex gap-2 text-[10px] border-l-2 border-[var(--color-primary-400)] pl-1.5 py-0.5 rounded-r ${
+                      editable ? "cursor-pointer hover:bg-[var(--color-primary-100)]" : ""
+                    }`}
+                  >
+                    <span className="text-[var(--color-ink-400)] whitespace-nowrap">{format(new Date(e.date), "d MMM yy")}</span>
+                    <span className="text-[var(--color-ink-700)] font-medium">{e.value}</span>
+                  </li>
+                ))}
+              </ol>
+            )}
+          </div>
         )}
       </div>
     );
-  })();
-
-  const tfInput = (label: string, key: keyof typeof data) => (
-    <div>
-      <label className="text-xs text-[var(--color-ink-400)] block mb-1">{label}</label>
-      <div className="flex items-center gap-1.5">
-        <input
-          disabled={!editable}
-          value={data[key]}
-          onChange={(e) => {
-            const v = e.target.value;
-            if (v !== "" && !/^\d*\.?\d*$/.test(v)) return;
-            upd(key)(v);
-          }}
-          inputMode="decimal"
-          className="w-28 rounded-lg border border-[var(--color-border)] bg-white px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] disabled:bg-[var(--color-surface-sunken)]"
-        />
-        {histBtn(key)}
-      </div>
-    </div>
-  );
+  };
 
   return (
     <Card>
@@ -1591,7 +1558,6 @@ function TearFilmCard({ visit, udid, editable, priorVisits = [] }: { visit: any;
           {tfInput("Schirmer's 2 – with anaesthetic (mm)", "schirmer2Le")}
         </div>
       </EyeColumns>
-      {histPanel}
     </Card>
   );
 }
