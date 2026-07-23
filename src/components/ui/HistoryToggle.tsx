@@ -97,7 +97,7 @@ export function FieldWithHistory({
                     key={i}
                     onDoubleClick={() => handleDoubleClick(h.value)}
                     title={onLoad ? "Double-click to load" : undefined}
-                    className={`text-sm flex gap-3 border-l-2 border-[var(--color-primary-500)] pl-3 py-1 rounded-r-lg transition-colors ${
+                    className={`text-sm flex gap-3 py-1 transition-colors ${
                       onLoad ? "cursor-pointer hover:bg-[var(--color-primary-100)] select-none" : ""
                     }`}
                   >
@@ -106,9 +106,6 @@ export function FieldWithHistory({
                     </span>
                     <span className="text-[var(--color-ink-700)]">
                       {h.value}
-                      {h.hospitalName && (
-                        <span className="text-[var(--color-ink-400)]"> · {h.hospitalName}</span>
-                      )}
                     </span>
                   </li>
                 ))}

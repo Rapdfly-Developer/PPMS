@@ -131,6 +131,7 @@ export function KeywordTextarea({
   placeholder,
   rows,
   className,
+  afterButtons,
 }: {
   fieldKey: string;
   value: string;
@@ -139,6 +140,7 @@ export function KeywordTextarea({
   placeholder?: string;
   rows?: number;
   className?: string;
+  afterButtons?: React.ReactNode;
 }) {
   const [tick, setTick] = useState(0);
 
@@ -159,6 +161,7 @@ export function KeywordTextarea({
         <div className="flex flex-wrap items-center gap-1.5">
           <AddKeywordButton getValue={() => value.trim().split(/\s+/).pop() ?? value.trim()} fieldKey={fieldKey} onRefresh={() => setTick((t) => t + 1)} />
           <KeywordChips key={tick} fieldKey={fieldKey} onAppend={(kw) => onChange(value ? `${value} ${kw}` : kw)} disabled={false} />
+          {afterButtons}
         </div>
       )}
     </div>

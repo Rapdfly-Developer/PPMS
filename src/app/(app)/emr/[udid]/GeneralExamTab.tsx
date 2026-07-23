@@ -148,7 +148,7 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, customPmhCh
                 key={i}
                 className={i > 0 ? "pt-3 border-t border-dashed border-[var(--color-border)]" : ""}
               >
-                {/* Laterality + number row */}
+                {/* Laterality + Since + remove */}
                 <div className="flex items-center gap-2 flex-wrap mb-2">
                   {complaints.length > 1 && (
                     <span className="text-[11px] font-bold tracking-wider text-[var(--color-ink-400)] uppercase">
@@ -178,20 +178,8 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, customPmhCh
                       </button>
                     );
                   })}
-                </div>
-
-                {/* Complaint textarea + Since inline */}
-                <div className="flex items-start gap-2">
-                  <div className="flex-1 min-w-0">
-                    <KeywordTextarea
-                      fieldKey="ge_chiefComplaint"
-                      value={c.text}
-                      onChange={(v) => patchComplaint(i, { text: v.replace(/\|/g, "/") })}
-                      disabled={readOnly}
-                      rows={2}
-                    />
-                  </div>
-                  <div className="flex items-center gap-1.5 shrink-0 pt-1">
+                  {/* Since controls — inline with laterality */}
+                  <div className="flex items-center gap-1 ml-auto shrink-0">
                     <span className="text-xs font-semibold text-[var(--color-ink-400)]">Since</span>
                     <select
                       value={c.sinceNum}
@@ -226,20 +214,30 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, customPmhCh
                     )}
                   </div>
                 </div>
+
+                {/* Complaint textarea — full width; "+ Add Chief Complaint" sits next to "+ Keyword" on the last item */}
+                <KeywordTextarea
+                  fieldKey="ge_chiefComplaint"
+                  value={c.text}
+                  onChange={(v) => patchComplaint(i, { text: v.replace(/\|/g, "/") })}
+                  disabled={readOnly}
+                  rows={2}
+                  afterButtons={
+                    !readOnly && i === complaints.length - 1 ? (
+                      <button
+                        type="button"
+                        onClick={addComplaint}
+                        className="self-start inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-[10px] font-medium text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] transition-colors whitespace-nowrap"
+                      >
+                        <Plus size={11} strokeWidth={2.5} />
+                        Add Chief Complaint
+                      </button>
+                    ) : undefined
+                  }
+                />
               </div>
             ))}
           </div>
-
-          {!readOnly && (
-            <button
-              type="button"
-              onClick={addComplaint}
-              className="mt-3 inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-dashed border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-[11px] font-semibold text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] transition-colors"
-            >
-              <Plus size={12} strokeWidth={2.5} />
-              Add Chief Complaint
-            </button>
-          )}
         </FieldWithHistory>
       </Card>
 
