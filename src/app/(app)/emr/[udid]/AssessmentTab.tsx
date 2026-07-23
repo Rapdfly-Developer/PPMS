@@ -118,7 +118,10 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
               onLoad={setProvisionalDx}
             >
               <div className="flex items-end gap-3 flex-wrap mt-1">
-                <SingleChipSelect options={LATERALITY} value={laterality} onChange={setLaterality} />
+                <div>
+                  <p className="text-xs text-[var(--color-ink-400)] mb-1.5">Laterality</p>
+                  <SingleChipSelect options={LATERALITY} value={laterality} onChange={setLaterality} />
+                </div>
                 <div className="relative flex-1 min-w-[200px]">
                   <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] pointer-events-none" />
                   <input
