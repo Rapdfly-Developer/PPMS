@@ -16,7 +16,8 @@ export default async function PatientsPage({
   const categoryFilter = sp.category  ?? "";
   const sexFilter      = sp.sex       ?? "";
   const hospitalFilter = sp.hospital  ?? "";
-  const opStatusFilter = sp.opStatus  ?? "";
+  const rawOpStatus    = sp.opStatus  ?? "dispensed";
+  const opStatusFilter = rawOpStatus === "all" ? "" : rawOpStatus;
   const sortBy         = sp.sort      ?? "lastvisit";
   const registered     = sp.registered ?? "";
   const page     = Math.max(1, parseInt(sp.page ?? "1", 10) || 1);
@@ -60,6 +61,11 @@ export default async function PatientsPage({
   if (categoryFilter) listConds.push({ category: categoryFilter });
   if (sexFilter)      listConds.push({ sex: sexFilter });
   if (hospitalFilter) listConds.push({ registeredAtId: hospitalFilter });
+  if (opStatusFilter === "dispensed") {
+    const dayStart = startOfDay(new Date());
+    const dayEnd   = new Date(dayStart); dayEnd.setHours(23, 59, 59, 999);
+    listConds.push({ appointments: { some: { status: "DISPENSED", dateTime: { gte: dayStart, lte: dayEnd } } } });
+  }
   if (opStatusFilter === "surgery")    listConds.push({ visits: { some: { surgicalCounselling: { isNot: null } } } });
   if (opStatusFilter === "admitted")   listConds.push({ visits: { some: { admission: { discharged: false } } } });
   if (opStatusFilter === "discharged") listConds.push({ visits: { some: { admission: { discharged: true  } } } });
@@ -210,7 +216,7 @@ export default async function PatientsPage({
         categoryFilter={categoryFilter}
         sexFilter={sexFilter}
         hospitalFilter={hospitalFilter}
-        opStatusFilter={opStatusFilter}
+        opStatusFilter={rawOpStatus}
         doctorHospitals={doctorHospitals}
         sortBy={sortBy}
         isHospital={isHospital}

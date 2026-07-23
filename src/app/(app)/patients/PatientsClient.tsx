@@ -90,8 +90,8 @@ function exportCSV(patients: PatientRow[], selected: Set<string>) {
 }
 
 // ── KPI Card ─────────────────────────────────────────────────────────────────
-function KpiCard({ icon, label, value, sub, color }: {
-  icon: React.ReactNode; label: string; value: number; sub?: string; color: string;
+function KpiCard({ icon, label, value, sub, color, href }: {
+  icon: React.ReactNode; label: string; value: number; sub?: string; color: string; href?: string;
 }) {
   const C: Record<string, { icon: string; val: string; border: string }> = {
     teal:   { icon: "bg-[#DCEFEC] text-[#115E59]", val: "text-[#115E59]",   border: "border-[#C7E4E0]" },
@@ -101,14 +101,24 @@ function KpiCard({ icon, label, value, sub, color }: {
     amber:  { icon: "bg-amber-50 text-amber-600",   val: "text-amber-700",   border: "border-amber-100" },
   };
   const c = C[color] ?? C.teal;
-  return (
-    <div className={`bg-white rounded-2xl border ${c.border} p-4 flex items-start gap-3 shadow-sm`}>
+  const inner = (
+    <>
       <div className={`${c.icon} rounded-xl p-2.5 flex-shrink-0`}>{icon}</div>
       <div className="min-w-0 flex-1">
         <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--color-ink-400)] truncate">{label}</p>
         <p className={`text-[26px] font-bold leading-none mt-1 ${c.val}`}>{value}</p>
         {sub && <p className="text-[11px] text-[var(--color-ink-400)] mt-1">{sub}</p>}
       </div>
+    </>
+  );
+  if (href) return (
+    <Link href={href} className={`bg-white rounded-2xl border ${c.border} p-4 flex items-start gap-3 shadow-sm hover:shadow-md hover:border-[var(--color-primary-300)] transition-all`}>
+      {inner}
+    </Link>
+  );
+  return (
+    <div className={`bg-white rounded-2xl border ${c.border} p-4 flex items-start gap-3 shadow-sm`}>
+      {inner}
     </div>
   );
 }
@@ -333,7 +343,7 @@ export function PatientsClient({
   }
 
 
-  const activeFilters = [q, categoryFilter, sexFilter, hospitalFilter, opStatusFilter].filter(Boolean).length;
+  const activeFilters = [q, categoryFilter, sexFilter, hospitalFilter, opStatusFilter !== "dispensed" ? opStatusFilter : ""].filter(Boolean).length;
 
   const SEL = "border border-[var(--color-border)] bg-white rounded-lg pl-3 pr-8 py-2 text-sm text-[var(--color-ink-700)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] appearance-none cursor-pointer";
 
@@ -366,7 +376,7 @@ export function PatientsClient({
 
       {/* ── KPI Cards ──────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
-        <KpiCard icon={<Users size={17} />}         label="Total Patients"    value={kpis.totalPatients}  color="teal"  />
+        <KpiCard icon={<Users size={17} />}         label="Total Patients"    value={kpis.totalPatients}  color="teal"  href="/patients?opStatus=all" />
         <KpiCard icon={<CalendarCheck size={17} />} label="Total Operated"    value={kpis.todayReg}       color="blue"  sub="New today" />
         <KpiCard icon={<CalendarClock size={17} />} label="Lost to Follow Up" value={kpis.followUpCount}  color="green" sub="Overdue" />
         <KpiCard icon={<ClipboardList size={17} />} label="Pending Requests"  value={kpis.pendingRequests} color="amber" sub="Awaiting confirmation" />
@@ -463,12 +473,13 @@ export function PatientsClient({
                   </div>
                 )}
 
-                {/* Operation Status */}
+                {/* Visit Status */}
                 <div className="flex flex-col gap-1">
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Operation</label>
+                  <label className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Visit Status</label>
                   <div className="relative">
                     <select value={opStatusFilter} onChange={e => navigate({ opStatus: e.target.value, page: "1" })} className={SEL}>
-                      <option value="">All</option>
+                      <option value="all">All Patients</option>
+                      <option value="dispensed">Dispensed Today</option>
                       <option value="surgery">Surgery Scheduled</option>
                       <option value="admitted">Admitted</option>
                       <option value="discharged">Discharged</option>
@@ -480,7 +491,7 @@ export function PatientsClient({
                 {/* Clear all */}
                 {activeFilters > 0 && (
                   <button
-                    onClick={() => { handleSearch(""); navigate({ q: "", category: "", sex: "", hospital: "", opStatus: "", page: "1" }); }}
+                    onClick={() => { handleSearch(""); navigate({ q: "", category: "", sex: "", hospital: "", opStatus: "dispensed", page: "1" }); }}
                     className="text-sm font-medium text-[var(--color-primary-600)] hover:text-[var(--color-primary-800)] whitespace-nowrap pb-2"
                   >
                     Clear all
