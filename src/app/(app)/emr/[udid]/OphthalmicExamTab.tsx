@@ -156,8 +156,14 @@ function VisualAcuityCard({ visit, udid, editable, priorVisits = [] }: { visit: 
     const k = `${section}:${eyeKey}:${key}`;
     if (openHist !== k) return null;
     const entries = getHistory(section, eyeKey, key);
+    const allCols = section === "dist" ? DIST_COLS : NEAR_COLS;
+    const col = allCols.find((c) => c.key === key);
+    const heading = `${section === "dist" ? "Distance" : "Near"} · ${col?.label ?? key} · ${eyeKey.toUpperCase()}`;
     return (
       <div className="mt-1 rounded-lg border border-[var(--color-primary-200)] bg-[var(--color-primary-50)] px-2 py-1.5 w-full text-left">
+        <p className="text-[10px] font-semibold text-[var(--color-primary-600)] uppercase tracking-wide mb-1">
+          {heading}
+        </p>
         {entries.length === 0 ? (
           <p className="text-[10px] text-[var(--color-ink-400)]">No prior values.</p>
         ) : (
