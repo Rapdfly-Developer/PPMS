@@ -298,7 +298,7 @@ export async function getPatientInvestigations(patientId: string) {
       date: true,
       hospital: { select: { name: true } },
       investigationOrders: {
-        select: { id: true, category: true, testName: true, laterality: true, priority: true, status: true, notes: true, resultRef: true },
+        select: { id: true, category: true, testName: true, laterality: true, priority: true, status: true, notes: true, resultRef: true, createdAt: true },
         orderBy: { createdAt: "asc" },
       },
     },
@@ -309,7 +309,7 @@ export async function getPatientInvestigations(patientId: string) {
       visitId: v.id,
       date: v.date.toISOString(),
       hospitalName: v.hospital?.name ?? null,
-      orders: v.investigationOrders,
+      orders: v.investigationOrders.map((o) => ({ ...o, createdAt: o.createdAt.toISOString() })),
     }));
 }
 

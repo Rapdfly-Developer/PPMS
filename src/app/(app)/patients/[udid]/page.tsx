@@ -362,7 +362,7 @@ export default async function PatientProfilePage({
             hospitals={allHospitals}
           />
         )}
-        <InvestigationsButton patientId={patient.id} />
+        <InvestigationsButton patientId={patient.id} udid={udid} />
         <TreatmentHistoryButton patientId={patient.id} />
         <SpectacleHistoryButton patientId={patient.id} />
       </div>
