@@ -247,9 +247,9 @@ export default async function PatientDetailedEMR({
       <div
         className="relative rounded-2xl mb-5 overflow-hidden"
         style={{
-          background: "linear-gradient(135deg, #0D1F3C 0%, #0A2840 55%, #072D3C 100%)",
-          boxShadow: "0 8px 32px rgba(0,0,0,0.28), 0 2px 8px rgba(0,0,0,0.18), inset 0 1px 0 rgba(99,212,240,0.08)",
-          border: "1px solid rgba(56,189,248,0.12)",
+          background: "linear-gradient(135deg, #0E8282 0%, #0C7676 55%, #0A6C6C 100%)",
+          boxShadow: "0 8px 32px rgba(0,0,0,0.22), 0 2px 8px rgba(0,0,0,0.14), inset 0 1px 0 rgba(255,255,255,0.10)",
+          border: "1px solid rgba(255,255,255,0.10)",
         }}
       >
         {/* Healthcare background decoration — pointer-events-none, purely visual */}
