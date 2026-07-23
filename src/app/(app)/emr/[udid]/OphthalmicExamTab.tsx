@@ -835,6 +835,7 @@ function SegmentEyeInput({
 }) {
   const lsKey = CUSTOM_KW_KEY(structureKey, eye);
   const [customKws, setCustomKws] = useState<string[]>([]);
+  const [histOpen, setHistOpen] = useState(false);
   useEffect(() => {
     try { setCustomKws(JSON.parse(localStorage.getItem(lsKey) ?? "[]")); } catch { setCustomKws([]); }
   }, [lsKey]);
@@ -863,8 +864,52 @@ function SegmentEyeInput({
   };
 
   const ph = placeholder ?? `${toLabel(structureKey)} ${eye}...`;
+  const hasHistory = history && history.length > 0;
 
-  const content = (
+  const histBtn = hasHistory ? (
+    <button
+      type="button"
+      onClick={() => setHistOpen((v) => !v)}
+      className="inline-flex items-center gap-1 text-xs text-amber-700 bg-amber-50 hover:bg-amber-100 font-medium px-2.5 py-0.5 rounded-full border border-amber-200 transition-colors whitespace-nowrap"
+    >
+      <History size={11} />
+      History ({history.length})
+    </button>
+  ) : null;
+
+  const histPanel = histOpen && hasHistory ? (
+    <div className="mt-1 rounded-xl border border-[var(--color-border)] bg-[var(--color-primary-50)] p-3">
+      <div className="flex items-center justify-between mb-1.5">
+        <p className="text-xs font-semibold text-[var(--color-primary-700)] uppercase tracking-wide">Prior values</p>
+        <button onClick={() => setHistOpen(false)} className="text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)]">
+          <X size={14} />
+        </button>
+      </div>
+      {!disabled && (
+        <p className="text-[10px] text-[var(--color-ink-400)] mb-2">Double-click any entry to load it into the form.</p>
+      )}
+      <ol className="space-y-1.5 max-h-56 overflow-y-auto scrollbar-thin">
+        {history.map((h, i) => (
+          <li
+            key={i}
+            onDoubleClick={() => { if (!disabled) { onChange(h.value); setHistOpen(false); } }}
+            title={!disabled ? "Double-click to load" : undefined}
+            className={`text-sm flex gap-3 border-l-2 border-[var(--color-primary-500)] pl-3 py-1 rounded-r-lg transition-colors ${!disabled ? "cursor-pointer hover:bg-[var(--color-primary-100)] select-none" : ""}`}
+          >
+            <span className="text-[var(--color-ink-400)] whitespace-nowrap text-xs mt-0.5">
+              {format(new Date(h.date), "dd MMM yyyy")}
+            </span>
+            <span className="text-[var(--color-ink-700)]">
+              {h.value}
+              {h.hospitalName && <span className="text-[var(--color-ink-400)]"> · {h.hospitalName}</span>}
+            </span>
+          </li>
+        ))}
+      </ol>
+    </div>
+  ) : null;
+
+  return (
     <div className="flex flex-col gap-1.5">
       <input
         disabled={disabled}
@@ -874,7 +919,7 @@ function SegmentEyeInput({
         placeholder={ph}
         className="w-full rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] disabled:bg-[var(--color-surface-sunken)]"
       />
-      {!disabled && (
+      {!disabled ? (
         <div className="flex flex-wrap items-center gap-1.5">
           <button
             type="button"
@@ -892,7 +937,10 @@ function SegmentEyeInput({
               </button>
             </span>
           ))}
+          {histBtn}
         </div>
+      ) : (
+        histBtn && <div>{histBtn}</div>
       )}
       {!disabled && options.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
@@ -908,23 +956,10 @@ function SegmentEyeInput({
           ))}
         </div>
       )}
+      {histPanel}
     </div>
   );
 
-  if (history) {
-    return (
-      <FieldWithHistory
-        history={history}
-        currentValue={value}
-        onLoad={disabled ? undefined : onChange}
-        buttonPosition="below"
-      >
-        {content}
-      </FieldWithHistory>
-    );
-  }
-
-  return content;
 }
 
 function SegmentHistory({ priorVisits, dataKey }: { priorVisits: any[]; dataKey: "anteriorSegment" | "posteriorSegment" }) {
