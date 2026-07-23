@@ -19,6 +19,7 @@ export function FieldWithHistory({
   headerExtra,
   onLoad,
   currentValue: _currentValue,
+  buttonPosition = "above",
 }: {
   label?: string;
   history: HistoryEntry[];
@@ -26,6 +27,7 @@ export function FieldWithHistory({
   headerExtra?: React.ReactNode;
   onLoad?: (value: string) => void;
   currentValue?: string;
+  buttonPosition?: "above" | "below";
 }) {
   const [open, setOpen] = useState(false);
   const [toast, setToast] = useState(false);
@@ -37,26 +39,34 @@ export function FieldWithHistory({
     setToast(true);
   };
 
+  const historyBtn = (
+    <button
+      type="button"
+      onClick={() => setOpen((v) => !v)}
+      className="flex items-center gap-1 text-xs text-amber-700 bg-amber-50 hover:bg-amber-100 font-medium px-2.5 py-0.5 rounded-full border border-amber-200 transition-colors"
+    >
+      <History size={11} />
+      History ({history.length})
+    </button>
+  );
+
   return (
     <div className="relative">
-      <div className="flex items-center justify-between mb-1.5 gap-2 flex-wrap">
-        <div className="flex items-center gap-3 flex-wrap">
-          {label && <label className="text-xs font-semibold tracking-widest text-[var(--color-ink-500)] uppercase">{label}</label>}
-          {headerExtra}
+      {(label || headerExtra || (buttonPosition === "above" && history.length > 0)) && (
+        <div className="flex items-center justify-between mb-1.5 gap-2 flex-wrap">
+          <div className="flex items-center gap-3 flex-wrap">
+            {label && <label className="text-xs font-semibold tracking-widest text-[var(--color-ink-500)] uppercase">{label}</label>}
+            {headerExtra}
+          </div>
+          {buttonPosition === "above" && history.length > 0 && historyBtn}
         </div>
-        {history.length > 0 && (
-          <button
-            type="button"
-            onClick={() => setOpen((v) => !v)}
-            className="flex items-center gap-1 text-xs text-amber-700 bg-amber-50 hover:bg-amber-100 font-medium px-2.5 py-0.5 rounded-full border border-amber-200 transition-colors"
-          >
-            <History size={11} />
-            History ({history.length})
-          </button>
-        )}
-      </div>
+      )}
 
       {children}
+
+      {buttonPosition === "below" && history.length > 0 && (
+        <div className="mt-2">{historyBtn}</div>
+      )}
 
       <AnimatePresence>
         {open && (

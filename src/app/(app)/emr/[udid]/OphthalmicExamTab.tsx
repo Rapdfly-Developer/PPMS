@@ -911,6 +911,7 @@ function SegmentEyeInput({
         history={history}
         currentValue={value}
         onLoad={disabled ? undefined : onChange}
+        buttonPosition="below"
       >
         {content}
       </FieldWithHistory>
