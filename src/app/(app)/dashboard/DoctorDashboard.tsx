@@ -84,6 +84,7 @@ export async function DoctorDashboard({
   const appts = todayAppts.map((a) => ({
     id:          a.id,
     dateTime:    a.dateTime.toISOString(),
+    createdAt:   a.createdAt.toISOString(),
     status:      a.status,
     isWalkIn:    a.isWalkIn,
     complaint:   a.patient.complaint ?? null,

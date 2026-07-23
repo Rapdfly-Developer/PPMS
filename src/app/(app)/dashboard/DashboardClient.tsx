@@ -15,6 +15,7 @@ import { doctorConfirmAppointment, hospitalUpdateAppointmentStatus } from "@/app
 interface Appt {
   id: string;
   dateTime: string;
+  createdAt: string;
   status: string;
   isWalkIn: boolean;
   complaint: string | null;
@@ -143,6 +144,9 @@ function ApptRow({ appt, role }: { appt: Appt; role: "DOCTOR" | "HOSPITAL" }) {
             <Calendar size={9} /> Appt
           </span>
         )}
+        <span className="text-[9px] text-[var(--color-ink-300)]" title="Booked at">
+          {format(new Date(appt.createdAt), "h:mm a")}
+        </span>
       </div>
       <div className="w-px self-stretch bg-[var(--color-border)]" />
       <Link href={`/patients/${appt.patient.udid}?returnTo=/dashboard`} className="flex-1 min-w-0 hover:opacity-80 transition-opacity">
