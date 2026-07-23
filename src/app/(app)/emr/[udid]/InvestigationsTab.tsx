@@ -9,7 +9,10 @@ import { format } from "date-fns";
 import {
   Paperclip, ExternalLink, Upload, Download, Eye, Clock,
   CheckCircle2, XCircle, FlaskConical, Plus, History, Camera,
+  X, Search, Star,
 } from "lucide-react";
+
+const FAVES_KEY = "ppms_inv_favorites";
 import clsx from "clsx";
 
 // ── Investigation catalog ─────────────────────────────────────────────────
@@ -370,6 +373,159 @@ function UploadButton({ orderId, udid }: { orderId: string; udid: string }) {
   );
 }
 
+// ── Add Custom Test Modal ─────────────────────────────────────────────────
+
+const ALL_CATALOG_NAMES = Object.values(INV_CATALOG).flat().map((i) => i.name);
+const CATALOG_CATEGORIES = Object.keys(INV_CATALOG);
+
+function AddCustomTestModal({
+  onAdd,
+  onClose,
+}: {
+  onAdd: (name: string, category: string, saveAsFav: boolean) => void;
+  onClose: () => void;
+}) {
+  const [query, setQuery] = useState("");
+  const [category, setCategory] = useState(CATALOG_CATEGORIES[0]);
+  const [saveAsFav, setSaveAsFav] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
+  const suggestions = query.length >= 2
+    ? ALL_CATALOG_NAMES.filter((n) => n.toLowerCase().includes(query.toLowerCase())).slice(0, 6)
+    : [];
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const name = query.trim();
+    if (!name) return;
+    onAdd(name, category, saveAsFav);
+    onClose();
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: "rgba(0,0,0,0.45)" }}
+      onClick={onClose}
+    >
+      <div
+        className="relative w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+        style={{ background: "var(--color-surface)" }}
+      >
+        {/* Header */}
+        <div
+          className="px-5 py-4 flex items-center justify-between"
+          style={{ background: "linear-gradient(135deg, #0F766E 0%, #0D9488 100%)" }}
+        >
+          <div className="flex items-center gap-2.5">
+            <FlaskConical size={17} className="text-white/80" />
+            <p className="text-sm font-semibold text-white tracking-tight">Add Test</p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-white/60 hover:text-white transition-colors p-1"
+          >
+            <X size={16} />
+          </button>
+        </div>
+
+        {/* Body */}
+        <form onSubmit={handleSubmit} className="p-5 flex flex-col gap-4">
+          {/* Test Name with suggestions */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-semibold text-[var(--color-ink-500)] uppercase tracking-widest">
+              Test Name <span className="text-[var(--color-danger-500)]">*</span>
+            </label>
+            <div className="relative">
+              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)]">
+                <Search size={13} />
+              </div>
+              <input
+                autoFocus
+                type="text"
+                value={query}
+                onChange={(e) => { setQuery(e.target.value); setShowSuggestions(true); }}
+                onFocus={() => setShowSuggestions(true)}
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+                placeholder="Search or type a custom test…"
+                className="w-full rounded-xl border border-[var(--color-border)] pl-8 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0F766E]/40 focus:border-[#0F766E]"
+              />
+              {/* Dropdown suggestions */}
+              {showSuggestions && suggestions.length > 0 && (
+                <div className="absolute z-10 left-0 right-0 top-full mt-1 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-lg overflow-hidden">
+                  {suggestions.map((s) => (
+                    <button
+                      key={s}
+                      type="button"
+                      onMouseDown={() => { setQuery(s); setShowSuggestions(false); }}
+                      className="w-full text-left px-3.5 py-2 text-sm text-[var(--color-ink-700)] hover:bg-[#EEF8F7] hover:text-[#0F766E] transition-colors"
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Category */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-semibold text-[var(--color-ink-500)] uppercase tracking-widest">
+              Category
+            </label>
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="w-full rounded-xl border border-[var(--color-border)] px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0F766E]/40 focus:border-[#0F766E] bg-[var(--color-surface)] text-[var(--color-ink-800)]"
+            >
+              {CATALOG_CATEGORIES.map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+              <option value="Other">Other</option>
+            </select>
+          </div>
+
+          {/* Save as favorite */}
+          <label className="flex items-center gap-2.5 cursor-pointer">
+            <div
+              onClick={() => setSaveAsFav((v) => !v)}
+              className={clsx(
+                "flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full border transition-colors",
+                saveAsFav
+                  ? "bg-[#EEF8F7] border-[#B2DEDA] text-[#0F766E]"
+                  : "border-[var(--color-border)] text-[var(--color-ink-500)] hover:border-[#B2DEDA] hover:text-[#0F766E]"
+              )}
+            >
+              <Star size={11} fill={saveAsFav ? "#0F766E" : "none"} />
+              Save as favourite
+            </div>
+          </label>
+
+          {/* Actions */}
+          <div className="flex items-center justify-end gap-2.5 pt-1">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 rounded-xl border border-[var(--color-border)] text-sm font-medium text-[var(--color-ink-500)] hover:bg-[var(--color-surface-sunken)] transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={!query.trim()}
+              className="px-5 py-2 rounded-xl bg-[#0F766E] text-white text-sm font-semibold hover:bg-[#0D6862] transition-colors disabled:opacity-40"
+            >
+              Add Test
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 // ── New Investigations (order form + today's orders) ─────────────────────
 
 function NewInvestigations({
@@ -384,15 +540,50 @@ function NewInvestigations({
   const [laterality, setLaterality] = useState("OU");
   const [notes, setNotes] = useState("");
   const [pending, startTransition] = useTransition();
+  const [showAddModal, setShowAddModal] = useState(false);
+
+  // Custom tests: favorites from localStorage + session additions
+  const [customTests, setCustomTests] = useState<{ name: string; category: string }[]>(() => {
+    if (typeof window === "undefined") return [];
+    try { return JSON.parse(localStorage.getItem(FAVES_KEY) ?? "[]"); }
+    catch { return []; }
+  });
 
   const toggleTest = (name: string) =>
     setSelected((prev) => prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name]);
+
+  const handleAddCustom = (name: string, category: string, saveAsFav: boolean) => {
+    // If it's already in the catalog just select it and navigate to its tab
+    const catalogCat = Object.entries(INV_CATALOG).find(([, items]) => items.some((i) => i.name === name))?.[0];
+    if (catalogCat) {
+      setActiveCategory(catalogCat);
+      setSelected((prev) => prev.includes(name) ? prev : [...prev, name]);
+      return;
+    }
+    // New custom test — add to session list
+    setCustomTests((prev) => prev.some((t) => t.name === name) ? prev : [...prev, { name, category }]);
+    // Persist if save as favorite
+    if (saveAsFav) {
+      try {
+        const stored: { name: string; category: string }[] = JSON.parse(localStorage.getItem(FAVES_KEY) ?? "[]");
+        if (!stored.some((t) => t.name === name)) {
+          localStorage.setItem(FAVES_KEY, JSON.stringify([...stored, { name, category }]));
+        }
+      } catch {}
+    }
+    // Auto-select and navigate to its category tab
+    const targetCat = Object.keys(INV_CATALOG).includes(category) ? category : "Other";
+    setActiveCategory(targetCat);
+    setSelected((prev) => prev.includes(name) ? prev : [...prev, name]);
+  };
 
   const placeOrders = () => {
     if (selected.length === 0) return;
     startTransition(async () => {
       for (const testName of selected) {
-        const cat = Object.entries(INV_CATALOG).find(([, items]) => items.some((i) => i.name === testName))?.[0] ?? "Imaging";
+        const catFromCatalog = Object.entries(INV_CATALOG).find(([, items]) => items.some((i) => i.name === testName))?.[0];
+        const catFromCustom = customTests.find((t) => t.name === testName)?.category;
+        const cat = catFromCatalog ?? catFromCustom ?? "Other";
         await addInvestigationOrder(visit.id, udid, { category: cat, testName, priority, laterality, notes });
       }
       setSelected([]);
@@ -400,25 +591,48 @@ function NewInvestigations({
     });
   };
 
-  const allFlat = Object.values(INV_CATALOG).flat();
-  const categories = Object.keys(INV_CATALOG);
-  const currentItems = INV_CATALOG[activeCategory] ?? [];
-  const todayTotal = todayOrders.reduce((sum, o) => sum + (allFlat.find((i) => i.name === o.testName)?.price ?? 0), 0);
+  // Merge catalog categories + "Other" when custom tests exist there
+  const hasOtherCustom = customTests.some((t) => !Object.keys(INV_CATALOG).includes(t.category));
+  const categories = [
+    ...Object.keys(INV_CATALOG),
+    ...(hasOtherCustom ? ["Other"] : []),
+  ];
+
+  // Items for the active tab: catalog items + custom tests in same category
+  const currentItems: { name: string; price: number; isCustom?: boolean }[] = [
+    ...(INV_CATALOG[activeCategory] ?? []),
+    ...customTests
+      .filter((t) => {
+        if (activeCategory === "Other") return !Object.keys(INV_CATALOG).includes(t.category);
+        return t.category === activeCategory;
+      })
+      .map((t) => ({ name: t.name, price: 0, isCustom: true })),
+  ];
 
   return (
     <div className="flex flex-col gap-4">
       {/* Order form */}
       <Card className="p-0 overflow-hidden">
-        {/* Priority + Laterality */}
-        <div className="px-5 pt-5 pb-4 flex flex-wrap gap-32 border-b border-[var(--color-border)]">
-          <div>
-            <p className="text-xs font-semibold tracking-widest text-[var(--color-ink-400)] uppercase mb-2">Priority</p>
-            <SingleChipSelect options={ORDER_PRIORITIES} value={priority} onChange={setPriority} />
+        {/* Priority + Laterality + Add Test */}
+        <div className="px-5 pt-5 pb-4 flex items-start justify-between gap-4 border-b border-[var(--color-border)]">
+          <div className="flex flex-wrap gap-8">
+            <div>
+              <p className="text-xs font-semibold tracking-widest text-[var(--color-ink-400)] uppercase mb-2">Priority</p>
+              <SingleChipSelect options={ORDER_PRIORITIES} value={priority} onChange={setPriority} />
+            </div>
+            <div>
+              <p className="text-xs font-semibold tracking-widest text-[var(--color-ink-400)] uppercase mb-2">Laterality</p>
+              <SingleChipSelect options={LATERALITY} value={laterality} onChange={setLaterality} />
+            </div>
           </div>
-          <div>
-            <p className="text-xs font-semibold tracking-widest text-[var(--color-ink-400)] uppercase mb-2">Laterality</p>
-            <SingleChipSelect options={LATERALITY} value={laterality} onChange={setLaterality} />
-          </div>
+          <button
+            type="button"
+            onClick={() => setShowAddModal(true)}
+            className="shrink-0 flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl border border-[#B2DEDA] bg-[#EEF8F7] text-[#0F766E] hover:bg-[#DCF3F1] transition-colors whitespace-nowrap mt-0.5"
+          >
+            <Plus size={13} />
+            Add Test
+          </button>
         </div>
 
         {/* Category sub-tabs */}
@@ -462,6 +676,11 @@ function NewInvestigations({
                   />
                   {item.name}
                 </span>
+                {item.isCustom && (
+                  <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-[#EEF8F7] text-[#0F766E] border border-[#B2DEDA] ml-2 shrink-0">
+                    Custom
+                  </span>
+                )}
               </label>
             );
           })}
@@ -491,10 +710,9 @@ function NewInvestigations({
         </div>
       </Card>
 
-      {/* Today's placed orders — stay here until EOD */}
+      {/* Today's placed orders */}
       {todayOrders.length > 0 && (
         <div className="flex flex-col gap-3">
-          {/* Section header */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <CheckCircle2 size={15} className="text-[var(--color-success-600)]" />
@@ -503,12 +721,8 @@ function NewInvestigations({
                 {todayOrders.length}
               </span>
             </div>
-            <div className="flex items-center gap-3">
-              <span className="text-xs text-[var(--color-ink-400)]">Moves to Previous at end of day</span>
-            </div>
+            <span className="text-xs text-[var(--color-ink-400)]">Moves to Previous at end of day</span>
           </div>
-
-          {/* Order cards with inline result upload + preview */}
           {todayOrders.map((o) => (
             <InvestigationCard key={o.id} order={o} udid={udid} readOnly={false} onView={setViewUrl} />
           ))}
@@ -538,6 +752,11 @@ function NewInvestigations({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Add Custom Test modal */}
+      {showAddModal && (
+        <AddCustomTestModal onAdd={handleAddCustom} onClose={() => setShowAddModal(false)} />
       )}
     </div>
   );
