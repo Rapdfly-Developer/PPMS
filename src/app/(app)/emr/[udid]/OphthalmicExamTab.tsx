@@ -821,7 +821,7 @@ function IOPCard({ visit, udid, editable, priorVisits }: { visit: any; udid: str
             <p className="text-[11px] font-bold text-[#0F766E] uppercase tracking-widest">Prior IOP Readings</p>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full text-sm min-w-[460px]">
+            <table className="text-sm">
               <thead>
                 <tr className="border-b border-[#B2DEDA]">
                   <th className="py-2 px-4 text-left text-[11px] font-semibold text-[var(--color-ink-400)] uppercase tracking-wide whitespace-nowrap">Visit Date</th>
