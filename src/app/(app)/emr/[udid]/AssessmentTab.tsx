@@ -109,6 +109,10 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
       <Card>
         <div className="flex items-start justify-between gap-2 mb-2">
           <div className="flex-1">
+            <div className="mb-3">
+              <p className="text-xs font-medium text-[var(--color-ink-500)] mb-1.5">Laterality</p>
+              <SingleChipSelect options={LATERALITY} value={laterality} onChange={setLaterality} />
+            </div>
             <FieldWithHistory
               label="Provisional Diagnosis"
               history={priorVisits
