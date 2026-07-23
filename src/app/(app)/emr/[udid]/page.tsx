@@ -244,10 +244,49 @@ export default async function PatientDetailedEMR({
       )}
 
       {/* ── Premium Patient Banner ── */}
-      <div className="bg-[var(--color-surface-card)] rounded-2xl border border-[var(--color-border)] shadow-sm mb-5 overflow-hidden">
+      <div
+        className="relative rounded-2xl mb-5 overflow-hidden"
+        style={{
+          background: "linear-gradient(135deg, #FFFFFF 0%, #F0F9FF 50%, #F0FDFA 100%)",
+          boxShadow: "0 4px 24px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.04)",
+          border: "1px solid rgba(20,184,166,0.15)",
+        }}
+      >
+        {/* Healthcare background decoration — pointer-events-none, purely visual */}
+        <svg
+          aria-hidden="true"
+          className="absolute inset-0 w-full h-full pointer-events-none"
+          style={{ opacity: 0.035 }}
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <defs>
+            {/* Dot grid */}
+            <pattern id="ph-dots" x="0" y="0" width="24" height="24" patternUnits="userSpaceOnUse">
+              <circle cx="2" cy="2" r="1.2" fill="#0D9488" />
+            </pattern>
+            {/* Medical cross */}
+            <pattern id="ph-cross" x="4" y="4" width="64" height="64" patternUnits="userSpaceOnUse">
+              <rect x="29" y="22" width="6" height="20" rx="1" fill="#0EA5E9" />
+              <rect x="22" y="29" width="20" height="6" rx="1" fill="#0EA5E9" />
+            </pattern>
+            {/* ECG heartbeat tile */}
+            <pattern id="ph-ecg" x="0" y="0" width="160" height="48" patternUnits="userSpaceOnUse">
+              <polyline
+                points="0,24 20,24 28,8 36,40 44,16 52,32 60,24 80,24 88,8 96,40 104,16 112,32 120,24 160,24"
+                fill="none" stroke="#0D9488" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
+              />
+            </pattern>
+          </defs>
+          {/* Layer 1: dot grid across whole card */}
+          <rect width="100%" height="100%" fill="url(#ph-dots)" />
+          {/* Layer 2: crosses concentrated on right side */}
+          <rect x="60%" width="40%" height="100%" fill="url(#ph-cross)" />
+          {/* Layer 3: ECG line along the bottom third */}
+          <rect y="60%" width="100%" height="40%" fill="url(#ph-ecg)" />
+        </svg>
 
         {/* Main info section */}
-        <div className="p-4 sm:p-5">
+        <div className="relative z-10 p-4 sm:p-5">
           <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
 
             {/* Left block: avatar + info */}
