@@ -109,10 +109,6 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
       <Card>
         <div className="flex items-start justify-between gap-2 mb-2">
           <div className="flex-1">
-            <div className="mb-3">
-              <p className="text-xs font-medium text-[var(--color-ink-500)] mb-1.5">Laterality</p>
-              <SingleChipSelect options={LATERALITY} value={laterality} onChange={setLaterality} />
-            </div>
             <FieldWithHistory
               label="Provisional Diagnosis"
               history={priorVisits
@@ -121,50 +117,53 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
               currentValue={provisionalDx}
               onLoad={setProvisionalDx}
             >
-              <div className="relative mt-1">
-                <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] pointer-events-none" />
-                <input
-                  value={provisionalDx}
-                  onChange={(e) => {
-                    setProvisionalDx(e.target.value);
-                    setShowSuggestions(true);
-                    setSuggestionIndex(-1);
-                  }}
-                  onFocus={() => { if (blurTimerRef.current) clearTimeout(blurTimerRef.current); setShowSuggestions(true); }}
-                  onBlur={() => { blurTimerRef.current = setTimeout(() => setShowSuggestions(false), 150); }}
-                  onKeyDown={handleProvisionalKeyDown}
-                  placeholder="Type to search diagnosis or enter free text..."
-                  className="w-full rounded-xl border border-[var(--color-border)] pl-9 pr-8 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
-                />
-                {provisionalDx && (
-                  <button
-                    type="button"
-                    onMouseDown={(e) => { e.preventDefault(); setProvisionalDx(""); setShowSuggestions(false); setSuggestionIndex(-1); }}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)] transition-colors"
-                  >
-                    <X size={14} />
-                  </button>
-                )}
-                {showSuggestions && provisionalSuggestions.length > 0 && (
-                  <ul className="absolute z-20 left-0 right-0 mt-1 rounded-xl border border-[var(--color-border)] bg-white shadow-xl overflow-hidden max-h-64 overflow-y-auto">
-                    {provisionalSuggestions.map((s, i) => (
-                      <li key={s.code}>
-                        <button
-                          type="button"
-                          onMouseDown={(e) => { e.preventDefault(); selectSuggestion(s.description); }}
-                          className={`w-full text-left px-3.5 py-2.5 text-sm flex items-center justify-between gap-4 transition-colors ${
-                            i === suggestionIndex
-                              ? "bg-[var(--color-primary-50)] text-[var(--color-primary-700)]"
-                              : "hover:bg-[var(--color-surface-sunken)]"
-                          }`}
-                        >
-                          <span className="flex-1 min-w-0 truncate">{s.description}</span>
-                          <span className="text-xs font-mono text-[var(--color-ink-400)] shrink-0">{s.code}</span>
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
+              <div className="flex items-end gap-3 flex-wrap mt-1">
+                <SingleChipSelect options={LATERALITY} value={laterality} onChange={setLaterality} />
+                <div className="relative flex-1 min-w-[200px]">
+                  <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] pointer-events-none" />
+                  <input
+                    value={provisionalDx}
+                    onChange={(e) => {
+                      setProvisionalDx(e.target.value);
+                      setShowSuggestions(true);
+                      setSuggestionIndex(-1);
+                    }}
+                    onFocus={() => { if (blurTimerRef.current) clearTimeout(blurTimerRef.current); setShowSuggestions(true); }}
+                    onBlur={() => { blurTimerRef.current = setTimeout(() => setShowSuggestions(false), 150); }}
+                    onKeyDown={handleProvisionalKeyDown}
+                    placeholder="Type to search diagnosis or enter free text..."
+                    className="w-full rounded-xl border border-[var(--color-border)] pl-9 pr-8 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
+                  />
+                  {provisionalDx && (
+                    <button
+                      type="button"
+                      onMouseDown={(e) => { e.preventDefault(); setProvisionalDx(""); setShowSuggestions(false); setSuggestionIndex(-1); }}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)] transition-colors"
+                    >
+                      <X size={14} />
+                    </button>
+                  )}
+                  {showSuggestions && provisionalSuggestions.length > 0 && (
+                    <ul className="absolute z-20 left-0 right-0 mt-1 rounded-xl border border-[var(--color-border)] bg-white shadow-xl overflow-hidden max-h-64 overflow-y-auto">
+                      {provisionalSuggestions.map((s, i) => (
+                        <li key={s.code}>
+                          <button
+                            type="button"
+                            onMouseDown={(e) => { e.preventDefault(); selectSuggestion(s.description); }}
+                            className={`w-full text-left px-3.5 py-2.5 text-sm flex items-center justify-between gap-4 transition-colors ${
+                              i === suggestionIndex
+                                ? "bg-[var(--color-primary-50)] text-[var(--color-primary-700)]"
+                                : "hover:bg-[var(--color-surface-sunken)]"
+                            }`}
+                          >
+                            <span className="flex-1 min-w-0 truncate">{s.description}</span>
+                            <span className="text-xs font-mono text-[var(--color-ink-400)] shrink-0">{s.code}</span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
               </div>
             </FieldWithHistory>
           </div>
