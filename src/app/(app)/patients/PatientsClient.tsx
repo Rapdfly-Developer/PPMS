@@ -294,9 +294,26 @@ export function PatientsClient({
 }: Props) {
   const router = useRouter();
   const [searchVal, setSearchVal] = useState(q);
-  const [showFilters, setShowFilters] = useState(!!(categoryFilter || sexFilter || hospitalFilter || opStatusFilter));
+  const [showFilters, setShowFilters] = useState(
+    !!(categoryFilter || sexFilter || hospitalFilter || (opStatusFilter && opStatusFilter !== "dispensed"))
+  );
   const [, startTransition] = useTransition();
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const filterPanelRef = useRef<HTMLDivElement>(null);
+  const filterBtnRef   = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    function handleOutsideClick(e: MouseEvent) {
+      if (
+        filterPanelRef.current && !filterPanelRef.current.contains(e.target as Node) &&
+        filterBtnRef.current   && !filterBtnRef.current.contains(e.target as Node)
+      ) {
+        setShowFilters(false);
+      }
+    }
+    if (showFilters) document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, [showFilters]);
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const from = total === 0 ? 0 : (page - 1) * pageSize + 1;
@@ -357,6 +374,7 @@ export function PatientsClient({
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <button
+            ref={filterBtnRef}
             onClick={() => setShowFilters(v => !v)}
             className={`inline-flex items-center gap-2 text-sm font-medium px-3.5 py-2.5 rounded-xl border transition-colors ${
               showFilters
@@ -390,7 +408,7 @@ export function PatientsClient({
 
           {/* ── Filter panel ────────────────────────────────────────────── */}
           {showFilters && (
-            <div className="surface-card p-4 mb-1">
+            <div ref={filterPanelRef} className="surface-card p-4 mb-1">
               <div className="flex flex-wrap items-end gap-3">
 
                 {/* Search */}
