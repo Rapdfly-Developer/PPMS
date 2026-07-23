@@ -148,46 +148,56 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, customPmhCh
                 key={i}
                 className={i > 0 ? "pt-3 border-t border-dashed border-[var(--color-border)]" : ""}
               >
-                {/* Controls row: number + laterality · since + remove */}
-                <div className="flex items-start justify-between gap-x-3 gap-y-2 flex-wrap mb-2">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    {complaints.length > 1 && (
-                      <span className="text-[11px] font-bold tracking-wider text-[var(--color-ink-400)] uppercase">
-                        Chief Complaint {i + 1}
-                      </span>
-                    )}
-                    {LATERALITY_OPTIONS.map((opt) => {
-                      const active = c.lat === opt;
-                      return (
-                        <button
-                          key={opt}
-                          type="button"
-                          disabled={readOnly}
-                          onClick={() => patchComplaint(i, { lat: active ? null : opt })}
-                          className="px-3.5 py-1 rounded-full text-[12px] font-bold transition-all"
-                          style={active ? {
-                            background: "var(--color-primary-600)",
-                            color: "#fff",
-                            boxShadow: "0 2px 8px rgba(15,118,110,.25)",
-                          } : {
-                            background: "var(--color-surface-1, #F1F5F9)",
-                            color: "var(--color-ink-500, #64748B)",
-                            border: "1px solid var(--color-border, #E2E8F0)",
-                          }}
-                        >
-                          {opt}
-                        </button>
-                      );
-                    })}
-                  </div>
+                {/* Laterality + number row */}
+                <div className="flex items-center gap-2 flex-wrap mb-2">
+                  {complaints.length > 1 && (
+                    <span className="text-[11px] font-bold tracking-wider text-[var(--color-ink-400)] uppercase">
+                      Chief Complaint {i + 1}
+                    </span>
+                  )}
+                  {LATERALITY_OPTIONS.map((opt) => {
+                    const active = c.lat === opt;
+                    return (
+                      <button
+                        key={opt}
+                        type="button"
+                        disabled={readOnly}
+                        onClick={() => patchComplaint(i, { lat: active ? null : opt })}
+                        className="px-3.5 py-1 rounded-full text-[12px] font-bold transition-all"
+                        style={active ? {
+                          background: "var(--color-primary-600)",
+                          color: "#fff",
+                          boxShadow: "0 2px 8px rgba(15,118,110,.25)",
+                        } : {
+                          background: "var(--color-surface-1, #F1F5F9)",
+                          color: "var(--color-ink-500, #64748B)",
+                          border: "1px solid var(--color-border, #E2E8F0)",
+                        }}
+                      >
+                        {opt}
+                      </button>
+                    );
+                  })}
+                </div>
 
-                  <div className="flex items-center gap-1.5">
+                {/* Complaint textarea + Since inline */}
+                <div className="flex items-start gap-2">
+                  <div className="flex-1 min-w-0">
+                    <KeywordTextarea
+                      fieldKey="ge_chiefComplaint"
+                      value={c.text}
+                      onChange={(v) => patchComplaint(i, { text: v.replace(/\|/g, "/") })}
+                      disabled={readOnly}
+                      rows={2}
+                    />
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0 pt-1">
                     <span className="text-xs font-semibold text-[var(--color-ink-400)]">Since</span>
                     <select
                       value={c.sinceNum}
                       onChange={(e) => patchComplaint(i, { sinceNum: e.target.value })}
                       disabled={readOnly}
-                      className="text-xs border border-[var(--color-border)] rounded-lg px-2 py-0.5 bg-white text-[var(--color-ink-700)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] disabled:opacity-50"
+                      className="text-xs border border-[var(--color-border)] rounded-lg px-2 py-1 bg-white text-[var(--color-ink-700)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] disabled:opacity-50"
                     >
                       <option value="">—</option>
                       {Array.from({ length: 10 }, (_, n) => n + 1).map((n) => (
@@ -198,7 +208,7 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, customPmhCh
                       value={c.sinceUnit}
                       onChange={(e) => patchComplaint(i, { sinceUnit: e.target.value })}
                       disabled={readOnly || !c.sinceNum}
-                      className="text-xs border border-[var(--color-border)] rounded-lg px-2 py-0.5 bg-white text-[var(--color-ink-700)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] disabled:opacity-50"
+                      className="text-xs border border-[var(--color-border)] rounded-lg px-2 py-1 bg-white text-[var(--color-ink-700)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] disabled:opacity-50"
                     >
                       {SINCE_UNITS.map((u) => (
                         <option key={u} value={u}>{u}</option>
@@ -209,21 +219,13 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, customPmhCh
                         type="button"
                         onClick={() => removeComplaint(i)}
                         title={`Remove Chief Complaint ${i + 1}`}
-                        className="ml-0.5 p-1 rounded-lg text-[var(--color-ink-400)] hover:text-red-600 hover:bg-red-50 transition-colors"
+                        className="p-1 rounded-lg text-[var(--color-ink-400)] hover:text-red-600 hover:bg-red-50 transition-colors"
                       >
                         <X size={13} strokeWidth={2.5} />
                       </button>
                     )}
                   </div>
                 </div>
-
-                <KeywordTextarea
-                  fieldKey="ge_chiefComplaint"
-                  value={c.text}
-                  onChange={(v) => patchComplaint(i, { text: v.replace(/\|/g, "/") })}
-                  disabled={readOnly}
-                  rows={2}
-                />
               </div>
             ))}
           </div>
