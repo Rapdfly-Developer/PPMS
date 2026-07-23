@@ -977,6 +977,16 @@ function AnteriorSegmentCard({ visit, udid, editable, priorVisits = [] }: { visi
     await saveAnteriorSegment(visit.id, udid, d);
   });
 
+  const getSegHistory = (eye: "re" | "le", key: string): HistoryEntry[] =>
+    priorVisits
+      .filter((v) => v.anteriorSegment)
+      .map((v) => ({
+        date: v.date,
+        value: (parseJSON<Record<string, string>>(eye === "re" ? v.anteriorSegment.re : v.anteriorSegment.le, {}))[key] ?? "",
+        hospitalName: v.hospital?.name,
+      }))
+      .filter((e) => Boolean(e.value));
+
   return (
     <Card>
       <div className="flex items-center justify-between mb-4">
@@ -995,8 +1005,8 @@ function AnteriorSegmentCard({ visit, udid, editable, priorVisits = [] }: { visi
         {AS_KEYS.map((key) => (
           <div key={key} className="grid grid-cols-[140px_1fr_1fr] gap-x-6 items-start">
             <p className="text-sm font-medium text-[var(--color-ink-700)] pt-2">{toLabel(key)}</p>
-            <SegmentEyeInput structureKey={key} options={ANTERIOR_SEGMENT_STRUCTURES[key] ?? []} eye="RE" value={re[key] ?? ""} onChange={(v) => setRe({ ...re, [key]: v })} disabled={!editable} />
-            <SegmentEyeInput structureKey={key} options={ANTERIOR_SEGMENT_STRUCTURES[key] ?? []} eye="LE" value={le[key] ?? ""} onChange={(v) => setLe({ ...le, [key]: v })} disabled={!editable} />
+            <SegmentEyeInput structureKey={key} options={ANTERIOR_SEGMENT_STRUCTURES[key] ?? []} eye="RE" value={re[key] ?? ""} onChange={(v) => setRe({ ...re, [key]: v })} disabled={!editable} history={getSegHistory("re", key)} />
+            <SegmentEyeInput structureKey={key} options={ANTERIOR_SEGMENT_STRUCTURES[key] ?? []} eye="LE" value={le[key] ?? ""} onChange={(v) => setLe({ ...le, [key]: v })} disabled={!editable} history={getSegHistory("le", key)} />
           </div>
         ))}
       </div>
