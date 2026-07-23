@@ -615,7 +615,7 @@ function ColourContrastTab({ visit, udid, editable, priorVisits = [] }: { visit:
           ))}
         </div>
         {priorCv.length > 0 && (
-          <div className="mt-5 rounded-xl border border-[#B2DEDA] bg-[#EEF8F7] overflow-hidden">
+          <div className="mt-5 rounded-xl border border-[#B2DEDA] bg-[#EEF8F7] overflow-hidden w-fit">
             <div className="px-3 pt-2.5 pb-2 border-b border-[#B2DEDA]">
               <p className="text-[10px] font-bold text-[#0F766E] uppercase tracking-widest">Previous</p>
             </div>
@@ -678,7 +678,7 @@ function ColourContrastTab({ visit, udid, editable, priorVisits = [] }: { visit:
           ))}
         </div>
         {priorCv.length > 0 && (
-          <div className="mt-5 rounded-xl border border-[#B2DEDA] bg-[#EEF8F7] overflow-hidden">
+          <div className="mt-5 rounded-xl border border-[#B2DEDA] bg-[#EEF8F7] overflow-hidden w-fit">
             <div className="px-3 pt-2.5 pb-2 border-b border-[#B2DEDA]">
               <p className="text-[10px] font-bold text-[#0F766E] uppercase tracking-widest">Previous</p>
             </div>
