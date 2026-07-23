@@ -206,7 +206,7 @@ export function PlanTab({ visit, udid, patientSex }: { visit: any; udid: string;
   return (
     <div className="flex flex-col gap-5">
       <PrescriptionCard visit={visit} udid={udid} />
-      <OpticalPrescriptionCard visit={visit} udid={udid} />
+      <OpticalPrescriptionCard visit={visit} />
       <DispositionCard visit={visit} udid={udid} patientSex={patientSex} />
     </div>
   );
@@ -592,41 +592,30 @@ function PrescriptionCard({ visit, udid }: { visit: any; udid: string }) {
   );
 }
 
-function OpticalPrescriptionCard({ visit, udid }: { visit: any; udid: string }) {
+function OpticalPrescriptionCard({ visit }: { visit: any }) {
   const rc = visit.refraction;
   type RxFields = { sph: string; cyl: string; axis: string; nearSph: string; va: string; nearVa: string };
   const emptyRx: RxFields = { sph: "", cyl: "", axis: "", nearSph: "", va: "", nearVa: "" };
-  const [re, setRe] = useState<RxFields>(() => parseJSON(rc?.re, emptyRx));
-  const [le, setLe] = useState<RxFields>(() => parseJSON(rc?.le, emptyRx));
+  const re: RxFields = parseJSON(rc?.re, emptyRx);
+  const le: RxFields = parseJSON(rc?.le, emptyRx);
 
-  const state = useAutoSave({ re: JSON.stringify(re), le: JSON.stringify(le) }, async (d) => {
-    await saveRefraction(visit.id, udid, d);
-  });
+  const SEL = "rounded border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-1.5 py-1 text-xs cursor-default";
 
-  const SEL = "rounded border border-[var(--color-border)] bg-white px-1.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-400)]";
-
-  const signedSelect = (label: string, value: string, onChange: (v: string) => void, mags: string[]) => {
+  const signedSelect = (label: string, value: string, mags: string[]) => {
     const { sign, mag } = parseOptSignedVal(value);
-    const toggle = () => { const ns = sign === "+" ? "-" : "+"; onChange(mag ? `${ns}${mag}` : ns); };
     return (
       <div className="flex flex-col gap-0.5">
         <label className="text-[10px] text-[var(--color-ink-400)] font-medium">{label}</label>
         <div className="flex items-center gap-1">
-          <button
-            type="button"
-            onClick={toggle}
-            className="w-6 h-6 rounded flex items-center justify-center text-xs font-bold border transition-colors"
+          <span
+            className="w-6 h-6 rounded flex items-center justify-center text-xs font-bold border"
             style={sign === "-"
               ? { background: "var(--color-primary-600)", color: "#fff", borderColor: "var(--color-primary-600)" }
-              : { background: "#fff", color: "var(--color-ink-600)", borderColor: "var(--color-border)" }}
+              : { background: "var(--color-surface-sunken)", color: "var(--color-ink-600)", borderColor: "var(--color-border)" }}
           >
             {sign}
-          </button>
-          <select
-            value={mag}
-            onChange={(e) => onChange(e.target.value ? `${sign}${e.target.value}` : sign)}
-            className={`w-full min-w-0 ${SEL}`}
-          >
+          </span>
+          <select disabled value={mag} onChange={() => {}} className={`w-full min-w-0 ${SEL}`}>
             {mags.map((m) => <option key={m} value={m}>{m || "—"}</option>)}
           </select>
         </div>
@@ -634,23 +623,19 @@ function OpticalPrescriptionCard({ visit, udid }: { visit: any; udid: string }) 
     );
   };
 
-  const axisSelect = (label: string, value: string, onChange: (v: string) => void) => (
+  const axisSelect = (label: string, value: string) => (
     <div className="flex flex-col gap-0.5 min-w-0">
       <label className="text-[10px] text-[var(--color-ink-400)] font-medium">{label}</label>
-      <select
-        value={parseOptSignedVal(value).mag}
-        onChange={(e) => onChange(e.target.value)}
-        className={`w-full min-w-0 ${SEL}`}
-      >
+      <select disabled value={parseOptSignedVal(value).mag} onChange={() => {}} className={`w-full min-w-0 ${SEL}`}>
         {OPT_AXIS_OPTS.map((a) => <option key={a} value={a}>{a || "—"}</option>)}
       </select>
     </div>
   );
 
-  const vaSelect = (label: string, value: string, onChange: (v: string) => void, options: readonly string[] = VA_SNELLEN_VALUES, className = "") => (
+  const vaSelect = (label: string, value: string, options: readonly string[] = VA_SNELLEN_VALUES, className = "") => (
     <div className={`flex flex-col gap-0.5 min-w-0 ${className}`}>
       <label className="text-[10px] text-[var(--color-ink-400)] font-medium">{label}</label>
-      <select value={value || "-"} onChange={(e) => onChange(e.target.value)} className={`w-full min-w-0 ${SEL}`}>
+      <select disabled value={value || "-"} onChange={() => {}} className={`w-full min-w-0 ${SEL}`}>
         {options.map((v) => <option key={v} value={v}>{v}</option>)}
       </select>
     </div>
@@ -658,29 +643,26 @@ function OpticalPrescriptionCard({ visit, udid }: { visit: any; udid: string }) 
 
   const SECTION_LABEL = "col-span-2 sm:col-span-5 text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-widest";
 
-  const eyeFields = (val: RxFields, setVal: (v: RxFields) => void) => (
+  const eyeFields = (val: RxFields) => (
     <div className="grid grid-cols-2 sm:grid-cols-[88px_88px_64px_20px_80px] gap-x-2 gap-y-2 items-end">
       <p className={SECTION_LABEL}>Distance</p>
-      {signedSelect("Sph",       val.sph,     (v) => setVal({ ...val, sph: v }),     OPT_SPH_MAGS)}
-      {signedSelect("Cyl",       val.cyl,     (v) => setVal({ ...val, cyl: v }),     OPT_CYL_MAGS)}
-      {axisSelect("Axis°",       val.axis,    (v) => setVal({ ...val, axis: v }))}
+      {signedSelect("Sph",       val.sph,     OPT_SPH_MAGS)}
+      {signedSelect("Cyl",       val.cyl,     OPT_CYL_MAGS)}
+      {axisSelect("Axis°",       val.axis)}
       <div aria-hidden="true" className="hidden sm:block" />
-      {vaSelect("Resulting VA",  val.va,      (v) => setVal({ ...val, va: v }))}
+      {vaSelect("Resulting VA",  val.va)}
       <p className={`${SECTION_LABEL} mt-2`}>Near</p>
-      {signedSelect("Sph (Add)", val.nearSph, (v) => setVal({ ...val, nearSph: v }), OPT_ADD_MAGS)}
-      {vaSelect("Resulting NV",  val.nearVa,  (v) => setVal({ ...val, nearVa: v }), OPT_VA_NEAR, "col-start-2 sm:col-start-5")}
+      {signedSelect("Sph (Add)", val.nearSph, OPT_ADD_MAGS)}
+      {vaSelect("Resulting NV",  val.nearVa,  OPT_VA_NEAR, "col-start-2 sm:col-start-5")}
     </div>
   );
 
   return (
     <Card>
-      <div className="flex items-center justify-between mb-3">
-        <p className="text-sm font-medium text-[var(--color-ink-700)]">Optical Prescription</p>
-        <SaveIndicator state={state} />
-      </div>
+      <p className="text-sm font-medium text-[var(--color-ink-700)] mb-3">Optical Prescription</p>
       <OptEyeColumns>
-        {eyeFields(re, setRe)}
-        {eyeFields(le, setLe)}
+        {eyeFields(re)}
+        {eyeFields(le)}
       </OptEyeColumns>
     </Card>
   );
