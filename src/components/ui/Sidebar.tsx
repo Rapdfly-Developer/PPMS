@@ -191,10 +191,10 @@ export function Sidebar({ role, name, permissions, licenseActive = true }: { rol
           </div>
           <div className="min-w-0">
             <p className="text-xs font-semibold text-[#EDF9F6] truncate leading-tight">{name}</p>
-            <p className="mt-0.5 flex items-center gap-1.5 text-[10px] text-[#7FAAA3] truncate">
-              <span className="size-1.5 rounded-full bg-[#34D399] shadow-[0_0_6px_rgba(52,211,153,0.8)]" />
-              {ROLE_LABEL[role] ?? role}
-            </p>
+            <div className="mt-0.5 flex items-center gap-1.5 min-w-0">
+              <span className="size-1.5 shrink-0 rounded-full bg-[#34D399] shadow-[0_0_6px_rgba(52,211,153,0.8)]" />
+              <span className="text-[10px] text-[#7FAAA3] truncate">{ROLE_LABEL[role] ?? role}</span>
+            </div>
           </div>
         </div>
       </div>
