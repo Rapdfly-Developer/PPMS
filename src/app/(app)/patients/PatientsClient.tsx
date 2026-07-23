@@ -535,9 +535,7 @@ export function PatientsClient({
                 <div className="w-32 shrink-0">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">UHID</span>
                 </div>
-                <div className="w-36 shrink-0">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">Hospital</span>
-                </div>
+
                 <div className="w-28 shrink-0">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">Last Visit</span>
                 </div>
@@ -613,11 +611,6 @@ export function PatientsClient({
                         <span className="font-mono text-[10px] bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded">
                           {p.uhid || <span className="text-[var(--color-ink-300)]">—</span>}
                         </span>
-                      </div>
-
-                      {/* Hospital — fixed width */}
-                      <div className="hidden xl:block w-36 shrink-0">
-                        <p className="text-sm text-[var(--color-ink-700)] truncate">{p.hospitalName || <span className="text-[var(--color-ink-300)]">—</span>}</p>
                       </div>
 
                       {/* Last Visit — fixed width */}
