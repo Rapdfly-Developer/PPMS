@@ -1,39 +1,29 @@
 "use client";
 
-import { useState, useTransition, useRef, useEffect, ReactNode } from "react";
-import { ChevronRight, Printer, FileSignature, CheckCircle2, Download, ChevronDown, X, FileText } from "lucide-react";
-import Link from "next/link";
+import { useState, useTransition, useRef, useEffect } from "react";
+import { ChevronRight, Printer, FileSignature, CheckCircle2, Download, ChevronDown, FileText } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { closeVisit } from "./actions";
 
 function SuccessModal({ udid, onClose }: { udid: string; onClose: () => void }) {
   const router = useRouter();
 
-  const goToProfile = () => {
-    onClose();
-    router.push(`/patients/${udid}`);
-  };
+  useEffect(() => {
+    const t = setTimeout(() => {
+      onClose();
+      router.push(`/patients/${udid}`);
+    }, 1800);
+    return () => clearTimeout(t);
+  }, [udid, onClose, router]);
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/40 backdrop-blur-sm">
-      {/* X button above the card */}
-      <button
-        onClick={onClose}
-        className="mb-3 w-9 h-9 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/35 text-white transition-colors"
-      >
-        <X size={18} />
-      </button>
-
-      {/* Clickable card → patient profile */}
-      <div
-        onClick={goToProfile}
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden cursor-pointer hover:shadow-3xl hover:scale-[1.01] transition-all duration-150 active:scale-[0.99]"
-      >
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden">
         <div className="bg-emerald-600 px-6 py-6 text-white text-center">
           <CheckCircle2 size={40} className="mx-auto mb-2" />
           <h2 className="text-lg font-bold">Consultation Completed</h2>
           <p className="text-sm text-emerald-100 mt-1">EMR has been finalized and signed.</p>
-          <p className="text-xs text-emerald-200 mt-3 opacity-80">Tap to view patient profile →</p>
+          <p className="text-xs text-emerald-200 mt-3 opacity-80">Redirecting to patient profile…</p>
         </div>
       </div>
     </div>
