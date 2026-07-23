@@ -8,11 +8,12 @@ import {
   ChevronRight, ChevronDown, Hospital, Stethoscope, FileText,
   CheckCircle2, Clock, AlertCircle, Filter, ClipboardCheck,
   ArrowRightLeft, X, Download, Loader2,
-  Pill, Activity, Paperclip, Upload, Camera,
+  Pill, FlaskConical, Activity, Microscope, Eye, Paperclip, Upload, Camera,
 } from "lucide-react";
 import { EmrViewerButton, VisitDownloadButton } from "./EmrViewerModal";
 import { VisitSummaryTabs } from "./VisitSummaryTabs";
 import { transferPatient } from "../actions";
+import { attachResult } from "../../emr/[udid]/actions";
 export { TimeStampButton } from "./PatientTimeline";
 
 /* ── Transfer Button ────────────────────────────────────────────────────────── */
@@ -405,6 +406,65 @@ function ResultLightbox({ url, onClose }: { url: string; onClose: () => void }) 
   );
 }
 
+/* ── Upload result button for investigation orders ───────────────────────────── */
+function UploadResultButton({ orderId, udid }: { orderId: string; udid: string }) {
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState("");
+  const [, startTransition] = useTransition();
+  const fileRef = useRef<HTMLInputElement>(null);
+  const cameraRef = useRef<HTMLInputElement>(null);
+
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    setError("");
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/uploads", { method: "POST", body: fd });
+      const json = await res.json();
+      if (!res.ok || json.error) throw new Error(json.error ?? "Upload failed");
+      startTransition(async () => {
+        const result = await attachResult(orderId, udid, json.url);
+        if (result?.error) setError(result.error);
+      });
+    } catch (err: any) {
+      setError(err.message ?? "Upload failed");
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = "";
+      if (cameraRef.current) cameraRef.current.value = "";
+    }
+  };
+
+  return (
+    <div className="flex flex-col items-end gap-1 shrink-0">
+      <input ref={fileRef} type="file" accept=".pdf,.jpg,.jpeg,.png,.docx" className="hidden" onChange={handleFile} />
+      <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFile} />
+      <div className="flex items-center gap-1">
+        <button
+          type="button"
+          disabled={uploading}
+          onClick={() => fileRef.current?.click()}
+          className="flex items-center gap-1 text-[11px] font-medium px-2 py-1.5 rounded-lg border border-dashed border-[var(--color-primary-400)] text-[var(--color-primary-600)] hover:bg-[var(--color-primary-50)] disabled:opacity-50 transition-colors"
+        >
+          {uploading ? <Upload size={12} className="animate-pulse" /> : <Upload size={12} />}
+          {uploading ? "Uploading…" : "Add File"}
+        </button>
+        <button
+          type="button"
+          disabled={uploading}
+          onClick={() => cameraRef.current?.click()}
+          className="flex items-center gap-1 text-[11px] font-medium px-2 py-1.5 rounded-lg border border-dashed border-amber-400 text-amber-600 hover:bg-amber-50 disabled:opacity-50 transition-colors"
+        >
+          <Camera size={12} /> Camera
+        </button>
+      </div>
+      {error && <p className="text-[10px] text-red-600">{error}</p>}
+    </div>
+  );
+}
 
 /* ── Last Visit Summary section ─────────────────────────────────────────────── */
 function LastVisitSummarySection({ summary, udid }: { summary: LastVisitSummary; udid: string }) {
@@ -509,6 +569,87 @@ function LastVisitSummarySection({ summary, udid }: { summary: LastVisitSummary;
         </div>
       </div>
 
+      {/* ── Investigation Orders (timeline with date groups) ── */}
+      {summary.investigations.length > 0 && (() => {
+        /* group by calendar date */
+        const groups: { date: string; label: string; items: typeof summary.investigations }[] = [];
+        for (const inv of [...summary.investigations].reverse()) {
+          const d = inv.createdAt.slice(0, 10);
+          const existing = groups.find((g) => g.date === d);
+          if (existing) existing.items.push(inv);
+          else groups.push({ date: d, label: format(new Date(inv.createdAt), "dd MMM yyyy"), items: [inv] });
+        }
+        return (
+          <div className="rounded-xl border border-[var(--color-border)] bg-white overflow-hidden">
+            <div className="px-4 py-3 border-b border-[var(--color-border)] flex items-center gap-2">
+              <Microscope size={14} className="text-[var(--color-primary-600)]" />
+              <p className="text-sm font-semibold text-[var(--color-ink-800)]">Previous Investigation Orders</p>
+              <span className="ml-auto text-[10px] font-semibold px-2 py-0.5 rounded-full bg-violet-100 text-violet-700">
+                {summary.investigations.length} pending
+              </span>
+            </div>
+            <div className="px-4 py-4 space-y-4 max-h-[420px] overflow-y-auto">
+              {groups.map((group) => (
+                <div key={group.date}>
+                  {/* date header */}
+                  <p className="text-[11px] font-semibold text-[var(--color-ink-400)] mb-2">{group.label}</p>
+                  <ul className="space-y-0">
+                    {group.items.map((inv, idx) => {
+                      const catKey = (inv.category ?? "").toLowerCase();
+                      const palette =
+                        catKey.includes("imag") ? { dot: "bg-violet-100", icon: "text-violet-600", badge: "bg-violet-100 text-violet-700" } :
+                        catKey.includes("lab")  ? { dot: "bg-cyan-100",   icon: "text-cyan-600",   badge: "bg-cyan-100 text-cyan-700"   } :
+                        catKey.includes("path") ? { dot: "bg-rose-100",   icon: "text-rose-600",   badge: "bg-rose-100 text-rose-700"   } :
+                        catKey.includes("proc") ? { dot: "bg-amber-100",  icon: "text-amber-600",  badge: "bg-amber-100 text-amber-700" } :
+                                                  { dot: "bg-teal-100",   icon: "text-teal-600",   badge: "bg-teal-100 text-teal-700"   };
+                      const isLast = idx === group.items.length - 1;
+                      return (
+                        <li key={inv.id} className="flex gap-3">
+                          {/* rail */}
+                          <div className="flex flex-col items-center shrink-0">
+                            <div className={`w-8 h-8 rounded-full ${palette.dot} flex items-center justify-center z-10`}>
+                              <FlaskConical size={13} className={palette.icon} />
+                            </div>
+                            {!isLast && <div className="w-0.5 flex-1 my-1 bg-slate-100" />}
+                          </div>
+                          {/* card */}
+                          <div className={`flex-1 min-w-0 bg-slate-50 rounded-xl border border-slate-100 px-3 py-2.5 flex items-center gap-3 hover:bg-white transition-colors ${isLast ? "mb-0" : "mb-2"}`}>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${palette.badge}`}>
+                                  {inv.category || "Test"}
+                                </span>
+                                <p className="text-sm font-semibold text-[var(--color-ink-800)]">{inv.testName}</p>
+                              </div>
+                              <p className="text-[11px] text-[var(--color-ink-400)] mt-0.5">
+                                {[inv.laterality, inv.priority, inv.status.replace(/_/g, " ")].filter(Boolean).join(" · ")}
+                                {inv.notes && <span className="italic"> · {inv.notes}</span>}
+                              </p>
+                            </div>
+                            <p className="shrink-0 text-[10px] text-[var(--color-ink-400)]">
+                              {format(new Date(inv.createdAt), "h:mm a")}
+                            </p>
+                            {inv.resultRef ? (
+                              <button
+                                onClick={() => setLightboxUrl(inv.resultRef)}
+                                className="shrink-0 inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-1.5 rounded-lg border border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-100 transition-colors"
+                              >
+                                <Eye size={12} /> View
+                              </button>
+                            ) : (
+                              <UploadResultButton orderId={inv.id} udid={udid} />
+                            )}
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
 
       {lightboxUrl && <ResultLightbox url={lightboxUrl} onClose={() => setLightboxUrl(null)} />}
     </div>
