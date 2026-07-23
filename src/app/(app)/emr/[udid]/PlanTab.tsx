@@ -13,6 +13,7 @@ import {
   getTreatmentPresets, matchPresets, mergeMeds,
   getApplied, setApplied, clearApplied,
   getDiagnosisSnapshot, setDiagnosisSnapshot,
+  getDismissedPresets, addDismissedPreset, clearDismissedPresets,
 } from "./treatmentPresets";
 import { type MedEntry, searchMedications, categoryColor } from "@/lib/ophthalmic-medications";
 import { VA_SNELLEN_VALUES } from "@/lib/constants";
@@ -466,37 +467,45 @@ function PresetSelectDialog({
 /* ── PlanTab ─────────────────────────────────────────────────────────────── */
 
 export function PlanTab({ visit, udid, patientSex }: { visit: any; udid: string; patientSex: string }) {
-  const [presetMatches, setPresetMatches]   = useState<PresetMatch[]>([]);
-  const [appliedPresets, setAppliedPresets] = useState<AppliedPreset[]>([]);
-  const [diagChanged, setDiagChanged]       = useState(false);
-  const [dismissed, setDismissed]           = useState(false);
-  const [showDialog, setShowDialog]         = useState(false);
-  const [applying, startApply]              = useTransition();
+  const [presetMatches, setPresetMatches]     = useState<PresetMatch[]>([]);
+  const [appliedPresets, setAppliedPresets]   = useState<AppliedPreset[]>([]);
+  const [dismissedIds, setDismissedIds]       = useState<string[]>([]);
+  const [diagChanged, setDiagChanged]         = useState(false);
+  const [showDialog, setShowDialog]           = useState(false);
+  const [applying, startApply]                = useTransition();
 
   const diagnoses: { icd10Code: string; description: string }[] = visit.diagnoses ?? [];
   const medications: any[] = visit.medications ?? [];
 
-  // On mount: load presets, detect matches, check if diagnoses changed since last apply
+  // Stable key — re-runs effect whenever the diagnosis list changes
+  const diagKey = useMemo(
+    () => diagnoses.map((d) => d.icd10Code).sort().join(","),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [diagnoses.map((d) => d.icd10Code).sort().join(",")],
+  );
+
   useEffect(() => {
-    const allPresets  = getTreatmentPresets();
-    const matches     = matchPresets(diagnoses, allPresets);
+    const allPresets     = getTreatmentPresets();
+    const matches        = matchPresets(diagnoses, allPresets);
     setPresetMatches(matches);
 
     const alreadyApplied = getApplied(visit.id);
     setAppliedPresets(alreadyApplied);
 
+    const dismissed = getDismissedPresets(visit.id);
+    setDismissedIds(dismissed);
+
     if (alreadyApplied.length > 0) {
-      const snapshot     = getDiagnosisSnapshot(visit.id);
-      const currentCodes = [...diagnoses.map((d) => d.icd10Code)].sort().join(",");
-      if (snapshot.sort().join(",") !== currentCodes) {
+      const snapshot = getDiagnosisSnapshot(visit.id);
+      if ([...snapshot].sort().join(",") !== diagKey) {
         setDiagChanged(true);
       }
     }
 
-    // Update snapshot to current diagnoses
     setDiagnosisSnapshot(visit.id, diagnoses.map((d) => d.icd10Code));
+  // diagKey changing (new/removed diagnosis) is the only external trigger
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [diagKey]);
 
   const handleApplyPresets = (selected: TreatmentPreset[]) => {
     startApply(async () => {
@@ -520,11 +529,12 @@ export function PlanTab({ visit, udid, patientSex }: { visit: any; udid: string;
       }
 
       // Persist applied state
+      const allMatches = [...presetMatches];
       const records: AppliedPreset[] = selected.map((p) => ({
-        presetId:     p.id,
-        presetName:   p.name,
-        appliedAt:    new Date().toISOString(),
-        diagnosisDesc: presetMatches.find((m) => m.preset.id === p.id)?.diagnosisDesc ?? "",
+        presetId:      p.id,
+        presetName:    p.name,
+        appliedAt:     new Date().toISOString(),
+        diagnosisDesc: allMatches.find((m) => m.preset.id === p.id)?.diagnosisDesc ?? "",
       }));
       setApplied(visit.id, records);
       setAppliedPresets(records);
@@ -534,18 +544,26 @@ export function PlanTab({ visit, udid, patientSex }: { visit: any; udid: string;
     });
   };
 
-  const handleRemovePreset = () => {
-    clearApplied(visit.id);
-    setAppliedPresets([]);
-    setDiagChanged(false);
-    setDismissed(false);
+  const handleDismissPreset = (presetId: string) => {
+    addDismissedPreset(visit.id, presetId);
+    setDismissedIds((prev) => [...prev, presetId]);
   };
 
+  const handleRemovePreset = () => {
+    clearApplied(visit.id);
+    clearDismissedPresets(visit.id);
+    setAppliedPresets([]);
+    setDismissedIds([]);
+    setDiagChanged(false);
+  };
+
+  // Only show presets that haven't been individually dismissed
+  const visibleMatches = presetMatches.filter((m) => !dismissedIds.includes(m.preset.id));
+
   const showAvailableBanner =
-    !dismissed &&
     appliedPresets.length === 0 &&
     !diagChanged &&
-    presetMatches.length > 0;
+    visibleMatches.length > 0;
 
   return (
     <div className="flex flex-col gap-5">
@@ -560,9 +578,9 @@ export function PlanTab({ visit, udid, patientSex }: { visit: any; udid: string;
       {/* Preset available — offer to apply */}
       {showAvailableBanner && (
         <PresetAvailableBanner
-          matches={presetMatches}
-          onApply={() => presetMatches.length === 1 ? handleApplyPresets([presetMatches[0].preset]) : setShowDialog(true)}
-          onDismiss={() => setDismissed(true)}
+          matches={visibleMatches}
+          onApply={() => visibleMatches.length === 1 ? handleApplyPresets([visibleMatches[0].preset]) : setShowDialog(true)}
+          onDismiss={() => visibleMatches.forEach((m) => handleDismissPreset(m.preset.id))}
         />
       )}
 
@@ -581,7 +599,7 @@ export function PlanTab({ visit, udid, patientSex }: { visit: any; udid: string;
 
       {showDialog && (
         <PresetSelectDialog
-          matches={presetMatches}
+          matches={visibleMatches.length > 0 ? visibleMatches : presetMatches}
           onApply={handleApplyPresets}
           onClose={() => setShowDialog(false)}
           applying={applying}

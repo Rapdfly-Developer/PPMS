@@ -149,6 +149,7 @@ export const DEFAULT_TREATMENT_PRESETS: TreatmentPreset[] = [
 const TX_PRESETS_KEY    = "ppms_tx_presets_v1";
 const APPLIED_KEY       = "ppms_tx_applied_v1";
 const DIAG_SNAPSHOT_KEY = "ppms_tx_diag_snapshot_v1";
+const DISMISSED_KEY     = "ppms_tx_dismissed_v1";
 
 export function getTreatmentPresets(): TreatmentPreset[] {
   if (typeof window === "undefined") return DEFAULT_TREATMENT_PRESETS;
@@ -197,6 +198,37 @@ export function clearApplied(visitId: string): void {
     const all = JSON.parse(localStorage.getItem(APPLIED_KEY) ?? "{}");
     delete all[visitId];
     localStorage.setItem(APPLIED_KEY, JSON.stringify(all));
+  } catch {}
+}
+
+/* Dismissed preset IDs — per visitId ──────────────────────────────────── */
+
+export function getDismissedPresets(visitId: string): string[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const all = JSON.parse(localStorage.getItem(DISMISSED_KEY) ?? "{}");
+    return all[visitId] ?? [];
+  } catch {
+    return [];
+  }
+}
+
+export function addDismissedPreset(visitId: string, presetId: string): void {
+  if (typeof window === "undefined") return;
+  try {
+    const all = JSON.parse(localStorage.getItem(DISMISSED_KEY) ?? "{}");
+    const existing: string[] = all[visitId] ?? [];
+    if (!existing.includes(presetId)) all[visitId] = [...existing, presetId];
+    localStorage.setItem(DISMISSED_KEY, JSON.stringify(all));
+  } catch {}
+}
+
+export function clearDismissedPresets(visitId: string): void {
+  if (typeof window === "undefined") return;
+  try {
+    const all = JSON.parse(localStorage.getItem(DISMISSED_KEY) ?? "{}");
+    delete all[visitId];
+    localStorage.setItem(DISMISSED_KEY, JSON.stringify(all));
   } catch {}
 }
 
