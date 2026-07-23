@@ -820,7 +820,7 @@ function IOPCard({ visit, udid, editable, priorVisits }: { visit: any; udid: str
       </div>
 
       {showHistory && priorIOPRows.length > 0 && (
-        <div className="mt-4 rounded-xl border border-[#B2DEDA] bg-[#EEF8F7] overflow-hidden">
+        <div className="mt-4 rounded-xl border border-[#B2DEDA] bg-[#EEF8F7] overflow-hidden w-fit">
           <div className="px-4 pt-3 pb-2 border-b border-[#B2DEDA]">
             <p className="text-[11px] font-bold text-[#0F766E] uppercase tracking-widest">Prior IOP Readings</p>
           </div>
