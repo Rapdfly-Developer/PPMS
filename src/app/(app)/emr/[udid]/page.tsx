@@ -247,33 +247,33 @@ export default async function PatientDetailedEMR({
       <div
         className="relative rounded-2xl mb-5 overflow-hidden"
         style={{
-          background: "linear-gradient(135deg, #FFFFFF 0%, #F0F9FF 50%, #F0FDFA 100%)",
-          boxShadow: "0 4px 24px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.04)",
-          border: "1px solid rgba(20,184,166,0.15)",
+          background: "linear-gradient(135deg, #0D1F3C 0%, #0A2840 55%, #072D3C 100%)",
+          boxShadow: "0 8px 32px rgba(0,0,0,0.28), 0 2px 8px rgba(0,0,0,0.18), inset 0 1px 0 rgba(99,212,240,0.08)",
+          border: "1px solid rgba(56,189,248,0.12)",
         }}
       >
         {/* Healthcare background decoration — pointer-events-none, purely visual */}
         <svg
           aria-hidden="true"
           className="absolute inset-0 w-full h-full pointer-events-none"
-          style={{ opacity: 0.035 }}
+          style={{ opacity: 0.055 }}
           xmlns="http://www.w3.org/2000/svg"
         >
           <defs>
             {/* Dot grid */}
             <pattern id="ph-dots" x="0" y="0" width="24" height="24" patternUnits="userSpaceOnUse">
-              <circle cx="2" cy="2" r="1.2" fill="#0D9488" />
+              <circle cx="2" cy="2" r="1.2" fill="#38BDF8" />
             </pattern>
             {/* Medical cross */}
             <pattern id="ph-cross" x="4" y="4" width="64" height="64" patternUnits="userSpaceOnUse">
-              <rect x="29" y="22" width="6" height="20" rx="1" fill="#0EA5E9" />
-              <rect x="22" y="29" width="20" height="6" rx="1" fill="#0EA5E9" />
+              <rect x="29" y="22" width="6" height="20" rx="1" fill="#2DD4BF" />
+              <rect x="22" y="29" width="20" height="6" rx="1" fill="#2DD4BF" />
             </pattern>
             {/* ECG heartbeat tile */}
             <pattern id="ph-ecg" x="0" y="0" width="160" height="48" patternUnits="userSpaceOnUse">
               <polyline
                 points="0,24 20,24 28,8 36,40 44,16 52,32 60,24 80,24 88,8 96,40 104,16 112,32 120,24 160,24"
-                fill="none" stroke="#0D9488" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
+                fill="none" stroke="#38BDF8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
               />
             </pattern>
           </defs>
@@ -295,7 +295,7 @@ export default async function PatientDetailedEMR({
               {/* Avatar */}
               <div className="shrink-0">
                 <div className="relative">
-                  <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full overflow-hidden ring-[3px] ring-[var(--color-primary-300)] shadow-md bg-[var(--color-primary-100)] flex items-center justify-center">
+                  <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full overflow-hidden ring-[3px] ring-sky-400/40 shadow-lg bg-sky-900/50 flex items-center justify-center">
                     {patient.photoUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
@@ -304,12 +304,12 @@ export default async function PatientDetailedEMR({
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <User size={26} className="text-[var(--color-primary-400)]" />
+                      <User size={26} className="text-sky-300/70" />
                     )}
                   </div>
                   {activeVisit && (
-                    <span className={`absolute bottom-0.5 right-0.5 w-3.5 h-3.5 rounded-full border-2 border-[var(--color-surface-card)] shadow-sm ${
-                      activeVisit.status === "IN_PROGRESS" ? "bg-emerald-500" : "bg-slate-400"
+                    <span className={`absolute bottom-0.5 right-0.5 w-3.5 h-3.5 rounded-full border-2 shadow-sm ${
+                      activeVisit.status === "IN_PROGRESS" ? "bg-emerald-400 border-[#0D1F3C]" : "bg-slate-500 border-[#0D1F3C]"
                     }`} />
                   )}
                 </div>
@@ -319,19 +319,19 @@ export default async function PatientDetailedEMR({
               <div className="flex-1 min-w-0">
                 {/* Name row */}
                 <div className="flex flex-wrap items-center gap-1.5 mb-2">
-                  <h2 className="text-lg sm:text-xl font-bold text-[var(--color-ink-900)] leading-tight">{patient.name}</h2>
-                  <span className="text-sm text-[var(--color-ink-400)]">{patient.age}y · {patient.sex.charAt(0).toUpperCase()}</span>
+                  <h2 className="text-lg sm:text-xl font-bold text-white leading-tight">{patient.name}</h2>
+                  <span className="text-sm text-white/55">{patient.age}y · {patient.sex.charAt(0).toUpperCase()}</span>
                   {patient.category !== "GENERAL" && (
                     <span className={`text-[10px] font-bold tracking-wide px-2 py-0.5 rounded-full ${
-                      patient.category === "BPL"        ? "bg-amber-100 text-amber-700" :
-                      patient.category === "SUBSIDISED" ? "bg-sky-100 text-sky-700" :
-                      patient.category === "ECHS"       ? "bg-green-100 text-green-700" :
-                      patient.category === "INSURANCE"  ? "bg-violet-100 text-violet-700" :
-                      "bg-slate-100 text-slate-600"
+                      patient.category === "BPL"        ? "bg-amber-400/20 text-amber-300" :
+                      patient.category === "SUBSIDISED" ? "bg-sky-400/20 text-sky-300" :
+                      patient.category === "ECHS"       ? "bg-green-400/20 text-green-300" :
+                      patient.category === "INSURANCE"  ? "bg-violet-400/20 text-violet-300" :
+                      "bg-white/15 text-white/70"
                     }`}>{patient.category}</span>
                   )}
                   {latestDiagnosis && (
-                    <span className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-[var(--color-primary-50)] text-[var(--color-primary-700)] border border-[var(--color-primary-200)]">
+                    <span className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-teal-400/20 text-teal-200 border border-teal-400/30">
                       {latestDiagnosis.description}{latestDiagnosis.laterality ? ` · ${latestDiagnosis.laterality}` : ""}
                     </span>
                   )}
@@ -339,35 +339,35 @@ export default async function PatientDetailedEMR({
 
                 {/* Info chips */}
                 <div className="flex flex-wrap gap-1.5">
-                  <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-[var(--color-primary-50)] text-[var(--color-primary-700)] border border-[var(--color-primary-200)] font-mono font-semibold">
+                  <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-sky-400/15 text-sky-200 border border-sky-400/25 font-mono font-semibold">
                     <Hash size={10} />{patient.udid ?? "—"}
                   </span>
                   {patient.mobile && (
-                    <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-[var(--color-surface-sunken)] text-[var(--color-ink-600)] border border-[var(--color-border)]">
+                    <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-white/8 text-white/70 border border-white/12">
                       <Phone size={10} />{patient.mobile}
                     </span>
                   )}
                   {patient.registeredAt && (
-                    <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-[var(--color-surface-sunken)] text-[var(--color-ink-600)] border border-[var(--color-border)]">
+                    <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-white/8 text-white/70 border border-white/12">
                       <Building2 size={10} />{patient.registeredAt.name}
                     </span>
                   )}
                   {doctorName && (
-                    <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-[var(--color-surface-sunken)] text-[var(--color-ink-600)] border border-[var(--color-border)]">
+                    <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-white/8 text-white/70 border border-white/12">
                       <Stethoscope size={10} />Dr. {doctorName}
                     </span>
                   )}
                   {priorVisits[0] && (
-                    <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-[var(--color-surface-sunken)] text-[var(--color-ink-600)] border border-[var(--color-border)]">
+                    <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-white/8 text-white/70 border border-white/12">
                       <Calendar size={10} />Last: {format(new Date(priorVisits[0].date), "d MMM yyyy")}
                     </span>
                   )}
                   {activeVisit?.generalExam?.nkda ? (
-                    <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-emerald-400/15 text-emerald-300 border border-emerald-400/25">
                       <CheckCircle2 size={10} />NKDA
                     </span>
                   ) : activeVisit?.generalExam?.allergies ? (
-                    <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
+                    <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-amber-400/15 text-amber-300 border border-amber-400/25">
                       <AlertTriangle size={10} />{activeVisit.generalExam.allergies}
                     </span>
                   ) : null}
@@ -375,7 +375,7 @@ export default async function PatientDetailedEMR({
 
                 {/* Chief complaint */}
                 {activeVisit?.generalExam?.chiefComplaint && (
-                  <p className="text-[11px] italic text-[var(--color-ink-400)] mt-2">
+                  <p className="text-[11px] italic text-white/40 mt-2">
                     CC: {activeVisit.generalExam.chiefComplaint}
                   </p>
                 )}
@@ -385,22 +385,24 @@ export default async function PatientDetailedEMR({
             {/* Right: active visit status panel */}
             {activeVisit && (
               <div className="shrink-0 lg:w-52 xl:w-56">
-                <div className="rounded-xl border border-[var(--color-primary-200)] bg-[var(--color-primary-50)] p-3 h-full">
+                <div className="rounded-xl border border-white/12 bg-white/8 p-3 h-full">
                   <div className="flex items-center gap-2 mb-2.5">
                     <span className={`w-2 h-2 rounded-full shrink-0 ${
-                      activeVisit.status === "IN_PROGRESS" ? "bg-emerald-500" : "bg-slate-400"
+                      activeVisit.status === "IN_PROGRESS" ? "bg-emerald-400" : "bg-slate-500"
                     }`} />
-                    <span className="text-xs font-bold text-[var(--color-primary-700)] uppercase tracking-wide">
+                    <span className={`text-xs font-bold uppercase tracking-wide ${
+                      activeVisit.status === "IN_PROGRESS" ? "text-emerald-400" : "text-white/50"
+                    }`}>
                       {activeVisit.status === "IN_PROGRESS" ? "Active Visit" : "Closed Visit"}
                     </span>
                   </div>
                   <div className="space-y-1">
-                    <div className="text-xs font-semibold text-[var(--color-ink-800)]">{activeVisit.visitType}</div>
-                    <div className="text-[11px] text-[var(--color-ink-400)]">
+                    <div className="text-xs font-semibold text-white">{activeVisit.visitType}</div>
+                    <div className="text-[11px] text-white/50">
                       {format(new Date(activeVisit.date), "EEE, d MMM yyyy")}
                     </div>
                     {activeVisit.appointment?.dateTime && (
-                      <div className="flex items-center gap-1 text-[11px] text-[var(--color-ink-400)]">
+                      <div className="flex items-center gap-1 text-[11px] text-white/50">
                         <Clock size={10} className="shrink-0" />
                         {new Date(activeVisit.appointment.dateTime).toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit", hour12: true, timeZone: "Asia/Kolkata" })}
                       </div>
