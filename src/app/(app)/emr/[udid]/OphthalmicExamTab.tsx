@@ -947,7 +947,6 @@ function SegmentEyeInput({
             </span>
             <span className="text-[var(--color-ink-700)]">
               {h.value}
-              {h.hospitalName && <span className="text-[var(--color-ink-400)]"> · {h.hospitalName}</span>}
             </span>
           </li>
         ))}
