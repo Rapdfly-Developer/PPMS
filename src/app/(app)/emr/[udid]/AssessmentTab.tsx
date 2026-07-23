@@ -242,7 +242,7 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
                   <li key={m.code}>
                     <button
                       onClick={() => add(m.code, m.description)}
-                      className="w-full text-left px-3.5 py-2.5 text-sm hover:bg-[var(--color-primary-50)] flex items-center justify-between"
+                      className="w-full text-left px-3.5 py-2.5 text-sm text-[var(--color-ink-800)] hover:bg-[var(--color-surface-sunken)] flex items-center justify-between"
                     >
                       <span>{m.description}</span>
                       <span className="text-xs font-mono text-[var(--color-ink-400)]">{m.code}</span>
