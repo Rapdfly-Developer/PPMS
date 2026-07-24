@@ -1056,7 +1056,7 @@ export default function LoginPage() {
               </p>
 
               {/* Brand motto */}
-              <p className="lp-a2 mb-9" style={{
+              <p className="lp-a2 mb-5" style={{
                 fontSize: "12px", fontWeight: 700, letterSpacing: "0.16em",
                 color: "#0F766E", textTransform: "uppercase",
               }}>
@@ -1064,7 +1064,7 @@ export default function LoginPage() {
               </p>
 
               {/* Feature grid — 2 columns */}
-              <div className="lp-a3 grid grid-cols-1 sm:grid-cols-2 gap-x-7 gap-y-4">
+              <div className="lp-a3 grid grid-cols-1 sm:grid-cols-2 gap-x-7 gap-y-3">
                 {FEATURES.map((f, i) => (
                   <div key={i} className="lp-feat flex items-start gap-3 rounded-2xl px-3 py-2.5 -mx-3 cursor-default">
                     <div className="shrink-0 w-9 h-9 rounded-xl flex items-center justify-center" style={{
@@ -1079,6 +1079,25 @@ export default function LoginPage() {
                       <p style={{ fontSize: "13.5px", fontWeight: 700, color: "#1E293B", letterSpacing: "-0.01em" }}>{f.label}</p>
                       <p style={{ fontSize: "11.5px", color: "#94A3B8", marginTop: "1px" }}>{f.desc}</p>
                     </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Inline stats strip — fills vertical space with live proof points */}
+              <div className="lp-a4 mt-5 grid grid-cols-3 gap-2.5">
+                {[
+                  { v: "500+",  l: "Hospitals",       col: "#0F766E", bg: "rgba(240,253,250,.85)" },
+                  { v: "12K+",  l: "Active Doctors",  col: "#1E40AF", bg: "rgba(239,246,255,.85)" },
+                  { v: "2M+",   l: "Patient Records", col: "#7C3AED", bg: "rgba(245,243,255,.85)" },
+                ].map((s, i) => (
+                  <div key={i} className="rounded-2xl px-3 py-2.5 flex flex-col items-center gap-0.5" style={{
+                    background: s.bg,
+                    backdropFilter: "blur(10px)",
+                    border: "1px solid rgba(255,255,255,.7)",
+                    boxShadow: "0 2px 12px rgba(15,23,42,.05)",
+                  }}>
+                    <p style={{ fontSize: "18px", fontWeight: 900, color: s.col, letterSpacing: "-0.02em", lineHeight: 1.1 }}>{s.v}</p>
+                    <p style={{ fontSize: "9.5px", fontWeight: 600, color: "#64748B", textAlign: "center" }}>{s.l}</p>
                   </div>
                 ))}
               </div>
@@ -1108,7 +1127,8 @@ export default function LoginPage() {
         </div>
 
         {/* ══ RIGHT PANEL — Frosted glass card ══════════════════════════════ */}
-        <div className="w-full lg:w-[500px] xl:w-[540px] shrink-0 flex flex-col items-center justify-start lg:justify-center pt-6 pb-4 px-4 lg:py-4 lg:px-6 xl:pr-14 overflow-y-auto">
+        <div className="w-full lg:w-[500px] xl:w-[540px] shrink-0 flex flex-col items-center justify-start lg:justify-center pt-6 pb-4 px-4 lg:py-4 lg:px-6 xl:pr-14 overflow-y-auto"
+          style={{ background: "linear-gradient(180deg,rgba(255,255,255,.32) 0%,rgba(248,250,252,.18) 100%)", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)", borderLeft: "1px solid rgba(255,255,255,.52)" }}>
 
           {/* Mobile hero — centered logo + concise headline (below lg only) */}
           <div className="lg:hidden lp-a0 shrink-0 flex flex-col items-center text-center mb-6">
@@ -1137,7 +1157,7 @@ export default function LoginPage() {
               WebkitBackdropFilter: "blur(28px)",
               borderRadius: "28px",
               border: "1px solid rgba(255,255,255,.72)",
-              boxShadow: "0 32px 80px rgba(15,23,42,.1), 0 8px 24px rgba(15,23,42,.06), inset 0 1px 0 rgba(255,255,255,.96)",
+              boxShadow: "0 40px 100px rgba(15,23,42,.2), 0 16px 40px rgba(15,23,42,.1), 0 4px 10px rgba(15,23,42,.06), inset 0 1px 0 rgba(255,255,255,.98)",
               overflow: "hidden",
               position: "relative",
             }}
@@ -1145,10 +1165,10 @@ export default function LoginPage() {
             {/* Animated top edge */}
             <div className="lp-border-glow" style={{ height: "2px", background: "linear-gradient(90deg,transparent,#14B8A6 30%,#0F766E 50%,#14B8A6 70%,transparent)" }} />
 
-            <div className="px-8 py-7">
+            <div className="px-7 py-5">
 
               {/* Welcome */}
-              <div className="text-center mb-6">
+              <div className="text-center mb-4">
                 <div className="flex items-center justify-center gap-2.5 mb-2">
                   {/* Shield */}
                   <div className="lp-shield-anim w-8 h-8 rounded-xl flex items-center justify-center"
@@ -1163,7 +1183,7 @@ export default function LoginPage() {
               </div>
 
               {/* ── Segmented tab control ── */}
-              <div className="relative flex rounded-2xl p-1 mb-5" style={{ background: "#F1F5F9" }}>
+              <div className="relative flex rounded-2xl p-1 mb-3" style={{ background: "#F1F5F9" }}>
                 {/* Sliding pill */}
                 <div className="lp-tab-pill absolute top-1 bottom-1 rounded-[14px]" style={{
                   left: tab === "password" ? "4px" : "calc(50%)",
@@ -1195,7 +1215,7 @@ export default function LoginPage() {
                     setFieldErrors(errs);
                     if (Object.keys(errs).length > 0) e.preventDefault();
                   }}
-                  className="flex flex-col gap-5"
+                  className="flex flex-col gap-4"
                 >
                   <div className="lp-f1">
                     <FloatingInput
