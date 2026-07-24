@@ -431,20 +431,33 @@ function LastVisitSummarySection({ summary }: { summary: LastVisitSummary }) {
           {summary.medications.length > 0 && (
             <div>
               <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)] mb-1.5">Medications</p>
-              <div className="space-y-1.5">
-                {summary.medications.map((m) => (
-                  <div key={m.id} className="flex items-start gap-2">
-                    <Pill size={12} className="text-[var(--color-primary-400)] mt-0.5 shrink-0" />
-                    <div className="text-xs text-[var(--color-ink-700)]">
-                      <span className="font-semibold">{m.drugName}</span>
-                      {m.dosage && <span className="text-[var(--color-ink-400)]"> · {m.dosage}</span>}
-                      {m.frequency && <span className="text-[var(--color-ink-400)]"> · {m.frequency}</span>}
-                      {m.duration && <span className="text-[var(--color-ink-400)]"> · {m.duration}</span>}
-                      {m.instructions && <span className="text-[var(--color-ink-400)]"> — {m.instructions}</span>}
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <table className="w-full text-xs border-collapse">
+                <thead>
+                  <tr className="border-b border-[var(--color-border)]">
+                    <th className="text-left py-1 pr-3 text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-wide w-[35%]">Drug</th>
+                    <th className="text-left py-1 pr-3 text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-wide w-[12%]">Dose</th>
+                    <th className="text-left py-1 pr-3 text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-wide w-[18%]">Frequency</th>
+                    <th className="text-left py-1 pr-3 text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-wide w-[12%]">Duration</th>
+                    <th className="text-left py-1 text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-wide">Instructions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {summary.medications.map((m, i) => (
+                    <tr key={m.id} className={i % 2 === 0 ? "bg-transparent" : "bg-[var(--color-surface-2)]"}>
+                      <td className="py-1.5 pr-3 font-semibold text-[var(--color-ink-700)] align-top">
+                        <span className="flex items-center gap-1.5">
+                          <Pill size={11} className="text-[var(--color-primary-400)] shrink-0" />
+                          {m.drugName}
+                        </span>
+                      </td>
+                      <td className="py-1.5 pr-3 text-[var(--color-ink-500)] align-top">{m.dosage ?? "—"}</td>
+                      <td className="py-1.5 pr-3 text-[var(--color-ink-500)] align-top">{m.frequency ?? "—"}</td>
+                      <td className="py-1.5 pr-3 text-[var(--color-ink-500)] align-top">{m.duration ?? "—"}</td>
+                      <td className="py-1.5 text-[var(--color-ink-500)] align-top">{m.instructions ?? "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
 
