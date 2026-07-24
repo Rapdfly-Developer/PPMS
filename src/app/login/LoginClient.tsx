@@ -6,7 +6,7 @@ import {
   Eye, EyeOff, User, Lock, Phone, AlertCircle, CheckCircle2,
   ShieldCheck, ArrowRight, Loader2, Check, Mail, X, KeyRound, RotateCcw,
   FileText, CalendarDays, CreditCard, UserPlus, Pill, FlaskConical,
-  Building2, Cloud, Zap, Stethoscope, HeartPulse, Sparkles, Users, BedDouble,
+  Building2, Cloud, Zap, Stethoscope, HeartPulse,
 } from "lucide-react";
 
 /* ── Types ─────────────────────────────────────────────────────────────── */
@@ -23,13 +23,24 @@ const TEST_ACCOUNTS = [
   { label: "Supreme",  username: "supreme_hospital", password: "password123" },
 ];
 
-const FEATURES = [
-  { icon: <FileText size={15} />,     label: "Electronic Medical Records", desc: "Complete ophthalmic EMR workflow"  },
-  { icon: <CalendarDays size={15} />, label: "Appointment Scheduling",     desc: "Multi-hospital slot management"    },
-  { icon: <CreditCard size={15} />,   label: "Billing & Insurance",        desc: "Categories, ECHS & insurance"      },
-  { icon: <UserPlus size={15} />,     label: "Patient Registration",       desc: "UDID & UHID auto-assigned"         },
-  { icon: <Pill size={15} />,         label: "Pharmacy Management",        desc: "Prescriptions & dispensing"        },
-  { icon: <FlaskConical size={15} />, label: "Lab Integration",            desc: "Orders, results & reports"         },
+/* Network illustration nodes — positions are % of the 460×300 illustration box,
+   matching the SVG connector endpoints below. */
+const NETWORK_NODES = [
+  { icon: <FileText size={15} />,     label: "EMR",          x: "12%", y: "14.7%", d: "0s"   },
+  { icon: <CalendarDays size={15} />, label: "Appointments", x: "50%", y: "8.7%",  d: "0.7s" },
+  { icon: <CreditCard size={15} />,   label: "Billing",      x: "88%", y: "17.3%", d: "1.4s" },
+  { icon: <UserPlus size={15} />,     label: "Registration", x: "12%", y: "77.3%", d: "2.1s" },
+  { icon: <FlaskConical size={15} />, label: "Lab",          x: "50%", y: "89.3%", d: "2.8s" },
+  { icon: <Pill size={15} />,         label: "Pharmacy",     x: "88%", y: "74.7%", d: "3.5s" },
+];
+
+/* Right-panel security assurances */
+const SECURITY_FEATURES = [
+  "256-bit Encryption",
+  "Cloud Hosted",
+  "Multi-Hospital Access",
+  "HIPAA Ready",
+  "Role-Based Access",
 ];
 
 /* ── Validation ─────────────────────────────────────────────────────────── */
@@ -77,146 +88,116 @@ function useCountUp(target: number, decimals = 0, duration = 1800) {
   return decimals > 0 ? val.toFixed(decimals) : Math.round(val).toLocaleString("en-IN");
 }
 
-function TrustStat({ icon, value, decimals = 0, suffix, label, floatDelay }: {
-  icon: React.ReactNode; value: number; decimals?: number;
-  suffix: string; label: string; floatDelay: string;
+/* ── Statistic card (left panel) ─────────────────────────────────────────── */
+function StatCard({ icon, value, suffix, label, tint, delay }: {
+  icon: React.ReactNode; value: number; suffix: string;
+  label: string; tint: string; delay: string;
 }) {
-  const v = useCountUp(value, decimals);
+  const v = useCountUp(value);
   return (
-    <div className="lp-floaty rounded-2xl px-3.5 py-3 flex items-center gap-2.5"
+    <div className="lp-stat rounded-2xl px-3 py-3 flex flex-col items-center gap-1"
       style={{
-        animationDelay: floatDelay,
-        background: "rgba(255,255,255,.6)",
+        animationDelay: delay,
+        background: "rgba(255,255,255,.66)",
         backdropFilter: "blur(14px)",
-        border: "1px solid rgba(255,255,255,.75)",
-        boxShadow: "0 8px 28px rgba(15,118,110,.09), 0 2px 6px rgba(15,23,42,.04)",
+        WebkitBackdropFilter: "blur(14px)",
+        border: "1px solid rgba(255,255,255,.8)",
+        boxShadow: "0 8px 28px rgba(15,118,110,.08), 0 2px 6px rgba(15,23,42,.04)",
       }}>
-      <div className="shrink-0 w-8 h-8 rounded-xl flex items-center justify-center"
-        style={{ background: "linear-gradient(135deg,#F0FDFA,#CCFBF1)", border: "1px solid rgba(20,184,166,.22)", color: "#0F766E" }}>
+      <span className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
+        style={{ background: "linear-gradient(135deg,#F0FDFA,#CCFBF1)", border: "1px solid rgba(20,184,166,.22)", color: tint }}>
         {icon}
-      </div>
-      <div className="min-w-0">
-        <p style={{ fontSize: "16px", fontWeight: 900, color: "#0F172A", letterSpacing: "-0.02em", lineHeight: 1.1 }}>
-          {v}{suffix}
-        </p>
-        <p style={{ fontSize: "9.5px", fontWeight: 600, color: "#64748B", letterSpacing: "0.03em", whiteSpace: "nowrap" }}>{label}</p>
-      </div>
+      </span>
+      <p style={{ fontSize: "20px", fontWeight: 900, color: "#0F172A", letterSpacing: "-0.03em", lineHeight: 1.1 }}>
+        {v}{suffix}
+      </p>
+      <p style={{ fontSize: "10px", fontWeight: 600, color: "#64748B", letterSpacing: "0.02em", textAlign: "center", whiteSpace: "nowrap" }}>
+        {label}
+      </p>
     </div>
   );
 }
 
-/* ── Decorative glass analytics cluster (wide screens, background) ──────── */
-function AnalyticsCluster() {
-  const bars = [42, 63, 48, 78, 58, 88, 70];
-  const days = ["M", "T", "W", "T", "F", "S", "S"];
-  const journey = ["Register", "Consult", "Lab", "Pharmacy"];
+/* ── Healthcare network illustration (left panel hero) ───────────────────── */
+function NetworkIllustration() {
   return (
-    <div
-      aria-hidden="true"
-      className="hidden min-[1600px]:flex flex-col gap-3.5 absolute pointer-events-none select-none"
-      style={{ right: "36px", top: "50%", transform: "translateY(-50%)", width: "300px", zIndex: 0 }}
-    >
-      {/* Mini live dashboard */}
-      <div className="lp-floaty rounded-3xl p-4"
-        style={{
-          background: "rgba(255,255,255,.55)",
-          backdropFilter: "blur(18px)",
-          border: "1px solid rgba(255,255,255,.7)",
-          boxShadow: "0 16px 48px rgba(15,118,110,.1), 0 4px 12px rgba(15,23,42,.05)",
+    <div className="lp-a3 relative w-full mx-auto" style={{ maxWidth: "460px", aspectRatio: "460 / 300" }}>
+      {/* Ambient glow behind the hub */}
+      <div className="absolute rounded-full pointer-events-none" style={{
+        left: "50%", top: "46.7%", width: "58%", height: "70%",
+        transform: "translate(-50%,-50%)",
+        background: "radial-gradient(circle,rgba(20,184,166,.16) 0%,transparent 68%)",
+        filter: "blur(26px)",
+      }} />
+
+      {/* Connector lines */}
+      <svg className="absolute inset-0 w-full h-full" viewBox="0 0 460 300" fill="none" aria-hidden="true">
+        <defs>
+          <linearGradient id="lp-net" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#14B8A6" stopOpacity=".7" />
+            <stop offset="100%" stopColor="#0F766E" stopOpacity=".25" />
+          </linearGradient>
+        </defs>
+        {[
+          "M230,140 Q142,110 55,44",
+          "M230,140 Q232,80 230,26",
+          "M230,140 Q325,110 405,52",
+          "M230,140 Q140,175 55,232",
+          "M230,140 Q228,205 230,268",
+          "M230,140 Q325,175 405,224",
+        ].map((d, i) => (
+          <g key={i}>
+            <path d={d} stroke="url(#lp-net)" strokeWidth="1.4" strokeLinecap="round" strokeDasharray="5 8" />
+            {/* Data packet travelling hub → node */}
+            <circle r="2.6" fill="#14B8A6" opacity=".85">
+              <animateMotion dur="4.5s" begin={`${i * 0.75}s`} repeatCount="indefinite" path={d} keyPoints="0;1" keyTimes="0;1" calcMode="linear" />
+              <animate attributeName="opacity" values="0;.9;.9;0" dur="4.5s" begin={`${i * 0.75}s`} repeatCount="indefinite" />
+            </circle>
+          </g>
+        ))}
+      </svg>
+
+      {/* Central hub — PPMS-AI */}
+      <div className="absolute" style={{ left: "50%", top: "46.7%", transform: "translate(-50%,-50%)" }}>
+        <div className="lp-hub rounded-3xl flex items-center justify-center" style={{
+          width: "76px", height: "76px",
+          background: "linear-gradient(135deg,#0F766E 0%,#14B8A6 100%)",
+          boxShadow: "0 16px 40px rgba(15,118,110,.34), 0 4px 12px rgba(15,118,110,.2), inset 0 1px 0 rgba(255,255,255,.3)",
         }}>
-        {/* Header */}
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-1.5">
-            <span className="lp-dot" style={{ width: 5, height: 5, borderRadius: "50%", background: "#14B8A6" }} />
-            <span style={{ fontSize: "9px", fontWeight: 800, letterSpacing: "0.13em", color: "#0F766E" }}>LIVE HOSPITAL OVERVIEW</span>
-          </div>
-          <HeartPulse size={12} style={{ color: "#14B8A6" }} />
+          <img src="/landing/logo-ppms-new.png" alt="" aria-hidden="true"
+            style={{ width: "42px", height: "42px", objectFit: "contain", filter: "brightness(0) invert(1)" }} />
         </div>
-
-        {/* KPI row */}
-        <div className="grid grid-cols-3 gap-2 mb-3">
-          {[
-            { v: "128", l: "OPD Today",   icon: <Users size={10} /> },
-            { v: "46",  l: "On Duty",     icon: <Stethoscope size={10} /> },
-            { v: "82%", l: "Beds",        icon: <BedDouble size={10} /> },
-          ].map((k, i) => (
-            <div key={i} className="rounded-xl px-2 py-1.5 text-center" style={{ background: "rgba(240,253,250,.8)", border: "1px solid rgba(20,184,166,.15)" }}>
-              <p style={{ fontSize: "13px", fontWeight: 900, color: "#0F172A", lineHeight: 1.15 }}>{k.v}</p>
-              <p className="flex items-center justify-center gap-1" style={{ fontSize: "8px", fontWeight: 600, color: "#64748B" }}>
-                <span style={{ color: "#14B8A6" }}>{k.icon}</span>{k.l}
-              </p>
-            </div>
-          ))}
-        </div>
-
-        {/* Appointments chart */}
-        <p style={{ fontSize: "8.5px", fontWeight: 700, letterSpacing: "0.08em", color: "#94A3B8", marginBottom: "5px" }}>APPOINTMENTS · THIS WEEK</p>
-        <div className="flex items-end gap-1.5 h-12 mb-1">
-          {bars.map((h, i) => (
-            <div key={i} className="lp-bargrow flex-1 rounded-t-md"
-              style={{
-                height: `${h}%`,
-                animationDelay: `${0.5 + i * 0.09}s`,
-                background: i === 5 ? "linear-gradient(180deg,#14B8A6,#0F766E)" : "rgba(20,184,166,.28)",
-              }} />
-          ))}
-        </div>
-        <div className="flex gap-1.5 mb-3">
-          {days.map((d, i) => (
-            <span key={i} className="flex-1 text-center" style={{ fontSize: "7.5px", fontWeight: 700, color: i === 5 ? "#0F766E" : "#CBD5E1" }}>{d}</span>
-          ))}
-        </div>
-
-        {/* Bed occupancy */}
-        <div className="flex items-center justify-between mb-1">
-          <span style={{ fontSize: "8.5px", fontWeight: 700, letterSpacing: "0.08em", color: "#94A3B8" }}>BED OCCUPANCY</span>
-          <span style={{ fontSize: "9px", fontWeight: 800, color: "#0F766E" }}>82%</span>
-        </div>
-        <div className="rounded-full mb-3.5 overflow-hidden" style={{ height: "5px", background: "rgba(15,118,110,.1)" }}>
-          <div className="lp-bargrow-x h-full rounded-full" style={{ width: "82%", background: "linear-gradient(90deg,#14B8A6,#0F766E)" }} />
-        </div>
-
-        {/* Patient journey */}
-        <p style={{ fontSize: "8.5px", fontWeight: 700, letterSpacing: "0.08em", color: "#94A3B8", marginBottom: "7px" }}>PATIENT JOURNEY</p>
-        <div className="flex items-center">
-          {journey.map((s, i) => (
-            <div key={s} className="flex items-center" style={{ flex: i < journey.length - 1 ? 1 : "none" }}>
-              <div className="flex flex-col items-center gap-1">
-                <span className={i === 1 ? "lp-dot" : ""} style={{
-                  width: 7, height: 7, borderRadius: "50%",
-                  background: i <= 1 ? "#14B8A6" : "rgba(20,184,166,.25)",
-                  border: i <= 1 ? "none" : "1px solid rgba(20,184,166,.35)",
-                }} />
-                <span style={{ fontSize: "7.5px", fontWeight: 700, color: i <= 1 ? "#0F766E" : "#94A3B8", whiteSpace: "nowrap" }}>{s}</span>
-              </div>
-              {i < journey.length - 1 && (
-                <div className="flex-1 mx-1 mb-3" style={{ height: "1.5px", background: i < 1 ? "#14B8A6" : "rgba(20,184,166,.2)" }} />
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Trust metric cards — count-up */}
-      <div className="grid grid-cols-2 gap-2.5">
-        <TrustStat icon={<Building2 size={14} />}   value={500}   suffix="+"  label="Hospitals Connected"  floatDelay="0.6s" />
-        <TrustStat icon={<Stethoscope size={14} />} value={12500} suffix="+"  label="Active Doctors"       floatDelay="1.4s" />
-        <TrustStat icon={<FileText size={14} />}    value={2}     suffix="M+" label="Patient Records"      floatDelay="2.1s" />
-        <TrustStat icon={<Zap size={14} />}         value={99.98} decimals={2} suffix="%" label="Uptime SLA" floatDelay="0.9s" />
-      </div>
-
-      {/* AI insight chip */}
-      <div className="lp-floaty flex items-center gap-2 rounded-2xl px-3.5 py-2.5"
-        style={{
-          animationDelay: "1.8s",
-          background: "linear-gradient(105deg,rgba(15,118,110,.92),rgba(20,184,166,.88))",
-          boxShadow: "0 10px 30px rgba(15,118,110,.25)",
+        <p className="text-center" style={{
+          marginTop: "7px", fontSize: "9px", fontWeight: 800,
+          letterSpacing: "0.14em", color: "#0F766E", whiteSpace: "nowrap",
         }}>
-        <Sparkles size={13} color="white" className="shrink-0" />
-        <p style={{ fontSize: "10px", fontWeight: 600, color: "rgba(255,255,255,.95)", lineHeight: 1.35 }}>
-          <span style={{ fontWeight: 800 }}>AI Insight:</span> OPD load peaks 10–11 AM — smart slots auto-balance bookings
+          PPMS-AI CORE
         </p>
       </div>
+
+      {/* Orbiting module nodes */}
+      {NETWORK_NODES.map((n) => (
+        <div key={n.label} className="lp-floaty absolute flex flex-col items-center"
+          style={{ left: n.x, top: n.y, transform: "translate(-50%,-50%)", animationDelay: n.d }}>
+          <div className="rounded-2xl flex items-center justify-center" style={{
+            width: "42px", height: "42px",
+            background: "rgba(255,255,255,.85)",
+            backdropFilter: "blur(12px)",
+            WebkitBackdropFilter: "blur(12px)",
+            border: "1px solid rgba(20,184,166,.25)",
+            boxShadow: "0 6px 20px rgba(15,118,110,.13), 0 1px 3px rgba(15,23,42,.05)",
+            color: "#0F766E",
+          }}>
+            {n.icon}
+          </div>
+          <span style={{
+            marginTop: "5px", fontSize: "9.5px", fontWeight: 700,
+            color: "#64748B", letterSpacing: "0.03em", whiteSpace: "nowrap",
+          }}>
+            {n.label}
+          </span>
+        </div>
+      ))}
     </div>
   );
 }
@@ -774,6 +755,8 @@ export default function LoginPage() {
   const [rememberMe, setRememberMe]     = useState(false);
   const [tab, setTab]                   = useState<"password" | "otp">("password");
   const [showForgotPw, setShowForgotPw] = useState(false);
+  // Microsoft SSO is not provisioned yet — surface an honest notice instead of a dead button.
+  const [ssoNotice, setSsoNotice]       = useState(false);
 
   // Password tab
   const [username, setUsername]     = useState("");
@@ -889,7 +872,10 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="fixed inset-0 flex overflow-hidden" style={{ background: "#F8FAFC" }}>
+    <div className="fixed inset-0 flex overflow-hidden" style={{
+      background: "#F8FCFC",
+      fontFamily: "var(--font-inter), 'Segoe UI', system-ui, -apple-system, sans-serif",
+    }}>
       {showForgotPw && <ForgotPasswordModal onClose={() => setShowForgotPw(false)} />}
       <style>{`
         /* ── Keyframes ────────────────────────────────────────────────── */
@@ -916,8 +902,6 @@ export default function LoginPage() {
         @keyframes lp-border-glow { 0%,100%{opacity:.45} 50%{opacity:1} }
         @keyframes lp-dot { 0%,100%{box-shadow:0 0 0 0 rgba(20,184,166,.45)} 60%{box-shadow:0 0 0 6px rgba(20,184,166,0)} }
         @keyframes lp-floaty  { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-7px)} }
-        @keyframes lp-bargrow { from{transform:scaleY(0)} to{transform:scaleY(1)} }
-        @keyframes lp-bargrow-x { from{transform:scaleX(0)} to{transform:scaleX(1)} }
         @keyframes lp-flowdash { to{stroke-dashoffset:-140} }
 
         /* ── Entrance ──────────────────────────────────────────────── */
@@ -961,11 +945,17 @@ export default function LoginPage() {
         .lp-feat{transition:background .2s ease,transform .2s cubic-bezier(.34,1.56,.64,1)}
         .lp-feat:hover{background:rgba(255,255,255,.65);transform:translateY(-2px)}
 
-        /* ── Background analytics decor ────────────────────────────── */
+        /* ── Background + network illustration decor ───────────────── */
         .lp-floaty{animation:lp-floaty 7s ease-in-out infinite}
-        .lp-bargrow{transform-origin:bottom;animation:lp-bargrow .8s cubic-bezier(.22,1,.36,1) both}
-        .lp-bargrow-x{transform-origin:left;animation:lp-bargrow-x 1.1s cubic-bezier(.22,1,.36,1) .6s both}
         .lp-flow path{animation:lp-flowdash 9s linear infinite}
+        .lp-stat{animation:lp-floaty 9s ease-in-out infinite}
+        .lp-hub{animation:lp-hub 5.5s ease-in-out infinite}
+        @keyframes lp-hub{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-6px) scale(1.035)}}
+
+        /* ── Microsoft SSO outline button ──────────────────────────── */
+        .lp-sso{transition:border-color .2s,background .2s,transform .2s cubic-bezier(.34,1.56,.64,1),box-shadow .2s}
+        .lp-sso:hover{border-color:#CBD5E1!important;background:#fff!important;transform:translateY(-2px);box-shadow:0 8px 22px rgba(15,23,42,.08)}
+        .lp-sso:active{transform:translateY(0)}
 
         /* ── Tab sliding pill ──────────────────────────────────────── */
         .lp-tab-pill{transition:left .3s cubic-bezier(.34,1.56,.64,1)}
@@ -982,7 +972,7 @@ export default function LoginPage() {
           .lp-blob1,.lp-blob2,.lp-blob3,.lp-blob4,
           .lp-ecg,.lp-shield-anim,
           .lp-trial,.lp-btn,.lp-feat,.lp-dot,.lp-card-levitate,
-          .lp-floaty,.lp-bargrow,.lp-bargrow-x,.lp-flow path,
+          .lp-floaty,.lp-flow path,.lp-stat,.lp-hub,.lp-sso,
           .lp-f1,.lp-f2,.lp-f3,.lp-f4,.lp-f5
           { animation:none!important; transition:none!important; }
           .lp-grad-text{-webkit-text-fill-color:#0F766E;background:none;}
@@ -995,25 +985,25 @@ export default function LoginPage() {
       {/* ── Page layout ──────────────────────────────────────────────────── */}
       <div className="relative flex w-full h-full overflow-hidden">
 
-        {/* ══ LEFT PANEL ══════════════════════════════════════════════════ */}
-        <div className="hidden lg:flex flex-col justify-between flex-1 px-12 xl:px-20 py-12 min-w-0 relative">
+        {/* ══ LEFT PANEL — brand, network graphic, proof (40%) ════════════ */}
+        <div className="hidden lg:flex flex-col justify-between lg:w-[40%] shrink-0 px-9 xl:px-14 py-8 xl:py-10 min-w-0 relative overflow-y-auto scrollbar-thin">
 
           {/* Logo lockup */}
-          <div className="lp-a0">
+          <div className="lp-a0 shrink-0">
             <div className="flex items-center gap-3.5">
               <img
                 src="/landing/logo-ppms-new.png"
                 alt="PPMS-AI"
                 className="shrink-0"
-                style={{ width: "52px", height: "52px", objectFit: "contain" }}
+                style={{ width: "48px", height: "48px", objectFit: "contain" }}
               />
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="text-[28px] font-black" style={{ color: "#0F172A", letterSpacing: "-0.035em" }}>PPMS-AI</span>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                  <span className="text-[25px] font-black" style={{ color: "#0F172A", letterSpacing: "-0.035em" }}>PPMS-AI</span>
+                  <span className="text-[9.5px] font-bold px-2 py-0.5 rounded-full"
                     style={{ background: "#F0FDFA", color: "#0F766E", border: "1px solid #CCFBF1", letterSpacing: "0.04em" }}>v2.0 Cloud</span>
                 </div>
-                <p className="text-[11px] font-semibold" style={{ color: "#64748B", letterSpacing: "0.06em" }}>
+                <p className="text-[9.5px] font-semibold" style={{ color: "#64748B", letterSpacing: "0.06em" }}>
                   PERSONAL PATIENT MANAGEMENT SYSTEM
                 </p>
               </div>
@@ -1021,96 +1011,60 @@ export default function LoginPage() {
           </div>
 
           {/* Hero content */}
-          <div className="flex-1 flex items-center py-6 min-w-0">
-            <div className="flex flex-col min-w-0 w-full max-w-[600px]">
+          <div className="flex-1 flex flex-col justify-center py-7 min-w-0">
 
-              {/* Eyebrow badge */}
-              <div className="lp-a1 mb-5">
-                <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full" style={{
-                  background: "rgba(255,255,255,.75)",
-                  backdropFilter: "blur(8px)",
-                  border: "1px solid rgba(20,184,166,.25)",
-                  boxShadow: "0 2px 10px rgba(15,118,110,.07)",
-                }}>
-                  <span className="lp-dot" style={{ width: 6, height: 6, borderRadius: "50%", background: "#14B8A6" }} />
-                  <span style={{ fontSize: "10.5px", fontWeight: 800, letterSpacing: "0.14em", color: "#0F766E" }}>
-                    ENTERPRISE HEALTHCARE PLATFORM
-                  </span>
-                </span>
-              </div>
-
-              {/* Headline */}
-              <div className="lp-a1 mb-3">
-                <h1 className="font-black leading-[1.05]"
-                  style={{ fontSize: "clamp(40px,3.6vw,56px)", color: "#0F172A", letterSpacing: "-0.028em" }}>
-                  Better{" "}
-                  <span className="lp-grad-text">Healthcare.</span>
-                  <br />Better Management.
-                </h1>
-              </div>
-
-              {/* Subcopy */}
-              <p className="lp-a2 leading-relaxed mb-4" style={{ fontSize: "15.5px", color: "#64748B", maxWidth: "420px" }}>
-                A secure enterprise healthcare platform for hospitals, clinics,
-                diagnostics, pharmacies, and healthcare networks.
-              </p>
-
-              {/* Brand motto */}
-              <p className="lp-a2 mb-5" style={{
-                fontSize: "12px", fontWeight: 700, letterSpacing: "0.16em",
-                color: "#0F766E", textTransform: "uppercase",
+            {/* Eyebrow badge */}
+            <div className="lp-a1 mb-4">
+              <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full" style={{
+                background: "rgba(255,255,255,.75)",
+                backdropFilter: "blur(8px)",
+                WebkitBackdropFilter: "blur(8px)",
+                border: "1px solid rgba(20,184,166,.25)",
+                boxShadow: "0 2px 10px rgba(15,118,110,.07)",
               }}>
-                One Doctor&nbsp;&nbsp;·&nbsp;&nbsp;Multiple Hospitals&nbsp;&nbsp;·&nbsp;&nbsp;One Smart System
-              </p>
+                <span className="lp-dot" style={{ width: 6, height: 6, borderRadius: "50%", background: "#14B8A6" }} />
+                <span style={{ fontSize: "10px", fontWeight: 800, letterSpacing: "0.14em", color: "#0F766E" }}>
+                  ENTERPRISE HEALTHCARE PLATFORM
+                </span>
+              </span>
+            </div>
 
-              {/* Feature grid — 2 columns */}
-              <div className="lp-a3 grid grid-cols-1 sm:grid-cols-2 gap-x-7 gap-y-3">
-                {FEATURES.map((f, i) => (
-                  <div key={i} className="lp-feat flex items-start gap-3 rounded-2xl px-3 py-2.5 -mx-3 cursor-default">
-                    <div className="shrink-0 w-9 h-9 rounded-xl flex items-center justify-center" style={{
-                      background: "linear-gradient(135deg,#F0FDFA,#CCFBF1)",
-                      border: "1px solid rgba(20,184,166,.22)",
-                      color: "#0F766E",
-                      boxShadow: "0 2px 8px rgba(15,118,110,.08)",
-                    }}>
-                      {f.icon}
-                    </div>
-                    <div className="min-w-0">
-                      <p style={{ fontSize: "13.5px", fontWeight: 700, color: "#1E293B", letterSpacing: "-0.01em" }}>{f.label}</p>
-                      <p style={{ fontSize: "11.5px", color: "#94A3B8", marginTop: "1px" }}>{f.desc}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
+            {/* Headline */}
+            <h1 className="lp-a1 font-black leading-[1.06] mb-3.5"
+              style={{ fontSize: "clamp(29px,2.55vw,42px)", color: "#0F172A", letterSpacing: "-0.032em" }}>
+              Better <span className="lp-grad-text">Healthcare.</span>
+              <br />Better Management.
+            </h1>
 
-              {/* Inline stats strip — fills vertical space with live proof points */}
-              <div className="lp-a4 mt-5 grid grid-cols-3 gap-2.5">
-                {[
-                  { v: "500+",  l: "Hospitals",       col: "#0F766E", bg: "rgba(240,253,250,.85)" },
-                  { v: "12K+",  l: "Active Doctors",  col: "#1E40AF", bg: "rgba(239,246,255,.85)" },
-                  { v: "2M+",   l: "Patient Records", col: "#7C3AED", bg: "rgba(245,243,255,.85)" },
-                ].map((s, i) => (
-                  <div key={i} className="rounded-2xl px-3 py-2.5 flex flex-col items-center gap-0.5" style={{
-                    background: s.bg,
-                    backdropFilter: "blur(10px)",
-                    border: "1px solid rgba(255,255,255,.7)",
-                    boxShadow: "0 2px 12px rgba(15,23,42,.05)",
-                  }}>
-                    <p style={{ fontSize: "18px", fontWeight: 900, color: s.col, letterSpacing: "-0.02em", lineHeight: 1.1 }}>{s.v}</p>
-                    <p style={{ fontSize: "9.5px", fontWeight: 600, color: "#64748B", textAlign: "center" }}>{s.l}</p>
-                  </div>
-                ))}
-              </div>
+            {/* Description */}
+            <p className="lp-a2 leading-relaxed mb-3" style={{ fontSize: "14px", color: "#64748B", maxWidth: "430px" }}>
+              Secure enterprise healthcare platform for hospitals, clinics,
+              laboratories, pharmacies and healthcare networks.
+            </p>
+
+            {/* Brand motto */}
+            <p className="lp-a2 mb-6" style={{
+              fontSize: "10.5px", fontWeight: 700, letterSpacing: "0.15em",
+              color: "#0F766E", textTransform: "uppercase",
+            }}>
+              One Doctor&nbsp;&nbsp;·&nbsp;&nbsp;Multiple Hospitals&nbsp;&nbsp;·&nbsp;&nbsp;One Smart System
+            </p>
+
+            {/* Connected healthcare network graphic */}
+            <NetworkIllustration />
+
+            {/* Statistics cards */}
+            <div className="lp-a4 grid grid-cols-3 gap-2.5 mt-7" style={{ maxWidth: "400px" }}>
+              <StatCard icon={<Building2 size={15} />}   value={500} suffix="+"  label="Hospitals"       tint="#0F766E" delay="0s"   />
+              <StatCard icon={<Stethoscope size={15} />} value={12}  suffix="K+" label="Active Doctors"  tint="#0F766E" delay="0.9s" />
+              <StatCard icon={<FileText size={15} />}    value={2}   suffix="M+" label="Patient Records" tint="#0F766E" delay="1.8s" />
             </div>
           </div>
 
-          {/* Decorative analytics cluster — fills right whitespace on wide screens */}
-          <AnalyticsCluster />
-
           {/* Footer trust row */}
-          <div className="lp-a4">
-            <div className="mb-4" style={{ height: "1px", maxWidth: "600px", background: "linear-gradient(90deg,rgba(15,118,110,.18),rgba(15,118,110,.04) 70%,transparent)" }} />
-            <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+          <div className="lp-a4 shrink-0">
+            <div className="mb-3.5" style={{ height: "1px", background: "linear-gradient(90deg,rgba(15,118,110,.18),rgba(15,118,110,.04) 70%,transparent)" }} />
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
               {[
                 { icon: <ShieldCheck size={12} />, label: "HIPAA Ready"     },
                 { icon: <Building2 size={12} />,   label: "NABH Workflow"   },
@@ -1118,7 +1072,7 @@ export default function LoginPage() {
                 { icon: <Cloud size={12} />,       label: "Cloud Hosted"    },
                 { icon: <Zap size={12} />,         label: "99.98% Uptime"   },
               ].map((t, i) => (
-                <span key={i} className="flex items-center gap-1.5" style={{ fontSize: "11px", fontWeight: 500, color: "#94A3B8" }}>
+                <span key={i} className="flex items-center gap-1.5" style={{ fontSize: "10.5px", fontWeight: 500, color: "#94A3B8" }}>
                   <span style={{ color: "#14B8A6" }}>{t.icon}</span> {t.label}
                 </span>
               ))}
@@ -1127,8 +1081,12 @@ export default function LoginPage() {
         </div>
 
         {/* ══ RIGHT PANEL — Frosted glass card ══════════════════════════════ */}
-        <div className="w-full lg:w-[500px] xl:w-[540px] shrink-0 flex flex-col items-center justify-start lg:justify-center pt-6 pb-4 px-4 lg:py-4 lg:px-6 xl:pr-14 overflow-y-auto"
-          style={{ background: "linear-gradient(180deg,rgba(255,255,255,.32) 0%,rgba(248,250,252,.18) 100%)", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)", borderLeft: "1px solid rgba(255,255,255,.52)" }}>
+        <div className="w-full lg:w-[60%] shrink-0 flex flex-col overflow-y-auto scrollbar-thin"
+          style={{ background: "linear-gradient(180deg,rgba(255,255,255,.34) 0%,rgba(248,252,252,.2) 100%)", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)", borderLeft: "1px solid rgba(255,255,255,.55)" }}>
+
+          {/* Auto margins (not justify-center) so the card is never clipped
+              beyond reach when the viewport is shorter than the content. */}
+          <div className="w-full my-auto flex flex-col items-center pt-6 pb-4 px-4 lg:py-8 lg:px-6">
 
           {/* Mobile hero — centered logo + concise headline (below lg only) */}
           <div className="lg:hidden lp-a0 shrink-0 flex flex-col items-center text-center mb-6">
@@ -1150,14 +1108,14 @@ export default function LoginPage() {
           </div>
 
           <div
-            className="lp-card lp-card-levitate w-full max-w-[420px] lg:max-w-none shrink-0"
+            className="lp-card lp-card-levitate w-full max-w-[420px] shrink-0"
             style={{
               background: "rgba(255,255,255,.82)",
-              backdropFilter: "blur(28px)",
-              WebkitBackdropFilter: "blur(28px)",
-              borderRadius: "28px",
-              border: "1px solid rgba(255,255,255,.72)",
-              boxShadow: "0 40px 100px rgba(15,23,42,.2), 0 16px 40px rgba(15,23,42,.1), 0 4px 10px rgba(15,23,42,.06), inset 0 1px 0 rgba(255,255,255,.98)",
+              backdropFilter: "blur(20px)",
+              WebkitBackdropFilter: "blur(20px)",
+              borderRadius: "24px",
+              border: "1px solid rgba(255,255,255,.75)",
+              boxShadow: "0 32px 80px rgba(15,23,42,.16), 0 12px 32px rgba(15,23,42,.08), 0 3px 8px rgba(15,23,42,.05), inset 0 1px 0 rgba(255,255,255,.98)",
               overflow: "hidden",
               position: "relative",
             }}
@@ -1176,10 +1134,10 @@ export default function LoginPage() {
                     <ShieldCheck size={16} style={{ color: "#0F766E" }} />
                   </div>
                   <h2 className="text-[26px] font-bold" style={{ color: "#0F172A", letterSpacing: "-0.022em" }}>
-                    Welcome Back
+                    Welcome Back <span aria-hidden="true">👋</span>
                   </h2>
                 </div>
-                <p style={{ fontSize: "14px", color: "#64748B" }}>Access your secure PPMS workspace</p>
+                <p style={{ fontSize: "14px", color: "#64748B" }}>Sign in to your secure healthcare workspace.</p>
               </div>
 
               {/* ── Segmented tab control ── */}
@@ -1294,11 +1252,13 @@ export default function LoginPage() {
                     type="submit"
                     disabled={pending}
                     onClick={handleBtnClick}
-                    className="lp-btn lp-f4 relative overflow-hidden w-full font-bold text-white rounded-2xl h-14 lg:h-[52px]"
+                    className="lp-btn lp-f4 relative overflow-hidden w-full font-bold text-white"
                     style={{
+                      height: "56px",
+                      borderRadius: "14px",
                       fontSize: "15px",
                       letterSpacing: "0.01em",
-                      background: pending ? "#94A3B8" : "linear-gradient(135deg,#14B8A6 0%,#0F766E 100%)",
+                      background: pending ? "#94A3B8" : "linear-gradient(135deg,#0F766E 0%,#14B8A6 100%)",
                       boxShadow: pending ? "none" : "0 10px 32px rgba(20,184,166,.35), 0 4px 12px rgba(15,118,110,.25)",
                     }}
                   >
@@ -1400,15 +1360,57 @@ export default function LoginPage() {
                     type="button"
                     disabled={!otpSent || otpValue.length < 6 || otpLoading}
                     onClick={handleVerifyOtp}
-                    className="lp-btn relative overflow-hidden w-full font-bold text-white rounded-2xl flex items-center justify-center gap-2 h-14 lg:h-[52px]"
+                    className="lp-btn relative overflow-hidden w-full font-bold text-white flex items-center justify-center gap-2"
                     style={otpSent && otpValue.length >= 6 && !otpLoading
-                      ? { fontSize: "15px", background: "linear-gradient(135deg,#14B8A6,#0F766E)", boxShadow: "0 10px 32px rgba(20,184,166,.35), 0 4px 12px rgba(15,118,110,.25)" }
-                      : { fontSize: "15px", background: "#E2E8F0", color: "#94A3B8", cursor: "not-allowed" }}>
+                      ? { height: "56px", borderRadius: "14px", fontSize: "15px", background: "linear-gradient(135deg,#0F766E 0%,#14B8A6 100%)", boxShadow: "0 10px 32px rgba(20,184,166,.35), 0 4px 12px rgba(15,118,110,.25)" }
+                      : { height: "56px", borderRadius: "14px", fontSize: "15px", background: "#E2E8F0", color: "#94A3B8", cursor: "not-allowed" }}>
                     {otpLoading && otpSent
                       ? <><Loader2 size={16} className="animate-spin" /> Verifying…</>
                       : <><span>Verify & Sign In</span>{otpSent && otpValue.length >= 6 && <ArrowRight size={16} className="lp-arrow-icon" />}</>}
                   </button>
                 </div>
+              )}
+
+              {/* ── OR divider ── */}
+              <div className="lp-f5 flex items-center gap-3 my-4">
+                <div className="flex-1" style={{ height: "1px", background: "linear-gradient(90deg,transparent,#E2E8F0)" }} />
+                <span style={{ fontSize: "10.5px", fontWeight: 700, letterSpacing: "0.12em", color: "#94A3B8" }}>OR</span>
+                <div className="flex-1" style={{ height: "1px", background: "linear-gradient(90deg,#E2E8F0,transparent)" }} />
+              </div>
+
+              {/* ── Microsoft SSO ── */}
+              <button
+                type="button"
+                onClick={() => setSsoNotice(true)}
+                className="lp-sso lp-f5 w-full flex items-center justify-center gap-2.5 font-semibold"
+                style={{
+                  height: "52px",
+                  borderRadius: "14px",
+                  fontSize: "14px",
+                  color: "#334155",
+                  background: "rgba(255,255,255,.9)",
+                  border: "1.5px solid #E2E8F0",
+                }}>
+                {/* Microsoft four-square mark */}
+                <svg width="16" height="16" viewBox="0 0 23 23" aria-hidden="true">
+                  <rect x="1"  y="1"  width="10" height="10" fill="#F25022" />
+                  <rect x="12" y="1"  width="10" height="10" fill="#7FBA00" />
+                  <rect x="1"  y="12" width="10" height="10" fill="#00A4EF" />
+                  <rect x="12" y="12" width="10" height="10" fill="#FFB900" />
+                </svg>
+                Continue with Microsoft
+                <span className="px-1.5 py-0.5 rounded-md" style={{
+                  fontSize: "9px", fontWeight: 800, letterSpacing: "0.05em",
+                  background: "#F1F5F9", color: "#94A3B8",
+                }}>SOON</span>
+              </button>
+
+              {ssoNotice && (
+                <p className="flex items-start gap-2 rounded-xl px-3.5 py-2.5 mt-2.5"
+                  style={{ fontSize: "12px", background: "#F8FAFC", color: "#64748B", border: "1px solid #E2E8F0", animation: "lp-slide-up .22s both" }}>
+                  <AlertCircle size={13} className="shrink-0 mt-px" style={{ color: "#94A3B8" }} />
+                  Microsoft single sign-on isn&apos;t enabled for your organisation yet. Please sign in with your username or mobile OTP.
+                </p>
               )}
 
               {/* ── Test accounts ── */}
@@ -1471,26 +1473,43 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* Mobile trust footer (below lg only) */}
-          <div className="lg:hidden lp-a4 shrink-0 flex flex-col items-center gap-2.5 mt-6 mb-2">
+          {/* ── Security assurance section ── */}
+          <div className="lp-a4 w-full max-w-[420px] shrink-0 mt-5">
+            <div className="flex items-center justify-center gap-2 mb-3">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full" style={{
+                background: "rgba(240,253,250,.9)",
+                border: "1px solid rgba(20,184,166,.28)",
+                boxShadow: "0 2px 10px rgba(15,118,110,.06)",
+              }}>
+                <Lock size={11} style={{ color: "#0F766E" }} />
+                <span style={{ fontSize: "10px", fontWeight: 800, letterSpacing: "0.1em", color: "#0F766E" }}>
+                  ENTERPRISE SECURE LOGIN
+                </span>
+              </span>
+            </div>
             <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5">
-              {[
-                { icon: <ShieldCheck size={12} />, label: "HIPAA Ready"   },
-                { icon: <Lock size={12} />,        label: "Secure Login"  },
-                { icon: <Zap size={12} />,         label: "99.98% Uptime" },
-              ].map((t, i) => (
-                <span key={i} className="flex items-center gap-1.5" style={{ fontSize: "11px", fontWeight: 600, color: "#64748B" }}>
-                  <span style={{ color: "#14B8A6" }}>{t.icon}</span> {t.label}
+              {SECURITY_FEATURES.map((f) => (
+                <span key={f} className="flex items-center gap-1" style={{ fontSize: "11px", fontWeight: 500, color: "#64748B" }}>
+                  <Check size={11} strokeWidth={3} style={{ color: "#14B8A6" }} /> {f}
                 </span>
               ))}
             </div>
-            <div className="flex items-center gap-2.5 w-full max-w-[280px]">
-              <div className="flex-1" style={{ height: "1px", background: "linear-gradient(90deg,transparent,rgba(15,118,110,.2))" }} />
-              <p style={{ fontSize: "10.5px", fontWeight: 600, color: "#94A3B8", letterSpacing: "0.04em", whiteSpace: "nowrap" }}>
-                Trusted by 500+ Hospitals
-              </p>
-              <div className="flex-1" style={{ height: "1px", background: "linear-gradient(90deg,rgba(15,118,110,.2),transparent)" }} />
+          </div>
+
+          {/* ── Footer ── */}
+          <div className="lp-a4 w-full max-w-[420px] shrink-0 mt-5 mb-1">
+            <div className="mb-3" style={{ height: "1px", background: "linear-gradient(90deg,transparent,rgba(15,118,110,.16),transparent)" }} />
+            <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1.5" style={{ fontSize: "10.5px", color: "#94A3B8" }}>
+              <span style={{ fontWeight: 600 }}>© 2026 PPMS-AI</span>
+              <span style={{ color: "#CBD5E1" }}>·</span>
+              <span>Version 2.0 Cloud</span>
+              <span style={{ color: "#CBD5E1" }}>·</span>
+              <a href="/privacy" className="transition-colors hover:text-[#0F766E] hover:underline">Privacy Policy</a>
+              <span style={{ color: "#CBD5E1" }}>·</span>
+              <a href="/terms" className="transition-colors hover:text-[#0F766E] hover:underline">Terms of Service</a>
             </div>
+          </div>
+
           </div>
         </div>
       </div>
