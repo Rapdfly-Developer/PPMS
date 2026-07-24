@@ -46,13 +46,14 @@ export default async function BookAppointmentPage() {
     },
     orderBy: { weekday: "asc" },
   });
-  const availabilityByDoctor: Record<string, { weekday: number; startTime: string; endTime: string; slotMins: number; hospitalId: string }[]> = {};
+  const availabilityByDoctor: Record<string, { weekday: number; startTime: string; endTime: string; slotMins: number; maxPatients: number; hospitalId: string }[]> = {};
   for (const row of availabilityRows) {
     (availabilityByDoctor[row.doctorId] ??= []).push({
       weekday: row.weekday,
       startTime: row.startTime,
       endTime: row.endTime,
       slotMins: row.slotMins,
+      maxPatients: row.maxPatients,
       hospitalId: row.hospitalId,
     });
   }

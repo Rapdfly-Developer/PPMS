@@ -148,9 +148,8 @@ export async function bookAppointment(formData: FormData) {
     }
   }
 
-  // Determine per-slot capacity from slot duration (30-min slots allow 2 patients)
   const slotMins = avail?.slotMins ?? 15;
-  const capacity = slotMins === 30 ? 2 : 1;
+  const capacity = avail?.maxPatients ?? (slotMins === 30 ? 2 : 1);
 
   // Check slot capacity
   const slotCount = await prisma.appointment.count({

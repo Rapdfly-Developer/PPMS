@@ -15,7 +15,7 @@ const VISIT_TYPES = ["General OPD", "Emergency", "Follow-up", "Post-op Review"];
 const SEXES = ["MALE", "FEMALE", "OTHER"];
 
 
-type AvailSlot = { weekday: number; startTime: string; endTime: string; slotMins: number; hospitalId: string };
+type AvailSlot = { weekday: number; startTime: string; endTime: string; slotMins: number; maxPatients: number; hospitalId: string };
 type Doctor  = { id: string; name: string; specialty: string };
 type Patient = { id: string; name: string; udid: string; uhid: string; age: number | null; sex: string; mobile: string; registeredAtId: string | null };
 type Hospital = { id: string; name: string };
@@ -126,7 +126,7 @@ export function BookAppointmentForm({
     : [];
 
   const slotMins = todayAvail?.slotMins ?? 15;
-  const slotCapacity = slotMins === 30 ? 2 : 1;
+  const slotCapacity = todayAvail?.maxPatients ?? (slotMins === 30 ? 2 : 1);
 
   const nowMins = new Date().getHours() * 60 + new Date().getMinutes();
   const availableSlots = baseSlots.filter((t) => {
