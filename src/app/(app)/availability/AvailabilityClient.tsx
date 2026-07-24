@@ -154,13 +154,16 @@ function AddModal({
                     key={wd}
                     type="button"
                     onClick={() => toggleDay(wd)}
-                    className={`w-11 h-11 rounded-xl text-xs font-semibold border-2 transition-all ${
+                    className={`flex flex-col items-center justify-center w-12 py-2 rounded-xl border-2 transition-all ${
                       active
                         ? "border-[var(--color-primary-600)] bg-[var(--color-primary-600)] text-white"
                         : "border-[var(--color-border)] text-[var(--color-ink-500)] hover:border-[var(--color-primary-400)]"
                     }`}
                   >
-                    {DAYS[wd]}
+                    <span className="text-xs font-semibold">{DAYS[wd]}</span>
+                    <span className={`text-[9px] font-medium mt-0.5 leading-none ${active ? "text-white/80" : "text-[var(--color-ink-400)]"}`}>
+                      {nextWeekdayDate(wd).split(" ")[0]} {nextWeekdayDate(wd).split(" ")[1]}
+                    </span>
                   </button>
                 );
               })}
