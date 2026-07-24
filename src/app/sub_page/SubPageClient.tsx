@@ -195,6 +195,7 @@ export function SubPageClient() {
 
       <main id="top">
         <Hero />
+        <TrustBar />
         <AudienceBand />
         <FeatureStrip />
         <PropositionBar />
@@ -225,105 +226,162 @@ export function SubPageClient() {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   HERO — premium split with live product mockup
+   HERO — clean healthcare split with medical team illustration
 ═══════════════════════════════════════════════════════════════════════════ */
 function Hero() {
   return (
-    <section className="relative overflow-hidden pt-[116px] pb-16 md:pt-[150px] md:pb-24" style={{ background: "#FBFDFC" }}>
-      {/* Ambient mesh + fine dot grid */}
-      <div className="sp-hero-mesh absolute inset-0 pointer-events-none" />
+    <section className="relative overflow-hidden" style={{
+      paddingTop: 118, paddingBottom: 64,
+      background: "linear-gradient(155deg, #F5FFF8 0%, #EFF6FF 52%, #FFFFFF 100%)",
+    }}>
+      {/* Subtle dot grid */}
       <div className="sp-hero-grid absolute inset-0 pointer-events-none" />
+      {/* Ambient glows */}
+      <div className="absolute -top-20 -left-20 w-80 h-80 rounded-full pointer-events-none"
+        style={{ background: "radial-gradient(circle, rgba(22,163,74,0.07), transparent 68%)" }} />
+      <div className="absolute top-10 right-0 w-96 h-96 rounded-full pointer-events-none"
+        style={{ background: "radial-gradient(circle, rgba(14,116,144,0.05), transparent 68%)" }} />
 
       <div className="relative max-w-7xl mx-auto px-5 md:px-8">
-        <div className="grid lg:grid-cols-[1.04fr_1fr] gap-12 lg:gap-14 items-center">
+        <div className="grid lg:grid-cols-[1.08fr_1fr] gap-10 lg:gap-16 items-center">
 
           {/* ── Left copy ── */}
           <div>
             <Reveal>
-              <span className="inline-flex items-center gap-2 pl-1.5 pr-3.5 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-[0.14em] mb-6"
-                style={{ background: "rgba(22,163,74,0.08)", color: GREEN, border: "1px solid rgba(22,163,74,0.20)" }}>
-                <span className="w-5 h-5 rounded-full flex items-center justify-center text-white" style={{ background: GREEN }}>
-                  <HeartPulse size={11} className="sp-beat" />
+              <div className="flex items-center gap-2 mb-5">
+                <span className="w-6 h-6 rounded-full flex items-center justify-center" style={{ background: GREEN }}>
+                  <HeartPulse size={12} color="white" className="sp-beat" />
                 </span>
-                Start the change today
-              </span>
+                <span className="text-[11px] font-extrabold uppercase tracking-[0.16em]" style={{ color: GREEN }}>
+                  Start the change today
+                </span>
+              </div>
             </Reveal>
 
             <Reveal delay={70}>
-              <h1 className="sp-head text-[2.4rem] md:text-[3.35rem] font-black leading-[1.05] tracking-[-0.025em] mb-5" style={{ color: NAVY }}>
-                The Intelligent{" "}
-                <span className="sp-grad-text">Healthcare Platform</span>{" "}
-                for Modern Practices
+              <h1 className="sp-head font-black leading-[1.06] tracking-[-0.03em] mb-5"
+                style={{ fontSize: "clamp(34px, 4.2vw, 50px)", color: NAVY }}>
+                Smart Healthcare<br />
+                <span style={{ color: GREEN }}>Management</span><br />
+                for Clinics &amp; Hospitals
               </h1>
             </Reveal>
 
-            <Reveal delay={140}>
-              <p className="text-[15px] md:text-[17px] leading-relaxed mb-6 max-w-xl" style={{ color: "#4B5563" }}>
+            {/* ABHA Badge */}
+            <Reveal delay={130}>
+              <div className="inline-flex items-center gap-3 rounded-xl px-4 py-3 mb-5"
+                style={{ background: "#F0FDF4", border: "1.5px solid #BBF7D0", boxShadow: "0 2px 12px rgba(22,163,74,0.09)" }}>
+                <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
+                  style={{ background: GREEN }}>
+                  <ShieldCheck size={18} color="white" />
+                </div>
+                <div>
+                  <p className="text-sm font-extrabold" style={{ color: NAVY }}>ABHA-Ready, HIPAA Compliant HMIS</p>
+                  <p className="text-xs font-semibold" style={{ color: "#15803D" }}>Integrated: M1, M2, M3</p>
+                </div>
+              </div>
+            </Reveal>
+
+            {/* Bullet features */}
+            <Reveal delay={160}>
+              <div className="flex flex-wrap items-center gap-x-5 gap-y-2 mb-5">
+                {["ABHA Ready", "Health Records", "Consent Manager"].map(f => (
+                  <div key={f} className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: GREEN }} />
+                    <span className="text-sm font-semibold" style={{ color: "#334155" }}>{f}</span>
+                  </div>
+                ))}
+              </div>
+            </Reveal>
+
+            <Reveal delay={200}>
+              <p className="text-[15px] md:text-[17px] leading-relaxed mb-7 max-w-[500px]" style={{ color: "#475569" }}>
                 Securely manage appointments, prescriptions, patient records and clinic operations —
                 all in one elegant cloud platform. Built for doctors, clinics, hospitals and eye care centers.
               </p>
-            </Reveal>
-
-            {/* Compliance badges */}
-            <Reveal delay={190}>
-              <div className="flex flex-wrap items-center gap-2 mb-7">
-                {[
-                  { icon: CheckCircle2, label: "ABHA Ready",    accent: GREEN },
-                  { icon: FileText,     label: "Health Records", accent: GREEN },
-                  { icon: ShieldCheck,  label: "HIPAA Ready",   accent: GREEN },
-                  { icon: BadgeCheck,   label: "NABH Workflow",  accent: BLUE },
-                  { icon: Cloud,        label: "Cloud Hosted",  accent: GREEN },
-                ].map(({ icon: Icon, label, accent }) => (
-                  <span key={label} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-white"
-                    style={{ color: accent, border: "1px solid #E7EDF2", boxShadow: "0 1px 2px rgba(11,22,40,0.04)" }}>
-                    <Icon size={12} /> {label}
-                  </span>
-                ))}
-              </div>
             </Reveal>
 
             <Reveal delay={240}>
               <div className="flex flex-wrap gap-3 mb-8">
                 <a href={DEMO_MAIL}
                   className="sp-shine group flex items-center gap-2 px-7 py-3.5 rounded-xl text-[15px] font-bold text-white transition-all hover:-translate-y-0.5"
-                  style={{ background: `linear-gradient(135deg, ${GREEN}, #12833C)`, boxShadow: "0 12px 30px rgba(22,163,74,0.34)" }}>
+                  style={{ background: `linear-gradient(135deg, ${GREEN}, #12833C)`, boxShadow: "0 10px 28px rgba(22,163,74,0.32)" }}>
                   Request a Demo
                   <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
                 </a>
                 <a href={EXPERT_TEL}
-                  className="flex items-center gap-2 px-7 py-3.5 rounded-xl text-[15px] font-bold border-2 bg-white transition-all hover:-translate-y-0.5 hover:border-[color:var(--g)]"
-                  style={{ color: NAVY, borderColor: "#D5DEE7", ["--g" as string]: GREEN }}>
+                  className="flex items-center gap-2 px-7 py-3.5 rounded-xl text-[15px] font-bold border-2 bg-white transition-all hover:-translate-y-0.5"
+                  style={{ color: NAVY, borderColor: "#D1D5DB" }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = GREEN; (e.currentTarget as HTMLElement).style.color = GREEN; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = "#D1D5DB"; (e.currentTarget as HTMLElement).style.color = NAVY; }}>
                   <Phone size={15} /> Explore Features
                 </a>
               </div>
             </Reveal>
 
             {/* Social proof */}
-            <Reveal delay={290}>
+            <Reveal delay={280}>
               <div className="flex items-center gap-4">
                 <div className="flex -space-x-2.5">
-                  {[[TEAL, GREEN], [GREEN, "#12833C"], [BLUE, "#3B82F6"], [NAVY, TEAL]].map((g, i) => (
-                    <div key={i} className="w-9 h-9 rounded-full flex items-center justify-center text-white ring-2 ring-white"
-                      style={{ background: `linear-gradient(135deg, ${g[0]}, ${g[1]})` }}>
-                      {[<Stethoscope key="s" size={14} />, <UserCircle key="u" size={14} />, <Building2 key="b" size={14} />, <Eye key="e" size={14} />][i]}
+                  {[GREEN, TEAL, BLUE, "#7C3AED"].map((c, i) => (
+                    <div key={i} className="w-9 h-9 rounded-full flex items-center justify-center text-white ring-2 ring-white text-xs font-bold"
+                      style={{ background: c }}>
+                      {["D", "N", "A", "R"][i]}
                     </div>
                   ))}
                 </div>
                 <div>
-                  <div className="flex items-center gap-1 mb-0.5">
+                  <div className="flex items-center gap-0.5 mb-0.5">
                     {Array.from({ length: 5 }).map((_, j) => <Star key={j} size={12} fill="#F59E0B" stroke="#F59E0B" />)}
                   </div>
                   <p className="text-xs font-medium" style={{ color: "#64748B" }}>
-                    Trusted by clinics, hospitals &amp; eye care centers
+                    Trusted by <strong style={{ color: NAVY }}>500+ clinics</strong> &amp; hospitals across India
                   </p>
                 </div>
               </div>
             </Reveal>
           </div>
 
-          {/* ── Right — live product mockup ── */}
+          {/* ── Right — medical team illustration ── */}
           <Reveal delay={160} className="relative hidden md:block">
-            <DashboardMockup />
+            <div className="relative mx-auto" style={{ maxWidth: 500 }}>
+              <MedicalTeamIllustration />
+
+              {/* Card: For Your Practice */}
+              <div className="absolute flex items-center gap-3 rounded-2xl px-3.5 py-3 sp-hero-card"
+                style={{ top: 20, left: -12, background: "white", boxShadow: SHADOW_HI, width: 178, zIndex: 10 }}>
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "#EFF6FF" }}>
+                  <Stethoscope size={17} color={BLUE} />
+                </div>
+                <div>
+                  <p className="text-[12px] font-extrabold leading-tight" style={{ color: NAVY }}>For Your Practice.</p>
+                  <p className="text-[10px] leading-snug" style={{ color: "#64748B" }}>Smartly manage your clinic</p>
+                </div>
+              </div>
+
+              {/* ABHA badge — centre-top */}
+              <div className="absolute rounded-[16px] text-center sp-hero-card"
+                style={{ top: 20, left: "50%", transform: "translateX(-50%)", background: "white", boxShadow: SHADOW_CARD, padding: "12px 16px", zIndex: 10, minWidth: 92 }}>
+                <div className="w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-1.5"
+                  style={{ background: "#F0FDF4", border: "2px solid #BBF7D0" }}>
+                  <ShieldCheck size={18} color={GREEN} />
+                </div>
+                <p className="text-[9px] font-extrabold" style={{ color: GREEN }}>ABHA READY</p>
+                <p className="text-[8px] mt-0.5" style={{ color: "#64748B" }}>HIPAA · ABDM</p>
+              </div>
+
+              {/* Card: For Your Patients */}
+              <div className="absolute flex items-center gap-3 rounded-2xl px-3.5 py-3 sp-hero-card"
+                style={{ top: 20, right: -12, background: "white", boxShadow: SHADOW_HI, width: 174, zIndex: 10 }}>
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "#FFF0F3" }}>
+                  <HeartPulse size={17} color="#E11D48" />
+                </div>
+                <div>
+                  <p className="text-[12px] font-extrabold leading-tight" style={{ color: NAVY }}>For Your Patients.</p>
+                  <p className="text-[10px] leading-snug" style={{ color: "#64748B" }}>Better care. Better experience</p>
+                </div>
+              </div>
+            </div>
           </Reveal>
         </div>
       </div>
@@ -331,139 +389,160 @@ function Hero() {
   );
 }
 
-/* ── Live dashboard mockup ───────────────────────────────────────────────── */
-function DashboardMockup() {
+/* ── Medical team SVG illustration ──────────────────────────────────────── */
+function MedicalTeamIllustration() {
   return (
-    <div className="relative mx-auto max-w-[540px] sp-persp">
-      {/* soft ambient glow */}
-      <div className="absolute -inset-10 blur-2xl opacity-70 pointer-events-none"
-        style={{ background: "radial-gradient(55% 55% at 65% 25%, rgba(22,163,74,0.18), transparent 70%), radial-gradient(45% 45% at 25% 85%, rgba(13,148,136,0.16), transparent 70%)" }} />
+    <svg viewBox="0 0 480 500" fill="none" xmlns="http://www.w3.org/2000/svg"
+      style={{ width: "100%", height: "auto", display: "block" }}>
+      <defs>
+        <linearGradient id="illBg" x1="0" y1="0" x2="480" y2="500" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#EFF6FF" /><stop offset="1" stopColor="#F0FDF4" />
+        </linearGradient>
+        <linearGradient id="coatL" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop stopColor="#FFFFFF" /><stop offset="1" stopColor="#F1F5F9" />
+        </linearGradient>
+        <filter id="fSh" x="-20%" y="-10%" width="140%" height="130%">
+          <feDropShadow dx="0" dy="6" stdDeviation="10" floodColor="#0B1628" floodOpacity="0.08"/>
+        </filter>
+      </defs>
 
-      <div className="sp-tilt relative rounded-[22px] overflow-hidden bg-white" style={{ boxShadow: SHADOW_HI }}>
-        {/* browser chrome */}
-        <div className="flex items-center gap-2 px-4 h-11" style={{ background: NAVY }}>
-          <span className="w-2.5 h-2.5 rounded-full" style={{ background: "#FF5F57" }} />
-          <span className="w-2.5 h-2.5 rounded-full" style={{ background: "#FEBC2E" }} />
-          <span className="w-2.5 h-2.5 rounded-full" style={{ background: "#28C840" }} />
-          <div className="ml-3 flex items-center gap-1.5 px-3 py-1 rounded-md" style={{ background: "rgba(255,255,255,0.08)" }}>
-            <Lock size={9} style={{ color: "#86EFAC" }} />
-            <span className="text-[10px] font-medium" style={{ color: "rgba(255,255,255,0.62)" }}>app.ppms.health</span>
-          </div>
-        </div>
+      {/* Background */}
+      <rect width="480" height="500" fill="url(#illBg)" rx="24"/>
+      {/* Ambient circles */}
+      <circle cx="70" cy="68" r="48" fill="#16A34A" opacity="0.04"/>
+      <circle cx="415" cy="88" r="62" fill="#1E40AF" opacity="0.04"/>
+      <circle cx="240" cy="510" r="90" fill="#16A34A" opacity="0.03"/>
+      {/* Medical cross (bottom-right accent) */}
+      <rect x="412" y="376" width="6" height="22" rx="3" fill="#16A34A" opacity="0.14"/>
+      <rect x="404" y="384" width="22" height="6" rx="3" fill="#16A34A" opacity="0.14"/>
+      {/* Medical cross (top-left accent) */}
+      <rect x="57" y="156" width="5" height="18" rx="2.5" fill="#1E40AF" opacity="0.12"/>
+      <rect x="50" y="163" width="18" height="5" rx="2.5" fill="#1E40AF" opacity="0.12"/>
 
-        {/* app body */}
-        <div className="flex">
-          {/* sidebar */}
-          <div className="hidden sm:flex flex-col items-center gap-1.5 py-4 w-14 border-r" style={{ borderColor: "#EEF2F6", background: "#FAFBFC" }}>
-            <div className="w-8 h-8 rounded-xl flex items-center justify-center mb-2" style={{ background: `linear-gradient(135deg, ${TEAL}, ${GREEN})` }}>
-              <svg width="13" height="13" viewBox="0 0 52 52" fill="none">
-                <rect x="20" y="4" width="12" height="44" rx="5" fill="white" />
-                <rect x="4" y="20" width="44" height="12" rx="5" fill="white" />
-              </svg>
-            </div>
-            {[BarChart3, Calendar, Users, FileText, Receipt].map((I, i) => (
-              <div key={i} className="w-9 h-9 rounded-xl flex items-center justify-center"
-                style={i === 0 ? { background: "rgba(22,163,74,0.12)", color: GREEN } : { color: "#B4C0CC" }}>
-                <I size={15} />
-              </div>
-            ))}
-          </div>
+      {/* ══ DOCTOR LEFT — female, cx=118 ══ */}
+      <rect x="94" y="244" width="48" height="246" rx="7" fill="#7C3AED"/>
+      <path d="M80 248 L62 492 L108 492 L118 268 Z" fill="url(#coatL)" stroke="#E2E8F0" strokeWidth="0.5"/>
+      <path d="M156 248 L174 492 L128 492 L118 268 Z" fill="url(#coatL)" stroke="#E2E8F0" strokeWidth="0.5"/>
+      <path d="M106 250 L118 265 L130 250" fill="#F1F5F9" stroke="#E2E8F0" strokeWidth="1"/>
+      {/* Head */}
+      <circle cx="118" cy="203" r="31" fill="#FCD9A0"/>
+      {/* Hair long */}
+      <ellipse cx="118" cy="189" rx="34" ry="23" fill="#92400E"/>
+      <rect x="84" y="196" width="12" height="55" rx="6" fill="#92400E"/>
+      <rect x="122" y="196" width="12" height="55" rx="6" fill="#92400E"/>
+      {/* Face */}
+      <ellipse cx="109" cy="205" rx="4" ry="5" fill="#292524"/>
+      <ellipse cx="127" cy="205" rx="4" ry="5" fill="#292524"/>
+      <path d="M110 217 Q118 225 126 217" stroke="#292524" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
+      <rect x="110" y="230" width="16" height="16" rx="5" fill="#FCD9A0"/>
+      {/* Stethoscope */}
+      <path d="M107 272 Q95 290 92 307 Q89 324 99 330 Q109 336 113 323 Q117 310 107 303" stroke="#16A34A" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
+      <circle cx="107" cy="303" r="6" fill="none" stroke="#16A34A" strokeWidth="2"/>
+      {/* Right arm + clipboard */}
+      <path d="M148 272 Q158 298 156 328" stroke="#FCD9A0" strokeWidth="11" fill="none" strokeLinecap="round"/>
+      <rect x="150" y="314" width="32" height="44" rx="5" fill="#F8FAFC" stroke="#CBD5E1" strokeWidth="1.5"/>
+      <rect x="160" y="308" width="12" height="8" rx="2" fill="#CBD5E1"/>
+      <rect x="155" y="323" width="22" height="2.5" rx="1" fill="#94A3B8"/>
+      <rect x="155" y="331" width="17" height="2.5" rx="1" fill="#94A3B8"/>
+      <rect x="155" y="339" width="20" height="2.5" rx="1" fill="#94A3B8"/>
+      {/* Name badge */}
+      <rect x="76" y="296" width="44" height="22" rx="4" fill="#F0FDF4" stroke="#16A34A" strokeWidth="1"/>
+      <text x="98" y="306" textAnchor="middle" fontSize="6.5" fill="#16A34A" fontWeight="700" fontFamily="system-ui,sans-serif">Dr. Priya</text>
+      <text x="98" y="315" textAnchor="middle" fontSize="5.5" fill="#059669" fontFamily="system-ui,sans-serif">Gynaecologist</text>
 
-          {/* content */}
-          <div className="flex-1 p-4 md:p-5">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <p className="text-[9px] font-bold uppercase tracking-wider" style={{ color: "#9AA9B8" }}>Good morning, Doctor</p>
-                <p className="sp-head text-[15px] font-extrabold" style={{ color: NAVY }}>Dashboard</p>
-              </div>
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full" style={{ background: "#F0FDF4", border: "1px solid #BBF7D0" }}>
-                <span className="w-1.5 h-1.5 rounded-full sp-live" style={{ background: GREEN }} />
-                <span className="text-[9px] font-bold" style={{ color: GREEN }}>Live</span>
-              </div>
-            </div>
+      {/* ══ DOCTOR CENTER — male lead, cx=240 ══ */}
+      <rect x="212" y="226" width="56" height="266" rx="8" fill="#0D9488"/>
+      <path d="M196 230 L170 492 L226 492 L242 255 Z" fill="url(#coatL)" stroke="#E2E8F0" strokeWidth="0.5"/>
+      <path d="M284 230 L310 492 L254 492 L238 255 Z" fill="url(#coatL)" stroke="#E2E8F0" strokeWidth="0.5"/>
+      <path d="M224 232 L240 252 L256 232" fill="#F1F5F9" stroke="#E2E8F0" strokeWidth="1.5"/>
+      {/* Head */}
+      <circle cx="240" cy="177" r="41" fill="#FBBF24"/>
+      {/* Hair */}
+      <path d="M201 171 Q203 146 240 143 Q277 146 279 171 L276 159 Q240 149 204 159 Z" fill="#1C1917"/>
+      {/* Face */}
+      <ellipse cx="227" cy="179" rx="5.5" ry="6.5" fill="#1C1917"/>
+      <ellipse cx="253" cy="179" rx="5.5" ry="6.5" fill="#1C1917"/>
+      <path d="M229 196 Q240 207 251 196" stroke="#1C1917" strokeWidth="2" fill="none" strokeLinecap="round"/>
+      <rect x="230" y="214" width="20" height="18" rx="5" fill="#FBBF24"/>
+      {/* Stethoscope */}
+      <path d="M226 249 Q213 271 209 292 Q205 314 217 322 Q229 330 235 316 Q241 302 227 295" stroke="#16A34A" strokeWidth="3" fill="none" strokeLinecap="round"/>
+      <circle cx="227" cy="295" r="9" fill="none" stroke="#16A34A" strokeWidth="2.5"/>
+      <circle cx="227" cy="295" r="4" fill="#16A34A" opacity="0.22"/>
+      {/* Right arm + tablet */}
+      <path d="M276 254 Q292 284 288 326" stroke="#FBBF24" strokeWidth="14" fill="none" strokeLinecap="round"/>
+      <rect x="282" y="308" width="52" height="68" rx="8" fill="#1E3A5F"/>
+      <rect x="287" y="314" width="42" height="55" rx="4" fill="#2563EB" opacity="0.28"/>
+      <rect x="292" y="320" width="30" height="2.5" rx="1.5" fill="white" opacity="0.9"/>
+      <rect x="292" y="328" width="22" height="2" rx="1" fill="white" opacity="0.6"/>
+      <rect x="292" y="335" width="26" height="2" rx="1" fill="white" opacity="0.6"/>
+      <rect x="292" y="346" width="8" height="12" rx="2" fill="#16A34A" opacity="0.9"/>
+      <rect x="303" y="342" width="8" height="16" rx="2" fill="#16A34A" opacity="0.9"/>
+      <rect x="314" y="337" width="8" height="21" rx="2" fill="#22C55E" opacity="0.9"/>
+      <circle cx="295" cy="365" r="3.5" fill="#16A34A"/>
+      {/* Name badge */}
+      <rect x="200" y="308" width="56" height="22" rx="4" fill="#F0FDF4" stroke="#16A34A" strokeWidth="1"/>
+      <text x="228" y="318" textAnchor="middle" fontSize="6.5" fill="#16A34A" fontWeight="700" fontFamily="system-ui,sans-serif">Dr. Arun Kumar</text>
+      <text x="228" y="327" textAnchor="middle" fontSize="5.5" fill="#059669" fontFamily="system-ui,sans-serif">General Medicine</text>
 
-            {/* KPI tiles */}
-            <div className="grid grid-cols-3 gap-2 mb-3.5">
-              {[
-                { label: "Patients", val: "1,284", up: "+12%" },
-                { label: "Appointments", val: "36", up: "+8%" },
-                { label: "Revenue", val: "₹84.2k", up: "+19%" },
-              ].map(k => (
-                <div key={k.label} className="rounded-xl p-2.5" style={{ background: "#F8FAFC", border: "1px solid #EEF2F6" }}>
-                  <p className="text-[8px] font-bold uppercase tracking-wider" style={{ color: "#9AA9B8" }}>{k.label}</p>
-                  <p className="sp-head text-[13px] md:text-[15px] font-extrabold mt-0.5" style={{ color: NAVY }}>{k.val}</p>
-                  <p className="text-[8px] font-bold" style={{ color: GREEN }}>{k.up} ↑</p>
-                </div>
-              ))}
-            </div>
+      {/* ══ DOCTOR RIGHT — male glasses, cx=365 ══ */}
+      <rect x="340" y="244" width="50" height="248" rx="7" fill="#1E40AF"/>
+      <path d="M326 248 L308 492 L353 492 L363 268 Z" fill="url(#coatL)" stroke="#E2E8F0" strokeWidth="0.5"/>
+      <path d="M404 248 L422 492 L377 492 L367 268 Z" fill="url(#coatL)" stroke="#E2E8F0" strokeWidth="0.5"/>
+      <path d="M353 250 L365 265 L377 250" fill="#F1F5F9" stroke="#E2E8F0" strokeWidth="1"/>
+      {/* Head */}
+      <circle cx="365" cy="203" r="30" fill="#FBBF24"/>
+      {/* Hair */}
+      <path d="M337 196 Q339 177 365 174 Q391 177 393 196 L390 185 Q365 176 340 185 Z" fill="#374151"/>
+      {/* Glasses */}
+      <circle cx="356" cy="203" r="10" fill="none" stroke="#374151" strokeWidth="2"/>
+      <circle cx="375" cy="203" r="10" fill="none" stroke="#374151" strokeWidth="2"/>
+      <path d="M366 203 L365 203" stroke="#374151" strokeWidth="2" strokeLinecap="round"/>
+      <path d="M346 199 L339 197" stroke="#374151" strokeWidth="1.5" strokeLinecap="round"/>
+      <path d="M385 199 L392 197" stroke="#374151" strokeWidth="1.5" strokeLinecap="round"/>
+      {/* Eyes */}
+      <ellipse cx="356" cy="203" rx="4" ry="5" fill="#1C1917"/>
+      <ellipse cx="375" cy="203" rx="4" ry="5" fill="#1C1917"/>
+      <path d="M357 214 Q365 222 373 214" stroke="#1C1917" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
+      <rect x="357" y="229" width="16" height="16" rx="4" fill="#FBBF24"/>
+      {/* Stethoscope */}
+      <path d="M355 272 Q343 290 340 307 Q337 323 347 329 Q357 335 361 322 Q365 309 355 303" stroke="#16A34A" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
+      <circle cx="355" cy="303" r="6" fill="none" stroke="#16A34A" strokeWidth="2"/>
+      {/* Left arm gesture */}
+      <path d="M327 272 Q317 298 319 326" stroke="#FBBF24" strokeWidth="11" fill="none" strokeLinecap="round"/>
+      {/* Name badge */}
+      <rect x="320" y="296" width="44" height="22" rx="4" fill="#F0FDF4" stroke="#16A34A" strokeWidth="1"/>
+      <text x="342" y="306" textAnchor="middle" fontSize="6.5" fill="#16A34A" fontWeight="700" fontFamily="system-ui,sans-serif">Dr. Ramesh</text>
+      <text x="342" y="315" textAnchor="middle" fontSize="5.5" fill="#059669" fontFamily="system-ui,sans-serif">Cardiologist</text>
 
-            {/* chart */}
-            <div className="rounded-xl p-3 mb-3.5" style={{ background: "#F8FAFC", border: "1px solid #EEF2F6" }}>
-              <div className="flex items-center justify-between mb-2.5">
-                <p className="text-[10px] font-bold" style={{ color: "#41546B" }}>Weekly Patient Flow</p>
-                <TrendingUp size={12} style={{ color: GREEN }} />
-              </div>
-              <div className="flex items-end gap-1.5 h-14">
-                {[38, 55, 42, 70, 58, 88, 64, 92, 74, 60, 82, 96].map((h, i) => (
-                  <div key={i} className="flex-1 rounded-t sp-bar"
-                    style={{
-                      height: `${h}%`,
-                      background: i === 11 ? `linear-gradient(180deg, ${GREEN}, ${TEAL})` : "rgba(13,148,136,0.20)",
-                      animationDelay: `${i * 80}ms`,
-                    }} />
-                ))}
-              </div>
-            </div>
-
-            {/* queue rows */}
-            {[
-              { n: "Arun Kumar", t: "10:15 AM", tag: "Consultation" },
-              { n: "Priya Sharma", t: "10:40 AM", tag: "Follow-up" },
-            ].map(r => (
-              <div key={r.n} className="flex items-center gap-2.5 py-2 border-t border-slate-100">
-                <div className="w-7 h-7 rounded-full flex items-center justify-center text-[9px] font-extrabold text-white"
-                  style={{ background: `linear-gradient(135deg, ${TEAL}, ${GREEN})` }}>
-                  {r.n.split(" ").map(w => w[0]).join("")}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[11px] font-bold truncate" style={{ color: NAVY }}>{r.n}</p>
-                  <p className="text-[9px]" style={{ color: "#9AA9B8" }}>{r.t}</p>
-                </div>
-                <span className="text-[8px] font-bold px-2 py-0.5 rounded-full"
-                  style={{ background: "rgba(22,163,74,0.10)", color: GREEN }}>{r.tag}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* floating glass cards */}
-      <FloatCard className="-top-3 -left-3 lg:-left-7" delay={0}   icon={<Users size={13} />}     title="Today's Patients" value="36 checked in" />
-      <FloatCard className="top-28 -right-3 lg:-right-8" delay={1.3} icon={<BarChart3 size={13} />} title="Revenue" value="₹84,200 · +19%" />
-      <FloatCard className="-bottom-3 left-6" delay={0.7} icon={<Sparkles size={13} />} title="AI Insights" value="3 new suggestions" accent />
-    </div>
+      {/* Floor line */}
+      <path d="M40 492 L440 492" stroke="#E2E8F0" strokeWidth="1.5" strokeLinecap="round"/>
+      {/* Small medical cross floor accent */}
+      <rect x="223" y="456" width="6" height="20" rx="3" fill="#16A34A" opacity="0.15"/>
+      <rect x="215" y="464" width="20" height="6" rx="3" fill="#16A34A" opacity="0.15"/>
+    </svg>
   );
 }
 
-function FloatCard({ className = "", delay, icon, title, value, accent = false }: {
-  className?: string; delay: number; icon: React.ReactNode; title: string; value: string; accent?: boolean;
-}) {
+/* ── Trust bar — horizontal strip below hero ─────────────────────────────── */
+function TrustBar() {
   return (
-    <div className={`absolute z-10 flex items-center gap-2.5 rounded-2xl px-3.5 py-2.5 sp-float ${className}`}
-      style={{
-        background: accent ? "rgba(22,163,74,0.94)" : "rgba(255,255,255,0.82)",
-        backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
-        border: accent ? "1px solid rgba(255,255,255,0.35)" : "1px solid rgba(255,255,255,0.8)",
-        boxShadow: "0 16px 40px -12px rgba(11,22,40,0.28)",
-        animationDelay: `${delay}s`,
-      }}>
-      <div className="w-7 h-7 rounded-xl flex items-center justify-center shrink-0"
-        style={accent ? { background: "rgba(255,255,255,0.22)", color: "#fff" } : { background: "rgba(22,163,74,0.12)", color: GREEN }}>
-        {icon}
-      </div>
-      <div className="leading-tight">
-        <p className="text-[10px] font-extrabold" style={{ color: accent ? "#fff" : NAVY }}>{title}</p>
-        <p className="text-[9px] font-semibold" style={{ color: accent ? "rgba(255,255,255,0.85)" : "#7C8DA0" }}>{value}</p>
+    <div style={{ borderTop: "1px solid #E2E8F0", borderBottom: "1px solid #E2E8F0", background: "#FAFAF9" }}>
+      <div className="max-w-7xl mx-auto px-5 md:px-8 py-3.5">
+        <div className="flex flex-wrap items-center justify-between gap-y-3 gap-x-5">
+          {[
+            { icon: <Lock size={14}/>,       label: "Secure & Encrypted" },
+            { icon: <Cloud size={14}/>,      label: "Cloud Based" },
+            { icon: <ShieldCheck size={14}/>,label: "ABDM Compliant" },
+            { icon: <HeartPulse size={14}/>, label: "Dedicated Support" },
+            { icon: <Mail size={14}/>,       label: "rapdfly@gmail.com" },
+            { icon: <Phone size={14}/>,      label: "+91 96290 51083" },
+          ].map(({ icon, label }) => (
+            <div key={label} className="flex items-center gap-2 text-[13px] font-semibold" style={{ color: "#475569" }}>
+              <span style={{ color: GREEN }}>{icon}</span>
+              {label}
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -1266,52 +1345,28 @@ function PageStyles() {
       .sp-reveal { opacity: 0; transform: translateY(22px); transition: opacity .65s cubic-bezier(.16,1,.3,1), transform .65s cubic-bezier(.16,1,.3,1); }
       .sp-reveal.sp-in { opacity: 1; transform: none; }
 
-      /* Gradient shimmering headline accent */
-      .sp-grad-text {
-        background: linear-gradient(100deg, ${GREEN}, ${TEAL}, #22C55E, ${GREEN});
-        background-size: 220% auto;
-        -webkit-background-clip: text; background-clip: text;
-        -webkit-text-fill-color: transparent; color: transparent;
-        animation: spTextShimmer 5s linear infinite;
-      }
-      @keyframes spTextShimmer { to { background-position: 220% center; } }
-
-      /* Hero ambient mesh + dot grid */
-      .sp-hero-mesh {
-        background:
-          radial-gradient(42% 40% at 88% 6%, rgba(22,163,74,0.10), transparent 70%),
-          radial-gradient(38% 44% at 8% 22%, rgba(13,148,136,0.08), transparent 70%),
-          radial-gradient(46% 46% at 60% 100%, rgba(29,78,216,0.05), transparent 70%);
-      }
+      /* Hero dot grid */
       .sp-hero-grid {
-        background-image: radial-gradient(rgba(11,22,40,0.05) 1px, transparent 1px);
-        background-size: 22px 22px;
-        -webkit-mask-image: linear-gradient(to bottom, black, transparent 78%);
-        mask-image: linear-gradient(to bottom, black, transparent 78%);
+        background-image: radial-gradient(rgba(11,22,40,0.045) 1px, transparent 1px);
+        background-size: 24px 24px;
+        -webkit-mask-image: linear-gradient(to bottom, black 20%, transparent 80%);
+        mask-image: linear-gradient(to bottom, black 20%, transparent 80%);
       }
 
-      /* Product mockup tilt */
-      .sp-persp { perspective: 1600px; }
-      .sp-tilt { transition: transform .5s cubic-bezier(.16,1,.3,1); }
-      @media (min-width: 1024px) {
-        .sp-tilt { transform: rotateY(-6deg) rotateX(2deg); }
-        .sp-tilt:hover { transform: rotateY(-2deg) rotateX(1deg) translateY(-4px); }
+      /* Floating overlay cards on hero illustration */
+      @keyframes spHeroFloat {
+        0%, 100% { transform: translateY(0); }
+        50%      { transform: translateY(-6px); }
       }
+      .sp-hero-card { animation: spHeroFloat 5s ease-in-out infinite; }
+      .sp-hero-card:nth-child(2) { animation-delay: 1.2s; }
+      .sp-hero-card:nth-child(3) { animation-delay: 2.4s; }
 
       @keyframes spFloat {
         0%, 100% { transform: translateY(0); }
         50%      { transform: translateY(-10px); }
       }
       .sp-float { animation: spFloat 5.5s ease-in-out infinite; }
-
-      @keyframes spGrow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
-      .sp-bar { transform-origin: bottom; animation: spGrow .9s cubic-bezier(.16,1,.3,1) both; }
-
-      @keyframes spLive {
-        0%, 100% { box-shadow: 0 0 0 0 rgba(22,163,74,0.55); }
-        50%      { box-shadow: 0 0 0 4px rgba(22,163,74,0); }
-      }
-      .sp-live { animation: spLive 2s ease-in-out infinite; }
 
       @keyframes spBeat {
         0%, 100% { transform: scale(1); }
