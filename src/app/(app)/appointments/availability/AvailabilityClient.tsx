@@ -28,6 +28,14 @@ function toMins(t: string) {
 function slotsCount(start: string, end: string, mins: number) {
   return Math.max(0, Math.floor((toMins(end) - toMins(start)) / mins));
 }
+function nextWeekdayDate(weekday: number): string {
+  const today = new Date();
+  const diff = (weekday - today.getDay() + 7) % 7;
+  const d = new Date(today);
+  d.setDate(today.getDate() + diff);
+  const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+}
 
 /* ── Types ─────────────────────────────────────────────────────────────────── */
 interface Hospital { id: string; name: string; }
@@ -287,9 +295,14 @@ function ScheduleCard({
       <div className={`p-4 flex-1 transition-opacity ${active ? "" : "opacity-50"}`}>
         {/* Day + status */}
         <div className="flex items-center justify-between mb-3">
-          <span className="text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-lg bg-[var(--color-primary-50)] text-[var(--color-primary-700)]">
-            {WEEKDAYS_FULL[slot.weekday]}
-          </span>
+          <div>
+            <span className="text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-lg bg-[var(--color-primary-50)] text-[var(--color-primary-700)]">
+              {WEEKDAYS_FULL[slot.weekday]}
+            </span>
+            <p className="text-[10px] text-[var(--color-ink-400)] mt-1.5 pl-0.5">
+              {nextWeekdayDate(slot.weekday)}
+            </p>
+          </div>
           <span className={`inline-flex items-center gap-1.5 text-[10px] font-semibold px-2 py-0.5 rounded-full ${
             active
               ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
