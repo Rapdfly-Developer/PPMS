@@ -186,7 +186,7 @@ function ApptRow({ appt, role }: { appt: Appt; role: "DOCTOR" | "HOSPITAL" }) {
         </div>
       </Link>
       {appt.complaint && (
-        <span className="hidden md:block text-[11px] text-[var(--color-ink-400)] italic shrink-0 max-w-[140px] truncate">
+        <span className="hidden md:block text-sm font-medium text-[var(--color-ink-600)] shrink-0 max-w-[180px] truncate">
           {appt.complaint}
         </span>
       )}
