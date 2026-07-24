@@ -26,7 +26,10 @@ export async function hospitalUpdateAppointmentStatus(
   });
   if (!appt || appt.hospitalId !== user.hospitalId) throw new Error("Forbidden");
 
-  await prisma.appointment.update({ where: { id: appointmentId }, data: { status } });
+  await prisma.appointment.update({
+    where: { id: appointmentId },
+    data: { status, ...(status === "CONFIRMED" ? { arrivedAt: new Date() } : {}) },
+  });
 
   writeAudit(user.id, "Appointment", appointmentId,
     status === "CONFIRMED" ? "CONFIRMED" : "CANCELLED",
@@ -146,7 +149,7 @@ export async function doctorConfirmAppointment(appointmentId: string): Promise<v
   if (!appt || appt.doctorId !== scopeDoctorId(user)) throw new Error("Forbidden");
   if (appt.status !== "REQUESTED") throw new Error("Only REQUESTED appointments can be moved to queue.");
 
-  await prisma.appointment.update({ where: { id: appointmentId }, data: { status: "CONFIRMED" } });
+  await prisma.appointment.update({ where: { id: appointmentId }, data: { status: "CONFIRMED", arrivedAt: new Date() } });
 
   writeAudit(user.id, "Appointment", appointmentId, "CONFIRMED",
     { patient: appt.patient.name, hospital: appt.hospital.name },

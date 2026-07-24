@@ -16,6 +16,7 @@ interface Appt {
   id: string;
   dateTime: string;
   createdAt: string;
+  arrivedAt: string | null;
   status: string;
   isWalkIn: boolean;
   complaint: string | null;
@@ -127,14 +128,22 @@ function SurgeryRow({ s, role }: { s: Surgery; role: "DOCTOR" | "HOSPITAL" }) {
 
 /* ── Appointment row ────────────────────────────────────────────────────── */
 function ApptRow({ appt, role }: { appt: Appt; role: "DOCTOR" | "HOSPITAL" }) {
-  const cfg  = STATUS_CFG[appt.status] ?? STATUS_CFG["REQUESTED"];
-  const time = format(new Date(appt.dateTime), "h:mm a");
+  const cfg      = STATUS_CFG[appt.status] ?? STATUS_CFG["REQUESTED"];
+  const apptTime = format(new Date(appt.dateTime), "h:mm a");
+  // arrivedAt = when patient was confirmed into today's queue; fall back to appt time
+  const arrivedAt   = appt.arrivedAt ? new Date(appt.arrivedAt) : null;
+  const visitedTime = arrivedAt ? format(arrivedAt, "h:mm a") : null;
+  // Timer runs from arrival; if no arrivedAt yet (still REQUESTED), fall back to appt time
+  const timerSince  = appt.arrivedAt ?? appt.dateTime;
 
   return (
     <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-[var(--color-border)] bg-white hover:bg-[var(--color-primary-50)] hover:border-[var(--color-primary-200)] transition-colors">
       {/* Time + visit-type column */}
       <div className="w-20 shrink-0 flex flex-col items-center gap-0.5">
-        <p className="text-sm font-bold text-[var(--color-ink-900)]">{time}</p>
+        {/* Large: visited time (when patient arrived) or appt time if not yet arrived */}
+        <p className="text-sm font-bold text-[var(--color-ink-900)]" title={visitedTime ? "Arrived at" : "Appointment time"}>
+          {visitedTime ?? apptTime}
+        </p>
         {appt.isWalkIn ? (
           <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-orange-50 text-orange-600">
             <PersonStanding size={9} /> Walk-in
@@ -144,8 +153,9 @@ function ApptRow({ appt, role }: { appt: Appt; role: "DOCTOR" | "HOSPITAL" }) {
             <Calendar size={9} /> Appt
           </span>
         )}
-        <span className="text-[9px] text-[var(--color-ink-300)]" title="Booked at">
-          {format(new Date(appt.createdAt), "h:mm a")}
+        {/* Small: appointment scheduled time */}
+        <span className="text-[9px] text-[var(--color-ink-300)]" title="Appointment time">
+          {apptTime}
         </span>
       </div>
       <div className="w-px self-stretch bg-[var(--color-border)]" />
@@ -185,7 +195,7 @@ function ApptRow({ appt, role }: { appt: Appt; role: "DOCTOR" | "HOSPITAL" }) {
           <span className={clsx("w-1.5 h-1.5 rounded-full shrink-0", cfg.dot)} />
           {cfg.label}
         </span>
-        <LiveTimer since={appt.dateTime} />
+        <LiveTimer since={timerSince} />
       </div>
     </div>
   );

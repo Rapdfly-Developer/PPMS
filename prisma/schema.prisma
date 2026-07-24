@@ -318,6 +318,7 @@ model Appointment {
   isWalkIn           Boolean  @default(false)
   notes              String?
   createdAt          DateTime @default(now())
+  arrivedAt          DateTime?   // set when status → CONFIRMED (patient reached the clinic)
 
   visit      Visit?
 
