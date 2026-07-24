@@ -15,6 +15,11 @@ const GREEN  = "#16A34A";
 const NAVY   = "#0B1628";
 const TEAL   = "#0D9488";
 const NAVY2  = "#112240";
+const BLUE   = "#1D4ED8";
+
+/* ── Elevation ───────────────────────────────────────────────────────────── */
+const SHADOW_CARD = "0 1px 2px rgba(11,22,40,0.04), 0 10px 26px -10px rgba(11,22,40,0.12)";
+const SHADOW_HI   = "0 30px 70px -22px rgba(11,22,40,0.30), 0 12px 28px -14px rgba(11,22,40,0.14), 0 0 0 1px rgba(11,22,40,0.04)";
 
 const DEMO_MAIL  = "mailto:rapdfly@gmail.com?subject=PPMS%20Free%20Demo%20Request";
 const EXPERT_TEL = "tel:+919629051083";
@@ -95,7 +100,7 @@ function SectionHead({ kicker, title, sub, dark = false }: {
   return (
     <Reveal className="text-center max-w-3xl mx-auto mb-14">
       <p className="text-[11px] font-extrabold uppercase tracking-[0.24em] mb-3" style={{ color: GREEN }}>{kicker}</p>
-      <h2 className="sp-head text-3xl md:text-[2.5rem] font-extrabold leading-tight tracking-tight"
+      <h2 className="sp-head text-3xl md:text-[2.5rem] font-extrabold leading-tight tracking-[-0.02em]"
         style={{ color: dark ? "#fff" : NAVY }}>
         {title}
       </h2>
@@ -131,10 +136,10 @@ export function SubPageClient() {
       <header
         className="fixed top-0 inset-x-0 z-50 transition-all duration-300"
         style={scrolled
-          ? { background: "rgba(255,255,255,0.95)", backdropFilter: "blur(14px)", boxShadow: "0 1px 0 rgba(11,22,40,0.06), 0 6px 24px rgba(11,22,40,0.05)" }
+          ? { background: "rgba(255,255,255,0.9)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", boxShadow: "0 1px 0 rgba(11,22,40,0.06), 0 6px 24px rgba(11,22,40,0.05)" }
           : { background: "transparent" }}
       >
-        <nav className="max-w-7xl mx-auto flex items-center justify-between px-5 md:px-8 h-[68px]">
+        <nav className="max-w-7xl mx-auto flex items-center justify-between px-5 md:px-8 h-[70px]">
           <a href="#top" className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-xl flex items-center justify-center shadow-sm"
               style={{ background: `linear-gradient(135deg, ${TEAL}, ${GREEN})` }}>
@@ -150,11 +155,11 @@ export function SubPageClient() {
           </a>
 
           <div className="hidden lg:flex items-center gap-7 text-sm font-semibold" style={{ color: "#41546B" }}>
-            <a href="#features" className="hover:text-[#16A34A] transition-colors">Features</a>
-            <a href="#why-ppms" className="hover:text-[#16A34A] transition-colors">Why PPMS</a>
-            <a href="#rapdfly" className="hover:text-[#16A34A] transition-colors">Company</a>
-            <a href="#security" className="hover:text-[#16A34A] transition-colors">Security</a>
-            <a href="#faq" className="hover:text-[#16A34A] transition-colors">FAQ</a>
+            <a href="#features" className="sp-navlink">Features</a>
+            <a href="#why-ppms" className="sp-navlink">Why PPMS</a>
+            <a href="#rapdfly" className="sp-navlink">Company</a>
+            <a href="#security" className="sp-navlink">Security</a>
+            <a href="#faq" className="sp-navlink">FAQ</a>
           </div>
 
           <div className="hidden lg:flex items-center gap-3">
@@ -162,7 +167,7 @@ export function SubPageClient() {
               Login
             </a>
             <a href={DEMO_MAIL}
-              className="sp-shine px-5 py-2.5 rounded-xl text-sm font-bold text-white shadow-md transition-transform hover:-translate-y-0.5"
+              className="sp-shine px-5 py-2.5 rounded-xl text-sm font-bold text-white transition-transform hover:-translate-y-0.5"
               style={{ background: GREEN, boxShadow: "0 6px 20px rgba(22,163,74,0.30)" }}>
               Book Demo
             </a>
@@ -190,6 +195,8 @@ export function SubPageClient() {
 
       <main id="top">
         <Hero />
+        <AudienceBand />
+        <FeatureStrip />
         <PropositionBar />
         <TickerStrip />
         <TrustStats />
@@ -218,131 +225,303 @@ export function SubPageClient() {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   HERO — compact, white, clean
+   HERO — premium split with live product mockup
 ═══════════════════════════════════════════════════════════════════════════ */
 function Hero() {
   return (
-    <section className="pt-[110px] pb-0 md:pt-[140px]" style={{ background: "#fff" }}>
-      <div className="max-w-7xl mx-auto px-5 md:px-8">
-        <div className="grid lg:grid-cols-[1.1fr_1fr] gap-10 lg:gap-16 items-center pb-16 md:pb-20">
+    <section className="relative overflow-hidden pt-[116px] pb-16 md:pt-[150px] md:pb-24" style={{ background: "#FBFDFC" }}>
+      {/* Ambient mesh + fine dot grid */}
+      <div className="sp-hero-mesh absolute inset-0 pointer-events-none" />
+      <div className="sp-hero-grid absolute inset-0 pointer-events-none" />
+
+      <div className="relative max-w-7xl mx-auto px-5 md:px-8">
+        <div className="grid lg:grid-cols-[1.04fr_1fr] gap-12 lg:gap-14 items-center">
 
           {/* ── Left copy ── */}
           <div>
             <Reveal>
-              <p className="text-[11px] font-extrabold uppercase tracking-[0.28em] mb-4" style={{ color: GREEN }}>
-                START THE CHANGE TODAY
-              </p>
+              <span className="inline-flex items-center gap-2 pl-1.5 pr-3.5 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-[0.14em] mb-6"
+                style={{ background: "rgba(22,163,74,0.08)", color: GREEN, border: "1px solid rgba(22,163,74,0.20)" }}>
+                <span className="w-5 h-5 rounded-full flex items-center justify-center text-white" style={{ background: GREEN }}>
+                  <HeartPulse size={11} className="sp-beat" />
+                </span>
+                Start the change today
+              </span>
             </Reveal>
 
             <Reveal delay={70}>
-              <h1 className="sp-head text-[2.35rem] md:text-[3rem] font-black leading-[1.07] tracking-tight mb-5" style={{ color: NAVY }}>
-                PPMS —{" "}
-                <span style={{ color: GREEN }}>Intelligent<br />Healthcare Platform</span>
-                <br />for Clinics &amp; Hospitals
+              <h1 className="sp-head text-[2.4rem] md:text-[3.35rem] font-black leading-[1.05] tracking-[-0.025em] mb-5" style={{ color: NAVY }}>
+                The Intelligent{" "}
+                <span className="sp-grad-text">Healthcare Platform</span>{" "}
+                for Modern Practices
               </h1>
             </Reveal>
 
-            {/* Compliance badge strip */}
-            <Reveal delay={130}>
-              <div className="flex flex-wrap items-center gap-2 mb-5">
+            <Reveal delay={140}>
+              <p className="text-[15px] md:text-[17px] leading-relaxed mb-6 max-w-xl" style={{ color: "#4B5563" }}>
+                Securely manage appointments, prescriptions, patient records and clinic operations —
+                all in one elegant cloud platform. Built for doctors, clinics, hospitals and eye care centers.
+              </p>
+            </Reveal>
+
+            {/* Compliance badges */}
+            <Reveal delay={190}>
+              <div className="flex flex-wrap items-center gap-2 mb-7">
                 {[
-                  { icon: CheckCircle2, label: "ABHA Ready",       bg: "#F0FDF4", color: GREEN,     border: "#BBF7D0" },
-                  { icon: FileText,     label: "Health Records",   bg: "#F0FDF4", color: GREEN,     border: "#BBF7D0" },
-                  { icon: ShieldCheck,  label: "HIPAA Ready",      bg: "#F0FDF4", color: GREEN,     border: "#BBF7D0" },
-                  { icon: BadgeCheck,   label: "NABH Workflow",    bg: "#EFF6FF", color: "#1D4ED8", border: "#BFDBFE" },
-                  { icon: Cloud,        label: "Cloud Hosted",     bg: "#F0FDF4", color: GREEN,     border: "#BBF7D0" },
-                ].map(({ icon: Icon, label, bg, color, border }) => (
-                  <span key={label} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold"
-                    style={{ background: bg, color, border: `1px solid ${border}` }}>
+                  { icon: CheckCircle2, label: "ABHA Ready",    accent: GREEN },
+                  { icon: FileText,     label: "Health Records", accent: GREEN },
+                  { icon: ShieldCheck,  label: "HIPAA Ready",   accent: GREEN },
+                  { icon: BadgeCheck,   label: "NABH Workflow",  accent: BLUE },
+                  { icon: Cloud,        label: "Cloud Hosted",  accent: GREEN },
+                ].map(({ icon: Icon, label, accent }) => (
+                  <span key={label} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-white"
+                    style={{ color: accent, border: "1px solid #E7EDF2", boxShadow: "0 1px 2px rgba(11,22,40,0.04)" }}>
                     <Icon size={12} /> {label}
                   </span>
                 ))}
               </div>
             </Reveal>
 
-            <Reveal delay={180}>
-              <p className="text-[15px] md:text-base leading-relaxed mb-8 max-w-xl" style={{ color: "#4B5563" }}>
-                Securely manage appointments, prescriptions, patient records and clinic operations —
-                all in one intelligent cloud platform. Built for doctors, clinics, hospitals and eye care centers.
-              </p>
-            </Reveal>
-
-            <Reveal delay={230}>
+            <Reveal delay={240}>
               <div className="flex flex-wrap gap-3 mb-8">
                 <a href={DEMO_MAIL}
                   className="sp-shine group flex items-center gap-2 px-7 py-3.5 rounded-xl text-[15px] font-bold text-white transition-all hover:-translate-y-0.5"
-                  style={{ background: GREEN, boxShadow: "0 10px 28px rgba(22,163,74,0.32)" }}>
+                  style={{ background: `linear-gradient(135deg, ${GREEN}, #12833C)`, boxShadow: "0 12px 30px rgba(22,163,74,0.34)" }}>
                   Request a Demo
                   <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
                 </a>
                 <a href={EXPERT_TEL}
-                  className="flex items-center gap-2 px-7 py-3.5 rounded-xl text-[15px] font-bold border-2 transition-all hover:-translate-y-0.5"
-                  style={{ color: NAVY, borderColor: "#CBD5E1", background: "#fff" }}>
+                  className="flex items-center gap-2 px-7 py-3.5 rounded-xl text-[15px] font-bold border-2 bg-white transition-all hover:-translate-y-0.5 hover:border-[color:var(--g)]"
+                  style={{ color: NAVY, borderColor: "#D5DEE7", ["--g" as string]: GREEN }}>
                   <Phone size={15} /> Explore Features
                 </a>
               </div>
             </Reveal>
 
-            <Reveal delay={280}>
-              <div className="flex flex-wrap gap-x-5 gap-y-1.5 text-[13px] font-medium" style={{ color: "#64748B" }}>
-                {["One Doctor · Multiple Hospitals", "Secure & Cloud Based", "Fast Setup", "24×7 Support"].map(t => (
-                  <span key={t} className="flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: GREEN }} /> {t}
-                  </span>
-                ))}
+            {/* Social proof */}
+            <Reveal delay={290}>
+              <div className="flex items-center gap-4">
+                <div className="flex -space-x-2.5">
+                  {[[TEAL, GREEN], [GREEN, "#12833C"], [BLUE, "#3B82F6"], [NAVY, TEAL]].map((g, i) => (
+                    <div key={i} className="w-9 h-9 rounded-full flex items-center justify-center text-white ring-2 ring-white"
+                      style={{ background: `linear-gradient(135deg, ${g[0]}, ${g[1]})` }}>
+                      {[<Stethoscope key="s" size={14} />, <UserCircle key="u" size={14} />, <Building2 key="b" size={14} />, <Eye key="e" size={14} />][i]}
+                    </div>
+                  ))}
+                </div>
+                <div>
+                  <div className="flex items-center gap-1 mb-0.5">
+                    {Array.from({ length: 5 }).map((_, j) => <Star key={j} size={12} fill="#F59E0B" stroke="#F59E0B" />)}
+                  </div>
+                  <p className="text-xs font-medium" style={{ color: "#64748B" }}>
+                    Trusted by clinics, hospitals &amp; eye care centers
+                  </p>
+                </div>
               </div>
             </Reveal>
           </div>
 
-          {/* ── Right — benefit cards ── */}
-          <Reveal delay={160} className="flex flex-col gap-4">
-            <div className="rounded-2xl p-6 flex items-start gap-4 transition-all hover:shadow-lg hover:-translate-y-0.5 duration-300"
-              style={{ background: "#EFF6FF", border: "1px solid #BFDBFE" }}>
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 text-white"
-                style={{ background: "#1D4ED8" }}>
-                <Stethoscope size={22} />
-              </div>
-              <div>
-                <h3 className="sp-head text-[17px] font-extrabold mb-1.5" style={{ color: NAVY }}>For Your Practice.</h3>
-                <p className="text-sm leading-relaxed" style={{ color: "#374151" }}>
-                  Streamline appointments, EMR, billing, and analytics all in one place.
-                  Spend more time with patients, less on paperwork.
-                </p>
-              </div>
-            </div>
-
-            <div className="rounded-2xl p-6 flex items-start gap-4 transition-all hover:shadow-lg hover:-translate-y-0.5 duration-300"
-              style={{ background: "#F0FDF4", border: "1px solid #BBF7D0" }}>
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 text-white"
-                style={{ background: GREEN }}>
-                <Users size={22} />
-              </div>
-              <div>
-                <h3 className="sp-head text-[17px] font-extrabold mb-1.5" style={{ color: NAVY }}>For Your Patients.</h3>
-                <p className="text-sm leading-relaxed" style={{ color: "#374151" }}>
-                  Better care. Better experience. Digital prescriptions, smart reminders,
-                  and complete medical history in one tap.
-                </p>
-              </div>
-            </div>
-
-            <div className="rounded-xl px-5 py-4 flex items-center justify-between gap-4"
-              style={{ background: NAVY }}>
-              <div className="min-w-0">
-                <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "rgba(255,255,255,0.4)" }}>Dedicated Support</p>
-                <p className="text-sm font-bold text-white truncate">rapdfly@gmail.com</p>
-              </div>
-              <div className="w-px h-8 shrink-0" style={{ background: "rgba(255,255,255,0.12)" }} />
-              <a href={EXPERT_TEL} className="flex items-center gap-2 text-sm font-bold whitespace-nowrap shrink-0 transition-opacity hover:opacity-80" style={{ color: "#86EFAC" }}>
-                <Phone size={13} /> +91 96290 51083
-              </a>
-            </div>
+          {/* ── Right — live product mockup ── */}
+          <Reveal delay={160} className="relative hidden md:block">
+            <DashboardMockup />
           </Reveal>
         </div>
       </div>
+    </section>
+  );
+}
 
-      {/* ── Feature strip ── */}
-      <FeatureStrip />
+/* ── Live dashboard mockup ───────────────────────────────────────────────── */
+function DashboardMockup() {
+  return (
+    <div className="relative mx-auto max-w-[540px] sp-persp">
+      {/* soft ambient glow */}
+      <div className="absolute -inset-10 blur-2xl opacity-70 pointer-events-none"
+        style={{ background: "radial-gradient(55% 55% at 65% 25%, rgba(22,163,74,0.18), transparent 70%), radial-gradient(45% 45% at 25% 85%, rgba(13,148,136,0.16), transparent 70%)" }} />
+
+      <div className="sp-tilt relative rounded-[22px] overflow-hidden bg-white" style={{ boxShadow: SHADOW_HI }}>
+        {/* browser chrome */}
+        <div className="flex items-center gap-2 px-4 h-11" style={{ background: NAVY }}>
+          <span className="w-2.5 h-2.5 rounded-full" style={{ background: "#FF5F57" }} />
+          <span className="w-2.5 h-2.5 rounded-full" style={{ background: "#FEBC2E" }} />
+          <span className="w-2.5 h-2.5 rounded-full" style={{ background: "#28C840" }} />
+          <div className="ml-3 flex items-center gap-1.5 px-3 py-1 rounded-md" style={{ background: "rgba(255,255,255,0.08)" }}>
+            <Lock size={9} style={{ color: "#86EFAC" }} />
+            <span className="text-[10px] font-medium" style={{ color: "rgba(255,255,255,0.62)" }}>app.ppms.health</span>
+          </div>
+        </div>
+
+        {/* app body */}
+        <div className="flex">
+          {/* sidebar */}
+          <div className="hidden sm:flex flex-col items-center gap-1.5 py-4 w-14 border-r" style={{ borderColor: "#EEF2F6", background: "#FAFBFC" }}>
+            <div className="w-8 h-8 rounded-xl flex items-center justify-center mb-2" style={{ background: `linear-gradient(135deg, ${TEAL}, ${GREEN})` }}>
+              <svg width="13" height="13" viewBox="0 0 52 52" fill="none">
+                <rect x="20" y="4" width="12" height="44" rx="5" fill="white" />
+                <rect x="4" y="20" width="44" height="12" rx="5" fill="white" />
+              </svg>
+            </div>
+            {[BarChart3, Calendar, Users, FileText, Receipt].map((I, i) => (
+              <div key={i} className="w-9 h-9 rounded-xl flex items-center justify-center"
+                style={i === 0 ? { background: "rgba(22,163,74,0.12)", color: GREEN } : { color: "#B4C0CC" }}>
+                <I size={15} />
+              </div>
+            ))}
+          </div>
+
+          {/* content */}
+          <div className="flex-1 p-4 md:p-5">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <p className="text-[9px] font-bold uppercase tracking-wider" style={{ color: "#9AA9B8" }}>Good morning, Doctor</p>
+                <p className="sp-head text-[15px] font-extrabold" style={{ color: NAVY }}>Dashboard</p>
+              </div>
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full" style={{ background: "#F0FDF4", border: "1px solid #BBF7D0" }}>
+                <span className="w-1.5 h-1.5 rounded-full sp-live" style={{ background: GREEN }} />
+                <span className="text-[9px] font-bold" style={{ color: GREEN }}>Live</span>
+              </div>
+            </div>
+
+            {/* KPI tiles */}
+            <div className="grid grid-cols-3 gap-2 mb-3.5">
+              {[
+                { label: "Patients", val: "1,284", up: "+12%" },
+                { label: "Appointments", val: "36", up: "+8%" },
+                { label: "Revenue", val: "₹84.2k", up: "+19%" },
+              ].map(k => (
+                <div key={k.label} className="rounded-xl p-2.5" style={{ background: "#F8FAFC", border: "1px solid #EEF2F6" }}>
+                  <p className="text-[8px] font-bold uppercase tracking-wider" style={{ color: "#9AA9B8" }}>{k.label}</p>
+                  <p className="sp-head text-[13px] md:text-[15px] font-extrabold mt-0.5" style={{ color: NAVY }}>{k.val}</p>
+                  <p className="text-[8px] font-bold" style={{ color: GREEN }}>{k.up} ↑</p>
+                </div>
+              ))}
+            </div>
+
+            {/* chart */}
+            <div className="rounded-xl p-3 mb-3.5" style={{ background: "#F8FAFC", border: "1px solid #EEF2F6" }}>
+              <div className="flex items-center justify-between mb-2.5">
+                <p className="text-[10px] font-bold" style={{ color: "#41546B" }}>Weekly Patient Flow</p>
+                <TrendingUp size={12} style={{ color: GREEN }} />
+              </div>
+              <div className="flex items-end gap-1.5 h-14">
+                {[38, 55, 42, 70, 58, 88, 64, 92, 74, 60, 82, 96].map((h, i) => (
+                  <div key={i} className="flex-1 rounded-t sp-bar"
+                    style={{
+                      height: `${h}%`,
+                      background: i === 11 ? `linear-gradient(180deg, ${GREEN}, ${TEAL})` : "rgba(13,148,136,0.20)",
+                      animationDelay: `${i * 80}ms`,
+                    }} />
+                ))}
+              </div>
+            </div>
+
+            {/* queue rows */}
+            {[
+              { n: "Arun Kumar", t: "10:15 AM", tag: "Consultation" },
+              { n: "Priya Sharma", t: "10:40 AM", tag: "Follow-up" },
+            ].map(r => (
+              <div key={r.n} className="flex items-center gap-2.5 py-2 border-t border-slate-100">
+                <div className="w-7 h-7 rounded-full flex items-center justify-center text-[9px] font-extrabold text-white"
+                  style={{ background: `linear-gradient(135deg, ${TEAL}, ${GREEN})` }}>
+                  {r.n.split(" ").map(w => w[0]).join("")}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[11px] font-bold truncate" style={{ color: NAVY }}>{r.n}</p>
+                  <p className="text-[9px]" style={{ color: "#9AA9B8" }}>{r.t}</p>
+                </div>
+                <span className="text-[8px] font-bold px-2 py-0.5 rounded-full"
+                  style={{ background: "rgba(22,163,74,0.10)", color: GREEN }}>{r.tag}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* floating glass cards */}
+      <FloatCard className="-top-3 -left-3 lg:-left-7" delay={0}   icon={<Users size={13} />}     title="Today's Patients" value="36 checked in" />
+      <FloatCard className="top-28 -right-3 lg:-right-8" delay={1.3} icon={<BarChart3 size={13} />} title="Revenue" value="₹84,200 · +19%" />
+      <FloatCard className="-bottom-3 left-6" delay={0.7} icon={<Sparkles size={13} />} title="AI Insights" value="3 new suggestions" accent />
+    </div>
+  );
+}
+
+function FloatCard({ className = "", delay, icon, title, value, accent = false }: {
+  className?: string; delay: number; icon: React.ReactNode; title: string; value: string; accent?: boolean;
+}) {
+  return (
+    <div className={`absolute z-10 flex items-center gap-2.5 rounded-2xl px-3.5 py-2.5 sp-float ${className}`}
+      style={{
+        background: accent ? "rgba(22,163,74,0.94)" : "rgba(255,255,255,0.82)",
+        backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
+        border: accent ? "1px solid rgba(255,255,255,0.35)" : "1px solid rgba(255,255,255,0.8)",
+        boxShadow: "0 16px 40px -12px rgba(11,22,40,0.28)",
+        animationDelay: `${delay}s`,
+      }}>
+      <div className="w-7 h-7 rounded-xl flex items-center justify-center shrink-0"
+        style={accent ? { background: "rgba(255,255,255,0.22)", color: "#fff" } : { background: "rgba(22,163,74,0.12)", color: GREEN }}>
+        {icon}
+      </div>
+      <div className="leading-tight">
+        <p className="text-[10px] font-extrabold" style={{ color: accent ? "#fff" : NAVY }}>{title}</p>
+        <p className="text-[9px] font-semibold" style={{ color: accent ? "rgba(255,255,255,0.85)" : "#7C8DA0" }}>{value}</p>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   AUDIENCE BAND — For Your Practice / For Your Patients
+═══════════════════════════════════════════════════════════════════════════ */
+const AUDIENCE = [
+  {
+    icon: Stethoscope, tag: "For Your Practice", title: "Run a smarter clinic.",
+    desc: "Streamline appointments, EMR, billing and analytics in one place. Spend more time with patients, less on paperwork.",
+    points: ["Unified patient records", "One-click prescriptions", "Real-time analytics"],
+    accent: BLUE, soft: "#EFF6FF", ring: "#BFDBFE",
+  },
+  {
+    icon: HeartPulse, tag: "For Your Patients", title: "Deliver better care.",
+    desc: "A better experience at every visit — digital prescriptions, smart reminders and complete medical history in one tap.",
+    points: ["Faster check-in with QR", "Automated reminders", "Complete visit timeline"],
+    accent: GREEN, soft: "#F0FDF4", ring: "#BBF7D0",
+  },
+];
+
+function AudienceBand() {
+  return (
+    <section className="py-16 md:py-20" style={{ background: "#fff" }}>
+      <div className="max-w-7xl mx-auto px-5 md:px-8">
+        <div className="grid md:grid-cols-2 gap-5 md:gap-6">
+          {AUDIENCE.map((a, i) => (
+            <Reveal key={a.tag} delay={i * 90}>
+              <div className="group relative rounded-[26px] p-7 md:p-9 h-full overflow-hidden transition-all duration-300 hover:-translate-y-1"
+                style={{ background: a.soft, border: `1px solid ${a.ring}`, boxShadow: SHADOW_CARD }}>
+                <div className="absolute -top-20 -right-16 w-56 h-56 rounded-full opacity-60 blur-2xl transition-transform duration-500 group-hover:scale-125"
+                  style={{ background: `radial-gradient(circle, ${a.accent}22, transparent 70%)` }} />
+                <div className="relative">
+                  <div className="w-13 h-13 rounded-2xl flex items-center justify-center mb-5 text-white"
+                    style={{ background: a.accent, boxShadow: `0 10px 24px -6px ${a.accent}70`, width: 52, height: 52 }}>
+                    <a.icon size={24} />
+                  </div>
+                  <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] mb-1.5" style={{ color: a.accent }}>{a.tag}</p>
+                  <h3 className="sp-head text-2xl md:text-[1.7rem] font-extrabold tracking-tight mb-3" style={{ color: NAVY }}>{a.title}</h3>
+                  <p className="text-[15px] leading-relaxed mb-6 max-w-md" style={{ color: "#4B5563" }}>{a.desc}</p>
+                  <ul className="flex flex-col gap-2.5">
+                    {a.points.map(p => (
+                      <li key={p} className="flex items-center gap-2.5 text-sm font-semibold" style={{ color: "#1E293B" }}>
+                        <span className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-white" style={{ background: a.accent }}>
+                          <Check size={11} />
+                        </span>
+                        {p}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </Reveal>
+          ))}
+        </div>
+      </div>
     </section>
   );
 }
@@ -351,24 +530,29 @@ function Hero() {
    FEATURE STRIP — 5-column icon row
 ═══════════════════════════════════════════════════════════════════════════ */
 const FEATURE_STRIP = [
-  { icon: Fingerprint,  title: "Patient Registration",       desc: "Fast & secure patient check-in with QR" },
+  { icon: Fingerprint,  title: "Patient Registration",       desc: "Fast & secure check-in with QR" },
   { icon: CalendarDays, title: "Appointment Management",     desc: "Schedule, reschedule & manage easily" },
   { icon: FileText,     title: "Electronic Medical Records", desc: "Complete EMR with history & timeline" },
   { icon: Receipt,      title: "Billing & Inventory",        desc: "Simplify billing & manage inventory" },
-  { icon: Building2,    title: "OPD & IPD Records",          desc: "Digital records for OPD & IPD management" },
+  { icon: Building2,    title: "OPD & IPD Records",          desc: "Digital records for OPD & IPD" },
 ];
 
 function FeatureStrip() {
   return (
-    <div style={{ background: "#F8FAFC", borderTop: "1px solid #E2E8F0", borderBottom: "1px solid #E2E8F0" }}>
-      <div className="max-w-7xl mx-auto px-5 md:px-8 py-8">
+    <div style={{ background: "#F8FAFC", borderTop: "1px solid #E7EDF2", borderBottom: "1px solid #E7EDF2" }}>
+      <div className="max-w-7xl mx-auto px-5 md:px-8 py-9">
         <div className="grid grid-cols-2 md:grid-cols-5 gap-2 md:gap-4">
           {FEATURE_STRIP.map((f, i) => (
             <Reveal key={f.title} delay={i * 55}>
-              <div className="flex flex-col items-center text-center gap-3 px-3 py-5 rounded-xl transition-all hover:-translate-y-0.5 hover:bg-white hover:shadow-md cursor-default group">
-                <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 transition-all duration-200 group-hover:scale-110"
+              <div className="flex flex-col items-center text-center gap-3 px-3 py-5 rounded-2xl transition-all duration-300 hover:-translate-y-1 hover:bg-white cursor-default group"
+                style={{ border: "1px solid transparent" }}
+                onMouseEnter={e => { e.currentTarget.style.boxShadow = SHADOW_CARD; e.currentTarget.style.borderColor = "#E7EDF2"; }}
+                onMouseLeave={e => { e.currentTarget.style.boxShadow = "none"; e.currentTarget.style.borderColor = "transparent"; }}>
+                <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-all duration-300 group-hover:scale-110 group-hover:text-white"
                   style={{ background: "rgba(22,163,74,0.10)", color: GREEN }}>
-                  <f.icon size={19} />
+                  <span className="group-hover:hidden"><f.icon size={20} /></span>
+                  <span className="hidden group-hover:flex w-full h-full items-center justify-center rounded-2xl"
+                    style={{ background: `linear-gradient(135deg, ${TEAL}, ${GREEN})` }}><f.icon size={20} /></span>
                 </div>
                 <div>
                   <p className="text-[13px] font-bold leading-snug" style={{ color: NAVY }}>{f.title}</p>
@@ -395,14 +579,16 @@ const PROPS = [
 
 function PropositionBar() {
   return (
-    <section style={{ background: NAVY }}>
-      <div className="max-w-7xl mx-auto px-5 md:px-8 py-12 grid lg:grid-cols-[1fr_1px_1fr] gap-8 items-center">
+    <section className="relative overflow-hidden" style={{ background: NAVY }}>
+      <div className="absolute top-0 right-0 w-[420px] h-[420px] rounded-full opacity-20 blur-2xl pointer-events-none"
+        style={{ background: `radial-gradient(circle, ${GREEN}, transparent 65%)` }} />
+      <div className="relative max-w-7xl mx-auto px-5 md:px-8 py-14 grid lg:grid-cols-[1fr_1px_1fr] gap-8 items-center">
         <Reveal className="flex items-start gap-5">
           <div className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0"
             style={{ background: "rgba(22,163,74,0.15)" }}>
-            <HeartPulse size={24} style={{ color: "#86EFAC" }} />
+            <HeartPulse size={24} style={{ color: "#86EFAC" }} className="sp-beat" />
           </div>
-          <p className="sp-head text-xl md:text-2xl font-black text-white leading-snug">
+          <p className="sp-head text-xl md:text-2xl font-black text-white leading-snug tracking-tight">
             TECHNOLOGY THAT LETS YOU{" "}
             <span style={{ color: "#86EFAC" }}>FOCUS ON PATIENT CARE,</span>{" "}
             NOT DATA ENTRY.
@@ -414,19 +600,18 @@ function PropositionBar() {
         <Reveal delay={100} className="flex flex-col gap-3">
           <div className="grid grid-cols-2 gap-2.5">
             {PROPS.map(p => (
-              <div key={p.label} className="flex items-center gap-2.5 rounded-xl px-4 py-3"
+              <div key={p.label} className="flex items-center gap-2.5 rounded-xl px-4 py-3 transition-colors hover:bg-white/[0.09]"
                 style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)" }}>
                 <p.icon size={15} style={{ color: "#86EFAC" }} className="shrink-0" />
                 <span className="text-[12px] font-semibold" style={{ color: "rgba(255,255,255,0.85)" }}>{p.label}</span>
               </div>
             ))}
           </div>
-          <div className="rounded-xl px-4 py-3.5 flex items-center gap-3"
-            style={{ background: GREEN }}>
+          <div className="rounded-xl px-4 py-3.5 flex items-center gap-3" style={{ background: `linear-gradient(120deg, ${GREEN}, #12833C)` }}>
             <BadgeCheck size={18} className="text-white shrink-0" />
             <div>
               <p className="text-xs font-extrabold text-white">PPMS — Simplifying Your Practice</p>
-              <p className="text-[10px]" style={{ color: "rgba(255,255,255,0.75)" }}>From Paper to Digital — The Smart Solution for Hospital Management</p>
+              <p className="text-[10px]" style={{ color: "rgba(255,255,255,0.78)" }}>From Paper to Digital — The Smart Solution for Hospital Management</p>
             </div>
           </div>
         </Reveal>
@@ -448,11 +633,11 @@ const TICKER = [
 function TickerStrip() {
   const items = [...TICKER, ...TICKER];
   return (
-    <div className="relative overflow-hidden py-3.5" style={{ background: "#0A1120" }}>
+    <div className="relative overflow-hidden py-3.5" style={{ background: "#08101E" }}>
       <div className="sp-marquee flex items-center w-max">
         {items.map((t, i) => (
           <span key={i} className="flex items-center shrink-0">
-            <span className="text-[12px] font-semibold tracking-wide whitespace-nowrap" style={{ color: "rgba(255,255,255,0.7)" }}>{t}</span>
+            <span className="text-[12px] font-semibold tracking-wide whitespace-nowrap" style={{ color: "rgba(255,255,255,0.68)" }}>{t}</span>
             <span className="mx-6 w-1.5 h-1.5 rounded-full shrink-0" style={{ background: GREEN }} />
           </span>
         ))}
@@ -475,14 +660,16 @@ function TrustStats() {
         />
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
           {[
-            { big: <Counter to={100} suffix="%" />, label: "Cloud Based",       sub: "Access from anywhere",    icon: Cloud },
+            { big: <Counter to={100} suffix="%" />, label: "Cloud Based",       sub: "Access from anywhere",     icon: Cloud },
             { big: <Counter to={99.9} suffix="%" decimals={1} />, label: "Uptime SLA", sub: "Enterprise reliability", icon: Database },
-            { big: "24/7",       label: "Technical Support", sub: "Always available",     icon: Timer },
-            { big: "Enterprise", label: "Security",          sub: "Bank-level protection", icon: ShieldCheck },
+            { big: "24/7",       label: "Technical Support", sub: "Always available",       icon: Timer },
+            { big: "Enterprise", label: "Security",          sub: "Bank-level protection",  icon: ShieldCheck },
           ].map((s, i) => (
             <Reveal key={s.label} delay={i * 80}>
-              <div className="rounded-2xl p-6 md:p-8 text-center h-full transition-all hover:-translate-y-1.5 hover:shadow-lg duration-300"
-                style={{ background: "#F8FAFC", border: "1px solid #E2E8F0" }}>
+              <div className="rounded-2xl p-6 md:p-8 text-center h-full transition-all hover:-translate-y-1.5 duration-300"
+                style={{ background: "#F8FAFC", border: "1px solid #E7EDF2" }}
+                onMouseEnter={e => (e.currentTarget.style.boxShadow = SHADOW_CARD)}
+                onMouseLeave={e => (e.currentTarget.style.boxShadow = "none")}>
                 <div className="w-11 h-11 mx-auto rounded-2xl flex items-center justify-center mb-4"
                   style={{ background: "rgba(22,163,74,0.10)", color: GREEN }}>
                   <s.icon size={20} />
@@ -521,11 +708,15 @@ function WhyDoctors() {
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
           {WHY_CARDS.map((c, i) => (
             <Reveal key={c.t} delay={(i % 4) * 75}>
-              <div className="group rounded-[20px] p-6 h-full bg-white transition-all duration-300 hover:-translate-y-1.5 hover:shadow-lg"
-                style={{ border: "1px solid #E7EDF2" }}>
-                <div className="w-11 h-11 rounded-2xl flex items-center justify-center mb-4 transition-all duration-300 group-hover:scale-110"
+              <div className="group rounded-[20px] p-6 h-full bg-white transition-all duration-300 hover:-translate-y-1.5"
+                style={{ border: "1px solid #E7EDF2" }}
+                onMouseEnter={e => (e.currentTarget.style.boxShadow = SHADOW_CARD)}
+                onMouseLeave={e => (e.currentTarget.style.boxShadow = "none")}>
+                <div className="w-11 h-11 rounded-2xl flex items-center justify-center mb-4 transition-all duration-300 group-hover:scale-110 group-hover:text-white"
                   style={{ background: "rgba(22,163,74,0.10)", color: GREEN }}>
-                  <c.icon size={20} />
+                  <span className="group-hover:hidden"><c.icon size={20} /></span>
+                  <span className="hidden group-hover:flex w-full h-full items-center justify-center rounded-2xl"
+                    style={{ background: `linear-gradient(135deg, ${TEAL}, ${GREEN})` }}><c.icon size={20} /></span>
                 </div>
                 <h3 className="sp-head text-[15px] font-bold leading-snug mb-2" style={{ color: NAVY }}>{c.t}</h3>
                 <p className="text-[13px] leading-relaxed" style={{ color: "#5B6B7B" }}>{c.d}</p>
@@ -580,7 +771,7 @@ function FeatureShowcase() {
                 </div>
                 <div className="lg:[direction:ltr]">
                   <div className="relative rounded-[24px] p-8 md:p-10 overflow-hidden min-h-[240px] flex items-center justify-center"
-                    style={{ background: `linear-gradient(150deg, ${NAVY}, ${NAVY2} 60%, ${TEAL})`, boxShadow: "0 28px 60px rgba(11,22,40,0.20)" }}>
+                    style={{ background: `linear-gradient(150deg, ${NAVY}, ${NAVY2} 60%, ${TEAL})`, boxShadow: "0 28px 60px -18px rgba(11,22,40,0.35)" }}>
                     <div className="absolute -top-16 -right-16 w-56 h-56 rounded-full" style={{ background: `radial-gradient(circle, rgba(22,163,74,0.30), transparent 70%)` }} />
                     <div className="absolute -bottom-20 -left-16 w-64 h-64 rounded-full" style={{ background: "radial-gradient(circle, rgba(255,255,255,0.06), transparent 70%)" }} />
                     <div className="relative grid grid-cols-3 gap-4">
@@ -672,18 +863,20 @@ function AiSection() {
       <div className="max-w-7xl mx-auto px-5 md:px-8">
         <Reveal className="text-center max-w-3xl mx-auto mb-12">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-extrabold uppercase tracking-widest mb-4 text-white"
-            style={{ background: GREEN, boxShadow: "0 6px 18px rgba(22,163,74,0.28)" }}>
+            style={{ background: `linear-gradient(120deg, ${TEAL}, ${GREEN})`, boxShadow: "0 6px 18px rgba(22,163,74,0.28)" }}>
             <Sparkles size={13} /> Coming Soon
           </div>
-          <h2 className="sp-head text-3xl md:text-[2.5rem] font-extrabold leading-tight tracking-tight" style={{ color: NAVY }}>
+          <h2 className="sp-head text-3xl md:text-[2.5rem] font-extrabold leading-tight tracking-[-0.02em]" style={{ color: NAVY }}>
             Intelligent Healthcare Powered by Modern Technology
           </h2>
         </Reveal>
         <div className="flex flex-wrap justify-center gap-3 max-w-4xl mx-auto">
           {AI_ITEMS.map((a, i) => (
             <Reveal key={a.t} delay={i * 65}>
-              <div className="flex items-center gap-2.5 rounded-2xl px-5 py-3.5 bg-white transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
-                style={{ border: "1px solid #D1FAE5" }}>
+              <div className="flex items-center gap-2.5 rounded-2xl px-5 py-3.5 bg-white transition-all duration-300 hover:-translate-y-1"
+                style={{ border: "1px solid #D1FAE5" }}
+                onMouseEnter={e => (e.currentTarget.style.boxShadow = SHADOW_CARD)}
+                onMouseLeave={e => (e.currentTarget.style.boxShadow = "none")}>
                 <div className="w-8 h-8 rounded-xl flex items-center justify-center"
                   style={{ background: "rgba(22,163,74,0.10)", color: GREEN }}>
                   <a.icon size={16} />
@@ -725,8 +918,10 @@ function SecuritySection() {
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4 max-w-4xl mx-auto">
           {SECURITY_CARDS.map((s, i) => (
             <Reveal key={s.t} delay={(i % 3) * 75}>
-              <div className="group flex flex-col items-center text-center rounded-[20px] px-4 py-7 h-full transition-all duration-300 hover:-translate-y-1.5 hover:shadow-lg"
-                style={{ background: "#F8FAFC", border: "1px solid #E2E8F0" }}>
+              <div className="group flex flex-col items-center text-center rounded-[20px] px-4 py-7 h-full transition-all duration-300 hover:-translate-y-1.5"
+                style={{ background: "#F8FAFC", border: "1px solid #E7EDF2" }}
+                onMouseEnter={e => (e.currentTarget.style.boxShadow = SHADOW_CARD)}
+                onMouseLeave={e => (e.currentTarget.style.boxShadow = "none")}>
                 <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-3.5 text-white transition-transform duration-300 group-hover:scale-110"
                   style={{ background: `linear-gradient(135deg, ${NAVY}, ${TEAL})`, boxShadow: "0 6px 18px rgba(11,22,40,0.18)" }}>
                   <s.icon size={20} />
@@ -758,8 +953,10 @@ function Testimonials() {
         <div className="grid md:grid-cols-3 gap-5 max-w-5xl mx-auto">
           {TESTIMONIALS.map((t, i) => (
             <Reveal key={t.who} delay={i * 90}>
-              <div className="relative rounded-[22px] bg-white p-7 h-full flex flex-col transition-all duration-300 hover:-translate-y-1.5 hover:shadow-xl"
-                style={{ border: "1px solid #E7EDF2" }}>
+              <div className="relative rounded-[22px] bg-white p-7 h-full flex flex-col transition-all duration-300 hover:-translate-y-1.5"
+                style={{ border: "1px solid #E7EDF2" }}
+                onMouseEnter={e => (e.currentTarget.style.boxShadow = SHADOW_HI)}
+                onMouseLeave={e => (e.currentTarget.style.boxShadow = "none")}>
                 <p className="sp-head absolute -top-1 left-5 text-[64px] leading-none font-black select-none" style={{ color: "rgba(22,163,74,0.12)" }}>&ldquo;</p>
                 <div className="flex gap-1 mb-4 relative">
                   {Array.from({ length: 5 }).map((_, j) => (
@@ -803,8 +1000,10 @@ function ProcessSection() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-5xl mx-auto">
           {STEPS.map((s, i) => (
             <Reveal key={s} delay={(i % 4) * 80}>
-              <div className="relative rounded-[20px] p-5 pt-6 h-full transition-all duration-300 hover:-translate-y-1 hover:shadow-md"
-                style={{ background: "#F8FAFC", border: "1px solid #E2E8F0" }}>
+              <div className="relative rounded-[20px] p-5 pt-6 h-full transition-all duration-300 hover:-translate-y-1"
+                style={{ background: "#F8FAFC", border: "1px solid #E7EDF2" }}
+                onMouseEnter={e => (e.currentTarget.style.boxShadow = SHADOW_CARD)}
+                onMouseLeave={e => (e.currentTarget.style.boxShadow = "none")}>
                 <div className="flex items-center gap-3 mb-2.5">
                   <span className="sp-head w-9 h-9 rounded-xl flex items-center justify-center text-sm font-black text-white shrink-0"
                     style={{ background: `linear-gradient(135deg, ${TEAL}, ${GREEN})`, boxShadow: "0 4px 14px rgba(22,163,74,0.25)" }}>
@@ -844,7 +1043,7 @@ function ComparisonSection() {
         <SectionHead kicker="The Upgrade" title="Why Switch to PPMS?" />
         <Reveal>
           <div className="max-w-3xl mx-auto rounded-[24px] overflow-hidden bg-white"
-            style={{ border: "1px solid #E7EDF2", boxShadow: "0 16px 48px rgba(11,22,40,0.07)" }}>
+            style={{ border: "1px solid #E7EDF2", boxShadow: "0 16px 48px -16px rgba(11,22,40,0.12)" }}>
             <div className="grid grid-cols-2 text-center">
               <div className="py-4 text-sm font-extrabold uppercase tracking-wider" style={{ background: "#F3F5F8", color: "#7C8DA0" }}>
                 Traditional Practice
@@ -898,7 +1097,7 @@ function FaqSection() {
                 <div className="rounded-[18px] overflow-hidden transition-all duration-300"
                   style={{
                     border: `1px solid ${isOpen ? "rgba(22,163,74,0.4)" : "#E7EDF2"}`,
-                    boxShadow: isOpen ? "0 8px 24px rgba(22,163,74,0.08)" : "none",
+                    boxShadow: isOpen ? "0 8px 24px -8px rgba(22,163,74,0.20)" : "none",
                     background: isOpen ? "#F0FDF4" : "#fff",
                   }}>
                   <button
@@ -944,7 +1143,7 @@ function FinalCta() {
 
       <div className="relative max-w-4xl mx-auto px-5 md:px-8 text-center">
         <Reveal>
-          <h2 className="sp-head text-3xl md:text-[2.8rem] font-black tracking-tight text-white leading-tight">
+          <h2 className="sp-head text-3xl md:text-[2.8rem] font-black tracking-[-0.02em] text-white leading-tight">
             Ready to Transform Your Practice?
           </h2>
           <p className="mt-4 text-base md:text-lg max-w-2xl mx-auto" style={{ color: "rgba(255,255,255,0.65)" }}>
@@ -964,7 +1163,7 @@ function FinalCta() {
           <div className="flex flex-wrap justify-center gap-4 mt-9">
             <a href={DEMO_MAIL}
               className="sp-shine group flex items-center gap-2 px-8 py-4 rounded-2xl text-[15px] font-black text-white transition-all hover:-translate-y-0.5"
-              style={{ background: GREEN, boxShadow: "0 14px 36px rgba(22,163,74,0.35)" }}>
+              style={{ background: `linear-gradient(135deg, ${GREEN}, #12833C)`, boxShadow: "0 14px 36px rgba(22,163,74,0.35)" }}>
               Book a Live Demo
               <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
             </a>
@@ -1053,11 +1252,51 @@ function PageStyles() {
   return (
     <style>{`
       html { scroll-behavior: smooth; }
-      .sp-root { font-family: var(--font-body-sp), ui-sans-serif, system-ui, sans-serif; }
+      .sp-root { font-family: var(--font-body-sp), ui-sans-serif, system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
       .sp-head { font-family: var(--font-head), ui-sans-serif, system-ui, sans-serif; }
+
+      .sp-navlink { position: relative; transition: color .2s ease; }
+      .sp-navlink::after {
+        content: ""; position: absolute; left: 0; bottom: -5px; width: 0; height: 2px;
+        border-radius: 2px; background: ${GREEN}; transition: width .25s ease;
+      }
+      .sp-navlink:hover { color: ${GREEN}; }
+      .sp-navlink:hover::after { width: 100%; }
 
       .sp-reveal { opacity: 0; transform: translateY(22px); transition: opacity .65s cubic-bezier(.16,1,.3,1), transform .65s cubic-bezier(.16,1,.3,1); }
       .sp-reveal.sp-in { opacity: 1; transform: none; }
+
+      /* Gradient shimmering headline accent */
+      .sp-grad-text {
+        background: linear-gradient(100deg, ${GREEN}, ${TEAL}, #22C55E, ${GREEN});
+        background-size: 220% auto;
+        -webkit-background-clip: text; background-clip: text;
+        -webkit-text-fill-color: transparent; color: transparent;
+        animation: spTextShimmer 5s linear infinite;
+      }
+      @keyframes spTextShimmer { to { background-position: 220% center; } }
+
+      /* Hero ambient mesh + dot grid */
+      .sp-hero-mesh {
+        background:
+          radial-gradient(42% 40% at 88% 6%, rgba(22,163,74,0.10), transparent 70%),
+          radial-gradient(38% 44% at 8% 22%, rgba(13,148,136,0.08), transparent 70%),
+          radial-gradient(46% 46% at 60% 100%, rgba(29,78,216,0.05), transparent 70%);
+      }
+      .sp-hero-grid {
+        background-image: radial-gradient(rgba(11,22,40,0.05) 1px, transparent 1px);
+        background-size: 22px 22px;
+        -webkit-mask-image: linear-gradient(to bottom, black, transparent 78%);
+        mask-image: linear-gradient(to bottom, black, transparent 78%);
+      }
+
+      /* Product mockup tilt */
+      .sp-persp { perspective: 1600px; }
+      .sp-tilt { transition: transform .5s cubic-bezier(.16,1,.3,1); }
+      @media (min-width: 1024px) {
+        .sp-tilt { transform: rotateY(-6deg) rotateX(2deg); }
+        .sp-tilt:hover { transform: rotateY(-2deg) rotateX(1deg) translateY(-4px); }
+      }
 
       @keyframes spFloat {
         0%, 100% { transform: translateY(0); }
@@ -1067,6 +1306,21 @@ function PageStyles() {
 
       @keyframes spGrow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
       .sp-bar { transform-origin: bottom; animation: spGrow .9s cubic-bezier(.16,1,.3,1) both; }
+
+      @keyframes spLive {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(22,163,74,0.55); }
+        50%      { box-shadow: 0 0 0 4px rgba(22,163,74,0); }
+      }
+      .sp-live { animation: spLive 2s ease-in-out infinite; }
+
+      @keyframes spBeat {
+        0%, 100% { transform: scale(1); }
+        14%      { transform: scale(1.25); }
+        28%      { transform: scale(1); }
+        42%      { transform: scale(1.18); }
+        56%      { transform: scale(1); }
+      }
+      .sp-beat { animation: spBeat 1.8s ease-in-out infinite; transform-origin: center; }
 
       @keyframes spPulse {
         0%, 100% { box-shadow: 0 10px 28px rgba(22,163,74,.40); }
@@ -1092,9 +1346,11 @@ function PageStyles() {
       }
 
       @media (prefers-reduced-motion: reduce) {
-        .sp-marquee, .sp-float, .sp-bar, .sp-float-btn { animation: none !important; }
+        .sp-marquee, .sp-float, .sp-bar, .sp-float-btn, .sp-live, .sp-beat, .sp-grad-text { animation: none !important; }
+        .sp-grad-text { background-position: 0 center; }
         .sp-shine::after { display: none; }
         .sp-reveal { opacity: 1; transform: none; transition: none; }
+        .sp-tilt { transform: none !important; }
       }
     `}</style>
   );
