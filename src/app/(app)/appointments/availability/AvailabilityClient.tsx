@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition, useMemo } from "react";
+import Link from "next/link";
 import {
   Plus, Pencil, Trash2, Clock, Building2, CalendarDays,
   Users, Loader2, AlertTriangle, X, Save, ToggleLeft, ToggleRight,
@@ -680,13 +681,12 @@ export function AvailabilityClient({
               Design your consultation week — patients book into these hours across every hospital you visit.
             </p>
           </div>
-          <button
-            onClick={() => setModal({ type: "add", hospitalId: allHospitals[0]?.id ?? "" })}
-            disabled={allHospitals.length === 0}
-            className="shrink-0 inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-white text-[var(--color-primary-700)] text-sm font-bold shadow-lg shadow-black/10 hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all duration-150 disabled:opacity-50 disabled:pointer-events-none"
+          <Link
+            href="/settings?section=add-hospital&returnTo=/appointments/availability"
+            className="shrink-0 inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-white text-[var(--color-primary-700)] text-sm font-bold shadow-lg shadow-black/10 hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all duration-150"
           >
-            <Plus size={15} strokeWidth={2.5} /> Create Schedule
-          </button>
+            <Plus size={15} strokeWidth={2.5} /> Add Hospital
+          </Link>
         </div>
 
         {/* Glass stats */}
