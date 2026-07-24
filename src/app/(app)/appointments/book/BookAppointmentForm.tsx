@@ -670,7 +670,7 @@ export function BookAppointmentForm({
                           >
                             {to12h(t)}
                             {slotCapacity > 1 && (
-                              <span className="ml-1 text-[10px] opacity-70">{remaining}/{slotCapacity}</span>
+                              <span className="ml-1 text-[10px] opacity-70">{count}/{slotCapacity}</span>
                             )}
                           </button>
                         );
