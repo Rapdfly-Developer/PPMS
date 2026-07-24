@@ -66,12 +66,14 @@ const STATUS_FILTERS = [
 
 /* ── Live waiting timer ─────────────────────────────────────────────────── */
 function LiveTimer({ since }: { since: string }) {
-  const [now, setNow] = useState(() => Date.now());
+  const [now, setNow] = useState<number | null>(null);
   useEffect(() => {
+    setNow(Date.now());
     const id = setInterval(() => setNow(Date.now()), 30_000);
     return () => clearInterval(id);
   }, []);
 
+  if (now === null) return null;
   const elapsed = now - new Date(since).getTime();
   if (elapsed <= 0) return null;
 
