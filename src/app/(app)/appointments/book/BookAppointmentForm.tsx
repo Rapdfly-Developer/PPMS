@@ -3,9 +3,9 @@
 import { useState, useTransition, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import {
-  Search, UserPlus, Stethoscope,
+  Search, UserPlus,
   Calendar, Clock, FileText, ChevronRight,
-  User, Phone, AlertCircle, CheckCircle2, Info, Building2,
+  User, Phone, AlertCircle, CheckCircle2, Building2,
 } from "lucide-react";
 import { bookAppointment, getBookedSlots } from "./actions";
 import { BackButton } from "@/components/ui/BackButton";
@@ -14,16 +14,6 @@ import { SmartUploadBox, type UploadedFile } from "@/components/ui/SmartUploadBo
 const VISIT_TYPES = ["General OPD", "Emergency", "Follow-up", "Post-op Review"];
 const SEXES = ["MALE", "FEMALE", "OTHER"];
 
-const FALLBACK_SLOTS = [
-  "08:00","08:15","08:30","08:45",
-  "09:00","09:15","09:30","09:45",
-  "10:00","10:15","10:30","10:45",
-  "11:00","11:15","11:30","11:45",
-  "14:00","14:15","14:30","14:45",
-  "15:00","15:15","15:30","15:45",
-  "16:00","16:15","16:30","16:45",
-  "17:00","17:15","17:30","17:45",
-];
 
 type AvailSlot = { weekday: number; startTime: string; endTime: string; slotMins: number; hospitalId: string };
 type Doctor  = { id: string; name: string; specialty: string };
@@ -130,11 +120,10 @@ export function BookAppointmentForm({
   const todayAvail = doctorAvail.find(
     (a) => a.weekday === weekday && (!effectiveHospitalId || a.hospitalId === effectiveHospitalId)
   );
-  const usingAvailability = !!todayAvail;
 
   const baseSlots = todayAvail
     ? generateSlots(todayAvail.startTime, todayAvail.endTime, todayAvail.slotMins)
-    : FALLBACK_SLOTS;
+    : [];
 
   const slotMins = todayAvail?.slotMins ?? 15;
   const slotCapacity = slotMins === 30 ? 2 : 1;
@@ -143,8 +132,7 @@ export function BookAppointmentForm({
   const availableSlots = baseSlots.filter((t) => {
     const [h, m] = t.split(":").map(Number);
     if (date === todayStr && h * 60 + m <= nowMins) return false;
-    // Non-30-min slots: existing behavior — hide once any booking exists
-    if (slotCapacity === 1 && (bookedCounts[t] ?? 0) >= 1) return false;
+    if ((bookedCounts[t] ?? 0) >= slotCapacity) return false;
     return true;
   });
 
@@ -203,15 +191,16 @@ export function BookAppointmentForm({
     if (encounterType === "walkin") {
       const now = new Date();
       const nowMins = now.getHours() * 60 + now.getMinutes();
-      const slots = baseSlots.length > 0 ? baseSlots : FALLBACK_SLOTS;
-      const nextSlot = slots.find((t) => {
+      const nextSlot = baseSlots.find((t) => {
         const [h, m] = t.split(":").map(Number);
         return h * 60 + m > nowMins && (bookedCounts[t] ?? 0) < slotCapacity;
-      }) ?? slots.find((t) => {
-        const [h, m] = t.split(":").map(Number);
-        return h * 60 + m > nowMins;
       });
-      if (!nextSlot) { setError("No available time slots left for today. Please book a scheduled appointment."); return; }
+      if (!nextSlot) {
+        setError(baseSlots.length === 0
+          ? "No schedule configured for this doctor at this hospital today."
+          : "No available time slots left for today. Please book a scheduled appointment.");
+        return;
+      }
       const pad = (n: number) => String(n).padStart(2, "0");
       fd.set("date", `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`);
       fd.set("time", nextSlot);
@@ -644,60 +633,50 @@ export function BookAppointmentForm({
                   />
                 </div>
                 <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <FieldLabel icon={<Clock size={12} />}>Time *</FieldLabel>
-                    {usingAvailability ? (
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--color-primary-100)] text-[var(--color-primary-700)] font-medium">
-                        From availability
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-1 text-[10px] text-[var(--color-ink-400)]">
-                        <Info size={10} /> No schedule set — showing all slots
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto scrollbar-thin pr-1">
-                    {availableSlots.length === 0 && (
-                      <p className="text-xs text-[var(--color-ink-400)] italic py-1">
-                        {usingAvailability
-                          ? "No slots available — all slots are booked or the session has passed."
-                          : "No slots available for today. Please select a future date."}
-                      </p>
-                    )}
-                    {availableSlots.map((t) => {
-                      const count = bookedCounts[t] ?? 0;
-                      const remaining = slotCapacity - count;
-                      const isFull = remaining <= 0;
-                      const isSelected = time === t;
+                  <FieldLabel icon={<Clock size={12} />}>Time *</FieldLabel>
+                  {!todayAvail ? (
+                    <div className="flex items-center gap-2 px-4 py-3 rounded-xl text-sm bg-amber-50 text-amber-800 border border-amber-200 mt-1.5">
+                      <AlertCircle size={14} className="shrink-0" />
+                      No schedule configured for this doctor on {["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][weekday]}s at the selected hospital.
+                    </div>
+                  ) : availableSlots.length === 0 ? (
+                    <p className="text-xs text-[var(--color-ink-400)] italic py-2 mt-1">
+                      All slots are booked or the session has passed for this date.
+                    </p>
+                  ) : (
+                    <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto scrollbar-thin pr-1 mt-1.5">
+                      {availableSlots.map((t) => {
+                        const count = bookedCounts[t] ?? 0;
+                        const remaining = slotCapacity - count;
+                        const isSelected = time === t;
 
-                      let bg: string, fg: string, border: string;
-                      if (isSelected) {
-                        bg = "var(--color-primary-700)"; fg = "#fff"; border = "var(--color-primary-700)";
-                      } else if (slotCapacity > 1) {
-                        if (isFull)       { bg = "#FEF2F2"; fg = "#DC2626"; border = "#FECACA"; }
-                        else if (remaining === 1) { bg = "#FFF7ED"; fg = "#EA580C"; border = "#FED7AA"; }
-                        else              { bg = "#F0FDF4"; fg = "#16A34A"; border = "#BBF7D0"; }
-                      } else {
-                        bg = "#fff"; fg = "var(--color-ink-700)"; border = "var(--color-border)";
-                      }
+                        let bg: string, fg: string, border: string;
+                        if (isSelected) {
+                          bg = "var(--color-primary-700)"; fg = "#fff"; border = "var(--color-primary-700)";
+                        } else if (slotCapacity > 1) {
+                          if (remaining === 1) { bg = "#FFF7ED"; fg = "#EA580C"; border = "#FED7AA"; }
+                          else                  { bg = "#F0FDF4"; fg = "#16A34A"; border = "#BBF7D0"; }
+                        } else {
+                          bg = "#fff"; fg = "var(--color-ink-700)"; border = "var(--color-border)";
+                        }
 
-                      return (
-                        <button
-                          key={t}
-                          type="button"
-                          disabled={isFull}
-                          onClick={() => !isFull && setTime(t)}
-                          className="px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors disabled:cursor-not-allowed disabled:opacity-80"
-                          style={{ background: bg, color: fg, borderColor: border }}
-                        >
-                          {to12h(t)}
-                          {slotCapacity > 1 && (
-                            <span className="ml-1 text-[10px] opacity-70">{remaining}/{slotCapacity}</span>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
+                        return (
+                          <button
+                            key={t}
+                            type="button"
+                            onClick={() => setTime(t)}
+                            className="px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors"
+                            style={{ background: bg, color: fg, borderColor: border }}
+                          >
+                            {to12h(t)}
+                            {slotCapacity > 1 && (
+                              <span className="ml-1 text-[10px] opacity-70">{remaining}/{slotCapacity}</span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               </div>
             ) : (
