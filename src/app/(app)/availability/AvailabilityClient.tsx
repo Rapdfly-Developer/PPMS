@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   Clock, Plus, Trash2, Calendar, Building2, Users,
   X, Check, ChevronDown, Power, Timer, Layers, CalendarDays,
@@ -349,12 +350,22 @@ export function AvailabilityClient({
             Weekly consultation schedule for Dr. {doctorName}
           </p>
         </div>
-        <button
-          onClick={() => setShowModal(true)}
-          className="flex items-center gap-2 bg-[var(--color-primary-800)] text-white text-sm font-semibold px-5 py-2.5 rounded-xl hover:bg-[var(--color-primary-700)] transition-colors shadow-sm"
-        >
-          <Plus size={16} /> Add Schedule
-        </button>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/settings?section=add-hospital&returnTo=/availability"
+            className="flex items-center gap-2 border border-[var(--color-border)] text-[var(--color-ink-700)] text-sm font-medium px-4 py-2.5 rounded-xl hover:bg-[var(--color-surface-sunken)] transition-colors"
+          >
+            <Building2 size={15} /> Add Hospital
+          </Link>
+          {hospitals.length > 0 && (
+            <button
+              onClick={() => setShowModal(true)}
+              className="flex items-center gap-2 bg-[var(--color-primary-800)] text-white text-sm font-semibold px-5 py-2.5 rounded-xl hover:bg-[var(--color-primary-700)] transition-colors shadow-sm"
+            >
+              <Plus size={16} /> Create Schedule
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Stats */}
@@ -392,10 +403,18 @@ export function AvailabilityClient({
 
       {/* Weekly Calendar Grid */}
       {hospitals.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-[var(--color-border)] py-20 flex flex-col items-center gap-3 text-[var(--color-ink-400)]">
-          <Calendar size={40} className="opacity-20" />
-          <p className="text-sm font-medium">No hospitals linked to your profile yet.</p>
-          <p className="text-xs">Ask your admin to link you to a hospital first.</p>
+        <div className="bg-white rounded-2xl border border-[var(--color-border)] py-20 flex flex-col items-center gap-4 text-[var(--color-ink-400)]">
+          <Building2 size={40} className="opacity-20" />
+          <div className="text-center">
+            <p className="text-sm font-semibold text-[var(--color-ink-700)]">No hospitals added yet.</p>
+            <p className="text-xs mt-1">Add a hospital before creating your availability schedule.</p>
+          </div>
+          <Link
+            href="/settings?section=add-hospital&returnTo=/availability"
+            className="flex items-center gap-2 bg-[var(--color-primary-700)] text-white text-sm font-semibold px-5 py-2.5 rounded-xl hover:bg-[var(--color-primary-600)] transition-colors"
+          >
+            <Plus size={15} /> Add Hospital
+          </Link>
         </div>
       ) : (
         <div className="bg-white rounded-2xl border border-[var(--color-border)] overflow-hidden">

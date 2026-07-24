@@ -2786,7 +2786,7 @@ const WIZARD_STEPS = [
   { n: 4 as const, label: "Permissions" },
 ];
 
-function HospitalSetupWizard({ assignableRoles = [] }: { assignableRoles?: AssignableRole[] }) {
+function HospitalSetupWizard({ assignableRoles = [], returnTo = "" }: { assignableRoles?: AssignableRole[]; returnTo?: string }) {
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [done, setDone] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -2904,9 +2904,17 @@ function HospitalSetupWizard({ assignableRoles = [] }: { assignableRoles?: Assig
           <p className="text-sm text-[var(--color-ink-500)]">
             <span className="font-medium">{hosp.name}</span> created with {1 + users.length} account{users.length !== 0 ? "s" : ""}.
           </p>
+          {returnTo && (
+            <Link
+              href={returnTo}
+              className="mt-2 flex items-center gap-2 rounded-xl border border-[var(--color-border)] px-6 py-2.5 text-sm font-medium text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] transition-colors"
+            >
+              ← Back to Availability
+            </Link>
+          )}
           <button
             onClick={() => { setDone(false); setStep(1); setHosp(blank); setUsers([]); setPerms({}); setCreateError(""); }}
-            className="mt-2 rounded-xl bg-[var(--color-primary-600)] px-6 py-2.5 text-sm font-semibold text-white hover:bg-[var(--color-primary-700)] transition-colors"
+            className="rounded-xl bg-[var(--color-primary-600)] px-6 py-2.5 text-sm font-semibold text-white hover:bg-[var(--color-primary-700)] transition-colors"
           >
             Add Another Hospital
           </button>
@@ -3300,10 +3308,16 @@ type LicSubTab = typeof LICENSE_SUBTABS[number];
 export function DoctorSettingsClient({ users, auditLogs, hospitals, loginLogs, patientApptLogs, assignableRoles, doctor }: Props) {
   const searchParams = useSearchParams();
   const urlTab = searchParams.get("tab") ?? "";
+  const urlSection = searchParams.get("section") as Section | null;
+  const urlReturnTo = searchParams.get("returnTo") ?? "";
   const isLicenseTab = (LICENSE_SUBTABS as readonly string[]).includes(urlTab) || urlTab === "license";
   const licInitialTab: LicSubTab = (LICENSE_SUBTABS as readonly string[]).includes(urlTab) ? urlTab as LicSubTab : "overview";
 
-  const [activeSection, setActiveSection] = useState<Section>(isLicenseTab ? "licenses" : "profile");
+  const VALID_SECTIONS: Section[] = ["profile","users","roles","departments","hospital","add-hospital","appointments","notifications","audit","export","logs","patient-appt-logs","licenses","integrations"];
+  const [activeSection, setActiveSection] = useState<Section>(
+    urlSection && VALID_SECTIONS.includes(urlSection) ? urlSection :
+    isLicenseTab ? "licenses" : "profile"
+  );
 
   const content = () => {
     switch (activeSection) {
@@ -3312,7 +3326,7 @@ export function DoctorSettingsClient({ users, auditLogs, hospitals, loginLogs, p
       case "roles":        return <RolesSection />;
       case "departments":  return <DepartmentsSection />;
       case "hospital":     return <HospitalSection hospitals={hospitals} />;
-      case "add-hospital": return <HospitalSetupWizard assignableRoles={assignableRoles} />;
+      case "add-hospital": return <HospitalSetupWizard assignableRoles={assignableRoles} returnTo={urlReturnTo} />;
       case "appointments": return <AppointmentsSection />;
       case "notifications":return <NotificationsSection />;
       case "audit":        return <AuditSection auditLogs={auditLogs} />;
