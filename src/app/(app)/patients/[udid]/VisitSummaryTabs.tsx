@@ -130,6 +130,43 @@ function ShortContent({ complaint, diagText }: { complaint: string | null; diagT
 }
 
 /* ─── Long ─── */
+function SectionLabel({ icon, label }: { icon?: React.ReactNode; label: string }) {
+  return (
+    <div className="flex items-center gap-1 mb-1.5 pb-0.5 border-b border-[var(--color-border)]">
+      {icon}
+      <span className="text-[9px] font-bold uppercase tracking-widest text-[var(--color-ink-400)]">{label}</span>
+    </div>
+  );
+}
+
+function EyeRow({ label, re, le }: { label: string; re?: string | null; le?: string | null }) {
+  if (!re && !le) return null;
+  return (
+    <tr className="border-b border-[var(--color-border)] last:border-0">
+      <td className="py-0.5 pr-3 text-[var(--color-ink-400)] w-[40%]">{label}</td>
+      <td className="py-0.5 pr-3 text-[var(--color-ink-700)] w-[30%]">{re ?? "—"}</td>
+      <td className="py-0.5 text-[var(--color-ink-700)] w-[30%]">{le ?? "—"}</td>
+    </tr>
+  );
+}
+
+function parseJSON<T>(val: string | null | undefined, fallback: T): T {
+  try { return val ? JSON.parse(val) : fallback; } catch { return fallback; }
+}
+
+function parseComplaints(raw: string) {
+  return raw.split("|").map((s) => s.trim()).filter(Boolean).map((seg) => {
+    let rest = seg;
+    const latM = rest.match(/^\[(RE|LE|OU)\]\s*/);
+    const lat = latM ? latM[1] : null;
+    if (latM) rest = rest.slice(latM[0].length);
+    const sinceM = rest.match(/^\[(\d+)\s+(days|weeks|months|years)\]\s*/);
+    const since = sinceM ? `${sinceM[1]} ${sinceM[2]}` : null;
+    if (sinceM) rest = rest.slice(sinceM[0].length);
+    return { lat, since, text: rest.trim() };
+  });
+}
+
 function LongContent({
   data,
   complaint,
@@ -141,116 +178,284 @@ function LongContent({
 }) {
   if (!data) return <ShortContent complaint={complaint} diagText={diagText} />;
 
-  const g = data.generalExam;
-  const vitals = [
-    g?.bp && `BP: ${g.bp}`,
-    g?.pulse && `Pulse: ${g.pulse}`,
-    g?.weight && `Wt: ${g.weight}`,
-    g?.temperature && `Temp: ${g.temperature}`,
-  ].filter(Boolean) as string[];
+  const g   = data.generalExam;
+  const va  = data.visualAcuity;
+  const iop = data.iopReadings as any[] | undefined;
+  const ant = data.anteriorSegment;
+  const pos = data.posteriorSegment;
 
-  const hasDiagnoses = data.diagnoses?.length > 0;
-  const hasMeds = data.medications?.length > 0;
-  const hasInv = data.investigationOrders?.length > 0;
+  const hasVitals   = !!(g?.bp || g?.pulse || g?.weight || g?.temperature);
+  const hasDiag     = data.diagnoses?.length > 0;
+  const hasMeds     = data.medications?.length > 0;
+  const hasInv      = data.investigationOrders?.length > 0;
+  const hasVA       = !!(va?.re || va?.le);
+  const hasIOP      = iop && iop.length > 0;
+  const hasAnt      = !!(ant?.re || ant?.le);
+  const hasPost     = !!(pos?.re || pos?.le);
 
-  if (!g?.chiefComplaint && !vitals.length && !hasDiagnoses && !hasMeds && !hasInv) {
-    return <p className="text-[11px] italic text-[var(--color-ink-300)]">No detailed clinical data recorded.</p>;
-  }
+  const isEmpty = !g?.chiefComplaint && !hasVitals && !hasDiag && !hasMeds && !hasInv && !hasVA && !hasIOP && !hasAnt && !hasPost && !g?.hpi;
+  if (isEmpty) return <p className="text-[11px] italic text-[var(--color-ink-300)]">No detailed clinical data recorded.</p>;
 
   return (
-    <div className="space-y-3 text-[11px]">
-      {vitals.length > 0 && (
-        <div>
-          <div className="flex items-center gap-1 mb-1">
-            <Activity size={9} className="text-[var(--color-ink-400)]" />
-            <span className="text-[9px] font-bold uppercase tracking-widest text-[var(--color-ink-400)]">Vitals</span>
-          </div>
-          <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-[var(--color-ink-600)]">
-            {vitals.map((v) => <span key={v}>{v}</span>)}
-          </div>
-        </div>
-      )}
+    <div className="space-y-4 text-[11px]">
 
+      {/* Chief Complaint */}
       {g?.chiefComplaint && (
         <div>
-          <p className="text-[9px] font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-0.5">Complaint</p>
-          <p className="text-[var(--color-ink-700)]">{g.chiefComplaint}</p>
-        </div>
-      )}
-
-      {hasDiagnoses && (
-        <div>
-          <p className="text-[9px] font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-1">Diagnoses</p>
-          <div className="space-y-1">
-            {data.diagnoses.map((d: any, i: number) => (
-              <div key={i} className="flex items-start gap-1.5">
-                <span className="mt-1 w-1.5 h-1.5 rounded-full bg-[var(--color-primary-400)] shrink-0" />
-                <span className="text-[var(--color-ink-700)]">
-                  {d.description}
-                  {d.laterality && <span className="text-[var(--color-ink-400)]"> · {d.laterality}</span>}
-                  {d.provisional && <span className="text-amber-500 italic"> (P)</span>}
-                  {d.icd10Code && (
-                    <span className="ml-1.5 font-mono text-[9px] text-[var(--color-ink-300)]">{d.icd10Code}</span>
-                  )}
-                  {" "}
-                  <span className={`text-[9px] font-bold ${
-                    d.status === "RESOLVED" ? "text-emerald-600"
-                    : d.status === "CHRONIC" ? "text-amber-600"
-                    : "text-red-500"
-                  }`}>{d.status}</span>
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {hasMeds && (
-        <div>
-          <div className="flex items-center gap-1 mb-1">
-            <Pill size={9} className="text-[var(--color-ink-400)]" />
-            <span className="text-[9px] font-bold uppercase tracking-widest text-[var(--color-ink-400)]">Medications</span>
-          </div>
-          <div className="space-y-1">
-            {data.medications.map((m: any, i: number) => (
+          <SectionLabel label="Chief Complaint" />
+          <div className="space-y-0.5">
+            {parseComplaints(g.chiefComplaint).map((c, i) => (
               <p key={i} className="text-[var(--color-ink-700)]">
-                <span className="font-semibold">{m.drugName}</span>
-                {m.dosage && <span className="text-[var(--color-ink-400)]"> {m.dosage}</span>}
-                {m.frequency && <span className="text-[var(--color-ink-400)]"> · {m.frequency}</span>}
-                {m.duration && <span className="text-[var(--color-ink-400)]"> for {m.duration}</span>}
-                {m.instructions && <span className="text-[var(--color-ink-400)]"> — {m.instructions}</span>}
+                {c.lat && <span className="font-bold text-[var(--color-primary-700)] mr-1">{c.lat}</span>}
+                {c.text}
+                {c.since && <span className="text-[var(--color-ink-400)] ml-1">· Since {c.since}</span>}
               </p>
             ))}
           </div>
         </div>
       )}
 
-      {hasInv && (
+      {/* HPI */}
+      {g?.hpi && (
         <div>
-          <div className="flex items-center gap-1 mb-1">
-            <FlaskConical size={9} className="text-[var(--color-ink-400)]" />
-            <span className="text-[9px] font-bold uppercase tracking-widest text-[var(--color-ink-400)]">Investigations</span>
-          </div>
-          <div className="space-y-0.5">
-            {data.investigationOrders.map((o: any, i: number) => (
-              <div key={i} className="flex items-center gap-2 text-[var(--color-ink-700)]">
-                <span>{o.testName}</span>
-                <span className={`text-[9px] font-bold uppercase ${
-                  o.status === "COMPLETED" ? "text-emerald-600"
-                  : o.status === "ORDERED" ? "text-blue-600"
-                  : "text-amber-600"
-                }`}>{o.status}</span>
-                {o.resultRef && (
-                  <a href={o.resultRef} target="_blank" rel="noreferrer"
-                    className="text-[var(--color-primary-600)] underline text-[10px]">
-                    View Result
-                  </a>
-                )}
-              </div>
-            ))}
+          <SectionLabel label="History of Present Illness" />
+          <p className="text-[var(--color-ink-700)] leading-relaxed whitespace-pre-wrap">{g.hpi}</p>
+        </div>
+      )}
+
+      {/* Vitals */}
+      {hasVitals && (
+        <div>
+          <SectionLabel icon={<Activity size={9} className="text-[var(--color-ink-400)]" />} label="Vitals" />
+          <div className="grid grid-cols-2 gap-x-6 gap-y-0.5">
+            {g.bp          && <span><span className="text-[var(--color-ink-400)]">BP: </span><span className="text-[var(--color-ink-700)] font-medium">{g.bp}</span></span>}
+            {g.pulse       && <span><span className="text-[var(--color-ink-400)]">Pulse: </span><span className="text-[var(--color-ink-700)] font-medium">{g.pulse}</span></span>}
+            {g.weight      && <span><span className="text-[var(--color-ink-400)]">Weight: </span><span className="text-[var(--color-ink-700)] font-medium">{g.weight}</span></span>}
+            {g.temperature && <span><span className="text-[var(--color-ink-400)]">Temp: </span><span className="text-[var(--color-ink-700)] font-medium">{g.temperature}</span></span>}
           </div>
         </div>
       )}
+
+      {/* Visual Acuity */}
+      {hasVA && (() => {
+        const re = parseJSON<any>(va.re, {});
+        const le = parseJSON<any>(va.le, {});
+        return (
+          <div>
+            <SectionLabel label={`Visual Acuity${va.testMethod ? ` · ${va.testMethod}` : ""}`} />
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="text-[9px] font-bold uppercase tracking-wide text-[var(--color-ink-400)]">
+                  <th className="text-left py-0.5 pr-3 w-[40%]" />
+                  <th className="text-left py-0.5 pr-3 w-[30%]">RE</th>
+                  <th className="text-left py-0.5 w-[30%]">LE</th>
+                </tr>
+              </thead>
+              <tbody>
+                <EyeRow label="Distance Unaided"       re={re.distanceUnaided}      le={le.distanceUnaided} />
+                <EyeRow label="Distance Pinhole"       re={re.distancePinhole}      le={le.distancePinhole} />
+                <EyeRow label="Distance Best Corrected" re={re.distanceBestCorrected} le={le.distanceBestCorrected} />
+                <EyeRow label="Near Unaided"           re={re.nearUnaided}          le={le.nearUnaided} />
+                <EyeRow label="Near Best Corrected"    re={re.nearBestCorrected}    le={le.nearBestCorrected} />
+              </tbody>
+            </table>
+          </div>
+        );
+      })()}
+
+      {/* IOP */}
+      {hasIOP && (
+        <div>
+          <SectionLabel label="Intraocular Pressure" />
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="text-[9px] font-bold uppercase tracking-wide text-[var(--color-ink-400)]">
+                <th className="text-left py-0.5 pr-3 w-[40%]">Method</th>
+                <th className="text-left py-0.5 pr-3 w-[30%]">RE (mmHg)</th>
+                <th className="text-left py-0.5 w-[30%]">LE (mmHg)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {iop!.map((r: any, i: number) => (
+                <tr key={i} className="border-b border-[var(--color-border)] last:border-0">
+                  <td className="py-0.5 pr-3 text-[var(--color-ink-400)]">{r.method ?? "NCT"}</td>
+                  <td className="py-0.5 pr-3 text-[var(--color-ink-700)] font-medium">{r.re ?? "—"}</td>
+                  <td className="py-0.5 text-[var(--color-ink-700)] font-medium">{r.le ?? "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Anterior Segment */}
+      {hasAnt && (() => {
+        const re = parseJSON<any>(ant.re, {});
+        const le = parseJSON<any>(ant.le, {});
+        const fields = ["upperLid","lowerLid","conjunctiva","sclera","cornea","anteriorChamber","iris","pupil","lens"] as const;
+        const labels: Record<string, string> = {
+          upperLid: "Upper Lid", lowerLid: "Lower Lid", conjunctiva: "Conjunctiva",
+          sclera: "Sclera", cornea: "Cornea", anteriorChamber: "Ant. Chamber",
+          iris: "Iris", pupil: "Pupil", lens: "Lens",
+        };
+        const rows = fields.filter((f) => re[f] || le[f]);
+        if (!rows.length && !re.freeText && !le.freeText) return null;
+        return (
+          <div>
+            <SectionLabel label="Anterior Segment" />
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="text-[9px] font-bold uppercase tracking-wide text-[var(--color-ink-400)]">
+                  <th className="text-left py-0.5 pr-3 w-[30%]" />
+                  <th className="text-left py-0.5 pr-3 w-[35%]">RE</th>
+                  <th className="text-left py-0.5 w-[35%]">LE</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((f) => <EyeRow key={f} label={labels[f]} re={re[f]} le={le[f]} />)}
+                {(re.freeText || le.freeText) && <EyeRow label="Notes" re={re.freeText} le={le.freeText} />}
+              </tbody>
+            </table>
+          </div>
+        );
+      })()}
+
+      {/* Posterior Segment */}
+      {hasPost && (() => {
+        const re = parseJSON<any>(pos.re, {});
+        const le = parseJSON<any>(pos.le, {});
+        const fields = ["media","discSize","discShape","discColour","discVessels","cdr","nrr","macula","retinalVessels","periphery"] as const;
+        const labels: Record<string, string> = {
+          media: "Media", discSize: "Disc Size", discShape: "Disc Shape",
+          discColour: "Disc Colour", discVessels: "Disc Vessels", cdr: "CDR",
+          nrr: "NRR", macula: "Macula", retinalVessels: "Retinal Vessels", periphery: "Periphery",
+        };
+        const rows = fields.filter((f) => re[f] || le[f]);
+        if (!rows.length && !pos.notes) return null;
+        return (
+          <div>
+            <SectionLabel label="Posterior Segment" />
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="text-[9px] font-bold uppercase tracking-wide text-[var(--color-ink-400)]">
+                  <th className="text-left py-0.5 pr-3 w-[30%]" />
+                  <th className="text-left py-0.5 pr-3 w-[35%]">RE</th>
+                  <th className="text-left py-0.5 w-[35%]">LE</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((f) => <EyeRow key={f} label={labels[f]} re={re[f]} le={le[f]} />)}
+              </tbody>
+            </table>
+            {pos.notes && <p className="mt-1 text-[var(--color-ink-500)] italic">{pos.notes}</p>}
+          </div>
+        );
+      })()}
+
+      {/* Diagnoses */}
+      {hasDiag && (
+        <div>
+          <SectionLabel label="Diagnoses" />
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="text-[9px] font-bold uppercase tracking-wide text-[var(--color-ink-400)]">
+                <th className="text-left py-0.5 pr-2">Diagnosis</th>
+                <th className="text-left py-0.5 pr-2 w-12">Eye</th>
+                <th className="text-left py-0.5 pr-2 w-16">ICD</th>
+                <th className="text-left py-0.5 w-16">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.diagnoses.map((d: any, i: number) => (
+                <tr key={i} className="border-b border-[var(--color-border)] last:border-0">
+                  <td className="py-1 pr-2 text-[var(--color-ink-700)] align-top">
+                    {d.description}
+                    {d.provisional && <span className="text-amber-500 italic ml-1">(P)</span>}
+                  </td>
+                  <td className="py-1 pr-2 text-[var(--color-ink-500)] align-top">{d.laterality ?? "—"}</td>
+                  <td className="py-1 pr-2 font-mono text-[9px] text-[var(--color-ink-400)] align-top">{d.icd10Code || "—"}</td>
+                  <td className="py-1 align-top">
+                    <span className={`text-[9px] font-bold ${
+                      d.status === "RESOLVED" ? "text-emerald-600"
+                      : d.status === "CHRONIC" ? "text-amber-600"
+                      : "text-red-500"
+                    }`}>{d.status}</span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Medications */}
+      {hasMeds && (
+        <div>
+          <SectionLabel icon={<Pill size={9} className="text-[var(--color-ink-400)]" />} label="Medications" />
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="text-[9px] font-bold uppercase tracking-wide text-[var(--color-ink-400)]">
+                <th className="text-left py-0.5 pr-2 w-[32%]">Drug</th>
+                <th className="text-left py-0.5 pr-2 w-[12%]">Dose</th>
+                <th className="text-left py-0.5 pr-2 w-[18%]">Frequency</th>
+                <th className="text-left py-0.5 pr-2 w-[14%]">Duration</th>
+                <th className="text-left py-0.5">Instructions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.medications.map((m: any, i: number) => (
+                <tr key={i} className={`border-b border-[var(--color-border)] last:border-0 ${i % 2 === 1 ? "bg-[var(--color-surface-2)]" : ""}`}>
+                  <td className="py-1 pr-2 font-semibold text-[var(--color-ink-700)] align-top">{m.drugName}</td>
+                  <td className="py-1 pr-2 text-[var(--color-ink-500)] align-top">{m.dosage ?? "—"}</td>
+                  <td className="py-1 pr-2 text-[var(--color-ink-500)] align-top">{m.frequency ?? "—"}</td>
+                  <td className="py-1 pr-2 text-[var(--color-ink-500)] align-top">{m.duration ?? "—"}</td>
+                  <td className="py-1 text-[var(--color-ink-500)] align-top">{m.instructions ?? "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Investigations */}
+      {hasInv && (
+        <div>
+          <SectionLabel icon={<FlaskConical size={9} className="text-[var(--color-ink-400)]" />} label="Investigations" />
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="text-[9px] font-bold uppercase tracking-wide text-[var(--color-ink-400)]">
+                <th className="text-left py-0.5 pr-2 w-[35%]">Test</th>
+                <th className="text-left py-0.5 pr-2 w-[10%]">Eye</th>
+                <th className="text-left py-0.5 pr-2 w-[14%]">Priority</th>
+                <th className="text-left py-0.5 pr-2 w-[16%]">Status</th>
+                <th className="text-left py-0.5">Result</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.investigationOrders.map((o: any, i: number) => (
+                <tr key={i} className="border-b border-[var(--color-border)] last:border-0">
+                  <td className="py-1 pr-2 text-[var(--color-ink-700)] align-top">{o.testName}</td>
+                  <td className="py-1 pr-2 text-[var(--color-ink-500)] align-top">{o.laterality ?? "—"}</td>
+                  <td className="py-1 pr-2 text-[var(--color-ink-500)] align-top">{o.priority}</td>
+                  <td className="py-1 pr-2 align-top">
+                    <span className={`text-[9px] font-bold uppercase ${
+                      o.status === "COMPLETED" ? "text-emerald-600"
+                      : o.status === "ORDERED" ? "text-blue-600"
+                      : "text-amber-600"
+                    }`}>{o.status}</span>
+                  </td>
+                  <td className="py-1 align-top">
+                    {o.resultRef
+                      ? <a href={o.resultRef} target="_blank" rel="noreferrer" className="text-[var(--color-primary-600)] underline">View</a>
+                      : <span className="text-[var(--color-ink-300)]">—</span>}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
     </div>
   );
 }
