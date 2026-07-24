@@ -55,6 +55,15 @@ function fmt12(t: string) {
   return `${h % 12 || 12}:${m.toString().padStart(2, "0")} ${p}`;
 }
 
+function nextWeekdayDate(weekday: number): string {
+  const today = new Date();
+  const diff = (weekday - today.getDay() + 7) % 7;
+  const d = new Date(today);
+  d.setDate(today.getDate() + diff);
+  const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+}
+
 // ── Add Schedule Modal ─────────────────────────────────────────────────────
 
 function AddModal({
@@ -265,6 +274,9 @@ function ScheduleCard({
           {active ? "ACTIVE" : "OFF"}
         </span>
       </div>
+
+      {/* Next occurrence date */}
+      <p className="text-[10px] text-[var(--color-ink-400)] -mt-1">{nextWeekdayDate(slot.weekday)}</p>
 
       {/* Time */}
       <div className={`flex items-center gap-1 font-semibold ${color.label}`}>
