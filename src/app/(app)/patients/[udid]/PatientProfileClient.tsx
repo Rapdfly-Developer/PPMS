@@ -15,6 +15,21 @@ import { VisitSummaryTabs } from "./VisitSummaryTabs";
 import { transferPatient } from "../actions";
 export { TimeStampButton } from "./PatientTimeline";
 
+/* ── Chief complaint parser (mirrors GeneralExamTab storage format) ──────────
+   Stored as "[RE] [3 days] Redness | [LE] Watering"                          */
+function parseComplaints(raw: string) {
+  return raw.split("|").map((s) => s.trim()).filter(Boolean).map((seg) => {
+    let rest = seg;
+    const latM = rest.match(/^\[(RE|LE|OU)\]\s*/);
+    const lat = latM ? latM[1] : null;
+    if (latM) rest = rest.slice(latM[0].length);
+    const sinceM = rest.match(/^\[(\d+)\s+(days|weeks|months|years)\]\s*/);
+    const since = sinceM ? `${sinceM[1]} ${sinceM[2]}` : null;
+    if (sinceM) rest = rest.slice(sinceM[0].length);
+    return { lat, since, text: rest.trim() };
+  });
+}
+
 /* ── Transfer Button ────────────────────────────────────────────────────────── */
 export function TransferButton({
   patientId,
@@ -406,8 +421,20 @@ function LastVisitSummarySection({ summary }: { summary: LastVisitSummary }) {
           {/* Chief Complaint */}
           {summary.chiefComplaint && (
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)] mb-1">Chief Complaint</p>
-              <p className="text-sm text-[var(--color-ink-800)]">{summary.chiefComplaint}</p>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)] mb-1.5">Chief Complaint</p>
+              <div className="space-y-1">
+                {parseComplaints(summary.chiefComplaint).map((c, i) => (
+                  <p key={i} className="text-sm text-[var(--color-ink-800)]">
+                    {c.lat && (
+                      <span className="inline-block font-bold text-[var(--color-primary-700)] mr-1.5">{c.lat}</span>
+                    )}
+                    {c.text}
+                    {c.since && (
+                      <span className="text-[var(--color-ink-400)] ml-1.5">· Since {c.since}</span>
+                    )}
+                  </p>
+                ))}
+              </div>
             </div>
           )}
 
