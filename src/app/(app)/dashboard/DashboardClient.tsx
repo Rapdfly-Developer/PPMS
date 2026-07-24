@@ -488,11 +488,11 @@ export function DashboardClient({
                         return (
                           <div key={a.id} className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-[var(--color-border)] bg-white">
                             <div className="w-16 shrink-0 flex flex-col items-center gap-0.5">
-                              <span className="text-sm font-bold text-[var(--color-ink-900)]" title="Booked at">
-                                {format(new Date(a.createdAt), "h:mm a")}
+                              <span className="text-sm font-bold text-[var(--color-ink-900)]" title="Scheduled appointment time">
+                                {format(new Date(a.dateTime), "h:mm a")}
                               </span>
-                              <span className="text-[9px] text-[var(--color-ink-400)]" title="Scheduled appointment time">
-                                Appt {format(new Date(a.dateTime), "h:mm a")}
+                              <span className="text-[9px] text-[var(--color-ink-400)]" title="Booked at">
+                                Booked {format(new Date(a.createdAt), "h:mm a")}
                               </span>
                             </div>
                             <div className="w-px self-stretch bg-[var(--color-border)]" />
