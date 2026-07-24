@@ -487,9 +487,14 @@ export function DashboardClient({
                         const isMoving = movingId === a.id;
                         return (
                           <div key={a.id} className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-[var(--color-border)] bg-white">
-                            <span className="text-sm font-bold text-[var(--color-ink-900)] w-16 shrink-0">
-                              {format(new Date(a.dateTime), "h:mm a")}
-                            </span>
+                            <div className="w-16 shrink-0 flex flex-col items-center gap-0.5">
+                              <span className="text-sm font-bold text-[var(--color-ink-900)]" title="Booked at">
+                                {format(new Date(a.createdAt), "h:mm a")}
+                              </span>
+                              <span className="text-[9px] text-[var(--color-ink-400)]" title="Scheduled appointment time">
+                                Appt {format(new Date(a.dateTime), "h:mm a")}
+                              </span>
+                            </div>
                             <div className="w-px self-stretch bg-[var(--color-border)]" />
                             <Link href={`/patients/${a.patient.udid}?returnTo=/dashboard`} className="flex-1 min-w-0 hover:opacity-80 transition-opacity">
                               <p className="text-sm font-semibold text-[var(--color-ink-900)] truncate">{a.patient.name}</p>
