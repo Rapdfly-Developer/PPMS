@@ -54,17 +54,28 @@ All loaded from CDN. No bundler.
 
 ## COLOR
 
-| Token | Value |
-|---|---|
-| Primary | `#16A34A` |
-| Dark Green | `#15803D` |
-| Emerald | `#10B981` |
-| Background | `#F8FAFC` |
-| White | `#FFFFFF` |
-| Heading | `#0F172A` |
-| Body | `#64748B` |
-| Accent Blue | `#2563EB` |
-| Accent Orange | `#F97316` |
+The brief originally specified a green primary (`#16A34A`). That was changed to
+**teal** so the landing page matches the actual PPMS product UI — the app shell
+and login screen use `#0F766E` / `#14B8A6` / `#18D2C3`, and a green marketing
+site handing off to a teal login broke brand continuity.
+
+CSS custom-property names are still `--green`, `--green-dk`, `--emerald` so no
+rule had to be rewritten; only the values changed.
+
+| Token | Value | Was |
+|---|---|---|
+| Primary | `#0D9488` | `#16A34A` |
+| Dark | `#0F766E` | `#15803D` |
+| Accent teal | `#14B8A6` | `#10B981` |
+| Background | `#F8FAFC` | — |
+| White | `#FFFFFF` | — |
+| Heading | `#0F172A` | — |
+| Body | `#64748B` | — |
+| Accent Blue | `#2563EB` | — |
+| Accent Orange | `#F97316` | — |
+
+To revert to green, swap those three values back — nothing else references the
+hue directly.
 
 ---
 
