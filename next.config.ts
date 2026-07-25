@@ -7,6 +7,13 @@ const nextConfig: NextConfig = {
   // resolve files relative to their own location in node_modules - bundling
   // them breaks that resolution, so they must run as real, unbundled deps.
   serverExternalPackages: ["tesseract.js", "puppeteer", "puppeteer-core", "@sparticuz/chromium"],
+  // Standalone marketing site lives at public/v2/index.html. Static files under
+  // public/ are not directory-indexed, so map the bare /v2 path onto the file.
+  async rewrites() {
+    return [
+      { source: "/v2", destination: "/v2/index.html" },
+    ];
+  },
 };
 
 export default nextConfig;

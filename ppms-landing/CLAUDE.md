@@ -124,6 +124,37 @@ picked up automatically — no code change needed.
 
 ---
 
+## PUBLISHING TO THE APP
+
+This folder is the source of truth. It is published side-by-side with the
+existing Next.js landing page, which is left untouched:
+
+| Route | Serves |
+|---|---|
+| `/` | existing Next.js landing (`src/app/LandingClient.tsx`) |
+| `/v2` | this static site, from `public/v2/` |
+
+After editing `index.html`, re-publish with:
+
+```bash
+node sync-landing.js
+```
+
+That copies the folder into `public/v2/` and rewrites relative asset
+references (`ppms-logo.png`, `hero-story-scrub.mp4`) to absolute `/v2/…`
+paths. The rewrite is necessary because `/v2` has no trailing slash, so
+relative URLs would otherwise resolve against `/` and 404. A trailing-slash
+redirect is not usable here — Next.js defaults to `trailingSlash: false` and
+normalises `/v2/` back to `/v2`, which would loop.
+
+`/v2` is also excluded from the auth middleware matcher in `src/proxy.ts`,
+so it stays publicly reachable without a login.
+
+To make this the primary landing page later, point `/` at it and retire
+`LandingClient.tsx` — nothing here depends on the current route.
+
+---
+
 ## ACCESSIBILITY
 
 - All motion is gated behind `prefers-reduced-motion`.

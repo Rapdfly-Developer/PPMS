@@ -1,0 +1,1539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>PPMS — AI Patient Practice Management System for Doctors &amp; Hospitals</title>
+<meta name="description" content="AI-powered practice management for doctors, clinics and hospitals. Appointments, EMR, billing, analytics and patient care on one secure platform." />
+<link rel="icon" href="/v2/ppms-logo.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+<style>
+/* ═══════════════════════ TOKENS ═══════════════════════ */
+:root{
+  /* Teal family — matches the PPMS product UI (#0F766E / #14B8A6 / #18D2C3).
+     Token names kept as --green* so existing rules stay untouched. */
+  --green:#0D9488; --green-dk:#0F766E; --emerald:#14B8A6;
+  --bg:#F8FAFC; --white:#FFFFFF; --head:#0F172A; --body:#64748B;
+  --blue:#2563EB; --orange:#F97316;
+  --line:#E2E8F0; --line-soft:rgba(15,23,42,.07);
+  --glass:rgba(255,255,255,.72);
+  --sh-sm:0 1px 2px rgba(15,23,42,.04),0 2px 8px rgba(15,23,42,.04);
+  --sh-md:0 4px 12px rgba(15,23,42,.05),0 12px 32px rgba(15,23,42,.07);
+  --sh-lg:0 8px 24px rgba(15,23,42,.07),0 32px 72px rgba(15,23,42,.11);
+  --sh-xl:0 12px 32px rgba(15,23,42,.08),0 48px 110px rgba(15,23,42,.15);
+  --ring:0 0 0 4px rgba(13,148,136,.16);
+  --r-sm:10px; --r:16px; --r-lg:22px; --r-xl:28px;
+  --ease:cubic-bezier(.22,1,.36,1);
+  --maxw:1200px;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--bg); color:var(--body);
+  font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+  font-size:16px; line-height:1.6; -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+img,svg,video{display:block;max-width:100%}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+h1,h2,h3,h4{margin:0;color:var(--head);line-height:1.12;letter-spacing:-.03em;font-weight:800}
+p{margin:0}
+ul{margin:0;padding:0;list-style:none}
+:focus-visible{outline:2px solid var(--green);outline-offset:3px;border-radius:6px}
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 24px}
+.sec{padding:120px 0;position:relative}
+.display{font-family:"Playfair Display",Georgia,serif;font-weight:700;letter-spacing:-.02em}
+
+/* ── Section heading kit ── */
+.eyebrow{
+  display:inline-flex;align-items:center;gap:8px;padding:7px 15px;border-radius:999px;
+  background:rgba(13,148,136,.08);border:1px solid rgba(13,148,136,.18);
+  font-size:11.5px;font-weight:800;letter-spacing:.13em;text-transform:uppercase;color:var(--green-dk);
+}
+.eyebrow i{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulseDot 2.4s ease-out infinite}
+@keyframes pulseDot{0%,100%{box-shadow:0 0 0 0 rgba(13,148,136,.5)}60%{box-shadow:0 0 0 7px rgba(13,148,136,0)}}
+.s-head{max-width:720px;margin:0 auto 64px;text-align:center}
+.s-head h2{font-size:clamp(30px,4vw,50px);margin:18px 0 16px}
+.s-head p{font-size:17px;line-height:1.65}
+.grad{background:linear-gradient(100deg,var(--green),var(--emerald) 55%,var(--blue));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent}
+
+/* ── Buttons ── */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:9px;
+  height:52px;padding:0 26px;border-radius:13px;font-size:15px;font-weight:700;
+  transition:transform .25s var(--ease),box-shadow .25s var(--ease),background .25s,border-color .25s;
+  white-space:nowrap;
+}
+.btn-p{background:linear-gradient(135deg,var(--green),var(--emerald));color:#fff;box-shadow:0 8px 24px rgba(13,148,136,.3),0 2px 6px rgba(13,148,136,.2)}
+.btn-p:hover{transform:translateY(-3px);box-shadow:0 16px 40px rgba(13,148,136,.36),0 4px 10px rgba(13,148,136,.24)}
+.btn-g{background:var(--glass);color:var(--head);border:1px solid var(--line);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:var(--sh-sm)}
+.btn-g:hover{transform:translateY(-3px);box-shadow:var(--sh-md);border-color:#CBD5E1}
+.btn-sm{height:42px;padding:0 18px;font-size:14px;border-radius:11px}
+.btn-lg{height:58px;padding:0 32px;font-size:16px;border-radius:14px}
+
+/* ═══════════════════════ NAV ═══════════════════════ */
+.nav{
+  position:fixed;inset:0 0 auto;z-index:100;height:70px;
+  display:flex;align-items:center;
+  background:rgba(248,250,252,.68);backdrop-filter:blur(18px) saturate(180%);
+  -webkit-backdrop-filter:blur(18px) saturate(180%);
+  border-bottom:1px solid transparent;transition:background .3s,border-color .3s,box-shadow .3s;
+}
+.nav.stuck{background:rgba(255,255,255,.86);border-bottom-color:var(--line-soft);box-shadow:0 1px 20px rgba(15,23,42,.06)}
+.nav .wrap{display:flex;align-items:center;justify-content:space-between;gap:24px;width:100%}
+.brand{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.brand img{width:34px;height:34px;object-fit:contain}
+.brand b{font-size:19px;font-weight:900;color:var(--head);letter-spacing:-.04em}
+.brand span{font-size:8.5px;font-weight:800;letter-spacing:.14em;color:var(--body);display:block;margin-top:-3px}
+.nav-links{display:flex;align-items:center;gap:2px}
+.nav-links a{
+  padding:9px 13px;border-radius:9px;font-size:14px;font-weight:600;color:#475569;
+  transition:color .2s,background .2s;position:relative;
+}
+.nav-links a:hover{color:var(--head);background:rgba(15,23,42,.045)}
+.nav-links a.on{color:var(--green-dk)}
+.nav-cta{display:flex;align-items:center;gap:9px;flex-shrink:0}
+.nav-cta .ghost{font-size:14px;font-weight:600;color:#475569;padding:9px 12px;border-radius:9px;transition:color .2s,background .2s}
+.nav-cta .ghost:hover{color:var(--head);background:rgba(15,23,42,.045)}
+.burger{display:none;width:42px;height:42px;border-radius:11px;border:1px solid var(--line);background:var(--white);align-items:center;justify-content:center}
+.burger span{display:block;width:17px;height:2px;background:var(--head);border-radius:2px;position:relative;transition:transform .3s var(--ease)}
+.burger span::before,.burger span::after{content:"";position:absolute;left:0;width:17px;height:2px;background:var(--head);border-radius:2px;transition:transform .3s var(--ease)}
+.burger span::before{top:-6px}.burger span::after{top:6px}
+.mobile-menu{
+  position:fixed;top:70px;left:0;right:0;z-index:99;background:rgba(255,255,255,.97);
+  backdrop-filter:blur(18px);border-bottom:1px solid var(--line);padding:16px 24px 22px;
+  display:none;flex-direction:column;gap:3px;box-shadow:var(--sh-lg);
+}
+.mobile-menu.open{display:flex}
+.mobile-menu a{padding:12px 14px;border-radius:11px;font-size:15px;font-weight:600;color:#334155}
+.mobile-menu a:active{background:rgba(15,23,42,.05)}
+.mobile-menu .btn{margin-top:9px}
+
+/* ═══════════════════════ HERO ═══════════════════════ */
+.hero{height:500vh;position:relative}
+.hero-pin{
+  height:100vh;position:relative;overflow:hidden;
+  display:flex;align-items:center;justify-content:center;
+}
+.hero-media{position:absolute;inset:0;overflow:hidden}
+.hero-media video{width:100%;height:100%;object-fit:cover}
+.hero-fallback{
+  position:absolute;inset:0;
+  background:
+    radial-gradient(1000px 700px at 18% 22%,rgba(20,184,166,.20),transparent 62%),
+    radial-gradient(900px 640px at 84% 74%,rgba(37,99,235,.16),transparent 62%),
+    radial-gradient(700px 520px at 55% 45%,rgba(13,148,136,.13),transparent 66%),
+    linear-gradient(150deg,#F0FDFA 0%,#F8FAFC 42%,#EFF6FF 100%);
+  background-size:200% 200%;
+}
+.hero-grid{
+  position:absolute;inset:0;opacity:.5;
+  background-image:linear-gradient(rgba(15,23,42,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(15,23,42,.05) 1px,transparent 1px);
+  background-size:60px 60px;
+  -webkit-mask-image:radial-gradient(ellipse 65% 60% at 50% 45%,#000 35%,transparent 78%);
+  mask-image:radial-gradient(ellipse 65% 60% at 50% 45%,#000 35%,transparent 78%);
+}
+.hero-scrim{position:absolute;inset:0;background:linear-gradient(180deg,rgba(248,250,252,.72),rgba(248,250,252,.5) 45%,rgba(248,250,252,.9))}
+.hero-inner{position:relative;z-index:3;text-align:center;padding:0 24px;max-width:960px}
+.hero h1{font-size:clamp(38px,6.6vw,84px);letter-spacing:-.045em;margin:22px 0 0}
+.hero h1 .l2{display:block}
+.hero-sub{font-size:clamp(15.5px,1.6vw,19px);max-width:640px;margin:24px auto 0;line-height:1.65}
+.hero-btns{display:flex;gap:13px;justify-content:center;flex-wrap:wrap;margin-top:36px}
+.hero-note{margin-top:20px;font-size:13px;color:#94A3B8;display:flex;gap:16px;justify-content:center;flex-wrap:wrap}
+.hero-note span{display:inline-flex;align-items:center;gap:6px}
+
+/* floating hero stats */
+.hero-stats{position:absolute;inset:0;z-index:2;pointer-events:none}
+.fstat{
+  position:absolute;display:flex;align-items:center;gap:11px;padding:13px 17px;border-radius:16px;
+  background:rgba(255,255,255,.82);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border:1px solid rgba(255,255,255,.9);box-shadow:var(--sh-md);
+}
+.fstat .ic{width:36px;height:36px;border-radius:11px;display:grid;place-items:center;flex-shrink:0}
+.fstat b{display:block;font-size:19px;font-weight:900;color:var(--head);letter-spacing:-.03em;line-height:1.1}
+.fstat small{font-size:11px;font-weight:600;color:var(--body)}
+.fstat.a{top:17%;left:5%}
+.fstat.b{top:27%;right:5%}
+.fstat.c{bottom:24%;left:8%}
+.fstat.d{bottom:17%;right:7%}
+@media(max-width:1100px){.fstat.a,.fstat.b,.fstat.c,.fstat.d{display:none}}
+
+/* hero particles */
+.particles{position:absolute;inset:0;z-index:1;pointer-events:none}
+.particles i{position:absolute;width:4px;height:4px;border-radius:50%;background:var(--emerald);opacity:.4;box-shadow:0 0 10px rgba(20,184,166,.7)}
+
+/* scroll cue */
+.cue{position:absolute;bottom:30px;left:50%;transform:translateX(-50%);z-index:4;display:flex;flex-direction:column;align-items:center;gap:8px}
+.cue span{font-size:10.5px;font-weight:700;letter-spacing:.16em;color:#94A3B8;text-transform:uppercase}
+.cue div{width:24px;height:38px;border:2px solid #CBD5E1;border-radius:13px;position:relative}
+.cue div::after{content:"";position:absolute;top:7px;left:50%;transform:translateX(-50%);width:3.5px;height:7px;border-radius:2px;background:var(--green);animation:wheel 1.8s ease-in-out infinite}
+@keyframes wheel{0%{opacity:0;transform:translate(-50%,0)}35%{opacity:1}70%{opacity:0;transform:translate(-50%,13px)}100%{opacity:0}}
+
+/* ═══════════ SHARED: dashboard mockup chrome ═══════════ */
+.mock{background:var(--white);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--sh-lg)}
+.mock-bar{display:flex;align-items:center;gap:7px;padding:11px 15px;border-bottom:1px solid var(--line);background:#FCFDFE}
+.mock-bar i{width:9px;height:9px;border-radius:50%;background:#E2E8F0}
+.mock-bar i:nth-child(1){background:#FCA5A5}.mock-bar i:nth-child(2){background:#FCD34D}.mock-bar i:nth-child(3){background:#86EFAC}
+.mock-bar .t{margin-left:9px;font-size:11px;font-weight:700;color:#94A3B8;letter-spacing:.04em}
+.mock-body{padding:18px}
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:11px}
+.kpi{background:#F8FAFC;border:1px solid var(--line);border-radius:13px;padding:13px}
+.kpi small{font-size:10px;font-weight:700;letter-spacing:.07em;color:#94A3B8;text-transform:uppercase}
+.kpi b{display:block;font-size:22px;font-weight:900;color:var(--head);letter-spacing:-.035em;margin-top:5px;line-height:1}
+.kpi em{font-style:normal;font-size:11px;font-weight:700;color:var(--green)}
+.bars{display:flex;align-items:flex-end;gap:9px;height:120px;margin-top:6px}
+.bars i{flex:1;border-radius:6px 6px 0 0;background:linear-gradient(180deg,rgba(13,148,136,.35),rgba(13,148,136,.1));transform-origin:bottom}
+.bars i.hi{background:linear-gradient(180deg,var(--emerald),var(--green))}
+
+/* ═══════════ 3. PLATFORM OVERVIEW ═══════════ */
+.plat{position:relative}
+.plat-stage{position:relative;max-width:1000px;margin:0 auto}
+.plat-tabs{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:34px}
+.plat-tab{
+  padding:10px 18px;border-radius:11px;font-size:13.5px;font-weight:700;color:var(--body);
+  background:var(--white);border:1px solid var(--line);transition:all .25s var(--ease);
+}
+.plat-tab:hover{border-color:#CBD5E1;transform:translateY(-2px)}
+.plat-tab.on{background:linear-gradient(135deg,var(--green),var(--emerald));color:#fff;border-color:transparent;box-shadow:0 8px 22px rgba(13,148,136,.28)}
+.plat-panel{display:none}
+.plat-panel.on{display:block;animation:fadeUp .5s var(--ease) both}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+.plat-float{position:absolute;z-index:5;background:var(--white);border:1px solid var(--line);border-radius:15px;padding:13px 16px;box-shadow:var(--sh-lg)}
+.plat-float.f1{top:-22px;right:-18px}
+.plat-float.f2{bottom:-24px;left:-22px}
+@media(max-width:900px){.plat-float{display:none}}
+
+/* ═══════════ 4. WHY PPMS ═══════════ */
+.cards6{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+.card{
+  position:relative;background:var(--white);border:1px solid var(--line);border-radius:var(--r-lg);
+  padding:30px 26px;box-shadow:var(--sh-sm);overflow:hidden;
+  transition:transform .35s var(--ease),box-shadow .35s var(--ease),border-color .35s;
+}
+.card::before{
+  content:"";position:absolute;inset:0;opacity:0;transition:opacity .35s;
+  background:radial-gradient(420px circle at var(--mx,50%) var(--my,0%),rgba(13,148,136,.09),transparent 62%);
+}
+.card:hover{transform:translateY(-7px);box-shadow:var(--sh-lg);border-color:rgba(13,148,136,.3)}
+.card:hover::before{opacity:1}
+.card .ic{width:50px;height:50px;border-radius:15px;display:grid;place-items:center;margin-bottom:19px;position:relative;z-index:1}
+.card h3{font-size:18.5px;margin-bottom:9px;position:relative;z-index:1}
+.card p{font-size:14.5px;line-height:1.62;position:relative;z-index:1}
+.card .tag{display:inline-block;margin-top:15px;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--green-dk);position:relative;z-index:1}
+
+/* ═══════════ 5. WORKFLOW (horizontal) ═══════════ */
+.flow{overflow:hidden;background:linear-gradient(180deg,#fff,#F8FAFC)}
+.flow-track{display:flex;gap:26px;padding:0 max(24px,calc((100vw - var(--maxw))/2))}
+.step{
+  flex:0 0 300px;background:var(--white);border:1px solid var(--line);border-radius:var(--r-lg);
+  padding:28px 26px;box-shadow:var(--sh-sm);position:relative;
+}
+.step .n{
+  width:42px;height:42px;border-radius:13px;display:grid;place-items:center;font-size:15px;font-weight:900;
+  background:linear-gradient(135deg,var(--green),var(--emerald));color:#fff;margin-bottom:18px;
+  box-shadow:0 8px 20px rgba(13,148,136,.28);
+}
+.step h3{font-size:18px;margin-bottom:9px}
+.step p{font-size:14px;line-height:1.6}
+.step .arrow{position:absolute;top:50%;right:-19px;width:12px;height:12px;border-top:2px solid #CBD5E1;border-right:2px solid #CBD5E1;transform:translateY(-50%) rotate(45deg)}
+.step:last-child .arrow{display:none}
+.flow-prog{height:3px;background:var(--line);border-radius:3px;max-width:var(--maxw);margin:44px auto 0;overflow:hidden}
+.flow-prog i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--green),var(--emerald));border-radius:3px}
+
+/* ═══════════ 6. EMR ═══════════ */
+.emr-grid{display:grid;grid-template-columns:1fr 1.15fr;gap:56px;align-items:center}
+.emr-list{display:flex;flex-direction:column;gap:5px}
+.emr-item{
+  display:flex;align-items:flex-start;gap:14px;padding:15px 17px;border-radius:15px;
+  border:1px solid transparent;transition:all .3s var(--ease);cursor:default;
+}
+.emr-item:hover{background:var(--white);border-color:var(--line);box-shadow:var(--sh-sm);transform:translateX(5px)}
+.emr-item .dot{width:30px;height:30px;border-radius:10px;background:rgba(13,148,136,.1);display:grid;place-items:center;flex-shrink:0;color:var(--green-dk)}
+.emr-item h4{font-size:15.5px;margin-bottom:3px}
+.emr-item p{font-size:13.5px;line-height:1.55}
+.emr-rows{display:flex;flex-direction:column;gap:9px}
+.emr-row{display:grid;grid-template-columns:96px 1fr 1fr;gap:11px;align-items:center;padding:11px 13px;background:#F8FAFC;border:1px solid var(--line);border-radius:11px}
+.emr-row .lbl{font-size:11px;font-weight:700;color:#94A3B8;letter-spacing:.05em;text-transform:uppercase}
+.emr-row .val{font-size:13.5px;font-weight:700;color:var(--head)}
+.emr-head{display:grid;grid-template-columns:96px 1fr 1fr;gap:11px;padding:0 13px 4px;font-size:10.5px;font-weight:800;letter-spacing:.1em;color:#94A3B8;text-transform:uppercase}
+.ai-box{margin-top:15px;padding:16px 18px;border-radius:15px;background:linear-gradient(135deg,rgba(37,99,235,.06),rgba(20,184,166,.06));border:1px solid rgba(37,99,235,.16)}
+.ai-box .h{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.ai-box .h b{font-size:11px;font-weight:800;letter-spacing:.11em;color:var(--blue);text-transform:uppercase}
+.ai-box p{font-size:13.5px;line-height:1.6;color:#475569}
+
+/* ═══════════ 7. AI FEATURES ═══════════ */
+.ai-sec{background:linear-gradient(165deg,#0B1220,#0F172A 45%,#0B1220);position:relative;overflow:hidden}
+.ai-sec::before{content:"";position:absolute;inset:0;background:radial-gradient(760px 520px at 22% 18%,rgba(20,184,166,.16),transparent 62%),radial-gradient(700px 480px at 82% 78%,rgba(37,99,235,.15),transparent 62%)}
+.ai-sec .wrap{position:relative;z-index:2}
+.ai-sec h2,.ai-sec .s-head h2{color:#fff}
+.ai-sec .s-head p{color:#94A3B8}
+.ai-sec .eyebrow{background:rgba(20,184,166,.1);border-color:rgba(20,184,166,.25);color:var(--emerald)}
+.ai-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.ai-card{
+  background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.1);border-radius:var(--r-lg);
+  padding:28px 25px;backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+  transition:transform .35s var(--ease),border-color .35s,box-shadow .35s,background .35s;
+}
+.ai-card:hover{transform:translateY(-7px);background:rgba(255,255,255,.075);border-color:rgba(20,184,166,.36);box-shadow:0 24px 60px rgba(0,0,0,.4),0 0 46px rgba(20,184,166,.14)}
+.ai-card .ic{width:46px;height:46px;border-radius:14px;display:grid;place-items:center;margin-bottom:18px;background:linear-gradient(135deg,rgba(20,184,166,.18),rgba(37,99,235,.14));border:1px solid rgba(20,184,166,.26);color:var(--emerald)}
+.ai-card h3{color:#fff;font-size:17.5px;margin-bottom:8px}
+.ai-card p{color:#94A3B8;font-size:14px;line-height:1.6}
+
+/* ═══════════ 8. MULTI-HOSPITAL ═══════════ */
+.hosp{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+.hcard{
+  background:var(--white);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;
+  box-shadow:var(--sh-sm);transition:transform .35s var(--ease),box-shadow .35s var(--ease),border-color .35s;
+}
+.hcard:hover{transform:translateY(-6px);box-shadow:var(--sh-lg);border-color:rgba(13,148,136,.28)}
+.hcard-top{padding:24px 24px 20px;display:flex;align-items:center;gap:14px;border-bottom:1px solid var(--line)}
+.hcard-top .logo{width:52px;height:52px;border-radius:15px;display:grid;place-items:center;flex-shrink:0}
+.hcard-top h3{font-size:17px;margin-bottom:3px}
+.hcard-top small{font-size:12.5px;color:var(--body)}
+.hcard-body{padding:20px 24px 24px}
+.hstat{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px dashed var(--line)}
+.hstat:last-of-type{border-bottom:0}
+.hstat span{font-size:13px;color:var(--body)}
+.hstat b{font-size:14px;font-weight:800;color:var(--head)}
+.hcard-more{max-height:0;overflow:hidden;transition:max-height .5s var(--ease)}
+.hcard.open .hcard-more{max-height:280px}
+.docmap{display:flex;flex-direction:column;gap:8px;padding-top:14px;margin-top:12px;border-top:1px solid var(--line)}
+.docrow{display:flex;align-items:center;gap:10px;padding:9px 11px;background:#F8FAFC;border:1px solid var(--line);border-radius:11px}
+.docrow .av{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:800;color:#fff;flex-shrink:0}
+.docrow b{font-size:13px;color:var(--head);font-weight:700}
+.docrow small{font-size:11.5px;color:var(--body);margin-left:auto}
+.hcard-btn{width:100%;margin-top:16px;height:42px;border-radius:11px;border:1px solid var(--line);background:#F8FAFC;font-size:13.5px;font-weight:700;color:var(--head);display:flex;align-items:center;justify-content:center;gap:7px;transition:all .25s}
+.hcard-btn:hover{background:var(--white);border-color:#CBD5E1}
+.hcard-btn svg{transition:transform .3s var(--ease)}
+.hcard.open .hcard-btn svg{transform:rotate(180deg)}
+
+/* ═══════════ 9. INTEGRATIONS ═══════════ */
+.integ{display:grid;grid-template-columns:.9fr 1.1fr;gap:56px;align-items:start}
+.integ-sticky{position:sticky;top:110px}
+.integ-list{display:flex;flex-direction:column;gap:16px}
+.icard{
+  display:flex;gap:17px;align-items:flex-start;padding:24px;background:var(--white);
+  border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--sh-sm);
+  transition:transform .35s var(--ease),box-shadow .35s var(--ease),border-color .35s;
+}
+.icard:hover{transform:translateY(-4px);box-shadow:var(--sh-md);border-color:rgba(37,99,235,.28)}
+.icard .ic{width:48px;height:48px;border-radius:14px;display:grid;place-items:center;flex-shrink:0}
+.icard h3{font-size:16.5px;margin-bottom:6px}
+.icard p{font-size:14px;line-height:1.58}
+.icard code{font-size:12px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;background:#F1F5F9;padding:2px 7px;border-radius:6px;color:var(--green-dk);font-weight:600}
+
+/* ═══════════ 10. SECURITY ═══════════ */
+.sec-dark{background:linear-gradient(165deg,#0B1220,#111C2E 50%,#0B1220);position:relative;overflow:hidden}
+.sec-dark::before{content:"";position:absolute;inset:0;background:radial-gradient(720px 520px at 50% 30%,rgba(13,148,136,.16),transparent 64%)}
+.sec-dark .wrap{position:relative;z-index:2}
+.sec-dark .s-head h2{color:#fff}
+.sec-dark .s-head p{color:#94A3B8}
+.sec-dark .eyebrow{background:rgba(13,148,136,.12);border-color:rgba(13,148,136,.28);color:#2DD4BF}
+.shield-wrap{display:grid;place-items:center;margin-bottom:56px}
+.shield{width:132px;height:132px;position:relative;display:grid;place-items:center}
+.shield .ring{position:absolute;inset:0;border-radius:50%;border:1px solid rgba(13,148,136,.3)}
+.shield .ring:nth-child(2){inset:-19px;border-color:rgba(13,148,136,.18)}
+.shield .ring:nth-child(3){inset:-38px;border-color:rgba(13,148,136,.1)}
+.sgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.scard{
+  background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.1);border-radius:var(--r-lg);
+  padding:26px 24px;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  transition:transform .35s var(--ease),border-color .35s,background .35s;
+}
+.scard:hover{transform:translateY(-6px);background:rgba(255,255,255,.07);border-color:rgba(13,148,136,.35)}
+.scard .ic{width:44px;height:44px;border-radius:13px;display:grid;place-items:center;margin-bottom:16px;background:rgba(13,148,136,.14);border:1px solid rgba(13,148,136,.26);color:#2DD4BF}
+.scard h3{color:#fff;font-size:16.5px;margin-bottom:7px}
+.scard p{color:#94A3B8;font-size:13.5px;line-height:1.58}
+
+/* ═══════════ 11. ANALYTICS ═══════════ */
+.an-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;margin-bottom:44px}
+.an-card{background:var(--white);border:1px solid var(--line);border-radius:var(--r-lg);padding:26px;box-shadow:var(--sh-sm)}
+.an-card .top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.an-card small{font-size:11px;font-weight:800;letter-spacing:.09em;color:#94A3B8;text-transform:uppercase}
+.an-card .pill{font-size:11px;font-weight:800;padding:4px 9px;border-radius:999px;background:rgba(13,148,136,.1);color:var(--green-dk)}
+.an-card b{font-size:38px;font-weight:900;color:var(--head);letter-spacing:-.045em;line-height:1;display:block}
+.an-card p{font-size:13.5px;margin-top:7px}
+.spark{margin-top:16px;height:46px}
+.chart-box{background:var(--white);border:1px solid var(--line);border-radius:var(--r-lg);padding:30px;box-shadow:var(--sh-md)}
+.chart-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;flex-wrap:wrap;gap:12px}
+.chart-head h3{font-size:19px}
+.legend{display:flex;gap:16px;flex-wrap:wrap}
+.legend span{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;color:var(--body)}
+.legend i{width:10px;height:10px;border-radius:3px}
+
+/* ═══════════ 12. TESTIMONIALS ═══════════ */
+.tst{overflow:hidden}
+.tst-track{display:flex;gap:22px;width:max-content}
+.tcard{
+  flex:0 0 380px;background:var(--white);border:1px solid var(--line);border-radius:var(--r-lg);
+  padding:30px 28px;box-shadow:var(--sh-sm);
+}
+.stars{display:flex;gap:3px;margin-bottom:16px}
+.tcard blockquote{margin:0 0 20px;font-size:15.5px;line-height:1.68;color:#334155}
+.tcard .who{display:flex;align-items:center;gap:13px;padding-top:18px;border-top:1px solid var(--line)}
+.tcard .av{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font-size:15px;font-weight:800;color:#fff;flex-shrink:0}
+.tcard .who b{display:block;font-size:14.5px;color:var(--head);font-weight:700}
+.tcard .who small{font-size:12.5px;color:var(--body)}
+.logos{display:flex;align-items:center;justify-content:center;gap:44px;flex-wrap:wrap;margin-top:56px;padding-top:44px;border-top:1px solid var(--line);opacity:.65}
+.logos div{display:flex;align-items:center;gap:9px;font-size:15px;font-weight:800;color:#94A3B8;letter-spacing:-.02em}
+
+/* ═══════════ 13. PRICING ═══════════ */
+.price{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;align-items:start}
+.pcard{
+  background:var(--white);border:1px solid var(--line);border-radius:var(--r-xl);padding:34px 30px;
+  box-shadow:var(--sh-sm);position:relative;transition:transform .35s var(--ease),box-shadow .35s var(--ease);
+}
+.pcard:hover{transform:translateY(-6px);box-shadow:var(--sh-lg)}
+.pcard.best{border-color:transparent;box-shadow:var(--sh-xl);transform:scale(1.035)}
+.pcard.best:hover{transform:scale(1.035) translateY(-6px)}
+.pcard.best::before{content:"";position:absolute;inset:-1px;border-radius:var(--r-xl);padding:1.5px;background:linear-gradient(135deg,var(--green),var(--emerald),var(--blue));-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}
+.badge{position:absolute;top:-13px;left:50%;transform:translateX(-50%);padding:6px 15px;border-radius:999px;font-size:11px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;background:linear-gradient(135deg,var(--green),var(--emerald));color:#fff;box-shadow:0 8px 20px rgba(13,148,136,.32);white-space:nowrap}
+.pcard h3{font-size:19px;margin-bottom:6px}
+.pcard .desc{font-size:13.5px;margin-bottom:22px}
+.amt{display:flex;align-items:baseline;gap:4px;margin-bottom:5px}
+.amt .c{font-size:22px;font-weight:800;color:var(--head)}
+.amt .v{font-size:46px;font-weight:900;color:var(--head);letter-spacing:-.05em;line-height:1}
+.amt .p{font-size:14px;color:var(--body);font-weight:600}
+.pcard .note{font-size:12.5px;color:#94A3B8;margin-bottom:24px}
+.pcard .btn{width:100%;margin-bottom:24px}
+.feat{display:flex;flex-direction:column;gap:11px}
+.feat li{display:flex;align-items:flex-start;gap:10px;font-size:14px;color:#475569;line-height:1.5}
+.feat li svg{flex-shrink:0;margin-top:2px}
+.price-note{display:flex;gap:28px;justify-content:center;flex-wrap:wrap;margin-top:44px}
+.price-note span{display:inline-flex;align-items:center;gap:8px;font-size:14px;font-weight:600;color:#475569}
+
+/* ═══════════ 14. CTA ═══════════ */
+.cta{position:relative;overflow:hidden;background:linear-gradient(150deg,#0B1220,#0F3D3A 45%,#0B1220)}
+.cta::before{content:"";position:absolute;inset:0;background:radial-gradient(760px 520px at 30% 26%,rgba(20,184,166,.24),transparent 62%),radial-gradient(680px 460px at 76% 76%,rgba(37,99,235,.17),transparent 62%)}
+.cta .wrap{position:relative;z-index:2;text-align:center}
+.cta h2{font-size:clamp(32px,5vw,60px);color:#fff;margin-bottom:20px}
+.cta p{font-size:18px;color:#94A3B8;max-width:600px;margin:0 auto 38px}
+.cta-btns{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+.cta .btn-g{background:rgba(255,255,255,.08);color:#fff;border-color:rgba(255,255,255,.18);backdrop-filter:blur(14px)}
+.cta .btn-g:hover{background:rgba(255,255,255,.13);border-color:rgba(255,255,255,.3)}
+.cta-mock{max-width:820px;margin:60px auto 0;border-radius:var(--r-lg);overflow:hidden;border:1px solid rgba(255,255,255,.14);box-shadow:0 40px 100px rgba(0,0,0,.5)}
+
+/* ═══════════ 15. FOOTER ═══════════ */
+.ft{background:#0B1220;padding:76px 0 0;color:#94A3B8}
+.ft-grid{display:grid;grid-template-columns:1.5fr repeat(5,1fr);gap:40px;padding-bottom:52px;border-bottom:1px solid rgba(255,255,255,.08)}
+.ft-brand .brand b{color:#fff}
+.ft-brand .brand span{color:#64748B}
+.ft-brand p{font-size:14px;line-height:1.65;margin:18px 0 22px;max-width:290px}
+.ft-social{display:flex;gap:10px}
+.ft-social a{width:38px;height:38px;border-radius:11px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);display:grid;place-items:center;color:#94A3B8;transition:all .25s}
+.ft-social a:hover{background:rgba(13,148,136,.16);border-color:rgba(13,148,136,.32);color:#2DD4BF;transform:translateY(-2px)}
+.ft-col h4{font-size:12px;font-weight:800;letter-spacing:.11em;text-transform:uppercase;color:#fff;margin-bottom:17px}
+.ft-col a{display:block;font-size:14px;padding:6px 0;transition:color .2s}
+.ft-col a:hover{color:#2DD4BF}
+.ft-bot{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:26px 0;flex-wrap:wrap;font-size:13.5px}
+.ft-bot a:hover{color:#2DD4BF}
+.ft-bot .contact{display:flex;gap:22px;flex-wrap:wrap}
+.ft-bot .contact a{display:inline-flex;align-items:center;gap:7px}
+
+/* ═══════════ CURSOR GLOW ═══════════ */
+.glow{
+  position:fixed;top:0;left:0;width:420px;height:420px;border-radius:50%;pointer-events:none;z-index:9999;
+  background:radial-gradient(circle,rgba(13,148,136,.09),transparent 62%);
+  transform:translate(-50%,-50%);opacity:0;transition:opacity .35s;will-change:transform;
+}
+/* ═══════════ REVEAL BASE ═══════════ */
+.rv{opacity:0;transform:translateY(28px)}
+
+/* ═══════════ POLISH PASS ═══════════ */
+/* Skip link — keyboard users reach content without tabbing the whole nav */
+.skip{position:absolute;left:-9999px;top:0;z-index:1000;padding:13px 22px;background:var(--green);color:#fff;font-weight:700;border-radius:0 0 12px 0}
+.skip:focus{left:0}
+
+/* Balanced ragging on display type; avoids orphaned words in headings */
+h1,h2,h3,.s-head h2{text-wrap:balance}
+.s-head p,.hero-sub,.cta p{text-wrap:pretty}
+
+/* Optical leading for the largest display sizes */
+.hero h1{line-height:1.04}
+.display{line-height:1.08}
+
+/* Tabular figures so counters don't jitter while animating */
+[data-count],.amt .v,.an-card b,.kpi b,.fstat b{font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
+
+/* Compositor hints, scoped to what actually moves */
+.hero-pin,.flow-track,.tst-track{will-change:transform}
+.fstat,.plat-float{will-change:transform}
+
+/* Sticky mobile CTA — primary action stays reachable on small screens */
+.mcta{display:none}
+
+/* Card keyboard affordance parity with :hover */
+.card:focus-within,.ai-card:focus-within,.hcard:focus-within{border-color:rgba(13,148,136,.4)}
+
+@media(max-width:720px){
+  .mcta{
+    display:flex;position:fixed;left:12px;right:12px;bottom:12px;z-index:90;gap:9px;padding:9px;
+    border-radius:17px;background:rgba(255,255,255,.9);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+    border:1px solid var(--line);box-shadow:var(--sh-lg);transform:translateY(160%);
+  }
+  .mcta .btn{flex:1;height:46px;font-size:14px;padding:0 14px}
+  .ft{padding-bottom:80px}
+}
+
+/* ═══════════ RESPONSIVE ═══════════ */
+@media(max-width:1024px){
+  .nav-links{display:none}
+  .burger{display:flex}
+  .nav-cta .ghost,.nav-cta .btn:not(.primary-cta){display:none}
+  .cards6,.ai-cards,.hosp,.sgrid,.an-grid{grid-template-columns:repeat(2,1fr)}
+  .emr-grid,.integ{grid-template-columns:1fr;gap:40px}
+  .integ-sticky{position:static}
+  .price{grid-template-columns:1fr;max-width:460px;margin:0 auto}
+  .pcard.best{transform:none}
+  .pcard.best:hover{transform:translateY(-6px)}
+  .ft-grid{grid-template-columns:repeat(3,1fr)}
+  .ft-brand{grid-column:1/-1}
+}
+@media(max-width:720px){
+  /* 500vh of pinned scrub is punishing on phones — shorten the runway */
+  .hero{height:300vh}
+  .sec{padding:80px 0}
+  .s-head{margin-bottom:44px}
+  .cards6,.ai-cards,.hosp,.sgrid,.an-grid{grid-template-columns:1fr}
+  .kpi-row{grid-template-columns:repeat(2,1fr)}
+  .step{flex:0 0 78vw}
+  .tcard{flex:0 0 84vw}
+  .ft-grid{grid-template-columns:repeat(2,1fr);gap:32px}
+  .ft-bot{flex-direction:column;align-items:flex-start;gap:14px}
+  .hero-btns .btn,.cta-btns .btn{width:100%}
+  .emr-row,.emr-head{grid-template-columns:74px 1fr 1fr;gap:8px}
+  .glow{display:none}
+}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important}
+  .rv{opacity:1;transform:none}
+  .glow{display:none}
+}
+</style>
+</head>
+<body>
+<a href="#features" class="skip">Skip to content</a>
+<div class="glow" id="glow" aria-hidden="true"></div>
+
+<!-- ══════════ 1. NAV ══════════ -->
+<nav class="nav" id="nav">
+  <div class="wrap">
+    <a href="#home" class="brand" aria-label="PPMS home">
+      <img src="/v2/ppms-logo.png" alt="" width="34" height="34" decoding="async" />
+      <span style="display:block"><b>PPMS</b><span>PRACTICE MANAGEMENT</span></span>
+    </a>
+    <div class="nav-links" id="navLinks">
+      <a href="#home" class="on">Home</a>
+      <a href="#features">Features</a>
+      <a href="#solutions">Solutions</a>
+      <a href="#hospitals">Hospitals</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#testimonials">Testimonials</a>
+      <a href="#contact">Contact</a>
+    </div>
+    <div class="nav-cta">
+      <a href="#" class="ghost">Login</a>
+      <a href="#contact" class="btn btn-g btn-sm">Book Demo</a>
+      <a href="#pricing" class="btn btn-p btn-sm primary-cta">Free Trial</a>
+      <button class="burger" id="burger" aria-label="Open menu" aria-expanded="false"><span></span></button>
+    </div>
+  </div>
+</nav>
+<div class="mobile-menu" id="mobileMenu">
+  <a href="#home">Home</a><a href="#features">Features</a><a href="#solutions">Solutions</a>
+  <a href="#hospitals">Hospitals</a><a href="#pricing">Pricing</a><a href="#testimonials">Testimonials</a>
+  <a href="#contact">Contact</a><a href="#" >Login</a>
+  <a href="#contact" class="btn btn-p">Book Live Demo</a>
+</div>
+
+<!-- ══════════ 2. HERO ══════════ -->
+<section class="hero" id="home">
+  <div class="hero-pin" id="heroPin">
+    <div class="hero-media">
+      <video id="heroVideo" muted playsinline preload="auto" poster="" style="display:none">
+        <source src="/v2/hero-story-scrub.mp4" type="video/mp4" />
+      </video>
+      <div class="hero-fallback" id="heroFallback"></div>
+      <div class="hero-grid"></div>
+    </div>
+    <div class="hero-scrim"></div>
+    <div class="particles" id="particles" aria-hidden="true"></div>
+
+    <div class="hero-stats" aria-hidden="true">
+      <div class="fstat a" data-f="1">
+        <span class="ic" style="background:rgba(13,148,136,.11);color:#0F766E"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/></svg></span>
+        <span><b data-count="500" data-suffix="+">0</b><small>Doctors</small></span>
+      </div>
+      <div class="fstat b" data-f="-1">
+        <span class="ic" style="background:rgba(37,99,235,.1);color:#2563EB"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"><path d="M19 21V5a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v16"/><path d="M9 7h6M9 11h6M9 15h4"/></svg></span>
+        <span><b data-count="100" data-suffix="K+">0</b><small>Patients</small></span>
+      </div>
+      <div class="fstat c" data-f="1">
+        <span class="ic" style="background:rgba(20,184,166,.11);color:#14B8A6"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></span>
+        <span><b data-count="99.9" data-dec="1" data-suffix="%">0</b><small>Uptime</small></span>
+      </div>
+      <div class="fstat d" data-f="-1">
+        <span class="ic" style="background:rgba(249,115,22,.11);color:#F97316"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></span>
+        <span><b>24/7</b><small>Support</small></span>
+      </div>
+    </div>
+
+    <div class="hero-inner">
+      <span class="eyebrow" id="hEyebrow"><i></i> AI-Powered Healthcare Platform</span>
+      <h1 id="hTitle">The Future of<span class="l2 grad display">Patient Practice Management</span></h1>
+      <p class="hero-sub" id="hSub">AI-powered software designed for doctors, clinics, and hospitals to manage appointments, EMR, billing, analytics, and patient care from one platform.</p>
+      <div class="hero-btns" id="hBtns">
+        <a href="#pricing" class="btn btn-p btn-lg magnetic">Start Free Trial
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
+        <a href="#contact" class="btn btn-g btn-lg magnetic">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M10 8l6 4-6 4z" fill="currentColor" stroke="none"/></svg>
+          Book Live Demo</a>
+      </div>
+      <div class="hero-note" id="hNote">
+        <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0D9488" stroke-width="3" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg> 30-day free trial</span>
+        <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0D9488" stroke-width="3" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg> No credit card</span>
+        <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0D9488" stroke-width="3" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg> HIPAA ready</span>
+      </div>
+    </div>
+
+    <div class="cue" id="cue"><span>Scroll</span><div></div></div>
+  </div>
+</section>
+
+<!-- ══════════ 3. PLATFORM OVERVIEW ══════════ -->
+<section class="sec plat" id="features">
+  <div class="wrap">
+    <div class="s-head rv">
+      <span class="eyebrow"><i></i> Platform Overview</span>
+      <h2>One platform for your <span class="grad display">entire practice</span></h2>
+      <p>Every screen your team needs — connected, real-time and built for the way clinics actually run.</p>
+    </div>
+    <div class="plat-tabs rv" id="platTabs">
+      <button class="plat-tab on" data-p="0">Doctor Dashboard</button>
+      <button class="plat-tab" data-p="1">EMR</button>
+      <button class="plat-tab" data-p="2">Appointments</button>
+      <button class="plat-tab" data-p="3">Analytics</button>
+      <button class="plat-tab" data-p="4">Patient Timeline</button>
+    </div>
+    <div class="plat-stage rv" id="platStage">
+      <div class="plat-float f1">
+        <small style="font-size:10px;font-weight:800;letter-spacing:.09em;color:#94A3B8;text-transform:uppercase">Today</small>
+        <b style="display:block;font-size:21px;font-weight:900;color:#0F172A;letter-spacing:-.035em">42 <span style="font-size:12px;font-weight:700;color:#0D9488">visits</span></b>
+      </div>
+      <div class="plat-float f2">
+        <small style="font-size:10px;font-weight:800;letter-spacing:.09em;color:#94A3B8;text-transform:uppercase">Avg wait</small>
+        <b style="display:block;font-size:21px;font-weight:900;color:#0F172A;letter-spacing:-.035em">8<span style="font-size:12px;font-weight:700;color:#0D9488"> min ↓</span></b>
+      </div>
+
+      <!-- panel 0 : dashboard -->
+      <div class="plat-panel on" data-panel="0">
+        <div class="mock">
+          <div class="mock-bar"><i></i><i></i><i></i><span class="t">PPMS · DOCTOR DASHBOARD</span></div>
+          <div class="mock-body">
+            <div class="kpi-row">
+              <div class="kpi"><small>Today's OPD</small><b>128</b><em>▲ 12%</em></div>
+              <div class="kpi"><small>In Queue</small><b>14</b><em style="color:#F97316">avg 8m</em></div>
+              <div class="kpi"><small>Doctors On Duty</small><b>46</b><em>▲ 4</em></div>
+              <div class="kpi"><small>Bed Occupancy</small><b>82%</b><em>▲ 6%</em></div>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin:24px 0 10px">
+              <b style="font-size:13px;font-weight:800;color:#0F172A;letter-spacing:-.01em">Appointments this week</b>
+              <span style="font-size:11px;font-weight:700;color:#94A3B8">Mon — Sun</span>
+            </div>
+            <div class="bars" data-bars>
+              <i style="height:42%"></i><i style="height:63%"></i><i style="height:48%"></i>
+              <i style="height:78%"></i><i style="height:58%"></i><i class="hi" style="height:94%"></i><i style="height:70%"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- panel 1 : EMR -->
+      <div class="plat-panel" data-panel="1">
+        <div class="mock">
+          <div class="mock-bar"><i></i><i></i><i></i><span class="t">PPMS · ELECTRONIC MEDICAL RECORD</span></div>
+          <div class="mock-body">
+            <div class="emr-head"><span></span><span>Right Eye</span><span>Left Eye</span></div>
+            <div class="emr-rows">
+              <div class="emr-row"><span class="lbl">VA Unaided</span><span class="val">6/18</span><span class="val">6/12</span></div>
+              <div class="emr-row"><span class="lbl">VA Corrected</span><span class="val">6/6</span><span class="val">6/6</span></div>
+              <div class="emr-row"><span class="lbl">IOP</span><span class="val">16 mmHg</span><span class="val">15 mmHg</span></div>
+              <div class="emr-row"><span class="lbl">Lens</span><span class="val">NS Grade II</span><span class="val">Clear</span></div>
+            </div>
+            <div class="ai-box">
+              <div class="h"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2.2" stroke-linecap="round"><path d="M12 3l1.9 5.8L20 10l-5.2 3 1.3 6-4.1-3.3L7.9 19l1.3-6L4 10l6.1-1.2z"/></svg><b>AI Visit Summary</b></div>
+              <p>Immature senile cataract RE with early NS changes. BCVA 6/6 both eyes. IOP within normal limits. Advise review in 6 months; counsel on phaco when VA drops below 6/18.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- panel 2 : appointments -->
+      <div class="plat-panel" data-panel="2">
+        <div class="mock">
+          <div class="mock-bar"><i></i><i></i><i></i><span class="t">PPMS · APPOINTMENT SCHEDULING</span></div>
+          <div class="mock-body">
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+              <span style="padding:7px 13px;border-radius:9px;background:linear-gradient(135deg,#0D9488,#14B8A6);color:#fff;font-size:12px;font-weight:700">Fri 25 Jul</span>
+              <span style="padding:7px 13px;border-radius:9px;background:#F8FAFC;border:1px solid #E2E8F0;font-size:12px;font-weight:700;color:#64748B">Sat 26</span>
+              <span style="padding:7px 13px;border-radius:9px;background:#F8FAFC;border:1px solid #E2E8F0;font-size:12px;font-weight:700;color:#64748B">Sun 27</span>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:9px">
+              <div style="padding:12px;border-radius:11px;background:#F0FDFA;border:1px solid #99F6E4"><b style="display:block;font-size:13px;font-weight:800;color:#0F766E">5:00 PM</b><small style="font-size:11px;color:#0D9488">2 / 5 booked</small></div>
+              <div style="padding:12px;border-radius:11px;background:#F0FDFA;border:1px solid #99F6E4"><b style="display:block;font-size:13px;font-weight:800;color:#0F766E">5:30 PM</b><small style="font-size:11px;color:#0D9488">1 / 5 booked</small></div>
+              <div style="padding:12px;border-radius:11px;background:#FFF7ED;border:1px solid #FED7AA"><b style="display:block;font-size:13px;font-weight:800;color:#C2410C">6:00 PM</b><small style="font-size:11px;color:#EA580C">4 / 5 booked</small></div>
+              <div style="padding:12px;border-radius:11px;background:#F8FAFC;border:1px solid #E2E8F0;opacity:.6"><b style="display:block;font-size:13px;font-weight:800;color:#94A3B8">6:30 PM</b><small style="font-size:11px;color:#94A3B8">Full</small></div>
+            </div>
+            <div style="margin-top:18px;padding:15px;border-radius:13px;background:#F8FAFC;border:1px solid #E2E8F0;display:flex;align-items:center;gap:12px">
+              <span style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#0D9488,#14B8A6);display:grid;place-items:center;color:#fff;font-size:13px;font-weight:800">NV</span>
+              <span><b style="display:block;font-size:14px;color:#0F172A">Nila Valluvan</b><small style="font-size:12px;color:#64748B">PPMS-SAI-0009 · Follow-up</small></span>
+              <span style="margin-left:auto;padding:5px 11px;border-radius:999px;background:#DBEAFE;color:#1E40AF;font-size:11px;font-weight:800">Scheduled</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- panel 3 : analytics -->
+      <div class="plat-panel" data-panel="3">
+        <div class="mock">
+          <div class="mock-bar"><i></i><i></i><i></i><span class="t">PPMS · PRACTICE ANALYTICS</span></div>
+          <div class="mock-body">
+            <div class="kpi-row" style="margin-bottom:20px">
+              <div class="kpi"><small>Revenue MTD</small><b>₹8.4L</b><em>▲ 18%</em></div>
+              <div class="kpi"><small>New Patients</small><b>312</b><em>▲ 9%</em></div>
+              <div class="kpi"><small>Retention</small><b>91%</b><em>▲ 3%</em></div>
+              <div class="kpi"><small>No-show</small><b>4.2%</b><em>▼ 1.1%</em></div>
+            </div>
+            <svg viewBox="0 0 700 170" style="width:100%;height:auto">
+              <defs><linearGradient id="ag" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#0D9488" stop-opacity=".28"/><stop offset="100%" stop-color="#0D9488" stop-opacity="0"/></linearGradient></defs>
+              <g stroke="#E2E8F0" stroke-width="1"><line x1="0" y1="40" x2="700" y2="40"/><line x1="0" y1="80" x2="700" y2="80"/><line x1="0" y1="120" x2="700" y2="120"/></g>
+              <path d="M0,140 C90,120 130,70 210,82 C290,94 320,40 400,52 C480,64 520,26 590,34 C640,40 670,28 700,22 L700,170 L0,170Z" fill="url(#ag)"/>
+              <path d="M0,140 C90,120 130,70 210,82 C290,94 320,40 400,52 C480,64 520,26 590,34 C640,40 670,28 700,22" fill="none" stroke="#0D9488" stroke-width="2.6" stroke-linecap="round"/>
+              <path d="M0,155 C90,148 140,132 220,136 C300,140 340,112 420,116 C500,120 540,96 620,92 C660,90 680,86 700,84" fill="none" stroke="#2563EB" stroke-width="2.2" stroke-dasharray="5 6" stroke-linecap="round"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- panel 4 : timeline -->
+      <div class="plat-panel" data-panel="4">
+        <div class="mock">
+          <div class="mock-bar"><i></i><i></i><i></i><span class="t">PPMS · PATIENT TIMELINE</span></div>
+          <div class="mock-body">
+            <div style="display:flex;flex-direction:column;gap:0">
+              <div style="display:flex;gap:15px"><div style="display:flex;flex-direction:column;align-items:center"><span style="width:12px;height:12px;border-radius:50%;background:#0D9488;box-shadow:0 0 0 4px rgba(13,148,136,.15)"></span><span style="width:2px;flex:1;background:#E2E8F0"></span></div><div style="padding-bottom:20px"><b style="font-size:14px;color:#0F172A">Registration · UHID assigned</b><p style="font-size:12.5px;margin-top:2px">12 Jan 2026 · Moonrise Eye Hospital</p></div></div>
+              <div style="display:flex;gap:15px"><div style="display:flex;flex-direction:column;align-items:center"><span style="width:12px;height:12px;border-radius:50%;background:#0D9488;box-shadow:0 0 0 4px rgba(13,148,136,.15)"></span><span style="width:2px;flex:1;background:#E2E8F0"></span></div><div style="padding-bottom:20px"><b style="font-size:14px;color:#0F172A">Consultation · Cataract screening</b><p style="font-size:12.5px;margin-top:2px">12 Jan 2026 · Dr. Sai</p></div></div>
+              <div style="display:flex;gap:15px"><div style="display:flex;flex-direction:column;align-items:center"><span style="width:12px;height:12px;border-radius:50%;background:#2563EB;box-shadow:0 0 0 4px rgba(37,99,235,.15)"></span><span style="width:2px;flex:1;background:#E2E8F0"></span></div><div style="padding-bottom:20px"><b style="font-size:14px;color:#0F172A">Phacoemulsification · RE</b><p style="font-size:12.5px;margin-top:2px">03 Feb 2026 · Day-care</p></div></div>
+              <div style="display:flex;gap:15px"><div style="display:flex;flex-direction:column;align-items:center"><span style="width:12px;height:12px;border-radius:50%;background:#F97316;box-shadow:0 0 0 4px rgba(249,115,22,.15)"></span></div><div><b style="font-size:14px;color:#0F172A">Follow-up scheduled</b><p style="font-size:12.5px;margin-top:2px">25 Jul 2026 · Review + refraction</p></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ 4. WHY PPMS ══════════ -->
+<section class="sec" id="solutions" style="background:linear-gradient(180deg,#F8FAFC,#fff)">
+  <div class="wrap">
+    <div class="s-head rv">
+      <span class="eyebrow"><i></i> Why PPMS</span>
+      <h2>Built for the way <span class="grad display">clinics really work</span></h2>
+      <p>Six pillars that replace the spreadsheets, registers and disconnected tools most practices still run on.</p>
+    </div>
+    <div class="cards6" id="whyCards">
+      <article class="card">
+        <span class="ic" style="background:rgba(13,148,136,.1);color:#0F766E"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2.5"/><path d="M16 2v4M8 2v4M3 10h18M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg></span>
+        <h3>Smart Appointment Booking</h3>
+        <p>Per-slot capacity, multi-hospital sessions, walk-in allocation and automatic overbooking guards — so the schedule never lies.</p>
+        <span class="tag">Zero double-booking</span>
+      </article>
+      <article class="card">
+        <span class="ic" style="background:rgba(37,99,235,.09);color:#2563EB"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M19 21V5a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v16l3.5-2 3.5 2 3.5-2z"/><path d="M9 8h6M9 12h6"/></svg></span>
+        <h3>Digital EMR</h3>
+        <p>Structured ophthalmic records — visual acuity, refraction, IOP, anterior and posterior segment — captured per eye, versioned per visit.</p>
+        <span class="tag">Speciality-ready</span>
+      </article>
+      <article class="card">
+        <span class="ic" style="background:rgba(20,184,166,.1);color:#0F766E"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3l1.9 5.8L20 10l-5.2 3 1.3 6-4.1-3.3L7.9 19l1.3-6L4 10l6.1-1.2z"/></svg></span>
+        <h3>AI Visit Summary</h3>
+        <p>Every encounter distilled into a clean clinical narrative the moment you close the chart. Review it, edit it, sign it.</p>
+        <span class="tag">Seconds, not minutes</span>
+      </article>
+      <article class="card">
+        <span class="ic" style="background:rgba(249,115,22,.1);color:#EA580C"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg></span>
+        <h3>Queue Management</h3>
+        <p>Live token flow with arrival timestamps and waiting timers, so front desk and consulting room always see the same truth.</p>
+        <span class="tag">Real-time</span>
+      </article>
+      <article class="card">
+        <span class="ic" style="background:rgba(139,92,246,.1);color:#7C3AED"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10.5 20.5 3 13a5 5 0 0 1 7-7l1 1 1-1a5 5 0 0 1 7 7l-2 2"/><path d="M14 15h7M17.5 11.5v7"/></svg></span>
+        <h3>Prescription Management</h3>
+        <p>Drug, dose, frequency, duration and instructions in one aligned table — printed, exported or pushed straight to pharmacy.</p>
+        <span class="tag">Legible by default</span>
+      </article>
+      <article class="card">
+        <span class="ic" style="background:rgba(6,182,212,.1);color:#0891B2"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 3v18h18"/><path d="M7 15l4-5 3.5 3L21 6"/></svg></span>
+        <h3>Hospital Analytics</h3>
+        <p>Revenue, footfall, retention and doctor productivity across every branch — one dashboard, no monthly reconciliation.</p>
+        <span class="tag">Board-ready</span>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ 5. WORKFLOW ══════════ -->
+<section class="sec flow" id="workflow">
+  <div class="wrap">
+    <div class="s-head rv">
+      <span class="eyebrow"><i></i> Complete Workflow</span>
+      <h2>From <span class="grad display">registration to analytics</span></h2>
+      <p>One continuous chain of custody for every patient. Nothing re-typed, nothing lost between departments.</p>
+    </div>
+  </div>
+  <div class="flow-track" id="flowTrack">
+    <div class="step"><span class="n">01</span><h3>Patient Registers</h3><p>UDID and UHID auto-assigned. Demographics, contact and consent captured once.</p><span class="arrow"></span></div>
+    <div class="step"><span class="n">02</span><h3>Appointment</h3><p>Slot picked against live doctor availability and per-slot capacity.</p><span class="arrow"></span></div>
+    <div class="step"><span class="n">03</span><h3>Doctor Consultation</h3><p>Patient enters the live queue on arrival; waiting time tracked from check-in.</p><span class="arrow"></span></div>
+    <div class="step"><span class="n">04</span><h3>EMR</h3><p>Structured examination recorded per eye, with prior visits one click away.</p><span class="arrow"></span></div>
+    <div class="step"><span class="n">05</span><h3>Prescription</h3><p>Medications issued from a validated formulary and pushed to pharmacy.</p><span class="arrow"></span></div>
+    <div class="step"><span class="n">06</span><h3>Billing</h3><p>Consultation, procedure, ECHS and insurance categories reconciled automatically.</p><span class="arrow"></span></div>
+    <div class="step"><span class="n">07</span><h3>Follow-up</h3><p>Review dates scheduled at close of visit and surfaced on the follow-up board.</p><span class="arrow"></span></div>
+    <div class="step"><span class="n">08</span><h3>Analytics</h3><p>Every step rolls up into practice-level reporting in real time.</p></div>
+  </div>
+  <div class="wrap"><div class="flow-prog"><i id="flowProg"></i></div></div>
+</section>
+
+<!-- ══════════ 6. SMART EMR ══════════ -->
+<section class="sec" id="emr" style="background:#fff">
+  <div class="wrap">
+    <div class="s-head rv">
+      <span class="eyebrow"><i></i> Smart EMR</span>
+      <h2>Clinical depth without <span class="grad display">the clicks</span></h2>
+      <p>Purpose-built for ophthalmology, flexible enough for multi-speciality.</p>
+    </div>
+    <div class="emr-grid">
+      <div class="emr-list rv" id="emrList">
+        <div class="emr-item"><span class="dot"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg></span><div><h4>SOAP Notes</h4><p>Subjective, objective, assessment and plan in a structured, searchable form.</p></div></div>
+        <div class="emr-item"><span class="dot"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></span><div><h4>Visual Acuity</h4><p>Distance and near, unaided, pinhole and best-corrected — captured per eye.</p></div></div>
+        <div class="emr-item"><span class="dot"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 3v18"/></svg></span><div><h4>Refraction</h4><p>Sphere, cylinder, axis and resulting VA for distance and near.</p></div></div>
+        <div class="emr-item"><span class="dot"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg></span><div><h4>Diagnosis</h4><p>ICD-10 coded, laterality-aware, with provisional and chronic states.</p></div></div>
+        <div class="emr-item"><span class="dot"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 2v20M2 12h20"/></svg></span><div><h4>Treatment Plan</h4><p>Medical, surgical and counselling pathways with review intervals.</p></div></div>
+        <div class="emr-item"><span class="dot"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 3l1.9 5.8L20 10l-5.2 3 1.3 6-4.1-3.3L7.9 19l1.3-6L4 10l6.1-1.2z"/></svg></span><div><h4>AI Summary</h4><p>A written clinical narrative generated from the structured record.</p></div></div>
+        <div class="emr-item"><span class="dot"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 3 5-6"/></svg></span><div><h4>Previous History</h4><p>Every prior visit, prescription and investigation, one click deep.</p></div></div>
+        <div class="emr-item"><span class="dot"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span><div><h4>Timeline</h4><p>The complete longitudinal record, rendered as a single vertical story.</p></div></div>
+      </div>
+      <div class="rv" id="emrMock">
+        <div class="mock">
+          <div class="mock-bar"><i></i><i></i><i></i><span class="t">EMR · NILA VALLUVAN · PPMS-SAI-0009</span></div>
+          <div class="mock-body">
+            <div style="margin-bottom:16px"><span style="font-size:10.5px;font-weight:800;letter-spacing:.1em;color:#94A3B8;text-transform:uppercase">Chief Complaint</span>
+              <p style="margin-top:5px;font-size:14.5px;color:#0F172A"><b style="color:#0F766E">RE</b> Blurred distance vision <span style="color:#94A3B8">· Since 5 months</span></p>
+              <p style="margin-top:2px;font-size:14.5px;color:#0F172A"><b style="color:#0F766E">LE</b> Occasional glare <span style="color:#94A3B8">· Since 2 weeks</span></p>
+            </div>
+            <div class="emr-head"><span></span><span>Right Eye</span><span>Left Eye</span></div>
+            <div class="emr-rows" id="emrRows">
+              <div class="emr-row"><span class="lbl">VA Unaided</span><span class="val">6/18</span><span class="val">6/12</span></div>
+              <div class="emr-row"><span class="lbl">Pinhole</span><span class="val">6/9</span><span class="val">6/9</span></div>
+              <div class="emr-row"><span class="lbl">Best Corr.</span><span class="val">6/6</span><span class="val">6/6</span></div>
+              <div class="emr-row"><span class="lbl">IOP</span><span class="val">16 mmHg</span><span class="val">15 mmHg</span></div>
+              <div class="emr-row"><span class="lbl">Lens</span><span class="val">NS Grade II</span><span class="val">Clear</span></div>
+              <div class="emr-row"><span class="lbl">Fundus</span><span class="val">CDR 0.3</span><span class="val">CDR 0.3</span></div>
+            </div>
+            <div class="ai-box">
+              <div class="h"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2.2" stroke-linecap="round"><path d="M12 3l1.9 5.8L20 10l-5.2 3 1.3 6-4.1-3.3L7.9 19l1.3-6L4 10l6.1-1.2z"/></svg><b>AI Visit Summary</b></div>
+              <p>Immature senile cataract right eye with Grade II nuclear sclerosis. Best-corrected acuity 6/6 bilaterally; intraocular pressures normal. Discs healthy, CDR 0.3 both eyes. Plan: review in six months, counsel for phacoemulsification when acuity declines.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ 7. AI FEATURES ══════════ -->
+<section class="sec ai-sec" id="ai">
+  <div class="wrap">
+    <div class="s-head rv">
+      <span class="eyebrow"><i></i> AI Features</span>
+      <h2>Clinical intelligence, <span class="grad display">quietly assisting</span></h2>
+      <p>AI that drafts, suggests and searches — while the clinician stays in control of every entry.</p>
+    </div>
+    <div class="ai-cards" id="aiCards">
+      <article class="ai-card"><span class="ic"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3l1.9 5.8L20 10l-5.2 3 1.3 6-4.1-3.3L7.9 19l1.3-6L4 10l6.1-1.2z"/></svg></span><h3>AI Summary</h3><p>Turns the structured chart into a readable clinical narrative on visit close.</p></article>
+      <article class="ai-card"><span class="ic"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10.5 20.5 3 13a5 5 0 0 1 7-7l1 1 1-1a5 5 0 0 1 7 7l-2 2"/><path d="M14 15h7"/></svg></span><h3>Auto Prescription</h3><p>Suggests regimens from diagnosis and history, with dose and duration pre-filled.</p></article>
+      <article class="ai-card"><span class="ic"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></span><h3>Disease Suggestions</h3><p>Surfaces differentials ranked against the recorded findings — never auto-applied.</p></article>
+      <article class="ai-card"><span class="ic"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg></span><h3>Clinical Notes</h3><p>Dictate or type shorthand; PPMS expands it into structured SOAP fields.</p></article>
+      <article class="ai-card"><span class="ic"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3M8 11h6"/></svg></span><h3>Smart Search</h3><p>Ask in plain language — "diabetics with CDR above 0.6" — and get the cohort.</p></article>
+      <article class="ai-card"><span class="ic"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span><h3>Medical Timeline</h3><p>Reconstructs the full patient story across visits, branches and specialities.</p></article>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ 8. MULTI-HOSPITAL ══════════ -->
+<section class="sec" id="hospitals" style="background:linear-gradient(180deg,#fff,#F8FAFC)">
+  <div class="wrap">
+    <div class="s-head rv">
+      <span class="eyebrow"><i></i> Multi-Hospital</span>
+      <h2>One doctor. <span class="grad display">Many hospitals.</span> One system.</h2>
+      <p>Visiting consultants keep a single patient record while each hospital keeps its own books. Tap a card to expand.</p>
+    </div>
+    <div class="hosp" id="hospCards">
+      <article class="hcard">
+        <div class="hcard-top"><span class="logo" style="background:rgba(13,148,136,.1);color:#0F766E"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M3 21h18M5 21V7l7-4 7 4v14"/><path d="M12 9v6M9 12h6"/></svg></span><div><h3>Moonrise Eye Hospital</h3><small>Chennai · Tertiary Eye Care</small></div></div>
+        <div class="hcard-body">
+          <div class="hstat"><span>Doctors mapped</span><b>18</b></div>
+          <div class="hstat"><span>OPD / day</span><b>240</b></div>
+          <div class="hstat"><span>Beds</span><b>60</b></div>
+          <div class="hcard-more"><div class="docmap">
+            <div class="docrow"><span class="av" style="background:linear-gradient(135deg,#0D9488,#14B8A6)">SA</span><b>Dr. Sai</b><small>Vitreoretinal</small></div>
+            <div class="docrow"><span class="av" style="background:linear-gradient(135deg,#2563EB,#0891B2)">RM</span><b>Dr. Ramesh</b><small>Cornea</small></div>
+            <div class="docrow"><span class="av" style="background:linear-gradient(135deg,#F97316,#EA580C)">KV</span><b>Dr. Kavya</b><small>Glaucoma</small></div>
+          </div></div>
+          <button class="hcard-btn" data-toggle>View doctor mapping <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg></button>
+        </div>
+      </article>
+      <article class="hcard">
+        <div class="hcard-top"><span class="logo" style="background:rgba(37,99,235,.09);color:#2563EB"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M3 21h18M5 21V7l7-4 7 4v14"/><path d="M12 9v6M9 12h6"/></svg></span><div><h3>Sunrise Multi-Speciality</h3><small>Coimbatore · 12 Departments</small></div></div>
+        <div class="hcard-body">
+          <div class="hstat"><span>Doctors mapped</span><b>34</b></div>
+          <div class="hstat"><span>OPD / day</span><b>410</b></div>
+          <div class="hstat"><span>Beds</span><b>120</b></div>
+          <div class="hcard-more"><div class="docmap">
+            <div class="docrow"><span class="av" style="background:linear-gradient(135deg,#7C3AED,#2563EB)">AN</span><b>Dr. Anand</b><small>Cardiology</small></div>
+            <div class="docrow"><span class="av" style="background:linear-gradient(135deg,#0D9488,#14B8A6)">PR</span><b>Dr. Priya</b><small>Paediatrics</small></div>
+            <div class="docrow"><span class="av" style="background:linear-gradient(135deg,#0891B2,#14B8A6)">VJ</span><b>Dr. Vijay</b><small>Orthopaedics</small></div>
+          </div></div>
+          <button class="hcard-btn" data-toggle>View doctor mapping <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg></button>
+        </div>
+      </article>
+      <article class="hcard">
+        <div class="hcard-top"><span class="logo" style="background:rgba(249,115,22,.1);color:#EA580C"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M3 21h18M5 21V7l7-4 7 4v14"/><path d="M12 9v6M9 12h6"/></svg></span><div><h3>Lakeview Clinic</h3><small>Madurai · Day-care Surgery</small></div></div>
+        <div class="hcard-body">
+          <div class="hstat"><span>Doctors mapped</span><b>9</b></div>
+          <div class="hstat"><span>OPD / day</span><b>95</b></div>
+          <div class="hstat"><span>Theatres</span><b>2</b></div>
+          <div class="hcard-more"><div class="docmap">
+            <div class="docrow"><span class="av" style="background:linear-gradient(135deg,#0D9488,#14B8A6)">SA</span><b>Dr. Sai</b><small>Visiting</small></div>
+            <div class="docrow"><span class="av" style="background:linear-gradient(135deg,#EA580C,#F97316)">MG</span><b>Dr. Meena</b><small>Anaesthesia</small></div>
+          </div></div>
+          <button class="hcard-btn" data-toggle>View doctor mapping <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg></button>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ 9. INTEGRATIONS ══════════ -->
+<section class="sec" id="integrations" style="background:#fff">
+  <div class="wrap">
+    <div class="integ">
+      <div class="integ-sticky rv">
+        <span class="eyebrow"><i></i> Integrations</span>
+        <h2 style="font-size:clamp(28px,3.6vw,44px);margin:18px 0 16px">Speaks the language of <span class="grad display">healthcare IT</span></h2>
+        <p style="font-size:16.5px;line-height:1.65">PPMS exchanges data with the systems your hospital already runs — no rip-and-replace, no manual re-entry.</p>
+        <svg viewBox="0 0 300 200" style="width:100%;max-width:300px;margin-top:34px" aria-hidden="true">
+          <defs><linearGradient id="ig" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0D9488"/><stop offset="100%" stop-color="#2563EB"/></linearGradient></defs>
+          <g class="ipath" stroke="url(#ig)" stroke-width="1.6" fill="none" stroke-dasharray="4 7" stroke-linecap="round">
+            <path d="M150,100 L48,40"/><path d="M150,100 L252,40"/><path d="M150,100 L48,160"/><path d="M150,100 L252,160"/>
+          </g>
+          <circle cx="150" cy="100" r="30" fill="url(#ig)" opacity=".13"/>
+          <circle cx="150" cy="100" r="19" fill="url(#ig)"/>
+          <text x="150" y="105" text-anchor="middle" fill="#fff" font-size="11" font-weight="800" font-family="Inter">PPMS</text>
+          <g font-family="Inter" font-size="10" font-weight="700" fill="#64748B" text-anchor="middle">
+            <circle cx="48" cy="40" r="17" fill="#F1F5F9" stroke="#E2E8F0"/><text x="48" y="44">FHIR</text>
+            <circle cx="252" cy="40" r="17" fill="#F1F5F9" stroke="#E2E8F0"/><text x="252" y="44">HL7</text>
+            <circle cx="48" cy="160" r="17" fill="#F1F5F9" stroke="#E2E8F0"/><text x="48" y="164">LAB</text>
+            <circle cx="252" cy="160" r="17" fill="#F1F5F9" stroke="#E2E8F0"/><text x="252" y="164">API</text>
+          </g>
+        </svg>
+      </div>
+      <div class="integ-list" id="integList">
+        <article class="icard rv"><span class="ic" style="background:rgba(13,148,136,.1);color:#0F766E"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2v20M2 12h20"/><circle cx="12" cy="12" r="9"/></svg></span><div><h3>FHIR R4</h3><p>Patient, Encounter, Observation, Condition and MedicationRequest resources exposed over a conformant REST surface.</p></div></article>
+        <article class="icard rv"><span class="ic" style="background:rgba(37,99,235,.09);color:#2563EB"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg></span><div><h3>HL7 v2</h3><p>ADT, ORM and ORU message handling for hospitals still running classic interface engines.</p></div></article>
+        <article class="icard rv"><span class="ic" style="background:rgba(20,184,166,.1);color:#0F766E"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 3v6l-5 9a3 3 0 0 0 2.6 4.5h10.8A3 3 0 0 0 20 18l-5-9V3"/><path d="M8 3h8"/></svg></span><div><h3>Laboratory</h3><p>Bi-directional orders and results. Reports attach straight onto the visit record.</p></div></article>
+        <article class="icard rv"><span class="ic" style="background:rgba(249,115,22,.1);color:#EA580C"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 6l-6 6 6 6M16 6l6 6-6 6"/></svg></span><div><h3>REST API</h3><p>Token-authenticated JSON endpoints with webhooks. <code>GET /v1/patients</code></p></div></article>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ 10. SECURITY ══════════ -->
+<section class="sec sec-dark" id="security">
+  <div class="wrap">
+    <div class="s-head rv">
+      <span class="eyebrow"><i></i> Security &amp; Compliance</span>
+      <h2>Patient data, <span class="grad display">properly guarded</span></h2>
+      <p>Built to the standards hospitals and government health bodies expect.</p>
+    </div>
+    <div class="shield-wrap rv">
+      <div class="shield" id="shield">
+        <span class="ring"></span><span class="ring"></span><span class="ring"></span>
+        <svg width="62" height="62" viewBox="0 0 24 24" fill="none" stroke="#2DD4BF" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
+      </div>
+    </div>
+    <div class="sgrid" id="secCards">
+      <article class="scard"><span class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 10h-1V8A5 5 0 0 0 7 8v2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2z"/></svg></span><h3>Encryption</h3><p>TLS 1.3 in transit, AES-256 at rest. Keys rotated and never co-located with data.</p></article>
+      <article class="scard"><span class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 10a6 6 0 0 0-12 0c0 1.5-2 2-2 4a4 4 0 0 0 4 4h8a4 4 0 0 0 4-4c0-2-2-2.5-2-4z"/></svg></span><h3>Cloud Backup</h3><p>Continuous replication with point-in-time recovery across availability zones.</p></article>
+      <article class="scard"><span class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="8" r="4"/><path d="M2 21v-2a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v2M19 8v6M22 11h-6"/></svg></span><h3>Role Permissions</h3><p>Granular RBAC per module and per hospital. Least privilege by default.</p></article>
+      <article class="scard"><span class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 15h6M9 11h3"/></svg></span><h3>Audit Logs</h3><p>Every read and write attributed to a user, timestamped and immutable.</p></article>
+      <article class="scard"><span class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg></span><h3>Daily Backup</h3><p>Automated nightly snapshots with 35-day retention and one-click restore.</p></article>
+      <article class="scard"><span class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span><h3>License Protection</h3><p>Signed activation keys with tamper detection and per-tenant enforcement.</p></article>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ 11. ANALYTICS ══════════ -->
+<section class="sec" id="analytics" style="background:linear-gradient(180deg,#F8FAFC,#fff)">
+  <div class="wrap">
+    <div class="s-head rv">
+      <span class="eyebrow"><i></i> Analytics</span>
+      <h2>The numbers that <span class="grad display">run your practice</span></h2>
+      <p>Live operational and financial reporting, refreshed as the day happens.</p>
+    </div>
+    <div class="an-grid" id="anGrid">
+      <div class="an-card rv"><div class="top"><small>Appointments</small><span class="pill">▲ 14%</span></div><b data-count="48250">0</b><p>Booked in the last 30 days</p>
+        <svg class="spark" viewBox="0 0 200 46" fill="none"><path d="M2,38 L28,30 L54,34 L80,20 L106,25 L132,12 L158,16 L198,5" stroke="#0D9488" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div class="an-card rv"><div class="top"><small>Revenue</small><span class="pill">▲ 18%</span></div><b>₹<span data-count="84.6" data-dec="1">0</span>L</b><p>Collected month to date</p>
+        <svg class="spark" viewBox="0 0 200 46" fill="none"><path d="M2,40 L28,36 L54,26 L80,29 L106,17 L132,20 L158,9 L198,4" stroke="#2563EB" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div class="an-card rv"><div class="top"><small>Patients</small><span class="pill">▲ 9%</span></div><b data-count="112400">0</b><p>Unique records on file</p>
+        <svg class="spark" viewBox="0 0 200 46" fill="none"><path d="M2,42 L28,38 L54,32 L80,28 L106,22 L132,18 L158,11 L198,6" stroke="#14B8A6" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div class="an-card rv"><div class="top"><small>Doctors</small><span class="pill">▲ 6%</span></div><b data-count="524">0</b><p>Active across all branches</p>
+        <svg class="spark" viewBox="0 0 200 46" fill="none"><path d="M2,36 L28,33 L54,35 L80,24 L106,27 L132,15 L158,18 L198,8" stroke="#F97316" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div class="an-card rv"><div class="top"><small>Growth</small><span class="pill">YoY</span></div><b data-count="37" data-suffix="%">0</b><p>Year-on-year footfall increase</p>
+        <svg class="spark" viewBox="0 0 200 46" fill="none"><path d="M2,41 L28,35 L54,29 L80,31 L106,19 L132,14 L158,10 L198,3" stroke="#7C3AED" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div class="an-card rv"><div class="top"><small>Retention</small><span class="pill">▲ 3%</span></div><b data-count="91" data-suffix="%">0</b><p>Patients returning for follow-up</p>
+        <svg class="spark" viewBox="0 0 200 46" fill="none"><path d="M2,30 L28,28 L54,24 L80,26 L106,18 L132,16 L158,12 L198,9" stroke="#0891B2" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    </div>
+    <div class="chart-box rv">
+      <div class="chart-head"><h3>Appointments vs Revenue · 12 months</h3>
+        <div class="legend"><span><i style="background:#0D9488"></i> Appointments</span><span><i style="background:#2563EB"></i> Revenue</span></div>
+      </div>
+      <svg viewBox="0 0 900 260" style="width:100%;height:auto" id="bigChart">
+        <defs><linearGradient id="cg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#0D9488" stop-opacity=".22"/><stop offset="100%" stop-color="#0D9488" stop-opacity="0"/></linearGradient></defs>
+        <g stroke="#E2E8F0" stroke-width="1"><line x1="0" y1="60" x2="900" y2="60"/><line x1="0" y1="120" x2="900" y2="120"/><line x1="0" y1="180" x2="900" y2="180"/><line x1="0" y1="240" x2="900" y2="240"/></g>
+        <path id="area" d="M0,215 C75,200 110,150 190,160 C270,170 300,110 380,120 C460,130 490,80 570,86 C650,92 690,54 760,48 C820,43 860,34 900,28 L900,260 L0,260Z" fill="url(#cg)"/>
+        <path id="lineA" d="M0,215 C75,200 110,150 190,160 C270,170 300,110 380,120 C460,130 490,80 570,86 C650,92 690,54 760,48 C820,43 860,34 900,28" fill="none" stroke="#0D9488" stroke-width="3" stroke-linecap="round"/>
+        <path id="lineB" d="M0,238 C75,230 120,208 200,214 C280,220 320,182 400,188 C480,194 520,158 600,152 C680,146 720,120 800,112 C850,107 875,100 900,96" fill="none" stroke="#2563EB" stroke-width="2.6" stroke-dasharray="6 7" stroke-linecap="round"/>
+        <g font-family="Inter" font-size="12" font-weight="600" fill="#94A3B8"><text x="0" y="256">Aug</text><text x="150" y="256">Oct</text><text x="300" y="256">Dec</text><text x="450" y="256">Feb</text><text x="600" y="256">Apr</text><text x="750" y="256">Jun</text><text x="866" y="256">Jul</text></g>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ 12. TESTIMONIALS ══════════ -->
+<section class="sec tst" id="testimonials" style="background:#fff">
+  <div class="wrap">
+    <div class="s-head rv">
+      <span class="eyebrow"><i></i> Testimonials</span>
+      <h2>Trusted by <span class="grad display">clinicians who ship</span></h2>
+      <p>What doctors and administrators say after moving their practice onto PPMS.</p>
+    </div>
+  </div>
+  <div style="overflow:hidden"><div class="tst-track" id="tstTrack"></div></div>
+  <div class="wrap"><div class="logos rv">
+    <div><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V7l7-4 7 4v14"/></svg> Moonrise Eye</div>
+    <div><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V7l7-4 7 4v14"/></svg> Sunrise Multi-Speciality</div>
+    <div><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V7l7-4 7 4v14"/></svg> Lakeview Clinic</div>
+    <div><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V7l7-4 7 4v14"/></svg> Supreme Hospitals</div>
+  </div></div>
+</section>
+
+<!-- ══════════ 13. PRICING ══════════ -->
+<section class="sec" id="pricing" style="background:linear-gradient(180deg,#fff,#F8FAFC)">
+  <div class="wrap">
+    <div class="s-head rv">
+      <span class="eyebrow"><i></i> Pricing</span>
+      <h2>Straightforward plans, <span class="grad display">no surprises</span></h2>
+      <p>Start free for 30 days. Upgrade when your practice is ready — never before.</p>
+    </div>
+    <div class="price" id="priceCards">
+      <article class="pcard">
+        <h3>Starter</h3><p class="desc">Solo doctors and single-chair clinics.</p>
+        <div class="amt"><span class="c">₹</span><span class="v">2,999</span><span class="p">/mo</span></div>
+        <p class="note">Billed monthly · 1 doctor</p>
+        <a href="#contact" class="btn btn-g magnetic">Start Free Trial</a>
+        <ul class="feat">
+          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0D9488" stroke-width="3" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg> Appointments &amp; queue</li>
+          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0D9488" stroke-width="3" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg> Digital EMR</li>
+          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0D9488" stroke-width="3" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg> Prescriptions &amp; billing</li>
+          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0D9488" stroke-width="3" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg> 5 GB document storage</li>
+          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0D9488" stroke-width="3" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg> Email support</li>
+        </ul>
+      </article>
+      <article class="pcard best">
+        <span class="badge">Most Popular</span>
+        <h3>Professional</h3><p class="desc">Growing clinics and eye hospitals.</p>
+        <div class="amt"><span class="c">₹</span><span class="v">7,999</span><span class="p">/mo</span></div>
+        <p class="note">Billed monthly · up to 10 doctors</p>
+        <a href="#contact" class="btn btn-p magnetic">Start Free Trial</a>
+        <ul class="feat">
+          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0D9488" stroke-width="3" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg> Everything in Starter</li>
+          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0D9488" stroke-width="3" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg> AI visit summaries</li>
+          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0D9488" stroke-width="3" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg> Multi-hospital mapping</li>
+          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0D9488" stroke-width="3" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg> Practice analytics</li>
+          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0D9488" stroke-width="3" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg> Lab &amp; pharmacy integration</li>
+          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0D9488" stroke-width="3" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg> Priority support</li>
+        </ul>
+      </article>
+      <article class="pcard">
+        <h3>Enterprise</h3><p class="desc">Multi-branch hospital groups.</p>
+        <div class="amt"><span class="v">Custom</span></div>
+        <p class="note">Annual contract · unlimited doctors</p>
+        <a href="#contact" class="btn btn-g magnetic">Talk to Sales</a>
+        <ul class="feat">
+          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0D9488" stroke-width="3" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg> Everything in Professional</li>
+          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0D9488" stroke-width="3" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg> FHIR &amp; HL7 interfaces</li>
+          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0D9488" stroke-width="3" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg> SSO &amp; custom RBAC</li>
+          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0D9488" stroke-width="3" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg> On-premise option</li>
+          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0D9488" stroke-width="3" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg> Dedicated success manager</li>
+          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0D9488" stroke-width="3" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg> 99.9% uptime SLA</li>
+        </ul>
+      </article>
+    </div>
+    <div class="price-note rv">
+      <span><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#0D9488" stroke-width="2.6" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg> 30-day free trial</span>
+      <span><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#0D9488" stroke-width="2.6" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg> No credit card required</span>
+      <span><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#0D9488" stroke-width="2.6" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg> Lifetime support</span>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ 14. CTA ══════════ -->
+<section class="sec cta" id="contact">
+  <div class="wrap">
+    <h2 class="rv">Transform Your <span class="grad display">Practice Today</span></h2>
+    <p class="rv">Join 500+ doctors already running their clinics on PPMS. Setup takes an afternoon, not a quarter.</p>
+    <div class="cta-btns rv">
+      <a href="#" class="btn btn-p btn-lg magnetic">Book Live Demo
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
+      <a href="#" class="btn btn-g btn-lg magnetic">Start Free Trial</a>
+    </div>
+    <div class="cta-mock rv">
+      <div class="mock" style="border-radius:0;border:0;box-shadow:none">
+        <div class="mock-bar" style="background:#0F172A;border-color:rgba(255,255,255,.08)"><i></i><i></i><i></i><span class="t" style="color:#64748B">PPMS · LIVE PRACTICE OVERVIEW</span></div>
+        <div class="mock-body" style="background:#0F172A">
+          <div class="kpi-row">
+            <div class="kpi" style="background:rgba(255,255,255,.04);border-color:rgba(255,255,255,.08)"><small>OPD Today</small><b style="color:#fff">128</b><em>▲ 12%</em></div>
+            <div class="kpi" style="background:rgba(255,255,255,.04);border-color:rgba(255,255,255,.08)"><small>Revenue</small><b style="color:#fff">₹8.4L</b><em>▲ 18%</em></div>
+            <div class="kpi" style="background:rgba(255,255,255,.04);border-color:rgba(255,255,255,.08)"><small>Doctors</small><b style="color:#fff">46</b><em>▲ 4</em></div>
+            <div class="kpi" style="background:rgba(255,255,255,.04);border-color:rgba(255,255,255,.08)"><small>Uptime</small><b style="color:#fff">99.9%</b><em>SLA</em></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- sticky mobile CTA -->
+<div class="mcta" id="mcta">
+  <a href="#contact" class="btn btn-g">Book Demo</a>
+  <a href="#pricing" class="btn btn-p">Start Free Trial</a>
+</div>
+
+<!-- ══════════ 15. FOOTER ══════════ -->
+<footer class="ft">
+  <div class="wrap">
+    <div class="ft-grid">
+      <div class="ft-brand">
+        <div class="brand"><img src="/v2/ppms-logo.png" alt="" width="34" height="34" decoding="async" loading="lazy" /><span style="display:block"><b>PPMS</b><span>PRACTICE MANAGEMENT</span></span></div>
+        <p>AI-powered practice management for doctors, clinics and hospitals. One platform for appointments, EMR, billing, analytics and patient care.</p>
+        <div class="ft-social">
+          <a href="#" aria-label="LinkedIn"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M4.98 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zM3 9h4v12H3zM9 9h3.8v1.7h.05c.53-1 1.83-2.05 3.76-2.05 4.02 0 4.76 2.65 4.76 6.1V21h-4v-5.5c0-1.31-.02-3-1.83-3-1.83 0-2.11 1.43-2.11 2.9V21H9z"/></svg></a>
+          <a href="#" aria-label="X"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M18.9 2H22l-7 8 8.2 12h-6.4l-5-7.3L5.9 22H2.8l7.5-8.6L2.4 2h6.6l4.5 6.6zm-1.1 18h1.7L7.3 3.8H5.5z"/></svg></a>
+          <a href="#" aria-label="YouTube"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M23 12s0-3.4-.4-5c-.3-.9-1-1.6-1.9-1.9C19 4.7 12 4.7 12 4.7s-7 0-8.7.4c-.9.3-1.6 1-1.9 1.9C1 8.6 1 12 1 12s0 3.4.4 5c.3.9 1 1.6 1.9 1.9 1.7.4 8.7.4 8.7.4s7 0 8.7-.4c.9-.3 1.6-1 1.9-1.9.4-1.6.4-5 .4-5zM9.8 15.3V8.7l5.7 3.3z"/></svg></a>
+        </div>
+      </div>
+      <div class="ft-col"><h4>Product</h4><a href="#features">Features</a><a href="#emr">Smart EMR</a><a href="#ai">AI Features</a><a href="#analytics">Analytics</a><a href="#pricing">Pricing</a></div>
+      <div class="ft-col"><h4>Solutions</h4><a href="#solutions">Solo Doctors</a><a href="#solutions">Clinics</a><a href="#hospitals">Eye Hospitals</a><a href="#hospitals">Multi-Speciality</a></div>
+      <div class="ft-col"><h4>Resources</h4><a href="#integrations">Integrations</a><a href="#">API Docs</a><a href="#">Help Centre</a><a href="#">Onboarding</a></div>
+      <div class="ft-col"><h4>Company</h4><a href="#">About</a><a href="#testimonials">Customers</a><a href="#security">Security</a><a href="#contact">Contact</a></div>
+      <div class="ft-col"><h4>Support</h4><a href="#contact">Book a Demo</a><a href="#">Status</a><a href="#">Privacy Policy</a><a href="#">Terms of Service</a></div>
+    </div>
+    <div class="ft-bot">
+      <span>© 2026 PPMS · Patient Practice Management System</span>
+      <div class="contact">
+        <a href="mailto:support@ppmsai.com"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 6 10-6"/></svg> support@ppmsai.com</a>
+        <a href="tel:9629051083"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.2a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></svg> 9629051083</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.1.14/dist/lenis.min.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  var REDUCED = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var FINE    = window.matchMedia("(pointer: fine)").matches;
+  var hasGSAP = typeof gsap !== "undefined" && typeof ScrollTrigger !== "undefined";
+
+  var SMALL = window.matchMedia("(max-width: 720px)").matches;
+
+  if (hasGSAP) {
+    gsap.registerPlugin(ScrollTrigger);
+    /* ignoreMobileResize stops the mobile URL bar collapsing from re-running
+       every trigger mid-scroll (the main cause of janky pinning on phones). */
+    ScrollTrigger.config({ ignoreMobileResize: true, autoRefreshEvents: "visibilitychange,DOMContentLoaded,load" });
+  }
+
+  /* ═══════ LENIS SMOOTH SCROLL ═══════ */
+  var lenis = null;
+  if (!REDUCED && typeof Lenis !== "undefined") {
+    lenis = new Lenis({ duration: 1.1, smoothWheel: true, wheelMultiplier: 1, touchMultiplier: 1.6 });
+    if (hasGSAP) {
+      lenis.on("scroll", ScrollTrigger.update);
+      gsap.ticker.add(function (t) { lenis.raf(t * 1000); });
+      gsap.ticker.lagSmoothing(0);
+    } else {
+      requestAnimationFrame(function raf(t) { lenis.raf(t); requestAnimationFrame(raf); });
+    }
+  }
+
+  /* ═══════ NAV ═══════ */
+  var nav = document.getElementById("nav");
+  function onScroll() { nav.classList.toggle("stuck", window.scrollY > 24); }
+  onScroll(); window.addEventListener("scroll", onScroll, { passive: true });
+
+  var burger = document.getElementById("burger");
+  var menu   = document.getElementById("mobileMenu");
+  burger.addEventListener("click", function () {
+    var open = menu.classList.toggle("open");
+    burger.setAttribute("aria-expanded", String(open));
+  });
+  menu.addEventListener("click", function (e) {
+    if (e.target.tagName === "A") { menu.classList.remove("open"); burger.setAttribute("aria-expanded", "false"); }
+  });
+
+  /* anchor scrolling through Lenis so offsets respect the sticky nav */
+  document.querySelectorAll('a[href^="#"]').forEach(function (a) {
+    a.addEventListener("click", function (e) {
+      var id = a.getAttribute("href");
+      if (!id || id === "#") return;
+      var el = document.querySelector(id);
+      if (!el) return;
+      e.preventDefault();
+      if (lenis) lenis.scrollTo(el, { offset: -70 });
+      else window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 70, behavior: "smooth" });
+    });
+  });
+
+  /* active link highlight */
+  if (hasGSAP) {
+    document.querySelectorAll("section[id]").forEach(function (sec) {
+      ScrollTrigger.create({
+        trigger: sec, start: "top 45%", end: "bottom 45%",
+        onToggle: function (self) {
+          if (!self.isActive) return;
+          document.querySelectorAll(".nav-links a").forEach(function (l) {
+            var active = l.getAttribute("href") === "#" + sec.id;
+            l.classList.toggle("on", active);
+            if (active) l.setAttribute("aria-current", "true");
+            else l.removeAttribute("aria-current");
+          });
+        }
+      });
+    });
+  }
+
+  /* ═══════ CURSOR GLOW ═══════ */
+  var glow = document.getElementById("glow");
+  if (FINE && !REDUCED && hasGSAP) {
+    var gx = gsap.quickTo(glow, "x", { duration: .55, ease: "power3" });
+    var gy = gsap.quickTo(glow, "y", { duration: .55, ease: "power3" });
+    window.addEventListener("mousemove", function (e) {
+      glow.style.opacity = "1"; gx(e.clientX); gy(e.clientY);
+    }, { passive: true });
+    document.addEventListener("mouseleave", function () { glow.style.opacity = "0"; });
+  }
+
+  /* card spotlight follow */
+  document.querySelectorAll(".card").forEach(function (c) {
+    c.addEventListener("mousemove", function (e) {
+      var r = c.getBoundingClientRect();
+      c.style.setProperty("--mx", (e.clientX - r.left) + "px");
+      c.style.setProperty("--my", (e.clientY - r.top) + "px");
+    });
+  });
+
+  /* ═══════ MAGNETIC BUTTONS ═══════ */
+  if (FINE && !REDUCED && hasGSAP) {
+    document.querySelectorAll(".magnetic").forEach(function (b) {
+      b.addEventListener("mousemove", function (e) {
+        var r = b.getBoundingClientRect();
+        gsap.to(b, { x: (e.clientX - r.left - r.width / 2) * .22, y: (e.clientY - r.top - r.height / 2) * .3, duration: .4, ease: "power3" });
+      });
+      b.addEventListener("mouseleave", function () {
+        gsap.to(b, { x: 0, y: 0, duration: .55, ease: "elastic.out(1,.4)" });
+      });
+    });
+  }
+
+  /* ═══════ HERO PARTICLES ═══════ */
+  var pw = document.getElementById("particles");
+  if (pw && !REDUCED) {
+    var PCOUNT = SMALL ? 10 : 26; /* fewer infinite tweens on phones */
+    for (var i = 0; i < PCOUNT; i++) {
+      var s = document.createElement("i");
+      s.style.left = (Math.random() * 100) + "%";
+      s.style.top  = (Math.random() * 100) + "%";
+      pw.appendChild(s);
+      if (hasGSAP) {
+        gsap.to(s, {
+          y: "-=" + (60 + Math.random() * 130), x: "+=" + (Math.random() * 70 - 35),
+          opacity: 0, duration: 6 + Math.random() * 7, delay: Math.random() * 6,
+          repeat: -1, ease: "none",
+          onRepeat: function () { this.targets()[0].style.opacity = ".4"; }
+        });
+      }
+    }
+  }
+
+  if (!hasGSAP) { document.querySelectorAll(".rv").forEach(function (e) { e.style.opacity = 1; e.style.transform = "none"; }); return; }
+
+  /* ═══════ HERO: VIDEO SCRUB + PIN ═══════ */
+  var video = document.getElementById("heroVideo");
+  var fall  = document.getElementById("heroFallback");
+
+  /* Only show the <video> if the file actually loads; otherwise the animated
+     CSS fallback stays and gets scrubbed instead. */
+  var videoOK = false;
+  video.addEventListener("loadedmetadata", function () {
+    if (video.duration && isFinite(video.duration)) {
+      videoOK = true;
+      video.style.display = "block";
+      fall.style.display = "none";
+      buildHeroScrub();
+      ScrollTrigger.refresh();
+    }
+  });
+  video.addEventListener("error", function () { videoOK = false; });
+
+  var heroTl;
+  function buildHeroScrub() {
+    if (heroTl) heroTl.kill();
+    heroTl = gsap.timeline({
+      scrollTrigger: { trigger: ".hero", start: "top top", end: "bottom bottom", scrub: true }
+    });
+    if (videoOK) heroTl.to(video, { currentTime: video.duration, ease: "none" }, 0);
+    else heroTl.to(fall, { backgroundPosition: "100% 100%", ease: "none" }, 0);
+  }
+
+  ScrollTrigger.create({ trigger: ".hero", start: "top top", end: "bottom bottom", pin: "#heroPin", pinSpacing: false, anticipatePin: 1 });
+  buildHeroScrub();
+
+  /* hero content choreography across the pinned scroll */
+  var hero = gsap.timeline({ scrollTrigger: { trigger: ".hero", start: "top top", end: "60% bottom", scrub: 1 } });
+  hero.to("#hEyebrow", { y: -40, opacity: 0 }, 0)
+      .to("#hTitle",   { y: -70, opacity: 0 }, .05)
+      .to("#hSub",     { y: -55, opacity: 0 }, .1)
+      .to("#hBtns",    { y: -45, opacity: 0 }, .15)
+      .to("#hNote",    { y: -35, opacity: 0 }, .18)
+      .to("#cue",      { opacity: 0 }, 0);
+
+  /* floating stat parallax */
+  gsap.utils.toArray(".fstat").forEach(function (el) {
+    gsap.to(el, {
+      y: (parseFloat(el.dataset.f) || 1) * -170,
+      scrollTrigger: { trigger: ".hero", start: "top top", end: "bottom bottom", scrub: 1.2 }
+    });
+  });
+
+  /* hero entrance */
+  gsap.from(["#hEyebrow", "#hTitle", "#hSub", "#hBtns", "#hNote"], {
+    y: 34, opacity: 0, duration: 1, ease: "power3.out", stagger: .1, delay: .15
+  });
+
+  /* ═══════ GENERIC REVEALS ═══════ */
+  gsap.utils.toArray(".rv").forEach(function (el) {
+    gsap.to(el, {
+      opacity: 1, y: 0, duration: .9, ease: "power3.out",
+      scrollTrigger: { trigger: el, start: "top 86%", once: true }
+    });
+  });
+
+  /* ═══════ STAGGERED CARD GROUPS ═══════ */
+  [["#whyCards .card", 0], ["#aiCards .ai-card", 0], ["#hospCards .hcard", 0], ["#secCards .scard", 0]].forEach(function (g) {
+    gsap.from(g[0], {
+      y: 44, opacity: 0, duration: .8, ease: "power3.out", stagger: .09,
+      scrollTrigger: { trigger: g[0].split(" ")[0], start: "top 82%", once: true }
+    });
+  });
+
+  /* pricing reveal */
+  gsap.from("#priceCards .pcard", {
+    y: 54, opacity: 0, scale: .97, duration: .85, ease: "power3.out", stagger: .11,
+    scrollTrigger: { trigger: "#priceCards", start: "top 82%", once: true },
+    clearProps: "transform"
+  });
+
+  /* EMR rows */
+  gsap.from("#emrRows .emr-row", {
+    x: -22, opacity: 0, duration: .6, ease: "power2.out", stagger: .07,
+    scrollTrigger: { trigger: "#emrMock", start: "top 78%", once: true }
+  });
+  gsap.from("#emrList .emr-item", {
+    x: -26, opacity: 0, duration: .55, ease: "power2.out", stagger: .06,
+    scrollTrigger: { trigger: "#emrList", start: "top 84%", once: true }
+  });
+
+  /* dashboard bars grow */
+  gsap.utils.toArray("[data-bars]").forEach(function (wrap) {
+    gsap.from(wrap.children, {
+      scaleY: 0, transformOrigin: "bottom", duration: .8, ease: "power3.out", stagger: .06,
+      scrollTrigger: { trigger: wrap, start: "top 88%", once: true }
+    });
+  });
+
+  /* integration connector dashes */
+  gsap.to(".ipath path", {
+    strokeDashoffset: -110, duration: 3, ease: "none", repeat: -1
+  });
+
+  /* shield */
+  gsap.to("#shield .ring", { rotate: 360, duration: 26, ease: "none", repeat: -1, transformOrigin: "50% 50%" });
+  gsap.to("#shield svg", { y: -7, duration: 2.6, ease: "sine.inOut", repeat: -1, yoyo: true });
+
+  /* big chart line draw */
+  ["#lineA", "#lineB"].forEach(function (sel, i) {
+    var p = document.querySelector(sel); if (!p) return;
+    var len = p.getTotalLength();
+    gsap.set(p, { strokeDasharray: i ? "6 7" : len, strokeDashoffset: len });
+    gsap.to(p, {
+      strokeDashoffset: 0, duration: 2, ease: "power2.inOut", delay: i * .25,
+      scrollTrigger: { trigger: "#bigChart", start: "top 82%", once: true }
+    });
+  });
+  gsap.from("#area", { opacity: 0, duration: 1.4, delay: .5, scrollTrigger: { trigger: "#bigChart", start: "top 82%", once: true } });
+
+  /* ═══════ COUNTERS ═══════ */
+  gsap.utils.toArray("[data-count]").forEach(function (el) {
+    var end = parseFloat(el.dataset.count);
+    var dec = parseInt(el.dataset.dec || "0", 10);
+    var suf = el.dataset.suffix || "";
+    var o   = { v: 0 };
+    gsap.to(o, {
+      v: end, duration: 2, ease: "power2.out",
+      scrollTrigger: { trigger: el, start: "top 92%", once: true },
+      onUpdate: function () {
+        el.textContent = (dec ? o.v.toFixed(dec) : Math.round(o.v).toLocaleString("en-IN")) + suf;
+      }
+    });
+  });
+
+  /* ═══════ PLATFORM TABS ═══════ */
+  var tabs = document.querySelectorAll(".plat-tab");
+  var panels = document.querySelectorAll(".plat-panel");
+  tabs.forEach(function (t) {
+    t.addEventListener("click", function () {
+      tabs.forEach(function (x) { x.classList.remove("on"); });
+      panels.forEach(function (p) { p.classList.remove("on"); });
+      t.classList.add("on");
+      var p = document.querySelector('.plat-panel[data-panel="' + t.dataset.p + '"]');
+      if (p) p.classList.add("on");
+      ScrollTrigger.refresh();
+    });
+  });
+
+  /* ═══════ HORIZONTAL WORKFLOW ═══════ */
+  var track = document.getElementById("flowTrack");
+  if (track && window.innerWidth > 720) {
+    var dist = function () { return track.scrollWidth - window.innerWidth + 48; };
+    gsap.to(track, {
+      x: function () { return -dist(); },
+      ease: "none",
+      scrollTrigger: {
+        trigger: ".flow", start: "top top", end: function () { return "+=" + dist(); },
+        scrub: 1, pin: true, anticipatePin: 1, invalidateOnRefresh: true,
+        onUpdate: function (self) { gsap.set("#flowProg", { width: (self.progress * 100) + "%" }); }
+      }
+    });
+    gsap.from("#flowTrack .step", {
+      y: 40, opacity: 0, duration: .7, ease: "power3.out", stagger: .08,
+      scrollTrigger: { trigger: ".flow", start: "top 70%", once: true }
+    });
+  } else if (track) {
+    track.style.overflowX = "auto";
+    track.style.scrollSnapType = "x mandatory";
+    gsap.set("#flowProg", { width: "100%" });
+  }
+
+  /* ═══════ TESTIMONIALS (auto slider) ═══════ */
+  var DATA = [
+    { q: "Consultation notes that used to take me ten minutes now take under two. The AI summary is genuinely usable — I edit a line and sign it.", n: "Dr. Sai", r: "Vitreoretinal Surgeon · Moonrise Eye", i: "SA", c: "linear-gradient(135deg,#0D9488,#14B8A6)" },
+    { q: "We run three branches. Before PPMS, reconciling the month took a full week. Now the analytics board is correct at close of business every day.", n: "Dr. Anand Kumar", r: "Medical Director · Sunrise Multi-Speciality", i: "AN", c: "linear-gradient(135deg,#2563EB,#0891B2)" },
+    { q: "The queue screen ended the arguments between front desk and consulting room. Everyone finally sees the same waiting time.", n: "Dr. Priya Raman", r: "Paediatrician · Sunrise", i: "PR", c: "linear-gradient(135deg,#F97316,#EA580C)" },
+    { q: "Per-slot capacity solved our overbooking properly. Patients stopped waiting an hour past their appointment time.", n: "Dr. Kavya Menon", r: "Glaucoma Specialist · Moonrise Eye", i: "KV", c: "linear-gradient(135deg,#7C3AED,#2563EB)" },
+    { q: "Structured refraction and IOP per eye is exactly how we think clinically. Most EMRs make you fight the form. This one doesn't.", n: "Dr. Ramesh Iyer", r: "Cornea Consultant · Lakeview", i: "RM", c: "linear-gradient(135deg,#0891B2,#14B8A6)" },
+    { q: "Onboarding took one afternoon. Our previous system took four months and never finished.", n: "Dr. Meena Gopal", r: "Anaesthetist · Lakeview Clinic", i: "MG", c: "linear-gradient(135deg,#EA580C,#F59E0B)" }
+  ];
+  var star = '<svg width="15" height="15" viewBox="0 0 24 24" fill="#F59E0B"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.3 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg>';
+  var tt = document.getElementById("tstTrack");
+  if (tt) {
+    var html = DATA.map(function (d) {
+      return '<article class="tcard"><div class="stars">' + star.repeat(5) + '</div>' +
+             '<blockquote>' + d.q + '</blockquote>' +
+             '<div class="who"><span class="av" style="background:' + d.c + '">' + d.i + '</span>' +
+             '<span><b>' + d.n + '</b><small>' + d.r + '</small></span></div></article>';
+    }).join("");
+    tt.innerHTML = html + html; /* duplicate for seamless loop */
+
+    if (!REDUCED) {
+      var half = tt.scrollWidth / 2;
+      var slider = gsap.to(tt, { x: -half, duration: 46, ease: "none", repeat: -1,
+        modifiers: { x: function (x) { return (parseFloat(x) % half) + "px"; } } });
+      tt.addEventListener("mouseenter", function () { slider.timeScale(.15); });
+      tt.addEventListener("mouseleave", function () { slider.timeScale(1); });
+    }
+  }
+
+  /* ═══════ HOSPITAL CARD EXPAND ═══════ */
+  document.querySelectorAll("[data-toggle]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var card = btn.closest(".hcard");
+      var open = card.classList.toggle("open");
+      btn.firstChild.textContent = open ? "Hide doctor mapping " : "View doctor mapping ";
+      if (open) {
+        gsap.from(card.querySelectorAll(".docrow"), { x: -16, opacity: 0, duration: .45, ease: "power2.out", stagger: .07 });
+      }
+      ScrollTrigger.refresh();
+    });
+  });
+
+  /* ═══════ STICKY MOBILE CTA ═══════ */
+  var mcta = document.getElementById("mcta");
+  if (mcta && SMALL) {
+    ScrollTrigger.create({
+      trigger: ".hero", start: "bottom 80%",
+      onEnter:     function () { gsap.to(mcta, { y: 0,      duration: .5, ease: "power3.out" }); },
+      onLeaveBack: function () { gsap.to(mcta, { y: "160%", duration: .4, ease: "power2.in"  }); }
+    });
+    /* tuck away over the footer so it never covers contact details */
+    ScrollTrigger.create({
+      trigger: ".ft", start: "top 90%",
+      onEnter:     function () { gsap.to(mcta, { y: "160%", duration: .4, ease: "power2.in"  }); },
+      onLeaveBack: function () { gsap.to(mcta, { y: 0,      duration: .5, ease: "power3.out" }); }
+    });
+  }
+
+  /* ═══════ PARALLAX ACCENTS ═══════ */
+  gsap.utils.toArray(".plat-float").forEach(function (el, i) {
+    gsap.to(el, { y: i ? 40 : -40, scrollTrigger: { trigger: "#platStage", start: "top bottom", end: "bottom top", scrub: 1.4 } });
+  });
+
+  /* keep triggers honest after fonts/images settle */
+  window.addEventListener("load", function () { ScrollTrigger.refresh(); });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { ScrollTrigger.refresh(); });
+  var rt; window.addEventListener("resize", function () { clearTimeout(rt); rt = setTimeout(function () { ScrollTrigger.refresh(); }, 180); });
+
+  ScrollTrigger.refresh();
+})();
+</script>
+</body>
+</html>
