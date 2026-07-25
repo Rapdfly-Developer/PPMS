@@ -13,6 +13,20 @@
       "runtimeExecutable": "C:\\Users\\ELCOT\\Desktop\\PPMS\\start-rfconnector.bat",
       "runtimeArgs": [],
       "port": 5173
+    },
+    {
+      "name": "Flow K-Beauty",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "C:\\Users\\ELCOT\\AppData\\Local\\Temp\\claude\\C--Users-ELCOT-Desktop-PPMS\\000ad6ab-328b-4ab5-82ce-caa53d3f9ad4\\scratchpad\\serve-flow.js"
+      ],
+      "port": 8080
+    },
+    {
+      "name": "PPMS Landing",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["serve-landing.js"],
+      "port": 8081
     }
   ]
 }
