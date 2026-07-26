@@ -6,7 +6,7 @@ import {
   Plus, Pencil, Trash2, Clock, Building2, CalendarDays, Users,
   Loader2, AlertTriangle, X, Save, ToggleLeft, ToggleRight, Power,
   Stethoscope, Layers, CheckCircle2, CalendarOff, Calendar,
-  ChevronRight, Info, XCircle,
+  ChevronRight, Info,
 } from "lucide-react";
 import {
   upsertWeekly, deleteWeekly, toggleWeeklyStatus,
@@ -1073,39 +1073,6 @@ function LeaveTab({ leaves, hospitals }: { leaves: Leave[]; hospitals: Hospital[
   );
 }
 
-/* ════════════════════════════════════════════════════════════════════════════
-   PRIORITY LADDER (visual)
-═══════════════════════════════════════════════════════════════════════════════ */
-function PriorityLadder() {
-  const steps = [
-    { icon: <CalendarOff size={14} />, label: "Leave", sub: "Blocks everything", color: "text-red-400", bg: "bg-red-950/40 border-red-900/50" },
-    { icon: <CalendarDays size={14} />, label: "Individual Day", sub: "One-time override", color: "text-blue-400", bg: "bg-blue-950/40 border-blue-900/50" },
-    { icon: <Layers size={14} />, label: "Monthly Plan", sub: "Date-range schedule", color: "text-purple-400", bg: "bg-purple-950/40 border-purple-900/50" },
-    { icon: <Calendar size={14} />, label: "Weekly Recurring", sub: "Base schedule", color: "text-[#18D2C3]", bg: "bg-teal-950/40 border-teal-900/50" },
-    { icon: <XCircle size={14} />, label: "Default", sub: "Not available", color: "text-white/30", bg: "bg-white/5 border-white/10" },
-  ];
-  return (
-    <div className="flex flex-col gap-1.5">
-      {steps.map((s, i) => (
-        <div key={i} className="flex items-center gap-3">
-          <span className="text-[10px] font-mono text-white/30 w-3">{i + 1}</span>
-          <div className={`flex-1 flex items-center gap-2.5 px-3 py-2 rounded-lg border ${s.bg}`}>
-            <span className={s.color}>{s.icon}</span>
-            <div>
-              <span className={`text-xs font-bold ${s.color}`}>{s.label}</span>
-              <span className="text-[10px] text-white/40 ml-2">{s.sub}</span>
-            </div>
-          </div>
-          {i < steps.length - 1 && (
-            <div className="w-3 flex justify-center">
-              <div className="w-px h-3 bg-white/20" />
-            </div>
-          )}
-        </div>
-      ))}
-    </div>
-  );
-}
 
 /* ════════════════════════════════════════════════════════════════════════════
    MAIN CLIENT
@@ -1188,21 +1155,8 @@ export function AvailabilityClient({
         </div>
       </div>
 
-      {/* ── Priority ladder + architecture (two-col on large) ────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-[280px,1fr] gap-4">
-        {/* Priority order */}
-        <div className="rounded-[18px] p-5 border border-[#0a2825]"
-          style={{ background: "linear-gradient(135deg,#071a19 0%,#0d2d29 100%)" }}>
-          <div className="flex items-center gap-2 mb-4">
-            <Layers size={14} className="text-[#18D2C3]" />
-            <p className="font-bold text-white text-[13px]">Priority Order</p>
-          </div>
-          <PriorityLadder />
-          <p className="text-[10px] text-white/30 mt-3 leading-relaxed">
-            When a patient books, PPMS resolves availability using this order. Higher priority overrides lower.
-          </p>
-        </div>
-
+      {/* ── Hospital overview ────────────────────────────────────────────── */}
+      <div>
         {/* Hospital overview */}
         <div className="rounded-[18px] p-5 border border-[#0a2825]"
           style={{ background: "linear-gradient(135deg,#071a19 0%,#0c2422 100%)" }}>
