@@ -56,8 +56,11 @@ model Doctor {
   patients       Patient[]
   appointments   Appointment[]
   visits         Visit[]
-  availabilities DoctorAvailability[]
-  license        TenantLicense?
+  availabilities              DoctorAvailability[]
+  monthlyAvailabilities       MonthlyAvailability[]
+  individualDayAvailabilities IndividualDayAvailability[]
+  leaves                      DoctorLeave[]
+  license                     TenantLicense?
 }
 
 model Hospital {
@@ -77,8 +80,11 @@ model Hospital {
   patients       Patient[]
   appointments   Appointment[]
   visits         Visit[]
-  availabilities DoctorAvailability[]
-  chipOptions    ChipOption[]
+  availabilities              DoctorAvailability[]
+  monthlyAvailabilities       MonthlyAvailability[]
+  individualDayAvailabilities IndividualDayAvailability[]
+  leaves                      DoctorLeave[]
+  chipOptions                 ChipOption[]
   integration    HospitalIntegration?
   integrationLogs IntegrationLog[]
 }
@@ -249,7 +255,9 @@ model Refractionist {
   createdAt  DateTime @default(now())
 }
 
-// Recurring weekly availability slots, e.g. "Mondays 16:00-19:00 at Hospital A"
+// ── Availability types ──────────────────────────────────────────────────────
+
+// Weekly recurring slots — lowest priority base schedule
 model DoctorAvailability {
   id          String   @id @default(cuid())
   doctorId    String
@@ -263,6 +271,57 @@ model DoctorAvailability {
   maxPatients Int      @default(5)
   status      String   @default("ACTIVE") // ACTIVE | INACTIVE
   createdAt   DateTime @default(now())
+}
+
+// Monthly plan — overrides weekly; e.g. "Every Mon-Fri in Aug at Hospital A, 9-1 PM"
+model MonthlyAvailability {
+  id          String   @id @default(cuid())
+  doctorId    String
+  doctor      Doctor   @relation(fields: [doctorId], references: [id])
+  hospitalId  String
+  hospital    Hospital @relation(fields: [hospitalId], references: [id])
+  validFrom   DateTime // start of validity period
+  validTo     DateTime // end of validity period
+  weekdays    String   // comma-separated day indices: "1,2,3,4,5" = Mon–Fri
+  startTime   String   // "HH:MM" 24h
+  endTime     String
+  slotMins    Int      @default(15)
+  maxPatients Int      @default(5)
+  label       String?  // e.g. "Morning OPD August"
+  status      String   @default("ACTIVE")
+  createdAt   DateTime @default(now())
+}
+
+// Individual date override — overrides weekly + monthly
+model IndividualDayAvailability {
+  id          String   @id @default(cuid())
+  doctorId    String
+  doctor      Doctor   @relation(fields: [doctorId], references: [id])
+  hospitalId  String
+  hospital    Hospital @relation(fields: [hospitalId], references: [id])
+  date        DateTime // specific calendar date (time part ignored)
+  startTime   String
+  endTime     String
+  slotMins    Int      @default(15)
+  maxPatients Int      @default(5)
+  reason      String?  // e.g. "Special Camp", "Half Day"
+  status      String   @default("ACTIVE")
+  createdAt   DateTime @default(now())
+}
+
+// Leave — highest priority; blocks all slots on the date
+model DoctorLeave {
+  id         String    @id @default(cuid())
+  doctorId   String
+  doctor     Doctor    @relation(fields: [doctorId], references: [id])
+  hospitalId String?   // null = all hospitals
+  hospital   Hospital? @relation(fields: [hospitalId], references: [id])
+  date       DateTime  // calendar date of leave
+  leaveType  String    @default("FULL_DAY") // FULL_DAY | HALF_DAY
+  halfPeriod String?   // MORNING | AFTERNOON (only for HALF_DAY)
+  reason     String?
+  status     String    @default("APPROVED") // APPROVED | CANCELLED
+  createdAt  DateTime  @default(now())
 }
 
 // ──────────────────────────────────────────────────────────────────────────
