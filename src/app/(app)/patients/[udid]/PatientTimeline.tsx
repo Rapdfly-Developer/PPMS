@@ -6,7 +6,7 @@ import {
   X, Search, Stethoscope, FlaskConical, Scissors, BedDouble,
   Receipt, ArrowRightLeft, FileText, ChevronDown, ChevronUp,
   Timer, Building2, UserRound, CalendarDays, SlidersHorizontal,
-  Loader2, Pill, CheckCircle2, Clock, AlertCircle,
+  Loader2, Pill, CheckCircle2, Clock, AlertCircle, LogIn, Calendar,
 } from "lucide-react";
 import { getPatientTimeline, type TimelineEvent, type TimelineEventType } from "../actions";
 
@@ -67,43 +67,144 @@ function fullTime(iso: string) {
 function EventDetail({ ev }: { ev: TimelineEvent }) {
   const d = ev.detail;
 
-  if (ev.type === "CONSULTATION") return (
-    <div className="mt-3 space-y-2 text-xs text-[var(--color-ink-700)]">
-      {d.complaint && <p><span className="font-semibold text-[var(--color-ink-500)] uppercase tracking-wide text-[10px]">Chief Complaint</span><br />{d.complaint}</p>}
-      {(d.bp || d.pulse) && (
-        <p className="flex gap-4">
-          {d.bp    && <span><span className="font-semibold">BP </span>{d.bp}</span>}
-          {d.pulse && <span><span className="font-semibold">Pulse </span>{d.pulse}</span>}
-        </p>
-      )}
-      {d.diagnoses && d.diagnoses.length > 0 && (
-        <div>
-          <p className="font-semibold text-[var(--color-ink-500)] uppercase tracking-wide text-[10px] mb-1">Diagnoses</p>
-          <ul className="space-y-0.5">
-            {d.diagnoses.map((dx, i) => (
-              <li key={i} className="flex items-start gap-1.5">
-                <span className="mt-0.5 w-1.5 h-1.5 rounded-full bg-teal-400 shrink-0" />
-                <span>{dx.description}{dx.icd10Code && <span className="text-[var(--color-ink-400)] ml-1">({dx.icd10Code})</span>}{dx.laterality && <span className="text-[var(--color-ink-400)] ml-1">· {dx.laterality}</span>}{dx.provisional && <span className="ml-1 text-amber-600 font-medium">Provisional</span>}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-      {d.medications && d.medications.length > 0 && (
-        <div>
-          <p className="font-semibold text-[var(--color-ink-500)] uppercase tracking-wide text-[10px] mb-1">Medications</p>
-          <ul className="space-y-0.5">
-            {d.medications.map((m, i) => (
-              <li key={i} className="flex items-start gap-1.5">
-                <Pill size={11} className="text-teal-500 mt-0.5 shrink-0" />
-                <span>{m.drugName}{m.dosage && ` · ${m.dosage}`}{m.frequency && ` · ${m.frequency}`}{m.duration && ` · ${m.duration}`}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-    </div>
-  );
+  if (ev.type === "CONSULTATION") {
+    const arrivedAt   = d.arrivedAt   ? new Date(d.arrivedAt)   : null;
+    const seenAt      = d.seenAt      ? new Date(d.seenAt)      : null;
+    const finalizedAt = d.finalizedAt ? new Date(d.finalizedAt) : null;
+    const waitMins    = arrivedAt && seenAt
+      ? Math.max(0, Math.round((seenAt.getTime() - arrivedAt.getTime()) / 60000))
+      : null;
+    const totalMins   = arrivedAt && finalizedAt
+      ? Math.max(0, Math.round((finalizedAt.getTime() - arrivedAt.getTime()) / 60000))
+      : null;
+    const fmtDur = (m: number) => m < 60 ? `${m} min` : `${Math.floor(m / 60)}h ${m % 60}m`;
+
+    return (
+      <div className="mt-3 space-y-3 text-xs text-[var(--color-ink-700)]">
+
+        {/* ── Timestamp trail ─────────────────────────────────────── */}
+        {(d.bookedAt || d.arrivedAt || d.finalizedAt) && (
+          <div className="rounded-xl border border-[var(--color-border)] overflow-hidden">
+            <p className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-500)] bg-[var(--color-surface-sunken)] border-b border-[var(--color-border)]">
+              Visit Timeline
+            </p>
+            <div className="divide-y divide-[var(--color-border)]">
+
+              {/* Booked */}
+              {d.bookedAt && (
+                <div className="flex items-center justify-between px-3 py-2">
+                  <span className="flex items-center gap-1.5 text-[var(--color-ink-500)]">
+                    <Clock size={11} className="shrink-0" />
+                    Appointment Booked
+                  </span>
+                  <span className="font-semibold text-[var(--color-ink-800)]">
+                    {format(new Date(d.bookedAt), "d MMM yyyy, h:mm a")}
+                  </span>
+                </div>
+              )}
+
+              {/* Scheduled slot */}
+              {d.scheduledAt && (
+                <div className="flex items-center justify-between px-3 py-2">
+                  <span className="flex items-center gap-1.5 text-[var(--color-ink-500)]">
+                    <Calendar size={11} className="shrink-0" />
+                    Appointment Time
+                  </span>
+                  <span className="font-semibold text-[var(--color-ink-800)]">
+                    {format(new Date(d.scheduledAt), "d MMM yyyy, h:mm a")}
+                  </span>
+                </div>
+              )}
+
+              {/* Arrived */}
+              {arrivedAt && (
+                <div className="flex items-center justify-between px-3 py-2">
+                  <span className="flex items-center gap-1.5 text-blue-500">
+                    <LogIn size={11} className="shrink-0" />
+                    Arrived at Clinic
+                  </span>
+                  <span className="font-semibold text-[var(--color-ink-800)]">
+                    {format(arrivedAt, "h:mm a")}
+                  </span>
+                </div>
+              )}
+
+              {/* Seen by doctor */}
+              {seenAt && (
+                <div className="flex items-center justify-between px-3 py-2">
+                  <span className="flex items-center gap-1.5 text-teal-600">
+                    <Stethoscope size={11} className="shrink-0" />
+                    Seen by Doctor
+                    {waitMins !== null && (
+                      <span className="ml-1 text-amber-500 font-medium">
+                        ({fmtDur(waitMins)} wait)
+                      </span>
+                    )}
+                  </span>
+                  <span className="font-semibold text-[var(--color-ink-800)]">
+                    {format(seenAt, "h:mm a")}
+                  </span>
+                </div>
+              )}
+
+              {/* Dispensed */}
+              {finalizedAt && (
+                <div className="flex items-center justify-between px-3 py-2 bg-emerald-50/60">
+                  <span className="flex items-center gap-1.5 text-emerald-600">
+                    <CheckCircle2 size={11} className="shrink-0" />
+                    Dispensed
+                    {totalMins !== null && (
+                      <span className="ml-1 text-[var(--color-ink-400)] font-normal">
+                        ({fmtDur(totalMins)} total visit)
+                      </span>
+                    )}
+                  </span>
+                  <span className="font-semibold text-emerald-700">
+                    {format(finalizedAt, "h:mm a")}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ── Clinical notes ───────────────────────────────────────── */}
+        {d.complaint && <p><span className="font-semibold text-[var(--color-ink-500)] uppercase tracking-wide text-[10px]">Chief Complaint</span><br />{d.complaint}</p>}
+        {(d.bp || d.pulse) && (
+          <p className="flex gap-4">
+            {d.bp    && <span><span className="font-semibold">BP </span>{d.bp}</span>}
+            {d.pulse && <span><span className="font-semibold">Pulse </span>{d.pulse}</span>}
+          </p>
+        )}
+        {d.diagnoses && d.diagnoses.length > 0 && (
+          <div>
+            <p className="font-semibold text-[var(--color-ink-500)] uppercase tracking-wide text-[10px] mb-1">Diagnoses</p>
+            <ul className="space-y-0.5">
+              {d.diagnoses.map((dx, i) => (
+                <li key={i} className="flex items-start gap-1.5">
+                  <span className="mt-0.5 w-1.5 h-1.5 rounded-full bg-teal-400 shrink-0" />
+                  <span>{dx.description}{dx.icd10Code && <span className="text-[var(--color-ink-400)] ml-1">({dx.icd10Code})</span>}{dx.laterality && <span className="text-[var(--color-ink-400)] ml-1">· {dx.laterality}</span>}{dx.provisional && <span className="ml-1 text-amber-600 font-medium">Provisional</span>}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {d.medications && d.medications.length > 0 && (
+          <div>
+            <p className="font-semibold text-[var(--color-ink-500)] uppercase tracking-wide text-[10px] mb-1">Medications</p>
+            <ul className="space-y-0.5">
+              {d.medications.map((m, i) => (
+                <li key={i} className="flex items-start gap-1.5">
+                  <Pill size={11} className="text-teal-500 mt-0.5 shrink-0" />
+                  <span>{m.drugName}{m.dosage && ` · ${m.dosage}`}{m.frequency && ` · ${m.frequency}`}{m.duration && ` · ${m.duration}`}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   if (ev.type === "INVESTIGATION") return (
     <div className="mt-3 space-y-1.5">

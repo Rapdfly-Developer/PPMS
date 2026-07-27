@@ -35,6 +35,12 @@ export type TimelineEvent = {
     pulse?: string | null;
     diagnoses?: { description: string; icd10Code: string; laterality?: string | null; provisional: boolean; status: string }[];
     medications?: { drugName: string; dosage?: string | null; frequency?: string | null; duration?: string | null }[];
+    // CONSULTATION — timestamp trail
+    bookedAt?: string | null;        // Appointment.createdAt
+    scheduledAt?: string | null;     // Appointment.dateTime
+    arrivedAt?: string | null;       // Appointment.arrivedAt
+    seenAt?: string | null;          // Visit.date (consultation started)
+    finalizedAt?: string | null;     // Visit.finalizedAt (dispensed)
     // INVESTIGATION
     orders?: { id: string; testName: string; category: string; status: string; laterality?: string | null; priority: string; resultRef?: string | null }[];
     // SURGERY
@@ -81,6 +87,7 @@ export async function getPatientTimeline(patientId: string): Promise<TimelineEve
         surgicalCounselling:{ select: { surgeryType: true, surgeryDate: true, rightEye: true, leftEye: true, anaesthesiaType: true } },
         admission:          { select: { reason: true, ward: true, numberOfDays: true, discharged: true, dischargedAt: true } },
         dispense:           { select: { shortSummary: true } },
+        appointment:        { select: { createdAt: true, dateTime: true, arrivedAt: true } },
       },
     }),
     prisma.pastExternalVisit.findMany({
@@ -119,6 +126,12 @@ export async function getPatientTimeline(patientId: string): Promise<TimelineEve
         pulse:       v.generalExam?.pulse ?? null,
         diagnoses:   v.diagnoses,
         medications: v.medications,
+        // Timestamp trail
+        bookedAt:    v.appointment?.createdAt?.toISOString() ?? null,
+        scheduledAt: v.appointment?.dateTime?.toISOString()  ?? null,
+        arrivedAt:   v.appointment?.arrivedAt?.toISOString() ?? null,
+        seenAt:      v.date.toISOString(),
+        finalizedAt: v.finalizedAt?.toISOString() ?? null,
       },
     });
 
