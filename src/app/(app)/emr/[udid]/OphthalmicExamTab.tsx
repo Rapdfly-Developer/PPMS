@@ -301,9 +301,11 @@ function parseSignedVal(v: string): { sign: "+" | "-"; mag: string } {
 
 /* ── Refraction ────────────────────────────────────────────────────────── */
 
+const REFRACTION_METHODS = ["Subjective", "Cycloplegic", "Auto-Refraction", "Current Glass Rx"] as const;
+
 function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: any; udid: string; editable: boolean; priorVisits?: any[] }) {
   const rc = visit.refraction;
-  const [re, setRe] = useState(parseJSON(rc?.re, { sph: "", cyl: "", axis: "", va: "", nearSph: "", nearVa: "" }));
+  const [re, setRe] = useState(parseJSON(rc?.re, { sph: "", cyl: "", axis: "", va: "", nearSph: "", nearVa: "", method: "" }));
   const [le, setLe] = useState(parseJSON(rc?.le, { sph: "", cyl: "", axis: "", va: "", nearSph: "", nearVa: "" }));
   const [showHistory, setShowHistory] = useState(false);
   const [confirmRx, setConfirmRx] = useState<typeof priorRefractions[0] | null>(null);
@@ -450,8 +452,21 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
 
   return (
     <Card>
-      <div className="flex items-center justify-between mb-3">
-        <p className="text-sm font-medium text-[var(--color-ink-700)]">Refractive Correction</p>
+      <div className="flex items-center justify-between mb-3 flex-wrap gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
+          <p className="text-sm font-medium text-[var(--color-ink-700)]">Refractive Correction</p>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-[var(--color-ink-400)]">Method:</span>
+            <select
+              disabled={!editable}
+              value={re.method || REFRACTION_METHODS[0]}
+              onChange={(e) => setRe({ ...re, method: e.target.value })}
+              className="rounded-lg border border-[var(--color-border)] bg-white px-2.5 py-1 text-xs disabled:bg-[var(--color-surface-sunken)]"
+            >
+              {REFRACTION_METHODS.map((m) => <option key={m}>{m}</option>)}
+            </select>
+          </div>
+        </div>
         <div className="flex items-center gap-2">
           {priorRefractions.length > 0 && (
             <button
