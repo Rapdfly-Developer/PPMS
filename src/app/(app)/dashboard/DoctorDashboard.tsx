@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { format } from "date-fns";
+import { redirect } from "next/navigation";
 import type { SessionUser } from "@/lib/rbac";
 import { istTodayRange, istParts, toISTWall } from "@/lib/ist";
 import { DashboardClient } from "./DashboardClient";
@@ -33,6 +34,12 @@ export async function DoctorDashboard({
     where: { doctorId, active: true },
     select: { hospital: { select: { id: true, name: true } } },
   });
+
+  // Guard: doctor with no linked hospitals must complete setup first.
+  // Runs on every dashboard load (including post-login) so it cannot be bypassed.
+  if (linkedHospitals.length === 0) {
+    redirect("/settings?section=add-hospital");
+  }
 
   const upcomingSurgeries = await prisma.surgicalCounselling.findMany({
     where: { surgeryDate: { gte: dayStart }, visit: { doctorId } },
