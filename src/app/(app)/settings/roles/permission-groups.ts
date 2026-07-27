@@ -82,13 +82,4 @@ export const PERMISSION_GROUPS: {
       { key: "reports.export", label: "Export Reports", description: "Download reports as CSV or PDF" },
     ],
   },
-  {
-    category: "Settings & Administration",
-    permissions: [
-      { key: "settings.view",   label: "View Settings",   description: "Access the settings section" },
-      { key: "settings.manage", label: "Manage Settings", description: "Edit hospital profile and chip options" },
-      { key: "users.manage",    label: "Manage Users",    description: "Create, edit and deactivate user accounts" },
-      { key: "roles.manage",    label: "Manage Roles",    description: "Change role-permission assignments" },
-    ],
-  },
 ];
