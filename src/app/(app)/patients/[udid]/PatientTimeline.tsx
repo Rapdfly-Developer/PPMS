@@ -83,7 +83,7 @@ function EventDetail({ ev }: { ev: TimelineEvent }) {
       <div className="mt-3 space-y-3 text-xs text-[var(--color-ink-700)]">
 
         {/* ── Timestamp trail ─────────────────────────────────────── */}
-        {(d.bookedAt || d.arrivedAt || d.finalizedAt) && (
+        {(d.bookedAt || d.arrivedAt || d.seenAt || d.finalizedAt) && (
           <div className="rounded-xl border border-[var(--color-border)] overflow-hidden">
             <p className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-500)] bg-[var(--color-surface-sunken)] border-b border-[var(--color-border)]">
               Visit Timeline
