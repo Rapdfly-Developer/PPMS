@@ -154,24 +154,44 @@ function HospChip({ hospitalId, hospitals, small = false, isExtra = false }: {
    TEMPLATE TAB — edit the weekly recurring schedule (Mon–Sun)
 ═══════════════════════════════════════════════════════════════════════════════ */
 
-function TemplateSlotModal({ hospitals, initial, onClose }: {
+// Returns true if [s1,e1) overlaps with [s2,e2) (string "HH:MM" comparison)
+function timesOverlap(s1: string, e1: string, s2: string, e2: string) {
+  return s1 < e2 && s2 < e1;
+}
+
+// ── Edit single existing slot ────────────────────────────────────────────────
+function EditSlotModal({ hospitals, slot, weekly, onClose }: {
   hospitals: Hospital[];
-  initial?: Partial<WeeklySlot> & { weekday?: number };
+  slot: WeeklySlot;
+  weekly: WeeklySlot[];
   onClose: () => void;
 }) {
-  const [hospitalId, setHospitalId] = useState(initial?.hospitalId ?? hospitals[0]?.id ?? "");
-  const [weekday,    setWeekday]    = useState(initial?.weekday    ?? 1);
-  const [startTime,  setStartTime]  = useState(initial?.startTime  ?? "09:00");
-  const [endTime,    setEndTime]    = useState(initial?.endTime    ?? "12:00");
-  const [slotMins,   setSlotMins]   = useState(initial?.slotMins   ?? 15);
-  const [maxPat,     setMaxPat]     = useState(initial?.maxPatients ?? 5);
-  const [status,     setStatus]     = useState(initial?.status     ?? "ACTIVE");
+  const [hospitalId, setHospitalId] = useState(slot.hospitalId);
+  const [startTime,  setStartTime]  = useState(slot.startTime);
+  const [endTime,    setEndTime]    = useState(slot.endTime);
+  const [slotMins,   setSlotMins]   = useState(slot.slotMins);
+  const [maxPat,     setMaxPat]     = useState(slot.maxPatients);
+  const [status,     setStatus]     = useState(slot.status);
   const [error,      setError]      = useState("");
   const [pending,    start]         = useTransition();
   const total = slotsCount(startTime, endTime, slotMins);
 
+  // Live collision check (exclude the slot being edited)
+  const collision = useMemo(() => {
+    if (!startTime || !endTime || startTime >= endTime) return null;
+    const conflict = weekly.find(s =>
+      s.id !== slot.id &&
+      s.weekday === slot.weekday &&
+      s.hospitalId === hospitalId &&
+      timesOverlap(startTime, endTime, s.startTime, s.endTime)
+    );
+    return conflict
+      ? `Overlaps with existing slot ${fmt12(conflict.startTime)}–${fmt12(conflict.endTime)} at this hospital`
+      : null;
+  }, [startTime, endTime, hospitalId, weekly, slot.id, slot.weekday]);
+
   return (
-    <Modal title={initial?.id ? "Edit Template Slot" : "Add Template Slot"} sub="Repeats every week until you change it" onClose={onClose}>
+    <Modal title="Edit Template Slot" sub={`${WEEKDAYS_FULL[slot.weekday]} — repeats every week`} onClose={onClose}>
       {error && <Err msg={error} />}
 
       <div><label className={LBL}>Hospital</label>
@@ -179,20 +199,6 @@ function TemplateSlotModal({ hospitals, initial, onClose }: {
           {hospitals.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
         </select>
       </div>
-
-      {!initial?.id && (
-        <div>
-          <label className={LBL}>Day of Week</label>
-          <div className="grid grid-cols-7 gap-1">
-            {WEEKDAYS.map((d, i) => (
-              <button key={d} type="button" onClick={() => setWeekday(i)}
-                className={`py-2 rounded-lg text-xs font-bold border transition-all ${weekday === i ? "bg-[var(--color-primary-600)] text-white border-[var(--color-primary-600)]" : "bg-white text-[var(--color-ink-500)] border-[var(--color-border)] hover:border-[var(--color-primary-300)]"}`}>
-                {d}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
 
       <div className="grid grid-cols-2 gap-3">
         <div><label className={LBL}>Start Time</label><input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} className={FLD} /></div>
@@ -209,9 +215,11 @@ function TemplateSlotModal({ hospitals, initial, onClose }: {
         </div>
       </div>
 
-      {startTime < endTime && total > 0 && (
-        <div className="rounded-xl bg-[var(--color-primary-50)] border border-[var(--color-primary-100)] px-4 py-3 grid grid-cols-3 gap-0">
-          {[{ val: total, lbl: "Slots" }, { val: total * maxPat, lbl: "Max Patients" }, { val: `${fmt12(startTime)}–${fmt12(endTime)}`, lbl: WEEKDAYS_FULL[weekday] }].map((item, i) => (
+      {collision && <Err msg={collision} />}
+
+      {startTime < endTime && total > 0 && !collision && (
+        <div className="rounded-xl bg-[var(--color-primary-50)] border border-[var(--color-primary-100)] px-4 py-3 grid grid-cols-3">
+          {[{ val: total, lbl: "Slots" }, { val: total * maxPat, lbl: "Max Patients" }, { val: `${fmt12(startTime)}–${fmt12(endTime)}`, lbl: WEEKDAYS_FULL[slot.weekday] }].map((item, i) => (
             <div key={i} className={`text-center px-2 ${i > 0 ? "border-l border-[var(--color-primary-100)]" : ""}`}>
               <p className="text-sm font-bold text-[var(--color-primary-800)]">{item.val}</p>
               <p className="text-[11px] text-[var(--color-primary-600)] mt-0.5">{item.lbl}</p>
@@ -230,19 +238,192 @@ function TemplateSlotModal({ hospitals, initial, onClose }: {
 
       <div className="flex gap-2">
         <button onClick={onClose} className="flex-1 px-4 py-2.5 rounded-xl border border-[var(--color-border)] text-sm font-medium hover:bg-[var(--color-surface-sunken)] transition-colors">Cancel</button>
-        <button disabled={pending}
+        <button disabled={pending || !!collision}
           onClick={() => {
             if (!hospitalId) { setError("Select a hospital"); return; }
             if (startTime >= endTime) { setError("End time must be after start time"); return; }
+            if (collision) return;
             setError("");
             start(async () => {
-              try { await upsertWeekly({ id: initial?.id, hospitalId, weekday, startTime, endTime, slotMins, maxPatients: maxPat, status }); onClose(); }
+              try { await upsertWeekly({ id: slot.id, hospitalId, weekday: slot.weekday, startTime, endTime, slotMins, maxPatients: maxPat, status }); onClose(); }
               catch (e: any) { setError(e.message ?? "Failed"); }
             });
           }}
           className="flex-1 px-4 py-2.5 rounded-xl bg-[var(--color-primary-600)] text-white text-sm font-semibold hover:bg-[var(--color-primary-700)] disabled:opacity-60 transition-all inline-flex items-center justify-center gap-2">
+          {pending ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Save Changes
+        </button>
+      </div>
+    </Modal>
+  );
+}
+
+// ── Add Weekly Slot — multi-day with collision detection ─────────────────────
+function AddWeeklySlotModal({ hospitals, weekly, preWeekday, onClose }: {
+  hospitals: Hospital[];
+  weekly: WeeklySlot[];
+  preWeekday?: number;        // pre-select a day when opened from the + button
+  onClose: () => void;
+}) {
+  const [hospitalId, setHospitalId] = useState(hospitals[0]?.id ?? "");
+  const [startTime,  setStartTime]  = useState("09:00");
+  const [endTime,    setEndTime]    = useState("13:00");
+  const [slotMins,   setSlotMins]   = useState(15);
+  const [maxPat,     setMaxPat]     = useState(5);
+  // Selected weekdays: Set of 0-6
+  const [selDays, setSelDays] = useState<Set<number>>(
+    () => new Set(preWeekday !== undefined ? [preWeekday] : [1, 2, 3, 4, 5])
+  );
+  const [error,   setError]   = useState("");
+  const [pending, start]      = useTransition();
+
+  const allSelected = selDays.size === 7;
+
+  function toggleDay(d: number) {
+    setSelDays(prev => {
+      const next = new Set(prev);
+      if (next.has(d)) next.delete(d); else next.add(d);
+      return next;
+    });
+  }
+  function toggleAll() {
+    setSelDays(allSelected ? new Set() : new Set([0, 1, 2, 3, 4, 5, 6]));
+  }
+
+  const total = slotsCount(startTime, endTime, slotMins);
+
+  // Per-day collision map: weekday → conflict description | null
+  const collisions = useMemo<Record<number, string | null>>(() => {
+    const result: Record<number, string | null> = {};
+    if (!startTime || !endTime || startTime >= endTime) return result;
+    for (const wd of selDays) {
+      const conflict = weekly.find(s =>
+        s.weekday === wd &&
+        s.hospitalId === hospitalId &&
+        timesOverlap(startTime, endTime, s.startTime, s.endTime)
+      );
+      result[wd] = conflict
+        ? `${fmt12(conflict.startTime)}–${fmt12(conflict.endTime)}`
+        : null;
+    }
+    return result;
+  }, [startTime, endTime, hospitalId, selDays, weekly]);
+
+  const blockedDays  = Object.entries(collisions).filter(([, v]) => v !== null).map(([k]) => Number(k));
+  const cleanDays    = Array.from(selDays).filter(d => !collisions[d]);
+  const hasConflicts = blockedDays.length > 0;
+
+  return (
+    <Modal title="Add Weekly Slot" sub="Choose days, time and hospital — we'll check for clashes" onClose={onClose}>
+      {error && <Err msg={error} />}
+
+      {/* Hospital */}
+      <div><label className={LBL}>Hospital</label>
+        <select value={hospitalId} onChange={e => setHospitalId(e.target.value)} className={FLD}>
+          {hospitals.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
+        </select>
+      </div>
+
+      {/* Day picker */}
+      <div>
+        <div className="flex items-center justify-between mb-1.5">
+          <label className={LBL + " mb-0"}>Days</label>
+          <button type="button" onClick={toggleAll}
+            className="text-[11px] font-semibold text-[var(--color-primary-600)] hover:underline">
+            {allSelected ? "Deselect All" : "All Days"}
+          </button>
+        </div>
+        <div className="grid grid-cols-7 gap-1">
+          {[1,2,3,4,5,6,0].map(d => {
+            const sel     = selDays.has(d);
+            const clash   = sel && collisions[d];
+            return (
+              <button key={d} type="button" onClick={() => toggleDay(d)}
+                className={`py-2 rounded-lg text-xs font-bold border transition-all flex flex-col items-center gap-0.5 ${
+                  clash
+                    ? "bg-red-50 border-red-300 text-red-700"
+                    : sel
+                    ? "bg-[var(--color-primary-600)] text-white border-[var(--color-primary-600)]"
+                    : "bg-white text-[var(--color-ink-500)] border-[var(--color-border)] hover:border-[var(--color-primary-300)]"
+                }`}>
+                {WEEKDAYS[d]}
+                {clash && <span className="w-1.5 h-1.5 rounded-full bg-red-500" />}
+              </button>
+            );
+          })}
+        </div>
+        {selDays.size === 0 && (
+          <p className="text-[11px] text-[var(--color-ink-400)] mt-1.5">Select at least one day</p>
+        )}
+      </div>
+
+      {/* Time */}
+      <div className="grid grid-cols-2 gap-3">
+        <div><label className={LBL}>Start Time</label><input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} className={FLD} /></div>
+        <div><label className={LBL}>End Time</label><input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} className={FLD} /></div>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div><label className={LBL}>Slot Duration</label>
+          <select value={slotMins} onChange={e => setSlotMins(Number(e.target.value))} className={FLD}>
+            {SLOT_OPTIONS.map(m => <option key={m} value={m}>{m} min</option>)}
+          </select>
+        </div>
+        <div><label className={LBL}>Max Patients / Slot</label>
+          <input type="number" min={1} max={20} value={maxPat} onChange={e => setMaxPat(Number(e.target.value))} className={FLD} />
+        </div>
+      </div>
+
+      {/* Collision warnings */}
+      {hasConflicts && startTime < endTime && (
+        <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 flex flex-col gap-1.5">
+          <p className="text-xs font-bold text-red-700 flex items-center gap-1.5"><AlertTriangle size={13} /> Time conflicts detected</p>
+          {blockedDays.map(d => (
+            <p key={d} className="text-[11px] text-red-600">
+              <span className="font-semibold">{WEEKDAYS_FULL[d]}</span> — already has {collisions[d]} at this hospital
+            </p>
+          ))}
+          {cleanDays.length > 0 && (
+            <p className="text-[11px] text-red-500 mt-0.5">Slot will only be saved for the {cleanDays.length} conflict-free day{cleanDays.length > 1 ? "s" : ""}.</p>
+          )}
+        </div>
+      )}
+
+      {/* Summary */}
+      {startTime < endTime && total > 0 && cleanDays.length > 0 && (
+        <div className="rounded-xl bg-[var(--color-primary-50)] border border-[var(--color-primary-100)] px-4 py-3 grid grid-cols-3">
+          {[
+            { val: total, lbl: "Slots/day" },
+            { val: total * maxPat, lbl: "Max Pts/day" },
+            { val: cleanDays.length, lbl: `Day${cleanDays.length > 1 ? "s" : ""} saved` },
+          ].map((item, i) => (
+            <div key={i} className={`text-center px-2 ${i > 0 ? "border-l border-[var(--color-primary-100)]" : ""}`}>
+              <p className="text-sm font-bold text-[var(--color-primary-800)]">{item.val}</p>
+              <p className="text-[11px] text-[var(--color-primary-600)] mt-0.5">{item.lbl}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="flex gap-2">
+        <button onClick={onClose} className="flex-1 px-4 py-2.5 rounded-xl border border-[var(--color-border)] text-sm font-medium hover:bg-[var(--color-surface-sunken)] transition-colors">Cancel</button>
+        <button disabled={pending || cleanDays.length === 0 || startTime >= endTime}
+          onClick={() => {
+            if (!hospitalId) { setError("Select a hospital"); return; }
+            if (startTime >= endTime) { setError("End time must be after start time"); return; }
+            if (cleanDays.length === 0) { setError("All selected days have conflicts — adjust the time or choose different days"); return; }
+            setError("");
+            start(async () => {
+              try {
+                // Save one slot per conflict-free day (sequential to avoid race)
+                for (const wd of cleanDays) {
+                  await upsertWeekly({ hospitalId, weekday: wd, startTime, endTime, slotMins, maxPatients: maxPat, status: "ACTIVE" });
+                }
+                onClose();
+              } catch (e: any) { setError(e.message ?? "Failed"); }
+            });
+          }}
+          className="flex-1 px-4 py-2.5 rounded-xl bg-[var(--color-primary-600)] text-white text-sm font-semibold hover:bg-[var(--color-primary-700)] disabled:opacity-60 transition-all inline-flex items-center justify-center gap-2">
           {pending ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
-          {initial?.id ? "Save Changes" : "Add Slot"}
+          {pending ? "Saving…" : cleanDays.length > 0 ? `Add Slot${cleanDays.length > 1 ? `s for ${cleanDays.length} Days` : ""}` : "Add Slot"}
         </button>
       </div>
     </Modal>
@@ -252,9 +433,11 @@ function TemplateSlotModal({ hospitals, initial, onClose }: {
 function TemplateTab({ weekly, hospitals, onGenerate }: {
   weekly: WeeklySlot[]; hospitals: Hospital[]; onGenerate: () => void;
 }) {
-  const [editTarget, setEditTarget] = useState<(Partial<WeeklySlot> & { weekday?: number }) | null>(null);
-  const [delTarget,  setDelTarget]  = useState<WeeklySlot | null>(null);
-  const [pending,    start]         = useTransition();
+  const [editTarget,    setEditTarget]    = useState<WeeklySlot | null>(null);
+  const [delTarget,     setDelTarget]     = useState<WeeklySlot | null>(null);
+  const [showAddSlot,   setShowAddSlot]   = useState(false);
+  const [addPreWeekday, setAddPreWeekday] = useState<number | undefined>(undefined);
+  const [pending,       start]            = useTransition();
 
   const byDay = useMemo(() => {
     const m: Record<number, WeeklySlot[]> = {};
@@ -264,13 +447,22 @@ function TemplateTab({ weekly, hospitals, onGenerate }: {
 
   return (
     <>
-      {/* Info banner */}
-      <div className="flex items-start gap-3 p-4 rounded-xl bg-[var(--color-primary-50)] border border-[var(--color-primary-100)] mb-2">
-        <Info size={16} className="text-[var(--color-primary-600)] shrink-0 mt-0.5" />
-        <div>
-          <p className="text-sm font-semibold text-[var(--color-primary-800)]">Set your weekly template once</p>
-          <p className="text-xs text-[var(--color-primary-600)] mt-0.5">Define which hospitals and times you work each day of the week. Then use <strong>Generate Month</strong> to auto-fill your calendar — no manual entry needed.</p>
+      {/* Info banner + Add Weekly Slot button */}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-2">
+        <div className="flex items-start gap-3 p-4 rounded-xl bg-[var(--color-primary-50)] border border-[var(--color-primary-100)] flex-1">
+          <Info size={16} className="text-[var(--color-primary-600)] shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-semibold text-[var(--color-primary-800)]">Set your weekly template once</p>
+            <p className="text-xs text-[var(--color-primary-600)] mt-0.5">Define which hospitals and times you work each day of the week. Then use <strong>Generate Month</strong> to auto-fill your calendar — no manual entry needed.</p>
+          </div>
         </div>
+        {hospitals.length > 0 && (
+          <button
+            onClick={() => { setAddPreWeekday(undefined); setShowAddSlot(true); }}
+            className="shrink-0 inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-[var(--color-primary-600)] text-white text-sm font-bold hover:bg-[var(--color-primary-700)] active:scale-[.98] transition-all shadow-sm whitespace-nowrap">
+            <Plus size={15} strokeWidth={2.5} /> Add Weekly Slot
+          </button>
+        )}
       </div>
 
       {hospitals.length === 0 ? (
@@ -297,7 +489,7 @@ function TemplateTab({ weekly, hospitals, onGenerate }: {
                       <p className="text-[11px] font-semibold text-[var(--color-ink-500)] tabular-nums">{fmtWeekdayDate(wd)}</p>
                       <p className="text-[10px] text-[var(--color-ink-400)]">{slots.length > 0 ? `${slots.length} hospital${slots.length > 1 ? "s" : ""}` : "No schedule"}</p>
                     </div>
-                    <button onClick={() => setEditTarget({ weekday: wd })}
+                    <button onClick={() => { setAddPreWeekday(wd); setShowAddSlot(true); }}
                       className="p-1.5 rounded-lg bg-[var(--color-primary-50)] text-[var(--color-primary-600)] hover:bg-[var(--color-primary-100)] transition-colors">
                       <Plus size={13} />
                     </button>
@@ -321,7 +513,7 @@ function TemplateTab({ weekly, hospitals, onGenerate }: {
                           <div className="flex items-center justify-between text-[10px] text-[var(--color-ink-400)]">
                             <span><span className="font-semibold text-[var(--color-ink-600)]">{slot.slotMins}m</span> · {slotsCount(slot.startTime, slot.endTime, slot.slotMins)} slots · <Users size={9} className="inline" /> {slot.maxPatients}</span>
                             <div className="flex items-center gap-0.5">
-                              <button onClick={() => setEditTarget(slot)} className="p-1 rounded text-[var(--color-ink-400)] hover:text-[var(--color-primary-600)] hover:bg-[var(--color-primary-50)] transition-colors"><Pencil size={11} /></button>
+                              <button onClick={() => setEditTarget(slot as WeeklySlot)} className="p-1 rounded text-[var(--color-ink-400)] hover:text-[var(--color-primary-600)] hover:bg-[var(--color-primary-50)] transition-colors"><Pencil size={11} /></button>
                               <button onClick={() => setDelTarget(slot)} className="p-1 rounded text-[var(--color-ink-400)] hover:text-red-600 hover:bg-red-50 transition-colors"><Trash2 size={11} /></button>
                               <button disabled={pending}
                                 onClick={() => start(async () => toggleWeeklyStatus(slot.id, active ? "INACTIVE" : "ACTIVE"))}
@@ -334,7 +526,7 @@ function TemplateTab({ weekly, hospitals, onGenerate }: {
                       );
                     })}
                     {slots.length === 0 && (
-                      <button onClick={() => setEditTarget({ weekday: wd })}
+                      <button onClick={() => { setAddPreWeekday(wd); setShowAddSlot(true); }}
                         className="text-xs text-[var(--color-ink-400)] border border-dashed border-[var(--color-border)] rounded-xl py-3 hover:border-[var(--color-primary-300)] hover:text-[var(--color-primary-600)] transition-colors">
                         + Add Hospital
                       </button>
@@ -361,8 +553,16 @@ function TemplateTab({ weekly, hospitals, onGenerate }: {
         </>
       )}
 
-      {editTarget !== null && (
-        <TemplateSlotModal hospitals={hospitals} initial={editTarget} onClose={() => setEditTarget(null)} />
+      {showAddSlot && (
+        <AddWeeklySlotModal
+          hospitals={hospitals}
+          weekly={weekly}
+          preWeekday={addPreWeekday}
+          onClose={() => setShowAddSlot(false)}
+        />
+      )}
+      {editTarget && (
+        <EditSlotModal hospitals={hospitals} slot={editTarget} weekly={weekly} onClose={() => setEditTarget(null)} />
       )}
       {delTarget && (
         <ConfirmModal
