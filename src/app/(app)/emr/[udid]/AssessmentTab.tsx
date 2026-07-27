@@ -27,6 +27,8 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
   const [laterality, setLaterality] = useState("OU");
   const [pending, startTransition] = useTransition();
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [showProvManual, setShowProvManual] = useState(false);
+  const [provManualText, setProvManualText] = useState("");
   const [showManual, setShowManual] = useState(false);
   const [manualText, setManualText] = useState("");
   const [confirmDxGroup, setConfirmDxGroup] = useState<any[] | null>(null);
@@ -229,7 +231,52 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
                     </ul>
                   )}
                 </div>
+                <button
+                  type="button"
+                  onClick={() => { setShowProvManual((v) => !v); setProvManualText(""); setShowSuggestions(false); }}
+                  className={`flex items-center gap-1.5 text-xs font-medium px-3 py-2.5 rounded-xl border transition-colors whitespace-nowrap ${
+                    showProvManual
+                      ? "bg-[var(--color-primary-600)] text-white border-[var(--color-primary-600)]"
+                      : "bg-white text-[var(--color-ink-600)] border-[var(--color-border)] hover:border-[var(--color-primary-400)] hover:text-[var(--color-primary-600)]"
+                  }`}
+                >
+                  <PenLine size={13} />
+                  Add Manually
+                </button>
               </div>
+              {showProvManual && (
+                <div className="mt-3 flex items-center gap-2 p-3 rounded-xl border border-[var(--color-primary-200)] bg-[var(--color-primary-50)]">
+                  <input
+                    autoFocus
+                    value={provManualText}
+                    onChange={(e) => setProvManualText(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && provManualText.trim()) {
+                        setProvisionalDx(provManualText.trim());
+                        setProvManualText("");
+                        setShowProvManual(false);
+                      } else if (e.key === "Escape") {
+                        setShowProvManual(false);
+                      }
+                    }}
+                    placeholder="Type diagnosis name..."
+                    className="flex-1 rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
+                  />
+                  <button
+                    disabled={!provManualText.trim()}
+                    onClick={() => { setProvisionalDx(provManualText.trim()); setProvManualText(""); setShowProvManual(false); }}
+                    className="px-3.5 py-2 rounded-lg bg-[var(--color-primary-600)] text-white text-sm font-medium hover:bg-[var(--color-primary-700)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Add
+                  </button>
+                  <button
+                    onClick={() => { setShowProvManual(false); setProvManualText(""); }}
+                    className="p-2 rounded-lg text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)] hover:bg-white transition-colors"
+                  >
+                    <X size={15} />
+                  </button>
+                </div>
+              )}
             </FieldWithHistory>
           </div>
           <SaveIndicator state={state} />
