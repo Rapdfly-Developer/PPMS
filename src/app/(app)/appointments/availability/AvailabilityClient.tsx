@@ -528,7 +528,7 @@ function TemplateTab({ weekly, hospitals, onGenerate }: {
                     {slots.length === 0 && (
                       <button onClick={() => { setAddPreWeekday(wd); setShowAddSlot(true); }}
                         className="text-xs text-[var(--color-ink-400)] border border-dashed border-[var(--color-border)] rounded-xl py-3 hover:border-[var(--color-primary-300)] hover:text-[var(--color-primary-600)] transition-colors">
-                        + Add Hospital
+                        + Add Slot
                       </button>
                     )}
                   </div>
