@@ -714,19 +714,17 @@ function IOPCard({ visit, udid, editable, priorVisits }: { visit: any; udid: str
   const [le, setLe] = useState("");
   const [method, setMethod] = useState<string>(IOP_METHODS[0]);
   const [deletePending, startDelete] = useTransition();
-  const [showHistory, setShowHistory] = useState(false);
   const readings: any[] = visit.iopReadings ?? [];
 
   const priorIOPRows = priorVisits
     .filter((v) => v.iopReadings?.length > 0)
     .flatMap((v) =>
       (v.iopReadings as any[]).map((r: any) => ({
-        date: v.date,
-        hospitalName: v.hospital?.name,
+        takenAt: r.takenAt,
         re: r.re, le: r.le, method: r.method,
       }))
     )
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    .sort((a, b) => new Date(b.takenAt).getTime() - new Date(a.takenAt).getTime());
 
   const add = async () => {
     if (!re && !le) return;
@@ -736,22 +734,10 @@ function IOPCard({ visit, udid, editable, priorVisits }: { visit: any; udid: str
 
   return (
     <Card>
-      <div className="flex items-center justify-between mb-3">
-        <p className="text-sm font-medium text-[var(--color-ink-700)]">Intra-Ocular Pressure (mmHg)</p>
-        {priorIOPRows.length > 0 && (
-          <button
-            type="button"
-            onClick={() => setShowHistory((v) => !v)}
-            className="flex items-center gap-1 text-xs text-[#0F766E] bg-[#EEF8F7] hover:bg-[#DCF3F1] font-medium px-2.5 py-0.5 rounded-full border border-[#B2DEDA] transition-colors"
-          >
-            History ({priorIOPRows.length} prior readings)
-          </button>
-        )}
-      </div>
+      <p className="text-sm font-medium text-[var(--color-ink-700)] mb-3">Intra-Ocular Pressure (mmHg)</p>
 
       {editable && (
         <div className="flex items-end gap-3 mb-4 flex-wrap">
-          {/* Method first */}
           <div>
             <label className="text-xs text-[var(--color-ink-400)] block mb-1">Method</label>
             <select value={method} onChange={(e) => setMethod(e.target.value)}
@@ -768,24 +754,27 @@ function IOPCard({ visit, udid, editable, priorVisits }: { visit: any; udid: str
         </div>
       )}
 
-      <div className="inline-block rounded-lg border border-[var(--color-border)]">
-        <table className="text-xs border-collapse">
+      {/* Current visit readings */}
+      <div className="overflow-x-auto w-fit">
+        <table className="text-xs border border-[var(--color-border)] rounded-lg overflow-hidden border-collapse">
           <thead>
             <tr className="bg-[var(--color-surface-sunken)] text-[var(--color-ink-400)] uppercase tracking-wide border-b border-[var(--color-border)]">
               <th className="py-1.5 px-3 text-left font-semibold whitespace-nowrap">Method</th>
-              <th className="py-1.5 px-3 text-left font-semibold whitespace-nowrap">Date & Time</th>
-              <th className="py-1.5 px-4 text-center font-semibold text-[var(--color-primary-700)] w-14">RE</th>
-              <th className="py-1.5 px-4 text-center font-semibold text-[var(--color-primary-700)] w-14">LE</th>
+              <th className="py-1.5 px-3 text-left font-semibold whitespace-nowrap">Date &amp; Time</th>
+              <th className="py-1.5 px-4 text-center font-semibold text-[#0F766E] w-16">RE</th>
+              <th className="py-1.5 px-4 text-center font-semibold text-[#0F766E] w-16">LE</th>
               {editable && <th className="py-1.5 px-2 w-7" />}
             </tr>
           </thead>
           <tbody className="divide-y divide-[var(--color-border)]">
             {readings.length === 0 ? (
-              <tr><td colSpan={editable ? 5 : 4} className="py-3 px-3 text-center text-[var(--color-ink-400)]">No readings yet.</td></tr>
+              <tr><td colSpan={editable ? 5 : 4} className="py-3 px-6 text-center text-[var(--color-ink-400)] italic">No readings yet.</td></tr>
             ) : readings.map((r: any) => (
               <tr key={r.id} className="hover:bg-[var(--color-surface-sunken)] transition-colors">
-                <td className="py-1.5 px-3 font-medium text-[var(--color-ink-700)] whitespace-nowrap">{r.method}</td>
-                <td className="py-1.5 px-3 text-[var(--color-ink-400)] whitespace-nowrap">{format(new Date(r.takenAt), "h:mm a, d MMM yyyy")}</td>
+                <td className="py-1.5 px-3 text-[var(--color-ink-500)] whitespace-nowrap">{r.method}</td>
+                <td className="py-1.5 px-3 text-[var(--color-ink-600)] whitespace-nowrap">
+                  {format(new Date(r.takenAt), "d MMM yyyy")}<span className="text-[var(--color-ink-400)] ml-1.5">{format(new Date(r.takenAt), "h:mm a")}</span>
+                </td>
                 <td className="py-1.5 px-4 text-center font-semibold text-[var(--color-ink-800)] tabular-nums">{r.re ?? "—"}</td>
                 <td className="py-1.5 px-4 text-center font-semibold text-[var(--color-ink-800)] tabular-nums">{r.le ?? "—"}</td>
                 {editable && (
@@ -806,30 +795,31 @@ function IOPCard({ visit, udid, editable, priorVisits }: { visit: any; udid: str
         </table>
       </div>
 
-      {showHistory && priorIOPRows.length > 0 && (
-        <div className="mt-4 rounded-xl border border-[#B2DEDA] bg-[#EEF8F7] overflow-hidden w-fit">
-          <div className="px-4 pt-3 pb-2 border-b border-[#B2DEDA]">
-            <p className="text-[11px] font-bold text-[#0F766E] uppercase tracking-widest">Prior IOP Readings</p>
+      {/* Previous visits history — always visible, matches Colour Vision style */}
+      {priorIOPRows.length > 0 && (
+        <div className="mt-5 rounded-xl border border-[#B2DEDA] bg-[#EEF8F7] overflow-hidden w-fit">
+          <div className="px-3 pt-2.5 pb-2 border-b border-[#B2DEDA]">
+            <p className="text-[10px] font-bold text-[#0F766E] uppercase tracking-widest">Previous</p>
           </div>
           <div className="overflow-x-auto">
-            <table className="text-sm">
+            <table className="text-xs">
               <thead>
                 <tr className="border-b border-[#B2DEDA]">
-                  <th className="py-2 px-4 text-left text-[11px] font-semibold text-[var(--color-ink-400)] uppercase tracking-wide whitespace-nowrap">Visit Date</th>
-                  <th className="py-2 px-4 text-left text-[11px] font-semibold text-[var(--color-primary-700)] uppercase tracking-wide w-16">RE</th>
-                  <th className="py-2 px-4 text-left text-[11px] font-semibold text-[var(--color-primary-700)] uppercase tracking-wide w-16">LE</th>
-                  <th className="py-2 px-4 text-left text-[11px] font-semibold text-[var(--color-ink-400)] uppercase tracking-wide">Method</th>
-                  <th className="py-2 px-4 text-left text-[11px] font-semibold text-[var(--color-ink-400)] uppercase tracking-wide">Hospital</th>
+                  <th className="py-1.5 px-3 text-left font-semibold text-[var(--color-ink-400)] uppercase tracking-wide whitespace-nowrap">Method</th>
+                  <th className="py-1.5 px-3 text-left font-semibold text-[var(--color-ink-400)] uppercase tracking-wide whitespace-nowrap">Date</th>
+                  <th className="py-1.5 px-3 text-left font-semibold text-[var(--color-ink-400)] uppercase tracking-wide whitespace-nowrap">Time</th>
+                  <th className="py-1.5 px-3 text-center font-semibold text-[#0F766E] uppercase tracking-wide w-16">RE</th>
+                  <th className="py-1.5 px-3 text-center font-semibold text-[#0F766E] uppercase tracking-wide w-16">LE</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#D5EFED]">
-                {priorIOPRows.map((r, i) => (
+                {priorIOPRows.slice(0, 5).map((r, i) => (
                   <tr key={i} className="hover:bg-[#DCF3F1]/60 transition-colors">
-                    <td className="py-2.5 px-4 text-sm text-[var(--color-ink-800)] whitespace-nowrap">{format(new Date(r.date), "d MMM yyyy")}</td>
-                    <td className="py-2.5 px-4 text-sm font-semibold text-[var(--color-ink-900)] tabular-nums">{r.re ?? "—"}</td>
-                    <td className="py-2.5 px-4 text-sm font-semibold text-[var(--color-ink-900)] tabular-nums">{r.le ?? "—"}</td>
-                    <td className="py-2.5 px-4 text-sm text-[var(--color-ink-700)]">{r.method}</td>
-                    <td className="py-2.5 px-4 text-sm text-[var(--color-ink-400)]">{r.hospitalName ?? "—"}</td>
+                    <td className="py-2 px-3 text-[var(--color-ink-500)] whitespace-nowrap">{r.method}</td>
+                    <td className="py-2 px-3 text-[var(--color-ink-600)] whitespace-nowrap">{format(new Date(r.takenAt), "d MMM yyyy")}</td>
+                    <td className="py-2 px-3 text-[var(--color-ink-400)] whitespace-nowrap">{format(new Date(r.takenAt), "h:mm a")}</td>
+                    <td className="py-2 px-3 text-center font-semibold text-[var(--color-ink-800)] tabular-nums">{r.re ?? "—"}</td>
+                    <td className="py-2 px-3 text-center font-semibold text-[var(--color-ink-800)] tabular-nums">{r.le ?? "—"}</td>
                   </tr>
                 ))}
               </tbody>
