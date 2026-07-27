@@ -993,6 +993,8 @@ function SegmentEyeInput({
 
 }
 
+const AS_METHODS = ["Slit Lamp", "Pen Torch", "Loupe", "Direct Ophthalmoscope"] as const;
+
 function AnteriorSegmentCard({ visit, udid, editable, priorVisits = [] }: { visit: any; udid: string; editable: boolean; priorVisits?: any[] }) {
   const as_ = visit.anteriorSegment;
   const [re, setRe] = useState<Record<string, string>>(parseJSON(as_?.re, {}));
@@ -1015,8 +1017,21 @@ function AnteriorSegmentCard({ visit, udid, editable, priorVisits = [] }: { visi
 
   return (
     <Card>
-      <div className="flex items-center justify-between mb-4">
-        <p className="text-sm font-medium text-[var(--color-ink-700)]">Anterior Segment</p>
+      <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
+          <p className="text-sm font-medium text-[var(--color-ink-700)]">Anterior Segment</p>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-[var(--color-ink-400)]">Method:</span>
+            <select
+              disabled={!editable}
+              value={re._method ?? AS_METHODS[0]}
+              onChange={(e) => setRe({ ...re, _method: e.target.value })}
+              className="rounded-lg border border-[var(--color-border)] bg-white px-2.5 py-1 text-xs disabled:bg-[var(--color-surface-sunken)]"
+            >
+              {AS_METHODS.map((m) => <option key={m}>{m}</option>)}
+            </select>
+          </div>
+        </div>
         <SaveIndicator state={state} />
       </div>
 
@@ -1099,6 +1114,8 @@ const PS_PLACEHOLDERS: Record<string, string> = {
   background:     "Background retina",
 };
 
+const PS_METHODS = ["Direct Ophthalmoscope", "Indirect Ophthalmoscope", "Slit Lamp + 90D", "Slit Lamp + 78D", "Slit Lamp + 20D", "Fundus Camera"] as const;
+
 function PosteriorSegmentCard({ visit, udid, editable, priorVisits = [] }: { visit: any; udid: string; editable: boolean; priorVisits?: any[] }) {
   const ps = visit.posteriorSegment;
   const [re, setRe] = useState<Record<string, string>>(parseJSON(ps?.re, {}));
@@ -1121,8 +1138,21 @@ function PosteriorSegmentCard({ visit, udid, editable, priorVisits = [] }: { vis
 
   return (
     <Card>
-      <div className="flex items-center justify-between mb-4">
-        <p className="text-sm font-medium text-[var(--color-ink-700)]">Posterior Segment</p>
+      <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
+          <p className="text-sm font-medium text-[var(--color-ink-700)]">Posterior Segment</p>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-[var(--color-ink-400)]">Method:</span>
+            <select
+              disabled={!editable}
+              value={re._method ?? PS_METHODS[0]}
+              onChange={(e) => setRe({ ...re, _method: e.target.value })}
+              className="rounded-lg border border-[var(--color-border)] bg-white px-2.5 py-1 text-xs disabled:bg-[var(--color-surface-sunken)]"
+            >
+              {PS_METHODS.map((m) => <option key={m}>{m}</option>)}
+            </select>
+          </div>
+        </div>
         <SaveIndicator state={state} />
       </div>
 
