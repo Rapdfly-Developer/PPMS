@@ -3,18 +3,16 @@
 import { useState, useTransition, useMemo } from "react";
 import {
   Shield, Crown, Plus, Edit2, Trash2, Save, Check, X,
-  ChevronRight, Users, AlertTriangle, Loader2, CheckSquare, Square,
+  ChevronRight, AlertTriangle, Loader2, CheckSquare, Square, ArrowLeft,
 } from "lucide-react";
 import { saveRolePermissions, createRole, updateRoleMeta, deleteRole } from "./actions";
 import { PERMISSION_GROUPS, type RoleWithPerms } from "./permission-groups";
 
-// ── Colour presets ────────────────────────────────────────────────────────
 const COLORS = [
   "#6366f1", "#10b981", "#f59e0b", "#3b82f6",
   "#ec4899", "#8b5cf6", "#14b8a6", "#f97316",
 ];
 
-// ── Role icon / avatar ────────────────────────────────────────────────────
 function RoleAvatar({ color, label }: { color: string; label: string }) {
   return (
     <span
@@ -64,8 +62,11 @@ function RoleFormModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4" onClick={onClose}>
+      <div
+        className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-md"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--color-border)]">
           <p className="font-semibold text-[var(--color-ink-900)]">
             {initial ? "Edit Role" : "Add New Role"}
@@ -123,7 +124,7 @@ function RoleFormModal({
               ))}
             </div>
           </div>
-          <div className="flex gap-2 pt-1">
+          <div className="flex gap-2 pt-1 pb-safe">
             <button type="button" onClick={onClose} className="flex-1 px-4 py-2 rounded-lg border border-[var(--color-border)] text-sm font-medium text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] transition-colors">
               Cancel
             </button>
@@ -150,8 +151,8 @@ function DeleteConfirm({ role, onClose, onDeleted }: {
 }) {
   const [pending, start] = useTransition();
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4" onClick={onClose}>
+      <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-sm p-6" onClick={(e) => e.stopPropagation()}>
         <div className="flex flex-col items-center gap-3 text-center">
           <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
             <Trash2 size={22} className="text-red-600" />
@@ -161,7 +162,7 @@ function DeleteConfirm({ role, onClose, onDeleted }: {
             All permission assignments for this role will also be removed. Users with this role will lose access until reassigned.
           </p>
         </div>
-        <div className="flex gap-2 mt-5">
+        <div className="flex gap-2 mt-5 pb-safe">
           <button onClick={onClose} className="flex-1 px-4 py-2 rounded-lg border border-[var(--color-border)] text-sm font-medium hover:bg-[var(--color-surface-sunken)] transition-colors">
             Cancel
           </button>
@@ -180,9 +181,10 @@ function DeleteConfirm({ role, onClose, onDeleted }: {
 }
 
 // ── Permission matrix panel ───────────────────────────────────────────────
-function PermissionPanel({ role, onSaved }: {
+function PermissionPanel({ role, onSaved, onBack }: {
   role: RoleWithPerms;
   onSaved: (keys: string[]) => void;
+  onBack?: () => void;
 }) {
   const isSuperAdmin = role.name === "DOCTOR";
   const [checked, setChecked] = useState<Set<string>>(
@@ -230,11 +232,21 @@ function PermissionPanel({ role, onSaved }: {
   return (
     <div className="flex flex-col h-full">
       {/* Panel header */}
-      <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--color-border)] shrink-0">
-        <div className="flex items-center gap-3">
+      <div className="flex items-center justify-between px-4 sm:px-5 py-3 sm:py-4 border-b border-[var(--color-border)] shrink-0 gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          {/* Back button — mobile only */}
+          {onBack && (
+            <button
+              onClick={onBack}
+              className="md:hidden p-1.5 rounded-lg hover:bg-[var(--color-surface-sunken)] text-[var(--color-ink-600)] shrink-0 transition-colors"
+              aria-label="Back to roles"
+            >
+              <ArrowLeft size={16} />
+            </button>
+          )}
           <RoleAvatar color={role.color} label={role.label} />
-          <div>
-            <p className="font-semibold text-[var(--color-ink-900)]">{role.label}</p>
+          <div className="min-w-0">
+            <p className="font-semibold text-[var(--color-ink-900)] truncate">{role.label}</p>
             <p className="text-xs text-[var(--color-ink-400)]">
               {isSuperAdmin ? "Super Admin — all permissions" : `${checked.size} / ${role.totalPerms} permissions`}
             </p>
@@ -244,7 +256,7 @@ function PermissionPanel({ role, onSaved }: {
           <button
             onClick={handleSave}
             disabled={pending || !isDirty}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--color-primary-600)] text-white text-sm font-semibold hover:bg-[var(--color-primary-700)] disabled:opacity-50 transition-colors"
+            className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg bg-[var(--color-primary-600)] text-white text-sm font-semibold hover:bg-[var(--color-primary-700)] disabled:opacity-50 transition-colors shrink-0"
           >
             {pending ? (
               <Loader2 size={14} className="animate-spin" />
@@ -253,7 +265,8 @@ function PermissionPanel({ role, onSaved }: {
             ) : (
               <Save size={14} />
             )}
-            {saved ? "Saved!" : "Save Permissions"}
+            <span className="hidden xs:inline">{saved ? "Saved!" : "Save"}</span>
+            <span className="xs:hidden">{saved ? "✓" : "Save"}</span>
           </button>
         )}
       </div>
@@ -270,8 +283,7 @@ function PermissionPanel({ role, onSaved }: {
           </div>
         </div>
       ) : (
-        /* Permission checkboxes */
-        <div className="flex-1 overflow-y-auto px-5 py-4">
+        <div className="flex-1 overflow-y-auto px-4 sm:px-5 py-4">
           {PERMISSION_GROUPS.map((group) => {
             const keys = group.permissions.map((p) => p.key);
             const checkedCount = keys.filter((k) => checked.has(k)).length;
@@ -279,7 +291,6 @@ function PermissionPanel({ role, onSaved }: {
 
             return (
               <div key={group.category} className="mb-5">
-                {/* Category header */}
                 <div className="flex items-center justify-between mb-2">
                   <p className="text-xs font-semibold text-[var(--color-ink-500)] uppercase tracking-wider">
                     {group.category}
@@ -290,18 +301,17 @@ function PermissionPanel({ role, onSaved }: {
                   <button
                     type="button"
                     onClick={() => toggleAll(keys, !allChecked)}
-                    className="text-[11px] text-[var(--color-primary-600)] hover:underline"
+                    className="text-[11px] text-[var(--color-primary-600)] hover:underline shrink-0"
                   >
                     {allChecked ? "Deselect all" : "Select all"}
                   </button>
                 </div>
 
-                {/* Permission rows */}
                 <div className="rounded-xl border border-[var(--color-border)] overflow-hidden">
                   {group.permissions.map((perm, idx) => (
                     <label
                       key={perm.key}
-                      className={`flex items-start gap-3 px-4 py-3 cursor-pointer hover:bg-[var(--color-primary-50)] transition-colors ${
+                      className={`flex items-start gap-3 px-3 sm:px-4 py-3 cursor-pointer hover:bg-[var(--color-primary-50)] transition-colors ${
                         idx > 0 ? "border-t border-[var(--color-border)]" : ""
                       }`}
                     >
@@ -322,7 +332,7 @@ function PermissionPanel({ role, onSaved }: {
                         <p className="text-sm font-medium text-[var(--color-ink-800)]">{perm.label}</p>
                         <p className="text-xs text-[var(--color-ink-400)] mt-0.5">{perm.description}</p>
                       </div>
-                      <code className="text-[10px] text-[var(--color-ink-300)] shrink-0 mt-1">{perm.key}</code>
+                      <code className="text-[10px] text-[var(--color-ink-300)] shrink-0 mt-1 hidden sm:block">{perm.key}</code>
                     </label>
                   ))}
                 </div>
@@ -335,6 +345,113 @@ function PermissionPanel({ role, onSaved }: {
   );
 }
 
+// ── Role list ─────────────────────────────────────────────────────────────
+function RoleList({
+  roles,
+  selectedName,
+  totalPerms,
+  onSelect,
+  onAdd,
+  onEdit,
+  onDelete,
+}: {
+  roles: RoleWithPerms[];
+  selectedName: string;
+  totalPerms: number;
+  onSelect: (name: string) => void;
+  onAdd: () => void;
+  onEdit: (role: RoleWithPerms) => void;
+  onDelete: (role: RoleWithPerms) => void;
+}) {
+  return (
+    <div className="flex flex-col gap-2 h-full">
+      <button
+        onClick={onAdd}
+        className="flex items-center gap-2 px-3 py-2.5 rounded-xl border-2 border-dashed border-[var(--color-border)] text-sm text-[var(--color-ink-500)] hover:border-[var(--color-primary-400)] hover:text-[var(--color-primary-600)] transition-colors"
+      >
+        <Plus size={15} />
+        Add New Role
+      </button>
+
+      <div className="flex flex-col gap-2 overflow-y-auto">
+        {roles.map((role) => {
+          const count = role.name === "DOCTOR" ? totalPerms : role.permissionKeys.length;
+          const pct = totalPerms > 0 ? (count / totalPerms) * 100 : 0;
+          const isSelected = role.name === selectedName;
+          return (
+            <div
+              key={role.id}
+              onClick={() => onSelect(role.name)}
+              className={`rounded-xl border p-3 cursor-pointer transition-all ${
+                isSelected
+                  ? "border-[var(--color-primary-400)] bg-[var(--color-primary-50)] shadow-sm"
+                  : "border-[var(--color-border)] bg-white hover:border-[var(--color-primary-200)] hover:bg-[var(--color-ink-50)]"
+              }`}
+            >
+              <div className="flex items-start gap-2.5 mb-2">
+                <RoleAvatar color={role.color} label={role.label} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-[var(--color-ink-900)] truncate">{role.label}</p>
+                  <p className="text-[11px] text-[var(--color-ink-400)]">
+                    {role.name === "DOCTOR" ? "All permissions" : `${count} / ${totalPerms}`}
+                  </p>
+                </div>
+                <ChevronRight
+                  size={14}
+                  className={`transition-opacity shrink-0 mt-0.5 ${isSelected ? "opacity-100 text-[var(--color-primary-600)]" : "opacity-30 text-[var(--color-ink-400)]"}`}
+                />
+              </div>
+
+              <div className="h-1 rounded-full bg-[var(--color-surface-sunken)] overflow-hidden">
+                <div className="h-1 rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: role.color }} />
+              </div>
+
+              <div className="flex items-center gap-1.5 mt-2">
+                {role.name === "DOCTOR" && (
+                  <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-[var(--color-primary-100)] text-[var(--color-primary-700)]">
+                    <Crown size={9} /> Super Admin
+                  </span>
+                )}
+                {role.isSystem && role.name !== "DOCTOR" && (
+                  <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)]">
+                    System
+                  </span>
+                )}
+                <div className="ml-auto flex gap-1">
+                  {role.name !== "DOCTOR" && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onEdit(role); }}
+                      className="p-1 rounded hover:bg-[var(--color-ink-100)] text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)] transition-colors"
+                      title="Edit role"
+                    >
+                      <Edit2 size={12} />
+                    </button>
+                  )}
+                  {!role.isSystem && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onDelete(role); }}
+                      className="p-1 rounded hover:bg-red-50 text-[var(--color-ink-400)] hover:text-red-600 transition-colors"
+                      title="Delete role"
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="mt-auto pt-3 border-t border-[var(--color-border)] hidden md:block">
+        <p className="text-[11px] text-[var(--color-ink-400)] leading-relaxed">
+          <strong>System roles</strong> cannot be deleted but their permissions can be edited. Changes take effect on next login.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 // ── Main client component ─────────────────────────────────────────────────
 export function RolesClient({ initialRoles }: { initialRoles: RoleWithPerms[] }) {
   const [roles, setRoles] = useState(initialRoles);
@@ -342,16 +459,22 @@ export function RolesClient({ initialRoles }: { initialRoles: RoleWithPerms[] })
   const [showAdd, setShowAdd] = useState(false);
   const [editRole, setEditRole] = useState<RoleWithPerms | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<RoleWithPerms | null>(null);
+  // Mobile: "list" shows role cards; "perms" shows the permission panel
+  const [mobileView, setMobileView] = useState<"list" | "perms">("list");
 
   const selectedRole = roles.find((r) => r.name === selectedName) ?? roles[0];
-
   const totalPerms = PERMISSION_GROUPS.reduce((a, g) => a + g.permissions.length, 0);
 
+  const handleSelect = (name: string) => {
+    setSelectedName(name);
+    setMobileView("perms");
+  };
+
   return (
-    <div className="fade-in flex flex-col gap-6 h-full">
+    <div className="fade-in flex flex-col gap-4 md:gap-6">
       {/* Page header */}
       <div>
-        <h1 className="text-2xl font-semibold text-[var(--color-ink-900)] tracking-tight">
+        <h1 className="text-xl sm:text-2xl font-semibold text-[var(--color-ink-900)] tracking-tight">
           Role & Permission Management
         </h1>
         <p className="text-sm text-[var(--color-ink-500)] mt-1">
@@ -359,106 +482,32 @@ export function RolesClient({ initialRoles }: { initialRoles: RoleWithPerms[] })
         </p>
       </div>
 
-      {/* Main layout */}
-      <div className="flex gap-5 min-h-0" style={{ minHeight: "600px" }}>
-        {/* ── Left: role list ──────────────────────────────────────────── */}
-        <div className="w-64 shrink-0 flex flex-col gap-2">
-          {/* Add role button */}
-          <button
-            onClick={() => setShowAdd(true)}
-            className="flex items-center gap-2 px-3 py-2.5 rounded-xl border-2 border-dashed border-[var(--color-border)] text-sm text-[var(--color-ink-500)] hover:border-[var(--color-primary-400)] hover:text-[var(--color-primary-600)] transition-colors"
-          >
-            <Plus size={15} />
-            Add New Role
-          </button>
-
-          {/* Role cards */}
-          {roles.map((role) => {
-            const count = role.name === "DOCTOR" ? totalPerms : role.permissionKeys.length;
-            const pct = totalPerms > 0 ? (count / totalPerms) * 100 : 0;
-            const isSelected = role.name === selectedName;
-            return (
-              <div
-                key={role.id}
-                onClick={() => setSelectedName(role.name)}
-                className={`rounded-xl border p-3 cursor-pointer transition-all ${
-                  isSelected
-                    ? "border-[var(--color-primary-400)] bg-[var(--color-primary-50)] shadow-sm"
-                    : "border-[var(--color-border)] bg-white hover:border-[var(--color-primary-200)] hover:bg-[var(--color-ink-50)]"
-                }`}
-              >
-                <div className="flex items-start gap-2.5 mb-2">
-                  <RoleAvatar color={role.color} label={role.label} />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-[var(--color-ink-900)] truncate">{role.label}</p>
-                    <p className="text-[11px] text-[var(--color-ink-400)]">
-                      {role.name === "DOCTOR" ? "All permissions" : `${count} / ${totalPerms}`}
-                    </p>
-                  </div>
-                  {isSelected && <ChevronRight size={14} className="text-[var(--color-primary-600)] shrink-0 mt-0.5" />}
-                </div>
-
-                {/* Progress bar */}
-                <div className="h-1 rounded-full bg-[var(--color-surface-sunken)] overflow-hidden">
-                  <div className="h-1 rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: role.color }} />
-                </div>
-
-                {/* Badges + actions */}
-                <div className="flex items-center gap-1.5 mt-2">
-                  {role.name === "DOCTOR" && (
-                    <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-[var(--color-primary-100)] text-[var(--color-primary-700)]">
-                      <Crown size={9} /> Super Admin
-                    </span>
-                  )}
-                  {role.isSystem && role.name !== "DOCTOR" && (
-                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)]">
-                      System
-                    </span>
-                  )}
-                  <div className="ml-auto flex gap-1">
-                    {role.name !== "DOCTOR" && (
-                      <button
-                        onClick={(e) => { e.stopPropagation(); setEditRole(role); }}
-                        className="p-1 rounded hover:bg-[var(--color-ink-100)] text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)] transition-colors"
-                        title="Edit role"
-                      >
-                        <Edit2 size={12} />
-                      </button>
-                    )}
-                    {!role.isSystem && (
-                      <button
-                        onClick={(e) => { e.stopPropagation(); setDeleteTarget(role); }}
-                        className="p-1 rounded hover:bg-red-50 text-[var(--color-ink-400)] hover:text-red-600 transition-colors"
-                        title="Delete role"
-                      >
-                        <Trash2 size={12} />
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-
-          {/* Legend */}
-          <div className="mt-auto pt-2 border-t border-[var(--color-border)]">
-            <p className="text-[11px] text-[var(--color-ink-400)] leading-relaxed">
-              <strong>System roles</strong> cannot be deleted but their permissions can be edited. New roles take effect on next login.
-            </p>
-          </div>
+      {/* ── Desktop/tablet: side-by-side layout ── */}
+      <div className="hidden md:flex gap-4 lg:gap-5" style={{ minHeight: "560px" }}>
+        {/* Left: role list */}
+        <div className="w-52 lg:w-64 shrink-0 flex flex-col">
+          <RoleList
+            roles={roles}
+            selectedName={selectedName}
+            totalPerms={totalPerms}
+            onSelect={setSelectedName}
+            onAdd={() => setShowAdd(true)}
+            onEdit={setEditRole}
+            onDelete={setDeleteTarget}
+          />
         </div>
 
-        {/* ── Right: permission matrix ─────────────────────────────────── */}
-        <div className="flex-1 surface-card overflow-hidden flex flex-col">
+        {/* Right: permission panel */}
+        <div className="flex-1 surface-card overflow-hidden flex flex-col min-w-0">
           {selectedRole ? (
             <PermissionPanel
               key={selectedRole.name}
               role={selectedRole}
-              onSaved={(keys) => {
+              onSaved={(keys) =>
                 setRoles((prev) =>
                   prev.map((r) => r.name === selectedRole.name ? { ...r, permissionKeys: keys } : r)
-                );
-              }}
+                )
+              }
             />
           ) : (
             <div className="flex-1 flex items-center justify-center text-[var(--color-ink-400)]">
@@ -469,6 +518,36 @@ export function RolesClient({ initialRoles }: { initialRoles: RoleWithPerms[] })
             </div>
           )}
         </div>
+      </div>
+
+      {/* ── Mobile: stacked, list → perms ── */}
+      <div className="md:hidden">
+        {mobileView === "list" ? (
+          <RoleList
+            roles={roles}
+            selectedName={selectedName}
+            totalPerms={totalPerms}
+            onSelect={handleSelect}
+            onAdd={() => setShowAdd(true)}
+            onEdit={setEditRole}
+            onDelete={setDeleteTarget}
+          />
+        ) : (
+          <div className="surface-card overflow-hidden" style={{ minHeight: "60vh" }}>
+            {selectedRole ? (
+              <PermissionPanel
+                key={selectedRole.name}
+                role={selectedRole}
+                onBack={() => setMobileView("list")}
+                onSaved={(keys) =>
+                  setRoles((prev) =>
+                    prev.map((r) => r.name === selectedRole.name ? { ...r, permissionKeys: keys } : r)
+                  )
+                }
+              />
+            ) : null}
+          </div>
+        )}
       </div>
 
       {/* Modals */}
@@ -498,6 +577,7 @@ export function RolesClient({ initialRoles }: { initialRoles: RoleWithPerms[] })
           onDeleted={() => {
             setRoles((prev) => prev.filter((r) => r.id !== deleteTarget.id));
             if (selectedName === deleteTarget.name) setSelectedName(roles[0]?.name ?? "");
+            setMobileView("list");
           }}
         />
       )}
