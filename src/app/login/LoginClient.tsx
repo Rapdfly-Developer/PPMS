@@ -1134,7 +1134,7 @@ export default function LoginPage() {
       <div className="relative flex w-full h-full overflow-hidden">
 
         {/* ══ LEFT PANEL — brand, network graphic, proof (40%) ════════════ */}
-        <div className="hidden lg:flex flex-col justify-between lg:w-[45%] shrink-0 px-9 xl:px-14 py-8 xl:py-10 min-w-0 relative overflow-y-auto scrollbar-thin">
+        <div className="hidden lg:flex flex-col justify-between lg:w-[45%] shrink-0 px-9 xl:px-14 py-8 xl:py-10 min-w-0 relative overflow-hidden">
 
           {/* Logo lockup */}
           <div className="lp-a0 shrink-0">
@@ -1229,7 +1229,7 @@ export default function LoginPage() {
         </div>
 
         {/* ══ RIGHT PANEL — Frosted glass card ══════════════════════════════ */}
-        <div className="w-full lg:w-[55%] shrink-0 flex flex-col overflow-y-auto scrollbar-thin relative"
+        <div className="w-full lg:w-[55%] shrink-0 flex flex-col overflow-hidden relative"
           style={{ background: "linear-gradient(200deg,rgba(13,22,36,.5) 0%,rgba(6,11,20,.28) 100%)", backdropFilter: "blur(18px)", WebkitBackdropFilter: "blur(18px)", borderLeft: `1px solid ${T.border}` }}>
 
           {/* Auto margins (not justify-center) so the card is never clipped
