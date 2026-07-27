@@ -337,28 +337,28 @@ export default async function PatientDetailedEMR({
                   )}
                 </div>
 
-                {/* Info chips */}
+                {/* Info chips — square ghost style (distinct from rounded diagnosis badge above) */}
                 <div className="flex flex-wrap gap-1.5">
-                  <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-sky-400/15 text-sky-200 border border-sky-400/25 font-mono font-semibold">
+                  <span className="inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-md bg-transparent text-sky-200 border border-sky-300/40 font-mono font-semibold tracking-wide">
                     <Hash size={10} />{patient.udid ?? "—"}
                   </span>
                   {patient.mobile && (
-                    <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-white/8 text-white/70 border border-white/12">
+                    <span className="inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-md bg-transparent text-white/65 border border-white/20">
                       <Phone size={10} />{patient.mobile}
                     </span>
                   )}
                   {patient.registeredAt && (
-                    <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-white/8 text-white/70 border border-white/12">
+                    <span className="inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-md bg-transparent text-white/65 border border-white/20">
                       <Building2 size={10} />{patient.registeredAt.name}
                     </span>
                   )}
                   {doctorName && (
-                    <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-white/8 text-white/70 border border-white/12">
+                    <span className="inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-md bg-transparent text-white/65 border border-white/20">
                       <Stethoscope size={10} />Dr. {doctorName}
                     </span>
                   )}
                   {priorVisits[0] && (
-                    <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-white/8 text-white/70 border border-white/12">
+                    <span className="inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-md bg-transparent text-white/65 border border-white/20">
                       <Calendar size={10} />Last: {format(new Date(priorVisits[0].date), "d MMM yyyy")}
                     </span>
                   )}
