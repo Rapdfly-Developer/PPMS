@@ -129,6 +129,8 @@ export async function deleteUser(userId: string): Promise<{ error?: string }> {
   try {
     await prisma.hospitalStaff.deleteMany({ where: { userId } });
     await prisma.refractionist.deleteMany({ where: { userId } });
+    // Remove audit log references so the RESTRICT FK doesn't block deletion
+    await prisma.auditLog.deleteMany({ where: { userId } });
     await prisma.user.delete({ where: { id: userId } });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "Unknown error";
