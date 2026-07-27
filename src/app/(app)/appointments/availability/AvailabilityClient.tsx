@@ -806,7 +806,7 @@ function DayPopup({ dateStr, dayData, hospitals, onClose, onRefresh }: {
             <div className="flex gap-2">
               <button onClick={() => { setShowExtraOP(true); }}
                 className="flex-1 inline-flex items-center justify-center gap-1.5 text-xs font-semibold py-2 px-3 rounded-xl border border-[var(--color-border)] hover:bg-amber-50 hover:text-amber-700 hover:border-amber-200 transition-colors">
-                <Zap size={12} /> Extra OP
+                <Zap size={12} /> Add Slot
               </button>
               {!leave && (
                 <button onClick={() => setShowLeave(true)}
