@@ -3,7 +3,7 @@
 import { format } from "date-fns";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { Phone, Stethoscope, Tag, FileText, CalendarPlus, Printer, UserRound, Clock, Timer } from "lucide-react";
+import { Phone, Stethoscope, Tag, FileText, CalendarPlus, Printer, UserRound, Clock, Timer, LogIn, CheckCircle2, Calendar } from "lucide-react";
 import { hospitalUpdateAppointmentStatus, doctorUpdateAppointmentStatus, doctorConfirmAppointment, doctorCancelAppointment } from "./actions";
 import { ScheduleNextSlotModal } from "./ScheduleNextSlotModal";
 
@@ -115,30 +115,60 @@ export function AppointmentRow({ appt, role, token }: { appt: any; role: string;
           )}
         </div>
 
-        {/* Row 3 (timestamps): booked at · appt time · wait time */}
-        <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-[11px] text-[var(--color-ink-400)] mt-1">
-          <span className="flex items-center gap-1">
-            <Clock size={10} />
-            Booked {format(new Date(appt.createdAt), "d MMM, h:mm a")}
-          </span>
-          <span className="flex items-center gap-1">
-            <Clock size={10} />
-            Appt {format(new Date(appt.dateTime), "h:mm a")}
-          </span>
-          {appt.completedAt && (() => {
-            const mins = Math.round(
-              (new Date(appt.completedAt).getTime() - new Date(appt.dateTime).getTime()) / 60000
-            );
-            const waitStr = mins < 60
-              ? `${mins} min`
-              : `${Math.floor(mins / 60)}h ${mins % 60}m`;
-            return (
-              <span className="flex items-center gap-1 text-emerald-600">
-                <Timer size={10} /> Waited {waitStr}
+        {/* Row 3: full timestamp trail */}
+        {(() => {
+          const bookedAt       = new Date(appt.createdAt);
+          const scheduledAt    = new Date(appt.dateTime);
+          const arrivedAt      = appt.arrivedAt      ? new Date(appt.arrivedAt)              : null;
+          const seenAt         = appt.visit?.date    ? new Date(appt.visit.date)             : null;
+          const finalizedAt    = appt.visit?.finalizedAt ? new Date(appt.visit.finalizedAt) :
+                                 appt.completedAt    ? new Date(appt.completedAt)            : null;
+          const waitMins       = arrivedAt && seenAt
+            ? Math.max(0, Math.round((seenAt.getTime() - arrivedAt.getTime()) / 60000))
+            : null;
+          const fmtWait = (m: number) => m < 60 ? `${m}m` : `${Math.floor(m / 60)}h ${m % 60}m`;
+
+          return (
+            <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] mt-1.5">
+              {/* Booked */}
+              <span className="flex items-center gap-1 text-[var(--color-ink-400)]" title="Appointment booked at">
+                <Clock size={10} /> Booked: {format(bookedAt, "d MMM, h:mm a")}
               </span>
-            );
-          })()}
-        </div>
+              {/* Scheduled */}
+              <span className="flex items-center gap-1 text-[var(--color-ink-400)]" title="Scheduled appointment time">
+                <Calendar size={10} /> Appt: {format(scheduledAt, "h:mm a")}
+              </span>
+              {/* Arrived */}
+              {arrivedAt && (
+                <span className="flex items-center gap-1 text-blue-500" title="Patient arrived at clinic">
+                  <LogIn size={10} /> Arrived: {format(arrivedAt, "h:mm a")}
+                </span>
+              )}
+              {/* Wait time + seen by doctor */}
+              {seenAt && (
+                <span className="flex items-center gap-1 text-[var(--color-primary-600)]" title="Doctor started consultation">
+                  <Stethoscope size={10} /> Seen: {format(seenAt, "h:mm a")}
+                  {waitMins !== null && (
+                    <span className="text-amber-500 ml-0.5" title="Wait time from arrival to being seen">
+                      ({fmtWait(waitMins)} wait)
+                    </span>
+                  )}
+                </span>
+              )}
+              {/* Dispensed */}
+              {finalizedAt && (
+                <span className="flex items-center gap-1 text-emerald-600" title="Consultation finalized / patient dispensed">
+                  <CheckCircle2 size={10} /> Dispensed: {format(finalizedAt, "h:mm a")}
+                  {arrivedAt && (
+                    <span className="text-[var(--color-ink-400)] ml-0.5" title="Total time at clinic">
+                      ({fmtWait(Math.max(0, Math.round((finalizedAt.getTime() - arrivedAt.getTime()) / 60000)))} total)
+                    </span>
+                  )}
+                </span>
+              )}
+            </div>
+          );
+        })()}
 
         {/* Row 3: action buttons — only when needed */}
         {hasActions && (

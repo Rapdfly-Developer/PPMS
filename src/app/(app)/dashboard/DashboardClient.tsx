@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ChevronDown, Plus, Building2, Phone, LogIn, Loader2,
-  Sun, Sunset, Moon, CalendarX2, Calendar, PersonStanding, Clock, Undo2,
+  Sun, Sunset, Moon, CalendarX2, Calendar, PersonStanding, Clock, Undo2, Timer, Stethoscope, CheckCircle2,
 } from "lucide-react";
 import clsx from "clsx";
 import { doctorConfirmAppointment, hospitalUpdateAppointmentStatus, undoQueueEntry } from "@/app/(app)/appointments/actions";
@@ -23,7 +23,9 @@ interface Appt {
   patient: { name: string; udid: string; uhid?: string; age: number; sex: string; mobile?: string };
   hospital?: { id: string; name: string };
   doctor?:   { id: string; name: string } | null;
-  visitId:   string | null;
+  visitId:          string | null;
+  visitStartedAt:   string | null;
+  visitFinalizedAt: string | null;
 }
 
 interface Surgery {
@@ -132,11 +134,16 @@ function SurgeryRow({ s, role }: { s: Surgery; role: "DOCTOR" | "HOSPITAL" }) {
 function ApptRow({ appt, role }: { appt: Appt; role: "DOCTOR" | "HOSPITAL" }) {
   const cfg      = STATUS_CFG[appt.status] ?? STATUS_CFG["REQUESTED"];
   const apptTime = format(new Date(appt.dateTime), "h:mm a");
-  // arrivedAt = when patient was confirmed into today's queue; fall back to appt time
-  const arrivedAt   = appt.arrivedAt ? new Date(appt.arrivedAt) : null;
-  const visitedTime = arrivedAt ? format(arrivedAt, "h:mm a") : null;
-  // Timer runs from arrival; if no arrivedAt yet (still REQUESTED), fall back to appt time
+  const arrivedAt      = appt.arrivedAt      ? new Date(appt.arrivedAt)      : null;
+  const visitStartedAt = appt.visitStartedAt ? new Date(appt.visitStartedAt) : null;
+  // Primary time shown: arrived → started consultation → appt time fallback
+  const primaryTime = arrivedAt ? format(arrivedAt, "h:mm a") : apptTime;
+  // Timer runs from arrival; fall back to appt time if not yet arrived
   const timerSince  = appt.arrivedAt ?? appt.dateTime;
+  // Wait time = from arrival to when doctor opened the case
+  const waitMins = arrivedAt && visitStartedAt
+    ? Math.max(0, Math.round((visitStartedAt.getTime() - arrivedAt.getTime()) / 60000))
+    : null;
 
   const [undoing, startUndo] = useTransition();
 
@@ -144,9 +151,10 @@ function ApptRow({ appt, role }: { appt: Appt; role: "DOCTOR" | "HOSPITAL" }) {
     <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-[var(--color-border)] bg-white hover:bg-[var(--color-primary-50)] hover:border-[var(--color-primary-200)] transition-colors">
       {/* Time + visit-type column */}
       <div className="w-20 shrink-0 flex flex-col items-center gap-0.5">
-        {/* Large: visited time (when patient arrived) or appt time if not yet arrived */}
-        <p className="text-sm font-bold text-[var(--color-ink-900)]" title={visitedTime ? "Arrived at" : "Appointment time"}>
-          {visitedTime ?? apptTime}
+        {/* Primary time: arrived or scheduled */}
+        <p className="text-sm font-bold text-[var(--color-ink-900)]"
+           title={arrivedAt ? `Arrived at ${format(arrivedAt, "h:mm a")}` : "Appointment time"}>
+          {primaryTime}
         </p>
         {appt.isWalkIn ? (
           <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-orange-50 text-orange-600">
@@ -157,8 +165,8 @@ function ApptRow({ appt, role }: { appt: Appt; role: "DOCTOR" | "HOSPITAL" }) {
             <Calendar size={9} /> Appt
           </span>
         )}
-        {/* Small: appointment scheduled time */}
-        <span className="text-[9px] text-[var(--color-ink-300)]" title="Appointment time">
+        {/* Scheduled time (if different from arrived) */}
+        <span className="text-[9px] text-[var(--color-ink-300)]" title="Scheduled appointment time">
           {apptTime}
         </span>
       </div>
@@ -212,6 +220,22 @@ function ApptRow({ appt, role }: { appt: Appt; role: "DOCTOR" | "HOSPITAL" }) {
           )}
         </div>
         <LiveTimer since={timerSince} />
+        {/* Timestamp trail — compact, right-aligned */}
+        <div className="flex flex-col items-end gap-0.5 mt-0.5">
+          {arrivedAt && (
+            <span className="flex items-center gap-1 text-[10px] text-blue-500" title="Arrived at clinic">
+              <LogIn size={9} /> {format(arrivedAt, "h:mm a")}
+            </span>
+          )}
+          {visitStartedAt && (
+            <span className="flex items-center gap-1 text-[10px] text-[var(--color-primary-500)]" title="Consultation started">
+              <Stethoscope size={9} /> {format(visitStartedAt, "h:mm a")}
+              {waitMins !== null && (
+                <span className="text-amber-500 ml-0.5">({waitMins}m wait)</span>
+              )}
+            </span>
+          )}
+        </div>
       </div>
     </div>
   );
