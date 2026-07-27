@@ -220,22 +220,6 @@ function ApptRow({ appt, role }: { appt: Appt; role: "DOCTOR" | "HOSPITAL" }) {
           )}
         </div>
         <LiveTimer since={timerSince} />
-        {/* Timestamp trail — compact, right-aligned */}
-        <div className="flex flex-col items-end gap-0.5 mt-0.5">
-          {arrivedAt && (
-            <span className="flex items-center gap-1 text-[10px] text-blue-500" title="Arrived at clinic">
-              <LogIn size={9} /> {format(arrivedAt, "h:mm a")}
-            </span>
-          )}
-          {visitStartedAt && (
-            <span className="flex items-center gap-1 text-[10px] text-[var(--color-primary-500)]" title="Consultation started">
-              <Stethoscope size={9} /> {format(visitStartedAt, "h:mm a")}
-              {waitMins !== null && (
-                <span className="text-amber-500 ml-0.5">({waitMins}m wait)</span>
-              )}
-            </span>
-          )}
-        </div>
       </div>
     </div>
   );
