@@ -853,14 +853,15 @@ model PasswordResetToken {
 // ──────────────────────────────────────────────────────────────────────────
 
 model Role {
-  id          String   @id @default(cuid())
-  name        String   @unique   // matches User.role string e.g. "HOSPITAL"
-  label       String             // "Hospital Admin"
-  description String?
-  isSystem    Boolean  @default(false)   // DOCTOR/HOSPITAL/REFRACTIONIST locked
-  isActive    Boolean  @default(true)
-  color       String   @default("#6366f1")
-  createdAt   DateTime @default(now())
+  id                 String   @id @default(cuid())
+  name               String   @unique   // matches User.role string e.g. "HOSPITAL"
+  label              String             // "Hospital Admin"
+  description        String?
+  isSystem           Boolean  @default(false)   // DOCTOR/HOSPITAL/REFRACTIONIST locked
+  isActive           Boolean  @default(true)
+  color              String   @default("#6366f1")
+  createdAt          DateTime @default(now())
+  createdByDoctorId  String?            // null = system role; set = doctor-scoped custom role
 }
 
 model Permission {

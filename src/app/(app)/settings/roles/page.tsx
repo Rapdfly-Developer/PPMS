@@ -1,11 +1,12 @@
-import { requireRole } from "@/lib/rbac";
+import { requireRole, scopeDoctorId } from "@/lib/rbac";
 import { seedRolesAndPermissions, loadRolesPageData } from "./actions";
 import { RolesClient } from "./RolesClient";
 
 export default async function RolesPage() {
-  await requireRole("DOCTOR");
+  const user = await requireRole("DOCTOR");
+  const doctorId = scopeDoctorId(user);
   await seedRolesAndPermissions();
-  const roles = await loadRolesPageData();
+  const roles = await loadRolesPageData(doctorId);
   return (
     <div className="fade-in h-full">
       <RolesClient initialRoles={roles} />

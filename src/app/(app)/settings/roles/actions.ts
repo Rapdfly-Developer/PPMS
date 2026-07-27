@@ -69,9 +69,19 @@ export async function seedRolesAndPermissions() {
 }
 
 // ── Load page data ────────────────────────────────────────────────────────
-export async function loadRolesPageData() {
+export async function loadRolesPageData(doctorId?: string) {
   const [dbRoles, rolePerms] = await Promise.all([
-    prisma.role.findMany({ orderBy: { createdAt: "asc" } }),
+    prisma.role.findMany({
+      where: doctorId
+        ? {
+            OR: [
+              { isSystem: true },
+              { createdByDoctorId: doctorId },
+            ],
+          }
+        : undefined,
+      orderBy: { createdAt: "asc" },
+    }),
     prisma.rolePermission.findMany({ include: { permission: true } }),
   ]);
 
@@ -141,9 +151,10 @@ export async function createRole(data: {
 }) {
   const user = await requireRole("DOCTOR");
   const name = data.name.toUpperCase().replace(/[^A-Z0-9_]/g, "_");
+  const doctorId = user.profileId;
 
   const role = await prisma.role.create({
-    data: { name, label: data.label, description: data.description, color: data.color, isSystem: false },
+    data: { name, label: data.label, description: data.description, color: data.color, isSystem: false, createdByDoctorId: doctorId },
   });
 
   await prisma.auditLog.create({
