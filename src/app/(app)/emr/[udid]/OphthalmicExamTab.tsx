@@ -306,13 +306,13 @@ const REFRACTION_METHODS = ["Subjective", "Cycloplegic", "Auto-Refraction", "Cur
 function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: any; udid: string; editable: boolean; priorVisits?: any[] }) {
   const rc = visit.refraction;
   const [re, setRe] = useState(parseJSON(rc?.re, { sph: "", cyl: "", axis: "", va: "", nearSph: "", nearVa: "", method: "" }));
-  const [le, setLe] = useState(parseJSON(rc?.le, { sph: "", cyl: "", axis: "", va: "", nearSph: "", nearVa: "" }));
+  const [le, setLe] = useState(parseJSON(rc?.le, { sph: "", cyl: "", axis: "", va: "", nearSph: "", nearVa: "", method: "" }));
   const [showHistory, setShowHistory] = useState(false);
   const [confirmRx, setConfirmRx] = useState<typeof priorRefractions[0] | null>(null);
   const [rxToast, setRxToast] = useState(false);
 
-  type RxFields = { sph: string; cyl: string; axis: string; nearSph: string; va: string; nearVa: string };
-  const emptyRx: RxFields = { sph: "", cyl: "", axis: "", nearSph: "", va: "", nearVa: "" };
+  type RxFields = { sph: string; cyl: string; axis: string; nearSph: string; va: string; nearVa: string; method: string };
+  const emptyRx: RxFields = { sph: "", cyl: "", axis: "", nearSph: "", va: "", nearVa: "", method: "" };
   const priorRefractions = priorVisits
     .filter((v) => v.refraction)
     .map((v) => ({
@@ -436,8 +436,8 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
   const hasRxData = (rx: typeof re) => Object.values(rx).some(Boolean);
 
   const loadRx = (pr: typeof priorRefractions[0]) => {
-    setRe(pr.re);
-    setLe(pr.le);
+    setRe({ ...emptyRx, ...pr.re });
+    setLe({ ...emptyRx, ...pr.le });
     setShowHistory(false);
     setRxToast(true);
   };
