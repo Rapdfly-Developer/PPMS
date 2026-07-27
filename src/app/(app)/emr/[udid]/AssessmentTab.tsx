@@ -290,25 +290,42 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
             <SingleChipSelect options={LATERALITY} value={laterality} onChange={setLaterality} />
           </div>
           <div className="relative flex-1 min-w-[240px]">
+            <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] pointer-events-none" />
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search ICD-10 (code or description)..."
-              className="w-full rounded-xl border border-[var(--color-border)] px-3.5 py-2.5 text-sm"
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && query.trim() && matches.length === 0) {
+                  add("", query.trim());
+                  setQuery("");
+                }
+              }}
+              placeholder="Search ICD-10 code or description..."
+              className="w-full rounded-xl border border-[var(--color-border)] pl-9 pr-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
             />
-            {matches.length > 0 && (
+            {query.length > 0 && (
               <ul className="absolute z-20 left-0 right-0 mt-1 rounded-xl border border-[var(--color-border)] bg-white shadow-xl overflow-hidden max-h-60 overflow-y-auto">
                 {matches.map((m) => (
                   <li key={m.code}>
                     <button
-                      onClick={() => add(m.code, m.description)}
-                      className="w-full text-left px-3.5 py-2.5 text-sm text-[var(--color-ink-800)] hover:bg-[var(--color-surface-sunken)] flex items-center justify-between"
+                      onClick={() => { add(m.code, m.description); setQuery(""); }}
+                      className="w-full text-left px-3.5 py-2.5 text-sm text-[var(--color-ink-800)] hover:bg-[var(--color-surface-sunken)] flex items-center justify-between gap-4"
                     >
-                      <span>{m.description}</span>
-                      <span className="text-xs font-mono text-[var(--color-ink-400)]">{m.code}</span>
+                      <span className="flex-1 min-w-0 truncate">{m.description}</span>
+                      <span className="text-xs font-mono text-[var(--color-ink-400)] shrink-0">{m.code}</span>
                     </button>
                   </li>
                 ))}
+                {/* Free-text fallback — always shown at bottom so doctor can add unlisted diagnoses */}
+                <li className="border-t border-[var(--color-border)]">
+                  <button
+                    onClick={() => { add("", query.trim()); setQuery(""); }}
+                    className="w-full text-left px-3.5 py-2.5 text-sm flex items-center gap-2 text-[var(--color-primary-700)] hover:bg-[var(--color-primary-50)] transition-colors"
+                  >
+                    <span className="text-base leading-none">+</span>
+                    <span>Add &ldquo;<span className="font-medium">{query.trim()}</span>&rdquo; as custom diagnosis</span>
+                  </button>
+                </li>
               </ul>
             )}
           </div>
