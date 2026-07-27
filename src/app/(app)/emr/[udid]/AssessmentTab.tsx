@@ -6,7 +6,7 @@ import { SingleChipSelect } from "@/components/ui/Chip";
 import { ICD10_OPHTHALMOLOGY, DIAGNOSIS_STATUSES, LATERALITY } from "@/lib/constants";
 import { saveProvisionalDiagnosis, addDiagnosis, updateDiagnosisStatus, removeDiagnosis, addMedication, saveFollowUp } from "./actions";
 import { useAutoSave, SaveIndicator } from "@/lib/useAutoSave";
-import { X, History, ChevronDown, Search } from "lucide-react";
+import { X, History, ChevronDown, Search, PenLine } from "lucide-react";
 import {
   getTreatmentPresets, matchPresets, mergeMeds,
   getApplied, setApplied,
@@ -27,6 +27,8 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
   const [laterality, setLaterality] = useState("OU");
   const [pending, startTransition] = useTransition();
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [showManual, setShowManual] = useState(false);
+  const [manualText, setManualText] = useState("");
   const [confirmDxGroup, setConfirmDxGroup] = useState<any[] | null>(null);
   const [dxToast, setDxToast] = useState(false);
   const [presetToast, setPresetToast] = useState<string[]>([]);
@@ -284,7 +286,7 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
 
 
 
-        <div className="flex items-end gap-3 flex-wrap mb-4">
+        <div className="flex items-end gap-3 flex-wrap mb-2">
           <div>
             <p className="text-xs font-medium text-[var(--color-ink-500)] mb-1.5">Laterality</p>
             <SingleChipSelect options={LATERALITY} value={laterality} onChange={setLaterality} />
@@ -293,7 +295,7 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
             <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] pointer-events-none" />
             <input
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={(e) => { setQuery(e.target.value); setShowManual(false); }}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && query.trim() && matches.length === 0) {
                   add("", query.trim());
@@ -316,7 +318,7 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
                     </button>
                   </li>
                 ))}
-                {/* Free-text fallback — always shown at bottom so doctor can add unlisted diagnoses */}
+                {/* Free-text fallback at bottom of dropdown */}
                 <li className="border-t border-[var(--color-border)]">
                   <button
                     onClick={() => { add("", query.trim()); setQuery(""); }}
@@ -329,7 +331,55 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
               </ul>
             )}
           </div>
+          {/* Manual entry button */}
+          <button
+            type="button"
+            onClick={() => { setShowManual((v) => !v); setManualText(""); setQuery(""); }}
+            className={`flex items-center gap-1.5 text-xs font-medium px-3 py-2.5 rounded-xl border transition-colors whitespace-nowrap ${
+              showManual
+                ? "bg-[var(--color-primary-600)] text-white border-[var(--color-primary-600)]"
+                : "bg-white text-[var(--color-ink-600)] border-[var(--color-border)] hover:border-[var(--color-primary-400)] hover:text-[var(--color-primary-600)]"
+            }`}
+          >
+            <PenLine size={13} />
+            Add Manually
+          </button>
         </div>
+
+        {/* Manual entry inline form */}
+        {showManual && (
+          <div className="mb-4 flex items-center gap-2 p-3 rounded-xl border border-[var(--color-primary-200)] bg-[var(--color-primary-50)]">
+            <input
+              autoFocus
+              value={manualText}
+              onChange={(e) => setManualText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && manualText.trim()) {
+                  add("", manualText.trim());
+                  setManualText("");
+                  setShowManual(false);
+                } else if (e.key === "Escape") {
+                  setShowManual(false);
+                }
+              }}
+              placeholder="Type diagnosis name..."
+              className="flex-1 rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
+            />
+            <button
+              disabled={!manualText.trim() || pending}
+              onClick={() => { add("", manualText.trim()); setManualText(""); setShowManual(false); }}
+              className="px-3.5 py-2 rounded-lg bg-[var(--color-primary-600)] text-white text-sm font-medium hover:bg-[var(--color-primary-700)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              Add
+            </button>
+            <button
+              onClick={() => { setShowManual(false); setManualText(""); }}
+              className="p-2 rounded-lg text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)] hover:bg-white transition-colors"
+            >
+              <X size={15} />
+            </button>
+          </div>
+        )}
 
         {diagnoses.length === 0 ? (
           <p className="text-sm text-[var(--color-ink-400)] py-4 text-center">No diagnoses added yet. Click &apos;Add Diagnosis&apos; to begin.</p>
