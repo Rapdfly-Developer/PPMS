@@ -754,52 +754,57 @@ function IOPCard({ visit, udid, editable, priorVisits }: { visit: any; udid: str
         </div>
       )}
 
-      {/* Current visit readings */}
-      <div className="overflow-x-auto w-fit">
-        <table className="text-xs border border-[var(--color-border)] rounded-lg overflow-hidden border-collapse">
-          <thead>
-            <tr className="bg-[var(--color-surface-sunken)] text-[var(--color-ink-400)] uppercase tracking-wide border-b border-[var(--color-border)]">
-              <th className="py-1.5 px-3 text-left font-semibold whitespace-nowrap">Method</th>
-              <th className="py-1.5 px-3 text-left font-semibold whitespace-nowrap">Date &amp; Time</th>
-              <th className="py-1.5 px-4 text-center font-semibold text-[#0F766E] w-16">RE</th>
-              <th className="py-1.5 px-4 text-center font-semibold text-[#0F766E] w-16">LE</th>
-              {editable && <th className="py-1.5 px-2 w-7" />}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-[var(--color-border)]">
-            {readings.length === 0 ? (
-              <tr><td colSpan={editable ? 5 : 4} className="py-3 px-6 text-center text-[var(--color-ink-400)] italic">No readings yet.</td></tr>
-            ) : readings.map((r: any) => (
-              <tr key={r.id} className="hover:bg-[var(--color-surface-sunken)] transition-colors">
-                <td className="py-1.5 px-3 text-[var(--color-ink-500)] whitespace-nowrap">{r.method}</td>
-                <td className="py-1.5 px-3 text-[var(--color-ink-600)] whitespace-nowrap">
-                  {format(new Date(r.takenAt), "d MMM yyyy")}<span className="text-[var(--color-ink-400)] ml-1.5">{format(new Date(r.takenAt), "h:mm a")}</span>
-                </td>
-                <td className="py-1.5 px-4 text-center font-semibold text-[var(--color-ink-800)] tabular-nums">{r.re ?? "—"}</td>
-                <td className="py-1.5 px-4 text-center font-semibold text-[var(--color-ink-800)] tabular-nums">{r.le ?? "—"}</td>
-                {editable && (
-                  <td className="py-1.5 px-2 text-center">
-                    <button
-                      disabled={deletePending}
-                      onClick={() => startDelete(() => removeIOPReading(r.id, udid))}
-                      className="text-[var(--color-ink-300)] hover:text-[var(--color-danger-600)] disabled:opacity-40"
-                      title="Delete reading"
-                    >
-                      <Trash2 size={13} />
-                    </button>
-                  </td>
-                )}
+      {/* Current Readings */}
+      <div className="rounded-xl border border-[#B2DEDA] bg-[#EEF8F7] overflow-hidden w-fit">
+        <div className="px-3 pt-2.5 pb-2 border-b border-[#B2DEDA]">
+          <p className="text-[10px] font-bold text-[#0F766E] uppercase tracking-widest">Current Readings</p>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="text-xs">
+            <thead>
+              <tr className="border-b border-[#B2DEDA]">
+                <th className="py-1.5 px-3 text-left font-semibold text-[var(--color-ink-400)] uppercase tracking-wide whitespace-nowrap">Method</th>
+                <th className="py-1.5 px-3 text-left font-semibold text-[var(--color-ink-400)] uppercase tracking-wide whitespace-nowrap">Date</th>
+                <th className="py-1.5 px-3 text-left font-semibold text-[var(--color-ink-400)] uppercase tracking-wide whitespace-nowrap">Time</th>
+                <th className="py-1.5 px-3 text-center font-semibold text-[#0F766E] uppercase tracking-wide w-16">RE</th>
+                <th className="py-1.5 px-3 text-center font-semibold text-[#0F766E] uppercase tracking-wide w-16">LE</th>
+                {editable && <th className="py-1.5 px-2 w-7" />}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-[#D5EFED]">
+              {readings.length === 0 ? (
+                <tr><td colSpan={editable ? 6 : 5} className="py-3 px-6 text-center text-[var(--color-ink-400)] italic">No readings yet.</td></tr>
+              ) : readings.map((r: any) => (
+                <tr key={r.id} className="hover:bg-[#DCF3F1]/60 transition-colors">
+                  <td className="py-2 px-3 text-[var(--color-ink-500)] whitespace-nowrap">{r.method}</td>
+                  <td className="py-2 px-3 text-[var(--color-ink-600)] whitespace-nowrap">{format(new Date(r.takenAt), "d MMM yyyy")}</td>
+                  <td className="py-2 px-3 text-[var(--color-ink-400)] whitespace-nowrap">{format(new Date(r.takenAt), "h:mm a")}</td>
+                  <td className="py-2 px-3 text-center font-semibold text-[var(--color-ink-800)] tabular-nums">{r.re ?? "—"}</td>
+                  <td className="py-2 px-3 text-center font-semibold text-[var(--color-ink-800)] tabular-nums">{r.le ?? "—"}</td>
+                  {editable && (
+                    <td className="py-2 px-2 text-center">
+                      <button
+                        disabled={deletePending}
+                        onClick={() => startDelete(() => removeIOPReading(r.id, udid))}
+                        className="text-[var(--color-ink-300)] hover:text-[var(--color-danger-600)] disabled:opacity-40"
+                        title="Delete reading"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </td>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      {/* Previous visits history — always visible, matches Colour Vision style */}
+      {/* Previous Readings */}
       {priorIOPRows.length > 0 && (
-        <div className="mt-5 rounded-xl border border-[#B2DEDA] bg-[#EEF8F7] overflow-hidden w-fit">
+        <div className="mt-4 rounded-xl border border-[#B2DEDA] bg-[#EEF8F7] overflow-hidden w-fit">
           <div className="px-3 pt-2.5 pb-2 border-b border-[#B2DEDA]">
-            <p className="text-[10px] font-bold text-[#0F766E] uppercase tracking-widest">Previous</p>
+            <p className="text-[10px] font-bold text-[#0F766E] uppercase tracking-widest">Previous Readings</p>
           </div>
           <div className="overflow-x-auto">
             <table className="text-xs">
