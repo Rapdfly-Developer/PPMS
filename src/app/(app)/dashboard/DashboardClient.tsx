@@ -6,10 +6,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ChevronDown, Plus, Building2, Phone, LogIn, Loader2,
-  Sun, Sunset, Moon, CalendarX2, Calendar, PersonStanding, Clock,
+  Sun, Sunset, Moon, CalendarX2, Calendar, PersonStanding, Clock, Undo2,
 } from "lucide-react";
 import clsx from "clsx";
-import { doctorConfirmAppointment, hospitalUpdateAppointmentStatus } from "@/app/(app)/appointments/actions";
+import { doctorConfirmAppointment, hospitalUpdateAppointmentStatus, undoQueueEntry } from "@/app/(app)/appointments/actions";
 
 /* ── Types ─────────────────────────────────────────────────────────────── */
 interface Appt {
@@ -138,6 +138,8 @@ function ApptRow({ appt, role }: { appt: Appt; role: "DOCTOR" | "HOSPITAL" }) {
   // Timer runs from arrival; if no arrivedAt yet (still REQUESTED), fall back to appt time
   const timerSince  = appt.arrivedAt ?? appt.dateTime;
 
+  const [undoing, startUndo] = useTransition();
+
   return (
     <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-[var(--color-border)] bg-white hover:bg-[var(--color-primary-50)] hover:border-[var(--color-primary-200)] transition-colors">
       {/* Time + visit-type column */}
@@ -192,11 +194,23 @@ function ApptRow({ appt, role }: { appt: Appt; role: "DOCTOR" | "HOSPITAL" }) {
           {appt.complaint}
         </span>
       )}
-      <div className="flex flex-col items-end gap-0.5 shrink-0">
-        <span className={clsx("inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold", cfg.color)}>
-          <span className={clsx("w-1.5 h-1.5 rounded-full shrink-0", cfg.dot)} />
-          {cfg.label}
-        </span>
+      <div className="flex flex-col items-end gap-1 shrink-0">
+        <div className="flex items-center gap-1.5">
+          <span className={clsx("inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold", cfg.color)}>
+            <span className={clsx("w-1.5 h-1.5 rounded-full shrink-0", cfg.dot)} />
+            {cfg.label}
+          </span>
+          {appt.status === "CONFIRMED" && (
+            <button
+              disabled={undoing}
+              title={`Move back to appointment time (${apptTime})`}
+              onClick={e => { e.preventDefault(); startUndo(async () => { await undoQueueEntry(appt.id); }); }}
+              className="p-1.5 rounded-lg border border-[var(--color-border)] bg-white text-[var(--color-ink-400)] hover:text-amber-600 hover:border-amber-300 hover:bg-amber-50 disabled:opacity-50 transition-all"
+            >
+              {undoing ? <Loader2 size={12} className="animate-spin" /> : <Undo2 size={12} />}
+            </button>
+          )}
+        </div>
         <LiveTimer since={timerSince} />
       </div>
     </div>

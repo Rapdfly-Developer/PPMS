@@ -181,6 +181,39 @@ export async function doctorConfirmAppointment(appointmentId: string): Promise<v
   revalidatePath("/dashboard");
 }
 
+// ── Undo queue entry: revert CONFIRMED → REQUESTED (move patient back to Visit time) ──
+export async function undoQueueEntry(appointmentId: string): Promise<void> {
+  // Works for both DOCTOR and HOSPITAL roles
+  let userId: string;
+  try {
+    const u = await requireRole("DOCTOR");
+    userId = u.id;
+  } catch {
+    const u = await requireRole("HOSPITAL");
+    userId = u.id;
+  }
+
+  const appt = await prisma.appointment.findUnique({
+    where: { id: appointmentId },
+    include: { patient: true, hospital: true },
+  });
+  if (!appt) throw new Error("Appointment not found");
+  if (appt.status !== "CONFIRMED") throw new Error("Only Waiting appointments can be moved back.");
+
+  await prisma.appointment.update({
+    where: { id: appointmentId },
+    data: { status: "REQUESTED", arrivedAt: null },
+  });
+
+  writeAudit(userId, "Appointment", appointmentId, "APPOINTMENT_REQUESTED",
+    { patient: appt.patient.name, hospital: appt.hospital.name, note: "Moved back to Visit time" },
+    { moduleName: "Appointment", actionType: "UPDATE",
+      hospitalId: appt.hospitalId, userName: appt.patient.name });
+
+  revalidatePath("/appointments");
+  revalidatePath("/dashboard");
+}
+
 // ── Doctor: cancel/reject an appointment ─────────────────────────────────────
 export async function doctorCancelAppointment(appointmentId: string): Promise<void> {
   const user = await requireRole("DOCTOR");
