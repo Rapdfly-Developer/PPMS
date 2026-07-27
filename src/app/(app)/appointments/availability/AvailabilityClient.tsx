@@ -23,6 +23,25 @@ const WEEKDAYS_FULL = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "
 const MONTHS        = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 const SLOT_OPTIONS  = [5, 10, 15, 20, 30, 45, 60];
 
+// Returns the upcoming calendar date for a given weekday (0=Sun…6=Sat).
+// If today IS that weekday it shows today; once a day passes EOD (midnight rolls over
+// to the next calendar date) the calculation naturally lands on next week's occurrence.
+function nextDateForWeekday(wd: number): Date {
+  const today  = new Date();
+  const todayWd = today.getDay();
+  const diff   = (wd - todayWd + 7) % 7;
+  const d = new Date(today);
+  d.setDate(today.getDate() + diff);
+  return d;
+}
+function fmtWeekdayDate(wd: number): string {
+  const d = nextDateForWeekday(wd);
+  return d.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+}
+function isToday(wd: number): boolean {
+  return new Date().getDay() === wd;
+}
+
 // Stable hospital color palette — inline styles to bypass Tailwind JIT
 const PALETTE = [
   { bg: "#0F9B8E", light: "#e6f7f6", border: "#a7e3df", text: "#0c6b65" },
@@ -269,7 +288,13 @@ function TemplateTab({ weekly, hospitals, onGenerate }: {
                 <div key={wd} className="bg-white rounded-2xl border border-[var(--color-border)] p-4">
                   <div className="flex items-center justify-between mb-3">
                     <div>
-                      <p className="font-bold text-[var(--color-ink-900)] text-sm">{WEEKDAYS_FULL[wd]}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="font-bold text-[var(--color-ink-900)] text-sm">{WEEKDAYS_FULL[wd]}</p>
+                        {isToday(wd) && (
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-[var(--color-primary-100)] text-[var(--color-primary-700)]">Today</span>
+                        )}
+                      </div>
+                      <p className="text-[11px] font-semibold text-[var(--color-ink-500)] tabular-nums">{fmtWeekdayDate(wd)}</p>
                       <p className="text-[10px] text-[var(--color-ink-400)]">{slots.length > 0 ? `${slots.length} hospital${slots.length > 1 ? "s" : ""}` : "No schedule"}</p>
                     </div>
                     <button onClick={() => setEditTarget({ weekday: wd })}
