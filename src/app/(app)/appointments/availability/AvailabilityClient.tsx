@@ -1,90 +1,70 @@
 "use client";
 
-import { useState, useTransition, useMemo } from "react";
+import { useState, useTransition, useCallback, useMemo } from "react";
 import Link from "next/link";
 import {
   Plus, Pencil, Trash2, Clock, Building2, CalendarDays, Users,
   Loader2, AlertTriangle, X, Save, ToggleLeft, ToggleRight, Power,
-  Stethoscope, Layers, CheckCircle2, CalendarOff, Calendar,
-  ChevronRight, Info,
+  ChevronLeft, ChevronRight, CalendarOff, Zap, Copy, Layers,
+  CheckSquare, Square, Info, RefreshCw,
 } from "lucide-react";
 import {
   upsertWeekly, deleteWeekly, toggleWeeklyStatus,
-  upsertMonthly, deleteMonthly, toggleMonthlyStatus,
-  upsertIndividualDay, deleteIndividualDay,
-  applyLeave, cancelLeave,
+  generateMonthlySchedule, copyPreviousMonth,
+  updateGeneratedDay, deleteGeneratedDay, bulkAssignDays,
+  addLeave, addExtraOP, cancelScheduleException,
+  addRecurringLeave, getCalendarData,
+  type CalendarData, type DaySlot, type DayLeave,
 } from "./actions";
 
-/* ── Constants ─────────────────────────────────────────────────────────────── */
+/* ── Constants ──────────────────────────────────────────────────────────────── */
 const WEEKDAYS      = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const WEEKDAYS_FULL = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+const MONTHS        = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 const SLOT_OPTIONS  = [5, 10, 15, 20, 30, 45, 60];
 
+// Stable hospital color palette — inline styles to bypass Tailwind JIT
+const PALETTE = [
+  { bg: "#0F9B8E", light: "#e6f7f6", border: "#a7e3df", text: "#0c6b65" },
+  { bg: "#3B82F6", light: "#eff6ff", border: "#bfdbfe", text: "#1d4ed8" },
+  { bg: "#8B5CF6", light: "#f5f3ff", border: "#ddd6fe", text: "#6d28d9" },
+  { bg: "#F59E0B", light: "#fffbeb", border: "#fde68a", text: "#b45309" },
+  { bg: "#EC4899", light: "#fdf2f8", border: "#fbcfe8", text: "#be185d" },
+  { bg: "#10B981", light: "#ecfdf5", border: "#a7f3d0", text: "#047857" },
+  { bg: "#6366F1", light: "#eef2ff", border: "#c7d2fe", text: "#4338ca" },
+];
+
+function getColor(idx: number) { return PALETTE[Math.max(0, idx) % PALETTE.length]; }
+
 function fmt12(t: string) {
+  if (!t) return "";
   const [h, m] = t.split(":").map(Number);
   return `${h % 12 || 12}:${String(m).padStart(2, "0")} ${h >= 12 ? "PM" : "AM"}`;
 }
-function toMins(t: string) {
-  const [h, m] = t.split(":").map(Number);
-  return h * 60 + m;
+function toMins(t: string) { const [h, m] = t.split(":").map(Number); return h * 60 + m; }
+function slotsCount(s: string, e: string, m: number) { return Math.max(0, Math.floor((toMins(e) - toMins(s)) / m)); }
+function hospCode(name: string) { return name.split(/\s+/).map(w => w[0]).join("").toUpperCase().slice(0, 3); }
+function padDate(y: number, m: number, d: number) {
+  return `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
 }
-function slotsCount(start: string, end: string, mins: number) {
-  return Math.max(0, Math.floor((toMins(end) - toMins(start)) / mins));
-}
-function fmtDate(d: string) {
-  return new Date(d).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
-}
-function dateStr(d: Date | string) {
-  return new Date(d).toISOString().split("T")[0];
-}
-function hospCode(name: string) {
-  return name.split(/\s+/).map(w => w[0]).join("").toUpperCase().slice(0, 3);
-}
-function parseWeekdays(s: string): number[] {
-  return s.split(",").map(Number).filter(n => !isNaN(n));
+function fmtFullDate(dateStr: string) {
+  const d = new Date(dateStr + "T00:00:00");
+  return d.toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 }
 
-/* ── Types ─────────────────────────────────────────────────────────────────── */
+/* ── Types ──────────────────────────────────────────────────────────────────── */
 interface Hospital { id: string; name: string; }
 interface WeeklySlot {
   id: string; hospitalId: string; hospital: { id: string; name: string };
   weekday: number; startTime: string; endTime: string;
   slotMins: number; maxPatients: number; status: string;
 }
-interface MonthlySlot {
-  id: string; hospitalId: string; hospital: { id: string; name: string };
-  validFrom: string; validTo: string; weekdays: string;
-  startTime: string; endTime: string;
-  slotMins: number; maxPatients: number; label: string | null; status: string;
-}
-interface IndivDay {
-  id: string; hospitalId: string; hospital: { id: string; name: string };
-  date: string; startTime: string; endTime: string;
-  slotMins: number; maxPatients: number; reason: string | null; status: string;
-}
-interface Leave {
-  id: string; hospitalId: string | null; hospital: { id: string; name: string } | null;
-  date: string; leaveType: string; halfPeriod: string | null; reason: string | null; status: string;
-}
 
-/* ── Scoped CSS ────────────────────────────────────────────────────────────── */
-function LocalStyles() {
-  return (
-    <style>{`
-      @keyframes avlFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
-      .avl-float{animation:avlFloat 4s ease-in-out infinite}
-    `}</style>
-  );
-}
-
-/* ── Shared form field classes ─────────────────────────────────────────────── */
+/* ── Shared components ──────────────────────────────────────────────────────── */
 const FLD = "w-full border border-[var(--color-border)] rounded-xl px-3 py-2.5 text-sm text-[var(--color-ink-900)] bg-[var(--color-surface-sunken)]/40 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] transition-all";
 const LBL = "block text-xs font-semibold text-[var(--color-ink-500)] uppercase tracking-wide mb-1.5";
 
-/* ── Modal shell ───────────────────────────────────────────────────────────── */
-function Modal({ title, sub, onClose, children }: {
-  title: string; sub?: string; onClose: () => void; children: React.ReactNode;
-}) {
+function Modal({ title, sub, onClose, children }: { title: string; sub?: string; onClose: () => void; children: React.ReactNode }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-[3px] p-4" onClick={onClose}>
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[92vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
@@ -94,9 +74,7 @@ function Modal({ title, sub, onClose, children }: {
             <p className="font-bold text-white text-[15px]">{title}</p>
             {sub && <p className="text-[11px] text-white/60 mt-0.5">{sub}</p>}
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors">
-            <X size={15} />
-          </button>
+          <button onClick={onClose} className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors"><X size={15} /></button>
         </div>
         <div className="p-6 flex flex-col gap-4">{children}</div>
       </div>
@@ -104,53 +82,31 @@ function Modal({ title, sub, onClose, children }: {
   );
 }
 
-/* ── Error box ─────────────────────────────────────────────────────────────── */
 function Err({ msg }: { msg: string }) {
   return (
     <div className="flex items-center gap-2 text-sm text-red-700 bg-red-50 border border-red-200 rounded-xl px-3 py-2">
-      <AlertTriangle size={14} className="shrink-0" /> {msg}
+      <AlertTriangle size={14} className="shrink-0" />{msg}
     </div>
   );
 }
 
-/* ── Preview summary bar ───────────────────────────────────────────────────── */
-function PreviewBar({ items }: { items: { val: string | number; label: string }[] }) {
-  return (
-    <div className="rounded-xl bg-[var(--color-primary-50)] border border-[var(--color-primary-100)] px-4 py-3 grid gap-0"
-      style={{ gridTemplateColumns: `repeat(${items.length},1fr)` }}>
-      {items.map((item, i) => (
-        <div key={i} className={`text-center px-2 ${i > 0 ? "border-l border-[var(--color-primary-100)]" : ""}`}>
-          <p className="text-sm font-bold text-[var(--color-primary-800)]">{item.val}</p>
-          <p className="text-[11px] text-[var(--color-primary-600)] mt-0.5">{item.label}</p>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-/* ── Delete confirm ────────────────────────────────────────────────────────── */
-function DeleteConfirm({ label, onConfirm, onClose }: { label: string; onConfirm: () => Promise<void>; onClose: () => void }) {
+function ConfirmModal({ title, body, confirmLabel, confirmClass, onConfirm, onClose }: {
+  title: string; body: string; confirmLabel: string; confirmClass: string;
+  onConfirm: () => Promise<void>; onClose: () => void;
+}) {
   const [pending, start] = useTransition();
+  const [err, setErr]    = useState("");
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-[3px] p-4" onClick={onClose}>
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6" onClick={e => e.stopPropagation()}>
-        <div className="text-center flex flex-col items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-red-50 border border-red-100 flex items-center justify-center">
-            <Trash2 size={20} className="text-red-500" />
-          </div>
-          <p className="font-semibold text-[var(--color-ink-900)]">Delete this entry?</p>
-          <p className="text-sm text-[var(--color-ink-400)]">{label}</p>
-        </div>
-        <div className="flex gap-2 mt-5">
-          <button onClick={onClose} className="flex-1 px-4 py-2.5 rounded-xl border border-[var(--color-border)] text-sm font-medium hover:bg-[var(--color-surface-sunken)] transition-colors">
-            Cancel
-          </button>
-          <button
-            onClick={() => start(async () => { await onConfirm(); onClose(); })}
-            disabled={pending}
-            className="flex-1 px-4 py-2.5 rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-700 disabled:opacity-60 inline-flex items-center justify-center gap-2"
-          >
-            {pending && <Loader2 size={14} className="animate-spin" />} Delete
+        {err && <Err msg={err} />}
+        <p className="font-bold text-[var(--color-ink-900)] mb-2">{title}</p>
+        <p className="text-sm text-[var(--color-ink-500)] mb-5">{body}</p>
+        <div className="flex gap-2">
+          <button onClick={onClose} className="flex-1 px-4 py-2.5 rounded-xl border border-[var(--color-border)] text-sm font-medium hover:bg-[var(--color-surface-sunken)] transition-colors">Cancel</button>
+          <button disabled={pending} onClick={() => start(async () => { try { await onConfirm(); onClose(); } catch (e: any) { setErr(e.message ?? "Failed"); } })}
+            className={`flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-60 inline-flex items-center justify-center gap-2 ${confirmClass}`}>
+            {pending && <Loader2 size={13} className="animate-spin" />}{confirmLabel}
           </button>
         </div>
       </div>
@@ -158,39 +114,30 @@ function DeleteConfirm({ label, onConfirm, onClose }: { label: string; onConfirm
   );
 }
 
-/* ── Hospital badge ────────────────────────────────────────────────────────── */
-function HospBadge({ name, size = "md" }: { name: string; size?: "sm" | "md" }) {
-  const sz = size === "sm" ? "w-8 h-8 text-[10px]" : "w-10 h-10 text-xs";
+/* ── Hospital chip (color-coded) ────────────────────────────────────────────── */
+function HospChip({ hospitalId, hospitals, small = false, isExtra = false }: {
+  hospitalId: string; hospitals: Hospital[]; small?: boolean; isExtra?: boolean;
+}) {
+  const idx   = hospitals.findIndex(h => h.id === hospitalId);
+  const color = getColor(idx);
+  const name  = hospitals.find(h => h.id === hospitalId)?.name ?? "?";
+  const code  = hospCode(name);
+  const sz    = small ? "text-[9px] px-1 py-0.5" : "text-[11px] px-2 py-0.5";
   return (
-    <div className={`${sz} rounded-xl shrink-0 flex items-center justify-center font-extrabold text-white shadow-sm`}
-      style={{ background: "linear-gradient(135deg,#0F4039,var(--color-primary-600))" }}
-      title={name}>
-      {hospCode(name)}
-    </div>
-  );
-}
-
-/* ── Status badge ──────────────────────────────────────────────────────────── */
-function StatusBadge({ active }: { active: boolean }) {
-  return (
-    <span className={`inline-flex items-center gap-1.5 text-[10px] font-semibold px-2 py-0.5 rounded-full ${
-      active ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-             : "bg-[var(--color-surface-sunken)] text-[var(--color-ink-400)] border border-[var(--color-border)]"
-    }`}>
-      <span className={`w-1.5 h-1.5 rounded-full ${active ? "bg-emerald-500" : "bg-[var(--color-ink-300)]"}`} />
-      {active ? "Active" : "Paused"}
+    <span className={`inline-flex items-center gap-1 rounded-md font-bold text-white truncate ${sz}`}
+      style={{ background: color.bg }} title={name}>
+      {isExtra && <Zap size={8} />}{code}
     </span>
   );
 }
 
-/* ════════════════════════════════════════════════════════════════════════════
-   TAB 1 — WEEKLY
+/* ═══════════════════════════════════════════════════════════════════════════════
+   TEMPLATE TAB — edit the weekly recurring schedule (Mon–Sun)
 ═══════════════════════════════════════════════════════════════════════════════ */
-function WeeklyModal({
-  hospitals, initial, onClose,
-}: {
+
+function TemplateSlotModal({ hospitals, initial, onClose }: {
   hospitals: Hospital[];
-  initial?: Partial<WeeklySlot> & { hospitalId?: string };
+  initial?: Partial<WeeklySlot> & { weekday?: number };
   onClose: () => void;
 }) {
   const [hospitalId, setHospitalId] = useState(initial?.hospitalId ?? hospitals[0]?.id ?? "");
@@ -202,15 +149,10 @@ function WeeklyModal({
   const [status,     setStatus]     = useState(initial?.status     ?? "ACTIVE");
   const [error,      setError]      = useState("");
   const [pending,    start]         = useTransition();
-
   const total = slotsCount(startTime, endTime, slotMins);
 
   return (
-    <Modal
-      title={initial?.id ? "Edit Weekly Slot" : "Add Weekly Slot"}
-      sub="Repeats every week automatically until changed"
-      onClose={onClose}
-    >
+    <Modal title={initial?.id ? "Edit Template Slot" : "Add Template Slot"} sub="Repeats every week until you change it" onClose={onClose}>
       {error && <Err msg={error} />}
 
       <div><label className={LBL}>Hospital</label>
@@ -219,56 +161,56 @@ function WeeklyModal({
         </select>
       </div>
 
-      <div>
-        <label className={LBL}>Day of Week</label>
-        <div className="grid grid-cols-7 gap-1">
-          {WEEKDAYS.map((d, i) => (
-            <button key={d} type="button" onClick={() => setWeekday(i)}
-              className={`py-2 rounded-lg text-xs font-bold border transition-all ${
-                weekday === i
-                  ? "bg-[var(--color-primary-600)] text-white border-[var(--color-primary-600)]"
-                  : "bg-white text-[var(--color-ink-500)] border-[var(--color-border)] hover:border-[var(--color-primary-300)]"
-              }`}>{d}</button>
-          ))}
+      {!initial?.id && (
+        <div>
+          <label className={LBL}>Day of Week</label>
+          <div className="grid grid-cols-7 gap-1">
+            {WEEKDAYS.map((d, i) => (
+              <button key={d} type="button" onClick={() => setWeekday(i)}
+                className={`py-2 rounded-lg text-xs font-bold border transition-all ${weekday === i ? "bg-[var(--color-primary-600)] text-white border-[var(--color-primary-600)]" : "bg-white text-[var(--color-ink-500)] border-[var(--color-border)] hover:border-[var(--color-primary-300)]"}`}>
+                {d}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="grid grid-cols-2 gap-3">
-        <div><label className={LBL}>Start Time</label>
-          <input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} className={FLD} /></div>
-        <div><label className={LBL}>End Time</label>
-          <input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} className={FLD} /></div>
+        <div><label className={LBL}>Start Time</label><input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} className={FLD} /></div>
+        <div><label className={LBL}>End Time</label><input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} className={FLD} /></div>
       </div>
-
       <div className="grid grid-cols-2 gap-3">
         <div><label className={LBL}>Slot Duration</label>
           <select value={slotMins} onChange={e => setSlotMins(Number(e.target.value))} className={FLD}>
             {SLOT_OPTIONS.map(m => <option key={m} value={m}>{m} min</option>)}
-          </select></div>
+          </select>
+        </div>
         <div><label className={LBL}>Max Patients / Slot</label>
-          <input type="number" min={1} max={20} value={maxPat} onChange={e => setMaxPat(Number(e.target.value))} className={FLD} /></div>
+          <input type="number" min={1} max={20} value={maxPat} onChange={e => setMaxPat(Number(e.target.value))} className={FLD} />
+        </div>
       </div>
 
       {startTime < endTime && total > 0 && (
-        <PreviewBar items={[
-          { val: total, label: "Slots" },
-          { val: total * maxPat, label: "Max Patients" },
-          { val: `${fmt12(startTime)} – ${fmt12(endTime)}`, label: WEEKDAYS_FULL[weekday] },
-        ]} />
+        <div className="rounded-xl bg-[var(--color-primary-50)] border border-[var(--color-primary-100)] px-4 py-3 grid grid-cols-3 gap-0">
+          {[{ val: total, lbl: "Slots" }, { val: total * maxPat, lbl: "Max Patients" }, { val: `${fmt12(startTime)}–${fmt12(endTime)}`, lbl: WEEKDAYS_FULL[weekday] }].map((item, i) => (
+            <div key={i} className={`text-center px-2 ${i > 0 ? "border-l border-[var(--color-primary-100)]" : ""}`}>
+              <p className="text-sm font-bold text-[var(--color-primary-800)]">{item.val}</p>
+              <p className="text-[11px] text-[var(--color-primary-600)] mt-0.5">{item.lbl}</p>
+            </div>
+          ))}
+        </div>
       )}
 
       <div className="flex items-center justify-between rounded-xl border border-[var(--color-border)] px-4 py-3 bg-[var(--color-surface-sunken)]/40">
         <span className="text-sm font-medium text-[var(--color-ink-700)]">Status</span>
         <button type="button" onClick={() => setStatus(s => s === "ACTIVE" ? "INACTIVE" : "ACTIVE")}
           className={`inline-flex items-center gap-2 text-sm font-semibold transition-colors ${status === "ACTIVE" ? "text-[var(--color-primary-600)]" : "text-[var(--color-ink-400)]"}`}>
-          {status === "ACTIVE" ? <><ToggleRight size={22} /> Active</> : <><ToggleLeft size={22} /> Inactive</>}
+          {status === "ACTIVE" ? <><ToggleRight size={22} />Active</> : <><ToggleLeft size={22} />Inactive</>}
         </button>
       </div>
 
       <div className="flex gap-2">
-        <button onClick={onClose} className="flex-1 px-4 py-2.5 rounded-xl border border-[var(--color-border)] text-sm font-medium hover:bg-[var(--color-surface-sunken)] transition-colors">
-          Cancel
-        </button>
+        <button onClick={onClose} className="flex-1 px-4 py-2.5 rounded-xl border border-[var(--color-border)] text-sm font-medium hover:bg-[var(--color-surface-sunken)] transition-colors">Cancel</button>
         <button disabled={pending}
           onClick={() => {
             if (!hospitalId) { setError("Select a hospital"); return; }
@@ -279,7 +221,7 @@ function WeeklyModal({
               catch (e: any) { setError(e.message ?? "Failed"); }
             });
           }}
-          className="flex-1 px-4 py-2.5 rounded-xl bg-[var(--color-primary-600)] text-white text-sm font-semibold hover:bg-[var(--color-primary-700)] disabled:opacity-60 transition-all inline-flex items-center justify-center gap-2 shadow-sm">
+          className="flex-1 px-4 py-2.5 rounded-xl bg-[var(--color-primary-600)] text-white text-sm font-semibold hover:bg-[var(--color-primary-700)] disabled:opacity-60 transition-all inline-flex items-center justify-center gap-2">
           {pending ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
           {initial?.id ? "Save Changes" : "Add Slot"}
         </button>
@@ -288,111 +230,120 @@ function WeeklyModal({
   );
 }
 
-function WeeklyTab({ slots, hospitals }: { slots: WeeklySlot[]; hospitals: Hospital[] }) {
-  const [editTarget, setEditTarget] = useState<Partial<WeeklySlot> & { hospitalId?: string } | null>(null);
+function TemplateTab({ weekly, hospitals, onGenerate }: {
+  weekly: WeeklySlot[]; hospitals: Hospital[]; onGenerate: () => void;
+}) {
+  const [editTarget, setEditTarget] = useState<(Partial<WeeklySlot> & { weekday?: number }) | null>(null);
   const [delTarget,  setDelTarget]  = useState<WeeklySlot | null>(null);
   const [pending,    start]         = useTransition();
 
   const byDay = useMemo(() => {
     const m: Record<number, WeeklySlot[]> = {};
-    for (const s of slots) (m[s.weekday] ??= []).push(s);
+    for (const s of weekly) (m[s.weekday] ??= []).push(s);
     return m;
-  }, [slots]);
-
-  const activeDays = Object.keys(byDay).map(Number).sort();
-
-  if (slots.length === 0) {
-    return (
-      <div className="flex flex-col items-center gap-4 py-16 text-center">
-        <Calendar size={40} className="text-[var(--color-ink-200)]" />
-        <div>
-          <p className="font-semibold text-[var(--color-ink-700)]">No weekly schedule set</p>
-          <p className="text-sm text-[var(--color-ink-400)] mt-1">Add recurring slots that repeat every week.</p>
-        </div>
-        <button onClick={() => setEditTarget({})}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[var(--color-primary-600)] text-white text-sm font-semibold hover:bg-[var(--color-primary-700)] transition-all">
-          <Plus size={14} /> Add First Slot
-        </button>
-      </div>
-    );
-  }
+  }, [weekly]);
 
   return (
     <>
-      <div className="flex justify-end mb-4">
-        <button onClick={() => setEditTarget({})}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[var(--color-primary-600)] text-white text-sm font-semibold hover:bg-[var(--color-primary-700)] transition-all shadow-sm">
-          <Plus size={14} /> Add Slot
-        </button>
+      {/* Info banner */}
+      <div className="flex items-start gap-3 p-4 rounded-xl bg-[var(--color-primary-50)] border border-[var(--color-primary-100)] mb-2">
+        <Info size={16} className="text-[var(--color-primary-600)] shrink-0 mt-0.5" />
+        <div>
+          <p className="text-sm font-semibold text-[var(--color-primary-800)]">Set your weekly template once</p>
+          <p className="text-xs text-[var(--color-primary-600)] mt-0.5">Define which hospitals and times you work each day of the week. Then use <strong>Generate Month</strong> to auto-fill your calendar — no manual entry needed.</p>
+        </div>
       </div>
 
-      {/* Weekly grid by day */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-        {activeDays.map(wd => (
-          <div key={wd} className="bg-[var(--color-surface-sunken)]/50 rounded-2xl p-4 border border-[var(--color-border)]">
-            <div className="flex items-center justify-between mb-3">
-              <div>
-                <p className="font-bold text-[var(--color-ink-900)]">{WEEKDAYS_FULL[wd]}</p>
-                <p className="text-[10px] text-[var(--color-ink-400)] font-mono mt-0.5">Weekly · Every {WEEKDAYS[wd]}</p>
+      {hospitals.length === 0 ? (
+        <div className="flex flex-col items-center gap-3 py-12 text-center">
+          <Building2 size={36} className="text-[var(--color-ink-200)]" />
+          <p className="font-semibold text-[var(--color-ink-700)]">No hospitals linked</p>
+          <p className="text-sm text-[var(--color-ink-400)] max-w-sm">Once a hospital links your profile, you can set up your weekly template here.</p>
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+            {[1,2,3,4,5,6,0].map(wd => {
+              const slots = (byDay[wd] ?? []).sort((a, b) => a.startTime.localeCompare(b.startTime));
+              return (
+                <div key={wd} className="bg-white rounded-2xl border border-[var(--color-border)] p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <p className="font-bold text-[var(--color-ink-900)] text-sm">{WEEKDAYS_FULL[wd]}</p>
+                      <p className="text-[10px] text-[var(--color-ink-400)]">{slots.length > 0 ? `${slots.length} hospital${slots.length > 1 ? "s" : ""}` : "No schedule"}</p>
+                    </div>
+                    <button onClick={() => setEditTarget({ weekday: wd })}
+                      className="p-1.5 rounded-lg bg-[var(--color-primary-50)] text-[var(--color-primary-600)] hover:bg-[var(--color-primary-100)] transition-colors">
+                      <Plus size={13} />
+                    </button>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    {slots.map(slot => {
+                      const active = slot.status === "ACTIVE";
+                      const idx    = hospitals.findIndex(h => h.id === slot.hospitalId);
+                      const color  = getColor(idx);
+                      return (
+                        <div key={slot.id}
+                          className={`rounded-xl border p-2.5 transition-all ${active ? "bg-white border-[var(--color-border)]" : "bg-[var(--color-surface-sunken)]/40 border-[var(--color-border)] opacity-60"}`}>
+                          <div className="flex items-center gap-2 mb-1.5">
+                            <span className="w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-extrabold text-white shrink-0"
+                              style={{ background: color.bg }}>{hospCode(slot.hospital.name)}</span>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-semibold text-[var(--color-ink-800)] truncate">{slot.hospital.name}</p>
+                              <p className="text-[11px] font-bold text-[var(--color-ink-900)] tabular-nums">{fmt12(slot.startTime)} – {fmt12(slot.endTime)}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between text-[10px] text-[var(--color-ink-400)]">
+                            <span><span className="font-semibold text-[var(--color-ink-600)]">{slot.slotMins}m</span> · {slotsCount(slot.startTime, slot.endTime, slot.slotMins)} slots · <Users size={9} className="inline" /> {slot.maxPatients}</span>
+                            <div className="flex items-center gap-0.5">
+                              <button onClick={() => setEditTarget(slot)} className="p-1 rounded text-[var(--color-ink-400)] hover:text-[var(--color-primary-600)] hover:bg-[var(--color-primary-50)] transition-colors"><Pencil size={11} /></button>
+                              <button onClick={() => setDelTarget(slot)} className="p-1 rounded text-[var(--color-ink-400)] hover:text-red-600 hover:bg-red-50 transition-colors"><Trash2 size={11} /></button>
+                              <button disabled={pending}
+                                onClick={() => start(async () => toggleWeeklyStatus(slot.id, active ? "INACTIVE" : "ACTIVE"))}
+                                className={`p-1 rounded transition-colors ${active ? "text-[var(--color-ink-400)] hover:text-amber-600 hover:bg-amber-50" : "text-[var(--color-primary-600)] hover:bg-[var(--color-primary-50)]"}`}>
+                                <Power size={11} />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {slots.length === 0 && (
+                      <button onClick={() => setEditTarget({ weekday: wd })}
+                        className="text-xs text-[var(--color-ink-400)] border border-dashed border-[var(--color-border)] rounded-xl py-3 hover:border-[var(--color-primary-300)] hover:text-[var(--color-primary-600)] transition-colors">
+                        + Add Hospital
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Generate CTA */}
+          {weekly.filter(s => s.status === "ACTIVE").length > 0 && (
+            <div className="mt-2 rounded-2xl border border-[var(--color-primary-100)] bg-[var(--color-primary-50)] p-5 flex flex-col sm:flex-row items-center gap-4">
+              <div className="flex-1">
+                <p className="font-bold text-[var(--color-primary-800)]">Template ready — generate your monthly calendar</p>
+                <p className="text-xs text-[var(--color-primary-600)] mt-1">Switch to the Calendar tab to generate a month automatically from this template. You only need to handle exceptions (leave, extra sessions).</p>
               </div>
-              <button onClick={() => setEditTarget({ weekday: wd })}
-                className="p-1.5 rounded-lg bg-[var(--color-primary-50)] text-[var(--color-primary-600)] hover:bg-[var(--color-primary-100)] transition-colors">
-                <Plus size={12} />
+              <button onClick={onGenerate}
+                className="shrink-0 inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-[var(--color-primary-600)] text-white text-sm font-bold hover:bg-[var(--color-primary-700)] transition-all shadow-sm">
+                <CalendarDays size={15} /> Go to Calendar
               </button>
             </div>
-            <div className="flex flex-col gap-2">
-              {byDay[wd].sort((a, b) => a.startTime.localeCompare(b.startTime)).map(slot => {
-                const active = slot.status === "ACTIVE";
-                return (
-                  <div key={slot.id}
-                    className={`rounded-xl border p-3 bg-white transition-opacity ${active ? "border-[var(--color-border)]" : "border-[var(--color-border)] opacity-60"}`}>
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <HospBadge name={slot.hospital.name} size="sm" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-semibold text-[var(--color-ink-700)] truncate">{slot.hospital.name}</p>
-                        <p className="text-[11px] font-bold text-[var(--color-ink-900)] tabular-nums">
-                          {fmt12(slot.startTime)} – {fmt12(slot.endTime)}
-                        </p>
-                      </div>
-                      <StatusBadge active={active} />
-                    </div>
-                    <div className="flex items-center justify-between text-[11px] text-[var(--color-ink-400)] mb-2">
-                      <span><span className="font-semibold text-[var(--color-ink-600)]">{slot.slotMins} min</span> · {slotsCount(slot.startTime, slot.endTime, slot.slotMins)} slots</span>
-                      <span className="inline-flex items-center gap-1"><Users size={10} /><span className="font-semibold text-[var(--color-ink-600)]">{slot.maxPatients}</span>/slot</span>
-                    </div>
-                    <div className="flex items-center gap-1 pt-2 border-t border-[var(--color-border)]">
-                      <button onClick={() => setEditTarget(slot)}
-                        className="p-1.5 rounded-lg text-[var(--color-ink-400)] hover:text-[var(--color-primary-700)] hover:bg-[var(--color-primary-50)] transition-colors">
-                        <Pencil size={12} />
-                      </button>
-                      <button onClick={() => setDelTarget(slot)}
-                        className="p-1.5 rounded-lg text-[var(--color-ink-400)] hover:text-red-600 hover:bg-red-50 transition-colors">
-                        <Trash2 size={12} />
-                      </button>
-                      <div className="flex-1" />
-                      <button
-                        disabled={pending}
-                        onClick={() => start(async () => { await toggleWeeklyStatus(slot.id, active ? "INACTIVE" : "ACTIVE"); })}
-                        className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-lg transition-colors ${
-                          active ? "text-[var(--color-ink-500)] hover:text-amber-700 hover:bg-amber-50"
-                                 : "text-[var(--color-primary-600)] hover:bg-[var(--color-primary-50)]"}`}>
-                        <Power size={11} /> {active ? "Disable" : "Enable"}
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        ))}
-      </div>
+          )}
+        </>
+      )}
 
       {editTarget !== null && (
-        <WeeklyModal hospitals={hospitals} initial={editTarget} onClose={() => setEditTarget(null)} />
+        <TemplateSlotModal hospitals={hospitals} initial={editTarget} onClose={() => setEditTarget(null)} />
       )}
       {delTarget && (
-        <DeleteConfirm
-          label={`${WEEKDAYS_FULL[delTarget.weekday]}: ${fmt12(delTarget.startTime)} – ${fmt12(delTarget.endTime)} at ${delTarget.hospital.name}`}
+        <ConfirmModal
+          title="Delete Template Slot?"
+          body={`${WEEKDAYS_FULL[delTarget.weekday]} · ${delTarget.hospital.name} · ${fmt12(delTarget.startTime)} – ${fmt12(delTarget.endTime)}`}
+          confirmLabel="Delete" confirmClass="bg-red-600 hover:bg-red-700"
           onConfirm={() => deleteWeekly(delTarget.id)}
           onClose={() => setDelTarget(null)}
         />
@@ -401,542 +352,176 @@ function WeeklyTab({ slots, hospitals }: { slots: WeeklySlot[]; hospitals: Hospi
   );
 }
 
-/* ════════════════════════════════════════════════════════════════════════════
-   TAB 2 — MONTHLY
+/* ═══════════════════════════════════════════════════════════════════════════════
+   CALENDAR TAB — month view with color-coded days, click-to-edit
 ═══════════════════════════════════════════════════════════════════════════════ */
-function MonthlyModal({
-  hospitals, initial, onClose,
-}: {
-  hospitals: Hospital[];
-  initial?: Partial<MonthlySlot> & { hospitalId?: string };
-  onClose: () => void;
-}) {
-  const today = new Date().toISOString().split("T")[0];
-  const [hospitalId, setHospitalId] = useState(initial?.hospitalId ?? hospitals[0]?.id ?? "");
-  const [validFrom,  setValidFrom]  = useState(initial?.validFrom ? dateStr(initial.validFrom) : today);
-  const [validTo,    setValidTo]    = useState(initial?.validTo   ? dateStr(initial.validTo)   : "");
-  const [weekdays,   setWeekdays]   = useState<number[]>(initial?.weekdays ? parseWeekdays(initial.weekdays) : [1,2,3,4,5]);
-  const [startTime,  setStartTime]  = useState(initial?.startTime ?? "09:00");
-  const [endTime,    setEndTime]    = useState(initial?.endTime   ?? "13:00");
-  const [slotMins,   setSlotMins]   = useState(initial?.slotMins  ?? 15);
-  const [maxPat,     setMaxPat]     = useState(initial?.maxPatients ?? 5);
-  const [label,      setLabel]      = useState(initial?.label ?? "");
-  const [status,     setStatus]     = useState(initial?.status ?? "ACTIVE");
+
+// Day-edit modal (edit a single generated slot)
+function DayEditModal({ slot, hospitals, onClose }: { slot: DaySlot; hospitals: Hospital[]; onClose: () => void }) {
+  const [hospitalId, setHospitalId] = useState(slot.hospitalId);
+  const [startTime,  setStartTime]  = useState(slot.startTime);
+  const [endTime,    setEndTime]    = useState(slot.endTime);
+  const [slotMins,   setSlotMins]   = useState(slot.slotMins);
+  const [maxPat,     setMaxPat]     = useState(slot.maxPatients);
   const [error,      setError]      = useState("");
   const [pending,    start]         = useTransition();
 
-  const toggle = (d: number) =>
-    setWeekdays(prev => prev.includes(d) ? prev.filter(x => x !== d) : [...prev, d].sort());
-
-  const total = slotsCount(startTime, endTime, slotMins);
-
   return (
-    <Modal
-      title={initial?.id ? "Edit Monthly Plan" : "Add Monthly Plan"}
-      sub="Fixed schedule for a date range — overrides weekly"
-      onClose={onClose}
-    >
+    <Modal title="Edit This Day" sub="Only this date changes — template is untouched" onClose={onClose}>
       {error && <Err msg={error} />}
-
       <div><label className={LBL}>Hospital</label>
         <select value={hospitalId} onChange={e => setHospitalId(e.target.value)} className={FLD}>
           {hospitals.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
         </select>
       </div>
-
       <div className="grid grid-cols-2 gap-3">
-        <div><label className={LBL}>Valid From</label>
-          <input type="date" value={validFrom} onChange={e => setValidFrom(e.target.value)} className={FLD} /></div>
-        <div><label className={LBL}>Valid To</label>
-          <input type="date" value={validTo} onChange={e => setValidTo(e.target.value)} className={FLD} /></div>
+        <div><label className={LBL}>Start Time</label><input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} className={FLD} /></div>
+        <div><label className={LBL}>End Time</label><input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} className={FLD} /></div>
       </div>
-
-      <div>
-        <label className={LBL}>Applies On</label>
-        <div className="grid grid-cols-7 gap-1">
-          {WEEKDAYS.map((d, i) => (
-            <button key={d} type="button" onClick={() => toggle(i)}
-              className={`py-2 rounded-lg text-xs font-bold border transition-all ${
-                weekdays.includes(i)
-                  ? "bg-[var(--color-primary-600)] text-white border-[var(--color-primary-600)]"
-                  : "bg-white text-[var(--color-ink-500)] border-[var(--color-border)] hover:border-[var(--color-primary-300)]"
-              }`}>{d}</button>
-          ))}
-        </div>
-        {weekdays.length > 0 && (
-          <p className="text-[11px] text-[var(--color-ink-400)] mt-1.5">
-            Every {weekdays.map(d => WEEKDAYS_FULL[d]).join(", ")}
-          </p>
-        )}
-      </div>
-
-      <div className="grid grid-cols-2 gap-3">
-        <div><label className={LBL}>Start Time</label>
-          <input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} className={FLD} /></div>
-        <div><label className={LBL}>End Time</label>
-          <input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} className={FLD} /></div>
-      </div>
-
       <div className="grid grid-cols-2 gap-3">
         <div><label className={LBL}>Slot Duration</label>
           <select value={slotMins} onChange={e => setSlotMins(Number(e.target.value))} className={FLD}>
             {SLOT_OPTIONS.map(m => <option key={m} value={m}>{m} min</option>)}
-          </select></div>
+          </select>
+        </div>
         <div><label className={LBL}>Max Patients / Slot</label>
-          <input type="number" min={1} max={20} value={maxPat} onChange={e => setMaxPat(Number(e.target.value))} className={FLD} /></div>
+          <input type="number" min={1} max={20} value={maxPat} onChange={e => setMaxPat(Number(e.target.value))} className={FLD} />
+        </div>
       </div>
-
-      <div><label className={LBL}>Label (optional)</label>
-        <input type="text" value={label} onChange={e => setLabel(e.target.value)}
-          placeholder="e.g. Morning OPD August" className={FLD} /></div>
-
-      {startTime < endTime && total > 0 && validFrom && validTo && (
-        <PreviewBar items={[
-          { val: total, label: "Slots/day" },
-          { val: total * maxPat, label: "Patients/day" },
-          { val: `${fmt12(startTime)} – ${fmt12(endTime)}`, label: "Time Range" },
-        ]} />
-      )}
-
-      <div className="flex items-center justify-between rounded-xl border border-[var(--color-border)] px-4 py-3 bg-[var(--color-surface-sunken)]/40">
-        <span className="text-sm font-medium text-[var(--color-ink-700)]">Status</span>
-        <button type="button" onClick={() => setStatus(s => s === "ACTIVE" ? "INACTIVE" : "ACTIVE")}
-          className={`inline-flex items-center gap-2 text-sm font-semibold transition-colors ${status === "ACTIVE" ? "text-[var(--color-primary-600)]" : "text-[var(--color-ink-400)]"}`}>
-          {status === "ACTIVE" ? <><ToggleRight size={22} /> Active</> : <><ToggleLeft size={22} /> Inactive</>}
-        </button>
-      </div>
-
       <div className="flex gap-2">
-        <button onClick={onClose} className="flex-1 px-4 py-2.5 rounded-xl border border-[var(--color-border)] text-sm font-medium hover:bg-[var(--color-surface-sunken)] transition-colors">
-          Cancel
-        </button>
+        <button onClick={onClose} className="flex-1 px-4 py-2.5 rounded-xl border border-[var(--color-border)] text-sm font-medium hover:bg-[var(--color-surface-sunken)] transition-colors">Cancel</button>
         <button disabled={pending}
           onClick={() => {
-            if (!hospitalId) { setError("Select a hospital"); return; }
-            if (!validFrom || !validTo) { setError("Enter validity date range"); return; }
-            if (weekdays.length === 0) { setError("Select at least one day"); return; }
             if (startTime >= endTime) { setError("End time must be after start time"); return; }
             setError("");
             start(async () => {
-              try {
-                await upsertMonthly({ id: initial?.id, hospitalId, validFrom, validTo, weekdays: weekdays.join(","), startTime, endTime, slotMins, maxPatients: maxPat, label: label || undefined, status });
-                onClose();
-              } catch (e: any) { setError(e.message ?? "Failed"); }
+              try { await updateGeneratedDay(slot.id, { hospitalId, startTime, endTime, slotMins, maxPatients: maxPat }); onClose(); }
+              catch (e: any) { setError(e.message ?? "Failed"); }
             });
           }}
-          className="flex-1 px-4 py-2.5 rounded-xl bg-[var(--color-primary-600)] text-white text-sm font-semibold hover:bg-[var(--color-primary-700)] disabled:opacity-60 transition-all inline-flex items-center justify-center gap-2 shadow-sm">
-          {pending ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
-          {initial?.id ? "Save Changes" : "Add Plan"}
+          className="flex-1 px-4 py-2.5 rounded-xl bg-[var(--color-primary-600)] text-white text-sm font-semibold hover:bg-[var(--color-primary-700)] disabled:opacity-60 inline-flex items-center justify-center gap-2">
+          {pending ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Save Change
         </button>
       </div>
     </Modal>
   );
 }
 
-function MonthlyTab({ slots, hospitals }: { slots: MonthlySlot[]; hospitals: Hospital[] }) {
-  const [editTarget, setEditTarget] = useState<Partial<MonthlySlot> & { hospitalId?: string } | null>(null);
-  const [delTarget,  setDelTarget]  = useState<MonthlySlot | null>(null);
-  const [pending,    start]         = useTransition();
-
-  if (slots.length === 0) {
-    return (
-      <div className="flex flex-col items-center gap-4 py-16 text-center">
-        <CalendarDays size={40} className="text-[var(--color-ink-200)]" />
-        <div>
-          <p className="font-semibold text-[var(--color-ink-700)]">No monthly plans set</p>
-          <p className="text-sm text-[var(--color-ink-400)] mt-1">Define date-range schedules with specific weekdays. Overrides weekly.</p>
-        </div>
-        <button onClick={() => setEditTarget({})}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[var(--color-primary-600)] text-white text-sm font-semibold hover:bg-[var(--color-primary-700)] transition-all">
-          <Plus size={14} /> Add First Plan
-        </button>
-      </div>
-    );
-  }
-
-  return (
-    <>
-      <div className="flex justify-end mb-4">
-        <button onClick={() => setEditTarget({})}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[var(--color-primary-600)] text-white text-sm font-semibold hover:bg-[var(--color-primary-700)] transition-all shadow-sm">
-          <Plus size={14} /> Add Plan
-        </button>
-      </div>
-
-      <div className="flex flex-col gap-3">
-        {slots.map(slot => {
-          const active = slot.status === "ACTIVE";
-          const days   = parseWeekdays(slot.weekdays);
-          return (
-            <div key={slot.id} className={`bg-white rounded-2xl border border-[var(--color-border)] p-4 transition-all hover:shadow-md ${active ? "" : "opacity-70"}`}>
-              <div className="flex flex-wrap items-start gap-3">
-                <HospBadge name={slot.hospital.name} />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap mb-1">
-                    <p className="font-semibold text-[var(--color-ink-900)]">{slot.hospital.name}</p>
-                    {slot.label && (
-                      <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[var(--color-primary-50)] text-[var(--color-primary-700)] border border-[var(--color-primary-100)]">
-                        {slot.label}
-                      </span>
-                    )}
-                    <StatusBadge active={active} />
-                  </div>
-                  {/* Validity range */}
-                  <div className="flex items-center gap-1.5 text-xs text-[var(--color-ink-500)] mb-2">
-                    <CalendarDays size={12} className="text-[var(--color-primary-500)]" />
-                    <span className="font-semibold text-[var(--color-ink-700)]">{fmtDate(slot.validFrom)}</span>
-                    <ChevronRight size={12} />
-                    <span className="font-semibold text-[var(--color-ink-700)]">{fmtDate(slot.validTo)}</span>
-                  </div>
-                  {/* Days */}
-                  <div className="flex items-center gap-1 mb-2">
-                    {[0,1,2,3,4,5,6].map(d => (
-                      <span key={d}
-                        className={`w-6 h-6 rounded-md text-[10px] font-bold flex items-center justify-center ${
-                          days.includes(d)
-                            ? "bg-[var(--color-primary-600)] text-white"
-                            : "bg-[var(--color-surface-sunken)] text-[var(--color-ink-300)]"
-                        }`}>
-                        {WEEKDAYS[d][0]}
-                      </span>
-                    ))}
-                  </div>
-                  {/* Time + capacity */}
-                  <div className="flex items-center gap-3 text-xs text-[var(--color-ink-500)]">
-                    <span className="inline-flex items-center gap-1.5">
-                      <Clock size={11} className="text-[var(--color-primary-500)]" />
-                      <span className="font-bold text-[var(--color-ink-900)] tabular-nums">
-                        {fmt12(slot.startTime)} – {fmt12(slot.endTime)}
-                      </span>
-                    </span>
-                    <span>·</span>
-                    <span><span className="font-semibold text-[var(--color-ink-700)]">{slot.slotMins} min</span> · {slotsCount(slot.startTime, slot.endTime, slot.slotMins)} slots</span>
-                    <span>·</span>
-                    <span className="inline-flex items-center gap-1"><Users size={10} /><span className="font-semibold text-[var(--color-ink-700)]">{slot.maxPatients}</span>/slot</span>
-                  </div>
-                </div>
-                {/* Actions */}
-                <div className="flex items-center gap-1 shrink-0">
-                  <button onClick={() => setEditTarget(slot)}
-                    className="p-2 rounded-lg text-[var(--color-ink-400)] hover:text-[var(--color-primary-700)] hover:bg-[var(--color-primary-50)] transition-colors"><Pencil size={13} /></button>
-                  <button onClick={() => setDelTarget(slot)}
-                    className="p-2 rounded-lg text-[var(--color-ink-400)] hover:text-red-600 hover:bg-red-50 transition-colors"><Trash2 size={13} /></button>
-                  <button disabled={pending}
-                    onClick={() => start(async () => { await toggleMonthlyStatus(slot.id, active ? "INACTIVE" : "ACTIVE"); })}
-                    className={`inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1.5 rounded-lg transition-colors ${
-                      active ? "text-[var(--color-ink-500)] hover:text-amber-700 hover:bg-amber-50"
-                             : "text-[var(--color-primary-600)] hover:bg-[var(--color-primary-50)]"}`}>
-                    <Power size={12} /> {active ? "Disable" : "Enable"}
-                  </button>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {editTarget !== null && (
-        <MonthlyModal hospitals={hospitals} initial={editTarget} onClose={() => setEditTarget(null)} />
-      )}
-      {delTarget && (
-        <DeleteConfirm
-          label={`${slot_label_monthly(delTarget)}`}
-          onConfirm={() => deleteMonthly(delTarget.id)}
-          onClose={() => setDelTarget(null)}
-        />
-      )}
-    </>
-  );
-}
-function slot_label_monthly(s: MonthlySlot) {
-  return `${s.hospital.name} · ${fmtDate(s.validFrom)} – ${fmtDate(s.validTo)}`;
-}
-
-/* ════════════════════════════════════════════════════════════════════════════
-   TAB 3 — INDIVIDUAL DAY
-═══════════════════════════════════════════════════════════════════════════════ */
-function IndivDayModal({ hospitals, initial, onClose }: {
-  hospitals: Hospital[];
-  initial?: Partial<IndivDay> & { hospitalId?: string };
-  onClose: () => void;
-}) {
-  const today = new Date().toISOString().split("T")[0];
-  const [hospitalId, setHospitalId] = useState(initial?.hospitalId ?? hospitals[0]?.id ?? "");
-  const [date,       setDate]       = useState(initial?.date ? dateStr(initial.date) : today);
-  const [startTime,  setStartTime]  = useState(initial?.startTime ?? "09:00");
-  const [endTime,    setEndTime]    = useState(initial?.endTime   ?? "13:00");
-  const [slotMins,   setSlotMins]   = useState(initial?.slotMins  ?? 15);
-  const [maxPat,     setMaxPat]     = useState(initial?.maxPatients ?? 5);
-  const [reason,     setReason]     = useState(initial?.reason ?? "");
-  const [status,     setStatus]     = useState(initial?.status ?? "ACTIVE");
+// Extra OP modal
+function ExtraOPModal({ date, hospitals, onClose }: { date: string; hospitals: Hospital[]; onClose: () => void }) {
+  const [hospitalId, setHospitalId] = useState(hospitals[0]?.id ?? "");
+  const [startTime,  setStartTime]  = useState("09:00");
+  const [endTime,    setEndTime]    = useState("12:00");
+  const [slotMins,   setSlotMins]   = useState(15);
+  const [maxPat,     setMaxPat]     = useState(5);
   const [error,      setError]      = useState("");
   const [pending,    start]         = useTransition();
 
-  const total = slotsCount(startTime, endTime, slotMins);
-
   return (
-    <Modal
-      title={initial?.id ? "Edit Individual Day" : "Add Individual Day"}
-      sub="One-time override for a specific date — overrides weekly & monthly"
-      onClose={onClose}
-    >
+    <Modal title="Add Extra OP Session" sub={fmtFullDate(date)} onClose={onClose}>
       {error && <Err msg={error} />}
-
-      <div><label className={LBL}>Hospital</label>
-        <select value={hospitalId} onChange={e => setHospitalId(e.target.value)} className={FLD}>
-          {hospitals.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
-        </select>
-      </div>
-
-      <div><label className={LBL}>Date</label>
-        <input type="date" value={date} onChange={e => setDate(e.target.value)} className={FLD} /></div>
-
-      <div className="grid grid-cols-2 gap-3">
-        <div><label className={LBL}>Start Time</label>
-          <input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} className={FLD} /></div>
-        <div><label className={LBL}>End Time</label>
-          <input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} className={FLD} /></div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-3">
-        <div><label className={LBL}>Slot Duration</label>
-          <select value={slotMins} onChange={e => setSlotMins(Number(e.target.value))} className={FLD}>
-            {SLOT_OPTIONS.map(m => <option key={m} value={m}>{m} min</option>)}
-          </select></div>
-        <div><label className={LBL}>Max Patients / Slot</label>
-          <input type="number" min={1} max={20} value={maxPat} onChange={e => setMaxPat(Number(e.target.value))} className={FLD} /></div>
-      </div>
-
-      <div><label className={LBL}>Reason (optional)</label>
-        <input type="text" value={reason} onChange={e => setReason(e.target.value)}
-          placeholder="e.g. Special Camp, Half Day, Emergency Visit" className={FLD} /></div>
-
-      {startTime < endTime && total > 0 && (
-        <PreviewBar items={[
-          { val: total, label: "Slots" },
-          { val: total * maxPat, label: "Max Patients" },
-          { val: `${fmt12(startTime)} – ${fmt12(endTime)}`, label: fmtDate(date) },
-        ]} />
-      )}
-
-      <div className="flex gap-2">
-        <button onClick={onClose} className="flex-1 px-4 py-2.5 rounded-xl border border-[var(--color-border)] text-sm font-medium hover:bg-[var(--color-surface-sunken)] transition-colors">
-          Cancel
-        </button>
-        <button disabled={pending}
-          onClick={() => {
-            if (!hospitalId) { setError("Select a hospital"); return; }
-            if (!date) { setError("Select a date"); return; }
-            if (startTime >= endTime) { setError("End time must be after start time"); return; }
-            setError("");
-            start(async () => {
-              try {
-                await upsertIndividualDay({ id: initial?.id, hospitalId, date, startTime, endTime, slotMins, maxPatients: maxPat, reason: reason || undefined, status });
-                onClose();
-              } catch (e: any) { setError(e.message ?? "Failed"); }
-            });
-          }}
-          className="flex-1 px-4 py-2.5 rounded-xl bg-[var(--color-primary-600)] text-white text-sm font-semibold hover:bg-[var(--color-primary-700)] disabled:opacity-60 transition-all inline-flex items-center justify-center gap-2 shadow-sm">
-          {pending ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
-          {initial?.id ? "Save Changes" : "Add Day"}
-        </button>
-      </div>
-    </Modal>
-  );
-}
-
-function IndivDayTab({ slots, hospitals }: { slots: IndivDay[]; hospitals: Hospital[] }) {
-  const [editTarget, setEditTarget] = useState<Partial<IndivDay> & { hospitalId?: string } | null>(null);
-  const [delTarget,  setDelTarget]  = useState<IndivDay | null>(null);
-
-  const now    = new Date();
-  const past   = slots.filter(s => new Date(s.date) < now);
-  const future = slots.filter(s => new Date(s.date) >= now);
-
-  if (slots.length === 0) {
-    return (
-      <div className="flex flex-col items-center gap-4 py-16 text-center">
-        <CalendarDays size={40} className="text-[var(--color-ink-200)]" />
-        <div>
-          <p className="font-semibold text-[var(--color-ink-700)]">No individual day schedules</p>
-          <p className="text-sm text-[var(--color-ink-400)] mt-1">Add one-time schedules for special camps, half-days, or emergency visits.</p>
-        </div>
-        <button onClick={() => setEditTarget({})}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[var(--color-primary-600)] text-white text-sm font-semibold hover:bg-[var(--color-primary-700)] transition-all">
-          <Plus size={14} /> Add Day
-        </button>
-      </div>
-    );
-  }
-
-  const renderRow = (slot: IndivDay) => {
-    const active = slot.status === "ACTIVE";
-    return (
-      <div key={slot.id} className={`bg-white rounded-2xl border border-[var(--color-border)] p-4 flex flex-wrap items-center gap-3 transition-all hover:shadow-md ${active ? "" : "opacity-60"}`}>
-        {/* Date badge */}
-        <div className="w-14 h-14 rounded-xl flex flex-col items-center justify-center bg-[var(--color-primary-50)] border border-[var(--color-primary-100)] shrink-0">
-          <span className="text-[10px] font-bold text-[var(--color-primary-600)] uppercase">
-            {new Date(slot.date).toLocaleDateString("en-IN", { month: "short" })}
-          </span>
-          <span className="text-xl font-extrabold text-[var(--color-primary-800)] leading-none tabular-nums">
-            {new Date(slot.date).getDate()}
-          </span>
-          <span className="text-[9px] font-semibold text-[var(--color-primary-500)]">
-            {WEEKDAYS[new Date(slot.date).getDay()]}
-          </span>
-        </div>
-
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1 flex-wrap">
-            <HospBadge name={slot.hospital.name} size="sm" />
-            <span className="font-semibold text-[var(--color-ink-900)] text-sm">{slot.hospital.name}</span>
-            {slot.reason && (
-              <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
-                {slot.reason}
-              </span>
-            )}
-            <StatusBadge active={active} />
-          </div>
-          <div className="flex items-center gap-3 text-xs text-[var(--color-ink-500)]">
-            <span className="inline-flex items-center gap-1.5">
-              <Clock size={11} className="text-[var(--color-primary-500)]" />
-              <span className="font-bold text-[var(--color-ink-900)] tabular-nums">
-                {fmt12(slot.startTime)} – {fmt12(slot.endTime)}
-              </span>
-            </span>
-            <span>·</span>
-            <span><span className="font-semibold text-[var(--color-ink-700)]">{slot.slotMins} min</span> · {slotsCount(slot.startTime, slot.endTime, slot.slotMins)} slots</span>
-            <span>·</span>
-            <span className="inline-flex items-center gap-1"><Users size={10} /><span className="font-semibold text-[var(--color-ink-700)]">{slot.maxPatients}</span>/slot</span>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-1 shrink-0">
-          <button onClick={() => setEditTarget(slot)}
-            className="p-2 rounded-lg text-[var(--color-ink-400)] hover:text-[var(--color-primary-700)] hover:bg-[var(--color-primary-50)] transition-colors"><Pencil size={13} /></button>
-          <button onClick={() => setDelTarget(slot)}
-            className="p-2 rounded-lg text-[var(--color-ink-400)] hover:text-red-600 hover:bg-red-50 transition-colors"><Trash2 size={13} /></button>
-        </div>
-      </div>
-    );
-  };
-
-  return (
-    <>
-      <div className="flex justify-end mb-4">
-        <button onClick={() => setEditTarget({})}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[var(--color-primary-600)] text-white text-sm font-semibold hover:bg-[var(--color-primary-700)] transition-all shadow-sm">
-          <Plus size={14} /> Add Day
-        </button>
-      </div>
-
-      {future.length > 0 && (
-        <div className="mb-4">
-          <p className="text-xs font-bold text-[var(--color-ink-500)] uppercase tracking-wide mb-2">Upcoming</p>
-          <div className="flex flex-col gap-2">{future.map(renderRow)}</div>
-        </div>
-      )}
-      {past.length > 0 && (
-        <div>
-          <p className="text-xs font-bold text-[var(--color-ink-500)] uppercase tracking-wide mb-2">Past</p>
-          <div className="flex flex-col gap-2 opacity-60">{past.map(renderRow)}</div>
-        </div>
-      )}
-
-      {editTarget !== null && (
-        <IndivDayModal hospitals={hospitals} initial={editTarget} onClose={() => setEditTarget(null)} />
-      )}
-      {delTarget && (
-        <DeleteConfirm
-          label={`${fmtDate(delTarget.date)} · ${delTarget.hospital.name} · ${fmt12(delTarget.startTime)} – ${fmt12(delTarget.endTime)}`}
-          onConfirm={() => deleteIndividualDay(delTarget.id)}
-          onClose={() => setDelTarget(null)}
-        />
-      )}
-    </>
-  );
-}
-
-/* ════════════════════════════════════════════════════════════════════════════
-   TAB 4 — LEAVE
-═══════════════════════════════════════════════════════════════════════════════ */
-function LeaveModal({ hospitals, onClose }: { hospitals: Hospital[]; onClose: () => void }) {
-  const today = new Date().toISOString().split("T")[0];
-  const [allHospitals, setAllHospitals] = useState(true);
-  const [hospitalId,   setHospitalId]   = useState(hospitals[0]?.id ?? "");
-  const [date,         setDate]         = useState(today);
-  const [leaveType,    setLeaveType]    = useState("FULL_DAY");
-  const [halfPeriod,   setHalfPeriod]   = useState("MORNING");
-  const [reason,       setReason]       = useState("");
-  const [error,        setError]        = useState("");
-  const [pending,      start]           = useTransition();
-
-  return (
-    <Modal
-      title="Apply Leave"
-      sub="Leave blocks all appointments — highest priority override"
-      onClose={onClose}
-    >
-      {error && <Err msg={error} />}
-
-      {/* Info banner */}
       <div className="flex items-start gap-2 p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs">
-        <Info size={14} className="shrink-0 mt-0.5 text-amber-600" />
-        <span>Leave overrides all schedules. No new bookings will be accepted, and existing patients should be notified.</span>
+        <Zap size={13} className="text-amber-600 shrink-0 mt-0.5" />
+        Extra sessions override any holiday or off-day for this date only.
+      </div>
+      <div><label className={LBL}>Hospital</label>
+        <select value={hospitalId} onChange={e => setHospitalId(e.target.value)} className={FLD}>
+          {hospitals.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
+        </select>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div><label className={LBL}>Start Time</label><input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} className={FLD} /></div>
+        <div><label className={LBL}>End Time</label><input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} className={FLD} /></div>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div><label className={LBL}>Slot Duration</label>
+          <select value={slotMins} onChange={e => setSlotMins(Number(e.target.value))} className={FLD}>
+            {SLOT_OPTIONS.map(m => <option key={m} value={m}>{m} min</option>)}
+          </select>
+        </div>
+        <div><label className={LBL}>Max Patients / Slot</label>
+          <input type="number" min={1} max={20} value={maxPat} onChange={e => setMaxPat(Number(e.target.value))} className={FLD} />
+        </div>
+      </div>
+      <div className="flex gap-2">
+        <button onClick={onClose} className="flex-1 px-4 py-2.5 rounded-xl border border-[var(--color-border)] text-sm font-medium hover:bg-[var(--color-surface-sunken)] transition-colors">Cancel</button>
+        <button disabled={pending}
+          onClick={() => {
+            if (!hospitalId) { setError("Select a hospital"); return; }
+            if (startTime >= endTime) { setError("End time must be after start time"); return; }
+            setError("");
+            start(async () => {
+              try { await addExtraOP({ date, hospitalId, startTime, endTime, slotMins, maxPatients: maxPat }); onClose(); }
+              catch (e: any) { setError(e.message ?? "Failed"); }
+            });
+          }}
+          className="flex-1 px-4 py-2.5 rounded-xl bg-amber-600 text-white text-sm font-semibold hover:bg-amber-700 disabled:opacity-60 inline-flex items-center justify-center gap-2">
+          {pending ? <Loader2 size={14} className="animate-spin" /> : <Zap size={14} />} Add Session
+        </button>
+      </div>
+    </Modal>
+  );
+}
+
+// Leave modal
+function LeaveModal({ preSelectedDates, hospitals, onClose }: {
+  preSelectedDates: string[]; hospitals: Hospital[]; onClose: () => void;
+}) {
+  const today     = new Date().toISOString().split("T")[0];
+  const [allHosp, setAllHosp]   = useState(true);
+  const [hospId,  setHospId]    = useState(hospitals[0]?.id ?? "");
+  const [halfDay, setHalfDay]   = useState(false);
+  const [period,  setPeriod]    = useState("MORNING");
+  const [reason,  setReason]    = useState("");
+  const [error,   setError]     = useState("");
+  const [pending, start]        = useTransition();
+
+  return (
+    <Modal title="Apply Leave" sub={preSelectedDates.length > 1 ? `${preSelectedDates.length} dates selected` : (preSelectedDates[0] ? fmtFullDate(preSelectedDates[0]) : "Select dates first")} onClose={onClose}>
+      {error && <Err msg={error} />}
+      <div className="flex items-start gap-2 p-3 rounded-xl bg-red-50 border border-red-200 text-red-800 text-xs">
+        <CalendarOff size={13} className="text-red-500 shrink-0 mt-0.5" />
+        Leave blocks all appointments. New bookings will be disabled for the selected dates.
       </div>
 
-      {/* Hospital scope */}
       <div>
         <label className={LBL}>Applies To</label>
         <div className="flex gap-2">
-          {[{ val: true, label: "All Hospitals" }, { val: false, label: "Specific Hospital" }].map(opt => (
-            <button key={String(opt.val)} type="button"
-              onClick={() => setAllHospitals(opt.val)}
-              className={`flex-1 py-2.5 rounded-xl text-sm font-semibold border transition-all ${
-                allHospitals === opt.val
-                  ? "bg-[var(--color-primary-600)] text-white border-[var(--color-primary-600)]"
-                  : "bg-white text-[var(--color-ink-500)] border-[var(--color-border)] hover:border-[var(--color-primary-300)]"
-              }`}>{opt.label}</button>
+          {[{ v: true, l: "All Hospitals" }, { v: false, l: "Specific Hospital" }].map(opt => (
+            <button key={String(opt.v)} type="button" onClick={() => setAllHosp(opt.v)}
+              className={`flex-1 py-2.5 rounded-xl text-sm font-semibold border transition-all ${allHosp === opt.v ? "bg-[var(--color-primary-600)] text-white border-[var(--color-primary-600)]" : "bg-white text-[var(--color-ink-500)] border-[var(--color-border)] hover:border-[var(--color-primary-300)]"}`}>
+              {opt.l}
+            </button>
           ))}
         </div>
-        {!allHospitals && (
-          <select value={hospitalId} onChange={e => setHospitalId(e.target.value)} className={`${FLD} mt-2`}>
+        {!allHosp && (
+          <select value={hospId} onChange={e => setHospId(e.target.value)} className={`${FLD} mt-2`}>
             {hospitals.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
           </select>
         )}
       </div>
 
-      <div><label className={LBL}>Leave Date</label>
-        <input type="date" min={today} value={date} onChange={e => setDate(e.target.value)} className={FLD} /></div>
-
-      {/* Leave type */}
       <div>
         <label className={LBL}>Leave Type</label>
         <div className="flex gap-2">
-          {[{ val: "FULL_DAY", label: "Full Day" }, { val: "HALF_DAY", label: "Half Day" }].map(opt => (
-            <button key={opt.val} type="button"
-              onClick={() => setLeaveType(opt.val)}
-              className={`flex-1 py-2.5 rounded-xl text-sm font-semibold border transition-all ${
-                leaveType === opt.val
-                  ? "bg-[var(--color-primary-600)] text-white border-[var(--color-primary-600)]"
-                  : "bg-white text-[var(--color-ink-500)] border-[var(--color-border)] hover:border-[var(--color-primary-300)]"
-              }`}>{opt.label}</button>
+          {[{ v: false, l: "Full Day" }, { v: true, l: "Half Day" }].map(opt => (
+            <button key={String(opt.v)} type="button" onClick={() => setHalfDay(opt.v)}
+              className={`flex-1 py-2.5 rounded-xl text-sm font-semibold border transition-all ${halfDay === opt.v ? "bg-[var(--color-primary-600)] text-white border-[var(--color-primary-600)]" : "bg-white text-[var(--color-ink-500)] border-[var(--color-border)]"}`}>
+              {opt.l}
+            </button>
           ))}
         </div>
       </div>
 
-      {leaveType === "HALF_DAY" && (
+      {halfDay && (
         <div>
           <label className={LBL}>Period</label>
           <div className="flex gap-2">
-            {[{ val: "MORNING", label: "Morning" }, { val: "AFTERNOON", label: "Afternoon" }].map(opt => (
-              <button key={opt.val} type="button"
-                onClick={() => setHalfPeriod(opt.val)}
-                className={`flex-1 py-2.5 rounded-xl text-sm font-semibold border transition-all ${
-                  halfPeriod === opt.val
-                    ? "bg-amber-500 text-white border-amber-500"
-                    : "bg-white text-[var(--color-ink-500)] border-[var(--color-border)] hover:border-amber-300"
-                }`}>{opt.label}</button>
+            {["MORNING", "AFTERNOON"].map(p => (
+              <button key={p} type="button" onClick={() => setPeriod(p)}
+                className={`flex-1 py-2.5 rounded-xl text-sm font-semibold border transition-all ${period === p ? "bg-amber-500 text-white border-amber-500" : "bg-white text-[var(--color-ink-500)] border-[var(--color-border)]"}`}>
+                {p.charAt(0) + p.slice(1).toLowerCase()}
+              </button>
             ))}
           </div>
         </div>
@@ -944,29 +529,21 @@ function LeaveModal({ hospitals, onClose }: { hospitals: Hospital[]; onClose: ()
 
       <div><label className={LBL}>Reason</label>
         <input type="text" value={reason} onChange={e => setReason(e.target.value)}
-          placeholder="e.g. Conference, Personal, Medical Emergency" className={FLD} /></div>
+          placeholder="e.g. Conference, Personal, Medical Emergency" className={FLD} />
+      </div>
 
       <div className="flex gap-2">
-        <button onClick={onClose} className="flex-1 px-4 py-2.5 rounded-xl border border-[var(--color-border)] text-sm font-medium hover:bg-[var(--color-surface-sunken)] transition-colors">
-          Cancel
-        </button>
-        <button disabled={pending}
+        <button onClick={onClose} className="flex-1 px-4 py-2.5 rounded-xl border border-[var(--color-border)] text-sm font-medium hover:bg-[var(--color-surface-sunken)] transition-colors">Cancel</button>
+        <button disabled={pending || preSelectedDates.length === 0}
           onClick={() => {
-            if (!date) { setError("Select a date"); return; }
+            if (preSelectedDates.length === 0) { setError("No dates selected"); return; }
             setError("");
             start(async () => {
-              try {
-                await applyLeave({
-                  hospitalId: allHospitals ? undefined : hospitalId,
-                  date, leaveType,
-                  halfPeriod: leaveType === "HALF_DAY" ? halfPeriod : undefined,
-                  reason: reason || undefined,
-                });
-                onClose();
-              } catch (e: any) { setError(e.message ?? "Failed"); }
+              try { await addLeave({ dates: preSelectedDates, hospitalId: allHosp ? undefined : hospId, reason: reason || undefined, halfPeriod: halfDay ? period : undefined }); onClose(); }
+              catch (e: any) { setError(e.message ?? "Failed"); }
             });
           }}
-          className="flex-1 px-4 py-2.5 rounded-xl bg-amber-600 text-white text-sm font-semibold hover:bg-amber-700 disabled:opacity-60 transition-all inline-flex items-center justify-center gap-2 shadow-sm">
+          className="flex-1 px-4 py-2.5 rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-700 disabled:opacity-60 inline-flex items-center justify-center gap-2">
           {pending ? <Loader2 size={14} className="animate-spin" /> : <CalendarOff size={14} />}
           Apply Leave
         </button>
@@ -975,147 +552,633 @@ function LeaveModal({ hospitals, onClose }: { hospitals: Hospital[]; onClose: ()
   );
 }
 
-function LeaveTab({ leaves, hospitals }: { leaves: Leave[]; hospitals: Hospital[] }) {
-  const [showModal, setShowModal] = useState(false);
-  const [pending,   start]        = useTransition();
+// Bulk assign modal
+function BulkAssignModal({ dates, hospitals, onClose }: {
+  dates: string[]; hospitals: Hospital[]; onClose: () => void;
+}) {
+  const [hospitalId, setHospitalId] = useState(hospitals[0]?.id ?? "");
+  const [startTime,  setStartTime]  = useState("09:00");
+  const [endTime,    setEndTime]    = useState("13:00");
+  const [slotMins,   setSlotMins]   = useState(15);
+  const [maxPat,     setMaxPat]     = useState(5);
+  const [error,      setError]      = useState("");
+  const [pending,    start]         = useTransition();
 
-  const now    = new Date();
-  const past   = leaves.filter(l => new Date(l.date) < now);
-  const future = leaves.filter(l => new Date(l.date) >= now);
-
-  const renderLeave = (leave: Leave) => (
-    <div key={leave.id}
-      className="bg-white rounded-2xl border border-amber-200 p-4 flex flex-wrap items-center gap-3 hover:shadow-md transition-all">
-      {/* Date badge */}
-      <div className="w-14 h-14 rounded-xl flex flex-col items-center justify-center bg-red-50 border border-red-100 shrink-0">
-        <span className="text-[10px] font-bold text-red-600 uppercase">
-          {new Date(leave.date).toLocaleDateString("en-IN", { month: "short" })}
-        </span>
-        <span className="text-xl font-extrabold text-red-700 leading-none tabular-nums">
-          {new Date(leave.date).getDate()}
-        </span>
-        <span className="text-[9px] font-semibold text-red-500">
-          {WEEKDAYS[new Date(leave.date).getDay()]}
-        </span>
+  return (
+    <Modal title={`Assign ${dates.length} Date${dates.length > 1 ? "s" : ""}`} sub="All selected dates get this schedule" onClose={onClose}>
+      {error && <Err msg={error} />}
+      <div><label className={LBL}>Hospital</label>
+        <select value={hospitalId} onChange={e => setHospitalId(e.target.value)} className={FLD}>
+          {hospitals.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
+        </select>
       </div>
-
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-1 flex-wrap">
-          <span className="font-semibold text-[var(--color-ink-900)]">
-            {leave.hospital ? leave.hospital.name : "All Hospitals"}
-          </span>
-          <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${
-            leave.leaveType === "FULL_DAY"
-              ? "bg-red-50 text-red-700 border-red-200"
-              : "bg-amber-50 text-amber-700 border-amber-200"
-          }`}>
-            {leave.leaveType === "FULL_DAY" ? "Full Day" : `Half Day · ${leave.halfPeriod === "MORNING" ? "Morning" : "Afternoon"}`}
-          </span>
-          <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-red-50 text-red-700 border border-red-200">
-            <XCircle size={9} /> Leave
-          </span>
+      <div className="grid grid-cols-2 gap-3">
+        <div><label className={LBL}>Start Time</label><input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} className={FLD} /></div>
+        <div><label className={LBL}>End Time</label><input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} className={FLD} /></div>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div><label className={LBL}>Slot Duration</label>
+          <select value={slotMins} onChange={e => setSlotMins(Number(e.target.value))} className={FLD}>
+            {SLOT_OPTIONS.map(m => <option key={m} value={m}>{m} min</option>)}
+          </select>
         </div>
-        {leave.reason && (
-          <p className="text-xs text-[var(--color-ink-500)]">Reason: <span className="font-semibold text-[var(--color-ink-700)]">{leave.reason}</span></p>
+        <div><label className={LBL}>Max Patients / Slot</label>
+          <input type="number" min={1} max={20} value={maxPat} onChange={e => setMaxPat(Number(e.target.value))} className={FLD} />
+        </div>
+      </div>
+      <div className="flex gap-2">
+        <button onClick={onClose} className="flex-1 px-4 py-2.5 rounded-xl border border-[var(--color-border)] text-sm font-medium hover:bg-[var(--color-surface-sunken)] transition-colors">Cancel</button>
+        <button disabled={pending}
+          onClick={() => {
+            if (!hospitalId) { setError("Select a hospital"); return; }
+            if (startTime >= endTime) { setError("End time must be after start time"); return; }
+            setError("");
+            start(async () => {
+              try { await bulkAssignDays({ dates, hospitalId, startTime, endTime, slotMins, maxPatients: maxPat }); onClose(); }
+              catch (e: any) { setError(e.message ?? "Failed"); }
+            });
+          }}
+          className="flex-1 px-4 py-2.5 rounded-xl bg-[var(--color-primary-600)] text-white text-sm font-semibold hover:bg-[var(--color-primary-700)] disabled:opacity-60 inline-flex items-center justify-center gap-2">
+          {pending ? <Loader2 size={14} className="animate-spin" /> : <CheckSquare size={14} />} Assign All
+        </button>
+      </div>
+    </Modal>
+  );
+}
+
+// Recurring leave modal
+function RecurringLeaveModal({ hospitals, onClose }: { hospitals: Hospital[]; onClose: () => void }) {
+  const [weekday,  setWeekday]  = useState(6); // Saturday
+  const [halfDay,  setHalfDay]  = useState(true);
+  const [period,   setPeriod]   = useState("AFTERNOON");
+  const [allHosp,  setAllHosp]  = useState(true);
+  const [hospId,   setHospId]   = useState(hospitals[0]?.id ?? "");
+  const [until,    setUntil]    = useState("");
+  const [reason,   setReason]   = useState("");
+  const [error,    setError]    = useState("");
+  const [pending,  start]       = useTransition();
+
+  return (
+    <Modal title="Recurring Leave" sub="Automatically blocks every occurrence until the end date" onClose={onClose}>
+      {error && <Err msg={error} />}
+      <div>
+        <label className={LBL}>Every</label>
+        <div className="grid grid-cols-7 gap-1">
+          {WEEKDAYS.map((d, i) => (
+            <button key={d} type="button" onClick={() => setWeekday(i)}
+              className={`py-2 rounded-lg text-xs font-bold border transition-all ${weekday === i ? "bg-[var(--color-primary-600)] text-white border-[var(--color-primary-600)]" : "bg-white text-[var(--color-ink-500)] border-[var(--color-border)]"}`}>
+              {d}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div>
+        <label className={LBL}>Period</label>
+        <div className="flex gap-2">
+          {[{ v: false, l: "Full Day" }, { v: true, l: "Half Day" }].map(opt => (
+            <button key={String(opt.v)} type="button" onClick={() => setHalfDay(opt.v)}
+              className={`flex-1 py-2.5 rounded-xl text-sm font-semibold border transition-all ${halfDay === opt.v ? "bg-[var(--color-primary-600)] text-white border-[var(--color-primary-600)]" : "bg-white text-[var(--color-ink-500)] border-[var(--color-border)]"}`}>
+              {opt.l}
+            </button>
+          ))}
+        </div>
+        {halfDay && (
+          <div className="flex gap-2 mt-2">
+            {["MORNING", "AFTERNOON"].map(p => (
+              <button key={p} type="button" onClick={() => setPeriod(p)}
+                className={`flex-1 py-2 rounded-xl text-sm font-semibold border transition-all ${period === p ? "bg-amber-500 text-white border-amber-500" : "bg-white text-[var(--color-ink-500)] border-[var(--color-border)]"}`}>
+                {p.charAt(0) + p.slice(1).toLowerCase()}
+              </button>
+            ))}
+          </div>
         )}
       </div>
-
-      <button
-        disabled={pending}
-        onClick={() => start(async () => { await cancelLeave(leave.id); })}
-        className="shrink-0 inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl text-red-600 hover:bg-red-50 border border-red-200 hover:border-red-300 transition-colors">
-        {pending ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
-        Cancel Leave
-      </button>
-    </div>
+      <div><label className={LBL}>Until</label>
+        <input type="date" value={until} onChange={e => setUntil(e.target.value)} className={FLD} />
+      </div>
+      <div><label className={LBL}>Reason</label>
+        <input type="text" value={reason} onChange={e => setReason(e.target.value)} placeholder="e.g. Weekend rest, Teaching rounds" className={FLD} />
+      </div>
+      <div className="flex gap-2">
+        <button onClick={onClose} className="flex-1 px-4 py-2.5 rounded-xl border border-[var(--color-border)] text-sm font-medium hover:bg-[var(--color-surface-sunken)] transition-colors">Cancel</button>
+        <button disabled={pending}
+          onClick={() => {
+            if (!until) { setError("Select an end date"); return; }
+            setError("");
+            start(async () => {
+              try { await addRecurringLeave({ weekday, halfPeriod: halfDay ? period : undefined, untilDate: until, hospitalId: allHosp ? undefined : hospId, reason: reason || undefined }); onClose(); }
+              catch (e: any) { setError(e.message ?? "Failed"); }
+            });
+          }}
+          className="flex-1 px-4 py-2.5 rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-700 disabled:opacity-60 inline-flex items-center justify-center gap-2">
+          {pending ? <Loader2 size={14} className="animate-spin" /> : <CalendarOff size={14} />} Set Recurring Leave
+        </button>
+      </div>
+    </Modal>
   );
+}
+
+// Day popup
+function DayPopup({ dateStr, dayData, hospitals, onClose, onRefresh }: {
+  dateStr: string;
+  dayData: { slots: DaySlot[]; leave: DayLeave | null } | undefined;
+  hospitals: Hospital[];
+  onClose: () => void;
+  onRefresh: () => void;
+}) {
+  const [editSlot,    setEditSlot]    = useState<DaySlot | null>(null);
+  const [showExtraOP, setShowExtraOP] = useState(false);
+  const [showLeave,   setShowLeave]   = useState(false);
+  const [pending,     start]          = useTransition();
+
+  const slots  = dayData?.slots ?? [];
+  const leave  = dayData?.leave ?? null;
 
   return (
     <>
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2 text-sm text-[var(--color-ink-500)]">
-          <Info size={14} className="text-amber-500" />
-          <span>Leave overrides all schedules — highest priority</span>
-        </div>
-        <button onClick={() => setShowModal(true)}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-600 text-white text-sm font-semibold hover:bg-amber-700 transition-all shadow-sm">
-          <CalendarOff size={14} /> Apply Leave
-        </button>
-      </div>
+      <div className="fixed inset-0 z-40 bg-black/20" onClick={onClose} />
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+        <div className="bg-white rounded-2xl shadow-2xl border border-[var(--color-border)] w-full max-w-sm pointer-events-auto" onClick={e => e.stopPropagation()}>
+          {/* Header */}
+          <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--color-border)]">
+            <div>
+              <p className="font-bold text-[var(--color-ink-900)] text-sm">{fmtFullDate(dateStr)}</p>
+              <p className="text-[11px] text-[var(--color-ink-400)] mt-0.5">
+                {leave ? "Leave applied" : slots.length > 0 ? `${slots.length} session${slots.length > 1 ? "s" : ""}` : "No schedule"}
+              </p>
+            </div>
+            <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-[var(--color-surface-sunken)] text-[var(--color-ink-400)] transition-colors"><X size={14} /></button>
+          </div>
 
-      {leaves.length === 0 ? (
-        <div className="flex flex-col items-center gap-4 py-16 text-center">
-          <CheckCircle2 size={40} className="text-emerald-400" />
-          <div>
-            <p className="font-semibold text-[var(--color-ink-700)]">No active leaves</p>
-            <p className="text-sm text-[var(--color-ink-400)] mt-1">Your schedule is fully open. Apply leave when unavailable.</p>
+          <div className="px-5 py-4 flex flex-col gap-3 max-h-[60vh] overflow-y-auto">
+            {/* Leave banner */}
+            {leave && (
+              <div className="flex items-center justify-between p-3 rounded-xl bg-red-50 border border-red-200">
+                <div>
+                  <p className="text-xs font-bold text-red-700">
+                    {leave.type === "HALF_DAY" ? `Half Day Leave — ${leave.halfPeriod === "MORNING" ? "Morning" : "Afternoon"}` : "Full Day Leave"}
+                  </p>
+                  {leave.reason && <p className="text-[11px] text-red-500 mt-0.5">{leave.reason}</p>}
+                </div>
+                <button disabled={pending}
+                  onClick={() => start(async () => { await cancelScheduleException(leave.id); onRefresh(); onClose(); })}
+                  className="text-[11px] font-semibold text-red-600 hover:text-red-800 transition-colors px-2 py-1 rounded-lg hover:bg-red-100">
+                  {pending ? <Loader2 size={12} className="animate-spin" /> : "Cancel"}
+                </button>
+              </div>
+            )}
+
+            {/* Slots */}
+            {slots.length > 0 && (!leave || leave.type === "HALF_DAY") && (
+              <div className="flex flex-col gap-2">
+                {slots.map(slot => {
+                  const idx   = hospitals.findIndex(h => h.id === slot.hospitalId);
+                  const color = getColor(idx);
+                  return (
+                    <div key={slot.id} className="flex items-center gap-2.5 p-2.5 rounded-xl bg-[var(--color-surface-sunken)]/50 border border-[var(--color-border)]">
+                      <div className="w-9 h-9 rounded-lg flex items-center justify-center text-[10px] font-extrabold text-white shrink-0"
+                        style={{ background: color.bg }}>
+                        {hospCode(slot.hospitalName)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <p className="text-xs font-semibold text-[var(--color-ink-900)] truncate">{slot.hospitalName}</p>
+                          {slot.source === "extra_op" && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">Extra</span>}
+                          {slot.isModified && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700">Edited</span>}
+                        </div>
+                        <p className="text-[11px] text-[var(--color-ink-500)] tabular-nums">{fmt12(slot.startTime)} – {fmt12(slot.endTime)} · {slot.slotMins}m · {slot.maxPatients}p</p>
+                      </div>
+                      <div className="flex gap-0.5 shrink-0">
+                        {slot.source === "generated" && (
+                          <button onClick={() => setEditSlot(slot)}
+                            className="p-1.5 rounded-lg text-[var(--color-ink-400)] hover:text-[var(--color-primary-600)] hover:bg-[var(--color-primary-50)] transition-colors">
+                            <Pencil size={12} />
+                          </button>
+                        )}
+                        <button disabled={pending}
+                          onClick={() => start(async () => {
+                            if (slot.source === "generated") { await deleteGeneratedDay(slot.id); }
+                            else { await cancelScheduleException(slot.id); }
+                            onRefresh(); onClose();
+                          })}
+                          className="p-1.5 rounded-lg text-[var(--color-ink-400)] hover:text-red-600 hover:bg-red-50 transition-colors">
+                          {pending ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {slots.length === 0 && !leave && (
+              <p className="text-xs text-[var(--color-ink-400)] italic text-center py-3">No schedule for this day</p>
+            )}
+          </div>
+
+          {/* Actions */}
+          <div className="px-5 py-4 border-t border-[var(--color-border)] flex flex-col gap-2">
+            <div className="flex gap-2">
+              <button onClick={() => { setShowExtraOP(true); }}
+                className="flex-1 inline-flex items-center justify-center gap-1.5 text-xs font-semibold py-2 px-3 rounded-xl border border-[var(--color-border)] hover:bg-amber-50 hover:text-amber-700 hover:border-amber-200 transition-colors">
+                <Zap size={12} /> Extra OP
+              </button>
+              {!leave && (
+                <button onClick={() => setShowLeave(true)}
+                  className="flex-1 inline-flex items-center justify-center gap-1.5 text-xs font-semibold py-2 px-3 rounded-xl border border-red-200 bg-red-50 text-red-700 hover:bg-red-100 transition-colors">
+                  <CalendarOff size={12} /> Mark Leave
+                </button>
+              )}
+            </div>
           </div>
         </div>
-      ) : (
-        <>
-          {future.length > 0 && (
-            <div className="mb-4">
-              <p className="text-xs font-bold text-[var(--color-ink-500)] uppercase tracking-wide mb-2">Upcoming Leaves</p>
-              <div className="flex flex-col gap-2">{future.map(renderLeave)}</div>
-            </div>
-          )}
-          {past.length > 0 && (
-            <div>
-              <p className="text-xs font-bold text-[var(--color-ink-500)] uppercase tracking-wide mb-2">Past Leaves</p>
-              <div className="flex flex-col gap-2 opacity-50">{past.map(renderLeave)}</div>
-            </div>
-          )}
-        </>
-      )}
+      </div>
 
-      {showModal && <LeaveModal hospitals={hospitals} onClose={() => setShowModal(false)} />}
+      {editSlot && (
+        <DayEditModal slot={editSlot} hospitals={hospitals} onClose={() => { setEditSlot(null); onRefresh(); onClose(); }} />
+      )}
+      {showExtraOP && (
+        <ExtraOPModal date={dateStr} hospitals={hospitals} onClose={() => { setShowExtraOP(false); onRefresh(); onClose(); }} />
+      )}
+      {showLeave && (
+        <LeaveModal preSelectedDates={[dateStr]} hospitals={hospitals} onClose={() => { setShowLeave(false); onRefresh(); onClose(); }} />
+      )}
     </>
   );
 }
 
+// Legend
+function Legend({ hospitals }: { hospitals: Hospital[] }) {
+  return (
+    <div className="flex flex-wrap items-center gap-3 text-[11px]">
+      {hospitals.map((h, i) => {
+        const color = getColor(i);
+        return (
+          <div key={h.id} className="flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded-sm" style={{ background: color.bg }} />
+            <span className="text-[var(--color-ink-600)] font-medium truncate max-w-[120px]">{h.name}</span>
+          </div>
+        );
+      })}
+      <div className="flex items-center gap-1.5">
+        <span className="w-3 h-3 rounded-sm bg-red-500" />
+        <span className="text-[var(--color-ink-600)] font-medium">Leave</span>
+      </div>
+      <div className="flex items-center gap-1.5">
+        <span className="w-3 h-3 rounded-sm bg-amber-400" />
+        <span className="text-[var(--color-ink-600)] font-medium">Half Day</span>
+      </div>
+      <div className="flex items-center gap-1.5">
+        <span className="w-3 h-3 rounded-sm bg-amber-600" />
+        <span className="text-[var(--color-ink-600)] font-medium">Extra OP</span>
+      </div>
+    </div>
+  );
+}
 
-/* ════════════════════════════════════════════════════════════════════════════
-   MAIN CLIENT
+// Calendar grid
+function CalendarGrid({ year, month, calData, hospitals, selectMode, selectedDates, onDateClick, onDateSelect }: {
+  year: number; month: number;
+  calData: CalendarData; hospitals: Hospital[];
+  selectMode: "none" | "bulk" | "leave";
+  selectedDates: Set<string>;
+  onDateClick: (date: string) => void;
+  onDateSelect: (date: string) => void;
+}) {
+  const today          = new Date().toISOString().split("T")[0];
+  const firstDay       = new Date(year, month - 1, 1).getDay();
+  const daysInMonth    = new Date(year, month, 0).getDate();
+  const totalCells     = Math.ceil((firstDay + daysInMonth) / 7) * 7;
+
+  const cells = Array.from({ length: totalCells }, (_, i) => {
+    const dayNum = i - firstDay + 1;
+    return (dayNum >= 1 && dayNum <= daysInMonth) ? dayNum : null;
+  });
+
+  return (
+    <div className="overflow-x-auto">
+      <div style={{ minWidth: 560 }}>
+        {/* Header */}
+        <div className="grid grid-cols-7 mb-1.5">
+          {WEEKDAYS.map(d => (
+            <div key={d} className="text-center text-[11px] font-bold text-[var(--color-ink-500)] uppercase tracking-wide py-1.5">{d}</div>
+          ))}
+        </div>
+        {/* Grid */}
+        <div className="grid grid-cols-7 gap-1">
+          {cells.map((dayNum, idx) => {
+            if (dayNum === null) {
+              return <div key={`pad-${idx}`} className="min-h-[72px] rounded-xl bg-[var(--color-surface-sunken)]/20" />;
+            }
+            const dateStr    = padDate(year, month, dayNum);
+            const dayData    = calData.days[dateStr];
+            const isToday    = dateStr === today;
+            const isSelected = selectedDates.has(dateStr);
+            const isLeave    = !!dayData?.leave;
+            const isHalfDay  = dayData?.leave?.type === "HALF_DAY";
+            const slots      = dayData?.slots ?? [];
+            const hasSlots   = slots.length > 0;
+
+            let borderClass  = "border-[var(--color-border)]";
+            let bgClass      = "bg-white";
+            if (isToday)    { borderClass = "border-[var(--color-primary-500)]"; bgClass = "bg-[var(--color-primary-50)]/50"; }
+            if (isSelected) { borderClass = "border-[var(--color-primary-600)]"; bgClass = "bg-[var(--color-primary-50)]"; }
+            if (isLeave && !isHalfDay) { bgClass = "bg-red-50"; borderClass = "border-red-200"; }
+            if (isHalfDay)  { bgClass = "bg-amber-50"; borderClass = "border-amber-200"; }
+
+            return (
+              <div key={dateStr}
+                onClick={() => selectMode !== "none" ? onDateSelect(dateStr) : onDateClick(dateStr)}
+                className={`min-h-[72px] rounded-xl border p-1.5 cursor-pointer transition-all hover:shadow-sm ${bgClass} ${borderClass}`}>
+                {/* Date number + checkbox */}
+                <div className="flex items-center justify-between mb-1">
+                  <span className={`text-xs font-bold ${isToday ? "text-[var(--color-primary-700)]" : "text-[var(--color-ink-500)]"}`}>
+                    {dayNum}
+                  </span>
+                  {selectMode !== "none" ? (
+                    <span className={`text-[var(--color-primary-600)]`}>
+                      {isSelected ? <CheckSquare size={12} /> : <Square size={12} className="text-[var(--color-ink-300)]" />}
+                    </span>
+                  ) : isToday ? (
+                    <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-primary-500)]" />
+                  ) : null}
+                </div>
+
+                {/* Content */}
+                {isLeave && !isHalfDay ? (
+                  <div className="text-[9px] font-bold text-red-600 bg-red-100 rounded px-1 py-0.5 text-center truncate">Leave</div>
+                ) : isHalfDay ? (
+                  <div className="text-[9px] font-bold text-amber-700 bg-amber-100 rounded px-1 py-0.5 text-center truncate">Half Day</div>
+                ) : hasSlots ? (
+                  <div className="flex flex-col gap-0.5">
+                    {slots.slice(0, 2).map(slot => (
+                      <HospChip key={slot.id} hospitalId={slot.hospitalId} hospitals={hospitals} small isExtra={slot.source === "extra_op"} />
+                    ))}
+                    {slots.length > 2 && (
+                      <span className="text-[8px] text-[var(--color-ink-400)] pl-0.5">+{slots.length - 2} more</span>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-[9px] text-[var(--color-ink-300)] text-center mt-1">—</div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CalendarTab({ hospitals, initialCalData, initialYear, initialMonth, weeklyCount }: {
+  hospitals: Hospital[];
+  initialCalData: CalendarData;
+  initialYear: number;
+  initialMonth: number;
+  weeklyCount: number;
+}) {
+  const [year,          setYear]          = useState(initialYear);
+  const [month,         setMonth]         = useState(initialMonth);
+  const [calData,       setCalData]       = useState<CalendarData>(initialCalData);
+  const [loading,       setLoading]       = useState(false);
+  const [popupDate,     setPopupDate]     = useState<string | null>(null);
+  const [selectMode,    setSelectMode]    = useState<"none" | "bulk" | "leave">("none");
+  const [selectedDates, setSelectedDates] = useState<Set<string>>(new Set());
+
+  // Modals
+  const [showGenerate,  setShowGenerate]  = useState(false);
+  const [showCopyPrev,  setShowCopyPrev]  = useState(false);
+  const [showBulkAssign, setShowBulkAssign] = useState(false);
+  const [showLeave,     setShowLeave]     = useState(false);
+  const [showRecurring, setShowRecurring] = useState(false);
+
+  const [err, setErr] = useState("");
+  const [genPending, startGen] = useTransition();
+
+  const refresh = useCallback(async (y = year, m = month) => {
+    setLoading(true);
+    try { setCalData(await getCalendarData(y, m)); }
+    catch (e: any) { setErr(e.message ?? "Failed to load"); }
+    finally { setLoading(false); }
+  }, [year, month]);
+
+  function navigateMonth(delta: number) {
+    let m = month + delta, y = year;
+    if (m > 12) { m = 1; y++; }
+    if (m < 1)  { m = 12; y--; }
+    setYear(y); setMonth(m);
+    setSelectedDates(new Set());
+    setSelectMode("none");
+    setPopupDate(null);
+    refresh(y, m);
+  }
+
+  function toggleDate(dateStr: string) {
+    setSelectedDates(prev => {
+      const next = new Set(prev);
+      if (next.has(dateStr)) next.delete(dateStr); else next.add(dateStr);
+      return next;
+    });
+  }
+
+  const selCount = selectedDates.size;
+
+  return (
+    <>
+      {err && <Err msg={err} />}
+
+      {/* Month nav + action bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
+        {/* Month navigator */}
+        <div className="flex items-center gap-2 min-w-max">
+          <button onClick={() => navigateMonth(-1)}
+            className="p-2 rounded-xl border border-[var(--color-border)] hover:bg-[var(--color-surface-sunken)] transition-colors">
+            <ChevronLeft size={16} />
+          </button>
+          <span className="text-base font-bold text-[var(--color-ink-900)] min-w-[140px] text-center">
+            {MONTHS[month - 1]} {year}
+          </span>
+          <button onClick={() => navigateMonth(1)}
+            className="p-2 rounded-xl border border-[var(--color-border)] hover:bg-[var(--color-surface-sunken)] transition-colors">
+            <ChevronRight size={16} />
+          </button>
+          {loading && <Loader2 size={14} className="animate-spin text-[var(--color-primary-500)]" />}
+        </div>
+
+        {/* Actions */}
+        <div className="flex flex-wrap gap-2 sm:ml-auto">
+          <button onClick={() => setShowGenerate(true)}
+            className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] transition-all shadow-sm">
+            <RefreshCw size={12} /> Generate {MONTHS[month - 1].slice(0, 3)}
+          </button>
+          <button onClick={() => setShowCopyPrev(true)}
+            className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl border border-[var(--color-border)] hover:bg-[var(--color-surface-sunken)] text-[var(--color-ink-700)] transition-colors">
+            <Copy size={12} /> Copy {MONTHS[(month - 2 + 12) % 12].slice(0, 3)}
+          </button>
+          <button onClick={() => { setSelectMode(s => s === "bulk" ? "none" : "bulk"); setSelectedDates(new Set()); }}
+            className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl border transition-colors ${selectMode === "bulk" ? "bg-[var(--color-primary-100)] border-[var(--color-primary-400)] text-[var(--color-primary-700)]" : "border-[var(--color-border)] text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]"}`}>
+            <CheckSquare size={12} /> Bulk Edit
+          </button>
+          <button onClick={() => { setSelectMode(s => s === "leave" ? "none" : "leave"); setSelectedDates(new Set()); }}
+            className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl border transition-colors ${selectMode === "leave" ? "bg-red-100 border-red-400 text-red-700" : "border-[var(--color-border)] text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]"}`}>
+            <CalendarOff size={12} /> Add Leave
+          </button>
+          <button onClick={() => setShowRecurring(true)}
+            className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl border border-[var(--color-border)] text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] transition-colors">
+            <CalendarDays size={12} /> Recurring
+          </button>
+        </div>
+      </div>
+
+      {/* Select mode bar */}
+      {selectMode !== "none" && (
+        <div className={`flex items-center gap-3 px-4 py-2.5 rounded-xl mb-3 border text-sm font-semibold ${selectMode === "bulk" ? "bg-[var(--color-primary-50)] border-[var(--color-primary-200)] text-[var(--color-primary-800)]" : "bg-red-50 border-red-200 text-red-800"}`}>
+          <span className="flex-1">
+            {selectMode === "bulk" ? "Click dates to select for bulk assignment" : "Click dates to select for leave"}
+            {selCount > 0 && <span className="ml-2 font-bold">— {selCount} selected</span>}
+          </span>
+          {selCount > 0 && selectMode === "bulk" && (
+            <button onClick={() => setShowBulkAssign(true)}
+              className="px-3 py-1.5 rounded-lg bg-[var(--color-primary-600)] text-white text-xs hover:bg-[var(--color-primary-700)] transition-colors">
+              Assign {selCount} dates
+            </button>
+          )}
+          {selCount > 0 && selectMode === "leave" && (
+            <button onClick={() => setShowLeave(true)}
+              className="px-3 py-1.5 rounded-lg bg-red-600 text-white text-xs hover:bg-red-700 transition-colors">
+              Apply Leave to {selCount} dates
+            </button>
+          )}
+          <button onClick={() => { setSelectMode("none"); setSelectedDates(new Set()); }}
+            className="text-[var(--color-ink-500)] hover:text-[var(--color-ink-800)] transition-colors"><X size={16} /></button>
+        </div>
+      )}
+
+      {/* Legend */}
+      {hospitals.length > 0 && (
+        <div className="mb-3">
+          <Legend hospitals={hospitals} />
+        </div>
+      )}
+
+      {/* No template warning */}
+      {weeklyCount === 0 && !calData.isGenerated && (
+        <div className="flex items-start gap-3 p-4 rounded-xl bg-amber-50 border border-amber-200 mb-3">
+          <AlertTriangle size={16} className="text-amber-600 shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-semibold text-amber-800">No weekly template yet</p>
+            <p className="text-xs text-amber-600 mt-0.5">Go to the <strong>Template</strong> tab to define your weekly schedule, then generate a month here.</p>
+          </div>
+        </div>
+      )}
+
+      {/* Calendar */}
+      {hospitals.length === 0 ? (
+        <div className="flex flex-col items-center gap-3 py-16 text-center">
+          <Building2 size={36} className="text-[var(--color-ink-200)]" />
+          <p className="font-semibold text-[var(--color-ink-700)]">No hospitals linked</p>
+        </div>
+      ) : (
+        <CalendarGrid
+          year={year} month={month}
+          calData={calData} hospitals={hospitals}
+          selectMode={selectMode} selectedDates={selectedDates}
+          onDateClick={setPopupDate}
+          onDateSelect={toggleDate}
+        />
+      )}
+
+      {/* Day popup */}
+      {popupDate && (
+        <DayPopup
+          dateStr={popupDate}
+          dayData={calData.days[popupDate]}
+          hospitals={hospitals}
+          onClose={() => setPopupDate(null)}
+          onRefresh={() => refresh()}
+        />
+      )}
+
+      {/* Generate confirm */}
+      {showGenerate && (
+        <ConfirmModal
+          title={`Generate ${MONTHS[month - 1]} ${year}`}
+          body={`PPMS will fill in your entire calendar for ${MONTHS[month - 1]} ${year} from your weekly template. Any existing generated data for this month will be replaced.`}
+          confirmLabel="Generate" confirmClass="bg-[var(--color-primary-600)] hover:bg-[var(--color-primary-700)]"
+          onConfirm={async () => { await generateMonthlySchedule(year, month); await refresh(); }}
+          onClose={() => setShowGenerate(false)}
+        />
+      )}
+
+      {/* Copy previous month */}
+      {showCopyPrev && (
+        <ConfirmModal
+          title={`Copy ${MONTHS[(month - 2 + 12) % 12]} to ${MONTHS[month - 1]}`}
+          body={`This will copy the generated schedule from ${MONTHS[(month - 2 + 12) % 12]} into ${MONTHS[month - 1]} ${year}. Existing data for ${MONTHS[month - 1]} will be replaced.`}
+          confirmLabel="Copy" confirmClass="bg-[var(--color-primary-600)] hover:bg-[var(--color-primary-700)]"
+          onConfirm={async () => { await copyPreviousMonth(year, month); await refresh(); }}
+          onClose={() => setShowCopyPrev(false)}
+        />
+      )}
+
+      {/* Bulk assign */}
+      {showBulkAssign && (
+        <BulkAssignModal
+          dates={Array.from(selectedDates).sort()}
+          hospitals={hospitals}
+          onClose={() => { setShowBulkAssign(false); setSelectMode("none"); setSelectedDates(new Set()); refresh(); }}
+        />
+      )}
+
+      {/* Leave modal (from select-mode) */}
+      {showLeave && (
+        <LeaveModal
+          preSelectedDates={Array.from(selectedDates).sort()}
+          hospitals={hospitals}
+          onClose={() => { setShowLeave(false); setSelectMode("none"); setSelectedDates(new Set()); refresh(); }}
+        />
+      )}
+
+      {/* Recurring leave */}
+      {showRecurring && (
+        <RecurringLeaveModal hospitals={hospitals} onClose={() => { setShowRecurring(false); refresh(); }} />
+      )}
+    </>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   MAIN COMPONENT
 ═══════════════════════════════════════════════════════════════════════════════ */
-type Tab = "weekly" | "monthly" | "individual" | "leave";
+type Tab = "template" | "calendar";
 
 export function AvailabilityClient({
-  weekly, monthly, individualDays, leaves, hospitals,
+  weekly, hospitals, initialCalendarData, initialYear, initialMonth,
 }: {
   weekly: WeeklySlot[];
-  monthly: MonthlySlot[];
-  individualDays: IndivDay[];
-  leaves: Leave[];
   hospitals: Hospital[];
+  initialCalendarData: CalendarData;
+  initialYear: number;
+  initialMonth: number;
 }) {
-  const [activeTab, setActiveTab] = useState<Tab>("weekly");
+  const [activeTab, setActiveTab] = useState<Tab>("calendar");
 
-  // Stats
-  const today      = new Date().getDay();
-  const todaySess  = weekly.filter(s => s.weekday === today && s.status === "ACTIVE").length;
-  const activeLvs  = leaves.filter(l => new Date(l.date) >= new Date()).length;
-  const hospCount  = new Set([...weekly, ...monthly, ...individualDays].map(s => s.hospitalId)).size;
-  const weekSlots  = weekly.reduce((a, s) => a + slotsCount(s.startTime, s.endTime, s.slotMins), 0);
+  const activeSlots  = weekly.filter(s => s.status === "ACTIVE").length;
+  const hospCount    = new Set(weekly.map(s => s.hospitalId)).size;
+  const today        = new Date().getDay();
+  const todaySlots   = weekly.filter(s => s.weekday === today && s.status === "ACTIVE").length;
+  const generatedNow = initialCalendarData.isGenerated;
 
   const stats = [
-    { icon: <Stethoscope size={15} />, label: "Today's Sessions",  value: todaySess, sub: WEEKDAYS_FULL[today], warn: false },
-    { icon: <Layers size={15} />,      label: "Monthly Plans",     value: monthly.filter(m => m.status === "ACTIVE").length, sub: `${monthly.length} total`, warn: false },
-    { icon: <Building2 size={15} />,   label: "Hospitals",         value: hospCount, sub: "with schedules", warn: false },
-    { icon: <CalendarOff size={15} />, label: "Upcoming Leaves",   value: activeLvs, sub: "days blocked", warn: activeLvs > 0 },
-  ];
-
-  const tabs: { key: Tab; label: string; icon: React.ReactNode; count?: number; urgent?: boolean }[] = [
-    { key: "weekly",     label: "Weekly",       icon: <Calendar size={14} />,    count: weekly.length },
-    { key: "monthly",    label: "Monthly",      icon: <Layers size={14} />,      count: monthly.length },
-    { key: "individual", label: "Individual Day", icon: <CalendarDays size={14} />, count: individualDays.filter(d => new Date(d.date) >= new Date()).length },
-    { key: "leave",      label: "Leave",        icon: <CalendarOff size={14} />, count: activeLvs, urgent: activeLvs > 0 },
+    { label: "Today's Sessions", value: todaySlots, sub: WEEKDAYS_FULL[today], teal: true },
+    { label: "Template Slots",   value: activeSlots, sub: `${weekly.length} total` },
+    { label: "Hospitals",        value: hospCount,   sub: "in template" },
+    { label: `${MONTHS[initialMonth - 1]} Status`, value: generatedNow ? "Ready" : "Pending", sub: generatedNow ? "Calendar generated" : "Generate to fill calendar" },
   ];
 
   return (
     <div className="fade-in flex flex-col gap-5">
-      <LocalStyles />
-
-      {/* ── Hero header ──────────────────────────────────────────────────── */}
+      {/* ── Hero ── */}
       <div className="relative overflow-hidden rounded-[20px] px-5 sm:px-8 pt-7 pb-6 text-white"
         style={{ background: "linear-gradient(135deg,#071a19 0%,#0d2d29 55%,#0F4039 100%)" }}>
         <div className="pointer-events-none absolute -top-24 -right-16 w-72 h-72 rounded-full bg-[#18D2C3]/10 blur-3xl" />
@@ -1124,11 +1187,11 @@ export function AvailabilityClient({
         <div className="relative flex flex-col sm:flex-row sm:items-start gap-4 sm:gap-6">
           <div className="flex-1 min-w-0">
             <div className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-widest text-white/50 mb-1.5">
-              <CalendarDays size={12} /> Availability & Scheduling
+              <CalendarDays size={12} /> Template + Exceptions Model
             </div>
             <h1 className="text-2xl sm:text-[28px] font-bold tracking-tight leading-tight">My Availability</h1>
             <p className="text-sm text-white/60 mt-1 max-w-lg">
-              Multi-hospital scheduling with Monthly, Weekly, and Individual Day overrides. Leave blocks all slots.
+              Set your weekly template once — generate entire months automatically. Edit only exceptions.
             </p>
           </div>
           <Link href="/settings?section=add-hospital&returnTo=/appointments/availability"
@@ -1137,17 +1200,12 @@ export function AvailabilityClient({
           </Link>
         </div>
 
+        {/* Stats */}
         <div className="relative grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3 mt-6">
           {stats.map(c => (
-            <div key={c.label}
-              className="rounded-2xl border border-white/10 px-4 py-3 transition-colors hover:bg-white/[0.08]"
+            <div key={c.label} className="rounded-2xl border border-white/10 px-4 py-3"
               style={{ background: "rgba(255,255,255,0.07)", backdropFilter: "blur(12px)" }}>
-              <div className="flex items-center justify-between">
-                <p className={`text-2xl font-bold tracking-tight tabular-nums ${c.warn ? "text-amber-300" : ""}`}>{c.value}</p>
-                <span className={`w-7 h-7 rounded-lg border flex items-center justify-center ${
-                  c.warn ? "bg-amber-500/20 border-amber-400/30 text-amber-300" : "bg-white/10 border-white/10 text-[#18D2C3]"
-                }`}>{c.icon}</span>
-              </div>
+              <p className={`text-2xl font-bold tracking-tight tabular-nums ${c.teal ? "text-[#18D2C3]" : ""}`}>{c.value}</p>
               <p className="text-[11px] font-semibold text-white/70 mt-1">{c.label}</p>
               <p className="text-[10px] text-white/40">{c.sub}</p>
             </div>
@@ -1155,109 +1213,45 @@ export function AvailabilityClient({
         </div>
       </div>
 
-      {/* ── Hospital overview ────────────────────────────────────────────── */}
-      <div>
-        {/* Hospital overview */}
-        <div className="rounded-[18px] p-5 border border-[#0a2825]"
-          style={{ background: "linear-gradient(135deg,#071a19 0%,#0c2422 100%)" }}>
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <Building2 size={14} className="text-[#18D2C3]" />
-              <p className="font-bold text-white text-[13px]">Hospital Overview</p>
-            </div>
-            <span className="text-[10px] font-mono text-white/30">{weekly.length + monthly.length + individualDays.length} total slots</span>
-          </div>
-          {hospitals.length === 0 ? (
-            <p className="text-xs text-white/30 italic">No hospitals linked yet</p>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2.5">
-              {hospitals.map(h => {
-                const wCount = weekly.filter(s => s.hospitalId === h.id && s.status === "ACTIVE").length;
-                const mCount = monthly.filter(s => s.hospitalId === h.id && s.status === "ACTIVE").length;
-                const iCount = individualDays.filter(s => s.hospitalId === h.id && new Date(s.date) >= new Date()).length;
-                const lCount = leaves.filter(l => (!l.hospitalId || l.hospitalId === h.id) && new Date(l.date) >= new Date()).length;
-                return (
-                  <div key={h.id}
-                    className="bg-white/5 border border-white/10 rounded-xl p-3 relative overflow-hidden">
-                    <div className="absolute top-0 left-0 w-1 h-full rounded-l-xl bg-gradient-to-b from-[#18D2C3] to-[var(--color-primary-600)]" />
-                    <div className="pl-2.5">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="text-[11px] font-extrabold px-2 py-0.5 rounded text-white"
-                          style={{ background: "var(--color-primary-600)" }}>{hospCode(h.name)}</span>
-                        <span className="text-xs font-semibold text-white/80 truncate">{h.name}</span>
-                      </div>
-                      <div className="grid grid-cols-2 gap-1 text-[10px]">
-                        {[
-                          { label: "Weekly", val: wCount, color: "text-[#18D2C3]" },
-                          { label: "Monthly", val: mCount, color: "text-purple-400" },
-                          { label: "Indiv.", val: iCount, color: "text-blue-400" },
-                          { label: "Leaves", val: lCount, color: lCount > 0 ? "text-amber-400" : "text-white/30" },
-                        ].map(item => (
-                          <div key={item.label} className="flex items-center justify-between">
-                            <span className="text-white/40">{item.label}</span>
-                            <span className={`font-bold ${item.color}`}>{item.val}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* ── Tab bar ──────────────────────────────────────────────────────── */}
+      {/* ── Tabs ── */}
       <div className="bg-white rounded-2xl border border-[var(--color-border)] shadow-[0_1px_2px_rgba(16,42,39,.04),0_4px_16px_rgba(16,42,39,.05)] overflow-hidden">
-        {/* Tab navigation */}
-        <div className="flex border-b border-[var(--color-border)] overflow-x-auto">
-          {tabs.map(tab => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className={`flex items-center gap-2 px-5 py-3.5 text-sm font-semibold whitespace-nowrap transition-all border-b-2 ${
+        <div className="flex border-b border-[var(--color-border)]">
+          {([
+            { key: "template" as Tab, label: "Weekly Template", icon: <Layers size={14} />, badge: activeSlots },
+            { key: "calendar" as Tab, label: "Calendar",        icon: <CalendarDays size={14} />, badge: null },
+          ] as const).map(tab => (
+            <button key={tab.key} onClick={() => setActiveTab(tab.key)}
+              className={`flex items-center gap-2 px-6 py-3.5 text-sm font-semibold whitespace-nowrap transition-all border-b-2 ${
                 activeTab === tab.key
                   ? "border-[var(--color-primary-600)] text-[var(--color-primary-700)] bg-[var(--color-primary-50)]/50"
                   : "border-transparent text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]/50"
-              }`}
-            >
-              {tab.icon}
-              {tab.label}
-              {tab.count !== undefined && (
-                <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
-                  tab.urgent
-                    ? "bg-amber-100 text-amber-700"
-                    : activeTab === tab.key
-                    ? "bg-[var(--color-primary-100)] text-[var(--color-primary-700)]"
-                    : "bg-[var(--color-surface-sunken)] text-[var(--color-ink-400)]"
-                }`}>
-                  {tab.count}
+              }`}>
+              {tab.icon}{tab.label}
+              {tab.badge !== null && (
+                <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${activeTab === tab.key ? "bg-[var(--color-primary-100)] text-[var(--color-primary-700)]" : "bg-[var(--color-surface-sunken)] text-[var(--color-ink-400)]"}`}>
+                  {tab.badge}
                 </span>
               )}
             </button>
           ))}
         </div>
 
-        {/* Tab content */}
         <div className="p-5">
-          {hospitals.length === 0 ? (
-            <div className="flex flex-col items-center gap-4 py-16 text-center">
-              <Building2 size={40} className="text-[var(--color-ink-200)]" />
-              <div>
-                <p className="font-semibold text-[var(--color-ink-700)]">No hospitals linked</p>
-                <p className="text-sm text-[var(--color-ink-400)] mt-1 max-w-sm mx-auto">
-                  Once a hospital links your profile, you can configure your availability here.
-                </p>
-              </div>
-            </div>
-          ) : (
-            <>
-              {activeTab === "weekly"     && <WeeklyTab     slots={weekly}        hospitals={hospitals} />}
-              {activeTab === "monthly"    && <MonthlyTab    slots={monthly}       hospitals={hospitals} />}
-              {activeTab === "individual" && <IndivDayTab   slots={individualDays} hospitals={hospitals} />}
-              {activeTab === "leave"      && <LeaveTab      leaves={leaves}       hospitals={hospitals} />}
-            </>
+          {activeTab === "template" && (
+            <TemplateTab
+              weekly={weekly}
+              hospitals={hospitals}
+              onGenerate={() => setActiveTab("calendar")}
+            />
+          )}
+          {activeTab === "calendar" && (
+            <CalendarTab
+              hospitals={hospitals}
+              initialCalData={initialCalendarData}
+              initialYear={initialYear}
+              initialMonth={initialMonth}
+              weeklyCount={activeSlots}
+            />
           )}
         </div>
       </div>

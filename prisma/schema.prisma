@@ -60,6 +60,8 @@ model Doctor {
   monthlyAvailabilities       MonthlyAvailability[]
   individualDayAvailabilities IndividualDayAvailability[]
   leaves                      DoctorLeave[]
+  generatedSchedules          GeneratedSchedule[]
+  scheduleExceptions          ScheduleException[]
   license                     TenantLicense?
 }
 
@@ -84,6 +86,8 @@ model Hospital {
   monthlyAvailabilities       MonthlyAvailability[]
   individualDayAvailabilities IndividualDayAvailability[]
   leaves                      DoctorLeave[]
+  generatedSchedules          GeneratedSchedule[]
+  scheduleExceptions          ScheduleException[]
   chipOptions                 ChipOption[]
   integration    HospitalIntegration?
   integrationLogs IntegrationLog[]
@@ -307,6 +311,47 @@ model IndividualDayAvailability {
   reason      String?  // e.g. "Special Camp", "Half Day"
   status      String   @default("ACTIVE")
   createdAt   DateTime @default(now())
+}
+
+// Generated monthly schedule — produced by "Generate Month" from the weekly template
+model GeneratedSchedule {
+  id          String   @id @default(cuid())
+  doctorId    String
+  doctor      Doctor   @relation(fields: [doctorId], references: [id])
+  date        DateTime
+  hospitalId  String
+  hospital    Hospital @relation(fields: [hospitalId], references: [id])
+  startTime   String
+  endTime     String
+  slotMins    Int      @default(15)
+  maxPatients Int      @default(5)
+  isModified  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  @@index([doctorId, date])
+}
+
+// Schedule exceptions — leave, extra OP, recurring half-day blocks, etc.
+model ScheduleException {
+  id               String    @id @default(cuid())
+  doctorId         String
+  doctor           Doctor    @relation(fields: [doctorId], references: [id])
+  date             DateTime
+  type             String    // LEAVE | EXTRA_OP | HOLIDAY
+  hospitalId       String?   // null = all hospitals
+  hospital         Hospital? @relation(fields: [hospitalId], references: [id])
+  startTime        String?
+  endTime          String?
+  slotMins         Int?
+  maxPatients      Int?
+  reason           String?
+  halfPeriod       String?   // MORNING | AFTERNOON
+  isRecurring      Boolean   @default(false)
+  recurringGroupId String?
+  status           String    @default("ACTIVE")
+  createdAt        DateTime  @default(now())
+
+  @@index([doctorId, date])
 }
 
 // Leave — highest priority; blocks all slots on the date
