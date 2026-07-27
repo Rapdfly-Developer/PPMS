@@ -952,37 +952,55 @@ function PrescriptionCard({ visit, udid }: { visit: any; udid: string }) {
           <p className="text-sm text-[var(--color-ink-400)]">Search for a medication above to add it to the prescription.</p>
         </div>
       ) : (
-        <ul className="flex flex-col gap-2 mt-1">
-          {medications.map((m, idx) => (
-            <li key={m.id} className="rounded-xl border border-[var(--color-border)] bg-white p-3 shadow-sm hover:shadow-md transition-shadow">
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="w-8 h-8 rounded-lg bg-[var(--color-primary-50)] flex items-center justify-center shrink-0">
-                    <Pill size={14} className="text-[var(--color-primary-600)]" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-[10px] font-bold text-[var(--color-ink-400)] uppercase tracking-wide">Rx {idx + 1}</p>
-                    <p className="text-sm font-semibold text-[var(--color-ink-900)] truncate">{m.drugName}</p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => removeMedication(m.id, udid)}
-                  className="text-[var(--color-ink-300)] hover:text-red-500 transition-colors shrink-0 mt-0.5"
-                >
-                  <Trash2 size={14} />
-                </button>
-              </div>
-              {(m.dosage || m.frequency || m.duration || m.instructions) && (
-                <div className="mt-2.5 pt-2.5 border-t border-[var(--color-border)] flex flex-wrap gap-x-4 gap-y-1">
-                  {m.dosage     && <span className="text-xs text-[var(--color-ink-600)] font-medium">{m.dosage}</span>}
-                  {m.frequency  && <span className="text-xs text-[var(--color-ink-500)]">{m.frequency}</span>}
-                  {m.duration   && <span className="text-xs text-[var(--color-ink-500)]">{m.duration}</span>}
-                  {m.instructions && <span className="text-xs text-[var(--color-ink-400)] italic w-full mt-0.5">{m.instructions}</span>}
-                </div>
-              )}
-            </li>
-          ))}
-        </ul>
+        <div className="mt-1 rounded-xl border border-[var(--color-border)] overflow-hidden">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-[var(--color-surface-sunken)] border-b border-[var(--color-border)]">
+                <th className="px-3 py-2 text-left text-[10px] font-bold text-[var(--color-ink-400)] uppercase tracking-widest w-12">#</th>
+                <th className="px-3 py-2 text-left text-[10px] font-bold text-[var(--color-ink-400)] uppercase tracking-widest">Drug Name</th>
+                <th className="px-3 py-2 text-left text-[10px] font-bold text-[var(--color-ink-400)] uppercase tracking-widest w-24">Dose</th>
+                <th className="px-3 py-2 text-left text-[10px] font-bold text-[var(--color-ink-400)] uppercase tracking-widest w-44">Frequency</th>
+                <th className="px-3 py-2 text-left text-[10px] font-bold text-[var(--color-ink-400)] uppercase tracking-widest w-28">Duration</th>
+                <th className="px-3 py-2 w-10" />
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[var(--color-border)]">
+              {medications.map((m, idx) => (
+                <>
+                  <tr key={m.id} className="bg-white hover:bg-[var(--color-surface-sunken)] transition-colors">
+                    <td className="px-3 py-3 text-xs font-bold text-[var(--color-primary-600)]">Rx {idx + 1}</td>
+                    <td className="px-3 py-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-lg bg-[var(--color-primary-50)] flex items-center justify-center shrink-0">
+                          <Pill size={13} className="text-[var(--color-primary-600)]" />
+                        </div>
+                        <span className="text-sm font-semibold text-[var(--color-ink-900)]">{m.drugName}</span>
+                      </div>
+                    </td>
+                    <td className="px-3 py-3 text-xs text-[var(--color-ink-600)]">{m.dosage || <span className="text-[var(--color-ink-300)]">—</span>}</td>
+                    <td className="px-3 py-3 text-xs text-[var(--color-ink-600)]">{m.frequency || <span className="text-[var(--color-ink-300)]">—</span>}</td>
+                    <td className="px-3 py-3 text-xs text-[var(--color-ink-600)]">{m.duration || <span className="text-[var(--color-ink-300)]">—</span>}</td>
+                    <td className="px-3 py-3 text-right">
+                      <button
+                        onClick={() => removeMedication(m.id, udid)}
+                        className="text-[var(--color-ink-300)] hover:text-red-500 transition-colors"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </td>
+                  </tr>
+                  {m.instructions && (
+                    <tr key={`${m.id}-note`} className="bg-[var(--color-surface-sunken)]">
+                      <td />
+                      <td colSpan={4} className="px-3 pb-2.5 pt-0 text-xs text-[var(--color-ink-400)] italic">{m.instructions}</td>
+                      <td />
+                    </tr>
+                  )}
+                </>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </Card>
   );
