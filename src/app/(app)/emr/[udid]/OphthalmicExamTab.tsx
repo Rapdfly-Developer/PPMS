@@ -760,8 +760,8 @@ function IOPCard({ visit, udid, editable, priorVisits }: { visit: any; udid: str
               {IOP_METHODS.map((m) => <option key={m}>{m}</option>)}
             </select>
           </div>
-          <LabeledInput label="RE" value={re} onChange={setRe} compact />
-          <LabeledInput label="LE" value={le} onChange={setLe} compact />
+          <LabeledInput label="RE" value={re} onChange={setRe} compact numeric />
+          <LabeledInput label="LE" value={le} onChange={setLe} compact numeric />
           <button onClick={add}
             className="rounded-lg bg-[var(--color-primary-600)] text-white text-xs font-medium px-3 py-1.5 hover:bg-[var(--color-primary-700)]">
             Add Reading
