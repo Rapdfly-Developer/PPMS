@@ -109,22 +109,23 @@ export function VisitSummaryTabs({ visitId, complaint, diagnoses, shortContent, 
 /* ─── Short ─── */
 function ShortContent({ complaint, diagText }: { complaint: string | null; diagText: string }) {
   if (!complaint && !diagText) {
-    return <p className="text-[11px] italic text-[var(--color-ink-300)]">No clinical summary recorded.</p>;
+    return (
+      <div className="flex items-start gap-2.5 py-2 px-3 rounded-xl bg-[var(--color-surface-sunken)] border border-[var(--color-border)]">
+        <AlertCircle size={13} className="shrink-0 mt-0.5 text-[var(--color-ink-300)]" />
+        <p className="text-[11px] text-[var(--color-ink-400)]">No clinical data recorded for this visit.</p>
+      </div>
+    );
   }
   return (
-    <div className="space-y-1 text-[11px] text-[var(--color-ink-600)]">
-      {complaint && (
-        <p>
-          <span className="font-semibold text-[var(--color-ink-400)]">Complaint: </span>
-          {complaint}
-        </p>
-      )}
-      {diagText && (
-        <p>
-          <span className="font-semibold text-[var(--color-ink-400)]">Diagnosis: </span>
-          {diagText}
-        </p>
-      )}
+    <div className="space-y-1.5 text-[11px] text-[var(--color-ink-600)]">
+      <p>
+        <span className="font-semibold text-[var(--color-ink-400)]">Complaint: </span>
+        {complaint ?? <span className="italic text-[var(--color-ink-300)]">not recorded</span>}
+      </p>
+      <p>
+        <span className="font-semibold text-[var(--color-ink-400)]">Diagnosis: </span>
+        {diagText || <span className="italic text-[var(--color-ink-300)]">not recorded</span>}
+      </p>
     </div>
   );
 }
@@ -194,7 +195,12 @@ function LongContent({
   const hasPost     = !!(pos?.re || pos?.le);
 
   const isEmpty = !g?.chiefComplaint && !hasVitals && !hasDiag && !hasMeds && !hasInv && !hasVA && !hasIOP && !hasAnt && !hasPost && !g?.hpi;
-  if (isEmpty) return <p className="text-[11px] italic text-[var(--color-ink-300)]">No detailed clinical data recorded.</p>;
+  if (isEmpty) return (
+    <div className="flex items-start gap-2.5 py-2 px-3 rounded-xl bg-[var(--color-surface-sunken)] border border-[var(--color-border)]">
+      <AlertCircle size={13} className="shrink-0 mt-0.5 text-[var(--color-ink-300)]" />
+      <p className="text-[11px] text-[var(--color-ink-400)]">No detailed clinical notes recorded for this visit.</p>
+    </div>
+  );
 
   return (
     <div className="space-y-4 text-[11px]">
