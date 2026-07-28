@@ -23,6 +23,7 @@ import {
   saveColourVision,
   addIOPReading,
   removeIOPReading,
+  saveGonioNotes,
   saveAnteriorSegment,
   savePosteriorSegment,
   saveDiplopia,
@@ -58,7 +59,7 @@ export function OphthalmicExamTab({ visit, priorVisits, udid, role }: { visit: a
         { id: "va",        label: "Visual Acuity",    content: <VisualAcuityCard visit={visit} udid={udid} editable={refractionistCanEdit} priorVisits={priorVisits} /> },
         { id: "refraction",label: "Refraction",        content: <RefractionCard visit={visit} udid={udid} editable={refractionistCanEdit} priorVisits={priorVisits} /> },
         { id: "cv",        label: "Colour / Contrast", content: <ColourContrastTab visit={visit} udid={udid} editable={refractionistCanEdit} priorVisits={priorVisits} /> },
-        { id: "iop",       label: "IOP",               content: <IOPCard visit={visit} udid={udid} editable={refractionistCanEdit} priorVisits={priorVisits} /> },
+        { id: "iop",       label: "IOP/GONIO",         content: <div className="flex flex-col gap-4"><IOPCard visit={visit} udid={udid} editable={refractionistCanEdit} priorVisits={priorVisits} /><GonioscopyCard visit={visit} udid={udid} editable={doctorOnly} priorVisits={priorVisits} /></div> },
         { id: "anterior",  label: "Anterior Segment",  content: <AnteriorSegmentCard visit={visit} udid={udid} editable={doctorOnly} priorVisits={priorVisits} /> },
         { id: "posterior", label: "Posterior Segment", content: <PosteriorSegmentCard visit={visit} udid={udid} editable={doctorOnly} priorVisits={priorVisits} /> },
         { id: "tear",      label: "Tear Film",          content: <TearFilmCard visit={visit} udid={udid} editable={doctorOnly} priorVisits={priorVisits} /> },
@@ -847,6 +848,106 @@ function IOPCard({ visit, udid, editable, priorVisits }: { visit: any; udid: str
           </div>
         </div>
       )}
+    </Card>
+  );
+}
+
+/* ── Gonioscopy ───────────────────────────────────────────────────────────── */
+
+const GONIO_KEYWORDS = [
+  {
+    group: "Angle Grade (Shaffer)",
+    keywords: ["Grade 0 (closed)", "Grade 1 (10°)", "Grade 2 (20°)", "Grade 3 (30°)", "Grade 4 (40°, wide open)"],
+  },
+  {
+    group: "Structures Visible",
+    keywords: ["Schwalbe's line", "Trabecular meshwork", "Scleral spur", "Ciliary body band", "Iris root"],
+  },
+  {
+    group: "Pigmentation",
+    keywords: ["No pigment", "Mild pigment", "Moderate pigment", "Heavy pigment", "Sampaolesi line"],
+  },
+  {
+    group: "Pathology",
+    keywords: ["PAS (peripheral anterior synechiae)", "NVI (neovascularisation)", "Angle recession", "Cyclodialysis cleft", "Trabecular haemorrhage"],
+  },
+  {
+    group: "Overall Finding",
+    keywords: ["Open angle", "Narrow angle", "Occludable angle", "Closed angle", "Normal gonioscopy"],
+  },
+];
+
+function GonioscopyCard({
+  visit,
+  udid,
+  editable,
+  priorVisits,
+}: {
+  visit: any;
+  udid: string;
+  editable: boolean;
+  priorVisits: any[];
+}) {
+  const initial = parseJSON<{ re: string; le: string }>(visit.gonioNotes, { re: "", le: "" });
+  const [re, setRe] = useState(initial.re);
+  const [le, setLe] = useState(initial.le);
+
+  const { status } = useAutoSave(
+    { re, le },
+    async (data) => { await saveGonioNotes(visit.id, udid, data); },
+    1500,
+  );
+
+  const reHistory: HistoryEntry[] = priorVisits
+    .map((v) => {
+      const d = parseJSON<{ re: string; le: string }>(v.gonioNotes, null);
+      return d?.re ? { date: v.createdAt, value: d.re } : null;
+    })
+    .filter(Boolean) as HistoryEntry[];
+
+  const leHistory: HistoryEntry[] = priorVisits
+    .map((v) => {
+      const d = parseJSON<{ re: string; le: string }>(v.gonioNotes, null);
+      return d?.le ? { date: v.createdAt, value: d.le } : null;
+    })
+    .filter(Boolean) as HistoryEntry[];
+
+  return (
+    <Card>
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-sm font-semibold text-[var(--color-ink-700)]">Gonioscopy</h3>
+        <SaveIndicator status={status} />
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <p className="text-xs font-semibold text-[var(--color-ink-500)] mb-1.5">RE</p>
+          <FieldWithHistory history={reHistory} label="RE Gonioscopy">
+            <KeywordTextarea
+              value={re}
+              onChange={setRe}
+              disabled={!editable}
+              placeholder="Right eye gonioscopy findings…"
+              fieldKey="gonio_re"
+              keywordGroups={GONIO_KEYWORDS}
+              rows={3}
+            />
+          </FieldWithHistory>
+        </div>
+        <div>
+          <p className="text-xs font-semibold text-[var(--color-ink-500)] mb-1.5">LE</p>
+          <FieldWithHistory history={leHistory} label="LE Gonioscopy">
+            <KeywordTextarea
+              value={le}
+              onChange={setLe}
+              disabled={!editable}
+              placeholder="Left eye gonioscopy findings…"
+              fieldKey="gonio_le"
+              keywordGroups={GONIO_KEYWORDS}
+              rows={3}
+            />
+          </FieldWithHistory>
+        </div>
+      </div>
     </Card>
   );
 }
