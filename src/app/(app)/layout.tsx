@@ -11,7 +11,6 @@ import { LicenseGate } from "@/components/ui/LicenseGate";
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await requireUser();
 
-  // Post-login license check — never blocks access, only restricts modules.
   const licenseResult = await checkLicenseForUser(user);
   const licenseActive = licenseResult?.status === "ACTIVE";
 
@@ -22,43 +21,49 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <SidebarProvider>
-    <div className="min-h-screen flex">
-      <IdleTimeout />
-      <AutoRefresh interval={5000} />
-      <div className="contents no-print">
+      {/* Outer shell — sidebar + content side by side on desktop only */}
+      <div className="min-h-screen flex bg-[var(--color-bg)]">
+        <IdleTimeout />
+        <AutoRefresh interval={5000} />
+
+        {/*
+          Sidebar: fixed overlay drawer on mobile/tablet (<lg),
+          sticky visible column on desktop (lg+).
+          No-print wrapper must NOT use display:contents here —
+          that would re-introduce the sidebar into the flex flow on mobile.
+        */}
         <Sidebar
           role={user.role}
           name={user.name}
           permissions={permissions}
           licenseActive={licenseActive}
         />
-      </div>
-      <div className="flex-1 min-w-0 flex flex-col">
-        <div className="contents no-print">
+
+        {/* Main content — always flex-1, never pushed by the sidebar on mobile */}
+        <div className="flex-1 min-w-0 flex flex-col min-h-screen">
           <TopBar name={user.name} role={user.role} />
+          <main className="flex-1 bg-[var(--color-bg)] overflow-auto" data-main-content>
+            <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-5 lg:py-7 pb-24 lg:pb-7">
+              <LicenseGate
+                active={licenseActive}
+                status={licenseResult?.status ?? "NONE"}
+                expiryDate={licenseResult?.expiryDate ?? null}
+                remainingDays={licenseResult?.remainingDays ?? 0}
+                userRole={user.role}
+              >
+                {children}
+              </LicenseGate>
+            </div>
+          </main>
         </div>
-        <main className="flex-1 bg-[var(--color-bg)] overflow-auto" data-main-content>
-          <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-5 lg:py-7 pb-24 lg:pb-7">
-            <LicenseGate
-              active={licenseActive}
-              status={licenseResult?.status ?? "NONE"}
-              expiryDate={licenseResult?.expiryDate ?? null}
-              remainingDays={licenseResult?.remainingDays ?? 0}
-              userRole={user.role}
-            >
-              {children}
-            </LicenseGate>
-          </div>
-        </main>
-      </div>
-      <div className="contents no-print">
+
+        {/* Bottom nav — mobile/tablet only, sits above content via z-index */}
         <MobileNav
           role={user.role}
           permissions={permissions}
           licenseActive={licenseActive}
         />
       </div>
-    </div>
     </SidebarProvider>
   );
 }
