@@ -5,6 +5,7 @@ import { requireRole } from "@/lib/rbac";
 import { generateUDID, generateUHID } from "@/lib/udid";
 import { encryptAadhaar } from "@/lib/crypto";
 import { redirect } from "next/navigation";
+import { istDayRange } from "@/lib/ist";
 
 export async function createWalkInEncounter(formData: FormData) {
   const user = await requireRole("DOCTOR");
@@ -113,6 +114,20 @@ export async function createWalkInEncounter(formData: FormData) {
   const [year, month, day] = dateStr.split("-").map(Number);
   const [hours, mins] = timeStr.split(":").map(Number);
   const now = new Date(year, month - 1, day, hours, mins, 0);
+
+  // Prevent duplicate same-day appointments for the same patient
+  const { dayStart, dayEnd } = istDayRange(dateStr);
+  const sameDayAppt = await prisma.appointment.findFirst({
+    where: {
+      patientId,
+      doctorId: user.profileId!,
+      dateTime: { gte: dayStart, lte: dayEnd },
+      status: { notIn: ["CANCELLED", "NO_SHOW"] },
+    },
+  });
+  if (sameDayAppt) {
+    return { error: "This patient already has an appointment with you today. Only one appointment per patient per day is allowed." };
+  }
 
   const appointment = await prisma.appointment.create({
     data: {
