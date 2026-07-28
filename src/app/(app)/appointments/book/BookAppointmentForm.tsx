@@ -113,26 +113,36 @@ export function BookAppointmentForm({
 
   const todayStr = new Date().toISOString().split("T")[0];
 
-  // Compute slots: filter by selected hospital + weekday
+  // Compute slots: filter by selected hospital + weekday — support multiple windows per day
   const doctorAvail = availabilityByDoctor[doctorId] ?? [];
   const weekday = new Date(date + "T12:00:00").getDay(); // noon to avoid DST edge
-  // Match on both weekday AND hospital (a doctor may visit multiple hospitals same day)
-  const todayAvail = doctorAvail.find(
+  const todayAvails = doctorAvail.filter(
     (a) => a.weekday === weekday && (!effectiveHospitalId || a.hospitalId === effectiveHospitalId)
   );
 
-  const baseSlots = todayAvail
-    ? generateSlots(todayAvail.startTime, todayAvail.endTime, todayAvail.slotMins)
-    : [];
+  // Merge slots from all windows (e.g. 09:00–13:00 + 15:00–18:00), sorted by time
+  const baseSlots = todayAvails
+    .flatMap((a) => generateSlots(a.startTime, a.endTime, a.slotMins))
+    .filter((t, i, arr) => arr.indexOf(t) === i) // dedupe
+    .sort();
 
-  const slotMins = todayAvail?.slotMins ?? 15;
-  const slotCapacity = todayAvail?.maxPatients ?? (slotMins === 30 ? 2 : 1);
+  // Per-slot capacity: look up which window covers a given time
+  const toMins = (t: string) => { const [h, m] = t.split(":").map(Number); return h * 60 + m; };
+  function capacityFor(t: string) {
+    const mins = toMins(t);
+    const w = todayAvails.find((a) => mins >= toMins(a.startTime) && mins < toMins(a.endTime));
+    const sm = w?.slotMins ?? 15;
+    return w?.maxPatients ?? (sm === 30 ? 2 : 1);
+  }
+
+  const slotMins = todayAvails[0]?.slotMins ?? 15;
+  const slotCapacity = todayAvails[0]?.maxPatients ?? (slotMins === 30 ? 2 : 1);
 
   const nowMins = new Date().getHours() * 60 + new Date().getMinutes();
   const availableSlots = baseSlots.filter((t) => {
     const [h, m] = t.split(":").map(Number);
     if (date === todayStr && h * 60 + m <= nowMins) return false;
-    if ((bookedCounts[t] ?? 0) >= slotCapacity) return false;
+    if ((bookedCounts[t] ?? 0) >= capacityFor(t)) return false;
     return true;
   });
 
@@ -635,7 +645,7 @@ export function BookAppointmentForm({
                 </div>
                 <div>
                   <FieldLabel icon={<Clock size={12} />}>Time *</FieldLabel>
-                  {!todayAvail ? (
+                  {todayAvails.length === 0 ? (
                     <div className="flex items-center gap-2 px-4 py-3 rounded-xl text-sm bg-amber-50 text-amber-800 border border-amber-200 mt-1.5">
                       <AlertCircle size={14} className="shrink-0" />
                       No schedule configured for this doctor on {["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][weekday]}s at the selected hospital.
@@ -648,13 +658,14 @@ export function BookAppointmentForm({
                     <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto scrollbar-thin pr-1 mt-1.5">
                       {availableSlots.map((t) => {
                         const count = bookedCounts[t] ?? 0;
-                        const remaining = slotCapacity - count;
+                        const cap = capacityFor(t);
+                        const remaining = cap - count;
                         const isSelected = time === t;
 
                         let bg: string, fg: string, border: string;
                         if (isSelected) {
                           bg = "var(--color-primary-700)"; fg = "#fff"; border = "var(--color-primary-700)";
-                        } else if (slotCapacity > 1) {
+                        } else if (cap > 1) {
                           if (remaining === 1) { bg = "#FFF7ED"; fg = "#EA580C"; border = "#FED7AA"; }
                           else                  { bg = "#F0FDF4"; fg = "#16A34A"; border = "#BBF7D0"; }
                         } else {
@@ -670,8 +681,8 @@ export function BookAppointmentForm({
                             style={{ background: bg, color: fg, borderColor: border }}
                           >
                             {to12h(t)}
-                            {slotCapacity > 1 && (
-                              <span className="ml-1 text-[10px] opacity-70">{count}/{slotCapacity}</span>
+                            {cap > 1 && (
+                              <span className="ml-1 text-[10px] opacity-70">{count}/{cap}</span>
                             )}
                           </button>
                         );

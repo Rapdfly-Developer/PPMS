@@ -131,21 +131,23 @@ export async function bookAppointment(formData: FormData) {
     patientId = patient.id;
   }
 
-  // Fetch availability (used for window validation + slot capacity)
+  // Fetch ALL availability slots for this doctor/hospital/weekday
   const apptIst = istParts(dateTime);
-  const avail = await prisma.doctorAvailability.findFirst({
+  const availSlots = await prisma.doctorAvailability.findMany({
     where: { doctorId, hospitalId, weekday: apptIst.weekday, status: "ACTIVE" },
+    orderBy: { startTime: "asc" },
   });
 
-  // Validate time falls within availability window (non-walk-ins only)
-  if (!isWalkIn && avail) {
-    const toMins = (t: string) => { const [h, m] = t.split(":").map(Number); return h * 60 + m; };
-    const apptMins = apptIst.hours * 60 + apptIst.minutes;
-    const startMins = toMins(avail.startTime);
-    const endMins   = toMins(avail.endTime);
-    if (apptMins < startMins || apptMins >= endMins) {
-      return { error: `Selected time is outside the doctor's scheduled hours (${avail.startTime}–${avail.endTime}).` };
-    }
+  const toMins = (t: string) => { const [h, m] = t.split(":").map(Number); return h * 60 + m; };
+  const apptMins = apptIst.hours * 60 + apptIst.minutes;
+
+  // Find the slot that covers this appointment time
+  const avail = availSlots.find((s) => apptMins >= toMins(s.startTime) && apptMins < toMins(s.endTime)) ?? null;
+
+  // Validate time falls within one of the availability windows (non-walk-ins only)
+  if (!isWalkIn && availSlots.length > 0 && !avail) {
+    const windows = availSlots.map((s) => `${s.startTime}–${s.endTime}`).join(" or ");
+    return { error: `Selected time is outside the doctor's scheduled hours (${windows}).` };
   }
 
   const slotMins = avail?.slotMins ?? 15;
