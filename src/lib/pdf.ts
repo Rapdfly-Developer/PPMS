@@ -13,8 +13,9 @@ function escapeHtml(value: string): string {
     .replace(/"/g, "&quot;");
 }
 
-function val(v: string | null | undefined, fallback = "—") {
-  return escapeHtml(v ?? fallback);
+function val(v: unknown, fallback = "—") {
+  if (v === null || v === undefined || v === "") return escapeHtml(fallback);
+  return escapeHtml(String(v));
 }
 
 async function makeQr(text: string): Promise<string> {
@@ -250,12 +251,10 @@ const SHARED_CSS = `
   }
   td {
     padding: 7px 8px;
-    border-bottom: 1px solid #EDF5F4;
     vertical-align: top;
     word-break: break-word;
   }
   tr:nth-child(even) td { background: #F9FDFC; }
-  tr:last-child td { border-bottom: none; }
   .td-num { width: 24px; text-align: center; font-weight: 700; color: #0D4A45; font-size: 10px; }
   .td-head { font-weight: 700; color: #0D4A45; white-space: nowrap; }
   .td-mono { font-family: "Courier New", monospace; font-size: 10px; color: #0D4A45; background: #DFF0EE; padding: 1px 4px; border-radius: 3px; }
