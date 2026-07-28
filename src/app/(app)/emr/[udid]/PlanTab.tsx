@@ -1496,95 +1496,26 @@ function PrescriptionCard({ visit, udid, priorVisits }: { visit: any; udid: stri
         <div className="flex items-center justify-between mb-2">
           <label className="text-xs font-semibold text-[var(--color-ink-700)]">Advise Notes</label>
           <div className="flex items-center gap-1.5">
-            {/* History button */}
-            <div className="relative">
-              <button
-                onClick={() => { setShowHistory((v) => !v); setShowKeywords(false); }}
-                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-medium transition-colors
-                  ${showHistory
-                    ? "bg-[var(--color-primary-50)] border-[var(--color-primary-300)] text-[var(--color-primary-700)]"
-                    : "border-[var(--color-border)] text-[var(--color-ink-500)] hover:text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]"}`}
-              >
-                <History size={12} />
-                History
-              </button>
-              {showHistory && (
-                <div className="absolute right-0 top-full mt-1.5 z-30 w-80 rounded-xl border border-[var(--color-border)] bg-white shadow-xl overflow-hidden">
-                  <div className="px-3 py-2 bg-[var(--color-surface-sunken)] border-b border-[var(--color-border)] flex items-center justify-between">
-                    <span className="text-[10px] font-bold text-[var(--color-ink-400)] uppercase tracking-widest">Previous Advise Notes</span>
-                    <button onClick={() => setShowHistory(false)} className="text-[var(--color-ink-300)] hover:text-[var(--color-ink-700)]"><X size={12} /></button>
-                  </div>
-                  <div className="max-h-64 overflow-y-auto divide-y divide-[var(--color-border)]">
-                    {priorVisits.filter((v) => v.id !== visit.id && v.adviseNotes).length === 0 ? (
-                      <p className="px-3 py-4 text-xs text-[var(--color-ink-400)] text-center">No previous advise notes found.</p>
-                    ) : (
-                      priorVisits
-                        .filter((v) => v.id !== visit.id && v.adviseNotes)
-                        .map((v) => (
-                          <div key={v.id} className="px-3 py-2.5">
-                            <p className="text-[10px] font-semibold text-[var(--color-ink-400)] mb-1">
-                              {new Date(v.date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
-                            </p>
-                            <p className="text-xs text-[var(--color-ink-700)] whitespace-pre-wrap leading-relaxed">{v.adviseNotes}</p>
-                            <button
-                              onClick={() => { setAdviseNotes(v.adviseNotes); setShowHistory(false); }}
-                              className="mt-1.5 text-[10px] font-medium text-[var(--color-primary-600)] hover:underline"
-                            >
-                              Use this
-                            </button>
-                          </div>
-                        ))
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* + Keyword button */}
-            <div className="relative">
-              <button
-                onClick={() => { setShowKeywords((v) => !v); setShowHistory(false); }}
-                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-medium transition-colors
-                  ${showKeywords
-                    ? "bg-[var(--color-primary-50)] border-[var(--color-primary-300)] text-[var(--color-primary-700)]"
-                    : "border-[var(--color-border)] text-[var(--color-ink-500)] hover:text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]"}`}
-              >
-                <Plus size={12} />
-                Keyword
-              </button>
-              {showKeywords && (
-                <div className="absolute right-0 top-full mt-1.5 z-30 w-80 rounded-xl border border-[var(--color-border)] bg-white shadow-xl overflow-hidden">
-                  <div className="px-3 py-2 bg-[var(--color-surface-sunken)] border-b border-[var(--color-border)] flex items-center justify-between">
-                    <span className="text-[10px] font-bold text-[var(--color-ink-400)] uppercase tracking-widest">Add Keyword</span>
-                    <button onClick={() => setShowKeywords(false)} className="text-[var(--color-ink-300)] hover:text-[var(--color-ink-700)]"><X size={12} /></button>
-                  </div>
-                  <div className="max-h-80 overflow-y-auto p-3 flex flex-col gap-3">
-                    {ADVISE_KEYWORDS.map((group) => (
-                      <div key={group.group}>
-                        <p className="text-[10px] font-bold text-[var(--color-ink-400)] uppercase tracking-widest mb-1.5">{group.group}</p>
-                        <div className="flex flex-wrap gap-1.5">
-                          {group.items.map((kw) => (
-                            <button
-                              key={kw}
-                              onClick={() => {
-                                setAdviseNotes((prev) => {
-                                  const sep = prev.trim() ? (prev.trimEnd().endsWith(".") ? " " : ". ") : "";
-                                  return prev.trimEnd() + sep + kw + ".";
-                                });
-                                adviseRef.current?.focus();
-                              }}
-                              className="px-2 py-0.5 rounded-full border border-[var(--color-primary-200)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)] text-[11px] font-medium hover:bg-[var(--color-primary-100)] transition-colors"
-                            >
-                              {kw}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
+            <button
+              onClick={() => { setShowHistory((v) => !v); setShowKeywords(false); }}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-medium transition-colors
+                ${showHistory
+                  ? "bg-[var(--color-primary-50)] border-[var(--color-primary-300)] text-[var(--color-primary-700)]"
+                  : "border-[var(--color-border)] text-[var(--color-ink-500)] hover:text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]"}`}
+            >
+              <History size={12} />
+              History
+            </button>
+            <button
+              onClick={() => { setShowKeywords((v) => !v); setShowHistory(false); }}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-medium transition-colors
+                ${showKeywords
+                  ? "bg-[var(--color-primary-50)] border-[var(--color-primary-300)] text-[var(--color-primary-700)]"
+                  : "border-[var(--color-border)] text-[var(--color-ink-500)] hover:text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]"}`}
+            >
+              <Plus size={12} />
+              Keyword
+            </button>
           </div>
         </div>
 
@@ -1593,9 +1524,75 @@ function PrescriptionCard({ visit, udid, priorVisits }: { visit: any; udid: stri
           value={adviseNotes}
           onChange={(e) => setAdviseNotes(e.target.value)}
           rows={3}
-          placeholder="Type advise notes or use keywords above…"
+          placeholder="Type advise notes or use keywords below…"
           className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-3 py-2.5 text-sm text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent resize-none leading-relaxed"
         />
+
+        {/* History panel — below textarea */}
+        {showHistory && (
+          <div className="mt-2 rounded-xl border border-[var(--color-border)] bg-white shadow-sm overflow-hidden">
+            <div className="px-3 py-2 bg-[var(--color-surface-sunken)] border-b border-[var(--color-border)] flex items-center justify-between">
+              <span className="text-[10px] font-bold text-[var(--color-ink-400)] uppercase tracking-widest">Previous Advise Notes</span>
+              <button onClick={() => setShowHistory(false)} className="text-[var(--color-ink-300)] hover:text-[var(--color-ink-700)]"><X size={12} /></button>
+            </div>
+            <div className="max-h-56 overflow-y-auto divide-y divide-[var(--color-border)]">
+              {priorVisits.filter((v) => v.id !== visit.id && v.adviseNotes).length === 0 ? (
+                <p className="px-3 py-4 text-xs text-[var(--color-ink-400)] text-center">No previous advise notes found.</p>
+              ) : (
+                priorVisits
+                  .filter((v) => v.id !== visit.id && v.adviseNotes)
+                  .map((v) => (
+                    <div key={v.id} className="px-3 py-2.5">
+                      <p className="text-[10px] font-semibold text-[var(--color-ink-400)] mb-1">
+                        {new Date(v.date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+                      </p>
+                      <p className="text-xs text-[var(--color-ink-700)] whitespace-pre-wrap leading-relaxed">{v.adviseNotes}</p>
+                      <button
+                        onClick={() => { setAdviseNotes(v.adviseNotes); setShowHistory(false); }}
+                        className="mt-1.5 text-[10px] font-medium text-[var(--color-primary-600)] hover:underline"
+                      >
+                        Use this
+                      </button>
+                    </div>
+                  ))
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Keyword panel — below textarea */}
+        {showKeywords && (
+          <div className="mt-2 rounded-xl border border-[var(--color-border)] bg-white shadow-sm overflow-hidden">
+            <div className="px-3 py-2 bg-[var(--color-surface-sunken)] border-b border-[var(--color-border)] flex items-center justify-between">
+              <span className="text-[10px] font-bold text-[var(--color-ink-400)] uppercase tracking-widest">Add Keyword</span>
+              <button onClick={() => setShowKeywords(false)} className="text-[var(--color-ink-300)] hover:text-[var(--color-ink-700)]"><X size={12} /></button>
+            </div>
+            <div className="p-3 flex flex-col gap-3">
+              {ADVISE_KEYWORDS.map((group) => (
+                <div key={group.group}>
+                  <p className="text-[10px] font-bold text-[var(--color-ink-400)] uppercase tracking-widest mb-1.5">{group.group}</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {group.items.map((kw) => (
+                      <button
+                        key={kw}
+                        onClick={() => {
+                          setAdviseNotes((prev) => {
+                            const sep = prev.trim() ? (prev.trimEnd().endsWith(".") ? " " : ". ") : "";
+                            return prev.trimEnd() + sep + kw + ".";
+                          });
+                          adviseRef.current?.focus();
+                        }}
+                        className="px-2 py-0.5 rounded-full border border-[var(--color-primary-200)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)] text-[11px] font-medium hover:bg-[var(--color-primary-100)] transition-colors"
+                      >
+                        {kw}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </Card>
   );
