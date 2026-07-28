@@ -3,6 +3,7 @@ import { checkLicenseForUser } from "@/lib/license-guard";
 import { ROLE_DEFAULT_PERMISSIONS } from "@/lib/permissions";
 import { Sidebar, MobileNav } from "@/components/ui/Sidebar";
 import { TopBar } from "@/components/ui/TopBar";
+import { SidebarProvider } from "@/components/ui/SidebarContext";
 import { IdleTimeout } from "@/components/ui/IdleTimeout";
 import { AutoRefresh } from "@/components/ui/AutoRefresh";
 import { LicenseGate } from "@/components/ui/LicenseGate";
@@ -20,6 +21,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       : (ROLE_DEFAULT_PERMISSIONS[user.role] ?? []);
 
   return (
+    <SidebarProvider>
     <div className="min-h-screen flex">
       <IdleTimeout />
       <AutoRefresh interval={5000} />
@@ -57,5 +59,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         />
       </div>
     </div>
+    </SidebarProvider>
   );
 }

@@ -891,23 +891,25 @@ function GonioscopyCard({
   const [re, setRe] = useState(initial.re);
   const [le, setLe] = useState(initial.le);
 
-  const { status } = useAutoSave(
+  const state = useAutoSave(
     { re, le },
     async (data) => { await saveGonioNotes(visit.id, udid, data); },
     1500,
   );
 
+  const empty: { re: string; le: string } = { re: "", le: "" };
+
   const reHistory: HistoryEntry[] = priorVisits
     .map((v) => {
-      const d = parseJSON<{ re: string; le: string }>(v.gonioNotes, null);
-      return d?.re ? { date: v.createdAt, value: d.re } : null;
+      const d = parseJSON<{ re: string; le: string }>(v.gonioNotes, empty);
+      return d.re ? { date: v.createdAt, value: d.re } : null;
     })
     .filter(Boolean) as HistoryEntry[];
 
   const leHistory: HistoryEntry[] = priorVisits
     .map((v) => {
-      const d = parseJSON<{ re: string; le: string }>(v.gonioNotes, null);
-      return d?.le ? { date: v.createdAt, value: d.le } : null;
+      const d = parseJSON<{ re: string; le: string }>(v.gonioNotes, empty);
+      return d.le ? { date: v.createdAt, value: d.le } : null;
     })
     .filter(Boolean) as HistoryEntry[];
 
@@ -915,7 +917,7 @@ function GonioscopyCard({
     <Card>
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-semibold text-[var(--color-ink-700)]">Gonioscopy</h3>
-        <SaveIndicator status={status} />
+        <SaveIndicator state={state} />
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div>
@@ -927,7 +929,6 @@ function GonioscopyCard({
               disabled={!editable}
               placeholder="Right eye gonioscopy findings…"
               fieldKey="gonio_re"
-              keywordGroups={GONIO_KEYWORDS}
               rows={3}
             />
           </FieldWithHistory>
@@ -941,7 +942,6 @@ function GonioscopyCard({
               disabled={!editable}
               placeholder="Left eye gonioscopy findings…"
               fieldKey="gonio_le"
-              keywordGroups={GONIO_KEYWORDS}
               rows={3}
             />
           </FieldWithHistory>

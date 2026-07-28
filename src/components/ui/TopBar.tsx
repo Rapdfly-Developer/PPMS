@@ -1,8 +1,9 @@
 "use client";
 
 import { Suspense, useEffect, useRef, useState } from "react";
+import { useSidebar } from "./SidebarContext";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Bell, Search, LogOut, ArrowLeft } from "lucide-react";
+import { Bell, Search, LogOut, ArrowLeft, Menu } from "lucide-react";
 import Link from "next/link";
 import { signOut } from "next-auth/react";
 
@@ -49,6 +50,7 @@ export function TopBar({ name, role }: { name: string; role: string }) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [q, setQ] = useState("");
+  const { toggle } = useSidebar();
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -70,8 +72,15 @@ export function TopBar({ name, role }: { name: string; role: string }) {
 
   return (
     <header className="h-14 shrink-0 flex items-center justify-between px-4 lg:px-6 bg-white border-b border-[var(--color-border)] z-10">
-      {/* PPMS logo — mobile only (sidebar is hidden on small screens) */}
+      {/* Hamburger + logo — mobile/tablet only */}
       <div className="flex items-center gap-2 lg:hidden">
+        <button
+          onClick={toggle}
+          aria-label="Open menu"
+          className="p-1.5 rounded-lg text-[var(--color-ink-500)] hover:text-[var(--color-ink-800)] hover:bg-[var(--color-surface-sunken)] transition-colors"
+        >
+          <Menu size={20} />
+        </button>
         <div className="rounded-lg bg-[var(--color-primary-700)] p-1.5 text-white">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="12" cy="12" r="3"/>
