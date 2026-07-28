@@ -257,8 +257,8 @@ export function NewEncounterForm({
                 />
               </div>
 
-              {/* DOB + Sex */}
-              <div className="grid grid-cols-2 gap-4">
+              {/* DOB + Sex + Occupation */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <FieldLabel icon={<CalendarDays size={12} />}>Date of Birth *</FieldLabel>
                   <input
@@ -280,6 +280,16 @@ export function NewEncounterForm({
                     <option value="Female">Female</option>
                     <option value="Other">Other</option>
                   </select>
+                </div>
+                <div>
+                  <FieldLabel icon={<Building2 size={12} />}>Occupation *</FieldLabel>
+                  <input
+                    type="text"
+                    placeholder="e.g. Farmer, Teacher"
+                    value={occupation}
+                    onChange={(e) => setOccupation(e.target.value)}
+                    className={inputCls}
+                  />
                 </div>
               </div>
 
@@ -315,18 +325,6 @@ export function NewEncounterForm({
                     </button>
                   ))}
                 </div>
-              </div>
-
-              {/* Occupation */}
-              <div>
-                <FieldLabel icon={<Building2 size={12} />}>Occupation *</FieldLabel>
-                <input
-                  type="text"
-                  placeholder="e.g. Farmer, Teacher, Software Engineer"
-                  value={occupation}
-                  onChange={(e) => setOccupation(e.target.value)}
-                  className={inputCls}
-                />
               </div>
 
               {/* Notes / Instructions */}

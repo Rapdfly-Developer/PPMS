@@ -467,30 +467,42 @@ export function BookAppointmentForm({
                 />
               </div>
 
-              {/* DOB + Sex */}
-              <div>
-                <FieldLabel>Date of Birth *</FieldLabel>
-                <input
-                  required
-                  type="date"
-                  max={new Date().toISOString().slice(0, 10)}
-                  value={npDob}
-                  onChange={(e) => setNpDob(e.target.value)}
-                  className={inputCls}
-                />
-              </div>
-              <div>
-                <FieldLabel>Sex *</FieldLabel>
-                <select
-                  required
-                  value={npSex}
-                  onChange={(e) => setNpSex(e.target.value)}
-                  className={inputCls}
-                >
-                  {SEXES.map((s) => (
-                    <option key={s} value={s}>{s.charAt(0) + s.slice(1).toLowerCase()}</option>
-                  ))}
-                </select>
+              {/* DOB + Sex + Occupation */}
+              <div className="sm:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <FieldLabel>Date of Birth *</FieldLabel>
+                  <input
+                    required
+                    type="date"
+                    max={new Date().toISOString().slice(0, 10)}
+                    value={npDob}
+                    onChange={(e) => setNpDob(e.target.value)}
+                    className={inputCls}
+                  />
+                </div>
+                <div>
+                  <FieldLabel>Sex *</FieldLabel>
+                  <select
+                    required
+                    value={npSex}
+                    onChange={(e) => setNpSex(e.target.value)}
+                    className={inputCls}
+                  >
+                    {SEXES.map((s) => (
+                      <option key={s} value={s}>{s.charAt(0) + s.slice(1).toLowerCase()}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <FieldLabel icon={<Building2 size={12} />}>Occupation *</FieldLabel>
+                  <input
+                    type="text"
+                    placeholder="e.g. Farmer, Teacher"
+                    value={npOccupation}
+                    onChange={(e) => setNpOccupation(e.target.value)}
+                    className={inputCls}
+                  />
+                </div>
               </div>
 
               {/* Phone + Aadhaar */}
@@ -534,17 +546,6 @@ export function BookAppointmentForm({
                 </div>
               </div>
 
-              {/* Occupation */}
-              <div className="sm:col-span-2">
-                <FieldLabel icon={<Building2 size={12} />}>Occupation *</FieldLabel>
-                <input
-                  type="text"
-                  placeholder="e.g. Farmer, Teacher, Software Engineer"
-                  value={npOccupation}
-                  onChange={(e) => setNpOccupation(e.target.value)}
-                  className={inputCls}
-                />
-              </div>
 
               {/* Notes / Instructions */}
               <div className="sm:col-span-2">
