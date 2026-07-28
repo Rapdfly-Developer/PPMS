@@ -110,10 +110,15 @@ export function AppointmentRow({ appt, role, token }: { appt: any; role: string;
           {appt.visitType && (
             <span className="flex items-center gap-1"><Tag size={11} /> {appt.visitType}</span>
           )}
-          {(appt.notes || p.complaint) && (
-            <span className="flex items-center gap-1 italic"><FileText size={11} /> {appt.notes || p.complaint}</span>
-          )}
         </div>
+
+        {/* Chief complaint — distinct pill */}
+        {(appt.notes || p.complaint) && (
+          <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-xs font-medium max-w-full">
+            <FileText size={11} className="shrink-0 text-amber-500" />
+            <span className="truncate">{appt.notes || p.complaint}</span>
+          </div>
+        )}
 
         {/* Row 3: full timestamp trail */}
         {(() => {
