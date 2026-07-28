@@ -11,19 +11,19 @@ import {
 
 /* ── Dark theme palette ─────────────────────────────────────────────────── */
 const T = {
-  bg:       "#060B14",
-  surface:  "rgba(18,25,38,.75)",
-  card:     "rgba(20,28,42,.72)",
-  accent:   "#18D2C3",
-  accent2:  "#2DD4BF",
-  blue:     "#3B82F6",
+  bg:       "#041A18",
+  surface:  "rgba(4,26,24,.80)",
+  card:     "rgba(5,28,25,.78)",
+  accent:   "#22C55E",
+  accent2:  "#0F8F6F",
+  blue:     "#16A34A",
   text:     "#FFFFFF",
-  muted:    "#94A3B8",
-  faint:    "#64748B",
+  muted:    "#B5C2C7",
+  faint:    "#6B8F8A",
   border:   "rgba(255,255,255,.08)",
   border2:  "rgba(255,255,255,.14)",
-  field:    "rgba(10,16,26,.6)",
-  glow:     "0 0 0 4px rgba(24,210,195,.10), 0 0 22px rgba(24,210,195,.16)",
+  field:    "rgba(2,15,14,.65)",
+  glow:     "0 0 0 4px rgba(15,143,111,.12), 0 0 22px rgba(34,197,94,.18)",
 };
 
 /* ── Types ─────────────────────────────────────────────────────────────── */
@@ -143,10 +143,10 @@ function GlassStat({ icon, value, suffix, label, delay }: {
         boxShadow: "0 12px 34px rgba(0,0,0,.42), inset 0 1px 0 rgba(255,255,255,.05)",
       }}>
       <span className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style={{
-        background: "linear-gradient(135deg,rgba(24,210,195,.16),rgba(59,130,246,.1))",
-        border: "1px solid rgba(24,210,195,.22)",
+        background: "linear-gradient(135deg,rgba(15,143,111,.16),rgba(22,163,74,.1))",
+        border: "1px solid rgba(15,143,111,.22)",
         color: T.accent,
-        boxShadow: "0 0 16px rgba(24,210,195,.16)",
+        boxShadow: "0 0 16px rgba(15,143,111,.16)",
       }}>
         {icon}
       </span>
@@ -173,8 +173,8 @@ function DashboardMockup({ px, py }: { px: number; py: number }) {
         style={{ inset: "-26px -14px", width: "calc(100% + 28px)", height: "calc(100% + 52px)", opacity: 0.85 }}>
         <defs>
           <linearGradient id="lp-hosp" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#18D2C3" stopOpacity=".55" />
-            <stop offset="100%" stopColor="#3B82F6" stopOpacity=".15" />
+            <stop offset="0%" stopColor="#0F8F6F" stopOpacity=".55" />
+            <stop offset="100%" stopColor="#22C55E" stopOpacity=".15" />
           </linearGradient>
         </defs>
         {[
@@ -187,8 +187,8 @@ function DashboardMockup({ px, py }: { px: number; py: number }) {
         ))}
         {[[34,52],[236,34],[438,60],[40,254],[236,268],[430,256]].map(([cx, cy], i) => (
           <g key={i}>
-            <circle cx={cx} cy={cy} r="9" fill="rgba(24,210,195,.07)" />
-            <circle cx={cx} cy={cy} r="3" fill="#18D2C3" opacity=".8">
+            <circle cx={cx} cy={cy} r="9" fill="rgba(15,143,111,.07)" />
+            <circle cx={cx} cy={cy} r="3" fill="#0F8F6F" opacity=".8">
               <animate attributeName="opacity" values=".35;.95;.35" dur="3.4s" begin={`${i * 0.5}s`} repeatCount="indefinite" />
             </circle>
           </g>
@@ -202,7 +202,7 @@ function DashboardMockup({ px, py }: { px: number; py: number }) {
         backdropFilter: "blur(20px)",
         WebkitBackdropFilter: "blur(20px)",
         border: `1px solid ${T.border2}`,
-        boxShadow: "0 40px 90px rgba(0,0,0,.62), 0 12px 30px rgba(0,0,0,.45), 0 0 60px rgba(24,210,195,.09), inset 0 1px 0 rgba(255,255,255,.07)",
+        boxShadow: "0 40px 90px rgba(0,0,0,.62), 0 12px 30px rgba(0,0,0,.45), 0 0 60px rgba(15,143,111,.09), inset 0 1px 0 rgba(255,255,255,.07)",
         padding: "15px 16px 17px",
       }}>
         {/* Glass reflection sweep */}
@@ -254,9 +254,9 @@ function DashboardMockup({ px, py }: { px: number; py: number }) {
               height: `${h}%`,
               animationDelay: `${0.5 + i * 0.08}s`,
               background: i === 5
-                ? "linear-gradient(180deg,#2DD4BF,#0E9488)"
-                : "linear-gradient(180deg,rgba(24,210,195,.34),rgba(24,210,195,.1))",
-              boxShadow: i === 5 ? "0 0 14px rgba(45,212,191,.45)" : "none",
+                ? "linear-gradient(180deg,#22C55E,#0F8F6F)"
+                : "linear-gradient(180deg,rgba(15,143,111,.38),rgba(15,143,111,.10))",
+              boxShadow: i === 5 ? "0 0 14px rgba(34,197,94,.45)" : "none",
             }} />
           ))}
         </div>
@@ -276,7 +276,7 @@ function DashboardMockup({ px, py }: { px: number; py: number }) {
         backdropFilter: "blur(18px)",
         WebkitBackdropFilter: "blur(18px)",
         border: `1px solid ${T.border2}`,
-        boxShadow: "0 18px 44px rgba(0,0,0,.55), 0 0 26px rgba(24,210,195,.12)",
+        boxShadow: "0 18px 44px rgba(0,0,0,.55), 0 0 26px rgba(15,143,111,.12)",
       }}>
         <p style={{ fontSize: "7.5px", fontWeight: 700, letterSpacing: "0.1em", color: T.faint }}>THROUGHPUT</p>
         <div className="flex items-baseline gap-1">
@@ -284,7 +284,7 @@ function DashboardMockup({ px, py }: { px: number; py: number }) {
           <TrendingUp size={10} style={{ color: T.accent2 }} />
         </div>
         <svg width="62" height="16" viewBox="0 0 62 16" fill="none" className="mt-0.5">
-          <path d="M1,13 L11,9 L21,11 L31,5 L41,7 L51,3 L61,1" stroke={T.accent2} strokeWidth="1.4"
+          <path d="M1,13 L11,9 L21,11 L31,5 L41,7 L51,3 L61,1" stroke="#22C55E" strokeWidth="1.4"
             strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </div>
@@ -297,7 +297,7 @@ function DashboardMockup({ px, py }: { px: number; py: number }) {
         backdropFilter: "blur(18px)",
         WebkitBackdropFilter: "blur(18px)",
         border: `1px solid ${T.border2}`,
-        boxShadow: "0 18px 44px rgba(0,0,0,.55), 0 0 26px rgba(59,130,246,.1)",
+        boxShadow: "0 18px 44px rgba(0,0,0,.55), 0 0 26px rgba(22,163,74,.1)",
       }}>
         <div className="flex items-center justify-between mb-1.5">
           <span style={{ fontSize: "7.5px", fontWeight: 700, letterSpacing: "0.1em", color: T.faint }}>BED OCCUPANCY</span>
@@ -306,8 +306,8 @@ function DashboardMockup({ px, py }: { px: number; py: number }) {
         <div className="rounded-full mt-1.5 overflow-hidden" style={{ height: "4px", background: "rgba(255,255,255,.07)" }}>
           <div className="lp-fill h-full rounded-full" style={{
             width: "82%",
-            background: "linear-gradient(90deg,#18D2C3,#3B82F6)",
-            boxShadow: "0 0 10px rgba(24,210,195,.5)",
+            background: "linear-gradient(90deg,#0F8F6F,#22C55E)",
+            boxShadow: "0 0 10px rgba(34,197,94,.5)",
           }} />
         </div>
       </div>
@@ -528,20 +528,20 @@ function ForgotPasswordModal({ onClose }: { onClose: () => void }) {
           background: T.surface,
           backdropFilter: "blur(25px)",
           WebkitBackdropFilter: "blur(25px)",
-          boxShadow: "0 40px 100px rgba(0,0,0,.72), 0 12px 32px rgba(0,0,0,.5), 0 0 60px rgba(24,210,195,.1)",
+          boxShadow: "0 40px 100px rgba(0,0,0,.72), 0 12px 32px rgba(0,0,0,.5), 0 0 60px rgba(15,143,111,.1)",
           border: `1px solid ${T.border2}`,
           animation: "lp-cardin .35s cubic-bezier(.22,1,.36,1) both",
         }}>
 
         {/* Top accent */}
-        <div style={{ height: "1px", background: "linear-gradient(90deg,transparent,#18D2C3 40%,#3B82F6 60%,transparent)" }} />
+        <div style={{ height: "1px", background: "linear-gradient(90deg,transparent,#0F8F6F 40%,#22C55E 60%,transparent)" }} />
 
         <div className="px-7 py-6">
           {/* Header */}
           <div className="flex items-start justify-between mb-5">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0"
-                style={{ background: "linear-gradient(135deg,rgba(24,210,195,.18),rgba(59,130,246,.12))", border: "1px solid rgba(24,210,195,.28)" }}>
+                style={{ background: "linear-gradient(135deg,rgba(15,143,111,.18),rgba(22,163,74,.12))", border: "1px solid rgba(15,143,111,.28)" }}>
                 {step === "done"
                   ? <CheckCircle2 size={18} style={{ color: T.accent }} />
                   : <KeyRound size={18} style={{ color: T.accent }} />}
@@ -570,8 +570,8 @@ function ForgotPasswordModal({ onClose }: { onClose: () => void }) {
                 <div key={i} className="rounded-full transition-all duration-300" style={{
                   height: "4px",
                   flex: i === stepIndex ? 3 : 1,
-                  background: i <= stepIndex ? "linear-gradient(90deg,#14B8A6,#06B6D4)" : "rgba(255,255,255,.1)",
-                  boxShadow: i <= stepIndex ? "0 0 12px rgba(24,210,195,.35)" : "none",
+                  background: i <= stepIndex ? "linear-gradient(90deg,#0F8F6F,#22C55E)" : "rgba(255,255,255,.1)",
+                  boxShadow: i <= stepIndex ? "0 0 12px rgba(34,197,94,.35)" : "none",
                 }} />
               ))}
             </div>
@@ -594,8 +594,8 @@ function ForgotPasswordModal({ onClose }: { onClose: () => void }) {
               <button onClick={() => handleSendOtp()} disabled={loading}
                 className="lp-btn w-full font-bold text-white rounded-2xl flex items-center justify-center gap-2"
                 style={{ height: "48px", fontSize: "14px",
-                  background: loading ? "rgba(255,255,255,.07)" : "linear-gradient(135deg,#14B8A6,#06B6D4)",
-                  boxShadow: loading ? "none" : "0 8px 24px rgba(20,184,166,.34), 0 0 28px rgba(6,182,212,.2)" }}>
+                  background: loading ? "rgba(255,255,255,.07)" : "linear-gradient(135deg,#0F8F6F,#16A34A)",
+                  boxShadow: loading ? "none" : "0 8px 24px rgba(15,143,111,.34), 0 0 28px rgba(34,197,94,.2)" }}>
                 {loading ? <><Loader2 size={15} className="animate-spin" /> Sending…</> : <><span>Send OTP</span><ArrowRight size={15} /></>}
               </button>
             </div>
@@ -630,13 +630,13 @@ function ForgotPasswordModal({ onClose }: { onClose: () => void }) {
               <button onClick={handleVerifyOtp} disabled={loading || otp.length < 6}
                 className="lp-btn w-full font-bold text-white rounded-2xl flex items-center justify-center gap-2"
                 style={{ height: "48px", fontSize: "14px",
-                  background: loading || otp.length < 6 ? "rgba(255,255,255,.05)" : "linear-gradient(135deg,#14B8A6,#06B6D4)",
+                  background: loading || otp.length < 6 ? "rgba(255,255,255,.05)" : "linear-gradient(135deg,#0F8F6F,#16A34A)",
                   color: otp.length < 6 ? "#64748B" : "#03181C",
-                  boxShadow: otp.length < 6 ? "none" : "0 8px 24px rgba(20,184,166,.34), 0 0 28px rgba(6,182,212,.2)" }}>
+                  boxShadow: otp.length < 6 ? "none" : "0 8px 24px rgba(15,143,111,.34), 0 0 28px rgba(34,197,94,.2)" }}>
                 {loading ? <><Loader2 size={15} className="animate-spin" /> Verifying…</> : <><span>Verify OTP</span><ArrowRight size={15} /></>}
               </button>
               <button onClick={() => { setStep("email"); setOtp(""); setError(""); }}
-                className="text-center text-sm font-medium transition-colors hover:text-[#18D2C3]"
+                className="text-center text-sm font-medium transition-colors hover:text-[#22C55E]"
                 style={{ color: T.faint }}>
                 ← Use a different email
               </button>
@@ -670,7 +670,7 @@ function ForgotPasswordModal({ onClose }: { onClose: () => void }) {
               {/* Password strength bar */}
               {newPassword.length > 0 && (() => {
                 const strength = [newPassword.length >= 8, /[A-Z]/.test(newPassword), /[0-9]/.test(newPassword), /[^A-Za-z0-9]/.test(newPassword)].filter(Boolean).length;
-                const colors = ["#F87171","#FBBF24","#34D399","#18D2C3"];
+                const colors = ["#F87171","#FBBF24","#34D399","#22C55E"];
                 const labels = ["Weak","Fair","Good","Strong"];
                 return (
                   <div className="flex items-center gap-2 -mt-1">
@@ -705,9 +705,9 @@ function ForgotPasswordModal({ onClose }: { onClose: () => void }) {
                 disabled={loading || newPassword.length < 8 || newPassword !== confirmPw}
                 className="lp-btn w-full font-bold text-white rounded-2xl flex items-center justify-center gap-2 mt-1"
                 style={{ height: "48px", fontSize: "14px",
-                  background: loading || newPassword.length < 8 || newPassword !== confirmPw ? "rgba(255,255,255,.05)" : "linear-gradient(135deg,#14B8A6,#06B6D4)",
+                  background: loading || newPassword.length < 8 || newPassword !== confirmPw ? "rgba(255,255,255,.05)" : "linear-gradient(135deg,#0F8F6F,#16A34A)",
                   color: newPassword.length < 8 || newPassword !== confirmPw ? "#64748B" : "#03181C",
-                  boxShadow: newPassword.length < 8 || newPassword !== confirmPw ? "none" : "0 8px 24px rgba(20,184,166,.34), 0 0 28px rgba(6,182,212,.2)" }}>
+                  boxShadow: newPassword.length < 8 || newPassword !== confirmPw ? "none" : "0 8px 24px rgba(15,143,111,.34), 0 0 28px rgba(34,197,94,.2)" }}>
                 {loading ? <><Loader2 size={15} className="animate-spin" /> Updating…</> : <><span>Reset Password</span><ArrowRight size={15} /></>}
               </button>
             </div>
@@ -717,7 +717,7 @@ function ForgotPasswordModal({ onClose }: { onClose: () => void }) {
           {step === "done" && (
             <div className="flex flex-col items-center gap-4 py-2">
               <div className="w-16 h-16 rounded-2xl flex items-center justify-center"
-                style={{ background: "linear-gradient(135deg,rgba(24,210,195,.18),rgba(59,130,246,.12))", border: "1px solid rgba(24,210,195,.3)", boxShadow: "0 0 30px rgba(24,210,195,.2)" }}>
+                style={{ background: "linear-gradient(135deg,rgba(15,143,111,.18),rgba(22,163,74,.12))", border: "1px solid rgba(15,143,111,.3)", boxShadow: "0 0 30px rgba(15,143,111,.2)" }}>
                 <CheckCircle2 size={30} style={{ color: T.accent }} />
               </div>
               <div className="text-center">
@@ -729,8 +729,8 @@ function ForgotPasswordModal({ onClose }: { onClose: () => void }) {
               <button onClick={onClose}
                 className="lp-btn w-full font-bold text-white rounded-2xl flex items-center justify-center gap-2"
                 style={{ height: "48px", fontSize: "14px",
-                  background: "linear-gradient(135deg,#14B8A6,#06B6D4)",
-                  boxShadow: "0 8px 24px rgba(20,184,166,.34), 0 0 28px rgba(6,182,212,.2)" }}>
+                  background: "linear-gradient(135deg,#0F8F6F,#16A34A)",
+                  boxShadow: "0 8px 24px rgba(15,143,111,.34), 0 0 28px rgba(34,197,94,.2)" }}>
                 Sign In Now <ArrowRight size={15} />
               </button>
             </div>
@@ -762,35 +762,35 @@ function DarkBackground({ px, py }: { px: number; py: number }) {
 
   return (
     <div className="absolute inset-0 pointer-events-none overflow-hidden" style={{ background: T.bg }}>
-      {/* Deep navy → black base gradient */}
+      {/* Dark emerald base gradient — matches landing page */}
       <div className="absolute inset-0" style={{
-        background: "radial-gradient(1200px 800px at 22% 18%,#0C1A2B 0%,transparent 60%)," +
-                    "radial-gradient(1000px 700px at 82% 78%,#0A1726 0%,transparent 62%)," +
-                    "linear-gradient(160deg,#070D18 0%,#060B14 45%,#04080F 100%)",
+        background: "radial-gradient(ellipse 80% 60% at 15% 5%,rgba(15,143,111,.22) 0%,transparent 60%)," +
+                    "radial-gradient(ellipse 60% 50% at 85% 85%,rgba(22,163,74,.13) 0%,transparent 55%)," +
+                    "linear-gradient(160deg,#051F1C 0%,#041A18 50%,#030F0D 100%)",
       }} />
 
       {/* Moving gradient sheen */}
       <div className="lp-sheen absolute inset-0" style={{
-        backgroundImage: "linear-gradient(115deg,transparent 30%,rgba(24,210,195,.05) 48%,rgba(59,130,246,.04) 56%,transparent 74%)",
+        backgroundImage: "linear-gradient(115deg,transparent 30%,rgba(15,143,111,.07) 48%,rgba(34,197,94,.05) 56%,transparent 74%)",
         backgroundSize: "260% 260%",
       }} />
 
       {/* Large blurred glowing orbs — parallax */}
       <div className="lp-orb1 absolute rounded-full" style={{
         top: "-260px", left: "-180px", width: "760px", height: "760px",
-        background: "radial-gradient(circle,rgba(24,210,195,.20) 0%,rgba(24,210,195,.05) 42%,transparent 68%)",
+        background: "radial-gradient(circle,rgba(15,143,111,.24) 0%,rgba(15,143,111,.06) 42%,transparent 68%)",
         filter: "blur(70px)",
         transform: `translate3d(${px * 26}px,${py * 20}px,0)`,
       }} />
       <div className="lp-orb2 absolute rounded-full" style={{
         bottom: "-280px", right: "-160px", width: "820px", height: "820px",
-        background: "radial-gradient(circle,rgba(59,130,246,.17) 0%,rgba(59,130,246,.04) 44%,transparent 68%)",
+        background: "radial-gradient(circle,rgba(22,163,74,.16) 0%,rgba(22,163,74,.04) 44%,transparent 68%)",
         filter: "blur(80px)",
         transform: `translate3d(${px * -30}px,${py * -22}px,0)`,
       }} />
       <div className="lp-orb3 absolute rounded-full" style={{
         top: "34%", left: "46%", width: "520px", height: "520px",
-        background: "radial-gradient(circle,rgba(45,212,191,.13) 0%,transparent 66%)",
+        background: "radial-gradient(circle,rgba(34,197,94,.12) 0%,transparent 66%)",
         filter: "blur(64px)",
         transform: `translate3d(${px * 18}px,${py * -14}px,0)`,
       }} />
@@ -800,11 +800,11 @@ function DarkBackground({ px, py }: { px: number; py: number }) {
         style={{ transform: `translate3d(${px * 8}px,${py * 6}px,0)` }}>
         <defs>
           <pattern id="lp-dg1" width="44" height="44" patternUnits="userSpaceOnUse">
-            <path d="M44 0L0 0 0 44" fill="none" stroke="#2DD4BF" strokeWidth=".5" strokeOpacity=".05" />
+            <path d="M44 0L0 0 0 44" fill="none" stroke="#0F8F6F" strokeWidth=".5" strokeOpacity=".05" />
           </pattern>
           <pattern id="lp-dg2" width="220" height="220" patternUnits="userSpaceOnUse">
             <rect width="220" height="220" fill="url(#lp-dg1)" />
-            <path d="M220 0L0 0 0 220" fill="none" stroke="#2DD4BF" strokeWidth="1" strokeOpacity=".055" />
+            <path d="M220 0L0 0 0 220" fill="none" stroke="#0F8F6F" strokeWidth="1" strokeOpacity=".055" />
           </pattern>
           <radialGradient id="lp-dgfade" cx="50%" cy="45%" r="62%">
             <stop offset="0%" stopColor="#fff" stopOpacity="1" />
@@ -820,8 +820,8 @@ function DarkBackground({ px, py }: { px: number; py: number }) {
         preserveAspectRatio="none" style={{ opacity: 0.5, transform: `translate3d(${px * 12}px,${py * 9}px,0)` }}>
         <defs>
           <linearGradient id="lp-dline" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#18D2C3" stopOpacity=".5" />
-            <stop offset="100%" stopColor="#3B82F6" stopOpacity=".14" />
+            <stop offset="0%" stopColor="#0F8F6F" stopOpacity=".5" />
+            <stop offset="100%" stopColor="#22C55E" stopOpacity=".14" />
           </linearGradient>
         </defs>
         {[
@@ -854,8 +854,8 @@ function DarkBackground({ px, py }: { px: number; py: number }) {
       {particles.map((p, i) => (
         <div key={i} className="absolute rounded-full" style={{
           left: p.x, top: p.y, width: "4px", height: "4px",
-          background: "radial-gradient(circle,rgba(45,212,191,.9),transparent 70%)",
-          boxShadow: "0 0 10px rgba(24,210,195,.55)",
+          background: "radial-gradient(circle,rgba(34,197,94,.9),transparent 70%)",
+          boxShadow: "0 0 10px rgba(15,143,111,.55)",
           animation: `lp-particle ${p.d}s ease-in-out ${i * 0.9}s infinite`,
         }} />
       ))}
@@ -1015,7 +1015,7 @@ export default function LoginPage() {
         @keyframes lp-shield  { 0%,100%{transform:scale(1) rotate(0deg)} 50%{transform:scale(1.1) rotate(3deg)} }
         @keyframes lp-grad    { 0%,100%{background-position:0% 50%} 50%{background-position:100% 50%} }
         @keyframes lp-shimmer { 0%{background-position:-300% center} 100%{background-position:300% center} }
-        @keyframes lp-pulse   { 0%,100%{box-shadow:0 0 0 0 rgba(15,118,110,.3),0 6px 24px rgba(15,118,110,.22)} 50%{box-shadow:0 0 0 7px rgba(15,118,110,.06),0 6px 32px rgba(15,118,110,.36)} }
+        @keyframes lp-pulse   { 0%,100%{box-shadow:0 0 0 0 rgba(15,143,111,.3),0 6px 24px rgba(15,143,111,.22)} 50%{box-shadow:0 0 0 7px rgba(15,143,111,.06),0 6px 32px rgba(15,143,111,.36)} }
         @keyframes lp-ripple  { from{opacity:.32;transform:scale(0)} to{opacity:0;transform:scale(4.5)} }
         @keyframes lp-slide-up{ from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
         @keyframes lp-arrow   { 0%,100%{transform:translateX(0)} 50%{transform:translateX(4px)} }
@@ -1024,7 +1024,7 @@ export default function LoginPage() {
         @keyframes lp-card-levitate { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-5px)} }
         @keyframes lp-field-in{ from{opacity:0;transform:translateX(16px)} to{opacity:1;transform:translateX(0)} }
         @keyframes lp-border-glow { 0%,100%{opacity:.45} 50%{opacity:1} }
-        @keyframes lp-dot { 0%,100%{box-shadow:0 0 0 0 rgba(20,184,166,.45)} 60%{box-shadow:0 0 0 6px rgba(20,184,166,0)} }
+        @keyframes lp-dot { 0%,100%{box-shadow:0 0 0 0 rgba(34,197,94,.45)} 60%{box-shadow:0 0 0 6px rgba(34,197,94,0)} }
         @keyframes lp-floaty  { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-7px)} }
         @keyframes lp-flowdash { to{stroke-dashoffset:-140} }
 
@@ -1056,7 +1056,7 @@ export default function LoginPage() {
 
         /* ── Gradient headline ─────────────────────────────────────── */
         .lp-grad-text{
-          background:linear-gradient(90deg,#18D2C3,#2DD4BF,#3B82F6,#2DD4BF,#18D2C3);
+          background:linear-gradient(90deg,#5EEAD4,#22C55E,#0F8F6F,#22C55E,#5EEAD4);
           background-size:300% auto;
           -webkit-background-clip:text;
           -webkit-text-fill-color:transparent;
@@ -1100,7 +1100,7 @@ export default function LoginPage() {
 
         /* ── Microsoft SSO outline button ──────────────────────────── */
         .lp-sso{transition:border-color .2s,background .2s,transform .2s cubic-bezier(.34,1.56,.64,1),box-shadow .2s}
-        .lp-sso:hover{border-color:rgba(24,210,195,.42)!important;background:rgba(255,255,255,.075)!important;transform:translateY(-2px);box-shadow:0 10px 26px rgba(0,0,0,.45),0 0 26px rgba(24,210,195,.14)}
+        .lp-sso:hover{border-color:rgba(15,143,111,.42)!important;background:rgba(255,255,255,.075)!important;transform:translateY(-2px);box-shadow:0 10px 26px rgba(0,0,0,.45),0 0 26px rgba(15,143,111,.14)}
         .lp-sso:active{transform:translateY(0)}
 
         /* ── Tab sliding pill ──────────────────────────────────────── */
@@ -1123,7 +1123,7 @@ export default function LoginPage() {
           .lp-tilt,.lp-bar,.lp-fill,
           .lp-f1,.lp-f2,.lp-f3,.lp-f4,.lp-f5
           { animation:none!important; transition:none!important; }
-          .lp-grad-text{-webkit-text-fill-color:#2DD4BF;background:none;}
+          .lp-grad-text{-webkit-text-fill-color:#0F8F6F;background:none;}
         }
       `}</style>
 
@@ -1149,7 +1149,7 @@ export default function LoginPage() {
                 <div className="flex items-center gap-2">
                   <span className="text-[25px] font-black" style={{ color: T.text, letterSpacing: "-0.035em" }}>PPMS-AI</span>
                   <span className="text-[9.5px] font-bold px-2 py-0.5 rounded-full"
-                    style={{ background: "rgba(24,210,195,.1)", color: T.accent, border: "1px solid rgba(24,210,195,.24)", letterSpacing: "0.04em" }}>v2.0 Cloud</span>
+                    style={{ background: "rgba(15,143,111,.1)", color: T.accent, border: "1px solid rgba(15,143,111,.24)", letterSpacing: "0.04em" }}>v2.0 Cloud</span>
                 </div>
                 <p className="text-[9.5px] font-semibold" style={{ color: T.faint, letterSpacing: "0.06em" }}>
                   PERSONAL PATIENT MANAGEMENT SYSTEM
@@ -1164,11 +1164,11 @@ export default function LoginPage() {
             {/* Eyebrow badge */}
             <div className="lp-a1 mb-4">
               <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full" style={{
-                background: "rgba(24,210,195,.07)",
+                background: "rgba(15,143,111,.07)",
                 backdropFilter: "blur(10px)",
                 WebkitBackdropFilter: "blur(10px)",
-                border: "1px solid rgba(24,210,195,.2)",
-                boxShadow: "0 0 22px rgba(24,210,195,.1)",
+                border: "1px solid rgba(15,143,111,.2)",
+                boxShadow: "0 0 22px rgba(15,143,111,.1)",
               }}>
                 <span className="lp-dot" style={{ width: 6, height: 6, borderRadius: "50%", background: T.accent }} />
                 <span style={{ fontSize: "10px", fontWeight: 800, letterSpacing: "0.14em", color: T.accent }}>
@@ -1211,7 +1211,7 @@ export default function LoginPage() {
 
           {/* Footer trust row */}
           <div className="lp-a4 shrink-0">
-            <div className="mb-3.5" style={{ height: "1px", background: "linear-gradient(90deg,rgba(24,210,195,.28),rgba(24,210,195,.06) 70%,transparent)" }} />
+            <div className="mb-3.5" style={{ height: "1px", background: "linear-gradient(90deg,rgba(15,143,111,.28),rgba(15,143,111,.06) 70%,transparent)" }} />
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
               {[
                 { icon: <ShieldCheck size={12} />, label: "HIPAA Ready"     },
@@ -1265,13 +1265,13 @@ export default function LoginPage() {
               border: `1px solid ${T.border2}`,
               boxShadow:
                 "0 40px 110px rgba(0,0,0,.7), 0 16px 44px rgba(0,0,0,.5)," +
-                "0 0 70px rgba(24,210,195,.11), inset 0 1px 0 rgba(255,255,255,.08)",
+                "0 0 70px rgba(15,143,111,.11), inset 0 1px 0 rgba(255,255,255,.08)",
               overflow: "hidden",
               position: "relative",
             }}
           >
             {/* Animated top edge */}
-            <div className="lp-border-glow" style={{ height: "1px", background: "linear-gradient(90deg,transparent,#18D2C3 30%,#3B82F6 50%,#18D2C3 70%,transparent)" }} />
+            <div className="lp-border-glow" style={{ height: "1px", background: "linear-gradient(90deg,transparent,#0F8F6F 30%,#22C55E 50%,#0F8F6F 70%,transparent)" }} />
             {/* Glass reflection sweep across the card */}
             <div className="lp-reflect absolute pointer-events-none" style={{
               top: 0, bottom: 0, width: "40%",
@@ -1286,9 +1286,9 @@ export default function LoginPage() {
                   {/* Shield */}
                   <div className="lp-shield-anim w-8 h-8 rounded-xl flex items-center justify-center"
                     style={{
-                      background: "linear-gradient(135deg,rgba(24,210,195,.18),rgba(59,130,246,.12))",
-                      border: "1px solid rgba(24,210,195,.28)",
-                      boxShadow: "0 0 20px rgba(24,210,195,.2)",
+                      background: "linear-gradient(135deg,rgba(15,143,111,.18),rgba(22,163,74,.12))",
+                      border: "1px solid rgba(15,143,111,.28)",
+                      boxShadow: "0 0 20px rgba(15,143,111,.2)",
                     }}>
                     <ShieldCheck size={16} style={{ color: T.accent }} />
                   </div>
@@ -1306,9 +1306,9 @@ export default function LoginPage() {
                 <div className="lp-tab-pill absolute top-1 bottom-1 rounded-[13px]" style={{
                   left: tab === "password" ? "4px" : "calc(50%)",
                   width: "calc(50% - 4px)",
-                  background: "linear-gradient(135deg,rgba(24,210,195,.16),rgba(59,130,246,.1))",
-                  border: "1px solid rgba(24,210,195,.24)",
-                  boxShadow: "0 0 18px rgba(24,210,195,.14)",
+                  background: "linear-gradient(135deg,rgba(15,143,111,.16),rgba(22,163,74,.1))",
+                  border: "1px solid rgba(15,143,111,.24)",
+                  boxShadow: "0 0 18px rgba(15,143,111,.14)",
                 }} />
                 {(["password", "otp"] as const).map((t) => (
                   <button key={t} type="button" onClick={() => switchTab(t)}
@@ -1364,7 +1364,7 @@ export default function LoginPage() {
                       onKeyDown={e => setCapsLock(e.getModifierState("CapsLock"))}
                       rightSlot={
                         <button type="button" onClick={() => setShowPassword(!showPassword)}
-                          style={{ color: T.faint }} className="transition-colors hover:text-[#18D2C3]">
+                          style={{ color: T.faint }} className="transition-colors hover:text-[#22C55E]">
                           {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
                         </button>
                       }
@@ -1384,9 +1384,9 @@ export default function LoginPage() {
                         className="flex items-center justify-center rounded-md shrink-0"
                         style={{
                           width: 18, height: 18,
-                          background: rememberMe ? "linear-gradient(135deg,#14B8A6,#06B6D4)" : "rgba(10,16,26,.7)",
+                          background: rememberMe ? "linear-gradient(135deg,#0F8F6F,#16A34A)" : "rgba(10,16,26,.7)",
                           border: `1px solid ${rememberMe ? T.accent : "rgba(255,255,255,.18)"}`,
-                          boxShadow: rememberMe ? "0 0 14px rgba(24,210,195,.4)" : "none",
+                          boxShadow: rememberMe ? "0 0 14px rgba(15,143,111,.4)" : "none",
                           transition: "all .25s cubic-bezier(.34,1.56,.64,1)",
                         }}>
                         {rememberMe && <Check size={10} color="#04141A" strokeWidth={3.5} />}
@@ -1471,7 +1471,7 @@ export default function LoginPage() {
                         onClick={() => handleSendOtp()}
                         className="lp-btn shrink-0 rounded-[16px] text-sm font-semibold flex items-center justify-center gap-1.5"
                         style={mobile.length === 10 && !otpLoading
-                          ? { height: "58px", width: "96px", background: "linear-gradient(135deg,#14B8A6,#06B6D4)", color: "#03181C", boxShadow: "0 6px 20px rgba(20,184,166,.34), 0 0 26px rgba(6,182,212,.2)" }
+                          ? { height: "58px", width: "96px", background: "linear-gradient(135deg,#0F8F6F,#16A34A)", color: "#03181C", boxShadow: "0 6px 20px rgba(20,184,166,.34), 0 0 26px rgba(6,182,212,.2)" }
                           : { height: "58px", width: "96px", background: "rgba(255,255,255,.05)", color: T.faint, border: `1px solid ${T.border}`, cursor: "not-allowed" }}>
                         {otpLoading && !otpSent
                           ? <Loader2 size={14} className="animate-spin" />
@@ -1514,7 +1514,7 @@ export default function LoginPage() {
                   {/* Success message */}
                   {otpMsg && (
                     <p className="flex items-center gap-2 rounded-xl px-3.5 py-2.5"
-                      style={{ fontSize: "12px", background: "rgba(24,210,195,.08)", color: T.accent, border: "1px solid rgba(24,210,195,.22)", animation: "lp-slide-up .22s both" }}>
+                      style={{ fontSize: "12px", background: "rgba(15,143,111,.08)", color: T.accent, border: "1px solid rgba(15,143,111,.22)", animation: "lp-slide-up .22s both" }}>
                       <CheckCircle2 size={13} /> {otpMsg}
                     </p>
                   )}
@@ -1584,7 +1584,7 @@ export default function LoginPage() {
                 <div className="mt-3.5 rounded-2xl px-4 py-3" style={{ background: "rgba(255,255,255,.03)", border: `1px dashed ${T.border2}` }}>
                   <div className="flex items-center gap-1.5 mb-2">
                     <span className="font-mono text-[9px] font-bold px-1.5 py-0.5 rounded"
-                      style={{ background: "rgba(24,210,195,.16)", color: T.accent, border: "1px solid rgba(24,210,195,.28)", letterSpacing: "0.05em" }}>TEST</span>
+                      style={{ background: "rgba(15,143,111,.16)", color: T.accent, border: "1px solid rgba(15,143,111,.28)", letterSpacing: "0.05em" }}>TEST</span>
                     <p style={{ fontSize: "12px", fontWeight: 700, color: T.muted }}>Test Accounts</p>
                     <p style={{ fontSize: "11px", color: T.faint, marginLeft: "2px" }}>— click to fill</p>
                   </div>
@@ -1592,7 +1592,7 @@ export default function LoginPage() {
                     {TEST_ACCOUNTS.map((a) => (
                       <button key={a.username} type="button" onClick={() => fillTestAccount(a.username, a.password)}
                         className="flex items-center gap-2 px-2.5 py-2 rounded-xl text-left transition-all"
-                        style={{ background: username === a.username ? "rgba(24,210,195,.1)" : "rgba(255,255,255,.03)", border: `1px solid ${username === a.username ? "rgba(24,210,195,.4)" : T.border}` }}>
+                        style={{ background: username === a.username ? "rgba(15,143,111,.1)" : "rgba(255,255,255,.03)", border: `1px solid ${username === a.username ? "rgba(15,143,111,.4)" : T.border}` }}>
                         <User size={12} className="shrink-0" style={{ color: T.accent }} />
                         <span className="min-w-0">
                           <span className="block truncate" style={{ fontSize: "12px", fontWeight: 600, color: "#E2E8F0" }}>{a.label}</span>
@@ -1610,12 +1610,12 @@ export default function LoginPage() {
                 style={{
                   backgroundImage: "linear-gradient(105deg,rgba(6,26,32,.9) 0%,rgba(13,60,62,.85) 32%,rgba(15,90,92,.8) 62%,rgba(6,26,32,.9) 100%)",
                   backgroundSize: "300% auto",
-                  border: "1px solid rgba(24,210,195,.22)",
+                  border: "1px solid rgba(15,143,111,.22)",
                   display: "flex",
                 }}>
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-                    style={{ background: "rgba(24,210,195,.14)", border: "1px solid rgba(24,210,195,.24)" }}>
+                    style={{ background: "rgba(15,143,111,.14)", border: "1px solid rgba(15,143,111,.24)" }}>
                     <svg width="19" height="19" viewBox="0 0 24 24" fill={T.accent}>
                       <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
                     </svg>
@@ -1630,7 +1630,7 @@ export default function LoginPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0 rounded-lg px-2.5 sm:px-3 py-1.5 transition-transform group-hover:translate-x-0.5"
-                  style={{ background: "rgba(24,210,195,.14)", border: "1px solid rgba(24,210,195,.2)" }}>
+                  style={{ background: "rgba(15,143,111,.14)", border: "1px solid rgba(15,143,111,.2)" }}>
                   <span className="hidden sm:inline" style={{ fontSize: "11px", fontWeight: 700, color: T.accent }}>Create Workspace</span>
                   <ArrowRight size={12} color={T.accent} />
                 </div>
@@ -1644,11 +1644,11 @@ export default function LoginPage() {
           <div className="lp-a4 w-full max-w-[420px] shrink-0 mt-5">
             <div className="flex items-center justify-center gap-2 mb-3">
               <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full" style={{
-                background: "rgba(24,210,195,.07)",
+                background: "rgba(15,143,111,.07)",
                 backdropFilter: "blur(12px)",
                 WebkitBackdropFilter: "blur(12px)",
-                border: "1px solid rgba(24,210,195,.22)",
-                boxShadow: "0 0 24px rgba(24,210,195,.12)",
+                border: "1px solid rgba(15,143,111,.22)",
+                boxShadow: "0 0 24px rgba(15,143,111,.12)",
               }}>
                 <Lock size={11} style={{ color: T.accent }} />
                 <span style={{ fontSize: "10px", fontWeight: 800, letterSpacing: "0.1em", color: T.accent }}>
@@ -1673,9 +1673,9 @@ export default function LoginPage() {
               <span style={{ color: "rgba(255,255,255,.16)" }}>·</span>
               <span>Version 2.0 Cloud</span>
               <span style={{ color: "rgba(255,255,255,.16)" }}>·</span>
-              <a href="/privacy" className="transition-colors hover:text-[#18D2C3] hover:underline">Privacy Policy</a>
+              <a href="/privacy" className="transition-colors hover:text-[#22C55E] hover:underline">Privacy Policy</a>
               <span style={{ color: "rgba(255,255,255,.16)" }}>·</span>
-              <a href="/terms" className="transition-colors hover:text-[#18D2C3] hover:underline">Terms of Service</a>
+              <a href="/terms" className="transition-colors hover:text-[#22C55E] hover:underline">Terms of Service</a>
             </div>
           </div>
 
