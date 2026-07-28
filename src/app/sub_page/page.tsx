@@ -1,23 +1,20 @@
 import type { Metadata } from "next";
-import { Poppins, Inter } from "next/font/google";
+import { Sora, Inter, Manrope } from "next/font/google";
 import { SubPageClient } from "./SubPageClient";
 
-const poppins = Poppins({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800", "900"],
-  variable: "--font-head",
-});
-const inter = Inter({ subsets: ["latin"], variable: "--font-body-sp" });
+const sora = Sora({ subsets: ["latin"], weight: ["400","500","600","700","800"], variable: "--font-sora" });
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
+const manrope = Manrope({ subsets: ["latin"], weight: ["400","500","600","700","800"], variable: "--font-manrope" });
 
 export const metadata: Metadata = {
-  title: "PPMS — The Future of Healthcare Practice Management | RAPDFLY",
+  title: "PPMS — One Doctor. Multiple Hospitals. One Intelligent Platform.",
   description:
-    "One intelligent cloud platform to manage patients, appointments, EMR, billing and hospital operations. Built for doctors, clinics, hospitals and eye care centers by RAPDFLY PRIVATE LIMITED.",
+    "Manage appointments, EMR, prescriptions, billing, insurance, patient history and multiple hospitals from one secure cloud platform. Powered by RAPDFLY PRIVATE LIMITED.",
 };
 
 export default function SubPage() {
   return (
-    <div className={`${poppins.variable} ${inter.variable}`}>
+    <div className={`${sora.variable} ${inter.variable} ${manrope.variable}`}>
       <SubPageClient />
     </div>
   );
