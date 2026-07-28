@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { format, startOfDay, endOfDay } from "date-fns";
 import { Phone, MapPin, Calendar, Hash, IdCard, Briefcase, FileText } from "lucide-react";
 import { decryptAadhaar, maskAadhaar } from "@/lib/crypto";
-import { PatientProfileClient, TransferButton, TimeStampButton, type SerialVisit, type TodayVisit, type LastVisitSummary } from "./PatientProfileClient";
+import { PatientProfileClient, TimeStampButton, type SerialVisit, type TodayVisit, type LastVisitSummary } from "./PatientProfileClient";
 import { InvestigationsButton, TreatmentHistoryButton, SpectacleHistoryButton } from "./PatientHistoryButtons";
 
 const CATEGORY_STYLES: Record<string, string> = {
@@ -44,14 +44,6 @@ export default async function PatientProfilePage({
 
   if (!patient) notFound();
 
-  // Hospitals for the Transfer dropdown (Doctor only)
-  const allHospitals =
-    user.role === "DOCTOR"
-      ? await prisma.hospital.findMany({
-          select: { id: true, name: true },
-          orderBy: { name: "asc" },
-        })
-      : [];
 
   /* ── Derived ──────────────────────────────────────────────────────────── */
   const initials = patient.name
@@ -353,15 +345,6 @@ export default async function PatientProfilePage({
       {/* ── Action buttons ───────────────────────────────────────────── */}
       <div className="flex flex-wrap items-center gap-2 mb-4">
         <TimeStampButton patientId={patient.id} patientName={patient.name} />
-        {user.role === "DOCTOR" && (
-          <TransferButton
-            patientId={patient.id}
-            patientName={patient.name}
-            currentHospitalId={patient.registeredAtId}
-            currentHospitalName={patient.registeredAt?.name ?? null}
-            hospitals={allHospitals}
-          />
-        )}
         <InvestigationsButton patientId={patient.id} udid={udid} />
         <TreatmentHistoryButton patientId={patient.id} />
         <SpectacleHistoryButton patientId={patient.id} />
