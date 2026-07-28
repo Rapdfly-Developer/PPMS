@@ -506,7 +506,7 @@ export async function saveSurgicalCounselling(
   revalidate(udid);
 }
 
-export async function saveFollowUp(visitId: string, udid: string, data: { followUpDate?: string | null; referralEnabled: boolean; referralNote?: string }) {
+export async function saveFollowUp(visitId: string, udid: string, data: { followUpDate?: string | null; referralEnabled: boolean; referralNote?: string; inViewOf?: string }) {
   await requireRole("DOCTOR");
   await assertVisitAccess(visitId);
   await prisma.visit.update({
@@ -515,6 +515,7 @@ export async function saveFollowUp(visitId: string, udid: string, data: { follow
       followUpDate: data.followUpDate ? new Date(data.followUpDate) : null,
       referralEnabled: data.referralEnabled,
       referralNote: data.referralNote ?? null,
+      inViewOf: data.inViewOf ?? null,
     },
   });
   revalidate(udid);

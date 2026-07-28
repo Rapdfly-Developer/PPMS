@@ -905,7 +905,7 @@ export function PlanTab({ visit, udid, patientSex, priorVisits = [] }: { visit: 
 
       <PrescriptionCard visit={visit} udid={udid} priorVisits={priorVisits} />
       <OpticalPrescriptionCard visit={visit} />
-      <DispositionCard visit={visit} udid={udid} patientSex={patientSex} />
+      <DispositionCard visit={visit} udid={udid} patientSex={patientSex} priorVisits={priorVisits} />
 
       {/* "Change Preset" dialog */}
       {showDialog && (
@@ -1674,7 +1674,7 @@ function OpticalPrescriptionCard({ visit }: { visit: any }) {
   );
 }
 
-function DispositionCard({ visit, udid, patientSex }: { visit: any; udid: string; patientSex: string }) {
+function DispositionCard({ visit, udid, patientSex, priorVisits = [] }: { visit: any; udid: string; patientSex: string; priorVisits?: any[] }) {
   const [activePanels, setActivePanels] = useState<string[]>(
     [visit.admission && "admit", visit.surgicalCounselling && "surgery"].filter(Boolean) as string[]
   );
@@ -1693,7 +1693,7 @@ function DispositionCard({ visit, udid, patientSex }: { visit: any; udid: string
       <div className="flex flex-col gap-4">
         {activePanels.includes("admit")   && <AdmitPanel    visit={visit} udid={udid} patientSex={patientSex} />}
         {activePanels.includes("surgery") && <SurgicalPanel visit={visit} udid={udid} />}
-        {activePanels.includes("follow")  && <FollowUpdatesPanel visit={visit} udid={udid} />}
+        {activePanels.includes("follow")  && <FollowUpdatesPanel visit={visit} udid={udid} priorVisits={priorVisits} />}
       </div>
     </Card>
   );

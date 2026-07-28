@@ -453,6 +453,7 @@ model Visit {
   referralEnabled Boolean @default(false)
   referralNote   String?
   adviseNotes    String?
+  inViewOf       String?
 
   generalExam        GeneralExamination?
   medications        Medication[]

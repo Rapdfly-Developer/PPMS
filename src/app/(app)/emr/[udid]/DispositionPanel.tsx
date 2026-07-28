@@ -1,10 +1,33 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useRef } from "react";
 import { SingleChipSelect } from "@/components/ui/Chip";
 import { WARDS, ANAESTHESIA_TYPES, SURGERY_TYPES } from "@/lib/constants";
 import { saveDispense, saveAdmission, saveSurgicalCounselling, saveFollowUp } from "./actions";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, History, Plus, X } from "lucide-react";
+
+const IN_VIEW_OF_KEYWORDS: { group: string; items: string[] }[] = [
+  {
+    group: "Treatment Review",
+    items: ["Review of treatment response", "Medication adjustment", "Response to new medication", "Dose titration review"],
+  },
+  {
+    group: "Post-operative",
+    items: ["Post-operative review", "Wound healing assessment", "Suture removal", "Post-intravitreal injection review"],
+  },
+  {
+    group: "Investigations",
+    items: ["IOP check", "Visual field assessment", "OCT review", "Fundus examination", "Gonioscopy", "B-scan review"],
+  },
+  {
+    group: "Disease Monitoring",
+    items: ["Assessment of disease progression", "Monitoring of retinal status", "Corneal healing review", "Dry eye reassessment"],
+  },
+  {
+    group: "Other",
+    items: ["Contact lens fitting", "Spectacle prescription update", "Second opinion", "Routine review"],
+  },
+];
 
 // Disposition panels (Dispense / Admit / Surgical Counselling), rendered
 // inside the Plan tab's toggle group - see PlanTab.tsx.
@@ -84,13 +107,17 @@ export function AdmitPanel({ visit, udid, patientSex }: { visit: any; udid: stri
   );
 }
 
-export function FollowUpdatesPanel({ visit, udid }: { visit: any; udid: string }) {
+export function FollowUpdatesPanel({ visit, udid, priorVisits = [] }: { visit: any; udid: string; priorVisits?: any[] }) {
   const toInputDate = (d: any) => d ? new Date(d).toISOString().slice(0, 10) : "";
   const [followUpDate, setFollowUpDate] = useState(toInputDate(visit.followUpDate));
   const [referralEnabled, setReferralEnabled] = useState(visit.referralEnabled ?? false);
-  const [referralNote, setReferralNote] = useState(visit.referralNote ?? "");
-  const [pending, startTransition] = useTransition();
-  const [saved, setSaved] = useState(false);
+  const [referralNote, setReferralNote]       = useState(visit.referralNote ?? "");
+  const [inViewOf, setInViewOf]               = useState(visit.inViewOf ?? "");
+  const [showHistory, setShowHistory]         = useState(false);
+  const [showKeywords, setShowKeywords]       = useState(false);
+  const [pending, startTransition]            = useTransition();
+  const [saved, setSaved]                     = useState(false);
+  const inViewOfRef = useRef<HTMLInputElement>(null);
 
   const addWeeks = (weeks: number) => {
     const d = new Date();
@@ -107,17 +134,28 @@ export function FollowUpdatesPanel({ visit, udid }: { visit: any; udid: string }
 
   const formatDate = (iso: string) => {
     if (!iso) return "";
-    const d = new Date(iso);
-    return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+    return new Date(iso).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+  };
+
+  const appendKeyword = (kw: string) => {
+    setInViewOf((prev: string) => {
+      const sep = prev.trim() ? (prev.trimEnd().endsWith(".") ? " " : ", ") : "";
+      return prev.trimEnd() + sep + kw;
+    });
+    setSaved(false);
+    inViewOfRef.current?.focus();
   };
 
   const chipCls = "px-3 py-1 rounded-full text-xs border border-[var(--color-border)] bg-white text-[var(--color-ink-600)] hover:border-[var(--color-primary-400)] hover:bg-[var(--color-primary-50)] transition-colors";
+  const btnCls  = "flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-medium transition-colors";
 
   const save = () =>
     startTransition(async () => {
-      await saveFollowUp(visit.id, udid, { followUpDate: followUpDate || null, referralEnabled, referralNote });
+      await saveFollowUp(visit.id, udid, { followUpDate: followUpDate || null, referralEnabled, referralNote, inViewOf });
       setSaved(true);
     });
+
+  const pastWithViewOf = priorVisits.filter((v) => v.id !== visit.id && v.inViewOf);
 
   return (
     <div className="rounded-xl border border-[var(--color-border)] p-4 flex flex-col gap-5">
@@ -141,6 +179,97 @@ export function FollowUpdatesPanel({ visit, udid }: { visit: any; udid: string }
             <span className="text-sm text-[var(--color-ink-500)]">{formatDate(followUpDate)}</span>
           )}
         </div>
+      </div>
+
+      {/* In View Of */}
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-[10px] font-semibold tracking-widest text-[var(--color-ink-400)] uppercase">In View Of</p>
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => { setShowHistory((v) => !v); setShowKeywords(false); }}
+              className={`${btnCls} ${showHistory
+                ? "bg-[var(--color-primary-50)] border-[var(--color-primary-300)] text-[var(--color-primary-700)]"
+                : "border-[var(--color-border)] text-[var(--color-ink-500)] hover:text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]"}`}
+            >
+              <History size={12} /> History
+            </button>
+            <button
+              onClick={() => { setShowKeywords((v) => !v); setShowHistory(false); }}
+              className={`${btnCls} ${showKeywords
+                ? "bg-[var(--color-primary-50)] border-[var(--color-primary-300)] text-[var(--color-primary-700)]"
+                : "border-[var(--color-border)] text-[var(--color-ink-500)] hover:text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]"}`}
+            >
+              <Plus size={12} /> Keyword
+            </button>
+          </div>
+        </div>
+
+        <input
+          ref={inViewOfRef}
+          value={inViewOf}
+          onChange={(e) => { setInViewOf(e.target.value); setSaved(false); }}
+          placeholder="e.g. Review of treatment response, IOP check…"
+          className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-3 py-2 text-sm text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent"
+        />
+
+        {/* History panel */}
+        {showHistory && (
+          <div className="mt-2 rounded-xl border border-[var(--color-border)] bg-white shadow-sm overflow-hidden">
+            <div className="px-3 py-2 bg-[var(--color-surface-sunken)] border-b border-[var(--color-border)] flex items-center justify-between">
+              <span className="text-[10px] font-bold text-[var(--color-ink-400)] uppercase tracking-widest">Previous — In View Of</span>
+              <button onClick={() => setShowHistory(false)} className="text-[var(--color-ink-300)] hover:text-[var(--color-ink-700)]"><X size={12} /></button>
+            </div>
+            <div className="max-h-48 overflow-y-auto divide-y divide-[var(--color-border)]">
+              {pastWithViewOf.length === 0 ? (
+                <p className="px-3 py-4 text-xs text-[var(--color-ink-400)] text-center">No previous entries found.</p>
+              ) : (
+                pastWithViewOf.map((v) => (
+                  <div key={v.id} className="px-3 py-2.5">
+                    <p className="text-[10px] font-semibold text-[var(--color-ink-400)] mb-0.5">
+                      {new Date(v.date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+                    </p>
+                    <p className="text-xs text-[var(--color-ink-700)]">{v.inViewOf}</p>
+                    <button
+                      onClick={() => { setInViewOf(v.inViewOf); setSaved(false); setShowHistory(false); }}
+                      className="mt-1 text-[10px] font-medium text-[var(--color-primary-600)] hover:underline"
+                    >
+                      Use this
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Keyword panel */}
+        {showKeywords && (
+          <div className="mt-2 rounded-xl border border-[var(--color-border)] bg-white shadow-sm overflow-hidden">
+            <div className="px-3 py-2 bg-[var(--color-surface-sunken)] border-b border-[var(--color-border)] flex items-center justify-between">
+              <span className="text-[10px] font-bold text-[var(--color-ink-400)] uppercase tracking-widest">Add Keyword</span>
+              <button onClick={() => setShowKeywords(false)} className="text-[var(--color-ink-300)] hover:text-[var(--color-ink-700)]"><X size={12} /></button>
+            </div>
+            <div className="p-3 flex flex-col gap-3">
+              {IN_VIEW_OF_KEYWORDS.map((group) => (
+                <div key={group.group}>
+                  <p className="text-[10px] font-bold text-[var(--color-ink-400)] uppercase tracking-widest mb-1.5">{group.group}</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {group.items.map((kw) => (
+                      <button
+                        key={kw}
+                        onClick={() => appendKeyword(kw)}
+                        className="px-2 py-0.5 rounded-full border border-[var(--color-primary-200)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)] text-[11px] font-medium hover:bg-[var(--color-primary-100)] transition-colors"
+                      >
+                        {kw}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Referral */}
