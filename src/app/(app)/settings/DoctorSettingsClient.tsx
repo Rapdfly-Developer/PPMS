@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { format, formatDistanceToNow } from "date-fns";
@@ -32,7 +32,7 @@ import {
   Mail, Phone, MapPin, Save, Upload,
   Globe, HardDrive, BarChart2,
   CreditCard, Monitor, RefreshCw,
-  Stethoscope, Users2, Tag, History, Plug, Key,
+  Stethoscope, Users2, Tag, History, Plug, Key, Menu,
 } from "lucide-react";
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -238,9 +238,9 @@ function SaveBar({ onSave }: { onSave?: () => void }) {
   );
 }
 
-// ── SIDEBAR ──────────────────────────────────────────────────────────────────
+// ── SETTINGS NAV (shared between desktop sidebar and mobile drawer) ───────────
 
-function Sidebar({
+function SettingsNavContent({
   active, onSelect, userCount,
 }: {
   active: Section; onSelect: (s: Section) => void; userCount: number;
@@ -268,14 +268,8 @@ function Sidebar({
   }, [search]);
 
   return (
-    <aside className="w-full lg:w-60 shrink-0 border-b lg:border-b-0 lg:border-r border-[var(--color-border)] bg-white flex flex-col lg:h-full">
-      {/* Settings heading */}
-      <div className="px-4 py-4 border-b border-[var(--color-border)]">
-        <p className="text-xs font-bold uppercase tracking-widest text-[var(--color-ink-400)]">Settings</p>
-      </div>
-
-      {/* Search */}
-      <div className="px-3 py-3 border-b border-[var(--color-border)]">
+    <>
+      <div className="px-3 py-3 border-b border-[var(--color-border)] shrink-0">
         <div className="relative">
           <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)]" />
           <input
@@ -287,8 +281,7 @@ function Sidebar({
         </div>
       </div>
 
-      {/* Nav groups — height-capped scroll box when stacked on mobile */}
-      <nav className="flex-1 overflow-y-auto py-2 px-2 max-h-60 lg:max-h-none">
+      <nav className="flex-1 overflow-y-auto py-2 px-2">
         {filteredGroups.map((group) => {
           const isOpen = openGroups.has(group.id) || !!search.trim();
           const GroupIcon = group.icon;
@@ -300,10 +293,7 @@ function Sidebar({
               >
                 <GroupIcon size={12} className="shrink-0" />
                 <span className="flex-1 text-left">{group.label}</span>
-                <ChevronDown
-                  size={12}
-                  className={`shrink-0 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
-                />
+                <ChevronDown size={12} className={`shrink-0 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
               </button>
 
               {isOpen && (
@@ -318,7 +308,7 @@ function Sidebar({
                       <button
                         key={item.id}
                         onClick={() => onSelect(item.id)}
-                        className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all text-left ${
+                        className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm transition-all text-left min-h-[44px] ${
                           isActive
                             ? "bg-[var(--color-primary-50)] text-[var(--color-primary-700)] font-semibold border-l-2 border-[var(--color-primary-600)] pl-[10px]"
                             : "text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)] font-medium"
@@ -346,7 +336,65 @@ function Sidebar({
           );
         })}
       </nav>
+    </>
+  );
+}
+
+// Desktop sidebar — visible only on lg+
+function SettingsSidebar({
+  active, onSelect, userCount,
+}: {
+  active: Section; onSelect: (s: Section) => void; userCount: number;
+}) {
+  return (
+    <aside className="hidden lg:flex w-60 shrink-0 border-r border-[var(--color-border)] bg-white flex-col h-full">
+      <div className="px-4 py-4 border-b border-[var(--color-border)] shrink-0">
+        <p className="text-xs font-bold uppercase tracking-widest text-[var(--color-ink-400)]">Settings</p>
+      </div>
+      <SettingsNavContent active={active} onSelect={onSelect} userCount={userCount} />
     </aside>
+  );
+}
+
+// Mobile/tablet slide-over drawer
+function SettingsDrawer({
+  open, onClose, active, onSelect, userCount,
+}: {
+  open: boolean; onClose: () => void;
+  active: Section; onSelect: (s: Section) => void; userCount: number;
+}) {
+  useEffect(() => {
+    if (open) document.body.style.overflow = "hidden";
+    else document.body.style.overflow = "";
+    return () => { document.body.style.overflow = ""; };
+  }, [open]);
+
+  return (
+    <>
+      {/* Backdrop */}
+      <div
+        className="lg:hidden fixed inset-0 z-40 bg-black/50 transition-opacity duration-300"
+        style={{ opacity: open ? 1 : 0, pointerEvents: open ? "auto" : "none" }}
+        onClick={onClose}
+      />
+      {/* Drawer panel */}
+      <aside
+        className="lg:hidden fixed inset-y-0 left-0 z-50 w-72 bg-white shadow-2xl flex flex-col transition-transform duration-300 ease-in-out"
+        style={{ transform: open ? "translateX(0)" : "translateX(-100%)" }}
+      >
+        <div className="flex items-center justify-between px-4 py-4 border-b border-[var(--color-border)] shrink-0">
+          <p className="text-sm font-bold text-[var(--color-ink-900)]">Settings</p>
+          <button
+            onClick={onClose}
+            aria-label="Close settings menu"
+            className="p-2 rounded-lg hover:bg-[var(--color-surface-sunken)] text-[var(--color-ink-400)] transition-colors"
+          >
+            <X size={16} />
+          </button>
+        </div>
+        <SettingsNavContent active={active} onSelect={onSelect} userCount={userCount} />
+      </aside>
+    </>
   );
 }
 
@@ -3318,6 +3366,15 @@ export function DoctorSettingsClient({ users, auditLogs, hospitals, loginLogs, p
     urlSection && VALID_SECTIONS.includes(urlSection) ? urlSection :
     isLicenseTab ? "licenses" : "profile"
   );
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  const currentSectionLabel = useMemo(() => {
+    for (const group of SIDEBAR_GROUPS) {
+      const item = group.items.find((i) => i.id === activeSection);
+      if (item) return item.label;
+    }
+    return "Settings";
+  }, [activeSection]);
 
   const content = () => {
     switch (activeSection) {
@@ -3340,9 +3397,39 @@ export function DoctorSettingsClient({ users, auditLogs, hospitals, loginLogs, p
 
   return (
     <div className="flex flex-col lg:flex-row lg:h-[calc(100vh-4rem)] overflow-hidden rounded-xl border border-[var(--color-border)] shadow-sm">
-      <Sidebar active={activeSection} onSelect={setActiveSection} userCount={users.length} />
-      <main className="flex-1 overflow-y-auto bg-[var(--color-surface-sunken)] p-4 md:p-6">
-        {content()}
+      {/* Desktop sidebar — always visible on lg+ */}
+      <SettingsSidebar active={activeSection} onSelect={setActiveSection} userCount={users.length} />
+
+      {/* Mobile/tablet slide-over drawer */}
+      <SettingsDrawer
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        active={activeSection}
+        onSelect={(s) => { setActiveSection(s); setDrawerOpen(false); }}
+        userCount={users.length}
+      />
+
+      {/* Main content area */}
+      <main className="flex-1 overflow-y-auto bg-[var(--color-surface-sunken)]">
+        {/* Sticky mini-header — mobile/tablet only */}
+        <div className="lg:hidden sticky top-0 z-10 flex items-center justify-between gap-3 px-4 py-3 bg-white border-b border-[var(--color-border)] shadow-sm">
+          <div className="min-w-0">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-ink-400)]">Settings</p>
+            <p className="text-sm font-semibold text-[var(--color-ink-800)] truncate mt-0.5">{currentSectionLabel}</p>
+          </div>
+          <button
+            onClick={() => setDrawerOpen(true)}
+            className="flex items-center gap-2 px-3 py-2 rounded-xl border border-[var(--color-border)] bg-white text-sm font-medium text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] transition-colors shrink-0 min-h-[44px]"
+          >
+            <Menu size={15} />
+            <span>All Settings</span>
+          </button>
+        </div>
+
+        {/* Section content */}
+        <div className="p-4 md:p-6">
+          {content()}
+        </div>
       </main>
     </div>
   );
