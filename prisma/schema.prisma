@@ -452,6 +452,7 @@ model Visit {
   followUpDate   DateTime?
   referralEnabled Boolean @default(false)
   referralNote   String?
+  adviseNotes    String?
 
   generalExam        GeneralExamination?
   medications        Medication[]

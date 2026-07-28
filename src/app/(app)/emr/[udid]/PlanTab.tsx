@@ -5,15 +5,16 @@ import { Card } from "@/components/ui/Card";
 import { History } from "lucide-react";
 import { parseJSON } from "@/lib/json";
 import { useAutoSave, SaveIndicator } from "@/lib/useAutoSave";
-import { addMedication, removeMedication, saveRefraction, saveFollowUp } from "./actions";
+import { addMedication, removeMedication, updateMedication, clearAllMedications, saveRefraction, saveFollowUp, saveAdviseNotes } from "./actions";
 import { DispositionToggle, AdmitPanel, SurgicalPanel, FollowUpdatesPanel } from "./DispositionPanel";
-import { Plus, X, BedDouble, Stethoscope, ChevronDown, Pencil, Trash2, RefreshCw, Search, Pill, Sparkles, CheckCircle2 } from "lucide-react";
+import { Plus, X, BedDouble, Stethoscope, ChevronDown, Pencil, Trash2, RefreshCw, Search, Pill, Sparkles, CheckCircle2, Check, AlertTriangle } from "lucide-react";
 import {
   type TreatmentPreset, type PresetMatch, type AppliedPreset,
   getTreatmentPresets, matchPresets, mergeMeds,
   getApplied, setApplied, clearApplied,
   getDiagnosisSnapshot, setDiagnosisSnapshot,
   getDismissedPresets, addDismissedPreset, clearDismissedPresets,
+  saveTreatmentPresets,
 } from "./treatmentPresets";
 import { type MedEntry, searchMedications, categoryColor } from "@/lib/ophthalmic-medications";
 import { VA_SNELLEN_VALUES } from "@/lib/constants";
@@ -327,7 +328,74 @@ function PresetSelectDialog({
   onClose: () => void;
   applying: boolean;
 }) {
+  type FormMed = { drugName: string; dosage: string; frequency: string; duration: string };
+  const blankMed = (): FormMed => ({ drugName: "", dosage: "", frequency: "", duration: "" });
+
   const [selected, setSelected] = useState<Set<string>>(new Set([matches[0]?.preset.id]));
+  const [customPresets, setCustomPresets] = useState<TreatmentPreset[]>([]);
+  const [showForm, setShowForm] = useState(false);
+  const [formName, setFormName] = useState("");
+  const [formMeds, setFormMeds] = useState<FormMed[]>([blankMed()]);
+  const [formAdvice, setFormAdvice] = useState("");
+  const [formInvestigations, setFormInvestigations] = useState("");
+  const [formFollowUp, setFormFollowUp] = useState("");
+
+  // Load matching custom presets from localStorage on mount
+  useEffect(() => {
+    const all = getTreatmentPresets().filter((p) => !p.isDefault);
+    const diagCodes = matches.map((m) => m.diagnosisCode);
+    const diagDescs = matches.map((m) => m.diagnosisDesc.toLowerCase());
+    setCustomPresets(
+      all.filter((p) =>
+        p.diagnosisCodes.some((c) => diagCodes.some((d) => d.startsWith(c) || c.startsWith(d.slice(0, 3)))) ||
+        p.diagnosisKeywords.some((kw) => diagDescs.some((d) => d.includes(kw.toLowerCase())))
+      )
+    );
+  }, []);
+
+  const openForm = () => {
+    const base = matches[0]?.preset;
+    setFormName(`Protocol ${matches.length + customPresets.length + 1}`);
+    setFormMeds(
+      base?.medications.length
+        ? base.medications.map((m) => ({ drugName: m.drugName, dosage: m.dosage ?? "", frequency: m.frequency ?? "", duration: m.duration ?? "" }))
+        : [blankMed()]
+    );
+    setFormAdvice(base?.advice ?? "");
+    setFormInvestigations(base?.investigations?.join(", ") ?? "");
+    setFormFollowUp(base?.followUpDays ? String(base.followUpDays) : "");
+    setShowForm(true);
+  };
+
+  const saveCustomProtocol = () => {
+    const meds = formMeds.filter((m) => m.drugName.trim());
+    if (!formName.trim() || !meds.length) return;
+    const newPreset: TreatmentPreset = {
+      id: `custom-tx-${Date.now()}`,
+      name: formName.trim(),
+      diagnosisCodes: matches.map((m) => m.diagnosisCode),
+      diagnosisKeywords: [],
+      medications: meds.map((m) => ({ drugName: m.drugName.trim(), dosage: m.dosage || undefined, frequency: m.frequency || undefined, duration: m.duration || undefined })),
+      advice: formAdvice.trim() || undefined,
+      investigations: formInvestigations ? formInvestigations.split(",").map((s) => s.trim()).filter(Boolean) : undefined,
+      followUpDays: formFollowUp ? Number(formFollowUp) : undefined,
+      isDefault: false,
+      createdAt: new Date().toISOString(),
+    };
+    saveTreatmentPresets([...getTreatmentPresets(), newPreset]);
+    setCustomPresets((prev) => [...prev, newPreset]);
+    setSelected((prev) => new Set([...prev, newPreset.id]));
+    setShowForm(false);
+  };
+
+  const allMatches: PresetMatch[] = [
+    ...matches,
+    ...customPresets.map((p) => ({
+      preset: p,
+      diagnosisCode: matches[0]?.diagnosisCode ?? "",
+      diagnosisDesc: matches[0]?.diagnosisDesc ?? "Custom",
+    })),
+  ];
 
   const toggle = (id: string) =>
     setSelected((prev) => {
@@ -336,7 +404,9 @@ function PresetSelectDialog({
       return next;
     });
 
-  const selectedPresets = matches.filter((m) => selected.has(m.preset.id)).map((m) => m.preset);
+  const selectedPresets = allMatches.filter((m) => selected.has(m.preset.id)).map((m) => m.preset);
+
+  const inp = "w-full rounded-lg border border-[var(--color-border)] bg-white px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-[#0F766E] focus:border-[#0F766E]";
 
   return (
     <div
@@ -363,40 +433,38 @@ function PresetSelectDialog({
           </button>
         </div>
 
-        {/* Preset list */}
+        {/* Preset list + form */}
         <div className="p-5 flex flex-col gap-3 max-h-[65vh] overflow-y-auto">
           <p className="text-xs text-[var(--color-ink-400)]">
             Select one or more presets to apply. Duplicate medications will be automatically skipped.
           </p>
-          {matches.map(({ preset, diagnosisDesc }) => {
+
+          {allMatches.map(({ preset, diagnosisDesc }) => {
             const checked = selected.has(preset.id);
+            const isCustom = !preset.isDefault;
             return (
               <label
                 key={preset.id}
                 className={`flex items-start gap-3 p-3.5 rounded-xl border cursor-pointer transition-colors ${
-                  checked
-                    ? "border-[#B2DEDA] bg-[#EEF8F7]"
-                    : "border-[var(--color-border)] hover:border-[#B2DEDA] hover:bg-[#EEF8F7]/40"
+                  checked ? "border-[#B2DEDA] bg-[#EEF8F7]" : "border-[var(--color-border)] hover:border-[#B2DEDA] hover:bg-[#EEF8F7]/40"
                 }`}
               >
-                <input
-                  type="checkbox"
-                  checked={checked}
-                  onChange={() => toggle(preset.id)}
-                  className="mt-0.5 accent-[#0F766E]"
-                />
+                <input type="checkbox" checked={checked} onChange={() => toggle(preset.id)} className="mt-0.5 accent-[#0F766E]" />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2">
-                    <p className="text-sm font-semibold text-[var(--color-ink-800)]">{preset.name}</p>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <p className="text-sm font-semibold text-[var(--color-ink-800)]">{preset.name}</p>
+                      {isCustom && (
+                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 shrink-0">CUSTOM</span>
+                      )}
+                    </div>
                     {preset.followUpDays && (
                       <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-[#EEF8F7] text-[#0F766E] border border-[#B2DEDA] shrink-0">
                         F/U {preset.followUpDays}d
                       </span>
                     )}
                   </div>
-                  <p className="text-[11px] text-[#0F766E]/70 mt-0.5 mb-2">
-                    Matched: {diagnosisDesc}
-                  </p>
+                  <p className="text-[11px] text-[#0F766E]/70 mt-0.5 mb-2">Matched: {diagnosisDesc}</p>
                   <ul className="space-y-0.5">
                     {preset.medications.map((m, i) => (
                       <li key={i} className="text-xs text-[var(--color-ink-600)]">
@@ -410,14 +478,124 @@ function PresetSelectDialog({
                     </p>
                   )}
                   {preset.advice && (
-                    <p className="text-[11px] text-[var(--color-ink-400)] italic mt-1">
-                      Advice: {preset.advice}
-                    </p>
+                    <p className="text-[11px] text-[var(--color-ink-400)] italic mt-1">Advice: {preset.advice}</p>
                   )}
                 </div>
               </label>
             );
           })}
+
+          {/* ── Add Custom Protocol ─────────────────────────────────── */}
+          {!showForm ? (
+            <button
+              type="button"
+              onClick={openForm}
+              className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border-2 border-dashed border-[var(--color-border)] text-xs font-medium text-[var(--color-ink-400)] hover:border-[#0F766E] hover:text-[#0F766E] hover:bg-[#EEF8F7]/40 transition-colors"
+            >
+              <Plus size={13} /> Add Custom Protocol
+            </button>
+          ) : (
+            <div className="rounded-xl border-2 border-[#B2DEDA] bg-[#EEF8F7]/50 p-4 flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-bold text-[#0F766E] uppercase tracking-wide">New Custom Protocol</p>
+                <button type="button" onClick={() => setShowForm(false)} className="text-[var(--color-ink-300)] hover:text-[var(--color-ink-700)]">
+                  <X size={13} />
+                </button>
+              </div>
+
+              {/* Name */}
+              <div>
+                <label className="text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-wide block mb-1">Protocol Name *</label>
+                <input autoFocus value={formName} onChange={(e) => setFormName(e.target.value)} className={inp} placeholder="e.g. Corneal Ulcer — Protocol 2" />
+              </div>
+
+              {/* Drug rows */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-wide">Medications *</label>
+                  <button
+                    type="button"
+                    onClick={() => setFormMeds([...formMeds, blankMed()])}
+                    className="flex items-center gap-1 text-[10px] font-semibold text-[#0F766E] hover:underline"
+                  >
+                    <Plus size={10} /> Add Drug
+                  </button>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  {formMeds.map((med, i) => (
+                    <div key={i} className="grid gap-1 items-center" style={{ gridTemplateColumns: "1fr 70px 130px 70px 20px" }}>
+                      <input
+                        value={med.drugName}
+                        onChange={(e) => { const n = [...formMeds]; n[i] = { ...n[i], drugName: e.target.value }; setFormMeds(n); }}
+                        placeholder="Drug name"
+                        className={inp}
+                      />
+                      <input
+                        value={med.dosage}
+                        onChange={(e) => { const n = [...formMeds]; n[i] = { ...n[i], dosage: e.target.value }; setFormMeds(n); }}
+                        placeholder="Dose"
+                        className={inp}
+                      />
+                      <select
+                        value={med.frequency}
+                        onChange={(e) => { const n = [...formMeds]; n[i] = { ...n[i], frequency: e.target.value }; setFormMeds(n); }}
+                        className={inp}
+                      >
+                        <option value="">Frequency</option>
+                        {FREQUENCY_OPTIONS.map((f) => <option key={f}>{f}</option>)}
+                      </select>
+                      <input
+                        value={med.duration}
+                        onChange={(e) => { const n = [...formMeds]; n[i] = { ...n[i], duration: e.target.value }; setFormMeds(n); }}
+                        placeholder="Duration"
+                        className={inp}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setFormMeds(formMeds.filter((_, j) => j !== i))}
+                        className="text-[var(--color-ink-300)] hover:text-red-500 transition-colors"
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* F/U + Investigations */}
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-wide block mb-1">Follow-up Days</label>
+                  <input type="number" min="1" value={formFollowUp} onChange={(e) => setFormFollowUp(e.target.value)} placeholder="e.g. 7" className={inp} />
+                </div>
+                <div>
+                  <label className="text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-wide block mb-1">Investigations</label>
+                  <input value={formInvestigations} onChange={(e) => setFormInvestigations(e.target.value)} placeholder="Comma-separated" className={inp} />
+                </div>
+              </div>
+
+              {/* Advice */}
+              <div>
+                <label className="text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-wide block mb-1">Advice (optional)</label>
+                <textarea
+                  value={formAdvice}
+                  onChange={(e) => setFormAdvice(e.target.value)}
+                  rows={2}
+                  className={inp + " resize-none"}
+                  placeholder="e.g. Strict hygiene. No contact lens use until healed."
+                />
+              </div>
+
+              <button
+                type="button"
+                onClick={saveCustomProtocol}
+                disabled={!formName.trim() || !formMeds.some((m) => m.drugName.trim())}
+                className="w-full py-2 rounded-xl bg-[#0F766E] text-white text-xs font-semibold hover:bg-[#0D6862] disabled:opacity-40 transition-colors flex items-center justify-center gap-1.5"
+              >
+                <Check size={12} /> Save & Add to List
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Footer */}
@@ -454,7 +632,7 @@ function PresetSelectDialog({
 
 /* ── PlanTab ─────────────────────────────────────────────────────────────── */
 
-export function PlanTab({ visit, udid, patientSex }: { visit: any; udid: string; patientSex: string }) {
+export function PlanTab({ visit, udid, patientSex, priorVisits = [] }: { visit: any; udid: string; patientSex: string; priorVisits?: any[] }) {
   const [presetMatches, setPresetMatches]   = useState<PresetMatch[]>([]);
   const [appliedPresets, setAppliedPresets] = useState<AppliedPreset[]>([]);
   const [dismissedIds, setDismissedIds]     = useState<string[]>([]);
@@ -591,7 +769,7 @@ export function PlanTab({ visit, udid, patientSex }: { visit: any; udid: string;
         />
       )}
 
-      <PrescriptionCard visit={visit} udid={udid} />
+      <PrescriptionCard visit={visit} udid={udid} priorVisits={priorVisits} />
       <OpticalPrescriptionCard visit={visit} />
       <DispositionCard visit={visit} udid={udid} patientSex={patientSex} />
 
@@ -615,6 +793,33 @@ const FREQUENCY_OPTIONS = [
 ];
 
 const ROUTE_OPTIONS = ["Topical", "Oral", "IM", "IV", "Subconjunctival", "Intravitreal", "Subtenon"];
+
+const ADVISE_KEYWORDS: { group: string; items: string[] }[] = [
+  {
+    group: "Eye Care",
+    items: ["Avoid rubbing eyes", "Wear protective glasses", "Use dark glasses outdoors", "Avoid eye makeup", "Keep eyes clean and dry"],
+  },
+  {
+    group: "Drops & Medication",
+    items: ["Instill drops as prescribed", "Wash hands before instilling drops", "Shake bottle before use", "Wait 5 min between different drops", "Store drops in a cool place"],
+  },
+  {
+    group: "Activity",
+    items: ["Avoid swimming", "Avoid dusty environments", "No strenuous activity", "Avoid screen time for 24h", "Avoid driving after dilation"],
+  },
+  {
+    group: "Post-operative",
+    items: ["Avoid bending over", "Avoid water contact with eyes", "Lie flat after intravitreal injection", "No heavy lifting", "Sleep on non-operated side"],
+  },
+  {
+    group: "Diet & Lifestyle",
+    items: ["High fiber diet", "Avoid alcohol", "Adequate sleep", "Stay well hydrated", "Avoid smoking"],
+  },
+  {
+    group: "Follow-up",
+    items: ["Follow up as scheduled", "Return immediately if vision worsens", "Return if pain increases", "Call clinic if discharge occurs"],
+  },
+];
 
 /* ── Optical Prescription helpers ────────────────────────────────────────── */
 const OPT_SPH_MAGS  = ["", ...Array.from({ length: 81 }, (_, i) => (i * 0.25).toFixed(2))];
@@ -644,10 +849,21 @@ function OptEyeColumns({ children }: { children: [React.ReactNode, React.ReactNo
   );
 }
 
-function PrescriptionCard({ visit, udid }: { visit: any; udid: string }) {
+type EditDraft = { drugName: string; dosage: string; frequency: string; duration: string; instructions: string };
+
+function PrescriptionCard({ visit, udid, priorVisits }: { visit: any; udid: string; priorVisits: any[] }) {
   const [pending, startTransition] = useTransition();
   const [showAddDrug, setShowAddDrug] = useState(false);
   const [showPresets, setShowPresets] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState<EditDraft>({ drugName: "", dosage: "", frequency: "", duration: "", instructions: "" });
+  const [clearConfirm, setClearConfirm] = useState(false);
+  const [adviseNotes, setAdviseNotes] = useState<string>(visit.adviseNotes ?? "");
+  const [showHistory, setShowHistory] = useState(false);
+  const [showKeywords, setShowKeywords] = useState(false);
+  const adviseRef = useRef<HTMLTextAreaElement>(null);
+
+  useAutoSave(adviseNotes, (notes) => saveAdviseNotes(visit.id, udid, notes));
   const [drugName, setDrugName]       = useState("");
   const [dose, setDose]               = useState("");
   const [route, setRoute]             = useState("Topical");
@@ -710,6 +926,27 @@ function PrescriptionCard({ visit, udid }: { visit: any; udid: string }) {
     });
   };
 
+  const startEdit = (m: any) => {
+    setEditingId(m.id);
+    setEditDraft({ drugName: m.drugName ?? "", dosage: m.dosage ?? "", frequency: m.frequency ?? "", duration: m.duration ?? "", instructions: m.instructions ?? "" });
+  };
+
+  const saveEdit = (id: string) => {
+    if (!editDraft.drugName.trim()) return;
+    startTransition(async () => {
+      await updateMedication(id, udid, { drugName: editDraft.drugName.trim(), dosage: editDraft.dosage, frequency: editDraft.frequency, duration: editDraft.duration, instructions: editDraft.instructions });
+      setEditingId(null);
+    });
+  };
+
+  const handleClearAll = () => {
+    if (!clearConfirm) { setClearConfirm(true); setTimeout(() => setClearConfirm(false), 3500); return; }
+    startTransition(async () => {
+      await clearAllMedications(visit.id, udid);
+      setClearConfirm(false);
+    });
+  };
+
   const submitDrug = () => {
     if (!drugName.trim()) return;
     startTransition(async () => {
@@ -736,12 +973,27 @@ function PrescriptionCard({ visit, udid }: { visit: any; udid: string }) {
     <Card>
       <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
         <p className="text-sm font-medium text-[var(--color-ink-700)]">Prescription / Medications</p>
-        <button
-          onClick={() => setShowPresets((v) => !v)}
-          className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg bg-white border border-[var(--color-border)] hover:border-[var(--color-primary-500)] transition-colors"
-        >
-          <ChevronDown size={13} className={showPresets ? "rotate-180 transition-transform" : "transition-transform"} /> Presets
-        </button>
+        <div className="flex items-center gap-2">
+          {medications.length > 0 && (
+            <button
+              onClick={handleClearAll}
+              disabled={pending}
+              className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border transition-colors ${
+                clearConfirm
+                  ? "bg-red-50 text-red-600 border-red-300 hover:bg-red-100"
+                  : "bg-white text-[var(--color-ink-500)] border-[var(--color-border)] hover:border-red-300 hover:text-red-500"
+              }`}
+            >
+              {clearConfirm ? <><AlertTriangle size={12} /> Confirm Clear All?</> : <><Trash2 size={12} /> Clear All</>}
+            </button>
+          )}
+          <button
+            onClick={() => setShowPresets((v) => !v)}
+            className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg bg-white border border-[var(--color-border)] hover:border-[var(--color-primary-500)] transition-colors"
+          >
+            <ChevronDown size={13} className={showPresets ? "rotate-180 transition-transform" : "transition-transform"} /> Presets
+          </button>
+        </div>
       </div>
 
       {/* Medication search */}
@@ -952,56 +1204,265 @@ function PrescriptionCard({ visit, udid }: { visit: any; udid: string }) {
           <p className="text-sm text-[var(--color-ink-400)]">Search for a medication above to add it to the prescription.</p>
         </div>
       ) : (
-        <div className="mt-1 rounded-xl border border-[var(--color-border)] overflow-hidden">
+        <div className="mt-1">
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-[var(--color-surface-sunken)] border-b border-[var(--color-border)]">
-                <th className="px-3 py-2 text-left text-[10px] font-bold text-[var(--color-ink-400)] uppercase tracking-widest w-12">#</th>
-                <th className="px-3 py-2 text-left text-[10px] font-bold text-[var(--color-ink-400)] uppercase tracking-widest">Drug Name</th>
-                <th className="px-3 py-2 text-left text-[10px] font-bold text-[var(--color-ink-400)] uppercase tracking-widest w-24">Dose</th>
-                <th className="px-3 py-2 text-left text-[10px] font-bold text-[var(--color-ink-400)] uppercase tracking-widest w-44">Frequency</th>
-                <th className="px-3 py-2 text-left text-[10px] font-bold text-[var(--color-ink-400)] uppercase tracking-widest w-28">Duration</th>
-                <th className="px-3 py-2 w-10" />
+              <tr className="border-b border-[var(--color-border)]">
+                <th className="px-3 py-1.5 text-left text-[10px] font-bold text-[var(--color-ink-300)] uppercase tracking-widest w-12">#</th>
+                <th className="px-3 py-1.5 text-left text-[10px] font-bold text-[var(--color-ink-300)] uppercase tracking-widest">Drug Name</th>
+                <th className="px-3 py-1.5 text-left text-[10px] font-bold text-[var(--color-ink-300)] uppercase tracking-widest w-24">Dose</th>
+                <th className="px-3 py-1.5 text-left text-[10px] font-bold text-[var(--color-ink-300)] uppercase tracking-widest w-44">Frequency</th>
+                <th className="px-3 py-1.5 text-left text-[10px] font-bold text-[var(--color-ink-300)] uppercase tracking-widest w-28">Duration</th>
+                <th className="px-3 py-1.5 w-20" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-[var(--color-border)]">
-              {medications.map((m, idx) => (
-                <>
-                  <tr key={m.id} className="bg-white hover:bg-[var(--color-surface-sunken)] transition-colors">
-                    <td className="px-3 py-3 text-xs font-bold text-[var(--color-primary-600)]">Rx {idx + 1}</td>
-                    <td className="px-3 py-3">
-                      <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-lg bg-[var(--color-primary-50)] flex items-center justify-center shrink-0">
-                          <Pill size={13} className="text-[var(--color-primary-600)]" />
+            <tbody>
+              {medications.map((m, idx) => {
+                const isEditing = editingId === m.id;
+                const cellCls = "w-full rounded border border-[var(--color-primary-300)] bg-white px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)]";
+                return (
+                  <>
+                    <tr key={m.id} className={isEditing ? "bg-[var(--color-primary-50)]" : "bg-white hover:bg-[var(--color-surface-sunken)] transition-colors"}>
+                      <td className="px-3 py-3 text-xs font-bold text-[var(--color-primary-600)] whitespace-nowrap">Rx {idx + 1}</td>
+
+                      {/* Drug Name */}
+                      <td className="px-3 py-2.5">
+                        {isEditing ? (
+                          <input
+                            autoFocus
+                            value={editDraft.drugName}
+                            onChange={(e) => setEditDraft({ ...editDraft, drugName: e.target.value })}
+                            className={cellCls}
+                          />
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <div className="w-7 h-7 rounded-lg bg-[var(--color-primary-50)] flex items-center justify-center shrink-0">
+                              <Pill size={13} className="text-[var(--color-primary-600)]" />
+                            </div>
+                            <span className="text-sm font-semibold text-[var(--color-ink-900)]">{m.drugName}</span>
+                          </div>
+                        )}
+                      </td>
+
+                      {/* Dose */}
+                      <td className="px-3 py-2.5">
+                        {isEditing ? (
+                          <input
+                            value={editDraft.dosage}
+                            onChange={(e) => setEditDraft({ ...editDraft, dosage: e.target.value })}
+                            placeholder="e.g. 1 drop"
+                            className={cellCls}
+                          />
+                        ) : (
+                          <span className="text-xs text-[var(--color-ink-600)]">{m.dosage || <span className="text-[var(--color-ink-300)]">—</span>}</span>
+                        )}
+                      </td>
+
+                      {/* Frequency */}
+                      <td className="px-3 py-2.5">
+                        {isEditing ? (
+                          <select
+                            value={editDraft.frequency}
+                            onChange={(e) => setEditDraft({ ...editDraft, frequency: e.target.value })}
+                            className={cellCls}
+                          >
+                            <option value="">— Select —</option>
+                            {FREQUENCY_OPTIONS.map((f) => <option key={f}>{f}</option>)}
+                          </select>
+                        ) : (
+                          <span className="text-xs text-[var(--color-ink-600)]">{m.frequency || <span className="text-[var(--color-ink-300)]">—</span>}</span>
+                        )}
+                      </td>
+
+                      {/* Duration */}
+                      <td className="px-3 py-2.5">
+                        {isEditing ? (
+                          <input
+                            value={editDraft.duration}
+                            onChange={(e) => setEditDraft({ ...editDraft, duration: e.target.value })}
+                            placeholder="e.g. 2 weeks"
+                            className={cellCls}
+                          />
+                        ) : (
+                          <span className="text-xs text-[var(--color-ink-600)]">{m.duration || <span className="text-[var(--color-ink-300)]">—</span>}</span>
+                        )}
+                      </td>
+
+                      {/* Actions */}
+                      <td className="px-3 py-2.5">
+                        <div className="flex items-center justify-end gap-1.5">
+                          {isEditing ? (
+                            <>
+                              <button
+                                onClick={() => saveEdit(m.id)}
+                                disabled={pending || !editDraft.drugName.trim()}
+                                title="Save"
+                                className="p-1.5 rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-40 transition-colors"
+                              >
+                                <Check size={13} />
+                              </button>
+                              <button
+                                onClick={() => setEditingId(null)}
+                                title="Cancel"
+                                className="p-1.5 rounded-lg text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)] hover:bg-white transition-colors"
+                              >
+                                <X size={13} />
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <button
+                                onClick={() => startEdit(m)}
+                                title="Edit"
+                                className="p-1.5 rounded-lg text-[var(--color-ink-300)] hover:text-[var(--color-primary-600)] hover:bg-[var(--color-primary-50)] transition-colors"
+                              >
+                                <Pencil size={13} />
+                              </button>
+                              <button
+                                onClick={() => removeMedication(m.id, udid)}
+                                title="Delete"
+                                className="p-1.5 rounded-lg text-[var(--color-ink-300)] hover:text-red-500 hover:bg-red-50 transition-colors"
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            </>
+                          )}
                         </div>
-                        <span className="text-sm font-semibold text-[var(--color-ink-900)]">{m.drugName}</span>
-                      </div>
-                    </td>
-                    <td className="px-3 py-3 text-xs text-[var(--color-ink-600)]">{m.dosage || <span className="text-[var(--color-ink-300)]">—</span>}</td>
-                    <td className="px-3 py-3 text-xs text-[var(--color-ink-600)]">{m.frequency || <span className="text-[var(--color-ink-300)]">—</span>}</td>
-                    <td className="px-3 py-3 text-xs text-[var(--color-ink-600)]">{m.duration || <span className="text-[var(--color-ink-300)]">—</span>}</td>
-                    <td className="px-3 py-3 text-right">
-                      <button
-                        onClick={() => removeMedication(m.id, udid)}
-                        className="text-[var(--color-ink-300)] hover:text-red-500 transition-colors"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </td>
-                  </tr>
-                  {m.instructions && (
-                    <tr key={`${m.id}-note`} className="bg-[var(--color-surface-sunken)]">
-                      <td />
-                      <td colSpan={4} className="px-3 pb-2.5 pt-0 text-xs text-[var(--color-ink-400)] italic">{m.instructions}</td>
-                      <td />
+                      </td>
                     </tr>
-                  )}
-                </>
-              ))}
+
+                    {/* Instructions sub-row */}
+                    {(isEditing || m.instructions) && (
+                      <tr key={`${m.id}-note`} className={isEditing ? "bg-[var(--color-primary-50)]" : "bg-[var(--color-surface-sunken)]"}>
+                        <td />
+                        <td colSpan={4} className="px-3 pb-2.5 pt-0">
+                          {isEditing ? (
+                            <input
+                              value={editDraft.instructions}
+                              onChange={(e) => setEditDraft({ ...editDraft, instructions: e.target.value })}
+                              placeholder="Instructions (optional)..."
+                              className={cellCls + " w-full"}
+                            />
+                          ) : (
+                            <span className="text-xs text-[var(--color-ink-400)] italic">{m.instructions}</span>
+                          )}
+                        </td>
+                        <td />
+                      </tr>
+                    )}
+                  </>
+                );
+              })}
             </tbody>
           </table>
         </div>
       )}
+      {/* ── Advise Notes ─────────────────────────────────────────────── */}
+      <div className="mt-5 pt-4 border-t border-[var(--color-border)]">
+        <div className="flex items-center justify-between mb-2">
+          <label className="text-xs font-semibold text-[var(--color-ink-700)]">Advise Notes</label>
+          <div className="flex items-center gap-1.5">
+            {/* History button */}
+            <div className="relative">
+              <button
+                onClick={() => { setShowHistory((v) => !v); setShowKeywords(false); }}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-medium transition-colors
+                  ${showHistory
+                    ? "bg-[var(--color-primary-50)] border-[var(--color-primary-300)] text-[var(--color-primary-700)]"
+                    : "border-[var(--color-border)] text-[var(--color-ink-500)] hover:text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]"}`}
+              >
+                <History size={12} />
+                History
+              </button>
+              {showHistory && (
+                <div className="absolute right-0 top-full mt-1.5 z-30 w-80 rounded-xl border border-[var(--color-border)] bg-white shadow-xl overflow-hidden">
+                  <div className="px-3 py-2 bg-[var(--color-surface-sunken)] border-b border-[var(--color-border)] flex items-center justify-between">
+                    <span className="text-[10px] font-bold text-[var(--color-ink-400)] uppercase tracking-widest">Previous Advise Notes</span>
+                    <button onClick={() => setShowHistory(false)} className="text-[var(--color-ink-300)] hover:text-[var(--color-ink-700)]"><X size={12} /></button>
+                  </div>
+                  <div className="max-h-64 overflow-y-auto divide-y divide-[var(--color-border)]">
+                    {priorVisits.filter((v) => v.id !== visit.id && v.adviseNotes).length === 0 ? (
+                      <p className="px-3 py-4 text-xs text-[var(--color-ink-400)] text-center">No previous advise notes found.</p>
+                    ) : (
+                      priorVisits
+                        .filter((v) => v.id !== visit.id && v.adviseNotes)
+                        .map((v) => (
+                          <div key={v.id} className="px-3 py-2.5">
+                            <p className="text-[10px] font-semibold text-[var(--color-ink-400)] mb-1">
+                              {new Date(v.date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+                            </p>
+                            <p className="text-xs text-[var(--color-ink-700)] whitespace-pre-wrap leading-relaxed">{v.adviseNotes}</p>
+                            <button
+                              onClick={() => { setAdviseNotes(v.adviseNotes); setShowHistory(false); }}
+                              className="mt-1.5 text-[10px] font-medium text-[var(--color-primary-600)] hover:underline"
+                            >
+                              Use this
+                            </button>
+                          </div>
+                        ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* + Keyword button */}
+            <div className="relative">
+              <button
+                onClick={() => { setShowKeywords((v) => !v); setShowHistory(false); }}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-medium transition-colors
+                  ${showKeywords
+                    ? "bg-[var(--color-primary-50)] border-[var(--color-primary-300)] text-[var(--color-primary-700)]"
+                    : "border-[var(--color-border)] text-[var(--color-ink-500)] hover:text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]"}`}
+              >
+                <Plus size={12} />
+                Keyword
+              </button>
+              {showKeywords && (
+                <div className="absolute right-0 top-full mt-1.5 z-30 w-80 rounded-xl border border-[var(--color-border)] bg-white shadow-xl overflow-hidden">
+                  <div className="px-3 py-2 bg-[var(--color-surface-sunken)] border-b border-[var(--color-border)] flex items-center justify-between">
+                    <span className="text-[10px] font-bold text-[var(--color-ink-400)] uppercase tracking-widest">Add Keyword</span>
+                    <button onClick={() => setShowKeywords(false)} className="text-[var(--color-ink-300)] hover:text-[var(--color-ink-700)]"><X size={12} /></button>
+                  </div>
+                  <div className="max-h-80 overflow-y-auto p-3 flex flex-col gap-3">
+                    {ADVISE_KEYWORDS.map((group) => (
+                      <div key={group.group}>
+                        <p className="text-[10px] font-bold text-[var(--color-ink-400)] uppercase tracking-widest mb-1.5">{group.group}</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {group.items.map((kw) => (
+                            <button
+                              key={kw}
+                              onClick={() => {
+                                setAdviseNotes((prev) => {
+                                  const sep = prev.trim() ? (prev.trimEnd().endsWith(".") ? " " : ". ") : "";
+                                  return prev.trimEnd() + sep + kw + ".";
+                                });
+                                adviseRef.current?.focus();
+                              }}
+                              className="px-2 py-0.5 rounded-full border border-[var(--color-primary-200)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)] text-[11px] font-medium hover:bg-[var(--color-primary-100)] transition-colors"
+                            >
+                              {kw}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <textarea
+          ref={adviseRef}
+          value={adviseNotes}
+          onChange={(e) => setAdviseNotes(e.target.value)}
+          rows={3}
+          placeholder="Type advise notes or use keywords above…"
+          className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-3 py-2.5 text-sm text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent resize-none leading-relaxed"
+        />
+      </div>
     </Card>
   );
 }

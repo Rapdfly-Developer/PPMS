@@ -394,6 +394,24 @@ export async function removeMedication(id: string, udid: string) {
   revalidate(udid);
 }
 
+export async function updateMedication(
+  id: string,
+  udid: string,
+  data: { drugName: string; dosage?: string; frequency?: string; duration?: string; instructions?: string }
+) {
+  const user = await requireRole("DOCTOR");
+  await prisma.medication.update({ where: { id }, data });
+  await writeAudit(user.id, "Medication", id, "UPDATE", data);
+  revalidate(udid);
+}
+
+export async function clearAllMedications(visitId: string, udid: string) {
+  const user = await requireRole("DOCTOR");
+  await prisma.medication.deleteMany({ where: { visitId } });
+  await writeAudit(user.id, "Medication", visitId, "CLEAR_ALL");
+  revalidate(udid);
+}
+
 export async function sendToPharmacy(visitId: string, udid: string) {
   const user = await requireRole("DOCTOR");
   await assertVisitAccess(visitId);
@@ -499,6 +517,13 @@ export async function saveFollowUp(visitId: string, udid: string, data: { follow
       referralNote: data.referralNote ?? null,
     },
   });
+  revalidate(udid);
+}
+
+export async function saveAdviseNotes(visitId: string, udid: string, notes: string) {
+  await requireRole("DOCTOR");
+  await assertVisitAccess(visitId);
+  await prisma.visit.update({ where: { id: visitId }, data: { adviseNotes: notes } });
   revalidate(udid);
 }
 
