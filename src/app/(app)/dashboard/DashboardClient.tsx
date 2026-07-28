@@ -212,7 +212,7 @@ function ApptRow({ appt, role }: { appt: Appt; role: "DOCTOR" | "HOSPITAL" }) {
           )}
           <span className={clsx("inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold", cfg.color)}>
             <span className={clsx("w-1.5 h-1.5 rounded-full shrink-0", cfg.dot)} />
-            {cfg.label}
+            {appt.status !== "CONFIRMED" && cfg.label}
           </span>
           {appt.status === "CONFIRMED" && (
             <button
