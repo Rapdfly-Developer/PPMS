@@ -6,7 +6,7 @@ import { useEffect } from "react";
 import {
   LayoutDashboard, CalendarDays, Users, Eye,
   BedDouble, Settings, X,
-  CalendarClock, BarChart2,
+  CalendarClock, BarChart2, Lock,
 } from "lucide-react";
 import clsx from "clsx";
 import type { Role } from "@/lib/constants";
