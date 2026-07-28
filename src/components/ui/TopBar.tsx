@@ -82,22 +82,11 @@ export function TopBar({ name, role }: { name: string; role: string }) {
         <Menu size={20} />
       </button>
 
-      {/* PPMS logo — mobile only (tablet has Back button for context, desktop has sidebar) */}
-      <div className="flex items-center gap-1.5 md:hidden">
-        <div className="rounded-lg bg-[var(--color-primary-700)] p-1.5 text-white">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="3"/>
-            <path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7z"/>
-          </svg>
-        </div>
-        <span className="text-sm font-bold text-[var(--color-ink-900)] tracking-tight">PPMS</span>
-      </div>
-
-      {/* Back + Search — tablet + desktop */}
-      <div className="hidden md:flex items-center gap-1 flex-1 min-w-0">
+      {/* Back + Search — all screen sizes */}
+      <div className="flex items-center gap-1 flex-1 min-w-0">
         <Suspense
           fallback={
-            <span className={`${BACK_BTN_CLS} opacity-60 pointer-events-none`}>
+            <span className={`${BACK_BTN_CLS} opacity-60 pointer-events-none shrink-0`}>
               <ArrowLeft size={15} /> Back
             </span>
           }
@@ -105,8 +94,8 @@ export function TopBar({ name, role }: { name: string; role: string }) {
           <TopBarBackBtn />
         </Suspense>
 
-        <form onSubmit={handleSearch} className="flex items-center">
-          <div className="relative">
+        <form onSubmit={handleSearch} className="flex items-center flex-1 min-w-0">
+          <div className="relative flex-1 min-w-0">
             <Search
               size={14}
               className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] pointer-events-none"
@@ -115,8 +104,8 @@ export function TopBar({ name, role }: { name: string; role: string }) {
               ref={inputRef}
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder="Search patients, UHID..."
-              className="w-44 md:w-52 lg:w-56 pl-8 pr-10 py-1.5 text-sm bg-[var(--color-surface-sunken)] border border-[var(--color-border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] focus:bg-white transition-colors"
+              placeholder="Search patients…"
+              className="w-full pl-8 pr-3 lg:pr-10 py-1.5 text-sm bg-[var(--color-surface-sunken)] border border-[var(--color-border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] focus:bg-white transition-colors"
             />
             <kbd className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-medium text-[var(--color-ink-400)] bg-white border border-[var(--color-border)] rounded px-1 py-0.5 pointer-events-none hidden lg:block">
               ⌘K
@@ -125,21 +114,8 @@ export function TopBar({ name, role }: { name: string; role: string }) {
         </form>
       </div>
 
-      {/* Spacer so right actions stay right on mobile */}
-      <div className="flex-1 md:hidden" />
-
       {/* Right actions */}
-      <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-        {/* Mobile search icon */}
-        <button
-          className="md:hidden p-1.5 text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)] rounded-lg hover:bg-[var(--color-surface-sunken)] transition-colors"
-          onClick={() => router.push("/patients")}
-          title="Search patients"
-          aria-label="Search patients"
-        >
-          <Search size={17} />
-        </button>
-
+      <div className="flex items-center gap-2 shrink-0">
         {/* Notifications */}
         <Link
           href="/notifications"
