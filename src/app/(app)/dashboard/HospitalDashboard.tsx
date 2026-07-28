@@ -81,6 +81,7 @@ export async function HospitalDashboard({
     arrivedAt: a.arrivedAt ? a.arrivedAt.toISOString() : null,
     status:    a.status,
     isWalkIn:  a.isWalkIn,
+    visitType: a.visitType ?? null,
     complaint:  a.patient.complaint ?? null,
     patient:   { name: a.patient.name, udid: a.patient.udid ?? "", uhid: a.patient.uhid ?? "", age: a.patient.age, sex: a.patient.sex },
     doctor:    a.doctor ? { id: a.doctor.id, name: a.doctor.name } : null,

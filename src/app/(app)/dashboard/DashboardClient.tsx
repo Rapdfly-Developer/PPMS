@@ -19,6 +19,7 @@ interface Appt {
   arrivedAt: string | null;
   status: string;
   isWalkIn: boolean;
+  visitType: string | null;
   complaint: string | null;
   patient: { name: string; udid: string; uhid?: string; age: number; sex: string; mobile?: string };
   hospital?: { id: string; name: string };
@@ -204,6 +205,11 @@ function ApptRow({ appt, role }: { appt: Appt; role: "DOCTOR" | "HOSPITAL" }) {
       )}
       <div className="flex flex-col items-end gap-1 shrink-0">
         <div className="flex items-center gap-1.5">
+          {appt.visitType && (
+            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)] whitespace-nowrap">
+              {appt.visitType}
+            </span>
+          )}
           <span className={clsx("inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold", cfg.color)}>
             <span className={clsx("w-1.5 h-1.5 rounded-full shrink-0", cfg.dot)} />
             {cfg.label}

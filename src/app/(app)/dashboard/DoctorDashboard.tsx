@@ -95,6 +95,7 @@ export async function DoctorDashboard({
     arrivedAt:   a.arrivedAt ? a.arrivedAt.toISOString() : null,
     status:      a.status,
     isWalkIn:    a.isWalkIn,
+    visitType:   a.visitType ?? null,
     complaint:   a.patient.complaint ?? null,
     patient:     { name: a.patient.name, udid: a.patient.udid ?? "", uhid: a.patient.uhid ?? "", age: a.patient.age, sex: a.patient.sex, mobile: a.patient.mobile },
     hospital:    { id: a.hospital.id, name: a.hospital.name },
