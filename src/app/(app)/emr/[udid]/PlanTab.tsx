@@ -246,13 +246,58 @@ function PresetAppliedBadge({
   onChange: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const [editing, setEditing]   = useState(false);
 
-  // Collect advice + suggested investigations from currently applied presets
+  // Collect advice + investigations from applied presets
   const details = applied
     .map((a) => presetMatches.find((m) => m.preset.id === a.presetId)?.preset)
     .filter((p): p is NonNullable<typeof p> => !!p);
-  const allAdvice = details.map((p) => p.advice).filter(Boolean);
-  const allInvestigations = [...new Set(details.flatMap((p) => p.investigations ?? []))];
+  const allAdvice          = details.map((p) => p.advice).filter((a): a is string => !!a);
+  const allInvestigations  = [...new Set(details.flatMap((p) => p.investigations ?? []))];
+
+  // Edit state
+  const [editInvestigations, setEditInvestigations] = useState<string[]>([]);
+  const [editAdvice, setEditAdvice]                 = useState<Record<string, string>>({});
+  const [newInvInput, setNewInvInput]               = useState("");
+
+  const startEditing = () => {
+    setEditInvestigations([...allInvestigations]);
+    const map: Record<string, string> = {};
+    details.forEach((p) => { if (p.advice) map[p.id] = p.advice; });
+    setEditAdvice(map);
+    setNewInvInput("");
+    setEditing(true);
+    setExpanded(true);
+  };
+
+  const saveEdits = () => {
+    const all = getTreatmentPresets();
+    const updatedIds = new Set(applied.map((a) => a.presetId));
+    // Modify matching presets; carry through any not in the applied set unchanged
+    const updated = all.map((p) =>
+      updatedIds.has(p.id)
+        ? { ...p, investigations: editInvestigations, advice: editAdvice[p.id] ?? p.advice }
+        : p
+    );
+    // If an applied preset was a default (not yet in stored list), add it now
+    const storedIds = new Set(all.map((p) => p.id));
+    const missingDefaults = details.filter((p) => !storedIds.has(p.id)).map((p) => ({
+      ...p,
+      investigations: editInvestigations,
+      advice: editAdvice[p.id] ?? p.advice,
+    }));
+    saveTreatmentPresets([...updated, ...missingDefaults]);
+    setEditing(false);
+  };
+
+  const addInvestigation = () => {
+    const v = newInvInput.trim();
+    if (v && !editInvestigations.includes(v)) setEditInvestigations((prev) => [...prev, v]);
+    setNewInvInput("");
+  };
+
+  const hasDetails = allAdvice.length > 0 || allInvestigations.length > 0;
+  const btnCls = "text-xs font-medium px-2.5 py-1 rounded-lg border transition-colors";
 
   return (
     <div className="rounded-2xl border border-[#B2DEDA] bg-[#EEF8F7] overflow-hidden">
@@ -263,54 +308,143 @@ function PresetAppliedBadge({
           <span className="text-xs font-semibold text-[#0F766E]">Preset Applied: </span>
           <span className="text-xs text-[#0F766E]/80">{applied.map((a) => a.presetName).join(", ")}</span>
         </div>
-        <div className="flex items-center gap-2">
-          {(allAdvice.length > 0 || allInvestigations.length > 0) && (
+        <div className="flex items-center gap-2 flex-wrap">
+          {hasDetails && (
             <button
               type="button"
-              onClick={() => setExpanded((v) => !v)}
-              className="text-xs font-medium text-[#0F766E]/60 hover:text-[#0F766E] px-2.5 py-1 rounded-lg border border-[#B2DEDA] hover:bg-[#DCF3F1] transition-colors"
+              onClick={() => { setExpanded((v) => !v); if (editing && expanded) setEditing(false); }}
+              className={`${btnCls} text-[#0F766E]/60 hover:text-[#0F766E] border-[#B2DEDA] hover:bg-[#DCF3F1]`}
             >
               {expanded ? "Hide details" : "Details"}
+            </button>
+          )}
+          {hasDetails && !editing && (
+            <button
+              type="button"
+              onClick={startEditing}
+              className={`${btnCls} text-[#0F766E]/60 hover:text-[#0F766E] border-[#B2DEDA] hover:bg-[#DCF3F1] flex items-center gap-1`}
+            >
+              <Pencil size={11} /> Edit
             </button>
           )}
           <button
             type="button"
             onClick={onChange}
-            className="text-xs font-medium text-[#0F766E] hover:text-[#0D6862] px-2.5 py-1 rounded-lg border border-[#B2DEDA] hover:bg-[#DCF3F1] transition-colors"
+            className={`${btnCls} text-[#0F766E] hover:text-[#0D6862] border-[#B2DEDA] hover:bg-[#DCF3F1] font-semibold`}
           >
             Change
           </button>
           <button
             type="button"
             onClick={onRemove}
-            className="text-xs font-medium text-[#0F766E]/60 hover:text-red-600 px-2.5 py-1 rounded-lg border border-[#B2DEDA] hover:border-red-200 hover:bg-red-50 transition-colors"
+            className={`${btnCls} text-[#0F766E]/60 hover:text-red-600 border-[#B2DEDA] hover:border-red-200 hover:bg-red-50`}
           >
             Remove
           </button>
         </div>
       </div>
 
-      {/* Expandable advice + investigations */}
+      {/* Expandable details */}
       {expanded && (
-        <div className="border-t border-[#B2DEDA] px-4 py-3 flex flex-col gap-2.5">
-          {allInvestigations.length > 0 && (
+        <div className="border-t border-[#B2DEDA] px-4 py-3 flex flex-col gap-3">
+          {/* Investigations */}
+          {(editing ? true : allInvestigations.length > 0) && (
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-[#0F766E]/60 mb-1">Suggested Investigations</p>
-              <div className="flex flex-wrap gap-1.5">
-                {allInvestigations.map((inv) => (
-                  <span key={inv} className="text-[11px] px-2.5 py-0.5 rounded-full bg-white border border-[#B2DEDA] text-[#0F766E]">{inv}</span>
-                ))}
-              </div>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-[#0F766E]/60 mb-1.5">Suggested Investigations</p>
+              {editing ? (
+                <>
+                  <div className="flex flex-wrap gap-1.5 mb-2">
+                    {editInvestigations.map((inv) => (
+                      <span
+                        key={inv}
+                        className="flex items-center gap-1 text-[11px] pl-2.5 pr-1.5 py-0.5 rounded-full bg-white border border-[#B2DEDA] text-[#0F766E]"
+                      >
+                        {inv}
+                        <button
+                          type="button"
+                          onClick={() => setEditInvestigations((prev) => prev.filter((v) => v !== inv))}
+                          className="text-[#0F766E]/50 hover:text-red-500 transition-colors"
+                        >
+                          <X size={10} />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                  <div className="flex gap-1.5">
+                    <input
+                      value={newInvInput}
+                      onChange={(e) => setNewInvInput(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter" || e.key === ",") { e.preventDefault(); addInvestigation(); } }}
+                      placeholder="Type investigation and press Enter"
+                      className="flex-1 rounded-lg border border-[#B2DEDA] bg-white px-2.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-[#0F766E]"
+                    />
+                    <button
+                      type="button"
+                      onClick={addInvestigation}
+                      disabled={!newInvInput.trim()}
+                      className="px-2.5 py-1 rounded-lg bg-[#0F766E] text-white text-xs font-medium hover:bg-[#0D6862] disabled:opacity-40 transition-colors"
+                    >
+                      <Plus size={12} />
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div className="flex flex-wrap gap-1.5">
+                  {allInvestigations.map((inv) => (
+                    <span key={inv} className="text-[11px] px-2.5 py-0.5 rounded-full bg-white border border-[#B2DEDA] text-[#0F766E]">{inv}</span>
+                  ))}
+                </div>
+              )}
             </div>
           )}
-          {allAdvice.map((adv, i) => (
-            <div key={i}>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-[#0F766E]/60 mb-1">
-                {allAdvice.length > 1 ? `Advice (${applied[i]?.presetName})` : "Advice"}
-              </p>
-              <p className="text-xs text-[#0F766E]/80 leading-relaxed">{adv}</p>
+
+          {/* Advice */}
+          {(editing ? details.length > 0 : allAdvice.length > 0) && (
+            editing ? (
+              details.map((p, i) => (
+                <div key={p.id}>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-[#0F766E]/60 mb-1">
+                    {details.length > 1 ? `Advice (${applied[i]?.presetName})` : "Advice"}
+                  </p>
+                  <textarea
+                    value={editAdvice[p.id] ?? ""}
+                    onChange={(e) => setEditAdvice((prev) => ({ ...prev, [p.id]: e.target.value }))}
+                    rows={2}
+                    className="w-full rounded-lg border border-[#B2DEDA] bg-white px-2.5 py-1.5 text-xs text-[#0F766E]/80 focus:outline-none focus:ring-1 focus:ring-[#0F766E] resize-none leading-relaxed"
+                  />
+                </div>
+              ))
+            ) : (
+              allAdvice.map((adv, i) => (
+                <div key={i}>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-[#0F766E]/60 mb-1">
+                    {allAdvice.length > 1 ? `Advice (${applied[i]?.presetName})` : "Advice"}
+                  </p>
+                  <p className="text-xs text-[#0F766E]/80 leading-relaxed">{adv}</p>
+                </div>
+              ))
+            )
+          )}
+
+          {/* Edit action buttons */}
+          {editing && (
+            <div className="flex justify-end gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setEditing(false)}
+                className="px-3 py-1.5 rounded-lg border border-[#B2DEDA] text-xs font-medium text-[#0F766E]/60 hover:bg-[#DCF3F1] transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={saveEdits}
+                className="px-3 py-1.5 rounded-lg bg-[#0F766E] text-white text-xs font-semibold hover:bg-[#0D6862] transition-colors flex items-center gap-1.5"
+              >
+                <Check size={11} /> Save Changes
+              </button>
             </div>
-          ))}
+          )}
         </div>
       )}
     </div>
