@@ -302,7 +302,7 @@ function parseSignedVal(v: string): { sign: "+" | "-"; mag: string } {
 
 /* ── Refraction ────────────────────────────────────────────────────────── */
 
-const REFRACTION_METHODS = ["Subjective", "Cycloplegic", "Auto-Refraction", "Current Glass Rx"] as const;
+const REFRACTION_METHODS = ["Subjective", "Cycloplegic", "Auto-Refraction", "Current Glass Rx", "Retinoscopy"] as const;
 
 function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: any; udid: string; editable: boolean; priorVisits?: any[] }) {
   const rc = visit.refraction;
