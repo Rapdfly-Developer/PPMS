@@ -605,12 +605,12 @@ function ColourContrastTab({ visit, udid, editable, priorVisits = [] }: { visit:
             </select>
           </div>
         </div>
-        <div className="flex flex-wrap gap-x-28 gap-y-8 mt-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 mt-3">
           {[
             { label: "Right Eye", result: reResult, setResult: setReResult, notes: reNotes, setNotes: setReNotes },
             { label: "Left Eye",  result: leResult, setResult: setLeResult, notes: leNotes, setNotes: setLeNotes },
           ].map(({ label, result, setResult, notes, setNotes }) => (
-            <div key={label} className="flex flex-col gap-4 min-w-[220px]">
+            <div key={label} className="flex flex-col gap-4">
               <p className="text-xs font-semibold text-[var(--color-primary-700)] uppercase tracking-wide">{label}</p>
               <div className="flex gap-2 flex-wrap">{resultBtns(result, setResult)}</div>
               <KeywordInput fieldKey={`cv_${label}`} value={notes} onChange={setNotes} disabled={!editable} placeholder="Notes..." className="w-56 rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-xs disabled:bg-[var(--color-surface-sunken)]" />
@@ -670,12 +670,12 @@ function ColourContrastTab({ visit, udid, editable, priorVisits = [] }: { visit:
             </select>
           </div>
         </div>
-        <div className="flex flex-wrap gap-x-28 gap-y-8 mt-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 mt-3">
           {[
             { label: "Right Eye", result: csReResult, setResult: setCsReResult, notes: csReNotes, setNotes: setCsReNotes },
             { label: "Left Eye",  result: csLeResult, setResult: setCsLeResult, notes: csLeNotes, setNotes: setCsLeNotes },
           ].map(({ label, result, setResult, notes, setNotes }) => (
-            <div key={label} className="flex flex-col gap-4 min-w-[220px]">
+            <div key={label} className="flex flex-col gap-4">
               <p className="text-xs font-semibold text-[var(--color-primary-700)] uppercase tracking-wide">{label}</p>
               <div className="flex gap-2 flex-wrap">{resultBtns(result, setResult)}</div>
               <KeywordInput fieldKey={`cs_${label}`} value={notes} onChange={setNotes} disabled={!editable} placeholder="Notes..." className="w-56 rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-xs disabled:bg-[var(--color-surface-sunken)]" />

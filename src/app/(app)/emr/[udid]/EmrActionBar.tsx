@@ -60,7 +60,7 @@ export function EmrActionBar({
     <>
       {showSuccess && <SuccessModal udid={udid} onClose={() => setShowSuccess(false)} />}
 
-      <div className="fixed bottom-0 left-0 md:left-56 right-0 z-20 border-t border-[var(--color-border)] bg-white/95 backdrop-blur-sm px-6 md:px-8 py-3 flex items-center justify-end gap-3 shadow-[0_-4px_16px_rgba(20,36,43,0.06)]">
+      <div className="fixed bottom-0 left-0 lg:left-60 right-0 z-20 border-t border-[var(--color-border)] bg-white/95 backdrop-blur-sm px-6 md:px-8 py-3 flex items-center justify-end gap-3 shadow-[0_-4px_16px_rgba(20,36,43,0.06)]">
         {!closed && !isLastTab && (
           <button
             onClick={onNextSection}
