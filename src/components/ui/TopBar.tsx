@@ -71,16 +71,19 @@ export function TopBar({ name, role }: { name: string; role: string }) {
   const initials = getInitials(name);
 
   return (
-    <header className="h-14 shrink-0 flex items-center justify-between px-4 lg:px-6 bg-white border-b border-[var(--color-border)] z-10">
-      {/* Hamburger + logo — mobile/tablet only */}
-      <div className="flex items-center gap-2 lg:hidden">
-        <button
-          onClick={toggle}
-          aria-label="Open menu"
-          className="p-1.5 rounded-lg text-[var(--color-ink-500)] hover:text-[var(--color-ink-800)] hover:bg-[var(--color-surface-sunken)] transition-colors"
-        >
-          <Menu size={20} />
-        </button>
+    <header className="h-14 shrink-0 flex items-center gap-2 px-4 lg:px-6 bg-white border-b border-[var(--color-border)] z-10">
+
+      {/* Hamburger — mobile + tablet (hidden on desktop where sidebar is always visible) */}
+      <button
+        onClick={toggle}
+        aria-label="Open menu"
+        className="lg:hidden shrink-0 p-1.5 rounded-lg text-[var(--color-ink-500)] hover:text-[var(--color-ink-800)] hover:bg-[var(--color-surface-sunken)] transition-colors"
+      >
+        <Menu size={20} />
+      </button>
+
+      {/* PPMS logo — mobile only (tablet has Back button for context, desktop has sidebar) */}
+      <div className="flex items-center gap-1.5 md:hidden">
         <div className="rounded-lg bg-[var(--color-primary-700)] p-1.5 text-white">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="12" cy="12" r="3"/>
@@ -90,8 +93,8 @@ export function TopBar({ name, role }: { name: string; role: string }) {
         <span className="text-sm font-bold text-[var(--color-ink-900)] tracking-tight">PPMS</span>
       </div>
 
-      {/* Back + Search — desktop only */}
-      <div className="hidden md:flex items-center gap-1">
+      {/* Back + Search — tablet + desktop */}
+      <div className="hidden md:flex items-center gap-1 flex-1 min-w-0">
         <Suspense
           fallback={
             <span className={`${BACK_BTN_CLS} opacity-60 pointer-events-none`}>
@@ -102,29 +105,32 @@ export function TopBar({ name, role }: { name: string; role: string }) {
           <TopBarBackBtn />
         </Suspense>
 
-      <form onSubmit={handleSearch} className="flex items-center">
-        <div className="relative">
-          <Search
-            size={14}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] pointer-events-none"
-          />
-          <input
-            ref={inputRef}
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Search patients, UHID..."
-            className="w-56 pl-8 pr-10 py-1.5 text-sm bg-[var(--color-surface-sunken)] border border-[var(--color-border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] focus:bg-white transition-colors"
-          />
-          <kbd className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-medium text-[var(--color-ink-400)] bg-white border border-[var(--color-border)] rounded px-1 py-0.5 pointer-events-none">
-            ⌘K
-          </kbd>
-        </div>
-      </form>
+        <form onSubmit={handleSearch} className="flex items-center">
+          <div className="relative">
+            <Search
+              size={14}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] pointer-events-none"
+            />
+            <input
+              ref={inputRef}
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Search patients, UHID..."
+              className="w-44 md:w-52 lg:w-56 pl-8 pr-10 py-1.5 text-sm bg-[var(--color-surface-sunken)] border border-[var(--color-border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] focus:bg-white transition-colors"
+            />
+            <kbd className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-medium text-[var(--color-ink-400)] bg-white border border-[var(--color-border)] rounded px-1 py-0.5 pointer-events-none hidden lg:block">
+              ⌘K
+            </kbd>
+          </div>
+        </form>
       </div>
 
+      {/* Spacer so right actions stay right on mobile */}
+      <div className="flex-1 md:hidden" />
+
       {/* Right actions */}
-      <div className="flex items-center gap-3">
-        {/* Mobile search icon — navigates to patients search */}
+      <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+        {/* Mobile search icon */}
         <button
           className="md:hidden p-1.5 text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)] rounded-lg hover:bg-[var(--color-surface-sunken)] transition-colors"
           onClick={() => router.push("/patients")}
