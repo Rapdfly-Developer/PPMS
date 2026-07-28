@@ -1,7 +1,7 @@
 import { requireUser } from "@/lib/rbac";
 import { checkLicenseForUser } from "@/lib/license-guard";
 import { ROLE_DEFAULT_PERMISSIONS } from "@/lib/permissions";
-import { Sidebar, MobileNav } from "@/components/ui/Sidebar";
+import { Sidebar } from "@/components/ui/Sidebar";
 import { TopBar } from "@/components/ui/TopBar";
 import { SidebarProvider } from "@/components/ui/SidebarContext";
 import { IdleTimeout } from "@/components/ui/IdleTimeout";
@@ -43,7 +43,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <div className="flex-1 min-w-0 flex flex-col min-h-screen">
           <TopBar name={user.name} role={user.role} />
           <main className="flex-1 bg-[var(--color-bg)] overflow-auto" data-main-content>
-            <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-5 lg:py-7 pb-24 lg:pb-7">
+            <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-5 lg:py-7">
               <LicenseGate
                 active={licenseActive}
                 status={licenseResult?.status ?? "NONE"}
@@ -57,12 +57,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </main>
         </div>
 
-        {/* Bottom nav — mobile/tablet only, sits above content via z-index */}
-        <MobileNav
-          role={user.role}
-          permissions={permissions}
-          licenseActive={licenseActive}
-        />
       </div>
     </SidebarProvider>
   );

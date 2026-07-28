@@ -6,7 +6,7 @@ import { useEffect } from "react";
 import {
   LayoutDashboard, CalendarDays, Users, Eye,
   BedDouble, Settings, X,
-  CalendarClock, BarChart2, Lock,
+  CalendarClock, BarChart2,
 } from "lucide-react";
 import clsx from "clsx";
 import type { Role } from "@/lib/constants";
@@ -31,15 +31,6 @@ const ALL_NAV: NavItem[] = [
   { href: "/settings",     label: "Settings",     icon: Settings,        permission: "settings.view"                                         },
 ];
 
-const SHORT: Record<string, string> = {
-  "/dashboard":    "Home",
-  "/appointments": "Appts",
-  "/patients":     "Patients",
-  "/follow-ups":   "Follow",
-  "/ipd":          "IPD",
-  "/analytics":    "Reports",
-  "/settings":     "Settings",
-};
 
 const ROLE_LABEL: Record<string, string> = {
   DOCTOR:   "Doctor",
@@ -316,90 +307,3 @@ export function Sidebar({
   );
 }
 
-/* ─── Mobile bottom nav ────────────────────────────────────────────────────── */
-export function MobileNav({
-  role, permissions, licenseActive = true,
-}: {
-  role: Role; permissions: string[]; licenseActive?: boolean;
-}) {
-  const pathname = usePathname();
-  const items    = filterNav(role, permissions).slice(0, 5);
-
-  return (
-    <nav
-      className="lg:hidden"
-      style={{
-        position:   "fixed",
-        bottom:      0,
-        left:        0,
-        right:       0,
-        zIndex:      30,
-        display:    "flex",
-        borderTop:  "1px solid rgba(255,255,255,0.08)",
-        background: "linear-gradient(180deg, #0B3D3A 0%, #072926 100%)",
-        boxShadow:  "0 -12px 32px -12px rgba(0,0,0,0.55)",
-      }}
-    >
-      {items.map((item) => {
-        const active = pathname === item.href || pathname?.startsWith(item.href + "/");
-        const Icon   = item.icon;
-        const locked = !licenseActive && item.href !== "/settings";
-
-        if (locked) {
-          return (
-            <div
-              key={item.href}
-              title="License required"
-              style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4, padding: "8px 4px", fontSize: 10, fontWeight: 500, color: "#7FAAA3", opacity: 0.35, cursor: "not-allowed", userSelect: "none" }}
-            >
-              <span style={{ position: "relative", display: "grid", placeItems: "center", width: 32, height: 32, borderRadius: 12 }}>
-                <Icon size={19} strokeWidth={1.8} />
-                <Lock size={8} style={{ position: "absolute", bottom: -2, right: -2 }} />
-              </span>
-              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", width: "100%", textAlign: "center" }}>{SHORT[item.href] ?? item.label}</span>
-            </div>
-          );
-        }
-
-        return (
-          <Link
-            key={item.href}
-            href={item.href}
-            style={{
-              position: "relative", flex: 1, display: "flex", flexDirection: "column",
-              alignItems: "center", gap: 4, padding: "8px 4px",
-              fontSize: 10, fontWeight: 500, textDecoration: "none",
-              color: active ? "#F0FBF9" : "#7FAAA3",
-              transition: "color 200ms",
-            }}
-          >
-            {active && (
-              <span style={{
-                position: "absolute", top: 0, left: "50%", transform: "translateX(-50%)",
-                width: 32, height: 3, borderRadius: "0 0 4px 4px",
-                background: "linear-gradient(to right, #5EEAD4, #14B8A6)",
-                boxShadow: "0 0 10px rgba(94,234,212,0.7)",
-              }} />
-            )}
-            <span style={{
-              display: "grid", placeItems: "center", width: 32, height: 32, borderRadius: 12,
-              background: active ? "rgba(255,255,255,0.08)" : "transparent",
-              outline: active ? "1px solid rgba(255,255,255,0.12)" : "none",
-              transition: "all 200ms",
-            }}>
-              <Icon
-                size={19}
-                strokeWidth={active ? 2.2 : 1.8}
-                color={active ? "#5EEAD4" : undefined}
-                style={active ? { filter: "drop-shadow(0 0 6px rgba(94,234,212,0.45))" } : undefined}
-              />
-            </span>
-            <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", width: "100%", textAlign: "center" }}>
-              {SHORT[item.href] ?? item.label}
-            </span>
-          </Link>
-        );
-      })}
-    </nav>
-  );
-}
