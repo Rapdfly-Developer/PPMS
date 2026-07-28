@@ -64,7 +64,6 @@ export function OphthalmicExamTab({ visit, priorVisits, udid, role }: { visit: a
         { id: "posterior", label: "Posterior Segment", content: <PosteriorSegmentCard visit={visit} udid={udid} editable={doctorOnly} priorVisits={priorVisits} /> },
         { id: "tear",      label: "Tear Film",          content: <TearFilmCard visit={visit} udid={udid} editable={doctorOnly} priorVisits={priorVisits} /> },
         { id: "lacrimal",  label: "Lacrimal Sac",       content: <LacrimalSacCard visit={visit} udid={udid} editable={doctorOnly} priorVisits={priorVisits} /> },
-        { id: "retino",    label: "Retinoscopy",        content: <RetinoscopyCard visit={visit} udid={udid} editable={doctorOnly} /> },
         { id: "diplopia",  label: "Diplopia Chart",    content: <DiplopiaCard visit={visit} udid={udid} editable={doctorOnly} /> },
         { id: "hess",      label: "Hess Chart",        content: <HessCard visit={visit} udid={udid} editable={doctorOnly} /> },
       ]}
