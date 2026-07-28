@@ -521,6 +521,13 @@ export async function saveFollowUp(visitId: string, udid: string, data: { follow
   revalidate(udid);
 }
 
+export async function saveGonioNotes(visitId: string, udid: string, data: { re: string; le: string }) {
+  await requireRole("DOCTOR");
+  await assertVisitAccess(visitId);
+  await prisma.visit.update({ where: { id: visitId }, data: { gonioNotes: JSON.stringify(data) } });
+  revalidate(udid);
+}
+
 export async function saveAdviseNotes(visitId: string, udid: string, notes: string) {
   await requireRole("DOCTOR");
   await assertVisitAccess(visitId);

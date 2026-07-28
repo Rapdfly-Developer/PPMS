@@ -454,6 +454,7 @@ model Visit {
   referralNote   String?
   adviseNotes    String?
   inViewOf       String?
+  gonioNotes     String?  // JSON: { re: string, le: string }
 
   generalExam        GeneralExamination?
   medications        Medication[]
