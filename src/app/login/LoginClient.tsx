@@ -1229,12 +1229,12 @@ export default function LoginPage() {
         </div>
 
         {/* ══ RIGHT PANEL — Frosted glass card ══════════════════════════════ */}
-        <div className="w-full lg:w-[55%] shrink-0 flex flex-col overflow-hidden relative"
+        <div className="w-full lg:w-[55%] shrink-0 flex flex-col overflow-y-auto relative"
           style={{ background: "linear-gradient(200deg,rgba(13,22,36,.5) 0%,rgba(6,11,20,.28) 100%)", backdropFilter: "blur(18px)", WebkitBackdropFilter: "blur(18px)", borderLeft: `1px solid ${T.border}` }}>
 
-          {/* Auto margins (not justify-center) so the card is never clipped
-              beyond reach when the viewport is shorter than the content. */}
-          <div className="w-full my-auto flex flex-col items-center pt-6 pb-4 px-4 lg:py-8 lg:px-6">
+          {/* flex-1+min-h-full so the card is centred when viewport is tall,
+              but the panel scrolls when the content overflows on short screens. */}
+          <div className="w-full flex-1 flex flex-col justify-center items-center py-6 px-4 lg:py-8 lg:px-6" style={{ minHeight: "min-content" }}>
 
           {/* Mobile hero — centered logo + concise headline (below lg only) */}
           <div className="lg:hidden lp-a0 shrink-0 flex flex-col items-center text-center mb-6">
@@ -1278,7 +1278,7 @@ export default function LoginPage() {
               background: "linear-gradient(105deg,transparent,rgba(255,255,255,.05),transparent)",
             }} />
 
-            <div className="px-7 py-5">
+            <div className="px-4 py-5 sm:px-7">
 
               {/* Welcome */}
               <div className="text-center mb-4">
@@ -1420,10 +1420,10 @@ export default function LoginPage() {
                       fontSize: "15px",
                       letterSpacing: "0.01em",
                       color: pending ? T.muted : "#03181C",
-                      background: pending ? "rgba(255,255,255,.07)" : "linear-gradient(135deg,#14B8A6 0%,#06B6D4 100%)",
+                      background: pending ? "rgba(255,255,255,.07)" : "linear-gradient(135deg,#0F8F6F 0%,#16A34A 100%)",
                       boxShadow: pending
                         ? "none"
-                        : "0 10px 34px rgba(20,184,166,.4), 0 0 42px rgba(6,182,212,.26), inset 0 1px 0 rgba(255,255,255,.25)",
+                        : "0 10px 34px rgba(15,143,111,.4), 0 0 42px rgba(22,163,74,.26), inset 0 1px 0 rgba(255,255,255,.25)",
                     }}
                   >
                     {/* Ripple */}
@@ -1446,33 +1446,35 @@ export default function LoginPage() {
                 <div className="flex flex-col gap-4">
                   {/* Mobile input + Send OTP */}
                   <div>
-                    <div className="flex gap-2 items-start">
-                      <div className="flex items-center justify-center rounded-[16px] border-2 shrink-0 font-semibold"
-                        style={{ height: "58px", width: "58px", borderRadius: "14px", borderWidth: "1px", borderColor: T.border, background: T.field, color: T.muted, fontSize: "14px" }}>
-                        +91
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <FloatingInput
-                          label="Mobile Number"
-                          type="tel"
-                          maxLength={10}
-                          value={mobile}
-                          autoFocus
-                          autoComplete="tel"
-                          onChange={v => { const c = v.replace(/\D/g, ""); setMobile(c); setOtpMsg(""); if (otpTouched.mobile) setOtpErrors(p => ({ ...p, mobile: undefined })); }}
-                          onBlur={() => { touchOtpField("mobile"); setOtpErrors(p => ({ ...p, mobile: validateOtp({ mobile, otpSent: false }).mobile })); }}
-                          onKeyDown={e => { if (e.key === "Enter" && mobile.length === 10 && !otpSent) handleSendOtp(); }}
-                          error={otpTouched.mobile ? otpErrors.mobile : undefined}
-                        />
+                    <div className="flex flex-col min-[480px]:flex-row gap-2 items-stretch min-[480px]:items-start">
+                      <div className="flex gap-2 items-start flex-1 min-w-0">
+                        <div className="flex items-center justify-center shrink-0 font-semibold"
+                          style={{ height: "58px", width: "58px", borderRadius: "14px", border: `1px solid ${T.border}`, background: T.field, color: T.muted, fontSize: "14px" }}>
+                          +91
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <FloatingInput
+                            label="Mobile Number"
+                            type="tel"
+                            maxLength={10}
+                            value={mobile}
+                            autoFocus
+                            autoComplete="tel"
+                            onChange={v => { const c = v.replace(/\D/g, ""); setMobile(c); setOtpMsg(""); if (otpTouched.mobile) setOtpErrors(p => ({ ...p, mobile: undefined })); }}
+                            onBlur={() => { touchOtpField("mobile"); setOtpErrors(p => ({ ...p, mobile: validateOtp({ mobile, otpSent: false }).mobile })); }}
+                            onKeyDown={e => { if (e.key === "Enter" && mobile.length === 10 && !otpSent) handleSendOtp(); }}
+                            error={otpTouched.mobile ? otpErrors.mobile : undefined}
+                          />
+                        </div>
                       </div>
                       <button
                         type="button"
                         disabled={otpLoading || mobile.length !== 10}
                         onClick={() => handleSendOtp()}
-                        className="lp-btn shrink-0 rounded-[16px] text-sm font-semibold flex items-center justify-center gap-1.5"
+                        className="lp-btn shrink-0 text-sm font-semibold flex items-center justify-center gap-1.5"
                         style={mobile.length === 10 && !otpLoading
-                          ? { height: "58px", width: "96px", background: "linear-gradient(135deg,#0F8F6F,#16A34A)", color: "#03181C", boxShadow: "0 6px 20px rgba(20,184,166,.34), 0 0 26px rgba(6,182,212,.2)" }
-                          : { height: "58px", width: "96px", background: "rgba(255,255,255,.05)", color: T.faint, border: `1px solid ${T.border}`, cursor: "not-allowed" }}>
+                          ? { height: "58px", borderRadius: "14px", padding: "0 20px", background: "linear-gradient(135deg,#0F8F6F,#16A34A)", color: "#03181C", boxShadow: "0 6px 20px rgba(15,143,111,.34), 0 0 26px rgba(22,163,74,.2)" }
+                          : { height: "58px", borderRadius: "14px", padding: "0 20px", background: "rgba(255,255,255,.05)", color: T.faint, border: `1px solid ${T.border}`, cursor: "not-allowed" }}>
                         {otpLoading && !otpSent
                           ? <Loader2 size={14} className="animate-spin" />
                           : "Send OTP"}
@@ -1526,7 +1528,7 @@ export default function LoginPage() {
                     onClick={handleVerifyOtp}
                     className="lp-btn relative overflow-hidden w-full font-bold text-white flex items-center justify-center gap-2"
                     style={otpSent && otpValue.length >= 6 && !otpLoading
-                      ? { height: "58px", borderRadius: "14px", fontSize: "15px", color: "#03181C", background: "linear-gradient(135deg,#14B8A6 0%,#06B6D4 100%)", boxShadow: "0 10px 34px rgba(20,184,166,.4), 0 0 42px rgba(6,182,212,.26), inset 0 1px 0 rgba(255,255,255,.25)" }
+                      ? { height: "58px", borderRadius: "14px", fontSize: "15px", color: "#03181C", background: "linear-gradient(135deg,#0F8F6F 0%,#16A34A 100%)", boxShadow: "0 10px 34px rgba(15,143,111,.4), 0 0 42px rgba(22,163,74,.26), inset 0 1px 0 rgba(255,255,255,.25)" }
                       : { height: "58px", borderRadius: "14px", fontSize: "15px", background: "rgba(255,255,255,.05)", color: T.faint, border: `1px solid ${T.border}`, cursor: "not-allowed" }}>
                     {otpLoading && otpSent
                       ? <><Loader2 size={16} className="animate-spin" /> Verifying…</>
