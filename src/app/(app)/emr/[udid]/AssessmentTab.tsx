@@ -265,30 +265,27 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
     setTimeout(() => setPresetToast([]), 5000);
   };
 
-  // When a diagnosis is removed, clean up medications that were applied by its presets
-  // (only removes a preset's meds if no other remaining diagnosis still triggers that preset)
+  // When a diagnosis is removed, clean up medications from presets that are no longer triggered.
+  // Compares presets matched before vs after removal — does not rely on localStorage.
   const autoRemovePresetMeds = async (removedDesc: string) => {
     const allPresets = getTreatmentPresets();
     const applied    = getApplied(visit.id);
 
-    const presetsForThisDx = applied.filter((a) => a.diagnosisDesc === removedDesc);
-    if (presetsForThisDx.length === 0) return;
+    const allCurrentDx = (diagnoses as any[]).map((d) => ({
+      icd10Code: d.icd10Code ?? "", description: d.description,
+    }));
+    const remainingDx = allCurrentDx.filter((d) => d.description !== removedDesc);
 
-    const remainingDx = (diagnoses as any[])
-      .filter((d) => d.description !== removedDesc)
-      .map((d) => ({ icd10Code: d.icd10Code ?? "", description: d.description }));
+    // Presets triggered now (before removal) vs after removal
+    const beforeIds = new Set(matchPresets(allCurrentDx, allPresets).map((m) => m.preset.id));
+    const afterIds  = new Set(matchPresets(remainingDx,  allPresets).map((m) => m.preset.id));
 
-    const stillMatchingIds = new Set(matchPresets(remainingDx, allPresets).map((m) => m.preset.id));
-
-    // Only clean up presets that no remaining diagnosis still triggers
-    const presetsToRemove = presetsForThisDx.filter((a) => !stillMatchingIds.has(a.presetId));
-    if (presetsToRemove.length === 0) return;
+    // Presets that drop off after this diagnosis is deleted
+    const lostPresets = allPresets.filter((p) => beforeIds.has(p.id) && !afterIds.has(p.id));
+    if (lostPresets.length === 0) return;
 
     const drugNamesToRemove = new Set<string>();
-    for (const ap of presetsToRemove) {
-      const preset = allPresets.find((p) => p.id === ap.presetId);
-      preset?.medications.forEach((m) => drugNamesToRemove.add(m.drugName.toLowerCase()));
-    }
+    lostPresets.forEach((p) => p.medications.forEach((m) => drugNamesToRemove.add(m.drugName.toLowerCase())));
 
     const currentMeds: any[] = visit.medications ?? [];
     const medsToDelete = currentMeds.filter((m) => drugNamesToRemove.has(m.drugName.toLowerCase()));
@@ -296,9 +293,9 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
       await removeMedication(med.id, udid);
     }
 
-    // Remove these applied records from localStorage
-    const removedIds = new Set(presetsToRemove.map((p) => p.presetId));
-    setApplied(visit.id, applied.filter((a) => !(a.diagnosisDesc === removedDesc && removedIds.has(a.presetId))));
+    // Clean up localStorage applied records for the lost presets
+    const lostIds = new Set(lostPresets.map((p) => p.id));
+    setApplied(visit.id, applied.filter((a) => !lostIds.has(a.presetId)));
 
     if (medsToDelete.length > 0) {
       setPresetToast([`Removed ${medsToDelete.length} preset medication${medsToDelete.length > 1 ? "s" : ""} from Plan`]);
