@@ -4,7 +4,7 @@ import { useState, useTransition, useRef, useEffect, useMemo } from "react";
 import { Card } from "@/components/ui/Card";
 import { SingleChipSelect } from "@/components/ui/Chip";
 import { ICD10_OPHTHALMOLOGY, DIAGNOSIS_STATUSES, LATERALITY } from "@/lib/constants";
-import { saveProvisionalDiagnosis, addDiagnosis, updateDiagnosisStatus, removeDiagnosis, addMedication, saveFollowUp } from "./actions";
+import { saveProvisionalDiagnosis, addDiagnosis, updateDiagnosisStatus, removeDiagnosis, addMedication, removeMedication, saveFollowUp } from "./actions";
 import { useAutoSave, SaveIndicator } from "@/lib/useAutoSave";
 import { X, History, ChevronDown, Search, PenLine, Plus } from "lucide-react";
 import {
@@ -263,6 +263,47 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
 
     setPresetToast(presetsToApply.map((p) => p.name));
     setTimeout(() => setPresetToast([]), 5000);
+  };
+
+  // When a diagnosis is removed, clean up medications that were applied by its presets
+  // (only removes a preset's meds if no other remaining diagnosis still triggers that preset)
+  const autoRemovePresetMeds = async (removedDesc: string) => {
+    const allPresets = getTreatmentPresets();
+    const applied    = getApplied(visit.id);
+
+    const presetsForThisDx = applied.filter((a) => a.diagnosisDesc === removedDesc);
+    if (presetsForThisDx.length === 0) return;
+
+    const remainingDx = (diagnoses as any[])
+      .filter((d) => d.description !== removedDesc)
+      .map((d) => ({ icd10Code: d.icd10Code ?? "", description: d.description }));
+
+    const stillMatchingIds = new Set(matchPresets(remainingDx, allPresets).map((m) => m.preset.id));
+
+    // Only clean up presets that no remaining diagnosis still triggers
+    const presetsToRemove = presetsForThisDx.filter((a) => !stillMatchingIds.has(a.presetId));
+    if (presetsToRemove.length === 0) return;
+
+    const drugNamesToRemove = new Set<string>();
+    for (const ap of presetsToRemove) {
+      const preset = allPresets.find((p) => p.id === ap.presetId);
+      preset?.medications.forEach((m) => drugNamesToRemove.add(m.drugName.toLowerCase()));
+    }
+
+    const currentMeds: any[] = visit.medications ?? [];
+    const medsToDelete = currentMeds.filter((m) => drugNamesToRemove.has(m.drugName.toLowerCase()));
+    for (const med of medsToDelete) {
+      await removeMedication(med.id, udid);
+    }
+
+    // Remove these applied records from localStorage
+    const removedIds = new Set(presetsToRemove.map((p) => p.presetId));
+    setApplied(visit.id, applied.filter((a) => !(a.diagnosisDesc === removedDesc && removedIds.has(a.presetId))));
+
+    if (medsToDelete.length > 0) {
+      setPresetToast([`Removed ${medsToDelete.length} preset medication${medsToDelete.length > 1 ? "s" : ""} from Plan`]);
+      setTimeout(() => setPresetToast([]), 4000);
+    }
   };
 
   const add = (code: string, description: string) => {
@@ -677,7 +718,7 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
                       <option key={s} value={s}>{s}</option>
                     ))}
                   </select>
-                  <button onClick={() => removeDiagnosis(d.id, udid)} className="text-[var(--color-ink-400)] hover:text-[var(--color-danger-600)]">
+                  <button onClick={() => startTransition(async () => { await autoRemovePresetMeds(d.description); await removeDiagnosis(d.id, udid); })} className="text-[var(--color-ink-400)] hover:text-[var(--color-danger-600)]">
                     <X size={15} />
                   </button>
                 </div>
