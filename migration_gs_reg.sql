@@ -1,0 +1,1 @@
+INSERT INTO _prisma_migrations (id, checksum, finished_at, migration_name, logs, rolled_back_at, started_at, applied_steps_count) SELECT '20260727073355-gs', 'gs_manual', NOW(), '20260727000000_add_generated_schedule', NULL, NULL, NOW(), 1 WHERE NOT EXISTS (SELECT 1 FROM _prisma_migrations WHERE migration_name='20260727000000_add_generated_schedule');

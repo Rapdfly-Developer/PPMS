@@ -55,6 +55,12 @@ export const P = {
   SETTINGS_VIEW:           "settings.view",
   SETTINGS_MANAGE:         "settings.manage",
 
+  // Insurance / Billing
+  INSURANCE_VIEW:          "insurance.view",
+  INSURANCE_CREATE:        "insurance.create",
+  INSURANCE_EDIT:          "insurance.edit",
+  INSURANCE_MANAGE:        "insurance.manage",
+
   // User & Role management (Doctor/super-admin only)
   USERS_MANAGE:            "users.manage",
   ROLES_MANAGE:            "roles.manage",
@@ -87,6 +93,10 @@ export const ROLE_DEFAULT_PERMISSIONS: Record<string, string[]> = {
     P.BILLING_PRINT,
     P.REPORTS_VIEW,
     P.REPORTS_EXPORT,
+    P.INSURANCE_VIEW,
+    P.INSURANCE_CREATE,
+    P.INSURANCE_EDIT,
+    P.INSURANCE_MANAGE,
   ],
 
 };

@@ -2,11 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   LayoutDashboard, CalendarDays, Users, Eye,
   BedDouble, Settings, X,
   CalendarClock, BarChart2, Lock,
+  CreditCard, Building2, ShieldCheck, FileCheck2,
+  ReceiptText, MessageSquareWarning, Banknote,
+  ChevronDown,
 } from "lucide-react";
 import clsx from "clsx";
 import type { Role } from "@/lib/constants";
@@ -15,38 +18,79 @@ import { useSidebar } from "./SidebarContext";
 type NavItem = {
   href: string;
   label: string;
+  icon?: any;
+  permission: string;
+  roles?: Role[];
+};
+
+type NavGroup = {
+  type: "group";
+  groupLabel: string;
   icon: any;
   permission: string;
   roles?: Role[];
-  shortLabel?: string;
+  children: NavItem[];
 };
 
-const ALL_NAV: NavItem[] = [
+type TopNavItem = NavItem & { icon: any };
+
+type NavEntry = TopNavItem | NavGroup;
+
+function isGroup(e: NavEntry): e is NavGroup {
+  return (e as NavGroup).type === "group";
+}
+
+const ALL_NAV: NavEntry[] = [
   { href: "/dashboard",    label: "Dashboard",    icon: LayoutDashboard, permission: "dashboard.view"                                        },
   { href: "/appointments", label: "Appointments", icon: CalendarDays,    permission: "appointments.view", roles: ["DOCTOR", "HOSPITAL"]      },
   { href: "/patients",     label: "Patients",     icon: Users,           permission: "patients.view"                                         },
   { href: "/follow-ups",   label: "Follow Ups",   icon: CalendarClock,   permission: "patients.view",     roles: ["DOCTOR", "HOSPITAL"]      },
   { href: "/ipd",          label: "IPD",          icon: BedDouble,       permission: "ipd.view",          roles: ["DOCTOR"]                  },
   { href: "/analytics",    label: "Analytics",    icon: BarChart2,       permission: "reports.view"                                          },
+  {
+    type: "group",
+    groupLabel: "Billing & Insurance",
+    icon: CreditCard,
+    permission: "insurance.view",
+    roles: ["DOCTOR", "HOSPITAL"],
+    children: [
+      { href: "/billing",                      label: "Overview",             icon: ReceiptText,           permission: "insurance.view"   },
+      { href: "/billing/insurance-companies",  label: "Insurance Companies",  icon: Building2,             permission: "insurance.view"   },
+      { href: "/billing/patient-insurance",    label: "Patient Insurance",    icon: ShieldCheck,           permission: "insurance.view"   },
+      { href: "/billing/pre-auth",             label: "Pre-Authorization",    icon: FileCheck2,            permission: "insurance.create" },
+      { href: "/billing/claims",               label: "Claims",               icon: ReceiptText,           permission: "insurance.view"   },
+      { href: "/billing/queries",              label: "Queries",              icon: MessageSquareWarning,  permission: "insurance.view"   },
+      { href: "/billing/settlement",           label: "Settlement",           icon: Banknote,              permission: "insurance.manage" },
+    ],
+  },
   { href: "/settings",     label: "Settings",     icon: Settings,        permission: "settings.view"                                         },
 ];
-
 
 const ROLE_LABEL: Record<string, string> = {
   DOCTOR:   "Doctor",
   HOSPITAL: "Hospital Admin",
 };
 
-// Subtle grain texture so the deep emerald doesn't read as flat plastic
 const NOISE =
   "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E\")";
 
-function filterNav(role: Role, permissions: string[]) {
+function filterNav(role: Role, permissions: string[]): NavEntry[] {
   const can = (p: string) => permissions.includes("*") || permissions.includes(p);
-  return ALL_NAV.filter((item) => {
-    if (item.roles && !item.roles.includes(role)) return false;
-    return can(item.permission);
-  });
+  return ALL_NAV.filter((entry) => {
+    if (entry.roles && !entry.roles.includes(role)) return false;
+    return can(entry.permission);
+  }).map((entry) => {
+    if (isGroup(entry)) {
+      return {
+        ...entry,
+        children: entry.children.filter((child) => {
+          if (child.roles && !child.roles.includes(role)) return false;
+          return can(child.permission);
+        }),
+      };
+    }
+    return entry;
+  }).filter((entry) => !isGroup(entry) || (entry as NavGroup).children.length > 0);
 }
 
 function initialsOf(name: string) {
@@ -57,17 +101,17 @@ function initialsOf(name: string) {
 }
 
 function NavLink({
-  item, active, locked = false, onClick,
+  item, active, locked = false, onClick, indent = false,
 }: {
-  item: NavItem; active: boolean; locked?: boolean; onClick?: () => void;
+  item: NavItem & { icon?: any }; active: boolean; locked?: boolean; onClick?: () => void; indent?: boolean;
 }) {
   const Icon = item.icon;
 
   if (locked) {
     return (
-      <div className="relative flex items-center gap-3 pl-3.5 pr-3 py-[9px] rounded-xl text-[13px] cursor-not-allowed select-none opacity-35">
+      <div className={clsx("relative flex items-center gap-3 py-[8px] rounded-xl text-[12.5px] cursor-not-allowed select-none opacity-35", indent ? "pl-8 pr-3" : "pl-3.5 pr-3")}>
         <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-0 rounded-r-full" />
-        <Icon size={17} strokeWidth={1.8} className="shrink-0 text-[#7FAAA3]" />
+        {Icon && <Icon size={15} strokeWidth={1.8} className="shrink-0 text-[#7FAAA3]" />}
         <span className="truncate tracking-[0.01em] text-[#9DC4BE] flex-1">{item.label}</span>
         <Lock size={11} className="shrink-0 text-[#7FAAA3]" />
       </div>
@@ -79,7 +123,8 @@ function NavLink({
       href={item.href}
       onClick={onClick}
       className={clsx(
-        "group relative flex items-center gap-3 pl-3.5 pr-3 py-[9px] rounded-xl text-[13px] transition-all duration-200 ease-out",
+        "group relative flex items-center gap-3 py-[8px] rounded-xl text-[12.5px] transition-all duration-200 ease-out",
+        indent ? "pl-8 pr-3" : "pl-3.5 pr-3",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-300/50",
         active
           ? "text-[#F0FBF9] font-semibold bg-gradient-to-r from-white/[0.10] to-white/[0.05] ring-1 ring-white/[0.12]"
@@ -94,14 +139,89 @@ function NavLink({
         )}
         style={active ? { boxShadow: "0 0 12px rgba(94,234,212,0.55)" } : undefined}
       />
-      <Icon
-        size={17}
-        strokeWidth={active ? 2.2 : 1.8}
-        className={clsx("shrink-0 transition-all duration-200", active ? "text-[#5EEAD4]" : "text-[#7FAAA3] group-hover:text-[#C8E8E3]")}
-        style={active ? { filter: "drop-shadow(0 0 6px rgba(94,234,212,0.45))" } : undefined}
-      />
+      {Icon && (
+        <Icon
+          size={indent ? 14 : 17}
+          strokeWidth={active ? 2.2 : 1.8}
+          className={clsx("shrink-0 transition-all duration-200", active ? "text-[#5EEAD4]" : "text-[#7FAAA3] group-hover:text-[#C8E8E3]")}
+          style={active ? { filter: "drop-shadow(0 0 6px rgba(94,234,212,0.45))" } : undefined}
+        />
+      )}
       <span className="truncate tracking-[0.01em]">{item.label}</span>
     </Link>
+  );
+}
+
+function NavGroupItem({
+  group, isActive, locked, onClick,
+}: {
+  group: NavGroup; isActive: (href: string) => boolean; locked: boolean; onClick: () => void;
+}) {
+  const Icon = group.icon;
+  const anyChildActive = group.children.some((c) => isActive(c.href));
+  const [open, setOpen] = useState(anyChildActive);
+
+  // Auto-open when a child becomes active (e.g. initial navigation)
+  useEffect(() => {
+    if (anyChildActive) setOpen(true);
+  }, [anyChildActive]);
+
+  return (
+    <div>
+      {/* Group header button */}
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className={clsx(
+          "w-full relative flex items-center gap-3 pl-3.5 pr-3 py-[9px] rounded-xl text-[13px] transition-all duration-200 ease-out",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-300/50",
+          anyChildActive
+            ? "text-[#F0FBF9] font-semibold"
+            : "text-[#9DC4BE] font-medium hover:text-[#E4F5F2] hover:bg-white/[0.04]",
+        )}
+      >
+        <span
+          className={clsx(
+            "absolute left-0 top-1/2 -translate-y-1/2 w-[3px] rounded-r-full transition-all duration-200",
+            anyChildActive ? "h-5 bg-gradient-to-b from-[#5EEAD4] to-[#14B8A6]" : "h-0",
+          )}
+          style={anyChildActive ? { boxShadow: "0 0 12px rgba(94,234,212,0.55)" } : undefined}
+        />
+        <Icon
+          size={17}
+          strokeWidth={anyChildActive ? 2.2 : 1.8}
+          className={clsx("shrink-0 transition-all duration-200", anyChildActive ? "text-[#5EEAD4]" : "text-[#7FAAA3]")}
+          style={anyChildActive ? { filter: "drop-shadow(0 0 6px rgba(94,234,212,0.45))" } : undefined}
+        />
+        <span className="truncate tracking-[0.01em] flex-1 text-left">{group.groupLabel}</span>
+        <ChevronDown
+          size={13}
+          className={clsx("shrink-0 transition-transform duration-200", open ? "rotate-180" : "rotate-0", anyChildActive ? "text-[#5EEAD4]" : "text-[#5E8F88]")}
+        />
+      </button>
+
+      {/* Children */}
+      <div
+        style={{
+          overflow: "hidden",
+          maxHeight: open ? `${group.children.length * 44}px` : "0px",
+          transition: "max-height 250ms cubic-bezier(0.4,0,0.2,1)",
+        }}
+      >
+        {/* Vertical guide line */}
+        <div className="relative ml-[26px] pl-4 border-l border-white/[0.07] flex flex-col gap-0.5 py-1">
+          {group.children.map((child) => (
+            <NavLink
+              key={child.href}
+              item={child}
+              active={isActive(child.href)}
+              locked={locked}
+              onClick={onClick}
+              indent
+            />
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -114,26 +234,23 @@ export function Sidebar({
   const pathname  = usePathname();
   const { open, close } = useSidebar();
 
-  const items       = filterNav(role, permissions);
-  const mainItems   = items.filter((i) => i.href !== "/settings");
-  const settingsItem = items.find((i) => i.href === "/settings");
-  const isActive    = (href: string) => pathname === href || pathname?.startsWith(href + "/");
+  const entries      = filterNav(role, permissions);
+  const mainEntries  = entries.filter((e) => !isGroup(e) ? (e as TopNavItem).href !== "/settings" : true);
+  const settingsItem = entries.find((e) => !isGroup(e) && (e as TopNavItem).href === "/settings") as TopNavItem | undefined;
 
-  // Close drawer whenever the route changes
+  const isActive = (href: string) =>
+    href === "/billing"
+      ? pathname === "/billing"
+      : pathname === href || pathname?.startsWith(href + "/");
+
   useEffect(() => { close(); }, [pathname, close]);
 
-  // Lock / unlock body scroll while drawer is open on mobile/tablet
   useEffect(() => {
     if (typeof window === "undefined") return;
-    if (open) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
+    document.body.style.overflow = open ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
   }, [open]);
 
-  // Also close drawer if window is resized to desktop width
   useEffect(() => {
     const onResize = () => { if (window.innerWidth >= 1024) close(); };
     window.addEventListener("resize", onResize);
@@ -142,64 +259,38 @@ export function Sidebar({
 
   return (
     <>
-      {/* ── Backdrop (mobile / tablet only) ── */}
+      {/* Backdrop */}
       <div
         aria-hidden
         onClick={close}
         className="lg:hidden"
         style={{
-          position:   "fixed",
-          inset:      0,
-          zIndex:     40,
-          background: "rgba(0,0,0,0.5)",
-          backdropFilter: "blur(2px)",
+          position: "fixed", inset: 0, zIndex: 40,
+          background: "rgba(0,0,0,0.5)", backdropFilter: "blur(2px)",
           transition: "opacity 300ms ease",
-          opacity:    open ? 1 : 0,
-          pointerEvents: open ? "auto" : "none",
+          opacity: open ? 1 : 0, pointerEvents: open ? "auto" : "none",
         }}
       />
 
-      {/* ── Sidebar panel ── */}
+      {/* Sidebar panel */}
       <aside
         style={{
-          /*
-           * KEY FIX: use inline styles for the position/transform so Tailwind
-           * class ordering can never accidentally override `position: fixed`
-           * with `position: relative` (the previous bug).
-           *
-           * Desktop (lg+): sticky so it occupies space in the flex row.
-           * Mobile/tablet: fixed overlay — NOT in the document flow, so it
-           * never pushes or shrinks the main content area.
-           */
-          position:  "sticky",       // overridden to "fixed" on < lg via media query below
-          top:        0,
-          height:     "100vh",
-          width:      "240px",
-          flexShrink: 0,
-          zIndex:     50,
+          position: "sticky", top: 0, height: "100vh",
+          width: "240px", flexShrink: 0, zIndex: 50,
           background: "linear-gradient(172deg, #0C403C 0%, #0A3532 42%, #06231F 100%)",
-          // Smooth slide animation
           transition: "transform 300ms cubic-bezier(0.4,0,0.2,1)",
-          // isolation creates a stacking context for the inner ::before decorations
-          isolation:  "isolate",
-          overflow:   "hidden",
-          display:    "flex",
-          flexDirection: "column",
+          isolation: "isolate", overflow: "hidden",
+          display: "flex", flexDirection: "column",
         }}
-        // On mobile/tablet the inline position:sticky is overridden by the
-        // <style> block below to position:fixed + translateX.
         data-sidebar
       >
         {/* Grain texture */}
         <div aria-hidden style={{ position: "absolute", inset: 0, zIndex: -1, backgroundImage: NOISE, pointerEvents: "none" }} />
-        {/* Ambient glow top-left */}
         <div aria-hidden style={{ position: "absolute", top: -96, left: -96, width: 288, height: 288, borderRadius: "50%", background: "radial-gradient(circle, rgba(28,147,136,0.4), transparent 68%)", zIndex: -1, pointerEvents: "none" }} />
-        {/* Ambient glow bottom-right */}
         <div aria-hidden style={{ position: "absolute", bottom: 64, right: -96, width: 256, height: 256, borderRadius: "50%", background: "radial-gradient(circle, rgba(94,234,212,0.12), transparent 70%)", zIndex: -1, pointerEvents: "none" }} />
-        {/* Hairline right border */}
         <div aria-hidden style={{ position: "absolute", top: 0, right: 0, bottom: 0, width: 1, background: "rgba(255,255,255,0.06)", pointerEvents: "none" }} />
 
-        {/* ── Brand + close button ── */}
+        {/* Brand */}
         <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "28px 20px 24px" }}>
           <div style={{ position: "relative", flexShrink: 0 }}>
             <div style={{
@@ -221,7 +312,6 @@ export function Sidebar({
               {ROLE_LABEL[role] ?? role}
             </p>
           </div>
-          {/* Close button — only shown on mobile/tablet */}
           <button
             onClick={close}
             aria-label="Close menu"
@@ -232,20 +322,35 @@ export function Sidebar({
           </button>
         </div>
 
-        {/* Divider */}
         <div style={{ margin: "0 20px", height: 1, background: "linear-gradient(to right, rgba(255,255,255,0.14), rgba(255,255,255,0.05), transparent)" }} />
 
-        {/* ── Nav ── */}
+        {/* Nav */}
         <nav style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "20px 12px 0", display: "flex", flexDirection: "column", gap: 3 }}>
           <p style={{ padding: "0 14px 10px", fontSize: 9.5, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.22em", color: "#5E8F88", userSelect: "none" }}>
             Overview
           </p>
-          {mainItems.map((item) => (
-            <NavLink key={item.href} item={item} active={isActive(item.href)} locked={!licenseActive} onClick={close} />
-          ))}
+          {mainEntries.map((entry) =>
+            isGroup(entry) ? (
+              <NavGroupItem
+                key={entry.groupLabel}
+                group={entry}
+                isActive={isActive}
+                locked={!licenseActive}
+                onClick={close}
+              />
+            ) : (
+              <NavLink
+                key={(entry as TopNavItem).href}
+                item={entry as TopNavItem}
+                active={isActive((entry as TopNavItem).href)}
+                locked={!licenseActive}
+                onClick={close}
+              />
+            )
+          )}
         </nav>
 
-        {/* ── Bottom rail ── */}
+        {/* Bottom rail */}
         <div style={{ padding: "8px 12px 16px", display: "flex", flexDirection: "column", gap: 3 }}>
           {settingsItem && (
             <>
@@ -278,13 +383,6 @@ export function Sidebar({
         </div>
       </aside>
 
-      {/*
-        Responsive overrides via a <style> tag.
-        On < 1024 px the sidebar switches from sticky (in-flow) to
-        fixed (out-of-flow overlay). This avoids ANY Tailwind class
-        ordering issue because inline styles and media-query rules
-        have higher specificity than utility classes.
-      */}
       <style>{`
         @media (max-width: 1023px) {
           [data-sidebar] {
@@ -306,4 +404,3 @@ export function Sidebar({
     </>
   );
 }
-

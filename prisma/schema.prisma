@@ -91,6 +91,11 @@ model Hospital {
   chipOptions                 ChipOption[]
   integration    HospitalIntegration?
   integrationLogs IntegrationLog[]
+
+  insuranceCompanies InsuranceCompany[]
+  patientInsurances  PatientInsurance[]
+  preAuths           InsurancePreAuthorization[]
+  insuranceClaims    InsuranceClaim[]
 }
 
 // ──────────────────────────────────────────────────────────────────────────
@@ -402,6 +407,7 @@ model Patient {
   appointments    Appointment[]
   visits          Visit[]
   pastExternalVisits PastExternalVisit[]
+  insurancePolicies  PatientInsurance[]
 }
 
 // AppointmentStatus: REQUESTED | CONFIRMED | RESCHEDULED | COMPLETED | CANCELLED | NO_SHOW
@@ -706,6 +712,9 @@ model Admission {
   discharged      Boolean   @default(false)
   dischargedAt    DateTime?
   createdAt       DateTime  @default(now())
+
+  preAuths        InsurancePreAuthorization[]
+  insuranceClaims InsuranceClaim[]
 }
 
 model SurgicalCounselling {
@@ -900,4 +909,198 @@ model ChipOption {
 
   @@unique([category, value, hospitalId])
   @@index([category, hospitalId])
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// Billing & Insurance Module
+// ──────────────────────────────────────────────────────────────────────────
+
+model InsuranceCompany {
+  id            String   @id @default(cuid())
+  hospitalId    String
+  hospital      Hospital @relation(fields: [hospitalId], references: [id])
+  name          String
+  contactPerson String?
+  email         String?
+  phone         String?
+  address       String?
+  tpaName       String?  // Third-party administrator, if any
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  patientInsurances PatientInsurance[]
+  preAuths          InsurancePreAuthorization[]
+  claims            InsuranceClaim[]
+
+  @@index([hospitalId, active])
+}
+
+// PatientInsurance.status: ACTIVE | EXPIRED | SUSPENDED
+model PatientInsurance {
+  id                 String   @id @default(cuid())
+  hospitalId         String
+  hospital           Hospital @relation(fields: [hospitalId], references: [id])
+  patientId          String
+  patient            Patient  @relation(fields: [patientId], references: [id])
+  insuranceCompanyId String
+  insuranceCompany   InsuranceCompany @relation(fields: [insuranceCompanyId], references: [id])
+  policyNumber       String
+  cardNumber         String?
+  coveragePercent    Float    @default(80)
+  validFrom          DateTime
+  validTo            DateTime
+  status             String   @default("ACTIVE")
+  cardImageUrl       String?
+  notes              String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  preAuths InsurancePreAuthorization[]
+  claims   InsuranceClaim[]
+
+  @@index([hospitalId, patientId])
+  @@index([status])
+}
+
+// InsurancePreAuthorization.status: PENDING | APPROVED | REJECTED | QUERY_RAISED
+model InsurancePreAuthorization {
+  id                 String   @id @default(cuid())
+  hospitalId         String
+  hospital           Hospital @relation(fields: [hospitalId], references: [id])
+  admissionId        String?
+  admission          Admission? @relation(fields: [admissionId], references: [id])
+  patientInsuranceId String
+  patientInsurance   PatientInsurance @relation(fields: [patientInsuranceId], references: [id])
+  insuranceCompanyId String
+  insuranceCompany   InsuranceCompany @relation(fields: [insuranceCompanyId], references: [id])
+  diagnosis          String
+  plannedSurgery     String?
+  estimatedCost      Float
+  requestedAmount    Float
+  approvedAmount     Float?
+  authCode           String?
+  status             String   @default("PENDING")
+  notes              String?
+  submittedAt        DateTime?
+  respondedAt        DateTime?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  claim InsuranceClaim?
+
+  @@index([hospitalId, status])
+}
+
+// InsuranceClaim.status:
+//   CREATED | DOCUMENTS_UPLOADED | PRE_AUTH_SENT | PRE_AUTH_APPROVED |
+//   TREATMENT_COMPLETED | BILL_PREPARED | CLAIM_SUBMITTED |
+//   UNDER_REVIEW | QUERY_RAISED | APPROVED | REJECTED |
+//   PAYMENT_RECEIVED | CLOSED
+model InsuranceClaim {
+  id                    String   @id @default(cuid())
+  claimNumber           String   @unique
+  hospitalId            String
+  hospital              Hospital @relation(fields: [hospitalId], references: [id])
+  patientInsuranceId    String
+  patientInsurance      PatientInsurance @relation(fields: [patientInsuranceId], references: [id])
+  insuranceCompanyId    String
+  insuranceCompany      InsuranceCompany @relation(fields: [insuranceCompanyId], references: [id])
+  preAuthId             String?  @unique
+  preAuth               InsurancePreAuthorization? @relation(fields: [preAuthId], references: [id])
+  admissionId           String?
+  admission             Admission? @relation(fields: [admissionId], references: [id])
+
+  // Bill breakdown (all amounts in hospital's currency)
+  roomCharges           Float    @default(0)
+  surgeryCharges        Float    @default(0)
+  pharmacyCharges       Float    @default(0)
+  labCharges            Float    @default(0)
+  miscCharges           Float    @default(0)
+  totalBillAmount       Float    @default(0)
+
+  // Settlement
+  approvedAmount        Float?
+  patientResponsibility Float?
+
+  status                String   @default("CREATED")
+  submittedAt           DateTime?
+  approvedAt            DateTime?
+  closedAt              DateTime?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  documents   InsuranceClaimDocument[]
+  settlements InsuranceSettlement[]
+  queries     InsuranceQuery[]
+  payments    InsurancePayment[]
+
+  @@index([hospitalId, status])
+  @@index([claimNumber])
+}
+
+// InsuranceClaimDocument.docType:
+//   INSURANCE_CARD | PATIENT_ID | ADMISSION_FORM | DOCTORS_NOTES |
+//   INVESTIGATION_REPORTS | CONSENT_FORM | OPERATION_NOTES |
+//   DISCHARGE_SUMMARY | FINAL_BILL | PHARMACY_BILL | IMPLANT_INVOICE | OTHER
+model InsuranceClaimDocument {
+  id         String   @id @default(cuid())
+  claimId    String
+  claim      InsuranceClaim @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  docType    String
+  fileName   String
+  fileUrl    String
+  uploadedBy String   // userId
+  uploadedAt DateTime @default(now())
+
+  @@index([claimId])
+}
+
+model InsuranceSettlement {
+  id              String   @id @default(cuid())
+  claimId         String
+  claim           InsuranceClaim @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  settledAmount   Float
+  settledDate     DateTime
+  referenceNumber String?
+  notes           String?
+  createdAt       DateTime @default(now())
+
+  payments InsurancePayment[]
+
+  @@index([claimId])
+}
+
+// InsurancePayment.paymentMode: BANK_TRANSFER | CHEQUE | NEFT | RTGS | CASH
+model InsurancePayment {
+  id              String   @id @default(cuid())
+  claimId         String
+  claim           InsuranceClaim @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  settlementId    String?
+  settlement      InsuranceSettlement? @relation(fields: [settlementId], references: [id])
+  amount          Float
+  paymentDate     DateTime
+  paymentMode     String   @default("BANK_TRANSFER")
+  referenceNumber String?
+  notes           String?
+  postedBy        String   // userId
+  createdAt       DateTime @default(now())
+
+  @@index([claimId])
+}
+
+// InsuranceQuery.queryBy: INSURER | HOSPITAL
+// InsuranceQuery.status: OPEN | RESPONDED | CLOSED
+model InsuranceQuery {
+  id           String    @id @default(cuid())
+  claimId      String
+  claim        InsuranceClaim @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  queryBy      String    @default("INSURER")
+  queryText    String
+  responseText String?
+  status       String    @default("OPEN")
+  raisedAt     DateTime  @default(now())
+  respondedAt  DateTime?
+
+  @@index([claimId, status])
 }
