@@ -100,10 +100,14 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
       : [],
   [query, allDiagnoses]);
 
-  const selectSuggestion = (description: string) => {
-    setProvisionalDx(description);
+  const selectSuggestion = (item: DiagnosisItem) => {
+    setProvisionalDx(item.description);
     setShowSuggestions(false);
     setSuggestionIndex(-1);
+    // Auto-apply presets the same way ICD-10 diagnosis selection does
+    startTransition(async () => {
+      await autoApplyPresets([{ icd10Code: item.code ?? "", description: item.description }]);
+    });
   };
 
   const handleProvisionalKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -116,7 +120,7 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
       setSuggestionIndex((i) => Math.max(i - 1, -1));
     } else if (e.key === "Enter" && suggestionIndex >= 0) {
       e.preventDefault();
-      selectSuggestion(provisionalSuggestions[suggestionIndex].description);
+      selectSuggestion(provisionalSuggestions[suggestionIndex]);
     } else if (e.key === "Escape") {
       setShowSuggestions(false);
       setSuggestionIndex(-1);
@@ -298,7 +302,7 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
                             <li key={s.code || s.description}>
                               <button
                                 type="button"
-                                onMouseDown={(e) => { e.preventDefault(); selectSuggestion(s.description); }}
+                                onMouseDown={(e) => { e.preventDefault(); selectSuggestion(s); }}
                                 className={`w-full text-left px-3.5 py-2.5 text-sm flex items-center justify-between gap-4 transition-colors ${
                                   i === suggestionIndex
                                     ? "bg-[var(--color-primary-50)] text-[var(--color-primary-700)]"
