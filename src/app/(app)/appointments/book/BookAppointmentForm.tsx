@@ -86,7 +86,8 @@ export function BookAppointmentForm({
   const [visitType,  setVisitType]  = useState("General OPD");
   const [notes,      setNotes]      = useState("");
   const [laterality, setLaterality] = useState("");
-  const [since,      setSince]      = useState("");
+  const [sinceNum,   setSinceNum]   = useState("");
+  const [sinceUnit,  setSinceUnit]  = useState("days");
   const [bookedCounts, setBookedCounts] = useState<Record<string, number>>({});
 
   // For DOCTOR role: selected hospital (since hospitalId is null)
@@ -188,7 +189,8 @@ export function BookAppointmentForm({
     if (patientMode === "new" && !patientPhoto) { setError("Patient photo is required for new patients."); return; }
     if (!doctorId) { setError("Please select a doctor."); return; }
     if (!effectiveHospitalId) { setError("Please select a hospital."); return; }
-    const ccParts = [laterality, since ? `Since: ${since}` : ""].filter(Boolean);
+    const sinceStr = sinceNum ? `${sinceNum} ${sinceUnit}` : "";
+    const ccParts = [laterality, sinceStr ? `Since: ${sinceStr}` : ""].filter(Boolean);
     const fullNotes = ccParts.length > 0
       ? `${ccParts.join(" | ")}${notes.trim() ? " | " + notes.trim() : ""}`
       : notes.trim();
@@ -733,34 +735,53 @@ export function BookAppointmentForm({
             {/* Notes */}
             <div>
               <FieldLabel icon={<FileText size={12} />}>Chief Complaint *</FieldLabel>
-              <div className="flex gap-2 mt-0.5">
-                <select
-                  value={laterality}
-                  onChange={(e) => setLaterality(e.target.value)}
-                  className="flex-1 min-w-0 rounded-xl border border-[var(--color-border)] bg-white px-3 py-2.5 text-sm text-[var(--color-ink-700)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] transition-shadow"
-                >
-                  <option value="">Laterality</option>
-                  <option value="Both Eyes">Both Eyes</option>
-                  <option value="Right Eye (OD)">Right Eye (OD)</option>
-                  <option value="Left Eye (OS)">Left Eye (OS)</option>
-                </select>
-                <select
-                  value={since}
-                  onChange={(e) => setSince(e.target.value)}
-                  className="flex-1 min-w-0 rounded-xl border border-[var(--color-border)] bg-white px-3 py-2.5 text-sm text-[var(--color-ink-700)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] transition-shadow"
-                >
-                  <option value="">Since</option>
-                  <option value="1 Day">1 Day</option>
-                  <option value="2 Days">2 Days</option>
-                  <option value="3 Days">3 Days</option>
-                  <option value="1 Week">1 Week</option>
-                  <option value="2 Weeks">2 Weeks</option>
-                  <option value="1 Month">1 Month</option>
-                  <option value="3 Months">3 Months</option>
-                  <option value="6 Months">6 Months</option>
-                  <option value="1 Year">1 Year</option>
-                  <option value="> 1 Year">&gt; 1 Year</option>
-                </select>
+              <div className="flex items-center justify-between gap-3 mt-1.5 mb-2">
+                {/* Laterality pills */}
+                <div className="flex gap-1.5">
+                  {(["RE", "LE", "OU"] as const).map((lat) => (
+                    <button
+                      key={lat}
+                      type="button"
+                      onClick={() => setLaterality(laterality === lat ? "" : lat)}
+                      className="px-3.5 py-1 rounded-full text-xs font-semibold border transition-colors"
+                      style={laterality === lat ? {
+                        background: "var(--color-primary-700)",
+                        color: "#fff",
+                        borderColor: "var(--color-primary-700)",
+                      } : {
+                        background: "#fff",
+                        color: "var(--color-ink-600)",
+                        borderColor: "var(--color-border)",
+                      }}
+                    >
+                      {lat}
+                    </button>
+                  ))}
+                </div>
+                {/* Since */}
+                <div className="flex items-center gap-1.5">
+                  <span className="text-sm text-[var(--color-ink-500)]">Since</span>
+                  <select
+                    value={sinceNum}
+                    onChange={(e) => setSinceNum(e.target.value)}
+                    className="rounded-lg border border-[var(--color-border)] bg-white px-2 py-1.5 text-sm text-[var(--color-ink-700)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] transition-shadow"
+                  >
+                    <option value="">—</option>
+                    {Array.from({ length: 30 }, (_, i) => i + 1).map((n) => (
+                      <option key={n} value={n}>{n}</option>
+                    ))}
+                  </select>
+                  <select
+                    value={sinceUnit}
+                    onChange={(e) => setSinceUnit(e.target.value)}
+                    className="rounded-lg border border-[var(--color-border)] bg-white px-2 py-1.5 text-sm text-[var(--color-ink-700)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] transition-shadow"
+                  >
+                    <option value="days">days</option>
+                    <option value="weeks">weeks</option>
+                    <option value="months">months</option>
+                    <option value="years">years</option>
+                  </select>
+                </div>
               </div>
               <textarea
                 value={notes}
