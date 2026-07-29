@@ -8,10 +8,11 @@ import { saveProvisionalDiagnosis, addDiagnosis, updateDiagnosisStatus, removeDi
 import { useAutoSave, SaveIndicator } from "@/lib/useAutoSave";
 import { X, History, ChevronDown, Search, PenLine, Plus } from "lucide-react";
 import {
-  getTreatmentPresets, matchPresets, mergeMeds,
+  getTreatmentPresets, saveTreatmentPresets, matchPresets, mergeMeds,
   getApplied, setApplied,
   getDismissedPresets,
   type AppliedPreset,
+  type TreatmentPresetMed,
 } from "./treatmentPresets";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Toast } from "@/components/ui/Toast";
@@ -20,6 +21,8 @@ import { getCustomDiagnoses, saveCustomDiagnosis, isDuplicateDescription, type C
 
 type DiagnosisItem = { code: string; description: string; custom: boolean; category?: string };
 
+type PresetMedDraft = { drugName: string; dosage: string; frequency: string; duration: string; instructions: string };
+
 type CustomModalState = {
   name: string;
   code: string;
@@ -27,6 +30,9 @@ type CustomModalState = {
   notes: string;
   target: "icd" | "provisional";
   error: string;
+  step: "diagnosis" | "preset";
+  savedCode: string;
+  savedDescription: string;
 };
 
 export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; udid: string; priorVisits?: any[] }) {
@@ -48,6 +54,12 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
   const [presetToast, setPresetToast] = useState<string[]>([]);
   const [customDxList, setCustomDxList] = useState<CustomDx[]>([]);
   const [customModal, setCustomModal] = useState<CustomModalState | null>(null);
+  const emptyMed = (): PresetMedDraft => ({ drugName: "", dosage: "", frequency: "", duration: "", instructions: "" });
+  const [presetName, setPresetName] = useState("");
+  const [presetMeds, setPresetMeds] = useState<PresetMedDraft[]>([emptyMed()]);
+  const [presetFollowUpDays, setPresetFollowUpDays] = useState("");
+  const [presetAdvice, setPresetAdvice] = useState("");
+  const [presetInvestigations, setPresetInvestigations] = useState("");
 
   const diagnoses: any[] = visit.diagnoses ?? [];
 
@@ -129,7 +141,7 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
 
   const openCustomModal = (target: "icd" | "provisional") => {
     const prefill = target === "icd" ? query.trim() : provisionalDx.trim();
-    setCustomModal({ name: prefill, code: "", category: "", notes: "", target, error: "" });
+    setCustomModal({ name: prefill, code: "", category: "", notes: "", target, error: "", step: "diagnosis", savedCode: "", savedDescription: "" });
     if (target === "icd") setQuery("");
     setShowSuggestions(false);
   };
@@ -158,6 +170,50 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
     } else {
       setProvisionalDx(saved.description);
     }
+
+    // Transition to preset step
+    setPresetName(`${name} Protocol`);
+    setPresetMeds([emptyMed()]);
+    setPresetFollowUpDays("");
+    setPresetAdvice("");
+    setPresetInvestigations("");
+    setCustomModal({ ...customModal, step: "preset", savedCode: saved.code, savedDescription: saved.description, error: "" });
+  };
+
+  const handleSavePreset = () => {
+    if (!customModal) return;
+    const validMeds: TreatmentPresetMed[] = presetMeds
+      .filter((m) => m.drugName.trim())
+      .map((m) => ({
+        drugName: m.drugName.trim(),
+        ...(m.dosage.trim()        && { dosage:        m.dosage.trim() }),
+        ...(m.frequency.trim()     && { frequency:     m.frequency.trim() }),
+        ...(m.duration.trim()      && { duration:      m.duration.trim() }),
+        ...(m.instructions.trim()  && { instructions:  m.instructions.trim() }),
+      }));
+    const investigations = presetInvestigations.trim()
+      ? presetInvestigations.split("\n").map((s) => s.trim()).filter(Boolean)
+      : undefined;
+    const followUpDays = presetFollowUpDays ? parseInt(presetFollowUpDays, 10) : undefined;
+
+    const newPreset = {
+      id: `tx-custom-${Date.now()}`,
+      name: presetName.trim() || `${customModal.savedDescription} Protocol`,
+      diagnosisCodes: customModal.savedCode ? [customModal.savedCode] : [],
+      diagnosisKeywords: [customModal.savedDescription.toLowerCase()],
+      medications: validMeds,
+      ...(investigations && { investigations }),
+      ...(presetAdvice.trim() && { advice: presetAdvice.trim() }),
+      ...(followUpDays        && { followUpDays }),
+      createdAt: new Date().toISOString(),
+    };
+
+    const existing = getTreatmentPresets().filter((p) => !p.isDefault);
+    saveTreatmentPresets([...existing, newPreset]);
+
+    startTransition(async () => {
+      await autoApplyPresets([{ icd10Code: customModal.savedCode, description: customModal.savedDescription }]);
+    });
     setCustomModal(null);
   };
 
@@ -632,7 +688,7 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
       </Card>
     </div>
 
-      {/* Custom Diagnosis Modal */}
+      {/* Custom Diagnosis → Add Preset modal */}
       {customModal && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
@@ -640,109 +696,233 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
           onClick={() => setCustomModal(null)}
         >
           <div
-            className="relative w-full max-w-md rounded-2xl shadow-2xl overflow-hidden bg-white"
+            className={`relative w-full rounded-2xl shadow-2xl overflow-hidden bg-white ${customModal.step === "preset" ? "max-w-xl" : "max-w-md"}`}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="px-5 py-4 flex items-center justify-between border-b border-[var(--color-border)]"
-              style={{ background: "linear-gradient(135deg, #0F766E 0%, #0D9488 100%)" }}>
+            <div
+              className="px-5 py-4 flex items-center justify-between border-b border-[var(--color-border)]"
+              style={{ background: "linear-gradient(135deg, #0F766E 0%, #0D9488 100%)" }}
+            >
               <div className="flex items-center gap-2.5">
                 <div className="w-7 h-7 rounded-lg bg-white/20 flex items-center justify-center">
                   <Plus size={15} className="text-white" />
                 </div>
-                <p className="text-sm font-semibold text-white">Add Custom Diagnosis</p>
-              </div>
-              <button type="button" onClick={() => setCustomModal(null)} className="text-white/60 hover:text-white p-1 transition-colors">
-                <X size={16} />
-              </button>
-            </div>
-
-            {/* Body */}
-            <div className="px-5 py-4 flex flex-col gap-4">
-              {customModal.error && (
-                <p className="text-xs text-red-600 bg-red-50 border border-red-200 px-3 py-2 rounded-lg">{customModal.error}</p>
-              )}
-
-              {/* Diagnosis Name */}
-              <div>
-                <label className="block text-xs font-semibold text-[var(--color-ink-600)] mb-1.5">
-                  Diagnosis Name <span className="text-red-500">*</span>
-                </label>
-                <input
-                  autoFocus
-                  value={customModal.name}
-                  onChange={(e) => setCustomModal({ ...customModal, name: e.target.value, error: "" })}
-                  onKeyDown={(e) => { if (e.key === "Enter") handleSaveCustomDx(); }}
-                  placeholder="e.g. Bilateral Exophoria"
-                  className="w-full rounded-xl border border-[var(--color-border)] px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                {/* ICD Code */}
                 <div>
-                  <label className="block text-xs font-semibold text-[var(--color-ink-600)] mb-1.5">
-                    ICD Code <span className="text-[var(--color-ink-300)] font-normal">(optional)</span>
-                  </label>
-                  <input
-                    value={customModal.code}
-                    onChange={(e) => setCustomModal({ ...customModal, code: e.target.value })}
-                    placeholder="e.g. H50.9"
-                    className="w-full rounded-xl border border-[var(--color-border)] px-3.5 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
-                  />
-                </div>
-
-                {/* Category */}
-                <div>
-                  <label className="block text-xs font-semibold text-[var(--color-ink-600)] mb-1.5">
-                    Category <span className="text-[var(--color-ink-300)] font-normal">(optional)</span>
-                  </label>
-                  <input
-                    value={customModal.category}
-                    onChange={(e) => setCustomModal({ ...customModal, category: e.target.value })}
-                    placeholder="e.g. Strabismus"
-                    className="w-full rounded-xl border border-[var(--color-border)] px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
-                  />
+                  <p className="text-sm font-semibold text-white">
+                    {customModal.step === "preset" ? "Add Treatment Preset" : "Add Custom Diagnosis"}
+                  </p>
+                  {customModal.step === "preset" && (
+                    <p className="text-xs text-white/70 mt-0.5">for <span className="font-medium text-white">{customModal.savedDescription}</span></p>
+                  )}
                 </div>
               </div>
-
-              {/* Description / Notes */}
-              <div>
-                <label className="block text-xs font-semibold text-[var(--color-ink-600)] mb-1.5">
-                  Description <span className="text-[var(--color-ink-300)] font-normal">(optional)</span>
-                </label>
-                <textarea
-                  rows={2}
-                  value={customModal.notes}
-                  onChange={(e) => setCustomModal({ ...customModal, notes: e.target.value })}
-                  placeholder="Any additional notes about this diagnosis..."
-                  className="w-full rounded-xl border border-[var(--color-border)] px-3.5 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
-                />
+              <div className="flex items-center gap-2">
+                {/* Step indicator */}
+                <div className="flex items-center gap-1.5 mr-2">
+                  <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${customModal.step === "diagnosis" ? "bg-white text-[#0F766E]" : "bg-white/30 text-white"}`}>1</div>
+                  <div className="w-4 h-px bg-white/30" />
+                  <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${customModal.step === "preset" ? "bg-white text-[#0F766E]" : "bg-white/30 text-white"}`}>2</div>
+                </div>
+                <button type="button" onClick={() => setCustomModal(null)} className="text-white/60 hover:text-white p-1 transition-colors">
+                  <X size={16} />
+                </button>
               </div>
-
-              <p className="text-[11px] text-[var(--color-ink-400)] -mt-1">
-                This diagnosis will be saved to your custom library and appear in future searches with a <span className="font-semibold text-amber-700">Custom</span> badge.
-              </p>
             </div>
 
-            {/* Footer */}
-            <div className="px-5 py-4 border-t border-[var(--color-border)] flex items-center justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setCustomModal(null)}
-                className="px-4 py-2 rounded-xl border border-[var(--color-border)] text-sm font-medium text-[var(--color-ink-500)] hover:bg-[var(--color-surface-sunken)] transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                disabled={!customModal.name.trim()}
-                onClick={handleSaveCustomDx}
-                className="px-5 py-2 rounded-xl bg-[#0F766E] text-white text-sm font-semibold hover:bg-[#0D6862] transition-colors disabled:opacity-40"
-              >
-                Save &amp; Add
-              </button>
-            </div>
+            {/* ── Step 1: Diagnosis form ── */}
+            {customModal.step === "diagnosis" && (
+              <>
+                <div className="px-5 py-4 flex flex-col gap-4">
+                  {customModal.error && (
+                    <p className="text-xs text-red-600 bg-red-50 border border-red-200 px-3 py-2 rounded-lg">{customModal.error}</p>
+                  )}
+                  <div>
+                    <label className="block text-xs font-semibold text-[var(--color-ink-600)] mb-1.5">
+                      Diagnosis Name <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      autoFocus
+                      value={customModal.name}
+                      onChange={(e) => setCustomModal({ ...customModal, name: e.target.value, error: "" })}
+                      onKeyDown={(e) => { if (e.key === "Enter") handleSaveCustomDx(); }}
+                      placeholder="e.g. Bilateral Exophoria"
+                      className="w-full rounded-xl border border-[var(--color-border)] px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-[var(--color-ink-600)] mb-1.5">
+                        ICD Code <span className="text-[var(--color-ink-300)] font-normal">(optional)</span>
+                      </label>
+                      <input
+                        value={customModal.code}
+                        onChange={(e) => setCustomModal({ ...customModal, code: e.target.value })}
+                        placeholder="e.g. H50.9"
+                        className="w-full rounded-xl border border-[var(--color-border)] px-3.5 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-[var(--color-ink-600)] mb-1.5">
+                        Category <span className="text-[var(--color-ink-300)] font-normal">(optional)</span>
+                      </label>
+                      <input
+                        value={customModal.category}
+                        onChange={(e) => setCustomModal({ ...customModal, category: e.target.value })}
+                        placeholder="e.g. Strabismus"
+                        className="w-full rounded-xl border border-[var(--color-border)] px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-[var(--color-ink-600)] mb-1.5">
+                      Description <span className="text-[var(--color-ink-300)] font-normal">(optional)</span>
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={customModal.notes}
+                      onChange={(e) => setCustomModal({ ...customModal, notes: e.target.value })}
+                      placeholder="Any additional notes about this diagnosis..."
+                      className="w-full rounded-xl border border-[var(--color-border)] px-3.5 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
+                    />
+                  </div>
+                  <p className="text-[11px] text-[var(--color-ink-400)] -mt-1">
+                    Saved to your custom library. Next step: add a treatment preset so medications auto-populate in Plan.
+                  </p>
+                </div>
+                <div className="px-5 py-4 border-t border-[var(--color-border)] flex items-center justify-end gap-2">
+                  <button type="button" onClick={() => setCustomModal(null)}
+                    className="px-4 py-2 rounded-xl border border-[var(--color-border)] text-sm font-medium text-[var(--color-ink-500)] hover:bg-[var(--color-surface-sunken)] transition-colors">
+                    Cancel
+                  </button>
+                  <button type="button" disabled={!customModal.name.trim()} onClick={handleSaveCustomDx}
+                    className="px-5 py-2 rounded-xl bg-[#0F766E] text-white text-sm font-semibold hover:bg-[#0D6862] transition-colors disabled:opacity-40">
+                    Save &amp; Add →
+                  </button>
+                </div>
+              </>
+            )}
+
+            {/* ── Step 2: Preset form ── */}
+            {customModal.step === "preset" && (
+              <>
+                <div className="px-5 py-4 flex flex-col gap-4 max-h-[70vh] overflow-y-auto">
+                  {/* Preset name */}
+                  <div>
+                    <label className="block text-xs font-semibold text-[var(--color-ink-600)] mb-1.5">Preset Name</label>
+                    <input
+                      autoFocus
+                      value={presetName}
+                      onChange={(e) => setPresetName(e.target.value)}
+                      placeholder="e.g. Infection Protocol"
+                      className="w-full rounded-xl border border-[var(--color-border)] px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
+                    />
+                  </div>
+
+                  {/* Medications */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-xs font-semibold text-[var(--color-ink-600)]">Medications</label>
+                      <button type="button" onClick={() => setPresetMeds((p) => [...p, emptyMed()])}
+                        className="flex items-center gap-1 text-xs text-[var(--color-primary-600)] hover:text-[var(--color-primary-800)] font-medium transition-colors">
+                        <Plus size={12} /> Add
+                      </button>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      {presetMeds.map((m, i) => (
+                        <div key={i} className="rounded-xl border border-[var(--color-border)] p-3 flex flex-col gap-2">
+                          <div className="flex items-center gap-2">
+                            <input
+                              value={m.drugName}
+                              onChange={(e) => setPresetMeds((p) => p.map((r, idx) => idx === i ? { ...r, drugName: e.target.value } : r))}
+                              placeholder="Drug name *"
+                              className="flex-1 rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
+                            />
+                            {presetMeds.length > 1 && (
+                              <button type="button" onClick={() => setPresetMeds((p) => p.filter((_, idx) => idx !== i))}
+                                className="text-[var(--color-ink-400)] hover:text-[var(--color-danger-600)] transition-colors flex-shrink-0">
+                                <X size={14} />
+                              </button>
+                            )}
+                          </div>
+                          <div className="grid grid-cols-3 gap-2">
+                            {(["dosage", "frequency", "duration"] as const).map((field) => (
+                              <input key={field}
+                                value={m[field]}
+                                onChange={(e) => setPresetMeds((p) => p.map((r, idx) => idx === i ? { ...r, [field]: e.target.value } : r))}
+                                placeholder={field.charAt(0).toUpperCase() + field.slice(1)}
+                                className="rounded-lg border border-[var(--color-border)] px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
+                              />
+                            ))}
+                          </div>
+                          <input
+                            value={m.instructions}
+                            onChange={(e) => setPresetMeds((p) => p.map((r, idx) => idx === i ? { ...r, instructions: e.target.value } : r))}
+                            placeholder="Instructions (optional)"
+                            className="rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Follow-up days + Investigations */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-[var(--color-ink-600)] mb-1.5">
+                        Follow-up <span className="text-[var(--color-ink-300)] font-normal">(days)</span>
+                      </label>
+                      <input
+                        type="number" min="1" max="365"
+                        value={presetFollowUpDays}
+                        onChange={(e) => setPresetFollowUpDays(e.target.value)}
+                        placeholder="e.g. 7"
+                        className="w-full rounded-xl border border-[var(--color-border)] px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-[var(--color-ink-600)] mb-1.5">
+                        Investigations <span className="text-[var(--color-ink-300)] font-normal">(one per line)</span>
+                      </label>
+                      <textarea rows={2}
+                        value={presetInvestigations}
+                        onChange={(e) => setPresetInvestigations(e.target.value)}
+                        placeholder={"Visual Acuity\nIOP measurement"}
+                        className="w-full rounded-xl border border-[var(--color-border)] px-3.5 py-2 text-xs resize-none focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Advice */}
+                  <div>
+                    <label className="block text-xs font-semibold text-[var(--color-ink-600)] mb-1.5">
+                      Advice <span className="text-[var(--color-ink-300)] font-normal">(optional)</span>
+                    </label>
+                    <textarea rows={2}
+                      value={presetAdvice}
+                      onChange={(e) => setPresetAdvice(e.target.value)}
+                      placeholder="Patient advice to include in the plan..."
+                      className="w-full rounded-xl border border-[var(--color-border)] px-3.5 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
+                    />
+                  </div>
+                </div>
+
+                <div className="px-5 py-4 border-t border-[var(--color-border)] flex items-center justify-between gap-2">
+                  <button type="button" onClick={() => setCustomModal(null)}
+                    className="text-xs text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)] transition-colors">
+                    Skip for now
+                  </button>
+                  <div className="flex items-center gap-2">
+                    <button type="button"
+                      disabled={!presetMeds.some((m) => m.drugName.trim())}
+                      onClick={handleSavePreset}
+                      className="px-5 py-2 rounded-xl bg-[#0F766E] text-white text-sm font-semibold hover:bg-[#0D6862] transition-colors disabled:opacity-40">
+                      Save Preset &amp; Apply to Plan
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
