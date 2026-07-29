@@ -66,6 +66,8 @@ export function NewEncounterForm({
   const [occupation, setOccupation] = useState("");
   const [notes, setNotes] = useState("");
   const [complaint, setComplaint] = useState("");
+  const [laterality, setLaterality] = useState("");
+  const [since, setSince] = useState("");
   const [aadhaarPhoto, setAadhaarPhoto] = useState<UploadedFile | null>(null);
   const [patientPhoto, setPatientPhoto] = useState<UploadedFile | null>(null);
 
@@ -97,9 +99,13 @@ export function NewEncounterForm({
     fd.set("hospitalId", hospitalId);
     fd.set("date", date);
 
-    if (!complaint.trim()) { setError("Chief complaint is required."); return; }
+    const ccParts = [laterality, since ? `Since: ${since}` : ""].filter(Boolean);
+    const fullComplaint = ccParts.length > 0
+      ? `${ccParts.join(" | ")}${complaint.trim() ? " | " + complaint.trim() : ""}`
+      : complaint.trim();
+    if (!fullComplaint) { setError("Chief complaint is required."); return; }
 
-    fd.set("complaint", complaint.trim());
+    fd.set("complaint", fullComplaint);
 
     if (patientMode === "existing") {
       if (!selectedPatient) { setError("Please select a patient."); return; }
@@ -121,7 +127,7 @@ export function NewEncounterForm({
       fd.set("category", category);
       fd.set("occupation", occupation.trim());
       if (notes.trim()) fd.set("notes", notes.trim());
-      fd.set("complaint", complaint.trim());
+      fd.set("complaint", fullComplaint);
       if (patientPhoto) fd.set("patientPhoto", patientPhoto.savedName);
       if (aadhaarPhoto) fd.set("aadhaarPhoto", aadhaarPhoto.savedName);
     }
@@ -444,6 +450,35 @@ export function NewEncounterForm({
             {/* Chief Complaint */}
             <div>
               <FieldLabel icon={<FileText size={12} />}>Chief Complaint *</FieldLabel>
+              <div className="flex gap-2 mt-0.5">
+                <select
+                  value={laterality}
+                  onChange={(e) => setLaterality(e.target.value)}
+                  className="flex-1 min-w-0 rounded-xl border border-[var(--color-border)] bg-white px-3 py-2.5 text-sm text-[var(--color-ink-700)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] transition-shadow"
+                >
+                  <option value="">Laterality</option>
+                  <option value="Both Eyes">Both Eyes</option>
+                  <option value="Right Eye (OD)">Right Eye (OD)</option>
+                  <option value="Left Eye (OS)">Left Eye (OS)</option>
+                </select>
+                <select
+                  value={since}
+                  onChange={(e) => setSince(e.target.value)}
+                  className="flex-1 min-w-0 rounded-xl border border-[var(--color-border)] bg-white px-3 py-2.5 text-sm text-[var(--color-ink-700)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] transition-shadow"
+                >
+                  <option value="">Since</option>
+                  <option value="1 Day">1 Day</option>
+                  <option value="2 Days">2 Days</option>
+                  <option value="3 Days">3 Days</option>
+                  <option value="1 Week">1 Week</option>
+                  <option value="2 Weeks">2 Weeks</option>
+                  <option value="1 Month">1 Month</option>
+                  <option value="3 Months">3 Months</option>
+                  <option value="6 Months">6 Months</option>
+                  <option value="1 Year">1 Year</option>
+                  <option value="> 1 Year">&gt; 1 Year</option>
+                </select>
+              </div>
               <textarea
                 placeholder="Describe the patient's chief complaint..."
                 value={complaint}

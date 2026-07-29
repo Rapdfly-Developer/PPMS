@@ -85,6 +85,8 @@ export function BookAppointmentForm({
   const [time, setTime] = useState("09:00");
   const [visitType,  setVisitType]  = useState("General OPD");
   const [notes,      setNotes]      = useState("");
+  const [laterality, setLaterality] = useState("");
+  const [since,      setSince]      = useState("");
   const [bookedCounts, setBookedCounts] = useState<Record<string, number>>({});
 
   // For DOCTOR role: selected hospital (since hospitalId is null)
@@ -186,14 +188,18 @@ export function BookAppointmentForm({
     if (patientMode === "new" && !patientPhoto) { setError("Patient photo is required for new patients."); return; }
     if (!doctorId) { setError("Please select a doctor."); return; }
     if (!effectiveHospitalId) { setError("Please select a hospital."); return; }
-    if (!notes.trim()) { setError("Chief complaint is required."); return; }
+    const ccParts = [laterality, since ? `Since: ${since}` : ""].filter(Boolean);
+    const fullNotes = ccParts.length > 0
+      ? `${ccParts.join(" | ")}${notes.trim() ? " | " + notes.trim() : ""}`
+      : notes.trim();
+    if (!fullNotes) { setError("Chief complaint is required."); return; }
     setError("");
 
     const fd = new FormData();
     fd.set("mode",         patientMode);
     fd.set("doctorId",     doctorId);
     fd.set("visitType",    visitType);
-    fd.set("notes",        notes);
+    fd.set("notes",        fullNotes);
     fd.set("encounterType", encounterType);
     fd.set("hospitalId", effectiveHospitalId);
 
@@ -727,13 +733,41 @@ export function BookAppointmentForm({
             {/* Notes */}
             <div>
               <FieldLabel icon={<FileText size={12} />}>Chief Complaint *</FieldLabel>
+              <div className="flex gap-2 mt-0.5">
+                <select
+                  value={laterality}
+                  onChange={(e) => setLaterality(e.target.value)}
+                  className="flex-1 min-w-0 rounded-xl border border-[var(--color-border)] bg-white px-3 py-2.5 text-sm text-[var(--color-ink-700)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] transition-shadow"
+                >
+                  <option value="">Laterality</option>
+                  <option value="Both Eyes">Both Eyes</option>
+                  <option value="Right Eye (OD)">Right Eye (OD)</option>
+                  <option value="Left Eye (OS)">Left Eye (OS)</option>
+                </select>
+                <select
+                  value={since}
+                  onChange={(e) => setSince(e.target.value)}
+                  className="flex-1 min-w-0 rounded-xl border border-[var(--color-border)] bg-white px-3 py-2.5 text-sm text-[var(--color-ink-700)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] transition-shadow"
+                >
+                  <option value="">Since</option>
+                  <option value="1 Day">1 Day</option>
+                  <option value="2 Days">2 Days</option>
+                  <option value="3 Days">3 Days</option>
+                  <option value="1 Week">1 Week</option>
+                  <option value="2 Weeks">2 Weeks</option>
+                  <option value="1 Month">1 Month</option>
+                  <option value="3 Months">3 Months</option>
+                  <option value="6 Months">6 Months</option>
+                  <option value="1 Year">1 Year</option>
+                  <option value="> 1 Year">&gt; 1 Year</option>
+                </select>
+              </div>
               <textarea
-                required
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 rows={2}
                 placeholder="Describe the patient's chief complaint..."
-                className={inputCls}
+                className={`${inputCls} resize-none`}
               />
             </div>
           </div>
