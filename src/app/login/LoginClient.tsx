@@ -53,7 +53,7 @@ const NETWORK_NODES = [
 
 /* Right-panel security assurances */
 const SECURITY_FEATURES = [
-  "HIPAA Ready",
+  "DPDP & ABDM",
   "Multi-Hospital Access",
   "Cloud Hosted",
   "256-bit Encryption",
