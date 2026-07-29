@@ -15,7 +15,6 @@ import {
 } from "./treatmentPresets";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Toast } from "@/components/ui/Toast";
-import { FieldWithHistory } from "@/components/ui/HistoryToggle";
 import { format } from "date-fns";
 import { getCustomDiagnoses, saveCustomDiagnosis, isDuplicateDescription, type CustomDx } from "@/lib/customDiagnoses";
 
@@ -39,6 +38,7 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
   const [laterality, setLaterality] = useState("OU");
   const [pending, startTransition] = useTransition();
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [provHistoryOpen, setProvHistoryOpen] = useState(false);
   const [showProvManual, setShowProvManual] = useState(false);
   const [provManualText, setProvManualText] = useState("");
   const [showManual, setShowManual] = useState(false);
@@ -244,146 +244,194 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
     <>
     <div className="flex flex-col gap-5">
       <Card>
-        <div className="flex items-start justify-between gap-2 mb-2">
-          <div className="flex-1">
-            <FieldWithHistory
-              label="Provisional Diagnosis"
-              history={priorVisits
-                .filter((v) => v.generalExam?.provisionalDx)
-                .map((v) => ({ date: v.date, value: v.generalExam.provisionalDx }))}
-              currentValue={provisionalDx}
-              onLoad={setProvisionalDx}
+        {/* Header — identical structure to Diagnosis (ICD-10) */}
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-sm font-medium text-[var(--color-ink-700)]">Provisional Diagnosis</p>
+          <div className="flex items-center gap-2">
+            <SaveIndicator state={state} />
+            <button
+              type="button"
+              onClick={() => setProvHistoryOpen((v) => !v)}
+              className="flex items-center gap-1 text-xs text-[#0F766E] bg-[#EEF8F7] hover:bg-[#DCF3F1] font-medium px-2.5 py-0.5 rounded-full border border-[#B2DEDA] transition-colors"
             >
-              <div className="flex items-end gap-3 flex-wrap mt-1">
-                <div>
-                  <p className="text-xs text-[var(--color-ink-400)] mb-1.5">Laterality</p>
-                  <SingleChipSelect options={LATERALITY} value={laterality} onChange={setLaterality} />
-                </div>
-                <div className="relative flex-1 min-w-[200px]">
-                  <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] pointer-events-none" />
-                  <input
-                    value={provisionalDx}
-                    onChange={(e) => {
-                      setProvisionalDx(e.target.value);
-                      setShowSuggestions(true);
-                      setSuggestionIndex(-1);
-                    }}
-                    onFocus={() => { if (blurTimerRef.current) clearTimeout(blurTimerRef.current); setShowSuggestions(true); }}
-                    onBlur={() => { blurTimerRef.current = setTimeout(() => setShowSuggestions(false), 150); }}
-                    onKeyDown={handleProvisionalKeyDown}
-                    placeholder="Type to search diagnosis or enter free text..."
-                    className="w-full rounded-xl border border-[var(--color-border)] pl-9 pr-8 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
-                  />
-                  {provisionalDx && (
+              <History size={11} />
+              History {priorVisits.filter((v) => v.generalExam?.provisionalDx).length > 0 && `(${priorVisits.filter((v) => v.generalExam?.provisionalDx).length})`}
+              <ChevronDown size={11} className={provHistoryOpen ? "rotate-180 transition-transform" : "transition-transform"} />
+            </button>
+          </div>
+        </div>
+
+        {/* History panel — identical structure to ICD-10 */}
+        {provHistoryOpen && (
+          <div className="mb-4 rounded-xl border border-[#B2DEDA] bg-[#EEF8F7] p-3">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-[#0F766E]">Previous Provisional Diagnoses</p>
+              <p className="text-[10px] text-[#0D9488]">Double-click to load</p>
+            </div>
+            {priorVisits.filter((v) => v.generalExam?.provisionalDx).length === 0 ? (
+              <p className="text-xs text-[var(--color-ink-400)] py-2 text-center">No previous records found.</p>
+            ) : (
+              <div className="space-y-3 max-h-56 overflow-y-auto scrollbar-thin">
+                {priorVisits
+                  .filter((v) => v.generalExam?.provisionalDx)
+                  .map((v, i) => (
+                    <div
+                      key={i}
+                      onDoubleClick={() => { setProvisionalDx(v.generalExam.provisionalDx); setProvHistoryOpen(false); }}
+                      title="Double-click to load"
+                      className="cursor-pointer rounded-lg p-1.5 -mx-1.5 hover:bg-[#DCF3F1] transition-colors select-none"
+                    >
+                      <p className="text-[10px] font-semibold text-[var(--color-ink-400)] mb-0.5">{format(new Date(v.date), "d MMM yyyy")}</p>
+                      <p className="text-xs text-[var(--color-ink-700)]">{v.generalExam.provisionalDx}</p>
+                    </div>
+                  ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Controls row — identical to ICD-10 */}
+        <div className="flex items-end gap-3 flex-wrap mb-2">
+          <div>
+            <p className="text-xs font-medium text-[var(--color-ink-500)] mb-1.5">Laterality</p>
+            <SingleChipSelect options={LATERALITY} value={laterality} onChange={setLaterality} />
+          </div>
+          <div className="relative flex-1 min-w-[240px]">
+            <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] pointer-events-none" />
+            <input
+              value={provisionalDx}
+              onChange={(e) => { setProvisionalDx(e.target.value); setShowSuggestions(true); setSuggestionIndex(-1); }}
+              onFocus={() => { if (blurTimerRef.current) clearTimeout(blurTimerRef.current); setShowSuggestions(true); }}
+              onBlur={() => { blurTimerRef.current = setTimeout(() => setShowSuggestions(false), 150); }}
+              onKeyDown={handleProvisionalKeyDown}
+              placeholder="Search ICD-10 code or description..."
+              className="w-full rounded-xl border border-[var(--color-border)] pl-9 pr-8 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
+            />
+            {provisionalDx && (
+              <button
+                type="button"
+                onMouseDown={(e) => { e.preventDefault(); setProvisionalDx(""); setShowSuggestions(false); setSuggestionIndex(-1); }}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)] transition-colors"
+              >
+                <X size={14} />
+              </button>
+            )}
+            {showSuggestions && provisionalDx.length >= 2 && (
+              <ul className="absolute z-20 left-0 right-0 mt-1 rounded-xl border border-[var(--color-border)] bg-white shadow-xl overflow-hidden max-h-60 overflow-y-auto">
+                {provisionalSuggestions.length === 0 ? (
+                  <li>
                     <button
                       type="button"
-                      onMouseDown={(e) => { e.preventDefault(); setProvisionalDx(""); setShowSuggestions(false); setSuggestionIndex(-1); }}
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)] transition-colors"
+                      onMouseDown={(e) => { e.preventDefault(); openCustomModal("provisional"); }}
+                      className="w-full text-left px-3.5 py-3.5 text-sm flex items-center gap-2.5 text-[var(--color-primary-700)] hover:bg-[var(--color-primary-50)] transition-colors"
                     >
-                      <X size={14} />
+                      <Plus size={15} className="shrink-0 text-[var(--color-primary-500)]" />
+                      <span>No diagnosis found. Add <span className="font-semibold">&ldquo;{provisionalDx.trim()}&rdquo;</span> as Custom Diagnosis</span>
                     </button>
-                  )}
-                  {showSuggestions && provisionalDx.length >= 2 && (
-                    <ul className="absolute z-20 left-0 right-0 mt-1 rounded-xl border border-[var(--color-border)] bg-white shadow-xl overflow-hidden max-h-64 overflow-y-auto">
-                      {provisionalSuggestions.length === 0 ? (
-                        <li>
-                          <button
-                            type="button"
-                            onMouseDown={(e) => { e.preventDefault(); openCustomModal("provisional"); }}
-                            className="w-full text-left px-3.5 py-3 text-sm flex items-center gap-2.5 text-[var(--color-primary-700)] hover:bg-[var(--color-primary-50)] transition-colors"
-                          >
-                            <Plus size={15} className="shrink-0 text-[var(--color-primary-500)]" />
-                            <span>No diagnosis found. Add <span className="font-semibold">&ldquo;{provisionalDx.trim()}&rdquo;</span> as Custom Diagnosis</span>
-                          </button>
-                        </li>
-                      ) : (
-                        <>
-                          {provisionalSuggestions.map((s, i) => (
-                            <li key={s.code || s.description}>
-                              <button
-                                type="button"
-                                onMouseDown={(e) => { e.preventDefault(); selectSuggestion(s); }}
-                                className={`w-full text-left px-3.5 py-2.5 text-sm flex items-center justify-between gap-4 transition-colors ${
-                                  i === suggestionIndex
-                                    ? "bg-[var(--color-primary-50)] text-[var(--color-primary-700)]"
-                                    : "hover:bg-[var(--color-surface-sunken)]"
-                                }`}
-                              >
-                                <span className="flex-1 min-w-0 truncate">{s.description}</span>
-                                <div className="flex items-center gap-2 shrink-0">
-                                  {s.custom && (
-                                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">Custom</span>
-                                  )}
-                                  {s.code && <span className="text-xs font-mono text-[var(--color-ink-400)]">{s.code}</span>}
-                                </div>
-                              </button>
-                            </li>
-                          ))}
-                          <li className="border-t border-[var(--color-border)]">
-                            <button
-                              type="button"
-                              onMouseDown={(e) => { e.preventDefault(); openCustomModal("provisional"); }}
-                              className="w-full text-left px-3.5 py-2.5 text-sm flex items-center gap-2 text-[var(--color-primary-700)] hover:bg-[var(--color-primary-50)] transition-colors"
-                            >
-                              <Plus size={13} className="shrink-0" />
-                              <span>Add &ldquo;<span className="font-medium">{provisionalDx.trim()}</span>&rdquo; as Custom Diagnosis</span>
-                            </button>
-                          </li>
-                        </>
-                      )}
-                    </ul>
-                  )}
-                </div>
-                <button
-                  type="button"
-                  onClick={() => { setShowProvManual((v) => !v); setProvManualText(""); setShowSuggestions(false); }}
-                  className={`flex items-center gap-1.5 text-xs font-medium px-3 py-2.5 rounded-xl border transition-colors whitespace-nowrap ${
-                    showProvManual
-                      ? "bg-[var(--color-primary-600)] text-white border-[var(--color-primary-600)]"
-                      : "bg-white text-[var(--color-ink-600)] border-[var(--color-border)] hover:border-[var(--color-primary-400)] hover:text-[var(--color-primary-600)]"
-                  }`}
-                >
-                  <PenLine size={13} />
-                  Add Manually
-                </button>
-              </div>
-              {showProvManual && (
-                <div className="mt-3 flex items-center gap-2 p-3 rounded-xl border border-[var(--color-primary-200)] bg-[var(--color-primary-50)]">
-                  <input
-                    autoFocus
-                    value={provManualText}
-                    onChange={(e) => setProvManualText(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && provManualText.trim()) {
-                        setProvisionalDx(provManualText.trim());
-                        setProvManualText("");
-                        setShowProvManual(false);
-                      } else if (e.key === "Escape") {
-                        setShowProvManual(false);
-                      }
-                    }}
-                    placeholder="Type diagnosis name..."
-                    className="flex-1 rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
-                  />
-                  <button
-                    disabled={!provManualText.trim()}
-                    onClick={() => { setProvisionalDx(provManualText.trim()); setProvManualText(""); setShowProvManual(false); }}
-                    className="px-3.5 py-2 rounded-lg bg-[var(--color-primary-600)] text-white text-sm font-medium hover:bg-[var(--color-primary-700)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                  >
-                    Add
-                  </button>
-                  <button
-                    onClick={() => { setShowProvManual(false); setProvManualText(""); }}
-                    className="p-2 rounded-lg text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)] hover:bg-white transition-colors"
-                  >
-                    <X size={15} />
-                  </button>
-                </div>
-              )}
-            </FieldWithHistory>
+                  </li>
+                ) : (
+                  <>
+                    {provisionalSuggestions.map((s, i) => (
+                      <li key={s.code || s.description}>
+                        <button
+                          type="button"
+                          onMouseDown={(e) => { e.preventDefault(); selectSuggestion(s); }}
+                          className={`w-full text-left px-3.5 py-2.5 text-sm text-[var(--color-ink-800)] hover:bg-[var(--color-surface-sunken)] flex items-center justify-between gap-4 transition-colors ${
+                            i === suggestionIndex ? "bg-[var(--color-primary-50)] text-[var(--color-primary-700)]" : ""
+                          }`}
+                        >
+                          <span className="flex-1 min-w-0 truncate">{s.description}</span>
+                          <div className="flex items-center gap-2 shrink-0">
+                            {s.custom && (
+                              <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">Custom</span>
+                            )}
+                            {s.code && <span className="text-xs font-mono text-[var(--color-ink-400)]">{s.code}</span>}
+                          </div>
+                        </button>
+                      </li>
+                    ))}
+                    <li className="border-t border-[var(--color-border)]">
+                      <button
+                        type="button"
+                        onMouseDown={(e) => { e.preventDefault(); openCustomModal("provisional"); }}
+                        className="w-full text-left px-3.5 py-2.5 text-sm flex items-center gap-2 text-[var(--color-primary-700)] hover:bg-[var(--color-primary-50)] transition-colors"
+                      >
+                        <Plus size={13} className="shrink-0" />
+                        <span>Add &ldquo;<span className="font-medium">{provisionalDx.trim()}</span>&rdquo; as Custom Diagnosis</span>
+                      </button>
+                    </li>
+                  </>
+                )}
+              </ul>
+            )}
           </div>
-          <SaveIndicator state={state} />
+          <button
+            type="button"
+            onClick={() => { setShowProvManual((v) => !v); setProvManualText(""); setShowSuggestions(false); }}
+            className={`flex items-center gap-1.5 text-xs font-medium px-3 py-2.5 rounded-xl border transition-colors whitespace-nowrap ${
+              showProvManual
+                ? "bg-[var(--color-primary-600)] text-white border-[var(--color-primary-600)]"
+                : "bg-white text-[var(--color-ink-600)] border-[var(--color-border)] hover:border-[var(--color-primary-400)] hover:text-[var(--color-primary-600)]"
+            }`}
+          >
+            <PenLine size={13} />
+            Add Manually
+          </button>
         </div>
+
+        {/* Manual entry — identical to ICD-10 */}
+        {showProvManual && (
+          <div className="mb-4 flex items-center gap-2 p-3 rounded-xl border border-[var(--color-primary-200)] bg-[var(--color-primary-50)]">
+            <input
+              autoFocus
+              value={provManualText}
+              onChange={(e) => setProvManualText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && provManualText.trim()) {
+                  setProvisionalDx(provManualText.trim());
+                  setProvManualText("");
+                  setShowProvManual(false);
+                } else if (e.key === "Escape") {
+                  setShowProvManual(false);
+                }
+              }}
+              placeholder="Type diagnosis name..."
+              className="flex-1 rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
+            />
+            <button
+              disabled={!provManualText.trim()}
+              onClick={() => { setProvisionalDx(provManualText.trim()); setProvManualText(""); setShowProvManual(false); }}
+              className="px-3.5 py-2 rounded-lg bg-[var(--color-primary-600)] text-white text-sm font-medium hover:bg-[var(--color-primary-700)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              Add
+            </button>
+            <button
+              onClick={() => { setShowProvManual(false); setProvManualText(""); }}
+              className="p-2 rounded-lg text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)] hover:bg-white transition-colors"
+            >
+              <X size={15} />
+            </button>
+          </div>
+        )}
+
+        {/* Current value display — mirrors ICD-10 empty/filled state */}
+        {!provisionalDx ? (
+          <p className="text-sm text-[var(--color-ink-400)] py-4 text-center">No provisional diagnosis entered. Search above to begin.</p>
+        ) : (
+          <div className="flex items-center justify-between rounded-xl border border-[var(--color-border)] px-3.5 py-2.5">
+            <div>
+              <p className="text-sm font-medium text-[var(--color-ink-900)]">{provisionalDx}</p>
+              <p className="text-xs text-[var(--color-ink-400)]">{laterality} · Provisional</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => { setProvisionalDx(""); }}
+              className="text-[var(--color-ink-400)] hover:text-[var(--color-danger-600)]"
+            >
+              <X size={15} />
+            </button>
+          </div>
+        )}
       </Card>
 
       <Card>
