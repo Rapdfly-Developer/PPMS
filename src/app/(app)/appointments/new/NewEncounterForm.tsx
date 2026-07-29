@@ -100,13 +100,11 @@ export function NewEncounterForm({
     fd.set("hospitalId", hospitalId);
     fd.set("date", date);
 
-    const sinceStr = sinceNum ? `${sinceNum} ${sinceUnit}` : "";
-    const ccParts = [laterality, sinceStr ? `Since: ${sinceStr}` : ""].filter(Boolean);
-    const fullComplaint = ccParts.length > 0
-      ? `${ccParts.join(" | ")}${complaint.trim() ? " | " + complaint.trim() : ""}`
-      : complaint.trim();
-    if (!fullComplaint) { setError("Chief complaint is required."); return; }
+    if (!laterality) { setError("Please select laterality — RE, LE, or OU."); return; }
+    if (!sinceNum) { setError("Please select the 'Since' duration."); return; }
+    if (!complaint.trim()) { setError("Please describe the chief complaint."); return; }
 
+    const fullComplaint = `${laterality} | Since: ${sinceNum} ${sinceUnit} | ${complaint.trim()}`;
     fd.set("complaint", fullComplaint);
 
     if (patientMode === "existing") {

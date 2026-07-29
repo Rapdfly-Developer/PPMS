@@ -189,12 +189,11 @@ export function BookAppointmentForm({
     if (patientMode === "new" && !patientPhoto) { setError("Patient photo is required for new patients."); return; }
     if (!doctorId) { setError("Please select a doctor."); return; }
     if (!effectiveHospitalId) { setError("Please select a hospital."); return; }
-    const sinceStr = sinceNum ? `${sinceNum} ${sinceUnit}` : "";
-    const ccParts = [laterality, sinceStr ? `Since: ${sinceStr}` : ""].filter(Boolean);
-    const fullNotes = ccParts.length > 0
-      ? `${ccParts.join(" | ")}${notes.trim() ? " | " + notes.trim() : ""}`
-      : notes.trim();
-    if (!fullNotes) { setError("Chief complaint is required."); return; }
+    if (!laterality) { setError("Please select laterality — RE, LE, or OU."); return; }
+    if (!sinceNum) { setError("Please select the 'Since' duration."); return; }
+    if (!notes.trim()) { setError("Please describe the chief complaint."); return; }
+
+    const fullNotes = `${laterality} | Since: ${sinceNum} ${sinceUnit} | ${notes.trim()}`;
     setError("");
 
     const fd = new FormData();
