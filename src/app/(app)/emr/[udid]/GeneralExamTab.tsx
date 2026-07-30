@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { convertNotesToCC } from "@/lib/appointment-cc";
 import { ChevronDown, AlertTriangle, Plus, X } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { FieldWithHistory } from "@/components/ui/HistoryToggle";
@@ -37,7 +38,7 @@ type Complaint = { lat: Laterality | null; sinceNum: string; sinceUnit: string; 
 const emptyComplaint = (): Complaint => ({ lat: null, sinceNum: "", sinceUnit: "days", text: "" });
 
 function parseComplaints(raw: string): Complaint[] {
-  const segments = raw.split("|").map((s) => s.trim()).filter(Boolean);
+  const segments = convertNotesToCC(raw).split("|").map((s) => s.trim()).filter(Boolean);
   if (segments.length === 0) return [emptyComplaint()];
   return segments.map((seg) => {
     const { lat, sinceNum, sinceUnit, body } = parseComplaintPrefixes(seg);
