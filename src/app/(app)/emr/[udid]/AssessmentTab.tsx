@@ -60,11 +60,23 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
   const [presetFollowUpDays, setPresetFollowUpDays] = useState("");
   const [presetAdvice, setPresetAdvice] = useState("");
   const [presetInvestigations, setPresetInvestigations] = useState("");
+  const [medDropdownOpen, setMedDropdownOpen] = useState(-1);
+  const [allKnownMeds, setAllKnownMeds] = useState<import("./treatmentPresets").TreatmentPresetMed[]>([]);
 
   const diagnoses: any[] = visit.diagnoses ?? [];
 
   useEffect(() => {
     setCustomDxList(getCustomDiagnoses());
+    const presets = getTreatmentPresets();
+    const seen = new Set<string>();
+    const meds: import("./treatmentPresets").TreatmentPresetMed[] = [];
+    for (const preset of presets) {
+      for (const med of preset.medications) {
+        const key = med.drugName.toLowerCase();
+        if (!seen.has(key)) { seen.add(key); meds.push(med); }
+      }
+    }
+    setAllKnownMeds(meds);
   }, []);
 
   // Merged ICD-10 + custom diagnoses for search
@@ -869,15 +881,55 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
                       </button>
                     </div>
                     <div className="flex flex-col gap-2">
-                      {presetMeds.map((m, i) => (
+                      {presetMeds.map((m, i) => {
+                        const medQuery = m.drugName.toLowerCase();
+                        const medSuggestions = medQuery.length >= 1
+                          ? allKnownMeds.filter((med) => med.drugName.toLowerCase().includes(medQuery)).slice(0, 8)
+                          : [];
+                        return (
                         <div key={i} className="rounded-xl border border-[var(--color-border)] p-3 flex flex-col gap-2">
                           <div className="flex items-center gap-2">
-                            <input
-                              value={m.drugName}
-                              onChange={(e) => setPresetMeds((p) => p.map((r, idx) => idx === i ? { ...r, drugName: e.target.value } : r))}
-                              placeholder="Drug name *"
-                              className="flex-1 rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
-                            />
+                            <div className="relative flex-1">
+                              <input
+                                value={m.drugName}
+                                onChange={(e) => { setPresetMeds((p) => p.map((r, idx) => idx === i ? { ...r, drugName: e.target.value } : r)); setMedDropdownOpen(i); }}
+                                onFocus={() => setMedDropdownOpen(i)}
+                                onBlur={() => setTimeout(() => setMedDropdownOpen((v) => v === i ? -1 : v), 150)}
+                                placeholder="Drug name *"
+                                autoComplete="off"
+                                className="w-full rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
+                              />
+                              {medDropdownOpen === i && medSuggestions.length > 0 && (
+                                <ul className="absolute z-30 left-0 right-0 mt-1 rounded-xl border border-[var(--color-border)] bg-white shadow-xl overflow-hidden max-h-52 overflow-y-auto">
+                                  {medSuggestions.map((med, mi) => (
+                                    <li key={mi}>
+                                      <button
+                                        type="button"
+                                        onMouseDown={(e) => {
+                                          e.preventDefault();
+                                          setPresetMeds((p) => p.map((r, idx) => idx === i ? {
+                                            drugName:     med.drugName,
+                                            dosage:       med.dosage       ?? "",
+                                            frequency:    med.frequency    ?? "",
+                                            duration:     med.duration     ?? "",
+                                            instructions: med.instructions ?? "",
+                                          } : r));
+                                          setMedDropdownOpen(-1);
+                                        }}
+                                        className="w-full text-left px-3.5 py-2 hover:bg-[var(--color-surface-sunken)] transition-colors"
+                                      >
+                                        <p className="text-xs font-medium text-[var(--color-ink-800)] truncate">{med.drugName}</p>
+                                        {(med.dosage || med.frequency || med.duration) && (
+                                          <p className="text-[11px] text-[var(--color-ink-400)] mt-0.5 truncate">
+                                            {[med.dosage, med.frequency, med.duration].filter(Boolean).join(" · ")}
+                                          </p>
+                                        )}
+                                      </button>
+                                    </li>
+                                  ))}
+                                </ul>
+                              )}
+                            </div>
                             {presetMeds.length > 1 && (
                               <button type="button" onClick={() => setPresetMeds((p) => p.filter((_, idx) => idx !== i))}
                                 className="text-[var(--color-ink-400)] hover:text-[var(--color-danger-600)] transition-colors flex-shrink-0">
@@ -902,7 +954,8 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
                             className="rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
                           />
                         </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
 
