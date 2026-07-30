@@ -11,19 +11,19 @@ import {
 
 /* ── Dark theme palette ─────────────────────────────────────────────────── */
 const T = {
-  bg:       "#041A18",
-  surface:  "rgba(4,26,24,.80)",
-  card:     "rgba(5,28,25,.78)",
-  accent:   "#22C55E",
-  accent2:  "#0F8F6F",
-  blue:     "#16A34A",
-  text:     "#FFFFFF",
-  muted:    "#B5C2C7",
-  faint:    "#6B8F8A",
-  border:   "rgba(255,255,255,.08)",
-  border2:  "rgba(255,255,255,.14)",
-  field:    "rgba(2,15,14,.65)",
-  glow:     "0 0 0 4px rgba(15,143,111,.12), 0 0 22px rgba(34,197,94,.18)",
+  bg:       "#EFF9F6",
+  surface:  "rgba(255,255,255,.92)",
+  card:     "rgba(255,255,255,.98)",
+  accent:   "#0A7A60",
+  accent2:  "#0D9475",
+  blue:     "#0D8868",
+  text:     "#0C1F1C",
+  muted:    "#4A6460",
+  faint:    "#7D9E99",
+  border:   "rgba(10,122,96,.10)",
+  border2:  "rgba(10,122,96,.16)",
+  field:    "rgba(235,249,244,.95)",
+  glow:     "0 0 0 4px rgba(10,122,96,.12), 0 0 22px rgba(13,148,117,.18)",
 };
 
 /* ── Types ─────────────────────────────────────────────────────────────── */
@@ -136,17 +136,17 @@ function GlassStat({ icon, value, suffix, label, delay }: {
     <div className="lp-stat rounded-2xl px-3 py-3 flex flex-col items-center gap-1.5"
       style={{
         animationDelay: delay,
-        background: T.card,
+        background: "rgba(255,255,255,.92)",
         backdropFilter: "blur(16px)",
         WebkitBackdropFilter: "blur(16px)",
-        border: `1px solid ${T.border}`,
-        boxShadow: "0 12px 34px rgba(0,0,0,.42), inset 0 1px 0 rgba(255,255,255,.05)",
+        border: "1px solid rgba(10,122,96,.12)",
+        boxShadow: "0 8px 20px rgba(0,0,0,.07), inset 0 1px 0 rgba(255,255,255,.9)",
       }}>
       <span className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style={{
-        background: "linear-gradient(135deg,rgba(15,143,111,.16),rgba(22,163,74,.1))",
-        border: "1px solid rgba(15,143,111,.22)",
+        background: "linear-gradient(135deg,rgba(10,122,96,.12),rgba(13,148,117,.08))",
+        border: "1px solid rgba(10,122,96,.18)",
         color: T.accent,
-        boxShadow: "0 0 16px rgba(15,143,111,.16)",
+        boxShadow: "0 0 12px rgba(10,122,96,.1)",
       }}>
         {icon}
       </span>
@@ -198,11 +198,11 @@ function DashboardMockup({ px, py }: { px: number; py: number }) {
       {/* Main 3D glass panel */}
       <div className="lp-tilt relative rounded-2xl overflow-hidden" style={{
         transform: `rotateY(${-13 + px * 4.5}deg) rotateX(${7 - py * 4.5}deg)`,
-        background: "linear-gradient(158deg,rgba(24,34,52,.9) 0%,rgba(14,21,34,.86) 100%)",
+        background: "linear-gradient(158deg,rgba(255,255,255,.97) 0%,rgba(235,248,243,.94) 100%)",
         backdropFilter: "blur(20px)",
         WebkitBackdropFilter: "blur(20px)",
-        border: `1px solid ${T.border2}`,
-        boxShadow: "0 40px 90px rgba(0,0,0,.62), 0 12px 30px rgba(0,0,0,.45), 0 0 60px rgba(15,143,111,.09), inset 0 1px 0 rgba(255,255,255,.07)",
+        border: "1px solid rgba(10,122,96,.14)",
+        boxShadow: "0 32px 70px rgba(0,0,0,.12), 0 10px 24px rgba(0,0,0,.08), 0 0 40px rgba(10,122,96,.06), inset 0 1px 0 rgba(255,255,255,.9)",
         padding: "15px 16px 17px",
       }}>
         {/* Glass reflection sweep */}
@@ -217,7 +217,7 @@ function DashboardMockup({ px, py }: { px: number; py: number }) {
             {["#F87171", "#FBBF24", "#34D399"].map((c) => (
               <span key={c} style={{ width: 6, height: 6, borderRadius: "50%", background: c, opacity: .55 }} />
             ))}
-            <span style={{ marginLeft: 7, fontSize: "8.5px", fontWeight: 700, letterSpacing: "0.1em", color: T.faint }}>
+            <span style={{ marginLeft: 7, fontSize: "8.5px", fontWeight: 700, letterSpacing: "0.1em", color: T.muted }}>
               PPMS-AI · OVERVIEW
             </span>
           </div>
@@ -235,8 +235,8 @@ function DashboardMockup({ px, py }: { px: number; py: number }) {
             { v: "82%", l: "Beds"      },
           ].map((k) => (
             <div key={k.l} className="rounded-xl px-2 py-2 text-center" style={{
-              background: "rgba(255,255,255,.035)",
-              border: `1px solid ${T.border}`,
+              background: "rgba(235,249,244,.7)",
+              border: "1px solid rgba(10,122,96,.1)",
             }}>
               <p style={{ fontSize: "14px", fontWeight: 800, color: T.text, lineHeight: 1.15, letterSpacing: "-0.02em" }}>{k.v}</p>
               <p style={{ fontSize: "7.5px", fontWeight: 600, color: T.faint, letterSpacing: "0.05em" }}>{k.l}</p>
@@ -245,7 +245,7 @@ function DashboardMockup({ px, py }: { px: number; py: number }) {
         </div>
 
         {/* Chart */}
-        <p style={{ fontSize: "7.5px", fontWeight: 700, letterSpacing: "0.11em", color: T.faint, marginBottom: "6px" }}>
+        <p style={{ fontSize: "7.5px", fontWeight: 700, letterSpacing: "0.11em", color: T.muted, marginBottom: "6px" }}>
           APPOINTMENTS · THIS WEEK
         </p>
         <div className="flex items-end gap-1.5" style={{ height: "48px" }}>
@@ -272,13 +272,13 @@ function DashboardMockup({ px, py }: { px: number; py: number }) {
       <div className="lp-floaty absolute rounded-xl px-3 py-2.5" style={{
         top: "-16px", right: "-14px", animationDelay: ".4s",
         transform: `translate3d(${px * -12}px,${py * -9}px,0)`,
-        background: T.surface,
+        background: "rgba(255,255,255,.96)",
         backdropFilter: "blur(18px)",
         WebkitBackdropFilter: "blur(18px)",
-        border: `1px solid ${T.border2}`,
-        boxShadow: "0 18px 44px rgba(0,0,0,.55), 0 0 26px rgba(15,143,111,.12)",
+        border: "1px solid rgba(10,122,96,.14)",
+        boxShadow: "0 12px 32px rgba(0,0,0,.09), 0 0 20px rgba(10,122,96,.07)",
       }}>
-        <p style={{ fontSize: "7.5px", fontWeight: 700, letterSpacing: "0.1em", color: T.faint }}>THROUGHPUT</p>
+        <p style={{ fontSize: "7.5px", fontWeight: 700, letterSpacing: "0.1em", color: T.muted }}>THROUGHPUT</p>
         <div className="flex items-baseline gap-1">
           <p style={{ fontSize: "15px", fontWeight: 800, color: T.text, letterSpacing: "-0.03em" }}>+18%</p>
           <TrendingUp size={10} style={{ color: T.accent2 }} />
@@ -293,17 +293,17 @@ function DashboardMockup({ px, py }: { px: number; py: number }) {
       <div className="lp-floaty absolute rounded-xl px-3 py-2.5" style={{
         bottom: "-18px", left: "-16px", animationDelay: "1.6s", width: "134px",
         transform: `translate3d(${px * 14}px,${py * 10}px,0)`,
-        background: T.surface,
+        background: "rgba(255,255,255,.96)",
         backdropFilter: "blur(18px)",
         WebkitBackdropFilter: "blur(18px)",
-        border: `1px solid ${T.border2}`,
-        boxShadow: "0 18px 44px rgba(0,0,0,.55), 0 0 26px rgba(22,163,74,.1)",
+        border: "1px solid rgba(10,122,96,.14)",
+        boxShadow: "0 12px 32px rgba(0,0,0,.09), 0 0 18px rgba(10,122,96,.06)",
       }}>
         <div className="flex items-center justify-between mb-1.5">
-          <span style={{ fontSize: "7.5px", fontWeight: 700, letterSpacing: "0.1em", color: T.faint }}>BED OCCUPANCY</span>
+          <span style={{ fontSize: "7.5px", fontWeight: 700, letterSpacing: "0.1em", color: T.muted }}>BED OCCUPANCY</span>
         </div>
         <p style={{ fontSize: "15px", fontWeight: 800, color: T.text, letterSpacing: "-0.03em", lineHeight: 1 }}>82%</p>
-        <div className="rounded-full mt-1.5 overflow-hidden" style={{ height: "4px", background: "rgba(255,255,255,.07)" }}>
+        <div className="rounded-full mt-1.5 overflow-hidden" style={{ height: "4px", background: "rgba(10,122,96,.12)" }}>
           <div className="lp-fill h-full rounded-full" style={{
             width: "82%",
             background: "linear-gradient(90deg,#0F8F6F,#22C55E)",
@@ -648,7 +648,7 @@ function ForgotPasswordModal({ onClose }: { onClose: () => void }) {
             <div className="flex flex-col gap-3">
               {error && (
                 <div className="flex items-center gap-2 rounded-xl px-3.5 py-2.5"
-                  style={{ background: "rgba(69,10,10,.4)", color: "#FCA5A5", border: "1px solid rgba(248,113,113,.28)", fontSize: "12.5px" }}>
+                  style={{ background: "rgba(254,226,226,.85)", color: "#B91C1C", border: "1px solid rgba(239,68,68,.25)", fontSize: "12.5px" }}>
                   <AlertCircle size={13} className="shrink-0" /> {error}
                 </div>
               )}
@@ -705,7 +705,7 @@ function ForgotPasswordModal({ onClose }: { onClose: () => void }) {
                 disabled={loading || newPassword.length < 8 || newPassword !== confirmPw}
                 className="lp-btn w-full font-bold text-white rounded-2xl flex items-center justify-center gap-2 mt-1"
                 style={{ height: "48px", fontSize: "14px",
-                  background: loading || newPassword.length < 8 || newPassword !== confirmPw ? "rgba(255,255,255,.05)" : "linear-gradient(135deg,#0F8F6F,#16A34A)",
+                  background: loading || newPassword.length < 8 || newPassword !== confirmPw ? "rgba(0,0,0,.06)" : "linear-gradient(135deg,#0F8F6F,#16A34A)",
                   color: newPassword.length < 8 || newPassword !== confirmPw ? "#64748B" : "#03181C",
                   boxShadow: newPassword.length < 8 || newPassword !== confirmPw ? "none" : "0 8px 24px rgba(15,143,111,.34), 0 0 28px rgba(34,197,94,.2)" }}>
                 {loading ? <><Loader2 size={15} className="animate-spin" /> Updating…</> : <><span>Reset Password</span><ArrowRight size={15} /></>}
@@ -762,53 +762,53 @@ function DarkBackground({ px, py }: { px: number; py: number }) {
 
   return (
     <div className="absolute inset-0 pointer-events-none overflow-hidden" style={{ background: T.bg }}>
-      {/* Dark emerald base gradient — matches landing page */}
+      {/* Light mint base gradient */}
       <div className="absolute inset-0" style={{
-        background: "radial-gradient(ellipse 80% 60% at 15% 5%,rgba(15,143,111,.22) 0%,transparent 60%)," +
-                    "radial-gradient(ellipse 60% 50% at 85% 85%,rgba(22,163,74,.13) 0%,transparent 55%)," +
-                    "linear-gradient(160deg,#051F1C 0%,#041A18 50%,#030F0D 100%)",
+        background: "radial-gradient(ellipse 80% 60% at 15% 5%,rgba(10,122,96,.09) 0%,transparent 60%)," +
+                    "radial-gradient(ellipse 60% 50% at 85% 85%,rgba(13,148,117,.07) 0%,transparent 55%)," +
+                    "linear-gradient(160deg,#EFF9F6 0%,#EBF7F3 50%,#E8F6F1 100%)",
       }} />
 
       {/* Moving gradient sheen */}
       <div className="lp-sheen absolute inset-0" style={{
-        backgroundImage: "linear-gradient(115deg,transparent 30%,rgba(15,143,111,.07) 48%,rgba(34,197,94,.05) 56%,transparent 74%)",
+        backgroundImage: "linear-gradient(115deg,transparent 30%,rgba(10,122,96,.04) 48%,rgba(13,148,117,.03) 56%,transparent 74%)",
         backgroundSize: "260% 260%",
       }} />
 
-      {/* Large blurred glowing orbs — parallax */}
+      {/* Soft teal orbs — parallax */}
       <div className="lp-orb1 absolute rounded-full" style={{
         top: "-260px", left: "-180px", width: "760px", height: "760px",
-        background: "radial-gradient(circle,rgba(15,143,111,.24) 0%,rgba(15,143,111,.06) 42%,transparent 68%)",
+        background: "radial-gradient(circle,rgba(10,122,96,.13) 0%,rgba(10,122,96,.04) 42%,transparent 68%)",
         filter: "blur(70px)",
         transform: `translate3d(${px * 26}px,${py * 20}px,0)`,
       }} />
       <div className="lp-orb2 absolute rounded-full" style={{
         bottom: "-280px", right: "-160px", width: "820px", height: "820px",
-        background: "radial-gradient(circle,rgba(22,163,74,.16) 0%,rgba(22,163,74,.04) 44%,transparent 68%)",
+        background: "radial-gradient(circle,rgba(13,148,117,.10) 0%,rgba(13,148,117,.03) 44%,transparent 68%)",
         filter: "blur(80px)",
         transform: `translate3d(${px * -30}px,${py * -22}px,0)`,
       }} />
       <div className="lp-orb3 absolute rounded-full" style={{
         top: "34%", left: "46%", width: "520px", height: "520px",
-        background: "radial-gradient(circle,rgba(34,197,94,.12) 0%,transparent 66%)",
+        background: "radial-gradient(circle,rgba(13,148,117,.09) 0%,transparent 66%)",
         filter: "blur(64px)",
         transform: `translate3d(${px * 18}px,${py * -14}px,0)`,
       }} />
 
-      {/* Faint futuristic grid */}
+      {/* Faint grid */}
       <svg className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg"
         style={{ transform: `translate3d(${px * 8}px,${py * 6}px,0)` }}>
         <defs>
           <pattern id="lp-dg1" width="44" height="44" patternUnits="userSpaceOnUse">
-            <path d="M44 0L0 0 0 44" fill="none" stroke="#0F8F6F" strokeWidth=".5" strokeOpacity=".05" />
+            <path d="M44 0L0 0 0 44" fill="none" stroke="#0A7A60" strokeWidth=".5" strokeOpacity=".07" />
           </pattern>
           <pattern id="lp-dg2" width="220" height="220" patternUnits="userSpaceOnUse">
             <rect width="220" height="220" fill="url(#lp-dg1)" />
-            <path d="M220 0L0 0 0 220" fill="none" stroke="#0F8F6F" strokeWidth="1" strokeOpacity=".055" />
+            <path d="M220 0L0 0 0 220" fill="none" stroke="#0A7A60" strokeWidth="1" strokeOpacity=".08" />
           </pattern>
           <radialGradient id="lp-dgfade" cx="50%" cy="45%" r="62%">
-            <stop offset="0%" stopColor="#fff" stopOpacity="1" />
-            <stop offset="100%" stopColor="#fff" stopOpacity="0" />
+            <stop offset="0%" stopColor="#EFF9F6" stopOpacity="1" />
+            <stop offset="100%" stopColor="#EFF9F6" stopOpacity="0" />
           </radialGradient>
           <mask id="lp-dgmask"><rect width="100%" height="100%" fill="url(#lp-dgfade)" /></mask>
         </defs>
@@ -817,11 +817,11 @@ function DarkBackground({ px, py }: { px: number; py: number }) {
 
       {/* Thin connected healthcare network lines */}
       <svg className="lp-flow absolute inset-0 w-full h-full" viewBox="0 0 1440 900"
-        preserveAspectRatio="none" style={{ opacity: 0.5, transform: `translate3d(${px * 12}px,${py * 9}px,0)` }}>
+        preserveAspectRatio="none" style={{ opacity: 0.38, transform: `translate3d(${px * 12}px,${py * 9}px,0)` }}>
         <defs>
           <linearGradient id="lp-dline" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#0F8F6F" stopOpacity=".5" />
-            <stop offset="100%" stopColor="#22C55E" stopOpacity=".14" />
+            <stop offset="0%" stopColor="#0A7A60" stopOpacity=".5" />
+            <stop offset="100%" stopColor="#0D9475" stopOpacity=".12" />
           </linearGradient>
         </defs>
         {[
@@ -839,10 +839,10 @@ function DarkBackground({ px, py }: { px: number; py: number }) {
         ))}
       </svg>
 
-      {/* Floating medical icons, very low opacity */}
+      {/* Floating medical icons */}
       {icons.map(({ Icon, x, y, s }, i) => (
         <div key={i} className="lp-floaty absolute" style={{
-          left: x, top: y, opacity: 0.07, color: T.accent2,
+          left: x, top: y, opacity: 0.11, color: T.accent2,
           animationDelay: `${i * 1.1}s`,
           transform: `translate3d(${px * (10 + i * 2)}px,${py * (8 + i)}px,0)`,
         }}>
@@ -850,19 +850,19 @@ function DarkBackground({ px, py }: { px: number; py: number }) {
         </div>
       ))}
 
-      {/* Soft glowing particles */}
+      {/* Soft particles — teal on light */}
       {particles.map((p, i) => (
         <div key={i} className="absolute rounded-full" style={{
           left: p.x, top: p.y, width: "4px", height: "4px",
-          background: "radial-gradient(circle,rgba(34,197,94,.9),transparent 70%)",
-          boxShadow: "0 0 10px rgba(15,143,111,.55)",
+          background: "radial-gradient(circle,rgba(10,122,96,.75),transparent 70%)",
+          boxShadow: "0 0 8px rgba(10,122,96,.35)",
           animation: `lp-particle ${p.d}s ease-in-out ${i * 0.9}s infinite`,
         }} />
       ))}
 
-      {/* Vignette for cinematic falloff */}
+      {/* Subtle vignette */}
       <div className="absolute inset-0" style={{
-        background: "radial-gradient(ellipse 90% 80% at 50% 45%,transparent 40%,rgba(3,6,12,.62) 100%)",
+        background: "radial-gradient(ellipse 90% 80% at 50% 45%,transparent 40%,rgba(220,240,235,.22) 100%)",
       }} />
     </div>
   );
@@ -997,7 +997,7 @@ export default function LoginPage() {
     <div className="fixed inset-0 flex overflow-hidden" style={{
       background: T.bg,
       color: T.text,
-      colorScheme: "dark",
+      colorScheme: "light",
       fontFamily: "var(--font-inter), 'Segoe UI', system-ui, -apple-system, sans-serif",
     }}>
       {showForgotPw && <ForgotPasswordModal onClose={() => setShowForgotPw(false)} />}
@@ -1230,7 +1230,7 @@ export default function LoginPage() {
 
         {/* ══ RIGHT PANEL — Frosted glass card ══════════════════════════════ */}
         <div className="w-full lg:w-[55%] shrink-0 flex flex-col overflow-y-auto relative"
-          style={{ background: "linear-gradient(200deg,rgba(13,22,36,.5) 0%,rgba(6,11,20,.28) 100%)", backdropFilter: "blur(18px)", WebkitBackdropFilter: "blur(18px)", borderLeft: `1px solid ${T.border}` }}>
+          style={{ background: "linear-gradient(200deg,rgba(255,255,255,.78) 0%,rgba(240,252,249,.65) 100%)", backdropFilter: "blur(18px)", WebkitBackdropFilter: "blur(18px)", borderLeft: `1px solid ${T.border}` }}>
 
           {/* flex-1+min-h-full so the card is centred when viewport is tall,
               but the panel scrolls when the content overflows on short screens. */}
@@ -1474,7 +1474,7 @@ export default function LoginPage() {
                         className="lp-btn shrink-0 text-sm font-semibold flex items-center justify-center gap-1.5"
                         style={mobile.length === 10 && !otpLoading
                           ? { height: "58px", borderRadius: "14px", padding: "0 20px", background: "linear-gradient(135deg,#0F8F6F,#16A34A)", color: "#03181C", boxShadow: "0 6px 20px rgba(15,143,111,.34), 0 0 26px rgba(22,163,74,.2)" }
-                          : { height: "58px", borderRadius: "14px", padding: "0 20px", background: "rgba(255,255,255,.05)", color: T.faint, border: `1px solid ${T.border}`, cursor: "not-allowed" }}>
+                          : { height: "58px", borderRadius: "14px", padding: "0 20px", background: "rgba(0,0,0,.05)", color: T.faint, border: `1px solid ${T.border}`, cursor: "not-allowed" }}>
                         {otpLoading && !otpSent
                           ? <Loader2 size={14} className="animate-spin" />
                           : "Send OTP"}
@@ -1529,7 +1529,7 @@ export default function LoginPage() {
                     className="lp-btn relative overflow-hidden w-full font-bold text-white flex items-center justify-center gap-2"
                     style={otpSent && otpValue.length >= 6 && !otpLoading
                       ? { height: "58px", borderRadius: "14px", fontSize: "15px", color: "#03181C", background: "linear-gradient(135deg,#0F8F6F 0%,#16A34A 100%)", boxShadow: "0 10px 34px rgba(15,143,111,.4), 0 0 42px rgba(22,163,74,.26), inset 0 1px 0 rgba(255,255,255,.25)" }
-                      : { height: "58px", borderRadius: "14px", fontSize: "15px", background: "rgba(255,255,255,.05)", color: T.faint, border: `1px solid ${T.border}`, cursor: "not-allowed" }}>
+                      : { height: "58px", borderRadius: "14px", fontSize: "15px", background: "rgba(0,0,0,.05)", color: T.faint, border: `1px solid ${T.border}`, cursor: "not-allowed" }}>
                     {otpLoading && otpSent
                       ? <><Loader2 size={16} className="animate-spin" /> Verifying…</>
                       : <><span>Verify & Sign In</span>{otpSent && otpValue.length >= 6 && <ArrowRight size={16} className="lp-arrow-icon" />}</>}
@@ -1539,9 +1539,9 @@ export default function LoginPage() {
 
               {/* ── OR divider ── */}
               <div className="lp-f5 flex items-center gap-3 my-4">
-                <div className="flex-1" style={{ height: "1px", background: "linear-gradient(90deg,transparent,rgba(255,255,255,.13))" }} />
+                <div className="flex-1" style={{ height: "1px", background: "linear-gradient(90deg,transparent,rgba(10,122,96,.15))" }} />
                 <span style={{ fontSize: "10.5px", fontWeight: 700, letterSpacing: "0.12em", color: T.faint }}>OR</span>
-                <div className="flex-1" style={{ height: "1px", background: "linear-gradient(90deg,rgba(255,255,255,.13),transparent)" }} />
+                <div className="flex-1" style={{ height: "1px", background: "linear-gradient(90deg,rgba(10,122,96,.15),transparent)" }} />
               </div>
 
               {/* ── Microsoft SSO ── */}
@@ -1553,8 +1553,8 @@ export default function LoginPage() {
                   height: "54px",
                   borderRadius: "14px",
                   fontSize: "14px",
-                  color: "#E2E8F0",
-                  background: "rgba(255,255,255,.045)",
+                  color: T.muted,
+                  background: "rgba(0,0,0,.03)",
                   backdropFilter: "blur(14px)",
                   WebkitBackdropFilter: "blur(14px)",
                   border: `1px solid ${T.border2}`,
@@ -1569,13 +1569,13 @@ export default function LoginPage() {
                 Continue with Microsoft
                 <span className="px-1.5 py-0.5 rounded-md" style={{
                   fontSize: "9px", fontWeight: 800, letterSpacing: "0.05em",
-                  background: "rgba(255,255,255,.07)", color: T.faint, border: `1px solid ${T.border}`,
+                  background: "rgba(0,0,0,.05)", color: T.faint, border: `1px solid ${T.border}`,
                 }}>SOON</span>
               </button>
 
               {ssoNotice && (
                 <p className="flex items-start gap-2 rounded-xl px-3.5 py-2.5 mt-2.5"
-                  style={{ fontSize: "12px", background: "rgba(255,255,255,.04)", color: T.muted, border: `1px solid ${T.border}`, animation: "lp-slide-up .22s both" }}>
+                  style={{ fontSize: "12px", background: "rgba(0,0,0,.04)", color: T.muted, border: `1px solid ${T.border}`, animation: "lp-slide-up .22s both" }}>
                   <AlertCircle size={13} className="shrink-0 mt-px" style={{ color: T.faint }} />
                   Microsoft single sign-on isn&apos;t enabled for your organisation yet. Please sign in with your username or mobile OTP.
                 </p>
@@ -1583,7 +1583,7 @@ export default function LoginPage() {
 
               {/* ── Test accounts ── */}
               {SHOW_TEST_ACCOUNTS && (
-                <div className="mt-3.5 rounded-2xl px-4 py-3" style={{ background: "rgba(255,255,255,.03)", border: `1px dashed ${T.border2}` }}>
+                <div className="mt-3.5 rounded-2xl px-4 py-3" style={{ background: "rgba(0,0,0,.03)", border: `1px dashed ${T.border2}` }}>
                   <div className="flex items-center gap-1.5 mb-2">
                     <span className="font-mono text-[9px] font-bold px-1.5 py-0.5 rounded"
                       style={{ background: "rgba(15,143,111,.16)", color: T.accent, border: "1px solid rgba(15,143,111,.28)", letterSpacing: "0.05em" }}>TEST</span>
@@ -1594,10 +1594,10 @@ export default function LoginPage() {
                     {TEST_ACCOUNTS.map((a) => (
                       <button key={a.username} type="button" onClick={() => fillTestAccount(a.username, a.password)}
                         className="flex items-center gap-2 px-2.5 py-2 rounded-xl text-left transition-all"
-                        style={{ background: username === a.username ? "rgba(15,143,111,.1)" : "rgba(255,255,255,.03)", border: `1px solid ${username === a.username ? "rgba(15,143,111,.4)" : T.border}` }}>
+                        style={{ background: username === a.username ? "rgba(10,122,96,.08)" : "rgba(0,0,0,.02)", border: `1px solid ${username === a.username ? "rgba(10,122,96,.4)" : T.border}` }}>
                         <User size={12} className="shrink-0" style={{ color: T.accent }} />
                         <span className="min-w-0">
-                          <span className="block truncate" style={{ fontSize: "12px", fontWeight: 600, color: "#E2E8F0" }}>{a.label}</span>
+                          <span className="block truncate" style={{ fontSize: "12px", fontWeight: 600, color: T.text }}>{a.label}</span>
                           <span className="block font-mono truncate" style={{ fontSize: "10px", color: T.faint }}>{a.username}</span>
                         </span>
                       </button>
@@ -1610,9 +1610,9 @@ export default function LoginPage() {
               <a href="/license"
                 className="lp-trial mt-3.5 flex items-center justify-between gap-3 rounded-2xl px-4 py-2.5 no-underline group"
                 style={{
-                  backgroundImage: "linear-gradient(105deg,rgba(6,26,32,.9) 0%,rgba(13,60,62,.85) 32%,rgba(15,90,92,.8) 62%,rgba(6,26,32,.9) 100%)",
+                  backgroundImage: "linear-gradient(105deg,rgba(235,248,243,.95) 0%,rgba(220,245,235,.90) 32%,rgba(210,242,230,.85) 62%,rgba(235,248,243,.95) 100%)",
                   backgroundSize: "300% auto",
-                  border: "1px solid rgba(15,143,111,.22)",
+                  border: "1px solid rgba(10,122,96,.2)",
                   display: "flex",
                 }}>
                 <div className="flex items-center gap-3">
@@ -1669,15 +1669,15 @@ export default function LoginPage() {
 
           {/* ── Footer ── */}
           <div className="lp-a4 w-full max-w-[420px] shrink-0 mt-5 mb-1">
-            <div className="mb-3" style={{ height: "1px", background: "linear-gradient(90deg,transparent,rgba(255,255,255,.1),transparent)" }} />
+            <div className="mb-3" style={{ height: "1px", background: "linear-gradient(90deg,transparent,rgba(10,122,96,.18),transparent)" }} />
             <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1.5" style={{ fontSize: "10.5px", color: T.faint }}>
               <span style={{ fontWeight: 600 }}>© 2026 PPMS-AI</span>
-              <span style={{ color: "rgba(255,255,255,.16)" }}>·</span>
+              <span style={{ color: "rgba(10,122,96,.25)" }}>·</span>
               <span>Version 2.0 Cloud</span>
-              <span style={{ color: "rgba(255,255,255,.16)" }}>·</span>
-              <a href="/privacy" className="transition-colors hover:text-[#22C55E] hover:underline">Privacy Policy</a>
-              <span style={{ color: "rgba(255,255,255,.16)" }}>·</span>
-              <a href="/terms" className="transition-colors hover:text-[#22C55E] hover:underline">Terms of Service</a>
+              <span style={{ color: "rgba(10,122,96,.25)" }}>·</span>
+              <a href="/privacy" className="transition-colors hover:text-[#0A7A60] hover:underline">Privacy Policy</a>
+              <span style={{ color: "rgba(10,122,96,.25)" }}>·</span>
+              <a href="/terms" className="transition-colors hover:text-[#0A7A60] hover:underline">Terms of Service</a>
             </div>
           </div>
 
