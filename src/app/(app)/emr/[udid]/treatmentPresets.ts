@@ -598,7 +598,7 @@ export function matchPresets(
     for (const preset of presets) {
       if (seenPresetIds.has(preset.id)) continue;
 
-      const codeMatch = preset.diagnosisCodes.some(
+      const codeMatch = codeLower.length > 0 && preset.diagnosisCodes.some(
         (c) => codeLower.startsWith(c.toLowerCase()) || c.toLowerCase().startsWith(codeLower),
       );
       const kwMatch = preset.diagnosisKeywords.some((kw) => descLower.includes(kw.toLowerCase()));

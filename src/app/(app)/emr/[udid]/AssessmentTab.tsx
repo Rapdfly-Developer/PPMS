@@ -271,9 +271,11 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
     const allPresets = getTreatmentPresets();
     const applied    = getApplied(visit.id);
 
-    const allCurrentDx = (diagnoses as any[]).map((d) => ({
-      icd10Code: d.icd10Code ?? "", description: d.description,
-    }));
+    // Include provisional diagnosis so presets triggered by it are also tracked
+    const allCurrentDx = [
+      ...(diagnoses as any[]).map((d) => ({ icd10Code: d.icd10Code ?? "", description: d.description })),
+      ...(provisionalDx ? [{ icd10Code: "", description: provisionalDx }] : []),
+    ];
     const remainingDx = allCurrentDx.filter((d) => d.description !== removedDesc);
 
     // Presets triggered now (before removal) vs after removal
@@ -519,7 +521,7 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
             </div>
             <button
               type="button"
-              onClick={() => { setProvisionalDx(""); }}
+              onClick={() => startTransition(async () => { await autoRemovePresetMeds(provisionalDx); setProvisionalDx(""); })}
               className="text-[var(--color-ink-400)] hover:text-[var(--color-danger-600)]"
             >
               <X size={15} />
