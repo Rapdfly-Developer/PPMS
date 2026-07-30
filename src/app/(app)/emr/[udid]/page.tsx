@@ -9,6 +9,7 @@ import {
   Pill, CalendarCheck, Hash, Clock, CheckCircle2,
 } from "lucide-react";
 import { BackButton } from "@/components/ui/BackButton";
+import { convertNotesToCC } from "@/lib/appointment-cc";
 import { GeneralExamTab } from "./GeneralExamTab";
 import { PastExternalVisitsTab } from "./PastExternalVisitsTab";
 import { OphthalmicExamTab } from "./OphthalmicExamTab";
@@ -141,7 +142,7 @@ export default async function PatientDetailedEMR({
           const seedComplaint = pendingAppointment.notes || patient.complaint;
           if (seedComplaint) {
             await prisma.generalExamination.create({
-              data: { visitId: newVisit.id, chiefComplaint: seedComplaint },
+              data: { visitId: newVisit.id, chiefComplaint: convertNotesToCC(seedComplaint) },
             });
           }
         }

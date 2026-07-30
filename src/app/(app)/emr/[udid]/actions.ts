@@ -8,6 +8,7 @@ import { notifyAdmission } from "@/lib/mailer";
 import { writeAudit } from "@/lib/audit";
 import { syncVisit } from "@/lib/integration/engine";
 import { isSameDay } from "date-fns";
+import { convertNotesToCC } from "@/lib/appointment-cc";
 
 async function assertVisitAccess(visitId: string) {
   const user = await requireUser();
@@ -63,7 +64,7 @@ export async function startVisit(patientId: string, appointmentId: string, udid:
   const seedComplaint = appointment.notes || patient?.complaint;
   if (seedComplaint) {
     await prisma.generalExamination.create({
-      data: { visitId: visit.id, chiefComplaint: seedComplaint },
+      data: { visitId: visit.id, chiefComplaint: convertNotesToCC(seedComplaint) },
     });
   }
 

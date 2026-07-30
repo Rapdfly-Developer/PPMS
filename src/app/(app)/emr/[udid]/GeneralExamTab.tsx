@@ -188,7 +188,7 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, customPmhCh
                       className="text-xs border border-[var(--color-border)] rounded-lg px-2 py-1 bg-white text-[var(--color-ink-700)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] disabled:opacity-50"
                     >
                       <option value="">—</option>
-                      {Array.from({ length: 10 }, (_, n) => n + 1).map((n) => (
+                      {Array.from({ length: 30 }, (_, n) => n + 1).map((n) => (
                         <option key={n} value={String(n)}>{n}</option>
                       ))}
                     </select>
