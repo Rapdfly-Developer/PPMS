@@ -2,14 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import {
   LayoutDashboard, CalendarDays, Users, Eye,
   BedDouble, Settings, X,
   CalendarClock, BarChart2, Lock,
-  CreditCard, Building2, ShieldCheck, FileCheck2,
-  ReceiptText, MessageSquareWarning, Banknote,
-  ChevronDown,
+  CreditCard,
 } from "lucide-react";
 import clsx from "clsx";
 import type { Role } from "@/lib/constants";
@@ -23,22 +21,9 @@ type NavItem = {
   roles?: Role[];
 };
 
-type NavGroup = {
-  type: "group";
-  groupLabel: string;
-  icon: any;
-  permission: string;
-  roles?: Role[];
-  children: NavItem[];
-};
-
 type TopNavItem = NavItem & { icon: any };
 
-type NavEntry = TopNavItem | NavGroup;
-
-function isGroup(e: NavEntry): e is NavGroup {
-  return (e as NavGroup).type === "group";
-}
+type NavEntry = TopNavItem;
 
 const ALL_NAV: NavEntry[] = [
   { href: "/dashboard",    label: "Dashboard",    icon: LayoutDashboard, permission: "dashboard.view"                                        },
@@ -47,22 +32,7 @@ const ALL_NAV: NavEntry[] = [
   { href: "/follow-ups",   label: "Follow Ups",   icon: CalendarClock,   permission: "patients.view",     roles: ["DOCTOR", "HOSPITAL"]      },
   { href: "/ipd",          label: "IPD",          icon: BedDouble,       permission: "ipd.view",          roles: ["DOCTOR"]                  },
   { href: "/analytics",    label: "Analytics",    icon: BarChart2,       permission: "reports.view"                                          },
-  {
-    type: "group",
-    groupLabel: "Billing & Insurance",
-    icon: CreditCard,
-    permission: "insurance.view",
-    roles: ["DOCTOR", "HOSPITAL"],
-    children: [
-      { href: "/billing",                      label: "Overview",             icon: ReceiptText,           permission: "insurance.view"   },
-      { href: "/billing/insurance-companies",  label: "Insurance Companies",  icon: Building2,             permission: "insurance.view"   },
-      { href: "/billing/patient-insurance",    label: "Patient Insurance",    icon: ShieldCheck,           permission: "insurance.view"   },
-      { href: "/billing/pre-auth",             label: "Pre-Authorization",    icon: FileCheck2,            permission: "insurance.create" },
-      { href: "/billing/claims",               label: "Claims",               icon: ReceiptText,           permission: "insurance.view"   },
-      { href: "/billing/queries",              label: "Queries",              icon: MessageSquareWarning,  permission: "insurance.view"   },
-      { href: "/billing/settlement",           label: "Settlement",           icon: Banknote,              permission: "insurance.manage" },
-    ],
-  },
+  { href: "/billing", label: "Billing & Insurance", icon: CreditCard, permission: "insurance.view", roles: ["DOCTOR", "HOSPITAL"] },
   { href: "/settings",     label: "Settings",     icon: Settings,        permission: "settings.view"                                         },
 ];
 
@@ -79,18 +49,7 @@ function filterNav(role: Role, permissions: string[]): NavEntry[] {
   return ALL_NAV.filter((entry) => {
     if (entry.roles && !entry.roles.includes(role)) return false;
     return can(entry.permission);
-  }).map((entry) => {
-    if (isGroup(entry)) {
-      return {
-        ...entry,
-        children: entry.children.filter((child) => {
-          if (child.roles && !child.roles.includes(role)) return false;
-          return can(child.permission);
-        }),
-      };
-    }
-    return entry;
-  }).filter((entry) => !isGroup(entry) || (entry as NavGroup).children.length > 0);
+  });
 }
 
 function initialsOf(name: string) {
@@ -152,79 +111,6 @@ function NavLink({
   );
 }
 
-function NavGroupItem({
-  group, isActive, locked, onClick,
-}: {
-  group: NavGroup; isActive: (href: string) => boolean; locked: boolean; onClick: () => void;
-}) {
-  const Icon = group.icon;
-  const anyChildActive = group.children.some((c) => isActive(c.href));
-  const [open, setOpen] = useState(anyChildActive);
-
-  // Auto-open when a child becomes active (e.g. initial navigation)
-  useEffect(() => {
-    if (anyChildActive) setOpen(true);
-  }, [anyChildActive]);
-
-  return (
-    <div>
-      {/* Group header button */}
-      <button
-        onClick={() => setOpen((v) => !v)}
-        className={clsx(
-          "w-full relative flex items-center gap-3 pl-3.5 pr-3 py-[9px] rounded-xl text-[13px] transition-all duration-200 ease-out",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-300/50",
-          anyChildActive
-            ? "text-[#F0FBF9] font-semibold"
-            : "text-[#9DC4BE] font-medium hover:text-[#E4F5F2] hover:bg-white/[0.04]",
-        )}
-      >
-        <span
-          className={clsx(
-            "absolute left-0 top-1/2 -translate-y-1/2 w-[3px] rounded-r-full transition-all duration-200",
-            anyChildActive ? "h-5 bg-gradient-to-b from-[#5EEAD4] to-[#14B8A6]" : "h-0",
-          )}
-          style={anyChildActive ? { boxShadow: "0 0 12px rgba(94,234,212,0.55)" } : undefined}
-        />
-        <Icon
-          size={17}
-          strokeWidth={anyChildActive ? 2.2 : 1.8}
-          className={clsx("shrink-0 transition-all duration-200", anyChildActive ? "text-[#5EEAD4]" : "text-[#7FAAA3]")}
-          style={anyChildActive ? { filter: "drop-shadow(0 0 6px rgba(94,234,212,0.45))" } : undefined}
-        />
-        <span className="truncate tracking-[0.01em] flex-1 text-left">{group.groupLabel}</span>
-        <ChevronDown
-          size={13}
-          className={clsx("shrink-0 transition-transform duration-200", open ? "rotate-180" : "rotate-0", anyChildActive ? "text-[#5EEAD4]" : "text-[#5E8F88]")}
-        />
-      </button>
-
-      {/* Children */}
-      <div
-        style={{
-          overflow: "hidden",
-          maxHeight: open ? `${group.children.length * 44}px` : "0px",
-          transition: "max-height 250ms cubic-bezier(0.4,0,0.2,1)",
-        }}
-      >
-        {/* Vertical guide line */}
-        <div className="relative ml-[26px] pl-4 border-l border-white/[0.07] flex flex-col gap-0.5 py-1">
-          {group.children.map((child) => (
-            <NavLink
-              key={child.href}
-              item={child}
-              active={isActive(child.href)}
-              locked={locked}
-              onClick={onClick}
-              indent
-            />
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 /* ─── Sidebar ──────────────────────────────────────────────────────────────── */
 export function Sidebar({
   role, name, permissions, licenseActive = true,
@@ -235,13 +121,11 @@ export function Sidebar({
   const { open, close } = useSidebar();
 
   const entries      = filterNav(role, permissions);
-  const mainEntries  = entries.filter((e) => !isGroup(e) ? (e as TopNavItem).href !== "/settings" : true);
-  const settingsItem = entries.find((e) => !isGroup(e) && (e as TopNavItem).href === "/settings") as TopNavItem | undefined;
+  const mainEntries  = entries.filter((e) => e.href !== "/settings");
+  const settingsItem = entries.find((e) => e.href === "/settings");
 
   const isActive = (href: string) =>
-    href === "/billing"
-      ? pathname === "/billing"
-      : pathname === href || pathname?.startsWith(href + "/");
+    pathname === href || pathname?.startsWith(href + "/");
 
   useEffect(() => { close(); }, [pathname, close]);
 
@@ -329,25 +213,15 @@ export function Sidebar({
           <p style={{ padding: "0 14px 10px", fontSize: 9.5, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.22em", color: "#5E8F88", userSelect: "none" }}>
             Overview
           </p>
-          {mainEntries.map((entry) =>
-            isGroup(entry) ? (
-              <NavGroupItem
-                key={entry.groupLabel}
-                group={entry}
-                isActive={isActive}
-                locked={!licenseActive}
-                onClick={close}
-              />
-            ) : (
-              <NavLink
-                key={(entry as TopNavItem).href}
-                item={entry as TopNavItem}
-                active={isActive((entry as TopNavItem).href)}
-                locked={!licenseActive}
-                onClick={close}
-              />
-            )
-          )}
+          {mainEntries.map((entry) => (
+            <NavLink
+              key={entry.href}
+              item={entry}
+              active={isActive(entry.href)}
+              locked={!licenseActive}
+              onClick={close}
+            />
+          ))}
         </nav>
 
         {/* Bottom rail */}
