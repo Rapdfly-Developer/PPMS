@@ -1179,6 +1179,18 @@ function AnteriorSegmentCard({ visit, udid, editable, priorVisits = [] }: { visi
       }))
       .filter((e) => Boolean(e.value));
 
+  const isNormal = AS_KEYS.every(
+    (key) => (re[key] ?? "") === (ANTERIOR_SEGMENT_STRUCTURES[key]?.[0] ?? "") &&
+              (le[key] ?? "") === (ANTERIOR_SEGMENT_STRUCTURES[key]?.[0] ?? ""),
+  );
+
+  const applyNormal = (checked: boolean) => {
+    const patch: Record<string, string> = {};
+    AS_KEYS.forEach((key) => { patch[key] = checked ? (ANTERIOR_SEGMENT_STRUCTURES[key]?.[0] ?? "") : ""; });
+    setRe((prev) => ({ ...prev, ...patch }));
+    setLe((prev) => ({ ...prev, ...patch }));
+  };
+
   return (
     <Card>
       <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
@@ -1195,6 +1207,17 @@ function AnteriorSegmentCard({ visit, udid, editable, priorVisits = [] }: { visi
               {AS_METHODS.map((m) => <option key={m}>{m}</option>)}
             </select>
           </div>
+          {editable && (
+            <label className="flex items-center gap-1.5 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={isNormal}
+                onChange={(e) => applyNormal(e.target.checked)}
+                className="w-3.5 h-3.5 accent-[var(--color-primary-600)] cursor-pointer"
+              />
+              <span className="text-xs font-medium text-[var(--color-ink-600)]">Normal</span>
+            </label>
+          )}
         </div>
         <SaveIndicator state={state} />
       </div>
@@ -1300,6 +1323,18 @@ function PosteriorSegmentCard({ visit, udid, editable, priorVisits = [] }: { vis
       }))
       .filter((h) => h.value);
 
+  const isNormal = PS_KEYS.every(
+    (key) => (re[key] ?? "") === (POSTERIOR_SEGMENT_OPTIONS[key]?.[0] ?? "") &&
+              (le[key] ?? "") === (POSTERIOR_SEGMENT_OPTIONS[key]?.[0] ?? ""),
+  );
+
+  const applyNormal = (checked: boolean) => {
+    const patch: Record<string, string> = {};
+    PS_KEYS.forEach((key) => { patch[key] = checked ? (POSTERIOR_SEGMENT_OPTIONS[key]?.[0] ?? "") : ""; });
+    setRe((prev) => ({ ...prev, ...patch }));
+    setLe((prev) => ({ ...prev, ...patch }));
+  };
+
   return (
     <Card>
       <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
@@ -1316,6 +1351,17 @@ function PosteriorSegmentCard({ visit, udid, editable, priorVisits = [] }: { vis
               {PS_METHODS.map((m) => <option key={m}>{m}</option>)}
             </select>
           </div>
+          {editable && (
+            <label className="flex items-center gap-1.5 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={isNormal}
+                onChange={(e) => applyNormal(e.target.checked)}
+                className="w-3.5 h-3.5 accent-[var(--color-primary-600)] cursor-pointer"
+              />
+              <span className="text-xs font-medium text-[var(--color-ink-600)]">Normal</span>
+            </label>
+          )}
         </div>
         <SaveIndicator state={state} />
       </div>
