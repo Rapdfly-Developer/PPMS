@@ -21,6 +21,22 @@ export function formatComplaintDisplay(raw: string | null | undefined): string {
 }
 
 /**
+ * Parses the EMR serialised format "[RE] [2 days] Pain | [LE] Redness"
+ * into structured complaint objects for display.
+ */
+export function parseEMRComplaints(raw: string | null | undefined): { lat: string | null; since: string | null; text: string }[] {
+  if (!raw) return [];
+  return raw
+    .split("|")
+    .map((seg) => {
+      const m = seg.trim().match(/^\[?(RE|LE|OU)\]?\s*(?:\[([^\]]+)\])?\s*(.*)$/i);
+      if (!m) return { lat: null, since: null, text: seg.trim() };
+      return { lat: m[1]?.toUpperCase() ?? null, since: m[2]?.trim() ?? null, text: m[3]?.trim() ?? "" };
+    })
+    .filter((c) => c.text || c.lat);
+}
+
+/**
  * Converts the "LAT | Since: N unit | text" string saved by the appointment
  * booking form into the "[LAT] [N unit] text" format expected by the EMR
  * Chief Complaint parser.  Returns the raw string unchanged when it is

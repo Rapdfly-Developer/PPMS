@@ -9,7 +9,7 @@ import {
   Pill, CalendarCheck, Hash, Clock, CheckCircle2,
 } from "lucide-react";
 import { BackButton } from "@/components/ui/BackButton";
-import { convertNotesToCC } from "@/lib/appointment-cc";
+import { convertNotesToCC, parseEMRComplaints } from "@/lib/appointment-cc";
 import { GeneralExamTab } from "./GeneralExamTab";
 import { PastExternalVisitsTab } from "./PastExternalVisitsTab";
 import { OphthalmicExamTab } from "./OphthalmicExamTab";
@@ -375,11 +375,20 @@ export default async function PatientDetailedEMR({
                 </div>
 
                 {/* Chief complaint */}
-                {activeVisit?.generalExam?.chiefComplaint && (
-                  <p className="text-[11px] italic text-white/40 mt-2">
-                    CC: {activeVisit.generalExam.chiefComplaint}
-                  </p>
-                )}
+                {activeVisit?.generalExam?.chiefComplaint && (() => {
+                  const complaints = parseEMRComplaints(activeVisit.generalExam.chiefComplaint);
+                  return complaints.length > 0 ? (
+                    <div className="flex flex-wrap gap-1.5 mt-2">
+                      {complaints.map((c, i) => (
+                        <span key={i} className="inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-teal-400/20 text-teal-200 border border-teal-400/30">
+                          {c.lat && <span className="font-bold">{c.lat}</span>}
+                          {c.text && <span>{c.text}</span>}
+                          {c.since && <span className="opacity-75">· Since {c.since}</span>}
+                        </span>
+                      ))}
+                    </div>
+                  ) : null;
+                })()}
               </div>
             </div>
 
