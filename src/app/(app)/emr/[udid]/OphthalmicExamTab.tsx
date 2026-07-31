@@ -59,7 +59,7 @@ export function OphthalmicExamTab({ visit, priorVisits, udid, role }: { visit: a
         { id: "va",        label: "Visual Acuity",    content: <VisualAcuityCard visit={visit} udid={udid} editable={refractionistCanEdit} priorVisits={priorVisits} /> },
         { id: "refraction",label: "Refraction",        content: <RefractionCard visit={visit} udid={udid} editable={refractionistCanEdit} priorVisits={priorVisits} /> },
         { id: "cv",        label: "Colour / Contrast", content: <ColourContrastTab visit={visit} udid={udid} editable={refractionistCanEdit} priorVisits={priorVisits} /> },
-        { id: "iop",       label: "IOP/GONIO",         content: <div className="flex flex-col gap-4"><IOPCard visit={visit} udid={udid} editable={refractionistCanEdit} priorVisits={priorVisits} /><GonioscopyCard visit={visit} udid={udid} editable={doctorOnly} priorVisits={priorVisits} /></div> },
+        { id: "iop",       label: "IOP / Gonio",         content: <div className="flex flex-col gap-4"><IOPCard visit={visit} udid={udid} editable={refractionistCanEdit} priorVisits={priorVisits} /><GonioscopyCard visit={visit} udid={udid} editable={doctorOnly} priorVisits={priorVisits} /></div> },
         { id: "anterior",  label: "Anterior Segment",  content: <AnteriorSegmentCard visit={visit} udid={udid} editable={doctorOnly} priorVisits={priorVisits} /> },
         { id: "posterior", label: "Posterior Segment", content: <PosteriorSegmentCard visit={visit} udid={udid} editable={doctorOnly} priorVisits={priorVisits} /> },
         { id: "tear",      label: "Tear Film",          content: <TearFilmCard visit={visit} udid={udid} editable={doctorOnly} priorVisits={priorVisits} /> },
