@@ -490,12 +490,16 @@ export function DashboardClient({
               <p className="text-center text-xs text-[var(--color-ink-400)] py-6">No partial dispense patients</p>
             ) : (
               <div className="space-y-2">
-                {partialDispenseAppts.map((a) => (
+                {partialDispenseAppts.map((a, idx) => (
                   <Link
                     key={a.id}
                     href={`/patients/${a.patient.udid}?returnTo=/dashboard`}
                     className="flex items-center gap-3 px-4 py-3 rounded-xl border border-[var(--color-border)] bg-white hover:bg-orange-50 hover:border-orange-200 transition-colors"
                   >
+                    <div className="w-6 shrink-0 flex items-center justify-center">
+                      <span className="text-xs font-bold text-[var(--color-ink-400)]">{idx + 1}</span>
+                    </div>
+                    <div className="w-px self-stretch bg-[var(--color-border)]" />
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-sm text-[var(--color-ink-900)] truncate">{a.patient.name}</p>
                       <div className="flex items-center gap-2 mt-0.5 flex-wrap">
@@ -546,7 +550,9 @@ export function DashboardClient({
             )}
             {bookedGroups.length > 0 && (
               <div className="space-y-4">
-                {bookedGroups.map(({ name, appts: gAppts }) => (
+                {(() => {
+                  let serial = 0;
+                  return bookedGroups.map(({ name, appts: gAppts }) => (
                   <div key={name}>
                     {role === "DOCTOR" && (
                       <div className="flex items-center gap-1.5 mb-2">
@@ -561,8 +567,13 @@ export function DashboardClient({
                       {gAppts.map((a) => {
                         const cfg      = STATUS_CFG[a.status] ?? STATUS_CFG["REQUESTED"];
                         const isMoving = movingId === a.id;
+                        serial++;
                         return (
                           <div key={a.id} className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-[var(--color-border)] bg-white">
+                            <div className="w-6 shrink-0 flex items-center justify-center">
+                              <span className="text-xs font-bold text-[var(--color-ink-400)]">{serial}</span>
+                            </div>
+                            <div className="w-px self-stretch bg-[var(--color-border)]" />
                             <div className="w-16 shrink-0 flex flex-col items-center gap-0.5">
                               <span className="text-sm font-bold text-[var(--color-ink-900)]" title="Scheduled appointment time">
                                 {format(new Date(a.dateTime), "h:mm a")}
@@ -614,7 +625,8 @@ export function DashboardClient({
                       })}
                     </div>
                   </div>
-                ))}
+                  ));
+                })()}
               </div>
             )}
           </div>
