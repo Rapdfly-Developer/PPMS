@@ -134,7 +134,10 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
   const diagnoses: any[] = (visit.diagnoses ?? []).filter((d: any) => !d.provisional);
 
   const [provQuery, setProvQuery] = useState("");
-  const [provLaterality, setProvLaterality] = useState("OU");
+  const [provLaterality, setProvLateralityState] = useState<string>(
+    () => sessionStorage.getItem(`prov-lat-${visit.id}`) ?? "OU"
+  );
+  const setProvLaterality = (v: string) => { sessionStorage.setItem(`prov-lat-${visit.id}`, v); setProvLateralityState(v); };
   const [showProvSuggestions, setShowProvSuggestions] = useState(false);
   const [provSuggestionIndex, setProvSuggestionIndex] = useState(-1);
   const provBlurTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -145,7 +148,10 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
   const [provDxToast, setProvDxToast] = useState(false);
 
   const [query, setQuery] = useState("");
-  const [laterality, setLaterality] = useState("OU");
+  const [laterality, setLateralityState] = useState<string>(
+    () => sessionStorage.getItem(`icd-lat-${visit.id}`) ?? "OU"
+  );
+  const setLaterality = (v: string) => { sessionStorage.setItem(`icd-lat-${visit.id}`, v); setLateralityState(v); };
   const [pending, startTransition] = useTransition();
   const [historyOpen, setHistoryOpen] = useState(false);
   const [showManual, setShowManual] = useState(false);
