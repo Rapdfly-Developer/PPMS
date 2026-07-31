@@ -1,12 +1,105 @@
 "use client";
 
-import { useState, useTransition, useRef, useEffect, useMemo } from "react";
+import { useState, useTransition, useRef, useEffect, useMemo, useCallback } from "react";
 import { Card } from "@/components/ui/Card";
 import { SingleChipSelect } from "@/components/ui/Chip";
 import { ICD10_OPHTHALMOLOGY, DIAGNOSIS_STATUSES, LATERALITY } from "@/lib/constants";
 import { addDiagnosis, updateDiagnosisStatus, removeDiagnosis, addMedication, removeMedication, saveFollowUp } from "./actions";
 import { useAutoSave, SaveIndicator } from "@/lib/useAutoSave";
 import { X, History, ChevronDown, Search, PenLine, Plus } from "lucide-react";
+
+const DOSAGE_OPTIONS = [
+  "1 Drop","2 Drops","3 Drops","4 Drops","6 Drops",
+  "0.5 ml","1 ml","2 ml","2.5 ml","5 ml","10 ml",
+  "Half Tablet","1 Tablet","2 Tablets",
+  "5 mg","10 mg","20 mg","25 mg","40 mg","50 mg","75 mg","100 mg","200 mg","250 mg","500 mg","1 g",
+  "0.1%","0.5%","1%","2%","5%",
+];
+
+const FREQUENCY_OPTIONS = [
+  "Once daily (OD)","Twice daily (BD)","Three times daily (TDS)","Four times daily (QID)",
+  "Every 4 hours (Q4H)","Every 6 hours (Q6H)","Every 8 hours (Q8H)","Every 12 hours (Q12H)",
+  "At bedtime (HS)","Before meals","After meals","With meals",
+  "Once weekly","Twice weekly","Once monthly",
+  "As needed (PRN)","Stat (immediately)",
+];
+
+const DURATION_OPTIONS = [
+  "1 day","2 days","3 days","4 days","5 days","6 days",
+  "1 week","10 days","2 weeks","3 weeks",
+  "1 month","6 weeks","2 months","3 months","6 months","1 year",
+  "Ongoing","Long term","Till review",
+];
+
+const FIELD_OPTIONS: Record<"dosage"|"frequency"|"duration", string[]> = {
+  dosage: DOSAGE_OPTIONS,
+  frequency: FREQUENCY_OPTIONS,
+  duration: DURATION_OPTIONS,
+};
+
+function PresetFieldCombobox({
+  field, value, onChange, placeholder,
+}: {
+  field: "dosage" | "frequency" | "duration";
+  value: string;
+  onChange: (v: string) => void;
+  placeholder: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [inputVal, setInputVal] = useState(value);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => { setInputVal(value); }, [value]);
+
+  const filtered = useMemo(() => {
+    const q = inputVal.toLowerCase();
+    return q ? FIELD_OPTIONS[field].filter((o) => o.toLowerCase().includes(q)) : FIELD_OPTIONS[field];
+  }, [field, inputVal]);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  return (
+    <div ref={ref} className="relative">
+      <input
+        value={inputVal}
+        onChange={(e) => { setInputVal(e.target.value); onChange(e.target.value); setOpen(true); }}
+        onFocus={() => setOpen(true)}
+        placeholder={placeholder}
+        autoComplete="off"
+        className="w-full rounded-lg border border-[var(--color-border)] px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] pr-6"
+      />
+      <ChevronDown
+        size={11}
+        className={`absolute right-2 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] pointer-events-none transition-transform ${open ? "rotate-180" : ""}`}
+      />
+      {open && (
+        <ul className="absolute z-40 left-0 right-0 mt-1 rounded-xl border border-[var(--color-border)] bg-white shadow-xl overflow-hidden max-h-44 overflow-y-auto">
+          {filtered.length === 0 ? (
+            <li className="px-3 py-2 text-xs text-[var(--color-ink-400)]">No matches — press Enter to use &ldquo;{inputVal}&rdquo;</li>
+          ) : (
+            filtered.map((opt) => (
+              <li key={opt}>
+                <button
+                  type="button"
+                  onMouseDown={(e) => { e.preventDefault(); setInputVal(opt); onChange(opt); setOpen(false); }}
+                  className={`w-full text-left px-3 py-1.5 text-xs transition-colors hover:bg-[var(--color-surface-sunken)] ${opt === value ? "font-semibold text-[var(--color-primary-700)] bg-[var(--color-primary-50)]" : "text-[var(--color-ink-700)]"}`}
+                >
+                  {opt}
+                </button>
+              </li>
+            ))
+          )}
+        </ul>
+      )}
+    </div>
+  );
+}
 import {
   getTreatmentPresets, saveTreatmentPresets, matchPresets, mergeMeds,
   getApplied, setApplied,
@@ -936,11 +1029,12 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
                           </div>
                           <div className="grid grid-cols-3 gap-2">
                             {(["dosage", "frequency", "duration"] as const).map((field) => (
-                              <input key={field}
+                              <PresetFieldCombobox
+                                key={field}
+                                field={field}
                                 value={m[field]}
-                                onChange={(e) => setPresetMeds((p) => p.map((r, idx) => idx === i ? { ...r, [field]: e.target.value } : r))}
+                                onChange={(v) => setPresetMeds((p) => p.map((r, idx) => idx === i ? { ...r, [field]: v } : r))}
                                 placeholder={field.charAt(0).toUpperCase() + field.slice(1)}
-                                className="rounded-lg border border-[var(--color-border)] px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
                               />
                             ))}
                           </div>
