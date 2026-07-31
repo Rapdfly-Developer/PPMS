@@ -118,7 +118,12 @@ export function EmrActionBar({
 
               {/* 3. Print Short Summary */}
               <button
-                onClick={() => { setPrintOpen(false); window.open(`/api/prescription-pdf/${visit.id}/summary`, "_blank"); }}
+                onClick={() => {
+                  setPrintOpen(false);
+                  const spv = typeof window !== "undefined" ? localStorage.getItem(`spect_pin_${udid}`) : null;
+                  const url = `/api/prescription-pdf/${visit.id}/summary${spv ? `?spv=${spv}` : ""}`;
+                  window.open(url, "_blank");
+                }}
                 className="flex items-center gap-3 px-4 py-3 w-full text-left text-sm text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] transition-colors"
               >
                 <FileText size={15} className="text-[var(--color-primary-600)] shrink-0" />

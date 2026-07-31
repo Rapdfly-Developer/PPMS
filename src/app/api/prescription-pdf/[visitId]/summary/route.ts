@@ -27,7 +27,15 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
   if (!visit) return NextResponse.json({ error: "Visit not found" }, { status: 404 });
   if (visit.doctorId !== user.profileId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const rc = visit.refraction;
+  // ?spv=<visitId> pins a historical spectacle Rx to the summary
+  const spv = req.nextUrl.searchParams.get("spv");
+  let spectRc: any = null;
+  if (spv && spv !== visitId) {
+    const spectVisit = await prisma.visit.findUnique({ where: { id: spv }, include: { refraction: true } });
+    spectRc = spectVisit?.refraction ?? null;
+  }
+
+  const rc = spectRc ?? visit.refraction;
   const re = parseJSON((rc as any)?.re, { sph: "", cyl: "", axis: "", nearSph: "" });
   const le = parseJSON((rc as any)?.le, { sph: "", cyl: "", axis: "", nearSph: "" });
 

@@ -766,7 +766,7 @@ async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
     d.visit.hospitalAddress,
     d.visit.hospitalContact,
     d.visit.hospitalEmail,
-  ].filter(Boolean).map(escapeHtml).join(" &nbsp;|&nbsp; ");
+  ].filter((x): x is string => Boolean(x)).map(escapeHtml).join(" &nbsp;|&nbsp; ");
 
   const summaryHeader = `
   <div class="top-bar"></div>

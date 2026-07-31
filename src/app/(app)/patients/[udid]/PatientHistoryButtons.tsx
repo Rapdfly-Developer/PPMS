@@ -385,62 +385,95 @@ function parseSignedVal(v: string): { sign: "+" | "-"; mag: string } {
   return v.startsWith("-") ? { sign: "-", mag: v.slice(1) } : { sign: "+", mag: v.replace(/^\+/, "") };
 }
 
-function SpectEyeColumns({ re, le }: { re: RxFields; le: RxFields }) {
-  const SECTION_LABEL = "col-span-2 sm:col-span-4 text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-widest";
-  const fmt = (v: string) => { const { sign, mag } = parseSignedVal(v); return mag ? `${sign}${mag}` : "—"; };
-  const roBox = (label: string, value: string, className = "") => (
-    <div className={`flex flex-col gap-0.5 min-w-0 ${className}`}>
-      <span className="text-[10px] text-[var(--color-ink-400)] font-medium">{label}</span>
-      <div className="rounded border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-1.5 py-1 text-xs text-[var(--color-ink-800)] tabular-nums">{value}</div>
-    </div>
-  );
-  const eyeFields = (rx: RxFields) => (
-    <div className="grid grid-cols-2 sm:grid-cols-[80px_80px_60px_80px] gap-x-2 gap-y-2 items-end">
-      <p className={SECTION_LABEL}>Distance</p>
-      {roBox("Sph", fmt(rx.sph))}
-      {roBox("Cyl", fmt(rx.cyl))}
-      {roBox("Axis°", parseSignedVal(rx.axis).mag || "—")}
-      {roBox("Resulting VA", rx.va || "—")}
-      <p className={`${SECTION_LABEL} mt-2`}>Near</p>
-      {roBox("Sph (Add)", fmt(rx.nearSph))}
-      {roBox("Resulting NV", rx.nearVa || "—", "col-start-2 sm:col-start-4")}
-    </div>
+const SPECT_LS_KEY = (udid: string) => `spect_pin_${udid}`;
+
+function SpectEyeTable({ re, le }: { re: RxFields; le: RxFields }) {
+  const fmt = (v: string) => { const { sign, mag } = parseSignedVal(v); return mag ? `${sign}${mag}` : ""; };
+  const cell = (v: string) => (
+    <td className="px-2 py-1 text-center text-[11px] font-semibold tabular-nums text-[var(--color-ink-800)]">{v || <span className="text-[var(--color-ink-300)]">—</span>}</td>
   );
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-y-4">
-      <div className="min-w-0 md:pr-6 md:border-r md:border-[var(--color-border)]">
-        <p className="text-xs font-semibold text-[var(--color-primary-700)] uppercase tracking-wide mb-2">Right Eye</p>
-        {eyeFields(re)}
-      </div>
-      <div className="min-w-0 md:pl-6">
-        <p className="text-xs font-semibold text-[var(--color-primary-700)] uppercase tracking-wide mb-2">Left Eye</p>
-        {eyeFields(le)}
-      </div>
+    <div className="overflow-x-auto">
+      <table className="w-full border-collapse text-[10px]">
+        <thead>
+          <tr className="bg-[var(--color-surface-sunken)]">
+            <th className="px-2 py-1 text-left font-semibold text-[var(--color-ink-500)] w-[90px]"></th>
+            <th className="px-2 py-1 text-center font-semibold text-[var(--color-ink-500)]">Sph</th>
+            <th className="px-2 py-1 text-center font-semibold text-[var(--color-ink-500)]">Cyl</th>
+            <th className="px-2 py-1 text-center font-semibold text-[var(--color-ink-500)]">Axis°</th>
+            <th className="px-2 py-1 text-center font-semibold text-[var(--color-ink-500)]">VA</th>
+            <th className="px-2 py-1 text-center font-semibold text-[var(--color-ink-500)]">Add</th>
+            <th className="px-2 py-1 text-center font-semibold text-[var(--color-ink-500)]">NV</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr className="border-t border-[var(--color-border)]">
+            <td className="px-2 py-1 font-semibold text-[var(--color-primary-700)]">Right Eye</td>
+            {cell(fmt(re.sph))}
+            {cell(fmt(re.cyl))}
+            {cell(parseSignedVal(re.axis).mag)}
+            {cell(re.va)}
+            {cell(fmt(re.nearSph))}
+            {cell(re.nearVa)}
+          </tr>
+          <tr className="border-t border-[var(--color-border)] bg-[var(--color-surface-sunken)]/40">
+            <td className="px-2 py-1 font-semibold text-[var(--color-primary-700)]">Left Eye</td>
+            {cell(fmt(le.sph))}
+            {cell(fmt(le.cyl))}
+            {cell(parseSignedVal(le.axis).mag)}
+            {cell(le.va)}
+            {cell(fmt(le.nearSph))}
+            {cell(le.nearVa)}
+          </tr>
+        </tbody>
+      </table>
     </div>
   );
 }
 
 function SpectacleDrawer({
   patientId,
+  udid,
   open,
   onClose,
 }: {
   patientId: string;
+  udid: string;
   open: boolean;
   onClose: () => void;
 }) {
   const [data, setData] = useState<SpectVisit[] | null>(null);
   const [isPending, start] = useTransition();
+  const [pinned, setPinned] = useState<string | null>(null);
 
+  // Load data and initialise pin from localStorage
   if (open && data === null && !isPending) {
     start(async () => {
       const res = await getPatientSpectacleHistory(patientId);
       setData(res);
+      const stored = typeof window !== "undefined" ? localStorage.getItem(SPECT_LS_KEY(udid)) : null;
+      // Default: pin the most recent entry if nothing stored
+      setPinned(stored ?? (res[0]?.visitId ?? null));
+      if (!stored && res[0]?.visitId) {
+        localStorage.setItem(SPECT_LS_KEY(udid), res[0].visitId);
+      }
     });
   }
 
+  const togglePin = (visitId: string) => {
+    const next = pinned === visitId ? null : visitId;
+    setPinned(next);
+    if (next) localStorage.setItem(SPECT_LS_KEY(udid), next);
+    else localStorage.removeItem(SPECT_LS_KEY(udid));
+  };
+
   return (
     <Drawer open={open} onClose={onClose} title="Previous Spectacle History" icon={<Glasses size={16} />}>
+      {!isPending && data && data.length > 0 && (
+        <p className="text-[10px] text-[var(--color-ink-400)] mb-3">
+          Check a prescription to include it in the short summary.
+        </p>
+      )}
       {isPending && (
         <div className="flex justify-center py-10">
           <Loader2 size={22} className="animate-spin text-[var(--color-primary-500)]" />
@@ -450,25 +483,55 @@ function SpectacleDrawer({
       {!isPending && data && data.map((v) => {
         const re = parseJSON<RxFields>(v.re, emptyRx);
         const le = parseJSON<RxFields>(v.le, emptyRx);
+        const isSelected = pinned === v.visitId;
         return (
-          <VisitGroup key={v.visitId} date={v.date} hospitalName={v.hospitalName}>
-            {re.method && (
-              <p className="text-[10px] text-[var(--color-ink-500)] mb-2">
-                Method: <span className="font-medium text-[var(--color-ink-700)]">{re.method}</span>
-              </p>
-            )}
-            <SpectEyeColumns re={re} le={le} />
-            {v.sentToOpticals && (
-              <p className="text-[10px] text-emerald-600 font-semibold mt-3">✓ Sent to Opticals</p>
-            )}
-          </VisitGroup>
+          <div
+            key={v.visitId}
+            className={`rounded-xl border transition-colors ${isSelected ? "border-[var(--color-primary-400)] bg-[var(--color-primary-50)]/60" : "border-[var(--color-border)] bg-white"}`}
+          >
+            {/* Header row with checkbox */}
+            <div className="flex items-center justify-between gap-3 px-4 py-2.5 border-b border-[var(--color-border)]">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="text-[11px] font-bold text-[var(--color-ink-800)]">
+                  {format(new Date(v.date), "dd MMM yyyy")}
+                </span>
+                {v.hospitalName && (
+                  <span className="text-[10px] text-[var(--color-ink-400)] truncate">{v.hospitalName}</span>
+                )}
+                {re.method && (
+                  <span className="text-[9px] bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)] px-1.5 py-0.5 rounded-full border border-[var(--color-border)]">
+                    {re.method}
+                  </span>
+                )}
+              </div>
+              <label className="flex items-center gap-1.5 cursor-pointer shrink-0">
+                <input
+                  type="checkbox"
+                  checked={isSelected}
+                  onChange={() => togglePin(v.visitId)}
+                  className="w-3.5 h-3.5 accent-[var(--color-primary-600)] cursor-pointer"
+                />
+                <span className="text-[10px] font-semibold text-[var(--color-primary-700)]">
+                  {isSelected ? "In Summary" : "Add to Summary"}
+                </span>
+              </label>
+            </div>
+
+            {/* Refraction table */}
+            <div className="p-3">
+              <SpectEyeTable re={re} le={le} />
+              {v.sentToOpticals && (
+                <p className="text-[10px] text-emerald-600 font-semibold mt-2">✓ Sent to Opticals</p>
+              )}
+            </div>
+          </div>
         );
       })}
     </Drawer>
   );
 }
 
-export function SpectacleHistoryButton({ patientId }: { patientId: string }) {
+export function SpectacleHistoryButton({ patientId, udid }: { patientId: string; udid: string }) {
   const [open, setOpen] = useState(false);
   return (
     <>
@@ -479,7 +542,7 @@ export function SpectacleHistoryButton({ patientId }: { patientId: string }) {
         <Glasses size={13} />
         Spectacle History
       </button>
-      <SpectacleDrawer patientId={patientId} open={open} onClose={() => setOpen(false)} />
+      <SpectacleDrawer patientId={patientId} udid={udid} open={open} onClose={() => setOpen(false)} />
     </>
   );
 }

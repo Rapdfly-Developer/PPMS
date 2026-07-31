@@ -347,7 +347,7 @@ export default async function PatientProfilePage({
         <TimeStampButton patientId={patient.id} patientName={patient.name} />
         <InvestigationsButton patientId={patient.id} udid={udid} />
         <TreatmentHistoryButton patientId={patient.id} />
-        <SpectacleHistoryButton patientId={patient.id} />
+        <SpectacleHistoryButton patientId={patient.id} udid={udid} />
       </div>
 
       {/* ── Action buttons + drawer (client) ──────────────────────────── */}
