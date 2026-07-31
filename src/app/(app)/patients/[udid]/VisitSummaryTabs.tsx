@@ -410,7 +410,7 @@ function LongContent({
             </thead>
             <tbody>
               {data.medications.map((m: any, i: number) => (
-                <tr key={i} className={`border-b border-[var(--color-border)] last:border-0 ${i % 2 === 1 ? "bg-[var(--color-surface-2)]" : ""}`}>
+                <tr key={i} className={i % 2 === 1 ? "bg-[var(--color-surface-2)]" : ""}>
                   <td className="py-1 pr-2 font-semibold text-[var(--color-ink-700)] align-top">{m.drugName}</td>
                   <td className="py-1 pr-2 text-[var(--color-ink-500)] align-top">{m.dosage ?? "—"}</td>
                   <td className="py-1 pr-2 text-[var(--color-ink-500)] align-top">{m.frequency ?? "—"}</td>
