@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useTransition, useRef, useEffect } from "react";
-import { ChevronRight, Printer, FileSignature, CheckCircle2, Download, ChevronDown, FileText } from "lucide-react";
+import { ChevronRight, Printer, FileSignature, CheckCircle2, Download, ChevronDown, FileText, PackageOpen } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { closeVisit } from "./actions";
+import { closeVisit, markPartialDispense } from "./actions";
 
 function SuccessModal({ udid, onClose }: { udid: string; onClose: () => void }) {
   const router = useRouter();
@@ -37,6 +37,7 @@ export function EmrActionBar({
   currentTabIndex?: number; totalTabs?: number; onNextSection?: () => void;
 }) {
   const [pending, startTransition] = useTransition();
+  const [partialPending, startPartialTransition] = useTransition();
   const [printOpen, setPrintOpen] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
@@ -128,6 +129,21 @@ export function EmrActionBar({
             </div>
           )}
         </div>
+
+        {!closed && (
+          <button
+            disabled={partialPending}
+            onClick={() =>
+              startPartialTransition(async () => {
+                await markPartialDispense(visit.id, udid);
+                router.push("/dashboard");
+              })
+            }
+            className="flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-xl bg-amber-50 border border-amber-300 text-amber-700 hover:bg-amber-100 disabled:opacity-60"
+          >
+            <PackageOpen size={15} /> {partialPending ? "Saving…" : "Partial Dispense"}
+          </button>
+        )}
 
         {closed ? (
           <span className="flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-xl bg-[var(--color-success-100)] text-[var(--color-success-600)]">

@@ -54,12 +54,13 @@ export interface DashboardProps {
 
 /* ── Status config ──────────────────────────────────────────────────────── */
 const STATUS_CFG: Record<string, { label: string; color: string; dot: string }> = {
-  REQUESTED:   { label: "Scheduled",   color: "bg-blue-100 text-blue-700",    dot: "bg-blue-500"   },
-  CONFIRMED:   { label: "Waiting",     color: "bg-amber-100 text-amber-700",  dot: "bg-amber-500"  },
-  DISPENSED:   { label: "Dispensed",   color: "bg-green-100 text-green-700",  dot: "bg-green-500"  },
-  CANCELLED:   { label: "Cancelled",   color: "bg-red-100 text-red-600",      dot: "bg-red-500"    },
-  NO_SHOW:     { label: "No Show",     color: "bg-gray-100 text-gray-500",    dot: "bg-gray-400"   },
-  RESCHEDULED: { label: "Rescheduled", color: "bg-purple-100 text-purple-700",dot: "bg-purple-500" },
+  REQUESTED:        { label: "Scheduled",       color: "bg-blue-100 text-blue-700",    dot: "bg-blue-500"   },
+  CONFIRMED:        { label: "Waiting",         color: "bg-amber-100 text-amber-700",  dot: "bg-amber-500"  },
+  DISPENSED:        { label: "Dispensed",       color: "bg-green-100 text-green-700",  dot: "bg-green-500"  },
+  CANCELLED:        { label: "Cancelled",       color: "bg-red-100 text-red-600",      dot: "bg-red-500"    },
+  NO_SHOW:          { label: "No Show",         color: "bg-gray-100 text-gray-500",    dot: "bg-gray-400"   },
+  RESCHEDULED:      { label: "Rescheduled",     color: "bg-purple-100 text-purple-700",dot: "bg-purple-500" },
+  PARTIAL_DISPENSE: { label: "Partial Dispense",color: "bg-orange-100 text-orange-700",dot: "bg-orange-500" },
 };
 
 const STATUS_FILTERS = [
@@ -260,10 +261,15 @@ export function DashboardClient({
       : appts.filter((a) => a.doctor?.id === selectedFilter);
   }, [appts, selectedFilter, role]);
 
-  /* Today's Queue: active only (non-REQUESTED, non-DISPENSED). Dispensed patients
-     leave the queue once done — tracked separately as a completion count. */
+  /* Partial dispense patients */
+  const partialDispenseAppts = useMemo(
+    () => filteredAppts.filter((a) => a.status === "PARTIAL_DISPENSE"),
+    [filteredAppts],
+  );
+
+  /* Today's Queue: active only (non-REQUESTED, non-DISPENSED, non-PARTIAL_DISPENSE). */
   const queueGroups = useMemo(() => {
-    const queue     = filteredAppts.filter((a) => a.status !== "REQUESTED" && a.status !== "DISPENSED");
+    const queue     = filteredAppts.filter((a) => !["REQUESTED", "DISPENSED", "PARTIAL_DISPENSE"].includes(a.status));
     const dispensed = filteredAppts.filter((a) => a.status === "DISPENSED");
     if (role === "DOCTOR") {
       const hospitalsToShow = selectedFilter === "all"
@@ -467,20 +473,52 @@ export function DashboardClient({
       {/* ── Surgeries + Visit time ────────────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
 
-          {/* Scheduled OT */}
+          {/* Partial Dispense */}
           <div className="surface-card p-5">
             <h2 className="text-base font-semibold text-[var(--color-ink-900)] mb-4">
-              Scheduled OT
-              {filteredSurgeries.length > 0 && (
-                <span className="ml-2 text-xs font-normal text-[var(--color-ink-400)]">{filteredSurgeries.length} upcoming</span>
+              Partial Dispense
+              {partialDispenseAppts.length > 0 && (
+                <span className="ml-2 text-xs font-normal text-[var(--color-ink-400)]">{partialDispenseAppts.length} pending</span>
               )}
             </h2>
-            {filteredSurgeries.length === 0 && (
-              <p className="text-center text-xs text-[var(--color-ink-400)] py-6">No patients scheduled for OT</p>
-            )}
-            {filteredSurgeries.length > 0 && (
+            {partialDispenseAppts.length === 0 ? (
+              <p className="text-center text-xs text-[var(--color-ink-400)] py-6">No partial dispense patients</p>
+            ) : (
               <div className="space-y-2">
-                {filteredSurgeries.map((s) => <SurgeryRow key={s.id} s={s} role={role} />)}
+                {partialDispenseAppts.map((a) => (
+                  <Link
+                    key={a.id}
+                    href={`/patients/${a.patient.udid}?returnTo=/dashboard`}
+                    className="flex items-center gap-3 px-4 py-3 rounded-xl border border-[var(--color-border)] bg-white hover:bg-orange-50 hover:border-orange-200 transition-colors"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-sm text-[var(--color-ink-900)] truncate">{a.patient.name}</p>
+                      <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                        <span className="font-mono text-[10px] text-[#115E59] bg-[#F0F8F6] px-1.5 py-0.5 rounded">
+                          {a.patient.udid}
+                        </span>
+                        <span className="text-[11px] text-[var(--color-ink-400)]">
+                          {a.patient.age}y / {a.patient.sex === "MALE" ? "M" : a.patient.sex === "FEMALE" ? "F" : "O"}
+                        </span>
+                        {role === "HOSPITAL" && a.doctor && (
+                          <span className="text-[11px] text-[var(--color-ink-400)]">Dr. {a.doctor.name}</span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end gap-1 shrink-0">
+                      {a.visitType && (
+                        <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)] whitespace-nowrap">
+                          {a.visitType}
+                        </span>
+                      )}
+                      {a.complaint && (
+                        <span className="text-[11px] text-orange-600 max-w-[140px] truncate text-right">
+                          {formatComplaintDisplay(a.complaint)}
+                        </span>
+                      )}
+                    </div>
+                  </Link>
+                ))}
               </div>
             )}
           </div>

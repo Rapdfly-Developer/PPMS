@@ -623,3 +623,42 @@ export async function closeVisit(visitId: string, udid: string) {
   revalidatePath("/appointments");
   revalidatePath("/dashboard");
 }
+
+export async function markPartialDispense(visitId: string, udid: string) {
+  const user = await requireRole("DOCTOR");
+
+  const visit = await prisma.visit.findUnique({
+    where: { id: visitId },
+    select: { id: true, patientId: true, doctorId: true, appointmentId: true },
+  });
+  if (!visit) throw new Error("Visit not found");
+
+  let appointmentId = visit.appointmentId;
+  if (!appointmentId) {
+    const fallback = await prisma.appointment.findFirst({
+      where: {
+        patientId: visit.patientId,
+        doctorId: visit.doctorId,
+        status: { in: ["REQUESTED", "CONFIRMED"] },
+      },
+      orderBy: { dateTime: "desc" },
+      select: { id: true },
+    });
+    appointmentId = fallback?.id ?? null;
+    if (appointmentId) {
+      await prisma.visit.update({ where: { id: visitId }, data: { appointmentId } });
+    }
+  }
+
+  if (appointmentId) {
+    await prisma.appointment.update({
+      where: { id: appointmentId },
+      data: { status: "PARTIAL_DISPENSE" },
+    });
+  }
+
+  await writeAudit(user.id, "Appointment", appointmentId ?? visitId, "PARTIAL_DISPENSE", { visitId });
+
+  revalidate(udid);
+  revalidatePath("/dashboard");
+}
