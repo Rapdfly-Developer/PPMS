@@ -4,7 +4,7 @@ import { useState, useTransition, useRef, useEffect, useMemo } from "react";
 import { Card } from "@/components/ui/Card";
 import { SingleChipSelect } from "@/components/ui/Chip";
 import { ICD10_OPHTHALMOLOGY, DIAGNOSIS_STATUSES, LATERALITY } from "@/lib/constants";
-import { saveProvisionalDiagnosis, addDiagnosis, updateDiagnosisStatus, removeDiagnosis, addMedication, removeMedication, saveFollowUp } from "./actions";
+import { addDiagnosis, updateDiagnosisStatus, removeDiagnosis, addMedication, removeMedication, saveFollowUp } from "./actions";
 import { useAutoSave, SaveIndicator } from "@/lib/useAutoSave";
 import { X, History, ChevronDown, Search, PenLine, Plus } from "lucide-react";
 import {
@@ -36,17 +36,25 @@ type CustomModalState = {
 };
 
 export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; udid: string; priorVisits?: any[] }) {
-  const [provisionalDx, setProvisionalDx] = useState(visit.generalExam?.provisionalDx ?? "");
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [suggestionIndex, setSuggestionIndex] = useState(-1);
-  const blurTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Split diagnoses by provisional flag
+  const provisionalDiagnoses: any[] = (visit.diagnoses ?? []).filter((d: any) => d.provisional);
+  const diagnoses: any[] = (visit.diagnoses ?? []).filter((d: any) => !d.provisional);
+
+  const [provQuery, setProvQuery] = useState("");
+  const [provLaterality, setProvLaterality] = useState("OU");
+  const [showProvSuggestions, setShowProvSuggestions] = useState(false);
+  const [provSuggestionIndex, setProvSuggestionIndex] = useState(-1);
+  const provBlurTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [showProvManual, setShowProvManual] = useState(false);
+  const [provManualText, setProvManualText] = useState("");
+  const [provHistoryOpen, setProvHistoryOpen] = useState(false);
+  const [confirmProvGroup, setConfirmProvGroup] = useState<any[] | null>(null);
+  const [provDxToast, setProvDxToast] = useState(false);
+
   const [query, setQuery] = useState("");
   const [laterality, setLaterality] = useState("OU");
   const [pending, startTransition] = useTransition();
   const [historyOpen, setHistoryOpen] = useState(false);
-  const [provHistoryOpen, setProvHistoryOpen] = useState(false);
-  const [showProvManual, setShowProvManual] = useState(false);
-  const [provManualText, setProvManualText] = useState("");
   const [showManual, setShowManual] = useState(false);
   const [manualText, setManualText] = useState("");
   const [confirmDxGroup, setConfirmDxGroup] = useState<any[] | null>(null);
@@ -62,8 +70,6 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
   const [presetInvestigations, setPresetInvestigations] = useState("");
   const [medDropdownOpen, setMedDropdownOpen] = useState(-1);
   const [allKnownMeds, setAllKnownMeds] = useState<import("./treatmentPresets").TreatmentPresetMed[]>([]);
-
-  const diagnoses: any[] = visit.diagnoses ?? [];
 
   useEffect(() => {
     setCustomDxList(getCustomDiagnoses());
@@ -85,89 +91,61 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
     ...customDxList.map((d) => ({ code: d.code, description: d.description, custom: true, category: d.category })),
   ], [customDxList]);
 
-  const priorDxGroups = priorVisits
-    .filter((v) => v.diagnoses?.length > 0)
-    .map((v) => ({ date: v.date, diagnoses: v.diagnoses as any[] }));
+  // Prior visit groups — provisional
+  const priorProvGroups = priorVisits
+    .filter((v) => v.diagnoses?.some((d: any) => d.provisional))
+    .map((v) => ({ date: v.date, diagnoses: (v.diagnoses as any[]).filter((d) => d.provisional) }));
 
-  const state = useAutoSave(provisionalDx, async (text) => {
-    await saveProvisionalDiagnosis(visit.id, udid, text);
-  });
+  // Prior visit groups — ICD-10
+  const priorDxGroups = priorVisits
+    .filter((v) => v.diagnoses?.some((d: any) => !d.provisional))
+    .map((v) => ({ date: v.date, diagnoses: (v.diagnoses as any[]).filter((d) => !d.provisional) }));
 
   const existingCodes = new Set(diagnoses.map((d: any) => d.icd10Code));
+  const existingProvCodes = new Set(provisionalDiagnoses.map((d: any) => d.icd10Code));
 
-  const provisionalSuggestions = useMemo(() =>
-    provisionalDx.length >= 2
+  // Search suggestions — provisional
+  const provSuggestions = useMemo(() =>
+    provQuery.length >= 2
       ? allDiagnoses
-          .filter(
-            (d) =>
-              d.description.toLowerCase().includes(provisionalDx.toLowerCase()) ||
-              d.code.toLowerCase().includes(provisionalDx.toLowerCase()),
+          .filter((d) =>
+            d.description.toLowerCase().includes(provQuery.toLowerCase()) ||
+            d.code.toLowerCase().includes(provQuery.toLowerCase()),
           )
           .sort((a, b) => {
-            const q = provisionalDx.toLowerCase();
+            const q = provQuery.toLowerCase();
             return (a.description.toLowerCase().startsWith(q) ? -1 : 0) -
                    (b.description.toLowerCase().startsWith(q) ? -1 : 0);
           })
           .slice(0, 8)
       : [],
-  [provisionalDx, allDiagnoses]);
+  [provQuery, allDiagnoses]);
 
+  // Search suggestions — ICD-10
   const icdMatches = useMemo(() =>
     query.length > 0
       ? allDiagnoses
-          .filter(
-            (d) =>
-              d.code.toLowerCase().includes(query.toLowerCase()) ||
-              d.description.toLowerCase().includes(query.toLowerCase()),
+          .filter((d) =>
+            d.code.toLowerCase().includes(query.toLowerCase()) ||
+            d.description.toLowerCase().includes(query.toLowerCase()),
           )
           .slice(0, 6)
       : [],
   [query, allDiagnoses]);
 
-  const selectSuggestion = (item: DiagnosisItem) => {
-    setProvisionalDx(item.description);
-    setShowSuggestions(false);
-    setSuggestionIndex(-1);
-    // Auto-apply presets the same way ICD-10 diagnosis selection does
-    startTransition(async () => {
-      await autoApplyPresets([{ icd10Code: item.code ?? "", description: item.description }]);
-    });
-  };
-
-  const handleProvisionalKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (!showSuggestions || provisionalSuggestions.length === 0) return;
-    if (e.key === "ArrowDown") {
-      e.preventDefault();
-      setSuggestionIndex((i) => Math.min(i + 1, provisionalSuggestions.length - 1));
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault();
-      setSuggestionIndex((i) => Math.max(i - 1, -1));
-    } else if (e.key === "Enter" && suggestionIndex >= 0) {
-      e.preventDefault();
-      selectSuggestion(provisionalSuggestions[suggestionIndex]);
-    } else if (e.key === "Escape") {
-      setShowSuggestions(false);
-      setSuggestionIndex(-1);
-    }
-  };
-
   const openCustomModal = (target: "icd" | "provisional") => {
-    const prefill = target === "icd" ? query.trim() : provisionalDx.trim();
+    const prefill = target === "icd" ? query.trim() : provQuery.trim();
     setCustomModal({ name: prefill, code: "", category: "", notes: "", target, error: "", step: "diagnosis", savedCode: "", savedDescription: "" });
-    if (target === "icd") setQuery("");
-    setShowSuggestions(false);
+    if (target === "icd") setQuery(""); else setProvQuery("");
+    setShowProvSuggestions(false);
   };
 
   const handleSaveCustomDx = () => {
     if (!customModal) return;
     const name = customModal.name.trim();
-    if (!name) {
-      setCustomModal({ ...customModal, error: "Diagnosis name is required." });
-      return;
-    }
+    if (!name) { setCustomModal({ ...customModal, error: "Diagnosis name is required." }); return; }
     if (isDuplicateDescription(name, ICD10_OPHTHALMOLOGY)) {
-      setCustomModal({ ...customModal, error: "A diagnosis with this name already exists." });
-      return;
+      setCustomModal({ ...customModal, error: "A diagnosis with this name already exists." }); return;
     }
     const saved = saveCustomDiagnosis({
       code: customModal.code.trim(),
@@ -178,12 +156,11 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
     setCustomDxList((prev) => [...prev, saved]);
 
     if (customModal.target === "icd") {
-      add(saved.code, saved.description);
+      addIcd(saved.code, saved.description);
     } else {
-      setProvisionalDx(saved.description);
+      addProv(saved.code, saved.description);
     }
 
-    // Transition to preset step
     setPresetName(`${name} Protocol`);
     setPresetMeds([emptyMed()]);
     setPresetFollowUpDays("");
@@ -229,11 +206,12 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
     setCustomModal(null);
   };
 
-  // After adding one or more diagnoses, auto-apply matching treatment presets to Plan
+  // Auto-apply matching treatment presets to Plan
   const autoApplyPresets = async (newDiagnoses: { icd10Code: string; description: string }[]) => {
-    const allPresets   = getTreatmentPresets();
+    const allPresets = getTreatmentPresets();
     const allDx = [
       ...diagnoses.map((d: any) => ({ icd10Code: d.icd10Code, description: d.description })),
+      ...provisionalDiagnoses.map((d: any) => ({ icd10Code: d.icd10Code, description: d.description })),
       ...newDiagnoses,
     ];
     const presetMatches = matchPresets(allDx, allPresets);
@@ -256,9 +234,7 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
     const presetsToApply = toApply.map((m) => m.preset);
     const currentMeds: { drugName: string }[] = visit.medications ?? [];
     const newMeds = mergeMeds(presetsToApply, currentMeds);
-    for (const med of newMeds) {
-      await addMedication(visit.id, udid, med);
-    }
+    for (const med of newMeds) { await addMedication(visit.id, udid, med); }
 
     if (!visit.followUpDate) {
       const days = presetsToApply.map((p) => p.followUpDays).filter((d): d is number => !!d);
@@ -277,24 +253,20 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
     setTimeout(() => setPresetToast([]), 5000);
   };
 
-  // When a diagnosis is removed, clean up medications from presets that are no longer triggered.
-  // Compares presets matched before vs after removal — does not rely on localStorage.
+  // Remove preset meds when a diagnosis is deleted
   const autoRemovePresetMeds = async (removedDesc: string) => {
     const allPresets = getTreatmentPresets();
     const applied    = getApplied(visit.id);
 
-    // Include provisional diagnosis so presets triggered by it are also tracked
     const allCurrentDx = [
       ...(diagnoses as any[]).map((d) => ({ icd10Code: d.icd10Code ?? "", description: d.description })),
-      ...(provisionalDx ? [{ icd10Code: "", description: provisionalDx }] : []),
+      ...(provisionalDiagnoses as any[]).map((d) => ({ icd10Code: d.icd10Code ?? "", description: d.description })),
     ];
     const remainingDx = allCurrentDx.filter((d) => d.description !== removedDesc);
 
-    // Presets triggered now (before removal) vs after removal
     const beforeIds = new Set(matchPresets(allCurrentDx, allPresets).map((m) => m.preset.id));
     const afterIds  = new Set(matchPresets(remainingDx,  allPresets).map((m) => m.preset.id));
 
-    // Presets that drop off after this diagnosis is deleted
     const lostPresets = allPresets.filter((p) => beforeIds.has(p.id) && !afterIds.has(p.id));
     if (lostPresets.length === 0) return;
 
@@ -303,11 +275,8 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
 
     const currentMeds: any[] = visit.medications ?? [];
     const medsToDelete = currentMeds.filter((m) => drugNamesToRemove.has(m.drugName.toLowerCase()));
-    for (const med of medsToDelete) {
-      await removeMedication(med.id, udid);
-    }
+    for (const med of medsToDelete) { await removeMedication(med.id, udid); }
 
-    // Clean up localStorage applied records for the lost presets
     const lostIds = new Set(lostPresets.map((p) => p.id));
     setApplied(visit.id, applied.filter((a) => !lostIds.has(a.presetId)));
 
@@ -317,12 +286,34 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
     }
   };
 
-  const add = (code: string, description: string) => {
+  // Add provisional diagnosis
+  const addProv = (code: string, description: string) => {
+    startTransition(async () => {
+      await addDiagnosis(visit.id, udid, { icd10Code: code, description, laterality: provLaterality, provisional: true });
+      setProvQuery("");
+      await autoApplyPresets([{ icd10Code: code, description }]);
+    });
+  };
+
+  // Add ICD-10 diagnosis
+  const addIcd = (code: string, description: string) => {
     startTransition(async () => {
       await addDiagnosis(visit.id, udid, { icd10Code: code, description, laterality });
       setQuery("");
       await autoApplyPresets([{ icd10Code: code, description }]);
     });
+  };
+
+  const loadProvGroup = (dxList: any[]) => {
+    const missing = dxList.filter((d: any) => !existingProvCodes.has(d.icd10Code));
+    startTransition(async () => {
+      for (const d of missing) {
+        await addDiagnosis(visit.id, udid, { icd10Code: d.icd10Code, description: d.description, laterality: d.laterality ?? "OU", provisional: true });
+      }
+      await autoApplyPresets(missing.map((d: any) => ({ icd10Code: d.icd10Code, description: d.description })));
+    });
+    setProvHistoryOpen(false);
+    setProvDxToast(true);
   };
 
   const loadDxGroup = (dxList: any[]) => {
@@ -337,96 +328,100 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
     setDxToast(true);
   };
 
+  const handleProvGroupDoubleClick = (dxList: any[]) => {
+    if (provisionalDiagnoses.length > 0) setConfirmProvGroup(dxList);
+    else loadProvGroup(dxList);
+  };
+
   const handleDxGroupDoubleClick = (dxList: any[]) => {
-    if (diagnoses.length > 0) {
-      setConfirmDxGroup(dxList);
-    } else {
-      loadDxGroup(dxList);
-    }
+    if (diagnoses.length > 0) setConfirmDxGroup(dxList);
+    else loadDxGroup(dxList);
   };
 
   const isCustomDiagnosis = (d: any) =>
     !d.icd10Code || customDxList.some((c) => c.description.toLowerCase() === d.description.toLowerCase());
 
+  const handleProvKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!showProvSuggestions || provSuggestions.length === 0) return;
+    if (e.key === "ArrowDown") { e.preventDefault(); setProvSuggestionIndex((i) => Math.min(i + 1, provSuggestions.length - 1)); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); setProvSuggestionIndex((i) => Math.max(i - 1, -1)); }
+    else if (e.key === "Enter" && provSuggestionIndex >= 0) { e.preventDefault(); addProv(provSuggestions[provSuggestionIndex].code, provSuggestions[provSuggestionIndex].description); setShowProvSuggestions(false); setProvSuggestionIndex(-1); }
+    else if (e.key === "Escape") { setShowProvSuggestions(false); setProvSuggestionIndex(-1); }
+  };
+
   return (
     <>
     <div className="flex flex-col gap-5">
+
+      {/* ── Provisional Diagnosis ─────────────────────────────────────────── */}
       <Card>
-        {/* Header — identical structure to Diagnosis (ICD-10) */}
         <div className="flex items-center justify-between mb-3">
           <p className="text-sm font-medium text-[var(--color-ink-700)]">Provisional Diagnosis</p>
-          <div className="flex items-center gap-2">
-            <SaveIndicator state={state} />
-            <button
-              type="button"
-              onClick={() => setProvHistoryOpen((v) => !v)}
-              className="flex items-center gap-1 text-xs text-[#0F766E] bg-[#EEF8F7] hover:bg-[#DCF3F1] font-medium px-2.5 py-0.5 rounded-full border border-[#B2DEDA] transition-colors"
-            >
-              <History size={11} />
-              History {priorVisits.filter((v) => v.generalExam?.provisionalDx).length > 0 && `(${priorVisits.filter((v) => v.generalExam?.provisionalDx).length})`}
-              <ChevronDown size={11} className={provHistoryOpen ? "rotate-180 transition-transform" : "transition-transform"} />
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => setProvHistoryOpen((v) => !v)}
+            className="flex items-center gap-1 text-xs text-[#0F766E] bg-[#EEF8F7] hover:bg-[#DCF3F1] font-medium px-2.5 py-0.5 rounded-full border border-[#B2DEDA] transition-colors"
+          >
+            <History size={11} />
+            History {priorProvGroups.length > 0 && `(${priorProvGroups.length})`}
+            <ChevronDown size={11} className={provHistoryOpen ? "rotate-180 transition-transform" : "transition-transform"} />
+          </button>
         </div>
 
-        {/* History panel — identical structure to ICD-10 */}
         {provHistoryOpen && (
           <div className="mb-4 rounded-xl border border-[#B2DEDA] bg-[#EEF8F7] p-3">
             <div className="flex items-center justify-between mb-2">
               <p className="text-[10px] font-bold uppercase tracking-widest text-[#0F766E]">Previous Provisional Diagnoses</p>
-              <p className="text-[10px] text-[#0D9488]">Double-click to load</p>
+              {priorProvGroups.length > 0 && (
+                <p className="text-[10px] text-[#0D9488]">Double-click a visit to load its diagnoses</p>
+              )}
             </div>
-            {priorVisits.filter((v) => v.generalExam?.provisionalDx).length === 0 ? (
+            {priorProvGroups.length === 0 ? (
               <p className="text-xs text-[var(--color-ink-400)] py-2 text-center">No previous records found.</p>
             ) : (
               <div className="space-y-3 max-h-56 overflow-y-auto scrollbar-thin">
-                {priorVisits
-                  .filter((v) => v.generalExam?.provisionalDx)
-                  .map((v, i) => (
-                    <div
-                      key={i}
-                      onDoubleClick={() => { setProvisionalDx(v.generalExam.provisionalDx); setProvHistoryOpen(false); }}
-                      title="Double-click to load"
-                      className="cursor-pointer rounded-lg p-1.5 -mx-1.5 hover:bg-[#DCF3F1] transition-colors select-none"
-                    >
-                      <p className="text-[10px] font-semibold text-[var(--color-ink-400)] mb-0.5">{format(new Date(v.date), "d MMM yyyy")}</p>
-                      <p className="text-xs text-[var(--color-ink-700)]">{v.generalExam.provisionalDx}</p>
-                    </div>
-                  ))}
+                {priorProvGroups.map((g, gi) => (
+                  <div
+                    key={gi}
+                    onDoubleClick={() => handleProvGroupDoubleClick(g.diagnoses)}
+                    title="Double-click to add these diagnoses"
+                    className="cursor-pointer rounded-lg p-1.5 -mx-1.5 hover:bg-[#DCF3F1] transition-colors select-none"
+                  >
+                    <p className="text-[10px] font-semibold text-[var(--color-ink-400)] mb-1">{format(new Date(g.date), "d MMM yyyy")}</p>
+                    {g.diagnoses.map((d: any, di: number) => (
+                      <div key={di} className="flex items-center gap-2 text-xs text-[var(--color-ink-700)] mb-0.5">
+                        <span className="font-medium">{d.description}</span>
+                        {d.laterality && <span className="text-[var(--color-ink-400)]">{d.laterality}</span>}
+                        {d.icd10Code && <span className="font-mono text-[var(--color-ink-400)]">{d.icd10Code}</span>}
+                        <span className="ml-auto text-[10px] text-[var(--color-ink-400)]">{d.status}</span>
+                      </div>
+                    ))}
+                  </div>
+                ))}
               </div>
             )}
           </div>
         )}
 
-        {/* Controls row — identical to ICD-10 */}
         <div className="flex items-end gap-3 flex-wrap mb-2">
           <div>
             <p className="text-xs font-medium text-[var(--color-ink-500)] mb-1.5">Laterality</p>
-            <SingleChipSelect options={LATERALITY} value={laterality} onChange={setLaterality} />
+            <SingleChipSelect options={LATERALITY} value={provLaterality} onChange={setProvLaterality} />
           </div>
           <div className="relative flex-1 min-w-[240px]">
             <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] pointer-events-none" />
             <input
-              value={provisionalDx}
-              onChange={(e) => { setProvisionalDx(e.target.value); setShowSuggestions(true); setSuggestionIndex(-1); }}
-              onFocus={() => { if (blurTimerRef.current) clearTimeout(blurTimerRef.current); setShowSuggestions(true); }}
-              onBlur={() => { blurTimerRef.current = setTimeout(() => setShowSuggestions(false), 150); }}
-              onKeyDown={handleProvisionalKeyDown}
+              value={provQuery}
+              onChange={(e) => { setProvQuery(e.target.value); setShowProvSuggestions(true); setProvSuggestionIndex(-1); }}
+              onFocus={() => { if (provBlurTimerRef.current) clearTimeout(provBlurTimerRef.current); setShowProvSuggestions(true); }}
+              onBlur={() => { provBlurTimerRef.current = setTimeout(() => setShowProvSuggestions(false), 150); }}
+              onKeyDown={handleProvKeyDown}
               placeholder="Search ICD-10 code or description..."
-              className="w-full rounded-xl border border-[var(--color-border)] pl-9 pr-8 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
+              className="w-full rounded-xl border border-[var(--color-border)] pl-9 pr-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
             />
-            {provisionalDx && (
-              <button
-                type="button"
-                onMouseDown={(e) => { e.preventDefault(); setProvisionalDx(""); setShowSuggestions(false); setSuggestionIndex(-1); }}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)] transition-colors"
-              >
-                <X size={14} />
-              </button>
-            )}
-            {showSuggestions && provisionalDx.length >= 2 && (
+            {showProvSuggestions && provQuery.length >= 2 && (
               <ul className="absolute z-20 left-0 right-0 mt-1 rounded-xl border border-[var(--color-border)] bg-white shadow-xl overflow-hidden max-h-60 overflow-y-auto">
-                {provisionalSuggestions.length === 0 ? (
+                {provSuggestions.length === 0 ? (
                   <li>
                     <button
                       type="button"
@@ -434,18 +429,18 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
                       className="w-full text-left px-3.5 py-3.5 text-sm flex items-center gap-2.5 text-[var(--color-primary-700)] hover:bg-[var(--color-primary-50)] transition-colors"
                     >
                       <Plus size={15} className="shrink-0 text-[var(--color-primary-500)]" />
-                      <span>No diagnosis found. Add <span className="font-semibold">&ldquo;{provisionalDx.trim()}&rdquo;</span> as Custom Diagnosis</span>
+                      <span>No diagnosis found. Add <span className="font-semibold">&ldquo;{provQuery.trim()}&rdquo;</span> as Custom Diagnosis</span>
                     </button>
                   </li>
                 ) : (
                   <>
-                    {provisionalSuggestions.map((s, i) => (
+                    {provSuggestions.map((s, i) => (
                       <li key={s.code || s.description}>
                         <button
                           type="button"
-                          onMouseDown={(e) => { e.preventDefault(); selectSuggestion(s); }}
+                          onMouseDown={(e) => { e.preventDefault(); addProv(s.code, s.description); setShowProvSuggestions(false); setProvSuggestionIndex(-1); }}
                           className={`w-full text-left px-3.5 py-2.5 text-sm text-[var(--color-ink-800)] hover:bg-[var(--color-surface-sunken)] flex items-center justify-between gap-4 transition-colors ${
-                            i === suggestionIndex ? "bg-[var(--color-primary-50)] text-[var(--color-primary-700)]" : ""
+                            i === provSuggestionIndex ? "bg-[var(--color-primary-50)] text-[var(--color-primary-700)]" : ""
                           }`}
                         >
                           <span className="flex-1 min-w-0 truncate">{s.description}</span>
@@ -465,7 +460,7 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
                         className="w-full text-left px-3.5 py-2.5 text-sm flex items-center gap-2 text-[var(--color-primary-700)] hover:bg-[var(--color-primary-50)] transition-colors"
                       >
                         <Plus size={13} className="shrink-0" />
-                        <span>Add &ldquo;<span className="font-medium">{provisionalDx.trim()}</span>&rdquo; as Custom Diagnosis</span>
+                        <span>Add &ldquo;<span className="font-medium">{provQuery.trim()}</span>&rdquo; as Custom Diagnosis</span>
                       </button>
                     </li>
                   </>
@@ -475,7 +470,7 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
           </div>
           <button
             type="button"
-            onClick={() => { setShowProvManual((v) => !v); setProvManualText(""); setShowSuggestions(false); }}
+            onClick={() => { setShowProvManual((v) => !v); setProvManualText(""); setShowProvSuggestions(false); }}
             className={`flex items-center gap-1.5 text-xs font-medium px-3 py-2.5 rounded-xl border transition-colors whitespace-nowrap ${
               showProvManual
                 ? "bg-[var(--color-primary-600)] text-white border-[var(--color-primary-600)]"
@@ -487,7 +482,6 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
           </button>
         </div>
 
-        {/* Manual entry — identical to ICD-10 */}
         {showProvManual && (
           <div className="mb-4 flex items-center gap-2 p-3 rounded-xl border border-[var(--color-primary-200)] bg-[var(--color-primary-50)]">
             <input
@@ -496,19 +490,16 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
               onChange={(e) => setProvManualText(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && provManualText.trim()) {
-                  setProvisionalDx(provManualText.trim());
-                  setProvManualText("");
-                  setShowProvManual(false);
-                } else if (e.key === "Escape") {
-                  setShowProvManual(false);
-                }
+                  addProv("", provManualText.trim());
+                  setProvManualText(""); setShowProvManual(false);
+                } else if (e.key === "Escape") { setShowProvManual(false); }
               }}
               placeholder="Type diagnosis name..."
               className="flex-1 rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
             />
             <button
-              disabled={!provManualText.trim()}
-              onClick={() => { setProvisionalDx(provManualText.trim()); setProvManualText(""); setShowProvManual(false); }}
+              disabled={!provManualText.trim() || pending}
+              onClick={() => { addProv("", provManualText.trim()); setProvManualText(""); setShowProvManual(false); }}
               className="px-3.5 py-2 rounded-lg bg-[var(--color-primary-600)] text-white text-sm font-medium hover:bg-[var(--color-primary-700)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               Add
@@ -522,26 +513,47 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
           </div>
         )}
 
-        {/* Current value display — mirrors ICD-10 empty/filled state */}
-        {!provisionalDx ? (
-          <p className="text-sm text-[var(--color-ink-400)] py-4 text-center">No provisional diagnosis entered. Search above to begin.</p>
+        {provisionalDiagnoses.length === 0 ? (
+          <p className="text-sm text-[var(--color-ink-400)] py-4 text-center">No provisional diagnoses added yet. Search above to begin.</p>
         ) : (
-          <div className="flex items-center justify-between rounded-xl border border-[var(--color-border)] px-3.5 py-2.5">
-            <div>
-              <p className="text-sm font-medium text-[var(--color-ink-900)]">{provisionalDx}</p>
-              <p className="text-xs text-[var(--color-ink-400)]">{laterality} · Provisional</p>
-            </div>
-            <button
-              type="button"
-              onClick={() => startTransition(async () => { await autoRemovePresetMeds(provisionalDx); setProvisionalDx(""); })}
-              className="text-[var(--color-ink-400)] hover:text-[var(--color-danger-600)]"
-            >
-              <X size={15} />
-            </button>
-          </div>
+          <ul className="flex flex-col gap-2">
+            {provisionalDiagnoses.map((d) => (
+              <li key={d.id} className="flex items-center justify-between rounded-xl border border-[var(--color-border)] px-3.5 py-2.5">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-medium text-[var(--color-ink-900)]">{d.description}</p>
+                    {isCustomDiagnosis(d) && (
+                      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">Custom</span>
+                    )}
+                  </div>
+                  <p className="text-xs text-[var(--color-ink-400)] font-mono">
+                    {d.icd10Code || "—"} {d.laterality ? `· ${d.laterality}` : ""} · Provisional
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <select
+                    value={d.status}
+                    onChange={(e) => updateDiagnosisStatus(d.id, udid, e.target.value)}
+                    className="text-xs rounded-lg border border-[var(--color-border)] px-2 py-1 bg-white"
+                  >
+                    {DIAGNOSIS_STATUSES.map((s) => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
+                  <button
+                    onClick={() => startTransition(async () => { await autoRemovePresetMeds(d.description); await removeDiagnosis(d.id, udid); })}
+                    className="text-[var(--color-ink-400)] hover:text-[var(--color-danger-600)]"
+                  >
+                    <X size={15} />
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
         )}
       </Card>
 
+      {/* ── Diagnosis (ICD-10) ────────────────────────────────────────────── */}
       <Card>
         <div className="flex items-center justify-between mb-3">
           <p className="text-sm font-medium text-[var(--color-ink-700)]">Diagnosis (ICD-10)</p>
@@ -601,9 +613,7 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
               value={query}
               onChange={(e) => { setQuery(e.target.value); setShowManual(false); }}
               onKeyDown={(e) => {
-                if (e.key === "Enter" && query.trim() && icdMatches.length === 0) {
-                  openCustomModal("icd");
-                }
+                if (e.key === "Enter" && query.trim() && icdMatches.length === 0) openCustomModal("icd");
               }}
               placeholder="Search ICD-10 code or description..."
               className="w-full rounded-xl border border-[var(--color-border)] pl-9 pr-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
@@ -625,7 +635,7 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
                     {icdMatches.map((m) => (
                       <li key={m.code || m.description}>
                         <button
-                          onClick={() => { add(m.code, m.description); setQuery(""); }}
+                          onClick={() => { addIcd(m.code, m.description); setQuery(""); }}
                           className="w-full text-left px-3.5 py-2.5 text-sm text-[var(--color-ink-800)] hover:bg-[var(--color-surface-sunken)] flex items-center justify-between gap-4"
                         >
                           <span className="flex-1 min-w-0 truncate">{m.description}</span>
@@ -652,7 +662,6 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
               </ul>
             )}
           </div>
-          {/* Manual entry button */}
           <button
             type="button"
             onClick={() => { setShowManual((v) => !v); setManualText(""); setQuery(""); }}
@@ -667,7 +676,6 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
           </button>
         </div>
 
-        {/* Manual entry inline form */}
         {showManual && (
           <div className="mb-4 flex items-center gap-2 p-3 rounded-xl border border-[var(--color-primary-200)] bg-[var(--color-primary-50)]">
             <input
@@ -676,19 +684,15 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
               onChange={(e) => setManualText(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && manualText.trim()) {
-                  add("", manualText.trim());
-                  setManualText("");
-                  setShowManual(false);
-                } else if (e.key === "Escape") {
-                  setShowManual(false);
-                }
+                  addIcd("", manualText.trim()); setManualText(""); setShowManual(false);
+                } else if (e.key === "Escape") { setShowManual(false); }
               }}
               placeholder="Type diagnosis name..."
               className="flex-1 rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
             />
             <button
               disabled={!manualText.trim() || pending}
-              onClick={() => { add("", manualText.trim()); setManualText(""); setShowManual(false); }}
+              onClick={() => { addIcd("", manualText.trim()); setManualText(""); setShowManual(false); }}
               className="px-3.5 py-2 rounded-lg bg-[var(--color-primary-600)] text-white text-sm font-medium hover:bg-[var(--color-primary-700)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               Add
@@ -751,7 +755,6 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
             className={`relative w-full rounded-2xl shadow-2xl overflow-hidden bg-white ${customModal.step === "preset" ? "max-w-xl" : "max-w-md"}`}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header */}
             <div
               className="px-5 py-4 flex items-center justify-between border-b border-[var(--color-border)]"
               style={{ background: "linear-gradient(135deg, #0F766E 0%, #0D9488 100%)" }}
@@ -770,7 +773,6 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                {/* Step indicator */}
                 <div className="flex items-center gap-1.5 mr-2">
                   <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${customModal.step === "diagnosis" ? "bg-white text-[#0F766E]" : "bg-white/30 text-white"}`}>1</div>
                   <div className="w-4 h-px bg-white/30" />
@@ -782,7 +784,6 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
               </div>
             </div>
 
-            {/* ── Step 1: Diagnosis form ── */}
             {customModal.step === "diagnosis" && (
               <>
                 <div className="px-5 py-4 flex flex-col gap-4">
@@ -855,11 +856,9 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
               </>
             )}
 
-            {/* ── Step 2: Preset form ── */}
             {customModal.step === "preset" && (
               <>
                 <div className="px-5 py-4 flex flex-col gap-4 max-h-[70vh] overflow-y-auto">
-                  {/* Preset name */}
                   <div>
                     <label className="block text-xs font-semibold text-[var(--color-ink-600)] mb-1.5">Preset Name</label>
                     <input
@@ -870,8 +869,6 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
                       className="w-full rounded-xl border border-[var(--color-border)] px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
                     />
                   </div>
-
-                  {/* Medications */}
                   <div>
                     <div className="flex items-center justify-between mb-2">
                       <label className="text-xs font-semibold text-[var(--color-ink-600)]">Medications</label>
@@ -958,8 +955,6 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
                       })}
                     </div>
                   </div>
-
-                  {/* Follow-up days + Investigations */}
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="block text-xs font-semibold text-[var(--color-ink-600)] mb-1.5">
@@ -985,8 +980,6 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
                       />
                     </div>
                   </div>
-
-                  {/* Advice */}
                   <div>
                     <label className="block text-xs font-semibold text-[var(--color-ink-600)] mb-1.5">
                       Advice <span className="text-[var(--color-ink-300)] font-normal">(optional)</span>
@@ -999,7 +992,6 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
                     />
                   </div>
                 </div>
-
                 <div className="px-5 py-4 border-t border-[var(--color-border)] flex items-center justify-between gap-2">
                   <button type="button" onClick={() => setCustomModal(null)}
                     className="text-xs text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)] transition-colors">
@@ -1020,6 +1012,14 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
         </div>
       )}
 
+      {confirmProvGroup && (
+        <ConfirmDialog
+          title="Load Previous Record?"
+          message="Loading this history will add any missing provisional diagnoses. Do you want to continue?"
+          onConfirm={() => { loadProvGroup(confirmProvGroup); setConfirmProvGroup(null); }}
+          onCancel={() => setConfirmProvGroup(null)}
+        />
+      )}
       {confirmDxGroup && (
         <ConfirmDialog
           title="Load Previous Record?"
@@ -1027,6 +1027,9 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
           onConfirm={() => { loadDxGroup(confirmDxGroup); setConfirmDxGroup(null); }}
           onCancel={() => setConfirmDxGroup(null)}
         />
+      )}
+      {provDxToast && (
+        <Toast message="Previous provisional diagnoses loaded." onDone={() => setProvDxToast(false)} />
       )}
       {dxToast && (
         <Toast message="Previous record loaded successfully." onDone={() => setDxToast(false)} />
