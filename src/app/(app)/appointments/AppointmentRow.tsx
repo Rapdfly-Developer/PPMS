@@ -136,14 +136,6 @@ export function AppointmentRow({ appt, role, token }: { appt: any; role: string;
 
           return (
             <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] mt-1.5">
-              {/* Booked */}
-              <span className="flex items-center gap-1 text-[var(--color-ink-400)]" title="Appointment booked at">
-                <Clock size={10} /> Booked: {format(bookedAt, "d MMM, h:mm a")}
-              </span>
-              {/* Scheduled */}
-              <span className="flex items-center gap-1 text-[var(--color-ink-400)]" title="Scheduled appointment time">
-                <Calendar size={10} /> Appt: {format(scheduledAt, "h:mm a")}
-              </span>
               {/* Arrived */}
               {arrivedAt && (
                 <span className="flex items-center gap-1 text-blue-500" title="Patient arrived at clinic">
@@ -172,6 +164,10 @@ export function AppointmentRow({ appt, role, token }: { appt: any; role: string;
                   )}
                 </span>
               )}
+              {/* Booked — shown last as secondary info */}
+              <span className="flex items-center gap-1 text-[var(--color-ink-400)]" title="Appointment booked at">
+                <Clock size={10} /> Booked: {format(bookedAt, "d MMM, h:mm a")}
+              </span>
             </div>
           );
         })()}
