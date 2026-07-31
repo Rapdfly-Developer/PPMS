@@ -1,12 +1,19 @@
 // Treatment preset system — diagnosis-mapped full treatment protocols.
 // All state is localStorage-only; no DB schema change required.
 
+export interface TaperingStep {
+  dosage: string;
+  frequency: string;
+  duration: string;
+}
+
 export interface TreatmentPresetMed {
   drugName: string;
-  dosage?: string;
+  dosage?: string;     // flat field — used by legacy presets and as fallback
   frequency?: string;
   duration?: string;
   instructions?: string;
+  taperingSteps?: TaperingStep[]; // if present, each step becomes a Plan row
 }
 
 export interface TreatmentPreset {

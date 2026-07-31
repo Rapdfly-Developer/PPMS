@@ -114,7 +114,8 @@ import { getCustomDiagnoses, saveCustomDiagnosis, isDuplicateDescription, type C
 
 type DiagnosisItem = { code: string; description: string; custom: boolean; category?: string };
 
-type PresetMedDraft = { drugName: string; dosage: string; frequency: string; duration: string; instructions: string };
+type TaperingStepDraft = { dosage: string; frequency: string; duration: string };
+type PresetMedDraft = { drugName: string; steps: TaperingStepDraft[]; instructions: string };
 
 type CustomModalState = {
   name: string;
@@ -161,7 +162,8 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
   const [presetToast, setPresetToast] = useState<string[]>([]);
   const [customDxList, setCustomDxList] = useState<CustomDx[]>([]);
   const [customModal, setCustomModal] = useState<CustomModalState | null>(null);
-  const emptyMed = (): PresetMedDraft => ({ drugName: "", dosage: "", frequency: "", duration: "", instructions: "" });
+  const emptyStep = (): TaperingStepDraft => ({ dosage: "", frequency: "", duration: "" });
+  const emptyMed = (): PresetMedDraft => ({ drugName: "", steps: [emptyStep()], instructions: "" });
   const [presetName, setPresetName] = useState("");
   const [presetMeds, setPresetMeds] = useState<PresetMedDraft[]>([emptyMed()]);
   const [presetFollowUpDays, setPresetFollowUpDays] = useState("");
@@ -272,13 +274,18 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
     if (!customModal) return;
     const validMeds: TreatmentPresetMed[] = presetMeds
       .filter((m) => m.drugName.trim())
-      .map((m) => ({
-        drugName: m.drugName.trim(),
-        ...(m.dosage.trim()        && { dosage:        m.dosage.trim() }),
-        ...(m.frequency.trim()     && { frequency:     m.frequency.trim() }),
-        ...(m.duration.trim()      && { duration:      m.duration.trim() }),
-        ...(m.instructions.trim()  && { instructions:  m.instructions.trim() }),
-      }));
+      .map((m) => {
+        const validSteps = m.steps.filter((s) => s.dosage || s.frequency || s.duration);
+        return {
+          drugName: m.drugName.trim(),
+          ...(validSteps.length > 0 && { taperingSteps: validSteps }),
+          // flat fields from first step — for backward compat with display code
+          ...(validSteps[0]?.dosage     && { dosage:     validSteps[0].dosage }),
+          ...(validSteps[0]?.frequency  && { frequency:  validSteps[0].frequency }),
+          ...(validSteps[0]?.duration   && { duration:   validSteps[0].duration }),
+          ...(m.instructions.trim()     && { instructions: m.instructions.trim() }),
+        };
+      });
     const investigations = presetInvestigations.trim()
       ? presetInvestigations.split("\n").map((s) => s.trim()).filter(Boolean)
       : undefined;
@@ -333,7 +340,21 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
     const presetsToApply = toApply.map((m) => m.preset);
     const currentMeds: { drugName: string }[] = visit.medications ?? [];
     const newMeds = mergeMeds(presetsToApply, currentMeds);
-    for (const med of newMeds) { await addMedication(visit.id, udid, med); }
+    for (const med of newMeds) {
+      if (med.taperingSteps && med.taperingSteps.length > 0) {
+        for (const step of med.taperingSteps) {
+          await addMedication(visit.id, udid, {
+            drugName: med.drugName,
+            dosage: step.dosage || undefined,
+            frequency: step.frequency || undefined,
+            duration: step.duration || undefined,
+            instructions: med.instructions || undefined,
+          });
+        }
+      } else {
+        await addMedication(visit.id, udid, med);
+      }
+    }
 
     if (!visit.followUpDate) {
       const days = presetsToApply.map((p) => p.followUpDays).filter((d): d is number => !!d);
@@ -969,13 +990,7 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
                     />
                   </div>
                   <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <label className="text-xs font-semibold text-[var(--color-ink-600)]">Medications</label>
-                      <button type="button" onClick={() => setPresetMeds((p) => [...p, emptyMed()])}
-                        className="flex items-center gap-1 text-xs text-[var(--color-primary-600)] hover:text-[var(--color-primary-800)] font-medium transition-colors">
-                        <Plus size={12} /> Add
-                      </button>
-                    </div>
+                    <label className="block text-xs font-semibold text-[var(--color-ink-600)] mb-2">Medication</label>
                     <div className="flex flex-col gap-2">
                       {presetMeds.map((m, i) => {
                         const medQuery = m.drugName.toLowerCase();
@@ -983,67 +998,102 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
                           ? allKnownMeds.filter((med) => med.drugName.toLowerCase().includes(medQuery)).slice(0, 8)
                           : [];
                         return (
-                        <div key={i} className="rounded-xl border border-[var(--color-border)] p-3 flex flex-col gap-2">
-                          <div className="flex items-center gap-2">
-                            <div className="relative flex-1">
-                              <input
-                                value={m.drugName}
-                                onChange={(e) => { setPresetMeds((p) => p.map((r, idx) => idx === i ? { ...r, drugName: e.target.value } : r)); setMedDropdownOpen(i); }}
-                                onFocus={() => setMedDropdownOpen(i)}
-                                onBlur={() => setTimeout(() => setMedDropdownOpen((v) => v === i ? -1 : v), 150)}
-                                placeholder="Drug name *"
-                                autoComplete="off"
-                                className="w-full rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
-                              />
-                              {medDropdownOpen === i && medSuggestions.length > 0 && (
-                                <ul className="absolute z-30 left-0 right-0 mt-1 rounded-xl border border-[var(--color-border)] bg-white shadow-xl overflow-hidden max-h-52 overflow-y-auto">
-                                  {medSuggestions.map((med, mi) => (
-                                    <li key={mi}>
-                                      <button
-                                        type="button"
-                                        onMouseDown={(e) => {
-                                          e.preventDefault();
-                                          setPresetMeds((p) => p.map((r, idx) => idx === i ? {
-                                            drugName:     med.drugName,
-                                            dosage:       med.dosage       ?? "",
-                                            frequency:    med.frequency    ?? "",
-                                            duration:     med.duration     ?? "",
-                                            instructions: med.instructions ?? "",
-                                          } : r));
-                                          setMedDropdownOpen(-1);
-                                        }}
-                                        className="w-full text-left px-3.5 py-2 hover:bg-[var(--color-surface-sunken)] transition-colors"
-                                      >
-                                        <p className="text-xs font-medium text-[var(--color-ink-800)] truncate">{med.drugName}</p>
-                                        {(med.dosage || med.frequency || med.duration) && (
-                                          <p className="text-[11px] text-[var(--color-ink-400)] mt-0.5 truncate">
-                                            {[med.dosage, med.frequency, med.duration].filter(Boolean).join(" · ")}
-                                          </p>
-                                        )}
-                                      </button>
-                                    </li>
-                                  ))}
-                                </ul>
-                              )}
-                            </div>
-                            {presetMeds.length > 1 && (
-                              <button type="button" onClick={() => setPresetMeds((p) => p.filter((_, idx) => idx !== i))}
-                                className="text-[var(--color-ink-400)] hover:text-[var(--color-danger-600)] transition-colors flex-shrink-0">
-                                <X size={14} />
-                              </button>
+                        <div key={i} className="rounded-xl border border-[var(--color-border)] p-3 flex flex-col gap-3">
+                          {/* Drug name */}
+                          <div className="relative">
+                            <input
+                              value={m.drugName}
+                              onChange={(e) => { setPresetMeds((p) => p.map((r, idx) => idx === i ? { ...r, drugName: e.target.value } : r)); setMedDropdownOpen(i); }}
+                              onFocus={() => setMedDropdownOpen(i)}
+                              onBlur={() => setTimeout(() => setMedDropdownOpen((v) => v === i ? -1 : v), 150)}
+                              placeholder="Drug name *"
+                              autoComplete="off"
+                              className="w-full rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
+                            />
+                            {medDropdownOpen === i && medSuggestions.length > 0 && (
+                              <ul className="absolute z-30 left-0 right-0 mt-1 rounded-xl border border-[var(--color-border)] bg-white shadow-xl overflow-hidden max-h-52 overflow-y-auto">
+                                {medSuggestions.map((med, mi) => (
+                                  <li key={mi}>
+                                    <button
+                                      type="button"
+                                      onMouseDown={(e) => {
+                                        e.preventDefault();
+                                        const firstStep = med.taperingSteps?.[0];
+                                        setPresetMeds((p) => p.map((r, idx) => idx === i ? {
+                                          drugName: med.drugName,
+                                          steps: med.taperingSteps
+                                            ? med.taperingSteps.map((s) => ({ dosage: s.dosage, frequency: s.frequency, duration: s.duration }))
+                                            : [{ dosage: med.dosage ?? "", frequency: med.frequency ?? "", duration: med.duration ?? "" }],
+                                          instructions: med.instructions ?? "",
+                                        } : r));
+                                        setMedDropdownOpen(-1);
+                                      }}
+                                      className="w-full text-left px-3.5 py-2 hover:bg-[var(--color-surface-sunken)] transition-colors"
+                                    >
+                                      <p className="text-xs font-medium text-[var(--color-ink-800)] truncate">{med.drugName}</p>
+                                      {(med.dosage || med.frequency || med.duration) && (
+                                        <p className="text-[11px] text-[var(--color-ink-400)] mt-0.5 truncate">
+                                          {[med.dosage, med.frequency, med.duration].filter(Boolean).join(" · ")}
+                                        </p>
+                                      )}
+                                    </button>
+                                  </li>
+                                ))}
+                              </ul>
                             )}
                           </div>
-                          <div className="grid grid-cols-3 gap-2">
-                            {(["dosage", "frequency", "duration"] as const).map((field) => (
-                              <PresetFieldCombobox
-                                key={field}
-                                field={field}
-                                value={m[field]}
-                                onChange={(v) => setPresetMeds((p) => p.map((r, idx) => idx === i ? { ...r, [field]: v } : r))}
-                                placeholder={field.charAt(0).toUpperCase() + field.slice(1)}
-                              />
+
+                          {/* Tapering steps */}
+                          <div className="flex flex-col gap-2">
+                            <div className="flex items-center justify-between">
+                              <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Tapering Schedule</p>
+                            </div>
+                            {m.steps.map((step, si) => (
+                              <div key={si} className="flex items-center gap-2">
+                                <span className="text-[10px] font-bold text-[var(--color-ink-400)] w-10 shrink-0 text-right">
+                                  {si === 0 ? "Start" : `Step ${si + 1}`}
+                                </span>
+                                <div className="grid grid-cols-3 gap-1.5 flex-1">
+                                  {(["dosage", "frequency", "duration"] as const).map((field) => (
+                                    <PresetFieldCombobox
+                                      key={field}
+                                      field={field}
+                                      value={step[field]}
+                                      onChange={(v) => setPresetMeds((p) => p.map((r, ri) => ri === i
+                                        ? { ...r, steps: r.steps.map((s, sj) => sj === si ? { ...s, [field]: v } : s) }
+                                        : r
+                                      ))}
+                                      placeholder={field.charAt(0).toUpperCase() + field.slice(1)}
+                                    />
+                                  ))}
+                                </div>
+                                {m.steps.length > 1 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setPresetMeds((p) => p.map((r, ri) => ri === i
+                                      ? { ...r, steps: r.steps.filter((_, sj) => sj !== si) }
+                                      : r
+                                    ))}
+                                    className="text-[var(--color-ink-400)] hover:text-[var(--color-danger-600)] shrink-0 transition-colors"
+                                  >
+                                    <X size={13} />
+                                  </button>
+                                )}
+                              </div>
                             ))}
+                            <button
+                              type="button"
+                              onClick={() => setPresetMeds((p) => p.map((r, ri) => ri === i
+                                ? { ...r, steps: [...r.steps, emptyStep()] }
+                                : r
+                              ))}
+                              className="flex items-center gap-1 text-xs text-[var(--color-primary-600)] hover:text-[var(--color-primary-800)] font-medium mt-1 transition-colors w-fit"
+                            >
+                              <Plus size={12} /> Add Tapering Step
+                            </button>
                           </div>
+
+                          {/* Instructions */}
                           <input
                             value={m.instructions}
                             onChange={(e) => setPresetMeds((p) => p.map((r, idx) => idx === i ? { ...r, instructions: e.target.value } : r))}
