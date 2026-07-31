@@ -9,6 +9,7 @@ import {
   CalendarClock, ShieldCheck, ClipboardList, ChevronLeft, ChevronRight, ChevronDown, Eye,
   Phone, Building2,
 } from "lucide-react";
+import { formatComplaintDisplay } from "@/lib/appointment-cc";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 export interface PatientRow {
@@ -619,7 +620,7 @@ export function PatientsClient({
                       {/* Chief Complaint — fills space, shown on lg+ */}
                       <div className="hidden lg:block flex-1 min-w-0">
                         {p.chiefComplaint ? (
-                          <p className="text-sm text-[var(--color-ink-700)] truncate">{p.chiefComplaint}</p>
+                          <p className="text-sm text-[var(--color-ink-700)] truncate">{formatComplaintDisplay(p.chiefComplaint)}</p>
                         ) : (
                           <span className="text-[11px] italic text-[var(--color-ink-300)]">Not recorded</span>
                         )}

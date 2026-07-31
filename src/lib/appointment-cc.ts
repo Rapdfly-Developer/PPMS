@@ -14,7 +14,7 @@ export function formatComplaintDisplay(raw: string | null | undefined): string {
     const text = parts.slice(2).join(" | ").trim();
     const m = sinceRaw.match(/^Since:\s*(\d+)\s+(days?|weeks?|months?|years?)$/i);
     if (LATERALITY.has(lat) && m) {
-      return `${lat} ${text} - Since ${m[1]}${m[2]}`;
+      return `${lat} ${text} · Since ${m[1]} ${m[2]}`;
     }
   }
   return raw;
