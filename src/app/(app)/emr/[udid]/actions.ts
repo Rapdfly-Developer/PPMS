@@ -148,7 +148,7 @@ export async function saveVisualAcuity(visitId: string, udid: string, data: { te
   revalidate(udid);
 }
 
-export async function saveRefraction(visitId: string, udid: string, data: { re: string; le: string }) {
+export async function saveRefraction(visitId: string, udid: string, data: { re: string; le: string; extraCorrections?: string }) {
   const user = await requireRole("DOCTOR");
   await assertVisitAccess(visitId);
   const reviewedByDoctor = user.role === "DOCTOR";

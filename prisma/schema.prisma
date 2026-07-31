@@ -562,6 +562,7 @@ model RefractiveCorrection {
   visit            Visit    @relation(fields: [visitId], references: [id])
   re               String?  // JSON: { distance: {sph,cyl,axis,va}, near: {sph,cyl,axis,va} }
   le               String?
+  extraCorrections String?  // JSON: [{label,re,le}] for additional corrections beyond the first
   sentToOpticals   Boolean  @default(false)
   reviewedByDoctor Boolean  @default(false)
   updatedAt        DateTime @updatedAt

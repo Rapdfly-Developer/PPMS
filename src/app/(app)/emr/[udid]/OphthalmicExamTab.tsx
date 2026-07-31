@@ -305,14 +305,21 @@ const REFRACTION_METHODS = ["Subjective", "Cycloplegic", "Auto-Refraction", "Cur
 
 function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: any; udid: string; editable: boolean; priorVisits?: any[] }) {
   const rc = visit.refraction;
-  const [re, setRe] = useState(parseJSON(rc?.re, { sph: "", cyl: "", axis: "", va: "", nearSph: "", nearVa: "", method: "" }));
-  const [le, setLe] = useState(parseJSON(rc?.le, { sph: "", cyl: "", axis: "", va: "", nearSph: "", nearVa: "", method: "" }));
+
+  type RxFields = { sph: string; cyl: string; axis: string; nearSph: string; va: string; nearVa: string; method: string };
+  const emptyRx: RxFields = { sph: "", cyl: "", axis: "", nearSph: "", va: "", nearVa: "", method: "" };
+
+  type ExtraCorrection = { label: string; re: RxFields; le: RxFields };
+
+  const [re, setRe] = useState(parseJSON(rc?.re, emptyRx));
+  const [le, setLe] = useState(parseJSON(rc?.le, emptyRx));
+  const [extras, setExtras] = useState<ExtraCorrection[]>(() =>
+    parseJSON<ExtraCorrection[]>(rc?.extraCorrections, [])
+  );
   const [showHistory, setShowHistory] = useState(false);
   const [confirmRx, setConfirmRx] = useState<typeof priorRefractions[0] | null>(null);
   const [rxToast, setRxToast] = useState(false);
 
-  type RxFields = { sph: string; cyl: string; axis: string; nearSph: string; va: string; nearVa: string; method: string };
-  const emptyRx: RxFields = { sph: "", cyl: "", axis: "", nearSph: "", va: "", nearVa: "", method: "" };
   const priorRefractions = priorVisits
     .filter((v) => v.refraction)
     .map((v) => ({
@@ -321,10 +328,23 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
       le: parseJSON<RxFields>(v.refraction?.le, emptyRx),
     }));
 
-  const state = useAutoSave({ re: JSON.stringify(re), le: JSON.stringify(le) }, async (d) => {
-    if (!editable) return;
-    await saveRefraction(visit.id, udid, d);
-  });
+  const state = useAutoSave(
+    { re: JSON.stringify(re), le: JSON.stringify(le), extraCorrections: JSON.stringify(extras) },
+    async (d) => { if (!editable) return; await saveRefraction(visit.id, udid, d); }
+  );
+
+  const addCorrection = () => {
+    setExtras((prev) => [
+      ...prev,
+      { label: `Correction ${prev.length + 2}`, re: { ...emptyRx }, le: { ...emptyRx } },
+    ]);
+  };
+
+  const removeCorrection = (idx: number) =>
+    setExtras((prev) => prev.filter((_, i) => i !== idx));
+
+  const updateExtra = (idx: number, side: "re" | "le", val: RxFields) =>
+    setExtras((prev) => prev.map((e, i) => i === idx ? { ...e, [side]: val } : e));
 
   const SEL = "rounded border border-[var(--color-border)] bg-white px-1.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-400)] disabled:bg-[var(--color-surface-sunken)]";
 
@@ -452,9 +472,10 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
 
   return (
     <Card>
+      {/* ── Correction 1 (primary) ── */}
       <div className="flex items-center justify-between mb-3 flex-wrap gap-3">
         <div className="flex items-center gap-3 flex-wrap">
-          <p className="text-sm font-medium text-[var(--color-ink-700)]">Refractive Correction</p>
+          <p className="text-sm font-medium text-[var(--color-ink-700)]">Correction 1</p>
           <div className="flex items-center gap-2">
             <span className="text-xs text-[var(--color-ink-400)]">Method:</span>
             <select
@@ -484,6 +505,52 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
         {eyeFields(re, setRe)}
         {eyeFields(le, setLe)}
       </EyeColumns>
+
+      {/* ── Extra corrections ── */}
+      {extras.map((ex, idx) => (
+        <div key={idx} className="mt-5 pt-4 border-t border-[var(--color-border)]">
+          <div className="flex items-center justify-between mb-3 flex-wrap gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
+              <p className="text-sm font-medium text-[var(--color-ink-700)]">{ex.label}</p>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-[var(--color-ink-400)]">Method:</span>
+                <select
+                  disabled={!editable}
+                  value={ex.re.method || REFRACTION_METHODS[0]}
+                  onChange={(e) => updateExtra(idx, "re", { ...ex.re, method: e.target.value })}
+                  className="rounded-lg border border-[var(--color-border)] bg-white px-2.5 py-1 text-xs disabled:bg-[var(--color-surface-sunken)]"
+                >
+                  {REFRACTION_METHODS.map((m) => <option key={m}>{m}</option>)}
+                </select>
+              </div>
+            </div>
+            {editable && (
+              <button
+                type="button"
+                onClick={() => removeCorrection(idx)}
+                className="text-xs text-red-500 hover:text-red-700 hover:bg-red-50 px-2.5 py-0.5 rounded-full border border-red-200 transition-colors"
+              >
+                Remove
+              </button>
+            )}
+          </div>
+          <EyeColumns>
+            {eyeFields(ex.re, (v) => updateExtra(idx, "re", v))}
+            {eyeFields(ex.le, (v) => updateExtra(idx, "le", v))}
+          </EyeColumns>
+        </div>
+      ))}
+
+      {/* ── Add Correction button ── */}
+      {editable && (
+        <button
+          type="button"
+          onClick={addCorrection}
+          className="mt-4 flex items-center gap-1.5 text-xs font-medium text-[var(--color-primary-700)] hover:text-[var(--color-primary-900)] hover:bg-[var(--color-primary-50)] px-3 py-1.5 rounded-lg border border-[var(--color-primary-200)] transition-colors"
+        >
+          <span className="text-base leading-none">+</span> Add Correction
+        </button>
+      )}
 
       {showHistory && priorRefractions.length > 0 && (
         <div className="mt-4 rounded-xl border border-[#B2DEDA] bg-[#EEF8F7] p-3">
