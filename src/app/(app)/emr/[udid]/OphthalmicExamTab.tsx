@@ -566,8 +566,8 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
             )}
           </div>
           <EyeColumns>
-            {eyeFields(ex.re, (v) => updateExtra(idx, "re", v))}
-            {eyeFields(ex.le, (v) => updateExtra(idx, "le", v))}
+            {eyeFields(ex.re, (v) => updateExtra(idx, "re", typeof v === "function" ? v(ex.re) : v))}
+            {eyeFields(ex.le, (v) => updateExtra(idx, "le", typeof v === "function" ? v(ex.le) : v))}
           </EyeColumns>
         </div>
       ))}
