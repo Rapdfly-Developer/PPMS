@@ -142,8 +142,6 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
   const [showProvSuggestions, setShowProvSuggestions] = useState(false);
   const [provSuggestionIndex, setProvSuggestionIndex] = useState(-1);
   const provBlurTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [showProvManual, setShowProvManual] = useState(false);
-  const [provManualText, setProvManualText] = useState("");
   const [provHistoryOpen, setProvHistoryOpen] = useState(false);
   const [confirmProvGroup, setConfirmProvGroup] = useState<any[] | null>(null);
   const [provDxToast, setProvDxToast] = useState(false);
@@ -155,8 +153,6 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
   const setLaterality = (v: string) => { sessionStorage.setItem(`icd-lat-${visit.id}`, v); setLateralityState(v); };
   const [pending, startTransition] = useTransition();
   const [historyOpen, setHistoryOpen] = useState(false);
-  const [showManual, setShowManual] = useState(false);
-  const [manualText, setManualText] = useState("");
   const [confirmDxGroup, setConfirmDxGroup] = useState<any[] | null>(null);
   const [dxToast, setDxToast] = useState(false);
   const [presetToast, setPresetToast] = useState<string[]>([]);
@@ -590,48 +586,13 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
           </div>
           <button
             type="button"
-            onClick={() => { setShowProvManual((v) => !v); setProvManualText(""); setShowProvSuggestions(false); }}
-            className={`flex items-center gap-1.5 text-xs font-medium px-3 py-2.5 rounded-xl border transition-colors whitespace-nowrap ${
-              showProvManual
-                ? "bg-[var(--color-primary-600)] text-white border-[var(--color-primary-600)]"
-                : "bg-white text-[var(--color-ink-600)] border-[var(--color-border)] hover:border-[var(--color-primary-400)] hover:text-[var(--color-primary-600)]"
-            }`}
+            onClick={() => openCustomModal("provisional")}
+            className="flex items-center gap-1.5 text-xs font-medium px-3 py-2.5 rounded-xl border transition-colors whitespace-nowrap bg-white text-[var(--color-ink-600)] border-[var(--color-border)] hover:border-[var(--color-primary-400)] hover:text-[var(--color-primary-600)]"
           >
             <PenLine size={13} />
             Add Manually
           </button>
         </div>
-
-        {showProvManual && (
-          <div className="mb-4 flex items-center gap-2 p-3 rounded-xl border border-[var(--color-primary-200)] bg-[var(--color-primary-50)]">
-            <input
-              autoFocus
-              value={provManualText}
-              onChange={(e) => setProvManualText(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && provManualText.trim()) {
-                  addProv("", provManualText.trim());
-                  setProvManualText(""); setShowProvManual(false);
-                } else if (e.key === "Escape") { setShowProvManual(false); }
-              }}
-              placeholder="Type diagnosis name..."
-              className="flex-1 rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
-            />
-            <button
-              disabled={!provManualText.trim() || pending}
-              onClick={() => { addProv("", provManualText.trim()); setProvManualText(""); setShowProvManual(false); }}
-              className="px-3.5 py-2 rounded-lg bg-[var(--color-primary-600)] text-white text-sm font-medium hover:bg-[var(--color-primary-700)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-            >
-              Add
-            </button>
-            <button
-              onClick={() => { setShowProvManual(false); setProvManualText(""); }}
-              className="p-2 rounded-lg text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)] hover:bg-white transition-colors"
-            >
-              <X size={15} />
-            </button>
-          </div>
-        )}
 
         {provisionalDiagnoses.length === 0 ? (
           <p className="text-sm text-[var(--color-ink-400)] py-4 text-center">No provisional diagnoses added yet. Search above to begin.</p>
@@ -731,7 +692,7 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
             <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] pointer-events-none" />
             <input
               value={query}
-              onChange={(e) => { setQuery(e.target.value); setShowManual(false); }}
+              onChange={(e) => { setQuery(e.target.value); }}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && query.trim() && icdMatches.length === 0) openCustomModal("icd");
               }}
@@ -784,47 +745,13 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
           </div>
           <button
             type="button"
-            onClick={() => { setShowManual((v) => !v); setManualText(""); setQuery(""); }}
-            className={`flex items-center gap-1.5 text-xs font-medium px-3 py-2.5 rounded-xl border transition-colors whitespace-nowrap ${
-              showManual
-                ? "bg-[var(--color-primary-600)] text-white border-[var(--color-primary-600)]"
-                : "bg-white text-[var(--color-ink-600)] border-[var(--color-border)] hover:border-[var(--color-primary-400)] hover:text-[var(--color-primary-600)]"
-            }`}
+            onClick={() => openCustomModal("icd")}
+            className="flex items-center gap-1.5 text-xs font-medium px-3 py-2.5 rounded-xl border transition-colors whitespace-nowrap bg-white text-[var(--color-ink-600)] border-[var(--color-border)] hover:border-[var(--color-primary-400)] hover:text-[var(--color-primary-600)]"
           >
             <PenLine size={13} />
             Add Manually
           </button>
         </div>
-
-        {showManual && (
-          <div className="mb-4 flex items-center gap-2 p-3 rounded-xl border border-[var(--color-primary-200)] bg-[var(--color-primary-50)]">
-            <input
-              autoFocus
-              value={manualText}
-              onChange={(e) => setManualText(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && manualText.trim()) {
-                  addIcd("", manualText.trim()); setManualText(""); setShowManual(false);
-                } else if (e.key === "Escape") { setShowManual(false); }
-              }}
-              placeholder="Type diagnosis name..."
-              className="flex-1 rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
-            />
-            <button
-              disabled={!manualText.trim() || pending}
-              onClick={() => { addIcd("", manualText.trim()); setManualText(""); setShowManual(false); }}
-              className="px-3.5 py-2 rounded-lg bg-[var(--color-primary-600)] text-white text-sm font-medium hover:bg-[var(--color-primary-700)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-            >
-              Add
-            </button>
-            <button
-              onClick={() => { setShowManual(false); setManualText(""); }}
-              className="p-2 rounded-lg text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)] hover:bg-white transition-colors"
-            >
-              <X size={15} />
-            </button>
-          </div>
-        )}
 
         {diagnoses.length === 0 ? (
           <p className="text-sm text-[var(--color-ink-400)] py-4 text-center">No diagnoses added yet. Search above to begin.</p>
