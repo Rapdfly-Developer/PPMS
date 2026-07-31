@@ -7,7 +7,7 @@ import { parseJSON } from "@/lib/json";
 import { useAutoSave, SaveIndicator } from "@/lib/useAutoSave";
 import { addMedication, removeMedication, updateMedication, clearAllMedications, saveRefraction, saveFollowUp, saveAdviseNotes } from "./actions";
 import { DispositionToggle, AdmitPanel, SurgicalPanel, FollowUpdatesPanel } from "./DispositionPanel";
-import { Plus, X, BedDouble, Stethoscope, ChevronDown, Pencil, Trash2, RefreshCw, Search, Pill, Sparkles, CheckCircle2, Check, AlertTriangle } from "lucide-react";
+import { Plus, X, BedDouble, Stethoscope, ChevronDown, Pencil, Trash2, RefreshCw, Search, Eye, Sparkles, CheckCircle2, Check, AlertTriangle } from "lucide-react";
 import {
   type TreatmentPreset, type PresetMatch, type AppliedPreset,
   getTreatmentPresets, matchPresets, mergeMeds,
@@ -1169,7 +1169,7 @@ function PrescriptionCard({ visit, udid, priorVisits }: { visit: any; udid: stri
                   <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
                     i === activeIndex ? "bg-[var(--color-primary-100)]" : "bg-[var(--color-surface-sunken)]"
                   }`}>
-                    <Pill size={15} className="text-[var(--color-primary-600)]" />
+                    <Eye size={15} className="text-[var(--color-primary-600)]" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
@@ -1195,9 +1195,9 @@ function PrescriptionCard({ visit, udid, priorVisits }: { visit: any; udid: stri
           <div className="flex items-center justify-between mb-3 max-w-3xl">
             <div className="flex items-center gap-2">
               <div className="w-6 h-6 rounded-md bg-[var(--color-primary-600)] flex items-center justify-center">
-                <Pill size={13} className="text-white" />
+                <Eye size={13} className="text-white" />
               </div>
-              <p className="text-xs font-semibold text-[var(--color-primary-700)]">Rx #{medications.length + 1}</p>
+              <p className="text-xs font-semibold text-[var(--color-primary-700)]">#{medications.length + 1}</p>
             </div>
             <button onClick={() => setShowAddDrug(false)} className="text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)]"><X size={13} /></button>
           </div>
@@ -1333,7 +1333,7 @@ function PrescriptionCard({ visit, udid, priorVisits }: { visit: any; udid: stri
       {medications.length === 0 ? (
         <div className="flex flex-col items-center gap-2 py-8 text-center">
           <div className="w-10 h-10 rounded-xl bg-[var(--color-surface-sunken)] flex items-center justify-center">
-            <Pill size={20} className="text-[var(--color-ink-300)]" />
+            <Eye size={20} className="text-[var(--color-ink-300)]" />
           </div>
           <p className="text-sm text-[var(--color-ink-400)]">Search for a medication above to add it to the prescription.</p>
         </div>
@@ -1357,7 +1357,7 @@ function PrescriptionCard({ visit, udid, priorVisits }: { visit: any; udid: stri
                 return (
                   <>
                     <tr key={m.id} className={isEditing ? "bg-[var(--color-primary-50)]" : "bg-white hover:bg-[var(--color-surface-sunken)] transition-colors"}>
-                      <td className="px-3 py-3 text-xs font-bold text-[var(--color-primary-600)] whitespace-nowrap">Rx {idx + 1}</td>
+                      <td className="px-3 py-3 text-xs font-bold text-[var(--color-primary-600)] whitespace-nowrap">{idx + 1}</td>
 
                       {/* Drug Name */}
                       <td className="px-3 py-2.5">
@@ -1371,7 +1371,7 @@ function PrescriptionCard({ visit, udid, priorVisits }: { visit: any; udid: stri
                         ) : (
                           <div className="flex items-center gap-2">
                             <div className="w-7 h-7 rounded-lg bg-[var(--color-primary-50)] flex items-center justify-center shrink-0">
-                              <Pill size={13} className="text-[var(--color-primary-600)]" />
+                              <Eye size={13} className="text-[var(--color-primary-600)]" />
                             </div>
                             <span className="text-sm font-semibold text-[var(--color-ink-900)]">{m.drugName}</span>
                           </div>
