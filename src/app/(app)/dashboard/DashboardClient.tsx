@@ -134,7 +134,7 @@ function SurgeryRow({ s, role }: { s: Surgery; role: "DOCTOR" | "HOSPITAL" }) {
 }
 
 /* ── Appointment row ────────────────────────────────────────────────────── */
-function ApptRow({ appt, role }: { appt: Appt; role: "DOCTOR" | "HOSPITAL" }) {
+function ApptRow({ appt, role, serial }: { appt: Appt; role: "DOCTOR" | "HOSPITAL"; serial: number }) {
   const cfg      = STATUS_CFG[appt.status] ?? STATUS_CFG["REQUESTED"];
   const apptTime = format(new Date(appt.dateTime), "h:mm a");
   const arrivedAt      = appt.arrivedAt      ? new Date(appt.arrivedAt)      : null;
@@ -152,6 +152,11 @@ function ApptRow({ appt, role }: { appt: Appt; role: "DOCTOR" | "HOSPITAL" }) {
 
   return (
     <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-[var(--color-border)] bg-white hover:bg-[var(--color-primary-50)] hover:border-[var(--color-primary-200)] transition-colors">
+      {/* Serial number */}
+      <div className="w-6 shrink-0 flex items-center justify-center">
+        <span className="text-xs font-bold text-[var(--color-ink-400)]">{serial}</span>
+      </div>
+      <div className="w-px self-stretch bg-[var(--color-border)]" />
       {/* Time + visit-type column */}
       <div className="w-20 shrink-0 flex flex-col items-center gap-0.5">
         {/* Primary time: arrived or scheduled */}
@@ -460,7 +465,7 @@ export function DashboardClient({
                   </div>
                   {displayed.length > 0 && (
                     <div className="space-y-2">
-                      {displayed.map((a) => <ApptRow key={a.id} appt={a} role={role} />)}
+                      {displayed.map((a, idx) => <ApptRow key={a.id} appt={a} role={role} serial={idx + 1} />)}
                     </div>
                   )}
                 </div>
