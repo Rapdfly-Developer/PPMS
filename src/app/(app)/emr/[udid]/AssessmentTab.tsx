@@ -311,12 +311,7 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
   // Auto-apply matching treatment presets to Plan
   const autoApplyPresets = async (newDiagnoses: { icd10Code: string; description: string }[]) => {
     const allPresets = getTreatmentPresets();
-    const allDx = [
-      ...diagnoses.map((d: any) => ({ icd10Code: d.icd10Code, description: d.description })),
-      ...provisionalDiagnoses.map((d: any) => ({ icd10Code: d.icd10Code, description: d.description })),
-      ...newDiagnoses,
-    ];
-    const presetMatches = matchPresets(allDx, allPresets);
+    const presetMatches = matchPresets(newDiagnoses, allPresets);
     const alreadyApplied = getApplied(visit.id);
     const dismissedIds   = getDismissedPresets(visit.id);
     const appliedIds     = new Set(alreadyApplied.map((a) => a.presetId));
