@@ -225,7 +225,7 @@ function ApptRow({ appt, role }: { appt: Appt; role: "DOCTOR" | "HOSPITAL" }) {
           )}
         </div>
         {appt.complaint && (
-          <span className="text-xs font-medium text-[var(--color-ink-500)] max-w-[180px] truncate text-right">
+          <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[var(--color-primary-50)] text-[var(--color-primary-700)] border border-[var(--color-primary-100)] max-w-[180px] truncate text-right">
             {formatComplaintDisplay(appt.complaint)}
           </span>
         )}
