@@ -738,12 +738,13 @@ export type ShortSummaryData = {
   patient: { udid: string; name: string; age: number; sex: string; mobile?: string | null };
   visit: {
     date: Date; visitType?: string | null;
-    hospitalName: string; hospitalAddress?: string | null; hospitalContact?: string | null;
+    hospitalName: string; hospitalAddress?: string | null; hospitalContact?: string | null; hospitalEmail?: string | null;
     doctorName: string;
     followUpDate?: Date | null;
     referralEnabled?: boolean;
     referralNote?: string | null;
   };
+  chiefComplaint?: string | null;
   diagnoses: { description: string; icd10Code: string; status: string; laterality?: string | null }[];
   medications: { drugName: string; dosage?: string | null; frequency?: string | null; duration?: string | null; instructions?: string | null }[];
   investigations: { testName: string; category: string; priority: string; laterality?: string | null; status: string }[];
@@ -757,17 +758,41 @@ export type ShortSummaryData = {
 async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
   const qr = await makeQr(`PPMS-${d.patient.udid}-${format(d.visit.date, "yyyyMMdd")}`);
 
-  /* Diagnoses */
-  const diagRows = d.diagnoses.length
+  /* Local helper: empty string fallback (no em-dash) */
+  const v2 = (x: unknown) => (x === null || x === undefined || x === "") ? "" : escapeHtml(String(x));
+
+  /* Custom header for hospital summary */
+  const hospSubLines = [
+    d.visit.hospitalAddress,
+    d.visit.hospitalContact,
+    d.visit.hospitalEmail,
+  ].filter(Boolean).map(escapeHtml).join(" &nbsp;|&nbsp; ");
+
+  const summaryHeader = `
+  <div class="top-bar"></div>
+  <div class="letterhead">
+    <div class="lh-logo">✚</div>
+    <div class="lh-hosp">
+      <div class="lh-hosp-name">${escapeHtml(d.visit.hospitalName)}</div>
+      ${hospSubLines ? `<div class="lh-hosp-sub">${hospSubLines}</div>` : ""}
+    </div>
+    <div class="lh-right">
+      <span class="doc-name">Dr. ${escapeHtml(d.visit.doctorName)}</span>
+      ${format(d.visit.date, "dd MMM yyyy")}<br/>
+      ${format(d.visit.date, "hh:mm a")} IST
+    </div>
+  </div>
+  <div class="doc-type-bar">Consultation Summary</div>`;
+
+  /* Impression rows — # / Diagnosis / Laterality only */
+  const impressionRows = d.diagnoses.length
     ? d.diagnoses.map((dx, i) => `
       <tr>
         <td class="td-num">${i + 1}</td>
         <td class="td-head">${escapeHtml(dx.description)}</td>
-        <td><span class="td-mono">${val(dx.icd10Code)}</span></td>
-        <td>${val(dx.laterality)}</td>
-        <td>${badgeStatus(dx.status)}</td>
+        <td>${dx.laterality ? escapeHtml(dx.laterality) : ""}</td>
       </tr>`).join("")
-    : `<tr class="empty-row"><td colspan="5">No diagnoses recorded</td></tr>`;
+    : `<tr class="empty-row"><td colspan="3">No diagnosis recorded</td></tr>`;
 
   /* Medications */
   const medRows = d.medications.length
@@ -775,24 +800,11 @@ async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
       <tr>
         <td class="td-num">${i + 1}</td>
         <td><div class="drug-name">${escapeHtml(m.drugName)}</div>${m.instructions ? `<div class="drug-sub">${escapeHtml(m.instructions)}</div>` : ""}</td>
-        <td class="drug-dose">${val(m.dosage)}</td>
-        <td>${val(m.frequency)}</td>
-        <td>${val(m.duration)}</td>
+        <td class="drug-dose">${v2(m.dosage)}</td>
+        <td>${v2(m.frequency)}</td>
+        <td>${v2(m.duration)}</td>
       </tr>`).join("")
     : `<tr class="empty-row"><td colspan="5">No medications prescribed</td></tr>`;
-
-  /* Investigations */
-  const invRows = d.investigations.length
-    ? d.investigations.map((inv, i) => `
-      <tr>
-        <td class="td-num">${i + 1}</td>
-        <td class="td-head">${escapeHtml(inv.testName)}</td>
-        <td>${escapeHtml(inv.category)}</td>
-        <td>${badgePriority(inv.priority)}</td>
-        <td>${val(inv.laterality)}</td>
-        <td>${badgeStatus(inv.status)}</td>
-      </tr>`).join("")
-    : `<tr class="empty-row"><td colspan="6">No investigations ordered</td></tr>`;
 
   /* Optical Rx */
   const hasRx = d.opticalRx && (
@@ -801,7 +813,7 @@ async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
     d.opticalRx.re.nearSph || d.opticalRx.le.nearSph
   );
   const rxRow = (eye: string, sub: string, sph?: string, cyl?: string, axis?: string) =>
-    `<tr><td class="rx-eye">${eye}<br/><span class="rx-eye-sub">${sub}</span></td><td>${val(sph)}</td><td>${val(cyl)}</td><td>${val(axis)}</td></tr>`;
+    `<tr><td class="rx-eye">${eye}<br/><span class="rx-eye-sub">${sub}</span></td><td>${v2(sph)}</td><td>${v2(cyl)}</td><td>${v2(axis)}</td></tr>`;
 
   const opticalBlock = hasRx ? `
     ${secHdr("Optical Prescription")}
@@ -814,11 +826,13 @@ async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
       </tbody>
     </table>` : "";
 
-  /* Advice block */
-  const adviceRows = [
-    d.visit.followUpDate ? { label: "Follow-up Date", value: format(new Date(d.visit.followUpDate), "EEEE, dd MMM yyyy") } : null,
-    d.visit.referralEnabled && d.visit.referralNote ? { label: "Referral", value: d.visit.referralNote } : null,
-  ].filter(Boolean) as { label: string; value: string }[];
+  /* Advice & follow-up */
+  const followUpLine = d.visit.followUpDate
+    ? `In view of the above, please review on <strong>${format(new Date(d.visit.followUpDate), "EEEE, dd MMM yyyy")}</strong>.`
+    : "";
+  const referralLine = d.visit.referralEnabled && d.visit.referralNote
+    ? `Referred to: ${escapeHtml(d.visit.referralNote)}`
+    : "";
 
   const surgRow = d.surgicalCounselling?.surgeryType ? {
     type: d.surgicalCounselling.surgeryType,
@@ -826,22 +840,37 @@ async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
     notes: d.surgicalCounselling.notes,
   } : null;
 
+  const adviceBlock = (followUpLine || referralLine || surgRow) ? `
+  ${secHdr("Advice & Follow-up")}
+  ${followUpLine || referralLine ? `<div class="advice-box">
+    ${followUpLine ? `<div class="advice-row"><span class="advice-val">${followUpLine}</span></div>` : ""}
+    ${referralLine ? `<div class="advice-row"><span class="advice-label">Referral</span><span class="advice-val">${referralLine}</span></div>` : ""}
+  </div>` : ""}
+  ${surgRow ? `<div class="surgery-box" style="margin-top:8px;">
+    <div style="font-size:9px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:#E11D48;margin-bottom:5px;">⚕ Surgical Counselling</div>
+    <div style="font-size:12px;font-weight:700;color:#1A2E2A;">${escapeHtml(surgRow.type)}</div>
+    ${surgRow.date ? `<div style="font-size:10.5px;color:#5C7A75;margin-top:2px;">Planned date: ${escapeHtml(surgRow.date)}</div>` : ""}
+    ${surgRow.notes ? `<div style="font-size:10.5px;color:#1A2E2A;margin-top:4px;">${escapeHtml(surgRow.notes)}</div>` : ""}
+  </div>` : ""}` : "";
+
   return `<!DOCTYPE html>
 <html>
 <head>
 <meta charset="utf-8"/>
-<title>Short Summary — ${escapeHtml(d.patient.name)}</title>
+<title>Consultation Summary — ${escapeHtml(d.patient.name)}</title>
 <style>${SHARED_CSS}</style>
 </head>
 <body>
 
-  ${letterhead(d.visit.hospitalName, d.visit.hospitalAddress, d.visit.hospitalContact, d.visit.doctorName, d.visit.date, d.visit.visitType, "Consultation Short Summary")}
+  ${summaryHeader}
   ${patientCard(d.patient, d.visit.doctorName, d.visit.date, d.visit.hospitalName)}
 
-  ${secHdr("Diagnosis / Assessment")}
+  ${d.chiefComplaint ? `${secHdr("Chief Complaint")}<div class="text-block">${escapeHtml(d.chiefComplaint)}</div>` : ""}
+
+  ${secHdr("Impression")}
   <table>
-    <thead><tr><th style="width:24px">#</th><th>Diagnosis</th><th style="width:80px">ICD-10</th><th style="width:90px">Laterality</th><th style="width:90px">Status</th></tr></thead>
-    <tbody>${diagRows}</tbody>
+    <thead><tr><th style="width:24px">#</th><th>Diagnosis</th><th style="width:100px">Laterality</th></tr></thead>
+    <tbody>${impressionRows}</tbody>
   </table>
 
   ${secHdr("Medications Prescribed")}
@@ -852,26 +881,10 @@ async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
 
   ${opticalBlock}
 
-  ${secHdr("Investigations Ordered")}
-  <table>
-    <thead><tr><th style="width:24px">#</th><th>Test / Investigation</th><th style="width:90px">Category</th><th style="width:80px">Priority</th><th style="width:80px">Laterality</th><th style="width:90px">Status</th></tr></thead>
-    <tbody>${invRows}</tbody>
-  </table>
-
-  ${adviceRows.length || surgRow ? `
-  ${secHdr("Advice & Follow-up")}
-  ${adviceRows.length ? `<div class="advice-box">
-    ${adviceRows.map(r => `<div class="advice-row"><span class="advice-label">${escapeHtml(r.label)}</span><span class="advice-val">${escapeHtml(r.value)}</span></div>`).join("")}
-  </div>` : ""}
-  ${surgRow ? `<div class="surgery-box" style="margin-top:8px;">
-    <div style="font-size:9px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:#E11D48;margin-bottom:5px;">⚕ Surgical Counselling</div>
-    <div style="font-size:12px;font-weight:700;color:#1A2E2A;">${escapeHtml(surgRow.type)}</div>
-    ${surgRow.date ? `<div style="font-size:10.5px;color:#5C7A75;margin-top:2px;">Planned date: ${escapeHtml(surgRow.date)}</div>` : ""}
-    ${surgRow.notes ? `<div style="font-size:10.5px;color:#1A2E2A;margin-top:4px;">${escapeHtml(surgRow.notes)}</div>` : ""}
-  </div>` : ""}` : ""}
+  ${adviceBlock}
 
   ${bottomSection(d.visit.doctorName, d.visit.hospitalName, qr, d.patient.udid)}
-  ${footerHtml(d.patient.udid, "Consultation Short Summary")}
+  ${footerHtml(d.patient.udid, "Consultation Summary")}
 
 </body>
 </html>`;
