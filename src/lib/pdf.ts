@@ -769,20 +769,43 @@ async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
   ].filter((x): x is string => Boolean(x)).map(escapeHtml).join(" &nbsp;|&nbsp; ");
 
   const summaryHeader = `
-  <div class="top-bar"></div>
-  <div class="letterhead">
-    <div class="lh-logo">✚</div>
-    <div class="lh-hosp">
-      <div class="lh-hosp-name">${escapeHtml(d.visit.hospitalName)}</div>
-      ${hospSubLines ? `<div class="lh-hosp-sub">${hospSubLines}</div>` : ""}
+  <div style="
+    background: linear-gradient(135deg, #0D4A45 0%, #10857A 100%);
+    margin: -12mm -14mm 0;
+    padding: 14px 20px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    page-break-after: avoid;
+    page-break-inside: avoid;
+  ">
+    <div style="display:flex;align-items:center;gap:12px;min-width:0;flex:1;">
+      <div style="
+        width:46px;height:46px;border-radius:10px;
+        background:rgba(255,255,255,0.18);
+        display:flex;align-items:center;justify-content:center;
+        flex-shrink:0;color:#fff;font-size:22px;font-weight:900;
+        border:1.5px solid rgba(255,255,255,0.35);
+      ">✚</div>
+      <div style="min-width:0;">
+        <div style="font-size:18px;font-weight:800;color:#fff;letter-spacing:-0.3px;line-height:1.15;">
+          ${escapeHtml(d.visit.hospitalName)}
+        </div>
+        ${hospSubLines ? `<div style="font-size:9.5px;color:rgba(255,255,255,0.78);margin-top:3px;line-height:1.5;">${hospSubLines}</div>` : ""}
+      </div>
     </div>
-    <div class="lh-right">
-      <span class="doc-name">Dr. ${escapeHtml(d.visit.doctorName)}</span>
-      ${format(d.visit.date, "dd MMM yyyy")}<br/>
-      ${format(d.visit.date, "hh:mm a")} IST
+    <div style="text-align:right;flex-shrink:0;color:rgba(255,255,255,0.85);font-size:10px;line-height:1.6;">
+      <div style="font-size:13px;font-weight:700;color:#fff;">Dr. ${escapeHtml(d.visit.doctorName)}</div>
+      ${format(d.visit.date, "dd MMM yyyy")}<br/>${format(d.visit.date, "hh:mm a")} IST
     </div>
   </div>
-  <div class="doc-type-bar">Consultation Summary</div>`;
+  <div style="
+    background:#0A3530;color:#fff;
+    font-size:9.5px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;
+    padding:5px 20px;margin:0 -14mm 14px;
+    page-break-after:avoid;
+  ">Consultation Summary</div>`;
 
   /* Impression rows — # / Diagnosis / Laterality only */
   const impressionRows = d.diagnoses.length
