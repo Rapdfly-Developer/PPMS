@@ -3,6 +3,7 @@
 import { useState, useTransition, useRef } from "react";
 import { format } from "date-fns";
 import { X, FlaskConical, Pill, Glasses, Loader2, ChevronDown, ChevronUp, Upload, Camera, Eye } from "lucide-react";
+import { parseJSON } from "@/lib/json";
 import {
   getPatientInvestigations,
   getPatientTreatmentHistory,
@@ -375,50 +376,46 @@ export function TreatmentHistoryButton({ patientId }: { patientId: string }) {
 ══════════════════════════════════════════════════════════════════════════ */
 type SpectVisit = Awaited<ReturnType<typeof getPatientSpectacleHistory>>[number];
 
-type EyeRx = { distance?: { sph?: string; cyl?: string; axis?: string; va?: string }; near?: { sph?: string; cyl?: string; axis?: string; va?: string } };
+type RxFields = { sph: string; cyl: string; axis: string; nearSph: string; va: string; nearVa: string; method: string };
+const emptyRx: RxFields = { sph: "", cyl: "", axis: "", nearSph: "", va: "", nearVa: "", method: "" };
 
-function RxEye({ label, raw }: { label: "RE" | "LE"; raw: string | null }) {
-  if (!raw) return null;
-  let rx: EyeRx = {};
-  try { rx = JSON.parse(raw); } catch { return null; }
-  const dist = rx.distance;
-  const near = rx.near;
-  if (!dist && !near) return null;
-  const cell = (v?: string) => v || "—";
+function parseSignedVal(v: string): { sign: "+" | "-"; mag: string } {
+  if (!v || v === "+") return { sign: "+", mag: "" };
+  if (v === "-") return { sign: "-", mag: "" };
+  return v.startsWith("-") ? { sign: "-", mag: v.slice(1) } : { sign: "+", mag: v.replace(/^\+/, "") };
+}
+
+function SpectEyeColumns({ re, le }: { re: RxFields; le: RxFields }) {
+  const SECTION_LABEL = "col-span-2 sm:col-span-4 text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-widest";
+  const fmt = (v: string) => { const { sign, mag } = parseSignedVal(v); return mag ? `${sign}${mag}` : "—"; };
+  const roBox = (label: string, value: string, className = "") => (
+    <div className={`flex flex-col gap-0.5 min-w-0 ${className}`}>
+      <span className="text-[10px] text-[var(--color-ink-400)] font-medium">{label}</span>
+      <div className="rounded border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-1.5 py-1 text-xs text-[var(--color-ink-800)] tabular-nums">{value}</div>
+    </div>
+  );
+  const eyeFields = (rx: RxFields) => (
+    <div className="grid grid-cols-2 sm:grid-cols-[80px_80px_60px_80px] gap-x-2 gap-y-2 items-end">
+      <p className={SECTION_LABEL}>Distance</p>
+      {roBox("Sph", fmt(rx.sph))}
+      {roBox("Cyl", fmt(rx.cyl))}
+      {roBox("Axis°", parseSignedVal(rx.axis).mag || "—")}
+      {roBox("Resulting VA", rx.va || "—")}
+      <p className={`${SECTION_LABEL} mt-2`}>Near</p>
+      {roBox("Sph (Add)", fmt(rx.nearSph))}
+      {roBox("Resulting NV", rx.nearVa || "—", "col-start-2 sm:col-start-4")}
+    </div>
+  );
   return (
-    <div>
-      <p className="text-[10px] font-bold text-[var(--color-ink-600)] mb-1">{label}</p>
-      <table className="text-[10px] border-collapse w-full">
-        <thead>
-          <tr className="bg-[var(--color-surface-sunken)]">
-            <th className="px-2 py-1 text-left font-semibold text-[var(--color-ink-500)] border border-[var(--color-border)]"></th>
-            <th className="px-2 py-1 text-center font-semibold text-[var(--color-ink-500)] border border-[var(--color-border)]">Sph</th>
-            <th className="px-2 py-1 text-center font-semibold text-[var(--color-ink-500)] border border-[var(--color-border)]">Cyl</th>
-            <th className="px-2 py-1 text-center font-semibold text-[var(--color-ink-500)] border border-[var(--color-border)]">Axis</th>
-            <th className="px-2 py-1 text-center font-semibold text-[var(--color-ink-500)] border border-[var(--color-border)]">VA</th>
-          </tr>
-        </thead>
-        <tbody>
-          {dist && (
-            <tr className="bg-white">
-              <td className="px-2 py-1 font-medium text-[var(--color-ink-600)] border border-[var(--color-border)]">DV</td>
-              <td className="px-2 py-1 text-center text-[var(--color-ink-800)] border border-[var(--color-border)]">{cell(dist.sph)}</td>
-              <td className="px-2 py-1 text-center text-[var(--color-ink-800)] border border-[var(--color-border)]">{cell(dist.cyl)}</td>
-              <td className="px-2 py-1 text-center text-[var(--color-ink-800)] border border-[var(--color-border)]">{cell(dist.axis)}</td>
-              <td className="px-2 py-1 text-center text-[var(--color-ink-800)] border border-[var(--color-border)]">{cell(dist.va)}</td>
-            </tr>
-          )}
-          {near && (
-            <tr className="bg-[var(--color-surface-sunken)]/40">
-              <td className="px-2 py-1 font-medium text-[var(--color-ink-600)] border border-[var(--color-border)]">NV</td>
-              <td className="px-2 py-1 text-center text-[var(--color-ink-800)] border border-[var(--color-border)]">{cell(near.sph)}</td>
-              <td className="px-2 py-1 text-center text-[var(--color-ink-800)] border border-[var(--color-border)]">{cell(near.cyl)}</td>
-              <td className="px-2 py-1 text-center text-[var(--color-ink-800)] border border-[var(--color-border)]">{cell(near.axis)}</td>
-              <td className="px-2 py-1 text-center text-[var(--color-ink-800)] border border-[var(--color-border)]">{cell(near.va)}</td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-y-4">
+      <div className="min-w-0 md:pr-6 md:border-r md:border-[var(--color-border)]">
+        <p className="text-xs font-semibold text-[var(--color-primary-700)] uppercase tracking-wide mb-2">Right Eye</p>
+        {eyeFields(re)}
+      </div>
+      <div className="min-w-0 md:pl-6">
+        <p className="text-xs font-semibold text-[var(--color-primary-700)] uppercase tracking-wide mb-2">Left Eye</p>
+        {eyeFields(le)}
+      </div>
     </div>
   );
 }
@@ -450,17 +447,23 @@ function SpectacleDrawer({
         </div>
       )}
       {!isPending && data?.length === 0 && <Empty label="spectacle prescriptions" />}
-      {!isPending && data && data.map((v) => (
-        <VisitGroup key={v.visitId} date={v.date} hospitalName={v.hospitalName}>
-          <div className="space-y-3">
-            <RxEye label="RE" raw={v.re} />
-            <RxEye label="LE" raw={v.le} />
-          </div>
-          {v.sentToOpticals && (
-            <p className="text-[10px] text-emerald-600 font-semibold mt-2">✓ Sent to Opticals</p>
-          )}
-        </VisitGroup>
-      ))}
+      {!isPending && data && data.map((v) => {
+        const re = parseJSON<RxFields>(v.re, emptyRx);
+        const le = parseJSON<RxFields>(v.le, emptyRx);
+        return (
+          <VisitGroup key={v.visitId} date={v.date} hospitalName={v.hospitalName}>
+            {re.method && (
+              <p className="text-[10px] text-[var(--color-ink-500)] mb-2">
+                Method: <span className="font-medium text-[var(--color-ink-700)]">{re.method}</span>
+              </p>
+            )}
+            <SpectEyeColumns re={re} le={le} />
+            {v.sentToOpticals && (
+              <p className="text-[10px] text-emerald-600 font-semibold mt-3">✓ Sent to Opticals</p>
+            )}
+          </VisitGroup>
+        );
+      })}
     </Drawer>
   );
 }
