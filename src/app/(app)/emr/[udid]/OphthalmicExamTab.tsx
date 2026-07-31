@@ -430,59 +430,25 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
   );
 
   const fmtSigned = (v: string) => { const { sign, mag } = parseSignedVal(v); return mag ? `${sign}${mag}` : "—"; };
-
-  const RxEyeSection = ({ rx, eyeLabel, eyeCode }: { rx: RxFields; eyeLabel: string; eyeCode: string }) => {
-    const distanceCols = [
-      { label: "Sph",   value: fmtSigned(rx.sph) },
-      { label: "Cyl",   value: fmtSigned(rx.cyl) },
-      { label: "Axis",  value: parseSignedVal(rx.axis).mag || "—" },
-      { label: "VA",    value: rx.va || "—" },
-    ];
-    const nearCols = [
-      { label: "Add",   value: fmtSigned(rx.nearSph) },
-      { label: "NV",    value: rx.nearVa || "—" },
-    ];
-    return (
-      <div className="flex-1 min-w-0">
-        {/* Eye header */}
-        <div className="flex items-center gap-2 mb-3">
-          <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-[#0F766E] text-white text-[10px] font-black tracking-tight shrink-0">
-            {eyeCode}
-          </span>
-          <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.12em] text-[#0F766E]">{eyeLabel}</p>
-            <p className="text-[9px] text-slate-400 uppercase tracking-widest">{eyeCode === "OD" ? "Right Eye" : "Left Eye"}</p>
-          </div>
-        </div>
-
-        {/* Distance */}
-        <p className="text-[8.5px] font-bold uppercase tracking-[0.16em] text-slate-400 mb-2">Distance</p>
-        <div className="grid grid-cols-4 gap-3 mb-4">
-          {distanceCols.map(({ label, value }) => (
-            <div key={label} className="text-center">
-              <p className="text-[9px] uppercase tracking-wider text-slate-400 mb-1.5">{label}</p>
-              <p className="text-[13px] font-bold tabular-nums text-slate-800 leading-none pb-1.5 border-b-[1.5px] border-slate-300">
-                {value}
-              </p>
-            </div>
-          ))}
-        </div>
-
-        {/* Near */}
-        <p className="text-[8.5px] font-bold uppercase tracking-[0.16em] text-slate-400 mb-2">Near</p>
-        <div className="grid grid-cols-4 gap-3">
-          {nearCols.map(({ label, value }) => (
-            <div key={label} className="text-center">
-              <p className="text-[9px] uppercase tracking-wider text-slate-400 mb-1.5">{label}</p>
-              <p className="text-[13px] font-bold tabular-nums text-slate-800 leading-none pb-1.5 border-b-[1.5px] border-slate-300">
-                {value}
-              </p>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  };
+  const roBox = (label: string, value: string, className = "") => (
+    <div className={`flex flex-col gap-0.5 min-w-0 ${className}`}>
+      <span className="text-[10px] text-[var(--color-ink-400)] font-medium">{label}</span>
+      <div className="w-full min-w-0 rounded border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-1.5 py-1 text-xs text-[var(--color-ink-800)] tabular-nums">{value}</div>
+    </div>
+  );
+  const historyEyeFields = (rx: RxFields) => (
+    <div className="grid grid-cols-2 sm:grid-cols-[88px_88px_64px_20px_80px] gap-x-2 gap-y-2 items-end">
+      <p className={SECTION_LABEL}>Distance</p>
+      {roBox("Sph", fmtSigned(rx.sph))}
+      {roBox("Cyl", fmtSigned(rx.cyl))}
+      {roBox("Axis°", parseSignedVal(rx.axis).mag || "—")}
+      <div aria-hidden="true" className="hidden sm:block" />
+      {roBox("Resulting VA", rx.va || "—")}
+      <p className={`${SECTION_LABEL} mt-2`}>Near</p>
+      {roBox("Sph (Add)", fmtSigned(rx.nearSph))}
+      {roBox("Resulting NV", rx.nearVa || "—", "col-start-2 sm:col-start-5")}
+    </div>
+  );
 
   const hasRxData = (rx: typeof re) => Object.values(rx).some(Boolean);
 
@@ -584,62 +550,27 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
       )}
 
       {showHistory && priorRefractions.length > 0 && (
-        <div className="mt-4 space-y-3">
-          {/* History heading */}
-          <div className="flex items-center gap-3">
-            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-[#B2DEDA] to-transparent" />
-            <p className="text-[9px] font-black uppercase tracking-[0.2em] text-[#0F766E]">Previous Prescriptions</p>
-            <div className="h-px flex-1 bg-gradient-to-r from-[#B2DEDA] via-[#B2DEDA] to-transparent" />
+        <div className="mt-4 rounded-xl border border-[#B2DEDA] bg-[#EEF8F7] p-3">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs font-semibold text-[#0F766E] uppercase tracking-wide">Previous Spectacles</p>
+            <p className="text-[10px] text-[#0D9488]">Double-click an entry to load it</p>
           </div>
-
-          {priorRefractions.map((pr, i) => (
-            <div
-              key={i}
-              onDoubleClick={() => handleHistoryDoubleClick(pr)}
-              title="Double-click to load this prescription"
-              className="group relative rounded-2xl border border-slate-200 bg-white shadow-sm cursor-pointer select-none transition-all duration-200 hover:border-[#0F766E]/40 hover:shadow-md overflow-hidden"
-            >
-              {/* Prescription top accent bar */}
-              <div className="h-1 w-full bg-gradient-to-r from-[#0F766E] via-[#0D9488] to-[#14B8A6]" />
-
-              <div className="p-5">
-                {/* Prescription header */}
-                <div className="flex items-start justify-between mb-5">
-                  <div>
-                    <p className="text-[8.5px] font-black uppercase tracking-[0.2em] text-slate-400 mb-0.5">Refractive Prescription</p>
-                    <p className="text-[15px] font-black text-slate-800 tracking-tight leading-none">
-                      {format(new Date(pr.date), "dd MMM yyyy")}
-                    </p>
-                    {pr.re.method && (
-                      <p className="text-[10px] text-slate-500 mt-1">{pr.re.method}</p>
-                    )}
-                  </div>
-                  <span className="opacity-0 group-hover:opacity-100 transition-opacity text-[9px] font-semibold text-[#0F766E] bg-[#EEF8F7] border border-[#B2DEDA] px-2.5 py-1 rounded-full">
-                    Double-click to load
-                  </span>
-                </div>
-
-                {/* Eyes side by side */}
-                <div className="flex gap-0 divide-x divide-slate-100">
-                  <div className="flex-1 pr-5">
-                    <RxEyeSection rx={pr.re} eyeLabel="OD" eyeCode="OD" />
-                  </div>
-                  <div className="flex-1 pl-5">
-                    <RxEyeSection rx={pr.le} eyeLabel="OS" eyeCode="OS" />
-                  </div>
-                </div>
-
-                {/* Footer */}
-                <div className="mt-4 pt-3 border-t border-slate-50 flex items-center justify-between">
-                  <p className="text-[8.5px] uppercase tracking-[0.15em] text-slate-300 font-semibold">Verified by attending doctor</p>
-                  <div className="flex items-center gap-1">
-                    <div className="w-12 h-px bg-slate-300" />
-                    <p className="text-[8px] text-slate-400">Signature</p>
-                  </div>
-                </div>
+          <div className="flex flex-col gap-3">
+            {priorRefractions.map((pr, i) => (
+              <div
+                key={i}
+                onDoubleClick={() => handleHistoryDoubleClick(pr)}
+                title="Double-click to load this prescription"
+                className="rounded-lg border border-[#B2DEDA] bg-white p-4 cursor-pointer select-none transition-all hover:border-[#0F766E]/40 hover:shadow-sm"
+              >
+                <p className="text-[11px] font-bold text-[#0F766E] mb-3">{format(new Date(pr.date), "dd MMM yyyy")}</p>
+                <EyeColumns>
+                  {historyEyeFields(pr.re)}
+                  {historyEyeFields(pr.le)}
+                </EyeColumns>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
 
@@ -1054,7 +985,6 @@ function GonioscopyCard({
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <p className="text-xs font-semibold text-[var(--color-ink-500)] mb-1.5">RE</p>
           <FieldWithHistory history={reHistory} label="RE Gonioscopy">
             <KeywordTextarea
               value={re}
@@ -1067,7 +997,6 @@ function GonioscopyCard({
           </FieldWithHistory>
         </div>
         <div>
-          <p className="text-xs font-semibold text-[var(--color-ink-500)] mb-1.5">LE</p>
           <FieldWithHistory history={leHistory} label="LE Gonioscopy">
             <KeywordTextarea
               value={le}
