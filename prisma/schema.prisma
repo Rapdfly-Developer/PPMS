@@ -459,6 +459,7 @@ model Visit {
   referralEnabled Boolean @default(false)
   referralNote   String?
   adviseNotes    String?
+  anesthesiaType String?
   inViewOf       String?
   gonioNotes     String?  // JSON: { re: string, le: string }
 

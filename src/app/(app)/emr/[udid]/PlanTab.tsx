@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/Card";
 import { History } from "lucide-react";
 import { parseJSON } from "@/lib/json";
 import { useAutoSave, SaveIndicator } from "@/lib/useAutoSave";
-import { addMedication, removeMedication, updateMedication, clearAllMedications, saveRefraction, saveFollowUp, saveAdviseNotes } from "./actions";
+import { addMedication, removeMedication, updateMedication, clearAllMedications, saveRefraction, saveFollowUp, saveAdviseNotes, saveAnesthesiaType } from "./actions";
 import { DispositionToggle, AdmitPanel, SurgicalPanel, FollowUpdatesPanel } from "./DispositionPanel";
 import { Plus, X, BedDouble, Stethoscope, ChevronDown, Pencil, Trash2, RefreshCw, Search, Eye, Sparkles, CheckCircle2, Check, AlertTriangle } from "lucide-react";
 import {
@@ -904,6 +904,7 @@ export function PlanTab({ visit, udid, patientSex, priorVisits = [] }: { visit: 
       )}
 
       <PrescriptionCard visit={visit} udid={udid} priorVisits={priorVisits} />
+      <MinorProcedureCard visit={visit} udid={udid} priorVisits={priorVisits} />
       <OpticalPrescriptionCard visit={visit} />
       <DispositionCard visit={visit} udid={udid} patientSex={patientSex} priorVisits={priorVisits} />
 
@@ -917,6 +918,117 @@ export function PlanTab({ visit, udid, patientSex, priorVisits = [] }: { visit: 
         />
       )}
     </div>
+  );
+}
+
+const ANESTHESIA_KEYWORDS = [
+  "Topical Anesthesia",
+  "Local Infiltration",
+  "Peribulbar Block",
+  "Retrobulbar Block",
+  "Sub-Tenon's Block",
+  "General Anesthesia",
+  "Monitored Anesthesia Care (MAC)",
+  "Sedation + Topical",
+];
+
+function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: string; priorVisits: any[] }) {
+  const [anesthesia, setAnesthesia]       = useState<string>(visit.anesthesiaType ?? "");
+  const [showHistory, setShowHistory]     = useState(false);
+  const [showKeywords, setShowKeywords]   = useState(false);
+
+  useAutoSave(anesthesia, (val) => saveAnesthesiaType(visit.id, udid, val));
+
+  const btnCls = (active: boolean) =>
+    `flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-medium transition-colors ${
+      active
+        ? "bg-[var(--color-primary-50)] border-[var(--color-primary-300)] text-[var(--color-primary-700)]"
+        : "border-[var(--color-border)] text-[var(--color-ink-500)] hover:text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]"
+    }`;
+
+  return (
+    <Card>
+      {/* Heading row */}
+      <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+        <p className="text-sm font-medium text-[var(--color-ink-700)]">Minor Procedure</p>
+        <div className="flex items-center gap-1.5">
+          <button onClick={() => { setShowHistory((v) => !v); setShowKeywords(false); }} className={btnCls(showHistory)}>
+            <History size={12} /> History
+          </button>
+          <button onClick={() => { setShowKeywords((v) => !v); setShowHistory(false); }} className={btnCls(showKeywords)}>
+            <Plus size={12} /> Keyword
+          </button>
+        </div>
+      </div>
+
+      {/* Type of Anesthesia input */}
+      <div>
+        <label className="text-[10px] font-semibold text-[var(--color-ink-500)] uppercase tracking-wide block mb-1.5">
+          Type of Anesthesia
+        </label>
+        <input
+          value={anesthesia}
+          onChange={(e) => setAnesthesia(e.target.value)}
+          placeholder="e.g. Topical Anesthesia, Peribulbar Block…"
+          className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-3 py-2.5 text-sm text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent"
+        />
+      </div>
+
+      {/* History panel */}
+      {showHistory && (
+        <div className="mt-2 rounded-xl border border-[var(--color-border)] bg-white shadow-sm overflow-hidden">
+          <div className="px-3 py-2 bg-[var(--color-surface-sunken)] border-b border-[var(--color-border)] flex items-center justify-between">
+            <span className="text-[10px] font-bold text-[var(--color-ink-400)] uppercase tracking-widest">Previous Anesthesia Types</span>
+            <button onClick={() => setShowHistory(false)} className="text-[var(--color-ink-300)] hover:text-[var(--color-ink-700)]"><X size={12} /></button>
+          </div>
+          <div className="max-h-48 overflow-y-auto divide-y divide-[var(--color-border)]">
+            {priorVisits.filter((v) => v.id !== visit.id && v.anesthesiaType).length === 0 ? (
+              <p className="px-3 py-4 text-xs text-[var(--color-ink-400)] text-center">No previous records found.</p>
+            ) : (
+              priorVisits
+                .filter((v) => v.id !== visit.id && v.anesthesiaType)
+                .map((v) => (
+                  <div key={v.id} className="px-3 py-2.5 flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-[10px] font-semibold text-[var(--color-ink-400)] mb-0.5">
+                        {new Date(v.date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+                      </p>
+                      <p className="text-xs text-[var(--color-ink-700)]">{v.anesthesiaType}</p>
+                    </div>
+                    <button
+                      onClick={() => { setAnesthesia(v.anesthesiaType); setShowHistory(false); }}
+                      className="shrink-0 text-[10px] font-medium text-[var(--color-primary-600)] hover:underline"
+                    >
+                      Use this
+                    </button>
+                  </div>
+                ))
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Keyword panel */}
+      {showKeywords && (
+        <div className="mt-2 rounded-xl border border-[var(--color-border)] bg-white shadow-sm overflow-hidden">
+          <div className="px-3 py-2 bg-[var(--color-surface-sunken)] border-b border-[var(--color-border)] flex items-center justify-between">
+            <span className="text-[10px] font-bold text-[var(--color-ink-400)] uppercase tracking-widest">Common Anesthesia Types</span>
+            <button onClick={() => setShowKeywords(false)} className="text-[var(--color-ink-300)] hover:text-[var(--color-ink-700)]"><X size={12} /></button>
+          </div>
+          <div className="p-3 flex flex-wrap gap-1.5">
+            {ANESTHESIA_KEYWORDS.map((kw) => (
+              <button
+                key={kw}
+                onClick={() => { setAnesthesia(kw); setShowKeywords(false); }}
+                className="px-2 py-0.5 rounded-full border border-[var(--color-primary-200)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)] text-[11px] font-medium hover:bg-[var(--color-primary-100)] transition-colors"
+              >
+                {kw}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </Card>
   );
 }
 
