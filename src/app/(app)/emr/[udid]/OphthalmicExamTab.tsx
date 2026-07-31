@@ -1278,7 +1278,7 @@ const PS_PLACEHOLDERS: Record<string, string> = {
   background:     "Background retina",
 };
 
-const PS_METHODS = ["Direct Ophthalmoscope", "Indirect Ophthalmoscope", "Slit Lamp + 90D", "Slit Lamp + 78D", "Slit Lamp + 20D", "Fundus Camera"] as const;
+const PS_METHODS = ["Indirect Ophthalmoscope", "Direct Ophthalmoscope", "Slit Lamp + 90D", "Slit Lamp + 78D", "Slit Lamp + 20D", "Fundus Camera"] as const;
 
 function PosteriorSegmentCard({ visit, udid, editable, priorVisits = [] }: { visit: any; udid: string; editable: boolean; priorVisits?: any[] }) {
   const ps = visit.posteriorSegment;
