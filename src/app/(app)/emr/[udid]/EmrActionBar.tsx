@@ -36,6 +36,7 @@ export function EmrActionBar({
   visit: any; udid: string; patientName?: string;
   currentTabIndex?: number; totalTabs?: number; onNextSection?: () => void;
 }) {
+  const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [partialPending, startPartialTransition] = useTransition();
   const [printOpen, setPrintOpen] = useState(false);
