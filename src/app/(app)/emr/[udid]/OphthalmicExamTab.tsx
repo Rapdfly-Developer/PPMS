@@ -833,11 +833,8 @@ function IOPCard({ visit, udid, editable, priorVisits }: { visit: any; udid: str
         </div>
       )}
 
-      {/* Current Readings */}
+      {/* Combined IOP Table */}
       <div className="rounded-xl border border-[#B2DEDA] bg-[#EEF8F7] overflow-hidden w-fit">
-        <div className="px-3 pt-2.5 pb-2 border-b border-[#B2DEDA]">
-          <p className="text-[10px] font-bold text-[#0F766E] uppercase tracking-widest">Current Readings</p>
-        </div>
         <div className="overflow-x-auto">
           <table className="text-xs">
             <thead>
@@ -851,6 +848,10 @@ function IOPCard({ visit, udid, editable, priorVisits }: { visit: any; udid: str
               </tr>
             </thead>
             <tbody className="divide-y divide-[#D5EFED]">
+              {/* Current readings section label */}
+              <tr className="bg-[#E0F2F0]">
+                <td colSpan={editable ? 6 : 5} className="px-3 py-1 text-[10px] font-bold text-[#0F766E] uppercase tracking-widest">Current Readings</td>
+              </tr>
               {readings.length === 0 ? (
                 <tr><td colSpan={editable ? 6 : 5} className="py-3 px-6 text-center text-[var(--color-ink-400)] italic">No readings yet.</td></tr>
               ) : readings.map((r: any) => (
@@ -874,43 +875,29 @@ function IOPCard({ visit, udid, editable, priorVisits }: { visit: any; udid: str
                   )}
                 </tr>
               ))}
+
+              {/* Previous readings section */}
+              {priorIOPRows.length > 0 && (
+                <>
+                  <tr className="bg-[#E0F2F0]">
+                    <td colSpan={editable ? 6 : 5} className="px-3 py-1 text-[10px] font-bold text-[#0F766E] uppercase tracking-widest">Previous Readings</td>
+                  </tr>
+                  {priorIOPRows.slice(0, 5).map((r, i) => (
+                    <tr key={i} className="hover:bg-[#DCF3F1]/60 transition-colors">
+                      <td className="py-2 px-3 text-[var(--color-ink-500)] whitespace-nowrap">{r.method}</td>
+                      <td className="py-2 px-3 text-[var(--color-ink-600)] whitespace-nowrap">{format(new Date(r.takenAt), "d MMM yyyy")}</td>
+                      <td className="py-2 px-3 text-[var(--color-ink-400)] whitespace-nowrap">{format(new Date(r.takenAt), "h:mm a")}</td>
+                      <td className="py-2 px-3 text-center font-semibold text-[var(--color-ink-800)] tabular-nums">{r.re ?? "—"}</td>
+                      <td className="py-2 px-3 text-center font-semibold text-[var(--color-ink-800)] tabular-nums">{r.le ?? "—"}</td>
+                      {editable && <td />}
+                    </tr>
+                  ))}
+                </>
+              )}
             </tbody>
           </table>
         </div>
       </div>
-
-      {/* Previous Readings */}
-      {priorIOPRows.length > 0 && (
-        <div className="mt-4 rounded-xl border border-[#B2DEDA] bg-[#EEF8F7] overflow-hidden w-fit">
-          <div className="px-3 pt-2.5 pb-2 border-b border-[#B2DEDA]">
-            <p className="text-[10px] font-bold text-[#0F766E] uppercase tracking-widest">Previous Readings</p>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="text-xs">
-              <thead>
-                <tr className="border-b border-[#B2DEDA]">
-                  <th className="py-1.5 px-3 text-left font-semibold text-[var(--color-ink-400)] uppercase tracking-wide whitespace-nowrap">Method</th>
-                  <th className="py-1.5 px-3 text-left font-semibold text-[var(--color-ink-400)] uppercase tracking-wide whitespace-nowrap">Date</th>
-                  <th className="py-1.5 px-3 text-left font-semibold text-[var(--color-ink-400)] uppercase tracking-wide whitespace-nowrap">Time</th>
-                  <th className="py-1.5 px-3 text-center font-semibold text-[#0F766E] uppercase tracking-wide w-16">RE</th>
-                  <th className="py-1.5 px-3 text-center font-semibold text-[#0F766E] uppercase tracking-wide w-16">LE</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#D5EFED]">
-                {priorIOPRows.slice(0, 5).map((r, i) => (
-                  <tr key={i} className="hover:bg-[#DCF3F1]/60 transition-colors">
-                    <td className="py-2 px-3 text-[var(--color-ink-500)] whitespace-nowrap">{r.method}</td>
-                    <td className="py-2 px-3 text-[var(--color-ink-600)] whitespace-nowrap">{format(new Date(r.takenAt), "d MMM yyyy")}</td>
-                    <td className="py-2 px-3 text-[var(--color-ink-400)] whitespace-nowrap">{format(new Date(r.takenAt), "h:mm a")}</td>
-                    <td className="py-2 px-3 text-center font-semibold text-[var(--color-ink-800)] tabular-nums">{r.re ?? "—"}</td>
-                    <td className="py-2 px-3 text-center font-semibold text-[var(--color-ink-800)] tabular-nums">{r.le ?? "—"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
     </Card>
   );
 }
