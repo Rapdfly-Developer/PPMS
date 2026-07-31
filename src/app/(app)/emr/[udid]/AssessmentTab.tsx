@@ -369,17 +369,17 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
     const allPresets = getTreatmentPresets();
     const applied    = getApplied(visit.id);
 
-    const allCurrentDx = [
-      ...(diagnoses as any[]).map((d) => ({ icd10Code: d.icd10Code ?? "", description: d.description })),
-      ...(provisionalDiagnoses as any[]).map((d) => ({ icd10Code: d.icd10Code ?? "", description: d.description })),
-    ];
-    const remainingDx = allCurrentDx.filter((d) => d.description !== removedDesc);
+    // Use diagnosisDesc to find exactly which presets were triggered by this diagnosis
+    const lostApplied = applied.filter((a) => a.diagnosisDesc === removedDesc);
+    if (lostApplied.length === 0) return;
 
-    const beforeIds = new Set(matchPresets(allCurrentDx, allPresets).map((m) => m.preset.id));
-    const afterIds  = new Set(matchPresets(remainingDx,  allPresets).map((m) => m.preset.id));
+    const lostIds     = new Set(lostApplied.map((a) => a.presetId));
+    const lostPresets = allPresets.filter((p) => lostIds.has(p.id));
 
-    const lostPresets = allPresets.filter((p) => beforeIds.has(p.id) && !afterIds.has(p.id));
-    if (lostPresets.length === 0) return;
+    if (lostPresets.length === 0) {
+      setApplied(visit.id, applied.filter((a) => !lostIds.has(a.presetId)));
+      return;
+    }
 
     const drugNamesToRemove = new Set<string>();
     lostPresets.forEach((p) => p.medications.forEach((m) => drugNamesToRemove.add(m.drugName.toLowerCase())));
@@ -388,7 +388,6 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
     const medsToDelete = currentMeds.filter((m) => drugNamesToRemove.has(m.drugName.toLowerCase()));
     for (const med of medsToDelete) { await removeMedication(med.id, udid); }
 
-    const lostIds = new Set(lostPresets.map((p) => p.id));
     setApplied(visit.id, applied.filter((a) => !lostIds.has(a.presetId)));
 
     if (medsToDelete.length > 0) {
