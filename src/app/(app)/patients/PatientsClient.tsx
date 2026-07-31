@@ -7,8 +7,9 @@ import { format } from "date-fns";
 import {
   Search, Download, Filter, X, Users, CalendarCheck,
   CalendarClock, ShieldCheck, ClipboardList, ChevronLeft, ChevronRight, ChevronDown, Eye,
-  Phone, Building2,
+  Phone, Building2, Undo2,
 } from "lucide-react";
+import { undoDispense } from "./actions";
 import { formatComplaintDisplay } from "@/lib/appointment-cc";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -26,6 +27,7 @@ export interface PatientRow {
   lastVisit: string | null;
   chiefComplaint: string | null;
   photoUrl: string | null;
+  dispensedApptId?: string | null;
 }
 export interface TrendPoint { label: string; count: number; isToday: boolean; }
 export interface CatPoint   { category: string; count: number; }
@@ -648,11 +650,24 @@ export function PatientsClient({
                         <p className="text-sm text-[var(--color-ink-700)]">{lastVisitStr || <span className="text-[var(--color-ink-300)]">—</span>}</p>
                       </div>
 
-                      {/* Category — fixed width */}
+                      {/* Category + Undo — fixed width */}
                       <div className="flex items-center gap-2 w-20 shrink-0 justify-end">
                         <span className={`hidden sm:inline-flex text-[10px] font-semibold px-2 py-0.5 rounded-full ${cat.cls}`}>
                           {cat.label}
                         </span>
+                        {opStatusFilter === "dispensed" && p.dispensedApptId && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              startTransition(() => undoDispense(p.dispensedApptId!));
+                            }}
+                            title="Undo dispense — move back to queue"
+                            className="shrink-0 flex items-center gap-1 text-[10px] font-medium px-2 py-1 rounded-lg border border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors"
+                          >
+                            <Undo2 size={11} />
+                            Undo
+                          </button>
+                        )}
                       </div>
                     </li>
                   );

@@ -172,6 +172,24 @@ export default async function PatientsPage({
     };
   });
 
+  // Fetch today's dispensed appointment IDs when filtering by dispensed
+  let dispensedApptIds: Record<string, string> = {};
+  if (opStatusFilter === "dispensed" && patients.length > 0) {
+    const dayStart = startOfDay(new Date());
+    const dayEnd   = new Date(dayStart); dayEnd.setHours(23, 59, 59, 999);
+    const dispensedAppts = await prisma.appointment.findMany({
+      where: {
+        patientId: { in: patients.map(p => p.id) },
+        status: "DISPENSED",
+        dateTime: { gte: dayStart, lte: dayEnd },
+      },
+      select: { id: true, patientId: true },
+    });
+    for (const a of dispensedAppts) {
+      dispensedApptIds[a.patientId] = a.id;
+    }
+  }
+
   const serialized = patients.map(p => ({
     id:           p.id,
     udid:         p.udid ?? "",
@@ -186,6 +204,7 @@ export default async function PatientsPage({
     lastVisit:     p.visits[0]?.date.toISOString() ?? null,
     chiefComplaint: p.visits[0]?.generalExam?.chiefComplaint ?? p.complaint ?? (p as any).appointments?.[0]?.notes ?? null,
     photoUrl:      p.photoUrl ?? null,
+    dispensedApptId: dispensedApptIds[p.id] ?? null,
   }));
 
   const recentSerialized = recentReg.map(p => ({

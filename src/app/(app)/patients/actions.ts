@@ -7,6 +7,19 @@ import { redirect } from "next/navigation";
 import { writeAudit } from "@/lib/audit";
 import Anthropic from "@anthropic-ai/sdk";
 
+// ── Undo Dispense ────────────────────────────────────────────────────────────
+
+export async function undoDispense(appointmentId: string) {
+  await requireRole("DOCTOR");
+  await prisma.appointment.update({
+    where: { id: appointmentId },
+    data: { status: "CONFIRMED" },
+  });
+  revalidatePath("/patients");
+  revalidatePath("/dashboard");
+  revalidatePath("/appointments");
+}
+
 // ── Patient History Timeline ─────────────────────────────────────────────────
 
 export type TimelineEventType =
