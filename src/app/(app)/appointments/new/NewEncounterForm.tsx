@@ -312,27 +312,6 @@ export function NewEncounterForm({
                 />
               </div>
 
-              {/* Category */}
-              <div>
-                <FieldLabel>Category</FieldLabel>
-                <div className="flex flex-wrap gap-2 mt-0.5">
-                  {CATEGORIES.map((c) => (
-                    <button
-                      key={c.value}
-                      type="button"
-                      onClick={() => setCategory(c.value)}
-                      className={`px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
-                        category === c.value
-                          ? "bg-[var(--color-primary-700)] text-white border-[var(--color-primary-700)]"
-                          : "bg-white text-[var(--color-ink-600)] border-[var(--color-border)] hover:border-[var(--color-primary-400)]"
-                      }`}
-                    >
-                      {c.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
               {/* Notes / Instructions */}
               <div>
                 <FieldLabel icon={<FileText size={12} />}>Notes / Instructions</FieldLabel>

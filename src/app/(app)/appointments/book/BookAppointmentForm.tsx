@@ -534,34 +534,6 @@ export function BookAppointmentForm({
                   className={inputCls}
                 />
               </div>
-              {/* Category */}
-              <div className="sm:col-span-2">
-                <FieldLabel>Category</FieldLabel>
-                <div className="flex flex-wrap gap-2 mt-0.5">
-                  {[
-                    { value: "GENERAL",   label: "General" },
-                    { value: "BPL",       label: "BPL" },
-                    { value: "ECHS",      label: "ECHS" },
-                    { value: "INSURANCE", label: "Insurance" },
-                  ].map((c) => (
-                    <button
-                      key={c.value}
-                      type="button"
-                      onClick={() => setNpCategory(c.value)}
-                      className="px-3.5 py-1.5 rounded-full text-sm font-medium border transition-colors"
-                      style={npCategory === c.value ? {
-                        background: "var(--color-primary-700)", color: "#fff",
-                        borderColor: "var(--color-primary-700)",
-                      } : {
-                        background: "#fff", color: "var(--color-ink-700)",
-                        borderColor: "var(--color-border)",
-                      }}
-                    >
-                      {c.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
 
 
               {/* Notes / Instructions */}
