@@ -199,11 +199,6 @@ function ApptRow({ appt, role }: { appt: Appt; role: "DOCTOR" | "HOSPITAL" }) {
           )}
         </div>
       </Link>
-      {appt.complaint && (
-        <span className="hidden md:block text-sm font-medium text-[var(--color-ink-600)] shrink-0 max-w-[180px] truncate">
-          {formatComplaintDisplay(appt.complaint)}
-        </span>
-      )}
       <div className="flex flex-col items-end gap-1 shrink-0">
         <div className="flex items-center gap-1.5">
           {appt.visitType && (
@@ -228,6 +223,11 @@ function ApptRow({ appt, role }: { appt: Appt; role: "DOCTOR" | "HOSPITAL" }) {
             </button>
           )}
         </div>
+        {appt.complaint && (
+          <span className="text-xs font-medium text-[var(--color-ink-500)] max-w-[180px] truncate text-right">
+            {formatComplaintDisplay(appt.complaint)}
+          </span>
+        )}
         <LiveTimer since={timerSince} />
       </div>
     </div>
