@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import clsx from "clsx";
 import { doctorConfirmAppointment, hospitalUpdateAppointmentStatus, undoQueueEntry } from "@/app/(app)/appointments/actions";
+import { formatComplaintDisplay } from "@/lib/appointment-cc";
 
 /* ── Types ─────────────────────────────────────────────────────────────── */
 interface Appt {
@@ -200,7 +201,7 @@ function ApptRow({ appt, role }: { appt: Appt; role: "DOCTOR" | "HOSPITAL" }) {
       </Link>
       {appt.complaint && (
         <span className="hidden md:block text-sm font-medium text-[var(--color-ink-600)] shrink-0 max-w-[180px] truncate">
-          {appt.complaint}
+          {formatComplaintDisplay(appt.complaint)}
         </span>
       )}
       <div className="flex flex-col items-end gap-1 shrink-0">
@@ -210,10 +211,12 @@ function ApptRow({ appt, role }: { appt: Appt; role: "DOCTOR" | "HOSPITAL" }) {
               {appt.visitType}
             </span>
           )}
-          <span className={clsx("inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold", cfg.color)}>
-            <span className={clsx("w-1.5 h-1.5 rounded-full shrink-0", cfg.dot)} />
-            {appt.status !== "CONFIRMED" && cfg.label}
-          </span>
+          {appt.status !== "CONFIRMED" && (
+            <span className={clsx("inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold", cfg.color)}>
+              <span className={clsx("w-1.5 h-1.5 rounded-full shrink-0", cfg.dot)} />
+              {cfg.label}
+            </span>
+          )}
           {appt.status === "CONFIRMED" && (
             <button
               disabled={undoing}

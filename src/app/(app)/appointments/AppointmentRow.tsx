@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { Phone, Stethoscope, Tag, FileText, CalendarPlus, Printer, UserRound, Clock, Timer, LogIn, CheckCircle2, Calendar } from "lucide-react";
 import { hospitalUpdateAppointmentStatus, doctorUpdateAppointmentStatus, doctorConfirmAppointment, doctorCancelAppointment } from "./actions";
+import { formatComplaintDisplay } from "@/lib/appointment-cc";
 import { ScheduleNextSlotModal } from "./ScheduleNextSlotModal";
 
 const STATUS_STYLES: Record<string, string> = {
@@ -116,7 +117,7 @@ export function AppointmentRow({ appt, role, token }: { appt: any; role: string;
         {(appt.notes || p.complaint) && (
           <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-xs font-medium max-w-full">
             <FileText size={11} className="shrink-0 text-amber-500" />
-            <span className="truncate">{appt.notes || p.complaint}</span>
+            <span className="truncate">{formatComplaintDisplay(appt.notes || p.complaint)}</span>
           </div>
         )}
 
