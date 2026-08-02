@@ -496,7 +496,7 @@ export async function saveSurgicalCounselling(
     },
   });
 
-  await prisma.surgicalCounselling.upsert({
+  const sc = await prisma.surgicalCounselling.upsert({
     where: { visitId },
     create: {
       visitId,
@@ -520,23 +520,23 @@ export async function saveSurgicalCounselling(
   });
   await writeAudit(user.id, "SurgicalCounselling", visitId, "SAVE", data);
 
-  // Notify all hospital admin staff
+  // Notify all hospital admin staff (dedup: skip if already unread for this surgery)
   const [patient, hospitalStaff] = await Promise.all([
     prisma.patient.findUnique({ where: { id: visit.patientId }, select: { name: true } }),
     prisma.hospitalStaff.findMany({ where: { hospitalId: visit.hospitalId! }, include: { user: true } }),
   ]);
-  const surgeryLabel = data.surgeryName?.trim()
-    ? `${data.surgeryName.trim()} (${data.surgeryType})`
-    : data.surgeryType;
-  const eye = [data.rightEye && "RE", data.leftEye && "LE"].filter(Boolean).join(" + ") || "";
-  const dateStr = new Date(data.surgeryDate).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
   for (const staff of hospitalStaff) {
-    await createNotification(
-      staff.user.id,
-      "SURGICAL_COUNSELLING",
-      `Surgical counselling saved for ${patient?.name ?? "patient"}: ${surgeryLabel}${eye ? ` — ${eye}` : ""} on ${dateStr}.`,
-      visitId
-    );
+    const existing = await prisma.notification.findFirst({
+      where: { userId: staff.user.id, type: "SURGICAL_COUNSELLING", entityId: sc.id, read: false },
+    });
+    if (!existing) {
+      await createNotification(
+        staff.user.id,
+        "SURGICAL_COUNSELLING",
+        `Surgery is planned for ${patient?.name ?? "patient"}.`,
+        sc.id
+      );
+    }
   }
 
   revalidate(udid);

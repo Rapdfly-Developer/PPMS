@@ -1,11 +1,12 @@
 "use client";
 
-import { Suspense, useEffect, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useSidebar } from "./SidebarContext";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Bell, Search, LogOut, ArrowLeft, Menu } from "lucide-react";
+import { Bell, Search, LogOut, ArrowLeft, Menu, Scissors } from "lucide-react";
 import Link from "next/link";
 import { signOut } from "next-auth/react";
+import { markOneRead } from "@/app/(app)/notifications/actions";
 
 const BACK_BTN_CLS =
   "group inline-flex items-center gap-1.5 h-8 pl-2 pr-3 rounded-lg border border-[var(--color-border)] bg-white text-sm font-medium text-[var(--color-ink-600)] hover:text-[var(--color-primary-700)] hover:border-[var(--color-primary-300)] hover:bg-[var(--color-primary-50)] active:scale-[0.97] transition-all duration-150";
@@ -46,12 +47,95 @@ function getInitials(name: string) {
     .toUpperCase();
 }
 
+type NotifItem = {
+  id: string;
+  message: string;
+  type: string;
+  entityId: string | null;
+  createdAt: string;
+};
+
+function timeAgo(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60_000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
+}
+
+function BellDropdown({ items, onRead }: {
+  items: NotifItem[];
+  onRead: (id: string) => void;
+}) {
+  const router = useRouter();
+
+  return (
+    <div
+      className="absolute right-0 top-full mt-1 w-80 rounded-xl border border-[var(--color-border)] bg-white shadow-xl z-50 overflow-hidden"
+      style={{ boxShadow: "0 8px 30px -8px rgba(0,0,0,0.18), 0 2px 8px -2px rgba(0,0,0,0.08)" }}
+    >
+      <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--color-border)]">
+        <span className="text-sm font-semibold text-[var(--color-ink-800)]">Notifications</span>
+        {items.length > 0 && (
+          <span className="text-xs font-semibold text-red-500">{items.length} unread</span>
+        )}
+      </div>
+
+      {items.length === 0 ? (
+        <div className="px-4 py-8 text-center">
+          <Bell size={20} className="mx-auto mb-2 text-[var(--color-ink-300)]" />
+          <p className="text-sm text-[var(--color-ink-400)]">No new notifications</p>
+        </div>
+      ) : (
+        <ul className="max-h-72 overflow-y-auto divide-y divide-[var(--color-border)]">
+          {items.map((item) => (
+            <li key={item.id}>
+              <button
+                className="w-full text-left px-4 py-3 hover:bg-[var(--color-surface-sunken)] transition-colors flex gap-3 items-start"
+                onClick={async () => {
+                  onRead(item.id);
+                  await markOneRead(item.id);
+                  router.push("/scheduled-ot");
+                }}
+              >
+                <span className="mt-0.5 shrink-0 w-7 h-7 rounded-full bg-[var(--color-primary-50)] flex items-center justify-center">
+                  <Scissors size={13} className="text-[var(--color-primary-600)]" />
+                </span>
+                <span className="flex-1 min-w-0">
+                  <span className="block text-sm text-[var(--color-ink-800)] leading-snug">{item.message}</span>
+                  <span className="block text-xs text-[var(--color-ink-400)] mt-0.5">{timeAgo(item.createdAt)}</span>
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <div className="px-4 py-2.5 border-t border-[var(--color-border)]">
+        <Link
+          href="/notifications"
+          className="text-xs font-medium text-[var(--color-primary-600)] hover:underline"
+        >
+          View all notifications →
+        </Link>
+      </div>
+    </div>
+  );
+}
+
 export function TopBar({ name, role }: { name: string; role: string }) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
+  const bellRef = useRef<HTMLDivElement>(null);
   const [q, setQ] = useState("");
+  const [bellOpen, setBellOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [notifItems, setNotifItems] = useState<NotifItem[]>([]);
   const { toggle } = useSidebar();
 
+  // Cmd+K shortcut
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
@@ -63,9 +147,44 @@ export function TopBar({ name, role }: { name: string; role: string }) {
     return () => window.removeEventListener("keydown", handler);
   }, []);
 
+  // Poll for unread notifications
+  const fetchUnread = useCallback(async () => {
+    try {
+      const res = await fetch("/api/notifications/unread");
+      if (!res.ok) return;
+      const data = await res.json();
+      setUnreadCount(data.count ?? 0);
+      setNotifItems(data.items ?? []);
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    fetchUnread();
+    const id = setInterval(fetchUnread, 30_000);
+    return () => clearInterval(id);
+  }, [fetchUnread]);
+
+  // Click-outside to close dropdown
+  useEffect(() => {
+    if (!bellOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (bellRef.current && !bellRef.current.contains(e.target as Node)) {
+        setBellOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [bellOpen]);
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (q.trim()) router.push(`/patients?q=${encodeURIComponent(q.trim())}`);
+  };
+
+  const handleMarkRead = (id: string) => {
+    setNotifItems((prev) => prev.filter((n) => n.id !== id));
+    setUnreadCount((prev) => Math.max(0, prev - 1));
+    setBellOpen(false);
   };
 
   const initials = getInitials(name);
@@ -73,7 +192,7 @@ export function TopBar({ name, role }: { name: string; role: string }) {
   return (
     <header className="h-14 shrink-0 flex items-center gap-2 px-4 lg:px-6 bg-white border-b border-[var(--color-border)] z-10">
 
-      {/* Hamburger — mobile + tablet (hidden on desktop where sidebar is always visible) */}
+      {/* Hamburger — mobile + tablet */}
       <button
         onClick={toggle}
         aria-label="Open menu"
@@ -82,7 +201,7 @@ export function TopBar({ name, role }: { name: string; role: string }) {
         <Menu size={20} />
       </button>
 
-      {/* Back + Search — all screen sizes */}
+      {/* Back + Search */}
       <div className="flex items-center gap-1 flex-1 min-w-0">
         <Suspense
           fallback={
@@ -116,14 +235,26 @@ export function TopBar({ name, role }: { name: string; role: string }) {
 
       {/* Right actions */}
       <div className="flex items-center gap-2 shrink-0">
-        {/* Notifications */}
-        <Link
-          href="/notifications"
-          title="Notifications"
-          className="p-1.5 text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)] rounded-lg hover:bg-[var(--color-surface-sunken)] transition-colors"
-        >
-          <Bell size={17} />
-        </Link>
+        {/* Bell with dropdown */}
+        <div ref={bellRef} className="relative">
+          <button
+            onClick={() => setBellOpen((v) => !v)}
+            title="Notifications"
+            aria-label="Notifications"
+            className="relative p-1.5 text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)] rounded-lg hover:bg-[var(--color-surface-sunken)] transition-colors"
+          >
+            <Bell size={17} />
+            {unreadCount > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 h-4 min-w-4 flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold px-1 leading-none">
+                {unreadCount > 9 ? "9+" : unreadCount}
+              </span>
+            )}
+          </button>
+
+          {bellOpen && (
+            <BellDropdown items={notifItems} onRead={handleMarkRead} />
+          )}
+        </div>
 
         {/* Divider */}
         <span className="hidden sm:block w-px h-5 bg-[var(--color-border)]" />
