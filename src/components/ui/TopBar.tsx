@@ -190,7 +190,7 @@ export function TopBar({ name, role }: { name: string; role: string }) {
   const initials = getInitials(name);
 
   return (
-    <header className="h-14 shrink-0 flex items-center gap-2 px-4 lg:px-6 bg-white border-b border-[var(--color-border)] z-10">
+    <header className="h-14 shrink-0 flex items-center gap-2 px-4 lg:px-6 bg-white border-b border-[var(--color-border)] z-30 relative">
 
       {/* Hamburger — mobile + tablet */}
       <button
