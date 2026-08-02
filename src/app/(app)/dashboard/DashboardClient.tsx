@@ -204,6 +204,11 @@ function ApptRow({ appt, role, serial }: { appt: Appt; role: "DOCTOR" | "HOSPITA
             </span>
           )}
         </div>
+        {appt.complaint && (
+          <span className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-50 border border-amber-100 text-amber-800 text-[11px] font-medium leading-relaxed">
+            {formatComplaintDisplay(appt.complaint)}
+          </span>
+        )}
       </Link>
       <div className="flex flex-col items-end gap-1 shrink-0">
         <div className="flex items-center gap-1.5">
@@ -229,11 +234,6 @@ function ApptRow({ appt, role, serial }: { appt: Appt; role: "DOCTOR" | "HOSPITA
             </button>
           )}
         </div>
-        {appt.complaint && (
-          <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[var(--color-primary-50)] text-[var(--color-primary-700)] border border-[var(--color-primary-100)] max-w-[180px] truncate text-right">
-            {formatComplaintDisplay(appt.complaint)}
-          </span>
-        )}
         <LiveTimer since={timerSince} />
       </div>
     </div>
@@ -513,19 +513,17 @@ export function DashboardClient({
                           <span className="text-[11px] text-[var(--color-ink-400)]">Dr. {a.doctor.name}</span>
                         )}
                       </div>
-                    </div>
-                    <div className="flex flex-col items-end gap-1 shrink-0">
-                      {a.visitType && (
-                        <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)] whitespace-nowrap">
-                          {a.visitType}
-                        </span>
-                      )}
                       {a.complaint && (
-                        <span className="text-[11px] text-orange-600 max-w-[140px] truncate text-right">
+                        <span className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-50 border border-amber-100 text-amber-800 text-[11px] font-medium leading-relaxed">
                           {formatComplaintDisplay(a.complaint)}
                         </span>
                       )}
                     </div>
+                    {a.visitType && (
+                      <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)] whitespace-nowrap shrink-0">
+                        {a.visitType}
+                      </span>
+                    )}
                   </Link>
                 ))}
               </div>
@@ -595,6 +593,11 @@ export function DashboardClient({
                                   </span>
                                 )}
                               </span>
+                              {a.complaint && (
+                                <span className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-50 border border-amber-100 text-amber-800 text-[11px] font-medium leading-relaxed">
+                                  {formatComplaintDisplay(a.complaint)}
+                                </span>
+                              )}
                             </Link>
                             <span className={clsx("text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0", cfg.color)}>
                               {cfg.label}
