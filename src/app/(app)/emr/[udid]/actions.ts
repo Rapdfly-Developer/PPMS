@@ -631,7 +631,7 @@ export async function closeVisit(visitId: string, udid: string) {
   revalidatePath("/dashboard");
 }
 
-export async function markPartialDispense(visitId: string, udid: string) {
+export async function markPartialDispense(visitId: string, udid: string, reason?: string) {
   const user = await requireRole("DOCTOR");
 
   const visit = await prisma.visit.findUnique({
@@ -660,7 +660,7 @@ export async function markPartialDispense(visitId: string, udid: string) {
   if (appointmentId) {
     await prisma.appointment.update({
       where: { id: appointmentId },
-      data: { status: "PARTIAL_DISPENSE" },
+      data: { status: "PARTIAL_DISPENSE", partialDispenseReason: reason || null },
     });
   }
 

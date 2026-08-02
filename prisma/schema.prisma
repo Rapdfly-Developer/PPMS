@@ -427,6 +427,7 @@ model Appointment {
   completedBy        String?  // Doctor name
   isWalkIn           Boolean  @default(false)
   notes              String?
+  partialDispenseReason String?
   createdAt          DateTime @default(now())
   arrivedAt          DateTime?   // set when status → CONFIRMED (patient reached the clinic)
 

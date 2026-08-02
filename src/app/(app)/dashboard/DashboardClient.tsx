@@ -22,6 +22,7 @@ interface Appt {
   isWalkIn: boolean;
   visitType: string | null;
   complaint: string | null;
+  partialDispenseReason: string | null;
   patient: { name: string; udid: string; uhid?: string; age: number; sex: string; mobile?: string };
   hospital?: { id: string; name: string };
   doctor?:   { id: string; name: string } | null;
@@ -513,6 +514,11 @@ export function DashboardClient({
                           <span className="text-[11px] text-[var(--color-ink-400)]">Dr. {a.doctor.name}</span>
                         )}
                       </div>
+                      {a.partialDispenseReason && (
+                        <span className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-orange-50 border border-orange-200 text-orange-700 text-[11px] font-semibold leading-relaxed">
+                          {a.partialDispenseReason}
+                        </span>
+                      )}
                       {a.complaint && (
                         <span className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-50 border border-amber-100 text-amber-800 text-[11px] font-medium leading-relaxed">
                           {formatComplaintDisplay(a.complaint)}

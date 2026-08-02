@@ -1,9 +1,86 @@
 "use client";
 
 import { useState, useTransition, useRef, useEffect } from "react";
-import { ChevronRight, Printer, FileSignature, CheckCircle2, Download, ChevronDown, FileText, PackageOpen } from "lucide-react";
+import { ChevronRight, Printer, FileSignature, CheckCircle2, Download, ChevronDown, FileText, PackageOpen, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { closeVisit, markPartialDispense } from "./actions";
+
+const PARTIAL_REASONS = [
+  "Glasses not ready",
+  "Medicine unavailable",
+  "Awaiting test results",
+  "Patient requested later pickup",
+  "Frame selection pending",
+  "Insurance approval pending",
+];
+
+function PartialDispenseModal({
+  onConfirm,
+  onCancel,
+  loading,
+}: {
+  onConfirm: (reason: string) => void;
+  onCancel: () => void;
+  loading: boolean;
+}) {
+  const [reason, setReason] = useState("");
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
+          <div className="flex items-center gap-2">
+            <PackageOpen size={18} className="text-amber-600" />
+            <h2 className="text-base font-bold text-[var(--color-ink-900)]">Reason for Partial Dispense</h2>
+          </div>
+          <button onClick={onCancel} className="p-1.5 rounded-lg hover:bg-[var(--color-surface-sunken)] text-[var(--color-ink-400)]">
+            <X size={16} />
+          </button>
+        </div>
+        <div className="px-6 py-5 space-y-4">
+          <div className="flex flex-wrap gap-2">
+            {PARTIAL_REASONS.map((r) => (
+              <button
+                key={r}
+                type="button"
+                onClick={() => setReason(r)}
+                className={`text-xs font-medium px-3 py-1.5 rounded-full border transition-colors ${
+                  reason === r
+                    ? "bg-amber-100 border-amber-400 text-amber-800"
+                    : "bg-white border-[var(--color-border)] text-[var(--color-ink-600)] hover:border-amber-300 hover:bg-amber-50"
+                }`}
+              >
+                {r}
+              </button>
+            ))}
+          </div>
+          <textarea
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            placeholder="Or type a custom reason…"
+            rows={3}
+            className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-3 py-2.5 text-sm text-[var(--color-ink-900)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none"
+          />
+        </div>
+        <div className="flex justify-end gap-3 px-6 py-4 border-t border-[var(--color-border)]">
+          <button
+            onClick={onCancel}
+            className="px-4 py-2 rounded-xl text-sm font-medium border border-[var(--color-border)] text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)]"
+          >
+            Cancel
+          </button>
+          <button
+            disabled={!reason.trim() || loading}
+            onClick={() => onConfirm(reason.trim())}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium bg-amber-500 text-white hover:bg-amber-600 disabled:opacity-50"
+          >
+            <PackageOpen size={14} /> {loading ? "Saving…" : "Confirm Partial Dispense"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function SuccessModal({ udid, onClose }: { udid: string; onClose: () => void }) {
   const router = useRouter();
@@ -41,6 +118,7 @@ export function EmrActionBar({
   const [partialPending, startPartialTransition] = useTransition();
   const [printOpen, setPrintOpen] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [showPartialModal, setShowPartialModal] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
   const closed = visit.status === "CLOSED";
   const isLastTab = currentTabIndex >= totalTabs - 1;
@@ -61,6 +139,19 @@ export function EmrActionBar({
   return (
     <>
       {showSuccess && <SuccessModal udid={udid} onClose={() => setShowSuccess(false)} />}
+      {showPartialModal && (
+        <PartialDispenseModal
+          loading={partialPending}
+          onCancel={() => setShowPartialModal(false)}
+          onConfirm={(reason) => {
+            startPartialTransition(async () => {
+              await markPartialDispense(visit.id, udid, reason);
+              setShowPartialModal(false);
+              router.push("/dashboard");
+            });
+          }}
+        />
+      )}
 
       <div className="fixed bottom-0 left-0 lg:left-60 right-0 z-20 border-t border-[var(--color-border)] bg-white/95 backdrop-blur-sm px-6 md:px-8 py-3 flex items-center justify-end gap-3 shadow-[0_-4px_16px_rgba(20,36,43,0.06)]">
         {!closed && !isLastTab && (
@@ -139,12 +230,7 @@ export function EmrActionBar({
         {!closed && (
           <button
             disabled={partialPending}
-            onClick={() =>
-              startPartialTransition(async () => {
-                await markPartialDispense(visit.id, udid);
-                router.push("/dashboard");
-              })
-            }
+            onClick={() => setShowPartialModal(true)}
             className="flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-xl bg-amber-50 border border-amber-300 text-amber-700 hover:bg-amber-100 disabled:opacity-60"
           >
             <PackageOpen size={15} /> {partialPending ? "Saving…" : "Partial Dispense"}
