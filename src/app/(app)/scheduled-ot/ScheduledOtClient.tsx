@@ -111,7 +111,7 @@ export function ScheduledOtClient({
   confirmed: ConfirmedRecord[];
   role: "DOCTOR" | "HOSPITAL";
 }) {
-  const [tab,    setTab]    = useState<"planned" | "confirmed">("planned");
+  const [tab,    setTab]    = useState<"waiting" | "scheduled">("waiting");
   const [filter, setFilter] = useState<"upcoming" | "past" | "all">("upcoming");
   const [search, setSearch] = useState("");
 
@@ -178,7 +178,7 @@ export function ScheduledOtClient({
         <div>
           <h1 className="text-xl font-bold text-[var(--color-ink-900)] leading-tight">Scheduled OT</h1>
           <p className="text-xs text-[var(--color-ink-400)]">
-            {todayPlanned} surgical plan{todayPlanned !== 1 ? "s" : ""} today · {todayConfirmed} confirmed today
+            {todayPlanned} waiting today · {todayConfirmed} scheduled today
           </p>
         </div>
       </div>
@@ -187,17 +187,17 @@ export function ScheduledOtClient({
       <div className="flex gap-3 mb-6 flex-wrap">
         <StatCard
           icon={<CalendarClock size={18} />}
-          label="Surgical Plans"
+          label="Waiting for OT"
           value={planned.length}
-          active={tab === "planned"}
-          onClick={() => setTab("planned")}
+          active={tab === "waiting"}
+          onClick={() => setTab("waiting")}
         />
         <StatCard
           icon={<CheckCircle2 size={18} />}
-          label="Confirmed OT"
+          label="Schedule OT"
           value={confirmed.length}
-          active={tab === "confirmed"}
-          onClick={() => setTab("confirmed")}
+          active={tab === "scheduled"}
+          onClick={() => setTab("scheduled")}
         />
       </div>
 
@@ -226,8 +226,8 @@ export function ScheduledOtClient({
         />
       </div>
 
-      {/* ── PLANNED TAB ── */}
-      {tab === "planned" && (
+      {/* ── WAITING FOR OT TAB ── */}
+      {tab === "waiting" && (
         <>
           {plannedGroups.length === 0 ? (
             <EmptyState label="No surgical plans found." />
@@ -292,17 +292,17 @@ export function ScheduledOtClient({
         </>
       )}
 
-      {/* ── CONFIRMED OT TAB ── */}
-      {tab === "confirmed" && (
+      {/* ── SCHEDULE OT TAB ── */}
+      {tab === "scheduled" && (
         <>
           {confirmedGroups.length === 0 ? (
             <div className="flex flex-col items-center gap-3 py-20 text-center">
               <div className="w-16 h-16 rounded-2xl bg-[var(--color-surface-sunken)] flex items-center justify-center">
                 <CheckCircle2 size={28} className="text-[var(--color-ink-300)]" />
               </div>
-              <p className="text-sm font-medium text-[var(--color-ink-500)]">No confirmed OT entries yet.</p>
+              <p className="text-sm font-medium text-[var(--color-ink-500)]">No scheduled OT entries yet.</p>
               <p className="text-xs text-[var(--color-ink-400)] max-w-xs">
-                Once a hospital admin fills the Surgery Scheduling Form for a surgical plan, the patient will appear here.
+                Once a hospital admin fills the Surgery Scheduling Form for a patient, they will appear here.
               </p>
             </div>
           ) : (
