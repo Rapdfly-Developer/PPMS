@@ -539,6 +539,7 @@ model PastExternalVisit {
   extractedDiagnosis String?
   extractedTreatment String?
   scanFileRef        String?
+  label              String?
   verificationStatus String              @default("PENDING_REVIEW")
   createdAt          DateTime            @default(now())
 }

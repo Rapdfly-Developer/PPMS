@@ -98,6 +98,7 @@ export async function addPastExternalVisit(
   udid: string,
   data: {
     originalFileName: string;
+    label?: string;
     scanFileUrl?: string;
     sourceDate?: string | null;
     sourceHospital?: string | null;
@@ -116,10 +117,21 @@ export async function addPastExternalVisit(
       extractedDiagnosis: data.extractedDiagnosis ?? null,
       extractedTreatment: data.extractedTreatment ?? null,
       scanFileRef: data.scanFileUrl ?? data.originalFileName,
+      label: data.label?.trim() || data.originalFileName,
       verificationStatus: "VERIFIED",
     },
   });
   await writeAudit(user.id, "PastExternalVisit", patientId, "ADD", { sourceHospital: data.sourceHospital });
+  revalidate(udid);
+}
+
+export async function renamePastExternalVisit(id: string, udid: string, label: string): Promise<void> {
+  const user = await requireRole("DOCTOR", "HOSPITAL");
+  await prisma.pastExternalVisit.update({
+    where: { id },
+    data: { label: label.trim() || null },
+  });
+  await writeAudit(user.id, "PastExternalVisit", id, "RENAME", { label });
   revalidate(udid);
 }
 
