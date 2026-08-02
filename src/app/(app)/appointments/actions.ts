@@ -214,6 +214,37 @@ export async function undoQueueEntry(appointmentId: string): Promise<void> {
   revalidatePath("/dashboard");
 }
 
+export async function undoPartialDispense(appointmentId: string): Promise<void> {
+  let userId: string;
+  try {
+    const u = await requireRole("DOCTOR");
+    userId = u.id;
+  } catch {
+    const u = await requireRole("HOSPITAL");
+    userId = u.id;
+  }
+
+  const appt = await prisma.appointment.findUnique({
+    where: { id: appointmentId },
+    include: { patient: true, hospital: true },
+  });
+  if (!appt) throw new Error("Appointment not found");
+  if (appt.status !== "PARTIAL_DISPENSE") throw new Error("Only Partial Dispense appointments can be moved to queue.");
+
+  await prisma.appointment.update({
+    where: { id: appointmentId },
+    data: { status: "CONFIRMED", partialDispenseReason: null },
+  });
+
+  writeAudit(userId, "Appointment", appointmentId, "APPOINTMENT_CONFIRMED",
+    { patient: appt.patient.name, hospital: appt.hospital.name, note: "Moved back to Today's Queue from Partial Dispense" },
+    { moduleName: "Appointment", actionType: "UPDATE",
+      hospitalId: appt.hospitalId, userName: appt.patient.name });
+
+  revalidatePath("/appointments");
+  revalidatePath("/dashboard");
+}
+
 // ── Doctor: cancel/reject an appointment ─────────────────────────────────────
 export async function doctorCancelAppointment(appointmentId: string): Promise<void> {
   const user = await requireRole("DOCTOR");

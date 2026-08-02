@@ -9,7 +9,7 @@ import {
   Sun, Sunset, Moon, CalendarX2, Calendar, PersonStanding, Clock, Undo2, Timer, Stethoscope, CheckCircle2,
 } from "lucide-react";
 import clsx from "clsx";
-import { doctorConfirmAppointment, hospitalUpdateAppointmentStatus, undoQueueEntry } from "@/app/(app)/appointments/actions";
+import { doctorConfirmAppointment, hospitalUpdateAppointmentStatus, undoQueueEntry, undoPartialDispense } from "@/app/(app)/appointments/actions";
 import { formatComplaintDisplay } from "@/lib/appointment-cc";
 
 /* ── Types ─────────────────────────────────────────────────────────────── */
@@ -130,6 +130,74 @@ function SurgeryRow({ s, role }: { s: Surgery; role: "DOCTOR" | "HOSPITAL" }) {
       <span className="shrink-0 text-[10px] text-[var(--color-ink-400)]">
         {s.rightEye && s.leftEye ? "OU" : s.rightEye ? "RE" : "LE"}
       </span>
+    </div>
+  );
+}
+
+/* ── Partial Dispense row ───────────────────────────────────────────────── */
+function PartialDispenseRow({ appt: a, role, serial }: { appt: Appt; role: "DOCTOR" | "HOSPITAL"; serial: number }) {
+  const [undoing, startUndo] = useTransition();
+  const arrivedAt = a.arrivedAt ? new Date(a.arrivedAt) : null;
+  const apptTime  = format(new Date(a.dateTime), "h:mm a");
+
+  return (
+    <div className="rounded-xl border border-orange-200 bg-orange-50/40 overflow-hidden">
+      <div className="flex items-center gap-3 px-4 py-3">
+        {/* Serial */}
+        <div className="w-6 shrink-0 flex items-center justify-center">
+          <span className="text-xs font-bold text-orange-400">{serial}</span>
+        </div>
+        <div className="w-px self-stretch bg-orange-200" />
+
+        {/* Time column */}
+        <div className="w-16 shrink-0 flex flex-col items-center gap-0.5">
+          <span className="text-sm font-bold text-[var(--color-ink-900)]">
+            {arrivedAt ? format(arrivedAt, "h:mm a") : apptTime}
+          </span>
+          <span className="text-[9px] text-[var(--color-ink-400)]" title="Scheduled time">
+            Appt {apptTime}
+          </span>
+          <LiveTimer since={a.arrivedAt ?? a.dateTime} />
+        </div>
+        <div className="w-px self-stretch bg-orange-200" />
+
+        {/* Patient info */}
+        <Link href={`/patients/${a.patient.udid}?returnTo=/dashboard`} className="flex-1 min-w-0 hover:opacity-80 transition-opacity">
+          <p className="font-semibold text-sm text-[var(--color-ink-900)] truncate">{a.patient.name}</p>
+          <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+            <span className="font-mono text-[10px] text-[#115E59] bg-[#F0F8F6] px-1.5 py-0.5 rounded">
+              {a.patient.udid}
+            </span>
+            <span className="text-[11px] text-[var(--color-ink-400)]">
+              {a.patient.age}y / {a.patient.sex === "MALE" ? "M" : a.patient.sex === "FEMALE" ? "F" : "O"}
+            </span>
+            {role === "HOSPITAL" && a.doctor && (
+              <span className="text-[11px] text-[var(--color-ink-400)]">Dr. {a.doctor.name}</span>
+            )}
+          </div>
+          {a.partialDispenseReason && (
+            <span className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-orange-100 border border-orange-300 text-orange-700 text-[11px] font-semibold leading-relaxed">
+              {a.partialDispenseReason}
+            </span>
+          )}
+          {a.complaint && (
+            <span className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-50 border border-amber-100 text-amber-800 text-[11px] font-medium leading-relaxed">
+              {formatComplaintDisplay(a.complaint)}
+            </span>
+          )}
+        </Link>
+
+        {/* Undo → move to today's queue */}
+        <button
+          disabled={undoing}
+          title="Move back to Today's Queue"
+          onClick={() => startUndo(async () => { await undoPartialDispense(a.id); })}
+          className="shrink-0 flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1.5 rounded-lg bg-white border border-orange-300 text-orange-700 hover:bg-orange-100 disabled:opacity-50 transition-all"
+        >
+          {undoing ? <Loader2 size={12} className="animate-spin" /> : <LogIn size={12} />}
+          {!undoing && <span>To Queue</span>}
+        </button>
+      </div>
     </div>
   );
 }
@@ -492,45 +560,7 @@ export function DashboardClient({
             ) : (
               <div className="space-y-2">
                 {partialDispenseAppts.map((a, idx) => (
-                  <Link
-                    key={a.id}
-                    href={`/patients/${a.patient.udid}?returnTo=/dashboard`}
-                    className="flex items-center gap-3 px-4 py-3 rounded-xl border border-[var(--color-border)] bg-white hover:bg-orange-50 hover:border-orange-200 transition-colors"
-                  >
-                    <div className="w-6 shrink-0 flex items-center justify-center">
-                      <span className="text-xs font-bold text-[var(--color-ink-400)]">{idx + 1}</span>
-                    </div>
-                    <div className="w-px self-stretch bg-[var(--color-border)]" />
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-sm text-[var(--color-ink-900)] truncate">{a.patient.name}</p>
-                      <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                        <span className="font-mono text-[10px] text-[#115E59] bg-[#F0F8F6] px-1.5 py-0.5 rounded">
-                          {a.patient.udid}
-                        </span>
-                        <span className="text-[11px] text-[var(--color-ink-400)]">
-                          {a.patient.age}y / {a.patient.sex === "MALE" ? "M" : a.patient.sex === "FEMALE" ? "F" : "O"}
-                        </span>
-                        {role === "HOSPITAL" && a.doctor && (
-                          <span className="text-[11px] text-[var(--color-ink-400)]">Dr. {a.doctor.name}</span>
-                        )}
-                      </div>
-                      {a.partialDispenseReason && (
-                        <span className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-orange-50 border border-orange-200 text-orange-700 text-[11px] font-semibold leading-relaxed">
-                          {a.partialDispenseReason}
-                        </span>
-                      )}
-                      {a.complaint && (
-                        <span className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-50 border border-amber-100 text-amber-800 text-[11px] font-medium leading-relaxed">
-                          {formatComplaintDisplay(a.complaint)}
-                        </span>
-                      )}
-                    </div>
-                    {a.visitType && (
-                      <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)] whitespace-nowrap shrink-0">
-                        {a.visitType}
-                      </span>
-                    )}
-                  </Link>
+                  <PartialDispenseRow key={a.id} appt={a} role={role} serial={idx + 1} />
                 ))}
               </div>
             )}

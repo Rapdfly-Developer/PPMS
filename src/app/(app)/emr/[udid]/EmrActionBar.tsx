@@ -119,7 +119,12 @@ export function EmrActionBar({
   const [printOpen, setPrintOpen] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [showPartialModal, setShowPartialModal] = useState(false);
+  const [partialDone, setPartialDone] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (partialDone) router.push("/dashboard");
+  }, [partialDone, router]);
   const closed = visit.status === "CLOSED";
   const isLastTab = currentTabIndex >= totalTabs - 1;
 
@@ -147,7 +152,7 @@ export function EmrActionBar({
             startPartialTransition(async () => {
               await markPartialDispense(visit.id, udid, reason);
               setShowPartialModal(false);
-              router.push("/dashboard");
+              setPartialDone(true);
             });
           }}
         />
