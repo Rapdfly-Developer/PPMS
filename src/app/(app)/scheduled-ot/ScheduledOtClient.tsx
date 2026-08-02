@@ -3,8 +3,7 @@
 import { useState, useMemo } from "react";
 import { format, isToday, isTomorrow, isPast, startOfDay } from "date-fns";
 import Link from "next/link";
-import { Scissors, Calendar, User, Building2, Eye, AlertTriangle, ClipboardList } from "lucide-react";
-import { SurgeryScheduleForm, type OtRecordForForm } from "./SurgeryScheduleForm";
+import { Scissors, User, Building2, Eye, AlertTriangle, ClipboardList } from "lucide-react";
 
 interface OtRecord {
   id:              string;
@@ -43,9 +42,8 @@ export function ScheduledOtClient({
   records: OtRecord[];
   role: "DOCTOR" | "HOSPITAL";
 }) {
-  const [filter,      setFilter]      = useState<"upcoming" | "past" | "all">("upcoming");
-  const [search,      setSearch]      = useState("");
-  const [activeForm,  setActiveForm]  = useState<OtRecordForForm | null>(null);
+  const [filter, setFilter] = useState<"upcoming" | "past" | "all">("upcoming");
+  const [search, setSearch] = useState("");
 
   const filtered = useMemo(() => {
     return records.filter((r) => {
@@ -76,18 +74,6 @@ export function ScheduledOtClient({
 
   const upcoming   = records.filter((r) => !isPast(new Date(r.surgeryDate)) || isToday(new Date(r.surgeryDate)));
   const todayCount = records.filter((r) => isToday(new Date(r.surgeryDate))).length;
-
-  function openForm(r: OtRecord) {
-    setActiveForm({
-      id:              r.id,
-      surgeryName:     r.surgeryName,
-      surgeryType:     r.surgeryType,
-      anaesthesiaType: r.anaesthesiaType,
-      patient:         r.patient,
-      hospital:        r.hospital,
-      doctor:          r.doctor,
-    });
-  }
 
   return (
     <>
@@ -232,15 +218,15 @@ export function ScheduledOtClient({
                               )}
                             </div>
 
-                            {/* Fill the form button — hospital admin only */}
+                            {/* Fill the form — hospital admin only */}
                             {role === "HOSPITAL" && (
-                              <button
-                                onClick={() => openForm(r)}
+                              <Link
+                                href={`/scheduled-ot/${r.id}`}
                                 className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border border-[var(--color-primary-300)] text-[var(--color-primary-700)] bg-[var(--color-primary-50)] hover:bg-[var(--color-primary-100)] hover:border-[var(--color-primary-400)] transition-colors"
                               >
                                 <ClipboardList size={12} />
                                 Fill the Form
-                              </button>
+                              </Link>
                             )}
                           </div>
                         </div>
@@ -253,15 +239,6 @@ export function ScheduledOtClient({
           </div>
         )}
       </div>
-
-      {/* Surgery Schedule Form drawer */}
-      {activeForm && (
-        <SurgeryScheduleForm
-          record={activeForm}
-          onClose={() => setActiveForm(null)}
-          onSaved={() => setActiveForm(null)}
-        />
-      )}
     </>
   );
 }

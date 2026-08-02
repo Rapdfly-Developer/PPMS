@@ -1,28 +1,25 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import {
-  X, User, Building2, Scissors, Calendar, Clock, AlertTriangle,
-  CheckSquare, CreditCard, FileText, ChevronDown, Save, Loader2,
+  User, Building2, Scissors, Calendar, AlertTriangle,
+  CheckSquare, CreditCard, FileText, ChevronDown, Save,
+  Loader2, ArrowLeft, Clock,
 } from "lucide-react";
 import { saveSurgerySchedule } from "./actions";
 
 export interface OtRecordForForm {
-  id:              string;        // surgicalCounselling id
+  id:              string;
   surgeryName:     string | null;
   surgeryType:     string;
   anaesthesiaType: string;
-  patient: {
-    name: string;
-    udid: string;
-    age:  number;
-    sex:  string;
-    id:   string;
-  };
-  hospital: { name: string; id: string };
-  doctor:   { name: string; id: string };
+  patient: { id: string; name: string; udid: string; age: number; sex: string };
+  hospital: { id: string; name: string };
+  doctor:   { id: string; name: string };
 }
 
+/* ── shared style tokens ─────────────────────────────────────────────────── */
 const SEL =
   "w-full rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent appearance-none";
 const INP =
@@ -31,50 +28,67 @@ const TEXTAREA =
   "w-full rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent resize-none";
 const READONLY =
   "w-full rounded-lg border border-[var(--color-surface-sunken)] bg-[var(--color-surface-sunken)] px-3 py-2 text-sm text-[var(--color-ink-600)] cursor-default select-none";
+const ERR_INP =
+  "w-full rounded-lg border border-red-400 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400 focus:border-transparent";
 
-function SectionHeader({ icon, title }: { icon: React.ReactNode; title: string }) {
+/* ── small primitives ────────────────────────────────────────────────────── */
+function SectionCard({
+  icon, title, children,
+}: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
   return (
-    <div className="flex items-center gap-2 py-2 px-3 rounded-lg bg-[var(--color-surface-sunken)] border border-[var(--color-border)] mb-3">
-      <span className="text-[var(--color-primary-600)]">{icon}</span>
-      <span className="text-xs font-bold tracking-widest text-[var(--color-ink-500)] uppercase">{title}</span>
+    <div className="rounded-xl border border-[var(--color-border)] bg-white overflow-hidden">
+      <div className="flex items-center gap-2.5 px-5 py-3 bg-[var(--color-surface-sunken)] border-b border-[var(--color-border)]">
+        <span className="text-[var(--color-primary-600)]">{icon}</span>
+        <span className="text-xs font-bold tracking-widest text-[var(--color-ink-500)] uppercase">{title}</span>
+      </div>
+      <div className="px-5 py-4">{children}</div>
     </div>
   );
 }
 
 function Label({ children, required }: { children: React.ReactNode; required?: boolean }) {
   return (
-    <label className="block text-xs font-semibold text-[var(--color-ink-600)] mb-1">
-      {children}
-      {required && <span className="text-red-500 ml-0.5">*</span>}
+    <label className="block text-xs font-semibold text-[var(--color-ink-600)] mb-1.5">
+      {children}{required && <span className="text-red-500 ml-0.5">*</span>}
     </label>
   );
 }
 
-function Field({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <div className={className ?? "flex flex-col"}>{children}</div>;
+function SelectWrapper({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="relative">
+      {children}
+      <ChevronDown size={13} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)]" />
+    </div>
+  );
 }
 
 function CheckItem({
   label, checked, onChange,
 }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
   return (
-    <label className="flex items-center gap-2.5 cursor-pointer group">
-      <div
+    <label className="flex items-center gap-3 cursor-pointer group py-2.5 px-4 hover:bg-[var(--color-surface-sunken)] transition-colors">
+      <button
+        type="button"
         onClick={() => onChange(!checked)}
-        className={`w-4.5 h-4.5 rounded border-2 flex items-center justify-center transition-colors shrink-0 ${
+        className={`shrink-0 w-[18px] h-[18px] rounded border-2 flex items-center justify-center transition-colors ${
           checked
             ? "bg-[var(--color-primary-600)] border-[var(--color-primary-600)]"
             : "bg-white border-[var(--color-border)] group-hover:border-[var(--color-primary-400)]"
         }`}
-        style={{ width: 18, height: 18 }}
       >
         {checked && (
           <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
             <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
         )}
-      </div>
+      </button>
       <span className="text-sm text-[var(--color-ink-700)]">{label}</span>
+      {checked && (
+        <span className="ml-auto text-[10px] font-semibold text-[var(--color-primary-600)] bg-[var(--color-primary-50)] px-2 py-0.5 rounded-full">
+          Done
+        </span>
+      )}
     </label>
   );
 }
@@ -85,39 +99,40 @@ const URGENCY_OPTS  = ["ELECTIVE", "EMERGENCY"];
 const PRIORITY_OPTS = ["ROUTINE", "URGENT", "EMERGENCY"];
 const PAYMENT_OPTS  = ["SELF_PAY", "INSURED", "CORPORATE", "GOVERNMENT", "SUBSIDISED", "FREE"];
 
-export function SurgeryScheduleForm({
-  record,
-  onClose,
-  onSaved,
-}: {
-  record: OtRecordForForm;
-  onClose: () => void;
-  onSaved: () => void;
-}) {
-  const defaultSurgeryName = record.surgeryName ?? record.surgeryType;
+const STATUS_STYLE: Record<string, string> = {
+  PLANNED:     "bg-[var(--color-ink-700)] text-white border-[var(--color-ink-700)]",
+  SCHEDULED:   "bg-[var(--color-primary-600)] text-white border-[var(--color-primary-600)]",
+  RESCHEDULED: "bg-amber-500 text-white border-amber-500",
+  CANCELLED:   "bg-red-600 text-white border-red-600",
+};
 
-  const [department,         setDepartment]         = useState("");
-  const [surgeryName,        setSurgeryName]         = useState(defaultSurgeryName);
-  const [diagnosis,          setDiagnosis]           = useState("");
-  const [procedure,          setProcedure]           = useState(defaultSurgeryName);
-  const [surgeryCategory,    setSurgeryCategory]     = useState("MAJOR");
-  const [urgencyType,        setUrgencyType]         = useState("ELECTIVE");
-  const [priority,           setPriority]            = useState("ROUTINE");
-  const [plannedDate,        setPlannedDate]         = useState("");
-  const [plannedTime,        setPlannedTime]         = useState("08:00");
-  const [otRoom,             setOtRoom]              = useState("");
-  const [estimatedDuration,  setEstimatedDuration]   = useState("");
-  const [anesthetistName,    setAnesthetistName]     = useState(record.anaesthesiaType ? `${record.anaesthesiaType} anesthesia` : "");
-  const [nursingStaff,       setNursingStaff]        = useState("");
-  const [admissionDate,      setAdmissionDate]       = useState("");
-  const [paymentStatus,      setPaymentStatus]       = useState("SELF_PAY");
-  const [consentReceived,    setConsentReceived]     = useState(false);
-  const [reportsUploaded,    setReportsUploaded]     = useState(false);
-  const [otAvailable,        setOtAvailable]         = useState(false);
-  const [bloodArranged,      setBloodArranged]       = useState(false);
-  const [patientInformed,    setPatientInformed]     = useState(false);
-  const [status,             setStatus]              = useState("PLANNED");
-  const [remarks,            setRemarks]             = useState("");
+/* ── main component ──────────────────────────────────────────────────────── */
+export function SurgeryScheduleForm({ record }: { record: OtRecordForForm }) {
+  const router = useRouter();
+  const defaultName = record.surgeryName ?? record.surgeryType;
+
+  const [department,        setDepartment]        = useState("");
+  const [surgeryName,       setSurgeryName]        = useState(defaultName);
+  const [diagnosis,         setDiagnosis]          = useState("");
+  const [procedure,         setProcedure]          = useState(defaultName);
+  const [surgeryCategory,   setSurgeryCategory]    = useState("MAJOR");
+  const [urgencyType,       setUrgencyType]        = useState("ELECTIVE");
+  const [priority,          setPriority]           = useState("ROUTINE");
+  const [plannedDate,       setPlannedDate]        = useState("");
+  const [plannedTime,       setPlannedTime]        = useState("08:00");
+  const [otRoom,            setOtRoom]             = useState("");
+  const [estimatedDuration, setEstimatedDuration]  = useState("");
+  const [anesthetistName,   setAnesthetistName]    = useState("");
+  const [nursingStaff,      setNursingStaff]       = useState("");
+  const [admissionDate,     setAdmissionDate]      = useState("");
+  const [paymentStatus,     setPaymentStatus]      = useState("SELF_PAY");
+  const [consentReceived,   setConsentReceived]    = useState(false);
+  const [reportsUploaded,   setReportsUploaded]    = useState(false);
+  const [otAvailable,       setOtAvailable]        = useState(false);
+  const [bloodArranged,     setBloodArranged]      = useState(false);
+  const [patientInformed,   setPatientInformed]    = useState(false);
+  const [status,            setStatus]             = useState("PLANNED");
+  const [remarks,           setRemarks]            = useState("");
 
   const [errors,  setErrors]  = useState<Record<string, string>>({});
   const [saved,   setSaved]   = useState(false);
@@ -125,12 +140,9 @@ export function SurgeryScheduleForm({
 
   function validate() {
     const e: Record<string, string> = {};
-    if (!surgeryName.trim())  e.surgeryName    = "Required";
-    if (!plannedDate)         e.plannedDate    = "Required";
-    if (!plannedTime)         e.plannedTime    = "Required";
-    if (!surgeryCategory)     e.surgeryCategory = "Required";
-    if (!urgencyType)         e.urgencyType    = "Required";
-    if (!priority)            e.priority       = "Required";
+    if (!surgeryName.trim()) e.surgeryName    = "Required";
+    if (!plannedDate)        e.plannedDate    = "Required";
+    if (!plannedTime)        e.plannedTime    = "Required";
     setErrors(e);
     return Object.keys(e).length === 0;
   }
@@ -138,7 +150,6 @@ export function SurgeryScheduleForm({
   function handleSave() {
     if (!validate()) return;
     startTransition(async () => {
-      const plannedDateTime = new Date(`${plannedDate}T${plannedTime}`).toISOString();
       const result = await saveSurgerySchedule({
         surgicalCounsellingId: record.id,
         patientId:             record.patient.id,
@@ -151,7 +162,7 @@ export function SurgeryScheduleForm({
         surgeryCategory,
         urgencyType,
         priority,
-        plannedDateTime,
+        plannedDateTime:      new Date(`${plannedDate}T${plannedTime}`).toISOString(),
         otRoom,
         estimatedDuration:    estimatedDuration ? parseInt(estimatedDuration, 10) : undefined,
         anesthetistName,
@@ -172,78 +183,73 @@ export function SurgeryScheduleForm({
         return;
       }
       setSaved(true);
-      setTimeout(onSaved, 1200);
+      setTimeout(() => router.push("/scheduled-ot"), 1400);
     });
   }
 
-  const checklistAll = consentReceived && reportsUploaded && otAvailable && bloodArranged && patientInformed;
-  const checklistCount = [consentReceived, reportsUploaded, otAvailable, bloodArranged, patientInformed].filter(Boolean).length;
+  const checklistCount = [consentReceived, reportsUploaded, otAvailable, bloodArranged, patientInformed]
+    .filter(Boolean).length;
 
   return (
-    <>
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 bg-black/40 backdrop-blur-[2px] z-40"
-        onClick={onClose}
-      />
+    <div className="max-w-5xl mx-auto pb-16">
 
-      {/* Drawer */}
-      <div className="fixed right-0 top-0 h-full w-full max-w-2xl z-50 flex flex-col bg-white shadow-2xl">
-
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)] bg-white shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-[var(--color-primary-100)] flex items-center justify-center shrink-0">
-              <Scissors size={17} className="text-[var(--color-primary-700)]" />
-            </div>
-            <div>
-              <h2 className="text-base font-bold text-[var(--color-ink-900)]">Surgery Scheduling Form</h2>
-              <p className="text-xs text-[var(--color-ink-400)] mt-0.5">{record.patient.name} · {record.hospital.name}</p>
-            </div>
+      {/* Page header */}
+      <div className="flex items-center gap-4 mb-6">
+        <button
+          onClick={() => router.back()}
+          className="flex items-center gap-1.5 text-sm font-medium text-[var(--color-ink-500)] hover:text-[var(--color-ink-800)] transition-colors"
+        >
+          <ArrowLeft size={15} /> Back
+        </button>
+        <div className="h-5 w-px bg-[var(--color-border)]" />
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-[var(--color-primary-100)] flex items-center justify-center shrink-0">
+            <Scissors size={17} className="text-[var(--color-primary-700)]" />
           </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-lg text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] transition-colors"
-          >
-            <X size={18} />
-          </button>
+          <div>
+            <h1 className="text-lg font-bold text-[var(--color-ink-900)] leading-tight">
+              Surgery Scheduling Form
+            </h1>
+            <p className="text-xs text-[var(--color-ink-400)]">
+              {record.patient.name} · {record.hospital.name}
+            </p>
+          </div>
         </div>
+      </div>
 
-        {/* Scrollable body */}
-        <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
 
-          {/* ── Patient Details ── */}
-          <section>
-            <SectionHeader icon={<User size={14} />} title="Patient Details" />
-            <div className="grid grid-cols-2 gap-3">
-              <Field>
+        {/* ── Left column (patient + surgeon + team + payment) ── */}
+        <div className="flex flex-col gap-5">
+
+          {/* Patient Details */}
+          <SectionCard icon={<User size={14} />} title="Patient Details">
+            <div className="flex flex-col gap-3">
+              <div>
                 <Label>Patient Name</Label>
                 <div className={READONLY}>{record.patient.name}</div>
-              </Field>
-              <Field>
-                <Label>Patient ID</Label>
-                <div className={READONLY}>{record.patient.udid}</div>
-              </Field>
-              <Field>
-                <Label>Age</Label>
-                <div className={READONLY}>{record.patient.age} yrs</div>
-              </Field>
-              <Field>
-                <Label>Sex</Label>
-                <div className={READONLY}>{record.patient.sex}</div>
-              </Field>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Patient ID</Label>
+                  <div className={`${READONLY} font-mono text-xs`}>{record.patient.udid}</div>
+                </div>
+                <div>
+                  <Label>Age / Sex</Label>
+                  <div className={READONLY}>{record.patient.age}y / {record.patient.sex}</div>
+                </div>
+              </div>
             </div>
-          </section>
+          </SectionCard>
 
-          {/* ── Hospital & Department ── */}
-          <section>
-            <SectionHeader icon={<Building2 size={14} />} title="Hospital & Department" />
-            <div className="grid grid-cols-2 gap-3">
-              <Field>
+          {/* Hospital & Department */}
+          <SectionCard icon={<Building2 size={14} />} title="Hospital & Department">
+            <div className="flex flex-col gap-3">
+              <div>
                 <Label>Hospital</Label>
                 <div className={READONLY}>{record.hospital.name}</div>
-              </Field>
-              <Field>
+              </div>
+              <div>
                 <Label>Department</Label>
                 <input
                   value={department}
@@ -251,111 +257,146 @@ export function SurgeryScheduleForm({
                   placeholder="e.g. Ophthalmology"
                   className={INP}
                 />
-              </Field>
+              </div>
             </div>
-          </section>
+          </SectionCard>
 
-          {/* ── Operating Surgeon ── */}
-          <section>
-            <SectionHeader icon={<User size={14} />} title="Operating Surgeon" />
-            <Field>
+          {/* Operating Surgeon */}
+          <SectionCard icon={<User size={14} />} title="Operating Surgeon">
+            <div>
               <Label>Surgeon</Label>
               <div className={READONLY}>Dr. {record.doctor.name}</div>
-            </Field>
-          </section>
+            </div>
+          </SectionCard>
 
-          {/* ── Surgery Details ── */}
-          <section>
-            <SectionHeader icon={<Scissors size={14} />} title="Surgery Details" />
+          {/* Surgical Team */}
+          <SectionCard icon={<User size={14} />} title="Surgical Team">
             <div className="flex flex-col gap-3">
-              <Field>
+              <div>
+                <Label>Anesthetist</Label>
+                <input
+                  value={anesthetistName}
+                  onChange={(e) => setAnesthetistName(e.target.value)}
+                  placeholder="Name or type of anesthesia"
+                  className={INP}
+                />
+              </div>
+              <div>
+                <Label>Nursing Staff</Label>
+                <input
+                  value={nursingStaff}
+                  onChange={(e) => setNursingStaff(e.target.value)}
+                  placeholder="Scrub nurse, circulating nurse…"
+                  className={INP}
+                />
+              </div>
+            </div>
+          </SectionCard>
+
+          {/* Admission & Payment */}
+          <SectionCard icon={<CreditCard size={14} />} title="Admission & Payment">
+            <div className="flex flex-col gap-3">
+              <div>
+                <Label>Admission Date</Label>
+                <input
+                  type="date"
+                  value={admissionDate}
+                  onChange={(e) => setAdmissionDate(e.target.value)}
+                  className={INP}
+                />
+              </div>
+              <div>
+                <Label>Insurance / Payment Status</Label>
+                <SelectWrapper>
+                  <select value={paymentStatus} onChange={(e) => setPaymentStatus(e.target.value)} className={SEL}>
+                    {PAYMENT_OPTS.map((o) => (
+                      <option key={o} value={o}>{o.replace(/_/g, " ")}</option>
+                    ))}
+                  </select>
+                </SelectWrapper>
+              </div>
+            </div>
+          </SectionCard>
+        </div>
+
+        {/* ── Right column (surgery details + scheduling + checklist + status) ── */}
+        <div className="lg:col-span-2 flex flex-col gap-5">
+
+          {/* Surgery Details */}
+          <SectionCard icon={<Scissors size={14} />} title="Surgery Details">
+            <div className="flex flex-col gap-4">
+              <div>
                 <Label required>Surgery Name</Label>
                 <input
                   value={surgeryName}
                   onChange={(e) => { setSurgeryName(e.target.value); setErrors((p) => ({ ...p, surgeryName: "" })); }}
                   placeholder="e.g. Phacoemulsification with IOL implantation"
-                  className={`${INP} ${errors.surgeryName ? "border-red-400 focus:ring-red-400" : ""}`}
+                  className={errors.surgeryName ? ERR_INP : INP}
                 />
-                {errors.surgeryName && <span className="text-xs text-red-500 mt-0.5">{errors.surgeryName}</span>}
-              </Field>
-              <Field>
+                {errors.surgeryName && <p className="text-xs text-red-500 mt-1">{errors.surgeryName}</p>}
+              </div>
+              <div>
                 <Label>Diagnosis</Label>
                 <input
                   value={diagnosis}
                   onChange={(e) => setDiagnosis(e.target.value)}
-                  placeholder="e.g. Senile cataract"
+                  placeholder="e.g. Senile cataract — right eye"
                   className={INP}
                 />
-              </Field>
-              <Field>
+              </div>
+              <div>
                 <Label>Procedure Description</Label>
                 <textarea
                   value={procedure}
                   onChange={(e) => setProcedure(e.target.value)}
-                  rows={2}
-                  placeholder="Describe the surgical procedure..."
+                  rows={3}
+                  placeholder="Describe the surgical procedure in detail…"
                   className={TEXTAREA}
                 />
-              </Field>
+              </div>
               <div className="grid grid-cols-3 gap-3">
-                <Field>
+                <div>
                   <Label required>Category</Label>
-                  <div className="relative">
-                    <select
-                      value={surgeryCategory}
-                      onChange={(e) => setSurgeryCategory(e.target.value)}
-                      className={SEL}
-                    >
-                      {CATEGORY_OPTS.map((o) => <option key={o} value={o}>{o}</option>)}
+                  <SelectWrapper>
+                    <select value={surgeryCategory} onChange={(e) => setSurgeryCategory(e.target.value)} className={SEL}>
+                      {CATEGORY_OPTS.map((o) => <option key={o}>{o}</option>)}
                     </select>
-                    <ChevronDown size={13} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)]" />
-                  </div>
-                </Field>
-                <Field>
+                  </SelectWrapper>
+                </div>
+                <div>
                   <Label required>Elective / Emergency</Label>
-                  <div className="relative">
-                    <select
-                      value={urgencyType}
-                      onChange={(e) => setUrgencyType(e.target.value)}
-                      className={SEL}
-                    >
-                      {URGENCY_OPTS.map((o) => <option key={o} value={o}>{o}</option>)}
+                  <SelectWrapper>
+                    <select value={urgencyType} onChange={(e) => setUrgencyType(e.target.value)} className={SEL}>
+                      {URGENCY_OPTS.map((o) => <option key={o}>{o}</option>)}
                     </select>
-                    <ChevronDown size={13} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)]" />
-                  </div>
-                </Field>
-                <Field>
+                  </SelectWrapper>
+                </div>
+                <div>
                   <Label required>Priority</Label>
-                  <div className="relative">
-                    <select
-                      value={priority}
-                      onChange={(e) => setPriority(e.target.value)}
-                      className={SEL}
-                    >
-                      {PRIORITY_OPTS.map((o) => <option key={o} value={o}>{o}</option>)}
+                  <SelectWrapper>
+                    <select value={priority} onChange={(e) => setPriority(e.target.value)} className={SEL}>
+                      {PRIORITY_OPTS.map((o) => <option key={o}>{o}</option>)}
                     </select>
-                    <ChevronDown size={13} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)]" />
-                  </div>
-                </Field>
+                  </SelectWrapper>
+                </div>
               </div>
             </div>
-          </section>
+          </SectionCard>
 
-          {/* ── Scheduling ── */}
-          <section>
-            <SectionHeader icon={<Calendar size={14} />} title="Planned Surgery Date & Time" />
-            <div className="grid grid-cols-2 gap-3">
-              <Field>
+          {/* Scheduling */}
+          <SectionCard icon={<Calendar size={14} />} title="Planned Surgery Date & Time">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
                 <Label required>Date</Label>
                 <input
                   type="date"
                   value={plannedDate}
                   onChange={(e) => { setPlannedDate(e.target.value); setErrors((p) => ({ ...p, plannedDate: "" })); }}
-                  className={`${INP} ${errors.plannedDate ? "border-red-400 focus:ring-red-400" : ""}`}
+                  className={errors.plannedDate ? ERR_INP : INP}
                 />
-                {errors.plannedDate && <span className="text-xs text-red-500 mt-0.5">{errors.plannedDate}</span>}
-              </Field>
-              <Field>
+                {errors.plannedDate && <p className="text-xs text-red-500 mt-1">{errors.plannedDate}</p>}
+              </div>
+              <div>
                 <Label required>Time</Label>
                 <input
                   type="time"
@@ -363,8 +404,8 @@ export function SurgeryScheduleForm({
                   onChange={(e) => setPlannedTime(e.target.value)}
                   className={INP}
                 />
-              </Field>
-              <Field>
+              </div>
+              <div>
                 <Label>Operation Theatre (OT)</Label>
                 <input
                   value={otRoom}
@@ -372,8 +413,8 @@ export function SurgeryScheduleForm({
                   placeholder="e.g. OT-1, Main OT"
                   className={INP}
                 />
-              </Field>
-              <Field>
+              </div>
+              <div>
                 <Label>Estimated Duration (min)</Label>
                 <input
                   type="number"
@@ -384,90 +425,29 @@ export function SurgeryScheduleForm({
                   placeholder="e.g. 60"
                   className={INP}
                 />
-              </Field>
+              </div>
             </div>
-          </section>
+          </SectionCard>
 
-          {/* ── Team ── */}
-          <section>
-            <SectionHeader icon={<User size={14} />} title="Surgical Team" />
-            <div className="grid grid-cols-2 gap-3">
-              <Field>
-                <Label>Anesthetist</Label>
-                <input
-                  value={anesthetistName}
-                  onChange={(e) => setAnesthetistName(e.target.value)}
-                  placeholder="Anesthetist name or type"
-                  className={INP}
-                />
-              </Field>
-              <Field>
-                <Label>Nursing Staff</Label>
-                <input
-                  value={nursingStaff}
-                  onChange={(e) => setNursingStaff(e.target.value)}
-                  placeholder="Scrub nurse, circulating nurse..."
-                  className={INP}
-                />
-              </Field>
-            </div>
-          </section>
-
-          {/* ── Admin ── */}
-          <section>
-            <SectionHeader icon={<CreditCard size={14} />} title="Admission & Payment" />
-            <div className="grid grid-cols-2 gap-3">
-              <Field>
-                <Label>Admission Date</Label>
-                <input
-                  type="date"
-                  value={admissionDate}
-                  onChange={(e) => setAdmissionDate(e.target.value)}
-                  className={INP}
-                />
-              </Field>
-              <Field>
-                <Label>Insurance / Payment Status</Label>
-                <div className="relative">
-                  <select
-                    value={paymentStatus}
-                    onChange={(e) => setPaymentStatus(e.target.value)}
-                    className={SEL}
-                  >
-                    {PAYMENT_OPTS.map((o) => (
-                      <option key={o} value={o}>{o.replace(/_/g, " ")}</option>
-                    ))}
-                  </select>
-                  <ChevronDown size={13} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)]" />
-                </div>
-              </Field>
-            </div>
-          </section>
-
-          {/* ── Checklist ── */}
-          <section>
-            <SectionHeader icon={<CheckSquare size={14} />} title={`Administrative Checklist (${checklistCount}/5)`} />
-            <div className="rounded-xl border border-[var(--color-border)] divide-y divide-[var(--color-border)]">
+          {/* Administrative Checklist */}
+          <SectionCard
+            icon={<CheckSquare size={14} />}
+            title={`Administrative Checklist (${checklistCount}/5)`}
+          >
+            <div className="divide-y divide-[var(--color-border)] -mx-5 -mb-4">
               {[
-                { label: "Consent Form Received",  val: consentReceived,  set: setConsentReceived  },
-                { label: "Investigation Reports Uploaded", val: reportsUploaded, set: setReportsUploaded },
-                { label: "OT Available & Confirmed", val: otAvailable,    set: setOtAvailable      },
-                { label: "Blood Arranged (if required)", val: bloodArranged, set: setBloodArranged  },
-                { label: "Patient Informed & Counselled", val: patientInformed, set: setPatientInformed },
+                { label: "Consent Form Received",            val: consentReceived,  set: setConsentReceived  },
+                { label: "Investigation Reports Uploaded",   val: reportsUploaded,  set: setReportsUploaded  },
+                { label: "OT Available & Confirmed",         val: otAvailable,      set: setOtAvailable      },
+                { label: "Blood Arranged (if required)",     val: bloodArranged,    set: setBloodArranged    },
+                { label: "Patient Informed & Counselled",    val: patientInformed,  set: setPatientInformed  },
               ].map(({ label, val, set }) => (
-                <div key={label} className="flex items-center px-4 py-3">
-                  <CheckItem label={label} checked={val} onChange={set} />
-                  {val && (
-                    <span className="ml-auto text-[10px] font-semibold text-[var(--color-primary-600)] bg-[var(--color-primary-50)] px-2 py-0.5 rounded-full">
-                      Done
-                    </span>
-                  )}
-                </div>
+                <CheckItem key={label} label={label} checked={val} onChange={set} />
               ))}
             </div>
-            {checklistAll && (
-              <p className="mt-2 text-xs font-medium text-[var(--color-success-600)] flex items-center gap-1.5">
-                <span className="w-4 h-4 rounded-full bg-[var(--color-success-600)] flex items-center justify-center">
+            {checklistCount === 5 && (
+              <p className="mt-4 text-xs font-semibold text-[var(--color-primary-700)] flex items-center gap-1.5">
+                <span className="w-4 h-4 rounded-full bg-[var(--color-primary-600)] flex items-center justify-center shrink-0">
                   <svg width="8" height="6" viewBox="0 0 8 6" fill="none">
                     <path d="M1 3L3 5L7 1" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
@@ -475,98 +455,90 @@ export function SurgeryScheduleForm({
                 All checklist items complete
               </p>
             )}
-          </section>
+          </SectionCard>
 
-          {/* ── Status & Remarks ── */}
-          <section>
-            <SectionHeader icon={<FileText size={14} />} title="Status & Remarks" />
-            <div className="flex flex-col gap-3">
-              <Field>
+          {/* Status & Remarks */}
+          <SectionCard icon={<FileText size={14} />} title="Status & Remarks">
+            <div className="flex flex-col gap-4">
+              <div>
                 <Label required>Status</Label>
-                <div className="flex gap-2 flex-wrap">
+                <div className="flex gap-2 flex-wrap mt-0.5">
                   {STATUS_OPTS.map((s) => (
                     <button
                       key={s}
                       type="button"
                       onClick={() => setStatus(s)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
+                      className={`px-4 py-1.5 rounded-lg text-xs font-bold border transition-colors ${
                         status === s
-                          ? s === "CANCELLED"
-                            ? "bg-red-600 text-white border-red-600"
-                            : s === "SCHEDULED"
-                            ? "bg-[var(--color-primary-600)] text-white border-[var(--color-primary-600)]"
-                            : s === "RESCHEDULED"
-                            ? "bg-amber-500 text-white border-amber-500"
-                            : "bg-[var(--color-ink-700)] text-white border-[var(--color-ink-700)]"
-                          : "bg-white text-[var(--color-ink-600)] border-[var(--color-border)] hover:border-[var(--color-primary-400)]"
+                          ? STATUS_STYLE[s]
+                          : "bg-white text-[var(--color-ink-500)] border-[var(--color-border)] hover:border-[var(--color-primary-300)] hover:text-[var(--color-ink-800)]"
                       }`}
                     >
                       {s}
                     </button>
                   ))}
                 </div>
-              </Field>
-              <Field>
+              </div>
+              <div>
                 <Label>Remarks</Label>
                 <textarea
                   value={remarks}
                   onChange={(e) => setRemarks(e.target.value)}
                   rows={3}
-                  placeholder="Any additional notes or instructions..."
+                  placeholder="Additional notes, special instructions, pre-op requirements…"
                   className={TEXTAREA}
                 />
-              </Field>
+              </div>
             </div>
-          </section>
+          </SectionCard>
 
+          {/* Error */}
           {errors._general && (
-            <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
-              <AlertTriangle size={14} />
+            <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+              <AlertTriangle size={15} className="shrink-0" />
               {errors._general}
             </div>
           )}
-        </div>
 
-        {/* Footer */}
-        <div className="shrink-0 border-t border-[var(--color-border)] px-6 py-4 bg-white flex items-center justify-between gap-3">
-          {saved ? (
-            <div className="flex items-center gap-2 text-sm font-medium text-[var(--color-success-600)]">
-              <span className="w-5 h-5 rounded-full bg-[var(--color-success-600)] flex items-center justify-center">
-                <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
-                  <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
+          {/* Save row */}
+          <div className="flex items-center justify-between gap-4 pt-1">
+            {saved ? (
+              <span className="flex items-center gap-2 text-sm font-semibold text-[var(--color-primary-700)]">
+                <span className="w-5 h-5 rounded-full bg-[var(--color-primary-600)] flex items-center justify-center shrink-0">
+                  <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+                    <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </span>
+                Saved — surgeon notified. Returning to Scheduled OT…
               </span>
-              Surgery scheduled — surgeon notified
+            ) : (
+              <p className="text-xs text-[var(--color-ink-400)]">
+                Fields marked <span className="text-red-500 font-bold">*</span> are required
+              </p>
+            )}
+            <div className="flex items-center gap-3 shrink-0">
+              <button
+                onClick={() => router.back()}
+                disabled={pending}
+                className="px-4 py-2 rounded-lg border border-[var(--color-border)] text-sm font-medium text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={pending || saved}
+                className="flex items-center gap-2 px-6 py-2 rounded-lg bg-[var(--color-primary-600)] text-white text-sm font-bold hover:bg-[var(--color-primary-700)] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {pending ? (
+                  <><Loader2 size={14} className="animate-spin" /> Saving…</>
+                ) : saved ? "Saved" : (
+                  <><Save size={14} /> Save Schedule</>
+                )}
+              </button>
             </div>
-          ) : (
-            <p className="text-xs text-[var(--color-ink-400)]">
-              Fields marked <span className="text-red-500">*</span> are required
-            </p>
-          )}
-          <div className="flex items-center gap-2">
-            <button
-              onClick={onClose}
-              disabled={pending}
-              className="px-4 py-2 rounded-lg border border-[var(--color-border)] text-sm font-medium text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] transition-colors disabled:opacity-50"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={pending || saved}
-              className="flex items-center gap-2 px-5 py-2 rounded-lg bg-[var(--color-primary-600)] text-white text-sm font-semibold hover:bg-[var(--color-primary-700)] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              {pending ? (
-                <><Loader2 size={14} className="animate-spin" /> Saving…</>
-              ) : saved ? (
-                "Saved"
-              ) : (
-                <><Save size={14} /> Save Schedule</>
-              )}
-            </button>
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }
