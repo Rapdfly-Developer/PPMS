@@ -72,14 +72,15 @@ const STATUS_FILTERS = [
 
 /* ── Live waiting timer ─────────────────────────────────────────────────── */
 function LiveTimer({ since }: { since: string }) {
-  const [now, setNow] = useState<number | null>(null);
+  // Initialize immediately so the timer shows the correct elapsed time from
+  // the very first render — even for patients already waiting — without a
+  // flash-to-empty on each page load or auto-refresh.
+  const [now, setNow] = useState<number>(() => Date.now());
   useEffect(() => {
-    setNow(Date.now());
     const id = setInterval(() => setNow(Date.now()), 30_000);
     return () => clearInterval(id);
   }, []);
 
-  if (now === null) return null;
   const elapsed = now - new Date(since).getTime();
   if (elapsed <= 0) return null;
 
@@ -90,7 +91,7 @@ function LiveTimer({ since }: { since: string }) {
   const color     = totalMins > 30 ? "text-red-500" : totalMins > 15 ? "text-amber-500" : "text-emerald-600";
 
   return (
-    <span className={clsx("inline-flex items-center justify-center gap-0.5 text-[10px] font-semibold", color)}>
+    <span suppressHydrationWarning className={clsx("inline-flex items-center justify-center gap-0.5 text-[10px] font-semibold", color)}>
       <Clock size={9} /> {label}
     </span>
   );
