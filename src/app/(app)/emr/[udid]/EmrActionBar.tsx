@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useTransition, useRef, useEffect } from "react";
-import { ChevronRight, Printer, FileSignature, CheckCircle2, Download, ChevronDown, FileText, PackageOpen, X } from "lucide-react";
+import { ChevronRight, Printer, FileSignature, CheckCircle2, Download, ChevronDown, FileText, PackageOpen, X, Lock, PenLine } from "lucide-react";
+import { isSameDay } from "date-fns";
 import { useRouter } from "next/navigation";
 import { closeVisit, markPartialDispense } from "./actions";
 
@@ -127,6 +128,10 @@ export function EmrActionBar({
   }, [partialDone, router]);
   const closed = visit.status === "CLOSED";
   const isLastTab = currentTabIndex >= totalTabs - 1;
+  const finalizedToday = visit.finalizedAt
+    ? isSameDay(new Date(visit.finalizedAt), new Date())
+    : false;
+  const autoClosed = closed && !!visit.finalizedBy?.startsWith("SYSTEM");
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -243,9 +248,19 @@ export function EmrActionBar({
         )}
 
         {closed ? (
-          <span className="flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-xl bg-[var(--color-success-100)] text-[var(--color-success-600)]">
-            <CheckCircle2 size={15} /> Finalized & Signed
-          </span>
+          autoClosed ? (
+            <span className="flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-xl bg-amber-50 border border-amber-200 text-amber-700">
+              <Lock size={15} /> Auto-closed at EOD
+            </span>
+          ) : finalizedToday ? (
+            <span className="flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-xl bg-blue-50 border border-blue-200 text-blue-700">
+              <PenLine size={15} /> Finalized &amp; Signed — Editable until EOD
+            </span>
+          ) : (
+            <span className="flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-xl bg-[var(--color-success-100)] text-[var(--color-success-600)]">
+              <CheckCircle2 size={15} /> Finalized &amp; Signed
+            </span>
+          )
         ) : (
           <button
             disabled={pending}
