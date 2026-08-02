@@ -9,7 +9,7 @@ export default async function ScheduledOtPage() {
   const whereClause =
     user.role === "DOCTOR"
       ? { visit: { doctorId: user.profileId } }
-      : { visit: { hospitalId: user.profileId } };
+      : { visit: { hospitalId: user.hospitalId } };
 
   const records = await prisma.surgicalCounselling.findMany({
     where: whereClause,
