@@ -59,7 +59,7 @@ const SHARED_CSS = `
   .top-bar {
     height: 5px;
     background: linear-gradient(90deg, #0D4A45 0%, #10857A 50%, #059669 100%);
-    margin: -12mm -14mm 0;
+    margin: -16mm -14mm 0;
     page-break-after: avoid;
   }
 
@@ -771,7 +771,7 @@ async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
   const summaryHeader = `
   <div style="
     background: linear-gradient(135deg, #0D4A45 0%, #10857A 100%);
-    margin: -12mm -14mm 0;
+    margin: -16mm -14mm 0;
     padding: 14px 20px 12px;
     display: flex;
     align-items: center;
@@ -888,7 +888,11 @@ async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
   ${summaryHeader}
   ${patientCard(d.patient, d.visit.doctorName, d.visit.date, d.visit.hospitalName)}
 
-  ${d.chiefComplaint ? `${secHdr("Chief Complaint")}<div class="text-block">${escapeHtml(d.chiefComplaint)}</div>` : ""}
+  ${d.chiefComplaint ? `
+  <div style="margin:2px 0 12px;">
+    <div style="font-size:8.5px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:#7A9C97;margin-bottom:5px;">Chief Complaint</div>
+    <span style="display:inline-flex;align-items:center;padding:4px 10px;border-radius:7px;background:#FFFBEB;border:1px solid #FEF3C7;color:#92400E;font-size:11.5px;font-weight:600;">${escapeHtml(d.chiefComplaint)}</span>
+  </div>` : ""}
 
   ${secHdr("Impression")}
   <table>
@@ -1048,7 +1052,7 @@ async function renderFullEmrHtml(d: FullEmrData): Promise<string> {
   <!-- Chief Complaint & History -->
   ${ge?.chiefComplaint || ge?.hpi ? `
   ${secHdr("Chief Complaint & History of Present Illness")}
-  ${ge.chiefComplaint ? `<div style="font-size:12.5px;font-weight:700;color:#0D4A45;margin-bottom:5px;">${escapeHtml(ge.chiefComplaint)}</div>` : ""}
+  ${ge.chiefComplaint ? `<span style="display:inline-flex;align-items:center;padding:4px 10px;border-radius:7px;background:#FFFBEB;border:1px solid #FEF3C7;color:#92400E;font-size:11.5px;font-weight:600;margin-bottom:7px;">${escapeHtml(ge.chiefComplaint)}</span>` : ""}
   ${ge.hpi ? `<div class="text-block">${escapeHtml(ge.hpi)}</div>` : ""}
   ` : ""}
 
