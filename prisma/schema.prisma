@@ -725,6 +725,7 @@ model SurgicalCounselling {
   id              String   @id @default(cuid())
   visitId         String   @unique
   visit           Visit    @relation(fields: [visitId], references: [id])
+  surgeryName     String?
   surgeryType     String
   rightEye        Boolean  @default(false)
   leftEye         Boolean  @default(false)

@@ -310,6 +310,7 @@ export function FollowUpdatesPanel({ visit, udid, priorVisits = [] }: { visit: a
 
 export function SurgicalPanel({ visit, udid }: { visit: any; udid: string }) {
   const sc = visit.surgicalCounselling;
+  const [surgeryName, setSurgeryName] = useState(sc?.surgeryName ?? "");
   const [surgeryType, setSurgeryType] = useState(sc?.surgeryType ?? SURGERY_TYPES[0]);
   const [rightEye, setRightEye] = useState(sc?.rightEye ?? false);
   const [leftEye, setLeftEye] = useState(sc?.leftEye ?? false);
@@ -322,6 +323,15 @@ export function SurgicalPanel({ visit, udid }: { visit: any; udid: string }) {
     <div className="rounded-xl border border-[var(--color-border)] p-4">
       <p className="text-sm font-medium text-[var(--color-ink-700)] mb-3">Surgical Counselling</p>
       <div className="flex flex-col gap-3">
+        <div>
+          <p className="text-xs font-medium text-[var(--color-ink-500)] mb-1.5">Name of Surgery</p>
+          <input
+            value={surgeryName}
+            onChange={(e) => { setSurgeryName(e.target.value); setSaved(false); }}
+            placeholder="e.g. Phacoemulsification with IOL implantation"
+            className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-3 py-2 text-sm text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent"
+          />
+        </div>
         <div>
           <p className="text-xs font-medium text-[var(--color-ink-500)] mb-1.5">Type of Surgery</p>
           <SingleChipSelect options={SURGERY_TYPES} value={surgeryType} onChange={setSurgeryType} />
@@ -353,7 +363,7 @@ export function SurgicalPanel({ visit, udid }: { visit: any; udid: string }) {
         disabled={pending || !surgeryDate}
         onClick={() =>
           startTransition(async () => {
-            await saveSurgicalCounselling(visit.id, udid, { surgeryType, rightEye, leftEye, anaesthesiaType, surgeryDate });
+            await saveSurgicalCounselling(visit.id, udid, { surgeryName, surgeryType, rightEye, leftEye, anaesthesiaType, surgeryDate });
             setSaved(true);
           })
         }
@@ -361,7 +371,7 @@ export function SurgicalPanel({ visit, udid }: { visit: any; udid: string }) {
       >
         Save Surgical Counselling
       </button>
-      {saved && <span className="ml-3 text-xs text-[var(--color-success-600)] font-medium">Saved</span>}
+      {saved && <span className="ml-3 text-xs text-[var(--color-success-600)] font-medium">Saved — hospital admin notified</span>}
     </div>
   );
 }

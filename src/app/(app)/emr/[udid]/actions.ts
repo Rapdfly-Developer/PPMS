@@ -5,6 +5,7 @@ import { requireRole, requireUser } from "@/lib/rbac";
 import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import { notifyAdmission } from "@/lib/mailer";
+import { createNotification } from "@/lib/notify";
 import { writeAudit } from "@/lib/audit";
 import { syncVisit } from "@/lib/integration/engine";
 import { isSameDay } from "date-fns";
@@ -481,7 +482,7 @@ export async function saveAdmission(
 export async function saveSurgicalCounselling(
   visitId: string,
   udid: string,
-  data: { surgeryType: string; rightEye: boolean; leftEye: boolean; anaesthesiaType: string; surgeryDate: string }
+  data: { surgeryName?: string; surgeryType: string; rightEye: boolean; leftEye: boolean; anaesthesiaType: string; surgeryDate: string }
 ) {
   const user = await requireRole("DOCTOR");
   const visit = await assertVisitAccess(visitId);
@@ -499,6 +500,7 @@ export async function saveSurgicalCounselling(
     where: { visitId },
     create: {
       visitId,
+      surgeryName: data.surgeryName?.trim() || null,
       surgeryType: data.surgeryType,
       rightEye: data.rightEye,
       leftEye: data.leftEye,
@@ -507,6 +509,7 @@ export async function saveSurgicalCounselling(
       conflictFlag: !!conflict,
     },
     update: {
+      surgeryName: data.surgeryName?.trim() || null,
       surgeryType: data.surgeryType,
       rightEye: data.rightEye,
       leftEye: data.leftEye,
@@ -516,6 +519,26 @@ export async function saveSurgicalCounselling(
     },
   });
   await writeAudit(user.id, "SurgicalCounselling", visitId, "SAVE", data);
+
+  // Notify all hospital admin staff
+  const [patient, hospitalStaff] = await Promise.all([
+    prisma.patient.findUnique({ where: { id: visit.patientId }, select: { name: true } }),
+    prisma.hospitalStaff.findMany({ where: { hospitalId: visit.hospitalId! }, include: { user: true } }),
+  ]);
+  const surgeryLabel = data.surgeryName?.trim()
+    ? `${data.surgeryName.trim()} (${data.surgeryType})`
+    : data.surgeryType;
+  const eye = [data.rightEye && "RE", data.leftEye && "LE"].filter(Boolean).join(" + ") || "";
+  const dateStr = new Date(data.surgeryDate).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+  for (const staff of hospitalStaff) {
+    await createNotification(
+      staff.user.id,
+      "SURGICAL_COUNSELLING",
+      `Surgical counselling saved for ${patient?.name ?? "patient"}: ${surgeryLabel}${eye ? ` — ${eye}` : ""} on ${dateStr}.`,
+      visitId
+    );
+  }
+
   revalidate(udid);
 }
 
