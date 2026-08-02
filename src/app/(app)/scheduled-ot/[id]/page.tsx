@@ -6,12 +6,13 @@ import { SurgeryScheduleForm } from "../SurgeryScheduleForm";
 export default async function SurgerySchedulePage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
+  const { id } = await params;
   const user = await requirePermission("appointments.view");
 
   const sc = await prisma.surgicalCounselling.findUnique({
-    where: { id: params.id },
+    where: { id },
     include: {
       visit: {
         include: {
