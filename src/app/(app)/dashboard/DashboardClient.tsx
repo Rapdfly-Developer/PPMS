@@ -583,9 +583,7 @@ export function DashboardClient({
             )}
             {bookedGroups.length > 0 && (
               <div className="space-y-4">
-                {(() => {
-                  let serial = 0;
-                  return bookedGroups.map(({ name, appts: gAppts }) => (
+                {bookedGroups.map(({ name, appts: gAppts }) => (
                   <div key={name}>
                     {role === "DOCTOR" && (
                       <div className="flex items-center gap-1.5 mb-2">
@@ -597,14 +595,13 @@ export function DashboardClient({
                       </div>
                     )}
                     <div className={clsx("space-y-1.5", role === "DOCTOR" && "pl-1")}>
-                      {gAppts.map((a) => {
+                      {gAppts.map((a, idx) => {
                         const cfg      = STATUS_CFG[a.status] ?? STATUS_CFG["REQUESTED"];
                         const isMoving = movingId === a.id;
-                        serial++;
                         return (
                           <div key={a.id} className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-[var(--color-border)] bg-white">
                             <div className="w-6 shrink-0 flex items-center justify-center">
-                              <span className="text-xs font-bold text-[var(--color-ink-400)]">{serial}</span>
+                              <span className="text-xs font-bold text-[var(--color-ink-400)]">{idx + 1}</span>
                             </div>
                             <div className="w-px self-stretch bg-[var(--color-border)]" />
                             <div className="w-16 shrink-0 flex flex-col items-center gap-0.5">
@@ -616,7 +613,7 @@ export function DashboardClient({
                               </span>
                             </div>
                             <div className="w-px self-stretch bg-[var(--color-border)]" />
-                            <Link href={`/patients/${a.patient.udid}?returnTo=/dashboard`} className="flex-1 min-w-0 hover:opacity-80 transition-opacity">
+                            <div className="flex-1 min-w-0">
                               <p className="text-sm font-semibold text-[var(--color-ink-900)] truncate">{a.patient.name}</p>
                               <span className="inline-flex items-center gap-1 flex-wrap">
                                 <span title="UDID (Doctor ID)" className="font-mono text-[10px] text-[#115E59] bg-[#F0F8F6] px-1.5 py-0.5 rounded">
@@ -633,7 +630,7 @@ export function DashboardClient({
                                   {formatComplaintDisplay(a.complaint)}
                                 </span>
                               )}
-                            </Link>
+                            </div>
                             <span className={clsx("text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0", cfg.color)}>
                               {cfg.label}
                             </span>
@@ -663,8 +660,8 @@ export function DashboardClient({
                       })}
                     </div>
                   </div>
-                  ));
-                })()}
+                  ))}
+
               </div>
             )}
           </div>
