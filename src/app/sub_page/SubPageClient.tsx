@@ -94,12 +94,11 @@ const STYLES = `
 /* ── Helpers ──────────────────────────────────────────────────────────────── */
 function PPMSLogo({ size = 32 }: { size?: number }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
-      <div style={{ width: size, height: size, borderRadius: size * .33, background: "linear-gradient(135deg,#0F8F6F,#16A34A)", display: "grid", placeItems: "center", boxShadow: "0 4px 16px rgba(15,143,111,.45),inset 0 1px 0 rgba(255,255,255,.2)", flexShrink: 0 }}>
-        <Eye size={size * .54} color="white" strokeWidth={2.2} />
-      </div>
-      <span className="font-sora" style={{ fontWeight: 700, fontSize: size * .55, color: "#fff", letterSpacing: "-.01em" }}>PPMS<span style={{ color: "#22C55E" }}>.</span></span>
-    </div>
+    <img
+      src="/landing/logo-ppms-new.png"
+      alt="PPMS-AI"
+      style={{ height: size * 1.5, width: "auto", mixBlendMode: "screen", flexShrink: 0 }}
+    />
   );
 }
 function RFLogo({ size = 28 }: { size?: number }) {
@@ -364,7 +363,7 @@ function Features() {
     { icon: <CreditCard size={21} />, title: "Billing & Insurance", desc: "Invoices, payments, insurance claims, and receipts in one place.", c: "#16A34A" },
     { icon: <Calendar size={21} />, title: "Doctor Availability", desc: "Monthly, weekly, daily schedules and leave management per hospital.", c: "#0F8F6F" },
     { icon: <BarChart3 size={21} />, title: "Reports & Analytics", desc: "Revenue, visits, and hospital-wise performance at a glance.", c: "#22C55E" },
-    { icon: <Cloud size={21} />, title: "Cloud Access", desc: "Access securely from anywhere — any device, any location, any time.", c: "#16A34A" },
+    { icon: <Cloud size={21} />, title: "Cloud Access", desc: "Access securely from anywhere, on any device, at any location, any time.", c: "#16A34A" },
   ];
   return (
     <section id="features" className="section" style={{ padding: "100px clamp(16px,4vw,48px)" }}>
@@ -411,7 +410,7 @@ function Workflow() {
         <Reveal style={{ textAlign: "center", marginBottom: 60 }}>
           <div className="badge"><Activity size={11} />Workflow</div>
           <h2 className="font-sora" style={{ fontSize: "clamp(28px,4vw,48px)", fontWeight: 800, letterSpacing: "-.02em" }}>
-            From Login to Reports —<br /><span className="gradient-text">Everything Animated.</span>
+            From Login to Reports:<br /><span className="gradient-text">Everything Animated.</span>
           </h2>
         </Reveal>
         <div style={{ position: "relative", paddingLeft: 44 }}>
@@ -696,7 +695,7 @@ function CTA() {
             <h2 className="font-sora" style={{ fontSize: "clamp(28px,4vw,52px)", fontWeight: 800, letterSpacing: "-.02em", marginBottom: 18 }}>
               Ready to Transform Your<br /><span className="gradient-text">Medical Practice?</span>
             </h2>
-            <p style={{ fontSize: 17, color: C.muted, maxWidth: 520, margin: "0 auto 36px" }}>Join 500+ doctors who manage their multi-hospital practice with PPMS. Start your 30-day free trial — no credit card required.</p>
+            <p style={{ fontSize: 17, color: C.muted, maxWidth: 520, margin: "0 auto 36px" }}>Join 500+ doctors who manage their multi-hospital practice with PPMS. Start your 30-day free trial, no credit card required.</p>
             <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" }}>
               <a href="/login" className="btn-p" style={{ fontSize: 16, padding: "15px 34px" }}>Start 30-Day Free Trial <ArrowRight size={17} /></a>
               <a href="#contact" className="btn-g" style={{ fontSize: 16, padding: "15px 34px" }}>Schedule Free Demo</a>
@@ -745,7 +744,7 @@ function Contact() {
   const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setForm(f => ({ ...f, [k]: e.target.value }));
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    const s = encodeURIComponent(`PPMS Demo Request — ${form.name}`);
+    const s = encodeURIComponent(`PPMS Demo Request: ${form.name}`);
     const b = encodeURIComponent(`Name: ${form.name}\nHospital: ${form.hospital}\nEmail: ${form.email}\nPhone: ${form.phone}\nCity: ${form.city}\n\nMessage:\n${form.message}`);
     window.open(`mailto:support@ppmsai.com?subject=${s}&body=${b}`);
     setSent(true);

@@ -1184,9 +1184,9 @@ export function LandingClient() {
                   className="text-3xl sm:text-5xl leading-tight font-medium max-w-3xl"
                   style={{ fontFamily: FONT.display, textShadow: "0 4px 40px rgba(0,0,0,0.9)" }}
                 >
-                  Inside every eye is a universe —{" "}
+                  Inside every eye is a universe.{" "}
                   <em style={{ background: `linear-gradient(120deg, ${C.teal}, ${C.purpleSoft}, ${C.teal})`, backgroundSize: "200% auto", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent", animation: "gradientShift 5s linear infinite" }}>
-                    my work is to keep it full of light
+                    My work is to keep it full of light.
                   </em>
                   .
                 </h2>
@@ -1290,9 +1290,10 @@ export function LandingClient() {
               © {new Date().getFullYear()} Dr. Sai · @vitreous_void
             </p>
           </div>
-          <p className="text-xs" style={{ color: C.inkFaint }}>
-            Powered by <span style={{ color: C.tealSoft }}>PPMS</span> — Personal Patient Management System
-          </p>
+          <div className="flex items-center gap-2">
+            <img src="/landing/logo-ppms-new.png" alt="PPMS" style={{ height: 22, width: "auto", mixBlendMode: "screen" as const }} />
+            <p className="text-xs" style={{ color: C.inkFaint }}>Personal Patient Management System</p>
+          </div>
         </div>
       </footer>
     </div>
