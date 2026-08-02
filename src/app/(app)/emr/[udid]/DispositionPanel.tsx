@@ -317,7 +317,7 @@ export function SurgicalPanel({ visit, udid }: { visit: any; udid: string }) {
   const [anaesthesiaType, setAnaesthesiaType] = useState(sc?.anaesthesiaType ?? ANAESTHESIA_TYPES[0]);
   const [surgeryDate, setSurgeryDate] = useState(sc?.surgeryDate ? new Date(sc.surgeryDate).toISOString().slice(0, 10) : "");
   const [pending, startTransition] = useTransition();
-  const [saved, setSaved] = useState(false);
+  const [saved, setSaved] = useState(!!sc);
 
   return (
     <div className="rounded-xl border border-[var(--color-border)] p-4">
@@ -334,22 +334,22 @@ export function SurgicalPanel({ visit, udid }: { visit: any; udid: string }) {
         </div>
         <div>
           <p className="text-xs font-medium text-[var(--color-ink-500)] mb-1.5">Type of Surgery</p>
-          <SingleChipSelect options={SURGERY_TYPES} value={surgeryType} onChange={setSurgeryType} />
+          <SingleChipSelect options={SURGERY_TYPES} value={surgeryType} onChange={(v) => { setSurgeryType(v); setSaved(false); }} />
         </div>
         <div>
           <p className="text-xs font-medium text-[var(--color-ink-500)] mb-1.5">Eye Selection</p>
           <div className="flex gap-4">
-            <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={rightEye} onChange={(e) => setRightEye(e.target.checked)} /> Right Eye</label>
-            <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={leftEye} onChange={(e) => setLeftEye(e.target.checked)} /> Left Eye</label>
+            <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={rightEye} onChange={(e) => { setRightEye(e.target.checked); setSaved(false); }} /> Right Eye</label>
+            <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={leftEye} onChange={(e) => { setLeftEye(e.target.checked); setSaved(false); }} /> Left Eye</label>
           </div>
         </div>
         <div>
           <p className="text-xs font-medium text-[var(--color-ink-500)] mb-1.5">Type of Anaesthesia</p>
-          <SingleChipSelect options={ANAESTHESIA_TYPES} value={anaesthesiaType} onChange={setAnaesthesiaType} />
+          <SingleChipSelect options={ANAESTHESIA_TYPES} value={anaesthesiaType} onChange={(v) => { setAnaesthesiaType(v); setSaved(false); }} />
         </div>
         <div className="max-w-[200px]">
           <label className="text-xs font-medium text-[var(--color-ink-500)]">Date of Surgery</label>
-          <input type="date" value={surgeryDate} onChange={(e) => setSurgeryDate(e.target.value)} className="mt-1 w-full rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm" />
+          <input type="date" value={surgeryDate} onChange={(e) => { setSurgeryDate(e.target.value); setSaved(false); }} className="mt-1 w-full rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm" />
         </div>
       </div>
 
@@ -360,18 +360,18 @@ export function SurgicalPanel({ visit, udid }: { visit: any; udid: string }) {
       )}
 
       <button
-        disabled={pending || !surgeryDate}
+        disabled={pending || !surgeryDate || saved}
         onClick={() =>
           startTransition(async () => {
             await saveSurgicalCounselling(visit.id, udid, { surgeryName, surgeryType, rightEye, leftEye, anaesthesiaType, surgeryDate });
             setSaved(true);
           })
         }
-        className="mt-3 text-sm font-medium px-4 py-2 rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-50"
+        className="mt-3 text-sm font-medium px-4 py-2 rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
       >
-        Save Surgical Counselling
+        {saved ? "Saved" : pending ? "Saving…" : "Save Surgical Counselling"}
       </button>
-      {saved && <span className="ml-3 text-xs text-[var(--color-success-600)] font-medium">Saved — hospital admin notified</span>}
+      {saved && <span className="ml-3 text-xs text-[var(--color-success-600)] font-medium">Hospital admin notified</span>}
     </div>
   );
 }
