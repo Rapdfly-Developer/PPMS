@@ -7,6 +7,7 @@ import { Scissors, Calendar, User, Building2, Eye, AlertTriangle, ChevronDown } 
 
 interface OtRecord {
   id:              string;
+  surgeryName:     string | null;
   surgeryType:     string;
   surgeryDate:     string;
   anaesthesiaType: string;
@@ -191,7 +192,10 @@ export function ScheduledOtClient({
                           <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-[var(--color-ink-600)]">
                             <span className="flex items-center gap-1 font-medium text-[var(--color-ink-800)]">
                               <Scissors size={11} className="text-[var(--color-primary-500)]" />
-                              {r.surgeryType}
+                              {r.surgeryName ?? r.surgeryType}
+                              {r.surgeryName && (
+                                <span className="ml-1 text-[var(--color-ink-400)] font-normal">({r.surgeryType})</span>
+                              )}
                               {lat && <span className="ml-1 px-1.5 py-0.5 rounded bg-[var(--color-primary-50)] text-[var(--color-primary-700)] font-semibold text-[10px]">{lat}</span>}
                             </span>
                             {r.anaesthesiaType && (
