@@ -54,7 +54,7 @@ export function AppointmentRow({ appt, role, token }: { appt: any; role: string;
   const showCancelConfirmed =
     role === "HOSPITAL" && !isCompleted && appt.status === "CONFIRMED" && !appt.isWalkIn;
 
-  const hasActions = isCompleted || showConfirmReject || showScheduleNext || showCancelConfirmed;
+  const hasActions = isCompleted || showScheduleNext || showCancelConfirmed;
 
   return (
     <div
@@ -72,8 +72,8 @@ export function AppointmentRow({ appt, role, token }: { appt: any; role: string;
       {/* Main content — stacks vertically, fits any width */}
       <div className="flex-1 min-w-0">
 
-        {/* Row 1: name + time/status on the right */}
-        <div className="flex items-start justify-between gap-2 mb-1">
+        {/* Row 1: name left, time/status/booked/actions right */}
+        <div className="flex items-start justify-between gap-3 mb-1">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 min-w-0">
             <button
               onClick={(e) => { e.stopPropagation(); router.push(`/patients/${p.udid}?returnTo=${encodeURIComponent(window.location.pathname + window.location.search)}`); }}
@@ -89,14 +89,41 @@ export function AppointmentRow({ appt, role, token }: { appt: any; role: string;
             </span>
           </div>
 
-          {/* Time + status — always top-right */}
-          <div className="flex items-center gap-2 shrink-0">
-            <p className="text-sm font-medium text-[var(--color-ink-700)] whitespace-nowrap">
-              {format(new Date(appt.dateTime), "h:mm a")}
-            </p>
-            <span className={`text-[11px] font-medium px-2.5 py-0.5 rounded-full whitespace-nowrap ${STATUS_STYLES[appt.status] ?? ""}`}>
-              {appt.status.replace(/_/g, " ")}
+          {/* Right column: time → status → booked → confirm/reject */}
+          <div className="flex flex-col items-end gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-2">
+              <p className="text-sm font-medium text-[var(--color-ink-700)] whitespace-nowrap">
+                {format(new Date(appt.dateTime), "h:mm a")}
+              </p>
+              <span className={`text-[11px] font-medium px-2.5 py-0.5 rounded-full whitespace-nowrap ${STATUS_STYLES[appt.status] ?? ""}`}>
+                {appt.status.replace(/_/g, " ")}
+              </span>
+            </div>
+
+            {/* Booked timestamp — right-aligned under status */}
+            <span className="flex items-center gap-1 text-[11px] text-[var(--color-ink-400)]" title="Appointment booked at">
+              <Clock size={10} /> Booked: {format(new Date(appt.createdAt), "d MMM, h:mm a")}
             </span>
+
+            {/* Confirm / Reject — inline under booked */}
+            {showConfirmReject && (
+              <div className="flex items-center gap-2">
+                <button
+                  disabled={pending}
+                  onClick={() => hospitalSetStatus("CONFIRMED")}
+                  className="text-xs font-medium px-3 py-1 rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-50"
+                >
+                  {pending ? "…" : "Confirm"}
+                </button>
+                <button
+                  disabled={pending}
+                  onClick={() => hospitalSetStatus("CANCELLED")}
+                  className="text-xs font-medium px-3 py-1 rounded-lg bg-white border border-[var(--color-border)] text-[var(--color-danger-600)] hover:bg-[var(--color-danger-50)] disabled:opacity-50"
+                >
+                  Reject
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -121,10 +148,8 @@ export function AppointmentRow({ appt, role, token }: { appt: any; role: string;
           </div>
         )}
 
-        {/* Row 3: full timestamp trail */}
+        {/* Row 3: timestamp trail */}
         {(() => {
-          const bookedAt       = new Date(appt.createdAt);
-          const scheduledAt    = new Date(appt.dateTime);
           const arrivedAt      = appt.arrivedAt      ? new Date(appt.arrivedAt)              : null;
           const seenAt         = appt.visit?.date    ? new Date(appt.visit.date)             : null;
           const finalizedAt    = appt.visit?.finalizedAt ? new Date(appt.visit.finalizedAt) :
@@ -164,10 +189,6 @@ export function AppointmentRow({ appt, role, token }: { appt: any; role: string;
                   )}
                 </span>
               )}
-              {/* Booked — shown last as secondary info */}
-              <span className="flex items-center gap-1 text-[var(--color-ink-400)]" title="Appointment booked at">
-                <Clock size={10} /> Booked: {format(bookedAt, "d MMM, h:mm a")}
-              </span>
             </div>
           );
         })()}
@@ -186,26 +207,6 @@ export function AppointmentRow({ appt, role, token }: { appt: any; role: string;
               >
                 <Printer size={11} /> Prescription
               </a>
-            )}
-
-            {/* Confirm / Reject */}
-            {showConfirmReject && (
-              <>
-                <button
-                  disabled={pending}
-                  onClick={() => hospitalSetStatus("CONFIRMED")}
-                  className="text-xs font-medium px-3 py-1 rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-50"
-                >
-                  {pending ? "…" : "Confirm"}
-                </button>
-                <button
-                  disabled={pending}
-                  onClick={() => hospitalSetStatus("CANCELLED")}
-                  className="text-xs font-medium px-3 py-1 rounded-lg bg-white border border-[var(--color-border)] text-[var(--color-danger-600)] hover:bg-[var(--color-danger-50)] disabled:opacity-50"
-                >
-                  Reject
-                </button>
-              </>
             )}
 
             {/* Schedule Next Slot */}
