@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   User, Building2, Scissors, Calendar, AlertTriangle,
   CheckSquare, CreditCard, FileText, ChevronDown, Save,
-  Loader2, ArrowLeft, Clock,
+  Loader2,
 } from "lucide-react";
 import { saveSurgerySchedule } from "./actions";
 
@@ -195,13 +195,6 @@ export function SurgeryScheduleForm({ record }: { record: OtRecordForForm }) {
 
       {/* Page header */}
       <div className="flex items-center gap-4 mb-6">
-        <button
-          onClick={() => router.back()}
-          className="flex items-center gap-1.5 text-sm font-medium text-[var(--color-ink-500)] hover:text-[var(--color-ink-800)] transition-colors"
-        >
-          <ArrowLeft size={15} /> Back
-        </button>
-        <div className="h-5 w-px bg-[var(--color-border)]" />
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-[var(--color-primary-100)] flex items-center justify-center shrink-0">
             <Scissors size={17} className="text-[var(--color-primary-700)]" />
