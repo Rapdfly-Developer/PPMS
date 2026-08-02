@@ -496,8 +496,8 @@ export function AppointmentsClient({
                   {happts
                     .slice()
                     .sort((a: any, b: any) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime())
-                    .map((appt: any) => (
-                      <AppointmentRow key={appt.id} appt={appt} role={role} token={tokenMap[appt.id]} />
+                    .map((appt: any, idx: number) => (
+                      <AppointmentRow key={appt.id} appt={appt} role={role} token={idx + 1} />
                     ))}
                 </div>
               </div>
