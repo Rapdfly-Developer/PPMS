@@ -1,0 +1,112 @@
+"use server";
+
+import { prisma } from "@/lib/prisma";
+import { requireRole } from "@/lib/rbac";
+import { revalidatePath } from "next/cache";
+import { createNotification } from "@/lib/notify";
+import { writeAudit } from "@/lib/audit";
+
+export type SurgeryScheduleInput = {
+  surgicalCounsellingId?: string;
+  patientId:              string;
+  hospitalId:             string;
+  operatingSurgeonId:     string;
+  department?:            string;
+  surgeryName:            string;
+  diagnosis?:             string;
+  procedure?:             string;
+  surgeryCategory:        string;
+  urgencyType:            string;
+  priority:               string;
+  plannedDateTime:        string;   // ISO string
+  otRoom?:                string;
+  estimatedDuration?:     number;   // minutes
+  anesthetistName?:       string;
+  nursingStaff?:          string;
+  admissionDate?:         string;   // ISO date
+  paymentStatus?:         string;
+  consentReceived:        boolean;
+  reportsUploaded:        boolean;
+  otAvailable:            boolean;
+  bloodArranged:          boolean;
+  patientInformed:        boolean;
+  status:                 string;
+  remarks?:               string;
+};
+
+export async function saveSurgerySchedule(
+  input: SurgeryScheduleInput
+): Promise<{ error?: string; id?: string }> {
+  const user = await requireRole("HOSPITAL");
+
+  if (!input.surgeryName.trim())  return { error: "Surgery name is required." };
+  if (!input.plannedDateTime)     return { error: "Planned date & time is required." };
+  if (!input.surgeryCategory)     return { error: "Surgery category is required." };
+  if (!input.urgencyType)         return { error: "Elective/Emergency is required." };
+  if (!input.priority)            return { error: "Priority is required." };
+
+  const record = await prisma.surgerySchedule.create({
+    data: {
+      surgicalCounsellingId: input.surgicalCounsellingId ?? null,
+      patientId:             input.patientId,
+      hospitalId:            input.hospitalId,
+      operatingSurgeonId:    input.operatingSurgeonId,
+      department:            input.department?.trim() || null,
+      surgeryName:           input.surgeryName.trim(),
+      diagnosis:             input.diagnosis?.trim() || null,
+      procedure:             input.procedure?.trim() || null,
+      surgeryCategory:       input.surgeryCategory,
+      urgencyType:           input.urgencyType,
+      priority:              input.priority,
+      plannedDateTime:       new Date(input.plannedDateTime),
+      otRoom:                input.otRoom?.trim() || null,
+      estimatedDuration:     input.estimatedDuration ?? null,
+      anesthetistName:       input.anesthetistName?.trim() || null,
+      nursingStaff:          input.nursingStaff?.trim() || null,
+      admissionDate:         input.admissionDate ? new Date(input.admissionDate) : null,
+      paymentStatus:         input.paymentStatus || null,
+      consentReceived:       input.consentReceived,
+      reportsUploaded:       input.reportsUploaded,
+      otAvailable:           input.otAvailable,
+      bloodArranged:         input.bloodArranged,
+      patientInformed:       input.patientInformed,
+      status:                input.status,
+      remarks:               input.remarks?.trim() || null,
+      createdBy:             user.id,
+    },
+  });
+
+  await writeAudit(user.id, "SurgerySchedule", record.id, "CREATE", {
+    patientId:   input.patientId,
+    surgeryName: input.surgeryName,
+    status:      input.status,
+  });
+
+  // Notify the operating surgeon
+  try {
+    const doctor = await prisma.doctor.findUnique({
+      where:  { id: input.operatingSurgeonId },
+      select: { userId: true, name: true },
+    });
+    const patient = await prisma.patient.findUnique({
+      where:  { id: input.patientId },
+      select: { name: true },
+    });
+    if (doctor?.userId && patient) {
+      const dt = new Date(input.plannedDateTime).toLocaleDateString("en-IN", {
+        day: "2-digit", month: "short", year: "numeric",
+      });
+      await createNotification(
+        doctor.userId,
+        "SURGERY_SCHEDULED",
+        `Surgery scheduled: ${input.surgeryName} for ${patient.name} on ${dt}${input.otRoom ? ` — ${input.otRoom}` : ""}.`,
+        record.id
+      );
+    }
+  } catch {
+    // notification failure must never break the save
+  }
+
+  revalidatePath("/scheduled-ot");
+  return { id: record.id };
+}

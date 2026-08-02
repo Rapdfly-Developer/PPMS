@@ -52,13 +52,14 @@ export default async function ScheduledOtPage() {
     leftEye:         r.leftEye,
     conflictFlag:    r.conflictFlag,
     patient: {
+      id:   r.visit.patient.id,
       name: r.visit.patient.name,
       udid: r.visit.patient.udid ?? "",
       age:  r.visit.patient.age,
       sex:  r.visit.patient.sex,
     },
-    hospital: { name: r.visit.hospital.name },
-    doctor:   { name: r.visit.doctor.name },
+    hospital: { name: r.visit.hospital.name, id: r.visit.hospital.id },
+    doctor:   { name: r.visit.doctor.name,  id: r.visit.doctor.id  },
   }));
 
   return <ScheduledOtClient records={serialized} role={user.role as "DOCTOR" | "HOSPITAL"} />;

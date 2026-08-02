@@ -63,6 +63,7 @@ model Doctor {
   generatedSchedules          GeneratedSchedule[]
   scheduleExceptions          ScheduleException[]
   license                     TenantLicense?
+  surgerySchedules            SurgerySchedule[]
 }
 
 model Hospital {
@@ -95,6 +96,7 @@ model Hospital {
   insuranceCompanies InsuranceCompany[]
   patientInsurances  PatientInsurance[]
   preAuths           InsurancePreAuthorization[]
+  surgerySchedules   SurgerySchedule[]
   insuranceClaims    InsuranceClaim[]
 }
 
@@ -408,6 +410,7 @@ model Patient {
   visits          Visit[]
   pastExternalVisits PastExternalVisit[]
   insurancePolicies  PatientInsurance[]
+  surgerySchedules   SurgerySchedule[]
 }
 
 // AppointmentStatus: REQUESTED | CONFIRMED | RESCHEDULED | COMPLETED | CANCELLED | NO_SHOW
@@ -1108,4 +1111,53 @@ model InsuranceQuery {
   respondedAt  DateTime?
 
   @@index([claimId, status])
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// Surgery Scheduling (created by hospital admin from Scheduled OT)
+// status: PLANNED | SCHEDULED | RESCHEDULED | CANCELLED
+// ──────────────────────────────────────────────────────────────────────────
+model SurgerySchedule {
+  id                    String    @id @default(cuid())
+  surgicalCounsellingId String?
+  patientId             String
+  patient               Patient   @relation(fields: [patientId], references: [id])
+  hospitalId            String
+  hospital              Hospital  @relation(fields: [hospitalId], references: [id])
+  operatingSurgeonId    String
+  surgeon               Doctor    @relation(fields: [operatingSurgeonId], references: [id])
+
+  department            String?
+  surgeryName           String
+  diagnosis             String?
+  procedure             String?
+  surgeryCategory       String              // MAJOR | MINOR
+  urgencyType           String              // ELECTIVE | EMERGENCY
+  priority              String              // ROUTINE | URGENT | EMERGENCY
+
+  plannedDateTime       DateTime
+  otRoom                String?
+  estimatedDuration     Int?                // minutes
+
+  anesthetistName       String?
+  nursingStaff          String?
+
+  admissionDate         DateTime?
+  paymentStatus         String?
+
+  consentReceived       Boolean   @default(false)
+  reportsUploaded       Boolean   @default(false)
+  otAvailable           Boolean   @default(false)
+  bloodArranged         Boolean   @default(false)
+  patientInformed       Boolean   @default(false)
+
+  status                String    @default("PLANNED")
+  remarks               String?
+
+  createdBy             String
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([hospitalId, plannedDateTime])
+  @@index([patientId])
 }
