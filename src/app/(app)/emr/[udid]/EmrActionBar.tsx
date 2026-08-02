@@ -253,9 +253,23 @@ export function EmrActionBar({
               <Lock size={15} /> Auto-closed at EOD
             </span>
           ) : finalizedToday ? (
-            <span className="flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-xl bg-blue-50 border border-blue-200 text-blue-700">
-              <PenLine size={15} /> Finalized &amp; Signed — Editable until EOD
-            </span>
+            <>
+              <span className="flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-xl bg-blue-50 border border-blue-200 text-blue-600">
+                <PenLine size={13} /> Editable until EOD
+              </span>
+              <button
+                disabled={pending}
+                onClick={() =>
+                  startTransition(async () => {
+                    await closeVisit(visit.id, udid);
+                    setShowSuccess(true);
+                  })
+                }
+                className="flex items-center gap-2 text-sm font-medium px-5 py-2 rounded-xl bg-[var(--color-primary-900)] text-white hover:bg-[var(--color-primary-700)] transition-colors disabled:opacity-60"
+              >
+                <FileSignature size={15} /> {pending ? "Re-signing…" : "Re-sign & Lock"}
+              </button>
+            </>
           ) : (
             <span className="flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-xl bg-[var(--color-success-100)] text-[var(--color-success-600)]">
               <CheckCircle2 size={15} /> Finalized &amp; Signed
