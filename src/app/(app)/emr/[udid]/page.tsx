@@ -213,33 +213,46 @@ export default async function PatientDetailedEMR({
         visitDate={activeVisit?.date}
         visitType={activeVisit?.visitType}
       />
-      {/* Header bar — only show read-only badge when visit is closed */}
+      {/* Header bar — status chip */}
       {activeVisit?.status === "CLOSED" && (
         <div className="flex items-center gap-2 mb-3 flex-wrap no-print">
           <span
             className={`flex items-center gap-1.5 text-xs font-medium px-2.5 py-0.5 rounded-lg ${
-              autoClosed ? "text-amber-700 bg-amber-100" : "text-emerald-700 bg-emerald-100"
+              autoClosed
+                ? "text-amber-700 bg-amber-100"
+                : finalizedToday
+                ? "text-blue-700 bg-blue-50"
+                : "text-emerald-700 bg-emerald-100"
             }`}
           >
-            <Lock size={11} /> {autoClosed ? "Auto-closed at EOD" : "Finalized & Signed"} — Read-only
+            <Lock size={11} />
+            {autoClosed
+              ? "Auto-closed at EOD — Read-only"
+              : finalizedToday
+              ? "Finalized & Signed — Editable until EOD"
+              : "Finalized & Signed — Read-only"}
           </span>
         </div>
       )}
 
-      {/* Locked banner */}
+      {/* Status banner */}
       {activeVisit?.status === "CLOSED" && (
         <div
-          className={`mb-4 px-4 py-3 rounded-xl border flex items-center gap-2 text-sm ${
+          className={`mb-4 px-4 py-3 rounded-xl border flex items-start gap-3 text-sm ${
             autoClosed
               ? "bg-amber-50 border-amber-200 text-amber-800"
+              : finalizedToday
+              ? "bg-blue-50 border-blue-200 text-blue-800"
               : "bg-emerald-50 border-emerald-200 text-emerald-800"
           }`}
         >
-          <Lock size={14} className="shrink-0" />
+          <Lock size={14} className="shrink-0 mt-0.5" />
           <span>
             {autoClosed
-              ? "This consultation was left open past end of day and closed automatically. The EMR is read-only."
-              : "This consultation has been finalized and signed. The EMR is read-only."}
+              ? "This consultation was left open past end of day and closed automatically. The EMR is permanently read-only."
+              : finalizedToday
+              ? "This consultation has been finalized and signed. As the treating physician, you may still amend this record until midnight (end of day). After EOD, the record will be permanently locked."
+              : "This consultation has been finalized and signed. The EMR is permanently read-only."}
           </span>
         </div>
       )}
