@@ -775,12 +775,13 @@ async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
       `</div>`;
   };
 
-  /* ── Two-column patient info row ── */
+  /* ── Two-column patient info row (no internal horizontal lines) ── */
   const piRow = (label: string, value: string, shade: boolean) =>
     `<tr style="background:${shade ? "#FBF4EC" : "#fff"};">` +
-    `<td style="padding:7px 14px;font-weight:700;color:#222;font-size:10.5px;` +
-    `width:42%;border:1px solid #DDD0C0;">${label}</td>` +
-    `<td style="padding:7px 14px;color:#222;font-size:10.5px;border:1px solid #DDD0C0;">${value}</td>` +
+    `<td style="padding:7px 14px;font-weight:700;color:#222;font-size:10.5px;width:42%;` +
+    `border-left:1px solid #DDD0C0;border-right:1px solid #DDD0C0;">${label}</td>` +
+    `<td style="padding:7px 14px;color:#222;font-size:10.5px;` +
+    `border-left:1px solid #DDD0C0;border-right:1px solid #DDD0C0;">${value}</td>` +
     `</tr>`;
 
   /* ── Table header cell ── */
@@ -887,7 +888,7 @@ async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
 
   <!-- ── HEADER BANNER (full-bleed: compensates for 16mm top / 14mm L-R Puppeteer margins) ── -->
   <div style="background:linear-gradient(135deg,#C17A3C 0%,#A8622A 100%);
-              margin:-16mm -14mm 0;padding:20px 14mm 16px;
+              margin:-16mm -14mm 0;padding:22px 18mm 18px;
               position:relative;overflow:hidden;page-break-after:avoid;">
     <!-- decorative shapes -->
     <div style="position:absolute;top:-24px;right:140px;width:130px;height:130px;
@@ -910,7 +911,7 @@ async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
   </div>
 
   <!-- ── CONTACT SUB-BAR (full-bleed) ── -->
-  <div style="background:#7A4A1E;margin:0 -14mm;padding:6px 14mm;
+  <div style="background:#7A4A1E;margin:0 -14mm;padding:7px 18mm;
               text-align:center;font-size:9.5px;color:rgba(255,255,255,0.88);
               page-break-after:avoid;">
     ${hospSub || "&nbsp;"}
@@ -923,7 +924,7 @@ async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
 
   <!-- ── I. PATIENT INFORMATION ── -->
   ${sec("Patient Information")}
-  <table>
+  <table style="border-top:1px solid #DDD0C0;border-bottom:1px solid #DDD0C0;">
     <tbody>
       ${piRow("Patient Name", escapeHtml(d.patient.name), false)}
       ${piRow("UHID / Medical Record No.", escapeHtml(d.patient.udid), true)}
@@ -936,12 +937,11 @@ async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
     </tbody>
   </table>
 
-  <!-- ── II. PRESENTING COMPLAINT ── -->
+  <!-- ── II. CHIEF COMPLAINT ── -->
   ${d.chiefComplaint
-    ? sec("Presenting Complaint") +
-      `<p style="font-size:11px;color:#1a1a1a;line-height:1.7;padding:4px 0 6px;">` +
-      `The patient presented with <strong><span style="background:#FFFBEB;border:1px solid #FEF3C7;` +
-      `color:#92400E;padding:2px 9px;border-radius:4px;">${escapeHtml(d.chiefComplaint)}</span></strong>.` +
+    ? sec("Chief Complaint") +
+      `<p style="font-size:12px;font-weight:600;color:#C17A3C;line-height:1.6;padding:4px 0 6px;">` +
+      `${escapeHtml(d.chiefComplaint)}` +
       `</p>`
     : ""}
 
@@ -1063,26 +1063,16 @@ async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
   <div class="no-break" style="margin-top:28px;display:flex;align-items:flex-end;
                                justify-content:space-between;border-top:1px solid #ddd;padding-top:16px;">
     <div>
-      <div style="width:220px;height:50px;border-bottom:1.5px solid #555;margin-bottom:7px;"></div>
-      <div style="font-size:12px;font-weight:700;color:#1a1a1a;">Dr. ${escapeHtml(d.visit.doctorName)}</div>
-      <div style="font-size:9.5px;color:#555;margin-top:2px;">Consultant Ophthalmologist</div>
-      <div style="font-size:9px;color:#888;margin-top:1px;">${escapeHtml(d.visit.hospitalName)}</div>
-      <p style="font-size:8px;color:#bbb;font-style:italic;max-width:360px;margin-top:10px;line-height:1.5;">
-        This document is computer-generated. Valid only with the doctor's digital seal or wet signature.
-        For clinical reference only — not a substitute for professional medical advice.
-      </p>
+      <div style="width:220px;height:50px;border-bottom:1.5px solid #555;margin-bottom:8px;"></div>
+      <div style="font-size:13px;font-weight:700;color:#1a1a1a;">Dr. ${escapeHtml(d.visit.doctorName)}</div>
+      <div style="font-size:10px;color:#555;margin-top:3px;">Consultant Ophthalmologist</div>
+      <div style="font-size:9.5px;color:#888;margin-top:2px;">${escapeHtml(d.visit.hospitalName)}</div>
     </div>
-    <div style="text-align:center;flex-shrink:0;">
-      <div style="font-size:8px;color:#aaa;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em;">
-        Generated: ${genTs}
-      </div>
-      ${qr
-        ? `<img src="${qr}" alt="QR" style="width:72px;height:72px;border:1px solid #ddd;display:block;margin:0 auto 4px;" />`
-        : ""}
-      <div style="font-size:7.5px;color:#aaa;text-transform:uppercase;letter-spacing:0.06em;">
-        UHID: ${escapeHtml(d.patient.udid)}
-      </div>
-    </div>
+    ${qr
+      ? `<div style="text-align:center;flex-shrink:0;">` +
+        `<img src="${qr}" alt="QR" style="width:72px;height:72px;border:1px solid #ddd;display:block;margin:0 auto;" />` +
+        `</div>`
+      : ""}
   </div>
 
   <!-- ── RUNNING FOOTER ── -->
