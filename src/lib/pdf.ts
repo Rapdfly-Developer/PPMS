@@ -757,7 +757,7 @@ export type ShortSummaryData = {
 
 async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
   const qr = await makeQr(`PPMS-${d.patient.udid}-${format(d.visit.date, "yyyyMMdd")}`);
-  const v2 = (x: unknown) => (x === null || x === undefined || x === "") ? "—" : escapeHtml(String(x));
+  const v2 = (x: unknown) => (x === null || x === undefined || x === "") ? "" : escapeHtml(String(x));
 
   const hospSubParts = [d.visit.hospitalAddress, d.visit.hospitalContact, d.visit.hospitalEmail]
     .filter(Boolean).map(x => escapeHtml(String(x)));
@@ -815,7 +815,7 @@ async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
         `<td style="${TD}">${v2(m.duration)}</td>` +
         `</tr>`
       ).join("")
-    : `<tr><td colspan="5" style="${TD}text-align:center;color:#aaa;font-style:italic;">No medications prescribed</td></tr>`;
+    : `<tr><td colspan="5" style="padding:4px 8px;font-size:9.5px;color:#aaa;font-style:italic;border:none;">No medications prescribed</td></tr>`;
 
   /* ── Optical Rx ── */
   const hasRx = d.opticalRx && (
@@ -919,7 +919,7 @@ async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
       ${piRow("Patient Name", escapeHtml(d.patient.name), false)}
       ${piRow("UHID", escapeHtml(d.patient.udid), true)}
       ${piRow("Age / Gender", `${d.patient.age} yrs / ${escapeHtml(d.patient.sex)}`, false)}
-      ${piRow("Mobile", d.patient.mobile ? escapeHtml(d.patient.mobile) : "—", true)}
+      ${piRow("Mobile", d.patient.mobile ? escapeHtml(d.patient.mobile) : "", true)}
       ${piRow("Visit Date", format(d.visit.date, "dd MMM yyyy"), false)}
       ${piRow("Visit Time", format(d.visit.date, "hh:mm a") + " IST", true)}
       ${piRow("Consultant", `Dr. ${escapeHtml(d.visit.doctorName)}`, false)}
@@ -951,9 +951,9 @@ async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
             `<tr style="background:${i % 2 === 0 ? "#fff" : "#FBF4EC"};">` +
             `<td style="${TD}text-align:center;color:#888;">${i + 1}</td>` +
             `<td style="${TD}font-weight:600;color:#1a1a1a;">${escapeHtml(dx.description)}</td>` +
-            `<td style="${TD}color:#555;">${dx.laterality ? escapeHtml(dx.laterality) : "—"}</td>` +
-            `<td style="${TD}font-family:'Courier New',monospace;font-size:8.5px;color:#555;">${dx.icd10Code ? escapeHtml(dx.icd10Code) : "—"}</td>` +
-            `<td style="${TD}">${dx.status ? diagBadge(dx.status) : "—"}</td>` +
+            `<td style="${TD}color:#555;">${dx.laterality ? escapeHtml(dx.laterality) : ""}</td>` +
+            `<td style="${TD}font-family:'Courier New',monospace;font-size:8.5px;color:#555;">${dx.icd10Code ? escapeHtml(dx.icd10Code) : ""}</td>` +
+            `<td style="${TD}">${dx.status ? diagBadge(dx.status) : ""}</td>` +
             `</tr>`
           ).join("")}
         </tbody>
@@ -1043,7 +1043,7 @@ async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
 
   <!-- ── SIGNATURE ── -->
   <div class="no-break" style="margin-top:14px;display:flex;align-items:flex-end;
-                               justify-content:space-between;border-top:1px solid #ddd;padding-top:10px;">
+                               justify-content:space-between;padding-top:6px;">
     <div>
       <div style="font-size:12px;font-weight:700;color:#1a1a1a;">Dr. ${escapeHtml(d.visit.doctorName)}</div>
       <div style="font-size:9.5px;color:#555;margin-top:2px;">Consultant Ophthalmologist</div>
