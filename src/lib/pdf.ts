@@ -738,7 +738,7 @@ export type ShortSummaryData = {
   patient: { udid: string; name: string; age: number; sex: string; mobile?: string | null };
   visit: {
     date: Date; visitType?: string | null;
-    hospitalName: string; hospitalAddress?: string | null; hospitalContact?: string | null; hospitalEmail?: string | null;
+    hospitalName: string; hospitalLogo?: string | null; hospitalAddress?: string | null; hospitalContact?: string | null; hospitalEmail?: string | null;
     doctorName: string;
     followUpDate?: Date | null;
     referralEnabled?: boolean;
@@ -756,7 +756,6 @@ export type ShortSummaryData = {
 };
 
 async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
-  const qr = await makeQr(`PPMS-${d.patient.udid}-${format(d.visit.date, "yyyyMMdd")}`);
   const v2 = (x: unknown) => (x === null || x === undefined || x === "") ? "" : escapeHtml(String(x));
 
   /* Format "[RE] [5 days] Left Eye pain" → "RE Left Eye pain · Since 5 days" */
@@ -776,11 +775,10 @@ async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
     .filter(Boolean).map(x => escapeHtml(String(x)));
   const hospSub = hospSubParts.join("  |  ");
 
-  /* ── Section heading: bold navy-teal label + thin gray divider ── */
+  /* ── Section heading: bold navy-teal label ── */
   const sec = (label: string) =>
     `<div style="margin:9px 0 4px;page-break-after:avoid;break-after:avoid;">` +
     `<span style="font-size:12px;font-weight:700;color:#0C5A8C;">${label}:</span>` +
-    `<div style="height:1px;background:#D0D0D0;margin-top:3px;"></div>` +
     `</div>`;
 
   /* ── Patient info: 3-column field box cell (gray rounded, reference style) ── */
@@ -890,16 +888,19 @@ async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
 <!-- THIN TEAL ACCENT LINE (horizontal bleed) -->
 <div style="height:5px;background:#0F766E;margin:0 -14mm;"></div>
 
-<!-- HEADER: logo + hospital name left | large bold title center-right | QR right -->
-<div style="display:flex;align-items:flex-start;justify-content:space-between;
-            padding:10px 0 8px;gap:12px;page-break-after:avoid;">
+<!-- HEADER: logo + hospital name left | large bold title right -->
+<div style="display:flex;align-items:center;justify-content:space-between;
+            padding:10px 0 8px;gap:16px;page-break-after:avoid;">
 
   <!-- Left: Logo + Hospital Name -->
-  <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;">
-    <div style="width:40px;height:40px;border:2px solid #0F766E;border-radius:8px;
-                display:flex;align-items:center;justify-content:center;
-                color:#0F766E;font-size:20px;font-weight:900;flex-shrink:0;
-                background:#F0FDFA;">✚</div>
+  <div style="display:flex;align-items:center;gap:10px;min-width:0;">
+    ${d.visit.hospitalLogo
+      ? `<img src="${escapeHtml(d.visit.hospitalLogo)}" alt="Logo"
+             style="width:48px;height:48px;object-fit:contain;border-radius:6px;flex-shrink:0;" />`
+      : `<div style="width:40px;height:40px;border:2px solid #0F766E;border-radius:8px;
+                    display:flex;align-items:center;justify-content:center;
+                    color:#0F766E;font-size:20px;font-weight:900;flex-shrink:0;
+                    background:#F0FDFA;">✚</div>`}
     <div style="min-width:0;">
       <div style="font-size:14px;font-weight:800;color:#0C2E6B;letter-spacing:-0.2px;line-height:1.1;">
         ${escapeHtml(d.visit.hospitalName)}
@@ -908,19 +909,12 @@ async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
     </div>
   </div>
 
-  <!-- Center: Large bold title (surgery-report style) -->
-  <div style="text-align:center;flex-shrink:0;padding:0 10px;">
+  <!-- Right: Large bold title -->
+  <div style="text-align:right;flex-shrink:0;">
     <div style="font-size:19px;font-weight:900;color:#0C2E6B;letter-spacing:0.06em;
                 text-transform:uppercase;white-space:nowrap;line-height:1.15;">
       CONSULTATION SUMMARY
     </div>
-  </div>
-
-  <!-- Right: QR -->
-  <div style="display:flex;justify-content:flex-end;flex:1;align-items:flex-start;">
-    ${qr
-      ? `<img src="${qr}" alt="QR" style="width:52px;height:52px;border:1px solid #E2E8F0;border-radius:5px;" />`
-      : `<div style="width:52px;height:52px;border:1.5px solid #E2E8F0;border-radius:5px;display:flex;align-items:center;justify-content:center;color:#0F766E;font-size:20px;">✚</div>`}
   </div>
 </div>
 
@@ -934,9 +928,6 @@ ${hospSub
       ).join("")}
     </div>`
   : ""}
-
-<!-- HEADER DIVIDER -->
-<div style="height:1px;background:#C8C8C8;margin:6px 0;"></div>
 
 <!-- PATIENT INFO — 3-column field-box grid (reference report style) -->
 <table style="width:100%;border-collapse:collapse;">
@@ -958,9 +949,6 @@ ${hospSub
     </tr>
   </tbody>
 </table>
-
-<!-- SECTION DIVIDER -->
-<div style="height:1px;background:#C8C8C8;margin:2px 0 4px;"></div>
 
 <!-- CHIEF COMPLAINT -->
 ${d.chiefComplaint
@@ -1077,18 +1065,10 @@ ${hasFollowUp
   : ""}
 
 <!-- SIGNATURE -->
-<div class="no-break" style="margin-top:12px;display:flex;align-items:flex-end;
-                             justify-content:space-between;padding-top:4px;">
-  <div>
-    <div style="font-size:11.5px;font-weight:700;color:#0C2E6B;">Dr. ${escapeHtml(d.visit.doctorName)}</div>
-    <div style="font-size:9px;color:#555;margin-top:2px;">Consultant Ophthalmologist</div>
-    <div style="font-size:8.5px;color:#888;margin-top:1px;">${escapeHtml(d.visit.hospitalName)}</div>
-  </div>
-  ${qr
-    ? `<div style="text-align:right;flex-shrink:0;">` +
-      `<img src="${qr}" alt="QR" style="width:55px;height:55px;border:1px solid #ddd;border-radius:4px;display:block;" />` +
-      `</div>`
-    : ""}
+<div class="no-break" style="margin-top:12px;padding-top:4px;">
+  <div style="font-size:11.5px;font-weight:700;color:#0C2E6B;">Dr. ${escapeHtml(d.visit.doctorName)}</div>
+  <div style="font-size:9px;color:#555;margin-top:2px;">Consultant Ophthalmologist</div>
+  <div style="font-size:8.5px;color:#888;margin-top:1px;">${escapeHtml(d.visit.hospitalName)}</div>
 </div>
 
 <!-- RUNNING FOOTER -->
