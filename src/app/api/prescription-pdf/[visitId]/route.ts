@@ -98,6 +98,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
     medications: visit.medications.map((m: any) => ({
       drugName: m.drugName, dosage: m.dosage, frequency: m.frequency,
       duration: m.duration, instructions: m.instructions ?? null,
+      route: m.route ?? null, laterality: m.laterality ?? null,
     })),
     opticalRx: {
       re: parseJSON(rc?.re, { sph: "", cyl: "", axis: "", nearSph: "", nearCyl: "", nearAxis: "" }),

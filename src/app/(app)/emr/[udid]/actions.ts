@@ -392,7 +392,7 @@ export async function removeDiagnosis(id: string, udid: string) {
 export async function addMedication(
   visitId: string,
   udid: string,
-  data: { drugName: string; dosage?: string; frequency?: string; duration?: string; instructions?: string }
+  data: { drugName: string; dosage?: string; frequency?: string; duration?: string; instructions?: string; route?: string; laterality?: string }
 ) {
   const user = await requireRole("DOCTOR");
   await assertVisitAccess(visitId);
@@ -411,7 +411,7 @@ export async function removeMedication(id: string, udid: string) {
 export async function updateMedication(
   id: string,
   udid: string,
-  data: { drugName: string; dosage?: string; frequency?: string; duration?: string; instructions?: string }
+  data: { drugName: string; dosage?: string; frequency?: string; duration?: string; instructions?: string; route?: string; laterality?: string }
 ) {
   const user = await requireRole("DOCTOR");
   await prisma.medication.update({ where: { id }, data });

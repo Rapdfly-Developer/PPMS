@@ -66,7 +66,7 @@ export const ANTERIOR_SEGMENT_STRUCTURES: Record<string, string[]> = {
   cornea: ["Clear", "Edema", "Opacity", "Arcus senilis", "KP", "Vascularisation", "Scar"],
   anteriorChamber: ["Normal depth", "Shallow", "Cells/Flare", "Hyphema", "Hypopyon"],
   iris: ["Normal", "Atrophy", "Synechiae", "Neovascularisation", "Coloboma"],
-  pupil: ["Normal/Reactive", "RAPD", "Fixed dilated", "Irregular", "Miotic"],
+  pupil: ["Round regular & reactive", "RAPD", "Fixed dilated", "Irregular", "Miotic"],
   lens: ["Clear", "NS1", "NS2", "NS3", "NS4", "PSC", "PCIOL in-situ", "ACIOL in-situ", "Aphakia", "Subluxation"],
 };
 

@@ -631,7 +631,7 @@ export async function generateDispensePdf(data: DispenseSummaryData): Promise<Bu
 export type PrescriptionData = {
   patient: { udid: string; name: string; age: number; sex: string };
   visit: { date: Date; hospitalName: string; doctorName: string };
-  medications: { drugName: string; dosage?: string | null; frequency?: string | null; duration?: string | null; instructions?: string | null }[];
+  medications: { drugName: string; dosage?: string | null; frequency?: string | null; duration?: string | null; instructions?: string | null; route?: string | null; laterality?: string | null }[];
   opticalRx: {
     re: { sph?: string; cyl?: string; axis?: string; nearSph?: string; nearCyl?: string; nearAxis?: string };
     le: { sph?: string; cyl?: string; axis?: string; nearSph?: string; nearCyl?: string; nearAxis?: string };
@@ -641,11 +641,26 @@ export type PrescriptionData = {
 async function renderPrescriptionHtml(data: PrescriptionData): Promise<string> {
   const qr = await makeQr(`PPMS-${data.patient.udid}`);
 
+  const pdfMedBadge = (route: string | null | undefined, lat: string | null | undefined, name: string) => {
+    const r = route ?? "";
+    if (r === "Topical" || /eye\s*drops?|eye\s*oint/i.test(name)) {
+      const lbl = lat || "OU";
+      return `<span style="display:inline-block;min-width:26px;padding:1px 4px;border-radius:3px;background:#DBEAFE;color:#1D4ED8;font-size:7.5px;font-weight:700;text-align:center;margin-right:4px;">${escapeHtml(lbl)}</span>`;
+    }
+    if (/syrup|suspension/i.test(r) || /syrup|suspension/i.test(name)) {
+      return `<span style="display:inline-block;min-width:26px;padding:1px 4px;border-radius:3px;background:#D1FAE5;color:#065F46;font-size:7.5px;font-weight:700;text-align:center;margin-right:4px;">SYP</span>`;
+    }
+    if (r === "Oral" || /tablet|capsule/i.test(name)) {
+      return `<span style="display:inline-block;min-width:26px;padding:1px 4px;border-radius:3px;background:#FEF3C7;color:#92400E;font-size:7.5px;font-weight:700;text-align:center;margin-right:4px;">T</span>`;
+    }
+    return "";
+  };
+
   const medRows = data.medications.length
     ? data.medications.map((m, i) => `
       <tr>
         <td class="td-num">${i + 1}</td>
-        <td><div class="drug-name">${escapeHtml(m.drugName)}</div>${m.instructions ? `<div class="drug-sub">${escapeHtml(m.instructions)}</div>` : ""}</td>
+        <td><div class="drug-name">${pdfMedBadge(m.route, m.laterality, m.drugName)}${escapeHtml(m.drugName)}</div>${m.instructions ? `<div class="drug-sub">${escapeHtml(m.instructions)}</div>` : ""}</td>
         <td class="drug-dose">${val(m.dosage)}</td>
         <td>${val(m.frequency)}</td>
         <td>${val(m.duration)}</td>
@@ -746,7 +761,7 @@ export type ShortSummaryData = {
   };
   chiefComplaint?: string | null;
   diagnoses: { description: string; icd10Code: string; status: string; laterality?: string | null }[];
-  medications: { drugName: string; dosage?: string | null; frequency?: string | null; duration?: string | null; instructions?: string | null }[];
+  medications: { drugName: string; dosage?: string | null; frequency?: string | null; duration?: string | null; instructions?: string | null; route?: string | null; laterality?: string | null }[];
   investigations: { testName: string; category: string; priority: string; laterality?: string | null; status: string }[];
   opticalRx?: {
     re: { sph?: string; cyl?: string; axis?: string; nearSph?: string };
@@ -810,11 +825,27 @@ async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
   };
 
   /* ── Medication rows ── */
+  const pdfMedBadge2 = (route: string | null | undefined, lat: string | null | undefined, name: string) => {
+    const r = route ?? "";
+    if (r === "Topical" || /eye\s*drops?|eye\s*oint/i.test(name)) {
+      const lbl = lat || "OU";
+      return `<span style="display:inline-block;min-width:24px;padding:1px 4px;border-radius:3px;background:#DBEAFE;color:#1D4ED8;font-size:7px;font-weight:700;text-align:center;margin-right:3px;">${escapeHtml(lbl)}</span>`;
+    }
+    if (/syrup|suspension/i.test(r) || /syrup|suspension/i.test(name)) {
+      return `<span style="display:inline-block;min-width:24px;padding:1px 4px;border-radius:3px;background:#D1FAE5;color:#065F46;font-size:7px;font-weight:700;text-align:center;margin-right:3px;">SYP</span>`;
+    }
+    if (r === "Oral" || /tablet|capsule/i.test(name)) {
+      return `<span style="display:inline-block;min-width:24px;padding:1px 4px;border-radius:3px;background:#FEF3C7;color:#92400E;font-size:7px;font-weight:700;text-align:center;margin-right:3px;">T</span>`;
+    }
+    return "";
+  };
+
   const medRows = d.medications.length
     ? d.medications.map((m, i) =>
         `<tr style="background:${i % 2 === 0 ? "#fff" : "#F0FDFA"};">` +
         `<td style="${TD}text-align:center;color:#888;">${i + 1}</td>` +
         `<td style="${TD}">` +
+        pdfMedBadge2(m.route, m.laterality, m.drugName) +
         `<span style="font-weight:700;color:#1a1a1a;">${escapeHtml(m.drugName)}</span>` +
         (m.instructions ? `<span style="font-size:8.5px;color:#777;margin-left:5px;">${escapeHtml(m.instructions)}</span>` : "") +
         `</td>` +
@@ -1130,7 +1161,7 @@ export type FullEmrData = {
   anteriorSegment?: Record<string, string[]> | null;
   posteriorSegment?: { data?: Record<string, string[]>; cdr?: string | null; notes?: string | null } | null;
   diagnoses: { description: string; icd10Code: string; status: string; laterality?: string | null }[];
-  medications: { drugName: string; dosage?: string | null; frequency?: string | null; duration?: string | null; instructions?: string | null }[];
+  medications: { drugName: string; dosage?: string | null; frequency?: string | null; duration?: string | null; instructions?: string | null; route?: string | null; laterality?: string | null }[];
   opticalRx: {
     re: { sph?: string; cyl?: string; axis?: string; nearSph?: string; nearCyl?: string; nearAxis?: string };
     le: { sph?: string; cyl?: string; axis?: string; nearSph?: string; nearCyl?: string; nearAxis?: string };
@@ -1182,11 +1213,25 @@ async function renderFullEmrHtml(d: FullEmrData): Promise<string> {
     : `<tr class="empty-row"><td colspan="5">No diagnoses recorded</td></tr>`;
 
   /* Medications */
+  const pdfMedBadge3 = (route: string | null | undefined, lat: string | null | undefined, name: string) => {
+    const r = route ?? "";
+    if (r === "Topical" || /eye\s*drops?|eye\s*oint/i.test(name)) {
+      const lbl = lat || "OU";
+      return `<span style="display:inline-block;min-width:24px;padding:1px 4px;border-radius:3px;background:#DBEAFE;color:#1D4ED8;font-size:7.5px;font-weight:700;text-align:center;margin-right:4px;">${escapeHtml(lbl)}</span>`;
+    }
+    if (/syrup|suspension/i.test(r) || /syrup|suspension/i.test(name)) {
+      return `<span style="display:inline-block;min-width:24px;padding:1px 4px;border-radius:3px;background:#D1FAE5;color:#065F46;font-size:7.5px;font-weight:700;text-align:center;margin-right:4px;">SYP</span>`;
+    }
+    if (r === "Oral" || /tablet|capsule/i.test(name)) {
+      return `<span style="display:inline-block;min-width:24px;padding:1px 4px;border-radius:3px;background:#FEF3C7;color:#92400E;font-size:7.5px;font-weight:700;text-align:center;margin-right:4px;">T</span>`;
+    }
+    return "";
+  };
   const medRows = d.medications.length
     ? d.medications.map((m, i) => `
       <tr>
         <td class="td-num">${i + 1}</td>
-        <td><div class="drug-name">${escapeHtml(m.drugName)}</div>${m.instructions ? `<div class="drug-sub">${escapeHtml(m.instructions)}</div>` : ""}</td>
+        <td><div class="drug-name">${pdfMedBadge3(m.route, m.laterality, m.drugName)}${escapeHtml(m.drugName)}</div>${m.instructions ? `<div class="drug-sub">${escapeHtml(m.instructions)}</div>` : ""}</td>
         <td class="drug-dose">${val(m.dosage)}</td>
         <td>${val(m.frequency)}</td>
         <td>${val(m.duration)}</td>
@@ -1435,7 +1480,7 @@ export async function generateAllVisitsSummaryPdf(visits: any[]): Promise<Buffer
       anteriorSegment: null,
       posteriorSegment: null,
       diagnoses: (visit.diagnoses ?? []).map((d: any) => ({ description: d.description, icd10Code: d.icd10Code ?? "", status: d.status, laterality: d.laterality ?? null })),
-      medications: (visit.medications ?? []).map((m: any) => ({ drugName: m.drugName, dosage: m.dosage ?? null, frequency: m.frequency ?? null, duration: m.duration ?? null, instructions: m.instructions ?? null })),
+      medications: (visit.medications ?? []).map((m: any) => ({ drugName: m.drugName, dosage: m.dosage ?? null, frequency: m.frequency ?? null, duration: m.duration ?? null, instructions: m.instructions ?? null, route: m.route ?? null, laterality: m.laterality ?? null })),
       opticalRx: {
         re: { sph: reRef?.sph, cyl: reRef?.cyl, axis: reRef?.axis, nearSph: reRef?.nearSph },
         le: { sph: leRef?.sph, cyl: leRef?.cyl, axis: leRef?.axis, nearSph: leRef?.nearSph },
@@ -1458,8 +1503,22 @@ export async function generateAllVisitsSummaryPdf(visits: any[]): Promise<Buffer
       ? d.diagnoses.map((dx, i) => `<tr><td class="td-num">${i + 1}</td><td class="td-head">${escapeHtml(dx.description)}</td><td><span class="td-mono">${val(dx.icd10Code)}</span></td><td>${val(dx.laterality)}</td><td>${badgeStatus(dx.status)}</td></tr>`).join("")
       : `<tr class="empty-row"><td colspan="5">No diagnoses recorded</td></tr>`;
 
+    const pdfMedBadge4 = (route: string | null | undefined, lat: string | null | undefined, name: string) => {
+      const r = route ?? "";
+      if (r === "Topical" || /eye\s*drops?|eye\s*oint/i.test(name)) {
+        const lbl = lat || "OU";
+        return `<span style="display:inline-block;min-width:22px;padding:1px 4px;border-radius:3px;background:#DBEAFE;color:#1D4ED8;font-size:7px;font-weight:700;text-align:center;margin-right:3px;">${escapeHtml(lbl)}</span>`;
+      }
+      if (/syrup|suspension/i.test(r) || /syrup|suspension/i.test(name)) {
+        return `<span style="display:inline-block;min-width:22px;padding:1px 4px;border-radius:3px;background:#D1FAE5;color:#065F46;font-size:7px;font-weight:700;text-align:center;margin-right:3px;">SYP</span>`;
+      }
+      if (r === "Oral" || /tablet|capsule/i.test(name)) {
+        return `<span style="display:inline-block;min-width:22px;padding:1px 4px;border-radius:3px;background:#FEF3C7;color:#92400E;font-size:7px;font-weight:700;text-align:center;margin-right:3px;">T</span>`;
+      }
+      return "";
+    };
     const medRows = d.medications.length
-      ? d.medications.map((m, i) => `<tr><td class="td-num">${i + 1}</td><td><div class="drug-name">${escapeHtml(m.drugName)}</div>${m.instructions ? `<div class="drug-sub">${escapeHtml(m.instructions)}</div>` : ""}</td><td>${val(m.dosage)}</td><td>${val(m.frequency)}</td><td>${val(m.duration)}</td></tr>`).join("")
+      ? d.medications.map((m, i) => `<tr><td class="td-num">${i + 1}</td><td><div class="drug-name">${pdfMedBadge4(m.route, m.laterality, m.drugName)}${escapeHtml(m.drugName)}</div>${m.instructions ? `<div class="drug-sub">${escapeHtml(m.instructions)}</div>` : ""}</td><td>${val(m.dosage)}</td><td>${val(m.frequency)}</td><td>${val(m.duration)}</td></tr>`).join("")
       : `<tr class="empty-row"><td colspan="5">No medications prescribed</td></tr>`;
 
     const invRows = d.investigations.length
@@ -1621,7 +1680,7 @@ export async function generateVisitSummaryPdf(visit: any): Promise<Buffer> {
     anteriorSegment: ant ? (parseJ2(ant.re) || parseJ2(ant.le) ? { re: parseJ2(ant.re), le: parseJ2(ant.le) } : null) : null,
     posteriorSegment: pos ? { data: { re: parseJ2(pos.re), le: parseJ2(pos.le) }, cdr: pos.cdr ?? null, notes: pos.notes ?? null } : null,
     diagnoses: (visit.diagnoses ?? []).map((d: any) => ({ description: d.description, icd10Code: d.icd10Code ?? "", status: d.status, laterality: d.laterality ?? null })),
-    medications: (visit.medications ?? []).map((m: any) => ({ drugName: m.drugName, dosage: m.dosage ?? null, frequency: m.frequency ?? null, duration: m.duration ?? null, instructions: m.instructions ?? null })),
+    medications: (visit.medications ?? []).map((m: any) => ({ drugName: m.drugName, dosage: m.dosage ?? null, frequency: m.frequency ?? null, duration: m.duration ?? null, instructions: m.instructions ?? null, route: m.route ?? null, laterality: m.laterality ?? null })),
     opticalRx: {
       re: { sph: reRef?.sph, cyl: reRef?.cyl, axis: reRef?.axis, nearSph: reRef?.nearSph, nearCyl: reRef?.nearCyl, nearAxis: reRef?.nearAxis },
       le: { sph: leRef?.sph, cyl: leRef?.cyl, axis: leRef?.axis, nearSph: leRef?.nearSph, nearCyl: leRef?.nearCyl, nearAxis: leRef?.nearAxis },

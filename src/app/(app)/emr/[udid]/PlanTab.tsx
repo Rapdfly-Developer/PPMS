@@ -7,7 +7,7 @@ import { parseJSON } from "@/lib/json";
 import { useAutoSave, SaveIndicator } from "@/lib/useAutoSave";
 import { addMedication, removeMedication, updateMedication, clearAllMedications, saveRefraction, saveFollowUp, saveAdviseNotes, saveAnesthesiaType } from "./actions";
 import { DispositionToggle, AdmitPanel, SurgicalPanel, FollowUpdatesPanel } from "./DispositionPanel";
-import { Plus, X, BedDouble, Stethoscope, ChevronDown, Pencil, Trash2, RefreshCw, Search, Eye, Sparkles, CheckCircle2, Check, AlertTriangle } from "lucide-react";
+import { Plus, X, BedDouble, Stethoscope, ChevronDown, Pencil, Trash2, RefreshCw, Search, Pill, Sparkles, CheckCircle2, Check, AlertTriangle } from "lucide-react";
 import {
   type TreatmentPreset, type PresetMatch, type AppliedPreset,
   getTreatmentPresets, matchPresets, mergeMeds,
@@ -1095,14 +1095,14 @@ function OptEyeColumns({ children }: { children: [React.ReactNode, React.ReactNo
   );
 }
 
-type EditDraft = { drugName: string; dosage: string; frequency: string; duration: string; instructions: string };
+type EditDraft = { drugName: string; dosage: string; frequency: string; duration: string; instructions: string; route?: string; laterality?: string };
 
 function PrescriptionCard({ visit, udid, priorVisits }: { visit: any; udid: string; priorVisits: any[] }) {
   const [pending, startTransition] = useTransition();
   const [showAddDrug, setShowAddDrug] = useState(false);
   const [showPresets, setShowPresets] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editDraft, setEditDraft] = useState<EditDraft>({ drugName: "", dosage: "", frequency: "", duration: "", instructions: "" });
+  const [editDraft, setEditDraft] = useState<EditDraft>({ drugName: "", dosage: "", frequency: "", duration: "", instructions: "", route: "Topical", laterality: "OU" });
   const [clearConfirm, setClearConfirm] = useState(false);
   const [adviseNotes, setAdviseNotes] = useState<string>(visit.adviseNotes ?? "");
   const [showHistory, setShowHistory] = useState(false);
@@ -1113,6 +1113,7 @@ function PrescriptionCard({ visit, udid, priorVisits }: { visit: any; udid: stri
   const [drugName, setDrugName]       = useState("");
   const [dose, setDose]               = useState("");
   const [route, setRoute]             = useState("Topical");
+  const [laterality, setLaterality]   = useState("OU");
   const [frequency, setFrequency]         = useState("");
   const [durationNum, setDurationNum]     = useState("");
   const [durationUnit, setDurationUnit]   = useState("days");
@@ -1135,6 +1136,7 @@ function PrescriptionCard({ visit, udid, priorVisits }: { visit: any; udid: stri
     setDrugName(name);
     setDose(defaultDose ?? "");
     setRoute(defaultRoute ?? "Topical");
+    setLaterality("OU");
     setFrequency(""); setDurationNum(""); setDurationUnit("days");
     setTaperLevels([]);
     setInstructions("");
@@ -1174,13 +1176,13 @@ function PrescriptionCard({ visit, udid, priorVisits }: { visit: any; udid: stri
 
   const startEdit = (m: any) => {
     setEditingId(m.id);
-    setEditDraft({ drugName: m.drugName ?? "", dosage: m.dosage ?? "", frequency: m.frequency ?? "", duration: m.duration ?? "", instructions: m.instructions ?? "" });
+    setEditDraft({ drugName: m.drugName ?? "", dosage: m.dosage ?? "", frequency: m.frequency ?? "", duration: m.duration ?? "", instructions: m.instructions ?? "", route: m.route ?? "Topical", laterality: m.laterality ?? "OU" });
   };
 
   const saveEdit = (id: string) => {
     if (!editDraft.drugName.trim()) return;
     startTransition(async () => {
-      await updateMedication(id, udid, { drugName: editDraft.drugName.trim(), dosage: editDraft.dosage, frequency: editDraft.frequency, duration: editDraft.duration, instructions: editDraft.instructions });
+      await updateMedication(id, udid, { drugName: editDraft.drugName.trim(), dosage: editDraft.dosage, frequency: editDraft.frequency, duration: editDraft.duration, instructions: editDraft.instructions, route: editDraft.route, laterality: editDraft.route === "Topical" ? editDraft.laterality : undefined });
       setEditingId(null);
     });
   };
@@ -1202,8 +1204,8 @@ function PrescriptionCard({ visit, udid, priorVisits }: { visit: any; udid: stri
         .map((l) => `${l.frequency} × ${l.durationNum} ${l.durationUnit}`);
       const tapNote = tapParts.length ? `Tapering: ${tapParts.join(" → ")}` : "";
       const finalInstructions = [instructions, tapNote].filter(Boolean).join(" | ");
-      await addMedication(visit.id, udid, { drugName, dosage: dose, frequency, duration, instructions: finalInstructions } as any);
-      setDrugName(""); setDose(""); setRoute("Topical"); setFrequency(""); setDurationNum(""); setDurationUnit("days");
+      await addMedication(visit.id, udid, { drugName, dosage: dose, frequency, duration, instructions: finalInstructions, route, laterality: route === "Topical" ? laterality : undefined } as any);
+      setDrugName(""); setDose(""); setRoute("Topical"); setLaterality("OU"); setFrequency(""); setDurationNum(""); setDurationUnit("days");
       setTaperLevels([]);
       setInstructions("");
       setShowAddDrug(false);
@@ -1214,6 +1216,21 @@ function PrescriptionCard({ visit, udid, priorVisits }: { visit: any; udid: stri
   };
 
   const inputCls = "w-full rounded-lg border border-[var(--color-border)] bg-white px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)]";
+
+  const getMedBadge = (r: string | null | undefined, lat: string | null | undefined, name: string) => {
+    const route = r ?? "";
+    const dn = name ?? "";
+    if (route === "Topical" || /eye\s*drops?|eye\s*oint/i.test(dn)) {
+      return { label: lat || "OU", bg: "bg-[var(--color-primary-100)]", text: "text-[var(--color-primary-700)]" };
+    }
+    if (/syrup|suspension/i.test(route) || /syrup|suspension/i.test(dn)) {
+      return { label: "SYP", bg: "bg-emerald-100", text: "text-emerald-700" };
+    }
+    if (route === "Oral" || /tablet|capsule/i.test(dn)) {
+      return { label: "T", bg: "bg-amber-100", text: "text-amber-700" };
+    }
+    return null;
+  };
 
   return (
     <Card>
@@ -1278,11 +1295,20 @@ function PrescriptionCard({ visit, udid, priorVisits }: { visit: any; udid: stri
                     i === activeIndex ? "bg-[var(--color-primary-50)]" : "hover:bg-[var(--color-surface-sunken)]"
                   }`}
                 >
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
-                    i === activeIndex ? "bg-[var(--color-primary-100)]" : "bg-[var(--color-surface-sunken)]"
-                  }`}>
-                    <Eye size={15} className="text-[var(--color-primary-600)]" />
-                  </div>
+                  {(() => {
+                    const badge = getMedBadge(med.route, null, med.name);
+                    return badge ? (
+                      <span className={`min-w-[32px] h-8 px-1.5 rounded-lg flex items-center justify-center text-[10px] font-bold shrink-0 ${badge.bg} ${badge.text}`}>
+                        {badge.label === "OU" || badge.label === "RE" || badge.label === "LE" ? "EYE" : badge.label}
+                      </span>
+                    ) : (
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
+                        i === activeIndex ? "bg-[var(--color-primary-100)]" : "bg-[var(--color-surface-sunken)]"
+                      }`}>
+                        <Pill size={15} className="text-[var(--color-ink-400)]" />
+                      </div>
+                    );
+                  })()}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-sm font-medium text-[var(--color-ink-900)]">{med.name}</span>
@@ -1307,7 +1333,7 @@ function PrescriptionCard({ visit, udid, priorVisits }: { visit: any; udid: stri
           <div className="flex items-center justify-between mb-3 max-w-3xl">
             <div className="flex items-center gap-2">
               <div className="w-6 h-6 rounded-md bg-[var(--color-primary-600)] flex items-center justify-center">
-                <Eye size={13} className="text-white" />
+                <Pill size={13} className="text-white" />
               </div>
               <p className="text-xs font-semibold text-[var(--color-primary-700)]">#{medications.length + 1}</p>
             </div>
@@ -1328,6 +1354,16 @@ function PrescriptionCard({ visit, udid, priorVisits }: { visit: any; udid: stri
                 {ROUTE_OPTIONS.map((r) => <option key={r}>{r}</option>)}
               </select>
             </div>
+            {route === "Topical" && (
+              <div>
+                <label className="text-[10px] font-medium text-[var(--color-ink-400)] uppercase tracking-wide block mb-0.5">Eye</label>
+                <select value={laterality} onChange={(e) => setLaterality(e.target.value)} className={inputCls}>
+                  <option value="OU">Both (OU)</option>
+                  <option value="RE">Right (RE)</option>
+                  <option value="LE">Left (LE)</option>
+                </select>
+              </div>
+            )}
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-2 max-w-3xl">
             <div className="col-span-2">
@@ -1445,7 +1481,7 @@ function PrescriptionCard({ visit, udid, priorVisits }: { visit: any; udid: stri
       {medications.length === 0 ? (
         <div className="flex flex-col items-center gap-2 py-8 text-center">
           <div className="w-10 h-10 rounded-xl bg-[var(--color-surface-sunken)] flex items-center justify-center">
-            <Eye size={20} className="text-[var(--color-ink-300)]" />
+            <Pill size={20} className="text-[var(--color-ink-300)]" />
           </div>
           <p className="text-sm text-[var(--color-ink-400)]">Search for a medication above to add it to the prescription.</p>
         </div>
@@ -1474,17 +1510,48 @@ function PrescriptionCard({ visit, udid, priorVisits }: { visit: any; udid: stri
                       {/* Drug Name */}
                       <td className="px-3 py-2.5">
                         {isEditing ? (
-                          <input
-                            autoFocus
-                            value={editDraft.drugName}
-                            onChange={(e) => setEditDraft({ ...editDraft, drugName: e.target.value })}
-                            className={cellCls}
-                          />
+                          <div className="flex flex-col gap-1">
+                            <input
+                              autoFocus
+                              value={editDraft.drugName}
+                              onChange={(e) => setEditDraft({ ...editDraft, drugName: e.target.value })}
+                              className={cellCls}
+                            />
+                            <div className="flex gap-1">
+                              <select
+                                value={editDraft.route ?? "Topical"}
+                                onChange={(e) => setEditDraft({ ...editDraft, route: e.target.value })}
+                                className={cellCls + " flex-1"}
+                              >
+                                {ROUTE_OPTIONS.map((r) => <option key={r}>{r}</option>)}
+                              </select>
+                              {(editDraft.route ?? "Topical") === "Topical" && (
+                                <select
+                                  value={editDraft.laterality ?? "OU"}
+                                  onChange={(e) => setEditDraft({ ...editDraft, laterality: e.target.value })}
+                                  className={cellCls + " w-24"}
+                                >
+                                  <option value="OU">OU</option>
+                                  <option value="RE">RE</option>
+                                  <option value="LE">LE</option>
+                                </select>
+                              )}
+                            </div>
+                          </div>
                         ) : (
                           <div className="flex items-center gap-2">
-                            <div className="w-7 h-7 rounded-lg bg-[var(--color-primary-50)] flex items-center justify-center shrink-0">
-                              <Eye size={13} className="text-[var(--color-primary-600)]" />
-                            </div>
+                            {(() => {
+                              const badge = getMedBadge(m.route, m.laterality, m.drugName);
+                              return badge ? (
+                                <span className={`min-w-[32px] h-7 px-1.5 rounded-lg flex items-center justify-center text-[10px] font-bold shrink-0 ${badge.bg} ${badge.text}`}>
+                                  {badge.label}
+                                </span>
+                              ) : (
+                                <div className="w-7 h-7 rounded-lg bg-[var(--color-surface-sunken)] flex items-center justify-center shrink-0">
+                                  <Pill size={13} className="text-[var(--color-ink-400)]" />
+                                </div>
+                              );
+                            })()}
                             <span className="text-sm font-semibold text-[var(--color-ink-900)]">{m.drugName}</span>
                           </div>
                         )}

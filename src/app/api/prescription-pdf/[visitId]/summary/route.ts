@@ -75,6 +75,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
       frequency: m.frequency,
       duration: m.duration,
       instructions: m.instructions ?? null,
+      route: m.route ?? null,
+      laterality: m.laterality ?? null,
     })),
     investigations: visit.investigationOrders.map((inv: any) => ({
       testName: inv.testName,
