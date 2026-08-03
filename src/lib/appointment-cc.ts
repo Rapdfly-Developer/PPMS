@@ -7,6 +7,8 @@ const LATERALITY = new Set(["RE", "LE", "OU"]);
  */
 export function formatComplaintDisplay(raw: string | null | undefined): string {
   if (!raw) return "";
+
+  // Appointment format: "RE | Since: 3 days | Eye Pain Severe"
   const parts = raw.split(" | ");
   if (parts.length >= 3) {
     const lat = parts[0].trim();
@@ -17,6 +19,23 @@ export function formatComplaintDisplay(raw: string | null | undefined): string {
       return `${lat} ${text} · Since ${m[1]} ${m[2]}`;
     }
   }
+
+  // EMR bracket format: "[RE] [5 days] Eye Pain Severe" (possibly multi-segment separated by |)
+  const segments = raw.split("|").map((s) => s.trim()).filter(Boolean);
+  const formatted = segments.map((seg) => {
+    const m = seg.match(/^\[(RE|LE|OU)\]\s*(?:\[(\d+)\s+(days?|weeks?|months?|years?)\])?\s*(.+)?$/i);
+    if (!m) return seg;
+    const lat = m[1].toUpperCase();
+    const n = m[2];
+    const unit = m[3];
+    const text = (m[4] ?? "").trim();
+    const body = text ? `${lat} ${text}` : lat;
+    return n ? `${body} · Since ${n} ${unit}` : body;
+  });
+  if (formatted.some((s, i) => s !== segments[i])) {
+    return formatted.join(" · ");
+  }
+
   return raw;
 }
 

@@ -143,7 +143,7 @@ export async function getPatientTimeline(patientId: string): Promise<TimelineEve
         bookedAt:    v.appointment?.createdAt?.toISOString() ?? null,
         scheduledAt: v.appointment?.dateTime?.toISOString()  ?? null,
         arrivedAt:   v.appointment?.arrivedAt?.toISOString() ?? null,
-        seenAt:      v.date.toISOString(),
+        seenAt:      v.status === "CLOSED" ? v.date.toISOString() : null,
         finalizedAt: v.finalizedAt?.toISOString() ?? null,
       },
     });

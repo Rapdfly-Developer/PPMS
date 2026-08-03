@@ -9,6 +9,7 @@ import {
   Loader2, Pill, CheckCircle2, Clock, AlertCircle, LogIn, Calendar,
 } from "lucide-react";
 import { getPatientTimeline, type TimelineEvent, type TimelineEventType } from "../actions";
+import { formatComplaintDisplay } from "@/lib/appointment-cc";
 
 /* ── Config ─────────────────────────────────────────────────────────────────── */
 const EVENT_CFG = {
@@ -169,7 +170,7 @@ function EventDetail({ ev }: { ev: TimelineEvent }) {
         )}
 
         {/* ── Clinical notes ───────────────────────────────────────── */}
-        {d.complaint && <p><span className="font-semibold text-[var(--color-ink-500)] uppercase tracking-wide text-[10px]">Chief Complaint</span><br />{d.complaint}</p>}
+        {d.complaint && <p><span className="font-semibold text-[var(--color-ink-500)] uppercase tracking-wide text-[10px]">Chief Complaint</span><br />{formatComplaintDisplay(d.complaint)}</p>}
         {(d.bp || d.pulse) && (
           <p className="flex gap-4">
             {d.bp    && <span><span className="font-semibold">BP </span>{d.bp}</span>}
