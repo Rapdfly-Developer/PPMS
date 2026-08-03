@@ -15,6 +15,7 @@ const VISIT_TYPES = [
   "General OPD",
   "Emergency",
   "Follow-up",
+  "Pre-op",
   "Post-op Review",
 ];
 
@@ -100,11 +101,14 @@ export function NewEncounterForm({
     fd.set("hospitalId", hospitalId);
     fd.set("date", date);
 
-    if (!laterality) { setError("Please select laterality — RE, LE, or OU."); return; }
-    if (!sinceNum) { setError("Please select the 'Since' duration."); return; }
+    const isGeneralOPD = visitType === "General OPD";
+    if (isGeneralOPD && !laterality) { setError("Please select laterality — RE, LE, or OU."); return; }
+    if (isGeneralOPD && !sinceNum) { setError("Please select the 'Since' duration."); return; }
     if (!complaint.trim()) { setError("Please describe the chief complaint."); return; }
 
-    const fullComplaint = `${laterality} | Since: ${sinceNum} ${sinceUnit} | ${complaint.trim()}`;
+    const fullComplaint = laterality && sinceNum
+      ? `${laterality} | Since: ${sinceNum} ${sinceUnit} | ${complaint.trim()}`
+      : complaint.trim();
     fd.set("complaint", fullComplaint);
 
     if (patientMode === "existing") {

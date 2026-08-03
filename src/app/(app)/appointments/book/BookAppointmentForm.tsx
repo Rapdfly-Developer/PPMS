@@ -11,7 +11,7 @@ import { bookAppointment, getBookedSlots } from "./actions";
 import { BackButton } from "@/components/ui/BackButton";
 import { SmartUploadBox, type UploadedFile } from "@/components/ui/SmartUploadBox";
 
-const VISIT_TYPES = ["General OPD", "Emergency", "Follow-up", "Post-op Review"];
+const VISIT_TYPES = ["General OPD", "Emergency", "Follow-up", "Pre-op", "Post-op Review"];
 const SEXES = ["MALE", "FEMALE", "OTHER"];
 
 
@@ -189,11 +189,14 @@ export function BookAppointmentForm({
     if (patientMode === "new" && !patientPhoto) { setError("Patient photo is required for new patients."); return; }
     if (!doctorId) { setError("Please select a doctor."); return; }
     if (!effectiveHospitalId) { setError("Please select a hospital."); return; }
-    if (!laterality) { setError("Please select laterality — RE, LE, or OU."); return; }
-    if (!sinceNum) { setError("Please select the 'Since' duration."); return; }
+    const isGeneralOPD = visitType === "General OPD";
+    if (isGeneralOPD && !laterality) { setError("Please select laterality — RE, LE, or OU."); return; }
+    if (isGeneralOPD && !sinceNum) { setError("Please select the 'Since' duration."); return; }
     if (!notes.trim()) { setError("Please describe the chief complaint."); return; }
 
-    const fullNotes = `${laterality} | Since: ${sinceNum} ${sinceUnit} | ${notes.trim()}`;
+    const fullNotes = laterality && sinceNum
+      ? `${laterality} | Since: ${sinceNum} ${sinceUnit} | ${notes.trim()}`
+      : notes.trim();
     setError("");
 
     const fd = new FormData();
