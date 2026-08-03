@@ -771,10 +771,6 @@ async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
     return durations.length ? `${body} · Since ${durations.join(", ")}` : body;
   };
 
-  const hospSubParts = [d.visit.hospitalAddress, d.visit.hospitalContact, d.visit.hospitalEmail]
-    .filter(Boolean).map(x => escapeHtml(String(x)));
-  const hospSub = hospSubParts.join("  |  ");
-
   /* ── Section heading: bold navy-teal label ── */
   const sec = (label: string) =>
     `<div style="margin:9px 0 4px;page-break-after:avoid;break-after:avoid;">` +
@@ -885,49 +881,72 @@ async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
 </head>
 <body>
 
-<!-- THIN TEAL ACCENT LINE (horizontal bleed) -->
-<div style="height:5px;background:#0F766E;margin:0 -14mm;"></div>
+<!-- PREMIUM GRADIENT ACCENT LINE (full bleed) -->
+<div style="height:4px;background:linear-gradient(90deg,#0369A1 0%,#0EA5E9 50%,#0F766E 100%);margin:0 -14mm;"></div>
 
-<!-- HEADER: logo + hospital name left | large bold title right -->
-<div style="display:flex;align-items:center;justify-content:space-between;
-            padding:10px 0 8px;gap:16px;page-break-after:avoid;">
+<!-- PREMIUM HEADER CARD (full bleed, gradient background) -->
+<div style="margin:0 -14mm;padding:11px 14mm 13px;
+            background:linear-gradient(135deg,#F8FBFF 0%,#EBF4FF 55%,#F4FAFF 100%);
+            page-break-after:avoid;">
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:18px;">
 
-  <!-- Left: Logo + Hospital Name -->
-  <div style="display:flex;align-items:center;gap:10px;min-width:0;">
-    ${d.visit.hospitalLogo
-      ? `<img src="${escapeHtml(d.visit.hospitalLogo)}" alt="Logo"
-             style="width:48px;height:48px;object-fit:contain;border-radius:6px;flex-shrink:0;" />`
-      : `<div style="width:40px;height:40px;border:2px solid #0F766E;border-radius:8px;
-                    display:flex;align-items:center;justify-content:center;
-                    color:#0F766E;font-size:20px;font-weight:900;flex-shrink:0;
-                    background:#F0FDFA;">✚</div>`}
-    <div style="min-width:0;">
-      <div style="font-size:14px;font-weight:800;color:#0C2E6B;letter-spacing:-0.2px;line-height:1.1;">
-        ${escapeHtml(d.visit.hospitalName)}
+    <!-- Left: Logo card + hospital name + specialty + contacts -->
+    <div style="display:flex;align-items:flex-start;gap:12px;min-width:0;flex:1;">
+
+      <!-- Logo rounded card -->
+      ${d.visit.hospitalLogo
+        ? `<div style="background:#fff;border:1.5px solid #BFDBFE;border-radius:10px;padding:5px;flex-shrink:0;box-shadow:0 1px 6px rgba(3,105,161,0.10);">` +
+          `<img src="${escapeHtml(d.visit.hospitalLogo)}" alt="Logo" style="width:44px;height:44px;object-fit:contain;display:block;border-radius:6px;" /></div>`
+        : `<div style="background:linear-gradient(135deg,#EFF6FF,#DBEAFE);border:1.5px solid #BFDBFE;` +
+          `border-radius:10px;width:54px;height:54px;flex-shrink:0;display:flex;align-items:center;` +
+          `justify-content:center;color:#0369A1;font-size:24px;font-weight:900;">&#10010;</div>`}
+
+      <!-- Hospital text block -->
+      <div style="min-width:0;padding-top:1px;">
+        <div style="font-size:15px;font-weight:800;color:#0C2461;letter-spacing:-0.2px;line-height:1.1;">
+          ${escapeHtml(d.visit.hospitalName)}
+        </div>
+        <div style="font-size:8px;font-weight:600;color:#0369A1;margin-top:3px;letter-spacing:0.06em;text-transform:uppercase;">
+          Ophthalmology &amp; Eye Care
+        </div>
+        ${(d.visit.hospitalAddress || d.visit.hospitalContact || d.visit.hospitalEmail)
+          ? `<div style="margin-top:6px;display:flex;flex-direction:column;gap:2px;">` +
+            (d.visit.hospitalAddress
+              ? `<div style="font-size:7.5px;color:#475569;display:flex;align-items:flex-start;gap:3px;">` +
+                `<span style="color:#0369A1;font-size:8px;flex-shrink:0;">&#9679;</span>${escapeHtml(d.visit.hospitalAddress)}</div>`
+              : "") +
+            ((d.visit.hospitalContact || d.visit.hospitalEmail)
+              ? `<div style="font-size:7.5px;color:#475569;display:flex;align-items:center;gap:3px;">` +
+                `<span style="color:#0369A1;font-size:8px;flex-shrink:0;">&#9679;</span>` +
+                (d.visit.hospitalContact ? `<span>${escapeHtml(d.visit.hospitalContact)}</span>` : "") +
+                (d.visit.hospitalContact && d.visit.hospitalEmail
+                  ? `<span style="color:#CBD5E1;padding:0 4px;">|</span>` : "") +
+                (d.visit.hospitalEmail ? `<span>${escapeHtml(d.visit.hospitalEmail)}</span>` : "") +
+                `</div>`
+              : "") +
+            `</div>`
+          : ""}
       </div>
-      <div style="font-size:8px;color:#64748B;margin-top:2px;">Ophthalmology &amp; Eye Care</div>
     </div>
-  </div>
 
-  <!-- Right: Large bold title -->
-  <div style="text-align:right;flex-shrink:0;">
-    <div style="font-size:19px;font-weight:900;color:#0C2E6B;letter-spacing:0.06em;
-                text-transform:uppercase;white-space:nowrap;line-height:1.15;">
-      CONSULTATION SUMMARY
+    <!-- Right: CONSULTATION SUMMARY title block -->
+    <div style="text-align:right;flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;padding-top:2px;">
+      <div style="font-size:7px;font-weight:700;letter-spacing:0.28em;text-transform:uppercase;color:#0EA5E9;margin-bottom:5px;">
+        Clinical Report
+      </div>
+      <div style="font-size:18px;font-weight:900;color:#0C2461;letter-spacing:0.07em;text-transform:uppercase;line-height:1.0;white-space:nowrap;">
+        CONSULTATION
+      </div>
+      <div style="font-size:18px;font-weight:900;color:#0C2461;letter-spacing:0.07em;text-transform:uppercase;line-height:1.05;white-space:nowrap;margin-top:1px;">
+        SUMMARY
+      </div>
+      <div style="height:2px;width:100%;background:linear-gradient(90deg,transparent,#0369A1,#0EA5E9);border-radius:1px;margin-top:6px;"></div>
     </div>
   </div>
 </div>
 
-<!-- INFO BAR: address / phone / email -->
-${hospSub
-  ? `<div style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:5px;
-                padding:4px 12px;text-align:center;margin-bottom:2px;">
-      ${hospSubParts.map((p, i) =>
-        `<span style="font-size:8.5px;color:#475569;">${p}</span>` +
-        (i < hospSubParts.length - 1 ? `<span style="color:#CBD5E1;padding:0 8px;">|</span>` : "")
-      ).join("")}
-    </div>`
-  : ""}
+<!-- SOFT GRADIENT DIVIDER (full bleed) -->
+<div style="height:1px;background:linear-gradient(90deg,#BFDBFE,#BAE6FD,#BFDBFE);margin:0 -14mm 6px;"></div>
 
 <!-- PATIENT INFO — 3-column field-box grid (reference report style) -->
 <table style="width:100%;border-collapse:collapse;">
