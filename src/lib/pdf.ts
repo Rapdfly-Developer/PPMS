@@ -1142,7 +1142,7 @@ export async function generateShortSummaryPdf(data: ShortSummaryData): Promise<B
 
 export type FullEmrData = {
   patient: { udid: string; name: string; age: number; sex: string; mobile?: string | null; address?: string | null };
-  visit: { date: Date; visitType?: string | null; hospitalName: string; hospitalAddress?: string | null; hospitalContact?: string | null; doctorName: string };
+  visit: { date: Date; visitType?: string | null; hospitalName: string; hospitalLogo?: string | null; hospitalAddress?: string | null; hospitalContact?: string | null; hospitalEmail?: string | null; doctorName: string };
   generalExam?: {
     bp?: string | null; pulse?: string | null; temperature?: string | null; weight?: string | null;
     chiefComplaint?: string | null; hpi?: string | null;
@@ -1172,7 +1172,6 @@ export type FullEmrData = {
 };
 
 async function renderFullEmrHtml(d: FullEmrData): Promise<string> {
-  const qr = await makeQr(`PPMS-${d.patient.udid}-${format(d.visit.date, "yyyyMMdd")}`);
   const ge = d.generalExam;
   const va = d.visualAcuity;
 
@@ -1182,238 +1181,464 @@ async function renderFullEmrHtml(d: FullEmrData): Promise<string> {
     : (typeof rawPmh === "string" ? (() => { try { return JSON.parse(rawPmh); } catch { return []; } })() : [])
   ).filter(Boolean);
 
-  /* Segment helper */
-  const renderSegment = (segData: Record<string, string[]> | null | undefined) => {
-    if (!segData || Object.keys(segData).length === 0) return `<p class="empty-note">Not recorded</p>`;
+  const v2 = (x: unknown) => (x === null || x === undefined || x === "") ? "" : escapeHtml(String(x));
+
+  /* ── Shared style constants (matches short summary) ── */
+  const TH = `padding:4px 7px;background:#0C5A8C;color:#fff;font-size:8.5px;font-weight:700;text-align:left;`;
+  const TD = `padding:3.5px 7px;border-bottom:1px solid #EEEEEE;font-size:9.5px;`;
+
+  const sec = (label: string) =>
+    `<div style="margin:10px 0 4px;page-break-after:avoid;break-after:avoid;">` +
+    `<span style="font-size:12px;font-weight:700;color:#0C5A8C;">${label}:</span>` +
+    `</div>`;
+
+  const fbox = (label: string, value: string) =>
+    `<td style="padding-right:10px;padding-bottom:6px;vertical-align:top;">` +
+    `<div style="font-size:8.5px;font-weight:700;color:#0C4A7A;margin-bottom:2px;">${label}</div>` +
+    `<div style="background:#EBEBEB;border-radius:4px;padding:4px 8px;font-size:9.5px;color:#111;min-height:20px;">${value || "&nbsp;"}</div>` +
+    `</td>`;
+
+  const kvRow = (label: string, value: string) =>
+    `<tr>` +
+    `<td style="padding:2.5px 12px 2.5px 0;font-size:9.5px;font-weight:700;color:#444;width:34%;">${label}</td>` +
+    `<td style="padding:2.5px 0;font-size:9.5px;color:#1a1a1a;">${value}</td>` +
+    `</tr>`;
+
+  const textBlock = (html: string) =>
+    `<div style="background:#F0F7FF;border-left:3px solid #0369A1;border-radius:0 4px 4px 0;` +
+    `padding:7px 11px;font-size:9.5px;line-height:1.65;color:#1a1a1a;white-space:pre-wrap;">` +
+    html + `</div>`;
+
+  const emptyNote = `<p style="font-size:9.5px;color:#aaa;font-style:italic;padding:2px 0;">Not recorded</p>`;
+
+  /* ── Diagnosis badge ── */
+  const diagBadge = (s: string) => {
+    const u = s.toUpperCase();
+    const [fg, bg] = u === "RESOLVED" || u === "INACTIVE"
+      ? ["#15803D", "#F0FDF4"]
+      : u === "CHRONIC"
+      ? ["#B45309", "#FFFBEB"]
+      : ["#DC2626", "#FEF2F2"];
+    return `<span style="font-size:8px;font-weight:700;color:${fg};background:${bg};padding:1px 6px;border-radius:3px;">${escapeHtml(s)}</span>`;
+  };
+
+  /* ── Priority badge ── */
+  const prioBadge = (p: string) => {
+    const u = p.toUpperCase();
+    const [fg, bg] = u === "STAT" ? ["#92400E", "#FEF3C7"] : u === "URGENT" ? ["#B91C1C", "#FEE2E2"] : ["#0C5A8C", "#DBEAFE"];
+    return `<span style="font-size:8px;font-weight:700;color:${fg};background:${bg};padding:1px 6px;border-radius:3px;">${escapeHtml(p)}</span>`;
+  };
+
+  /* ── Status badge ── */
+  const statusBadge = (s: string) => {
+    const l = s.toLowerCase().replace(/_/g, " ");
+    const [fg, bg] = l.includes("resolv") || l.includes("complet") ? ["#15803D", "#F0FDF4"]
+      : l.includes("active") ? ["#15803D", "#DCFCE7"]
+      : ["#92400E", "#FEF3C7"];
+    return `<span style="font-size:8px;font-weight:700;color:${fg};background:${bg};padding:1px 6px;border-radius:3px;">${escapeHtml(l)}</span>`;
+  };
+
+  /* ── Medication badge ── */
+  const medBadge = (route: string | null | undefined, lat: string | null | undefined, name: string) => {
+    const r = route ?? "";
+    if (r === "Topical" || /eye\s*drops?|eye\s*oint/i.test(name)) {
+      const lbl = lat || "OU";
+      return `<span style="display:inline-block;min-width:24px;padding:1px 4px;border-radius:3px;background:#DBEAFE;color:#1D4ED8;font-size:7px;font-weight:700;text-align:center;margin-right:3px;">${escapeHtml(lbl)}</span>`;
+    }
+    if (/syrup|suspension/i.test(r) || /syrup|suspension/i.test(name))
+      return `<span style="display:inline-block;min-width:24px;padding:1px 4px;border-radius:3px;background:#D1FAE5;color:#065F46;font-size:7px;font-weight:700;text-align:center;margin-right:3px;">SYP</span>`;
+    if (r === "Oral" || /tablet|capsule/i.test(name))
+      return `<span style="display:inline-block;min-width:24px;padding:1px 4px;border-radius:3px;background:#FEF3C7;color:#92400E;font-size:7px;font-weight:700;text-align:center;margin-right:3px;">T</span>`;
+    return "";
+  };
+
+  /* ── Segment table (anterior / posterior data) ── */
+  const renderSegment = (segData: Record<string, any> | null | undefined): string => {
+    if (!segData || Object.keys(segData).length === 0) return emptyNote;
     const rows = Object.entries(segData).map(([k, v]: [string, any]) => {
       const label = k.replace(/([A-Z])/g, " $1").trim();
       const re = Array.isArray(v?.re) ? v.re.join(", ") : (v?.re ?? "—");
       const le = Array.isArray(v?.le) ? v.le.join(", ") : (v?.le ?? "—");
-      return `<tr><td class="td-head" style="width:120px">${escapeHtml(label)}</td><td>${escapeHtml(re || "—")}</td><td>${escapeHtml(le || "—")}</td></tr>`;
+      return `<tr>` +
+        `<td style="${TD}font-weight:600;color:#0C2461;width:130px;">${escapeHtml(label)}</td>` +
+        `<td style="${TD}">${escapeHtml(re || "—")}</td>` +
+        `<td style="${TD}">${escapeHtml(le || "—")}</td>` +
+        `</tr>`;
     }).join("");
-    return `<table>
-      <thead><tr><th style="width:120px">Structure</th><th>Right Eye (RE)</th><th>Left Eye (LE)</th></tr></thead>
-      <tbody>${rows}</tbody>
-    </table>`;
+    return `<table style="width:100%;border-collapse:collapse;">` +
+      `<thead><tr>` +
+      `<th style="${TH}width:130px;">Structure</th>` +
+      `<th style="${TH}">Right Eye (RE)</th>` +
+      `<th style="${TH}">Left Eye (LE)</th>` +
+      `</tr></thead><tbody>${rows}</tbody></table>`;
   };
 
-  const rxRow = (eye: string, sub: string, sph?: string, cyl?: string, axis?: string) =>
-    `<tr><td class="rx-eye">${eye}<br/><span class="rx-eye-sub">${sub}</span></td><td>${val(sph)}</td><td>${val(cyl)}</td><td>${val(axis)}</td></tr>`;
-
-  /* Diagnoses */
+  /* ── Data rows ── */
   const diagRows = d.diagnoses.length
-    ? d.diagnoses.map((dx, i) => `
-      <tr>
-        <td class="td-num">${i + 1}</td>
-        <td class="td-head">${escapeHtml(dx.description)}</td>
-        <td><span class="td-mono">${val(dx.icd10Code)}</span></td>
-        <td>${val(dx.laterality)}</td>
-        <td>${badgeStatus(dx.status)}</td>
-      </tr>`).join("")
-    : `<tr class="empty-row"><td colspan="5">No diagnoses recorded</td></tr>`;
+    ? d.diagnoses.map((dx, i) =>
+        `<tr style="background:${i % 2 === 0 ? "#fff" : "#F8FBFF"};">` +
+        `<td style="${TD}text-align:center;color:#888;">${i + 1}</td>` +
+        `<td style="${TD}font-weight:600;">${escapeHtml(dx.description)}</td>` +
+        `<td style="${TD}color:#555;">${dx.laterality ? escapeHtml(dx.laterality) : ""}</td>` +
+        `<td style="${TD}font-family:'Courier New',monospace;font-size:8.5px;color:#555;">${dx.icd10Code ? escapeHtml(dx.icd10Code) : ""}</td>` +
+        `<td style="${TD}">${dx.status ? diagBadge(dx.status) : ""}</td>` +
+        `</tr>`).join("")
+    : `<tr><td colspan="5" style="padding:6px 8px;font-size:9.5px;color:#aaa;font-style:italic;">No diagnoses recorded</td></tr>`;
 
-  /* Medications */
-  const pdfMedBadge3 = (route: string | null | undefined, lat: string | null | undefined, name: string) => {
-    const r = route ?? "";
-    if (r === "Topical" || /eye\s*drops?|eye\s*oint/i.test(name)) {
-      const lbl = lat || "OU";
-      return `<span style="display:inline-block;min-width:24px;padding:1px 4px;border-radius:3px;background:#DBEAFE;color:#1D4ED8;font-size:7.5px;font-weight:700;text-align:center;margin-right:4px;">${escapeHtml(lbl)}</span>`;
-    }
-    if (/syrup|suspension/i.test(r) || /syrup|suspension/i.test(name)) {
-      return `<span style="display:inline-block;min-width:24px;padding:1px 4px;border-radius:3px;background:#D1FAE5;color:#065F46;font-size:7.5px;font-weight:700;text-align:center;margin-right:4px;">SYP</span>`;
-    }
-    if (r === "Oral" || /tablet|capsule/i.test(name)) {
-      return `<span style="display:inline-block;min-width:24px;padding:1px 4px;border-radius:3px;background:#FEF3C7;color:#92400E;font-size:7.5px;font-weight:700;text-align:center;margin-right:4px;">T</span>`;
-    }
-    return "";
-  };
   const medRows = d.medications.length
-    ? d.medications.map((m, i) => `
-      <tr>
-        <td class="td-num">${i + 1}</td>
-        <td><div class="drug-name">${pdfMedBadge3(m.route, m.laterality, m.drugName)}${escapeHtml(m.drugName)}</div>${m.instructions ? `<div class="drug-sub">${escapeHtml(m.instructions)}</div>` : ""}</td>
-        <td class="drug-dose">${val(m.dosage)}</td>
-        <td>${val(m.frequency)}</td>
-        <td>${val(m.duration)}</td>
-      </tr>`).join("")
-    : `<tr class="empty-row"><td colspan="5">No medications prescribed</td></tr>`;
+    ? d.medications.map((m, i) =>
+        `<tr style="background:${i % 2 === 0 ? "#fff" : "#F8FBFF"};">` +
+        `<td style="${TD}text-align:center;color:#888;">${i + 1}</td>` +
+        `<td style="${TD}">${medBadge(m.route, m.laterality, m.drugName)}` +
+        `<span style="font-weight:700;color:#1a1a1a;">${escapeHtml(m.drugName)}</span>` +
+        (m.instructions ? `<span style="font-size:8.5px;color:#777;margin-left:5px;">${escapeHtml(m.instructions)}</span>` : "") +
+        `</td>` +
+        `<td style="${TD}">${v2(m.dosage)}</td>` +
+        `<td style="${TD}">${v2(m.frequency)}</td>` +
+        `<td style="${TD}">${v2(m.duration)}</td>` +
+        `</tr>`).join("")
+    : `<tr><td colspan="5" style="padding:6px 8px;font-size:9.5px;color:#aaa;font-style:italic;">No medications prescribed</td></tr>`;
 
-  /* Investigations */
   const invRows = d.investigations.length
-    ? d.investigations.map((inv, i) => `
-      <tr>
-        <td class="td-num">${i + 1}</td>
-        <td class="td-head">${escapeHtml(inv.testName)}</td>
-        <td>${badgePriority(inv.priority)}</td>
-        <td>${badgeStatus(inv.status)}</td>
-        <td>${val(inv.result ?? inv.notes)}</td>
-      </tr>`).join("")
-    : `<tr class="empty-row"><td colspan="5">No investigations ordered</td></tr>`;
+    ? d.investigations.map((inv, i) =>
+        `<tr style="background:${i % 2 === 0 ? "#fff" : "#F8FBFF"};">` +
+        `<td style="${TD}text-align:center;color:#888;">${i + 1}</td>` +
+        `<td style="${TD}font-weight:600;">${escapeHtml(inv.testName)}</td>` +
+        `<td style="${TD}">${prioBadge(inv.priority)}</td>` +
+        `<td style="${TD}">${statusBadge(inv.status)}</td>` +
+        `<td style="${TD}color:#555;">${v2(inv.result ?? inv.notes)}</td>` +
+        `</tr>`).join("")
+    : `<tr><td colspan="5" style="padding:6px 8px;font-size:9.5px;color:#aaa;font-style:italic;">No investigations ordered</td></tr>`;
 
-  /* Disposition */
-  const admissionBlock = d.admission
-    ? `<div class="advice-box">
-        <div class="advice-row"><span class="advice-label">Ward</span><span class="advice-val">${val(d.admission.wardName)}</span></div>
-        <div class="advice-row"><span class="advice-label">Bed Number</span><span class="advice-val">${val(d.admission.bedNumber)}</span></div>
-        ${d.admission.reason ? `<div class="advice-row"><span class="advice-label">Reason</span><span class="advice-val">${escapeHtml(d.admission.reason)}</span></div>` : ""}
-      </div>` : "";
+  const surgRow = d.surgicalCounselling?.surgeryType ? {
+    type: d.surgicalCounselling.surgeryType,
+    date: d.surgicalCounselling.surgeryDate ? format(new Date(d.surgicalCounselling.surgeryDate), "dd MMM yyyy") : null,
+    notes: d.surgicalCounselling.notes,
+  } : null;
 
-  const surgBlock = d.surgicalCounselling?.surgeryType
-    ? `<div class="surgery-box">
-        <div style="font-size:9px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:#E11D48;margin-bottom:5px;">⚕ Surgical Counselling</div>
-        <div style="font-size:12px;font-weight:700;color:#1A2E2A;">${val(d.surgicalCounselling!.surgeryType)}</div>
-        ${d.surgicalCounselling!.surgeryDate ? `<div style="font-size:10.5px;color:#5C7A75;margin-top:2px;">Planned date: ${format(new Date(d.surgicalCounselling!.surgeryDate), "dd MMM yyyy")}</div>` : ""}
-        ${d.surgicalCounselling!.notes ? `<div style="font-size:10.5px;color:#1A2E2A;margin-top:4px;">${escapeHtml(d.surgicalCounselling!.notes)}</div>` : ""}
-      </div>` : "";
+  const CSS = `
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+      font-size: 9.5px; line-height: 1.45; color: #1a1a1a;
+      background: #fff;
+      -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    }
+    table { width: 100%; border-collapse: collapse; }
+    .footer {
+      position: running(footer);
+      font-size: 7.5px; color: #888;
+      display: flex; align-items: center; justify-content: space-between;
+      border-top: 1px solid #ddd; padding-top: 4px;
+    }
+    @page { @bottom-center { content: element(footer); } }
+    .page-num::after { content: counter(page); }
+    .page-total::after { content: counter(pages); }
+    @media print { .no-break { page-break-inside: avoid; break-inside: avoid; } }
+  `;
 
   return `<!DOCTYPE html>
 <html>
 <head>
 <meta charset="utf-8"/>
-<title>Long Summary EMR — ${escapeHtml(d.patient.name)}</title>
-<style>${SHARED_CSS}</style>
+<title>Complete EMR — ${escapeHtml(d.patient.name)}</title>
+<style>${CSS}</style>
 </head>
 <body>
 
-  ${letterhead(d.visit.hospitalName, d.visit.hospitalAddress, d.visit.hospitalContact, d.visit.doctorName, d.visit.date, d.visit.visitType, "Complete EMR — Long Summary")}
-  ${patientCard(d.patient, d.visit.doctorName, d.visit.date, d.visit.hospitalName)}
+<!-- PREMIUM GRADIENT ACCENT LINE (full bleed) -->
+<div style="height:4px;background:linear-gradient(90deg,#0369A1 0%,#0EA5E9 50%,#0F766E 100%);margin:0 -14mm;"></div>
 
-  <!-- Chief Complaint & History -->
-  ${ge?.chiefComplaint || ge?.hpi ? `
-  ${secHdr("Chief Complaint & History of Present Illness")}
-  ${ge.chiefComplaint ? `<span style="display:inline-flex;align-items:center;padding:4px 10px;border-radius:7px;background:#FFFBEB;border:1px solid #FEF3C7;color:#92400E;font-size:11.5px;font-weight:600;margin-bottom:7px;">${escapeHtml(ge.chiefComplaint)}</span>` : ""}
-  ${ge.hpi ? `<div class="text-block">${escapeHtml(ge.hpi)}</div>` : ""}
-  ` : ""}
-
-  <!-- Vitals -->
-  ${secHdr("Vitals & General Examination")}
-  ${ge ? `<div class="info-grid">
-    <div class="ig-item"><div class="ig-label">Blood Pressure</div><div class="ig-value">${val(ge.bp)}<span class="ig-unit"> mmHg</span></div></div>
-    <div class="ig-item"><div class="ig-label">Pulse Rate</div><div class="ig-value">${val(ge.pulse)}<span class="ig-unit"> bpm</span></div></div>
-    <div class="ig-item"><div class="ig-label">Temperature</div><div class="ig-value">${val(ge.temperature)}</div></div>
-    <div class="ig-item"><div class="ig-label">Body Weight</div><div class="ig-value">${val(ge.weight)}</div></div>
-  </div>` : `<p class="empty-note">Not recorded</p>`}
-
-  <!-- Past Medical History -->
-  ${secHdr("Past Medical & Drug History")}
-  ${ge ? `<div class="text-block">
-    <strong>PMH:</strong> ${pmhList.length ? pmhList.map(escapeHtml).join(", ") + (ge.pmhOtherText ? `, ${escapeHtml(ge.pmhOtherText)}` : "") : "Nil"}<br/>
-    ${ge.medications ? `<strong>Current Medications:</strong> ${escapeHtml(ge.medications)}<br/>` : ""}
-    ${ge.nkda ? `<strong style="color:#059669;">✓ NKDA</strong> — No Known Drug Allergies<br/>` : ge.allergies ? `<strong style="color:#DC2626;">Allergies:</strong> ${escapeHtml(ge.allergies)}<br/>` : ""}
-    ${ge.familyHistory ? `<strong>Family History:</strong> ${escapeHtml(ge.familyHistory)}<br/>` : ""}
-    ${ge.socialHistory ? `<strong>Social History:</strong> ${escapeHtml(ge.socialHistory)}` : ""}
-  </div>` : `<p class="empty-note">Not recorded</p>`}
-
-  <!-- Visual Acuity -->
-  ${secHdr("Visual Acuity")}
-  ${va ? `<table>
-    <thead>
-      <tr><th style="width:110px"></th><th>Unaided / UCVA</th><th>Pinhole (PH)</th><th>Best Corrected (BCVA)</th></tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td class="td-head">Right Eye (RE)<br/><span style="font-size:9px;color:#5C7A75;font-weight:400;">Distance</span></td>
-        <td>${val(va.reDistance?.unaided)}</td>
-        <td>${val(va.reDistance?.ph)}</td>
-        <td>${val(va.reDistance?.bcva)}</td>
-      </tr>
-      <tr>
-        <td class="td-head">Left Eye (LE)<br/><span style="font-size:9px;color:#5C7A75;font-weight:400;">Distance</span></td>
-        <td>${val(va.leDistance?.unaided)}</td>
-        <td>${val(va.leDistance?.ph)}</td>
-        <td>${val(va.leDistance?.bcva)}</td>
-      </tr>
-      <tr>
-        <td class="td-head">Right Eye (RE)<br/><span style="font-size:9px;color:#5C7A75;font-weight:400;">Near</span></td>
-        <td colspan="2">${val(va.reNear)}</td>
-        <td>${val(va.reNearN)}</td>
-      </tr>
-      <tr>
-        <td class="td-head">Left Eye (LE)<br/><span style="font-size:9px;color:#5C7A75;font-weight:400;">Near</span></td>
-        <td colspan="2">${val(va.leNear)}</td>
-        <td>${val(va.leNearN)}</td>
-      </tr>
-    </tbody>
-  </table>` : `<p class="empty-note">Not recorded</p>`}
-
-  <!-- IOP -->
-  ${secHdr("Intraocular Pressure (IOP)")}
-  ${d.iopReadings.length ? `<table>
-    <thead><tr><th>Method</th><th>Right Eye (RE)</th><th>Left Eye (LE)</th><th>Time</th></tr></thead>
-    <tbody>${d.iopReadings.map(r => `<tr>
-      <td class="td-head">${val(r.method)}</td>
-      <td>${val(r.re)}</td>
-      <td>${val(r.le)}</td>
-      <td>${format(new Date(r.takenAt), "hh:mm a")}</td>
-    </tr>`).join("")}</tbody>
-  </table>` : `<p class="empty-note">Not recorded</p>`}
-
-  <!-- Colour Vision -->
-  ${d.colourVision ? `
-  ${secHdr("Colour Vision")}
-  <div class="info-grid" style="grid-template-columns:1fr 1fr;">
-    <div class="ig-item"><div class="ig-label">Right Eye (RE)</div><div class="ig-value" style="font-size:13px;">${val(d.colourVision.re)}</div></div>
-    <div class="ig-item"><div class="ig-label">Left Eye (LE)</div><div class="ig-value" style="font-size:13px;">${val(d.colourVision.le)}</div></div>
+<!-- PREMIUM HEADER CARD (full bleed) -->
+<div style="margin:0 -14mm;padding:11px 14mm 13px;
+            background:linear-gradient(135deg,#F8FBFF 0%,#EBF4FF 55%,#F4FAFF 100%);
+            page-break-after:avoid;">
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:18px;">
+    <div style="display:flex;align-items:flex-start;gap:12px;min-width:0;flex:1;">
+      ${d.visit.hospitalLogo
+        ? `<div style="background:#fff;border:1.5px solid #BFDBFE;border-radius:10px;padding:5px;flex-shrink:0;box-shadow:0 1px 6px rgba(3,105,161,0.10);">` +
+          `<img src="${escapeHtml(d.visit.hospitalLogo)}" alt="Logo" style="width:44px;height:44px;object-fit:contain;display:block;border-radius:6px;" /></div>`
+        : `<div style="background:linear-gradient(135deg,#EFF6FF,#DBEAFE);border:1.5px solid #BFDBFE;border-radius:10px;` +
+          `width:54px;height:54px;flex-shrink:0;display:flex;align-items:center;justify-content:center;` +
+          `color:#0369A1;font-size:24px;font-weight:900;">&#10010;</div>`}
+      <div style="min-width:0;padding-top:1px;">
+        <div style="font-size:15px;font-weight:800;color:#0C2461;letter-spacing:-0.2px;line-height:1.1;">
+          ${escapeHtml(d.visit.hospitalName)}
+        </div>
+        <div style="font-size:8px;font-weight:600;color:#0369A1;margin-top:3px;letter-spacing:0.06em;text-transform:uppercase;">
+          Ophthalmology &amp; Eye Care
+        </div>
+        ${(d.visit.hospitalAddress || d.visit.hospitalContact || d.visit.hospitalEmail)
+          ? `<div style="margin-top:6px;display:flex;flex-direction:column;gap:2px;">` +
+            (d.visit.hospitalAddress
+              ? `<div style="font-size:7.5px;color:#475569;display:flex;align-items:flex-start;gap:3px;"><span style="color:#0369A1;font-size:8px;flex-shrink:0;">&#9679;</span>${escapeHtml(d.visit.hospitalAddress)}</div>` : "") +
+            ((d.visit.hospitalContact || d.visit.hospitalEmail)
+              ? `<div style="font-size:7.5px;color:#475569;display:flex;align-items:center;gap:3px;"><span style="color:#0369A1;font-size:8px;flex-shrink:0;">&#9679;</span>` +
+                (d.visit.hospitalContact ? `<span>${escapeHtml(d.visit.hospitalContact)}</span>` : "") +
+                (d.visit.hospitalContact && d.visit.hospitalEmail ? `<span style="color:#CBD5E1;padding:0 4px;">|</span>` : "") +
+                (d.visit.hospitalEmail ? `<span>${escapeHtml(d.visit.hospitalEmail)}</span>` : "") +
+                `</div>` : "") +
+            `</div>` : ""}
+      </div>
+    </div>
+    <div style="text-align:right;flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;padding-top:2px;">
+      <div style="font-size:7px;font-weight:700;letter-spacing:0.28em;text-transform:uppercase;color:#0EA5E9;margin-bottom:5px;">
+        Clinical Record
+      </div>
+      <div style="font-size:18px;font-weight:900;color:#0C2461;letter-spacing:0.07em;text-transform:uppercase;line-height:1.0;white-space:nowrap;">
+        COMPLETE
+      </div>
+      <div style="font-size:18px;font-weight:900;color:#0C2461;letter-spacing:0.07em;text-transform:uppercase;line-height:1.05;white-space:nowrap;margin-top:1px;">
+        EMR SUMMARY
+      </div>
+      <div style="height:2px;width:100%;background:linear-gradient(90deg,transparent,#0369A1,#0EA5E9);border-radius:1px;margin-top:6px;"></div>
+    </div>
   </div>
-  ${d.colourVision.notes ? `<div class="text-block" style="margin-top:6px;">${escapeHtml(d.colourVision.notes)}</div>` : ""}
-  ` : ""}
+</div>
 
-  <!-- Anterior Segment -->
-  ${secHdr("Anterior Segment Examination")}
-  ${renderSegment(d.anteriorSegment as any)}
+<!-- SOFT GRADIENT DIVIDER (full bleed) -->
+<div style="height:1px;background:linear-gradient(90deg,#BFDBFE,#BAE6FD,#BFDBFE);margin:0 -14mm 6px;"></div>
 
-  <!-- Posterior Segment -->
-  ${secHdr("Posterior Segment Examination")}
-  ${(() => {
-    const ps = d.posteriorSegment as any;
-    if (!ps) return `<p class="empty-note">Not recorded</p>`;
-    return renderSegment(ps.data)
-      + (ps.cdr ? `<div style="font-size:11px;margin-top:6px;"><strong>CDR:</strong> ${escapeHtml(ps.cdr)}</div>` : "")
-      + (ps.notes ? `<div class="text-block" style="margin-top:6px;">${escapeHtml(ps.notes)}</div>` : "");
-  })()}
+<!-- PATIENT INFO -->
+<table style="width:100%;border-collapse:collapse;">
+  <tbody>
+    <tr>
+      ${fbox("Patient Name", escapeHtml(d.patient.name))}
+      ${fbox("UHID / MR No.", escapeHtml(d.patient.udid))}
+      ${fbox("Date of Visit", format(d.visit.date, "dd MMM yyyy"))}
+    </tr>
+    <tr>
+      ${fbox("Age / Gender", `${d.patient.age} yrs / ${escapeHtml(d.patient.sex)}`)}
+      ${fbox("Mobile", d.patient.mobile ? escapeHtml(d.patient.mobile) : "—")}
+      ${fbox("Consultant", `Dr. ${escapeHtml(d.visit.doctorName)}`)}
+    </tr>
+    <tr>
+      ${fbox("Visit Type", escapeHtml(d.visit.visitType ?? "Consultation"))}
+      ${fbox("Visit Time", format(d.visit.date, "hh:mm a") + " IST")}
+      ${d.patient.address ? fbox("Address", escapeHtml(d.patient.address)) : `<td></td>`}
+    </tr>
+  </tbody>
+</table>
 
-  <!-- Diagnosis -->
-  ${secHdr("Assessment / Diagnosis")}
-  <table>
-    <thead><tr><th style="width:24px">#</th><th>Diagnosis</th><th style="width:80px">ICD-10</th><th style="width:90px">Laterality</th><th style="width:90px">Status</th></tr></thead>
-    <tbody>${diagRows}</tbody>
-  </table>
+<!-- CHIEF COMPLAINT & HPI -->
+${ge?.chiefComplaint || ge?.hpi
+  ? sec("Chief Complaint & History of Present Illness") +
+    (ge.chiefComplaint
+      ? `<p style="font-size:10.5px;font-weight:600;color:#0C2E6B;padding:2px 0 3px;">${escapeHtml(ge.chiefComplaint)}</p>` : "") +
+    (ge.hpi ? textBlock(escapeHtml(ge.hpi)) : "")
+  : ""}
 
-  <!-- Medications -->
-  ${secHdr("Medications Prescribed")}
-  <table>
-    <thead><tr><th style="width:24px">#</th><th>Drug / Medicine</th><th style="width:80px">Dosage</th><th style="width:110px">Frequency</th><th style="width:80px">Duration</th></tr></thead>
-    <tbody>${medRows}</tbody>
-  </table>
+<!-- PAST MEDICAL & DRUG HISTORY -->
+${sec("Past Medical &amp; Drug History")}
+${ge
+  ? textBlock(
+      `<strong>PMH:</strong> ${pmhList.length ? pmhList.map(escapeHtml).join(", ") + (ge.pmhOtherText ? `, ${escapeHtml(ge.pmhOtherText)}` : "") : "Nil"}` +
+      (ge.medications ? `<br/><strong>Current Medications:</strong> ${escapeHtml(ge.medications)}` : "") +
+      (ge.nkda ? `<br/><strong style="color:#059669;">✓ NKDA</strong> — No Known Drug Allergies`
+        : ge.allergies ? `<br/><strong style="color:#DC2626;">Allergies:</strong> ${escapeHtml(ge.allergies)}` : "") +
+      (ge.familyHistory ? `<br/><strong>Family History:</strong> ${escapeHtml(ge.familyHistory)}` : "") +
+      (ge.socialHistory ? `<br/><strong>Social History:</strong> ${escapeHtml(ge.socialHistory)}` : ""))
+  : emptyNote}
 
-  <!-- Optical Rx -->
-  ${secHdr("Optical Prescription (Refraction)")}
-  <table class="rx-table">
-    <thead><tr><th style="width:110px;text-align:left"></th><th>Sphere (SPH)</th><th>Cylinder (CYL)</th><th>Axis</th></tr></thead>
-    <tbody>
-      ${rxRow("Right Eye (RE)", "Distance", d.opticalRx.re.sph, d.opticalRx.re.cyl, d.opticalRx.re.axis)}
-      ${rxRow("Left Eye (LE)", "Distance", d.opticalRx.le.sph, d.opticalRx.le.cyl, d.opticalRx.le.axis)}
-      ${rxRow("Right Eye (RE)", "Near Add", d.opticalRx.re.nearSph, d.opticalRx.re.nearCyl, d.opticalRx.re.nearAxis)}
-      ${rxRow("Left Eye (LE)", "Near Add", d.opticalRx.le.nearSph, d.opticalRx.le.nearCyl, d.opticalRx.le.nearAxis)}
-    </tbody>
-  </table>
+<!-- VITALS -->
+${sec("Vitals &amp; General Examination")}
+${ge
+  ? `<table style="width:100%;border-collapse:collapse;"><tbody><tr>` +
+    fbox("Blood Pressure", ge.bp ? escapeHtml(ge.bp) + " mmHg" : "—") +
+    fbox("Pulse Rate", ge.pulse ? escapeHtml(ge.pulse) + " bpm" : "—") +
+    fbox("Temperature", ge.temperature ? escapeHtml(ge.temperature) : "—") +
+    fbox("Body Weight", ge.weight ? escapeHtml(ge.weight) : "—") +
+    `</tr></tbody></table>`
+  : emptyNote}
 
-  <!-- Investigations -->
-  ${secHdr("Investigations Ordered")}
-  <table>
-    <thead><tr><th style="width:24px">#</th><th>Test / Investigation</th><th style="width:80px">Priority</th><th style="width:90px">Status</th><th>Result / Notes</th></tr></thead>
-    <tbody>${invRows}</tbody>
-  </table>
+<!-- VISUAL ACUITY -->
+${sec("Visual Acuity")}
+${va
+  ? `<table style="width:100%;border-collapse:collapse;">
+      <thead><tr>
+        <th style="${TH}width:110px;"></th>
+        <th style="${TH}">Unaided / UCVA</th>
+        <th style="${TH}">Pinhole (PH)</th>
+        <th style="${TH}">Best Corrected (BCVA)</th>
+      </tr></thead>
+      <tbody>
+        <tr style="background:#fff;">
+          <td style="${TD}font-weight:600;color:#0C2461;">RE <span style="font-weight:400;color:#777;font-size:8.5px;">(Distance)</span></td>
+          <td style="${TD}">${v2(va.reDistance?.unaided)}</td>
+          <td style="${TD}">${v2(va.reDistance?.ph)}</td>
+          <td style="${TD}">${v2(va.reDistance?.bcva)}</td>
+        </tr>
+        <tr style="background:#F8FBFF;">
+          <td style="${TD}font-weight:600;color:#0C2461;">LE <span style="font-weight:400;color:#777;font-size:8.5px;">(Distance)</span></td>
+          <td style="${TD}">${v2(va.leDistance?.unaided)}</td>
+          <td style="${TD}">${v2(va.leDistance?.ph)}</td>
+          <td style="${TD}">${v2(va.leDistance?.bcva)}</td>
+        </tr>
+        <tr style="background:#fff;">
+          <td style="${TD}font-weight:600;color:#0C2461;">RE <span style="font-weight:400;color:#777;font-size:8.5px;">(Near)</span></td>
+          <td style="${TD}" colspan="2">${v2(va.reNear)}</td>
+          <td style="${TD}">${v2(va.reNearN)}</td>
+        </tr>
+        <tr style="background:#F8FBFF;">
+          <td style="${TD}font-weight:600;color:#0C2461;">LE <span style="font-weight:400;color:#777;font-size:8.5px;">(Near)</span></td>
+          <td style="${TD}" colspan="2">${v2(va.leNear)}</td>
+          <td style="${TD}">${v2(va.leNearN)}</td>
+        </tr>
+      </tbody>
+    </table>`
+  : emptyNote}
 
-  <!-- Disposition -->
-  ${d.admission || d.surgicalCounselling?.surgeryType ? `
-  ${secHdr("Disposition / Plan")}
-  ${admissionBlock}
-  ${surgBlock}
-  ` : ""}
+<!-- IOP -->
+${sec("Intraocular Pressure (IOP)")}
+${d.iopReadings.length
+  ? `<table style="width:100%;border-collapse:collapse;">
+      <thead><tr>
+        <th style="${TH}">Method</th>
+        <th style="${TH}">Right Eye (RE)</th>
+        <th style="${TH}">Left Eye (LE)</th>
+        <th style="${TH}width:70px;">Time</th>
+      </tr></thead>
+      <tbody>
+        ${d.iopReadings.map((r, i) =>
+          `<tr style="background:${i % 2 === 0 ? "#fff" : "#F8FBFF"};">` +
+          `<td style="${TD}font-weight:600;color:#0C2461;">${v2(r.method)}</td>` +
+          `<td style="${TD}">${v2(r.re)}</td>` +
+          `<td style="${TD}">${v2(r.le)}</td>` +
+          `<td style="${TD}color:#555;">${format(new Date(r.takenAt), "hh:mm a")}</td>` +
+          `</tr>`).join("")}
+      </tbody>
+    </table>`
+  : emptyNote}
 
-  ${bottomSection(d.visit.doctorName, d.visit.hospitalName, qr, d.patient.udid)}
-  ${footerHtml(d.patient.udid, "Complete EMR — Long Summary")}
+<!-- COLOUR VISION -->
+${d.colourVision
+  ? sec("Colour Vision") +
+    `<table style="width:100%;border-collapse:collapse;"><tbody><tr>` +
+    fbox("Right Eye (RE)", v2(d.colourVision.re)) +
+    fbox("Left Eye (LE)", v2(d.colourVision.le)) +
+    (d.colourVision.notes ? fbox("Notes", escapeHtml(d.colourVision.notes)) : `<td></td>`) +
+    `</tr></tbody></table>`
+  : ""}
+
+<!-- ANTERIOR SEGMENT -->
+${sec("Anterior Segment Examination")}
+${renderSegment(d.anteriorSegment as any)}
+
+<!-- POSTERIOR SEGMENT -->
+${sec("Posterior Segment Examination")}
+${(() => {
+  const ps = d.posteriorSegment as any;
+  if (!ps) return emptyNote;
+  return renderSegment(ps.data) +
+    (ps.cdr
+      ? `<div style="margin-top:5px;font-size:9.5px;"><span style="font-weight:700;color:#0C2461;">CDR:</span> ${escapeHtml(ps.cdr)}</div>`
+      : "") +
+    (ps.notes ? `<div style="margin-top:4px;">${textBlock(escapeHtml(ps.notes))}</div>` : "");
+})()}
+
+<!-- ASSESSMENT / DIAGNOSIS -->
+${sec("Assessment / Diagnosis")}
+${d.diagnoses.length
+  ? `<table style="width:100%;border-collapse:collapse;">
+      <thead><tr>
+        <th style="${TH}width:28px;text-align:center;">#</th>
+        <th style="${TH}">Diagnosis</th>
+        <th style="${TH}width:90px;">Laterality</th>
+        <th style="${TH}width:75px;">ICD-10</th>
+        <th style="${TH}width:78px;">Status</th>
+      </tr></thead>
+      <tbody>${diagRows}</tbody>
+    </table>`
+  : `<p style="color:#aaa;font-style:italic;padding:2px 0;font-size:9.5px;">No diagnosis recorded</p>`}
+
+<!-- PROCEDURE / SURGICAL PLAN -->
+${surgRow
+  ? sec("Procedure / Surgical Plan") +
+    `<table style="width:100%;border-collapse:collapse;"><tbody>` +
+    kvRow("Procedure Type", escapeHtml(surgRow.type)) +
+    (surgRow.date ? kvRow("Planned Date", surgRow.date) : "") +
+    (surgRow.notes ? kvRow("Notes", escapeHtml(surgRow.notes)) : "") +
+    `</tbody></table>`
+  : ""}
+
+<!-- MEDICATIONS PRESCRIBED -->
+${sec("Medications Prescribed")}
+<table style="width:100%;border-collapse:collapse;">
+  <thead><tr>
+    <th style="${TH}width:28px;text-align:center;">#</th>
+    <th style="${TH}">Medicine</th>
+    <th style="${TH}width:65px;">Dosage</th>
+    <th style="${TH}width:95px;">Frequency</th>
+    <th style="${TH}width:65px;">Duration</th>
+  </tr></thead>
+  <tbody>${medRows}</tbody>
+</table>
+
+<!-- OPTICAL PRESCRIPTION -->
+${sec("Optical Prescription (Refraction)")}
+<table style="width:100%;border-collapse:collapse;">
+  <thead><tr>
+    <th style="${TH}width:110px;">Eye</th>
+    <th style="${TH}text-align:center;">SPH</th>
+    <th style="${TH}text-align:center;">CYL</th>
+    <th style="${TH}text-align:center;">Axis</th>
+    <th style="${TH}text-align:center;">Near Add</th>
+  </tr></thead>
+  <tbody>
+    ${["re", "le"].flatMap((eye, ei) =>
+      [["Distance", "sph", "cyl", "axis", "nearSph"], ["Near Add", "nearSph", "nearCyl", "nearAxis", ""]].map(([sub, s, c, a, n], ri) => {
+        const rx = d.opticalRx[eye as "re" | "le"] as any;
+        const hasData = rx?.[s] || rx?.[c] || rx?.[a];
+        if (sub === "Near Add" && !hasData) return "";
+        return `<tr style="background:${(ei * 2 + ri) % 2 === 0 ? "#fff" : "#F8FBFF"};">` +
+          `<td style="${TD}font-weight:600;color:#0C2461;">${eye.toUpperCase()} <span style="font-weight:400;color:#777;font-size:8.5px;">(${sub})</span></td>` +
+          `<td style="${TD}text-align:center;">${v2(rx?.[s])}</td>` +
+          `<td style="${TD}text-align:center;">${v2(rx?.[c])}</td>` +
+          `<td style="${TD}text-align:center;">${v2(rx?.[a])}</td>` +
+          `<td style="${TD}text-align:center;">${sub === "Near Add" ? v2(rx?.[n]) : ""}</td>` +
+          `</tr>`;
+      })).join("")}
+  </tbody>
+</table>
+
+<!-- INVESTIGATIONS -->
+${sec("Investigations Ordered")}
+${d.investigations.length
+  ? `<table style="width:100%;border-collapse:collapse;">
+      <thead><tr>
+        <th style="${TH}width:28px;text-align:center;">#</th>
+        <th style="${TH}">Test / Investigation</th>
+        <th style="${TH}width:72px;">Priority</th>
+        <th style="${TH}width:80px;">Status</th>
+        <th style="${TH}">Result / Notes</th>
+      </tr></thead>
+      <tbody>${invRows}</tbody>
+    </table>`
+  : `<p style="color:#aaa;font-style:italic;padding:2px 0;font-size:9.5px;">No investigations ordered</p>`}
+
+<!-- ADMISSION / DISPOSITION -->
+${d.admission
+  ? sec("Admission / Disposition") +
+    `<table style="width:100%;border-collapse:collapse;"><tbody>` +
+    kvRow("Ward", v2(d.admission.wardName)) +
+    kvRow("Bed Number", v2(d.admission.bedNumber)) +
+    (d.admission.reason ? kvRow("Reason", escapeHtml(d.admission.reason)) : "") +
+    `</tbody></table>`
+  : ""}
+
+<!-- DOCTOR SIGNATURE -->
+<div class="no-break" style="margin-top:12px;padding-top:4px;">
+  <div style="font-size:11.5px;font-weight:700;color:#0C2E6B;">Dr. ${escapeHtml(d.visit.doctorName)}</div>
+  <div style="font-size:9px;color:#555;margin-top:2px;">Consultant Ophthalmologist</div>
+  <div style="font-size:8.5px;color:#888;margin-top:1px;">${escapeHtml(d.visit.hospitalName)}</div>
+</div>
+
+<!-- RUNNING FOOTER -->
+<div class="footer">
+  <span>CONFIDENTIAL — For authorized clinical use only</span>
+  <span>UHID: ${escapeHtml(d.patient.udid)}</span>
+  <span>Generated by PPMS · Powered by RAPDFLY · Page <span class="page-num"></span> of <span class="page-total"></span></span>
+</div>
 
 </body>
 </html>`;
@@ -1453,8 +1678,10 @@ export async function generateAllVisitsSummaryPdf(visits: any[]): Promise<Buffer
       visit: {
         date: visit.date, visitType: visit.visitType ?? null,
         hospitalName: visit.hospital.name,
+        hospitalLogo: (visit.hospital as any).logoUrl ?? null,
         hospitalAddress: (visit.hospital as any).address ?? null,
         hospitalContact: (visit.hospital as any).contact ?? null,
+        hospitalEmail: (visit.hospital as any).email ?? null,
         doctorName: visit.doctor.name,
       },
       generalExam: ge ? {
@@ -1650,8 +1877,10 @@ export async function generateVisitSummaryPdf(visit: any): Promise<Buffer> {
     visit: {
       date: visit.date, visitType: visit.visitType ?? null,
       hospitalName: visit.hospital.name,
+      hospitalLogo: (visit.hospital as any).logoUrl ?? null,
       hospitalAddress: (visit.hospital as any).address ?? null,
       hospitalContact: (visit.hospital as any).contact ?? null,
+      hospitalEmail: (visit.hospital as any).email ?? null,
       doctorName: visit.doctor.name,
     },
     generalExam: ge ? {

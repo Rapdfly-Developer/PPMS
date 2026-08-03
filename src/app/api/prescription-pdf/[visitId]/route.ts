@@ -61,8 +61,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
       date: visit.date,
       visitType: visit.visitType ?? null,
       hospitalName: visit.hospital.name,
+      hospitalLogo: (visit.hospital as any).logoUrl ?? null,
       hospitalAddress: (visit.hospital as any).address ?? null,
       hospitalContact: (visit.hospital as any).contact ?? null,
+      hospitalEmail: (visit.hospital as any).email ?? null,
       doctorName: visit.doctor.name,
     },
     generalExam: ge ? {
