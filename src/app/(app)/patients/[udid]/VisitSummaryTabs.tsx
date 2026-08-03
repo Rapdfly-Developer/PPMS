@@ -133,7 +133,7 @@ function ShortContent({ complaint, diagText }: { complaint: string | null; diagT
 /* ─── Long ─── */
 function SectionLabel({ icon, label }: { icon?: React.ReactNode; label: string }) {
   return (
-    <div className="flex items-center gap-1 mb-1.5 pb-0.5 border-b border-[var(--color-border)]">
+    <div className="flex items-center gap-1 mb-1.5">
       {icon}
       <span className="text-[9px] font-bold uppercase tracking-widest text-[var(--color-ink-400)]">{label}</span>
     </div>
@@ -233,7 +233,7 @@ function LongContent({
       {hasVitals && (
         <div>
           <SectionLabel icon={<Activity size={9} className="text-[var(--color-ink-400)]" />} label="Vitals" />
-          <div className="grid grid-cols-2 gap-x-6 gap-y-0.5">
+          <div className="flex flex-wrap gap-x-6 gap-y-1">
             {g.bp          && <span><span className="text-[var(--color-ink-400)]">BP: </span><span className="text-[var(--color-ink-700)] font-medium">{g.bp}</span></span>}
             {g.pulse       && <span><span className="text-[var(--color-ink-400)]">Pulse: </span><span className="text-[var(--color-ink-700)] font-medium">{g.pulse}</span></span>}
             {g.weight      && <span><span className="text-[var(--color-ink-400)]">Weight: </span><span className="text-[var(--color-ink-700)] font-medium">{g.weight}</span></span>}
