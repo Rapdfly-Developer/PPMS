@@ -883,9 +883,9 @@ async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
 </head>
 <body>
 
-  <!-- ── HEADER BANNER ── -->
+  <!-- ── HEADER BANNER (horizontal bleed only — no top bleed to avoid Puppeteer clipping) ── -->
   <div style="background:linear-gradient(135deg,#C17A3C 0%,#8B4D1E 100%);
-              margin:-16mm -14mm 0;padding:16px 18mm 14px;
+              margin:0 -14mm;padding:16px 14mm 14px;
               position:relative;overflow:hidden;page-break-after:avoid;">
     <div style="position:absolute;top:-20px;right:120px;width:110px;height:110px;
                 background:rgba(255,255,255,0.07);transform:rotate(45deg);"></div>
@@ -907,7 +907,7 @@ async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
   </div>
 
   <!-- ── CONTACT SUB-BAR ── -->
-  <div style="background:#7A4A1E;margin:0 -14mm;padding:5px 18mm;
+  <div style="background:#7A4A1E;margin:0 -14mm;padding:5px 14mm;
               text-align:center;font-size:9px;color:rgba(255,255,255,0.88);">
     ${hospSub || "&nbsp;"}
   </div>
@@ -1045,7 +1045,6 @@ async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
   <div class="no-break" style="margin-top:14px;display:flex;align-items:flex-end;
                                justify-content:space-between;border-top:1px solid #ddd;padding-top:10px;">
     <div>
-      <div style="width:200px;height:38px;border-bottom:1.5px solid #555;margin-bottom:6px;"></div>
       <div style="font-size:12px;font-weight:700;color:#1a1a1a;">Dr. ${escapeHtml(d.visit.doctorName)}</div>
       <div style="font-size:9.5px;color:#555;margin-top:2px;">Consultant Ophthalmologist</div>
       <div style="font-size:9px;color:#888;margin-top:1px;">${escapeHtml(d.visit.hospitalName)}</div>
