@@ -757,67 +757,64 @@ export type ShortSummaryData = {
 
 async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
   const qr = await makeQr(`PPMS-${d.patient.udid}-${format(d.visit.date, "yyyyMMdd")}`);
-  const v2 = (x: unknown) => (x === null || x === undefined || x === "") ? "" : escapeHtml(String(x));
+  const v2 = (x: unknown) => (x === null || x === undefined || x === "") ? "—" : escapeHtml(String(x));
   const genTs = format(new Date(), "dd MMM yyyy, hh:mm a") + " IST";
 
   const hospSubParts = [d.visit.hospitalAddress, d.visit.hospitalContact, d.visit.hospitalEmail]
-    .filter(Boolean).map(v => escapeHtml(String(v)));
-  const hospSub = hospSubParts.join(" · ");
+    .filter(Boolean).map(x => escapeHtml(String(x)));
+  const hospSub = hospSubParts.join("  |  ");
 
-  /* ── Section-header helper: 3px teal accent + label + hairline rule ── */
-  const sh = (label: string) =>
-    `<div style="display:flex;align-items:center;gap:8px;margin:14px 0 7px;page-break-after:avoid;break-after:avoid;">` +
-    `<div style="width:3px;height:14px;background:#0F766E;border-radius:2px;flex-shrink:0;"></div>` +
-    `<span style="font-size:8.5px;font-weight:800;text-transform:uppercase;letter-spacing:0.14em;color:#0F766E;">${label}</span>` +
-    `<div style="flex:1;height:1px;background:#E2E8F0;"></div>` +
-    `</div>`;
+  /* ── Roman numeral section header ── */
+  const NUMERALS = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"];
+  let _secIdx = 0;
+  const sec = (label: string) => {
+    const n = NUMERALS[_secIdx++] ?? String(_secIdx);
+    return `<div style="margin:20px 0 9px;page-break-after:avoid;break-after:avoid;">` +
+      `<div style="font-size:13.5px;font-weight:700;color:#C17A3C;padding-bottom:5px;` +
+      `border-bottom:1.5px solid #C17A3C;">${n}. ${label}</div>` +
+      `</div>`;
+  };
 
-  /* ── Patient info cell ── */
-  const pf = (label: string, value: string) =>
-    `<div>` +
-    `<div style="font-size:7.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#94A3B8;">${label}</div>` +
-    `<div style="font-size:10.5px;font-weight:600;color:#1E293B;margin-top:1px;">${value || "—"}</div>` +
-    `</div>`;
+  /* ── Two-column patient info row ── */
+  const piRow = (label: string, value: string, shade: boolean) =>
+    `<tr style="background:${shade ? "#FBF4EC" : "#fff"};">` +
+    `<td style="padding:7px 14px;font-weight:700;color:#222;font-size:10.5px;` +
+    `width:42%;border:1px solid #DDD0C0;">${label}</td>` +
+    `<td style="padding:7px 14px;color:#222;font-size:10.5px;border:1px solid #DDD0C0;">${value}</td>` +
+    `</tr>`;
+
+  /* ── Table header cell ── */
+  const TH = `padding:7px 10px;background:#C17A3C;color:#fff;font-size:9.5px;font-weight:700;` +
+    `text-align:left;border:1px solid #A8622A;`;
 
   /* ── Diagnosis status badge ── */
   const diagBadge = (s: string) => {
     const u = s.toUpperCase();
-    const [fg, bg, bd] = u === "RESOLVED" || u === "INACTIVE"
-      ? ["#15803D", "#F0FDF4", "#BBF7D0"]
+    const [fg, bg] = u === "RESOLVED" || u === "INACTIVE"
+      ? ["#15803D", "#F0FDF4"]
       : u === "CHRONIC"
-      ? ["#B45309", "#FFFBEB", "#FDE68A"]
-      : ["#DC2626", "#FEF2F2", "#FECACA"];
-    return `<span style="font-size:8px;font-weight:700;color:${fg};background:${bg};border:1px solid ${bd};padding:1px 6px;border-radius:4px;">${escapeHtml(s)}</span>`;
+      ? ["#B45309", "#FFFBEB"]
+      : ["#DC2626", "#FEF2F2"];
+    return `<span style="font-size:8.5px;font-weight:700;color:${fg};background:${bg};` +
+      `padding:1px 7px;border-radius:3px;">${escapeHtml(s)}</span>`;
   };
 
-  /* ── Diagnoses ── */
-  const diagBlock = d.diagnoses.length
-    ? d.diagnoses.map((dx, i) =>
-        `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #F1F5F9;">` +
-        `<span style="min-width:18px;font-size:9px;font-weight:700;color:#0F766E;">${i + 1}.</span>` +
-        `<span style="flex:1;font-size:10.5px;font-weight:600;color:#0F172A;">${escapeHtml(dx.description)}</span>` +
-        (dx.laterality ? `<span style="font-size:9px;color:#64748B;background:#F1F5F9;padding:1px 6px;border-radius:4px;">${escapeHtml(dx.laterality)}</span>` : "") +
-        (dx.icd10Code ? `<span style="font-size:9px;font-family:'Courier New',monospace;color:#64748B;background:#F1F5F9;padding:1px 6px;border-radius:4px;">${escapeHtml(dx.icd10Code)}</span>` : "") +
-        (dx.status ? diagBadge(dx.status) : "") +
-        `</div>`
-      ).join("")
-    : `<p style="font-size:10px;color:#94A3B8;font-style:italic;padding:5px 2px;">No diagnosis recorded</p>`;
-
-  /* ── Medications ── */
+  /* ── Medication rows ── */
   const medRows = d.medications.length
     ? d.medications.map((m, i) =>
-        `<tr style="background:${i % 2 === 0 ? "#fff" : "#F8FAFC"};">` +
-        `<td style="width:22px;text-align:center;font-weight:700;color:#0F766E;font-size:9.5px;padding:7px 8px;">${i + 1}</td>` +
-        `<td style="padding:7px 8px;">` +
-        `<div style="font-weight:700;color:#0F172A;font-size:10.5px;">${escapeHtml(m.drugName)}</div>` +
-        (m.instructions ? `<div style="font-size:9px;color:#64748B;margin-top:1px;">${escapeHtml(m.instructions)}</div>` : "") +
+        `<tr style="background:${i % 2 === 0 ? "#fff" : "#FBF4EC"};">` +
+        `<td style="padding:7px 10px;text-align:center;border:1px solid #DDD0C0;color:#888;font-size:10px;">${i + 1}</td>` +
+        `<td style="padding:7px 10px;border:1px solid #DDD0C0;">` +
+        `<div style="font-weight:700;color:#1a1a1a;font-size:10.5px;">${escapeHtml(m.drugName)}</div>` +
+        (m.instructions ? `<div style="font-size:9px;color:#777;margin-top:1px;">${escapeHtml(m.instructions)}</div>` : "") +
         `</td>` +
-        `<td style="padding:7px 8px;color:#1E293B;">${v2(m.dosage) || "—"}</td>` +
-        `<td style="padding:7px 8px;color:#1E293B;">${v2(m.frequency) || "—"}</td>` +
-        `<td style="padding:7px 8px;color:#1E293B;">${v2(m.duration) || "—"}</td>` +
+        `<td style="padding:7px 10px;border:1px solid #DDD0C0;font-size:10.5px;">${v2(m.dosage)}</td>` +
+        `<td style="padding:7px 10px;border:1px solid #DDD0C0;font-size:10.5px;">${v2(m.frequency)}</td>` +
+        `<td style="padding:7px 10px;border:1px solid #DDD0C0;font-size:10.5px;">${v2(m.duration)}</td>` +
         `</tr>`
       ).join("")
-    : `<tr><td colspan="5" style="text-align:center;color:#94A3B8;font-style:italic;padding:12px 8px;border-bottom:none;">No medications prescribed</td></tr>`;
+    : `<tr><td colspan="5" style="padding:12px;text-align:center;color:#aaa;font-style:italic;` +
+      `border:1px solid #DDD0C0;">No medications prescribed</td></tr>`;
 
   /* ── Optical Rx ── */
   const hasRx = d.opticalRx && (
@@ -825,52 +822,12 @@ async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
     d.opticalRx.le.sph || d.opticalRx.le.cyl || d.opticalRx.le.axis ||
     d.opticalRx.re.nearSph || d.opticalRx.le.nearSph
   );
-  const rxCell = (v?: string) =>
-    `<td style="text-align:center;padding:7px 8px;font-weight:600;color:#1E293B;">${v2(v) || "—"}</td>`;
+  const rxTd = (val?: string) =>
+    `<td style="padding:7px 10px;text-align:center;border:1px solid #DDD0C0;font-size:10.5px;">${v2(val)}</td>`;
   const rxRowFn = (eye: string, sub: string, sph?: string, cyl?: string, axis?: string, near?: string) =>
-    `<tr>` +
-    `<td style="text-align:left;padding:7px 8px;font-weight:700;color:#0F766E;width:110px;">${eye}` +
-    `<br/><span style="font-size:9px;color:#64748B;font-weight:400;">${sub}</span></td>` +
-    rxCell(sph) + rxCell(cyl) + rxCell(axis) + rxCell(near) +
-    `</tr>`;
-
-  const opticalBlock = hasRx
-    ? sh("OPTICAL PRESCRIPTION") +
-      `<table style="width:100%;border-collapse:collapse;font-size:10px;">` +
-      `<thead><tr style="background:#F1F5F9;">` +
-      [``, `SPH`, `CYL`, `AXIS`, `NEAR ADD`].map((h, i) =>
-        `<th style="text-align:${i === 0 ? "left" : "center"};font-size:8.5px;font-weight:700;` +
-        `text-transform:uppercase;letter-spacing:0.07em;color:#64748B;padding:6px 8px;` +
-        `border-bottom:1px solid #E2E8F0;${i === 0 ? "width:110px;" : ""}">${h}</th>`
-      ).join("") +
-      `</tr></thead><tbody>` +
-      rxRowFn("Right Eye (RE)", "Distance", d.opticalRx!.re.sph, d.opticalRx!.re.cyl, d.opticalRx!.re.axis, d.opticalRx!.re.nearSph) +
-      rxRowFn("Left Eye (LE)", "Distance", d.opticalRx!.le.sph, d.opticalRx!.le.cyl, d.opticalRx!.le.axis, d.opticalRx!.le.nearSph) +
-      `</tbody></table>`
-    : "";
-
-  /* ── Investigations ── */
-  const hasInv = d.investigations && d.investigations.length > 0;
-  const invBlock = hasInv
-    ? sh("INVESTIGATIONS ORDERED") +
-      `<table style="width:100%;border-collapse:collapse;font-size:10px;">` +
-      `<thead><tr style="background:#F1F5F9;">` +
-      [`#`, `Test / Investigation`, `Category`, `Priority`, `Status`].map(h =>
-        `<th style="text-align:left;font-size:8.5px;font-weight:700;text-transform:uppercase;` +
-        `letter-spacing:0.07em;color:#64748B;padding:6px 8px;border-bottom:1px solid #E2E8F0;">${h}</th>`
-      ).join("") +
-      `</tr></thead><tbody>` +
-      d.investigations.map((inv, i) =>
-        `<tr style="background:${i % 2 === 0 ? "#fff" : "#F8FAFC"};">` +
-        `<td style="padding:7px 8px;color:#0F766E;font-weight:700;font-size:9.5px;">${i + 1}</td>` +
-        `<td style="padding:7px 8px;color:#0F172A;font-weight:600;">${escapeHtml(inv.testName)}</td>` +
-        `<td style="padding:7px 8px;color:#64748B;">${escapeHtml(inv.category ?? "—")}</td>` +
-        `<td style="padding:7px 8px;color:#64748B;">${escapeHtml(inv.priority ?? "Routine")}</td>` +
-        `<td style="padding:7px 8px;color:#64748B;">${escapeHtml(inv.status ?? "—")}</td>` +
-        `</tr>`
-      ).join("") +
-      `</tbody></table>`
-    : "";
+    `<tr><td style="padding:7px 10px;border:1px solid #DDD0C0;font-weight:700;font-size:10.5px;">` +
+    `${eye}<br/><span style="font-weight:400;font-size:9px;color:#777;">${sub}</span></td>` +
+    rxTd(sph) + rxTd(cyl) + rxTd(axis) + rxTd(near) + `</tr>`;
 
   /* ── Surgical counselling ── */
   const surgRow = d.surgicalCounselling?.surgeryType ? {
@@ -881,78 +838,38 @@ async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
     notes: d.surgicalCounselling.notes,
   } : null;
 
-  /* ── Follow-up card ── */
-  const hasFollowUp = !!(d.visit.followUpDate || (d.visit.referralEnabled && d.visit.referralNote));
-  const followUpCard = hasFollowUp
-    ? `<div style="background:#F0FDFA;border:1px solid #99F6E4;border-left:4px solid #0F766E;` +
-      `border-radius:0 8px 8px 0;padding:11px 16px;display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start;">` +
-      (d.visit.followUpDate
-        ? `<div>` +
-          `<div style="font-size:7.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#0F766E;">Review Date</div>` +
-          `<div style="font-size:11px;font-weight:700;color:#134E4A;margin-top:2px;">${format(new Date(d.visit.followUpDate), "EEEE, dd MMM yyyy")}</div>` +
-          `</div>`
-        : "") +
-      `<div>` +
-      `<div style="font-size:7.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#0F766E;">Department</div>` +
-      `<div style="font-size:11px;font-weight:700;color:#134E4A;margin-top:2px;">Ophthalmology</div>` +
-      `</div>` +
-      `<div>` +
-      `<div style="font-size:7.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#0F766E;">Consultant</div>` +
-      `<div style="font-size:11px;font-weight:700;color:#134E4A;margin-top:2px;">Dr. ${escapeHtml(d.visit.doctorName)}</div>` +
-      `</div>` +
-      (d.visit.referralEnabled && d.visit.referralNote
-        ? `<div>` +
-          `<div style="font-size:7.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#0F766E;">Referred To</div>` +
-          `<div style="font-size:11px;font-weight:700;color:#134E4A;margin-top:2px;">${escapeHtml(d.visit.referralNote)}</div>` +
-          `</div>`
-        : "") +
-      `</div>`
-    : `<p style="font-size:10px;color:#94A3B8;font-style:italic;padding:5px 2px;">No follow-up scheduled</p>`;
+  /* ── Investigations ── */
+  const hasInv = d.investigations && d.investigations.length > 0;
 
-  /* ── Dedicated CSS (no dependency on SHARED_CSS) ── */
+  /* ── Follow-up ── */
+  const hasFollowUp = !!(d.visit.followUpDate || (d.visit.referralEnabled && d.visit.referralNote));
+
   const CSS = `
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    @page { size: A4; margin: 16mm 16mm 20mm 16mm; }
-
     body {
       font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
       font-size: 10.5px;
       line-height: 1.55;
-      color: #0F172A;
+      color: #1a1a1a;
       background: #fff;
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
     }
-
-    table { width: 100%; border-collapse: collapse; font-size: 10px; }
-    thead tr { background: #F1F5F9; }
-    th {
-      text-align: left;
-      font-size: 8.5px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.07em;
-      color: #64748B;
-      padding: 6px 8px;
-      border-bottom: 1px solid #E2E8F0;
-    }
-    td { padding: 7px 8px; vertical-align: top; color: #1E293B; }
-
+    table { width: 100%; border-collapse: collapse; }
     .footer {
       position: running(footer);
-      font-size: 7.5px;
-      color: #94A3B8;
+      font-size: 8px;
+      color: #888;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      border-top: 1px solid #E2E8F0;
-      padding-top: 4px;
+      border-top: 1px solid #ddd;
+      padding-top: 5px;
+      margin-top: 6px;
     }
     @page { @bottom-center { content: element(footer); } }
     .page-num::after { content: counter(page); }
     .page-total::after { content: counter(pages); }
-
     @media print {
       .no-break { page-break-inside: avoid; break-inside: avoid; }
       body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -968,99 +885,204 @@ async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
 </head>
 <body>
 
-  <!-- ── HEADER ── -->
-  <div style="display:flex;align-items:flex-start;justify-content:space-between;padding-bottom:12px;border-bottom:2px solid #0F766E;margin-bottom:14px;page-break-after:avoid;">
-    <div style="display:flex;align-items:flex-start;gap:12px;">
-      <div style="width:46px;height:46px;border-radius:10px;background:linear-gradient(135deg,#134E4A 0%,#0F766E 100%);display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px;font-weight:900;flex-shrink:0;">✚</div>
+  <!-- ── HEADER BANNER (full-bleed: compensates for 16mm top / 14mm L-R Puppeteer margins) ── -->
+  <div style="background:linear-gradient(135deg,#C17A3C 0%,#A8622A 100%);
+              margin:-16mm -14mm 0;padding:20px 14mm 16px;
+              position:relative;overflow:hidden;page-break-after:avoid;">
+    <!-- decorative shapes -->
+    <div style="position:absolute;top:-24px;right:140px;width:130px;height:130px;
+                background:rgba(255,255,255,0.07);transform:rotate(45deg);"></div>
+    <div style="position:absolute;bottom:-36px;right:60px;width:100px;height:100px;
+                background:rgba(255,255,255,0.05);transform:rotate(20deg);"></div>
+    <div style="position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between;">
       <div>
-        <div style="font-size:16px;font-weight:800;color:#134E4A;letter-spacing:-0.2px;line-height:1.2;">${escapeHtml(d.visit.hospitalName)}</div>
-        ${hospSub ? `<div style="font-size:9px;color:#64748B;margin-top:2px;line-height:1.5;">${hospSub}</div>` : ""}
-        <span style="display:inline-block;margin-top:5px;font-size:8.5px;font-weight:800;letter-spacing:0.15em;text-transform:uppercase;color:#0F766E;border:1px solid #99F6E4;background:#F0FDFA;padding:2px 8px;border-radius:4px;">Consultation Summary</span>
+        <div style="font-size:26px;font-weight:800;color:#fff;letter-spacing:-0.4px;line-height:1.15;">
+          ${escapeHtml(d.visit.hospitalName)}
+        </div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.82);margin-top:5px;font-weight:400;">
+          Consultation Summary
+        </div>
       </div>
-    </div>
-    <div style="text-align:right;flex-shrink:0;">
-      ${qr ? `<img src="${qr}" alt="QR Code" style="width:68px;height:68px;border:1px solid #E2E8F0;border-radius:6px;display:block;margin-left:auto;" />` : ""}
-      <div style="font-size:8px;color:#94A3B8;margin-top:4px;">Generated: ${genTs}</div>
-    </div>
-  </div>
-
-  <!-- ── PATIENT CARD ── -->
-  <div class="no-break" style="background:#F8FAFC;border:1px solid #E2E8F0;border-left:4px solid #0F766E;border-radius:0 8px 8px 0;padding:12px 16px;margin-bottom:14px;">
-    <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:9px;">
-      <span style="font-size:14px;font-weight:800;color:#0F172A;">${escapeHtml(d.patient.name)}</span>
-      <span style="font-size:10px;font-family:'Courier New',monospace;background:#CCFBF1;color:#134E4A;padding:1px 7px;border-radius:4px;font-weight:700;">${escapeHtml(d.patient.udid)}</span>
-    </div>
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px 16px;">
-      ${pf("Age / Gender", `${d.patient.age} yrs / ${escapeHtml(d.patient.sex)}`)}
-      ${pf("Mobile", d.patient.mobile ? escapeHtml(d.patient.mobile) : "—")}
-      ${pf("Visit Date", format(d.visit.date, "dd MMM yyyy"))}
-      ${pf("Visit Time", format(d.visit.date, "hh:mm a") + " IST")}
-      ${pf("Consultant", `Dr. ${escapeHtml(d.visit.doctorName)}`)}
-      ${pf("Visit Type", escapeHtml(d.visit.visitType ?? "Consultation"))}
+      ${qr
+        ? `<img src="${qr}" alt="QR" style="width:62px;height:62px;background:#fff;padding:4px;border-radius:5px;flex-shrink:0;" />`
+        : `<div style="width:62px;height:62px;background:rgba(255,255,255,0.2);border-radius:5px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:26px;font-weight:900;">✚</div>`}
     </div>
   </div>
 
-  <!-- ── PRESENTING COMPLAINT ── -->
+  <!-- ── CONTACT SUB-BAR (full-bleed) ── -->
+  <div style="background:#7A4A1E;margin:0 -14mm;padding:6px 14mm;
+              text-align:center;font-size:9.5px;color:rgba(255,255,255,0.88);
+              page-break-after:avoid;">
+    ${hospSub || "&nbsp;"}
+  </div>
+
+  <!-- ── DOCUMENT TITLE ── -->
+  <div style="text-align:center;margin:22px 0 16px;">
+    <div style="font-size:18px;font-weight:700;color:#1a1a1a;">Consultation Summary</div>
+  </div>
+
+  <!-- ── I. PATIENT INFORMATION ── -->
+  ${sec("Patient Information")}
+  <table>
+    <tbody>
+      ${piRow("Patient Name", escapeHtml(d.patient.name), false)}
+      ${piRow("UHID / Medical Record No.", escapeHtml(d.patient.udid), true)}
+      ${piRow("Age / Gender", `${d.patient.age} yrs / ${escapeHtml(d.patient.sex)}`, false)}
+      ${piRow("Mobile", d.patient.mobile ? escapeHtml(d.patient.mobile) : "—", true)}
+      ${piRow("Visit Date", format(d.visit.date, "dd MMM yyyy"), false)}
+      ${piRow("Visit Time", format(d.visit.date, "hh:mm a") + " IST", true)}
+      ${piRow("Attending Consultant", `Dr. ${escapeHtml(d.visit.doctorName)}`, false)}
+      ${piRow("Visit Type", escapeHtml(d.visit.visitType ?? "Consultation"), true)}
+    </tbody>
+  </table>
+
+  <!-- ── II. PRESENTING COMPLAINT ── -->
   ${d.chiefComplaint
-    ? sh("PRESENTING COMPLAINT") +
-      `<div style="padding:2px 0 6px;"><span style="display:inline-flex;align-items:center;padding:5px 12px;border-radius:6px;background:#FFFBEB;border:1px solid #FEF3C7;color:#92400E;font-size:11px;font-weight:600;">${escapeHtml(d.chiefComplaint)}</span></div>`
+    ? sec("Presenting Complaint") +
+      `<p style="font-size:11px;color:#1a1a1a;line-height:1.7;padding:4px 0 6px;">` +
+      `The patient presented with <strong><span style="background:#FFFBEB;border:1px solid #FEF3C7;` +
+      `color:#92400E;padding:2px 9px;border-radius:4px;">${escapeHtml(d.chiefComplaint)}</span></strong>.` +
+      `</p>`
     : ""}
 
-  <!-- ── CLINICAL DIAGNOSIS ── -->
-  ${sh("CLINICAL DIAGNOSIS")}
-  <div style="padding:2px 0;">${diagBlock}</div>
+  <!-- ── III. CLINICAL DIAGNOSIS ── -->
+  ${sec("Clinical Diagnosis")}
+  ${d.diagnoses.length
+    ? `<table>
+        <thead>
+          <tr>
+            <th style="${TH}width:36px;text-align:center;">#</th>
+            <th style="${TH}">Diagnosis</th>
+            <th style="${TH}width:100px;">Laterality</th>
+            <th style="${TH}width:88px;">ICD-10</th>
+            <th style="${TH}width:90px;">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${d.diagnoses.map((dx, i) =>
+            `<tr style="background:${i % 2 === 0 ? "#fff" : "#FBF4EC"};">` +
+            `<td style="padding:7px 10px;text-align:center;border:1px solid #DDD0C0;color:#888;">${i + 1}</td>` +
+            `<td style="padding:7px 10px;border:1px solid #DDD0C0;font-weight:600;color:#1a1a1a;">${escapeHtml(dx.description)}</td>` +
+            `<td style="padding:7px 10px;border:1px solid #DDD0C0;color:#555;">${dx.laterality ? escapeHtml(dx.laterality) : "—"}</td>` +
+            `<td style="padding:7px 10px;border:1px solid #DDD0C0;font-family:'Courier New',monospace;font-size:9.5px;color:#555;">${dx.icd10Code ? escapeHtml(dx.icd10Code) : "—"}</td>` +
+            `<td style="padding:7px 10px;border:1px solid #DDD0C0;">${dx.status ? diagBadge(dx.status) : "—"}</td>` +
+            `</tr>`
+          ).join("")}
+        </tbody>
+      </table>`
+    : `<p style="color:#aaa;font-style:italic;font-size:10.5px;padding:6px 0;">No diagnosis recorded</p>`}
 
-  <!-- ── PROCEDURE / SURGICAL PLAN ── -->
-  ${sh("PROCEDURE / SURGICAL PLAN")}
+  <!-- ── IV. PROCEDURE / SURGICAL PLAN ── -->
+  ${sec("Procedure / Surgical Plan")}
   ${surgRow
-    ? `<div style="background:#FFF1F2;border:1px solid #FECDD3;border-left:4px solid #E11D48;border-radius:0 8px 8px 0;padding:10px 14px;page-break-inside:avoid;">` +
-      `<div style="font-size:8.5px;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;color:#E11D48;margin-bottom:4px;">⚕ Surgical Counselling</div>` +
-      `<div style="font-size:11.5px;font-weight:700;color:#0F172A;">${escapeHtml(surgRow.type)}</div>` +
-      (surgRow.date ? `<div style="font-size:9.5px;color:#64748B;margin-top:3px;">Planned Date: ${escapeHtml(surgRow.date)}</div>` : "") +
-      (surgRow.notes ? `<div style="font-size:10px;color:#0F172A;margin-top:5px;line-height:1.5;">${escapeHtml(surgRow.notes)}</div>` : "") +
-      `</div>`
-    : `<p style="font-size:10px;color:#94A3B8;font-style:italic;padding:5px 2px;">No procedure performed</p>`}
+    ? `<table><tbody>` +
+      piRow("Procedure Type", escapeHtml(surgRow.type), false) +
+      (surgRow.date ? piRow("Planned Date", surgRow.date, true) : "") +
+      (surgRow.notes ? piRow("Notes", escapeHtml(surgRow.notes), surgRow.date ? false : true) : "") +
+      `</tbody></table>`
+    : `<p style="color:#aaa;font-style:italic;font-size:10.5px;padding:6px 0;">No procedure performed</p>`}
 
-  <!-- ── MEDICATIONS PRESCRIBED ── -->
-  ${sh("MEDICATIONS PRESCRIBED")}
+  <!-- ── V. MEDICATIONS PRESCRIBED ── -->
+  ${sec("Medications Prescribed")}
   <table>
     <thead>
       <tr>
-        <th style="width:22px;">#</th>
-        <th>Medicine</th>
-        <th style="width:72px;">Dosage</th>
-        <th style="width:100px;">Frequency</th>
-        <th style="width:72px;">Duration</th>
+        <th style="${TH}width:36px;text-align:center;">#</th>
+        <th style="${TH}">Medicine</th>
+        <th style="${TH}width:76px;">Dosage</th>
+        <th style="${TH}width:108px;">Frequency</th>
+        <th style="${TH}width:76px;">Duration</th>
       </tr>
     </thead>
     <tbody>${medRows}</tbody>
   </table>
 
-  <!-- ── OPTICAL PRESCRIPTION ── -->
-  ${opticalBlock}
+  <!-- ── VI. OPTICAL PRESCRIPTION ── -->
+  ${hasRx
+    ? sec("Optical Prescription") +
+      `<table>
+        <thead>
+          <tr>
+            <th style="${TH}width:120px;">Eye</th>
+            <th style="${TH}text-align:center;">Sphere (SPH)</th>
+            <th style="${TH}text-align:center;">Cylinder (CYL)</th>
+            <th style="${TH}text-align:center;">Axis</th>
+            <th style="${TH}text-align:center;">Near Add</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rxRowFn("Right Eye (RE)", "Distance", d.opticalRx!.re.sph, d.opticalRx!.re.cyl, d.opticalRx!.re.axis, d.opticalRx!.re.nearSph)}
+          ${rxRowFn("Left Eye (LE)", "Distance", d.opticalRx!.le.sph, d.opticalRx!.le.cyl, d.opticalRx!.le.axis, d.opticalRx!.le.nearSph)}
+        </tbody>
+      </table>`
+    : ""}
 
-  <!-- ── INVESTIGATIONS ORDERED ── -->
-  ${invBlock}
+  <!-- ── VII. INVESTIGATIONS ORDERED ── -->
+  ${hasInv
+    ? sec("Investigations Ordered") +
+      `<table>
+        <thead>
+          <tr>
+            <th style="${TH}width:36px;text-align:center;">#</th>
+            <th style="${TH}">Test / Investigation</th>
+            <th style="${TH}width:100px;">Category</th>
+            <th style="${TH}width:80px;">Priority</th>
+            <th style="${TH}width:90px;">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${d.investigations.map((inv, i) =>
+            `<tr style="background:${i % 2 === 0 ? "#fff" : "#FBF4EC"};">` +
+            `<td style="padding:7px 10px;text-align:center;border:1px solid #DDD0C0;color:#888;">${i + 1}</td>` +
+            `<td style="padding:7px 10px;border:1px solid #DDD0C0;font-weight:600;color:#1a1a1a;">${escapeHtml(inv.testName)}</td>` +
+            `<td style="padding:7px 10px;border:1px solid #DDD0C0;color:#555;">${escapeHtml(inv.category ?? "—")}</td>` +
+            `<td style="padding:7px 10px;border:1px solid #DDD0C0;color:#555;">${escapeHtml(inv.priority ?? "Routine")}</td>` +
+            `<td style="padding:7px 10px;border:1px solid #DDD0C0;color:#555;">${escapeHtml(inv.status ?? "—")}</td>` +
+            `</tr>`
+          ).join("")}
+        </tbody>
+      </table>`
+    : ""}
 
-  <!-- ── FOLLOW-UP PLAN ── -->
-  ${sh("FOLLOW-UP PLAN")}
-  ${followUpCard}
+  <!-- ── VIII. FOLLOW-UP PLAN ── -->
+  ${sec("Follow-up Plan")}
+  ${hasFollowUp
+    ? `<table><tbody>` +
+      (d.visit.followUpDate
+        ? piRow("Review Date", format(new Date(d.visit.followUpDate), "EEEE, dd MMM yyyy"), false)
+        : "") +
+      piRow("Department", "Ophthalmology", !d.visit.followUpDate) +
+      piRow("Consultant", `Dr. ${escapeHtml(d.visit.doctorName)}`, !!d.visit.followUpDate) +
+      (d.visit.referralEnabled && d.visit.referralNote
+        ? piRow("Referred To", escapeHtml(d.visit.referralNote), !d.visit.followUpDate)
+        : "") +
+      `</tbody></table>`
+    : `<p style="color:#aaa;font-style:italic;font-size:10.5px;padding:6px 0;">No follow-up scheduled</p>`}
 
-  <!-- ── SIGNATURE SECTION ── -->
-  <div class="no-break" style="margin-top:22px;display:flex;align-items:flex-end;justify-content:space-between;border-top:1px solid #E2E8F0;padding-top:14px;">
+  <!-- ── SIGNATURE ── -->
+  <div class="no-break" style="margin-top:28px;display:flex;align-items:flex-end;
+                               justify-content:space-between;border-top:1px solid #ddd;padding-top:16px;">
     <div>
-      <div style="width:180px;border-top:1.5px solid #0F766E;margin-bottom:5px;"></div>
-      <div style="font-size:11.5px;font-weight:700;color:#0F172A;">Dr. ${escapeHtml(d.visit.doctorName)}</div>
-      <div style="font-size:9px;color:#64748B;margin-top:1px;">Consultant Ophthalmologist</div>
-      <div style="font-size:9px;color:#94A3B8;margin-top:1px;">${escapeHtml(d.visit.hospitalName)}</div>
-      <p style="font-size:8px;color:#CBD5E1;font-style:italic;max-width:340px;margin-top:8px;line-height:1.45;">This document is computer-generated and valid only with the doctor's digital seal or wet signature. For clinical reference only — not a substitute for professional medical advice.</p>
+      <div style="width:220px;height:50px;border-bottom:1.5px solid #555;margin-bottom:7px;"></div>
+      <div style="font-size:12px;font-weight:700;color:#1a1a1a;">Dr. ${escapeHtml(d.visit.doctorName)}</div>
+      <div style="font-size:9.5px;color:#555;margin-top:2px;">Consultant Ophthalmologist</div>
+      <div style="font-size:9px;color:#888;margin-top:1px;">${escapeHtml(d.visit.hospitalName)}</div>
+      <p style="font-size:8px;color:#bbb;font-style:italic;max-width:360px;margin-top:10px;line-height:1.5;">
+        This document is computer-generated. Valid only with the doctor's digital seal or wet signature.
+        For clinical reference only — not a substitute for professional medical advice.
+      </p>
     </div>
-    ${qr
-      ? `<div style="text-align:center;flex-shrink:0;">` +
-        `<img src="${qr}" alt="QR Code" style="width:70px;height:70px;border:1px solid #E2E8F0;border-radius:6px;display:block;margin-left:auto;" />` +
-        `<div style="font-size:7.5px;color:#94A3B8;margin-top:3px;text-transform:uppercase;letter-spacing:0.07em;">UHID: ${escapeHtml(d.patient.udid)}</div>` +
-        `</div>`
-      : ""}
+    <div style="text-align:center;flex-shrink:0;">
+      <div style="font-size:8px;color:#aaa;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em;">
+        Generated: ${genTs}
+      </div>
+      ${qr
+        ? `<img src="${qr}" alt="QR" style="width:72px;height:72px;border:1px solid #ddd;display:block;margin:0 auto 4px;" />`
+        : ""}
+      <div style="font-size:7.5px;color:#aaa;text-transform:uppercase;letter-spacing:0.06em;">
+        UHID: ${escapeHtml(d.patient.udid)}
+      </div>
+    </div>
   </div>
 
   <!-- ── RUNNING FOOTER ── -->
