@@ -759,6 +759,19 @@ async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
   const qr = await makeQr(`PPMS-${d.patient.udid}-${format(d.visit.date, "yyyyMMdd")}`);
   const v2 = (x: unknown) => (x === null || x === undefined || x === "") ? "" : escapeHtml(String(x));
 
+  /* Format "[RE] [5 days] Left Eye pain" → "RE Left Eye pain · Since 5 days" */
+  const fmtComplaint = (raw: string): string => {
+    const durations: string[] = [];
+    const others: string[] = [];
+    const rest = raw.replace(/\[([^\]]+)\]/g, (_, inner) => {
+      const t = inner.trim();
+      /^\d+\s*(day|week|month|year|hour)s?/i.test(t) ? durations.push(t) : others.push(t);
+      return "";
+    }).replace(/\s+/g, " ").trim();
+    const body = [...others, rest].filter(Boolean).join(" ").trim();
+    return durations.length ? `${body} · Since ${durations.join(", ")}` : body;
+  };
+
   const hospSubParts = [d.visit.hospitalAddress, d.visit.hospitalContact, d.visit.hospitalEmail]
     .filter(Boolean).map(x => escapeHtml(String(x)));
   const hospSub = hospSubParts.join("  |  ");
@@ -931,7 +944,7 @@ async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
   ${d.chiefComplaint
     ? sec("Chief Complaint") +
       `<p style="font-size:11px;font-weight:600;color:#C17A3C;padding:3px 0 4px;">` +
-      `${escapeHtml(d.chiefComplaint)}` +
+      `${escapeHtml(fmtComplaint(d.chiefComplaint))}` +
       `</p>`
     : ""}
 
