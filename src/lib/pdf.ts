@@ -782,25 +782,25 @@ async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
   const sec = (label: string) => {
     const n = NUMERALS[_secIdx++] ?? String(_secIdx);
     return `<div style="margin:10px 0 4px;page-break-after:avoid;break-after:avoid;">` +
-      `<span style="font-size:11.5px;font-weight:700;color:#C17A3C;">${n}. ${label}</span>` +
+      `<span style="font-size:11.5px;font-weight:700;color:#0F766E;">${n}. ${label}</span>` +
       `</div>`;
   };
 
   /* ── Two-column patient info row — no row dividers, only outer border ── */
   const piRow = (label: string, value: string, shade: boolean) =>
-    `<tr style="background:${shade ? "#FBF4EC" : "#fff"};">` +
+    `<tr style="background:${shade ? "#F0FDFA" : "#fff"};">` +
     `<td style="padding:4px 10px;font-weight:700;color:#222;font-size:9.5px;width:42%;` +
-    `border-left:1px solid #DDD0C0;border-right:1px solid #DDD0C0;">${label}</td>` +
+    `border-left:1px solid #E2E8F0;border-right:1px solid #E2E8F0;">${label}</td>` +
     `<td style="padding:4px 10px;color:#333;font-size:9.5px;` +
-    `border-left:1px solid #DDD0C0;border-right:1px solid #DDD0C0;">${value}</td>` +
+    `border-left:1px solid #E2E8F0;border-right:1px solid #E2E8F0;">${value}</td>` +
     `</tr>`;
 
   /* ── Table header style ── */
-  const TH = `padding:5px 8px;background:#C17A3C;color:#fff;font-size:8.5px;font-weight:700;` +
-    `text-align:left;border:1px solid #A8622A;`;
+  const TH = `padding:5px 8px;background:#0F766E;color:#fff;font-size:8.5px;font-weight:700;` +
+    `text-align:left;border:1px solid #0D5E58;`;
 
   /* ── Data cell style ── */
-  const TD = `padding:4px 8px;border:1px solid #DDD0C0;font-size:9.5px;`;
+  const TD = `padding:4px 8px;border:1px solid #E2E8F0;font-size:9.5px;`;
 
   /* ── Diagnosis status badge ── */
   const diagBadge = (s: string) => {
@@ -817,7 +817,7 @@ async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
   /* ── Medication rows ── */
   const medRows = d.medications.length
     ? d.medications.map((m, i) =>
-        `<tr style="background:${i % 2 === 0 ? "#fff" : "#FBF4EC"};">` +
+        `<tr style="background:${i % 2 === 0 ? "#fff" : "#F0FDFA"};">` +
         `<td style="${TD}text-align:center;color:#888;">${i + 1}</td>` +
         `<td style="${TD}">` +
         `<span style="font-weight:700;color:#1a1a1a;">${escapeHtml(m.drugName)}</span>` +
@@ -896,38 +896,63 @@ async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
 </head>
 <body>
 
-  <!-- ── HEADER BANNER (horizontal bleed only — no top bleed to avoid Puppeteer clipping) ── -->
-  <div style="background:linear-gradient(135deg,#C17A3C 0%,#8B4D1E 100%);
-              margin:0 -14mm;padding:16px 14mm 14px;
-              position:relative;overflow:hidden;page-break-after:avoid;">
-    <div style="position:absolute;top:-20px;right:120px;width:110px;height:110px;
-                background:rgba(255,255,255,0.07);transform:rotate(45deg);"></div>
-    <div style="position:absolute;bottom:-28px;right:50px;width:80px;height:80px;
-                background:rgba(255,255,255,0.05);transform:rotate(20deg);"></div>
-    <div style="position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between;gap:12px;">
+  <!-- ── THIN TEAL TOP-ACCENT LINE (horizontal bleed) ── -->
+  <div style="height:5px;background:#0F766E;margin:0 -14mm;"></div>
+
+  <!-- ── PREMIUM HEADER: Logo · Hospital · Title · QR ── -->
+  <div style="display:flex;align-items:center;justify-content:space-between;
+              padding:12px 0 10px;gap:16px;page-break-after:avoid;">
+
+    <!-- Left: Logo + Name + Speciality -->
+    <div style="display:flex;align-items:center;gap:10px;min-width:0;flex:1;">
+      <div style="width:42px;height:42px;border:2px solid #0F766E;border-radius:8px;
+                  display:flex;align-items:center;justify-content:center;
+                  color:#0F766E;font-size:22px;font-weight:900;flex-shrink:0;
+                  background:#F0FDFA;">✚</div>
       <div style="min-width:0;">
-        <div style="font-size:22px;font-weight:800;color:#fff;letter-spacing:-0.3px;line-height:1.1;">
+        <div style="font-size:19px;font-weight:700;color:#0F172A;letter-spacing:-0.2px;line-height:1.1;">
           ${escapeHtml(d.visit.hospitalName)}
         </div>
-        <div style="font-size:10px;color:rgba(255,255,255,0.85);margin-top:4px;">
-          Consultation Summary
+        <div style="font-size:9px;color:#64748B;margin-top:3px;font-weight:500;">
+          Ophthalmology &amp; Eye Care
         </div>
       </div>
+    </div>
+
+    <!-- Center: Document type badge -->
+    <div style="text-align:center;flex-shrink:0;padding:0 14px;">
+      <div style="font-size:7.5px;font-weight:800;letter-spacing:0.24em;
+                  text-transform:uppercase;color:#0F766E;white-space:nowrap;">
+        Consultation Summary
+      </div>
+      <div style="height:1.5px;background:#0F766E;border-radius:1px;margin-top:4px;"></div>
+    </div>
+
+    <!-- Right: QR Code -->
+    <div style="display:flex;justify-content:flex-end;flex:1;">
       ${qr
-        ? `<img src="${qr}" alt="QR" style="width:56px;height:56px;background:#fff;padding:3px;border-radius:4px;flex-shrink:0;" />`
-        : `<div style="width:56px;height:56px;background:rgba(255,255,255,0.2);border-radius:4px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:24px;font-weight:900;flex-shrink:0;">✚</div>`}
+        ? `<img src="${qr}" alt="QR" style="width:56px;height:56px;border:1px solid #E2E8F0;border-radius:6px;display:block;" />`
+        : `<div style="width:56px;height:56px;border:2px solid #E2E8F0;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#0F766E;font-size:22px;">✚</div>`}
     </div>
   </div>
 
-  <!-- ── CONTACT SUB-BAR ── -->
-  <div style="background:#7A4A1E;margin:0 -14mm;padding:5px 14mm;
-              text-align:center;font-size:9px;color:rgba(255,255,255,0.88);">
-    ${hospSub || "&nbsp;"}
-  </div>
+  <!-- ── INFO BAR: Address · Phone · Email ── -->
+  ${hospSub
+    ? `<div style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:6px;
+                  padding:5px 12px;margin-bottom:0;text-align:center;">
+        ${hospSubParts.map((p, i) =>
+          `<span style="font-size:8.5px;color:#475569;">${p}</span>` +
+          (i < hospSubParts.length - 1 ? `<span style="color:#CBD5E1;padding:0 8px;">|</span>` : "")
+        ).join("")}
+      </div>`
+    : ""}
+
+  <!-- ── HEADER / CONTENT DIVIDER ── -->
+  <div style="height:1px;background:#E2E8F0;margin:10px 0;"></div>
 
   <!-- ── I. PATIENT INFORMATION ── -->
   ${sec("Patient Information")}
-  <table style="border-top:1px solid #DDD0C0;border-bottom:1px solid #DDD0C0;">
+  <table style="border-top:1px solid #E2E8F0;border-bottom:1px solid #E2E8F0;">
     <tbody>
       ${piRow("Patient Name", escapeHtml(d.patient.name), false)}
       ${piRow("UHID", escapeHtml(d.patient.udid), true)}
@@ -943,7 +968,7 @@ async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
   <!-- ── II. CHIEF COMPLAINT ── -->
   ${d.chiefComplaint
     ? sec("Chief Complaint") +
-      `<p style="font-size:11px;font-weight:600;color:#C17A3C;padding:3px 0 4px;">` +
+      `<p style="font-size:11px;font-weight:600;color:#0F766E;padding:3px 0 4px;">` +
       `${escapeHtml(fmtComplaint(d.chiefComplaint))}` +
       `</p>`
     : ""}
@@ -961,7 +986,7 @@ async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
         </tr></thead>
         <tbody>
           ${d.diagnoses.map((dx, i) =>
-            `<tr style="background:${i % 2 === 0 ? "#fff" : "#FBF4EC"};">` +
+            `<tr style="background:${i % 2 === 0 ? "#fff" : "#F0FDFA"};">` +
             `<td style="${TD}text-align:center;color:#888;">${i + 1}</td>` +
             `<td style="${TD}font-weight:600;color:#1a1a1a;">${escapeHtml(dx.description)}</td>` +
             `<td style="${TD}color:#555;">${dx.laterality ? escapeHtml(dx.laterality) : ""}</td>` +
@@ -976,7 +1001,7 @@ async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
   <!-- ── IV. PROCEDURE / SURGICAL PLAN (only if present) ── -->
   ${surgRow
     ? sec("Procedure / Surgical Plan") +
-      `<table style="border-top:1px solid #DDD0C0;border-bottom:1px solid #DDD0C0;"><tbody>` +
+      `<table style="border-top:1px solid #E2E8F0;border-bottom:1px solid #E2E8F0;"><tbody>` +
       piRow("Procedure Type", escapeHtml(surgRow.type), false) +
       (surgRow.date ? piRow("Planned Date", surgRow.date, true) : "") +
       (surgRow.notes ? piRow("Notes", escapeHtml(surgRow.notes), surgRow.date ? false : true) : "") +
@@ -1027,7 +1052,7 @@ async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
         </tr></thead>
         <tbody>
           ${d.investigations.map((inv, i) =>
-            `<tr style="background:${i % 2 === 0 ? "#fff" : "#FBF4EC"};">` +
+            `<tr style="background:${i % 2 === 0 ? "#fff" : "#F0FDFA"};">` +
             `<td style="${TD}text-align:center;color:#888;">${i + 1}</td>` +
             `<td style="${TD}font-weight:600;color:#1a1a1a;">${escapeHtml(inv.testName)}</td>` +
             `<td style="${TD}color:#555;">${escapeHtml(inv.category ?? "—")}</td>` +
@@ -1042,7 +1067,7 @@ async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
   <!-- ── VIII. FOLLOW-UP PLAN (only if present) ── -->
   ${hasFollowUp
     ? sec("Follow-up Plan") +
-      `<table style="border-top:1px solid #DDD0C0;border-bottom:1px solid #DDD0C0;"><tbody>` +
+      `<table style="border-top:1px solid #E2E8F0;border-bottom:1px solid #E2E8F0;"><tbody>` +
       (d.visit.followUpDate
         ? piRow("Review Date", format(new Date(d.visit.followUpDate), "EEEE, dd MMM yyyy"), false)
         : "") +
