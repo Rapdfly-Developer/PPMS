@@ -11,7 +11,6 @@ import {
   Pill, Activity,
 } from "lucide-react";
 import { EmrViewerButton, VisitDownloadButton } from "./EmrViewerModal";
-import { formatComplaintDisplay } from "@/lib/appointment-cc";
 import { VisitSummaryTabs } from "./VisitSummaryTabs";
 import { transferPatient } from "../actions";
 export { TimeStampButton } from "./PatientTimeline";
@@ -285,10 +284,19 @@ function VisitCard({ visit, udid }: { visit: SerialVisit; udid: string }) {
       </div>
 
       {visit.chiefComplaint && (
-        <p className="text-xs text-[var(--color-ink-500)] border-t border-[var(--color-border)] pt-2.5">
-          <span className="font-medium text-[var(--color-ink-400)]">Complaint: </span>
-          {formatComplaintDisplay(visit.chiefComplaint)}
-        </p>
+        <div className="border-t border-[var(--color-border)] pt-2.5 space-y-0.5">
+          {parseComplaints(visit.chiefComplaint).map((c, i) => (
+            <p key={i} className="text-xs text-[var(--color-ink-600)]">
+              {c.lat && (
+                <span className="inline-block font-bold text-[var(--color-primary-700)] mr-1">{c.lat}</span>
+              )}
+              <span>{c.text}</span>
+              {c.since && (
+                <span className="text-[var(--color-ink-400)] ml-1">· Since {c.since}</span>
+              )}
+            </p>
+          ))}
+        </div>
       )}
 
       {diagText && (
