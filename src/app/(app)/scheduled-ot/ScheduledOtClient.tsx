@@ -447,7 +447,7 @@ export function ScheduledOtClient({
   role: "DOCTOR" | "HOSPITAL";
 }) {
   const [search, setSearch] = useState("");
-  const [view, setView]     = useState<"waiting" | "confirmed" | "completed">("waiting");
+  const [view, setView]     = useState<"main" | "completed">("main");
 
   function filterSchedule(list: ScheduleRecord[]) {
     if (!search) return list;
@@ -498,16 +498,16 @@ export function ScheduledOtClient({
       {/* Stat cards */}
       <div className="flex gap-3 flex-wrap">
         <StatCard
-          icon={<CalendarClock size={17} className={view === "waiting" ? "text-amber-600" : "text-[var(--color-ink-400)]"} />}
-          label="Waiting Confirmation" value={counts.waiting}
-          color="bg-amber-50 border-amber-300 text-amber-800"
-          active={view === "waiting"} onClick={() => setView("waiting")}
-        />
-        <StatCard
-          icon={<CheckCircle2 size={17} className={view === "confirmed" ? "text-emerald-600" : "text-[var(--color-ink-400)]"} />}
+          icon={<CheckCircle2 size={17} className={view === "main" ? "text-emerald-600" : "text-[var(--color-ink-400)]"} />}
           label="Scheduled OT" value={counts.scheduled}
           color="bg-emerald-50 border-emerald-300 text-emerald-800"
-          active={view === "confirmed"} onClick={() => setView("confirmed")}
+          active={view === "main"} onClick={() => setView("main")}
+        />
+        <StatCard
+          icon={<CalendarClock size={17} className={view === "main" ? "text-amber-600" : "text-[var(--color-ink-400)]"} />}
+          label="Waiting Confirmation" value={counts.waiting}
+          color="bg-amber-50 border-amber-300 text-amber-800"
+          active={view === "main"} onClick={() => setView("main")}
         />
         <StatCard
           icon={<BedDouble size={17} className={view === "completed" ? "text-[var(--color-primary-600)]" : "text-[var(--color-ink-400)]"} />}
@@ -534,71 +534,72 @@ export function ScheduledOtClient({
         />
       </div>
 
-      {/* ── Section 1: Waiting for Doctor Confirmation ── */}
-      {view === "waiting" && (
-        <section>
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-2 h-6 rounded-full bg-amber-400" />
-            <h2 className="text-base font-bold text-[var(--color-ink-900)]">Waiting for Doctor Confirmation</h2>
-            <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-200">
-              {filteredWaiting.length}
-            </span>
-          </div>
-
-          {waitingGroups.length === 0 ? (
-            <EmptySection
-              icon={<CalendarClock size={22} className="text-[var(--color-ink-300)]" />}
-              label={search ? "No results found." : "No surgeries awaiting confirmation."}
-              sub={!search ? "Once hospital admin fills the Surgery Scheduling Form, surgeries appear here for your approval." : undefined}
-            />
-          ) : (
-            <div className="space-y-6">
-              {waitingGroups.map(({ key, items }) => (
-                <div key={key}>
-                  <DateHeader iso={items[0].plannedDateTime} count={items.length} />
-                  <div className="space-y-2">
-                    {items.map((r, idx) => <WaitingCard key={r.id} rec={r} role={role} idx={idx} />)}
-                  </div>
-                </div>
-              ))}
+      {/* ── Main view: Scheduled OT + Waiting (always together) ── */}
+      {view === "main" && (
+        <>
+          {/* Section 1: Scheduled OT */}
+          <section>
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-2 h-6 rounded-full bg-emerald-500" />
+              <h2 className="text-base font-bold text-[var(--color-ink-900)]">Scheduled OT</h2>
+              <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-200">
+                {filteredConfirmed.length}
+              </span>
             </div>
-          )}
-        </section>
+
+            {confirmedGroups.length === 0 ? (
+              <EmptySection
+                icon={<CheckCircle2 size={22} className="text-[var(--color-ink-300)]" />}
+                label={search ? "No results found." : "No confirmed surgeries yet."}
+                sub={!search ? "Approved surgeries appear here automatically." : undefined}
+              />
+            ) : (
+              <div className="space-y-6">
+                {confirmedGroups.map(({ key, items }) => (
+                  <div key={key}>
+                    <DateHeader iso={items[0].plannedDateTime} count={items.length} />
+                    <div className="space-y-2">
+                      {items.map((r, idx) => <ConfirmedCard key={r.id} rec={r} role={role} idx={idx} />)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
+          {/* Section 2: Waiting for Doctor Confirmation */}
+          <section className="pt-2 border-t border-[var(--color-border)]">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-2 h-6 rounded-full bg-amber-400" />
+              <h2 className="text-base font-bold text-[var(--color-ink-900)]">Waiting for Doctor Confirmation</h2>
+              <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-200">
+                {filteredWaiting.length}
+              </span>
+            </div>
+
+            {waitingGroups.length === 0 ? (
+              <EmptySection
+                icon={<CalendarClock size={22} className="text-[var(--color-ink-300)]" />}
+                label={search ? "No results found." : "No surgeries awaiting confirmation."}
+                sub={!search ? "Once hospital admin fills the Surgery Scheduling Form, surgeries appear here for your approval." : undefined}
+              />
+            ) : (
+              <div className="space-y-6">
+                {waitingGroups.map(({ key, items }) => (
+                  <div key={key}>
+                    <DateHeader iso={items[0].plannedDateTime} count={items.length} />
+                    <div className="space-y-2">
+                      {items.map((r, idx) => <WaitingCard key={r.id} rec={r} role={role} idx={idx} />)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+        </>
       )}
 
-      {/* ── Section 2: Scheduled OT ── */}
-      {view === "confirmed" && (
-        <section>
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-2 h-6 rounded-full bg-emerald-500" />
-            <h2 className="text-base font-bold text-[var(--color-ink-900)]">Scheduled OT</h2>
-            <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-200">
-              {filteredConfirmed.length}
-            </span>
-          </div>
-
-          {confirmedGroups.length === 0 ? (
-            <EmptySection
-              icon={<CheckCircle2 size={22} className="text-[var(--color-ink-300)]" />}
-              label={search ? "No results found." : "No confirmed surgeries yet."}
-              sub={!search ? "Approved surgeries appear here automatically." : undefined}
-            />
-          ) : (
-            <div className="space-y-6">
-              {confirmedGroups.map(({ key, items }) => (
-                <div key={key}>
-                  <DateHeader iso={items[0].plannedDateTime} count={items.length} />
-                  <div className="space-y-2">
-                    {items.map((r, idx) => <ConfirmedCard key={r.id} rec={r} role={role} idx={idx} />)}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-      )}
-
-      {/* ── Section 3: Completed OT ── */}
+      {/* ── Completed OT ── */}
       {view === "completed" && (
         <section>
           <div className="flex items-center gap-2 mb-4">
