@@ -116,7 +116,7 @@ export async function startSurgery(
     data: { status: "OT_IN_PROGRESS" },
   });
 
-  await logTimeline(otRecordId, "SURGERY_START", `Surgery started at ${now.toLocaleTimeString("en-IN")}.`, user.name ?? user.id);
+  await logTimeline(otRecordId, "SURGERY_START", "Surgery started.", user.name ?? user.id);
   revalidatePath("/scheduled-ot");
   return {};
 }
@@ -166,7 +166,7 @@ export async function completeSurgery(
     data: { status: "OT_COMPLETED" },
   });
 
-  await logTimeline(otRecordId, "COMPLETED", `Surgery completed at ${now.toLocaleTimeString("en-IN")}.`, user.name ?? user.id);
+  await logTimeline(otRecordId, "COMPLETED", "Surgery completed.", user.name ?? user.id);
   await writeAudit(user.id, "OtRecord", otRecordId, "UPDATE", { status: "COMPLETED" });
   revalidatePath("/scheduled-ot");
   return {};
@@ -189,7 +189,7 @@ export async function transferToRecovery(
     },
   });
 
-  await logTimeline(otRecordId, "RECOVERY", `Patient transferred to recovery at ${now.toLocaleTimeString("en-IN")}.`, user.name ?? user.id);
+  await logTimeline(otRecordId, "RECOVERY", "Patient transferred to recovery.", user.name ?? user.id);
   revalidatePath("/scheduled-ot");
   return {};
 }
