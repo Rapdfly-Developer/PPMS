@@ -207,8 +207,10 @@ function ApptRow({ appt, role, serial }: { appt: Appt; role: "DOCTOR" | "HOSPITA
   const apptTime = format(new Date(appt.dateTime), "h:mm a");
   const arrivedAt      = appt.arrivedAt      ? new Date(appt.arrivedAt)      : null;
   const visitStartedAt = appt.visitStartedAt ? new Date(appt.visitStartedAt) : null;
-  // Primary time shown: arrived → started consultation → appt time fallback
-  const primaryTime = arrivedAt ? format(arrivedAt, "h:mm a") : apptTime;
+  // Walk-ins: show registration (createdAt) time. Booked appts: show arrived time or scheduled time.
+  const primaryTime = appt.isWalkIn
+    ? format(new Date(appt.createdAt), "h:mm a")
+    : (arrivedAt ? format(arrivedAt, "h:mm a") : apptTime);
   // Timer runs from arrival; fall back to appt time if not yet arrived
   const timerSince  = appt.arrivedAt ?? appt.dateTime;
   // Wait time = from arrival to when doctor opened the case
