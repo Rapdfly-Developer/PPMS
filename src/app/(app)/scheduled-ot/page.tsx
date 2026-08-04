@@ -49,8 +49,11 @@ export default async function ScheduledOtPage() {
     select: { status: true },
   });
 
+  // Legacy statuses (PLANNED/SCHEDULED/RESCHEDULED) count as "waiting" — not yet doctor-confirmed
+  const WAITING_STATUSES  = ["WAITING_DOCTOR_CONFIRMATION", "CHANGES_REQUESTED", "PLANNED", "SCHEDULED", "RESCHEDULED"];
+
   const counts = {
-    waiting:   allSchedules.filter((s) => ["WAITING_DOCTOR_CONFIRMATION", "CHANGES_REQUESTED"].includes(s.status)).length,
+    waiting:   allSchedules.filter((s) => WAITING_STATUSES.includes(s.status)).length,
     scheduled: allSchedules.filter((s) => s.status === "SURGERY_CONFIRMED").length,
     completed: allSchedules.filter((s) => s.status === "OT_COMPLETED").length,
     cancelled: allSchedules.filter((s) => s.status === "CANCELLED").length,
@@ -100,7 +103,7 @@ export default async function ScheduledOtPage() {
     doctor:   { name: r.surgeon.name,  id: r.surgeon.id  },
   });
 
-  const waiting   = scheduleRecords.filter((r) => ["WAITING_DOCTOR_CONFIRMATION", "CHANGES_REQUESTED"].includes(r.status)).map(shapeSchedule);
+  const waiting   = scheduleRecords.filter((r) => WAITING_STATUSES.includes(r.status)).map(shapeSchedule);
   const confirmed = scheduleRecords.filter((r) => r.status === "SURGERY_CONFIRMED").map(shapeSchedule);
   const completed = scheduleRecords.filter((r) => r.status === "OT_COMPLETED").map(shapeSchedule);
 
