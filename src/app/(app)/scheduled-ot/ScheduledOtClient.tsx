@@ -7,7 +7,7 @@ import {
   Scissors, User, Building2, Eye, AlertTriangle, ClipboardList,
   CheckCircle2, Clock, CalendarClock, XCircle, Search, ChevronDown,
   ChevronRight, Stethoscope, BedDouble, FileCheck, TriangleAlert,
-  ThumbsUp, MessageSquare, Ban, Loader2, Lock,
+  ThumbsUp, MessageSquare, Ban, Loader2, Lock, DoorOpen,
 } from "lucide-react";
 import { approveSurgery, requestSurgeryChanges, cancelScheduledSurgery } from "./actions";
 
@@ -401,6 +401,14 @@ function ConfirmedCard({ rec, role, idx }: { rec: ScheduleRecord; role: "DOCTOR"
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
+            {role === "DOCTOR" && (
+              <Link
+                href={`/scheduled-ot/${rec.id}/ot-room`}
+                className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors"
+              >
+                <DoorOpen size={13} /> Enter Surgery Room
+              </Link>
+            )}
             <button
               onClick={() => setOpen((v) => !v)}
               className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 rounded-lg border border-[var(--color-border)] text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)] transition-colors"

@@ -1118,6 +1118,73 @@ model InsuranceQuery {
 }
 
 // ──────────────────────────────────────────────────────────────────────────
+// OT Room Workflow  (created by doctor on entering the OT)
+// status: CHECKIN | PREP | IN_PROGRESS | COMPLETED | RECOVERY
+// ──────────────────────────────────────────────────────────────────────────
+model OtRecord {
+  id                String   @id @default(cuid())
+  surgeryScheduleId String   @unique
+  surgerySchedule   SurgerySchedule @relation(fields: [surgeryScheduleId], references: [id])
+
+  // Step 1 — Patient Check-in
+  checkInTime                 DateTime?
+  identityVerified            Boolean  @default(false)
+  correctEyeVerified          Boolean  @default(false)
+  surgeryTypeVerified         Boolean  @default(false)
+  consentFormsVerified        Boolean  @default(false)
+  implantAvailabilityVerified Boolean  @default(false)
+
+  // Step 2 — OT Preparation
+  assistantSurgeon            String?
+  anesthetist                 String?
+  scrubNurse                  String?
+  circulatingNurse            String?
+  anesthesiaTypeRecorded      String?
+  whoSignIn                   String?  // JSON: boolean map of checklist items
+
+  // Step 3 — Surgery Start
+  surgeryStartTime            DateTime?
+
+  // Step 4 — Intra-Operative
+  procedurePerformed          String?
+  iolModel                    String?
+  iolPower                    String?
+  iolBatch                    String?
+  iolSerial                   String?
+  medicinesConsumed           String?
+  intraopFindings             String?
+  complications               String?
+  intraopRemarks              String?
+
+  // Step 5 — Surgery Completion
+  surgeryEndTime              DateTime?
+  operativeNotes              String?
+
+  // Step 6 — Recovery Transfer
+  patientConditionOnTransfer  String?
+  transferTime                DateTime?
+
+  status                      String   @default("CHECKIN")
+  createdAt                   DateTime @default(now())
+  updatedAt                   DateTime @updatedAt
+
+  timeline  OtTimeline[]
+}
+
+// Immutable timestamped audit trail for the OT workflow
+model OtTimeline {
+  id          String   @id @default(cuid())
+  otRecordId  String
+  otRecord    OtRecord @relation(fields: [otRecordId], references: [id])
+  step        String   // CHECKIN | PREP | SURGERY_START | INTRAOP | COMPLETED | RECOVERY
+  action      String
+  performedBy String
+  performedAt DateTime @default(now())
+
+  @@index([otRecordId, performedAt])
+}
+
+// ──────────────────────────────────────────────────────────────────────────
 // Surgery Scheduling (created by hospital admin from Scheduled OT)
 // status: PLANNED | SCHEDULED | RESCHEDULED | CANCELLED
 // ──────────────────────────────────────────────────────────────────────────
@@ -1161,6 +1228,8 @@ model SurgerySchedule {
   createdBy             String
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
+
+  otRecord              OtRecord?
 
   @@index([hospitalId, plannedDateTime])
   @@index([patientId])
