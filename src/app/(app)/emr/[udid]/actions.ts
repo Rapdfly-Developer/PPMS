@@ -578,6 +578,13 @@ export async function saveAnesthesiaType(visitId: string, udid: string, value: s
   revalidate(udid);
 }
 
+export async function saveProcedureLaterality(visitId: string, udid: string, value: string) {
+  await requireRole("DOCTOR");
+  await assertVisitAccess(visitId);
+  await prisma.visit.update({ where: { id: visitId }, data: { procedureLaterality: value || null } });
+  revalidate(udid);
+}
+
 export async function closeVisit(visitId: string, udid: string) {
   const user = await requireRole("DOCTOR");
 
