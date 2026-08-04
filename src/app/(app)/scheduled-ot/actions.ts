@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/rbac";
+import { requireRole, requirePermission } from "@/lib/rbac";
 import { revalidatePath } from "next/cache";
 import { createNotification } from "@/lib/notify";
 import { writeAudit } from "@/lib/audit";
@@ -109,4 +109,97 @@ export async function saveSurgerySchedule(
 
   revalidatePath("/scheduled-ot");
   return { id: record.id };
+}
+
+/* ── Doctor: approve surgery ───────────────────────────────────────────── */
+export async function approveSurgery(id: string): Promise<{ error?: string }> {
+  const user = await requireRole("DOCTOR");
+
+  const rec = await prisma.surgerySchedule.findUnique({
+    where:  { id },
+    include: { patient: true, hospital: true },
+  });
+  if (!rec) return { error: "Record not found." };
+
+  await prisma.surgerySchedule.update({
+    where: { id },
+    data:  { status: "SURGERY_CONFIRMED" },
+  });
+
+  await writeAudit(user.id, "SurgerySchedule", id, "UPDATE", { status: "SURGERY_CONFIRMED" });
+
+  // Notify hospital admin users
+  try {
+    const staff = await prisma.hospitalStaff.findMany({
+      where: { hospitalId: rec.hospitalId },
+      select: { userId: true },
+    });
+    const dt = rec.plannedDateTime.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+    for (const s of staff) {
+      await createNotification(
+        s.userId,
+        "SURGERY_SCHEDULED",
+        `Surgery confirmed: ${rec.surgeryName} for ${rec.patient.name} on ${dt}.`,
+        id,
+      );
+    }
+  } catch { /* notification failure must not break the action */ }
+
+  revalidatePath("/scheduled-ot");
+  return {};
+}
+
+/* ── Doctor: request changes ───────────────────────────────────────────── */
+export async function requestSurgeryChanges(id: string, notes: string): Promise<{ error?: string }> {
+  const user = await requireRole("DOCTOR");
+
+  const rec = await prisma.surgerySchedule.findUnique({
+    where:  { id },
+    include: { patient: true },
+  });
+  if (!rec) return { error: "Record not found." };
+
+  await prisma.surgerySchedule.update({
+    where: { id },
+    data:  { status: "CHANGES_REQUESTED", remarks: notes.trim() || null },
+  });
+
+  await writeAudit(user.id, "SurgerySchedule", id, "UPDATE", { status: "CHANGES_REQUESTED", notes });
+
+  // Notify hospital admin users
+  try {
+    const staff = await prisma.hospitalStaff.findMany({
+      where: { hospitalId: rec.hospitalId },
+      select: { userId: true },
+    });
+    for (const s of staff) {
+      await createNotification(
+        s.userId,
+        "SURGERY_SCHEDULED",
+        `Changes requested for ${rec.surgeryName} (${rec.patient.name})${notes ? ": " + notes : ""}.`,
+        id,
+      );
+    }
+  } catch { /* ignore */ }
+
+  revalidatePath("/scheduled-ot");
+  return {};
+}
+
+/* ── Cancel surgery (DOCTOR or HOSPITAL) ──────────────────────────────── */
+export async function cancelScheduledSurgery(id: string, reason?: string): Promise<{ error?: string }> {
+  const user = await requirePermission("appointments.view");
+
+  const rec = await prisma.surgerySchedule.findUnique({ where: { id }, select: { hospitalId: true, surgeryName: true } });
+  if (!rec) return { error: "Record not found." };
+
+  await prisma.surgerySchedule.update({
+    where: { id },
+    data:  { status: "CANCELLED", remarks: reason?.trim() || null },
+  });
+
+  await writeAudit(user.id, "SurgerySchedule", id, "UPDATE", { status: "CANCELLED", reason });
+
+  revalidatePath("/scheduled-ot");
+  return {};
 }

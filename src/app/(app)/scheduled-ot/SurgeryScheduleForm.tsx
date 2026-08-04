@@ -174,7 +174,7 @@ export function SurgeryScheduleForm({ record }: { record: OtRecordForForm }) {
         otAvailable,
         bloodArranged,
         patientInformed,
-        status,
+        status: "WAITING_DOCTOR_CONFIRMATION",
         remarks,
       });
 
