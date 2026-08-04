@@ -241,10 +241,12 @@ function ApptRow({ appt, role, serial }: { appt: Appt; role: "DOCTOR" | "HOSPITA
             <Calendar size={9} /> Appt
           </span>
         )}
-        {/* Scheduled time (if different from arrived) */}
-        <span className="text-[9px] text-[var(--color-ink-300)]" title="Scheduled appointment time">
-          {apptTime}
-        </span>
+        {/* Scheduled time — only show when different from primary time */}
+        {apptTime !== primaryTime && (
+          <span className="text-[9px] text-[var(--color-ink-300)]" title="Scheduled appointment time">
+            {apptTime}
+          </span>
+        )}
       </div>
       <div className="w-px self-stretch bg-[var(--color-border)]" />
       <Link href={`/patients/${appt.patient.udid}?returnTo=/dashboard`} className="flex-1 min-w-0 hover:opacity-80 transition-opacity">
