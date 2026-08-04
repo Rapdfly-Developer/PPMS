@@ -585,6 +585,13 @@ export async function saveProcedureLaterality(visitId: string, udid: string, val
   revalidate(udid);
 }
 
+export async function saveProcedureName(visitId: string, udid: string, value: string) {
+  await requireRole("DOCTOR");
+  await assertVisitAccess(visitId);
+  await prisma.visit.update({ where: { id: visitId }, data: { procedureName: value || null } });
+  revalidate(udid);
+}
+
 export async function closeVisit(visitId: string, udid: string) {
   const user = await requireRole("DOCTOR");
 

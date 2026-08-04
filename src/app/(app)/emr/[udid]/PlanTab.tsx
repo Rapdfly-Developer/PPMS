@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/Card";
 import { History } from "lucide-react";
 import { parseJSON } from "@/lib/json";
 import { useAutoSave, SaveIndicator } from "@/lib/useAutoSave";
-import { addMedication, removeMedication, updateMedication, clearAllMedications, saveRefraction, saveFollowUp, saveAdviseNotes, saveAnesthesiaType, saveProcedureLaterality } from "./actions";
+import { addMedication, removeMedication, updateMedication, clearAllMedications, saveRefraction, saveFollowUp, saveAdviseNotes, saveAnesthesiaType, saveProcedureLaterality, saveProcedureName } from "./actions";
 import { DispositionToggle, AdmitPanel, SurgicalPanel, FollowUpdatesPanel } from "./DispositionPanel";
 import { Plus, X, BedDouble, Stethoscope, ChevronDown, Pencil, Trash2, RefreshCw, Search, Pill, Sparkles, CheckCircle2, Check, AlertTriangle } from "lucide-react";
 import {
@@ -933,20 +933,21 @@ const ANESTHESIA_KEYWORDS = [
 ];
 
 function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: string; priorVisits: any[] }) {
-  const [anesthesia, setAnesthesia]       = useState<string>(visit.anesthesiaType ?? "");
-  const [laterality, setLaterality]       = useState<string>(visit.procedureLaterality ?? "OU");
-  const [showHistory, setShowHistory]     = useState(false);
+  const [laterality,     setLaterality]     = useState<string>(visit.procedureLaterality ?? "OU");
+  const [procedureName,  setProcedureName]  = useState<string>(visit.procedureName ?? "");
+  const [anesthesia,     setAnesthesia]     = useState<string>(visit.anesthesiaType ?? "");
+  const [showHistory,    setShowHistory]    = useState(false);
   const [anesthesiaOpen, setAnesthesiaOpen] = useState(false);
 
-  useAutoSave(anesthesia,  (val) => saveAnesthesiaType(visit.id, udid, val));
-  useAutoSave(laterality,  (val) => saveProcedureLaterality(visit.id, udid, val));
+  useAutoSave(laterality,    (val) => saveProcedureLaterality(visit.id, udid, val));
+  useAutoSave(procedureName, (val) => saveProcedureName(visit.id, udid, val));
+  useAutoSave(anesthesia,    (val) => saveAnesthesiaType(visit.id, udid, val));
 
-  const btnCls = (active: boolean) =>
-    `flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-medium transition-colors ${
-      active
-        ? "bg-[var(--color-primary-50)] border-[var(--color-primary-300)] text-[var(--color-primary-700)]"
-        : "border-[var(--color-border)] text-[var(--color-ink-500)] hover:text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]"
-    }`;
+  const historyBtnCls = `flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-medium transition-colors ${
+    showHistory
+      ? "bg-[var(--color-primary-50)] border-[var(--color-primary-300)] text-[var(--color-primary-700)]"
+      : "border-[var(--color-border)] text-[var(--color-ink-500)] hover:text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]"
+  }`;
 
   const filteredAnesthesia = ANESTHESIA_KEYWORDS.filter((kw) =>
     anesthesia.trim() === "" || kw.toLowerCase().includes(anesthesia.toLowerCase())
@@ -957,104 +958,127 @@ function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: st
       {/* Heading row */}
       <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
         <p className="text-sm font-medium text-[var(--color-ink-700)]">Minor Procedure</p>
-        <button onClick={() => { setShowHistory((v) => !v); setAnesthesiaOpen(false); }} className={btnCls(showHistory)}>
+        <button onClick={() => setShowHistory((v) => !v)} className={historyBtnCls}>
           <History size={12} /> History
         </button>
       </div>
 
-      {/* Laterality selector */}
-      <div className="mb-3">
-        <label className="text-[10px] font-semibold text-[var(--color-ink-500)] uppercase tracking-wide block mb-1.5">
-          Laterality
-        </label>
-        <div className="flex gap-2">
-          {(["RE", "LE", "OU"] as const).map((lat) => (
-            <button
-              key={lat}
-              onClick={() => setLaterality(lat)}
-              className={`flex-1 py-1.5 rounded-lg border text-xs font-bold transition-colors ${
-                laterality === lat
-                  ? "bg-[var(--color-primary-600)] border-[var(--color-primary-600)] text-white"
-                  : "border-[var(--color-border)] text-[var(--color-ink-500)] hover:border-[var(--color-primary-300)] hover:text-[var(--color-primary-700)] hover:bg-[var(--color-primary-50)]"
-              }`}
-            >
-              {lat}
-            </button>
-          ))}
-        </div>
-      </div>
+      {/* Single row: Laterality | Procedure Name | Anesthesia */}
+      <div className="flex gap-3 items-end">
 
-      {/* Type of Anesthesia — search dropdown */}
-      <div className="relative">
-        <label className="text-[10px] font-semibold text-[var(--color-ink-500)] uppercase tracking-wide block mb-1.5">
-          Type of Anesthesia
-        </label>
-        <div className="relative">
-          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-300)] pointer-events-none" />
-          <input
-            value={anesthesia}
-            onChange={(e) => { setAnesthesia(e.target.value); setAnesthesiaOpen(true); }}
-            onFocus={() => setAnesthesiaOpen(true)}
-            onBlur={() => setTimeout(() => setAnesthesiaOpen(false), 150)}
-            placeholder="Search anesthesia type…"
-            className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] pl-8 pr-3 py-2.5 text-sm text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent"
-          />
-          {anesthesia && (
-            <button
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => { setAnesthesia(""); setAnesthesiaOpen(true); }}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-300)] hover:text-[var(--color-ink-600)]"
-            >
-              <X size={13} />
-            </button>
-          )}
-        </div>
-
-        {/* Dropdown options */}
-        {anesthesiaOpen && filteredAnesthesia.length > 0 && (
-          <div className="absolute z-20 mt-1 w-full rounded-xl border border-[var(--color-border)] bg-white shadow-lg overflow-hidden">
-            {filteredAnesthesia.map((kw) => (
+        {/* 1. Laterality */}
+        <div className="shrink-0">
+          <label className="text-[10px] font-semibold text-[var(--color-ink-500)] uppercase tracking-wide block mb-1.5">
+            Laterality
+          </label>
+          <div className="flex gap-1">
+            {(["RE", "LE", "OU"] as const).map((lat) => (
               <button
-                key={kw}
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => { setAnesthesia(kw); setAnesthesiaOpen(false); }}
-                className={`w-full text-left px-3 py-2.5 text-sm transition-colors flex items-center justify-between gap-2 ${
-                  anesthesia === kw
-                    ? "bg-[var(--color-primary-50)] text-[var(--color-primary-700)] font-medium"
-                    : "text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]"
+                key={lat}
+                onClick={() => setLaterality(lat)}
+                className={`w-10 py-2 rounded-lg border text-xs font-bold transition-colors ${
+                  laterality === lat
+                    ? "bg-[var(--color-primary-600)] border-[var(--color-primary-600)] text-white"
+                    : "border-[var(--color-border)] text-[var(--color-ink-500)] hover:border-[var(--color-primary-300)] hover:text-[var(--color-primary-700)] hover:bg-[var(--color-primary-50)]"
                 }`}
               >
-                {kw}
-                {anesthesia === kw && <Check size={13} className="shrink-0 text-[var(--color-primary-600)]" />}
+                {lat}
               </button>
             ))}
           </div>
-        )}
+        </div>
+
+        {/* 2. Procedure Name */}
+        <div className="flex-1 min-w-0">
+          <label className="text-[10px] font-semibold text-[var(--color-ink-500)] uppercase tracking-wide block mb-1.5">
+            Procedure
+          </label>
+          <input
+            value={procedureName}
+            onChange={(e) => setProcedureName(e.target.value)}
+            placeholder="Procedure name…"
+            className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-3 py-2 text-sm text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent"
+          />
+        </div>
+
+        {/* 3. Type of Anesthesia — search dropdown */}
+        <div className="flex-1 min-w-0 relative">
+          <label className="text-[10px] font-semibold text-[var(--color-ink-500)] uppercase tracking-wide block mb-1.5">
+            Type of Anesthesia
+          </label>
+          <div className="relative">
+            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-300)] pointer-events-none" />
+            <input
+              value={anesthesia}
+              onChange={(e) => { setAnesthesia(e.target.value); setAnesthesiaOpen(true); }}
+              onFocus={() => setAnesthesiaOpen(true)}
+              onBlur={() => setTimeout(() => setAnesthesiaOpen(false), 150)}
+              placeholder="Search anesthesia…"
+              className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] pl-8 pr-7 py-2 text-sm text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent"
+            />
+            {anesthesia && (
+              <button
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => { setAnesthesia(""); setAnesthesiaOpen(true); }}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-300)] hover:text-[var(--color-ink-600)]"
+              >
+                <X size={13} />
+              </button>
+            )}
+          </div>
+          {anesthesiaOpen && filteredAnesthesia.length > 0 && (
+            <div className="absolute z-20 mt-1 w-full rounded-xl border border-[var(--color-border)] bg-white shadow-lg overflow-hidden">
+              {filteredAnesthesia.map((kw) => (
+                <button
+                  key={kw}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => { setAnesthesia(kw); setAnesthesiaOpen(false); }}
+                  className={`w-full text-left px-3 py-2.5 text-sm transition-colors flex items-center justify-between gap-2 ${
+                    anesthesia === kw
+                      ? "bg-[var(--color-primary-50)] text-[var(--color-primary-700)] font-medium"
+                      : "text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]"
+                  }`}
+                >
+                  {kw}
+                  {anesthesia === kw && <Check size={13} className="shrink-0 text-[var(--color-primary-600)]" />}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
       </div>
 
       {/* History panel */}
       {showHistory && (
         <div className="mt-3 rounded-xl border border-[var(--color-border)] bg-white shadow-sm overflow-hidden">
           <div className="px-3 py-2 bg-[var(--color-surface-sunken)] border-b border-[var(--color-border)] flex items-center justify-between">
-            <span className="text-[10px] font-bold text-[var(--color-ink-400)] uppercase tracking-widest">Previous Anesthesia Types</span>
+            <span className="text-[10px] font-bold text-[var(--color-ink-400)] uppercase tracking-widest">Previous Procedures</span>
             <button onClick={() => setShowHistory(false)} className="text-[var(--color-ink-300)] hover:text-[var(--color-ink-700)]"><X size={12} /></button>
           </div>
           <div className="max-h-48 overflow-y-auto divide-y divide-[var(--color-border)]">
-            {priorVisits.filter((v) => v.id !== visit.id && v.anesthesiaType).length === 0 ? (
+            {priorVisits.filter((v) => v.id !== visit.id && (v.anesthesiaType || v.procedureName)).length === 0 ? (
               <p className="px-3 py-4 text-xs text-[var(--color-ink-400)] text-center">No previous records found.</p>
             ) : (
               priorVisits
-                .filter((v) => v.id !== visit.id && v.anesthesiaType)
+                .filter((v) => v.id !== visit.id && (v.anesthesiaType || v.procedureName))
                 .map((v) => (
                   <div key={v.id} className="px-3 py-2.5 flex items-center justify-between gap-3">
                     <div>
                       <p className="text-[10px] font-semibold text-[var(--color-ink-400)] mb-0.5">
                         {new Date(v.date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+                        {v.procedureLaterality && <span className="ml-1.5 font-bold text-[var(--color-primary-600)]">{v.procedureLaterality}</span>}
                       </p>
-                      <p className="text-xs text-[var(--color-ink-700)]">{v.anesthesiaType}</p>
+                      {v.procedureName && <p className="text-xs font-medium text-[var(--color-ink-700)]">{v.procedureName}</p>}
+                      {v.anesthesiaType && <p className="text-xs text-[var(--color-ink-500)]">{v.anesthesiaType}</p>}
                     </div>
                     <button
-                      onClick={() => { setAnesthesia(v.anesthesiaType); setShowHistory(false); }}
+                      onClick={() => {
+                        if (v.procedureLaterality) setLaterality(v.procedureLaterality);
+                        if (v.procedureName) setProcedureName(v.procedureName);
+                        if (v.anesthesiaType) setAnesthesia(v.anesthesiaType);
+                        setShowHistory(false);
+                      }}
                       className="shrink-0 text-[10px] font-medium text-[var(--color-primary-600)] hover:underline"
                     >
                       Use this

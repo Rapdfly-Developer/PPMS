@@ -465,6 +465,7 @@ model Visit {
   adviseNotes    String?
   anesthesiaType      String?
   procedureLaterality String?
+  procedureName       String?
   inViewOf       String?
   gonioNotes     String?  // JSON: { re: string, le: string }
 
