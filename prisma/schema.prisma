@@ -431,6 +431,7 @@ model Appointment {
   isWalkIn           Boolean  @default(false)
   notes              String?
   partialDispenseReason String?
+  partialDispenseAt     DateTime?  // set when status → PARTIAL_DISPENSE
   createdAt          DateTime @default(now())
   arrivedAt          DateTime?   // set when status → CONFIRMED (patient reached the clinic)
 

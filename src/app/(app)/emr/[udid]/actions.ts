@@ -710,7 +710,7 @@ export async function markPartialDispense(visitId: string, udid: string, reason?
   if (appointmentId) {
     await prisma.appointment.update({
       where: { id: appointmentId },
-      data: { status: "PARTIAL_DISPENSE", partialDispenseReason: reason || null },
+      data: { status: "PARTIAL_DISPENSE", partialDispenseReason: reason || null, partialDispenseAt: new Date() } as any,
     });
   }
 

@@ -921,6 +921,17 @@ export function PlanTab({ visit, udid, patientSex, priorVisits = [] }: { visit: 
   );
 }
 
+const PROCEDURE_KEYWORDS = [
+  { group: "Cataract", items: ["Phacoemulsification", "SICS", "ECCE", "ICCE", "IOL Implantation", "IOL Exchange", "Posterior Capsulotomy (YAG)"] },
+  { group: "Glaucoma", items: ["Trabeculectomy", "Ahmed Valve Implant", "Molteno Implant", "SLT", "ALT", "Goniotomy", "Cyclophotocoagulation"] },
+  { group: "Vitreoretina", items: ["Intravitreal Injection", "Vitrectomy (PPV)", "Scleral Buckling", "Retinal Laser (Photocoagulation)", "Pan-retinal Photocoagulation (PRP)", "Pneumatic Retinopexy", "Membrane Peeling"] },
+  { group: "Cornea", items: ["Penetrating Keratoplasty (PK)", "DSEK / DMEK", "Corneal Suturing", "Pterygium Excision", "Corneal Biopsy", "Superficial Keratectomy"] },
+  { group: "Lid & Adnexa", items: ["Chalazion Excision", "Entropion Repair", "Ectropion Repair", "Ptosis Correction", "Blepharoplasty", "Lid Laceration Repair", "Trichiasis Treatment"] },
+  { group: "Lacrimal", items: ["DCR (External)", "DCR (Endoscopic)", "Probing & Syringing", "Jones Tube Placement"] },
+  { group: "Squint", items: ["Strabismus Surgery (Recession)", "Strabismus Surgery (Resection)", "Adjustable Suture Squint Surgery"] },
+  { group: "Minor / Injection", items: ["Subconjunctival Injection", "Sub-Tenon Injection", "Botox Injection", "Foreign Body Removal", "Conjunctival Biopsy", "Anterior Chamber Paracentesis"] },
+] as const;
+
 const ANESTHESIA_KEYWORDS = [
   "Topical Anesthesia",
   "Local Infiltration",
@@ -937,6 +948,7 @@ function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: st
   const [procedureName,  setProcedureName]  = useState<string>(visit.procedureName ?? "");
   const [anesthesia,     setAnesthesia]     = useState<string>(visit.anesthesiaType ?? "");
   const [showHistory,    setShowHistory]    = useState(false);
+  const [showKeywords,   setShowKeywords]   = useState(false);
   const [anesthesiaOpen, setAnesthesiaOpen] = useState(false);
 
   useAutoSave(laterality,    (val) => saveProcedureLaterality(visit.id, udid, val));
@@ -958,9 +970,24 @@ function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: st
       {/* Heading row */}
       <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
         <p className="text-sm font-medium text-[var(--color-ink-700)]">Minor Procedure</p>
-        <button onClick={() => setShowHistory((v) => !v)} className={historyBtnCls}>
-          <History size={12} /> History
-        </button>
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={() => { setShowHistory((v) => !v); setShowKeywords(false); }}
+            className={historyBtnCls}
+          >
+            <History size={12} /> History
+          </button>
+          <button
+            onClick={() => { setShowKeywords((v) => !v); setShowHistory(false); }}
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-medium transition-colors ${
+              showKeywords
+                ? "bg-[var(--color-primary-50)] border-[var(--color-primary-300)] text-[var(--color-primary-700)]"
+                : "border-[var(--color-border)] text-[var(--color-ink-500)] hover:text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]"
+            }`}
+          >
+            <Plus size={12} /> Keyword
+          </button>
+        </div>
       </div>
 
       {/* Single row: Laterality | Procedure Name | Anesthesia */}
@@ -1048,6 +1075,38 @@ function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: st
         </div>
 
       </div>
+
+      {/* Keyword panel */}
+      {showKeywords && (
+        <div className="mt-3 rounded-xl border border-[var(--color-border)] bg-white shadow-sm overflow-hidden">
+          <div className="px-3 py-2 bg-[var(--color-surface-sunken)] border-b border-[var(--color-border)] flex items-center justify-between">
+            <span className="text-[10px] font-bold text-[var(--color-ink-400)] uppercase tracking-widest">Select Procedure</span>
+            <button onClick={() => setShowKeywords(false)} className="text-[var(--color-ink-300)] hover:text-[var(--color-ink-700)]"><X size={12} /></button>
+          </div>
+          <div className="p-3 flex flex-col gap-3 max-h-56 overflow-y-auto">
+            {PROCEDURE_KEYWORDS.map((group) => (
+              <div key={group.group}>
+                <p className="text-[10px] font-bold text-[var(--color-ink-400)] uppercase tracking-widest mb-1.5">{group.group}</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {group.items.map((kw) => (
+                    <button
+                      key={kw}
+                      onClick={() => { setProcedureName(kw); setShowKeywords(false); }}
+                      className={`px-2 py-0.5 rounded-full border text-[11px] font-medium transition-colors ${
+                        procedureName === kw
+                          ? "bg-[var(--color-primary-100)] border-[var(--color-primary-400)] text-[var(--color-primary-700)]"
+                          : "border-[var(--color-primary-200)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)]"
+                      }`}
+                    >
+                      {kw}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* History panel */}
       {showHistory && (
