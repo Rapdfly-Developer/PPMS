@@ -16,9 +16,11 @@ export default async function FollowUpsPage() {
       followUpDate: { not: null },
     },
     orderBy: { followUpDate: "asc" },
-    include: {
-      patient: true,
-      diagnoses: { orderBy: { createdAt: "desc" }, take: 1 },
+    select: {
+      id: true,
+      followUpDate: true,
+      patient: { select: { name: true, udid: true } },
+      diagnoses: { select: { description: true }, orderBy: { createdAt: "desc" }, take: 1 },
     },
   });
 

@@ -84,14 +84,16 @@ export async function saveSurgerySchedule(
 
   // Notify the operating surgeon
   try {
-    const doctor = await prisma.doctor.findUnique({
-      where:  { id: input.operatingSurgeonId },
-      select: { userId: true, name: true },
-    });
-    const patient = await prisma.patient.findUnique({
-      where:  { id: input.patientId },
-      select: { name: true },
-    });
+    const [doctor, patient] = await Promise.all([
+      prisma.doctor.findUnique({
+        where:  { id: input.operatingSurgeonId },
+        select: { userId: true, name: true },
+      }),
+      prisma.patient.findUnique({
+        where:  { id: input.patientId },
+        select: { name: true },
+      }),
+    ]);
     if (doctor?.userId && patient) {
       const dt = new Date(input.plannedDateTime).toLocaleDateString("en-IN", {
         day: "2-digit", month: "short", year: "numeric",
@@ -135,14 +137,9 @@ export async function approveSurgery(id: string): Promise<{ error?: string }> {
       select: { userId: true },
     });
     const dt = rec.plannedDateTime.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
-    for (const s of staff) {
-      await createNotification(
-        s.userId,
-        "SURGERY_SCHEDULED",
-        `Surgery confirmed: ${rec.surgeryName} for ${rec.patient.name} on ${dt}.`,
-        id,
-      );
-    }
+    await Promise.all(staff.map((s) =>
+      createNotification(s.userId, "SURGERY_SCHEDULED", `Surgery confirmed: ${rec.surgeryName} for ${rec.patient.name} on ${dt}.`, id)
+    ));
   } catch { /* notification failure must not break the action */ }
 
   revalidatePath("/scheduled-ot");
@@ -172,14 +169,9 @@ export async function requestSurgeryChanges(id: string, notes: string): Promise<
       where: { hospitalId: rec.hospitalId },
       select: { userId: true },
     });
-    for (const s of staff) {
-      await createNotification(
-        s.userId,
-        "SURGERY_SCHEDULED",
-        `Changes requested for ${rec.surgeryName} (${rec.patient.name})${notes ? ": " + notes : ""}.`,
-        id,
-      );
-    }
+    await Promise.all(staff.map((s) =>
+      createNotification(s.userId, "SURGERY_SCHEDULED", `Changes requested for ${rec.surgeryName} (${rec.patient.name})${notes ? ": " + notes : ""}.`, id)
+    ));
   } catch { /* ignore */ }
 
   revalidatePath("/scheduled-ot");

@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { istTodayRange } from "@/lib/ist";
+import { istTodayRange, istTodayStr } from "@/lib/ist";
 
 /**
  * EOD sweep: any visit still IN_PROGRESS from a previous IST calendar day is
@@ -10,7 +10,16 @@ import { istTodayRange } from "@/lib/ist";
  * they are never mistaken for consultations the doctor finalized & signed —
  * the EMR shows them as auto-closed, and consultationStatus stays null.
  */
+
+// Module-level guard: track the IST date we last ran so concurrent server
+// requests within the same calendar day only trigger one sweep.
+let lastRunDate = "";
+
 export async function autoCloseStaleVisits(): Promise<void> {
+  const todayIST = istTodayStr();
+  if (lastRunDate === todayIST) return;
+  lastRunDate = todayIST;
+
   const { dayStart } = istTodayRange();
 
   const stale = await prisma.visit.findMany({

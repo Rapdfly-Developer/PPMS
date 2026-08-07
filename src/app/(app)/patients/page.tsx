@@ -160,14 +160,19 @@ export default async function PatientsPage({
     }),
   ]);
 
-  // 7-day registration trend
+  // 7-day registration trend — single-pass bucket reduce (O(N) not O(7N))
+  const trendBuckets: Record<string, number> = {};
+  for (const p of trendRaw) {
+    const key = format(new Date(p.createdAt), "yyyy-MM-dd");
+    trendBuckets[key] = (trendBuckets[key] ?? 0) + 1;
+  }
   const trendData = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(today);
     d.setDate(d.getDate() - (6 - i));
     const dayStr = format(d, "yyyy-MM-dd");
     return {
       label:   i === 6 ? "Today" : format(d, "EEE"),
-      count:   trendRaw.filter(p => format(new Date(p.createdAt), "yyyy-MM-dd") === dayStr).length,
+      count:   trendBuckets[dayStr] ?? 0,
       isToday: i === 6,
     };
   });

@@ -472,9 +472,9 @@ export async function saveAdmission(
     prisma.patient.findUnique({ where: { id: visit.patientId } }),
     prisma.hospitalStaff.findMany({ where: { hospitalId: visit.hospitalId }, include: { user: true } }),
   ]);
-  for (const staff of hospitalStaff) {
-    await notifyAdmission(staff.user.email, { patientName: patient?.name ?? "", ward: data.ward, numberOfDays: data.numberOfDays });
-  }
+  await Promise.all(hospitalStaff.map((staff) =>
+    notifyAdmission(staff.user.email, { patientName: patient?.name ?? "", ward: data.ward, numberOfDays: data.numberOfDays })
+  ));
 
   revalidate(udid);
 }
@@ -525,19 +525,14 @@ export async function saveSurgicalCounselling(
     prisma.patient.findUnique({ where: { id: visit.patientId }, select: { name: true } }),
     prisma.hospitalStaff.findMany({ where: { hospitalId: visit.hospitalId! }, include: { user: true } }),
   ]);
-  for (const staff of hospitalStaff) {
+  await Promise.all(hospitalStaff.map(async (staff) => {
     const existing = await prisma.notification.findFirst({
       where: { userId: staff.user.id, type: "SURGICAL_COUNSELLING", entityId: sc.id, read: false },
     });
     if (!existing) {
-      await createNotification(
-        staff.user.id,
-        "SURGICAL_COUNSELLING",
-        `Surgery is planned for ${patient?.name ?? "patient"}.`,
-        sc.id
-      );
+      await createNotification(staff.user.id, "SURGICAL_COUNSELLING", `Surgery is planned for ${patient?.name ?? "patient"}.`, sc.id);
     }
-  }
+  }));
 
   revalidate(udid);
 }

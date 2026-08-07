@@ -380,39 +380,41 @@ export async function resolveAvailabilityForDate(
 ): Promise<{ startTime: string; endTime: string; slotMins: number; maxPatients: number } | null> {
   const date      = new Date(dateStr + "T00:00:00.000Z");
   const dayOfWeek = date.getUTCDay();
+  const dayStart  = new Date(dateStr + "T00:00:00.000Z");
+  const dayEnd    = new Date(dateStr + "T23:59:59.999Z");
 
-  const excLeave = await prisma.scheduleException.findFirst({
-    where: { doctorId, status: "ACTIVE", type: "LEAVE", date: { gte: new Date(dateStr + "T00:00:00.000Z"), lt: new Date(dateStr + "T23:59:59.999Z") }, OR: [{ hospitalId }, { hospitalId: null }] },
-  });
+  // Fire all 6 queries in parallel; apply priority logic on results
+  const [excLeave, gen, leave, indiv, monthly, weekly] = await Promise.all([
+    prisma.scheduleException.findFirst({
+      where: { doctorId, status: "ACTIVE", type: "LEAVE", date: { gte: dayStart, lt: dayEnd }, OR: [{ hospitalId }, { hospitalId: null }] },
+    }),
+    prisma.generatedSchedule.findFirst({
+      where: { doctorId, hospitalId, date: { gte: dayStart, lt: dayEnd } },
+      orderBy: { startTime: "asc" },
+    }),
+    prisma.doctorLeave.findFirst({
+      where: { doctorId, status: "APPROVED", date: { gte: dayStart, lt: dayEnd }, OR: [{ hospitalId }, { hospitalId: null }] },
+    }),
+    prisma.individualDayAvailability.findFirst({
+      where: { doctorId, hospitalId, status: "ACTIVE", date: { gte: dayStart, lt: dayEnd } },
+    }),
+    prisma.monthlyAvailability.findFirst({
+      where: { doctorId, hospitalId, status: "ACTIVE", validFrom: { lte: date }, validTo: { gte: date } },
+    }),
+    prisma.doctorAvailability.findFirst({
+      where: { doctorId, hospitalId, weekday: dayOfWeek, status: "ACTIVE" },
+    }),
+  ]);
+
+  // Priority: excLeave > gen > leave > indiv > monthly > weekly
   if (excLeave) return null;
-
-  const gen = await prisma.generatedSchedule.findFirst({
-    where: { doctorId, hospitalId, date: { gte: new Date(dateStr + "T00:00:00.000Z"), lt: new Date(dateStr + "T23:59:59.999Z") } },
-    orderBy: { startTime: "asc" },
-  });
   if (gen) return { startTime: gen.startTime, endTime: gen.endTime, slotMins: gen.slotMins, maxPatients: gen.maxPatients };
-
-  const leave = await prisma.doctorLeave.findFirst({
-    where: { doctorId, status: "APPROVED", date: { gte: new Date(dateStr + "T00:00:00.000Z"), lt: new Date(dateStr + "T23:59:59.999Z") }, OR: [{ hospitalId }, { hospitalId: null }] },
-  });
   if (leave) return null;
-
-  const indiv = await prisma.individualDayAvailability.findFirst({
-    where: { doctorId, hospitalId, status: "ACTIVE", date: { gte: new Date(dateStr + "T00:00:00.000Z"), lt: new Date(dateStr + "T23:59:59.999Z") } },
-  });
   if (indiv) return { startTime: indiv.startTime, endTime: indiv.endTime, slotMins: indiv.slotMins, maxPatients: indiv.maxPatients };
-
-  const monthly = await prisma.monthlyAvailability.findFirst({
-    where: { doctorId, hospitalId, status: "ACTIVE", validFrom: { lte: date }, validTo: { gte: date } },
-  });
   if (monthly) {
     const days = monthly.weekdays.split(",").map(Number);
     if (days.includes(dayOfWeek)) return { startTime: monthly.startTime, endTime: monthly.endTime, slotMins: monthly.slotMins, maxPatients: monthly.maxPatients };
   }
-
-  const weekly = await prisma.doctorAvailability.findFirst({
-    where: { doctorId, hospitalId, weekday: dayOfWeek, status: "ACTIVE" },
-  });
   if (weekly) return { startTime: weekly.startTime, endTime: weekly.endTime, slotMins: weekly.slotMins, maxPatients: weekly.maxPatients };
 
   return null;

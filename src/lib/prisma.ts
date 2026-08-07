@@ -16,8 +16,16 @@ strip("AADHAAR_ENC_KEY");
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 
 function makePrisma() {
+  // Neon serverless: cap Prisma's own pool to 1 connection per function instance
+  // so we don't exhaust the pgbouncer connection limit across concurrent invocations.
+  const dbUrl = process.env.DATABASE_URL ?? "";
+  const pooledUrl = dbUrl.includes("connection_limit")
+    ? dbUrl
+    : dbUrl + (dbUrl.includes("?") ? "&" : "?") + "connection_limit=1&pool_timeout=20";
+
   const client = new PrismaClient({
     log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
+    datasources: process.env.NODE_ENV === "production" ? { db: { url: pooledUrl } } : undefined,
   });
 
   // Neon serverless terminates idle connections (E57P01).

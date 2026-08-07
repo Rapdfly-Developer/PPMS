@@ -240,6 +240,8 @@ model HospitalStaff {
   name       String
   mobile     String?
   createdAt  DateTime @default(now())
+
+  @@index([hospitalId])
 }
 
 model DoctorHospitalLink {
@@ -251,6 +253,7 @@ model DoctorHospitalLink {
   active     Boolean  @default(true)
 
   @@unique([doctorId, hospitalId])
+  @@index([hospitalId])
 }
 
 model Refractionist {
@@ -301,6 +304,8 @@ model MonthlyAvailability {
   label       String?  // e.g. "Morning OPD August"
   status      String   @default("ACTIVE")
   createdAt   DateTime @default(now())
+
+  @@index([doctorId, hospitalId])
 }
 
 // Individual date override — overrides weekly + monthly
@@ -318,6 +323,8 @@ model IndividualDayAvailability {
   reason      String?  // e.g. "Special Camp", "Half Day"
   status      String   @default("ACTIVE")
   createdAt   DateTime @default(now())
+
+  @@index([doctorId, hospitalId, date])
 }
 
 // Generated monthly schedule — produced by "Generate Month" from the weekly template
@@ -374,6 +381,8 @@ model DoctorLeave {
   reason     String?
   status     String    @default("APPROVED") // APPROVED | CANCELLED
   createdAt  DateTime  @default(now())
+
+  @@index([doctorId, date])
 }
 
 // ──────────────────────────────────────────────────────────────────────────
@@ -411,6 +420,12 @@ model Patient {
   pastExternalVisits PastExternalVisit[]
   insurancePolicies  PatientInsurance[]
   surgerySchedules   SurgerySchedule[]
+
+  @@index([doctorId])
+  @@index([registeredAtId])
+  @@index([createdAt])
+  @@index([mobile])
+  @@index([category])
 }
 
 // AppointmentStatus: REQUESTED | CONFIRMED | RESCHEDULED | COMPLETED | CANCELLED | NO_SHOW
@@ -438,6 +453,9 @@ model Appointment {
   visit      Visit?
 
   @@index([doctorId, dateTime])
+  @@index([hospitalId, dateTime])
+  @@index([patientId])
+  @@index([status])
 }
 
 // ──────────────────────────────────────────────────────────────────────────
@@ -488,6 +506,12 @@ model Visit {
   dispense           Dispense?
   admission          Admission?
   surgicalCounselling SurgicalCounselling?
+
+  @@index([patientId])
+  @@index([doctorId])
+  @@index([hospitalId])
+  @@index([followUpDate])
+  @@index([status, date])
 }
 
 // ──────────────────────────────────────────────────────────────────────────
@@ -531,6 +555,8 @@ model Medication {
   route        String?
   laterality   String?
   createdAt    DateTime @default(now())
+
+  @@index([visitId])
 }
 
 // ──────────────────────────────────────────────────────────────────────────
@@ -550,6 +576,8 @@ model PastExternalVisit {
   label              String?
   verificationStatus String              @default("PENDING_REVIEW")
   createdAt          DateTime            @default(now())
+
+  @@index([patientId])
 }
 
 // ──────────────────────────────────────────────────────────────────────────
@@ -599,6 +627,8 @@ model IOPReading {
   takenAt          DateTime @default(now())
   source           String   @default("DOCTOR") // DOCTOR | REFRACTIONIST
   reviewedByDoctor Boolean  @default(false)
+
+  @@index([visitId])
 }
 
 model AnteriorSegment {
@@ -686,6 +716,8 @@ model InvestigationOrder {
   status     String        @default("ORDERED")
   resultRef  String?
   createdAt  DateTime      @default(now())
+
+  @@index([visitId])
 }
 
 // DiagnosisStatus: ACTIVE | RESOLVED | CHRONIC
@@ -699,6 +731,8 @@ model Diagnosis {
   laterality  String?         // RE | LE | OU
   provisional Boolean         @default(false)
   createdAt   DateTime        @default(now())
+
+  @@index([visitId])
 }
 
 // ──────────────────────────────────────────────────────────────────────────
@@ -762,6 +796,8 @@ model Notification {
   entityId  String?  // optional reference (appointmentId, visitId, etc.)
   read      Boolean  @default(false)
   createdAt DateTime @default(now())
+
+  @@index([userId, read])
 }
 
 model AuditLog {
@@ -784,6 +820,7 @@ model AuditLog {
 
   @@index([userId, timestamp])
   @@index([hospitalId, timestamp])
+  @@index([entityType, entityId])
 }
 
 // ──────────────────────────────────────────────────────────────────────────
