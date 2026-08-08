@@ -63,11 +63,13 @@ export default async function FollowUpsPage() {
   }
 
   function Section({
+    id,
     title,
     icon,
     color,
     items,
   }: {
+    id: string;
     title: string;
     icon: React.ReactNode;
     color: string;
@@ -75,7 +77,7 @@ export default async function FollowUpsPage() {
   }) {
     if (items.length === 0) return null;
     return (
-      <div className="surface-card overflow-hidden">
+      <div id={id} className="surface-card overflow-hidden scroll-mt-4">
         <div className={`flex items-center gap-2 px-4 py-3 border-b border-[var(--color-border)] ${color}`}>
           {icon}
           <span className="text-sm font-semibold">{title}</span>
@@ -87,6 +89,55 @@ export default async function FollowUpsPage() {
           ))}
         </div>
       </div>
+    );
+  }
+
+  /* Summary cards — jump to the matching section. A count of zero has no
+     section to scroll to, so it renders as plain text rather than a dead link. */
+  function SummaryCard({
+    href,
+    label,
+    count,
+    icon,
+    accent,
+    iconBg,
+  }: {
+    href: string;
+    label: string;
+    count: number;
+    icon: React.ReactNode;
+    accent: string;
+    iconBg: string;
+  }) {
+    const inner = (
+      <>
+        <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${iconBg}`}>
+          {icon}
+        </div>
+        <div className="min-w-0">
+          <p className={`text-2xl font-bold leading-none tabular-nums ${count > 0 ? accent : "text-[var(--color-ink-300)]"}`}>
+            {count}
+          </p>
+          <p className="text-xs text-[var(--color-ink-500)] mt-1 truncate">{label}</p>
+        </div>
+      </>
+    );
+
+    const base = "flex items-center gap-3 px-4 py-4 rounded-xl border bg-white transition-all";
+
+    if (count === 0) {
+      return (
+        <div className={`${base} border-[var(--color-border)] opacity-60`}>{inner}</div>
+      );
+    }
+
+    return (
+      <a
+        href={href}
+        className={`${base} border-[var(--color-border)] hover:border-[var(--color-primary-300)] hover:shadow-sm hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary-400)]`}
+      >
+        {inner}
+      </a>
     );
   }
 
@@ -107,31 +158,73 @@ export default async function FollowUpsPage() {
           <p className="text-xs text-[var(--color-ink-300)]">Set a follow-up date in the EMR to see patients here.</p>
         </div>
       ) : (
-        <div className="flex flex-col gap-4">
-          <Section
-            title="Overdue"
-            icon={<AlertCircle size={15} className="text-red-600" />}
-            color="bg-red-50 text-red-800"
-            items={overdue}
-          />
-          <Section
-            title="Today"
-            icon={<CheckCircle2 size={15} className="text-emerald-600" />}
-            color="bg-emerald-50 text-emerald-800"
-            items={todayList}
-          />
-          <Section
-            title="Tomorrow"
-            icon={<Clock size={15} className="text-amber-600" />}
-            color="bg-amber-50 text-amber-800"
-            items={tomorrowList}
-          />
-          <Section
-            title="Upcoming"
-            icon={<CalendarClock size={15} className="text-[var(--color-primary-600)]" />}
-            color="bg-[var(--color-primary-50)] text-[var(--color-primary-800)]"
-            items={upcoming}
-          />
+        <div className="flex flex-col gap-5">
+          {/* Summary cards */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <SummaryCard
+              href="#overdue"
+              label="Overdue"
+              count={overdue.length}
+              icon={<AlertCircle size={17} className="text-red-600" />}
+              accent="text-red-700"
+              iconBg="bg-red-50"
+            />
+            <SummaryCard
+              href="#today"
+              label="Today"
+              count={todayList.length}
+              icon={<CheckCircle2 size={17} className="text-emerald-600" />}
+              accent="text-emerald-700"
+              iconBg="bg-emerald-50"
+            />
+            <SummaryCard
+              href="#tomorrow"
+              label="Tomorrow"
+              count={tomorrowList.length}
+              icon={<Clock size={17} className="text-amber-600" />}
+              accent="text-amber-700"
+              iconBg="bg-amber-50"
+            />
+            <SummaryCard
+              href="#upcoming"
+              label="Upcoming"
+              count={upcoming.length}
+              icon={<CalendarClock size={17} className="text-[var(--color-primary-600)]" />}
+              accent="text-[var(--color-primary-700)]"
+              iconBg="bg-[var(--color-primary-50)]"
+            />
+          </div>
+
+          <div className="flex flex-col gap-4">
+            <Section
+              id="overdue"
+              title="Overdue"
+              icon={<AlertCircle size={15} className="text-red-600" />}
+              color="bg-red-50 text-red-800"
+              items={overdue}
+            />
+            <Section
+              id="today"
+              title="Today"
+              icon={<CheckCircle2 size={15} className="text-emerald-600" />}
+              color="bg-emerald-50 text-emerald-800"
+              items={todayList}
+            />
+            <Section
+              id="tomorrow"
+              title="Tomorrow"
+              icon={<Clock size={15} className="text-amber-600" />}
+              color="bg-amber-50 text-amber-800"
+              items={tomorrowList}
+            />
+            <Section
+              id="upcoming"
+              title="Upcoming"
+              icon={<CalendarClock size={15} className="text-[var(--color-primary-600)]" />}
+              color="bg-[var(--color-primary-50)] text-[var(--color-primary-800)]"
+              items={upcoming}
+            />
+          </div>
         </div>
       )}
     </div>
