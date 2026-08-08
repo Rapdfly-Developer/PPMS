@@ -774,8 +774,15 @@ export function PlanTab({ visit, udid, patientSex, priorVisits = [] }: { visit: 
   const [showDialog, setShowDialog]         = useState(false);
   const [applying, startApply]              = useTransition();
 
-  const diagnoses: { icd10Code: string; description: string }[] = visit.diagnoses ?? [];
+  const diagnoses: { icd10Code: string; description: string; laterality?: string }[] = visit.diagnoses ?? [];
   const medications: any[] = visit.medications ?? [];
+
+  // Derive a single default laterality from all current diagnoses.
+  // If every diagnosis agrees on the same eye → use it; mixed/none → OU.
+  const diagLaterality = useMemo(() => {
+    const lats = [...new Set(diagnoses.map((d) => d.laterality).filter(Boolean))];
+    return lats.length === 1 ? lats[0] : "OU";
+  }, [diagnoses]);
 
   // Stable string key — effect re-runs when diagnosis list changes
   const diagKey = useMemo(
@@ -817,7 +824,7 @@ export function PlanTab({ visit, udid, patientSex, priorVisits = [] }: { visit: 
       startApply(async () => {
         const newMeds = mergeMeds(presetsToApply, medications);
         for (const med of newMeds) {
-          await addMedication(visit.id, udid, med);
+          await addMedication(visit.id, udid, { ...med, laterality: (med as any).laterality ?? diagLaterality });
         }
 
         // Set follow-up only if not already set; use minimum days across matched presets
@@ -848,7 +855,7 @@ export function PlanTab({ visit, udid, patientSex, priorVisits = [] }: { visit: 
     startApply(async () => {
       const newMeds = mergeMeds(selected, medications);
       for (const med of newMeds) {
-        await addMedication(visit.id, udid, med);
+        await addMedication(visit.id, udid, { ...med, laterality: (med as any).laterality ?? diagLaterality });
       }
 
       const followUpDays = selected.map((p) => p.followUpDays).filter((d): d is number => !!d);
@@ -903,7 +910,7 @@ export function PlanTab({ visit, udid, patientSex, priorVisits = [] }: { visit: 
         />
       )}
 
-      <PrescriptionCard visit={visit} udid={udid} priorVisits={priorVisits} />
+      <PrescriptionCard visit={visit} udid={udid} priorVisits={priorVisits} defaultLaterality={diagLaterality} />
       <MinorProcedureCard visit={visit} udid={udid} priorVisits={priorVisits} />
       <OpticalPrescriptionCard visit={visit} />
       <DispositionCard visit={visit} udid={udid} patientSex={patientSex} priorVisits={priorVisits} />
@@ -1217,7 +1224,7 @@ function OptEyeColumns({ children }: { children: [React.ReactNode, React.ReactNo
 
 type EditDraft = { drugName: string; dosage: string; frequency: string; duration: string; instructions: string; route?: string; laterality?: string };
 
-function PrescriptionCard({ visit, udid, priorVisits }: { visit: any; udid: string; priorVisits: any[] }) {
+function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU" }: { visit: any; udid: string; priorVisits: any[]; defaultLaterality?: string }) {
   const [pending, startTransition] = useTransition();
   const [showAddDrug, setShowAddDrug] = useState(false);
   const [showPresets, setShowPresets] = useState(false);
@@ -1233,7 +1240,7 @@ function PrescriptionCard({ visit, udid, priorVisits }: { visit: any; udid: stri
   const [drugName, setDrugName]       = useState("");
   const [dose, setDose]               = useState("");
   const [route, setRoute]             = useState("Topical");
-  const [laterality, setLaterality]   = useState("OU");
+  const [laterality, setLaterality]   = useState(defaultLaterality);
   const [frequency, setFrequency]         = useState("");
   const [durationNum, setDurationNum]     = useState("");
   const [durationUnit, setDurationUnit]   = useState("days");
@@ -1256,7 +1263,7 @@ function PrescriptionCard({ visit, udid, priorVisits }: { visit: any; udid: stri
     setDrugName(name);
     setDose(defaultDose ?? "");
     setRoute(defaultRoute ?? "Topical");
-    setLaterality("OU");
+    setLaterality(defaultLaterality);
     setFrequency(""); setDurationNum(""); setDurationUnit("days");
     setTaperLevels([]);
     setInstructions("");
@@ -1325,7 +1332,7 @@ function PrescriptionCard({ visit, udid, priorVisits }: { visit: any; udid: stri
       const tapNote = tapParts.length ? `Tapering: ${tapParts.join(" → ")}` : "";
       const finalInstructions = [instructions, tapNote].filter(Boolean).join(" | ");
       await addMedication(visit.id, udid, { drugName, dosage: dose, frequency, duration, instructions: finalInstructions, route, laterality: route === "Topical" ? laterality : undefined } as any);
-      setDrugName(""); setDose(""); setRoute("Topical"); setLaterality("OU"); setFrequency(""); setDurationNum(""); setDurationUnit("days");
+      setDrugName(""); setDose(""); setRoute("Topical"); setLaterality(defaultLaterality); setFrequency(""); setDurationNum(""); setDurationUnit("days");
       setTaperLevels([]);
       setInstructions("");
       setShowAddDrug(false);
