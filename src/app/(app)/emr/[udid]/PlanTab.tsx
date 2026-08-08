@@ -1241,6 +1241,7 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU" }
   const [dose, setDose]               = useState("");
   const [route, setRoute]             = useState("Topical");
   const [laterality, setLaterality]   = useState(defaultLaterality);
+  useEffect(() => { setLaterality(defaultLaterality); }, [defaultLaterality]);
   const [frequency, setFrequency]         = useState("");
   const [durationNum, setDurationNum]     = useState("");
   const [durationUnit, setDurationUnit]   = useState("days");
