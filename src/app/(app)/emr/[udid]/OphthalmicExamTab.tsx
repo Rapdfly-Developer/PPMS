@@ -1179,14 +1179,15 @@ function AnteriorSegmentCard({ visit, udid, editable, priorVisits = [] }: { visi
       }))
       .filter((e) => Boolean(e.value));
 
+  const WNL = "Within Normal Limits";
+
   const isNormal = AS_KEYS.every(
-    (key) => (re[key] ?? "") === (ANTERIOR_SEGMENT_STRUCTURES[key]?.[0] ?? "") &&
-              (le[key] ?? "") === (ANTERIOR_SEGMENT_STRUCTURES[key]?.[0] ?? ""),
+    (key) => (re[key] ?? "") === WNL && (le[key] ?? "") === WNL,
   );
 
   const applyNormal = (checked: boolean) => {
     const patch: Record<string, string> = {};
-    AS_KEYS.forEach((key) => { patch[key] = checked ? (ANTERIOR_SEGMENT_STRUCTURES[key]?.[0] ?? "") : ""; });
+    AS_KEYS.forEach((key) => { patch[key] = checked ? WNL : ""; });
     setRe((prev) => ({ ...prev, ...patch }));
     setLe((prev) => ({ ...prev, ...patch }));
   };
@@ -1323,21 +1324,15 @@ function PosteriorSegmentCard({ visit, udid, editable, priorVisits = [] }: { vis
       }))
       .filter((h) => h.value);
 
-  const normalValueFor = (key: string) =>
-    key === "cdr" ? "0.3" : key === "macula" ? "foveal reflex +" : (POSTERIOR_SEGMENT_OPTIONS[key]?.[0] ?? "");
+  const WNL = "Within Normal Limits";
 
   const isNormal = PS_KEYS.every(
-    (key) => (re[key] ?? "") === normalValueFor(key) && (le[key] ?? "") === normalValueFor(key),
+    (key) => (re[key] ?? "") === WNL && (le[key] ?? "") === WNL,
   );
 
   const applyNormal = (checked: boolean) => {
     const patch: Record<string, string> = {};
-    PS_KEYS.forEach((key) => {
-      if (!checked) { patch[key] = ""; return; }
-      if (key === "cdr") { patch[key] = "0.3"; return; }
-      if (key === "macula") { patch[key] = "foveal reflex +"; return; }
-      patch[key] = POSTERIOR_SEGMENT_OPTIONS[key]?.[0] ?? "";
-    });
+    PS_KEYS.forEach((key) => { patch[key] = checked ? WNL : ""; });
     setRe((prev) => ({ ...prev, ...patch }));
     setLe((prev) => ({ ...prev, ...patch }));
   };
