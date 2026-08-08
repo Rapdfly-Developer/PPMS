@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition, useRef, useEffect, useMemo, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/Card";
 import { SingleChipSelect } from "@/components/ui/Chip";
 import { ICD10_OPHTHALMOLOGY, DIAGNOSIS_STATUSES, LATERALITY } from "@/lib/constants";
@@ -130,6 +131,7 @@ type CustomModalState = {
 };
 
 export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; udid: string; priorVisits?: any[] }) {
+  const router = useRouter();
   // Split diagnoses by provisional flag
   const provisionalDiagnoses: any[] = (visit.diagnoses ?? []).filter((d: any) => d.provisional);
   const diagnoses: any[] = (visit.diagnoses ?? []).filter((d: any) => !d.provisional);
@@ -402,6 +404,7 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
       await addDiagnosis(visit.id, udid, { icd10Code: code, description, laterality: provLaterality, provisional: true });
       setProvQuery("");
       await autoApplyPresets([{ icd10Code: code, description }]);
+      router.refresh();
     });
   };
 
@@ -411,6 +414,7 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
       await addDiagnosis(visit.id, udid, { icd10Code: code, description, laterality });
       setQuery("");
       await autoApplyPresets([{ icd10Code: code, description }]);
+      router.refresh();
     });
   };
 
@@ -421,6 +425,7 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
         await addDiagnosis(visit.id, udid, { icd10Code: d.icd10Code, description: d.description, laterality: d.laterality ?? "OU", provisional: true });
       }
       await autoApplyPresets(missing.map((d: any) => ({ icd10Code: d.icd10Code, description: d.description })));
+      router.refresh();
     });
     setProvHistoryOpen(false);
     setProvDxToast(true);
@@ -433,6 +438,7 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
         await addDiagnosis(visit.id, udid, { icd10Code: d.icd10Code, description: d.description, laterality: d.laterality ?? "OU" });
       }
       await autoApplyPresets(missing.map((d: any) => ({ icd10Code: d.icd10Code, description: d.description })));
+      router.refresh();
     });
     setHistoryOpen(false);
     setDxToast(true);
@@ -616,7 +622,7 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
                     ))}
                   </select>
                   <button
-                    onClick={() => startTransition(async () => { await autoRemovePresetMeds(d.description); await removeDiagnosis(d.id, udid); })}
+                    onClick={() => startTransition(async () => { await autoRemovePresetMeds(d.description); await removeDiagnosis(d.id, udid); router.refresh(); })}
                     className="text-[var(--color-ink-400)] hover:text-[var(--color-danger-600)]"
                   >
                     <X size={15} />
@@ -774,7 +780,7 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
                       <option key={s} value={s}>{s}</option>
                     ))}
                   </select>
-                  <button onClick={() => startTransition(async () => { await autoRemovePresetMeds(d.description); await removeDiagnosis(d.id, udid); })} className="text-[var(--color-ink-400)] hover:text-[var(--color-danger-600)]">
+                  <button onClick={() => startTransition(async () => { await autoRemovePresetMeds(d.description); await removeDiagnosis(d.id, udid); router.refresh(); })} className="text-[var(--color-ink-400)] hover:text-[var(--color-danger-600)]">
                     <X size={15} />
                   </button>
                 </div>
