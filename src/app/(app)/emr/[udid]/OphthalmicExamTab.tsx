@@ -1181,13 +1181,21 @@ function AnteriorSegmentCard({ visit, udid, editable, priorVisits = [] }: { visi
 
   const WNL = "Within Normal Limits";
 
+  // Cornea, pupil and lens offer no generic "Normal" option -- their normal
+  // finding is the specific term leading each keyword list ("Clear",
+  // "Round regular & reactive", "Clear"), so Normal uses that instead of WNL.
+  const FIRST_KEYWORD_KEYS = new Set(["cornea", "pupil", "lens"]);
+
+  const normalFor = (key: string) =>
+    FIRST_KEYWORD_KEYS.has(key) ? (ANTERIOR_SEGMENT_STRUCTURES[key]?.[0] ?? WNL) : WNL;
+
   const isNormal = AS_KEYS.every(
-    (key) => (re[key] ?? "") === WNL && (le[key] ?? "") === WNL,
+    (key) => (re[key] ?? "") === normalFor(key) && (le[key] ?? "") === normalFor(key),
   );
 
   const applyNormal = (checked: boolean) => {
     const patch: Record<string, string> = {};
-    AS_KEYS.forEach((key) => { patch[key] = checked ? WNL : ""; });
+    AS_KEYS.forEach((key) => { patch[key] = checked ? normalFor(key) : ""; });
     setRe((prev) => ({ ...prev, ...patch }));
     setLe((prev) => ({ ...prev, ...patch }));
   };
