@@ -7,7 +7,7 @@ import {
   LayoutDashboard, CalendarDays, Users, Eye,
   BedDouble, Settings, X,
   CalendarClock, BarChart2, Lock,
-  CreditCard, Scissors,
+  CreditCard, Scissors, HeartHandshake,
 } from "lucide-react";
 import clsx from "clsx";
 import type { Role } from "@/lib/constants";
@@ -31,6 +31,7 @@ const ALL_NAV: NavEntry[] = [
   { href: "/patients",     label: "Patients",     icon: Users,           permission: "patients.view"                                         },
   { href: "/follow-ups",   label: "Follow Ups",   icon: CalendarClock,   permission: "patients.view",     roles: ["DOCTOR", "HOSPITAL"]      },
   { href: "/ipd",          label: "IPD",          icon: BedDouble,       permission: "ipd.view",          roles: ["DOCTOR"]                  },
+  { href: "/counseling",   label: "Counseling",   icon: HeartHandshake,  permission: "appointments.view",  roles: ["DOCTOR", "HOSPITAL"]      },
   { href: "/scheduled-ot", label: "Scheduled OT", icon: Scissors,        permission: "appointments.view",  roles: ["DOCTOR", "HOSPITAL"]      },
   { href: "/analytics",    label: "Analytics",    icon: BarChart2,       permission: "reports.view"                                          },
   { href: "/billing", label: "Billing & Insurance", icon: CreditCard, permission: "insurance.view", roles: ["DOCTOR", "HOSPITAL"] },
