@@ -223,9 +223,10 @@ function LongContent({
 
       {/* HPI */}
       {g?.hpi && (
-        <div>
-          <SectionLabel label="History of Present Illness" />
-          <p className="text-[var(--color-ink-700)] leading-relaxed whitespace-pre-wrap">{g.hpi}</p>
+        <div className="flex items-baseline gap-2 flex-wrap">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)] shrink-0">History of Present Illness</span>
+          <span className="text-[var(--color-ink-300)] shrink-0">·</span>
+          <span className="text-[var(--color-ink-700)] leading-relaxed">{g.hpi}</span>
         </div>
       )}
 
