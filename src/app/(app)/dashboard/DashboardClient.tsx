@@ -164,15 +164,15 @@ function PartialDispenseRow({ appt: a, role, serial }: { appt: Appt; role: "DOCT
           <span className="text-[11px] text-[var(--color-ink-400)]">
             {a.patient.age}y / {a.patient.sex === "MALE" ? "M" : a.patient.sex === "FEMALE" ? "F" : "O"}
           </span>
+          {a.partialDispenseAt && (
+            <span className="inline-flex items-center gap-1 text-[10px] text-orange-500">
+              <Clock size={10} /> Added at {format(new Date(a.partialDispenseAt), "h:mm a")}
+            </span>
+          )}
           {role === "HOSPITAL" && a.doctor && (
             <span className="text-[11px] text-[var(--color-ink-400)]">Dr. {a.doctor.name}</span>
           )}
         </div>
-        {a.partialDispenseAt && (
-          <span className="mt-0.5 inline-flex items-center gap-1 text-[10px] text-orange-500">
-            <Clock size={10} /> Added at {format(new Date(a.partialDispenseAt), "h:mm a")}
-          </span>
-        )}
         {a.partialDispenseReason && (
           <span className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-orange-100 border border-orange-300 text-orange-700 text-[11px] font-semibold leading-relaxed">
             {a.partialDispenseReason}
