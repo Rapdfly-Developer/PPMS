@@ -378,6 +378,44 @@ export async function updateDiagnosisStatus(id: string, udid: string, status: st
   revalidate(udid);
 }
 
+/** Confirm a diagnosis and record the treatment protocol chosen for it. */
+export async function confirmDiagnosis(
+  id: string,
+  udid: string,
+  data: { protocolId?: string; protocolName?: string; status?: string }
+) {
+  const user = await requireRole("DOCTOR");
+  await prisma.diagnosis.update({
+    where: { id },
+    data: {
+      confirmedAt:  new Date(),
+      protocolId:   data.protocolId   ?? null,
+      protocolName: data.protocolName ?? null,
+      ...(data.status ? { status: data.status } : {}),
+    },
+  });
+  await writeAudit(user.id, "Diagnosis", id, "CONFIRM", data);
+  revalidate(udid);
+}
+
+/** Change the treatment protocol on an already-confirmed diagnosis. */
+export async function setDiagnosisProtocol(
+  id: string,
+  udid: string,
+  data: { protocolId?: string; protocolName?: string }
+) {
+  const user = await requireRole("DOCTOR");
+  await prisma.diagnosis.update({
+    where: { id },
+    data: {
+      protocolId:   data.protocolId   ?? null,
+      protocolName: data.protocolName ?? null,
+    },
+  });
+  await writeAudit(user.id, "Diagnosis", id, "PROTOCOL", data);
+  revalidate(udid);
+}
+
 export async function removeDiagnosis(id: string, udid: string) {
   const user = await requireRole("DOCTOR");
   const existing = await prisma.diagnosis.findUnique({ where: { id } });

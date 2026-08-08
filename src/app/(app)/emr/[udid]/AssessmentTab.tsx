@@ -5,9 +5,9 @@ import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/Card";
 import { SingleChipSelect } from "@/components/ui/Chip";
 import { ICD10_OPHTHALMOLOGY, DIAGNOSIS_STATUSES, LATERALITY } from "@/lib/constants";
-import { addDiagnosis, updateDiagnosisStatus, removeDiagnosis, addMedication, removeMedication, saveFollowUp } from "./actions";
+import { addDiagnosis, updateDiagnosisStatus, removeDiagnosis, addMedication, removeMedication, saveFollowUp, confirmDiagnosis, setDiagnosisProtocol } from "./actions";
 import { useAutoSave, SaveIndicator } from "@/lib/useAutoSave";
-import { X, History, ChevronDown, Search, PenLine, Plus } from "lucide-react";
+import { X, History, ChevronDown, Search, PenLine, Plus, Check, Ban } from "lucide-react";
 
 const DOSAGE_OPTIONS = [
   "1 Drop","2 Drops","3 Drops","4 Drops","6 Drops",
@@ -104,8 +104,7 @@ function PresetFieldCombobox({
 import {
   getTreatmentPresets, saveTreatmentPresets, matchPresets, mergeMeds,
   getApplied, setApplied,
-  getDismissedPresets,
-  type AppliedPreset,
+  type TreatmentPreset,
   type TreatmentPresetMed,
 } from "./treatmentPresets";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -129,6 +128,132 @@ type CustomModalState = {
   savedCode: string;
   savedDescription: string;
 };
+
+/* ── Diagnosis row: Confirm / Reject, then protocol selection ────────────── */
+
+// Kept at module scope so React preserves the subtree across parent renders --
+// defining it inside AssessmentTab would remount every row on each render and
+// steal focus from the status select.
+function DiagnosisRow({
+  d, provisional = false, isCustom, protocols, pending,
+  onConfirm, onReject, onChangeProtocol, onStatusChange,
+}: {
+  d: any;
+  provisional?: boolean;
+  isCustom: boolean;
+  protocols: TreatmentPreset[];
+  pending: boolean;
+  onConfirm: (d: any) => void;
+  onReject: (d: any) => void;
+  onChangeProtocol: (d: any, p: TreatmentPreset) => void;
+  onStatusChange: (d: any, status: string) => void;
+}) {
+  const confirmed = !!d.confirmedAt;
+  // Fall back to the first protocol so the selection is never visually empty on
+  // a row confirmed before any protocol existed for that diagnosis.
+  const selectedId = d.protocolId ?? protocols[0]?.id;
+
+  return (
+    <li className="rounded-xl border border-[var(--color-border)] px-3.5 py-2.5">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <p className="text-sm font-medium text-[var(--color-ink-900)]">{d.description}</p>
+            {isCustom && (
+              <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">Custom</span>
+            )}
+            {confirmed && (
+              <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 inline-flex items-center gap-1">
+                <Check size={10} /> Confirmed
+              </span>
+            )}
+          </div>
+          <p className="text-xs text-[var(--color-ink-400)] font-mono">
+            {d.icd10Code || "—"} {d.laterality ? `· ${d.laterality}` : ""}{provisional ? " · Provisional" : ""}
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
+          {!confirmed ? (
+            <>
+              <button
+                type="button"
+                onClick={() => onConfirm(d)}
+                disabled={pending}
+                className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 disabled:opacity-50 transition-colors"
+              >
+                <Check size={13} /> Confirm
+              </button>
+              <button
+                type="button"
+                onClick={() => onReject(d)}
+                disabled={pending}
+                className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border border-[var(--color-border)] bg-white text-[var(--color-ink-600)] hover:border-[var(--color-danger-300)] hover:text-[var(--color-danger-600)] disabled:opacity-50 transition-colors"
+              >
+                <Ban size={13} /> Reject
+              </button>
+            </>
+          ) : (
+            <>
+              <select
+                value={d.status}
+                onChange={(e) => onStatusChange(d, e.target.value)}
+                className="text-xs rounded-lg border border-[var(--color-border)] px-2 py-1 bg-white"
+              >
+                {DIAGNOSIS_STATUSES.map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+              <button
+                onClick={() => onReject(d)}
+                disabled={pending}
+                className="text-[var(--color-ink-400)] hover:text-[var(--color-danger-600)] disabled:opacity-50"
+                aria-label={`Remove ${d.description}`}
+              >
+                <X size={15} />
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+
+      {confirmed && (
+        <div className="mt-2.5 pt-2.5 border-t border-[var(--color-border)]">
+          {protocols.length === 0 ? (
+            <p className="text-xs text-[var(--color-ink-400)]">
+              No treatment protocol is configured for this diagnosis.
+            </p>
+          ) : (
+            <div className="flex items-baseline gap-2 flex-wrap">
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-[var(--color-ink-500)] shrink-0">
+                Protocol
+              </span>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {protocols.map((p, i) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => onChangeProtocol(d, p)}
+                    disabled={pending}
+                    title={p.name}
+                    className={`text-xs font-medium px-2.5 py-1 rounded-lg border transition-colors disabled:opacity-50 ${
+                      p.id === selectedId
+                        ? "bg-[var(--color-primary-600)] border-[var(--color-primary-600)] text-white"
+                        : "bg-white border-[var(--color-border)] text-[var(--color-ink-600)] hover:border-[var(--color-primary-400)] hover:text-[var(--color-primary-700)]"
+                    }`}
+                  >
+                    Protocol {i + 1}
+                    <span className="opacity-70"> · {p.name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </li>
+  );
+}
 
 export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; udid: string; priorVisits?: any[] }) {
   const router = useRouter();
@@ -304,57 +429,70 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
     const existing = getTreatmentPresets().filter((p) => !p.isDefault);
     saveTreatmentPresets([...existing, newPreset]);
 
-    startTransition(async () => {
-      await autoApplyPresets([{
-        icd10Code: customModal.savedCode,
-        description: customModal.savedDescription,
-        laterality: customModal.target === "icd" ? laterality : provLaterality,
-      }]);
-    });
+    // The diagnosis itself was already added in the modal's first step. The new
+    // preset now shows up as a protocol option once it is confirmed.
+    router.refresh();
     setCustomModal(null);
   };
 
-  // Auto-apply matching treatment presets to Plan
-  const autoApplyPresets = async (newDiagnoses: { icd10Code: string; description: string; laterality?: string }[]) => {
+  // Remove preset meds when a diagnosis is deleted or its protocol is swapped.
+  // Returns the ids of the medications actually deleted so a follow-on apply can
+  // treat them as already gone -- `visit.medications` is a stale server snapshot
+  // for the rest of this transition.
+  const autoRemovePresetMeds = async (removedDesc: string, quiet = false): Promise<Set<string>> => {
     const allPresets = getTreatmentPresets();
-    const presetMatches = matchPresets(newDiagnoses, allPresets);
-    const alreadyApplied = getApplied(visit.id);
-    const dismissedIds   = getDismissedPresets(visit.id);
-    const appliedIds     = new Set(alreadyApplied.map((a) => a.presetId));
-    const dismissedSet   = new Set(dismissedIds);
-    const toApply        = presetMatches.filter((m) => !appliedIds.has(m.preset.id) && !dismissedSet.has(m.preset.id));
+    const applied    = getApplied(visit.id);
 
-    if (toApply.length === 0) return;
+    // Use diagnosisDesc to find exactly which presets were triggered by this diagnosis
+    const lostApplied = applied.filter((a) => a.diagnosisDesc === removedDesc);
+    if (lostApplied.length === 0) return new Set();
 
-    const newRecords: AppliedPreset[] = toApply.map((m) => ({
-      presetId:      m.preset.id,
-      presetName:    m.preset.name,
-      appliedAt:     new Date().toISOString(),
-      diagnosisDesc: m.diagnosisDesc,
-    }));
-    setApplied(visit.id, [...alreadyApplied, ...newRecords]);
+    const lostIds     = new Set(lostApplied.map((a) => a.presetId));
+    const lostPresets = allPresets.filter((p) => lostIds.has(p.id));
 
-    const presetsToApply = toApply.map((m) => m.preset);
-
-    // Carry the triggering diagnosis's laterality onto every med the preset adds,
-    // otherwise the med is stored with a null laterality and the Plan tab badge
-    // falls back to "OU" regardless of the eye selected here.
-    const descToLat = new Map(
-      newDiagnoses.map((d) => [d.description.toLowerCase(), d.laterality]),
-    );
-    const drugLat = new Map<string, string | undefined>();
-    for (const m of toApply) {
-      const lat = descToLat.get(m.diagnosisDesc.toLowerCase());
-      for (const med of m.preset.medications) {
-        const key = med.drugName.toLowerCase();
-        if (!drugLat.has(key)) drugLat.set(key, lat);
-      }
+    if (lostPresets.length === 0) {
+      setApplied(visit.id, applied.filter((a) => !lostIds.has(a.presetId)));
+      return new Set();
     }
 
-    const currentMeds: { drugName: string }[] = visit.medications ?? [];
-    const newMeds = mergeMeds(presetsToApply, currentMeds);
+    const drugNamesToRemove = new Set<string>();
+    lostPresets.forEach((p) => p.medications.forEach((m) => drugNamesToRemove.add(m.drugName.toLowerCase())));
+
+    const currentMeds: any[] = visit.medications ?? [];
+    const medsToDelete = currentMeds.filter((m) => drugNamesToRemove.has(m.drugName.toLowerCase()));
+    for (const med of medsToDelete) { await removeMedication(med.id, udid); }
+
+    setApplied(visit.id, applied.filter((a) => !lostIds.has(a.presetId)));
+
+    if (!quiet && medsToDelete.length > 0) {
+      setPresetToast([`Removed ${medsToDelete.length} preset medication${medsToDelete.length > 1 ? "s" : ""} from Plan`]);
+      setTimeout(() => setPresetToast([]), 4000);
+    }
+    return new Set(medsToDelete.map((m) => m.id));
+  };
+
+  /* ── Protocols (treatment presets matched to a single diagnosis) ───────── */
+
+  // Every preset that matches this diagnosis. Index 0 is "Protocol 1".
+  const protocolsFor = useCallback((d: { icd10Code: string; description: string }): TreatmentPreset[] =>
+    matchPresets([{ icd10Code: d.icd10Code ?? "", description: d.description }], getTreatmentPresets())
+      .map((m) => m.preset),
+  []);
+
+  // Apply exactly one protocol's medications to the Plan.
+  // `excludeMedIds` are rows deleted earlier in this same transition.
+  const applyProtocol = async (d: any, preset: TreatmentPreset, excludeMedIds: Set<string> = new Set()) => {
+    const applied = getApplied(visit.id);
+    setApplied(visit.id, [
+      ...applied.filter((a) => a.diagnosisDesc !== d.description),
+      { presetId: preset.id, presetName: preset.name, appliedAt: new Date().toISOString(), diagnosisDesc: d.description },
+    ]);
+
+    const currentMeds: any[] = (visit.medications ?? []).filter((m: any) => !excludeMedIds.has(m.id));
+    const newMeds = mergeMeds([preset], currentMeds);
+    const lat = d.laterality ?? undefined;
+
     for (const med of newMeds) {
-      const lat = drugLat.get(med.drugName.toLowerCase());
       if (med.taperingSteps && med.taperingSteps.length > 0) {
         for (const step of med.taperingSteps) {
           await addMedication(visit.id, udid, {
@@ -371,53 +509,58 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
       }
     }
 
-    if (!visit.followUpDate) {
-      const days = presetsToApply.map((p) => p.followUpDays).filter((d): d is number => !!d);
-      if (days.length > 0) {
-        const fuDate = new Date();
-        fuDate.setDate(fuDate.getDate() + Math.min(...days));
-        await saveFollowUp(visit.id, udid, {
-          followUpDate:    fuDate.toISOString(),
-          referralEnabled: visit.referralEnabled ?? false,
-          referralNote:    visit.referralNote ?? null,
-        });
-      }
+    if (!visit.followUpDate && preset.followUpDays) {
+      const fuDate = new Date();
+      fuDate.setDate(fuDate.getDate() + preset.followUpDays);
+      await saveFollowUp(visit.id, udid, {
+        followUpDate:    fuDate.toISOString(),
+        referralEnabled: visit.referralEnabled ?? false,
+        referralNote:    visit.referralNote ?? null,
+      });
     }
-
-    setPresetToast(presetsToApply.map((p) => p.name));
-    setTimeout(() => setPresetToast([]), 5000);
   };
 
-  // Remove preset meds when a diagnosis is deleted
-  const autoRemovePresetMeds = async (removedDesc: string) => {
-    const allPresets = getTreatmentPresets();
-    const applied    = getApplied(visit.id);
+  // Confirm a diagnosis. Protocol 1 is selected and applied by default.
+  const handleConfirm = (d: any) => {
+    startTransition(async () => {
+      const first = protocolsFor(d)[0];
+      if (first) await applyProtocol(d, first);
+      await confirmDiagnosis(d.id, udid, { protocolId: first?.id, protocolName: first?.name });
+      if (first) {
+        setPresetToast([first.name]);
+        setTimeout(() => setPresetToast([]), 5000);
+      }
+      router.refresh();
+    });
+  };
 
-    // Use diagnosisDesc to find exactly which presets were triggered by this diagnosis
-    const lostApplied = applied.filter((a) => a.diagnosisDesc === removedDesc);
-    if (lostApplied.length === 0) return;
+  // Swap the confirmed diagnosis onto a different protocol.
+  const handleChangeProtocol = (d: any, preset: TreatmentPreset) => {
+    if (d.protocolId === preset.id) return;
+    startTransition(async () => {
+      const removedIds = await autoRemovePresetMeds(d.description, true);
+      await applyProtocol(d, preset, removedIds);
+      await setDiagnosisProtocol(d.id, udid, { protocolId: preset.id, protocolName: preset.name });
+      setPresetToast([preset.name]);
+      setTimeout(() => setPresetToast([]), 5000);
+      router.refresh();
+    });
+  };
 
-    const lostIds     = new Set(lostApplied.map((a) => a.presetId));
-    const lostPresets = allPresets.filter((p) => lostIds.has(p.id));
+  const handleStatusChange = (d: any, status: string) => {
+    startTransition(async () => {
+      await updateDiagnosisStatus(d.id, udid, status);
+      router.refresh();
+    });
+  };
 
-    if (lostPresets.length === 0) {
-      setApplied(visit.id, applied.filter((a) => !lostIds.has(a.presetId)));
-      return;
-    }
-
-    const drugNamesToRemove = new Set<string>();
-    lostPresets.forEach((p) => p.medications.forEach((m) => drugNamesToRemove.add(m.drugName.toLowerCase())));
-
-    const currentMeds: any[] = visit.medications ?? [];
-    const medsToDelete = currentMeds.filter((m) => drugNamesToRemove.has(m.drugName.toLowerCase()));
-    for (const med of medsToDelete) { await removeMedication(med.id, udid); }
-
-    setApplied(visit.id, applied.filter((a) => !lostIds.has(a.presetId)));
-
-    if (medsToDelete.length > 0) {
-      setPresetToast([`Removed ${medsToDelete.length} preset medication${medsToDelete.length > 1 ? "s" : ""} from Plan`]);
-      setTimeout(() => setPresetToast([]), 4000);
-    }
+  // Reject removes the diagnosis outright, along with any meds it contributed.
+  const handleReject = (d: any) => {
+    startTransition(async () => {
+      await autoRemovePresetMeds(d.description);
+      await removeDiagnosis(d.id, udid);
+      router.refresh();
+    });
   };
 
   // Add provisional diagnosis
@@ -425,7 +568,6 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
     startTransition(async () => {
       await addDiagnosis(visit.id, udid, { icd10Code: code, description, laterality: provLaterality, provisional: true });
       setProvQuery("");
-      await autoApplyPresets([{ icd10Code: code, description, laterality: provLaterality }]);
       router.refresh();
     });
   };
@@ -435,7 +577,6 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
     startTransition(async () => {
       await addDiagnosis(visit.id, udid, { icd10Code: code, description, laterality });
       setQuery("");
-      await autoApplyPresets([{ icd10Code: code, description, laterality }]);
       router.refresh();
     });
   };
@@ -446,7 +587,6 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
       for (const d of missing) {
         await addDiagnosis(visit.id, udid, { icd10Code: d.icd10Code, description: d.description, laterality: d.laterality ?? "OU", provisional: true });
       }
-      await autoApplyPresets(missing.map((d: any) => ({ icd10Code: d.icd10Code, description: d.description, laterality: d.laterality ?? "OU" })));
       router.refresh();
     });
     setProvHistoryOpen(false);
@@ -459,7 +599,6 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
       for (const d of missing) {
         await addDiagnosis(visit.id, udid, { icd10Code: d.icd10Code, description: d.description, laterality: d.laterality ?? "OU" });
       }
-      await autoApplyPresets(missing.map((d: any) => ({ icd10Code: d.icd10Code, description: d.description, laterality: d.laterality ?? "OU" })));
       router.refresh();
     });
     setHistoryOpen(false);
@@ -621,36 +760,18 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
         ) : (
           <ul className="flex flex-col gap-2">
             {provisionalDiagnoses.map((d) => (
-              <li key={d.id} className="flex items-center justify-between rounded-xl border border-[var(--color-border)] px-3.5 py-2.5">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm font-medium text-[var(--color-ink-900)]">{d.description}</p>
-                    {isCustomDiagnosis(d) && (
-                      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">Custom</span>
-                    )}
-                  </div>
-                  <p className="text-xs text-[var(--color-ink-400)] font-mono">
-                    {d.icd10Code || "—"} {d.laterality ? `· ${d.laterality}` : ""} · Provisional
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <select
-                    value={d.status}
-                    onChange={(e) => updateDiagnosisStatus(d.id, udid, e.target.value)}
-                    className="text-xs rounded-lg border border-[var(--color-border)] px-2 py-1 bg-white"
-                  >
-                    {DIAGNOSIS_STATUSES.map((s) => (
-                      <option key={s} value={s}>{s}</option>
-                    ))}
-                  </select>
-                  <button
-                    onClick={() => startTransition(async () => { await autoRemovePresetMeds(d.description); await removeDiagnosis(d.id, udid); router.refresh(); })}
-                    className="text-[var(--color-ink-400)] hover:text-[var(--color-danger-600)]"
-                  >
-                    <X size={15} />
-                  </button>
-                </div>
-              </li>
+              <DiagnosisRow
+                key={d.id}
+                d={d}
+                provisional
+                isCustom={isCustomDiagnosis(d)}
+                protocols={d.confirmedAt ? protocolsFor(d) : []}
+                pending={pending}
+                onConfirm={handleConfirm}
+                onReject={handleReject}
+                onChangeProtocol={handleChangeProtocol}
+                onStatusChange={handleStatusChange}
+              />
             ))}
           </ul>
         )}
@@ -780,33 +901,17 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
         ) : (
           <ul className="flex flex-col gap-2">
             {diagnoses.map((d) => (
-              <li key={d.id} className="flex items-center justify-between rounded-xl border border-[var(--color-border)] px-3.5 py-2.5">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm font-medium text-[var(--color-ink-900)]">{d.description}</p>
-                    {isCustomDiagnosis(d) && (
-                      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">Custom</span>
-                    )}
-                  </div>
-                  <p className="text-xs text-[var(--color-ink-400)] font-mono">
-                    {d.icd10Code || "—"} {d.laterality ? `· ${d.laterality}` : ""}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <select
-                    value={d.status}
-                    onChange={(e) => updateDiagnosisStatus(d.id, udid, e.target.value)}
-                    className="text-xs rounded-lg border border-[var(--color-border)] px-2 py-1 bg-white"
-                  >
-                    {DIAGNOSIS_STATUSES.map((s) => (
-                      <option key={s} value={s}>{s}</option>
-                    ))}
-                  </select>
-                  <button onClick={() => startTransition(async () => { await autoRemovePresetMeds(d.description); await removeDiagnosis(d.id, udid); router.refresh(); })} className="text-[var(--color-ink-400)] hover:text-[var(--color-danger-600)]">
-                    <X size={15} />
-                  </button>
-                </div>
-              </li>
+              <DiagnosisRow
+                key={d.id}
+                d={d}
+                isCustom={isCustomDiagnosis(d)}
+                protocols={d.confirmedAt ? protocolsFor(d) : []}
+                pending={pending}
+                onConfirm={handleConfirm}
+                onReject={handleReject}
+                onChangeProtocol={handleChangeProtocol}
+                onStatusChange={handleStatusChange}
+              />
             ))}
           </ul>
         )}

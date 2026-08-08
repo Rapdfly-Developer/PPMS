@@ -730,6 +730,14 @@ model Diagnosis {
   status      String          @default("ACTIVE")
   laterality  String?         // RE | LE | OU
   provisional Boolean         @default(false)
+  // Null until the doctor confirms the diagnosis. Rejecting deletes the row,
+  // so there is no explicit REJECTED state to store.
+  confirmedAt DateTime?
+  // Treatment preset ("protocol") chosen at confirmation. protocolName is
+  // denormalised because presets live in localStorage, so another device
+  // cannot resolve protocolId back to a label.
+  protocolId   String?
+  protocolName String?
   createdAt   DateTime        @default(now())
 
   @@index([visitId])
