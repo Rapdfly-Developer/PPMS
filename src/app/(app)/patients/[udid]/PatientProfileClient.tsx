@@ -403,9 +403,19 @@ function LastVisitSummarySection({ summary }: { summary: LastVisitSummary }) {
       {/* ── Last Visit Summary ── */}
       <div className="rounded-xl border border-[var(--color-border)] bg-white overflow-hidden">
         <div className="px-4 py-3 border-b border-[var(--color-border)] flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <Activity size={14} className="text-[var(--color-primary-600)]" />
             <p className="text-sm font-semibold text-[var(--color-ink-800)]">Last Visit Summary</p>
+            {summary.hospitalName && (
+              <span className="flex items-center gap-1 text-xs text-[var(--color-ink-500)]">
+                <Hospital size={11} />{summary.hospitalName}
+              </span>
+            )}
+            {summary.doctorName && (
+              <span className="flex items-center gap-1 text-xs text-[var(--color-ink-500)]">
+                <Stethoscope size={11} />Dr. {summary.doctorName}
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-2 text-xs text-[var(--color-ink-400)]">
             <span>{format(new Date(summary.date), "dd MMM yyyy")}</span>
@@ -414,11 +424,6 @@ function LastVisitSummarySection({ summary }: { summary: LastVisitSummary }) {
         </div>
 
         <div className="px-4 py-3 space-y-3">
-          {/* Meta */}
-          <div className="flex gap-4 text-xs text-[var(--color-ink-500)] flex-wrap">
-            {summary.hospitalName && <span className="flex items-center gap-1"><Hospital size={11} />{summary.hospitalName}</span>}
-            {summary.doctorName && <span className="flex items-center gap-1"><Stethoscope size={11} />Dr. {summary.doctorName}</span>}
-          </div>
 
           <VisitSummaryTabs
             bare
