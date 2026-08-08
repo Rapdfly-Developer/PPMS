@@ -434,21 +434,17 @@ function LastVisitSummarySection({ summary }: { summary: LastVisitSummary }) {
               <div className="space-y-3">
           {/* Chief Complaint */}
           {summary.chiefComplaint && (
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)] mb-1.5">Chief Complaint</p>
-              <div className="space-y-1">
-                {parseComplaints(summary.chiefComplaint).map((c, i) => (
-                  <p key={i} className="text-sm text-[var(--color-ink-800)]">
-                    {c.lat && (
-                      <span className="inline-block font-bold text-[var(--color-primary-700)] mr-1.5">{c.lat}</span>
-                    )}
-                    {c.text}
-                    {c.since && (
-                      <span className="text-[var(--color-ink-400)] ml-1.5">· Since {c.since}</span>
-                    )}
-                  </p>
-                ))}
-              </div>
+            <div className="flex items-baseline gap-2 flex-wrap">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)] shrink-0">Chief Complaint</span>
+              <span className="text-[var(--color-ink-300)] text-xs shrink-0">·</span>
+              {parseComplaints(summary.chiefComplaint).map((c, i) => (
+                <span key={i} className="text-sm text-[var(--color-ink-800)]">
+                  {i > 0 && <span className="text-[var(--color-ink-300)] mr-2">·</span>}
+                  {c.lat && <span className="font-bold text-[var(--color-primary-700)] mr-1.5">{c.lat}</span>}
+                  {c.text}
+                  {c.since && <span className="text-[var(--color-ink-400)] ml-1.5">· Since {c.since}</span>}
+                </span>
+              ))}
             </div>
           )}
 

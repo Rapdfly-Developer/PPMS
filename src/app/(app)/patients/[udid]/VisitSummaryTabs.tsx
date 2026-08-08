@@ -207,17 +207,17 @@ function LongContent({
 
       {/* Chief Complaint */}
       {g?.chiefComplaint && (
-        <div>
-          <SectionLabel label="Chief Complaint" />
-          <div className="space-y-0.5">
-            {parseComplaints(g.chiefComplaint).map((c, i) => (
-              <p key={i} className="text-[var(--color-ink-700)]">
-                {c.lat && <span className="font-bold text-[var(--color-primary-700)] mr-1">{c.lat}</span>}
-                {c.text}
-                {c.since && <span className="text-[var(--color-ink-400)] ml-1">· Since {c.since}</span>}
-              </p>
-            ))}
-          </div>
+        <div className="flex items-baseline gap-2 flex-wrap">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)] shrink-0">Chief Complaint</span>
+          <span className="text-[var(--color-ink-300)] shrink-0">·</span>
+          {parseComplaints(g.chiefComplaint).map((c, i) => (
+            <span key={i} className="text-[var(--color-ink-700)]">
+              {i > 0 && <span className="text-[var(--color-ink-300)] mr-1.5">·</span>}
+              {c.lat && <span className="font-bold text-[var(--color-primary-700)] mr-1">{c.lat}</span>}
+              {c.text}
+              {c.since && <span className="text-[var(--color-ink-400)] ml-1">· Since {c.since}</span>}
+            </span>
+          ))}
         </div>
       )}
 
