@@ -263,11 +263,6 @@ function ApptRow({ appt, role, serial }: { appt: Appt; role: "DOCTOR" | "HOSPITA
           <span title="UDID (Doctor ID)" className="font-mono text-[10px] text-[#115E59] bg-[#F0F8F6] px-1.5 py-0.5 rounded">
             {appt.patient.udid}
           </span>
-          {appt.patient.uhid && (
-            <span title="UHID (Hospital ID)" className="font-mono text-[10px] text-[#1E4B8F] bg-[#F0F4FA] px-1.5 py-0.5 rounded">
-              {appt.patient.uhid}
-            </span>
-          )}
           <span className="text-[11px] text-[var(--color-ink-400)]">
             {appt.patient.age}y / {appt.patient.sex === "MALE" ? "M" : appt.patient.sex === "FEMALE" ? "F" : "O"}
           </span>
@@ -629,11 +624,6 @@ export function DashboardClient({
                                 <span title="UDID (Doctor ID)" className="font-mono text-[10px] text-[#115E59] bg-[#F0F8F6] px-1.5 py-0.5 rounded">
                                   {a.patient.udid}
                                 </span>
-                                {a.patient.uhid && (
-                                  <span title="UHID (Hospital ID)" className="font-mono text-[10px] text-[#1E4B8F] bg-[#F0F4FA] px-1.5 py-0.5 rounded">
-                                    {a.patient.uhid}
-                                  </span>
-                                )}
                               </span>
                               {a.complaint && (
                                 <span className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-50 border border-amber-100 text-amber-800 text-[11px] font-medium leading-relaxed">
