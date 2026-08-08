@@ -176,22 +176,23 @@ export default async function QueuePage() {
                     </span>
                   </div>
 
-                  {/* Row 2: age / sex · complaint */}
-                  <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                  {/* Row 2: complaint */}
+                  {appt.patient.complaint && (
+                    <div className="mt-0.5">
+                      <span className="text-[11px] text-[var(--color-ink-400)] truncate max-w-[180px] block">
+                        {appt.patient.complaint}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Row 3: age / sex */}
+                  <div className="flex items-center gap-2 mt-0.5">
                     <span className="text-[11px] text-[var(--color-ink-500)]">
                       {appt.patient.age}y · {sexLabel}
                     </span>
-                    {appt.patient.complaint && (
-                      <>
-                        <span className="text-[var(--color-ink-300)] text-[11px]">·</span>
-                        <span className="text-[11px] text-[var(--color-ink-400)] italic truncate max-w-[180px]">
-                          {appt.patient.complaint}
-                        </span>
-                      </>
-                    )}
                   </div>
 
-                  {/* Row 3: test pills or waiting label */}
+                  {/* Row 4: test pills or waiting label */}
                   <div className="flex items-center gap-1.5 mt-2 flex-wrap">
                     {v ? (
                       <>

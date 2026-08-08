@@ -168,14 +168,14 @@ function PartialDispenseRow({ appt: a, role, serial }: { appt: Appt; role: "DOCT
             <span className="text-[11px] text-[var(--color-ink-400)]">Dr. {a.doctor.name}</span>
           )}
         </div>
-        {a.partialDispenseReason && (
-          <span className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-orange-100 border border-orange-300 text-orange-700 text-[11px] font-semibold leading-relaxed">
-            {a.partialDispenseReason}
-          </span>
-        )}
         {a.partialDispenseAt && (
           <span className="mt-0.5 inline-flex items-center gap-1 text-[10px] text-orange-500">
             <Clock size={10} /> Added at {format(new Date(a.partialDispenseAt), "h:mm a")}
+          </span>
+        )}
+        {a.partialDispenseReason && (
+          <span className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-orange-100 border border-orange-300 text-orange-700 text-[11px] font-semibold leading-relaxed">
+            {a.partialDispenseReason}
           </span>
         )}
         {a.complaint && (
@@ -278,7 +278,7 @@ function ApptRow({ appt, role, serial }: { appt: Appt; role: "DOCTOR" | "HOSPITA
           )}
         </div>
         {appt.complaint && (
-          <span className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-50 border border-amber-100 text-amber-800 text-[11px] font-medium leading-relaxed">
+          <span className="mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-50 border border-amber-100 text-amber-800 text-[11px] font-medium leading-relaxed">
             {formatComplaintDisplay(appt.complaint)}
           </span>
         )}
@@ -620,13 +620,13 @@ export function DashboardClient({
                             <div className="w-px self-stretch bg-[var(--color-border)]" />
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-semibold text-[var(--color-ink-900)] truncate">{a.patient.name}</p>
-                              <span className="inline-flex items-center gap-1 flex-wrap">
+                              <div className="flex items-center gap-1 flex-wrap mt-0.5">
                                 <span title="UDID (Doctor ID)" className="font-mono text-[10px] text-[#115E59] bg-[#F0F8F6] px-1.5 py-0.5 rounded">
                                   {a.patient.udid}
                                 </span>
-                              </span>
+                              </div>
                               {a.complaint && (
-                                <span className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-50 border border-amber-100 text-amber-800 text-[11px] font-medium leading-relaxed">
+                                <span className="mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-50 border border-amber-100 text-amber-800 text-[11px] font-medium leading-relaxed">
                                   {formatComplaintDisplay(a.complaint)}
                                 </span>
                               )}
