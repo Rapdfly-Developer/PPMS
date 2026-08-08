@@ -400,8 +400,10 @@ function LongContent({
 
       {/* Medications */}
       {hasMeds && (
-        <div>
-          <SectionLabel icon={<Pill size={9} className="text-[var(--color-ink-400)]" />} label="Medications" />
+        <div className="flex items-start gap-2">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)] shrink-0 pt-0.5">Medications</span>
+          <span className="text-[var(--color-ink-300)] shrink-0 pt-0.5">·</span>
+          <div className="flex-1 min-w-0">
           <table className="w-full border-collapse">
             <thead>
               <tr className="text-[9px] font-bold uppercase tracking-wide text-[var(--color-ink-400)]">
@@ -424,6 +426,7 @@ function LongContent({
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
 
