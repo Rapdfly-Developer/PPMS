@@ -1179,15 +1179,18 @@ function AnteriorSegmentCard({ visit, udid, editable, priorVisits = [] }: { visi
       }))
       .filter((e) => Boolean(e.value));
 
-  const WNL = "Within Normal Limits";
+  // Each structure's keyword list leads with its own normal finding -- "Clear"
+  // for cornea, "Round regular & reactive" for pupil -- so Normal fills every
+  // field with the first keyword offered beneath it.
+  const normalFor = (key: string) => ANTERIOR_SEGMENT_STRUCTURES[key]?.[0] ?? "";
 
   const isNormal = AS_KEYS.every(
-    (key) => (re[key] ?? "") === WNL && (le[key] ?? "") === WNL,
+    (key) => (re[key] ?? "") === normalFor(key) && (le[key] ?? "") === normalFor(key),
   );
 
   const applyNormal = (checked: boolean) => {
     const patch: Record<string, string> = {};
-    AS_KEYS.forEach((key) => { patch[key] = checked ? WNL : ""; });
+    AS_KEYS.forEach((key) => { patch[key] = checked ? normalFor(key) : ""; });
     setRe((prev) => ({ ...prev, ...patch }));
     setLe((prev) => ({ ...prev, ...patch }));
   };
@@ -1324,15 +1327,17 @@ function PosteriorSegmentCard({ visit, udid, editable, priorVisits = [] }: { vis
       }))
       .filter((h) => h.value);
 
-  const WNL = "Within Normal Limits";
+  // As with the anterior segment, each list leads with its normal finding --
+  // "Clear" media, "Well-defined" disc margin, "Intact" NRR, 0.1 CDR.
+  const normalFor = (key: string) => POSTERIOR_SEGMENT_OPTIONS[key]?.[0] ?? "";
 
   const isNormal = PS_KEYS.every(
-    (key) => (re[key] ?? "") === WNL && (le[key] ?? "") === WNL,
+    (key) => (re[key] ?? "") === normalFor(key) && (le[key] ?? "") === normalFor(key),
   );
 
   const applyNormal = (checked: boolean) => {
     const patch: Record<string, string> = {};
-    PS_KEYS.forEach((key) => { patch[key] = checked ? WNL : ""; });
+    PS_KEYS.forEach((key) => { patch[key] = checked ? normalFor(key) : ""; });
     setRe((prev) => ({ ...prev, ...patch }));
     setLe((prev) => ({ ...prev, ...patch }));
   };
