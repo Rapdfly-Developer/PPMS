@@ -228,11 +228,6 @@ function ApptRow({ appt, role, serial }: { appt: Appt; role: "DOCTOR" | "HOSPITA
 
   return (
     <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-[var(--color-border)] bg-white hover:bg-[var(--color-primary-50)] hover:border-[var(--color-primary-200)] transition-colors">
-      {/* Serial number */}
-      <div className="w-6 shrink-0 flex items-center justify-center">
-        <span className="text-xs font-bold text-[var(--color-ink-400)]">{serial}</span>
-      </div>
-      <div className="w-px self-stretch bg-[var(--color-border)]" />
       {/* Time + visit-type column */}
       <div className="w-20 shrink-0 flex flex-col items-center gap-0.5">
         {/* Primary time: arrived or scheduled */}
@@ -285,6 +280,7 @@ function ApptRow({ appt, role, serial }: { appt: Appt; role: "DOCTOR" | "HOSPITA
       </Link>
       <div className="flex flex-col items-end gap-1 shrink-0">
         <div className="flex items-center gap-1.5">
+          <span className="text-xs font-bold text-[var(--color-ink-400)] tabular-nums">{serial}</span>
           {appt.visitType && (
             <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)] whitespace-nowrap">
               {appt.visitType}
