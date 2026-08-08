@@ -305,13 +305,17 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
     saveTreatmentPresets([...existing, newPreset]);
 
     startTransition(async () => {
-      await autoApplyPresets([{ icd10Code: customModal.savedCode, description: customModal.savedDescription }]);
+      await autoApplyPresets([{
+        icd10Code: customModal.savedCode,
+        description: customModal.savedDescription,
+        laterality: customModal.target === "icd" ? laterality : provLaterality,
+      }]);
     });
     setCustomModal(null);
   };
 
   // Auto-apply matching treatment presets to Plan
-  const autoApplyPresets = async (newDiagnoses: { icd10Code: string; description: string }[]) => {
+  const autoApplyPresets = async (newDiagnoses: { icd10Code: string; description: string; laterality?: string }[]) => {
     const allPresets = getTreatmentPresets();
     const presetMatches = matchPresets(newDiagnoses, allPresets);
     const alreadyApplied = getApplied(visit.id);
@@ -331,9 +335,26 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
     setApplied(visit.id, [...alreadyApplied, ...newRecords]);
 
     const presetsToApply = toApply.map((m) => m.preset);
+
+    // Carry the triggering diagnosis's laterality onto every med the preset adds,
+    // otherwise the med is stored with a null laterality and the Plan tab badge
+    // falls back to "OU" regardless of the eye selected here.
+    const descToLat = new Map(
+      newDiagnoses.map((d) => [d.description.toLowerCase(), d.laterality]),
+    );
+    const drugLat = new Map<string, string | undefined>();
+    for (const m of toApply) {
+      const lat = descToLat.get(m.diagnosisDesc.toLowerCase());
+      for (const med of m.preset.medications) {
+        const key = med.drugName.toLowerCase();
+        if (!drugLat.has(key)) drugLat.set(key, lat);
+      }
+    }
+
     const currentMeds: { drugName: string }[] = visit.medications ?? [];
     const newMeds = mergeMeds(presetsToApply, currentMeds);
     for (const med of newMeds) {
+      const lat = drugLat.get(med.drugName.toLowerCase());
       if (med.taperingSteps && med.taperingSteps.length > 0) {
         for (const step of med.taperingSteps) {
           await addMedication(visit.id, udid, {
@@ -342,10 +363,11 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
             frequency: step.frequency || undefined,
             duration: step.duration || undefined,
             instructions: med.instructions || undefined,
+            laterality: lat,
           });
         }
       } else {
-        await addMedication(visit.id, udid, med);
+        await addMedication(visit.id, udid, { ...med, laterality: lat });
       }
     }
 
@@ -403,7 +425,7 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
     startTransition(async () => {
       await addDiagnosis(visit.id, udid, { icd10Code: code, description, laterality: provLaterality, provisional: true });
       setProvQuery("");
-      await autoApplyPresets([{ icd10Code: code, description }]);
+      await autoApplyPresets([{ icd10Code: code, description, laterality: provLaterality }]);
       router.refresh();
     });
   };
@@ -413,7 +435,7 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
     startTransition(async () => {
       await addDiagnosis(visit.id, udid, { icd10Code: code, description, laterality });
       setQuery("");
-      await autoApplyPresets([{ icd10Code: code, description }]);
+      await autoApplyPresets([{ icd10Code: code, description, laterality }]);
       router.refresh();
     });
   };
@@ -424,7 +446,7 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
       for (const d of missing) {
         await addDiagnosis(visit.id, udid, { icd10Code: d.icd10Code, description: d.description, laterality: d.laterality ?? "OU", provisional: true });
       }
-      await autoApplyPresets(missing.map((d: any) => ({ icd10Code: d.icd10Code, description: d.description })));
+      await autoApplyPresets(missing.map((d: any) => ({ icd10Code: d.icd10Code, description: d.description, laterality: d.laterality ?? "OU" })));
       router.refresh();
     });
     setProvHistoryOpen(false);
@@ -437,7 +459,7 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
       for (const d of missing) {
         await addDiagnosis(visit.id, udid, { icd10Code: d.icd10Code, description: d.description, laterality: d.laterality ?? "OU" });
       }
-      await autoApplyPresets(missing.map((d: any) => ({ icd10Code: d.icd10Code, description: d.description })));
+      await autoApplyPresets(missing.map((d: any) => ({ icd10Code: d.icd10Code, description: d.description, laterality: d.laterality ?? "OU" })));
       router.refresh();
     });
     setHistoryOpen(false);

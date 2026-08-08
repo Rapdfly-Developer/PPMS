@@ -1304,7 +1304,7 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU" }
 
   const startEdit = (m: any) => {
     setEditingId(m.id);
-    setEditDraft({ drugName: m.drugName ?? "", dosage: m.dosage ?? "", frequency: m.frequency ?? "", duration: m.duration ?? "", instructions: m.instructions ?? "", route: m.route ?? "Topical", laterality: m.laterality ?? "OU" });
+    setEditDraft({ drugName: m.drugName ?? "", dosage: m.dosage ?? "", frequency: m.frequency ?? "", duration: m.duration ?? "", instructions: m.instructions ?? "", route: m.route ?? "Topical", laterality: m.laterality ?? defaultLaterality });
   };
 
   const saveEdit = (id: string) => {
@@ -1349,7 +1349,7 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU" }
     const route = r ?? "";
     const dn = name ?? "";
     if (route === "Topical" || /eye\s*drops?|eye\s*oint/i.test(dn)) {
-      return { label: lat || "OU", bg: "bg-[var(--color-primary-100)]", text: "text-[var(--color-primary-700)]" };
+      return { label: lat || defaultLaterality, bg: "bg-[var(--color-primary-100)]", text: "text-[var(--color-primary-700)]" };
     }
     if (/syrup|suspension/i.test(route) || /syrup|suspension/i.test(dn)) {
       return { label: "SYP", bg: "bg-emerald-100", text: "text-emerald-700" };
