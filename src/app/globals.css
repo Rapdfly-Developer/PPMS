@@ -54,6 +54,12 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+
+  /* Two breakpoints beyond Tailwind's defaults:
+     xs  — the 320-480px band, where two-up grids need to drop to one.
+     3xl — ultrawide, where a 1152px column starts reading as a ribbon. */
+  --breakpoint-xs: 30rem;
+  --breakpoint-3xl: 110rem;
 }
 
 * {
@@ -241,4 +247,35 @@ body {
 }
 .ppms-slide-up {
   animation: ppms-slide-up 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* ── Marketing site (src/components/landing/**) ──────────────────────────────
+   Scoped to the public landing page only. The console does not use these. */
+
+.font-display {
+  font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
+}
+.font-body {
+  font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Infinite capability strip. The two halves are identical, so translating the
+   track by exactly -50% loops seamlessly. `linear` is deliberate here: any
+   easing curve on a continuous loop reads as a visible pulse. */
+@keyframes ppms-marquee {
+  from { transform: translate3d(0, 0, 0); }
+  to   { transform: translate3d(-50%, 0, 0); }
+}
+
+/* Backstop for the marketing page: decorative blur orbs and the offset image
+   plates are deliberately positioned outside their parent's box, and any one of
+   them going a few pixels wide would give the whole page a horizontal
+   scrollbar. `clip` rather than `hidden` because `hidden` would turn this into
+   a scroll container and break `position: sticky` for anything inside. */
+.ppms-landing {
+  overflow-x: clip;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ppms-marquee-track { animation: none !important; }
 }
