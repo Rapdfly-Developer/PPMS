@@ -276,6 +276,46 @@ body {
   overflow-x: clip;
 }
 
+/* ── Ambient motion ────────────────────────────────────────────────────────
+   Everything below animates `transform` and nothing else, so each element is
+   promoted to its own compositor layer and the loops cost no layout or paint
+   on the main thread. The orbs are already blurred 120px+, so a slow drift
+   reads as the light shifting rather than as an object moving — which is why
+   these can run forever without becoming a distraction.
+   Durations are deliberately long and mutually prime-ish, so the two orbs
+   never settle into a visible shared rhythm. */
+
+@keyframes ppms-drift-a {
+  0%,  100% { transform: translate3d(0, 0, 0) scale(1); }
+  50%       { transform: translate3d(4%, 3%, 0) scale(1.06); }
+}
+
+@keyframes ppms-drift-b {
+  0%,  100% { transform: translate3d(0, 0, 0) scale(1); }
+  50%       { transform: translate3d(-3.5%, -4%, 0) scale(1.05); }
+}
+
+/* Offset image plates breathe against the plate they overlap. 8px is small
+   enough to read as depth rather than as an element that has come loose. */
+@keyframes ppms-float {
+  0%,  100% { transform: translate3d(0, 0, 0); }
+  50%       { transform: translate3d(0, -8px, 0); }
+}
+
+.ppms-orb-a { animation: ppms-drift-a 23s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+.ppms-orb-b { animation: ppms-drift-b 29s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+.ppms-float { animation: ppms-float 7.5s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+.ppms-float-slow { animation: ppms-float 9.5s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ppms-orb-a,
+  .ppms-orb-b,
+  .ppms-float,
+  .ppms-float-slow {
+    animation: none !important;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .ppms-marquee-track { animation: none !important; }
 }

@@ -110,7 +110,7 @@ function Section({
   return (
     <section
       id={id}
-      className={`scroll-mt-24 sm:scroll-mt-28 ${GUTTER} py-20 sm:py-24 md:py-32 lg:py-40 ${className}`}
+      className={`scroll-mt-24 sm:scroll-mt-28 ${GUTTER} py-14 sm:py-16 md:py-20 lg:py-24 ${className}`}
     >
       <div className={SHELL}>{children}</div>
     </section>
@@ -133,11 +133,11 @@ function SectionHead({
       <Eyebrow>{eyebrow}</Eyebrow>
       {/* Fluid between 320px and ~1536px, then pinned — clamp keeps the headline
           inside a 320px viewport without a stack of breakpoint overrides. */}
-      <h2 className="font-display mt-5 text-[clamp(1.75rem,6.2vw,3.5rem)] font-bold leading-[1.06] tracking-[-0.03em] text-balance text-emerald-950 sm:mt-6">
+      <h2 className="font-display mt-4 text-[clamp(1.75rem,6.2vw,3.5rem)] font-bold leading-[1.06] tracking-[-0.03em] text-balance text-emerald-950 sm:mt-5">
         {title}
       </h2>
       {lede && (
-        <p className="mt-5 text-[clamp(0.95rem,1.6vw,1.03rem)] leading-relaxed text-slate-600 sm:mt-6">
+        <p className="mt-4 text-[clamp(0.95rem,1.6vw,1.03rem)] leading-relaxed text-slate-600 sm:mt-5">
           {lede}
         </p>
       )}
@@ -162,23 +162,25 @@ function Split({
   children: React.ReactNode;
 }) {
   return (
-    <div className="grid items-center gap-10 sm:gap-12 lg:grid-cols-2 lg:gap-16 xl:gap-20">
+    <div className="grid items-center gap-8 sm:gap-10 lg:grid-cols-2 lg:gap-12 xl:gap-16">
       <div className={flip ? "lg:order-2" : ""}>
         <Reveal>
           <Eyebrow>{eyebrow}</Eyebrow>
-          <h2 className="font-display mt-5 text-[clamp(1.6rem,5.4vw,3rem)] font-bold leading-[1.07] tracking-[-0.03em] text-balance text-emerald-950 sm:mt-6">
+          <h2 className="font-display mt-4 text-[clamp(1.6rem,5.4vw,3rem)] font-bold leading-[1.07] tracking-[-0.03em] text-balance text-emerald-950 sm:mt-5">
             {title}
           </h2>
-          <p className="mt-5 text-[clamp(0.95rem,1.6vw,1.03rem)] leading-relaxed text-slate-600 sm:mt-6">
+          <p className="mt-4 text-[clamp(0.95rem,1.6vw,1.03rem)] leading-relaxed text-slate-600 sm:mt-5">
             {lede}
           </p>
         </Reveal>
 
-        <RevealGroup className="mt-8 flex flex-col gap-1 sm:mt-10" stagger={0.07} delayChildren={0.1}>
+        <RevealGroup className="mt-6 flex flex-col gap-0.5 sm:mt-8" stagger={0.07} delayChildren={0.1}>
           {points.map((p) => (
             <RevealItem key={p.label}>
-              <div className="flex gap-3.5 rounded-2xl px-3 py-4 transition-colors duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-emerald-50/70 sm:gap-4 sm:px-4">
-                <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-emerald-700 ring-1 ring-inset ring-emerald-950/[0.07] shadow-[0_1px_2px_rgba(6,60,45,0.05)]">
+              {/* The row lifts a little on hover as well as tinting, so the
+                  whole block reads as interactive rather than just colour-shifting. */}
+              <div className="group/pt flex gap-3.5 rounded-2xl px-3 py-3.5 transition-[background-color,transform] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:-translate-y-0.5 hover:bg-emerald-50/70 sm:gap-4 sm:px-4">
+                <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-emerald-700 ring-1 ring-inset ring-emerald-950/[0.07] shadow-[0_1px_2px_rgba(6,60,45,0.05)] transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover/pt:scale-110">
                   {p.icon}
                 </span>
                 <div>
@@ -307,19 +309,19 @@ export function PremiumLanding() {
       <Nav />
 
       {/* ── Hero ─────────────────────────────────────────────────────────── */}
-      <section className={`relative overflow-hidden ${GUTTER} pb-20 pt-28 sm:pb-24 sm:pt-36 lg:pb-32 lg:pt-44`}>
+      <section className={`relative overflow-hidden ${GUTTER} pb-14 pt-24 sm:pb-16 sm:pt-28 lg:pb-20 lg:pt-32`}>
         {/* Two soft emerald orbs, well below the content — the only colour in the
             page background. Fixed-size, blurred once, never animated. */}
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute -left-40 -top-40 h-[560px] w-[560px] rounded-full bg-emerald-200/30 blur-[120px]"
+          className="ppms-orb-a pointer-events-none absolute -left-40 -top-40 h-[560px] w-[560px] rounded-full bg-emerald-200/30 blur-[120px]"
         />
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute -right-52 top-40 h-[620px] w-[620px] rounded-full bg-teal-100/50 blur-[130px]"
+          className="ppms-orb-b pointer-events-none absolute -right-52 top-40 h-[620px] w-[620px] rounded-full bg-teal-100/50 blur-[130px]"
         />
 
-        <div className={`relative grid items-center gap-12 sm:gap-16 lg:grid-cols-[1.05fr_1fr] lg:gap-14 ${SHELL}`}>
+        <div className={`relative grid items-center gap-10 sm:gap-12 lg:grid-cols-[1.05fr_1fr] lg:gap-14 ${SHELL}`}>
           <div>
             <Reveal y={20}>
               <Eyebrow>
@@ -333,7 +335,7 @@ export function PremiumLanding() {
             <Reveal y={34} delay={0.06}>
               {/* "Every hospital." is the widest line and sets the floor: at
                   320px it has to fit 288px of usable width. */}
-              <h1 className="font-display mt-6 text-[clamp(2.1rem,8.6vw,4.25rem)] font-bold leading-[1.03] tracking-[-0.035em] text-emerald-950 sm:mt-7">
+              <h1 className="font-display mt-5 text-[clamp(2.1rem,8.6vw,4.25rem)] font-bold leading-[1.03] tracking-[-0.035em] text-emerald-950 sm:mt-6">
                 One doctor.
                 <br />
                 Every hospital.
@@ -345,7 +347,7 @@ export function PremiumLanding() {
             </Reveal>
 
             <Reveal y={24} delay={0.14}>
-              <p className="mt-6 max-w-xl text-[clamp(0.98rem,1.7vw,1.06rem)] leading-relaxed text-slate-600 sm:mt-8">
+              <p className="mt-5 max-w-xl text-[clamp(0.98rem,1.7vw,1.06rem)] leading-relaxed text-slate-600 sm:mt-6">
                 Appointments, medical records, prescriptions, surgery and billing across every
                 hospital you practise at — managed from a single secure account, with the patient
                 history following the patient rather than the building.
@@ -353,7 +355,7 @@ export function PremiumLanding() {
             </Reveal>
 
             <Reveal y={20} delay={0.22}>
-              <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:items-center">
+              <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center">
                 <Magnetic
                   href="/login"
                   className="group inline-flex items-center justify-between gap-3 rounded-full bg-emerald-950 py-2 pl-7 pr-2 text-[15px] font-semibold text-white shadow-[0_20px_40px_-20px_rgba(6,60,45,0.6)]"
@@ -374,7 +376,7 @@ export function PremiumLanding() {
             </Reveal>
 
             <Reveal y={16} delay={0.3}>
-              <ul className="mt-10 flex flex-wrap items-center gap-x-7 gap-y-3 text-[13.5px] text-slate-500">
+              <ul className="mt-7 flex flex-wrap items-center gap-x-6 gap-y-2.5 text-[13.5px] text-slate-500">
                 {["No credit card", "Set up in minutes", "Cancel anytime"].map((t) => (
                   <li key={t} className="flex items-center gap-2">
                     <Check size={14} strokeWidth={1.75} className="text-emerald-600" aria-hidden="true" />
@@ -397,7 +399,7 @@ export function PremiumLanding() {
               quality={85}
               radius="2.25rem"
             />
-            <div className="pointer-events-none absolute -bottom-10 -left-6 hidden w-[46%] lg:block">
+            <div className="ppms-float pointer-events-none absolute -bottom-10 -left-6 hidden w-[46%] lg:block">
               <Frame
                 src={`${IMG}/laptop-holographic-practice-dashboard.jpg`}
                 alt="Practice analytics projected above a laptop screen"
@@ -420,10 +422,10 @@ export function PremiumLanding() {
         </Reveal>
 
         <Reveal delay={0.08}>
-          <Marquee items={CAPABILITIES} className="mt-10" />
+          <Marquee items={CAPABILITIES} className="mt-7" />
         </Reveal>
 
-        <div className="mt-14 grid items-center gap-10 sm:mt-20 sm:gap-12 lg:grid-cols-[1fr_1.25fr] lg:gap-20">
+        <div className="mt-10 grid items-center gap-8 sm:mt-12 sm:gap-10 lg:grid-cols-[1fr_1.25fr] lg:gap-16">
           <Reveal>
             <Frame
               src={`${IMG}/gloved-hand-care-network.jpg`}
@@ -458,7 +460,7 @@ export function PremiumLanding() {
 
       {/* ── The shift ────────────────────────────────────────────────────── */}
       <Section className="bg-gradient-to-b from-white via-emerald-50/40 to-white">
-        <div className="grid items-center gap-14 lg:grid-cols-2 lg:gap-20">
+        <div className="grid items-center gap-8 sm:gap-10 lg:grid-cols-2 lg:gap-16">
           <Reveal>
             <Eyebrow>The shift</Eyebrow>
             <h2 className="font-display mt-5 text-[clamp(1.6rem,5.4vw,3rem)] font-bold leading-[1.07] tracking-[-0.03em] text-balance text-emerald-950 sm:mt-6">
@@ -528,7 +530,7 @@ export function PremiumLanding() {
             could not hold a 6-span plate beside a 3-span column, so the stacked
             column was orphaned at half width on tablets. */}
         <RevealGroup
-          className="mt-12 grid grid-cols-1 gap-4 sm:mt-16 sm:grid-cols-2 md:grid-cols-12"
+          className="mt-8 grid grid-cols-1 gap-4 sm:mt-10 sm:grid-cols-2 md:grid-cols-12"
           stagger={0.06}
         >
           {/* Wide feature plate */}
@@ -590,7 +592,7 @@ export function PremiumLanding() {
                 </div>
               </div>
 
-              <div className="flex flex-1 items-center gap-5 rounded-[2rem] bg-white p-5 ring-1 ring-inset ring-emerald-950/[0.07] shadow-[0_20px_50px_-40px_rgba(6,60,45,0.5)]">
+              <div className="group/care flex flex-1 items-center gap-5 rounded-[2rem] bg-white p-5 ring-1 ring-inset ring-emerald-950/[0.07] shadow-[0_20px_50px_-40px_rgba(6,60,45,0.5)] transition-[transform,box-shadow] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:-translate-y-1">
                 <div className="relative h-[92px] w-[92px] shrink-0 overflow-hidden rounded-2xl bg-slate-100">
                   <Image
                     src={`${IMG}/care-management-tile.jpg`}
@@ -622,7 +624,7 @@ export function PremiumLanding() {
             { icon: <ScanLine size={18} strokeWidth={1.25} />, t: "Documents & scans", d: "Attach scanned reports; text is extracted so paper becomes searchable." },
           ].map((f) => (
             <RevealItem key={f.t} className="sm:col-span-1 md:col-span-6 lg:col-span-3">
-              <div className="group h-full rounded-[1.75rem] bg-white p-2 ring-1 ring-inset ring-emerald-950/[0.07] transition-shadow duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] hover:shadow-[0_30px_60px_-40px_rgba(6,60,45,0.45)]">
+              <div className="group h-full rounded-[1.75rem] bg-white p-2 ring-1 ring-inset ring-emerald-950/[0.07] transition-[transform,box-shadow] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:-translate-y-1 hover:shadow-[0_30px_60px_-40px_rgba(6,60,45,0.45)]">
                 <div className="h-full rounded-[1.25rem] bg-gradient-to-b from-slate-50/80 to-white p-6">
                   <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-emerald-700 ring-1 ring-inset ring-emerald-950/[0.07]">
                     {f.icon}
@@ -673,7 +675,7 @@ export function PremiumLanding() {
                 radius="2.25rem"
               />
             </Reveal>
-            <div className="pointer-events-none absolute -bottom-10 -right-3 hidden w-[42%] lg:block">
+            <div className="ppms-float pointer-events-none absolute -bottom-10 -right-3 hidden w-[42%] lg:block">
               <Reveal delay={0.14}>
                 <Frame
                   src={`${IMG}/clinician-holographic-chart.jpg`}
@@ -725,7 +727,7 @@ export function PremiumLanding() {
                 radius="2.25rem"
               />
             </Reveal>
-            <div className="pointer-events-none absolute -bottom-10 -left-3 hidden w-[40%] lg:block">
+            <div className="ppms-float-slow pointer-events-none absolute -bottom-10 -left-3 hidden w-[40%] lg:block">
               <Reveal delay={0.14}>
                 <Frame
                   src={`${IMG}/front-desk-practice-workstation.jpg`}
@@ -749,7 +751,7 @@ export function PremiumLanding() {
           lede="Every stage writes to the same record, so the next person to see the patient starts from what actually happened rather than from what was remembered."
         />
 
-        <div className="mt-16 grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+        <div className="mt-8 grid gap-5 sm:mt-10 lg:grid-cols-[1.1fr_0.9fr]">
           <Reveal>
             <Frame
               src={`${IMG}/patient-preliminary-analysis-scan.jpg`}
@@ -781,7 +783,7 @@ export function PremiumLanding() {
                 { n: "04", t: "Follow-up", d: "Next appointment, repeat prescription and reminders scheduled before they leave." },
               ].map((s) => (
                 <RevealItem key={s.n}>
-                  <div className="flex items-start gap-5 rounded-2xl bg-white p-5 ring-1 ring-inset ring-emerald-950/[0.07]">
+                  <div className="flex items-start gap-5 rounded-2xl bg-white p-5 ring-1 ring-inset ring-emerald-950/[0.07] transition-[transform,box-shadow] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:-translate-y-1 hover:shadow-[0_20px_44px_-34px_rgba(6,60,45,0.5)]">
                     <span className="font-display text-[13px] font-bold tracking-[0.1em] text-emerald-500">
                       {s.n}
                     </span>
@@ -834,7 +836,7 @@ export function PremiumLanding() {
                 radius="2.25rem"
               />
             </Reveal>
-            <div className="pointer-events-none absolute -bottom-10 -right-3 hidden w-[42%] lg:block">
+            <div className="ppms-float pointer-events-none absolute -bottom-10 -right-3 hidden w-[42%] lg:block">
               <Reveal delay={0.14}>
                 <Frame
                   src={`${IMG}/neuro-imaging-analysis-screen.jpg`}
@@ -886,7 +888,7 @@ export function PremiumLanding() {
                 radius="2.25rem"
               />
             </Reveal>
-            <div className="pointer-events-none absolute -bottom-10 -left-3 hidden w-[40%] lg:block">
+            <div className="ppms-float-slow pointer-events-none absolute -bottom-10 -left-3 hidden w-[40%] lg:block">
               <Reveal delay={0.14}>
                 <Frame
                   src={`${IMG}/printed-clinical-reports.jpg`}
@@ -910,7 +912,7 @@ export function PremiumLanding() {
           lede="Patient data carries obligations. PPMS is designed so that who saw what, and when, is always answerable — and so that access is granted by role rather than by trust."
         />
 
-        <RevealGroup className="mt-16 grid grid-cols-2 gap-3 sm:grid-cols-4" stagger={0.05}>
+        <RevealGroup className="mt-8 grid grid-cols-2 gap-3 sm:mt-10 sm:grid-cols-4" stagger={0.05}>
           {[
             { icon: <Lock size={19} strokeWidth={1.25} />, label: "Encrypted in transit & at rest" },
             { icon: <ShieldCheck size={19} strokeWidth={1.25} />, label: "Role-based access control" },
@@ -922,9 +924,9 @@ export function PremiumLanding() {
             { icon: <Activity size={19} strokeWidth={1.25} />, label: "Session & device visibility" },
           ].map((s) => (
             <RevealItem key={s.label}>
-              <div className="h-full rounded-[1.5rem] bg-white p-2 ring-1 ring-inset ring-emerald-950/[0.07]">
+              <div className="group/sec h-full rounded-[1.5rem] bg-white p-2 ring-1 ring-inset ring-emerald-950/[0.07] transition-[transform,box-shadow] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:-translate-y-1 hover:shadow-[0_24px_50px_-38px_rgba(6,60,45,0.5)]">
                 <div className="flex h-full flex-col items-center gap-4 rounded-[1rem] bg-gradient-to-b from-slate-50/80 to-white px-4 py-8 text-center">
-                  <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-600/10">
+                  <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-600/10 transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover/sec:scale-110">
                     {s.icon}
                   </span>
                   <span className="text-[13.5px] font-medium leading-snug text-emerald-950">
@@ -937,7 +939,7 @@ export function PremiumLanding() {
         </RevealGroup>
 
         <Reveal delay={0.1}>
-          <p className="mx-auto mt-10 max-w-2xl text-center text-[13.5px] leading-relaxed text-slate-500">
+          <p className="mx-auto mt-8 max-w-2xl text-center text-[13.5px] leading-relaxed text-slate-500">
             HIPAA-aligned design describes how the platform is built — access control, audit
             logging and encryption. It is not a certification claim, and we will say so plainly in
             any procurement conversation.
@@ -952,7 +954,7 @@ export function PremiumLanding() {
           title={<>Built around how doctors already work.</>}
         />
 
-        <div className="mt-16 grid gap-4 sm:grid-cols-2 lg:hidden">
+        <div className="mt-8 grid gap-4 sm:mt-10 sm:grid-cols-2 lg:hidden">
           <Reveal>
             <Frame
               src={`${IMG}/doctor-tablet-portrait-warm.jpg`}
@@ -975,7 +977,7 @@ export function PremiumLanding() {
           </Reveal>
         </div>
 
-        <div className="mt-16 hidden items-start gap-6 lg:grid lg:grid-cols-[0.8fr_1.4fr_0.8fr]">
+        <div className="mt-10 hidden items-start gap-5 lg:grid lg:grid-cols-[0.8fr_1.4fr_0.8fr]">
           <Parallax distance={22}>
             <Reveal>
               <Frame
@@ -992,7 +994,7 @@ export function PremiumLanding() {
           <RevealGroup className="flex flex-col gap-4" stagger={0.08}>
             {TESTIMONIALS.map((t) => (
               <RevealItem key={t.name}>
-                <figure className="rounded-[1.75rem] bg-white p-2 ring-1 ring-inset ring-emerald-950/[0.07] shadow-[0_30px_60px_-50px_rgba(6,60,45,0.6)]">
+                <figure className="rounded-[1.75rem] bg-white p-2 ring-1 ring-inset ring-emerald-950/[0.07] shadow-[0_30px_60px_-50px_rgba(6,60,45,0.6)] transition-[transform,box-shadow] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:-translate-y-1">
                   <div className="rounded-[1.25rem] bg-gradient-to-b from-slate-50/70 to-white p-7">
                     <blockquote className="font-display text-[17px] font-medium leading-relaxed tracking-[-0.01em] text-emerald-950">
                       &ldquo;{t.text}&rdquo;
@@ -1037,7 +1039,7 @@ export function PremiumLanding() {
         <RevealGroup className="mt-4 flex flex-col gap-4 lg:hidden" stagger={0.08}>
           {TESTIMONIALS.map((t) => (
             <RevealItem key={t.name}>
-              <figure className="rounded-[1.75rem] bg-white p-2 ring-1 ring-inset ring-emerald-950/[0.07]">
+              <figure className="rounded-[1.75rem] bg-white p-2 ring-1 ring-inset ring-emerald-950/[0.07] transition-[transform,box-shadow] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:-translate-y-1">
                 <div className="rounded-[1.25rem] bg-gradient-to-b from-slate-50/70 to-white p-6">
                   <blockquote className="font-display text-[16px] font-medium leading-relaxed text-emerald-950">
                     &ldquo;{t.text}&rdquo;
@@ -1063,7 +1065,7 @@ export function PremiumLanding() {
         {/* Three-up from md — stacking full-width plan cards on a 768px tablet
             wastes the width and pushes the comparison off-screen. */}
         <RevealGroup
-          className="mt-12 grid items-stretch gap-4 sm:mt-16 md:grid-cols-3"
+          className="mt-8 grid items-stretch gap-4 sm:mt-10 md:grid-cols-3"
           stagger={0.08}
         >
           {PLANS.map((p) => (
@@ -1071,9 +1073,10 @@ export function PremiumLanding() {
               <div
                 className={[
                   "flex h-full flex-col rounded-[2rem] p-2 ring-1 ring-inset",
+                  "transition-[transform,box-shadow] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:-translate-y-1.5",
                   p.featured
                     ? "bg-emerald-950 ring-emerald-950 shadow-[0_40px_80px_-50px_rgba(6,60,45,0.9)]"
-                    : "bg-white ring-emerald-950/[0.07]",
+                    : "bg-white ring-emerald-950/[0.07] hover:shadow-[0_30px_60px_-42px_rgba(6,60,45,0.5)]",
                 ].join(" ")}
               >
                 <div
@@ -1165,7 +1168,7 @@ export function PremiumLanding() {
 
       {/* ── FAQ ──────────────────────────────────────────────────────────── */}
       <Section id="faq" className="bg-gradient-to-b from-white via-slate-50/60 to-white">
-        <div className="grid gap-12 lg:grid-cols-[0.85fr_1.15fr] lg:gap-20">
+        <div className="grid gap-8 lg:grid-cols-[0.85fr_1.15fr] lg:gap-16">
           <Reveal>
             <Eyebrow>FAQ</Eyebrow>
             <h2 className="font-display mt-5 text-[clamp(1.6rem,5.4vw,2.625rem)] font-bold leading-[1.07] tracking-[-0.03em] text-balance text-emerald-950 sm:mt-6">
@@ -1196,18 +1199,18 @@ export function PremiumLanding() {
           <div className="relative overflow-hidden rounded-[2.5rem] bg-emerald-950 p-2 ring-1 ring-inset ring-emerald-950">
             <div
               aria-hidden="true"
-              className="pointer-events-none absolute -right-24 -top-24 h-[420px] w-[420px] rounded-full bg-emerald-500/15 blur-[100px]"
+              className="ppms-orb-a pointer-events-none absolute -right-24 -top-24 h-[420px] w-[420px] rounded-full bg-emerald-500/15 blur-[100px]"
             />
-            <div className="relative rounded-[2rem] px-6 py-16 text-center shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)] sm:px-12 sm:py-24">
+            <div className="relative rounded-[2rem] px-6 py-12 text-center shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)] sm:px-12 sm:py-16">
               <h2 className="font-display mx-auto max-w-3xl text-[clamp(1.7rem,5.6vw,3.5rem)] font-bold leading-[1.06] tracking-[-0.03em] text-balance text-white">
                 Run every hospital you practise at from one account.
               </h2>
-              <p className="mx-auto mt-7 max-w-xl text-[16.5px] leading-relaxed text-emerald-100/70">
+              <p className="mx-auto mt-5 max-w-xl text-[16.5px] leading-relaxed text-emerald-100/70">
                 Thirty days, no card, no commitment. If it does not fit how your practice actually
                 works, we would rather you found that out for free.
               </p>
 
-              <div className="mt-11 flex flex-col items-center justify-center gap-3 sm:flex-row">
+              <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
                 <Magnetic
                   href="/login"
                   className="group inline-flex items-center justify-between gap-3 rounded-full bg-white py-2 pl-7 pr-2 text-[15px] font-semibold text-emerald-950"
@@ -1231,7 +1234,7 @@ export function PremiumLanding() {
       </Section>
 
       {/* ── Footer ───────────────────────────────────────────────────────── */}
-      <footer className={`border-t border-emerald-950/[0.07] ${GUTTER} py-14 sm:py-16`}>
+      <footer className={`border-t border-emerald-950/[0.07] ${GUTTER} py-12 sm:py-14`}>
         <div className={`grid gap-10 sm:grid-cols-2 sm:gap-12 lg:grid-cols-[1.3fr_1fr_1fr_1fr] ${SHELL}`}>
           <div>
             <div className="flex items-center gap-2.5">
@@ -1246,11 +1249,11 @@ export function PremiumLanding() {
                 PPMS
               </span>
             </div>
-            <p className="mt-5 max-w-xs text-[14px] leading-relaxed text-slate-500">
+            <p className="mt-4 max-w-xs text-[14px] leading-relaxed text-slate-500">
               Patient practice management for doctors working across multiple hospitals. A product
               of RAPDFLY PRIVATE LIMITED.
             </p>
-            <div className="mt-6 flex flex-col gap-2.5 text-[13.5px] text-slate-500">
+            <div className="mt-5 flex flex-col gap-2.5 text-[13.5px] text-slate-500">
               <a href="mailto:support@ppmsai.com" className="flex items-center gap-2 hover:text-emerald-800">
                 <Mail size={14} strokeWidth={1.25} aria-hidden="true" />
                 support@ppmsai.com
@@ -1275,7 +1278,7 @@ export function PremiumLanding() {
               <h3 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-950">
                 {col.h}
               </h3>
-              <ul className="mt-5 flex flex-col gap-3">
+              <ul className="mt-4 flex flex-col gap-2.5">
                 {col.links.map(([label, href]) => (
                   <li key={label}>
                     <a
@@ -1291,7 +1294,7 @@ export function PremiumLanding() {
           ))}
         </div>
 
-        <div className={`mt-12 flex flex-col gap-3 border-t border-emerald-950/[0.07] pt-8 text-[13px] text-slate-400 sm:mt-14 sm:flex-row sm:items-center sm:justify-between ${SHELL}`}>
+        <div className={`mt-10 flex flex-col gap-3 border-t border-emerald-950/[0.07] pt-6 text-[13px] text-slate-400 sm:flex-row sm:items-center sm:justify-between ${SHELL}`}>
           <p>© {new Date().getFullYear()} RAPDFLY PRIVATE LIMITED. All rights reserved.</p>
           <p>ppmsai.com</p>
         </div>

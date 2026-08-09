@@ -1,6 +1,6 @@
 "use client";
 
-import { AnimatePresence, motion, useReducedMotion, useScroll, useMotionValueEvent } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion, useScroll, useMotionValueEvent, useSpring } from "framer-motion";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { ArrowUpRight } from "lucide-react";
@@ -24,7 +24,11 @@ export function Nav() {
   const [open, setOpen] = useState(false);
   const [lifted, setLifted] = useState(false);
   const reduce = useReducedMotion();
-  const { scrollY } = useScroll();
+  const { scrollY, scrollYProgress } = useScroll();
+
+  // Read position across the page. Spring-smoothed so the bar glides instead of
+  // tracking raw scroll jitter; scaleX only, so it stays on the compositor.
+  const progress = useSpring(scrollYProgress, { stiffness: 120, damping: 30, restDelta: 0.001 });
 
   useMotionValueEvent(scrollY, "change", (v) => setLifted(v > 24));
 
@@ -48,8 +52,20 @@ export function Nav() {
             lifted
               ? "px-2.5 py-2 shadow-[0_10px_40px_-12px_rgba(6,60,45,0.22)] sm:px-3"
               : "px-3 py-2 shadow-[0_2px_18px_-8px_rgba(6,60,45,0.12)] sm:px-4 sm:py-2.5",
+            "relative overflow-hidden",
           ].join(" ")}
         >
+          {/* Reading progress, hairline along the bottom of the pill. Fades in
+              only once the page has actually been scrolled, so it does not
+              advertise itself on a fresh load. */}
+          <motion.span
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-x-0 bottom-0 h-[2px] origin-left bg-gradient-to-r from-emerald-500 to-teal-400"
+            style={reduce ? { scaleX: 0 } : { scaleX: progress }}
+            animate={{ opacity: lifted ? 1 : 0 }}
+            transition={{ duration: 0.4, ease: EASE.enter }}
+          />
+
           <a href="#top" className="flex shrink-0 items-center gap-2 rounded-full pr-1 sm:gap-2.5 sm:pl-1 sm:pr-2">
             <Image
               src="/landing/logo-ppms-new.png"
@@ -69,7 +85,9 @@ export function Nav() {
               <a
                 key={l.href}
                 href={l.href}
-                className="rounded-full px-3.5 py-2 text-[13.5px] font-medium text-slate-600 transition-colors duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-emerald-50 hover:text-emerald-800"
+                /* Underline wipes in from the left on hover — a transform on a
+                   pseudo-element, so it never triggers layout. */
+                className="group/nav relative rounded-full px-3.5 py-2 text-[13.5px] font-medium text-slate-600 transition-colors duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-emerald-50 hover:text-emerald-800 after:absolute after:inset-x-3.5 after:bottom-1 after:h-px after:origin-left after:scale-x-0 after:bg-emerald-700/60 after:transition-transform after:duration-500 after:ease-[cubic-bezier(0.32,0.72,0,1)] hover:after:scale-x-100"
               >
                 {l.label}
               </a>
