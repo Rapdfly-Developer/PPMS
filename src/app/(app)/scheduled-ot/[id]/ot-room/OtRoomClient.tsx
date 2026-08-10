@@ -7,6 +7,7 @@ import {
   ArrowLeft, CheckCircle2, Clock, User, Building2, Scissors,
   ShieldCheck, ClipboardList, PlayCircle, Activity, CheckSquare,
   HeartPulse, Loader2, ChevronRight, AlertCircle, Pill, FileText,
+  Eye, XCircle,
 } from "lucide-react";
 import {
   initOtRecord, saveCheckIn, saveOtPrep, startSurgery,
@@ -39,8 +40,19 @@ interface ExistingRecord {
   timeline: TimelineEntry[];
 }
 
+interface CounsellingInfo {
+  insuranceType: string | null;
+  counselingDone: boolean;
+  investigationDone: boolean;
+  fitForSurgery: boolean | null;
+  anaesthesiaType: string;
+  rightEye: boolean;
+  leftEye: boolean;
+}
+
 interface Props {
   scheduleId: string; surgeryName: string; surgeryCategory: string;
+  counselling: CounsellingInfo | null;
   patient: Patient; hospital: Hospital;
   otRoom: string | null; plannedDateTime: string;
   anesthetistName: string | null;
@@ -598,7 +610,7 @@ function TimelineSidebar({ entries }: { entries: TimelineEntry[] }) {
 /* ── Main component ─────────────────────────────────────────────────────── */
 export function OtRoomClient({
   scheduleId, surgeryName, surgeryCategory,
-  patient, hospital, otRoom, plannedDateTime,
+  counselling, patient, hospital, otRoom, plannedDateTime,
   anesthetistName, existingRecord,
 }: Props) {
   const initialStep = existingRecord ? statusToStep(existingRecord.status) : 0;
@@ -684,6 +696,40 @@ export function OtRoomClient({
               <Clock size={11} /> {format(new Date(plannedDateTime), "h:mm a, d MMM yyyy")}
             </span>
           </div>
+          {counselling && (
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 mt-2.5 px-3 py-2 rounded-lg bg-violet-50 border border-violet-100 text-[10px]">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-violet-400 shrink-0">Counselling</span>
+              {(["counselingDone", "investigationDone"] as const).map((key) => {
+                const done = counselling[key];
+                const label = key === "counselingDone" ? "Counseling" : "Investigations";
+                return (
+                  <span key={key} className={`inline-flex items-center gap-1 font-semibold px-1.5 py-0.5 rounded-full border ${done ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-white text-[var(--color-ink-400)] border-[var(--color-border)]"}`}>
+                    {done ? <CheckCircle2 size={9} /> : <XCircle size={9} />} {label}
+                  </span>
+                );
+              })}
+              {(() => {
+                const fit = counselling.fitForSurgery ?? (counselling.counselingDone && counselling.investigationDone);
+                return (
+                  <span className={`inline-flex items-center gap-1 font-bold px-1.5 py-0.5 rounded-full border ${fit ? "bg-violet-100 text-violet-700 border-violet-200" : "bg-white text-[var(--color-ink-400)] border-[var(--color-border)]"}`}>
+                    {fit ? <CheckCircle2 size={9} /> : <XCircle size={9} />} Fit for Surgery
+                  </span>
+                );
+              })()}
+              {counselling.insuranceType && (
+                <span className="inline-flex items-center gap-1 text-[var(--color-ink-500)]">
+                  <ShieldCheck size={9} className="text-violet-400" /> {counselling.insuranceType}
+                </span>
+              )}
+              {(counselling.rightEye || counselling.leftEye) && (
+                <span className="inline-flex items-center gap-1 text-[var(--color-ink-500)]">
+                  <Eye size={9} className="text-violet-400" />
+                  {counselling.rightEye && counselling.leftEye ? "OU" : counselling.rightEye ? "RE" : "LE"}
+                </span>
+              )}
+              <span className="text-[var(--color-ink-400)]">{counselling.anaesthesiaType}</span>
+            </div>
+          )}
         </div>
       </div>
 
