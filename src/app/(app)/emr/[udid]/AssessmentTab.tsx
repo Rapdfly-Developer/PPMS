@@ -7,7 +7,7 @@ import { SingleChipSelect } from "@/components/ui/Chip";
 import { ICD10_OPHTHALMOLOGY, DIAGNOSIS_STATUSES, LATERALITY } from "@/lib/constants";
 import { addDiagnosis, updateDiagnosisStatus, removeDiagnosis, addMedication, removeMedication, saveFollowUp, confirmDiagnosis, setDiagnosisProtocol } from "./actions";
 import { useAutoSave, SaveIndicator } from "@/lib/useAutoSave";
-import { X, History, ChevronDown, Search, PenLine, Plus, Check, Ban } from "lucide-react";
+import { X, History, ChevronDown, Search, PenLine, Plus, Check, Ban, Stethoscope, FileText } from "lucide-react";
 
 const DOSAGE_OPTIONS = [
   "1 Drop","2 Drops","3 Drops","4 Drops","6 Drops",
@@ -255,6 +255,141 @@ function DiagnosisRow({
   );
 }
 
+/* ── Protocol picker modal ───────────────────────────────────────────────── */
+
+function ProtocolPickerModal({
+  diagnosis,
+  protocols,
+  pending,
+  onConfirm,
+  onCancel,
+}: {
+  diagnosis: any;
+  protocols: TreatmentPreset[];
+  pending: boolean;
+  onConfirm: (preset: TreatmentPreset | null, customName: string) => void;
+  onCancel: () => void;
+}) {
+  const [selected, setSelected] = useState<"preset" | "custom">(protocols.length > 0 ? "preset" : "custom");
+  const [selectedPreset, setSelectedPreset] = useState<TreatmentPreset | null>(protocols[0] ?? null);
+  const [customName, setCustomName] = useState("");
+
+  const canSubmit =
+    selected === "preset" ? selectedPreset !== null : customName.trim().length > 0;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: "rgba(0,0,0,0.5)" }}
+      onClick={(e) => e.target === e.currentTarget && onCancel()}
+    >
+      <div className="w-full max-w-sm rounded-2xl bg-[var(--color-surface)] shadow-2xl overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 bg-[var(--color-primary-600)]">
+          <div className="flex items-center gap-2.5 text-white">
+            <Stethoscope size={17} />
+            <div>
+              <p className="text-[13px] font-semibold">Select Treatment Protocol</p>
+              <p className="text-[11px] text-white/70 mt-0.5 truncate max-w-[200px]">{diagnosis.description}</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onCancel}
+            className="text-white/60 hover:text-white p-1 rounded-lg hover:bg-white/15 transition-colors"
+          >
+            <X size={16} />
+          </button>
+        </div>
+
+        <div className="px-5 py-4 space-y-2.5">
+          <p className="text-[11px] font-semibold uppercase tracking-widest text-[var(--color-ink-400)] mb-1">
+            Which protocol are you selecting?
+          </p>
+
+          {/* Preset options */}
+          {protocols.map((p, i) => (
+            <button
+              key={p.id}
+              type="button"
+              onClick={() => { setSelected("preset"); setSelectedPreset(p); }}
+              className={`w-full text-left rounded-xl border px-4 py-3 transition-colors ${
+                selected === "preset" && selectedPreset?.id === p.id
+                  ? "border-[var(--color-primary-500)] bg-[var(--color-primary-50)]"
+                  : "border-[var(--color-border)] hover:border-[var(--color-primary-300)]"
+              }`}
+            >
+              <div className="flex items-center justify-between gap-2">
+                <div>
+                  <p className="text-sm font-semibold text-[var(--color-ink-800)]">Protocol {i + 1}</p>
+                  <p className="text-xs text-[var(--color-ink-500)] mt-0.5">{p.name}</p>
+                </div>
+                {selected === "preset" && selectedPreset?.id === p.id && (
+                  <Check size={16} className="text-[var(--color-primary-600)] shrink-0" />
+                )}
+              </div>
+            </button>
+          ))}
+
+          {/* Custom option */}
+          <button
+            type="button"
+            onClick={() => setSelected("custom")}
+            className={`w-full text-left rounded-xl border px-4 py-3 transition-colors ${
+              selected === "custom"
+                ? "border-amber-400 bg-amber-50"
+                : "border-[var(--color-border)] hover:border-amber-300"
+            }`}
+          >
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <FileText size={15} className="text-amber-600 shrink-0" />
+                <p className="text-sm font-semibold text-[var(--color-ink-800)]">Custom</p>
+              </div>
+              {selected === "custom" && <Check size={16} className="text-amber-600 shrink-0" />}
+            </div>
+          </button>
+
+          {selected === "custom" && (
+            <textarea
+              autoFocus
+              rows={3}
+              value={customName}
+              onChange={(e) => setCustomName(e.target.value)}
+              placeholder="Describe the custom protocol…"
+              className="w-full rounded-xl border border-[var(--color-border)] px-3.5 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-amber-400 bg-[var(--color-surface)]"
+            />
+          )}
+        </div>
+
+        <div className="px-5 py-4 border-t border-[var(--color-border)] flex items-center justify-end gap-2.5">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="px-4 py-2 rounded-lg text-sm font-medium text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)] transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            disabled={!canSubmit || pending}
+            onClick={() =>
+              onConfirm(
+                selected === "preset" ? selectedPreset : null,
+                selected === "custom" ? customName.trim() : "",
+              )
+            }
+            className="flex items-center gap-1.5 px-5 py-2 rounded-lg bg-[var(--color-primary-600)] text-white text-sm font-semibold hover:bg-[var(--color-primary-700)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            <Check size={14} />
+            Confirm Diagnosis
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; udid: string; priorVisits?: any[] }) {
   const router = useRouter();
   // Split diagnoses by provisional flag
@@ -294,6 +429,7 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
   const [presetInvestigations, setPresetInvestigations] = useState("");
   const [medDropdownOpen, setMedDropdownOpen] = useState(-1);
   const [allKnownMeds, setAllKnownMeds] = useState<import("./treatmentPresets").TreatmentPresetMed[]>([]);
+  const [pendingProtocolDx, setPendingProtocolDx] = useState<any | null>(null);
 
   useEffect(() => {
     setCustomDxList(getCustomDiagnoses());
@@ -520,15 +656,28 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
     }
   };
 
-  // Confirm a diagnosis. Protocol 1 is selected and applied by default.
+  // Open the protocol picker before confirming.
   const handleConfirm = (d: any) => {
+    setPendingProtocolDx(d);
+  };
+
+  // Called from ProtocolPickerModal once the doctor selects a protocol.
+  const handleConfirmWithProtocol = (
+    preset: TreatmentPreset | null,
+    customName: string,
+  ) => {
+    const d = pendingProtocolDx;
+    if (!d) return;
+    setPendingProtocolDx(null);
     startTransition(async () => {
-      const first = protocolsFor(d)[0];
-      if (first) await applyProtocol(d, first);
-      await confirmDiagnosis(d.id, udid, { protocolId: first?.id, protocolName: first?.name });
-      if (first) {
-        setPresetToast([first.name]);
+      if (preset) {
+        await applyProtocol(d, preset);
+        await confirmDiagnosis(d.id, udid, { protocolId: preset.id, protocolName: preset.name });
+        setPresetToast([preset.name]);
         setTimeout(() => setPresetToast([]), 5000);
+      } else {
+        // Custom protocol — confirm with free-text name, no auto-medication
+        await confirmDiagnosis(d.id, udid, { protocolName: customName });
       }
       router.refresh();
     });
@@ -1242,6 +1391,16 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
         <Toast
           message={`✨ Plan updated: ${presetToast.join(", ")}`}
           onDone={() => setPresetToast([])}
+        />
+      )}
+
+      {pendingProtocolDx && (
+        <ProtocolPickerModal
+          diagnosis={pendingProtocolDx}
+          protocols={protocolsFor(pendingProtocolDx)}
+          pending={pending}
+          onConfirm={handleConfirmWithProtocol}
+          onCancel={() => setPendingProtocolDx(null)}
         />
       )}
     </>
