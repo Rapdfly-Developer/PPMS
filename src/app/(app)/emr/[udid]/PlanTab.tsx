@@ -257,14 +257,10 @@ function PresetAppliedBadge({
 
   // Edit state
   const [editInvestigations, setEditInvestigations] = useState<string[]>([]);
-  const [editAdvice, setEditAdvice]                 = useState<Record<string, string>>({});
   const [newInvInput, setNewInvInput]               = useState("");
 
   const startEditing = () => {
     setEditInvestigations([...allInvestigations]);
-    const map: Record<string, string> = {};
-    details.forEach((p) => { if (p.advice) map[p.id] = p.advice; });
-    setEditAdvice(map);
     setNewInvInput("");
     setEditing(true);
     setExpanded(true);
@@ -273,18 +269,13 @@ function PresetAppliedBadge({
   const saveEdits = () => {
     const all = getTreatmentPresets();
     const updatedIds = new Set(applied.map((a) => a.presetId));
-    // Modify matching presets; carry through any not in the applied set unchanged
     const updated = all.map((p) =>
-      updatedIds.has(p.id)
-        ? { ...p, investigations: editInvestigations, advice: editAdvice[p.id] ?? p.advice }
-        : p
+      updatedIds.has(p.id) ? { ...p, investigations: editInvestigations } : p
     );
-    // If an applied preset was a default (not yet in stored list), add it now
     const storedIds = new Set(all.map((p) => p.id));
     const missingDefaults = details.filter((p) => !storedIds.has(p.id)).map((p) => ({
       ...p,
       investigations: editInvestigations,
-      advice: editAdvice[p.id] ?? p.advice,
     }));
     saveTreatmentPresets([...updated, ...missingDefaults]);
     setEditing(false);
@@ -296,7 +287,7 @@ function PresetAppliedBadge({
     setNewInvInput("");
   };
 
-  const hasDetails = allAdvice.length > 0 || allInvestigations.length > 0;
+  const hasDetails = allInvestigations.length > 0;
   const btnCls = "text-xs font-medium px-2.5 py-1 rounded-lg border transition-colors";
 
   return (
@@ -396,34 +387,6 @@ function PresetAppliedBadge({
                 </div>
               )}
             </div>
-          )}
-
-          {/* Advice */}
-          {(editing ? details.length > 0 : allAdvice.length > 0) && (
-            editing ? (
-              details.map((p, i) => (
-                <div key={p.id}>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-[#0F766E]/60 mb-1">
-                    {details.length > 1 ? `Advice (${applied[i]?.presetName})` : "Advice"}
-                  </p>
-                  <textarea
-                    value={editAdvice[p.id] ?? ""}
-                    onChange={(e) => setEditAdvice((prev) => ({ ...prev, [p.id]: e.target.value }))}
-                    rows={2}
-                    className="w-full rounded-lg border border-[#B2DEDA] bg-white px-2.5 py-1.5 text-xs text-[#0F766E]/80 focus:outline-none focus:ring-1 focus:ring-[#0F766E] resize-none leading-relaxed"
-                  />
-                </div>
-              ))
-            ) : (
-              allAdvice.map((adv, i) => (
-                <div key={i}>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-[#0F766E]/60 mb-1">
-                    {allAdvice.length > 1 ? `Advice (${applied[i]?.presetName})` : "Advice"}
-                  </p>
-                  <p className="text-xs text-[#0F766E]/80 leading-relaxed">{adv}</p>
-                </div>
-              ))
-            )
           )}
 
           {/* Edit action buttons */}
@@ -773,6 +736,7 @@ export function PlanTab({ visit, udid, patientSex, priorVisits = [] }: { visit: 
   const [toastNames, setToastNames]         = useState<string[]>([]);
   const [showDialog, setShowDialog]         = useState(false);
   const [applying, startApply]              = useTransition();
+  const [presetAdvice, setPresetAdvice]     = useState("");
 
   const diagnoses: { icd10Code: string; description: string; laterality?: string }[] = visit.diagnoses ?? [];
   const medications: any[] = visit.medications ?? [];
@@ -841,6 +805,10 @@ export function PlanTab({ visit, udid, patientSex, priorVisits = [] }: { visit: 
           }
         }
 
+        // Push advice into Advise Notes
+        const advice = presetsToApply.map((p) => p.advice).filter(Boolean).join("\n");
+        if (advice) setPresetAdvice(advice);
+
         // Show toast with names of newly applied presets
         setToastNames(presetsToApply.map((p) => p.name));
       });
@@ -880,6 +848,9 @@ export function PlanTab({ visit, udid, patientSex, priorVisits = [] }: { visit: 
       const merged = [...appliedPresets, ...newRecords.filter((r) => !existingIds.has(r.presetId))];
       setApplied(visit.id, merged);
       setAppliedPresets(merged);
+      const advice = selected.map((p) => p.advice).filter(Boolean).join("\n");
+      if (advice) setPresetAdvice(advice);
+
       setToastNames(selected.map((p) => p.name));
       setShowDialog(false);
     });
@@ -910,7 +881,7 @@ export function PlanTab({ visit, udid, patientSex, priorVisits = [] }: { visit: 
         />
       )}
 
-      <PrescriptionCard visit={visit} udid={udid} priorVisits={priorVisits} defaultLaterality={diagLaterality} />
+      <PrescriptionCard visit={visit} udid={udid} priorVisits={priorVisits} defaultLaterality={diagLaterality} externalAdvice={presetAdvice} />
       <MinorProcedureCard visit={visit} udid={udid} priorVisits={priorVisits} />
       <OpticalPrescriptionCard visit={visit} />
       <DispositionCard visit={visit} udid={udid} patientSex={patientSex} priorVisits={priorVisits} />
@@ -955,8 +926,9 @@ function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: st
   const [procedureName,  setProcedureName]  = useState<string>(visit.procedureName ?? "");
   const [anesthesia,     setAnesthesia]     = useState<string>(visit.anesthesiaType ?? "");
   const [showHistory,    setShowHistory]    = useState(false);
-  const [showKeywords,   setShowKeywords]   = useState(false);
+  const [procOpen,       setProcOpen]       = useState(false);
   const [anesthesiaOpen, setAnesthesiaOpen] = useState(false);
+  const procBlurTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useAutoSave(laterality,    (val) => saveProcedureLaterality(visit.id, udid, val));
   useAutoSave(procedureName, (val) => saveProcedureName(visit.id, udid, val));
@@ -979,20 +951,10 @@ function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: st
         <p className="text-sm font-medium text-[var(--color-ink-700)]">Minor Procedure</p>
         <div className="flex items-center gap-1.5">
           <button
-            onClick={() => { setShowHistory((v) => !v); setShowKeywords(false); }}
+            onClick={() => { setShowHistory((v) => !v); }}
             className={historyBtnCls}
           >
             <History size={12} /> History
-          </button>
-          <button
-            onClick={() => { setShowKeywords((v) => !v); setShowHistory(false); }}
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-medium transition-colors ${
-              showKeywords
-                ? "bg-[var(--color-primary-50)] border-[var(--color-primary-300)] text-[var(--color-primary-700)]"
-                : "border-[var(--color-border)] text-[var(--color-ink-500)] hover:text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]"
-            }`}
-          >
-            <Plus size={12} /> Keyword
           </button>
         </div>
       </div>
@@ -1022,17 +984,62 @@ function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: st
           </div>
         </div>
 
-        {/* 2. Procedure Name */}
-        <div className="flex-1 min-w-0">
+        {/* 2. Procedure Name — searchable dropdown */}
+        <div className="flex-1 min-w-0 relative">
           <label className="text-[10px] font-semibold text-[var(--color-ink-500)] uppercase tracking-wide block mb-1.5">
             Procedure
           </label>
-          <input
-            value={procedureName}
-            onChange={(e) => setProcedureName(e.target.value)}
-            placeholder="Procedure name…"
-            className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-3 py-2 text-sm text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent"
-          />
+          <div className="relative">
+            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-300)] pointer-events-none" />
+            <input
+              value={procedureName}
+              onChange={(e) => { setProcedureName(e.target.value); setProcOpen(true); }}
+              onFocus={() => { if (procBlurTimer.current) clearTimeout(procBlurTimer.current); setProcOpen(true); }}
+              onBlur={() => { procBlurTimer.current = setTimeout(() => setProcOpen(false), 150); }}
+              placeholder="Search procedure…"
+              className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] pl-8 pr-7 py-2 text-sm text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent"
+            />
+            {procedureName && (
+              <button
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => { setProcedureName(""); setProcOpen(true); }}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-300)] hover:text-[var(--color-ink-600)]"
+              >
+                <X size={13} />
+              </button>
+            )}
+          </div>
+          {procOpen && (() => {
+            const q = procedureName.toLowerCase();
+            const filtered = PROCEDURE_KEYWORDS.map((g) => ({
+              group: g.group,
+              items: g.items.filter((kw) => !q || kw.toLowerCase().includes(q)),
+            })).filter((g) => g.items.length > 0);
+            return filtered.length > 0 ? (
+              <div className="absolute z-20 mt-1 w-full rounded-xl border border-[var(--color-border)] bg-white shadow-lg max-h-64 overflow-y-auto">
+                {filtered.map((g) => (
+                  <div key={g.group}>
+                    <p className="px-3 pt-2 pb-0.5 text-[9px] font-bold uppercase tracking-widest text-[var(--color-ink-400)]">{g.group}</p>
+                    {g.items.map((kw) => (
+                      <button
+                        key={kw}
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => { setProcedureName(kw); setProcOpen(false); }}
+                        className={`w-full text-left px-3 py-2 text-sm transition-colors flex items-center justify-between gap-2 ${
+                          procedureName === kw
+                            ? "bg-[var(--color-primary-50)] text-[var(--color-primary-700)] font-medium"
+                            : "text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]"
+                        }`}
+                      >
+                        {kw}
+                        {procedureName === kw && <Check size={13} className="shrink-0 text-[var(--color-primary-600)]" />}
+                      </button>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            ) : null;
+          })()}
         </div>
 
         {/* 3. Type of Anesthesia — search dropdown */}
@@ -1082,38 +1089,6 @@ function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: st
         </div>
 
       </div>
-
-      {/* Keyword panel */}
-      {showKeywords && (
-        <div className="mt-3 rounded-xl border border-[var(--color-border)] bg-white shadow-sm overflow-hidden">
-          <div className="px-3 py-2 bg-[var(--color-surface-sunken)] border-b border-[var(--color-border)] flex items-center justify-between">
-            <span className="text-[10px] font-bold text-[var(--color-ink-400)] uppercase tracking-widest">Select Procedure</span>
-            <button onClick={() => setShowKeywords(false)} className="text-[var(--color-ink-300)] hover:text-[var(--color-ink-700)]"><X size={12} /></button>
-          </div>
-          <div className="p-3 flex flex-col gap-3 max-h-56 overflow-y-auto">
-            {PROCEDURE_KEYWORDS.map((group) => (
-              <div key={group.group}>
-                <p className="text-[10px] font-bold text-[var(--color-ink-400)] uppercase tracking-widest mb-1.5">{group.group}</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {group.items.map((kw) => (
-                    <button
-                      key={kw}
-                      onClick={() => { setProcedureName(kw); setShowKeywords(false); }}
-                      className={`px-2 py-0.5 rounded-full border text-[11px] font-medium transition-colors ${
-                        procedureName === kw
-                          ? "bg-[var(--color-primary-100)] border-[var(--color-primary-400)] text-[var(--color-primary-700)]"
-                          : "border-[var(--color-primary-200)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)]"
-                      }`}
-                    >
-                      {kw}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* History panel */}
       {showHistory && (
@@ -1240,7 +1215,7 @@ function OptEyeColumns({ children }: { children: [React.ReactNode, React.ReactNo
 
 type EditDraft = { drugName: string; dosage: string; frequency: string; duration: string; instructions: string; route?: string; laterality?: string };
 
-function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU" }: { visit: any; udid: string; priorVisits: any[]; defaultLaterality?: string }) {
+function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", externalAdvice = "" }: { visit: any; udid: string; priorVisits: any[]; defaultLaterality?: string; externalAdvice?: string }) {
   const [pending, startTransition] = useTransition();
   const [showAddDrug, setShowAddDrug] = useState(false);
   const [showPresets, setShowPresets] = useState(false);
@@ -1253,6 +1228,15 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU" }
   const adviseRef = useRef<HTMLTextAreaElement>(null);
 
   useAutoSave(adviseNotes, (notes) => saveAdviseNotes(visit.id, udid, notes));
+
+  useEffect(() => {
+    if (!externalAdvice) return;
+    setAdviseNotes((prev) => {
+      const trimmed = prev.trim();
+      return trimmed ? `${trimmed}\n${externalAdvice}` : externalAdvice;
+    });
+  }, [externalAdvice]);
+
   const [drugName, setDrugName]       = useState("");
   const [dose, setDose]               = useState("");
   const [route, setRoute]             = useState("Topical");

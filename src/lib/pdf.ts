@@ -650,8 +650,11 @@ async function renderPrescriptionHtml(data: PrescriptionData): Promise<string> {
     if (/syrup|suspension/i.test(r) || /syrup|suspension/i.test(name)) {
       return `<span style="display:inline-block;min-width:26px;padding:1px 4px;border-radius:3px;background:#D1FAE5;color:#065F46;font-size:7.5px;font-weight:700;text-align:center;margin-right:4px;">SYP</span>`;
     }
+    if (r === "IM" || r === "IV" || r === "Intravitreal" || r === "Subconjunctival" || r === "Subtenon" || /inject/i.test(name)) {
+      return `<span style="display:inline-block;min-width:26px;padding:1px 4px;border-radius:3px;background:#FFE4E6;color:#9F1239;font-size:7.5px;font-weight:700;text-align:center;margin-right:4px;">INJ</span>`;
+    }
     if (r === "Oral" || /tablet|capsule/i.test(name)) {
-      return `<span style="display:inline-block;min-width:26px;padding:1px 4px;border-radius:3px;background:#FEF3C7;color:#92400E;font-size:7.5px;font-weight:700;text-align:center;margin-right:4px;">T</span>`;
+      return `<span style="display:inline-block;min-width:26px;padding:1px 4px;border-radius:3px;background:#FEF3C7;color:#92400E;font-size:7.5px;font-weight:700;text-align:center;margin-right:4px;">TAB</span>`;
     }
     return "";
   };
@@ -834,8 +837,11 @@ async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
     if (/syrup|suspension/i.test(r) || /syrup|suspension/i.test(name)) {
       return `<span style="display:inline-block;min-width:24px;padding:1px 4px;border-radius:3px;background:#D1FAE5;color:#065F46;font-size:7px;font-weight:700;text-align:center;margin-right:3px;">SYP</span>`;
     }
+    if (r === "IM" || r === "IV" || r === "Intravitreal" || r === "Subconjunctival" || r === "Subtenon" || /inject/i.test(name)) {
+      return `<span style="display:inline-block;min-width:24px;padding:1px 4px;border-radius:3px;background:#FFE4E6;color:#9F1239;font-size:7px;font-weight:700;text-align:center;margin-right:3px;">INJ</span>`;
+    }
     if (r === "Oral" || /tablet|capsule/i.test(name)) {
-      return `<span style="display:inline-block;min-width:24px;padding:1px 4px;border-radius:3px;background:#FEF3C7;color:#92400E;font-size:7px;font-weight:700;text-align:center;margin-right:3px;">T</span>`;
+      return `<span style="display:inline-block;min-width:24px;padding:1px 4px;border-radius:3px;background:#FEF3C7;color:#92400E;font-size:7px;font-weight:700;text-align:center;margin-right:3px;">TAB</span>`;
     }
     return "";
   };
