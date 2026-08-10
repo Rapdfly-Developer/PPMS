@@ -13,7 +13,7 @@ import {
 import { EmrViewerButton, VisitDownloadButton } from "./EmrViewerModal";
 import {
   VisitSummaryTabs, Block, DataTable, Cols, DASH,
-  TH, TD, TD_MUTED, COLS_COMPLAINT,
+  TH, TD, TD_MUTED,
 } from "./VisitSummaryTabs";
 import { transferPatient } from "../actions";
 export { TimeStampButton } from "./PatientTimeline";
@@ -423,25 +423,14 @@ function LastVisitSummarySection({ summary }: { summary: LastVisitSummary }) {
                     columns around under the reader. */}
                 {summary.chiefComplaint && (
                   <Block label="Chief Complaint">
-                    <DataTable minWidth={300}>
-                      <Cols widths={COLS_COMPLAINT} />
-                      <thead>
-                        <tr>
-                          <th className={TH}>Eye</th>
-                          <th className={TH}>Complaint</th>
-                          <th className={TH}>Duration</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {parseComplaints(summary.chiefComplaint).map((c, i) => (
-                          <tr key={i}>
-                            <td className={`${TD} font-bold text-[var(--color-primary-700)]`}>{c.lat || DASH}</td>
-                            <td className={TD}>{c.text}</td>
-                            <td className={TD_MUTED}>{c.since || DASH}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </DataTable>
+                    <div className="flex flex-wrap gap-1.5">
+                      {parseComplaints(summary.chiefComplaint).map((c, i) => (
+                        <span key={i} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-[11px] font-medium">
+                          <FileText size={11} className="shrink-0 text-amber-500" />
+                          {[c.lat, c.text, c.since ? `· ${c.since}` : null].filter(Boolean).join(" ")}
+                        </span>
+                      ))}
+                    </div>
                   </Block>
                 )}
 

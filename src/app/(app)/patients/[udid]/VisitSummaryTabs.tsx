@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Sparkles, Loader2, Activity, AlertCircle } from "lucide-react";
+import { Sparkles, Loader2, Activity, AlertCircle, FileText } from "lucide-react";
+import { formatComplaintDisplay } from "@/lib/appointment-cc";
 import { getVisitEmrData } from "./emr-viewer-action";
 import { generateAiSummary } from "@/app/(app)/patients/actions";
 
@@ -201,23 +202,23 @@ function ShortContent({ complaint, diagText }: { complaint: string | null; diagT
     return <EmptyNote>No clinical data recorded for this visit.</EmptyNote>;
   }
   return (
-    <DataTable minWidth={260}>
-      <Cols widths={COLS_PAIR} />
-      <tbody>
-        <tr>
-          <td className={TD_MUTED}>Complaint</td>
-          <td className={TD}>
-            {complaint ?? <span className="italic text-[var(--color-ink-300)]">not recorded</span>}
-          </td>
-        </tr>
-        <tr>
-          <td className={TD_MUTED}>Diagnosis</td>
-          <td className={TD}>
-            {diagText || <span className="italic text-[var(--color-ink-300)]">not recorded</span>}
-          </td>
-        </tr>
-      </tbody>
-    </DataTable>
+    <div className="space-y-2.5">
+      {complaint && (
+        <div>
+          <p className="text-[9px] font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-1.5">Chief Complaint</p>
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-[11px] font-medium">
+            <FileText size={11} className="shrink-0 text-amber-500" />
+            {formatComplaintDisplay(complaint)}
+          </span>
+        </div>
+      )}
+      {diagText && (
+        <div>
+          <p className="text-[9px] font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-1">Diagnosis</p>
+          <p className="text-[11px] text-[var(--color-ink-700)]">{diagText}</p>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -305,25 +306,14 @@ function LongContent({
       {/* Chief Complaint */}
       {g?.chiefComplaint && (
         <Block label="Chief Complaint">
-          <DataTable minWidth={300}>
-            <Cols widths={COLS_COMPLAINT} />
-            <thead>
-              <tr>
-                <th className={TH}>Eye</th>
-                <th className={TH}>Complaint</th>
-                <th className={TH}>Duration</th>
-              </tr>
-            </thead>
-            <tbody>
-              {parseComplaints(g.chiefComplaint).map((c, i) => (
-                <tr key={i}>
-                  <td className={`${TD} font-bold text-[var(--color-primary-700)]`}>{c.lat || DASH}</td>
-                  <td className={TD}>{c.text}</td>
-                  <td className={TD_MUTED}>{c.since || DASH}</td>
-                </tr>
-              ))}
-            </tbody>
-          </DataTable>
+          <div className="flex flex-wrap gap-1.5">
+            {parseComplaints(g.chiefComplaint).map((c, i) => (
+              <span key={i} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-[11px] font-medium">
+                <FileText size={11} className="shrink-0 text-amber-500" />
+                {[c.lat, c.text, c.since ? `· ${c.since}` : null].filter(Boolean).join(" ")}
+              </span>
+            ))}
+          </div>
         </Block>
       )}
 
