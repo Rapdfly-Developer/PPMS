@@ -10,6 +10,7 @@ import {
 import { bookAppointment, getBookedSlots } from "./actions";
 import { BackButton } from "@/components/ui/BackButton";
 import { SmartUploadBox, type UploadedFile } from "@/components/ui/SmartUploadBox";
+import { ComplaintCombobox } from "@/components/ui/ComplaintCombobox";
 
 const VISIT_TYPES = ["General OPD", "Emergency", "Follow-up", "Pre-op", "Post-op Review"];
 const SEXES = ["MALE", "FEMALE", "OTHER"];
@@ -757,12 +758,11 @@ export function BookAppointmentForm({
                   </select>
                 </div>
               </div>
-              <textarea
+              <ComplaintCombobox
                 value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                rows={2}
-                placeholder="Describe the patient's chief complaint..."
-                className={`${inputCls} resize-none`}
+                onChange={setNotes}
+                placeholder="Select or type a complaint…"
+                inputCls={inputCls}
               />
             </div>
           </div>

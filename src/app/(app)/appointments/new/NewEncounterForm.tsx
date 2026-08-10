@@ -10,6 +10,7 @@ import {
 import { BackButton } from "@/components/ui/BackButton";
 import { SmartUploadBox, type UploadedFile } from "@/components/ui/SmartUploadBox";
 import { createWalkInEncounter } from "./actions";
+import { ComplaintCombobox } from "@/components/ui/ComplaintCombobox";
 
 const VISIT_TYPES = [
   "General OPD",
@@ -481,12 +482,11 @@ export function NewEncounterForm({
                   </select>
                 </div>
               </div>
-              <textarea
-                placeholder="Describe the patient's chief complaint..."
+              <ComplaintCombobox
                 value={complaint}
-                onChange={(e) => setComplaint(e.target.value)}
-                rows={3}
-                className={`${inputCls} resize-none`}
+                onChange={setComplaint}
+                placeholder="Select or type a complaint…"
+                inputCls={inputCls}
               />
             </div>
           </div>
