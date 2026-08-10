@@ -1335,7 +1335,7 @@ function PosteriorSegmentCard({ visit, udid, editable, priorVisits = [] }: { vis
   const WNL = "Within Normal Limits";
 
   const normalFor = (key: string): string => {
-    if (key === "discShape" || key === "discMargin" || key === "nrr")
+    if (key === "media" || key === "discShape" || key === "discMargin" || key === "nrr")
       return POSTERIOR_SEGMENT_OPTIONS[key]?.[0] ?? WNL;
     if (key === "cdr")
       return POSTERIOR_SEGMENT_OPTIONS[key]?.[2] ?? WNL;
