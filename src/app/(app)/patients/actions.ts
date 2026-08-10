@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { writeAudit } from "@/lib/audit";
 import Anthropic from "@anthropic-ai/sdk";
+import { formatComplaintDisplay } from "@/lib/appointment-cc";
 
 // ── Undo Dispense ────────────────────────────────────────────────────────────
 
@@ -127,7 +128,7 @@ export async function getPatientTimeline(patientId: string): Promise<TimelineEve
       id:          `consult-${v.id}`,
       type:        "CONSULTATION",
       date:        v.date.toISOString(),
-      title:       complaint ? complaint.slice(0, 80) : (v.visitType ?? "Consultation"),
+      title:       complaint ? formatComplaintDisplay(complaint).slice(0, 80) : (v.visitType ?? "Consultation"),
       hospitalName: hospital,
       doctorName:   doctor,
       searchText:  [complaint, diagText, medText, hospital, doctor, v.visitType].filter(Boolean).join(" ").toLowerCase(),

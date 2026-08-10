@@ -16,7 +16,7 @@ export function formatComplaintDisplay(raw: string | null | undefined): string {
     const text = parts.slice(2).join(" | ").trim();
     const m = sinceRaw.match(/^Since:\s*(\d+)\s+(days?|weeks?|months?|years?)$/i);
     if (LATERALITY.has(lat) && m) {
-      return `${lat} ${text} · Since ${m[1]} ${m[2]}`;
+      return `${lat} ${text} · ${m[1]} ${m[2]}`;
     }
   }
 
@@ -30,7 +30,7 @@ export function formatComplaintDisplay(raw: string | null | undefined): string {
     const unit = m[3];
     const text = (m[4] ?? "").trim();
     const body = text ? `${lat} ${text}` : lat;
-    return n ? `${body} · Since ${n} ${unit}` : body;
+    return n ? `${body} · ${n} ${unit}` : body;
   });
   if (formatted.some((s, i) => s !== segments[i])) {
     return formatted.join(" · ");
