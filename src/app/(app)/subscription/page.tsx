@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/rbac";
 import { getLicenseForHospital, getLicenseForDoctor } from "@/lib/license";
 import { prisma } from "@/lib/prisma";
@@ -5,6 +6,8 @@ import { SubscriptionClient } from "./SubscriptionClient";
 
 export default async function SubscriptionPage() {
   const user = await requireUser();
+
+  if (user.role !== "DOCTOR") redirect("/dashboard");
 
   let hospitalId: string | null = null;
   let hospitalName = "";

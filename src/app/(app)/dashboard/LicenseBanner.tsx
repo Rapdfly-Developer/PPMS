@@ -1,11 +1,18 @@
 import Link from "next/link";
-import { AlertTriangle, Clock, CheckCircle, XCircle } from "lucide-react";
+import { AlertTriangle, Clock, XCircle } from "lucide-react";
 import type { LicenseInfo } from "@/lib/license";
 
-export function LicenseBanner({ license }: { license: LicenseInfo | null }) {
+export function LicenseBanner({
+  license,
+  role = "DOCTOR",
+}: {
+  license: LicenseInfo | null;
+  role?: string;
+}) {
   if (!license) return null;
 
   const { status, daysRemaining } = license;
+  const isDoctor = role === "DOCTOR";
 
   if (status === "SUBSCRIBED") {
     if (daysRemaining > 14) return null;
@@ -15,9 +22,11 @@ export function LicenseBanner({ license }: { license: LicenseInfo | null }) {
           <Clock size={15} className="shrink-0" />
           <span>Subscription expires in <strong>{daysRemaining} day{daysRemaining !== 1 ? "s" : ""}</strong>.</span>
         </div>
-        <Link href="/subscription" className="whitespace-nowrap rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-700 transition-colors">
-          Renew Now
-        </Link>
+        {isDoctor && (
+          <Link href="/subscription" className="whitespace-nowrap rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-700 transition-colors">
+            Renew Now
+          </Link>
+        )}
       </div>
     );
   }
@@ -25,8 +34,8 @@ export function LicenseBanner({ license }: { license: LicenseInfo | null }) {
   if (status === "TRIAL_ACTIVE") {
     const color = daysRemaining <= 3 ? "red" : daysRemaining <= 7 ? "amber" : "emerald";
     const classes = {
-      red:     { wrap: "border-red-200 bg-red-50",     text: "text-red-800",     btn: "bg-red-600 hover:bg-red-700"       },
-      amber:   { wrap: "border-amber-200 bg-amber-50", text: "text-amber-800",   btn: "bg-amber-600 hover:bg-amber-700"   },
+      red:     { wrap: "border-red-200 bg-red-50",         text: "text-red-800",     btn: "bg-red-600 hover:bg-red-700"       },
+      amber:   { wrap: "border-amber-200 bg-amber-50",     text: "text-amber-800",   btn: "bg-amber-600 hover:bg-amber-700"   },
       emerald: { wrap: "border-emerald-200 bg-emerald-50", text: "text-emerald-800", btn: "bg-emerald-600 hover:bg-emerald-700" },
     }[color];
 
@@ -41,9 +50,11 @@ export function LicenseBanner({ license }: { license: LicenseInfo | null }) {
             {daysRemaining <= 3 && " Your access will be paused when the trial ends."}
           </span>
         </div>
-        <Link href="/subscription" className={`whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-semibold text-white transition-colors ${classes.btn}`}>
-          Subscribe Now
-        </Link>
+        {isDoctor && (
+          <Link href="/subscription" className={`whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-semibold text-white transition-colors ${classes.btn}`}>
+            Subscribe Now
+          </Link>
+        )}
       </div>
     );
   }
@@ -55,12 +66,14 @@ export function LicenseBanner({ license }: { license: LicenseInfo | null }) {
           <XCircle size={15} className="shrink-0" />
           <span>
             {status === "TRIAL_EXPIRED" ? "Your free trial has expired." : "Your subscription has expired."}
-            {" "}Subscribe to restore full access.
+            {isDoctor ? " Subscribe to restore full access." : " Please contact the doctor to renew."}
           </span>
         </div>
-        <Link href="/subscription" className="whitespace-nowrap rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700 transition-colors">
-          Subscribe Now
-        </Link>
+        {isDoctor && (
+          <Link href="/subscription" className="whitespace-nowrap rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700 transition-colors">
+            Subscribe Now
+          </Link>
+        )}
       </div>
     );
   }

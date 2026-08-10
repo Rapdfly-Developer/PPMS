@@ -115,7 +115,7 @@ export async function HospitalDashboard({
 
   return (
     <>
-      <LicenseBanner license={license} />
+      <LicenseBanner license={license} role="HOSPITAL" />
       <DashboardClient
         role="HOSPITAL"
         displayName={hospital?.name ?? "Hospital"}
