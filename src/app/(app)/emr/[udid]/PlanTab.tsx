@@ -736,7 +736,8 @@ export function PlanTab({ visit, udid, patientSex, priorVisits = [] }: { visit: 
   const [toastNames, setToastNames]         = useState<string[]>([]);
   const [showDialog, setShowDialog]         = useState(false);
   const [applying, startApply]              = useTransition();
-  const [presetAdvice, setPresetAdvice]     = useState("");
+  const [adviseNotes, setAdviseNotes]       = useState<string>(visit.adviseNotes ?? "");
+  useAutoSave(adviseNotes, (notes) => saveAdviseNotes(visit.id, udid, notes));
 
   const diagnoses: { icd10Code: string; description: string; laterality?: string }[] = visit.diagnoses ?? [];
   const medications: any[] = visit.medications ?? [];
@@ -807,7 +808,10 @@ export function PlanTab({ visit, udid, patientSex, priorVisits = [] }: { visit: 
 
         // Push advice into Advise Notes
         const advice = presetsToApply.map((p) => p.advice).filter(Boolean).join("\n");
-        if (advice) setPresetAdvice(advice);
+        if (advice) setAdviseNotes((prev) => {
+          const trimmed = prev.trim();
+          return trimmed ? `${trimmed}\n${advice}` : advice;
+        });
 
         // Show toast with names of newly applied presets
         setToastNames(presetsToApply.map((p) => p.name));
@@ -849,7 +853,10 @@ export function PlanTab({ visit, udid, patientSex, priorVisits = [] }: { visit: 
       setApplied(visit.id, merged);
       setAppliedPresets(merged);
       const advice = selected.map((p) => p.advice).filter(Boolean).join("\n");
-      if (advice) setPresetAdvice(advice);
+      if (advice) setAdviseNotes((prev) => {
+        const trimmed = prev.trim();
+        return trimmed ? `${trimmed}\n${advice}` : advice;
+      });
 
       setToastNames(selected.map((p) => p.name));
       setShowDialog(false);
@@ -881,7 +888,7 @@ export function PlanTab({ visit, udid, patientSex, priorVisits = [] }: { visit: 
         />
       )}
 
-      <PrescriptionCard visit={visit} udid={udid} priorVisits={priorVisits} defaultLaterality={diagLaterality} externalAdvice={presetAdvice} />
+      <PrescriptionCard visit={visit} udid={udid} priorVisits={priorVisits} defaultLaterality={diagLaterality} adviseNotes={adviseNotes} onAdviseChange={setAdviseNotes} />
       <MinorProcedureCard visit={visit} udid={udid} priorVisits={priorVisits} />
       <OpticalPrescriptionCard visit={visit} />
       <DispositionCard visit={visit} udid={udid} patientSex={patientSex} priorVisits={priorVisits} />
@@ -1215,27 +1222,16 @@ function OptEyeColumns({ children }: { children: [React.ReactNode, React.ReactNo
 
 type EditDraft = { drugName: string; dosage: string; frequency: string; duration: string; instructions: string; route?: string; laterality?: string };
 
-function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", externalAdvice = "" }: { visit: any; udid: string; priorVisits: any[]; defaultLaterality?: string; externalAdvice?: string }) {
+function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", adviseNotes, onAdviseChange }: { visit: any; udid: string; priorVisits: any[]; defaultLaterality?: string; adviseNotes: string; onAdviseChange: (notes: string) => void }) {
   const [pending, startTransition] = useTransition();
   const [showAddDrug, setShowAddDrug] = useState(false);
   const [showPresets, setShowPresets] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState<EditDraft>({ drugName: "", dosage: "", frequency: "", duration: "", instructions: "", route: "Topical", laterality: "OU" });
   const [clearConfirm, setClearConfirm] = useState(false);
-  const [adviseNotes, setAdviseNotes] = useState<string>(visit.adviseNotes ?? "");
   const [showHistory, setShowHistory] = useState(false);
   const [showKeywords, setShowKeywords] = useState(false);
   const adviseRef = useRef<HTMLTextAreaElement>(null);
-
-  useAutoSave(adviseNotes, (notes) => saveAdviseNotes(visit.id, udid, notes));
-
-  useEffect(() => {
-    if (!externalAdvice) return;
-    setAdviseNotes((prev) => {
-      const trimmed = prev.trim();
-      return trimmed ? `${trimmed}\n${externalAdvice}` : externalAdvice;
-    });
-  }, [externalAdvice]);
 
   const [drugName, setDrugName]       = useState("");
   const [dose, setDose]               = useState("");
@@ -1806,7 +1802,7 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
         <textarea
           ref={adviseRef}
           value={adviseNotes}
-          onChange={(e) => setAdviseNotes(e.target.value)}
+          onChange={(e) => onAdviseChange(e.target.value)}
           rows={3}
           placeholder="Type advise notes or use keywords below…"
           className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-3 py-2.5 text-sm text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent resize-none leading-relaxed"
@@ -1832,7 +1828,7 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
                       </p>
                       <p className="text-xs text-[var(--color-ink-700)] whitespace-pre-wrap leading-relaxed">{v.adviseNotes}</p>
                       <button
-                        onClick={() => { setAdviseNotes(v.adviseNotes); setShowHistory(false); }}
+                        onClick={() => { onAdviseChange(v.adviseNotes); setShowHistory(false); }}
                         className="mt-1.5 text-[10px] font-medium text-[var(--color-primary-600)] hover:underline"
                       >
                         Use this
@@ -1860,10 +1856,9 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
                       <button
                         key={kw}
                         onClick={() => {
-                          setAdviseNotes((prev) => {
-                            const sep = prev.trim() ? (prev.trimEnd().endsWith(".") ? " " : ". ") : "";
-                            return prev.trimEnd() + sep + kw + ".";
-                          });
+                          onAdviseChange(adviseNotes.trim()
+                            ? adviseNotes.trimEnd() + (adviseNotes.trimEnd().endsWith(".") ? " " : ". ") + kw + "."
+                            : kw + ".");
                           adviseRef.current?.focus();
                         }}
                         className="px-2 py-0.5 rounded-full border border-[var(--color-primary-200)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)] text-[11px] font-medium hover:bg-[var(--color-primary-100)] transition-colors"
