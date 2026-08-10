@@ -1,9 +1,92 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { X, Scissors, Calendar, Eye, Activity, CheckCircle2, XCircle, AlertTriangle } from "lucide-react";
+import { useState, useTransition, useRef, useEffect } from "react";
+import { X, Scissors, Calendar, Eye, Activity, CheckCircle2, XCircle, AlertTriangle, ChevronDown } from "lucide-react";
 import { format } from "date-fns";
 import { saveCounsellingAndSchedule } from "./surgicalCounsellingActions";
+
+const INSURANCE_OPTIONS = [
+  "Self-pay",
+  "ECHS",
+  "ESI",
+  "CGHS",
+  "Ayushman Bharat (PMJAY)",
+  "State Government Scheme",
+  "Private Insurance",
+  "Corporate / TPA",
+  "NRI / International",
+];
+
+function InsuranceCombobox({
+  value,
+  onChange,
+  disabled,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  disabled: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState(value);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => { setQuery(value); }, [value]);
+
+  useEffect(() => {
+    function handler(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const filtered = INSURANCE_OPTIONS.filter((o) =>
+    o.toLowerCase().includes(query.toLowerCase())
+  );
+
+  function select(opt: string) {
+    onChange(opt);
+    setQuery(opt);
+    setOpen(false);
+  }
+
+  return (
+    <div ref={ref} className="relative">
+      <div className="relative">
+        <input
+          type="text"
+          value={query}
+          disabled={disabled}
+          placeholder="Search or type insurance type…"
+          className="w-full px-3 py-2 pr-8 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 disabled:opacity-50 disabled:cursor-not-allowed"
+          onChange={(e) => { setQuery(e.target.value); onChange(e.target.value); setOpen(true); }}
+          onFocus={() => !disabled && setOpen(true)}
+        />
+        <ChevronDown
+          size={14}
+          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] pointer-events-none"
+        />
+      </div>
+      {open && filtered.length > 0 && (
+        <ul className="absolute z-50 mt-1 w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-lg overflow-hidden max-h-52 overflow-y-auto">
+          {filtered.map((opt) => (
+            <li key={opt}>
+              <button
+                type="button"
+                onMouseDown={(e) => { e.preventDefault(); select(opt); }}
+                className={`w-full text-left px-3 py-2 text-sm hover:bg-violet-50 hover:text-violet-700 transition-colors ${
+                  value === opt ? "bg-violet-50 text-violet-700 font-semibold" : "text-[var(--color-ink-700)]"
+                }`}
+              >
+                {opt}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
 
 export type CounsellingRecord = {
   id: string;
@@ -173,13 +256,10 @@ export function SurgicalCounsellingModal({
             <label className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-ink-400)]">
               Insurance Type
             </label>
-            <input
-              type="text"
+            <InsuranceCombobox
               value={insuranceType}
-              onChange={(e) => setInsuranceType(e.target.value)}
+              onChange={setInsuranceType}
               disabled={!canEdit || !!success}
-              placeholder="e.g. ECHS, ESI, Private, Self-pay"
-              className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 disabled:opacity-50 disabled:cursor-not-allowed"
             />
           </div>
 

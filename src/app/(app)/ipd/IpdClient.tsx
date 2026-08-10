@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { BedDouble, Plus, Stethoscope, UserCheck, LogOut } from "lucide-react";
+import { BedDouble, Plus, Stethoscope, UserCheck, LogOut, CheckCircle2, XCircle, ShieldCheck } from "lucide-react";
 import { differenceInDays, format } from "date-fns";
 import { dischargePatient } from "./actions";
 
@@ -25,13 +25,25 @@ function mapWard(ward: string): string {
   return "GENERAL";
 }
 
+type Counselling = {
+  surgeryName: string | null;
+  surgeryType: string;
+  anaesthesiaType: string;
+  rightEye: boolean;
+  leftEye: boolean;
+  insuranceType: string | null;
+  counselingDone: boolean;
+  investigationDone: boolean;
+  fitForSurgery: boolean | null;
+};
+
 type Admission = {
   id: string;
   visit: {
     patient: { name: string; udid: string; age: number };
     hospital: { name: string };
     doctor: { name: string } | null;
-    surgicalCounselling: { surgeryType: string } | null;
+    surgicalCounselling: Counselling | null;
   };
   ward: string;
   reason: string;
@@ -45,6 +57,8 @@ type Admission = {
 
 function OccupiedBed({ bedNum, admission }: { bedNum: string; admission: Admission }) {
   const dayIn = differenceInDays(new Date(), new Date(admission.createdAt));
+  const sc = admission.visit.surgicalCounselling;
+  const fit = sc ? (sc.fitForSurgery ?? (sc.counselingDone && sc.investigationDone)) : null;
   return (
     <div className="rounded-2xl border border-[var(--color-border)] bg-white p-4 shadow-sm flex flex-col gap-1 min-h-[140px]">
       <div className="flex items-center justify-between mb-1">
@@ -56,9 +70,29 @@ function OccupiedBed({ bedNum, admission }: { bedNum: string; admission: Admissi
       {admission.visit.doctor && (
         <p className="text-[11px] text-[var(--color-ink-500)]">Dr. {admission.visit.doctor.name}</p>
       )}
-      <p className="text-[11px] text-[var(--color-ink-600)] mt-auto">
-        {admission.visit.surgicalCounselling?.surgeryType ?? admission.reason}
+      <p className="text-[11px] text-[var(--color-ink-600)]">
+        {sc ? (sc.surgeryName ?? sc.surgeryType) : admission.reason}
       </p>
+      {sc && (
+        <div className="mt-1.5 flex flex-wrap gap-1">
+          <span className={`inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full border ${sc.counselingDone ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-slate-50 text-slate-400 border-slate-200"}`}>
+            {sc.counselingDone ? <CheckCircle2 size={8} /> : <XCircle size={8} />} Counseling
+          </span>
+          <span className={`inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full border ${sc.investigationDone ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-slate-50 text-slate-400 border-slate-200"}`}>
+            {sc.investigationDone ? <CheckCircle2 size={8} /> : <XCircle size={8} />} Inv.
+          </span>
+          {fit !== null && (
+            <span className={`inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full border ${fit ? "bg-violet-50 text-violet-700 border-violet-200" : "bg-slate-50 text-slate-400 border-slate-200"}`}>
+              {fit ? <CheckCircle2 size={8} /> : <XCircle size={8} />} Fit
+            </span>
+          )}
+          {sc.insuranceType && (
+            <span className="inline-flex items-center gap-0.5 text-[9px] px-1.5 py-0.5 rounded-full bg-sky-50 text-sky-700 border border-sky-200">
+              <ShieldCheck size={8} /> {sc.insuranceType}
+            </span>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -267,6 +301,8 @@ function AdmissionsList({ admissions }: { admissions: Admission[] }) {
   const Row = ({ a }: { a: Admission }) => {
     const dayIn = differenceInDays(new Date(), new Date(a.createdAt)) + 1;
     const wc = wardBadge[a.ward] ?? "bg-gray-100 text-gray-700";
+    const sc = a.visit.surgicalCounselling;
+    const fit = sc ? (sc.fitForSurgery ?? (sc.counselingDone && sc.investigationDone)) : null;
     return (
       <tr className="hover:bg-[var(--color-surface-sunken)] transition-colors">
         <td className="px-5 py-3.5">
@@ -276,8 +312,28 @@ function AdmissionsList({ admissions }: { admissions: Admission[] }) {
         <td className="px-5 py-3.5">
           <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${wc}`}>{a.ward.replace(/_/g, " ")}</span>
         </td>
-        <td className="px-5 py-3.5 text-sm text-[var(--color-ink-600)]">
-          {a.visit.surgicalCounselling?.surgeryType ?? a.reason}
+        <td className="px-5 py-3.5">
+          <p className="text-sm text-[var(--color-ink-600)]">{sc ? (sc.surgeryName ?? sc.surgeryType) : a.reason}</p>
+          {sc && (
+            <div className="flex flex-wrap gap-1 mt-1">
+              <span className={`inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full border ${sc.counselingDone ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-slate-50 text-slate-400 border-slate-200"}`}>
+                {sc.counselingDone ? <CheckCircle2 size={8} /> : <XCircle size={8} />} Counseling
+              </span>
+              <span className={`inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full border ${sc.investigationDone ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-slate-50 text-slate-400 border-slate-200"}`}>
+                {sc.investigationDone ? <CheckCircle2 size={8} /> : <XCircle size={8} />} Investigations
+              </span>
+              {fit !== null && (
+                <span className={`inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full border ${fit ? "bg-violet-50 text-violet-700 border-violet-200" : "bg-slate-50 text-slate-400 border-slate-200"}`}>
+                  {fit ? <CheckCircle2 size={8} /> : <XCircle size={8} />} Fit for Surgery
+                </span>
+              )}
+              {sc.insuranceType && (
+                <span className="inline-flex items-center gap-0.5 text-[9px] px-1.5 py-0.5 rounded-full bg-sky-50 text-sky-700 border border-sky-200">
+                  <ShieldCheck size={8} /> {sc.insuranceType}
+                </span>
+              )}
+            </div>
+          )}
         </td>
         <td className="px-5 py-3.5 text-sm text-[var(--color-ink-600)]">
           {format(new Date(a.createdAt), "dd MMM yyyy")}
