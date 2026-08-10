@@ -1334,13 +1334,21 @@ function PosteriorSegmentCard({ visit, udid, editable, priorVisits = [] }: { vis
 
   const WNL = "Within Normal Limits";
 
+  const normalFor = (key: string): string => {
+    if (key === "discShape" || key === "discMargin" || key === "nrr")
+      return POSTERIOR_SEGMENT_OPTIONS[key]?.[0] ?? WNL;
+    if (key === "cdr")
+      return POSTERIOR_SEGMENT_OPTIONS[key]?.[2] ?? WNL;
+    return WNL;
+  };
+
   const isNormal = PS_KEYS.every(
-    (key) => (re[key] ?? "") === WNL && (le[key] ?? "") === WNL,
+    (key) => (re[key] ?? "") === normalFor(key) && (le[key] ?? "") === normalFor(key),
   );
 
   const applyNormal = (checked: boolean) => {
     const patch: Record<string, string> = {};
-    PS_KEYS.forEach((key) => { patch[key] = checked ? WNL : ""; });
+    PS_KEYS.forEach((key) => { patch[key] = checked ? normalFor(key) : ""; });
     setRe((prev) => ({ ...prev, ...patch }));
     setLe((prev) => ({ ...prev, ...patch }));
   };
