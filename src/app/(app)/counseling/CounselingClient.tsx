@@ -6,6 +6,7 @@ import { format, isToday, isTomorrow, isPast, startOfDay } from "date-fns";
 import {
   HeartHandshake, Search, User, Building2, Stethoscope, Eye,
   CalendarClock, CheckCircle2, ClipboardList, AlertTriangle, Scissors,
+  ShieldCheck, FlaskConical, XCircle,
 } from "lucide-react";
 
 /* ── Types ─────────────────────────────────────────────────────────────── */
@@ -21,6 +22,10 @@ interface CounselingItem {
   counselledOn: string;
   scheduled: boolean;
   visitId: string;
+  insuranceType: string | null;
+  counselingDone: boolean;
+  investigationDone: boolean;
+  fitForSurgery: boolean | null;
   patient: { id: string; name: string; udid: string; uhid: string | null; age: number; sex: string };
   hospital: { id: string; name: string };
   doctor: { id: string; name: string };
@@ -76,8 +81,22 @@ function StatTile({ icon, label, value, color, active, onClick }: {
 }
 
 /* ── Row ───────────────────────────────────────────────────────────────── */
+function StatusPill({ done, label, icon }: { done: boolean; label: string; icon: React.ReactNode }) {
+  return (
+    <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
+      done
+        ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+        : "bg-[var(--color-surface-sunken)] text-[var(--color-ink-400)] border-[var(--color-border)]"
+    }`}>
+      {done ? <CheckCircle2 size={10} /> : <XCircle size={10} />}
+      {label}
+    </span>
+  );
+}
+
 function CounselingRow({ item, role }: { item: CounselingItem; role: "DOCTOR" | "HOSPITAL" }) {
   const lat = lateralityLabel(item.rightEye, item.leftEye);
+  const fitForSurgery = item.fitForSurgery ?? (item.counselingDone && item.investigationDone);
 
   return (
     <li className="rounded-xl border border-[var(--color-border)] bg-white px-4 py-3 hover:border-[var(--color-primary-200)] transition-colors">
@@ -116,9 +135,32 @@ function CounselingRow({ item, role }: { item: CounselingItem; role: "DOCTOR" | 
             )}
             <span className="text-[var(--color-ink-300)]">·</span>
             <span>{item.anaesthesiaType}</span>
+            {item.insuranceType && (
+              <>
+                <span className="text-[var(--color-ink-300)]">·</span>
+                <span className="inline-flex items-center gap-1">
+                  <ShieldCheck size={11} className="text-[var(--color-ink-400)]" />
+                  {item.insuranceType}
+                </span>
+              </>
+            )}
           </div>
 
-          <div className="mt-1 flex items-center gap-3 flex-wrap text-[11px] text-[var(--color-ink-400)]">
+          {/* Counselling status pills */}
+          <div className="mt-2 flex items-center gap-1.5 flex-wrap">
+            <StatusPill done={item.counselingDone} label="Counseling" icon={null} />
+            <StatusPill done={item.investigationDone} label="Investigations" icon={null} />
+            <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+              fitForSurgery
+                ? "bg-violet-50 text-violet-700 border-violet-200"
+                : "bg-[var(--color-surface-sunken)] text-[var(--color-ink-400)] border-[var(--color-border)]"
+            }`}>
+              {fitForSurgery ? <CheckCircle2 size={10} /> : <XCircle size={10} />}
+              Fit for Surgery
+            </span>
+          </div>
+
+          <div className="mt-1.5 flex items-center gap-3 flex-wrap text-[11px] text-[var(--color-ink-400)]">
             <span className="inline-flex items-center gap-1">
               <Stethoscope size={11} /> {item.doctor.name}
             </span>

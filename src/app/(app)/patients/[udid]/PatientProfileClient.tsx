@@ -582,14 +582,16 @@ export function PatientProfileClient({
 
       {/* ── Surgical Counseling button — shown only for OT-decided patients ── */}
       {surgicalCounselling && (
-        <button
-          type="button"
-          onClick={() => setShowCounsellingModal(true)}
-          className="flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-xl font-semibold text-sm bg-violet-600 text-white hover:bg-violet-700 transition-colors shadow-sm w-full"
-        >
-          <Scissors size={16} />
-          Surgical Counseling
-        </button>
+        <div className="mt-3">
+          <button
+            type="button"
+            onClick={() => setShowCounsellingModal(true)}
+            className="flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-xl font-semibold text-sm bg-violet-600 text-white hover:bg-violet-700 transition-colors shadow-sm w-full"
+          >
+            <Scissors size={16} />
+            Surgical Counseling
+          </button>
+        </div>
       )}
 
       {/* ── Surgical Counseling modal ──────────────────────────────────────── */}
