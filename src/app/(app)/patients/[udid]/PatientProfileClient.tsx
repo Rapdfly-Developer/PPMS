@@ -422,16 +422,15 @@ function LastVisitSummarySection({ summary }: { summary: LastVisitSummary }) {
                     and cell classes, so switching tabs does not shift the
                     columns around under the reader. */}
                 {summary.chiefComplaint && (
-                  <Block label="Chief Complaint">
-                    <div className="flex flex-wrap gap-1.5">
-                      {parseComplaints(summary.chiefComplaint).map((c, i) => (
-                        <span key={i} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-[11px] font-medium">
-                          <FileText size={11} className="shrink-0 text-amber-500" />
-                          {[c.lat, c.text, c.since ? `· ${c.since}` : null].filter(Boolean).join(" ")}
-                        </span>
-                      ))}
-                    </div>
-                  </Block>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-ink-400)] shrink-0">Chief Complaint</span>
+                    {parseComplaints(summary.chiefComplaint).map((c, i) => (
+                      <span key={i} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-[11px] font-medium">
+                        <FileText size={11} className="shrink-0 text-amber-500" />
+                        {[c.lat, c.text, c.since ? `· ${c.since}` : null].filter(Boolean).join(" ")}
+                      </span>
+                    ))}
+                  </div>
                 )}
 
                 {summary.diagnoses.length > 0 && (
