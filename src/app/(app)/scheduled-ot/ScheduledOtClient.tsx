@@ -8,6 +8,7 @@ import {
   CheckCircle2, Clock, CalendarClock, XCircle, Search, ChevronDown,
   ChevronRight, Stethoscope, BedDouble, FileCheck, TriangleAlert,
   ThumbsUp, MessageSquare, Ban, Loader2, Lock, DoorOpen,
+  ShieldCheck,
 } from "lucide-react";
 import { approveSurgery, requestSurgeryChanges, cancelScheduledSurgery } from "./actions";
 
@@ -22,6 +23,16 @@ interface UnscheduledRecord {
   patient: Patient; hospital: Hospital; doctor: Doctor;
 }
 
+interface CounsellingInfo {
+  insuranceType: string | null;
+  counselingDone: boolean;
+  investigationDone: boolean;
+  fitForSurgery: boolean | null;
+  anaesthesiaType: string;
+  rightEye: boolean;
+  leftEye: boolean;
+}
+
 interface ScheduleRecord {
   id: string; surgeryName: string; surgeryCategory: string; urgencyType: string;
   priority: string; plannedDateTime: string; otRoom: string | null;
@@ -29,6 +40,7 @@ interface ScheduleRecord {
   remarks: string | null; consentReceived: boolean; reportsUploaded: boolean;
   otAvailable: boolean; bloodArranged: boolean; patientInformed: boolean;
   patient: Patient; hospital: Hospital; doctor: Doctor;
+  counselling: CounsellingInfo | null;
 }
 
 interface Counts { waiting: number; scheduled: number; completed: number; cancelled: number }
@@ -111,6 +123,38 @@ function EmptySection({ icon, label, sub }: { icon: React.ReactNode; label: stri
 
 function ChecklistDot({ ok }: { ok: boolean }) {
   return <span className={`w-1.5 h-1.5 rounded-full inline-block ${ok ? "bg-emerald-500" : "bg-slate-300"}`} />;
+}
+
+/* ── Counselling strip ───────────────────────────────────────────────────── */
+function CounsellingStrip({ c }: { c: CounsellingInfo }) {
+  const lat = c.rightEye && c.leftEye ? "OU" : c.rightEye ? "RE" : c.leftEye ? "LE" : null;
+  const fit = c.fitForSurgery ?? (c.counselingDone && c.investigationDone);
+
+  return (
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 px-3 py-2 rounded-lg bg-violet-50 border border-violet-100 text-[10px]">
+      <span className="text-[10px] font-bold uppercase tracking-widest text-violet-400 shrink-0">Counselling</span>
+      <span className={`inline-flex items-center gap-1 font-semibold px-1.5 py-0.5 rounded-full border ${c.counselingDone ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-[var(--color-surface-sunken)] text-[var(--color-ink-400)] border-[var(--color-border)]"}`}>
+        {c.counselingDone ? <CheckCircle2 size={9} /> : <XCircle size={9} />} Counseling
+      </span>
+      <span className={`inline-flex items-center gap-1 font-semibold px-1.5 py-0.5 rounded-full border ${c.investigationDone ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-[var(--color-surface-sunken)] text-[var(--color-ink-400)] border-[var(--color-border)]"}`}>
+        {c.investigationDone ? <CheckCircle2 size={9} /> : <XCircle size={9} />} Investigations
+      </span>
+      <span className={`inline-flex items-center gap-1 font-bold px-1.5 py-0.5 rounded-full border ${fit ? "bg-violet-100 text-violet-700 border-violet-200" : "bg-[var(--color-surface-sunken)] text-[var(--color-ink-400)] border-[var(--color-border)]"}`}>
+        {fit ? <CheckCircle2 size={9} /> : <XCircle size={9} />} Fit for Surgery
+      </span>
+      {c.insuranceType && (
+        <span className="inline-flex items-center gap-1 text-[var(--color-ink-500)]">
+          <ShieldCheck size={9} className="text-violet-400" /> {c.insuranceType}
+        </span>
+      )}
+      {lat && (
+        <span className="inline-flex items-center gap-1 text-[var(--color-ink-500)]">
+          <Eye size={9} className="text-violet-400" /> {lat}
+        </span>
+      )}
+      <span className="text-[var(--color-ink-400)]">{c.anaesthesiaType}</span>
+    </div>
+  );
 }
 
 /* ── Waiting Card ────────────────────────────────────────────────────────── */
@@ -203,6 +247,13 @@ function WaitingCard({ rec, role, idx }: { rec: ScheduleRecord; role: "DOCTOR" |
             {role === "HOSPITAL" && <span className="flex items-center gap-1 text-[var(--color-ink-400)]"><User size={11} /> Dr. {rec.doctor.name}</span>}
             {role === "DOCTOR"   && <span className="flex items-center gap-1 text-[var(--color-ink-400)]"><Building2 size={11} /> {rec.hospital.name}</span>}
           </div>
+
+          {/* Counselling strip */}
+          {rec.counselling && (
+            <div className="mb-2.5">
+              <CounsellingStrip c={rec.counselling} />
+            </div>
+          )}
 
           {/* Checklist dots */}
           <div className="flex items-center gap-3 mb-2.5 flex-wrap">
@@ -384,6 +435,13 @@ function ConfirmedCard({ rec, role, idx }: { rec: ScheduleRecord; role: "DOCTOR"
             {role === "HOSPITAL" && <span className="flex items-center gap-1 text-[var(--color-ink-400)]"><User size={11} /> Dr. {rec.doctor.name}</span>}
             {role === "DOCTOR"   && <span className="flex items-center gap-1 text-[var(--color-ink-400)]"><Building2 size={11} /> {rec.hospital.name}</span>}
           </div>
+
+          {/* Counselling strip */}
+          {rec.counselling && (
+            <div className="mb-2.5">
+              <CounsellingStrip c={rec.counselling} />
+            </div>
+          )}
 
           {/* Checklist */}
           <div className="flex items-center gap-3 mb-2.5 flex-wrap">

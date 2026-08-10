@@ -59,6 +59,29 @@ export default async function ScheduledOtPage() {
     cancelled: allSchedules.filter((s) => s.status === "CANCELLED").length,
   };
 
+  /* ── fetch counselling details for schedule records that link to one ── */
+  const counsellingIds = scheduleRecords
+    .map((s) => s.surgicalCounsellingId)
+    .filter((id): id is string => !!id);
+
+  const counsellingMap = new Map(
+    counsellingIds.length > 0
+      ? (await prisma.surgicalCounselling.findMany({
+          where: { id: { in: counsellingIds } },
+          select: {
+            id:                true,
+            insuranceType:     true,
+            counselingDone:    true,
+            investigationDone: true,
+            fitForSurgery:     true,
+            anaesthesiaType:   true,
+            rightEye:          true,
+            leftEye:           true,
+          },
+        })).map((c) => [c.id, c])
+      : []
+  );
+
   /* ── shape unscheduled counselling records (for "needs form" section) ── */
   const scheduledCounsellingIds = new Set(
     scheduleRecords.map((s) => s.surgicalCounsellingId).filter(Boolean)
@@ -101,6 +124,19 @@ export default async function ScheduledOtPage() {
     patient:  { id: r.patient.id, name: r.patient.name, udid: r.patient.udid ?? "", uhid: (r.patient as any).uhid ?? null, age: r.patient.age, sex: r.patient.sex },
     hospital: { name: r.hospital.name, id: r.hospital.id },
     doctor:   { name: r.surgeon.name,  id: r.surgeon.id  },
+    counselling: (() => {
+      const c = r.surgicalCounsellingId ? counsellingMap.get(r.surgicalCounsellingId) : null;
+      if (!c) return null;
+      return {
+        insuranceType:     c.insuranceType ?? null,
+        counselingDone:    c.counselingDone,
+        investigationDone: c.investigationDone,
+        fitForSurgery:     c.fitForSurgery ?? null,
+        anaesthesiaType:   c.anaesthesiaType,
+        rightEye:          c.rightEye,
+        leftEye:           c.leftEye,
+      };
+    })(),
   });
 
   const waiting   = scheduleRecords.filter((r) => WAITING_STATUSES.includes(r.status)).map(shapeSchedule);
