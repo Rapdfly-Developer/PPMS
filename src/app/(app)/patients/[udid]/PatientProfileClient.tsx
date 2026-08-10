@@ -438,13 +438,6 @@ function LastVisitSummarySection({ summary }: { summary: LastVisitSummary }) {
                   <Block label="Diagnoses">
                     <DataTable minWidth={300}>
                       <Cols widths={["52%", "16%", "32%"]} />
-                      <thead>
-                        <tr>
-                          <th className={TH}>Diagnosis</th>
-                          <th className={TH}>Eye</th>
-                          <th className={TH}>Status</th>
-                        </tr>
-                      </thead>
                       <tbody>
                         {summary.diagnoses.map((d) => (
                           <tr key={d.id}>

@@ -446,14 +446,6 @@ function LongContent({
         <Block label="Diagnoses">
           <DataTable minWidth={360}>
             <Cols widths={COLS_DIAGNOSIS} />
-            <thead>
-              <tr>
-                <th className={TH}>Diagnosis</th>
-                <th className={TH}>Eye</th>
-                <th className={TH}>ICD</th>
-                <th className={TH}>Status</th>
-              </tr>
-            </thead>
             <tbody>
               {data.diagnoses.map((d: any, i: number) => (
                 <tr key={i}>
