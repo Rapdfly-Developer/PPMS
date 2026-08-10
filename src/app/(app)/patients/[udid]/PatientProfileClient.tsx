@@ -8,10 +8,13 @@ import {
   ChevronRight, ChevronDown, Hospital, Stethoscope, FileText,
   CheckCircle2, Clock, AlertCircle, Filter, ClipboardCheck,
   ArrowRightLeft, X, Download, Loader2,
-  Pill, Activity,
+  Activity,
 } from "lucide-react";
 import { EmrViewerButton, VisitDownloadButton } from "./EmrViewerModal";
-import { VisitSummaryTabs } from "./VisitSummaryTabs";
+import {
+  VisitSummaryTabs, Block, DataTable, Cols, DASH,
+  TH, TD, TD_MUTED, COLS_COMPLAINT,
+} from "./VisitSummaryTabs";
 import { transferPatient } from "../actions";
 export { TimeStampButton } from "./PatientTimeline";
 
@@ -381,23 +384,6 @@ function PreviousVisitsPanel({ visits, udid }: { visits: SerialVisit[]; udid: st
 
 /* ── Last Visit Summary section ─────────────────────────────────────────────── */
 function LastVisitSummarySection({ summary }: { summary: LastVisitSummary }) {
-  const statusColor: Record<string, string> = {
-    ACTIVE:   "bg-red-50 text-red-700",
-    RESOLVED: "bg-emerald-50 text-emerald-700",
-    CHRONIC:  "bg-amber-50 text-amber-700",
-  };
-  const invStatusColor: Record<string, string> = {
-    ORDERED:   "bg-blue-50 text-blue-700",
-    COMPLETED: "bg-emerald-50 text-emerald-700",
-    PENDING:   "bg-amber-50 text-amber-700",
-    CANCELLED: "bg-slate-100 text-slate-500",
-  };
-  const priorityColor: Record<string, string> = {
-    URGENT:   "bg-red-100 text-red-700",
-    STAT:     "bg-red-100 text-red-700",
-    ROUTINE:  "bg-slate-100 text-slate-600",
-  };
-
   return (
     <div className="mt-4 space-y-3">
       {/* ── Last Visit Summary ── */}
@@ -431,58 +417,96 @@ function LastVisitSummarySection({ summary }: { summary: LastVisitSummary }) {
             complaint={summary.chiefComplaint}
             diagnoses={summary.diagnoses.map((d) => d.description)}
             shortContent={
-              <div className="space-y-3">
-          {/* Chief Complaint */}
-          {summary.chiefComplaint && (
-            <div className="flex items-baseline gap-2 flex-wrap">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)] shrink-0">Chief Complaint</span>
-              <span className="text-[var(--color-ink-300)] text-xs shrink-0">·</span>
-              {parseComplaints(summary.chiefComplaint).map((c, i) => (
-                <span key={i} className="text-sm text-[var(--color-ink-800)]">
-                  {i > 0 && <span className="text-[var(--color-ink-300)] mr-2">·</span>}
-                  {c.lat && <span className="font-bold text-[var(--color-primary-700)] mr-1.5">{c.lat}</span>}
-                  {c.text}
-                  {c.since && <span className="text-[var(--color-ink-400)] ml-1.5">· Since {c.since}</span>}
-                </span>
-              ))}
-            </div>
-          )}
+              <div className="space-y-4">
+                {/* Same table grammar as the Long tab — shared column templates
+                    and cell classes, so switching tabs does not shift the
+                    columns around under the reader. */}
+                {summary.chiefComplaint && (
+                  <Block label="Chief Complaint">
+                    <DataTable minWidth={300}>
+                      <Cols widths={COLS_COMPLAINT} />
+                      <thead>
+                        <tr>
+                          <th className={TH}>Eye</th>
+                          <th className={TH}>Complaint</th>
+                          <th className={TH}>Duration</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {parseComplaints(summary.chiefComplaint).map((c, i) => (
+                          <tr key={i}>
+                            <td className={`${TD} font-bold text-[var(--color-primary-700)]`}>{c.lat || DASH}</td>
+                            <td className={TD}>{c.text}</td>
+                            <td className={TD_MUTED}>{c.since || DASH}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </DataTable>
+                  </Block>
+                )}
 
-          {/* Diagnoses */}
-          {summary.diagnoses.length > 0 && (
-            <div className="flex items-baseline gap-2 flex-wrap">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)] shrink-0">Diagnoses</span>
-              <span className="text-[var(--color-ink-300)] text-xs shrink-0">·</span>
-              {summary.diagnoses.map((d) => (
-                <span key={d.id} className={`inline-flex items-center gap-1 text-xs px-2.5 py-0.5 rounded-full font-medium ${statusColor[d.status] ?? "bg-slate-100 text-slate-700"}`}>
-                  {d.description}
-                  {d.laterality && <span className="opacity-70">· {d.laterality}</span>}
-                  {d.provisional && <span className="opacity-60 italic">(P)</span>}
-                </span>
-              ))}
-            </div>
-          )}
+                {summary.diagnoses.length > 0 && (
+                  <Block label="Diagnoses">
+                    <DataTable minWidth={300}>
+                      <Cols widths={["52%", "16%", "32%"]} />
+                      <thead>
+                        <tr>
+                          <th className={TH}>Diagnosis</th>
+                          <th className={TH}>Eye</th>
+                          <th className={TH}>Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {summary.diagnoses.map((d) => (
+                          <tr key={d.id}>
+                            <td className={TD}>
+                              {d.description}
+                              {d.provisional && <span className="text-amber-500 italic ml-1">(P)</span>}
+                            </td>
+                            <td className={TD_MUTED}>{d.laterality || DASH}</td>
+                            <td className={TD}>
+                              <span className={`text-[9px] font-bold uppercase ${
+                                d.status === "RESOLVED" ? "text-emerald-600"
+                                : d.status === "CHRONIC" ? "text-amber-600"
+                                : "text-red-500"
+                              }`}>{d.status}</span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </DataTable>
+                  </Block>
+                )}
 
-          {/* Medications */}
-          {summary.medications.length > 0 && (
-            <div className="flex items-baseline gap-2 flex-wrap">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)] shrink-0">Medications</span>
-              <span className="text-[var(--color-ink-300)] text-xs shrink-0">·</span>
-              {summary.medications.map((m, i) => (
-                <span key={m.id} className="inline-flex items-center gap-1 text-xs text-[var(--color-ink-700)]">
-                  {i > 0 && <span className="text-[var(--color-ink-300)] mr-1">·</span>}
-                  <Pill size={10} className="text-[var(--color-primary-400)] shrink-0" />
-                  <span className="font-medium">{m.drugName}</span>
-                  {m.dosage && <span className="text-[var(--color-ink-400)]">{m.dosage}</span>}
-                  {m.frequency && <span className="text-[var(--color-ink-400)]">· {m.frequency}</span>}
-                </span>
-              ))}
-            </div>
-          )}
+                {summary.medications.length > 0 && (
+                  <Block label="Medications">
+                    <DataTable minWidth={300}>
+                      <Cols widths={["48%", "22%", "30%"]} />
+                      <thead>
+                        <tr>
+                          <th className={TH}>Drug</th>
+                          <th className={TH}>Dose</th>
+                          <th className={TH}>Frequency</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {summary.medications.map((m) => (
+                          <tr key={m.id}>
+                            <td className={`${TD} font-semibold`}>{m.drugName}</td>
+                            <td className={TD_MUTED}>{m.dosage || DASH}</td>
+                            <td className={TD_MUTED}>{m.frequency || DASH}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </DataTable>
+                  </Block>
+                )}
 
-          {!summary.chiefComplaint && summary.diagnoses.length === 0 && summary.medications.length === 0 && (
-            <p className="text-xs italic text-[var(--color-ink-300)]">No clinical data recorded for this visit.</p>
-          )}
+                {!summary.chiefComplaint && summary.diagnoses.length === 0 && summary.medications.length === 0 && (
+                  <p className="text-[11px] italic text-[var(--color-ink-300)]">
+                    No clinical data recorded for this visit.
+                  </p>
+                )}
               </div>
             }
           />

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Sparkles, Loader2, Activity, Pill, FlaskConical, AlertCircle } from "lucide-react";
+import { Sparkles, Loader2, Activity, AlertCircle } from "lucide-react";
 import { getVisitEmrData } from "./emr-viewer-action";
 import { generateAiSummary } from "@/app/(app)/patients/actions";
 
@@ -15,6 +15,95 @@ interface Props {
   shortContent?: React.ReactNode;
   /** Omit the top divider when the host card already provides one. */
   bare?: boolean;
+}
+
+/* ═══ Shared table grammar ═══════════════════════════════════════════════════
+   Every summary table in all three tabs is built from these, so column widths,
+   cell padding and alignment stay identical section to section.
+
+   `table-fixed` is what actually makes the widths hold — without it the browser
+   re-negotiates every column against its content and no two tables line up.
+   Rows carry no rules; separation comes from row padding alone.               */
+
+export const TH =
+  "pb-2 pr-4 text-left align-bottom text-[9px] font-bold uppercase tracking-widest text-[var(--color-ink-400)]";
+export const TD = "py-1.5 pr-4 align-top text-[11px] leading-snug text-[var(--color-ink-700)]";
+export const TD_MUTED = "py-1.5 pr-4 align-top text-[11px] leading-snug text-[var(--color-ink-500)]";
+
+/** Wraps a table so narrow screens scroll it rather than crushing the columns. */
+export function DataTable({
+  children,
+  minWidth = 340,
+}: {
+  children: React.ReactNode;
+  minWidth?: number;
+}) {
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full table-fixed border-collapse" style={{ minWidth }}>
+        {children}
+      </table>
+    </div>
+  );
+}
+
+function SectionLabel({ icon, label }: { icon?: React.ReactNode; label: string }) {
+  return (
+    <div className="flex items-center gap-1.5 mb-1">
+      {icon}
+      <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-ink-400)]">
+        {label}
+      </span>
+    </div>
+  );
+}
+
+/** A labelled block. Sections sit on one vertical rhythm regardless of content. */
+export function Block({
+  label,
+  icon,
+  children,
+}: {
+  label: string;
+  icon?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <section>
+      <SectionLabel icon={icon} label={label} />
+      {children}
+    </section>
+  );
+}
+
+export const DASH = <span className="text-[var(--color-ink-300)]">—</span>;
+
+function EmptyNote({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex items-start gap-2.5 py-2 px-3 rounded-xl bg-[var(--color-surface-sunken)]">
+      <AlertCircle size={13} className="shrink-0 mt-0.5 text-[var(--color-ink-300)]" />
+      <p className="text-[11px] text-[var(--color-ink-400)]">{children}</p>
+    </div>
+  );
+}
+
+/* Column templates. Widths are declared once here so the same shape of data is
+   always laid out the same way, in every tab. */
+export const COLS_EYE = ["38%", "31%", "31%"];
+export const COLS_PAIR = ["30%", "70%"];
+export const COLS_COMPLAINT = ["14%", "60%", "26%"];
+export const COLS_DIAGNOSIS = ["42%", "14%", "20%", "24%"];
+export const COLS_MEDICATION = ["28%", "15%", "20%", "15%", "22%"];
+export const COLS_INVESTIGATION = ["32%", "12%", "16%", "20%", "20%"];
+
+export function Cols({ widths }: { widths: string[] }) {
+  return (
+    <colgroup>
+      {widths.map((w, i) => (
+        <col key={i} style={{ width: w }} />
+      ))}
+    </colgroup>
+  );
 }
 
 export function VisitSummaryTabs({ visitId, complaint, diagnoses, shortContent, bare }: Props) {
@@ -109,45 +198,51 @@ export function VisitSummaryTabs({ visitId, complaint, diagnoses, shortContent, 
 /* ─── Short ─── */
 function ShortContent({ complaint, diagText }: { complaint: string | null; diagText: string }) {
   if (!complaint && !diagText) {
-    return (
-      <div className="flex items-start gap-2.5 py-2 px-3 rounded-xl bg-[var(--color-surface-sunken)] border border-[var(--color-border)]">
-        <AlertCircle size={13} className="shrink-0 mt-0.5 text-[var(--color-ink-300)]" />
-        <p className="text-[11px] text-[var(--color-ink-400)]">No clinical data recorded for this visit.</p>
-      </div>
-    );
+    return <EmptyNote>No clinical data recorded for this visit.</EmptyNote>;
   }
   return (
-    <div className="space-y-1.5 text-[11px] text-[var(--color-ink-600)]">
-      <p>
-        <span className="font-semibold text-[var(--color-ink-400)]">Complaint: </span>
-        {complaint ?? <span className="italic text-[var(--color-ink-300)]">not recorded</span>}
-      </p>
-      <p>
-        <span className="font-semibold text-[var(--color-ink-400)]">Diagnosis: </span>
-        {diagText || <span className="italic text-[var(--color-ink-300)]">not recorded</span>}
-      </p>
-    </div>
+    <DataTable minWidth={260}>
+      <Cols widths={COLS_PAIR} />
+      <tbody>
+        <tr>
+          <td className={TD_MUTED}>Complaint</td>
+          <td className={TD}>
+            {complaint ?? <span className="italic text-[var(--color-ink-300)]">not recorded</span>}
+          </td>
+        </tr>
+        <tr>
+          <td className={TD_MUTED}>Diagnosis</td>
+          <td className={TD}>
+            {diagText || <span className="italic text-[var(--color-ink-300)]">not recorded</span>}
+          </td>
+        </tr>
+      </tbody>
+    </DataTable>
   );
 }
 
 /* ─── Long ─── */
-function SectionLabel({ icon, label }: { icon?: React.ReactNode; label: string }) {
-  return (
-    <div className="flex items-center gap-1 mb-1.5">
-      {icon}
-      <span className="text-[9px] font-bold uppercase tracking-widest text-[var(--color-ink-400)]">{label}</span>
-    </div>
-  );
-}
-
 function EyeRow({ label, re, le }: { label: string; re?: string | null; le?: string | null }) {
   if (!re && !le) return null;
   return (
-    <tr className="border-b border-[var(--color-border)] last:border-0">
-      <td className="py-0.5 pr-3 text-[var(--color-ink-400)] w-[40%]">{label}</td>
-      <td className="py-0.5 pr-3 text-[var(--color-ink-700)] w-[30%]">{re ?? "—"}</td>
-      <td className="py-0.5 text-[var(--color-ink-700)] w-[30%]">{le ?? "—"}</td>
+    <tr>
+      <td className={TD_MUTED}>{label}</td>
+      <td className={TD}>{re || DASH}</td>
+      <td className={TD}>{le || DASH}</td>
     </tr>
+  );
+}
+
+/** Header row shared by every RE/LE table, so all four align exactly. */
+function EyeHead({ first = "" }: { first?: string }) {
+  return (
+    <thead>
+      <tr>
+        <th className={TH}>{first}</th>
+        <th className={TH}>RE</th>
+        <th className={TH}>LE</th>
+      </tr>
+    </thead>
   );
 }
 
@@ -195,52 +290,65 @@ function LongContent({
   const hasPost     = !!(pos?.re || pos?.le);
 
   const isEmpty = !g?.chiefComplaint && !hasVitals && !hasDiag && !hasMeds && !hasInv && !hasVA && !hasIOP && !hasAnt && !hasPost && !g?.hpi;
-  if (isEmpty) return (
-    <div className="flex items-start gap-2.5 py-2 px-3 rounded-xl bg-[var(--color-surface-sunken)] border border-[var(--color-border)]">
-      <AlertCircle size={13} className="shrink-0 mt-0.5 text-[var(--color-ink-300)]" />
-      <p className="text-[11px] text-[var(--color-ink-400)]">No detailed clinical notes recorded for this visit.</p>
-    </div>
-  );
+  if (isEmpty) return <EmptyNote>No detailed clinical notes recorded for this visit.</EmptyNote>;
+
+  const vitals = [
+    ["BP", g?.bp],
+    ["Pulse", g?.pulse],
+    ["Weight", g?.weight],
+    ["Temperature", g?.temperature],
+  ].filter(([, v]) => !!v) as [string, string][];
 
   return (
-    <div className="space-y-4 text-[11px]">
+    <div className="space-y-4">
 
       {/* Chief Complaint */}
       {g?.chiefComplaint && (
-        <div className="flex items-baseline gap-2 flex-wrap">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)] shrink-0">Chief Complaint</span>
-          <span className="text-[var(--color-ink-300)] shrink-0">·</span>
-          {parseComplaints(g.chiefComplaint).map((c, i) => (
-            <span key={i} className="text-[var(--color-ink-700)]">
-              {i > 0 && <span className="text-[var(--color-ink-300)] mr-1.5">·</span>}
-              {c.lat && <span className="font-bold text-[var(--color-primary-700)] mr-1">{c.lat}</span>}
-              {c.text}
-              {c.since && <span className="text-[var(--color-ink-400)] ml-1">· Since {c.since}</span>}
-            </span>
-          ))}
-        </div>
+        <Block label="Chief Complaint">
+          <DataTable minWidth={300}>
+            <Cols widths={COLS_COMPLAINT} />
+            <thead>
+              <tr>
+                <th className={TH}>Eye</th>
+                <th className={TH}>Complaint</th>
+                <th className={TH}>Duration</th>
+              </tr>
+            </thead>
+            <tbody>
+              {parseComplaints(g.chiefComplaint).map((c, i) => (
+                <tr key={i}>
+                  <td className={`${TD} font-bold text-[var(--color-primary-700)]`}>{c.lat || DASH}</td>
+                  <td className={TD}>{c.text}</td>
+                  <td className={TD_MUTED}>{c.since || DASH}</td>
+                </tr>
+              ))}
+            </tbody>
+          </DataTable>
+        </Block>
       )}
 
-      {/* HPI */}
+      {/* HPI — prose, but starting on the same left edge as every table cell. */}
       {g?.hpi && (
-        <div className="flex items-baseline gap-2 flex-wrap">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)] shrink-0">History of Present Illness</span>
-          <span className="text-[var(--color-ink-300)] shrink-0">·</span>
-          <span className="text-[var(--color-ink-700)] leading-relaxed">{g.hpi}</span>
-        </div>
+        <Block label="History of Present Illness">
+          <p className="text-[11px] leading-relaxed text-[var(--color-ink-700)]">{g.hpi}</p>
+        </Block>
       )}
 
       {/* Vitals */}
       {hasVitals && (
-        <div>
-          <SectionLabel icon={<Activity size={9} className="text-[var(--color-ink-400)]" />} label="Vitals" />
-          <div className="flex flex-wrap gap-x-6 gap-y-1">
-            {g.bp          && <span><span className="text-[var(--color-ink-400)]">BP: </span><span className="text-[var(--color-ink-700)] font-medium">{g.bp}</span></span>}
-            {g.pulse       && <span><span className="text-[var(--color-ink-400)]">Pulse: </span><span className="text-[var(--color-ink-700)] font-medium">{g.pulse}</span></span>}
-            {g.weight      && <span><span className="text-[var(--color-ink-400)]">Weight: </span><span className="text-[var(--color-ink-700)] font-medium">{g.weight}</span></span>}
-            {g.temperature && <span><span className="text-[var(--color-ink-400)]">Temp: </span><span className="text-[var(--color-ink-700)] font-medium">{g.temperature}</span></span>}
-          </div>
-        </div>
+        <Block label="Vitals" icon={<Activity size={10} className="text-[var(--color-ink-400)]" />}>
+          <DataTable minWidth={260}>
+            <Cols widths={COLS_PAIR} />
+            <tbody>
+              {vitals.map(([k, v]) => (
+                <tr key={k}>
+                  <td className={TD_MUTED}>{k}</td>
+                  <td className={`${TD} font-medium`}>{v}</td>
+                </tr>
+              ))}
+            </tbody>
+          </DataTable>
+        </Block>
       )}
 
       {/* Visual Acuity */}
@@ -248,51 +356,45 @@ function LongContent({
         const re = parseJSON<any>(va.re, {});
         const le = parseJSON<any>(va.le, {});
         return (
-          <div>
-            <SectionLabel label={`Visual Acuity${va.testMethod ? ` · ${va.testMethod}` : ""}`} />
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="text-[9px] font-bold uppercase tracking-wide text-[var(--color-ink-400)]">
-                  <th className="text-left py-0.5 pr-3 w-[40%]" />
-                  <th className="text-left py-0.5 pr-3 w-[30%]">RE</th>
-                  <th className="text-left py-0.5 w-[30%]">LE</th>
-                </tr>
-              </thead>
+          <Block label={`Visual Acuity${va.testMethod ? ` · ${va.testMethod}` : ""}`}>
+            <DataTable>
+              <Cols widths={COLS_EYE} />
+              <EyeHead />
               <tbody>
-                <EyeRow label="Distance Unaided"       re={re.distanceUnaided}      le={le.distanceUnaided} />
-                <EyeRow label="Distance Pinhole"       re={re.distancePinhole}      le={le.distancePinhole} />
+                <EyeRow label="Distance Unaided"        re={re.distanceUnaided}       le={le.distanceUnaided} />
+                <EyeRow label="Distance Pinhole"        re={re.distancePinhole}       le={le.distancePinhole} />
                 <EyeRow label="Distance Best Corrected" re={re.distanceBestCorrected} le={le.distanceBestCorrected} />
-                <EyeRow label="Near Unaided"           re={re.nearUnaided}          le={le.nearUnaided} />
-                <EyeRow label="Near Best Corrected"    re={re.nearBestCorrected}    le={le.nearBestCorrected} />
+                <EyeRow label="Near Unaided"            re={re.nearUnaided}           le={le.nearUnaided} />
+                <EyeRow label="Near Best Corrected"     re={re.nearBestCorrected}     le={le.nearBestCorrected} />
               </tbody>
-            </table>
-          </div>
+            </DataTable>
+          </Block>
         );
       })()}
 
       {/* IOP */}
       {hasIOP && (
-        <div>
-          <SectionLabel label="Intraocular Pressure" />
-          <table className="w-full border-collapse">
+        <Block label="Intraocular Pressure">
+          <DataTable>
+            <Cols widths={COLS_EYE} />
             <thead>
-              <tr className="text-[9px] font-bold uppercase tracking-wide text-[var(--color-ink-400)]">
-                <th className="text-left py-0.5 pr-3 w-[40%]">Method</th>
-                <th className="text-left py-0.5 pr-3 w-[30%]">RE (mmHg)</th>
-                <th className="text-left py-0.5 w-[30%]">LE (mmHg)</th>
+              <tr>
+                <th className={TH}>Method</th>
+                <th className={TH}>RE (mmHg)</th>
+                <th className={TH}>LE (mmHg)</th>
               </tr>
             </thead>
             <tbody>
               {iop!.map((r: any, i: number) => (
-                <tr key={i} className="border-b border-[var(--color-border)] last:border-0">
-                  <td className="py-0.5 pr-3 text-[var(--color-ink-400)]">{r.method ?? "NCT"}</td>
-                  <td className="py-0.5 pr-3 text-[var(--color-ink-700)] font-medium">{r.re ?? "—"}</td>
-                  <td className="py-0.5 text-[var(--color-ink-700)] font-medium">{r.le ?? "—"}</td>
+                <tr key={i}>
+                  <td className={TD_MUTED}>{r.method ?? "NCT"}</td>
+                  <td className={`${TD} font-medium`}>{r.re || DASH}</td>
+                  <td className={`${TD} font-medium`}>{r.le || DASH}</td>
                 </tr>
               ))}
             </tbody>
-          </table>
-        </div>
+          </DataTable>
+        </Block>
       )}
 
       {/* Anterior Segment */}
@@ -308,22 +410,16 @@ function LongContent({
         const rows = fields.filter((f) => re[f] || le[f]);
         if (!rows.length && !re.freeText && !le.freeText) return null;
         return (
-          <div>
-            <SectionLabel label="Anterior Segment" />
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="text-[9px] font-bold uppercase tracking-wide text-[var(--color-ink-400)]">
-                  <th className="text-left py-0.5 pr-3 w-[30%]" />
-                  <th className="text-left py-0.5 pr-3 w-[35%]">RE</th>
-                  <th className="text-left py-0.5 w-[35%]">LE</th>
-                </tr>
-              </thead>
+          <Block label="Anterior Segment">
+            <DataTable>
+              <Cols widths={COLS_EYE} />
+              <EyeHead />
               <tbody>
                 {rows.map((f) => <EyeRow key={f} label={labels[f]} re={re[f]} le={le[f]} />)}
                 {(re.freeText || le.freeText) && <EyeRow label="Notes" re={re.freeText} le={le.freeText} />}
               </tbody>
-            </table>
-          </div>
+            </DataTable>
+          </Block>
         );
       })()}
 
@@ -340,51 +436,45 @@ function LongContent({
         const rows = fields.filter((f) => re[f] || le[f]);
         if (!rows.length && !pos.notes) return null;
         return (
-          <div>
-            <SectionLabel label="Posterior Segment" />
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="text-[9px] font-bold uppercase tracking-wide text-[var(--color-ink-400)]">
-                  <th className="text-left py-0.5 pr-3 w-[30%]" />
-                  <th className="text-left py-0.5 pr-3 w-[35%]">RE</th>
-                  <th className="text-left py-0.5 w-[35%]">LE</th>
-                </tr>
-              </thead>
+          <Block label="Posterior Segment">
+            <DataTable>
+              <Cols widths={COLS_EYE} />
+              <EyeHead />
               <tbody>
                 {rows.map((f) => <EyeRow key={f} label={labels[f]} re={re[f]} le={le[f]} />)}
               </tbody>
-            </table>
-            {pos.notes && <p className="mt-1 text-[var(--color-ink-500)] italic">{pos.notes}</p>}
-          </div>
+            </DataTable>
+            {pos.notes && (
+              <p className="mt-1.5 text-[11px] italic leading-snug text-[var(--color-ink-500)]">{pos.notes}</p>
+            )}
+          </Block>
         );
       })()}
 
       {/* Diagnoses */}
       {hasDiag && (
-        <div className="flex items-start gap-2">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)] shrink-0 pt-0.5">Diagnoses</span>
-          <span className="text-[var(--color-ink-300)] shrink-0 pt-0.5">·</span>
-          <div className="flex-1 min-w-0">
-          <table className="w-full border-collapse">
+        <Block label="Diagnoses">
+          <DataTable minWidth={360}>
+            <Cols widths={COLS_DIAGNOSIS} />
             <thead>
-              <tr className="text-[9px] font-bold uppercase tracking-wide text-[var(--color-ink-400)]">
-                <th className="text-left py-0.5 pr-2">Diagnosis</th>
-                <th className="text-left py-0.5 pr-2 w-12">Eye</th>
-                <th className="text-left py-0.5 pr-2 w-16">ICD</th>
-                <th className="text-left py-0.5 w-16">Status</th>
+              <tr>
+                <th className={TH}>Diagnosis</th>
+                <th className={TH}>Eye</th>
+                <th className={TH}>ICD</th>
+                <th className={TH}>Status</th>
               </tr>
             </thead>
             <tbody>
               {data.diagnoses.map((d: any, i: number) => (
-                <tr key={i} className="border-b border-[var(--color-border)] last:border-0">
-                  <td className="py-1 pr-2 text-[var(--color-ink-700)] align-top">
+                <tr key={i}>
+                  <td className={TD}>
                     {d.description}
                     {d.provisional && <span className="text-amber-500 italic ml-1">(P)</span>}
                   </td>
-                  <td className="py-1 pr-2 text-[var(--color-ink-500)] align-top">{d.laterality ?? "—"}</td>
-                  <td className="py-1 pr-2 font-mono text-[9px] text-[var(--color-ink-400)] align-top">{d.icd10Code || "—"}</td>
-                  <td className="py-1 align-top">
-                    <span className={`text-[9px] font-bold ${
+                  <td className={TD_MUTED}>{d.laterality || DASH}</td>
+                  <td className={`${TD_MUTED} font-mono text-[10px]`}>{d.icd10Code || DASH}</td>
+                  <td className={TD}>
+                    <span className={`text-[9px] font-bold uppercase ${
                       d.status === "RESOLVED" ? "text-emerald-600"
                       : d.status === "CHRONIC" ? "text-amber-600"
                       : "text-red-500"
@@ -393,83 +483,76 @@ function LongContent({
                 </tr>
               ))}
             </tbody>
-          </table>
-          </div>
-        </div>
+          </DataTable>
+        </Block>
       )}
 
       {/* Medications */}
       {hasMeds && (
-        <div className="flex items-start gap-2">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)] shrink-0 pt-0.5">Medications</span>
-          <span className="text-[var(--color-ink-300)] shrink-0 pt-0.5">·</span>
-          <div className="flex-1 min-w-0">
-          <table className="w-full border-collapse">
+        <Block label="Medications">
+          <DataTable minWidth={440}>
+            <Cols widths={COLS_MEDICATION} />
             <thead>
-              <tr className="text-[9px] font-bold uppercase tracking-wide text-[var(--color-ink-400)]">
-                <th className="text-left py-0.5 pr-2 w-[32%]">Drug</th>
-                <th className="text-left py-0.5 pr-2 w-[12%]">Dose</th>
-                <th className="text-left py-0.5 pr-2 w-[18%]">Frequency</th>
-                <th className="text-left py-0.5 pr-2 w-[14%]">Duration</th>
-                <th className="text-left py-0.5">Instructions</th>
+              <tr>
+                <th className={TH}>Drug</th>
+                <th className={TH}>Dose</th>
+                <th className={TH}>Frequency</th>
+                <th className={TH}>Duration</th>
+                <th className={TH}>Instructions</th>
               </tr>
             </thead>
             <tbody>
               {data.medications.map((m: any, i: number) => (
-                <tr key={i} className={i % 2 === 1 ? "bg-[var(--color-surface-2)]" : ""}>
-                  <td className="py-1 pr-2 font-semibold text-[var(--color-ink-700)] align-top">{m.drugName}</td>
-                  <td className="py-1 pr-2 text-[var(--color-ink-500)] align-top">{m.dosage ?? "—"}</td>
-                  <td className="py-1 pr-2 text-[var(--color-ink-500)] align-top">{m.frequency ?? "—"}</td>
-                  <td className="py-1 pr-2 text-[var(--color-ink-500)] align-top">{m.duration ?? "—"}</td>
-                  <td className="py-1 text-[var(--color-ink-500)] align-top">{m.instructions ?? "—"}</td>
+                <tr key={i}>
+                  <td className={`${TD} font-semibold`}>{m.drugName}</td>
+                  <td className={TD_MUTED}>{m.dosage || DASH}</td>
+                  <td className={TD_MUTED}>{m.frequency || DASH}</td>
+                  <td className={TD_MUTED}>{m.duration || DASH}</td>
+                  <td className={TD_MUTED}>{m.instructions || DASH}</td>
                 </tr>
               ))}
             </tbody>
-          </table>
-          </div>
-        </div>
+          </DataTable>
+        </Block>
       )}
 
       {/* Investigations */}
       {hasInv && (
-        <div className="flex items-start gap-2">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)] shrink-0 pt-0.5">Investigations</span>
-          <span className="text-[var(--color-ink-300)] shrink-0 pt-0.5">·</span>
-          <div className="flex-1 min-w-0">
-          <table className="w-full border-collapse">
+        <Block label="Investigations">
+          <DataTable minWidth={420}>
+            <Cols widths={COLS_INVESTIGATION} />
             <thead>
-              <tr className="text-[9px] font-bold uppercase tracking-wide text-[var(--color-ink-400)]">
-                <th className="text-left py-0.5 pr-2 w-[35%]">Test</th>
-                <th className="text-left py-0.5 pr-2 w-[10%]">Eye</th>
-                <th className="text-left py-0.5 pr-2 w-[14%]">Priority</th>
-                <th className="text-left py-0.5 pr-2 w-[16%]">Status</th>
-                <th className="text-left py-0.5">Result</th>
+              <tr>
+                <th className={TH}>Test</th>
+                <th className={TH}>Eye</th>
+                <th className={TH}>Priority</th>
+                <th className={TH}>Status</th>
+                <th className={TH}>Result</th>
               </tr>
             </thead>
             <tbody>
               {data.investigationOrders.map((o: any, i: number) => (
-                <tr key={i} className="border-b border-[var(--color-border)] last:border-0">
-                  <td className="py-1 pr-2 text-[var(--color-ink-700)] align-top">{o.testName}</td>
-                  <td className="py-1 pr-2 text-[var(--color-ink-500)] align-top">{o.laterality ?? "—"}</td>
-                  <td className="py-1 pr-2 text-[var(--color-ink-500)] align-top">{o.priority}</td>
-                  <td className="py-1 pr-2 align-top">
+                <tr key={i}>
+                  <td className={TD}>{o.testName}</td>
+                  <td className={TD_MUTED}>{o.laterality || DASH}</td>
+                  <td className={TD_MUTED}>{o.priority}</td>
+                  <td className={TD}>
                     <span className={`text-[9px] font-bold uppercase ${
                       o.status === "COMPLETED" ? "text-emerald-600"
                       : o.status === "ORDERED" ? "text-blue-600"
                       : "text-amber-600"
                     }`}>{o.status}</span>
                   </td>
-                  <td className="py-1 align-top">
+                  <td className={TD}>
                     {o.resultRef
                       ? <a href={o.resultRef} target="_blank" rel="noreferrer" className="text-[var(--color-primary-600)] underline">View</a>
-                      : <span className="text-[var(--color-ink-300)]">—</span>}
+                      : DASH}
                   </td>
                 </tr>
               ))}
             </tbody>
-          </table>
-          </div>
-        </div>
+          </DataTable>
+        </Block>
       )}
 
     </div>
@@ -490,30 +573,29 @@ function AIContent({
 }) {
   if (error) {
     return (
-      <div className="flex items-start gap-2 p-3 rounded-xl bg-red-50 border border-red-100 text-[11px] text-red-700">
+      <div className="flex items-start gap-2 p-3 rounded-xl bg-red-50 text-[11px] text-red-700">
         <AlertCircle size={12} className="shrink-0 mt-0.5" />
         <span>{error}</span>
       </div>
     );
   }
   if (!text) return null;
+
+  /* The model returns prose, so there is no table to build here. What is kept
+     consistent with the other two tabs is the label grammar, the 11px body and
+     the left edge — the paragraph starts exactly where every table cell does. */
   return (
-    <div className="relative rounded-xl overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-br from-violet-50/80 via-purple-50/50 to-indigo-50/70 pointer-events-none" />
-      <div className="relative p-4 border border-violet-100 rounded-xl">
-        <div className="flex items-center gap-1.5 mb-2.5">
-          <div className="p-1 rounded-md bg-violet-100">
-            <Sparkles size={10} className="text-violet-600" />
-          </div>
-          <span className="text-[10px] font-bold uppercase tracking-widest text-violet-600">
-            {source === "claude" ? "Claude AI Summary" : "Auto-Generated Summary"}
-          </span>
-        </div>
-        <p className="text-[11px] text-[var(--color-ink-700)] leading-relaxed">{text}</p>
-        {notice && (
-          <p className="mt-2.5 pt-2 border-t border-violet-100 text-[10px] text-amber-700">{notice}</p>
-        )}
+    <div className="rounded-xl bg-violet-50/50 p-3.5">
+      <div className="flex items-center gap-1.5 mb-1.5">
+        <Sparkles size={11} className="text-violet-500" />
+        <span className="text-[10px] font-bold uppercase tracking-widest text-violet-600">
+          {source === "claude" ? "Claude AI Summary" : "Auto-Generated Summary"}
+        </span>
       </div>
+      <p className="text-[11px] leading-relaxed text-[var(--color-ink-700)]">{text}</p>
+      {notice && (
+        <p className="mt-2.5 text-[10px] leading-snug text-amber-700">{notice}</p>
+      )}
     </div>
   );
 }
