@@ -1165,6 +1165,22 @@ const FREQUENCY_OPTIONS = [
   "Stat (Immediately)",
 ];
 
+const DOSE_OPTIONS = [
+  "1 drop", "2 drops",
+  "½ tablet", "1 tablet", "2 tablets",
+  "1 capsule", "2 capsules",
+  "0.05 mL", "0.1 mL", "0.5 mL", "1 mL",
+  "5 mL", "10 mL",
+  "25 mg", "50 mg", "100 mg", "250 mg", "500 mg", "1 g",
+];
+
+const DURATION_OPTIONS = [
+  "1 day", "2 days", "3 days", "4 days", "5 days", "6 days", "7 days",
+  "10 days", "14 days", "3 weeks", "4 weeks",
+  "1 month", "2 months", "3 months", "6 months", "1 year",
+  "Long-term",
+];
+
 const ROUTE_OPTIONS = ["Topical", "Oral", "IM", "IV", "Subconjunctival", "Intravitreal", "Subtenon"];
 
 const ADVISE_KEYWORDS: { group: string; items: string[] }[] = [
@@ -1243,8 +1259,7 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU" }
   const [laterality, setLaterality]   = useState(defaultLaterality);
   useEffect(() => { setLaterality(defaultLaterality); }, [defaultLaterality]);
   const [frequency, setFrequency]         = useState("");
-  const [durationNum, setDurationNum]     = useState("");
-  const [durationUnit, setDurationUnit]   = useState("days");
+  const [durationSel, setDurationSel]     = useState("");
   type TaperLevel = { frequency: string; durationNum: string; durationUnit: string };
   const [taperLevels, setTaperLevels] = useState<TaperLevel[]>([]);
   const [instructions, setInstructions]   = useState("");
@@ -1265,7 +1280,7 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU" }
     setDose(defaultDose ?? "");
     setRoute(defaultRoute ?? "Topical");
     setLaterality(defaultLaterality);
-    setFrequency(""); setDurationNum(""); setDurationUnit("days");
+    setFrequency(""); setDurationSel("");
     setTaperLevels([]);
     setInstructions("");
     setShowAddDrug(true);
@@ -1326,14 +1341,14 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU" }
   const submitDrug = () => {
     if (!drugName.trim()) return;
     startTransition(async () => {
-      const duration = durationNum ? `${durationNum} ${durationUnit}` : "";
+      const duration = durationSel;
       const tapParts = taperLevels
         .filter((l) => l.frequency && l.durationNum)
         .map((l) => `${l.frequency} × ${l.durationNum} ${l.durationUnit}`);
       const tapNote = tapParts.length ? `Tapering: ${tapParts.join(" → ")}` : "";
       const finalInstructions = [instructions, tapNote].filter(Boolean).join(" | ");
       await addMedication(visit.id, udid, { drugName, dosage: dose, frequency, duration, instructions: finalInstructions, route, laterality: route === "Topical" ? laterality : undefined } as any);
-      setDrugName(""); setDose(""); setRoute("Topical"); setLaterality(defaultLaterality); setFrequency(""); setDurationNum(""); setDurationUnit("days");
+      setDrugName(""); setDose(""); setRoute("Topical"); setFrequency(""); setDurationSel("");
       setTaperLevels([]);
       setInstructions("");
       setShowAddDrug(false);
@@ -1354,8 +1369,11 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU" }
     if (/syrup|suspension/i.test(route) || /syrup|suspension/i.test(dn)) {
       return { label: "SYP", bg: "bg-emerald-100", text: "text-emerald-700" };
     }
+    if (route === "IM" || route === "IV" || route === "Intravitreal" || route === "Subconjunctival" || route === "Subtenon" || /inject/i.test(dn)) {
+      return { label: "INJ", bg: "bg-rose-100", text: "text-rose-700" };
+    }
     if (route === "Oral" || /tablet|capsule/i.test(dn)) {
-      return { label: "T", bg: "bg-amber-100", text: "text-amber-700" };
+      return { label: "TAB", bg: "bg-amber-100", text: "text-amber-700" };
     }
     return null;
   };
@@ -1474,7 +1492,10 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU" }
             </div>
             <div>
               <label className="text-[10px] font-medium text-[var(--color-ink-400)] uppercase tracking-wide block mb-0.5">Dose</label>
-              <input value={dose} onChange={(e) => setDose(e.target.value)} placeholder="e.g. 1 drop" className={inputCls} />
+              <select value={dose} onChange={(e) => setDose(e.target.value)} className={inputCls}>
+                <option value="">— Select dose —</option>
+                {DOSE_OPTIONS.map((d) => <option key={d} value={d}>{d}</option>)}
+              </select>
             </div>
             <div>
               <label className="text-[10px] font-medium text-[var(--color-ink-400)] uppercase tracking-wide block mb-0.5">Route</label>
@@ -1482,16 +1503,6 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU" }
                 {ROUTE_OPTIONS.map((r) => <option key={r}>{r}</option>)}
               </select>
             </div>
-            {route === "Topical" && (
-              <div>
-                <label className="text-[10px] font-medium text-[var(--color-ink-400)] uppercase tracking-wide block mb-0.5">Eye</label>
-                <select value={laterality} onChange={(e) => setLaterality(e.target.value)} className={inputCls}>
-                  <option value="OU">Both (OU)</option>
-                  <option value="RE">Right (RE)</option>
-                  <option value="LE">Left (LE)</option>
-                </select>
-              </div>
-            )}
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-2 max-w-3xl">
             <div className="col-span-2">
@@ -1503,19 +1514,10 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU" }
             </div>
             <div>
               <label className="text-[10px] font-medium text-[var(--color-ink-400)] uppercase tracking-wide block mb-0.5">Duration</label>
-              <div className="flex gap-1">
-                <select value={durationNum} onChange={(e) => setDurationNum(e.target.value)} className={inputCls + " flex-1 min-w-0"}>
-                  <option value="">—</option>
-                  {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
-                    <option key={n} value={String(n)}>{n}</option>
-                  ))}
-                </select>
-                <select value={durationUnit} onChange={(e) => setDurationUnit(e.target.value)} className={inputCls + " flex-1 min-w-0"}>
-                  {["days", "weeks", "months", "years"].map((u) => (
-                    <option key={u} value={u}>{u}</option>
-                  ))}
-                </select>
-              </div>
+              <select value={durationSel} onChange={(e) => setDurationSel(e.target.value)} className={inputCls}>
+                <option value="">— Select —</option>
+                {DURATION_OPTIONS.map((d) => <option key={d} value={d}>{d}</option>)}
+              </select>
             </div>
             <div className="flex flex-col justify-end">
               <button onClick={submitDrug} disabled={pending} className="w-full rounded-lg bg-[var(--color-primary-600)] text-white text-xs font-medium py-1.5 hover:bg-[var(--color-primary-700)] transition-colors disabled:opacity-60">
@@ -1645,26 +1647,13 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU" }
                               onChange={(e) => setEditDraft({ ...editDraft, drugName: e.target.value })}
                               className={cellCls}
                             />
-                            <div className="flex gap-1">
-                              <select
-                                value={editDraft.route ?? "Topical"}
-                                onChange={(e) => setEditDraft({ ...editDraft, route: e.target.value })}
-                                className={cellCls + " flex-1"}
-                              >
-                                {ROUTE_OPTIONS.map((r) => <option key={r}>{r}</option>)}
-                              </select>
-                              {(editDraft.route ?? "Topical") === "Topical" && (
-                                <select
-                                  value={editDraft.laterality ?? "OU"}
-                                  onChange={(e) => setEditDraft({ ...editDraft, laterality: e.target.value })}
-                                  className={cellCls + " w-24"}
-                                >
-                                  <option value="OU">OU</option>
-                                  <option value="RE">RE</option>
-                                  <option value="LE">LE</option>
-                                </select>
-                              )}
-                            </div>
+                            <select
+                              value={editDraft.route ?? "Topical"}
+                              onChange={(e) => setEditDraft({ ...editDraft, route: e.target.value })}
+                              className={cellCls}
+                            >
+                              {ROUTE_OPTIONS.map((r) => <option key={r}>{r}</option>)}
+                            </select>
                           </div>
                         ) : (
                           <div className="flex items-center gap-2">
@@ -1688,12 +1677,14 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU" }
                       {/* Dose */}
                       <td className="px-3 py-2.5">
                         {isEditing ? (
-                          <input
+                          <select
                             value={editDraft.dosage}
                             onChange={(e) => setEditDraft({ ...editDraft, dosage: e.target.value })}
-                            placeholder="e.g. 1 drop"
                             className={cellCls}
-                          />
+                          >
+                            <option value="">— Select —</option>
+                            {DOSE_OPTIONS.map((d) => <option key={d} value={d}>{d}</option>)}
+                          </select>
                         ) : (
                           <span className="text-xs text-[var(--color-ink-600)]">{m.dosage || <span className="text-[var(--color-ink-300)]">—</span>}</span>
                         )}
@@ -1718,12 +1709,14 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU" }
                       {/* Duration */}
                       <td className="px-3 py-2.5">
                         {isEditing ? (
-                          <input
+                          <select
                             value={editDraft.duration}
                             onChange={(e) => setEditDraft({ ...editDraft, duration: e.target.value })}
-                            placeholder="e.g. 2 weeks"
                             className={cellCls}
-                          />
+                          >
+                            <option value="">— Select —</option>
+                            {DURATION_OPTIONS.map((d) => <option key={d} value={d}>{d}</option>)}
+                          </select>
                         ) : (
                           <span className="text-xs text-[var(--color-ink-600)]">{m.duration || <span className="text-[var(--color-ink-300)]">—</span>}</span>
                         )}
