@@ -437,15 +437,17 @@ function LastVisitSummarySection({ summary }: { summary: LastVisitSummary }) {
                 {summary.diagnoses.length > 0 && (
                   <Block label="Diagnoses">
                     <DataTable minWidth={300}>
-                      <Cols widths={["52%", "16%", "32%"]} />
+                      <Cols widths={["68%", "32%"]} />
                       <tbody>
                         {summary.diagnoses.map((d) => (
                           <tr key={d.id}>
                             <td className={TD}>
+                              {d.laterality && (
+                                <span className="font-bold text-[var(--color-primary-700)] mr-1.5">{d.laterality}</span>
+                              )}
                               {d.description}
                               {d.provisional && <span className="text-amber-500 italic ml-1">(P)</span>}
                             </td>
-                            <td className={TD_MUTED}>{d.laterality || DASH}</td>
                             <td className={TD}>
                               <span className={`text-[9px] font-bold uppercase ${
                                 d.status === "RESOLVED" ? "text-emerald-600"

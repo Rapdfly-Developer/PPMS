@@ -93,7 +93,7 @@ function EmptyNote({ children }: { children: React.ReactNode }) {
 export const COLS_EYE = ["38%", "31%", "31%"];
 export const COLS_PAIR = ["30%", "70%"];
 export const COLS_COMPLAINT = ["14%", "60%", "26%"];
-export const COLS_DIAGNOSIS = ["42%", "14%", "20%", "24%"];
+export const COLS_DIAGNOSIS = ["56%", "20%", "24%"];
 export const COLS_MEDICATION = ["28%", "15%", "20%", "15%", "22%"];
 export const COLS_INVESTIGATION = ["32%", "12%", "16%", "20%", "20%"];
 
@@ -287,7 +287,10 @@ function LongContent({
   const hasInv      = data.investigationOrders?.length > 0;
   const hasVA       = !!(va?.re || va?.le);
   const hasIOP      = iop && iop.length > 0;
-  const hasAnt      = !!(ant?.re || ant?.le);
+  const hasAnt      = !!(ant && (
+    Object.values(parseJSON<Record<string, unknown>>(ant.re, {})).some(Boolean) ||
+    Object.values(parseJSON<Record<string, unknown>>(ant.le, {})).some(Boolean)
+  ));
   const hasPost     = !!(pos?.re || pos?.le);
 
   const isEmpty = !g?.chiefComplaint && !hasVitals && !hasDiag && !hasMeds && !hasInv && !hasVA && !hasIOP && !hasAnt && !hasPost && !g?.hpi;
@@ -450,10 +453,12 @@ function LongContent({
               {data.diagnoses.map((d: any, i: number) => (
                 <tr key={i}>
                   <td className={TD}>
+                    {d.laterality && (
+                      <span className="font-bold text-[var(--color-primary-700)] mr-1.5">{d.laterality}</span>
+                    )}
                     {d.description}
                     {d.provisional && <span className="text-amber-500 italic ml-1">(P)</span>}
                   </td>
-                  <td className={TD_MUTED}>{d.laterality || DASH}</td>
                   <td className={`${TD_MUTED} font-mono text-[10px]`}>{d.icd10Code || DASH}</td>
                   <td className={TD}>
                     <span className={`text-[9px] font-bold uppercase ${
@@ -574,7 +579,11 @@ function AIContent({
           {source === "claude" ? "Claude AI Summary" : "Auto-Generated Summary"}
         </span>
       </div>
-      <p className="text-[11px] leading-relaxed text-[var(--color-ink-700)]">{text}</p>
+      <div className="space-y-1.5">
+        {text.split(/\n+/).filter(Boolean).map((line, i) => (
+          <p key={i} className="text-[11px] leading-relaxed text-[var(--color-ink-700)]">{line}</p>
+        ))}
+      </div>
       {notice && (
         <p className="mt-2.5 text-[10px] leading-snug text-amber-700">{notice}</p>
       )}
