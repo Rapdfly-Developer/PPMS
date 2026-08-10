@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition, useRef, useEffect } from "react";
-import { ChevronRight, Printer, FileSignature, CheckCircle2, Download, ChevronDown, FileText, PackageOpen, X, Lock, PenLine } from "lucide-react";
+import { ChevronRight, Printer, FileSignature, CheckCircle2, Download, ChevronDown, FileText, PackageOpen, X, Lock, PenLine, Search, Clock, Plus } from "lucide-react";
 import { isSameDay } from "date-fns";
 import { useRouter } from "next/navigation";
 import { closeVisit, markPartialDispense } from "./actions";
@@ -15,6 +15,16 @@ const PARTIAL_REASONS = [
   "Insurance approval pending",
 ];
 
+const HISTORY_KEY = "ppms_partial_dispense_history";
+
+function loadHistory(): string[] {
+  try { return JSON.parse(localStorage.getItem(HISTORY_KEY) ?? "[]"); } catch { return []; }
+}
+function saveHistory(reason: string, prev: string[]) {
+  const next = [reason, ...prev.filter((r) => r !== reason)].slice(0, 10);
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(next));
+}
+
 function PartialDispenseModal({
   onConfirm,
   onCancel,
@@ -24,11 +34,56 @@ function PartialDispenseModal({
   onCancel: () => void;
   loading: boolean;
 }) {
+  const [query, setQuery]   = useState("");
   const [reason, setReason] = useState("");
+  const [open, setOpen]     = useState(false);
+  const [history, setHistory] = useState<string[]>([]);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => { setHistory(loadHistory()); }, []);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const filteredPresets = PARTIAL_REASONS.filter((r) =>
+    r.toLowerCase().includes(query.toLowerCase())
+  );
+  const filteredHistory = history.filter(
+    (r) =>
+      r.toLowerCase().includes(query.toLowerCase()) &&
+      !PARTIAL_REASONS.includes(r)
+  );
+  const canAddCustom =
+    query.trim().length > 0 &&
+    !PARTIAL_REASONS.some((r) => r.toLowerCase() === query.trim().toLowerCase()) &&
+    !history.some((r) => r.toLowerCase() === query.trim().toLowerCase());
+
+  function select(r: string) {
+    setReason(r);
+    setQuery(r);
+    setOpen(false);
+  }
+
+  function handleConfirm() {
+    const r = reason.trim();
+    if (!r) return;
+    const next = [r, ...history.filter((h) => h !== r)].slice(0, 10);
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(next));
+    setHistory(next);
+    onConfirm(r);
+  }
+
+  const showDropdown = open && (filteredPresets.length > 0 || filteredHistory.length > 0 || canAddCustom);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+        {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
           <div className="flex items-center gap-2">
             <PackageOpen size={18} className="text-amber-600" />
@@ -38,31 +93,124 @@ function PartialDispenseModal({
             <X size={16} />
           </button>
         </div>
-        <div className="px-6 py-5 space-y-4">
-          <div className="flex flex-wrap gap-2">
-            {PARTIAL_REASONS.map((r) => (
-              <button
-                key={r}
-                type="button"
-                onClick={() => setReason(r)}
-                className={`text-xs font-medium px-3 py-1.5 rounded-full border transition-colors ${
-                  reason === r
-                    ? "bg-amber-100 border-amber-400 text-amber-800"
-                    : "bg-white border-[var(--color-border)] text-[var(--color-ink-600)] hover:border-amber-300 hover:bg-amber-50"
-                }`}
-              >
-                {r}
-              </button>
-            ))}
+
+        <div className="px-6 py-5 space-y-3">
+          {/* Searchable combobox */}
+          <div ref={ref} className="relative">
+            <div className="relative">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] pointer-events-none" />
+              <input
+                type="text"
+                value={query}
+                autoFocus
+                onChange={(e) => {
+                  setQuery(e.target.value);
+                  setReason(e.target.value);
+                  setOpen(true);
+                }}
+                onFocus={() => setOpen(true)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && query.trim()) {
+                    select(query.trim());
+                  } else if (e.key === "Escape") {
+                    setOpen(false);
+                  }
+                }}
+                placeholder="Search or type a reason…"
+                className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-[var(--color-border)] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 bg-[var(--color-surface)]"
+              />
+            </div>
+
+            {showDropdown && (
+              <ul className="absolute z-50 left-0 right-0 mt-1 rounded-xl border border-[var(--color-border)] bg-white shadow-xl overflow-hidden max-h-64 overflow-y-auto">
+                {/* Preset reasons */}
+                {filteredPresets.length > 0 && (
+                  <>
+                    <li className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-[var(--color-ink-400)] bg-[var(--color-surface-sunken)]">
+                      Presets
+                    </li>
+                    {filteredPresets.map((r) => (
+                      <li key={r}>
+                        <button
+                          type="button"
+                          onMouseDown={(e) => { e.preventDefault(); select(r); }}
+                          className={`w-full text-left px-3 py-2.5 text-sm transition-colors flex items-center justify-between gap-2 ${
+                            reason === r
+                              ? "bg-amber-50 text-amber-800 font-semibold"
+                              : "text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]"
+                          }`}
+                        >
+                          {r}
+                          {reason === r && <CheckCircle2 size={13} className="text-amber-600 shrink-0" />}
+                        </button>
+                      </li>
+                    ))}
+                  </>
+                )}
+
+                {/* History */}
+                {filteredHistory.length > 0 && (
+                  <>
+                    <li className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-[var(--color-ink-400)] bg-[var(--color-surface-sunken)] flex items-center gap-1.5 border-t border-[var(--color-border)]">
+                      <Clock size={10} /> Recent
+                    </li>
+                    {filteredHistory.map((r) => (
+                      <li key={r}>
+                        <button
+                          type="button"
+                          onMouseDown={(e) => { e.preventDefault(); select(r); }}
+                          className={`w-full text-left px-3 py-2.5 text-sm transition-colors flex items-center gap-2 ${
+                            reason === r
+                              ? "bg-amber-50 text-amber-800 font-semibold"
+                              : "text-[var(--color-ink-700)] hover:bg-amber-50/60"
+                          }`}
+                        >
+                          <Clock size={12} className="text-[var(--color-ink-400)] shrink-0" />
+                          {r}
+                          {reason === r && <CheckCircle2 size={13} className="ml-auto text-amber-600 shrink-0" />}
+                        </button>
+                      </li>
+                    ))}
+                  </>
+                )}
+
+                {/* Add custom keyword */}
+                {canAddCustom && (
+                  <li className="border-t border-[var(--color-border)]">
+                    <button
+                      type="button"
+                      onMouseDown={(e) => { e.preventDefault(); select(query.trim()); }}
+                      className="w-full text-left px-3 py-2.5 text-sm text-amber-700 hover:bg-amber-50 transition-colors flex items-center gap-2"
+                    >
+                      <Plus size={13} className="shrink-0" />
+                      Add &ldquo;<span className="font-semibold">{query.trim()}</span>&rdquo; as custom reason
+                    </button>
+                  </li>
+                )}
+              </ul>
+            )}
           </div>
-          <textarea
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-            placeholder="Or type a custom reason…"
-            rows={3}
-            className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-3 py-2.5 text-sm text-[var(--color-ink-900)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none"
-          />
+
+          {/* Selected reason badge */}
+          {reason.trim() && (
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200">
+              <CheckCircle2 size={14} className="text-amber-600 shrink-0" />
+              <span className="text-sm text-amber-800 font-medium flex-1 min-w-0 truncate">{reason}</span>
+              <button
+                type="button"
+                onClick={() => { setReason(""); setQuery(""); }}
+                className="text-amber-400 hover:text-amber-700 shrink-0 transition-colors"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          )}
+
+          <p className="text-[11px] text-[var(--color-ink-400)]">
+            Type a keyword to search presets, pick a recent reason, or enter a custom one and press Enter.
+          </p>
         </div>
+
         <div className="flex justify-end gap-3 px-6 py-4 border-t border-[var(--color-border)]">
           <button
             onClick={onCancel}
@@ -72,8 +220,8 @@ function PartialDispenseModal({
           </button>
           <button
             disabled={!reason.trim() || loading}
-            onClick={() => onConfirm(reason.trim())}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium bg-amber-500 text-white hover:bg-amber-600 disabled:opacity-50"
+            onClick={handleConfirm}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium bg-amber-500 text-white hover:bg-amber-600 disabled:opacity-50 transition-colors"
           >
             <PackageOpen size={14} /> {loading ? "Saving…" : "Confirm Partial Dispense"}
           </button>
