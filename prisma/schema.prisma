@@ -772,17 +772,21 @@ model Admission {
 }
 
 model SurgicalCounselling {
-  id              String   @id @default(cuid())
-  visitId         String   @unique
-  visit           Visit    @relation(fields: [visitId], references: [id])
-  surgeryName     String?
-  surgeryType     String
-  rightEye        Boolean  @default(false)
-  leftEye         Boolean  @default(false)
-  anaesthesiaType String
-  surgeryDate     DateTime
-  conflictFlag    Boolean  @default(false)
-  createdAt       DateTime @default(now())
+  id                String   @id @default(cuid())
+  visitId           String   @unique
+  visit             Visit    @relation(fields: [visitId], references: [id])
+  surgeryName       String?
+  surgeryType       String
+  rightEye          Boolean  @default(false)
+  leftEye           Boolean  @default(false)
+  anaesthesiaType   String
+  surgeryDate       DateTime
+  conflictFlag      Boolean  @default(false)
+  insuranceType     String?
+  counselingDone    Boolean  @default(false)
+  investigationDone Boolean  @default(false)
+  fitForSurgery     Boolean?
+  createdAt         DateTime @default(now())
 }
 
 // ──────────────────────────────────────────────────────────────────────────

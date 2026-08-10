@@ -16,6 +16,7 @@ import {
   TH, TD, TD_MUTED,
 } from "./VisitSummaryTabs";
 import { transferPatient } from "../actions";
+import { SurgicalCounsellingModal, type CounsellingRecord } from "./SurgicalCounsellingModal";
 export { TimeStampButton } from "./PatientTimeline";
 
 /* ── Chief complaint parser (mirrors GeneralExamTab storage format) ──────────
@@ -508,7 +509,7 @@ export function PatientProfileClient({
   userRole,
   timelineEntries = [],
   lastVisitSummary = null,
-  hasSurgicalCounselling = false,
+  surgicalCounselling = null,
 }: {
   udid: string;
   visits: SerialVisit[];
@@ -517,8 +518,9 @@ export function PatientProfileClient({
   userRole: string;
   timelineEntries?: TimelineEntry[];
   lastVisitSummary?: LastVisitSummary | null;
-  hasSurgicalCounselling?: boolean;
+  surgicalCounselling?: CounsellingRecord | null;
 }) {
+  const [showCounsellingModal, setShowCounsellingModal] = useState(false);
   const hasToday = todayVisit !== null;
   const hasPendingAppointment = !hasToday && !!todayAppointmentId;
 
@@ -579,14 +581,25 @@ export function PatientProfileClient({
       </div>
 
       {/* ── Surgical Counseling button — shown only for OT-decided patients ── */}
-      {hasSurgicalCounselling && (
-        <Link
-          href="/counseling"
+      {surgicalCounselling && (
+        <button
+          type="button"
+          onClick={() => setShowCounsellingModal(true)}
           className="flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-xl font-semibold text-sm bg-violet-600 text-white hover:bg-violet-700 transition-colors shadow-sm w-full"
         >
           <Scissors size={16} />
           Surgical Counseling
-        </Link>
+        </button>
+      )}
+
+      {/* ── Surgical Counseling modal ──────────────────────────────────────── */}
+      {showCounsellingModal && surgicalCounselling && (
+        <SurgicalCounsellingModal
+          udid={udid}
+          counselling={surgicalCounselling}
+          canEdit={userRole === "HOSPITAL"}
+          onClose={() => setShowCounsellingModal(false)}
+        />
       )}
 
 
