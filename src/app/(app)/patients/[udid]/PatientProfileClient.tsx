@@ -8,7 +8,7 @@ import {
   ChevronRight, ChevronDown, Hospital, Stethoscope, FileText,
   CheckCircle2, Clock, AlertCircle, Filter, ClipboardCheck,
   ArrowRightLeft, X, Download, Loader2,
-  Activity,
+  Activity, Scissors,
 } from "lucide-react";
 import { EmrViewerButton, VisitDownloadButton } from "./EmrViewerModal";
 import {
@@ -508,6 +508,7 @@ export function PatientProfileClient({
   userRole,
   timelineEntries = [],
   lastVisitSummary = null,
+  hasSurgicalCounselling = false,
 }: {
   udid: string;
   visits: SerialVisit[];
@@ -516,6 +517,7 @@ export function PatientProfileClient({
   userRole: string;
   timelineEntries?: TimelineEntry[];
   lastVisitSummary?: LastVisitSummary | null;
+  hasSurgicalCounselling?: boolean;
 }) {
   const hasToday = todayVisit !== null;
   const hasPendingAppointment = !hasToday && !!todayAppointmentId;
@@ -575,6 +577,17 @@ export function PatientProfileClient({
           )
         ) : null}
       </div>
+
+      {/* ── Surgical Counseling button — shown only for OT-decided patients ── */}
+      {hasSurgicalCounselling && (
+        <Link
+          href="/counseling"
+          className="flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-xl font-semibold text-sm bg-violet-600 text-white hover:bg-violet-700 transition-colors shadow-sm w-full"
+        >
+          <Scissors size={16} />
+          Surgical Counseling
+        </Link>
+      )}
 
 
       {/* ── Last Visit Summary + Investigations ─────────────────────── */}

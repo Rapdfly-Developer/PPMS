@@ -37,6 +37,7 @@ export default async function PatientProfilePage({
           doctor:   { select: { name: true } },
           generalExam: { select: { chiefComplaint: true } },
           diagnoses:   { select: { description: true } },
+          surgicalCounselling: { select: { id: true } },
         },
       },
     },
@@ -359,6 +360,7 @@ export default async function PatientProfilePage({
         userRole={user.role}
         timelineEntries={timelineEntries}
         lastVisitSummary={lastVisitSummary}
+        hasSurgicalCounselling={patient.visits.some((v) => v.surgicalCounselling !== null)}
       />
     </div>
   );
