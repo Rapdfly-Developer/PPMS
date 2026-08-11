@@ -178,6 +178,57 @@ export async function requestSurgeryChanges(id: string, notes: string): Promise<
   return {};
 }
 
+/* ── Hospital: update planned date (in response to doctor change request) */
+export async function updateSurgeryDate(
+  id: string,
+  plannedDateTime: string,
+  remarks?: string,
+): Promise<{ error?: string }> {
+  const user = await requireRole("HOSPITAL");
+
+  const rec = await prisma.surgerySchedule.findUnique({
+    where:  { id },
+    include: { patient: true, hospital: true },
+  });
+  if (!rec) return { error: "Record not found." };
+
+  await prisma.surgerySchedule.update({
+    where: { id },
+    data: {
+      plannedDateTime: new Date(plannedDateTime),
+      status:          "WAITING_DOCTOR_CONFIRMATION",
+      remarks:         remarks?.trim() || null,
+    },
+  });
+
+  await writeAudit(user.id, "SurgerySchedule", id, "UPDATE", {
+    plannedDateTime,
+    status: "WAITING_DOCTOR_CONFIRMATION",
+  });
+
+  // Re-notify the surgeon
+  try {
+    const doctor = await prisma.doctor.findUnique({
+      where:  { id: rec.operatingSurgeonId },
+      select: { userId: true },
+    });
+    if (doctor?.userId) {
+      const dt = new Date(plannedDateTime).toLocaleDateString("en-IN", {
+        day: "2-digit", month: "short", year: "numeric",
+      });
+      await createNotification(
+        doctor.userId,
+        "SURGERY_SCHEDULED",
+        `Surgery rescheduled: ${rec.surgeryName} for ${rec.patient.name} — new date ${dt}. Please review and confirm.`,
+        id,
+      );
+    }
+  } catch { /* ignore */ }
+
+  revalidatePath("/scheduled-ot");
+  return {};
+}
+
 /* ── Cancel surgery (DOCTOR or HOSPITAL) ──────────────────────────────── */
 export async function cancelScheduledSurgery(id: string, reason?: string): Promise<{ error?: string }> {
   const user = await requirePermission("appointments.view");

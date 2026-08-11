@@ -10,7 +10,7 @@ import {
   ThumbsUp, MessageSquare, Ban, Loader2, Lock, DoorOpen,
   ShieldCheck,
 } from "lucide-react";
-import { approveSurgery, requestSurgeryChanges, cancelScheduledSurgery } from "./actions";
+import { approveSurgery, requestSurgeryChanges, cancelScheduledSurgery, updateSurgeryDate } from "./actions";
 
 /* ── Types ─────────────────────────────────────────────────────────────── */
 interface Patient { id: string; name: string; udid: string; uhid: string | null; age: number; sex: string }
@@ -162,12 +162,24 @@ function WaitingCard({ rec, role, idx }: { rec: ScheduleRecord; role: "DOCTOR" |
   const [open, setOpen]         = useState(false);
   const [showCancel, setCancel] = useState(false);
   const [showChanges, setChanges] = useState(false);
+  const [showEdit, setShowEdit] = useState(false);
   const [notes, setNotes]       = useState("");
   const [cancelReason, setCancelReason] = useState("");
+  const [newDate, setNewDate]   = useState(new Date(rec.plannedDateTime).toISOString().slice(0, 10));
+  const [newTime, setNewTime]   = useState(new Date(rec.plannedDateTime).toTimeString().slice(0, 5));
   const [pending, start]        = useTransition();
   const [err, setErr]           = useState("");
 
   const isChangesRequested = rec.status === "CHANGES_REQUESTED";
+
+  async function handleUpdateDate() {
+    if (!newDate || !newTime) return;
+    start(async () => {
+      const res = await updateSurgeryDate(rec.id, new Date(`${newDate}T${newTime}`).toISOString());
+      if (res.error) setErr(res.error);
+      else setShowEdit(false);
+    });
+  }
 
   async function handleApprove() {
     start(async () => {
@@ -302,7 +314,7 @@ function WaitingCard({ rec, role, idx }: { rec: ScheduleRecord; role: "DOCTOR" |
                   Approve Surgery
                 </button>
                 <button
-                  onClick={() => { setChanges(true); setCancel(false); }}
+                  onClick={() => { setChanges(true); setCancel(false); setShowEdit(false); }}
                   disabled={pending}
                   className="inline-flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg border border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors disabled:opacity-50"
                 >
@@ -311,8 +323,18 @@ function WaitingCard({ rec, role, idx }: { rec: ScheduleRecord; role: "DOCTOR" |
               </>
             )}
 
+            {role === "HOSPITAL" && isChangesRequested && (
+              <button
+                onClick={() => { setShowEdit(true); setCancel(false); setChanges(false); }}
+                disabled={pending}
+                className="inline-flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] transition-colors disabled:opacity-50"
+              >
+                <CalendarClock size={12} /> Update Date &amp; Time
+              </button>
+            )}
+
             <button
-              onClick={() => { setCancel(true); setChanges(false); }}
+              onClick={() => { setCancel(true); setChanges(false); setShowEdit(false); }}
               disabled={pending}
               className="inline-flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 transition-colors disabled:opacity-50"
             >
@@ -361,6 +383,45 @@ function WaitingCard({ rec, role, idx }: { rec: ScheduleRecord; role: "DOCTOR" |
                 </button>
                 <button onClick={() => setCancel(false)} className="text-xs px-3 py-1.5 rounded-lg border border-[var(--color-border)] text-[var(--color-ink-500)] hover:bg-white transition-colors">
                   Back
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Update date panel (hospital, changes requested) */}
+          {showEdit && (
+            <div className="mt-3 p-3 rounded-xl border border-[var(--color-primary-200)] bg-[var(--color-primary-50)]">
+              <p className="text-xs font-semibold text-[var(--color-primary-800)] mb-2.5">Update Surgery Date &amp; Time</p>
+              <div className="flex gap-3 flex-wrap">
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] font-semibold text-[var(--color-ink-500)] uppercase tracking-wide">Date</label>
+                  <input
+                    type="date"
+                    value={newDate}
+                    onChange={(e) => setNewDate(e.target.value)}
+                    className="text-xs rounded-lg border border-[var(--color-primary-200)] bg-white px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)]"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] font-semibold text-[var(--color-ink-500)] uppercase tracking-wide">Time</label>
+                  <input
+                    type="time"
+                    value={newTime}
+                    onChange={(e) => setNewTime(e.target.value)}
+                    className="text-xs rounded-lg border border-[var(--color-primary-200)] bg-white px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)]"
+                  />
+                </div>
+              </div>
+              <div className="flex gap-2 mt-3">
+                <button
+                  onClick={handleUpdateDate}
+                  disabled={pending || !newDate || !newTime}
+                  className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-50 transition-colors"
+                >
+                  {pending ? "Saving…" : "Save & Notify Doctor"}
+                </button>
+                <button onClick={() => setShowEdit(false)} className="text-xs px-3 py-1.5 rounded-lg border border-[var(--color-border)] text-[var(--color-ink-500)] hover:bg-white transition-colors">
+                  Cancel
                 </button>
               </div>
             </div>
