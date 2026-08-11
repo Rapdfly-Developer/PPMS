@@ -184,44 +184,64 @@ export async function updateSurgeryDate(
   plannedDateTime: string,
   remarks?: string,
 ): Promise<{ error?: string }> {
-  const user = await requireRole("HOSPITAL");
+  const user = await requirePermission("appointments.view");
 
   const rec = await prisma.surgerySchedule.findUnique({
     where:  { id },
-    include: { patient: true, hospital: true },
+    include: { patient: true, hospital: { select: { id: true } } },
   });
   if (!rec) return { error: "Record not found." };
+
+  const isDoctor = user.role === "DOCTOR";
+
+  // Doctor updating date → status becomes SURGERY_CONFIRMED (doctor has approved the new date)
+  // Hospital updating date → status becomes WAITING_DOCTOR_CONFIRMATION (needs doctor to re-confirm)
+  const newStatus = isDoctor ? "SURGERY_CONFIRMED" : "WAITING_DOCTOR_CONFIRMATION";
 
   await prisma.surgerySchedule.update({
     where: { id },
     data: {
       plannedDateTime: new Date(plannedDateTime),
-      status:          "WAITING_DOCTOR_CONFIRMATION",
+      status:          newStatus,
       remarks:         remarks?.trim() || null,
     },
   });
 
-  await writeAudit(user.id, "SurgerySchedule", id, "UPDATE", {
-    plannedDateTime,
-    status: "WAITING_DOCTOR_CONFIRMATION",
+  await writeAudit(user.id, "SurgerySchedule", id, "UPDATE", { plannedDateTime, status: newStatus });
+
+  const dt = new Date(plannedDateTime).toLocaleDateString("en-IN", {
+    day: "2-digit", month: "short", year: "numeric",
   });
 
-  // Re-notify the surgeon
   try {
-    const doctor = await prisma.doctor.findUnique({
-      where:  { id: rec.operatingSurgeonId },
-      select: { userId: true },
-    });
-    if (doctor?.userId) {
-      const dt = new Date(plannedDateTime).toLocaleDateString("en-IN", {
-        day: "2-digit", month: "short", year: "numeric",
+    if (isDoctor) {
+      // Notify hospital admin staff
+      const staff = await prisma.hospitalStaff.findMany({
+        where:  { hospitalId: rec.hospital.id },
+        select: { userId: true },
       });
-      await createNotification(
-        doctor.userId,
-        "SURGERY_SCHEDULED",
-        `Surgery rescheduled: ${rec.surgeryName} for ${rec.patient.name} — new date ${dt}. Please review and confirm.`,
-        id,
-      );
+      await Promise.all(staff.map((s) =>
+        createNotification(
+          s.userId,
+          "SURGERY_SCHEDULED",
+          `Surgery rescheduled by doctor: ${rec.surgeryName} for ${rec.patient.name} — new date ${dt}.`,
+          id,
+        )
+      ));
+    } else {
+      // Notify the surgeon
+      const doctor = await prisma.doctor.findUnique({
+        where:  { id: rec.operatingSurgeonId },
+        select: { userId: true },
+      });
+      if (doctor?.userId) {
+        await createNotification(
+          doctor.userId,
+          "SURGERY_SCHEDULED",
+          `Surgery rescheduled: ${rec.surgeryName} for ${rec.patient.name} — new date ${dt}. Please review and confirm.`,
+          id,
+        );
+      }
     }
   } catch { /* ignore */ }
 

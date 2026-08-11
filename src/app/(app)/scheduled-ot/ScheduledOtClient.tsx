@@ -314,6 +314,13 @@ function WaitingCard({ rec, role, idx }: { rec: ScheduleRecord; role: "DOCTOR" |
                   Approve Surgery
                 </button>
                 <button
+                  onClick={() => { setShowEdit(true); setChanges(false); setCancel(false); }}
+                  disabled={pending}
+                  className="inline-flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] transition-colors disabled:opacity-50"
+                >
+                  <CalendarClock size={12} /> Update Date &amp; Time
+                </button>
+                <button
                   onClick={() => { setChanges(true); setCancel(false); setShowEdit(false); }}
                   disabled={pending}
                   className="inline-flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg border border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors disabled:opacity-50"
