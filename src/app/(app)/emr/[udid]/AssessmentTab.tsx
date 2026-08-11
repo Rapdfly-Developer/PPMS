@@ -257,6 +257,9 @@ function DiagnosisRow({
 
 /* ── Protocol picker modal ───────────────────────────────────────────────── */
 
+const PROTOCOL_SLOTS = ["Protocol 1", "Protocol 2", "Protocol 3"] as const;
+type ProtocolSlot = typeof PROTOCOL_SLOTS[number] | "custom";
+
 function ProtocolPickerModal({
   diagnosis,
   protocols,
@@ -270,12 +273,20 @@ function ProtocolPickerModal({
   onConfirm: (preset: TreatmentPreset | null, customName: string) => void;
   onCancel: () => void;
 }) {
-  const [selected, setSelected] = useState<"preset" | "custom">(protocols.length > 0 ? "preset" : "custom");
-  const [selectedPreset, setSelectedPreset] = useState<TreatmentPreset | null>(protocols[0] ?? null);
+  const [selected, setSelected] = useState<ProtocolSlot>("Protocol 1");
   const [customName, setCustomName] = useState("");
 
-  const canSubmit =
-    selected === "preset" ? selectedPreset !== null : customName.trim().length > 0;
+  const canSubmit = selected !== "custom" || customName.trim().length > 0;
+
+  function handleConfirm() {
+    if (selected === "custom") {
+      onConfirm(null, customName.trim());
+    } else {
+      const slotIndex = PROTOCOL_SLOTS.indexOf(selected);
+      const preset = protocols[slotIndex] ?? null;
+      onConfirm(preset, preset ? "" : selected);
+    }
+  }
 
   return (
     <div
@@ -307,29 +318,35 @@ function ProtocolPickerModal({
             Which protocol are you selecting?
           </p>
 
-          {/* Preset options */}
-          {protocols.map((p, i) => (
-            <button
-              key={p.id}
-              type="button"
-              onClick={() => { setSelected("preset"); setSelectedPreset(p); }}
-              className={`w-full text-left rounded-xl border px-4 py-3 transition-colors ${
-                selected === "preset" && selectedPreset?.id === p.id
-                  ? "border-[var(--color-primary-500)] bg-[var(--color-primary-50)]"
-                  : "border-[var(--color-border)] hover:border-[var(--color-primary-300)]"
-              }`}
-            >
-              <div className="flex items-center justify-between gap-2">
-                <div>
-                  <p className="text-sm font-semibold text-[var(--color-ink-800)]">Protocol {i + 1}</p>
-                  <p className="text-xs text-[var(--color-ink-500)] mt-0.5">{p.name}</p>
+          {/* Fixed Protocol 1 / 2 / 3 slots */}
+          {PROTOCOL_SLOTS.map((label, i) => {
+            const preset = protocols[i] ?? null;
+            const isActive = selected === label;
+            return (
+              <button
+                key={label}
+                type="button"
+                onClick={() => setSelected(label)}
+                className={`w-full text-left rounded-xl border px-4 py-3 transition-colors ${
+                  isActive
+                    ? "border-[var(--color-primary-500)] bg-[var(--color-primary-50)]"
+                    : "border-[var(--color-border)] hover:border-[var(--color-primary-300)]"
+                }`}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <div>
+                    <p className="text-sm font-semibold text-[var(--color-ink-800)]">{label}</p>
+                    {preset && (
+                      <p className="text-xs text-[var(--color-ink-500)] mt-0.5">{preset.name}</p>
+                    )}
+                  </div>
+                  {isActive && (
+                    <Check size={16} className="text-[var(--color-primary-600)] shrink-0" />
+                  )}
                 </div>
-                {selected === "preset" && selectedPreset?.id === p.id && (
-                  <Check size={16} className="text-[var(--color-primary-600)] shrink-0" />
-                )}
-              </div>
-            </button>
-          ))}
+              </button>
+            );
+          })}
 
           {/* Custom option */}
           <button
@@ -373,12 +390,7 @@ function ProtocolPickerModal({
           <button
             type="button"
             disabled={!canSubmit || pending}
-            onClick={() =>
-              onConfirm(
-                selected === "preset" ? selectedPreset : null,
-                selected === "custom" ? customName.trim() : "",
-              )
-            }
+            onClick={handleConfirm}
             className="flex items-center gap-1.5 px-5 py-2 rounded-lg bg-[var(--color-primary-600)] text-white text-sm font-semibold hover:bg-[var(--color-primary-700)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             <Check size={14} />
