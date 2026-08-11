@@ -1,10 +1,106 @@
 "use client";
 
-import { useState, useTransition, useRef } from "react";
+import { useState, useTransition, useRef, useEffect } from "react";
 import { SingleChipSelect } from "@/components/ui/Chip";
 import { WARDS, ANAESTHESIA_TYPES, SURGERY_TYPES } from "@/lib/constants";
 import { saveDispense, saveAdmission, saveSurgicalCounselling, saveFollowUp } from "./actions";
-import { AlertTriangle, History, Plus, X } from "lucide-react";
+import { AlertTriangle, ChevronDown, History, Plus, X } from "lucide-react";
+
+const SURGERY_NAME_OPTIONS = [
+  "Phacoemulsification with IOL Implantation",
+  "Manual Small Incision Cataract Surgery (MSICS)",
+  "Extracapsular Cataract Extraction (ECCE)",
+  "Intracapsular Cataract Extraction (ICCE)",
+  "Trabeculectomy",
+  "Ahmed Glaucoma Valve Implantation",
+  "Baerveldt Glaucoma Implant",
+  "Pars Plana Vitrectomy (PPV)",
+  "Scleral Buckle",
+  "Retinal Detachment Surgery",
+  "Intravitreal Injection",
+  "Laser Photocoagulation",
+  "Penetrating Keratoplasty (PKP)",
+  "Deep Anterior Lamellar Keratoplasty (DALK)",
+  "Descemet Membrane Endothelial Keratoplasty (DMEK)",
+  "Descemet Stripping Automated Endothelial Keratoplasty (DSAEK)",
+  "Pterygium Excision with Conjunctival Autograft",
+  "Dacryocystorhinostomy (DCR)",
+  "Squint Surgery",
+  "Entropion Correction",
+  "Ectropion Correction",
+  "Lid Repair",
+  "Orbital Decompression",
+  "Enucleation",
+  "Evisceration",
+];
+
+function SurgeryNameCombobox({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState(value);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => { setQuery(value); }, [value]);
+
+  useEffect(() => {
+    function handler(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const filtered = SURGERY_NAME_OPTIONS.filter((o) =>
+    o.toLowerCase().includes(query.toLowerCase())
+  );
+
+  function select(opt: string) {
+    onChange(opt);
+    setQuery(opt);
+    setOpen(false);
+  }
+
+  return (
+    <div ref={ref} className="relative">
+      <div className="relative">
+        <input
+          type="text"
+          value={query}
+          placeholder="e.g. Phacoemulsification with IOL implantation"
+          className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-3 py-2 pr-8 text-sm text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent"
+          onChange={(e) => { setQuery(e.target.value); onChange(e.target.value); setOpen(true); }}
+          onFocus={() => setOpen(true)}
+        />
+        <ChevronDown
+          size={14}
+          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] pointer-events-none"
+        />
+      </div>
+      {open && filtered.length > 0 && (
+        <ul className="absolute z-50 mt-1 w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-lg overflow-hidden max-h-52 overflow-y-auto">
+          {filtered.map((opt) => (
+            <li key={opt}>
+              <button
+                type="button"
+                onMouseDown={(e) => { e.preventDefault(); select(opt); }}
+                className={`w-full text-left px-3 py-2 text-sm hover:bg-[var(--color-primary-50)] hover:text-[var(--color-primary-700)] transition-colors ${
+                  value === opt ? "bg-[var(--color-primary-50)] text-[var(--color-primary-700)] font-semibold" : "text-[var(--color-ink-700)]"
+                }`}
+              >
+                {opt}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
 
 const IN_VIEW_OF_KEYWORDS: { group: string; items: string[] }[] = [
   {
@@ -325,11 +421,9 @@ export function SurgicalPanel({ visit, udid }: { visit: any; udid: string }) {
       <div className="flex flex-col gap-3">
         <div>
           <p className="text-xs font-medium text-[var(--color-ink-500)] mb-1.5">Name of Surgery</p>
-          <input
+          <SurgeryNameCombobox
             value={surgeryName}
-            onChange={(e) => { setSurgeryName(e.target.value); setSaved(false); }}
-            placeholder="e.g. Phacoemulsification with IOL implantation"
-            className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-3 py-2 text-sm text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent"
+            onChange={(v) => { setSurgeryName(v); setSaved(false); }}
           />
         </div>
         <div>
