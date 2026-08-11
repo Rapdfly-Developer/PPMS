@@ -458,7 +458,21 @@ function WaitingCard({ rec, role, idx }: { rec: ScheduleRecord; role: "DOCTOR" |
 
 /* ── Confirmed Card ──────────────────────────────────────────────────────── */
 function ConfirmedCard({ rec, role, idx }: { rec: ScheduleRecord; role: "DOCTOR" | "HOSPITAL"; idx: number }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen]       = useState(false);
+  const [showEdit, setShowEdit] = useState(false);
+  const [newDate, setNewDate] = useState(new Date(rec.plannedDateTime).toISOString().slice(0, 10));
+  const [newTime, setNewTime] = useState(new Date(rec.plannedDateTime).toTimeString().slice(0, 5));
+  const [pending, start]      = useTransition();
+  const [err, setErr]         = useState("");
+
+  function handleUpdateDate() {
+    if (!newDate || !newTime) return;
+    start(async () => {
+      const res = await updateSurgeryDate(rec.id, new Date(`${newDate}T${newTime}`).toISOString());
+      if (res.error) setErr(res.error);
+      else setShowEdit(false);
+    });
+  }
 
   return (
     <div className="rounded-xl border border-emerald-200 bg-white">
@@ -526,14 +540,25 @@ function ConfirmedCard({ rec, role, idx }: { rec: ScheduleRecord; role: "DOCTOR"
             ))}
           </div>
 
+          {err && <p className="text-xs text-red-600 mb-2">{err}</p>}
+
           <div className="flex items-center gap-2 flex-wrap">
             {role === "DOCTOR" && (
-              <Link
-                href={`/scheduled-ot/${rec.id}/ot-room`}
-                className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors"
-              >
-                <DoorOpen size={13} /> Enter Surgery Room
-              </Link>
+              <>
+                <Link
+                  href={`/scheduled-ot/${rec.id}/ot-room`}
+                  className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors"
+                >
+                  <DoorOpen size={13} /> Enter Surgery Room
+                </Link>
+                <button
+                  onClick={() => setShowEdit((v) => !v)}
+                  disabled={pending}
+                  className="inline-flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] transition-colors disabled:opacity-50"
+                >
+                  <CalendarClock size={12} /> Update Date &amp; Time
+                </button>
+              </>
             )}
             <button
               onClick={() => setOpen((v) => !v)}
@@ -543,10 +568,51 @@ function ConfirmedCard({ rec, role, idx }: { rec: ScheduleRecord; role: "DOCTOR"
               {open ? "Hide Details" : "View Details"}
               {open ? <ChevronDown size={11} /> : <ChevronRight size={11} />}
             </button>
-            <span className="flex items-center gap-1 text-[10px] text-[var(--color-ink-400)]">
-              <Lock size={10} /> Schedule locked
-            </span>
+            {role !== "DOCTOR" && (
+              <span className="flex items-center gap-1 text-[10px] text-[var(--color-ink-400)]">
+                <Lock size={10} /> Schedule locked
+              </span>
+            )}
           </div>
+
+          {/* Inline date editor (doctor only) */}
+          {showEdit && (
+            <div className="mt-3 p-3 rounded-xl border border-[var(--color-primary-200)] bg-[var(--color-primary-50)]">
+              <p className="text-xs font-semibold text-[var(--color-primary-800)] mb-2.5">Update Surgery Date &amp; Time</p>
+              <div className="flex gap-3 flex-wrap">
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] font-semibold text-[var(--color-ink-500)] uppercase tracking-wide">Date</label>
+                  <input
+                    type="date"
+                    value={newDate}
+                    onChange={(e) => setNewDate(e.target.value)}
+                    className="text-xs rounded-lg border border-[var(--color-primary-200)] bg-white px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)]"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] font-semibold text-[var(--color-ink-500)] uppercase tracking-wide">Time</label>
+                  <input
+                    type="time"
+                    value={newTime}
+                    onChange={(e) => setNewTime(e.target.value)}
+                    className="text-xs rounded-lg border border-[var(--color-primary-200)] bg-white px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)]"
+                  />
+                </div>
+              </div>
+              <div className="flex gap-2 mt-3">
+                <button
+                  onClick={handleUpdateDate}
+                  disabled={pending || !newDate || !newTime}
+                  className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-50 transition-colors"
+                >
+                  {pending ? "Saving…" : "Save & Notify Admin"}
+                </button>
+                <button onClick={() => setShowEdit(false)} className="text-xs px-3 py-1.5 rounded-lg border border-[var(--color-border)] text-[var(--color-ink-500)] hover:bg-white transition-colors">
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
