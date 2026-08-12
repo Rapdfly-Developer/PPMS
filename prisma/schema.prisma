@@ -485,8 +485,10 @@ model Visit {
   anesthesiaType      String?
   procedureLaterality String?
   procedureName       String?
-  inViewOf       String?
-  gonioNotes     String?  // JSON: { re: string, le: string }
+  inViewOf            String?
+  followUpCompleted   Boolean   @default(false)
+  followUpCancelledAt DateTime?
+  gonioNotes          String?  // JSON: { re: string, le: string }
 
   generalExam        GeneralExamination?
   medications        Medication[]
