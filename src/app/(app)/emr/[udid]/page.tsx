@@ -518,7 +518,7 @@ export default async function PatientDetailedEMR({
                 icon: <Activity size={14} />,
                 content:
                   user.role === "DOCTOR" ? (
-                    <AssessmentTab visit={activeVisit} udid={udid} priorVisits={priorVisits} />
+                    <AssessmentTab visit={activeVisit} udid={udid} priorVisits={priorVisits} readOnly={readOnly} />
                   ) : (
                     <p className="text-sm text-[var(--color-ink-400)]">Not accessible for this role.</p>
                   ),

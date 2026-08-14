@@ -7,7 +7,7 @@ import { SingleChipSelect } from "@/components/ui/Chip";
 import { ICD10_OPHTHALMOLOGY, DIAGNOSIS_STATUSES, LATERALITY } from "@/lib/constants";
 import { addDiagnosis, updateDiagnosisStatus, removeDiagnosis, addMedication, removeMedication, saveFollowUp, confirmDiagnosis, setDiagnosisProtocol } from "./actions";
 import { useAutoSave, SaveIndicator } from "@/lib/useAutoSave";
-import { X, History, ChevronDown, Search, PenLine, Plus, Check, Ban, Stethoscope, FileText } from "lucide-react";
+import { X, History, ChevronDown, Search, PenLine, Plus, Check, Ban, Stethoscope, FileText, Lock, AlertTriangle } from "lucide-react";
 
 const DOSAGE_OPTIONS = [
   "1 Drop","2 Drops","3 Drops","4 Drops","6 Drops",
@@ -402,11 +402,23 @@ function ProtocolPickerModal({
   );
 }
 
-export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; udid: string; priorVisits?: any[] }) {
+export function AssessmentTab({
+  visit, udid, priorVisits = [], readOnly = false,
+}: {
+  visit: any;
+  udid: string;
+  priorVisits?: any[];
+  readOnly?: boolean;
+}) {
   const router = useRouter();
   // Split diagnoses by provisional flag
   const provisionalDiagnoses: any[] = (visit.diagnoses ?? []).filter((d: any) => d.provisional);
   const diagnoses: any[] = (visit.diagnoses ?? []).filter((d: any) => !d.provisional);
+
+  // Server actions on this tab throw when the visit is finalized or out of the
+  // doctor's scope. Without surfacing that, the rejection is swallowed inside
+  // the transition and the click looks like it simply did nothing.
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const [provQuery, setProvQuery] = useState("");
   const [provLaterality, setProvLateralityState] = useState<string>(
@@ -426,6 +438,24 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
   );
   const setLaterality = (v: string) => { sessionStorage.setItem(`icd-lat-${visit.id}`, v); setLateralityState(v); };
   const [pending, startTransition] = useTransition();
+
+  /** Runs a mutating server action, surfacing any error instead of failing silently. */
+  const run = (fn: () => Promise<void>) => {
+    if (readOnly) {
+      setActionError("This consultation is finalized and read-only.");
+      return;
+    }
+    setActionError(null);
+    startTransition(async () => {
+      try {
+        await fn();
+        router.refresh();
+      } catch (err: unknown) {
+        setActionError(err instanceof Error ? err.message : "Could not save that change.");
+      }
+    });
+  };
+
   const [historyOpen, setHistoryOpen] = useState(false);
   const [confirmDxGroup, setConfirmDxGroup] = useState<any[] | null>(null);
   const [dxToast, setDxToast] = useState(false);
@@ -681,7 +711,7 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
     const d = pendingProtocolDx;
     if (!d) return;
     setPendingProtocolDx(null);
-    startTransition(async () => {
+    run(async () => {
       if (preset) {
         await applyProtocol(d, preset);
         await confirmDiagnosis(d.id, udid, { protocolId: preset.id, protocolName: preset.name });
@@ -691,64 +721,57 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
         // Custom protocol — confirm with free-text name, no auto-medication
         await confirmDiagnosis(d.id, udid, { protocolName: customName });
       }
-      router.refresh();
     });
   };
 
   // Swap the confirmed diagnosis onto a different protocol.
   const handleChangeProtocol = (d: any, preset: TreatmentPreset) => {
     if (d.protocolId === preset.id) return;
-    startTransition(async () => {
+    run(async () => {
       const removedIds = await autoRemovePresetMeds(d.description, true);
       await applyProtocol(d, preset, removedIds);
       await setDiagnosisProtocol(d.id, udid, { protocolId: preset.id, protocolName: preset.name });
       setPresetToast([preset.name]);
       setTimeout(() => setPresetToast([]), 5000);
-      router.refresh();
     });
   };
 
   const handleStatusChange = (d: any, status: string) => {
-    startTransition(async () => {
+    run(async () => {
       await updateDiagnosisStatus(d.id, udid, status);
-      router.refresh();
     });
   };
 
   // Reject removes the diagnosis outright, along with any meds it contributed.
   const handleReject = (d: any) => {
-    startTransition(async () => {
+    run(async () => {
       await autoRemovePresetMeds(d.description);
       await removeDiagnosis(d.id, udid);
-      router.refresh();
     });
   };
 
   // Add provisional diagnosis
   const addProv = (code: string, description: string) => {
-    startTransition(async () => {
+    run(async () => {
       await addDiagnosis(visit.id, udid, { icd10Code: code, description, laterality: provLaterality, provisional: true });
       setProvQuery("");
-      router.refresh();
     });
   };
 
   // Add ICD-10 diagnosis
   const addIcd = (code: string, description: string) => {
-    startTransition(async () => {
+    run(async () => {
       await addDiagnosis(visit.id, udid, { icd10Code: code, description, laterality });
       setQuery("");
-      router.refresh();
     });
   };
 
   const loadProvGroup = (dxList: any[]) => {
     const missing = dxList.filter((d: any) => !existingProvCodes.has(d.icd10Code));
-    startTransition(async () => {
+    run(async () => {
       for (const d of missing) {
         await addDiagnosis(visit.id, udid, { icd10Code: d.icd10Code, description: d.description, laterality: d.laterality ?? "OU", provisional: true });
       }
-      router.refresh();
     });
     setProvHistoryOpen(false);
     setProvDxToast(true);
@@ -756,11 +779,10 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
 
   const loadDxGroup = (dxList: any[]) => {
     const missing = dxList.filter((d: any) => !existingCodes.has(d.icd10Code));
-    startTransition(async () => {
+    run(async () => {
       for (const d of missing) {
         await addDiagnosis(visit.id, udid, { icd10Code: d.icd10Code, description: d.description, laterality: d.laterality ?? "OU" });
       }
-      router.refresh();
     });
     setHistoryOpen(false);
     setDxToast(true);
@@ -790,6 +812,33 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
   return (
     <>
     <div className="flex flex-col gap-5">
+
+      {/* Finalized consultations are read-only — say so rather than letting
+          clicks fail silently against the server-side guard. */}
+      {readOnly && (
+        <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-2.5 text-sm text-amber-800">
+          <Lock size={15} className="shrink-0 mt-0.5" />
+          <span>This consultation has been finalized and is read-only. Diagnoses can no longer be changed.</span>
+        </div>
+      )}
+
+      {actionError && (
+        <div
+          role="alert"
+          className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-3.5 py-2.5 text-sm text-red-700"
+        >
+          <AlertTriangle size={15} className="shrink-0 mt-0.5" />
+          <span className="flex-1">{actionError}</span>
+          <button
+            type="button"
+            onClick={() => setActionError(null)}
+            className="text-red-500 hover:text-red-700 shrink-0"
+            aria-label="Dismiss"
+          >
+            <X size={14} />
+          </button>
+        </div>
+      )}
 
       {/* ── Provisional Diagnosis ─────────────────────────────────────────── */}
       <Card>
@@ -850,14 +899,15 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
             <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] pointer-events-none" />
             <input
               value={provQuery}
+              disabled={readOnly}
               onChange={(e) => { setProvQuery(e.target.value); setShowProvSuggestions(true); setProvSuggestionIndex(-1); }}
               onFocus={() => { if (provBlurTimerRef.current) clearTimeout(provBlurTimerRef.current); setShowProvSuggestions(true); }}
               onBlur={() => { provBlurTimerRef.current = setTimeout(() => setShowProvSuggestions(false), 150); }}
               onKeyDown={handleProvKeyDown}
               placeholder="Search ICD-10 code or description..."
-              className="w-full rounded-xl border border-[var(--color-border)] pl-9 pr-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
+              className="w-full rounded-xl border border-[var(--color-border)] pl-9 pr-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] disabled:opacity-60 disabled:cursor-not-allowed"
             />
-            {showProvSuggestions && provQuery.length >= 2 && (
+            {showProvSuggestions && provQuery.length >= 2 && !readOnly && (
               <ul className="absolute z-20 left-0 right-0 mt-1 rounded-xl border border-[var(--color-border)] bg-white shadow-xl overflow-hidden max-h-60 overflow-y-auto">
                 {provSuggestions.length === 0 ? (
                   <li>
@@ -996,14 +1046,15 @@ export function AssessmentTab({ visit, udid, priorVisits = [] }: { visit: any; u
             <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] pointer-events-none" />
             <input
               value={query}
+              disabled={readOnly}
               onChange={(e) => { setQuery(e.target.value); }}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && query.trim() && icdMatches.length === 0) openCustomModal("icd");
               }}
               placeholder="Search ICD-10 code or description..."
-              className="w-full rounded-xl border border-[var(--color-border)] pl-9 pr-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
+              className="w-full rounded-xl border border-[var(--color-border)] pl-9 pr-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] disabled:opacity-60 disabled:cursor-not-allowed"
             />
-            {query.length > 0 && (
+            {query.length > 0 && !readOnly && (
               <ul className="absolute z-20 left-0 right-0 mt-1 rounded-xl border border-[var(--color-border)] bg-white shadow-xl overflow-hidden max-h-60 overflow-y-auto">
                 {icdMatches.length === 0 ? (
                   <li>
