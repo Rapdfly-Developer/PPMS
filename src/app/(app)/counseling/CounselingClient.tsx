@@ -6,8 +6,11 @@ import { format, isToday, isTomorrow, isPast, startOfDay } from "date-fns";
 import {
   HeartHandshake, Search, User, Building2, Stethoscope, Eye,
   CalendarClock, CheckCircle2, ClipboardList, AlertTriangle, Scissors,
-  ShieldCheck, FlaskConical, XCircle,
+  ShieldCheck, FlaskConical, XCircle, ArrowRight,
 } from "lucide-react";
+import {
+  BOARD_TABS, stageLabel, stageTone, nextActionFor, type BoardTab,
+} from "@/lib/counselling-workflow";
 
 /* ── Types ─────────────────────────────────────────────────────────────── */
 interface CounselingItem {
@@ -26,12 +29,29 @@ interface CounselingItem {
   counselingDone: boolean;
   investigationDone: boolean;
   fitForSurgery: boolean | null;
+  workflowId: string | null;
+  workflowStage: string | null;
+  workflowDecision: string | null;
   patient: { id: string; name: string; udid: string; uhid: string | null; age: number; sex: string };
   hospital: { id: string; name: string };
   doctor: { id: string; name: string };
 }
 
+export type CounsellingCapabilities = {
+  view: boolean;
+  counsel: boolean;
+  decide: boolean;
+  schedule: boolean;
+  approveOt: boolean;
+};
+
 type Filter = "all" | "awaiting" | "scheduled" | "upcoming";
+type StageTab = "all" | BoardTab;
+
+/** A case with no workflow row yet sits at the very start of the new flow. */
+function effectiveStage(item: CounselingItem): string {
+  return item.workflowStage ?? "PENDING_COUNSELING";
+}
 
 /* ── Helpers ───────────────────────────────────────────────────────────── */
 const SEX_SHORT: Record<string, string> = { MALE: "M", FEMALE: "F", OTHER: "O" };
@@ -94,9 +114,17 @@ function StatusPill({ done, label, icon }: { done: boolean; label: string; icon:
   );
 }
 
-function CounselingRow({ item, role }: { item: CounselingItem; role: "DOCTOR" | "HOSPITAL" }) {
+function CounselingRow({
+  item, role, can,
+}: {
+  item: CounselingItem;
+  role: "DOCTOR" | "HOSPITAL";
+  can: CounsellingCapabilities;
+}) {
   const lat = lateralityLabel(item.rightEye, item.leftEye);
   const fitForSurgery = item.fitForSurgery ?? (item.counselingDone && item.investigationDone);
+  const stage = effectiveStage(item);
+  const action = can.view ? nextActionFor(stage, can) : null;
 
   return (
     <li className="rounded-xl border border-[var(--color-border)] bg-white px-4 py-3 hover:border-[var(--color-primary-200)] transition-colors">
@@ -148,6 +176,10 @@ function CounselingRow({ item, role }: { item: CounselingItem; role: "DOCTOR" | 
 
           {/* Counselling status pills */}
           <div className="mt-2 flex items-center gap-1.5 flex-wrap">
+            {/* Workflow stage — the new counseling → approval → OT pipeline */}
+            <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border ${stageTone(stage)}`}>
+              {stageLabel(stage)}
+            </span>
             <StatusPill done={item.counselingDone} label="Counseling" icon={null} />
             <StatusPill done={item.investigationDone} label="Investigations" icon={null} />
             <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border ${
@@ -195,6 +227,29 @@ function CounselingRow({ item, role }: { item: CounselingItem; role: "DOCTOR" | 
               <CalendarClock size={11} /> Awaiting scheduling
             </Link>
           )}
+
+          {/* Next workflow action for this user */}
+          {action ? (
+            <Link
+              href={`/counseling/case/${item.id}`}
+              className={`text-[11px] font-semibold px-3 py-1.5 rounded-lg inline-flex items-center gap-1.5 whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 ${
+                action.tone === "amber"
+                  ? "bg-amber-500 text-white hover:bg-amber-600 focus-visible:ring-amber-400"
+                  : action.tone === "emerald"
+                  ? "bg-emerald-600 text-white hover:bg-emerald-700 focus-visible:ring-emerald-400"
+                  : "bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] focus-visible:ring-[var(--color-primary-400)]"
+              }`}
+            >
+              {action.label} <ArrowRight size={12} />
+            </Link>
+          ) : can.view ? (
+            <Link
+              href={`/counseling/case/${item.id}`}
+              className="text-[11px] font-semibold px-3 py-1.5 rounded-lg border border-[var(--color-border)] text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)] inline-flex items-center gap-1.5 whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary-400)]"
+            >
+              View case <ArrowRight size={12} />
+            </Link>
+          ) : null}
         </div>
       </div>
     </li>
@@ -202,9 +257,16 @@ function CounselingRow({ item, role }: { item: CounselingItem; role: "DOCTOR" | 
 }
 
 /* ── Page ──────────────────────────────────────────────────────────────── */
-export function CounselingClient({ items, role }: { items: CounselingItem[]; role: "DOCTOR" | "HOSPITAL" }) {
-  const [filter, setFilter] = useState<Filter>("all");
-  const [query, setQuery]   = useState("");
+export function CounselingClient({
+  items, role, can,
+}: {
+  items: CounselingItem[];
+  role: "DOCTOR" | "HOSPITAL";
+  can: CounsellingCapabilities;
+}) {
+  const [filter, setFilter]       = useState<Filter>("all");
+  const [stageTab, setStageTab]   = useState<StageTab>("all");
+  const [query, setQuery]         = useState("");
 
   const counts = useMemo(() => ({
     all:       items.length,
@@ -213,9 +275,20 @@ export function CounselingClient({ items, role }: { items: CounselingItem[]; rol
     upcoming:  items.filter((i) => isUpcoming(i.surgeryDate)).length,
   }), [items]);
 
+  /** How many cases sit in each workflow tab. */
+  const stageCounts = useMemo(() => {
+    const map: Record<string, number> = { all: items.length };
+    for (const tab of BOARD_TABS) {
+      map[tab.key] = items.filter((i) => tab.stages.includes(effectiveStage(i))).length;
+    }
+    return map;
+  }, [items]);
+
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
+    const activeTab = BOARD_TABS.find((t) => t.key === stageTab);
     return items.filter((i) => {
+      if (activeTab && !activeTab.stages.includes(effectiveStage(i))) return false;
       if (filter === "awaiting"  && i.scheduled)  return false;
       if (filter === "scheduled" && !i.scheduled) return false;
       if (filter === "upcoming"  && !isUpcoming(i.surgeryDate)) return false;
@@ -228,7 +301,7 @@ export function CounselingClient({ items, role }: { items: CounselingItem[]; rol
         i.doctor.name.toLowerCase().includes(q)
       );
     });
-  }, [items, filter, query]);
+  }, [items, filter, stageTab, query]);
 
   return (
     <div className="flex flex-col gap-5">
@@ -243,6 +316,42 @@ export function CounselingClient({ items, role }: { items: CounselingItem[]; rol
             Surgical counselling recorded from the EMR Plan tab
           </p>
         </div>
+      </div>
+
+      {/* Workflow stage tabs — Counseling → Clinical Decision → Confirmation → OT */}
+      <div
+        role="tablist"
+        aria-label="Counseling workflow stage"
+        className="flex gap-1 overflow-x-auto border-b border-[var(--color-border)] -mb-px"
+      >
+        {([{ key: "all" as StageTab, label: "All cases" }, ...BOARD_TABS]).map((tab) => {
+          const active = stageTab === tab.key;
+          const count  = stageCounts[tab.key] ?? 0;
+          return (
+            <button
+              key={tab.key}
+              role="tab"
+              aria-selected={active}
+              onClick={() => setStageTab(tab.key as StageTab)}
+              className={`shrink-0 px-3 py-2.5 text-xs font-semibold border-b-2 transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary-400)] focus-visible:rounded-t ${
+                active
+                  ? "border-[var(--color-primary-600)] text-[var(--color-primary-700)]"
+                  : "border-transparent text-[var(--color-ink-500)] hover:text-[var(--color-ink-800)] hover:border-[var(--color-border)]"
+              }`}
+            >
+              {tab.label}
+              <span
+                className={`ml-1.5 tabular-nums text-[10px] px-1.5 py-0.5 rounded-full ${
+                  active
+                    ? "bg-[var(--color-primary-100)] text-[var(--color-primary-700)]"
+                    : "bg-[var(--color-surface-sunken)] text-[var(--color-ink-400)]"
+                }`}
+              >
+                {count}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       {/* Stat tiles double as filters */}
@@ -303,7 +412,7 @@ export function CounselingClient({ items, role }: { items: CounselingItem[]; rol
       ) : (
         <ul className="flex flex-col gap-2">
           {visible.map((item) => (
-            <CounselingRow key={item.id} item={item} role={role} />
+            <CounselingRow key={item.id} item={item} role={role} can={can} />
           ))}
         </ul>
       )}

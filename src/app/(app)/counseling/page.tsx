@@ -1,6 +1,7 @@
-import { requirePermission } from "@/lib/rbac";
+import { requirePermission, userCan } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { CounselingClient } from "./CounselingClient";
+import { COUNSELLING_PERMISSIONS as P } from "@/lib/counselling-workflow";
 
 export default async function CounselingPage() {
   const user = await requirePermission("appointments.view");
@@ -30,7 +31,20 @@ export default async function CounselingPage() {
   const [records, schedules] = await Promise.all([
     prisma.surgicalCounselling.findMany({
       where: counsellingWhere,
-      include: { visit: { include: { patient: true, hospital: true, doctor: true } } },
+      include: {
+        visit: { include: { patient: true, hospital: true, doctor: true } },
+        // Additive workflow layer — null for records created before this module.
+        workflow: {
+          select: {
+            id: true,
+            stage: true,
+            decision: true,
+            counselledAt: true,
+            decidedAt: true,
+            confirmedAt: true,
+          },
+        },
+      },
       orderBy: { surgeryDate: "desc" },
     }),
     // Only needed to tell which counselling records already reached the OT list
@@ -60,6 +74,10 @@ export default async function CounselingPage() {
     counselingDone:    r.counselingDone,
     investigationDone: r.investigationDone,
     fitForSurgery:     r.fitForSurgery ?? null,
+    // ── workflow layer (null when the case has not been opened yet) ──
+    workflowId:        r.workflow?.id ?? null,
+    workflowStage:     r.workflow?.stage ?? null,
+    workflowDecision:  r.workflow?.decision ?? null,
     patient: {
       id:   r.visit.patient.id,
       name: r.visit.patient.name,
@@ -72,5 +90,19 @@ export default async function CounselingPage() {
     doctor:   { id: r.visit.doctor.id,   name: r.visit.doctor.name   },
   }));
 
-  return <CounselingClient items={items} role={user.role as "DOCTOR" | "HOSPITAL"} />;
+  const can = {
+    view:      userCan(user, P.view),
+    counsel:   userCan(user, P.counsel),
+    decide:    userCan(user, P.decide),
+    schedule:  userCan(user, P.schedule),
+    approveOt: userCan(user, P.approveOt),
+  };
+
+  return (
+    <CounselingClient
+      items={items}
+      role={user.role as "DOCTOR" | "HOSPITAL"}
+      can={can}
+    />
+  );
 }

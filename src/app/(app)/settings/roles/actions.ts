@@ -19,6 +19,19 @@ const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
   ],
 };
 
+/**
+ * Permissions introduced *after* the initial seed, which therefore must reach
+ * roles that already have a permission set (the block below skips those). Only
+ * ever add keys here — the backfill upserts and never revokes, and each key is
+ * granted once, so an admin who later removes one keeps it removed.
+ *
+ * counselling.decide / counselling.approve_ot are deliberately absent: clinical
+ * decisions stay with the DOCTOR role, which holds "*".
+ */
+const ADDITIVE_ROLE_PERMISSIONS: Record<string, string[]> = {
+  HOSPITAL: ["counselling.view", "counselling.counsel", "counselling.schedule"],
+};
+
 // ── Default role definitions ───────────────────────────────────────────────
 const DEFAULT_ROLES = [
   { name: "DOCTOR",   label: "Doctor",        description: "Super Admin — unrestricted access to all features",          isSystem: true, color: "#6366f1" },
@@ -64,6 +77,28 @@ export async function seedRolesAndPermissions() {
         update: {},
         create: { role: roleName, permissionId: perm.id },
       });
+    }
+  }
+
+  // Backfill permissions added by later modules onto roles that were already
+  // seeded. Runs for every role (unlike the block above) but only ever grants,
+  // and each grant is recorded so a deliberate revoke is not undone.
+  for (const [roleName, keys] of Object.entries(ADDITIVE_ROLE_PERMISSIONS)) {
+    for (const key of keys) {
+      const perm = await prisma.permission.findUnique({ where: { key } });
+      if (!perm) continue;
+      const seeded = await prisma.rolePermissionSeed.findUnique({
+        where: { role_permissionKey: { role: roleName, permissionKey: key } },
+      }).catch(() => null);
+      if (seeded) continue;
+      await prisma.rolePermission.upsert({
+        where: { role_permissionId: { role: roleName, permissionId: perm.id } },
+        update: {},
+        create: { role: roleName, permissionId: perm.id },
+      });
+      await prisma.rolePermissionSeed.create({
+        data: { role: roleName, permissionKey: key },
+      }).catch(() => { /* concurrent seed — ignore */ });
     }
   }
 }

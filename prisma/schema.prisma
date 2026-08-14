@@ -799,6 +799,11 @@ model SurgicalCounselling {
   doctorReviewedAt  DateTime?
   confirmedFitAt    DateTime?
   createdAt         DateTime @default(now())
+
+  // Optional additive workflow layer (see CounsellingWorkflow). Records created
+  // before the workflow module shipped simply have no row here and behave exactly
+  // as before.
+  workflow          CounsellingWorkflow?
 }
 
 // ──────────────────────────────────────────────────────────────────────────
@@ -1295,4 +1300,134 @@ model SurgerySchedule {
 
   @@index([hospitalId, plannedDateTime])
   @@index([patientId])
+}
+
+// Records that a later-added permission has already been auto-granted to a role
+// once, so the backfill never re-grants something an admin deliberately revoked.
+model RolePermissionSeed {
+  id            String   @id @default(cuid())
+  role          String
+  permissionKey String
+  seededAt      DateTime @default(now())
+
+  @@unique([role, permissionKey])
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// Surgical Counselling Workflow — additive layer over SurgicalCounselling.
+//
+// This module wraps the existing surgery flow rather than replacing it. A
+// SurgicalCounselling row with no CounsellingWorkflow behaves exactly as it did
+// before this module shipped, so historic records and the legacy counselling
+// screens keep working untouched.
+//
+// stage: PENDING_COUNSELING | COUNSELING_COMPLETED | AWAITING_DOCTOR_REVIEW
+//        FIT_FOR_SURGERY | NOT_FIT | DEFERRED | ADDITIONAL_INVESTIGATIONS
+//        CONFIRMATION_COUNSELING | READY_FOR_OT | OT_SLOT_REQUESTED
+//        RESCHEDULING_REQUIRED | SCHEDULED_OT | CANCELLED
+// ──────────────────────────────────────────────────────────────────────────
+model CounsellingWorkflow {
+  id                     String   @id @default(cuid())
+  surgicalCounsellingId  String   @unique
+  surgicalCounselling    SurgicalCounselling @relation(fields: [surgicalCounsellingId], references: [id])
+
+  stage                  String   @default("PENDING_COUNSELING")
+
+  // ── Stage 1 — initial counselling capture ──
+  eyeLaterality          String?   // RE | LE | OU
+  diagnosisText          String?
+  procedureExplanation   String?
+  benefits               String?
+  risks                  String?
+  recoveryInfo           String?
+  patientQuestions       String?
+  estimatedCost          Float?
+  paymentMode            String?   // CASH | INSURANCE | GOVT_SCHEME | CAMP | OTHER
+  insuranceApproval      String?   // NA | PENDING | APPROVED | REJECTED
+  packageStatus          String?   // PENDING | PARTIAL | PAID
+  requiredInvestigations String?
+  investigationStatus    String?   // PENDING | PARTIAL | COMPLETED
+  consentStatus          String?   // PENDING | OBTAINED
+  counsellingNotes       String?
+  counselledBy           String?   // userId
+  counselledByName       String?
+  counselledAt           DateTime?
+
+  // ── Stage 2 — doctor clinical decision ──
+  decision               String?   // FIT | NOT_FIT | DEFERRED | ADDITIONAL_INVESTIGATIONS
+  decisionReason         String?
+  decisionInvestigations String?
+  decidedBy              String?   // userId
+  decidedByName          String?
+  decidedAt              DateTime?
+
+  // ── Stage 3 — confirmation counselling ──
+  confirmedSections      String?   // JSON array of verified section keys
+  confirmationNotes      String?
+  patientReady           Boolean   @default(false)
+  consentConfirmed       Boolean   @default(false)
+  confirmedBy            String?   // userId
+  confirmedByName        String?
+  confirmedAt            DateTime?
+
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  versions               CounsellingVersion[]
+  otSlotRequests         OtSlotRequest[]
+
+  @@index([stage])
+}
+
+// Immutable snapshot written on every counselling / decision / confirmation
+// change so the module carries its own version history independent of AuditLog.
+model CounsellingVersion {
+  id            String   @id @default(cuid())
+  workflowId    String
+  workflow      CounsellingWorkflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  stage         String
+  changeType    String   // COUNSELING | DECISION | CONFIRMATION | OT_REQUEST | OT_DECISION
+  changedBy     String   // userId
+  changedByName String?
+  snapshot      String   // JSON payload of the values at this point
+  note          String?
+  createdAt     DateTime @default(now())
+
+  @@index([workflowId, createdAt])
+}
+
+// OT slot request + doctor approval loop that sits in front of the existing
+// SurgerySchedule record. Once the doctor approves, the linked SurgerySchedule
+// is driven to SURGERY_CONFIRMED and the existing OT flow continues unchanged.
+// status: REQUESTED | APPROVED | RESCHEDULE_SUGGESTED | REJECTED | CANCELLED
+model OtSlotRequest {
+  id                String   @id @default(cuid())
+  workflowId        String
+  workflow          CounsellingWorkflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  surgeryScheduleId String?
+
+  hospitalId        String
+  otRoom            String?
+  requestedDate     DateTime
+  timeSlot          String?
+  doctorId          String
+  surgeryName       String
+  equipment         String?
+  staff             String?
+  notes             String?
+
+  status            String   @default("REQUESTED")
+  doctorNote        String?
+  suggestedDateTime DateTime?
+  respondedBy       String?
+  respondedAt       DateTime?
+
+  requestedBy       String   // userId
+  requestedByName   String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([workflowId])
+  @@index([status])
+  @@index([doctorId, status])
 }

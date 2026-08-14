@@ -76,6 +76,16 @@ export const PERMISSION_GROUPS: {
     ],
   },
   {
+    category: "Surgical Counseling",
+    permissions: [
+      { key: "counselling.view",       label: "View Counseling Workflow",  description: "See the counseling board and case details" },
+      { key: "counselling.counsel",    label: "Complete Counseling",       description: "Fill initial and confirmation counseling forms (Manager / Counselor)" },
+      { key: "counselling.decide",     label: "Make Clinical Decision",    description: "Decide surgical fitness — grant to doctors only" },
+      { key: "counselling.schedule",   label: "Request OT Slot",           description: "Raise an OT slot request for a confirmed case" },
+      { key: "counselling.approve_ot", label: "Approve OT Slot",           description: "Approve, reject or suggest another OT slot — grant to doctors only" },
+    ],
+  },
+  {
     category: "Reports & Analytics",
     permissions: [
       { key: "reports.view",   label: "View Analytics", description: "Access reports and statistical dashboards" },
