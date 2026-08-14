@@ -788,6 +788,11 @@ model SurgicalCounselling {
   counselingDone    Boolean  @default(false)
   investigationDone Boolean  @default(false)
   fitForSurgery     Boolean?
+  // Extended counselling fields (filled via surgical counselling page)
+  paymentNotes      String?
+  advanceAmount     Float?
+  advanceReceipt    String?
+  counsellingNotes  String?
   createdAt         DateTime @default(now())
 }
 

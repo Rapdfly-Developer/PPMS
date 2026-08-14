@@ -62,7 +62,7 @@ export default async function FollowUpsPage() {
     followUpCompleted: v.followUpCompleted,
     followUpCancelledAt: v.followUpCancelledAt?.toISOString() ?? null,
     inViewOf: v.inViewOf,
-    patient: v.patient,
+    patient: { ...v.patient, udid: v.patient.udid ?? v.patient.id },
     doctor: v.doctor,
     hospital: v.hospital,
     diagnoses: v.diagnoses,
