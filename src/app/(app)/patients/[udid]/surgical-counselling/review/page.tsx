@@ -11,62 +11,60 @@ export default async function SurgicalCounsellingReviewPage({
   const user = await requirePermission("patients.view");
   if (user.role !== "DOCTOR") redirect(`/patients/${params.udid}`);
 
+  // Load patient base info
   const patient = await prisma.patient.findUnique({
     where: { udid: params.udid },
+    select: { id: true, name: true, udid: true, uhid: true, age: true, sex: true },
+  });
+  if (!patient) notFound();
+
+  // Find the surgical counselling record directly (avoids unsupported nested where)
+  const sc = await prisma.surgicalCounselling.findFirst({
+    where: { visit: { patientId: patient.id } },
+    orderBy: { createdAt: "desc" },
     select: {
-      id: true, name: true, udid: true, uhid: true, age: true, sex: true,
-      visits: {
-        orderBy: { date: "desc" },
-        where: { surgicalCounselling: { isNot: null } },
-        take: 1,
-        select: {
-          id: true,
-          surgicalCounselling: {
-            select: {
-              id: true,
-              surgeryName: true,
-              surgeryType: true,
-              rightEye: true,
-              leftEye: true,
-              anaesthesiaType: true,
-              surgeryDate: true,
-              conflictFlag: true,
-              insuranceType: true,
-              paymentNotes: true,
-              counselingDone: true,
-              investigationDone: true,
-              fitForSurgery: true,
-              advanceAmount: true,
-              advanceReceipt: true,
-              counsellingNotes: true,
-              reviewStatus: true,
-              doctorReviewNote: true,
-              doctorReviewedAt: true,
-              confirmedFitAt: true,
-            },
-          },
-          diagnoses: {
-            where: { confirmedAt: { not: null } },
-            select: { description: true },
-            take: 3,
-            orderBy: { confirmedAt: "desc" },
-          },
-        },
+      id: true,
+      surgeryName: true,
+      surgeryType: true,
+      rightEye: true,
+      leftEye: true,
+      anaesthesiaType: true,
+      surgeryDate: true,
+      conflictFlag: true,
+      insuranceType: true,
+      paymentNotes: true,
+      counselingDone: true,
+      investigationDone: true,
+      fitForSurgery: true,
+      advanceAmount: true,
+      advanceReceipt: true,
+      counsellingNotes: true,
+      reviewStatus: true,
+      doctorReviewNote: true,
+      doctorReviewedAt: true,
+      confirmedFitAt: true,
+      visitId: true,
+    },
+  });
+  if (!sc) redirect(`/patients/${params.udid}`);
+
+  // Load diagnoses from the related visit
+  const visit = await prisma.visit.findUnique({
+    where: { id: sc.visitId },
+    select: {
+      diagnoses: {
+        where: { confirmedAt: { not: null } },
+        select: { description: true },
+        take: 3,
+        orderBy: { confirmedAt: "desc" },
       },
     },
   });
 
-  if (!patient) notFound();
-
-  const visit = patient.visits[0];
-  const sc = visit?.surgicalCounselling;
-  if (!sc) redirect(`/patients/${params.udid}`);
-
-  // Load the associated schedule for OT details
+  // Load the associated surgery schedule for OT details
   const schedule = await prisma.surgerySchedule.findFirst({
     where: { surgicalCounsellingId: sc.id },
     select: {
-      id: true,
       surgeryCategory: true,
       urgencyType: true,
       priority: true,
@@ -78,12 +76,11 @@ export default async function SurgicalCounsellingReviewPage({
       consentReceived: true,
       reportsUploaded: true,
       bloodArranged: true,
-      patientInformed: true,
       plannedDateTime: true,
     },
   });
 
-  const diagnoses = visit.diagnoses.map((d) => d.description);
+  const diagnoses = visit?.diagnoses.map((d) => d.description) ?? [];
 
   return (
     <DoctorReviewClient
