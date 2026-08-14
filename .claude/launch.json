@@ -3,8 +3,8 @@
   "configurations": [
     {
       "name": "Next.js Dev Server",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["--max-old-space-size=4096", "node_modules/next/dist/bin/next", "dev", "--webpack"],
       "port": 3000,
       "autoPort": true
     },

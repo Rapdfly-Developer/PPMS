@@ -6,14 +6,16 @@ import { DoctorReviewClient } from "./DoctorReviewClient";
 export default async function SurgicalCounsellingReviewPage({
   params,
 }: {
-  params: { udid: string };
+  params: Promise<{ udid: string }>;
 }) {
+  const { udid } = await params;
+
   const user = await requirePermission("patients.view");
-  if (user.role !== "DOCTOR") redirect(`/patients/${params.udid}`);
+  if (user.role !== "DOCTOR") redirect(`/patients/${udid}`);
 
   // Load patient base info
   const patient = await prisma.patient.findUnique({
-    where: { udid: params.udid },
+    where: { udid },
     select: { id: true, name: true, udid: true, uhid: true, age: true, sex: true },
   });
   if (!patient) notFound();
@@ -46,7 +48,7 @@ export default async function SurgicalCounsellingReviewPage({
       visitId: true,
     },
   });
-  if (!sc) redirect(`/patients/${params.udid}`);
+  if (!sc) redirect(`/patients/${udid}`);
 
   // Load diagnoses from the related visit
   const visit = await prisma.visit.findUnique({
@@ -84,7 +86,7 @@ export default async function SurgicalCounsellingReviewPage({
 
   return (
     <DoctorReviewClient
-      udid={params.udid}
+      udid={udid}
       patient={{
         name: patient.name,
         udid: patient.udid ?? patient.id,

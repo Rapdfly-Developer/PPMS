@@ -6,13 +6,15 @@ import { SurgicalCounsellingForm } from "./SurgicalCounsellingForm";
 export default async function SurgicalCounsellingPage({
   params,
 }: {
-  params: { udid: string };
+  params: Promise<{ udid: string }>;
 }) {
+  const { udid } = await params;
+
   const user = await requirePermission("patients.view");
-  if (user.role !== "HOSPITAL") redirect(`/patients/${params.udid}`);
+  if (user.role !== "HOSPITAL") redirect(`/patients/${udid}`);
 
   const patient = await prisma.patient.findUnique({
-    where: { udid: params.udid },
+    where: { udid },
     select: {
       id: true, name: true, udid: true, uhid: true, age: true, sex: true,
       visits: {
@@ -37,13 +39,13 @@ export default async function SurgicalCounsellingPage({
   const latestVisit = patient.visits[0];
   const counselling = latestVisit?.surgicalCounselling;
 
-  if (!counselling) redirect(`/patients/${params.udid}`);
+  if (!counselling) redirect(`/patients/${udid}`);
 
   const diagnoses = latestVisit?.diagnoses.map((d) => d.description) ?? [];
 
   return (
     <SurgicalCounsellingForm
-      udid={params.udid}
+      udid={udid}
       patientName={patient.name}
       patientUhid={patient.uhid ?? patient.udid ?? patient.id}
       patientAge={patient.age}
