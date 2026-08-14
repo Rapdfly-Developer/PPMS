@@ -101,6 +101,7 @@ export type CounsellingRecord = {
   counselingDone: boolean;
   investigationDone: boolean;
   fitForSurgery: boolean | null;
+  reviewStatus: string | null;
 };
 
 function YesNoToggle({

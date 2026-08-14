@@ -52,6 +52,7 @@ export default async function PatientProfilePage({
               counselingDone: true,
               investigationDone: true,
               fitForSurgery: true,
+              reviewStatus: true,
             },
           },
         },
@@ -393,6 +394,7 @@ export default async function PatientProfilePage({
             counselingDone: sc.counselingDone,
             investigationDone: sc.investigationDone,
             fitForSurgery: sc.fitForSurgery,
+            reviewStatus: sc.reviewStatus,
           } satisfies CounsellingRecord;
         })()}
       />

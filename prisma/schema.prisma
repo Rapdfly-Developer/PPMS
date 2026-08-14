@@ -793,6 +793,11 @@ model SurgicalCounselling {
   advanceAmount     Float?
   advanceReceipt    String?
   counsellingNotes  String?
+  // Doctor review workflow
+  reviewStatus      String?   // PENDING_REVIEW | FIT_FOR_SURGERY | NOT_FIT | DEFERRED | ADDITIONAL_INVESTIGATIONS | CONFIRMED
+  doctorReviewNote  String?
+  doctorReviewedAt  DateTime?
+  confirmedFitAt    DateTime?
   createdAt         DateTime @default(now())
 }
 

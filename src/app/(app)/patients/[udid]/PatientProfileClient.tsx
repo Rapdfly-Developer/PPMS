@@ -582,14 +582,36 @@ export function PatientProfileClient({
 
       {/* ── Surgical Counseling button — shown only for OT-decided patients ── */}
       {surgicalCounselling && (
-        <div className="mt-3">
+        <div className="mt-3 space-y-2">
           {userRole === "HOSPITAL" ? (
             <Link
               href={`/patients/${udid}/surgical-counselling`}
               className="flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-xl font-semibold text-sm bg-violet-600 text-white hover:bg-violet-700 transition-colors shadow-sm w-full"
             >
               <Scissors size={16} />
-              Surgical Counseling
+              {surgicalCounselling.reviewStatus === "PENDING_REVIEW"
+                ? "Update Counselling"
+                : "Surgical Counseling"}
+            </Link>
+          ) : userRole === "DOCTOR" ? (
+            <Link
+              href={`/patients/${udid}/surgical-counselling/review`}
+              className={`flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-xl font-semibold text-sm transition-colors shadow-sm w-full ${
+                surgicalCounselling.reviewStatus === "PENDING_REVIEW"
+                  ? "bg-amber-500 text-white hover:bg-amber-600 animate-pulse"
+                  : surgicalCounselling.reviewStatus === "CONFIRMED"
+                  ? "bg-emerald-600 text-white hover:bg-emerald-700"
+                  : "bg-violet-600 text-white hover:bg-violet-700"
+              }`}
+            >
+              <Scissors size={16} />
+              {surgicalCounselling.reviewStatus === "PENDING_REVIEW"
+                ? "Review Counselling →"
+                : surgicalCounselling.reviewStatus === "CONFIRMED"
+                ? "✓ Confirmed Fit for Surgery"
+                : surgicalCounselling.reviewStatus === "FIT_FOR_SURGERY"
+                ? "Complete Confirmation →"
+                : "Surgical Counseling"}
             </Link>
           ) : (
             <button
@@ -600,6 +622,25 @@ export function PatientProfileClient({
               <Scissors size={16} />
               Surgical Counseling
             </button>
+          )}
+          {/* Review status badge */}
+          {surgicalCounselling.reviewStatus && (
+            <div className={`flex items-center justify-center gap-1.5 text-[10px] font-bold uppercase tracking-wide px-3 py-1.5 rounded-lg ${
+              surgicalCounselling.reviewStatus === "CONFIRMED"              ? "bg-emerald-50 text-emerald-700 border border-emerald-200" :
+              surgicalCounselling.reviewStatus === "PENDING_REVIEW"        ? "bg-amber-50 text-amber-700 border border-amber-200" :
+              surgicalCounselling.reviewStatus === "FIT_FOR_SURGERY"       ? "bg-violet-50 text-violet-700 border border-violet-200" :
+              surgicalCounselling.reviewStatus === "NOT_FIT"               ? "bg-red-50 text-red-700 border border-red-200" :
+              surgicalCounselling.reviewStatus === "DEFERRED"              ? "bg-amber-50 text-amber-700 border border-amber-200" :
+              surgicalCounselling.reviewStatus === "ADDITIONAL_INVESTIGATIONS" ? "bg-blue-50 text-blue-700 border border-blue-200" :
+              "bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)]"
+            }`}>
+              {surgicalCounselling.reviewStatus === "PENDING_REVIEW"           && "⏳ Awaiting Doctor Review"}
+              {surgicalCounselling.reviewStatus === "FIT_FOR_SURGERY"          && "⚕ Fit — Confirmation Pending"}
+              {surgicalCounselling.reviewStatus === "CONFIRMED"                && "✓ Confirmed Fit for Surgery"}
+              {surgicalCounselling.reviewStatus === "NOT_FIT"                  && "✗ Not Fit for Surgery"}
+              {surgicalCounselling.reviewStatus === "DEFERRED"                 && "⟳ Surgery Deferred"}
+              {surgicalCounselling.reviewStatus === "ADDITIONAL_INVESTIGATIONS" && "🔬 Additional Investigations Needed"}
+            </div>
           )}
         </div>
       )}
