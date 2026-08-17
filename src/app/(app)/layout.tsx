@@ -7,8 +7,10 @@ import { SidebarProvider } from "@/components/ui/SidebarContext";
 import { IdleTimeout } from "@/components/ui/IdleTimeout";
 import { AutoRefresh } from "@/components/ui/AutoRefresh";
 import { LicenseGate } from "@/components/ui/LicenseGate";
+import { runStartup } from "@/lib/startup";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
+  await runStartup(); // runs once per cold start; subsequent calls return instantly
   const user = await requireUser();
 
   const licenseResult = await checkLicenseForUser(user);
