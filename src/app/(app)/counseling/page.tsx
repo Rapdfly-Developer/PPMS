@@ -2,31 +2,13 @@ import { requirePermission, userCan } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { CounselingClient } from "./CounselingClient";
 import { COUNSELLING_PERMISSIONS as P } from "@/lib/counselling-workflow";
+import { getSurgeryScope } from "@/lib/surgery-scope";
 
 export default async function CounselingPage() {
   const user = await requirePermission("appointments.view");
 
-  /* ── access scoping — mirrors /scheduled-ot ── */
-  let counsellingWhere: any;
-  let scheduleWhere: any;
-
-  if (user.role === "DOCTOR") {
-    counsellingWhere = { visit: { doctorId: user.profileId } };
-    scheduleWhere    = { operatingSurgeonId: user.profileId };
-  } else {
-    const linkedDoctors = await prisma.doctorHospitalLink.findMany({
-      where: { hospitalId: user.hospitalId, active: true },
-      select: { doctorId: true },
-    });
-    const doctorIds = linkedDoctors.map((l) => l.doctorId);
-    counsellingWhere = {
-      OR: [
-        { visit: { hospitalId: user.hospitalId } },
-        ...(doctorIds.length > 0 ? [{ visit: { doctorId: { in: doctorIds } } }] : []),
-      ],
-    };
-    scheduleWhere = { hospitalId: user.hospitalId };
-  }
+  /* Shared with /scheduled-ot and the case page — see lib/surgery-scope.ts */
+  const { counsellingWhere, scheduleWhere } = await getSurgeryScope(user);
 
   const [records, schedules] = await Promise.all([
     prisma.surgicalCounselling.findMany({
@@ -103,6 +85,7 @@ export default async function CounselingPage() {
       items={items}
       role={user.role as "DOCTOR" | "HOSPITAL"}
       can={can}
+      myDoctorId={user.role === "DOCTOR" ? user.profileId : null}
     />
   );
 }

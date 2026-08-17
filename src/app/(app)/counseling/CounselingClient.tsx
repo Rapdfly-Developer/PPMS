@@ -258,36 +258,50 @@ function CounselingRow({
 
 /* ── Page ──────────────────────────────────────────────────────────────── */
 export function CounselingClient({
-  items, role, can,
+  items, role, can, myDoctorId,
 }: {
   items: CounselingItem[];
   role: "DOCTOR" | "HOSPITAL";
   can: CounsellingCapabilities;
+  /** Set for a doctor, so they can narrow the hospital-wide board to their own patients. */
+  myDoctorId?: string | null;
 }) {
   const [filter, setFilter]       = useState<Filter>("all");
   const [stageTab, setStageTab]   = useState<StageTab>("all");
   const [query, setQuery]         = useState("");
+  const [scope, setScope]         = useState<"all" | "mine">("all");
+
+  const mineCount = useMemo(
+    () => (myDoctorId ? items.filter((i) => i.doctor.id === myDoctorId).length : 0),
+    [items, myDoctorId],
+  );
+
+  /* Everything below counts and filters within the chosen scope. */
+  const scoped = useMemo(
+    () => (myDoctorId && scope === "mine" ? items.filter((i) => i.doctor.id === myDoctorId) : items),
+    [items, scope, myDoctorId],
+  );
 
   const counts = useMemo(() => ({
-    all:       items.length,
-    awaiting:  items.filter((i) => !i.scheduled).length,
-    scheduled: items.filter((i) => i.scheduled).length,
-    upcoming:  items.filter((i) => isUpcoming(i.surgeryDate)).length,
-  }), [items]);
+    all:       scoped.length,
+    awaiting:  scoped.filter((i) => !i.scheduled).length,
+    scheduled: scoped.filter((i) => i.scheduled).length,
+    upcoming:  scoped.filter((i) => isUpcoming(i.surgeryDate)).length,
+  }), [scoped]);
 
   /** How many cases sit in each workflow tab. */
   const stageCounts = useMemo(() => {
-    const map: Record<string, number> = { all: items.length };
+    const map: Record<string, number> = { all: scoped.length };
     for (const tab of BOARD_TABS) {
-      map[tab.key] = items.filter((i) => tab.stages.includes(effectiveStage(i))).length;
+      map[tab.key] = scoped.filter((i) => tab.stages.includes(effectiveStage(i))).length;
     }
     return map;
-  }, [items]);
+  }, [scoped]);
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
     const activeTab = BOARD_TABS.find((t) => t.key === stageTab);
-    return items.filter((i) => {
+    return scoped.filter((i) => {
       if (activeTab && !activeTab.stages.includes(effectiveStage(i))) return false;
       if (filter === "awaiting"  && i.scheduled)  return false;
       if (filter === "scheduled" && !i.scheduled) return false;
@@ -301,7 +315,7 @@ export function CounselingClient({
         i.doctor.name.toLowerCase().includes(q)
       );
     });
-  }, [items, filter, stageTab, query]);
+  }, [scoped, filter, stageTab, query]);
 
   return (
     <div className="flex flex-col gap-5">
@@ -316,6 +330,39 @@ export function CounselingClient({
             Surgical counselling recorded from the EMR Plan tab
           </p>
         </div>
+
+        {/* Doctors see every case in their hospitals; this narrows to their own. */}
+        {myDoctorId && (
+          <div
+            role="group"
+            aria-label="Whose cases to show"
+            className="ml-auto flex items-center gap-0.5 p-0.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] shrink-0"
+          >
+            {([
+              { key: "all"  as const, label: "All cases",   count: items.length },
+              { key: "mine" as const, label: "My patients", count: mineCount },
+            ]).map((opt) => {
+              const active = scope === opt.key;
+              return (
+                <button
+                  key={opt.key}
+                  onClick={() => setScope(opt.key)}
+                  aria-pressed={active}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary-400)] ${
+                    active
+                      ? "bg-white text-[var(--color-primary-700)] shadow-sm"
+                      : "text-[var(--color-ink-500)] hover:text-[var(--color-ink-800)]"
+                  }`}
+                >
+                  {opt.label}
+                  <span className="ml-1.5 tabular-nums text-[10px] text-[var(--color-ink-400)]">
+                    {opt.count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Workflow stage tabs — Counseling → Clinical Decision → Confirmation → OT */}

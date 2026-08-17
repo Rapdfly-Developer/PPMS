@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { requirePermission, userCan } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { COUNSELLING_PERMISSIONS as P } from "@/lib/counselling-workflow";
+import { canAccessCase } from "@/lib/surgery-scope";
 import { CaseClient } from "./CaseClient";
 
 /**
@@ -95,19 +96,12 @@ export default async function CounsellingCasePage({
 
   if (!sc) notFound();
 
-  /* ── Scope check — a user may only open cases in their own reach ────── */
-  if (user.role === "DOCTOR") {
-    if (sc.visit.doctorId !== user.profileId) redirect("/counseling");
-  } else if (user.hospitalId) {
-    const sameHospital = sc.visit.hospitalId === user.hospitalId;
-    if (!sameHospital) {
-      const linked = await prisma.doctorHospitalLink.findFirst({
-        where: { hospitalId: user.hospitalId, doctorId: sc.visit.doctorId, active: true },
-        select: { id: true },
-      });
-      if (!linked) redirect("/counseling");
-    }
-  }
+  /* ── Scope check — mirrors the board, see lib/surgery-scope.ts ──────── */
+  const allowed = await canAccessCase(user, {
+    doctorId:   sc.visit.doctorId,
+    hospitalId: sc.visit.hospitalId,
+  });
+  if (!allowed) redirect("/counseling");
 
   const workflowId = sc.workflow?.id ?? null;
 
