@@ -1164,6 +1164,56 @@ function CounsellingSummary({ wf }: { wf: WorkflowData }) {
   );
 }
 
+/* ── Read-only summary of confirmation counselling ─────────────────────── */
+
+function ConfirmationSummary({ wf }: { wf: WorkflowData }) {
+  let verified: string[] = [];
+  try { verified = wf.confirmedSections ? JSON.parse(wf.confirmedSections) : []; }
+  catch { verified = []; }
+
+  return (
+    <Panel title="Confirmation Counseling" icon={<ShieldCheck size={16} />}>
+      <div className="grid gap-2 sm:grid-cols-2 mb-4">
+        {CONFIRMATION_SECTIONS.map((s) => {
+          const on = verified.includes(s.key);
+          return (
+            <div
+              key={s.key}
+              className={`flex items-center gap-2.5 px-3 py-2 rounded-lg border ${
+                on
+                  ? "bg-emerald-50 border-emerald-200"
+                  : "bg-[var(--color-surface-sunken)] border-[var(--color-border)]"
+              }`}
+            >
+              <span
+                className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 text-white ${
+                  on ? "bg-emerald-500" : "bg-[var(--color-ink-300)]"
+                }`}
+              >
+                {on ? <Check size={10} strokeWidth={3} /> : <XCircle size={10} />}
+              </span>
+              <span className={`text-[11px] font-semibold ${on ? "text-emerald-800" : "text-[var(--color-ink-400)]"}`}>
+                {s.label}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+      <div className="flex flex-col">
+        <ReadRow label="Consent confirmed" value={wf.consentConfirmed ? "Yes" : "Not confirmed"} />
+        <ReadRow label="Patient ready"     value={wf.patientReady ? "Yes" : "Not confirmed"} />
+        <ReadRow label="Confirmation notes" value={wf.confirmationNotes} />
+        {wf.confirmedByName && (
+          <ReadRow
+            label="Confirmed by"
+            value={`${wf.confirmedByName}${wf.confirmedAt ? ` · ${format(new Date(wf.confirmedAt), "d MMM yyyy")}` : ""}`}
+          />
+        )}
+      </div>
+    </Panel>
+  );
+}
+
 /* ── History timeline ──────────────────────────────────────────────────── */
 
 const CHANGE_LABEL: Record<string, string> = {
@@ -1342,6 +1392,24 @@ export function CaseClient(props: Props) {
     surgery.rightEye ? "Right Eye" :
     surgery.leftEye ? "Left Eye" : "—";
 
+  /*
+    When the viewer's job at this stage is to *judge* work someone else did,
+    the record goes above the action so it is read first. When they are the one
+    authoring, the form goes first and the record sits below for reference.
+  */
+  const reviewBeforeActing = [
+    "COUNSELING_COMPLETED",
+    "AWAITING_DOCTOR_REVIEW",
+    "OT_SLOT_REQUESTED",
+  ].includes(stage);
+
+  const records = (
+    <>
+      {workflow?.counselledAt && <CounsellingSummary wf={workflow} />}
+      {workflow?.confirmedAt && <ConfirmationSummary wf={workflow} />}
+    </>
+  );
+
   return (
     <div className="flex flex-col gap-5 fade-in">
       {/* Header */}
@@ -1390,13 +1458,14 @@ export function CaseClient(props: Props) {
       {/* Main + sidebar */}
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px] items-start">
         <div className="flex flex-col gap-5 min-w-0">
+          {/*
+            Everything recorded so far, read-only. Shown to every viewer at every
+            stage once the data exists — a doctor approving an OT slot must be
+            able to see the counselling and the confirmation it rests on.
+          */}
+          {reviewBeforeActing && records}
           {renderPanel()}
-
-          {/* Once counselling is recorded, always show it for reference */}
-          {workflow?.counselledAt &&
-            !["PENDING_COUNSELING", "ADDITIONAL_INVESTIGATIONS"].includes(stage) && (
-              <CounsellingSummary wf={workflow} />
-            )}
+          {!reviewBeforeActing && records}
         </div>
 
         {/* Sidebar */}
