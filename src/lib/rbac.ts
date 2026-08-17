@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
@@ -24,13 +25,31 @@ async function freshPermissions(role: string): Promise<string[]> {
   return rows.map((r) => r.permission.key);
 }
 
-export async function requireUser(): Promise<SessionUser> {
+/**
+ * Resolves the session user once per server request.
+ *
+ * requireUser() is called from the app layout and again from every page, action
+ * and API route beneath it — 200+ call sites. Without this each call repeated
+ * both the session decode and the permission query, so a single page render
+ * issued the same DB round-trip several times over.
+ *
+ * React's cache() memoises for the lifetime of one request only, so permissions
+ * are still re-read on every navigation and Role Manager changes still apply
+ * immediately — exactly as before, just once instead of N times.
+ */
+const loadSessionUser = cache(async (): Promise<SessionUser | null> => {
   const session = await auth();
-  if (!session?.user) redirect("/login");
-  const user = session.user as unknown as SessionUser;
+  if (!session?.user) return null;
 
-  // Always resolve fresh permissions so changes in Role Manager take effect immediately.
+  // Copy rather than mutate the session object, since this result is now shared.
+  const user = { ...(session.user as unknown as SessionUser) };
   user.permissions = await freshPermissions(user.role);
+  return user;
+});
+
+export async function requireUser(): Promise<SessionUser> {
+  const user = await loadSessionUser();
+  if (!user) redirect("/login");
   return user;
 }
 

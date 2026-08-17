@@ -26,7 +26,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       {/* Outer shell — sidebar + content side by side on desktop only */}
       <div className="min-h-screen flex bg-[var(--color-bg)]">
         <IdleTimeout />
-        <AutoRefresh interval={5000} />
+        {/* Cadence is chosen per route — see AutoRefresh. /queue keeps its 5s pulse. */}
+        <AutoRefresh />
 
         {/*
           Sidebar: fixed overlay drawer on mobile/tablet (<lg),

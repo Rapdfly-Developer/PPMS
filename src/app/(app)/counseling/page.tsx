@@ -13,8 +13,32 @@ export default async function CounselingPage() {
   const [records, schedules] = await Promise.all([
     prisma.surgicalCounselling.findMany({
       where: counsellingWhere,
-      include: {
-        visit: { include: { patient: true, hospital: true, doctor: true } },
+      // Selected rather than included: the board renders ~8 patient fields, but
+      // `patient: true` pulls every column of a wide clinical table for every
+      // row, and the same again for hospital and doctor. Keep this list in step
+      // with the mapping below.
+      select: {
+        id: true,
+        surgeryName: true,
+        surgeryType: true,
+        surgeryDate: true,
+        anaesthesiaType: true,
+        rightEye: true,
+        leftEye: true,
+        conflictFlag: true,
+        createdAt: true,
+        visitId: true,
+        insuranceType: true,
+        counselingDone: true,
+        investigationDone: true,
+        fitForSurgery: true,
+        visit: {
+          select: {
+            patient:  { select: { id: true, name: true, udid: true, uhid: true, age: true, sex: true } },
+            hospital: { select: { id: true, name: true } },
+            doctor:   { select: { id: true, name: true } },
+          },
+        },
         // Additive workflow layer — null for records created before this module.
         workflow: {
           select: {
