@@ -120,6 +120,11 @@ export interface ExistingRecord {
   advancePaid: string | null;
   dateOfSurgery: string | null;
   eligibleForSurgery: boolean;
+  additionalInvestigations: boolean;
+  investigationDetails: string | null;
+  surgeryDeferred: boolean;
+  deferralReason: string | null;
+  deferralNotes: string | null;
 }
 
 export default function CounsellingForm({
@@ -166,6 +171,15 @@ export default function CounsellingForm({
   // 7. Eligible
   const [eligibleForSurgery, setEligibleForSurgery] = useState(ex?.eligibleForSurgery ?? false);
 
+  // 8. Additional Investigations
+  const [additionalInvestigations, setAdditionalInvestigations] = useState(ex?.additionalInvestigations ?? false);
+  const [investigationDetails,     setInvestigationDetails]     = useState(ex?.investigationDetails ?? "");
+
+  // 9. Surgery Deferred
+  const [surgeryDeferred, setSurgeryDeferred] = useState(ex?.surgeryDeferred ?? false);
+  const [deferralReason,  setDeferralReason]  = useState(ex?.deferralReason  ?? "");
+  const [deferralNotes,   setDeferralNotes]   = useState(ex?.deferralNotes   ?? "");
+
   const [saved,    setSaved]    = useState(false);
   const [pending,  startTransition] = useTransition();
 
@@ -191,6 +205,11 @@ export default function CounsellingForm({
       advancePaid:  advancePaid  || undefined,
       dateOfSurgery: dateOfSurgery || undefined,
       eligibleForSurgery,
+      additionalInvestigations,
+      investigationDetails: investigationDetails || undefined,
+      surgeryDeferred,
+      deferralReason: deferralReason || undefined,
+      deferralNotes:  deferralNotes  || undefined,
     };
 
     startTransition(async () => {
@@ -419,20 +438,129 @@ export default function CounsellingForm({
         />
       </div>
 
-      {/* ── 7. Eligible ── */}
+      {/* ── 7. Eligibility ── */}
       <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
         <SectionHeader icon={<CheckCircle2 size={14} />} title="Eligibility" />
-        <label className="flex items-center gap-3 cursor-pointer select-none">
-          <input
-            type="checkbox"
-            checked={eligibleForSurgery}
-            onChange={(e) => setEligibleForSurgery(e.target.checked)}
-            className="w-5 h-5 accent-amber-500"
-          />
-          <span className="text-sm font-semibold text-[var(--color-ink-700)]">
-            Patient is eligible for surgery
-          </span>
-        </label>
+
+        <div className="flex flex-col gap-3">
+          {/* Eligible toggle */}
+          <label className="flex items-center gap-3 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={eligibleForSurgery}
+              onChange={(e) => setEligibleForSurgery(e.target.checked)}
+              className="w-5 h-5 accent-amber-500"
+            />
+            <span className="text-sm font-semibold text-[var(--color-ink-700)]">
+              Patient is eligible for surgery
+            </span>
+          </label>
+
+          <div className="border-t border-[var(--color-border)] pt-3 flex flex-col gap-3">
+
+            {/* Additional Investigations */}
+            <div>
+              <label className="flex items-center gap-3 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={additionalInvestigations}
+                  onChange={(e) => setAdditionalInvestigations(e.target.checked)}
+                  className="w-4 h-4 accent-amber-500"
+                />
+                <span className="text-sm font-medium text-[var(--color-ink-700)]">
+                  Additional Investigations required
+                </span>
+              </label>
+
+              {additionalInvestigations && (
+                <div className="mt-2.5 ml-7 flex flex-col gap-2">
+                  <FieldLabel>Investigation details</FieldLabel>
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {[
+                      "Blood tests",
+                      "ECG",
+                      "Echo",
+                      "Chest X-ray",
+                      "Blood sugar",
+                      "Blood pressure",
+                      "Urine routine",
+                      "Coagulation profile",
+                    ].map((inv) => {
+                      const parts = investigationDetails.split(",").map((s) => s.trim()).filter(Boolean);
+                      const active = parts.includes(inv);
+                      return (
+                        <Chip
+                          key={inv}
+                          label={inv}
+                          active={active}
+                          onClick={() => {
+                            const next = active
+                              ? parts.filter((p) => p !== inv)
+                              : [...parts, inv];
+                            setInvestigationDetails(next.join(", "));
+                          }}
+                        />
+                      );
+                    })}
+                  </div>
+                  <textarea
+                    value={investigationDetails}
+                    onChange={(e) => setInvestigationDetails(e.target.value)}
+                    rows={2}
+                    placeholder="Any other investigations…"
+                    className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:border-amber-400 transition-colors resize-none"
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Surgery Deferred */}
+            <div>
+              <label className="flex items-center gap-3 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={surgeryDeferred}
+                  onChange={(e) => setSurgeryDeferred(e.target.checked)}
+                  className="w-4 h-4 accent-amber-500"
+                />
+                <span className="text-sm font-medium text-[var(--color-ink-700)]">
+                  Surgery deferred
+                </span>
+              </label>
+
+              {surgeryDeferred && (
+                <div className="mt-2.5 ml-7 flex flex-col gap-2">
+                  <FieldLabel>Reason for deferral</FieldLabel>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { k: "PATIENT_UNFIT",          l: "Patient not fit"         },
+                      { k: "FINANCIAL",               l: "Financial constraints"   },
+                      { k: "NOT_WILLING",             l: "Patient not willing"     },
+                      { k: "INVESTIGATION_PENDING",   l: "Investigation pending"   },
+                      { k: "MEDICAL_CLEARANCE",       l: "Medical clearance needed"},
+                      { k: "OTHERS",                  l: "Others"                  },
+                    ].map(({ k, l }) => (
+                      <Chip
+                        key={k}
+                        label={l}
+                        active={deferralReason === k}
+                        onClick={() => setDeferralReason(deferralReason === k ? "" : k)}
+                      />
+                    ))}
+                  </div>
+                  <textarea
+                    value={deferralNotes}
+                    onChange={(e) => setDeferralNotes(e.target.value)}
+                    rows={2}
+                    placeholder="Additional notes…"
+                    className="mt-1 w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:border-amber-400 transition-colors resize-none"
+                  />
+                </div>
+              )}
+            </div>
+
+          </div>
+        </div>
       </div>
 
       {/* ── Save ── */}

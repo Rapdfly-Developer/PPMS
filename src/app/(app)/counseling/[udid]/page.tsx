@@ -82,7 +82,12 @@ export default async function CounselingPatientPage({
         dateOfSurgery: rec.dateOfSurgery
           ? rec.dateOfSurgery.toISOString().slice(0, 10)
           : null,
-        eligibleForSurgery: rec.eligibleForSurgery,
+        eligibleForSurgery:       rec.eligibleForSurgery,
+        additionalInvestigations: rec.additionalInvestigations,
+        investigationDetails:     rec.investigationDetails,
+        surgeryDeferred:          rec.surgeryDeferred,
+        deferralReason:           rec.deferralReason,
+        deferralNotes:            rec.deferralNotes,
       }
     : null;
 

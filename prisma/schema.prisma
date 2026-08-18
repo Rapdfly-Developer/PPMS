@@ -1467,5 +1467,14 @@ model CounsellingRecord {
   dateOfSurgery  DateTime?
 
   // 7. Eligible
-  eligibleForSurgery Boolean @default(false)
+  eligibleForSurgery        Boolean  @default(false)
+
+  // 8. Additional Investigations
+  additionalInvestigations  Boolean  @default(false)
+  investigationDetails      String?  // free text
+
+  // 9. Surgery Deferred
+  surgeryDeferred           Boolean  @default(false)
+  deferralReason            String?  // PATIENT_UNFIT | FINANCIAL | NOT_WILLING | INVESTIGATION_PENDING | MEDICAL_CLEARANCE | OTHERS
+  deferralNotes             String?
 }

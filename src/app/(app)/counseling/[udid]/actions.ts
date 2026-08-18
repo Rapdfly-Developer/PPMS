@@ -32,6 +32,13 @@ export interface CounsellingFormData {
   dateOfSurgery?: string;
   // 7. Eligible
   eligibleForSurgery?: boolean;
+  // 8. Additional Investigations
+  additionalInvestigations?: boolean;
+  investigationDetails?: string;
+  // 9. Surgery Deferred
+  surgeryDeferred?: boolean;
+  deferralReason?: string;
+  deferralNotes?: string;
 }
 
 export async function saveCounsellingRecord(udid: string, data: CounsellingFormData) {
