@@ -1083,7 +1083,7 @@ ${d.minorProcedure?.procedureName
       [
         d.minorProcedure.procedureLaterality ? escapeHtml(d.minorProcedure.procedureLaterality) : "",
         escapeHtml(d.minorProcedure.procedureName),
-        d.minorProcedure.anesthesiaType ? escapeHtml(d.minorProcedure.anesthesiaType) : "",
+        d.minorProcedure.anesthesiaType ? `Under ${escapeHtml(d.minorProcedure.anesthesiaType)}` : "",
       ].filter(Boolean).join(`<span style="color:#B0BDBA;margin:0 5px;">·</span>`) +
       `</div>`)
   : ""}
