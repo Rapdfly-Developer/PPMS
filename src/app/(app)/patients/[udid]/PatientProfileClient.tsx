@@ -510,6 +510,9 @@ export function PatientProfileClient({
   lastVisitSummary = null,
   surgeryAdvisedVisitId = null,
   surgeryAdvisedName = null,
+  surgeryAdvisedEye = null,
+  surgeryAdvisedNotes = null,
+  surgeryAdvisedDate = null,
 }: {
   udid: string;
   visits: SerialVisit[];
@@ -520,6 +523,9 @@ export function PatientProfileClient({
   lastVisitSummary?: LastVisitSummary | null;
   surgeryAdvisedVisitId?: string | null;
   surgeryAdvisedName?: string | null;
+  surgeryAdvisedEye?: string | null;
+  surgeryAdvisedNotes?: string | null;
+  surgeryAdvisedDate?: string | null;
 }) {
   const hasToday = todayVisit !== null;
   const hasPendingAppointment = !hasToday && !!todayAppointmentId;
@@ -580,21 +586,58 @@ export function PatientProfileClient({
         ) : null}
       </div>
 
-      {/* ── Surgical Counselling alert ───────────────────────────────── */}
+      {/* ── Surgical Counselling card ─────────────────────────────────── */}
       {surgeryAdvisedVisitId && (
-        <Link
-          href={`/emr/${udid}?visit=${surgeryAdvisedVisitId}`}
-          className="flex items-center gap-3 px-4 py-3 rounded-xl border border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100 transition-colors"
-        >
-          <Scissors size={16} className="shrink-0 text-amber-600" />
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold">Surgical Counselling</p>
-            {surgeryAdvisedName && (
-              <p className="text-xs text-amber-700 truncate">{surgeryAdvisedName}</p>
+        <div className="rounded-xl border border-amber-300 bg-amber-50 overflow-hidden">
+          {/* Header */}
+          <div className="flex items-center justify-between px-4 py-3 bg-amber-100 border-b border-amber-200">
+            <div className="flex items-center gap-2">
+              <Scissors size={15} className="text-amber-700" />
+              <p className="text-sm font-semibold text-amber-900">Surgical Counselling</p>
+            </div>
+            <Link
+              href={`/emr/${udid}?visit=${surgeryAdvisedVisitId}`}
+              className="flex items-center gap-1 text-xs font-medium text-amber-700 hover:text-amber-900 hover:underline transition-colors"
+            >
+              Open EMR <ChevronRight size={13} />
+            </Link>
+          </div>
+
+          {/* Details */}
+          <div className="px-4 py-3 flex flex-col gap-2.5">
+            {surgeryAdvisedDate && (
+              <p className="text-[10px] font-semibold text-amber-600 uppercase tracking-widest">
+                Counselled on {format(new Date(surgeryAdvisedDate), "dd MMM yyyy")}
+              </p>
+            )}
+
+            <div className="flex flex-wrap gap-x-6 gap-y-2">
+              {surgeryAdvisedName && (
+                <div>
+                  <p className="text-[10px] font-bold text-amber-700 uppercase tracking-wide mb-0.5">Procedure</p>
+                  <p className="text-sm font-medium text-amber-900">{surgeryAdvisedName}</p>
+                </div>
+              )}
+              {surgeryAdvisedEye && (
+                <div>
+                  <p className="text-[10px] font-bold text-amber-700 uppercase tracking-wide mb-0.5">Eye</p>
+                  <p className="text-sm font-semibold text-amber-900">{surgeryAdvisedEye}</p>
+                </div>
+              )}
+            </div>
+
+            {surgeryAdvisedNotes && (
+              <div>
+                <p className="text-[10px] font-bold text-amber-700 uppercase tracking-wide mb-0.5">Counselling Notes</p>
+                <p className="text-sm text-amber-800 whitespace-pre-line">{surgeryAdvisedNotes}</p>
+              </div>
+            )}
+
+            {!surgeryAdvisedName && !surgeryAdvisedEye && !surgeryAdvisedNotes && (
+              <p className="text-xs text-amber-700 italic">Surgery advised — no details recorded yet.</p>
             )}
           </div>
-          <ChevronRight size={15} className="shrink-0 text-amber-500" />
-        </Link>
+        </div>
       )}
 
       {/* ── Last Visit Summary + Investigations ─────────────────────── */}

@@ -102,7 +102,10 @@ export default async function PatientProfilePage({
   // Most recent visit (any date) where surgery was counselled
   const surgeryAdvisedVisit = patient.visits.find((v) => (v as any).surgeryAdvised === true) ?? null;
   const surgeryAdvisedVisitId = surgeryAdvisedVisit?.id ?? null;
-  const surgeryAdvisedName    = (surgeryAdvisedVisit as any)?.advisedSurgeryName ?? null;
+  const surgeryAdvisedName    = (surgeryAdvisedVisit as any)?.advisedSurgeryName as string | null ?? null;
+  const surgeryAdvisedEye     = (surgeryAdvisedVisit as any)?.advisedSurgeryEye  as string | null ?? null;
+  const surgeryAdvisedNotes   = (surgeryAdvisedVisit as any)?.advisedSurgeryNotes as string | null ?? null;
+  const surgeryAdvisedDate    = surgeryAdvisedVisit ? (surgeryAdvisedVisit as any).date as Date : null;
 
   /* ── Patient timeline — finalization audit entries ───────────────────── */
   const appointmentIds = await prisma.appointment.findMany({
@@ -366,6 +369,9 @@ export default async function PatientProfilePage({
         lastVisitSummary={lastVisitSummary}
         surgeryAdvisedVisitId={surgeryAdvisedVisitId}
         surgeryAdvisedName={surgeryAdvisedName}
+        surgeryAdvisedEye={surgeryAdvisedEye}
+        surgeryAdvisedNotes={surgeryAdvisedNotes}
+        surgeryAdvisedDate={surgeryAdvisedDate?.toISOString() ?? null}
       />
     </div>
   );
