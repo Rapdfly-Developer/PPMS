@@ -30,9 +30,13 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
   // ?spv=<visitId> pins a historical spectacle Rx to the summary
   const spv = req.nextUrl.searchParams.get("spv");
   let spectRc: any = null;
-  if (spv && spv !== visitId) {
-    const spectVisit = await prisma.visit.findUnique({ where: { id: spv }, include: { refraction: true } });
-    spectRc = spectVisit?.refraction ?? null;
+  if (spv) {
+    if (spv === visitId) {
+      spectRc = visit.refraction ?? null;
+    } else {
+      const spectVisit = await prisma.visit.findUnique({ where: { id: spv }, include: { refraction: true } });
+      spectRc = spectVisit?.refraction ?? null;
+    }
   }
 
   // Only show spectacles when explicitly pinned from Previous Spectacle History
