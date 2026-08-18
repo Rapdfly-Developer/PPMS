@@ -596,10 +596,10 @@ export function PatientProfileClient({
               <p className="text-sm font-semibold text-amber-900">Surgical Counselling</p>
             </div>
             <Link
-              href={`/emr/${udid}?visit=${surgeryAdvisedVisitId}`}
+              href={`/counseling/${udid}`}
               className="flex items-center gap-1 text-xs font-medium text-amber-700 hover:text-amber-900 hover:underline transition-colors"
             >
-              Open EMR <ChevronRight size={13} />
+              View Details <ChevronRight size={13} />
             </Link>
           </div>
 
