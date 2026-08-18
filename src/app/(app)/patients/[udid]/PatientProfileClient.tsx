@@ -588,19 +588,17 @@ export function PatientProfileClient({
 
       {/* ── Surgical Counselling card ─────────────────────────────────── */}
       {surgeryAdvisedVisitId && (
-        <div className="rounded-xl border border-amber-300 bg-amber-50 overflow-hidden">
+        <Link
+          href={`/counseling/${udid}`}
+          className="block rounded-xl border border-amber-300 bg-amber-50 overflow-hidden hover:border-amber-400 hover:bg-amber-100/60 transition-colors group"
+        >
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 bg-amber-100 border-b border-amber-200">
             <div className="flex items-center gap-2">
               <Scissors size={15} className="text-amber-700" />
               <p className="text-sm font-semibold text-amber-900">Surgical Counselling</p>
             </div>
-            <Link
-              href={`/counseling/${udid}`}
-              className="flex items-center gap-1 text-xs font-medium text-amber-700 hover:text-amber-900 hover:underline transition-colors"
-            >
-              View Details <ChevronRight size={13} />
-            </Link>
+            <ChevronRight size={14} className="text-amber-500 group-hover:text-amber-700 transition-colors" />
           </div>
 
           {/* Details */}
@@ -637,7 +635,7 @@ export function PatientProfileClient({
               <p className="text-xs text-amber-700 italic">Surgery advised — no details recorded yet.</p>
             )}
           </div>
-        </div>
+        </Link>
       )}
 
       {/* ── Last Visit Summary + Investigations ─────────────────────── */}
