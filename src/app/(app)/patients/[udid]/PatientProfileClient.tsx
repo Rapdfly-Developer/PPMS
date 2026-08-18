@@ -8,7 +8,7 @@ import {
   ChevronRight, ChevronDown, Hospital, Stethoscope, FileText,
   CheckCircle2, Clock, AlertCircle, Filter, ClipboardCheck,
   ArrowRightLeft, X, Download, Loader2,
-  Activity,
+  Activity, Scissors,
 } from "lucide-react";
 import { EmrViewerButton, VisitDownloadButton } from "./EmrViewerModal";
 import {
@@ -508,6 +508,8 @@ export function PatientProfileClient({
   userRole,
   timelineEntries = [],
   lastVisitSummary = null,
+  surgeryAdvisedVisitId = null,
+  surgeryAdvisedName = null,
 }: {
   udid: string;
   visits: SerialVisit[];
@@ -516,6 +518,8 @@ export function PatientProfileClient({
   userRole: string;
   timelineEntries?: TimelineEntry[];
   lastVisitSummary?: LastVisitSummary | null;
+  surgeryAdvisedVisitId?: string | null;
+  surgeryAdvisedName?: string | null;
 }) {
   const hasToday = todayVisit !== null;
   const hasPendingAppointment = !hasToday && !!todayAppointmentId;
@@ -575,6 +579,23 @@ export function PatientProfileClient({
           )
         ) : null}
       </div>
+
+      {/* ── Surgical Counselling alert ───────────────────────────────── */}
+      {surgeryAdvisedVisitId && (
+        <Link
+          href={`/emr/${udid}?visit=${surgeryAdvisedVisitId}`}
+          className="flex items-center gap-3 px-4 py-3 rounded-xl border border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100 transition-colors"
+        >
+          <Scissors size={16} className="shrink-0 text-amber-600" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold">Surgical Counselling</p>
+            {surgeryAdvisedName && (
+              <p className="text-xs text-amber-700 truncate">{surgeryAdvisedName}</p>
+            )}
+          </div>
+          <ChevronRight size={15} className="shrink-0 text-amber-500" />
+        </Link>
+      )}
 
       {/* ── Last Visit Summary + Investigations ─────────────────────── */}
       {lastVisitSummary && (
