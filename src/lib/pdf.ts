@@ -818,10 +818,11 @@ async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
     `</div>`;
 
   /* ── Inline section: label tag on the left, content on the same row ── */
+  /* Label is fixed 148px wide so all three rows snap to the same vertical grid. */
   const inlineCard = (label: string, inner: string) =>
-    `<div class="no-break" style="display:flex;align-items:flex-start;gap:8px;margin-bottom:7px;">` +
-    `<div style="background:${TINT};border:1px solid ${LINE};border-radius:4px;padding:5px 9px;font-size:8.5px;font-weight:800;letter-spacing:0.11em;text-transform:uppercase;color:${LABEL_C};white-space:nowrap;flex-shrink:0;">${label}</div>` +
-    `<div style="flex:1;border:1px solid ${LINE};border-radius:4px;padding:5px 9px;">${inner}</div>` +
+    `<div class="no-break" style="display:flex;align-items:flex-start;gap:6px;margin-bottom:6px;">` +
+    `<div style="width:148px;min-width:148px;background:${TINT};border:1px solid ${LINE};border-radius:4px;padding:5px 8px;font-size:8.5px;font-weight:800;letter-spacing:0.11em;text-transform:uppercase;color:${LABEL_C};white-space:nowrap;text-align:center;flex-shrink:0;">${label}</div>` +
+    `<div style="flex:1;border:1px solid ${LINE};border-radius:4px;padding:5px 9px;min-height:28px;display:flex;align-items:center;">${inner}</div>` +
     `</div>`;
 
   /* ── Muted empty state — states absence, never invents content ── */
@@ -1054,7 +1055,7 @@ ${inlineCard("Chief Complaint",
 <!-- 2 · CLINICAL IMPRESSION -->
 ${inlineCard("Clinical Impression",
   d.diagnoses.length
-    ? `<table>
+    ? `<table style="width:100%;">
         <tbody>
           ${d.diagnoses.map((dx, i) =>
             `<tr>` +
