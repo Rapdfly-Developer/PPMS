@@ -214,58 +214,10 @@ async function main() {
     });
   }
 
-  // ── Upcoming surgeries ─────────────────────────────────────────────────────
-  const surgCandidates = [
-    { patient: patients[2], daysOut: 2, type: "Phacoemulsification + IOL", re: true, le: false },
-    { patient: patients[8], daysOut: 5, type: "SICS (Small Incision)",     re: false, le: true  },
-  ];
-
-  for (const s of surgCandidates) {
-    const existing = await prisma.surgicalCounselling.findFirst({
-      where: { visit: { patientId: s.patient.id, doctorId: doctor.id } },
-    });
-    if (existing) continue;
-
-    const surgDate = new Date(now);
-    surgDate.setDate(surgDate.getDate() + s.daysOut);
-    surgDate.setHours(8, 0, 0, 0);
-
-    const surgAppt = await prisma.appointment.create({
-      data: {
-        patientId:  s.patient.id,
-        doctorId:   doctor.id,
-        hospitalId: hospitalA.id,
-        dateTime:   past(s.daysOut + 2),
-        status:     "COMPLETED",
-        visitType:  "Surgical Counselling",
-      },
-    });
-    const surgVisit = await prisma.visit.create({
-      data: {
-        patientId:     s.patient.id,
-        doctorId:      doctor.id,
-        hospitalId:    hospitalA.id,
-        appointmentId: surgAppt.id,
-        date:          past(s.daysOut + 2),
-      },
-    });
-    await prisma.surgicalCounselling.create({
-      data: {
-        visitId:         surgVisit.id,
-        surgeryType:     s.type,
-        surgeryDate:     surgDate,
-        rightEye:        s.re,
-        leftEye:         s.le,
-        anaesthesiaType: "Local",
-      },
-    });
-  }
-
   console.log("\n✅ Demo seed complete!");
   console.log("   Doctor login : doctor / password123");
   console.log("   Today's schedule : 10 appointments (5 completed, 5 waiting)");
   console.log("   IPD admissions   : 3 patients");
-  console.log("   Upcoming surgeries: 2 (next 5 days)");
   console.log("   Pending investigations: 2");
   console.log("   7-day history    : 27 past visits\n");
 }
