@@ -1102,11 +1102,11 @@ ${card("Medications",
     <tbody>${medRows}</tbody>
   </table>`)}
 
-<!-- 4 · ADVICE (only when the doctor recorded some) -->
-${d.advice && d.advice.trim()
-  ? card("Advice",
-      `<div style="font-size:9.5px;color:#1a1a1a;white-space:pre-wrap;line-height:1.5;">${escapeHtml(d.advice.trim())}</div>`)
-  : ""}
+<!-- 4 · ADVICE NOTES -->
+${inlineCard("Advice Notes",
+  d.advice && d.advice.trim()
+    ? `<div style="font-size:9.5px;color:#1a1a1a;white-space:pre-wrap;line-height:1.5;">${escapeHtml(d.advice.trim())}</div>`
+    : none("No advice recorded"))}
 
 <!-- 5 · SPECTACLES / REFRACTION (only if an Rx exists) -->
 ${hasRx
