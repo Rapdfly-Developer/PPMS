@@ -990,9 +990,9 @@ async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
       </div>
     </div>
 
-    <!-- Right: title block over the visit's key identifiers -->
-    <div style="text-align:right;flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;padding-top:2px;">
-      <div style="font-size:7px;font-weight:700;letter-spacing:0.28em;text-transform:uppercase;color:${MINT};margin-bottom:5px;">
+    <!-- Center: CONSULTATION SUMMARY title -->
+    <div style="text-align:center;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding-top:4px;">
+      <div style="font-size:6.5px;font-weight:700;letter-spacing:0.28em;text-transform:uppercase;color:${MINT};margin-bottom:5px;">
         Clinical Report
       </div>
       <div style="font-size:18px;font-weight:900;color:${INK};letter-spacing:0.07em;text-transform:uppercase;line-height:1.0;white-space:nowrap;">
@@ -1001,22 +1001,16 @@ async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
       <div style="font-size:18px;font-weight:900;color:${INK};letter-spacing:0.07em;text-transform:uppercase;line-height:1.05;white-space:nowrap;margin-top:1px;">
         SUMMARY
       </div>
-      <div style="height:2px;width:100%;background:linear-gradient(90deg,transparent,${BRAND},${MINT});border-radius:1px;margin:6px 0 7px;"></div>
+      <div style="height:2px;width:100%;background:linear-gradient(90deg,transparent,${BRAND},${MINT});border-radius:1px;margin:6px 0 0;"></div>
+    </div>
 
-      <!-- Date · Patient ID · Patient · Consultant -->
+    <!-- Right: Date + Consultant -->
+    <div style="text-align:right;flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;padding-top:2px;">
       <table style="width:auto;border-collapse:collapse;">
         <tbody>
           <tr>
             <td style="padding:1px 0 1px 0;font-size:7.5px;font-weight:700;color:${LABEL_C};text-align:right;letter-spacing:0.05em;text-transform:uppercase;">Date</td>
             <td style="padding:1px 0 1px 8px;font-size:9px;font-weight:600;color:#1a1a1a;text-align:right;white-space:nowrap;">${format(d.visit.date, "dd MMM yyyy")}</td>
-          </tr>
-          <tr>
-            <td style="padding:1px 0 1px 0;font-size:7.5px;font-weight:700;color:${LABEL_C};text-align:right;letter-spacing:0.05em;text-transform:uppercase;">Patient ID</td>
-            <td style="padding:1px 0 1px 8px;font-size:9px;font-weight:600;color:#1a1a1a;text-align:right;white-space:nowrap;">${escapeHtml(d.patient.udid)}</td>
-          </tr>
-          <tr>
-            <td style="padding:1px 0 1px 0;font-size:7.5px;font-weight:700;color:${LABEL_C};text-align:right;letter-spacing:0.05em;text-transform:uppercase;">Patient</td>
-            <td style="padding:1px 0 1px 8px;font-size:9px;font-weight:600;color:#1a1a1a;text-align:right;white-space:nowrap;">${escapeHtml(d.patient.name)}</td>
           </tr>
           <tr>
             <td style="padding:1px 0 1px 0;font-size:7.5px;font-weight:700;color:${LABEL_C};text-align:right;letter-spacing:0.05em;text-transform:uppercase;">Consultant</td>
@@ -1031,14 +1025,14 @@ async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
 <!-- SOFT DIVIDER (full bleed) -->
 <div style="height:1px;background:linear-gradient(90deg,#DCEFEC,#B8DED7,#DCEFEC);margin:0 -14mm 6px;"></div>
 
-<!-- PATIENT / VISIT DETAIL STRIP (name, ID, date and consultant sit in the header) -->
+<!-- PATIENT DETAIL STRIP -->
 <table style="width:100%;border-collapse:collapse;margin-bottom:7px;">
   <tbody>
     <tr>
+      ${fbox("Patient", escapeHtml(d.patient.name))}
+      ${fbox("Patient ID", escapeHtml(d.patient.udid))}
       ${fbox("Age / Gender", `${d.patient.age} yrs / ${escapeHtml(d.patient.sex)}`)}
       ${fbox("Mobile", d.patient.mobile ? escapeHtml(d.patient.mobile) : "—")}
-      ${fbox("Visit Type", escapeHtml(d.visit.visitType ?? "Consultation"))}
-      ${fbox("Visit Time", format(d.visit.date, "hh:mm a") + " IST")}
     </tr>
   </tbody>
 </table>
