@@ -779,6 +779,7 @@ export type ShortSummaryData = {
     le: { sph?: string; cyl?: string; axis?: string; nearSph?: string };
   } | null;
   surgicalCounselling?: { surgeryType?: string | null; surgeryDate?: Date | null; notes?: string | null } | null;
+  minorProcedure?: { procedureName?: string | null; procedureLaterality?: string | null; anesthesiaType?: string | null } | null;
 };
 
 async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
@@ -1074,6 +1075,16 @@ ${card("Clinical Impression",
           `</tbody></table>`
         : "")
     : none("No diagnosis recorded"))}
+
+<!-- 2b · MINOR PROCEDURE (only when recorded) -->
+${d.minorProcedure?.procedureName
+  ? card("Minor Procedure",
+      `<table style="width:100%;border-collapse:collapse;"><tbody>` +
+      kvRow("Procedure", escapeHtml(d.minorProcedure.procedureName)) +
+      (d.minorProcedure.procedureLaterality ? kvRow("Laterality", escapeHtml(d.minorProcedure.procedureLaterality)) : "") +
+      (d.minorProcedure.anesthesiaType ? kvRow("Anaesthesia", escapeHtml(d.minorProcedure.anesthesiaType)) : "") +
+      `</tbody></table>`)
+  : ""}
 
 <!-- 3 · MEDICATIONS -->
 ${card("Medications",

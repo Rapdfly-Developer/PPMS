@@ -96,6 +96,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
       surgeryDate: (visit.surgicalCounselling as any).surgeryDate ?? null,
       notes: (visit.surgicalCounselling as any).notes ?? null,
     } : null,
+    minorProcedure: (visit as any).procedureName ? {
+      procedureName: (visit as any).procedureName ?? null,
+      procedureLaterality: (visit as any).procedureLaterality ?? null,
+      anesthesiaType: (visit as any).anesthesiaType ?? null,
+    } : null,
   });
 
   const dateStr = format(visit.date, "ddMMyyyy");
