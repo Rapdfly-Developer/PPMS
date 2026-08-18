@@ -340,19 +340,28 @@ function AdmissionsList({ admissions }: { admissions: Admission[] }) {
           <span className="text-xs text-[var(--color-ink-400)] ml-1">(Day {dayIn})</span>
         </td>
         <td className="px-5 py-3.5">
-          {a.discharged ? (
-            <span className="text-xs text-[var(--color-ink-400)]">
-              Discharged {a.dischargedAt ? format(new Date(a.dischargedAt), "dd MMM") : ""}
-            </span>
-          ) : (
-            <button
-              disabled={pending}
-              onClick={() => discharge(a.id)}
-              className="text-xs font-medium px-3 py-1.5 rounded-lg bg-[var(--color-danger-100)] text-[var(--color-danger-700)] hover:bg-[var(--color-danger-600)] hover:text-white transition-colors disabled:opacity-50"
+          <div className="flex flex-col gap-1.5">
+            <Link
+              href={`/ipd/${a.id}/discharge-summary`}
+              className="text-xs font-medium px-3 py-1.5 rounded-lg bg-[var(--color-primary-50)] text-[var(--color-primary-700)] border border-[var(--color-primary-200)] hover:bg-[var(--color-primary-100)] transition-colors text-center"
             >
-              Discharge
-            </button>
-          )}
+              Discharge Summary
+            </Link>
+            {!a.discharged && (
+              <button
+                disabled={pending}
+                onClick={() => discharge(a.id)}
+                className="text-xs font-medium px-3 py-1.5 rounded-lg bg-[var(--color-danger-100)] text-[var(--color-danger-700)] hover:bg-[var(--color-danger-600)] hover:text-white transition-colors disabled:opacity-50"
+              >
+                Mark Discharged
+              </button>
+            )}
+            {a.discharged && (
+              <span className="text-[11px] text-[var(--color-ink-400)] text-center">
+                Discharged {a.dischargedAt ? format(new Date(a.dischargedAt), "dd MMM") : ""}
+              </span>
+            )}
+          </div>
         </td>
       </tr>
     );
@@ -377,7 +386,7 @@ function AdmissionsList({ admissions }: { admissions: Admission[] }) {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-[var(--color-border)] bg-[var(--color-surface-sunken)]">
-                {["Patient", "Ward", "Reason / Surgery", "Admitted", "Action"].map((h) => (
+                {["Patient", "Ward", "Reason / Surgery", "Admitted", "Actions"].map((h) => (
                   <th key={h} className="px-5 py-2.5 text-left text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">{h}</th>
                 ))}
               </tr>
@@ -398,7 +407,7 @@ function AdmissionsList({ admissions }: { admissions: Admission[] }) {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-[var(--color-border)] bg-[var(--color-surface-sunken)]">
-                  {["Patient", "Ward", "Reason / Surgery", "Admitted", "Status"].map((h) => (
+                  {["Patient", "Ward", "Reason / Surgery", "Admitted", "Actions"].map((h) => (
                     <th key={h} className="px-5 py-2.5 text-left text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">{h}</th>
                   ))}
                 </tr>

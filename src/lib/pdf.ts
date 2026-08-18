@@ -1173,6 +1173,250 @@ export async function generateShortSummaryPdf(data: ShortSummaryData): Promise<B
 }
 
 /* ─────────────────────────────────────────────────────────────────────────── */
+/*  DISCHARGE SUMMARY PDF                                                       */
+/* ─────────────────────────────────────────────────────────────────────────── */
+
+export type DischargeSummaryPdfData = {
+  patient: { name: string; udid: string; age: number; sex: string; mobile?: string | null };
+  visit: {
+    doctorName: string; doctorSpecialty?: string | null; doctorRegNumber?: string | null;
+    doctorSignatureUrl?: string | null; hospitalName: string; hospitalLogo?: string | null;
+    hospitalAddress?: string | null; hospitalContact?: string | null; hospitalEmail?: string | null;
+  };
+  admission: { admissionDate?: Date | null; dischargeDate?: Date | null; ward: string; reason: string };
+  summary: {
+    surgeryPerformed?: string | null; operatingEye?: string | null; anesthesiaUsed?: string | null; iolDetails?: string | null;
+    postOpDiagnosis?: string | null; intraopComplications?: string | null; postOpCourse?: string | null; conditionAtDischarge: string;
+    dischargeMedications?: string | null; dischargeInstructions?: string | null; activityRestrictions?: string | null;
+    dietAdvice?: string | null; woundCareInstructions?: string | null; followUpDate?: Date | null; followUpInstructions?: string | null;
+  };
+};
+
+async function renderDischargeSummaryHtml(d: DischargeSummaryPdfData): Promise<string> {
+  const INK = "#0B3D3A", LABEL_C = "#115E59", BRAND = "#157A73", MINT = "#2BA89C";
+  const TINT = "#F0F8F6", LINE = "#D3E6E2";
+
+  const v = (x: unknown, fb = "—") => x === null || x === undefined || x === "" ? escapeHtml(String(fb)) : escapeHtml(String(x));
+
+  const conditionColor: Record<string, string> = {
+    STABLE:         "#15803D",
+    IMPROVED:       "#1D4ED8",
+    AGAINST_ADVICE: "#C2410C",
+    TRANSFERRED:    "#7C3AED",
+  };
+  const conditionLabel: Record<string, string> = {
+    STABLE: "Stable", IMPROVED: "Improved", AGAINST_ADVICE: "Against Medical Advice", TRANSFERRED: "Transferred",
+  };
+  const condColor = conditionColor[d.summary.conditionAtDischarge] ?? LABEL_C;
+  const condLabel = conditionLabel[d.summary.conditionAtDischarge] ?? d.summary.conditionAtDischarge;
+
+  const eyeLabel: Record<string, string> = { RE: "Right Eye", LE: "Left Eye", BE: "Both Eyes" };
+
+  type Med = { drugName: string; dosage: string; frequency: string; duration: string; instructions: string };
+  const meds: Med[] = (() => { try { return JSON.parse(d.summary.dischargeMedications ?? "[]"); } catch { return []; } })();
+
+  const section = (title: string, content: string) =>
+    `<div style="margin-bottom:14px;">` +
+    `<div style="display:flex;align-items:center;gap:0;margin-bottom:7px;">` +
+    `<div style="background:${TINT};border:1px solid ${LINE};border-radius:4px;padding:4px 10px;font-size:8px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:${LABEL_C};white-space:nowrap;">${title}</div>` +
+    `<div style="flex:1;height:1px;background:linear-gradient(90deg,${LINE},transparent);margin-left:6px;"></div>` +
+    `</div>` +
+    content +
+    `</div>`;
+
+  const row = (label: string, value: string) =>
+    `<div style="display:flex;align-items:flex-start;gap:8px;padding:4px 0;border-bottom:1px solid ${TINT};">` +
+    `<div style="width:160px;min-width:160px;font-size:8.5px;font-weight:700;color:#4A5A57;flex-shrink:0;">${label}</div>` +
+    `<div style="flex:1;font-size:9.5px;color:${INK};">${value}</div>` +
+    `</div>`;
+
+  const CSS = `
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: "Segoe UI","Helvetica Neue",Arial,sans-serif; font-size:9.5px; line-height:1.5; color:#1a1a1a; background:#fff; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    table { width:100%; border-collapse:collapse; }
+    .footer { position:running(footer); font-size:7.5px; color:#888; display:flex; align-items:center; justify-content:space-between; border-top:1px solid #ddd; padding-top:4px; }
+    @page { @bottom-center { content: element(footer); } }
+    .page-num::after { content: counter(page); }
+    .page-total::after { content: counter(pages); }
+    @media print { .no-break { page-break-inside:avoid; break-inside:avoid; } }
+  `;
+
+  return `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8"/>
+<title>Discharge Summary — ${escapeHtml(d.patient.name)}</title>
+<style>${CSS}</style>
+</head>
+<body>
+<div style="min-height:calc(297mm - 36mm);display:flex;flex-direction:column;">
+
+<!-- TOP BAR -->
+<div style="height:4px;background:linear-gradient(90deg,${INK} 0%,${BRAND} 50%,${MINT} 100%);margin:0 -14mm;"></div>
+
+<!-- HEADER -->
+<div style="margin:0 -14mm;padding:11px 14mm 13px;background:linear-gradient(135deg,#F7FCFB 0%,#E8F5F2 55%,#F2FAF8 100%);page-break-after:avoid;">
+  <div style="display:grid;grid-template-columns:1fr auto 1fr;align-items:flex-start;gap:18px;">
+    <!-- Left -->
+    <div style="display:flex;align-items:flex-start;gap:12px;min-width:0;">
+      ${d.visit.hospitalLogo
+        ? `<div style="background:#fff;border:1.5px solid #B8DED7;border-radius:10px;padding:5px;flex-shrink:0;"><img src="${escapeHtml(d.visit.hospitalLogo)}" alt="Logo" style="width:44px;height:44px;object-fit:contain;display:block;border-radius:6px;" /></div>`
+        : `<div style="background:linear-gradient(135deg,#F0F8F6,#DCEFEC);border:1.5px solid #B8DED7;border-radius:10px;width:54px;height:54px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:${BRAND};font-size:24px;font-weight:900;">&#10010;</div>`}
+      <div style="min-width:0;padding-top:1px;">
+        <div style="font-size:15px;font-weight:800;color:${INK};letter-spacing:-0.2px;line-height:1.1;">${escapeHtml(d.visit.hospitalName)}</div>
+        <div style="font-size:8px;font-weight:600;color:${BRAND};margin-top:3px;letter-spacing:0.06em;text-transform:uppercase;">Ophthalmology &amp; Eye Care</div>
+        ${d.visit.hospitalAddress ? `<div style="font-size:7.5px;color:#4A5A57;margin-top:4px;">${escapeHtml(d.visit.hospitalAddress)}</div>` : ""}
+        ${d.visit.hospitalContact ? `<div style="font-size:7.5px;color:#4A5A57;">${escapeHtml(d.visit.hospitalContact)}</div>` : ""}
+      </div>
+    </div>
+    <!-- Center -->
+    <div style="text-align:center;flex-shrink:0;padding-top:4px;">
+      <div style="font-size:6.5px;font-weight:700;letter-spacing:0.28em;text-transform:uppercase;color:${MINT};margin-bottom:5px;">Clinical Document</div>
+      <div style="font-size:18px;font-weight:900;color:${INK};letter-spacing:0.07em;text-transform:uppercase;line-height:1.0;white-space:nowrap;">DISCHARGE</div>
+      <div style="font-size:18px;font-weight:900;color:${INK};letter-spacing:0.07em;text-transform:uppercase;line-height:1.05;white-space:nowrap;margin-top:1px;">SUMMARY</div>
+      <div style="height:2px;width:100%;background:linear-gradient(90deg,transparent,${BRAND},${MINT});border-radius:1px;margin:6px 0 0;"></div>
+    </div>
+    <!-- Right -->
+    <div style="text-align:right;flex-shrink:0;padding-top:2px;">
+      <div style="font-size:13px;font-weight:800;color:${INK};">Dr. ${escapeHtml(d.visit.doctorName)}</div>
+      <div style="font-size:9px;color:${BRAND};font-weight:600;margin-top:2px;">${escapeHtml(d.visit.doctorSpecialty || "Consultant Ophthalmologist")}</div>
+      ${d.visit.doctorRegNumber ? `<div style="font-size:8px;color:#4A5A57;margin-top:2px;">Reg. No. ${escapeHtml(d.visit.doctorRegNumber)}</div>` : ""}
+    </div>
+  </div>
+</div>
+
+<!-- DIVIDER -->
+<div style="height:1px;background:linear-gradient(90deg,#DCEFEC,#B8DED7,#DCEFEC);margin:0 -14mm 10px;"></div>
+
+<!-- PATIENT STRIP -->
+<table style="width:100%;border-collapse:collapse;margin-bottom:12px;">
+  <tbody>
+    <tr>
+      ${[
+        ["Patient", escapeHtml(d.patient.name)],
+        ["Patient ID", escapeHtml(d.patient.udid)],
+        ["Age / Sex", `${d.patient.age} yrs / ${escapeHtml(d.patient.sex)}`],
+        ["Admission", d.admission.admissionDate ? format(d.admission.admissionDate, "dd MMM yyyy") : "—"],
+        ["Discharge", d.admission.dischargeDate ? format(d.admission.dischargeDate, "dd MMM yyyy") : "—"],
+        ["Ward", d.admission.ward.replace(/_/g, " ")],
+      ].map(([lbl, val]) =>
+        `<td style="padding-right:8px;padding-bottom:6px;vertical-align:top;">` +
+        `<div style="font-size:8px;font-weight:700;color:${LABEL_C};margin-bottom:2px;">${lbl}</div>` +
+        `<div style="background:#fff;border:1px solid ${LINE};border-radius:4px;padding:4px 8px;font-size:9.5px;color:#111;min-height:20px;">${val}</div>` +
+        `</td>`
+      ).join("")}
+    </tr>
+  </tbody>
+</table>
+
+<!-- CONDITION BADGE -->
+<div style="margin-bottom:12px;display:flex;align-items:center;gap:8px;">
+  <div style="font-size:8px;font-weight:700;color:#4A5A57;text-transform:uppercase;letter-spacing:0.08em;">Condition at discharge:</div>
+  <div style="display:inline-block;padding:3px 12px;border-radius:20px;background:${condColor}18;border:1px solid ${condColor}44;color:${condColor};font-size:10px;font-weight:700;">${condLabel}</div>
+</div>
+
+<!-- SURGERY DETAILS -->
+${section("Surgery Details",
+  row("Surgery / Procedure", v(d.summary.surgeryPerformed)) +
+  row("Operating Eye", v(d.summary.operatingEye ? (eyeLabel[d.summary.operatingEye] ?? d.summary.operatingEye) : null)) +
+  row("Anesthesia", v(d.summary.anesthesiaUsed)) +
+  row("IOL Details", v(d.summary.iolDetails))
+)}
+
+<!-- CLINICAL OUTCOME -->
+${section("Clinical Outcome",
+  row("Post-Op Diagnosis", v(d.summary.postOpDiagnosis)) +
+  row("Intra-Op Complications", v(d.summary.intraopComplications, "None")) +
+  row("Post-Op Course", `<div style="white-space:pre-wrap;">${v(d.summary.postOpCourse, "Uneventful")}</div>`)
+)}
+
+<!-- DISCHARGE MEDICATIONS -->
+${section("Discharge Medications",
+  meds.length
+    ? `<table style="font-size:9px;">
+        <thead>
+          <tr style="background:${TINT};">
+            <th style="padding:4px 7px;text-align:left;font-size:7.5px;font-weight:800;color:${LABEL_C};letter-spacing:0.08em;text-transform:uppercase;border-bottom:1px solid ${LINE};">#</th>
+            <th style="padding:4px 7px;text-align:left;font-size:7.5px;font-weight:800;color:${LABEL_C};letter-spacing:0.08em;text-transform:uppercase;border-bottom:1px solid ${LINE};">Medicine</th>
+            <th style="padding:4px 7px;text-align:left;font-size:7.5px;font-weight:800;color:${LABEL_C};letter-spacing:0.08em;text-transform:uppercase;border-bottom:1px solid ${LINE};">Dosage</th>
+            <th style="padding:4px 7px;text-align:left;font-size:7.5px;font-weight:800;color:${LABEL_C};letter-spacing:0.08em;text-transform:uppercase;border-bottom:1px solid ${LINE};">Frequency</th>
+            <th style="padding:4px 7px;text-align:left;font-size:7.5px;font-weight:800;color:${LABEL_C};letter-spacing:0.08em;text-transform:uppercase;border-bottom:1px solid ${LINE};">Duration</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${meds.map((m, i) =>
+            `<tr style="background:${i % 2 === 0 ? "#fff" : TINT};">` +
+            `<td style="padding:5px 7px;border-bottom:1px solid ${LINE};color:#888;text-align:center;">${i + 1}</td>` +
+            `<td style="padding:5px 7px;border-bottom:1px solid ${LINE};font-weight:700;color:${INK};">${escapeHtml(m.drugName)}${m.instructions ? `<br/><span style="font-size:8px;color:#777;font-weight:400;">${escapeHtml(m.instructions)}</span>` : ""}</td>` +
+            `<td style="padding:5px 7px;border-bottom:1px solid ${LINE};">${escapeHtml(m.dosage || "—")}</td>` +
+            `<td style="padding:5px 7px;border-bottom:1px solid ${LINE};">${escapeHtml(m.frequency || "—")}</td>` +
+            `<td style="padding:5px 7px;border-bottom:1px solid ${LINE};">${escapeHtml(m.duration || "—")}</td>` +
+            `</tr>`
+          ).join("")}
+        </tbody>
+      </table>`
+    : `<div style="font-size:9.5px;color:#888;font-style:italic;padding:4px 0;">No medications prescribed at discharge.</div>`
+)}
+
+<!-- INSTRUCTIONS -->
+${section("Discharge Instructions",
+  (d.summary.dischargeInstructions ? row("General instructions", `<div style="white-space:pre-wrap;">${escapeHtml(d.summary.dischargeInstructions)}</div>`) : "") +
+  (d.summary.activityRestrictions ? row("Activity restrictions", `<div style="white-space:pre-wrap;">${escapeHtml(d.summary.activityRestrictions)}</div>`) : "") +
+  (d.summary.woundCareInstructions ? row("Wound / eye care", `<div style="white-space:pre-wrap;">${escapeHtml(d.summary.woundCareInstructions)}</div>`) : "") +
+  (d.summary.dietAdvice ? row("Diet advice", escapeHtml(d.summary.dietAdvice)) : "")
+)}
+
+<!-- FOLLOW-UP -->
+${d.summary.followUpDate
+  ? section("Follow-Up",
+      row("Follow-up date", `<strong>${format(d.summary.followUpDate, "EEEE, dd MMM yyyy")}</strong>`) +
+      (d.summary.followUpInstructions ? row("Instructions", escapeHtml(d.summary.followUpInstructions)) : "")
+    )
+  : ""}
+
+<!-- SPACER -->
+<div style="flex:1;min-height:40px;"></div>
+
+<!-- SIGNATURE -->
+<div class="no-break" style="display:flex;justify-content:flex-end;margin-top:0;">
+  <div style="width:210px;text-align:center;">
+    ${d.visit.doctorSignatureUrl
+      ? `<div style="height:34px;display:flex;align-items:flex-end;justify-content:center;padding-bottom:2px;">
+           <img src="${escapeHtml(d.visit.doctorSignatureUrl)}" alt="Signature" style="max-height:32px;max-width:190px;object-fit:contain;display:block;" />
+         </div>
+         <div style="height:1px;background:${BRAND};"></div>`
+      : ""}
+    <div style="font-size:7px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:${LABEL_C};margin-top:3px;">Doctor&rsquo;s Signature</div>
+    <div style="font-size:11px;font-weight:700;color:${INK};margin-top:5px;">Dr. ${escapeHtml(d.visit.doctorName)}</div>
+    <div style="font-size:8.5px;color:#4A5A57;margin-top:1px;">${escapeHtml(d.visit.doctorSpecialty || "Consultant Ophthalmologist")}</div>
+    ${d.visit.doctorRegNumber ? `<div style="font-size:7.5px;color:#8A9793;margin-top:1px;">Reg. No. ${escapeHtml(d.visit.doctorRegNumber)}</div>` : ""}
+    <div style="font-size:7.5px;color:#8A9793;margin-top:1px;">${escapeHtml(d.visit.hospitalName)}</div>
+  </div>
+</div>
+
+<!-- CLOSING -->
+<div style="margin-top:12px;padding-top:7px;border-top:1px solid ${LINE};text-align:center;">
+  <span style="font-size:9px;font-style:italic;color:${LABEL_C};">Thank you for trusting us with your care. Wishing you a speedy recovery.</span>
+</div>
+
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+  <span>CONFIDENTIAL — For authorized clinical use only</span>
+  <span>UHID: ${escapeHtml(d.patient.udid)}</span>
+  <span>Generated by PPMS · Page <span class="page-num"></span> of <span class="page-total"></span></span>
+</div>
+
+</body>
+</html>`;
+}
+
+export async function generateDischargeSummaryPdf(data: DischargeSummaryPdfData): Promise<Buffer> {
+  return htmlToPdf(await renderDischargeSummaryHtml(data));
+}
+
+/* ─────────────────────────────────────────────────────────────────────────── */
 /*  FULL EMR / LONG SUMMARY PDF                                                */
 /* ─────────────────────────────────────────────────────────────────────────── */
 

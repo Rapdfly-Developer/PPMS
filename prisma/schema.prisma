@@ -64,6 +64,7 @@ model Doctor {
   scheduleExceptions          ScheduleException[]
   license                     TenantLicense?
   surgerySchedules            SurgerySchedule[]
+  dischargeSummaries          DischargeSummary[]
 }
 
 model Hospital {
@@ -759,18 +760,59 @@ model Dispense {
 }
 
 model Admission {
-  id              String    @id @default(cuid())
-  visitId         String    @unique
-  visit           Visit     @relation(fields: [visitId], references: [id])
-  reason          String
-  ward            String
-  numberOfDays    Int
-  discharged      Boolean   @default(false)
-  dischargedAt    DateTime?
-  createdAt       DateTime  @default(now())
+  id                  String    @id @default(cuid())
+  visitId             String    @unique
+  visit               Visit     @relation(fields: [visitId], references: [id])
+  reason              String
+  ward                String
+  numberOfDays        Int
+  discharged          Boolean   @default(false)
+  dischargedAt        DateTime?
+  dischargeCondition  String?   // STABLE | IMPROVED | AGAINST_ADVICE | TRANSFERRED
+  createdAt           DateTime  @default(now())
 
-  preAuths        InsurancePreAuthorization[]
-  insuranceClaims InsuranceClaim[]
+  preAuths            InsurancePreAuthorization[]
+  insuranceClaims     InsuranceClaim[]
+  dischargeSummary    DischargeSummary?
+}
+
+// conditionAtDischarge: STABLE | IMPROVED | AGAINST_ADVICE | TRANSFERRED
+model DischargeSummary {
+  id                    String    @id @default(cuid())
+  admissionId           String    @unique
+  admission             Admission @relation(fields: [admissionId], references: [id])
+  doctorId              String
+  doctor                Doctor    @relation(fields: [doctorId], references: [id])
+
+  // Surgery recap
+  surgeryPerformed      String?
+  operatingEye          String?   // RE | LE | BE
+  anesthesiaUsed        String?
+  iolDetails            String?
+
+  // Clinical outcome
+  postOpDiagnosis       String?
+  intraopComplications  String?
+  postOpCourse          String?
+  conditionAtDischarge  String    @default("STABLE")
+
+  // Discharge instructions
+  dischargeMedications  String?   // JSON — [{drugName,dosage,frequency,duration,instructions}]
+  dischargeInstructions String?
+  activityRestrictions  String?
+  dietAdvice            String?
+  woundCareInstructions String?
+
+  // Follow-up
+  followUpDate          DateTime?
+  followUpInstructions  String?
+
+  // Dates (captured from Admission.visit.date + dischargedAt)
+  admissionDate         DateTime?
+  dischargeDate         DateTime?
+
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
 }
 
 model SurgicalCounselling {
@@ -1290,6 +1332,8 @@ model SurgerySchedule {
   patientInformed       Boolean   @default(false)
 
   status                String    @default("PLANNED")
+  caseStatus            String?   // OPEN | CLOSED
+  caseClosedAt          DateTime?
   remarks               String?
 
   createdBy             String
