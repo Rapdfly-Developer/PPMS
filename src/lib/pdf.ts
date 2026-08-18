@@ -1093,13 +1093,6 @@ ${d.minorProcedure?.procedureName
 <!-- 3 · MEDICATIONS -->
 ${card("Medications",
   `<table>
-    <thead><tr>
-      <th style="${TH}width:26px;text-align:center;">#</th>
-      <th style="${TH}">Medicine</th>
-      <th style="${TH}width:62px;">Dosage</th>
-      <th style="${TH}width:92px;">Frequency</th>
-      <th style="${TH}width:62px;">Duration</th>
-    </tr></thead>
     <tbody>${medRows}</tbody>
   </table>`)}
 
@@ -1131,13 +1124,6 @@ ${hasRx
 ${hasInv
   ? card("Investigations Ordered",
       `<table>
-        <thead><tr>
-          <th style="${TH}width:26px;text-align:center;">#</th>
-          <th style="${TH}">Test / Investigation</th>
-          <th style="${TH}width:88px;">Category</th>
-          <th style="${TH}width:70px;">Priority</th>
-          <th style="${TH}width:78px;">Status</th>
-        </tr></thead>
         <tbody>
           ${d.investigations.map((inv, i) =>
             `<tr>` +
