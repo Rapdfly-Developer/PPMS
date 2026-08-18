@@ -3,8 +3,8 @@
 import { useState, useTransition, useRef, useEffect } from "react";
 import { SingleChipSelect } from "@/components/ui/Chip";
 import { WARDS, ANAESTHESIA_TYPES, SURGERY_TYPES } from "@/lib/constants";
-import { saveDispense, saveAdmission, saveFollowUp } from "./actions";
-import { AlertTriangle, ChevronDown, History, Plus, X } from "lucide-react";
+import { saveDispense, saveAdmission, saveFollowUp, saveSurgicalCounselling } from "./actions";
+import { AlertTriangle, ChevronDown, History, Plus, X, Scissors } from "lucide-react";
 
 const SURGERY_NAME_OPTIONS = [
   "Phacoemulsification with IOL Implantation",
@@ -389,6 +389,138 @@ export function FollowUpdatesPanel({ visit, udid, priorVisits = [] }: { visit: a
           />
         )}
       </div>
+
+      <div className="flex items-center gap-3">
+        <button
+          disabled={pending}
+          onClick={save}
+          className="text-sm font-medium px-4 py-2 rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-60 transition-colors"
+        >
+          Save
+        </button>
+        {saved && <span className="text-xs text-[var(--color-success-600)] font-medium">Saved</span>}
+      </div>
+    </div>
+  );
+}
+
+export function SurgicalPanel({ visit, udid }: { visit: any; udid: string }) {
+  const [advised,    setAdvised]    = useState<boolean>(visit.surgeryAdvised ?? false);
+  const [name,       setName]       = useState<string>(visit.advisedSurgeryName ?? "");
+  const [eye,        setEye]        = useState<string>(visit.advisedSurgeryEye ?? "OU");
+  const [notes,      setNotes]      = useState<string>(visit.advisedSurgeryNotes ?? "");
+  const [pending,    startTransition] = useTransition();
+  const [saved,      setSaved]      = useState(false);
+  const [nameOpen,   setNameOpen]   = useState(false);
+  const nameRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handler(e: MouseEvent) {
+      if (nameRef.current && !nameRef.current.contains(e.target as Node)) setNameOpen(false);
+    }
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const filteredNames = SURGERY_NAME_OPTIONS.filter((o) =>
+    o.toLowerCase().includes(name.toLowerCase())
+  );
+
+  const save = () =>
+    startTransition(async () => {
+      await saveSurgicalCounselling(visit.id, udid, {
+        surgeryAdvised:      advised,
+        advisedSurgeryName:  name || undefined,
+        advisedSurgeryEye:   eye || undefined,
+        advisedSurgeryNotes: notes || undefined,
+      });
+      setSaved(true);
+    });
+
+  return (
+    <div className="rounded-xl border border-[var(--color-border)] p-4 flex flex-col gap-4">
+      <p className="text-sm font-medium text-[var(--color-ink-700)]">Surgical Counselling</p>
+
+      {/* Advised toggle */}
+      <label className="flex items-center gap-2.5 cursor-pointer">
+        <input
+          type="checkbox"
+          checked={advised}
+          onChange={(e) => { setAdvised(e.target.checked); setSaved(false); }}
+          className="w-4 h-4 accent-[var(--color-primary-600)]"
+        />
+        <span className="text-sm text-[var(--color-ink-700)]">Surgery advised for this patient</span>
+      </label>
+
+      {advised && (
+        <div className="flex flex-col gap-3">
+          {/* Eye laterality */}
+          <div>
+            <p className="text-[10px] font-semibold text-[var(--color-ink-500)] uppercase tracking-wide mb-1.5">Eye</p>
+            <div className="flex gap-1">
+              {(["RE", "LE", "OU"] as const).map((lat) => (
+                <button
+                  key={lat}
+                  type="button"
+                  onClick={() => { setEye(lat); setSaved(false); }}
+                  className={`w-12 py-2 rounded-lg border text-xs font-bold transition-colors ${
+                    eye === lat
+                      ? "bg-[var(--color-primary-600)] border-[var(--color-primary-600)] text-white"
+                      : "border-[var(--color-border)] text-[var(--color-ink-500)] hover:border-[var(--color-primary-300)] hover:text-[var(--color-primary-700)] hover:bg-[var(--color-primary-50)]"
+                  }`}
+                >
+                  {lat}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Surgery name */}
+          <div>
+            <p className="text-[10px] font-semibold text-[var(--color-ink-500)] uppercase tracking-wide mb-1.5">Surgery Name</p>
+            <div ref={nameRef} className="relative">
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => { setName(e.target.value); setSaved(false); setNameOpen(true); }}
+                onFocus={() => setNameOpen(true)}
+                placeholder="e.g. Phacoemulsification with IOL Implantation"
+                className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-3 py-2 pr-8 text-sm text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent"
+              />
+              <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] pointer-events-none" />
+              {nameOpen && filteredNames.length > 0 && (
+                <ul className="absolute z-50 mt-1 w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-lg max-h-52 overflow-y-auto">
+                  {filteredNames.map((opt) => (
+                    <li key={opt}>
+                      <button
+                        type="button"
+                        onMouseDown={(e) => { e.preventDefault(); setName(opt); setSaved(false); setNameOpen(false); }}
+                        className={`w-full text-left px-3 py-2 text-sm hover:bg-[var(--color-primary-50)] hover:text-[var(--color-primary-700)] transition-colors ${
+                          name === opt ? "bg-[var(--color-primary-50)] text-[var(--color-primary-700)] font-semibold" : "text-[var(--color-ink-700)]"
+                        }`}
+                      >
+                        {opt}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+
+          {/* Notes */}
+          <div>
+            <p className="text-[10px] font-semibold text-[var(--color-ink-500)] uppercase tracking-wide mb-1.5">Counselling Notes</p>
+            <textarea
+              value={notes}
+              onChange={(e) => { setNotes(e.target.value); setSaved(false); }}
+              rows={3}
+              placeholder="Risks, benefits, alternatives, patient questions…"
+              className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-3 py-2 text-sm text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent resize-none"
+            />
+          </div>
+        </div>
+      )}
 
       <div className="flex items-center gap-3">
         <button

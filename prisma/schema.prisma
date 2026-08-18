@@ -491,6 +491,10 @@ model Visit {
   followUpCompleted   Boolean   @default(false)
   followUpCancelledAt DateTime?
   gonioNotes          String?  // JSON: { re: string, le: string }
+  surgeryAdvised      Boolean  @default(false)
+  advisedSurgeryName  String?
+  advisedSurgeryEye   String?
+  advisedSurgeryNotes String?
 
   generalExam        GeneralExamination?
   medications        Medication[]

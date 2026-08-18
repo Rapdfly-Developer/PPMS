@@ -533,6 +533,25 @@ export async function saveFollowUp(visitId: string, udid: string, data: { follow
   revalidate(udid);
 }
 
+export async function saveSurgicalCounselling(
+  visitId: string,
+  udid: string,
+  data: { surgeryAdvised: boolean; advisedSurgeryName?: string; advisedSurgeryEye?: string; advisedSurgeryNotes?: string }
+) {
+  await requireRole("DOCTOR");
+  await assertVisitAccess(visitId);
+  await prisma.visit.update({
+    where: { id: visitId },
+    data: {
+      surgeryAdvised:      data.surgeryAdvised,
+      advisedSurgeryName:  data.advisedSurgeryName ?? null,
+      advisedSurgeryEye:   data.advisedSurgeryEye ?? null,
+      advisedSurgeryNotes: data.advisedSurgeryNotes ?? null,
+    },
+  });
+  revalidate(udid);
+}
+
 export async function saveGonioNotes(visitId: string, udid: string, data: { re: string; le: string }) {
   await requireRole("DOCTOR");
   await assertVisitAccess(visitId);
