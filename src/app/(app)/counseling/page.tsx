@@ -1,12 +1,35 @@
+import React from "react";
 import { requirePermission } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { format } from "date-fns";
 import Link from "next/link";
-import { Scissors, ChevronRight, User, Calendar, Eye, FileText } from "lucide-react";
+import { Scissors, ChevronRight, User, Calendar, Eye, CheckCircle2, XCircle, Clock, FlaskConical } from "lucide-react";
 
 export const metadata = { title: "Counseling" };
 
 const EYE_LABEL: Record<string, string> = { RE: "Right Eye", LE: "Left Eye", OU: "Both Eyes" };
+
+const STATUS_BADGE: Record<string, { label: string; cls: string; Icon: React.ElementType }> = {
+  DRAFT:                   { label: "Draft",                   cls: "bg-gray-100 text-gray-600 border-gray-200",          Icon: Clock },
+  TENTATIVE_COMPLETED:     { label: "Tentative Submitted",     cls: "bg-amber-100 text-amber-700 border-amber-200",       Icon: Clock },
+  FIT_FOR_SURGERY:         { label: "Fit for Surgery",         cls: "bg-emerald-100 text-emerald-700 border-emerald-200", Icon: CheckCircle2 },
+  NOT_FIT:                 { label: "Not Fit",                 cls: "bg-red-100 text-red-700 border-red-200",             Icon: XCircle },
+  DEFERRED:                { label: "Deferred",                cls: "bg-orange-100 text-orange-700 border-orange-200",    Icon: Clock },
+  INVESTIGATIONS_REQUIRED: { label: "Investigations",          cls: "bg-blue-100 text-blue-700 border-blue-200",          Icon: FlaskConical },
+  CONFIRMED:               { label: "Confirmed",               cls: "bg-teal-100 text-teal-700 border-teal-200",          Icon: CheckCircle2 },
+};
+
+function StatusPill({ status }: { status: string | undefined }) {
+  const s = status ?? "DRAFT";
+  const meta = STATUS_BADGE[s] ?? STATUS_BADGE.DRAFT;
+  const { Icon } = meta;
+  return (
+    <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border ${meta.cls}`}>
+      <Icon size={9} />
+      {meta.label}
+    </span>
+  );
+}
 
 export default async function CounselingPage() {
   const user = await requirePermission("patients.view");
@@ -32,6 +55,7 @@ export default async function CounselingPage() {
       },
       doctor:   { select: { name: true } },
       hospital: { select: { name: true } },
+      counsellingRecord: { select: { status: true } },
     },
   });
 
@@ -73,6 +97,7 @@ export default async function CounselingPage() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <p className="text-sm font-semibold text-[var(--color-ink-800)]">{v.patient.name}</p>
+                  <StatusPill status={v.counsellingRecord?.status} />
                   {v.patient.age && (
                     <span className="text-[11px] text-[var(--color-ink-400)]">{v.patient.age}y</span>
                   )}

@@ -1471,10 +1471,19 @@ model CounsellingRecord {
 
   // 8. Additional Investigations
   additionalInvestigations  Boolean  @default(false)
-  investigationDetails      String?  // free text
+  investigationDetails      String?
 
   // 9. Surgery Deferred
   surgeryDeferred           Boolean  @default(false)
   deferralReason            String?  // PATIENT_UNFIT | FINANCIAL | NOT_WILLING | INVESTIGATION_PENDING | MEDICAL_CLEARANCE | OTHERS
   deferralNotes             String?
+
+  // Workflow status
+  // DRAFT → TENTATIVE_COMPLETED → (doctor decision) → FIT_FOR_SURGERY | NOT_FIT | DEFERRED | INVESTIGATIONS_REQUIRED → CONFIRMED
+  status              String   @default("DRAFT")
+  submittedAt         DateTime?
+  doctorDecision      String?  // FIT_FOR_SURGERY | NOT_FIT | DEFERRED | INVESTIGATIONS_REQUIRED
+  doctorDecisionNotes String?
+  doctorReviewedAt    DateTime?
+  confirmedAt         DateTime?
 }
