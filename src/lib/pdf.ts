@@ -810,7 +810,7 @@ async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
 
   /* ── Rounded section card: green title strip over bordered body ── */
   const card = (label: string, inner: string) =>
-    `<div class="no-break" style="border:1px solid ${LINE};border-radius:6px;overflow:hidden;margin-bottom:7px;">` +
+    `<div class="no-break" style="border:1px solid ${LINE};border-radius:6px;overflow:hidden;margin-bottom:12px;">` +
     `<div style="background:${TINT};border-bottom:1px solid ${LINE};padding:4.5px 10px;">` +
     `<span style="font-size:8.5px;font-weight:800;letter-spacing:0.11em;text-transform:uppercase;color:${LABEL_C};">${label}</span>` +
     `</div>` +
@@ -820,7 +820,7 @@ async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
   /* ── Inline section: label tag on the left, content on the same row ── */
   /* Label is fixed 148px wide so all three rows snap to the same vertical grid. */
   const inlineCard = (label: string, inner: string) =>
-    `<div class="no-break" style="display:flex;align-items:flex-start;gap:6px;margin-bottom:6px;">` +
+    `<div class="no-break" style="display:flex;align-items:flex-start;gap:6px;margin-bottom:11px;">` +
     `<div style="width:148px;min-width:148px;background:${TINT};border:1px solid ${LINE};border-radius:4px;padding:5px 8px;font-size:8.5px;font-weight:800;letter-spacing:0.11em;text-transform:uppercase;color:${LABEL_C};white-space:nowrap;text-align:center;flex-shrink:0;">${label}</div>` +
     `<div style="flex:1;border:1px solid ${LINE};border-radius:4px;padding:5px 9px;min-height:28px;display:flex;align-items:center;">${inner}</div>` +
     `</div>`;
@@ -1026,10 +1026,10 @@ async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
 </div>
 
 <!-- SOFT DIVIDER (full bleed) -->
-<div style="height:1px;background:linear-gradient(90deg,#DCEFEC,#B8DED7,#DCEFEC);margin:0 -14mm 6px;"></div>
+<div style="height:1px;background:linear-gradient(90deg,#DCEFEC,#B8DED7,#DCEFEC);margin:0 -14mm 10px;"></div>
 
 <!-- PATIENT DETAIL STRIP -->
-<table style="width:100%;border-collapse:collapse;margin-bottom:7px;">
+<table style="width:100%;border-collapse:collapse;margin-bottom:12px;">
   <tbody>
     <tr>
       ${fbox("Patient", escapeHtml(d.patient.name))}
