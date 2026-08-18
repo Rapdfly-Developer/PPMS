@@ -879,18 +879,20 @@ async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
     return "";
   };
 
+  const MED_TD = `padding:6px 7px;border-bottom:1px solid #ECF3F1;font-size:9.5px;`;
+
   const medRows = d.medications.length
     ? d.medications.map((m, i) =>
         `<tr style="background:${i % 2 === 0 ? "#fff" : TINT};">` +
-        `<td style="${TD}text-align:center;color:#888;">${i + 1}</td>` +
-        `<td style="${TD}">` +
+        `<td style="${MED_TD}text-align:center;color:#888;">${i + 1}</td>` +
+        `<td style="${MED_TD}">` +
         pdfMedBadge2(m.route, m.laterality, m.drugName) +
         `<span style="font-weight:700;color:#1a1a1a;">${escapeHtml(m.drugName)}</span>` +
         (m.instructions ? `<span style="font-size:8.5px;color:#777;margin-left:5px;">${escapeHtml(m.instructions)}</span>` : "") +
         `</td>` +
-        `<td style="${TD}">${v2(m.dosage)}</td>` +
-        `<td style="${TD}">${v2(m.frequency)}</td>` +
-        `<td style="${TD}">${v2(m.duration)}</td>` +
+        `<td style="${MED_TD}">${v2(m.dosage)}</td>` +
+        `<td style="${MED_TD}">${v2(m.frequency)}</td>` +
+        `<td style="${MED_TD}">${v2(m.duration)}</td>` +
         `</tr>`
       ).join("")
     : `<tr><td colspan="5" style="padding:4px 8px;border:none;">${none("No medications prescribed")}</td></tr>`;
