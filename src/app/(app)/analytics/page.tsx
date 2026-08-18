@@ -392,22 +392,11 @@ export default async function AnalyticsPage() {
         </div>
 
         <div className="surface-card p-6">
-          <h2 className="text-base font-semibold text-[var(--color-ink-900)] mb-1">Surgical Activity</h2>
-          <p className="text-xs text-[var(--color-ink-400)] mb-5">Surgeries counselled &amp; scheduled</p>
-          <div className="grid grid-cols-2 gap-4">
-            {[
-              { label: "This Month",  value: totalSurgeriesThisMonth, color: "text-purple-700", bg: "bg-purple-50 border border-purple-200" },
-              { label: "Upcoming",    value: upcomingSurgeries,        color: "text-[var(--color-primary-700)]", bg: "bg-[var(--color-primary-50)] border border-[var(--color-primary-200)]" },
-            ].map((s) => (
-              <div key={s.label} className={`rounded-xl p-4 ${s.bg}`}>
-                <p className={`text-3xl font-bold ${s.color}`}>{s.value}</p>
-                <p className="text-xs font-medium text-[var(--color-ink-500)] mt-1">{s.label}</p>
-              </div>
-            ))}
-          </div>
-          <div className="mt-4 flex items-center gap-2 text-xs text-[var(--color-ink-500)]">
+          <h2 className="text-base font-semibold text-[var(--color-ink-900)] mb-1">IPD Activity</h2>
+          <p className="text-xs text-[var(--color-ink-400)] mb-5">Current in-patient admissions</p>
+          <div className="mt-2 flex items-center gap-2 text-xs text-[var(--color-ink-500)]">
             <RefreshCw size={12} />
-            <span>IPD admissions recorded: <strong className="text-[var(--color-ink-800)]">{activeAdmissions}</strong></span>
+            <span>Active admissions: <strong className="text-[var(--color-ink-800)]">{activeAdmissions}</strong></span>
           </div>
         </div>
       </div>
