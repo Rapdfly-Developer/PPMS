@@ -511,8 +511,9 @@ model Visit {
   lacrimalSac        LacrimalSacSyringing?
   investigationOrders InvestigationOrder[]
   diagnoses          Diagnosis[]
-  dispense           Dispense?
-  admission          Admission?
+  dispense              Dispense?
+  admission             Admission?
+  counsellingRecord     CounsellingRecord?
 
   @@index([patientId])
   @@index([doctorId])
@@ -1425,3 +1426,46 @@ model RolePermissionSeed {
   @@unique([role, permissionKey])
 }
 
+
+
+// ── Surgical Counselling Record ────────────────────────────────────────────
+model CounsellingRecord {
+  id        String   @id @default(cuid())
+  visitId   String   @unique
+  visit     Visit    @relation(fields: [visitId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // 1. Payment / Finance
+  paymentType   String?  // TENTATIVE | OVERALL | INSURANCE
+  paymentMode   String?  // CASH | CASHLESS
+  schemeName    String?
+  schemeType    String?  // FULL | CAP | COMM
+  outOfPocket   String?  // FULL_CASH | GOVT_SCHEME | CAMP | OTHERS
+
+  // 2. IOL
+  iolType       String?
+  iolLensName   String?
+  iolPower      String?
+  iolBrand      String?
+  iolToric      Boolean  @default(false)
+
+  // 3. Surgery
+  laterality    String?
+  procedure     String?
+  anaesthesia   String?
+
+  // 4. Estimate
+  estimateAmount Decimal? @db.Decimal(10, 2)
+  estimateVague  Boolean  @default(false)
+  fitForSurgery  Boolean  @default(false)
+
+  // 5. Advance
+  advancePaid    Decimal? @db.Decimal(10, 2)
+
+  // 6. Date of Surgery
+  dateOfSurgery  DateTime?
+
+  // 7. Eligible
+  eligibleForSurgery Boolean @default(false)
+}
