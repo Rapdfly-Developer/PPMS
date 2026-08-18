@@ -65,6 +65,7 @@ model Doctor {
   license                     TenantLicense?
   surgerySchedules            SurgerySchedule[]
   dischargeSummaries          DischargeSummary[]
+  postOpReviews               PostOpReview[]
 }
 
 model Hospital {
@@ -1341,9 +1342,103 @@ model SurgerySchedule {
   updatedAt             DateTime  @updatedAt
 
   otRecord              OtRecord?
+  surgeryConsent        SurgeryConsent?
+  preOpAssessment       PreOpAssessment?
+  postOpReview          PostOpReview?
 
   @@index([hospitalId, plannedDateTime])
   @@index([patientId])
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// Surgery consent, pre-op assessment, post-op review
+// ──────────────────────────────────────────────────────────────────────────
+
+model SurgeryConsent {
+  id                    String          @id @default(cuid())
+  surgeryScheduleId     String          @unique
+  surgerySchedule       SurgerySchedule @relation(fields: [surgeryScheduleId], references: [id])
+
+  patientName           String
+  attendantName         String?
+  relationship          String?         // Self | Spouse | Parent | Child | Sibling | Guardian | Other
+
+  surgeryExplained      Boolean         @default(false)
+  risksExplained        Boolean         @default(false)
+  alternativesExplained Boolean         @default(false)
+  questionsAnswered     Boolean         @default(false)
+  consentGiven          Boolean         @default(false)
+  consentDate           DateTime        @default(now())
+  notes                 String?
+
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+}
+
+// asaGrade: I | II | III | IV | V
+// anesthesiaFitness: FIT | CONDITIONAL | NOT_FIT
+model PreOpAssessment {
+  id                    String          @id @default(cuid())
+  surgeryScheduleId     String          @unique
+  surgerySchedule       SurgerySchedule @relation(fields: [surgeryScheduleId], references: [id])
+
+  hasDiabetes           Boolean         @default(false)
+  hasHypertension       Boolean         @default(false)
+  hasCardiacDisease     Boolean         @default(false)
+  hasAsthma             Boolean         @default(false)
+  hasKidneyDisease      Boolean         @default(false)
+  otherConditions       String?
+
+  currentMedications    String?
+  allergies             String?
+  nkda                  Boolean         @default(false)
+
+  bloodSugarLevel       String?
+  bpReading             String?
+  ecgNormal             Boolean?
+  investigationNotes    String?
+
+  asaGrade              String?
+  anesthesiaFitness     String          @default("FIT")
+  fitnessNotes          String?
+
+  assessedBy            String?
+  assessedAt            DateTime?
+
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+}
+
+// woundStatus: INTACT | WOUND_LEAK | SUTURE_ISSUES
+// iolPosition: CENTERED | SLIGHTLY_DECENTERED | DECENTERED
+model PostOpReview {
+  id                    String          @id @default(cuid())
+  surgeryScheduleId     String          @unique
+  surgerySchedule       SurgerySchedule @relation(fields: [surgeryScheduleId], references: [id])
+  doctorId              String
+  doctor                Doctor          @relation(fields: [doctorId], references: [id])
+
+  reVaUnaided           String?
+  leVaUnaided           String?
+  reBcva                String?
+  leBcva                String?
+
+  iopRe                 String?
+  iopLe                 String?
+  woundStatus           String?
+  iolPosition           String?
+  anteriorChamber       String?
+  fundusNotes           String?
+  complications         String?
+
+  postOpMedications     String?         // JSON [{drugName,dosage,frequency,duration}]
+  instructions          String?
+  followUpDate          DateTime?
+
+  reviewNotes           String?
+  reviewedAt            DateTime        @default(now())
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
 }
 
 // Records that a later-added permission has already been auto-granted to a role

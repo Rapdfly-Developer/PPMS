@@ -8,7 +8,7 @@ import {
   CheckCircle2, Clock, CalendarClock, XCircle, Search, ChevronDown,
   ChevronRight, Stethoscope, BedDouble, FileCheck, TriangleAlert,
   ThumbsUp, MessageSquare, Ban, Loader2, Lock, DoorOpen,
-  ShieldCheck,
+  ShieldCheck, FileSignature, Activity,
 } from "lucide-react";
 import { approveSurgery, requestSurgeryChanges, cancelScheduledSurgery, updateSurgeryDate } from "./actions";
 
@@ -550,6 +550,25 @@ function ConfirmedCard({ rec, role, idx }: { rec: ScheduleRecord; role: "DOCTOR"
                   className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors"
                 >
                   <DoorOpen size={13} /> Enter Surgery Room
+                </Link>
+                <Link
+                  href={`/scheduled-ot/${rec.id}/consent`}
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border border-violet-300 bg-violet-50 text-violet-700 hover:bg-violet-100 transition-colors"
+                >
+                  <FileSignature size={12} /> Consent
+                  {rec.consentReceived && <CheckCircle2 size={10} className="text-emerald-500" />}
+                </Link>
+                <Link
+                  href={`/scheduled-ot/${rec.id}/pre-op-assessment`}
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors"
+                >
+                  <Activity size={12} /> Pre-Op
+                </Link>
+                <Link
+                  href={`/scheduled-ot/${rec.id}/post-op-review`}
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border border-teal-300 bg-teal-50 text-teal-700 hover:bg-teal-100 transition-colors"
+                >
+                  <Stethoscope size={12} /> Post-Op Review
                 </Link>
                 <button
                   onClick={() => setShowEdit((v) => !v)}
