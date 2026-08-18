@@ -1014,20 +1014,11 @@ async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
       <div style="height:2px;width:100%;background:linear-gradient(90deg,transparent,${BRAND},${MINT});border-radius:1px;margin:6px 0 0;"></div>
     </div>
 
-    <!-- Right: Date + Consultant -->
-    <div style="text-align:right;flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;padding-top:2px;">
-      <table style="width:auto;border-collapse:collapse;">
-        <tbody>
-          <tr>
-            <td style="padding:1px 0 1px 0;font-size:7.5px;font-weight:700;color:${LABEL_C};text-align:right;letter-spacing:0.05em;text-transform:uppercase;">Date</td>
-            <td style="padding:1px 0 1px 8px;font-size:9px;font-weight:600;color:#1a1a1a;text-align:right;white-space:nowrap;">${format(d.visit.date, "dd MMM yyyy")}</td>
-          </tr>
-          <tr>
-            <td style="padding:1px 0 1px 0;font-size:7.5px;font-weight:700;color:${LABEL_C};text-align:right;letter-spacing:0.05em;text-transform:uppercase;">Consultant</td>
-            <td style="padding:1px 0 1px 8px;font-size:9px;font-weight:600;color:#1a1a1a;text-align:right;white-space:nowrap;">Dr. ${escapeHtml(d.visit.doctorName)}</td>
-          </tr>
-        </tbody>
-      </table>
+    <!-- Right: Doctor name, specialty, date & time -->
+    <div style="text-align:right;flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;justify-content:center;padding-top:2px;">
+      <div style="font-size:13px;font-weight:800;color:${INK};line-height:1.2;">Dr. ${escapeHtml(d.visit.doctorName)}</div>
+      <div style="font-size:9px;color:${BRAND};font-weight:600;margin-top:2px;">${escapeHtml(d.visit.doctorSpecialty || "Consultant Ophthalmologist")}</div>
+      <div style="font-size:8.5px;color:#4A5A57;margin-top:4px;">${format(d.visit.date, "dd MMM yyyy, hh:mm a")} IST</div>
     </div>
   </div>
 </div>
