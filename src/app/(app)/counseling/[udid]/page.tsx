@@ -82,12 +82,6 @@ export default async function CounselingPatientPage({
         dateOfSurgery: rec.dateOfSurgery
           ? rec.dateOfSurgery.toISOString().slice(0, 10)
           : null,
-        eligibleForSurgery:       rec.eligibleForSurgery,
-        additionalInvestigations: rec.additionalInvestigations,
-        investigationDetails:     rec.investigationDetails,
-        surgeryDeferred:          rec.surgeryDeferred,
-        deferralReason:           rec.deferralReason,
-        deferralNotes:            rec.deferralNotes,
       }
     : null;
 
@@ -125,6 +119,9 @@ export default async function CounselingPatientPage({
           </div>
         </div>
       </div>
+
+      {/* Page heading */}
+      <h2 className="text-base font-bold text-[var(--color-ink-800)] mb-1">Tentative Counseling Form</h2>
 
       {/* Visit summary strip */}
       <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 mb-5 flex flex-wrap gap-x-5 gap-y-1 items-center">
