@@ -1080,12 +1080,12 @@ ${inlineCard("Clinical Impression",
 ${d.minorProcedure?.procedureName
   ? inlineCard("Minor Procedure",
       `<div style="font-size:10.5px;font-weight:600;color:${INK};">` +
-      (d.minorProcedure.procedureLaterality ? `<span style="margin-right:6px;">${escapeHtml(d.minorProcedure.procedureLaterality)}</span>` : "") +
-      escapeHtml(d.minorProcedure.procedureName) +
-      `</div>` +
-      (d.minorProcedure.anesthesiaType
-        ? `<div style="font-size:9px;color:#4A5A57;margin-top:2px;">${escapeHtml(d.minorProcedure.anesthesiaType)}</div>`
-        : ""))
+      [
+        d.minorProcedure.procedureLaterality ? escapeHtml(d.minorProcedure.procedureLaterality) : "",
+        escapeHtml(d.minorProcedure.procedureName),
+        d.minorProcedure.anesthesiaType ? escapeHtml(d.minorProcedure.anesthesiaType) : "",
+      ].filter(Boolean).join(`<span style="color:#B0BDBA;margin:0 5px;">·</span>`) +
+      `</div>`)
   : ""}
 
 <!-- 3 · MEDICATIONS -->
