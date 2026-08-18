@@ -1059,11 +1059,11 @@ ${inlineCard("Clinical Impression",
         <tbody>
           ${d.diagnoses.map((dx, i) =>
             `<tr>` +
-            `<td style="${TD}text-align:center;color:#8A9793;width:22px;">${i + 1}</td>` +
-            `<td style="${TD}font-weight:600;">${escapeHtml(dx.description)}</td>` +
-            `<td style="${TD}color:#4A5A57;width:80px;">${dx.laterality ? escapeHtml(dx.laterality) : ""}</td>` +
-            `<td style="${TD}font-family:'Courier New',monospace;font-size:8.5px;color:#4A5A57;width:70px;">${dx.icd10Code ? escapeHtml(dx.icd10Code) : ""}</td>` +
-            `<td style="${TD}width:74px;">${dx.status ? diagBadge(dx.status) : ""}</td>` +
+            `<td style="padding:3.5px 7px;font-size:9.5px;text-align:center;color:#8A9793;width:22px;">${i + 1}</td>` +
+            `<td style="padding:3.5px 7px;font-size:9.5px;font-weight:600;">` +
+            (dx.laterality ? `<span style="color:#4A5A57;font-weight:400;margin-right:5px;">${escapeHtml(dx.laterality)}</span>` : "") +
+            escapeHtml(dx.description) +
+            `</td>` +
             `</tr>`
           ).join("")}
         </tbody>
