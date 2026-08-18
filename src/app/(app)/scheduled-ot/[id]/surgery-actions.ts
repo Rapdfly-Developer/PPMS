@@ -76,7 +76,7 @@ export type PreOpInput = {
   nkda: boolean;
   bloodSugarLevel?: string;
   bpReading?: string;
-  ecgNormal?: boolean;
+  ecgNormal?: boolean | null;
   investigationNotes?: string;
   asaGrade?: string;
   anesthesiaFitness: string;
