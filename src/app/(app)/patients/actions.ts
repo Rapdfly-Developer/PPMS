@@ -98,7 +98,6 @@ export async function getPatientTimeline(patientId: string): Promise<TimelineEve
         diagnoses:          { select: { description: true, icd10Code: true, laterality: true, provisional: true, status: true } },
         medications:        { select: { drugName: true, dosage: true, frequency: true, duration: true } },
         investigationOrders:{ select: { id: true, testName: true, category: true, status: true, laterality: true, priority: true, resultRef: true, createdAt: true } },
-        surgicalCounselling:{ select: { surgeryType: true, surgeryDate: true, rightEye: true, leftEye: true, anaesthesiaType: true } },
         admission:          { select: { reason: true, ward: true, numberOfDays: true, discharged: true, dischargedAt: true } },
         dispense:           { select: { shortSummary: true } },
         appointment:        { select: { createdAt: true, dateTime: true, arrivedAt: true } },
@@ -161,27 +160,6 @@ export async function getPatientTimeline(patientId: string): Promise<TimelineEve
         doctorName:   doctor,
         searchText:  [testNames, hospital, doctor].filter(Boolean).join(" ").toLowerCase(),
         detail: { orders: v.investigationOrders.map((o) => ({ ...o, createdAt: undefined })) },
-      });
-    }
-
-    // Surgery counselling
-    if (v.surgicalCounselling) {
-      const sc = v.surgicalCounselling;
-      events.push({
-        id:          `surg-${v.id}`,
-        type:        "SURGERY",
-        date:        sc.surgeryDate.toISOString(),
-        title:       `Surgery: ${sc.surgeryType}`,
-        hospitalName: hospital,
-        doctorName:   doctor,
-        searchText:  [sc.surgeryType, hospital, doctor].filter(Boolean).join(" ").toLowerCase(),
-        detail: {
-          surgeryType:     sc.surgeryType,
-          surgeryDate:     sc.surgeryDate.toISOString(),
-          rightEye:        sc.rightEye,
-          leftEye:         sc.leftEye,
-          anaesthesiaType: sc.anaesthesiaType,
-        },
       });
     }
 
