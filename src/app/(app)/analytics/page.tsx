@@ -336,7 +336,6 @@ export default async function AnalyticsPage() {
                 { metric: "Dispensed",          cur: statusMap["DISPENSED"] ?? 0, prev: null },
                 { metric: "Cancellations",      cur: (statusMap["CANCELLED"] ?? 0) + (statusMap["NO_SHOW"] ?? 0), prev: null },
                 { metric: "New Patients",        cur: newPatientsThisMonth, prev: null },
-                { metric: "Surgeries",           cur: totalSurgeriesThisMonth, prev: null },
                 { metric: "Pending Tests",       cur: pendingInvestigations, prev: null },
               ].map((row) => {
                 const diff = row.prev !== null ? row.cur - row.prev : null;
