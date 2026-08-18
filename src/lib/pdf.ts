@@ -817,6 +817,13 @@ async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
     `<div style="padding:7px 10px;">${inner}</div>` +
     `</div>`;
 
+  /* ── Inline section: label tag on the left, content on the same row ── */
+  const inlineCard = (label: string, inner: string) =>
+    `<div class="no-break" style="display:flex;align-items:flex-start;gap:8px;margin-bottom:7px;">` +
+    `<div style="background:${TINT};border:1px solid ${LINE};border-radius:4px;padding:5px 9px;font-size:8.5px;font-weight:800;letter-spacing:0.11em;text-transform:uppercase;color:${LABEL_C};white-space:nowrap;flex-shrink:0;">${label}</div>` +
+    `<div style="flex:1;border:1px solid ${LINE};border-radius:4px;padding:5px 9px;">${inner}</div>` +
+    `</div>`;
+
   /* ── Muted empty state — states absence, never invents content ── */
   const none = (t: string) => `<span style="color:#9AA5A3;font-style:italic;font-size:9.5px;">${t}</span>`;
 
@@ -1039,30 +1046,23 @@ async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
 </table>
 
 <!-- 1 · CHIEF COMPLAINT -->
-${card("Chief Complaint",
+${inlineCard("Chief Complaint",
   d.chiefComplaint
     ? `<div style="font-size:10.5px;font-weight:600;color:${INK};">${escapeHtml(fmtComplaint(d.chiefComplaint))}</div>`
     : none("No complaint recorded"))}
 
 <!-- 2 · CLINICAL IMPRESSION -->
-${card("Clinical Impression",
+${inlineCard("Clinical Impression",
   d.diagnoses.length
     ? `<table>
-        <thead><tr>
-          <th style="${TH}width:26px;text-align:center;">#</th>
-          <th style="${TH}">Diagnosis</th>
-          <th style="${TH}width:80px;">Laterality</th>
-          <th style="${TH}width:70px;">ICD-10</th>
-          <th style="${TH}width:74px;">Status</th>
-        </tr></thead>
         <tbody>
           ${d.diagnoses.map((dx, i) =>
             `<tr>` +
-            `<td style="${TD}text-align:center;color:#8A9793;">${i + 1}</td>` +
+            `<td style="${TD}text-align:center;color:#8A9793;width:22px;">${i + 1}</td>` +
             `<td style="${TD}font-weight:600;">${escapeHtml(dx.description)}</td>` +
-            `<td style="${TD}color:#4A5A57;">${dx.laterality ? escapeHtml(dx.laterality) : ""}</td>` +
-            `<td style="${TD}font-family:'Courier New',monospace;font-size:8.5px;color:#4A5A57;">${dx.icd10Code ? escapeHtml(dx.icd10Code) : ""}</td>` +
-            `<td style="${TD}">${dx.status ? diagBadge(dx.status) : ""}</td>` +
+            `<td style="${TD}color:#4A5A57;width:80px;">${dx.laterality ? escapeHtml(dx.laterality) : ""}</td>` +
+            `<td style="${TD}font-family:'Courier New',monospace;font-size:8.5px;color:#4A5A57;width:70px;">${dx.icd10Code ? escapeHtml(dx.icd10Code) : ""}</td>` +
+            `<td style="${TD}width:74px;">${dx.status ? diagBadge(dx.status) : ""}</td>` +
             `</tr>`
           ).join("")}
         </tbody>
