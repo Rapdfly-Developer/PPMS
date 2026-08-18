@@ -37,6 +37,7 @@ export default async function PatientProfilePage({
           doctor:   { select: { name: true } },
           generalExam: { select: { chiefComplaint: true } },
           diagnoses:   { select: { description: true } },
+          counsellingRecord: { select: { status: true } },
         },
       },
     },
@@ -106,6 +107,7 @@ export default async function PatientProfilePage({
   const surgeryAdvisedEye     = (surgeryAdvisedVisit as any)?.advisedSurgeryEye  as string | null ?? null;
   const surgeryAdvisedNotes   = (surgeryAdvisedVisit as any)?.advisedSurgeryNotes as string | null ?? null;
   const surgeryAdvisedDate    = surgeryAdvisedVisit ? (surgeryAdvisedVisit as any).date as Date : null;
+  const counsellingStatus     = (surgeryAdvisedVisit as any)?.counsellingRecord?.status as string | null ?? null;
 
   /* ── Patient timeline — finalization audit entries ───────────────────── */
   const appointmentIds = await prisma.appointment.findMany({
@@ -372,6 +374,7 @@ export default async function PatientProfilePage({
         surgeryAdvisedEye={surgeryAdvisedEye}
         surgeryAdvisedNotes={surgeryAdvisedNotes}
         surgeryAdvisedDate={surgeryAdvisedDate?.toISOString() ?? null}
+        counsellingStatus={counsellingStatus}
       />
     </div>
   );

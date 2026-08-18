@@ -513,6 +513,7 @@ export function PatientProfileClient({
   surgeryAdvisedEye = null,
   surgeryAdvisedNotes = null,
   surgeryAdvisedDate = null,
+  counsellingStatus = null,
 }: {
   udid: string;
   visits: SerialVisit[];
@@ -526,6 +527,7 @@ export function PatientProfileClient({
   surgeryAdvisedEye?: string | null;
   surgeryAdvisedNotes?: string | null;
   surgeryAdvisedDate?: string | null;
+  counsellingStatus?: string | null;
 }) {
   const hasToday = todayVisit !== null;
   const hasPendingAppointment = !hasToday && !!todayAppointmentId;
@@ -598,7 +600,26 @@ export function PatientProfileClient({
               <Scissors size={15} className="text-amber-700" />
               <p className="text-sm font-semibold text-amber-900">Surgical Counselling</p>
             </div>
-            <ChevronRight size={14} className="text-amber-500 group-hover:text-amber-700 transition-colors" />
+            <div className="flex items-center gap-2">
+              {counsellingStatus && counsellingStatus !== "DRAFT" && (
+                <span className={`inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                  counsellingStatus === "CONFIRMED"             ? "bg-teal-100 text-teal-700 border-teal-200" :
+                  counsellingStatus === "FIT_FOR_SURGERY"       ? "bg-emerald-100 text-emerald-700 border-emerald-200" :
+                  counsellingStatus === "NOT_FIT"               ? "bg-red-100 text-red-700 border-red-200" :
+                  counsellingStatus === "DEFERRED"              ? "bg-orange-100 text-orange-700 border-orange-200" :
+                  counsellingStatus === "INVESTIGATIONS_REQUIRED" ? "bg-blue-100 text-blue-700 border-blue-200" :
+                  "bg-amber-200 text-amber-800 border-amber-300"
+                }`}>
+                  {counsellingStatus === "TENTATIVE_COMPLETED"     ? "Tentative Submitted" :
+                   counsellingStatus === "FIT_FOR_SURGERY"         ? "Fit for Surgery" :
+                   counsellingStatus === "NOT_FIT"                 ? "Not Fit" :
+                   counsellingStatus === "DEFERRED"                ? "Deferred" :
+                   counsellingStatus === "INVESTIGATIONS_REQUIRED" ? "Investigations" :
+                   counsellingStatus === "CONFIRMED"               ? "Confirmed" : counsellingStatus}
+                </span>
+              )}
+              <ChevronRight size={14} className="text-amber-500 group-hover:text-amber-700 transition-colors" />
+            </div>
           </div>
 
           {/* Details */}
