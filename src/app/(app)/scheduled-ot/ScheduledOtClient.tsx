@@ -8,7 +8,8 @@ import {
   CheckCircle2, Clock, CalendarClock, XCircle, Search, ChevronDown,
   ChevronRight, Stethoscope, BedDouble, FileCheck, TriangleAlert,
   ThumbsUp, MessageSquare, Ban, Loader2, Lock, DoorOpen,
-  ShieldCheck, FileSignature, Activity,
+  ShieldCheck, FileSignature, Activity, BadgeCheck, CircleDashed,
+  CircleX, HelpCircle,
 } from "lucide-react";
 import { approveSurgery, requestSurgeryChanges, cancelScheduledSurgery, updateSurgeryDate } from "./actions";
 
@@ -33,12 +34,20 @@ interface CounsellingInfo {
   leftEye: boolean;
 }
 
+interface PreAuthInfo {
+  status: string;
+  approvedAmount: number | null;
+  authCode: string | null;
+  insuranceName: string;
+}
+
 interface ScheduleRecord {
   id: string; surgeryName: string; surgeryCategory: string; urgencyType: string;
   priority: string; plannedDateTime: string; otRoom: string | null;
   estimatedDuration: number | null; status: string; department: string | null;
   remarks: string | null; consentReceived: boolean; reportsUploaded: boolean;
   otAvailable: boolean; bloodArranged: boolean; patientInformed: boolean;
+  preAuth: PreAuthInfo | null;
   patient: Patient; hospital: Hospital; doctor: Doctor;
   counselling: CounsellingInfo | null;
 }
@@ -123,6 +132,33 @@ function EmptySection({ icon, label, sub }: { icon: React.ReactNode; label: stri
 
 function ChecklistDot({ ok }: { ok: boolean }) {
   return <span className={`w-1.5 h-1.5 rounded-full inline-block ${ok ? "bg-emerald-500" : "bg-slate-300"}`} />;
+}
+
+const PREAUTH_CONFIG: Record<string, { label: string; icon: React.ReactNode; cls: string }> = {
+  PENDING:      { label: "Pre-Auth Pending",  icon: <CircleDashed size={9} />,  cls: "bg-amber-50 text-amber-700 border-amber-200" },
+  APPROVED:     { label: "Pre-Auth Approved", icon: <BadgeCheck size={9} />,    cls: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+  REJECTED:     { label: "Pre-Auth Rejected", icon: <CircleX size={9} />,       cls: "bg-red-50 text-red-600 border-red-200" },
+  QUERY_RAISED: { label: "Query Raised",      icon: <HelpCircle size={9} />,    cls: "bg-orange-50 text-orange-700 border-orange-200" },
+};
+
+function PreAuthBadge({ p }: { p: PreAuthInfo }) {
+  const cfg = PREAUTH_CONFIG[p.status] ?? PREAUTH_CONFIG["PENDING"];
+  return (
+    <div className={`flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-1.5 rounded-lg border text-[10px] ${cfg.cls}`}>
+      <span className="flex items-center gap-1 font-bold uppercase tracking-widest text-inherit opacity-70">
+        <ShieldCheck size={9} /> {p.insuranceName}
+      </span>
+      <span className="flex items-center gap-1 font-semibold">
+        {cfg.icon} {cfg.label}
+      </span>
+      {p.status === "APPROVED" && p.approvedAmount != null && (
+        <span className="font-medium">₹{p.approvedAmount.toLocaleString("en-IN")}</span>
+      )}
+      {p.authCode && (
+        <span className="font-mono opacity-80">Auth: {p.authCode}</span>
+      )}
+    </div>
+  );
 }
 
 /* ── Counselling strip ───────────────────────────────────────────────────── */
@@ -264,6 +300,13 @@ function WaitingCard({ rec, role, idx }: { rec: ScheduleRecord; role: "DOCTOR" |
           {rec.counselling && (
             <div className="mb-2.5">
               <CounsellingStrip c={rec.counselling} />
+            </div>
+          )}
+
+          {/* Pre-auth badge */}
+          {rec.preAuth && (
+            <div className="mb-2.5">
+              <PreAuthBadge p={rec.preAuth} />
             </div>
           )}
 
@@ -522,6 +565,13 @@ function ConfirmedCard({ rec, role, idx }: { rec: ScheduleRecord; role: "DOCTOR"
           {rec.counselling && (
             <div className="mb-2.5">
               <CounsellingStrip c={rec.counselling} />
+            </div>
+          )}
+
+          {/* Pre-auth badge */}
+          {rec.preAuth && (
+            <div className="mb-2.5">
+              <PreAuthBadge p={rec.preAuth} />
             </div>
           )}
 

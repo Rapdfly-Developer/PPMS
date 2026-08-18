@@ -20,7 +20,12 @@ export default async function ScheduledOtPage() {
     /* SurgerySchedule — all non-cancelled workflow records */
     prisma.surgerySchedule.findMany({
       where: { ...scheduleWhere, status: { not: "CANCELLED" } },
-      include: { patient: true, hospital: true, surgeon: true },
+      include: {
+        patient:  true,
+        hospital: true,
+        surgeon:  true,
+        preAuth:  { include: { insuranceCompany: true } },
+      },
       orderBy: { plannedDateTime: "asc" },
     }),
   ]);
@@ -103,6 +108,12 @@ export default async function ScheduledOtPage() {
     otAvailable:       r.otAvailable,
     bloodArranged:     r.bloodArranged,
     patientInformed:   r.patientInformed,
+    preAuth: r.preAuth ? {
+      status:        r.preAuth.status,
+      approvedAmount: r.preAuth.approvedAmount ?? null,
+      authCode:      r.preAuth.authCode ?? null,
+      insuranceName: r.preAuth.insuranceCompany.name,
+    } : null,
     patient:  { id: r.patient.id, name: r.patient.name, udid: r.patient.udid ?? "", uhid: (r.patient as any).uhid ?? null, age: r.patient.age, sex: r.patient.sex },
     hospital: { name: r.hospital.name, id: r.hospital.id },
     doctor:   { name: r.surgeon.name,  id: r.surgeon.id  },

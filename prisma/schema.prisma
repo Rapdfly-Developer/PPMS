@@ -1109,7 +1109,8 @@ model InsurancePreAuthorization {
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
-  claim InsuranceClaim?
+  claim                InsuranceClaim?
+  surgerySchedule      SurgerySchedule?
 
   @@index([hospitalId, status])
 }
@@ -1336,6 +1337,9 @@ model SurgerySchedule {
   caseStatus            String?   // OPEN | CLOSED
   caseClosedAt          DateTime?
   remarks               String?
+
+  preAuthId             String?   @unique
+  preAuth               InsurancePreAuthorization? @relation(fields: [preAuthId], references: [id])
 
   createdBy             String
   createdAt             DateTime  @default(now())
