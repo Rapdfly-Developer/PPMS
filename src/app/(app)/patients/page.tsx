@@ -66,7 +66,6 @@ export default async function PatientsPage({
     const dayEnd   = new Date(dayStart); dayEnd.setHours(23, 59, 59, 999);
     listConds.push({ appointments: { some: { status: "DISPENSED", dateTime: { gte: dayStart, lte: dayEnd } } } });
   }
-  if (opStatusFilter === "surgery")    listConds.push({ visits: { some: { surgicalCounselling: { isNot: null } } } });
   if (opStatusFilter === "admitted")   listConds.push({ visits: { some: { admission: { discharged: false } } } });
   if (opStatusFilter === "discharged") listConds.push({ visits: { some: { admission: { discharged: true  } } } });
 

@@ -7,7 +7,6 @@ import { createNotification } from "@/lib/notify";
 import { writeAudit } from "@/lib/audit";
 
 export type SurgeryScheduleInput = {
-  surgicalCounsellingId?: string;
   patientId:              string;
   hospitalId:             string;
   operatingSurgeonId:     string;
@@ -47,7 +46,6 @@ export async function saveSurgerySchedule(
 
   const record = await prisma.surgerySchedule.create({
     data: {
-      surgicalCounsellingId: input.surgicalCounsellingId ?? null,
       patientId:             input.patientId,
       hospitalId:            input.hospitalId,
       operatingSurgeonId:    input.operatingSurgeonId,

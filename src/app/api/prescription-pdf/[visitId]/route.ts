@@ -25,7 +25,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
       medications: { orderBy: { createdAt: "asc" } },
       investigationOrders: { orderBy: { createdAt: "asc" } },
       admission: true,
-      surgicalCounselling: true,
     },
   });
 
@@ -114,11 +113,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
       wardName: (visit.admission as any).wardName ?? null,
       bedNumber: (visit.admission as any).bedNumber ?? null,
       reason: (visit.admission as any).reason ?? null,
-    } : null,
-    surgicalCounselling: visit.surgicalCounselling ? {
-      surgeryType: (visit.surgicalCounselling as any).surgeryType ?? null,
-      surgeryDate: (visit.surgicalCounselling as any).surgeryDate ?? null,
-      notes: (visit.surgicalCounselling as any).notes ?? null,
     } : null,
   });
 

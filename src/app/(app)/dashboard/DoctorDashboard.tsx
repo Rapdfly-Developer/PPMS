@@ -41,21 +41,6 @@ export async function DoctorDashboard({
     redirect("/settings?section=add-hospital");
   }
 
-  const upcomingSurgeries = await prisma.surgicalCounselling.findMany({
-    where: { surgeryDate: { gte: dayStart }, visit: { doctorId } },
-    select: {
-      id: true, surgeryType: true, surgeryDate: true, rightEye: true, leftEye: true,
-      visit: {
-        select: {
-          patient:  { select: { name: true, udid: true, uhid: true } },
-          hospital: { select: { name: true } },
-        },
-      },
-    },
-    orderBy: { surgeryDate: "asc" },
-    take: 20,
-  });
-
   const activeAdmissions = await prisma.admission.findMany({
     where: { discharged: false, visit: { doctorId } },
     select: {
@@ -64,7 +49,6 @@ export async function DoctorDashboard({
         select: {
           patient:  { select: { name: true, udid: true, uhid: true } },
           hospital: { select: { name: true } },
-          surgicalCounselling: { select: { surgeryType: true } },
         },
       },
     },
@@ -106,16 +90,6 @@ export async function DoctorDashboard({
     visitFinalizedAt: a.visit?.finalizedAt?.toISOString() ?? null,
   }));
 
-  const surgeries = upcomingSurgeries.map((s) => ({
-    id:          s.id,
-    surgeryType: s.surgeryType,
-    surgeryDate: s.surgeryDate.toISOString(),
-    rightEye:    s.rightEye,
-    leftEye:     s.leftEye,
-    patient:     { ...s.visit.patient, udid: s.visit.patient.udid ?? "", uhid: s.visit.patient.uhid ?? "" },
-    hospital:    s.visit.hospital,
-  }));
-
   const hospitals = linkedHospitals.map((l) => ({ id: l.hospital.id, name: l.hospital.name }));
 
   const admissions = activeAdmissions.map((a) => ({
@@ -125,7 +99,6 @@ export async function DoctorDashboard({
     createdAt:   a.createdAt.toISOString(),
     patient:     a.visit.patient,
     hospital:    a.visit.hospital,
-    surgeryType: a.visit.surgicalCounselling?.surgeryType ?? null,
   }));
 
   // Today's schedule: each session with live appointment count
@@ -160,7 +133,7 @@ export async function DoctorDashboard({
       displayName={doctorProfile?.name ?? user.name}
       todayLabel={format(toISTWall(now), "EEEE, d MMM yyyy")}
       appts={appts}
-      surgeries={surgeries}
+      surgeries={[]}
       filterOptions={hospitals}
       newEncounterHref="/appointments/new"
       newEncounterLabel="New Encounter"

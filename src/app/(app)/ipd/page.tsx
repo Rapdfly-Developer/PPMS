@@ -14,26 +14,15 @@ export default async function IpdPage() {
           patient: true,
           hospital: true,
           doctor: true,
-          surgicalCounselling: true,
         },
       },
     },
     orderBy: [{ createdAt: "asc" }],
   });
 
-  const todaySurgeries = await prisma.surgicalCounselling.count({
-    where: {
-      visit: { doctorId },
-      surgeryDate: {
-        gte: new Date(new Date().setHours(0, 0, 0, 0)),
-        lte: new Date(new Date().setHours(23, 59, 59, 999)),
-      },
-    },
-  });
-
   const admissionsMapped = admissions.map((a) => ({
     ...a,
     visit: { ...a.visit, patient: { ...a.visit.patient, udid: a.visit.patient.udid ?? "" } },
   }));
-  return <IpdClient admissions={admissionsMapped} todaySurgeriesCount={todaySurgeries} />;
+  return <IpdClient admissions={admissionsMapped} />;
 }

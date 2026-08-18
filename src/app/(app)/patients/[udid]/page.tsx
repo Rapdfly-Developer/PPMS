@@ -5,7 +5,6 @@ import { format, startOfDay, endOfDay } from "date-fns";
 import { Phone, MapPin, Calendar, Hash, IdCard, Briefcase, FileText } from "lucide-react";
 import { decryptAadhaar, maskAadhaar } from "@/lib/crypto";
 import { PatientProfileClient, TimeStampButton, type SerialVisit, type TodayVisit, type LastVisitSummary } from "./PatientProfileClient";
-import type { CounsellingRecord } from "./SurgicalCounsellingModal";
 import { InvestigationsButton, TreatmentHistoryButton, SpectacleHistoryButton } from "./PatientHistoryButtons";
 
 const CATEGORY_STYLES: Record<string, string> = {
@@ -38,23 +37,6 @@ export default async function PatientProfilePage({
           doctor:   { select: { name: true } },
           generalExam: { select: { chiefComplaint: true } },
           diagnoses:   { select: { description: true } },
-          surgicalCounselling: {
-            select: {
-              id: true,
-              surgeryName: true,
-              surgeryType: true,
-              rightEye: true,
-              leftEye: true,
-              anaesthesiaType: true,
-              surgeryDate: true,
-              conflictFlag: true,
-              insuranceType: true,
-              counselingDone: true,
-              investigationDone: true,
-              fitForSurgery: true,
-              reviewStatus: true,
-            },
-          },
         },
       },
     },
@@ -377,26 +359,6 @@ export default async function PatientProfilePage({
         userRole={user.role}
         timelineEntries={timelineEntries}
         lastVisitSummary={lastVisitSummary}
-        surgicalCounselling={(() => {
-          const v = patient.visits.find((v) => v.surgicalCounselling !== null);
-          const sc = v?.surgicalCounselling;
-          if (!sc) return null;
-          return {
-            id: sc.id,
-            surgeryName: sc.surgeryName,
-            surgeryType: sc.surgeryType,
-            rightEye: sc.rightEye,
-            leftEye: sc.leftEye,
-            anaesthesiaType: sc.anaesthesiaType,
-            surgeryDate: sc.surgeryDate.toISOString(),
-            conflictFlag: sc.conflictFlag,
-            insuranceType: sc.insuranceType,
-            counselingDone: sc.counselingDone,
-            investigationDone: sc.investigationDone,
-            fitForSurgery: sc.fitForSurgery,
-            reviewStatus: sc.reviewStatus,
-          } satisfies CounsellingRecord;
-        })()}
       />
     </div>
   );

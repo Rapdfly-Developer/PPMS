@@ -28,9 +28,7 @@ const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
  * counselling.decide / counselling.approve_ot are deliberately absent: clinical
  * decisions stay with the DOCTOR role, which holds "*".
  */
-const ADDITIVE_ROLE_PERMISSIONS: Record<string, string[]> = {
-  HOSPITAL: ["counselling.view", "counselling.counsel", "counselling.schedule"],
-};
+const ADDITIVE_ROLE_PERMISSIONS: Record<string, string[]> = {};
 
 // ── Default role definitions ───────────────────────────────────────────────
 const DEFAULT_ROLES = [

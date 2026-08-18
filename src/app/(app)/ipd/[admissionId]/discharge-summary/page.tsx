@@ -19,7 +19,6 @@ export default async function DischargeSummaryPage({
           patient: true,
           hospital: true,
           doctor: true,
-          surgicalCounselling: true,
           medications: { orderBy: { createdAt: "asc" } },
           diagnoses: { orderBy: { createdAt: "asc" } },
         },
@@ -60,17 +59,6 @@ export default async function DischargeSummaryPage({
         doctorName: admission.visit.doctor?.name ?? "",
         hospitalName: admission.visit.hospital.name,
       }}
-      counselling={
-        admission.visit.surgicalCounselling
-          ? {
-              surgeryName: admission.visit.surgicalCounselling.surgeryName ?? null,
-              surgeryType: admission.visit.surgicalCounselling.surgeryType,
-              anaesthesiaType: admission.visit.surgicalCounselling.anaesthesiaType,
-              rightEye: admission.visit.surgicalCounselling.rightEye,
-              leftEye: admission.visit.surgicalCounselling.leftEye,
-            }
-          : null
-      }
       otRecord={
         schedule?.otRecord
           ? {

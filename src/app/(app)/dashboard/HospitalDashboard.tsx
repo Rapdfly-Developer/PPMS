@@ -40,15 +40,6 @@ export async function HospitalDashboard({
     select: { doctor: { select: { id: true, name: true } } },
   });
 
-  const upcomingSurgeries = await prisma.surgicalCounselling.findMany({
-    where: { surgeryDate: { gte: dayStart }, visit: { hospitalId } },
-    select: {
-      id: true, surgeryType: true, surgeryDate: true, rightEye: true, leftEye: true,
-      visit: { select: { patient: { select: { name: true, udid: true } }, doctor: { select: { name: true } } } },
-    },
-    orderBy: { surgeryDate: "asc" },
-  });
-
   const activeAdmissions = await prisma.admission.findMany({
     where: { discharged: false, visit: { hospitalId } },
     select: {
@@ -71,7 +62,6 @@ export async function HospitalDashboard({
   const totalToday    = todayAppts.length;
   const pendingOPD    = todayAppts.filter((a) => ["REQUESTED", "CONFIRMED"].includes(a.status)).length;
   const consultedToday = todayAppts.filter((a) => a.status === "DISPENSED").length;
-  const surgeryCount  = upcomingSurgeries.length;
 
   // Serialise for client
   const appts = todayAppts.map((a) => ({
@@ -90,16 +80,6 @@ export async function HospitalDashboard({
     visitId:          a.visit?.id ?? null,
     visitStartedAt:   a.visit?.date?.toISOString() ?? null,
     visitFinalizedAt: a.visit?.finalizedAt?.toISOString() ?? null,
-  }));
-
-  const surgeries = upcomingSurgeries.map((s) => ({
-    id:          s.id,
-    surgeryType: s.surgeryType,
-    surgeryDate: s.surgeryDate.toISOString(),
-    rightEye:    s.rightEye,
-    leftEye:     s.leftEye,
-    patient:     { ...s.visit.patient, udid: s.visit.patient.udid ?? "" },
-    doctor:      s.visit.doctor,
   }));
 
   const doctors = linkedDoctors.map((l) => ({ id: l.doctor.id, name: l.doctor.name }));
@@ -121,7 +101,7 @@ export async function HospitalDashboard({
         displayName={hospital?.name ?? "Hospital"}
         todayLabel={format(toISTWall(now), "EEEE, d MMM yyyy")}
         appts={appts}
-        surgeries={surgeries}
+        surgeries={[]}
         filterOptions={doctors}
         newEncounterHref="/appointments/book"
         newEncounterLabel="New Appointment"

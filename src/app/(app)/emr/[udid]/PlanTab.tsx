@@ -6,7 +6,7 @@ import { History } from "lucide-react";
 import { parseJSON } from "@/lib/json";
 import { useAutoSave, SaveIndicator } from "@/lib/useAutoSave";
 import { addMedication, removeMedication, updateMedication, clearAllMedications, saveRefraction, saveFollowUp, saveAdviseNotes, saveAnesthesiaType, saveProcedureLaterality, saveProcedureName } from "./actions";
-import { DispositionToggle, AdmitPanel, SurgicalPanel, FollowUpdatesPanel } from "./DispositionPanel";
+import { DispositionToggle, AdmitPanel, FollowUpdatesPanel } from "./DispositionPanel";
 import { Plus, X, BedDouble, Stethoscope, ChevronDown, Pencil, Trash2, RefreshCw, Search, Pill, Sparkles, CheckCircle2, Check, AlertTriangle } from "lucide-react";
 import {
   type TreatmentPreset, type PresetMatch, type AppliedPreset,
@@ -1955,7 +1955,7 @@ function OpticalPrescriptionCard({ visit }: { visit: any }) {
 
 function DispositionCard({ visit, udid, patientSex, priorVisits = [] }: { visit: any; udid: string; patientSex: string; priorVisits?: any[] }) {
   const [activePanels, setActivePanels] = useState<string[]>(
-    [visit.admission && "admit", visit.surgicalCounselling && "surgery"].filter(Boolean) as string[]
+    [visit.admission && "admit"].filter(Boolean) as string[]
   );
   const togglePanel = (id: string) =>
     setActivePanels((cur) => (cur.includes(id) ? cur.filter((p) => p !== id) : [...cur, id]));
@@ -1964,15 +1964,12 @@ function DispositionCard({ visit, udid, patientSex, priorVisits = [] }: { visit:
     <Card>
       <p className="text-sm font-medium text-[var(--color-ink-700)] mb-3">Patient Disposition</p>
       <div className="flex gap-3 flex-wrap mb-2">
-        <DispositionToggle icon={<BedDouble size={16} />}    label="Admit"                active={activePanels.includes("admit")}   onClick={() => togglePanel("admit")} />
-        <DispositionToggle icon={<Stethoscope size={16} />}  label="Surgical Counselling" active={activePanels.includes("surgery")} onClick={() => togglePanel("surgery")} />
-        <DispositionToggle icon={<RefreshCw size={16} />}    label="Follow Up Dates"       active={activePanels.includes("follow")}  onClick={() => togglePanel("follow")} />
+        <DispositionToggle icon={<BedDouble size={16} />}    label="Admit"           active={activePanels.includes("admit")}   onClick={() => togglePanel("admit")} />
+        <DispositionToggle icon={<RefreshCw size={16} />}    label="Follow Up Dates" active={activePanels.includes("follow")}  onClick={() => togglePanel("follow")} />
       </div>
-      <p className="text-xs text-[var(--color-ink-400)] mb-4">These are not mutually exclusive — a patient may be both Admitted and have Surgical Counselling recorded.</p>
       <div className="flex flex-col gap-4">
-        {activePanels.includes("admit")   && <AdmitPanel    visit={visit} udid={udid} patientSex={patientSex} />}
-        {activePanels.includes("surgery") && <SurgicalPanel visit={visit} udid={udid} />}
-        {activePanels.includes("follow")  && <FollowUpdatesPanel visit={visit} udid={udid} priorVisits={priorVisits} />}
+        {activePanels.includes("admit")  && <AdmitPanel         visit={visit} udid={udid} patientSex={patientSex} />}
+        {activePanels.includes("follow") && <FollowUpdatesPanel  visit={visit} udid={udid} priorVisits={priorVisits} />}
       </div>
     </Card>
   );

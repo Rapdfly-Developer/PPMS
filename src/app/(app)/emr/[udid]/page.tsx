@@ -57,7 +57,6 @@ export default async function PatientDetailedEMR({
           medications: { orderBy: { createdAt: "desc" } },
           dispense: true,
           admission: true,
-          surgicalCounselling: true,
           appointment: { select: { dateTime: true } },
         },
       },

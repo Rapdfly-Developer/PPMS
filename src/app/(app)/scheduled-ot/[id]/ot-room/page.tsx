@@ -24,21 +24,6 @@ export default async function OtRoomPage({
   if (!schedule) notFound();
   if (schedule.operatingSurgeonId !== user.profileId) redirect("/scheduled-ot");
 
-  const counselling = schedule.surgicalCounsellingId
-    ? await prisma.surgicalCounselling.findUnique({
-        where: { id: schedule.surgicalCounsellingId },
-        select: {
-          insuranceType:     true,
-          counselingDone:    true,
-          investigationDone: true,
-          fitForSurgery:     true,
-          anaesthesiaType:   true,
-          rightEye:          true,
-          leftEye:           true,
-        },
-      })
-    : null;
-
   const rec = schedule.otRecord;
 
   return (
@@ -46,15 +31,7 @@ export default async function OtRoomPage({
       scheduleId={id}
       surgeryName={schedule.surgeryName}
       surgeryCategory={schedule.surgeryCategory}
-      counselling={counselling ? {
-        insuranceType:     counselling.insuranceType ?? null,
-        counselingDone:    counselling.counselingDone,
-        investigationDone: counselling.investigationDone,
-        fitForSurgery:     counselling.fitForSurgery ?? null,
-        anaesthesiaType:   counselling.anaesthesiaType,
-        rightEye:          counselling.rightEye,
-        leftEye:           counselling.leftEye,
-      } : null}
+      counselling={null}
       patient={{
         name: schedule.patient.name,
         uhid: (schedule.patient as any).uhid ?? null,

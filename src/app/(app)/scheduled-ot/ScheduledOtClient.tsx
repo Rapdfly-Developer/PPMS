@@ -18,22 +18,6 @@ interface Patient { id: string; name: string; udid: string; uhid: string | null;
 interface Hospital { name: string; id: string }
 interface Doctor  { name: string; id: string }
 
-interface UnscheduledRecord {
-  id: string; surgeryName: string | null; surgeryType: string; surgeryDate: string;
-  anaesthesiaType: string; rightEye: boolean; leftEye: boolean; conflictFlag: boolean;
-  patient: Patient; hospital: Hospital; doctor: Doctor;
-}
-
-interface CounsellingInfo {
-  insuranceType: string | null;
-  counselingDone: boolean;
-  investigationDone: boolean;
-  fitForSurgery: boolean | null;
-  anaesthesiaType: string;
-  rightEye: boolean;
-  leftEye: boolean;
-}
-
 interface PreAuthInfo {
   status: string;
   approvedAmount: number | null;
@@ -49,7 +33,6 @@ interface ScheduleRecord {
   otAvailable: boolean; bloodArranged: boolean; patientInformed: boolean;
   preAuth: PreAuthInfo | null;
   patient: Patient; hospital: Hospital; doctor: Doctor;
-  counselling: CounsellingInfo | null;
 }
 
 interface Counts { waiting: number; scheduled: number; completed: number; cancelled: number }
@@ -161,38 +144,6 @@ function PreAuthBadge({ p }: { p: PreAuthInfo }) {
   );
 }
 
-/* ── Counselling strip ───────────────────────────────────────────────────── */
-function CounsellingStrip({ c }: { c: CounsellingInfo }) {
-  const lat = c.rightEye && c.leftEye ? "OU" : c.rightEye ? "RE" : c.leftEye ? "LE" : null;
-  const fit = c.fitForSurgery ?? (c.counselingDone && c.investigationDone);
-
-  return (
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 px-3 py-2 rounded-lg bg-violet-50 border border-violet-100 text-[10px]">
-      <span className="text-[10px] font-bold uppercase tracking-widest text-violet-400 shrink-0">Counselling</span>
-      <span className={`inline-flex items-center gap-1 font-semibold px-1.5 py-0.5 rounded-full border ${c.counselingDone ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-[var(--color-surface-sunken)] text-[var(--color-ink-400)] border-[var(--color-border)]"}`}>
-        {c.counselingDone ? <CheckCircle2 size={9} /> : <XCircle size={9} />} Counseling
-      </span>
-      <span className={`inline-flex items-center gap-1 font-semibold px-1.5 py-0.5 rounded-full border ${c.investigationDone ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-[var(--color-surface-sunken)] text-[var(--color-ink-400)] border-[var(--color-border)]"}`}>
-        {c.investigationDone ? <CheckCircle2 size={9} /> : <XCircle size={9} />} Investigations
-      </span>
-      <span className={`inline-flex items-center gap-1 font-bold px-1.5 py-0.5 rounded-full border ${fit ? "bg-violet-100 text-violet-700 border-violet-200" : "bg-[var(--color-surface-sunken)] text-[var(--color-ink-400)] border-[var(--color-border)]"}`}>
-        {fit ? <CheckCircle2 size={9} /> : <XCircle size={9} />} Fit for Surgery
-      </span>
-      {c.insuranceType && (
-        <span className="inline-flex items-center gap-1 text-[var(--color-ink-500)]">
-          <ShieldCheck size={9} className="text-violet-400" /> {c.insuranceType}
-        </span>
-      )}
-      {lat && (
-        <span className="inline-flex items-center gap-1 text-[var(--color-ink-500)]">
-          <Eye size={9} className="text-violet-400" /> {lat}
-        </span>
-      )}
-      <span className="text-[var(--color-ink-400)]">{c.anaesthesiaType}</span>
-    </div>
-  );
-}
-
 /* ── Waiting Card ────────────────────────────────────────────────────────── */
 function WaitingCard({ rec, role, idx }: { rec: ScheduleRecord; role: "DOCTOR" | "HOSPITAL"; idx: number }) {
   const [open, setOpen]         = useState(false);
@@ -295,13 +246,6 @@ function WaitingCard({ rec, role, idx }: { rec: ScheduleRecord; role: "DOCTOR" |
             {role === "HOSPITAL" && <span className="flex items-center gap-1 text-[var(--color-ink-400)]"><User size={11} /> Dr. {rec.doctor.name}</span>}
             {role === "DOCTOR"   && <span className="flex items-center gap-1 text-[var(--color-ink-400)]"><Building2 size={11} /> {rec.hospital.name}</span>}
           </div>
-
-          {/* Counselling strip */}
-          {rec.counselling && (
-            <div className="mb-2.5">
-              <CounsellingStrip c={rec.counselling} />
-            </div>
-          )}
 
           {/* Pre-auth badge */}
           {rec.preAuth && (
@@ -561,13 +505,6 @@ function ConfirmedCard({ rec, role, idx }: { rec: ScheduleRecord; role: "DOCTOR"
             {role === "DOCTOR"   && <span className="flex items-center gap-1 text-[var(--color-ink-400)]"><Building2 size={11} /> {rec.hospital.name}</span>}
           </div>
 
-          {/* Counselling strip */}
-          {rec.counselling && (
-            <div className="mb-2.5">
-              <CounsellingStrip c={rec.counselling} />
-            </div>
-          )}
-
           {/* Pre-auth badge */}
           {rec.preAuth && (
             <div className="mb-2.5">
@@ -706,9 +643,8 @@ function ConfirmedCard({ rec, role, idx }: { rec: ScheduleRecord; role: "DOCTOR"
 
 /* ── Main client ────────────────────────────────────────────────────────── */
 export function ScheduledOtClient({
-  unscheduled, waiting, confirmed, completed, counts, role,
+  waiting, confirmed, completed, counts, role,
 }: {
-  unscheduled: UnscheduledRecord[];
   waiting:     ScheduleRecord[];
   confirmed:   ScheduleRecord[];
   completed:   ScheduleRecord[];
@@ -756,12 +692,6 @@ export function ScheduledOtClient({
             </p>
           </div>
         </div>
-        {role === "HOSPITAL" && unscheduled.length > 0 && (
-          <Link href="#unscheduled"
-            className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg border border-[var(--color-primary-300)] text-[var(--color-primary-700)] bg-[var(--color-primary-50)] hover:bg-[var(--color-primary-100)] transition-colors">
-            <ClipboardList size={13} /> {unscheduled.length} Pending Form{unscheduled.length !== 1 ? "s" : ""}
-          </Link>
-        )}
       </div>
 
       {/* Stat cards */}
@@ -899,45 +829,6 @@ export function ScheduledOtClient({
         </section>
       )}
 
-      {/* ── Unscheduled (Hospital admin only — "fill form" CTA) ── */}
-      {role === "HOSPITAL" && unscheduled.length > 0 && (
-        <section id="unscheduled" className="pt-4 border-t border-[var(--color-border)]">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-2 h-6 rounded-full bg-slate-400" />
-            <h2 className="text-base font-bold text-[var(--color-ink-900)]">Pending Scheduling Form</h2>
-            <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
-              {unscheduled.length}
-            </span>
-          </div>
-          <p className="text-xs text-[var(--color-ink-400)] mb-3">Doctor has recommended surgery. Fill the Scheduling Form to proceed.</p>
-          <div className="space-y-2">
-            {unscheduled.map((r) => {
-              const lat = lateralityLabel(r.rightEye, r.leftEye);
-              return (
-                <div key={r.id} className="flex items-center gap-3 px-4 py-3 rounded-xl border border-[var(--color-border)] bg-white">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap mb-0.5">
-                      <span className="text-sm font-semibold text-[var(--color-ink-800)]">{r.patient.name}</span>
-                      <span className="text-xs text-[var(--color-ink-400)]">{r.patient.age}y / {SEX_SHORT[r.patient.sex] ?? r.patient.sex}</span>
-                      {r.patient.uhid && <span className="font-mono text-[10px] bg-teal-50 text-teal-700 px-1.5 py-0.5 rounded">{r.patient.uhid}</span>}
-                      {r.conflictFlag && <span className="flex items-center gap-0.5 text-[10px] font-medium px-2 py-0.5 rounded-full bg-red-50 text-red-600 border border-red-200"><AlertTriangle size={9} /> Conflict</span>}
-                    </div>
-                    <div className="flex items-center gap-3 text-xs text-[var(--color-ink-500)]">
-                      <span className="flex items-center gap-1"><Scissors size={10} /> {r.surgeryName ?? r.surgeryType}{lat && ` · ${lat}`}</span>
-                      <span><User size={10} className="inline mr-0.5" />Dr. {r.doctor.name}</span>
-                      <span>{format(new Date(r.surgeryDate), "d MMM yyyy")}</span>
-                    </div>
-                  </div>
-                  <Link href={`/scheduled-ot/${r.id}`}
-                    className="shrink-0 inline-flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg border border-[var(--color-primary-300)] text-[var(--color-primary-700)] bg-[var(--color-primary-50)] hover:bg-[var(--color-primary-100)] transition-colors">
-                    <ClipboardList size={12} /> Fill Form
-                  </Link>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-      )}
     </div>
   );
 }

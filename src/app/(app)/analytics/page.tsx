@@ -83,8 +83,6 @@ export default async function AnalyticsPage() {
     newPatientsThisMonth,
     pendingInvestigations,
     completedInvestigations,
-    upcomingSurgeries,
-    totalSurgeriesThisMonth,
     activeAdmissions,
     week7Appts,
     statusCounts,
@@ -97,8 +95,6 @@ export default async function AnalyticsPage() {
     prisma.patient.count({ where: { ...(user.role === "DOCTOR" ? { doctorId: scopeDoctorId(user) } : { registeredAtId: (user as any).hospitalId }), createdAt: { gte: monthStart } } }),
     prisma.investigationOrder.count({ where: { visit: { ...where }, status: { not: "REVIEWED" } } }),
     prisma.investigationOrder.count({ where: { visit: { ...where }, status: "REVIEWED" } }),
-    prisma.surgicalCounselling.count({ where: { visit: { ...where }, surgeryDate: { gte: now } } }),
-    prisma.surgicalCounselling.count({ where: { visit: { ...where }, surgeryDate: { gte: monthStart, lte: monthEnd } } }),
     prisma.admission.count({ where: { visit: { ...where } } }),
     prisma.appointment.findMany({
       where: { ...where, dateTime: { gte: week7Start, lte: todayEnd } },
@@ -230,13 +226,6 @@ export default async function AnalyticsPage() {
           sub="cancelled or no-show"
           icon={<XCircle size={18} />}
           color="text-red-600"
-        />
-        <KPI
-          label="Upcoming Surgeries"
-          value={upcomingSurgeries}
-          sub={`${totalSurgeriesThisMonth} this month`}
-          icon={<Scissors size={18} />}
-          color="text-purple-700"
         />
         <KPI
           label="IPD Admissions"

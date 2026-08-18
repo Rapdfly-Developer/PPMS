@@ -517,63 +517,6 @@ export async function saveAdmission(
   revalidate(udid);
 }
 
-export async function saveSurgicalCounselling(
-  visitId: string,
-  udid: string,
-  data: { surgeryName?: string; surgeryType: string; rightEye: boolean; leftEye: boolean; anaesthesiaType: string; surgeryDate: string }
-) {
-  const user = await requireRole("DOCTOR");
-  const visit = await assertVisitAccess(visitId);
-
-  const surgeryDate = new Date(data.surgeryDate);
-  const conflict = await prisma.appointment.findFirst({
-    where: {
-      doctorId: visit.doctorId,
-      dateTime: { gte: new Date(surgeryDate.setHours(0, 0, 0, 0)), lte: new Date(surgeryDate.setHours(23, 59, 59, 999)) },
-      status: { in: ["CONFIRMED", "REQUESTED"] },
-    },
-  });
-
-  const sc = await prisma.surgicalCounselling.upsert({
-    where: { visitId },
-    create: {
-      visitId,
-      surgeryName: data.surgeryName?.trim() || null,
-      surgeryType: data.surgeryType,
-      rightEye: data.rightEye,
-      leftEye: data.leftEye,
-      anaesthesiaType: data.anaesthesiaType,
-      surgeryDate: new Date(data.surgeryDate),
-      conflictFlag: !!conflict,
-    },
-    update: {
-      surgeryName: data.surgeryName?.trim() || null,
-      surgeryType: data.surgeryType,
-      rightEye: data.rightEye,
-      leftEye: data.leftEye,
-      anaesthesiaType: data.anaesthesiaType,
-      surgeryDate: new Date(data.surgeryDate),
-      conflictFlag: !!conflict,
-    },
-  });
-  await writeAudit(user.id, "SurgicalCounselling", visitId, "SAVE", data);
-
-  // Notify all hospital admin staff (dedup: skip if already unread for this surgery)
-  const [patient, hospitalStaff] = await Promise.all([
-    prisma.patient.findUnique({ where: { id: visit.patientId }, select: { name: true } }),
-    prisma.hospitalStaff.findMany({ where: { hospitalId: visit.hospitalId! }, include: { user: true } }),
-  ]);
-  await Promise.all(hospitalStaff.map(async (staff) => {
-    const existing = await prisma.notification.findFirst({
-      where: { userId: staff.user.id, type: "SURGICAL_COUNSELLING", entityId: sc.id, read: false },
-    });
-    if (!existing) {
-      await createNotification(staff.user.id, "SURGICAL_COUNSELLING", `Surgery is planned for ${patient?.name ?? "patient"}.`, sc.id);
-    }
-  }));
-
-  revalidate(udid);
-}
 
 export async function saveFollowUp(visitId: string, udid: string, data: { followUpDate?: string | null; referralEnabled: boolean; referralNote?: string; inViewOf?: string }) {
   await requireRole("DOCTOR");

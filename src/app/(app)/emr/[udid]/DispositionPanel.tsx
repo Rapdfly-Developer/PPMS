@@ -3,7 +3,7 @@
 import { useState, useTransition, useRef, useEffect } from "react";
 import { SingleChipSelect } from "@/components/ui/Chip";
 import { WARDS, ANAESTHESIA_TYPES, SURGERY_TYPES } from "@/lib/constants";
-import { saveDispense, saveAdmission, saveSurgicalCounselling, saveFollowUp } from "./actions";
+import { saveDispense, saveAdmission, saveFollowUp } from "./actions";
 import { AlertTriangle, ChevronDown, History, Plus, X } from "lucide-react";
 
 const SURGERY_NAME_OPTIONS = [
@@ -404,68 +404,3 @@ export function FollowUpdatesPanel({ visit, udid, priorVisits = [] }: { visit: a
   );
 }
 
-export function SurgicalPanel({ visit, udid }: { visit: any; udid: string }) {
-  const sc = visit.surgicalCounselling;
-  const [surgeryName, setSurgeryName] = useState(sc?.surgeryName ?? "");
-  const [surgeryType, setSurgeryType] = useState(sc?.surgeryType ?? SURGERY_TYPES[0]);
-  const [rightEye, setRightEye] = useState(sc?.rightEye ?? false);
-  const [leftEye, setLeftEye] = useState(sc?.leftEye ?? false);
-  const [anaesthesiaType, setAnaesthesiaType] = useState(sc?.anaesthesiaType ?? ANAESTHESIA_TYPES[0]);
-  const [surgeryDate, setSurgeryDate] = useState(sc?.surgeryDate ? new Date(sc.surgeryDate).toISOString().slice(0, 10) : "");
-  const [pending, startTransition] = useTransition();
-  const [saved, setSaved] = useState(!!sc);
-
-  return (
-    <div className="rounded-xl border border-[var(--color-border)] p-4">
-      <p className="text-sm font-medium text-[var(--color-ink-700)] mb-3">Surgical Counselling</p>
-      <div className="flex flex-col gap-3">
-        <div>
-          <p className="text-xs font-medium text-[var(--color-ink-500)] mb-1.5">Name of Surgery</p>
-          <SurgeryNameCombobox
-            value={surgeryName}
-            onChange={(v) => { setSurgeryName(v); setSaved(false); }}
-          />
-        </div>
-        <div>
-          <p className="text-xs font-medium text-[var(--color-ink-500)] mb-1.5">Type of Surgery</p>
-          <SingleChipSelect options={SURGERY_TYPES} value={surgeryType} onChange={(v) => { setSurgeryType(v); setSaved(false); }} />
-        </div>
-        <div>
-          <p className="text-xs font-medium text-[var(--color-ink-500)] mb-1.5">Eye Selection</p>
-          <div className="flex gap-4">
-            <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={rightEye} onChange={(e) => { setRightEye(e.target.checked); setSaved(false); }} /> Right Eye</label>
-            <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={leftEye} onChange={(e) => { setLeftEye(e.target.checked); setSaved(false); }} /> Left Eye</label>
-          </div>
-        </div>
-        <div>
-          <p className="text-xs font-medium text-[var(--color-ink-500)] mb-1.5">Type of Anaesthesia</p>
-          <SingleChipSelect options={ANAESTHESIA_TYPES} value={anaesthesiaType} onChange={(v) => { setAnaesthesiaType(v); setSaved(false); }} />
-        </div>
-        <div className="max-w-[200px]">
-          <label className="text-xs font-medium text-[var(--color-ink-500)]">Date of Surgery</label>
-          <input type="date" value={surgeryDate} onChange={(e) => { setSurgeryDate(e.target.value); setSaved(false); }} className="mt-1 w-full rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm" />
-        </div>
-      </div>
-
-      {sc?.conflictFlag && (
-        <p className="flex items-center gap-1.5 text-xs text-[var(--color-danger-600)] bg-[var(--color-danger-100)] rounded-lg px-3 py-2 mt-3">
-          <AlertTriangle size={13} /> Potential scheduling conflict with an existing appointment on this date.
-        </p>
-      )}
-
-      <button
-        disabled={pending || !surgeryDate || saved}
-        onClick={() =>
-          startTransition(async () => {
-            await saveSurgicalCounselling(visit.id, udid, { surgeryName, surgeryType, rightEye, leftEye, anaesthesiaType, surgeryDate });
-            setSaved(true);
-          })
-        }
-        className="mt-3 text-sm font-medium px-4 py-2 rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-      >
-        {saved ? "Saved" : pending ? "Saving…" : "Save Surgical Counselling"}
-      </button>
-      {saved && <span className="ml-3 text-xs text-[var(--color-success-600)] font-medium">Hospital admin notified</span>}
-    </div>
-  );
-}

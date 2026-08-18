@@ -16,7 +16,6 @@ type Props = {
   admission: { id: string; discharged: boolean; dischargedAt: string | null; createdAt: string; ward: string; reason: string };
   patient: { name: string; udid: string; age: number; sex: string; mobile: string | null };
   visit: { date: string; doctorName: string; hospitalName: string };
-  counselling: { surgeryName: string | null; surgeryType: string; anaesthesiaType: string; rightEye: boolean; leftEye: boolean } | null;
   otRecord: { procedurePerformed: string | null; iolModel: string | null; iolPower: string | null; complications: string | null; anesthesiaTypeRecorded: string | null; surgeryScheduleId: string } | null;
   medications: { drugName: string; dosage: string; frequency: string; duration: string; instructions: string }[];
   diagnoses: { description: string; laterality: string | null }[];
@@ -63,17 +62,17 @@ const inputCls = "w-full rounded-lg border border-[var(--color-border)] bg-white
 const textareaCls = inputCls + " resize-none";
 
 export default function DischargeSummaryForm({
-  admission, patient, visit, counselling, otRecord, medications, diagnoses, existing,
+  admission, patient, visit, otRecord, medications, diagnoses, existing,
 }: Props) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Pre-fill from OT record / counselling
-  const defaultSurgery = otRecord?.procedurePerformed ?? counselling?.surgeryName ?? counselling?.surgeryType ?? "";
-  const defaultEye = counselling ? (counselling.rightEye && counselling.leftEye ? "BE" : counselling.rightEye ? "RE" : counselling.leftEye ? "LE" : "") : "";
-  const defaultAnesthesia = otRecord?.anesthesiaTypeRecorded ?? counselling?.anaesthesiaType ?? "";
+  // Pre-fill from OT record
+  const defaultSurgery = otRecord?.procedurePerformed ?? "";
+  const defaultEye = "";
+  const defaultAnesthesia = otRecord?.anesthesiaTypeRecorded ?? "";
   const defaultIol = otRecord?.iolModel && otRecord?.iolPower ? `${otRecord.iolModel} ${otRecord.iolPower}` : "";
   const defaultDiagnosis = diagnoses.map(d => (d.laterality ? `${d.laterality} ` : "") + d.description).join("; ");
   const defaultComplications = otRecord?.complications ?? "";

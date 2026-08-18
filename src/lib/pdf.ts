@@ -341,17 +341,6 @@ const SHARED_CSS = `
   }
   .advice-box .advice-val { color: #1A2E2A; }
 
-  /* Surgical counselling box */
-  .surgery-box {
-    background: #FFF1F2;
-    border: 1px solid #FECDD3;
-    border-left: 4px solid #E11D48;
-    border-radius: 0 8px 8px 0;
-    padding: 10px 14px;
-    font-size: 11px;
-    margin-top: 8px;
-    page-break-inside: avoid;
-  }
 
   /* Optical Rx table */
   .rx-table { font-size: 11px; }
@@ -778,7 +767,6 @@ export type ShortSummaryData = {
     re: { sph?: string; cyl?: string; axis?: string; nearSph?: string };
     le: { sph?: string; cyl?: string; axis?: string; nearSph?: string };
   } | null;
-  surgicalCounselling?: { surgeryType?: string | null; surgeryDate?: Date | null; notes?: string | null } | null;
   minorProcedure?: { procedureName?: string | null; procedureLaterality?: string | null; anesthesiaType?: string | null } | null;
 };
 
@@ -907,15 +895,6 @@ async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
   const rxRowFn = (eye: string, sub: string, sph?: string, cyl?: string, axis?: string, near?: string) =>
     `<tr><td style="${TD}font-weight:700;">${eye} <span style="font-weight:400;font-size:8.5px;color:#777;">(${sub})</span></td>` +
     rxTd(sph) + rxTd(cyl) + rxTd(axis) + rxTd(near) + `</tr>`;
-
-  /* ── Surgical counselling ── */
-  const surgRow = d.surgicalCounselling?.surgeryType ? {
-    type: d.surgicalCounselling.surgeryType,
-    date: d.surgicalCounselling.surgeryDate
-      ? format(new Date(d.surgicalCounselling.surgeryDate), "dd MMM yyyy")
-      : null,
-    notes: d.surgicalCounselling.notes,
-  } : null;
 
   /* ── Investigations ── */
   const hasInv = d.investigations && d.investigations.length > 0;
@@ -1061,14 +1040,7 @@ ${inlineCard("Clinical Impression",
             `</tr>`
           ).join("")}
         </tbody>
-      </table>` +
-      (surgRow
-        ? `<table style="width:100%;border-collapse:collapse;margin-top:6px;padding-top:5px;border-top:1px dashed ${LINE};"><tbody>` +
-          kvRow("Planned Procedure", escapeHtml(surgRow.type)) +
-          (surgRow.date ? kvRow("Planned Date", surgRow.date) : "") +
-          (surgRow.notes ? kvRow("Procedure Notes", escapeHtml(surgRow.notes)) : "") +
-          `</tbody></table>`
-        : "")
+      </table>`
     : none("No diagnosis recorded"))}
 
 <!-- 2b · MINOR PROCEDURE (only when recorded) -->
@@ -1448,7 +1420,6 @@ export type FullEmrData = {
   };
   investigations: { testName: string; priority: string; status: string; result?: string | null; notes?: string | null }[];
   admission?: { wardName?: string | null; bedNumber?: string | null; reason?: string | null } | null;
-  surgicalCounselling?: { surgeryType?: string | null; surgeryDate?: Date | null; notes?: string | null } | null;
 };
 
 async function renderFullEmrHtml(d: FullEmrData): Promise<string> {
@@ -1589,12 +1560,6 @@ async function renderFullEmrHtml(d: FullEmrData): Promise<string> {
         `<td style="${TD}color:#555;">${v2(inv.result ?? inv.notes)}</td>` +
         `</tr>`).join("")
     : `<tr><td colspan="5" style="padding:6px 8px;font-size:9.5px;color:#aaa;font-style:italic;">No investigations ordered</td></tr>`;
-
-  const surgRow = d.surgicalCounselling?.surgeryType ? {
-    type: d.surgicalCounselling.surgeryType,
-    date: d.surgicalCounselling.surgeryDate ? format(new Date(d.surgicalCounselling.surgeryDate), "dd MMM yyyy") : null,
-    notes: d.surgicalCounselling.notes,
-  } : null;
 
   const CSS = `
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -1831,16 +1796,6 @@ ${d.diagnoses.length
     </table>`
   : `<p style="color:#aaa;font-style:italic;padding:2px 0;font-size:9.5px;">No diagnosis recorded</p>`}
 
-<!-- PROCEDURE / SURGICAL PLAN -->
-${surgRow
-  ? sec("Procedure / Surgical Plan") +
-    `<table style="width:100%;border-collapse:collapse;"><tbody>` +
-    kvRow("Procedure Type", escapeHtml(surgRow.type)) +
-    (surgRow.date ? kvRow("Planned Date", surgRow.date) : "") +
-    (surgRow.notes ? kvRow("Notes", escapeHtml(surgRow.notes)) : "") +
-    `</tbody></table>`
-  : ""}
-
 <!-- MEDICATIONS PRESCRIBED -->
 ${sec("Medications Prescribed")}
 <table style="width:100%;border-collapse:collapse;">
@@ -1994,7 +1949,6 @@ export async function generateAllVisitsSummaryPdf(visits: any[]): Promise<Buffer
       },
       investigations: (visit.investigationOrders ?? []).map((o: any) => ({ testName: o.testName, priority: o.priority ?? "Routine", status: o.status, result: o.resultRef ?? null, notes: o.notes ?? null })),
       admission: null,
-      surgicalCounselling: (visit as any).surgicalCounselling ?? null,
     };
   }
 
@@ -2196,7 +2150,6 @@ export async function generateVisitSummaryPdf(visit: any): Promise<Buffer> {
     },
     investigations: (visit.investigationOrders ?? []).map((o: any) => ({ testName: o.testName, priority: o.priority ?? "Routine", status: o.status, result: o.resultRef ?? null, notes: o.notes ?? null })),
     admission: (visit as any).admission ?? null,
-    surgicalCounselling: (visit as any).surgicalCounselling ?? null,
   };
 
   return htmlToPdf(await renderFullEmrHtml(data));

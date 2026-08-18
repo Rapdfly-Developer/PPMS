@@ -1,23 +1,7 @@
-/**
- * Who can see which surgical cases.
- *
- * The Counseling board, Scheduled OT and the counselling case page must all
- * agree — a case visible on one and hidden on another means a user clicks a row
- * and gets bounced. This is the single definition they all read.
- *
- * Doctors see every case at the hospitals they are linked to, not just the
- * visits they personally recorded, so a doctor can pick up a colleague's case
- * and act on it. Their own visits are always included as a fallback, so a
- * missing or deactivated hospital link never hides a doctor's own patients.
- */
-
 import { prisma } from "@/lib/prisma";
 import type { SessionUser } from "@/lib/rbac";
 
 export type SurgeryScope = {
-  /** Filter for prisma.surgicalCounselling — `any` so it composes with spreads, as before. */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  counsellingWhere: any;
   /** Filter for prisma.surgerySchedule */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   scheduleWhere: any;
@@ -44,12 +28,6 @@ export async function getSurgeryScope(user: SessionUser): Promise<SurgeryScope> 
     // branch alone still returns the doctor's own cases.
     return {
       hospitalIds,
-      counsellingWhere: {
-        OR: [
-          { visit: { hospitalId: { in: hospitalIds } } },
-          { visit: { doctorId: user.profileId } },
-        ],
-      },
       scheduleWhere: {
         OR: [
           { hospitalId: { in: hospitalIds } },
@@ -68,12 +46,6 @@ export async function getSurgeryScope(user: SessionUser): Promise<SurgeryScope> 
 
   return {
     hospitalIds: user.hospitalId ? [user.hospitalId] : [],
-    counsellingWhere: {
-      OR: [
-        { visit: { hospitalId: user.hospitalId } },
-        ...(doctorIds.length > 0 ? [{ visit: { doctorId: { in: doctorIds } } }] : []),
-      ],
-    },
     scheduleWhere: { hospitalId: user.hospitalId },
   };
 }

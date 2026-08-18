@@ -20,7 +20,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
       diagnoses: { orderBy: { createdAt: "asc" } },
       medications: { orderBy: { createdAt: "asc" } },
       investigationOrders: { orderBy: { createdAt: "asc" } },
-      surgicalCounselling: true,
     },
   });
 
@@ -96,11 +95,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
       status: inv.status,
     })),
     opticalRx: hasOptical ? { re, le } : null,
-    surgicalCounselling: visit.surgicalCounselling ? {
-      surgeryType: (visit.surgicalCounselling as any).surgeryType ?? null,
-      surgeryDate: (visit.surgicalCounselling as any).surgeryDate ?? null,
-      notes: (visit.surgicalCounselling as any).notes ?? null,
-    } : null,
     minorProcedure: (visit as any).procedureName ? {
       procedureName: (visit as any).procedureName ?? null,
       procedureLaterality: (visit as any).procedureLaterality ?? null,
