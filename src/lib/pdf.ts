@@ -958,10 +958,10 @@ async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
 <div style="margin:0 -14mm;padding:11px 14mm 13px;
             background:linear-gradient(135deg,#F7FCFB 0%,#E8F5F2 55%,#F2FAF8 100%);
             page-break-after:avoid;">
-  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:18px;">
+  <div style="display:grid;grid-template-columns:1fr auto 1fr;align-items:flex-start;gap:18px;">
 
     <!-- Left: Logo card + hospital name + specialty + contacts -->
-    <div style="display:flex;align-items:flex-start;gap:12px;min-width:0;flex:1;">
+    <div style="display:flex;align-items:flex-start;gap:12px;min-width:0;">
 
       <!-- Logo rounded card -->
       ${d.visit.hospitalLogo
