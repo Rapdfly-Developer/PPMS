@@ -1111,37 +1111,10 @@ ${hasRx
       </table>`)
   : ""}
 
-<!-- INVESTIGATIONS ORDERED (only if present) -->
-${hasInv
-  ? card("Investigations Ordered",
-      `<table>
-        <tbody>
-          ${d.investigations.map((inv, i) =>
-            `<tr>` +
-            `<td style="${TD}text-align:center;color:#8A9793;">${i + 1}</td>` +
-            `<td style="${TD}font-weight:600;">${escapeHtml(inv.testName)}</td>` +
-            `<td style="${TD}color:#4A5A57;">${escapeHtml(inv.category ?? "")}</td>` +
-            `<td style="${TD}color:#4A5A57;">${escapeHtml(inv.priority ?? "Routine")}</td>` +
-            `<td style="${TD}color:#4A5A57;">${escapeHtml(inv.status ?? "")}</td>` +
-            `</tr>`
-          ).join("")}
-        </tbody>
-      </table>`)
-  : ""}
-
-<!-- 6 · FOLLOW-UP (only if present) -->
-${hasFollowUp
-  ? card("Follow-up",
-      `<table style="width:100%;border-collapse:collapse;"><tbody>` +
-      (d.visit.followUpDate
-        ? kvRow("Review Date", format(new Date(d.visit.followUpDate), "EEEE, dd MMM yyyy"))
-        : "") +
-      kvRow("Department", "Ophthalmology") +
-      kvRow("Consultant", `Dr. ${escapeHtml(d.visit.doctorName)}`) +
-      (d.visit.referralEnabled && d.visit.referralNote
-        ? kvRow("Referred To", escapeHtml(d.visit.referralNote))
-        : "") +
-      `</tbody></table>`)
+<!-- 6 · FOLLOW-UP (only date & day, inline) -->
+${d.visit.followUpDate
+  ? inlineCard("Follow-up",
+      `<div style="font-size:10.5px;font-weight:600;color:${INK};">${format(new Date(d.visit.followUpDate), "EEEE, dd MMM yyyy")}</div>`)
   : ""}
 
 <!-- SPACER: pushes signature to the bottom of the page -->

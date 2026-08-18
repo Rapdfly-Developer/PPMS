@@ -35,11 +35,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
     spectRc = spectVisit?.refraction ?? null;
   }
 
-  const rc = spectRc ?? visit.refraction;
+  // Only show spectacles when explicitly pinned from Previous Spectacle History
+  const rc = spectRc ?? null;
   const re = parseJSON((rc as any)?.re, { sph: "", cyl: "", axis: "", nearSph: "" });
   const le = parseJSON((rc as any)?.le, { sph: "", cyl: "", axis: "", nearSph: "" });
 
-  const hasOptical = re.sph || re.cyl || re.axis || le.sph || le.cyl || le.axis || re.nearSph || le.nearSph;
+  const hasOptical = rc && (re.sph || re.cyl || re.axis || le.sph || le.cyl || le.axis || re.nearSph || le.nearSph);
 
   const pdf = await generateShortSummaryPdf({
     patient: {
