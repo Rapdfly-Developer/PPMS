@@ -950,6 +950,7 @@ async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
 <style>${CSS}</style>
 </head>
 <body>
+<div style="min-height:calc(297mm - 36mm);display:flex;flex-direction:column;">
 
 <!-- BRAND ACCENT LINE (full bleed) -->
 <div style="height:4px;background:linear-gradient(90deg,${INK} 0%,${BRAND} 50%,${MINT} 100%);margin:0 -14mm;"></div>
@@ -1166,12 +1167,15 @@ ${hasFollowUp
       `</tbody></table>`)
   : ""}
 
+<!-- SPACER: pushes signature to the bottom of the page -->
+<div style="flex:1;"></div>
+
 <!--
   DOCTOR'S SIGNATURE — bottom-right, above the footer.
   Prints the doctor's own uploaded signature when one exists; otherwise leaves a
   blank rule for a wet signature. A signature is never drawn or synthesised.
 -->
-<div class="no-break" style="margin-top:14px;display:flex;justify-content:flex-end;">
+<div class="no-break" style="margin-top:0;display:flex;justify-content:flex-end;">
   <div style="width:210px;text-align:center;">
     ${d.visit.doctorSignatureUrl
         ? `<div style="height:34px;display:flex;align-items:flex-end;justify-content:center;padding-bottom:2px;">
@@ -1198,6 +1202,8 @@ ${hasFollowUp
 <div style="margin-top:12px;padding-top:7px;border-top:1px solid ${LINE};text-align:center;">
   <span style="font-size:9px;font-style:italic;color:${LABEL_C};">Thank you for trusting us with your care.</span>
 </div>
+
+</div><!-- end flex-column page wrapper -->
 
 <!-- RUNNING FOOTER -->
 <div class="footer">
