@@ -1078,12 +1078,14 @@ ${inlineCard("Clinical Impression",
 
 <!-- 2b · MINOR PROCEDURE (only when recorded) -->
 ${d.minorProcedure?.procedureName
-  ? card("Minor Procedure",
-      `<table style="width:100%;border-collapse:collapse;"><tbody>` +
-      kvRow("Procedure", escapeHtml(d.minorProcedure.procedureName)) +
-      (d.minorProcedure.procedureLaterality ? kvRow("Laterality", escapeHtml(d.minorProcedure.procedureLaterality)) : "") +
-      (d.minorProcedure.anesthesiaType ? kvRow("Anaesthesia", escapeHtml(d.minorProcedure.anesthesiaType)) : "") +
-      `</tbody></table>`)
+  ? inlineCard("Minor Procedure",
+      `<div style="font-size:10.5px;font-weight:600;color:${INK};">` +
+      (d.minorProcedure.procedureLaterality ? `<span style="margin-right:6px;">${escapeHtml(d.minorProcedure.procedureLaterality)}</span>` : "") +
+      escapeHtml(d.minorProcedure.procedureName) +
+      `</div>` +
+      (d.minorProcedure.anesthesiaType
+        ? `<div style="font-size:9px;color:#4A5A57;margin-top:2px;">${escapeHtml(d.minorProcedure.anesthesiaType)}</div>`
+        : ""))
   : ""}
 
 <!-- 3 · MEDICATIONS -->
