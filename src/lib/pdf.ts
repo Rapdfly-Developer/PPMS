@@ -1118,7 +1118,7 @@ ${d.visit.followUpDate
   : ""}
 
 <!-- SPACER: pushes signature to the bottom of the page -->
-<div style="flex:1;"></div>
+<div style="flex:1;min-height:40px;"></div>
 
 <!--
   DOCTOR'S SIGNATURE — bottom-right, above the footer.
