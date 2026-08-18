@@ -1173,12 +1173,12 @@ ${hasFollowUp
 -->
 <div class="no-break" style="margin-top:14px;display:flex;justify-content:flex-end;">
   <div style="width:210px;text-align:center;">
-    <div style="height:34px;display:flex;align-items:flex-end;justify-content:center;padding-bottom:2px;">
-      ${d.visit.doctorSignatureUrl
-        ? `<img src="${escapeHtml(d.visit.doctorSignatureUrl)}" alt="Signature of Dr. ${escapeHtml(d.visit.doctorName)}" style="max-height:32px;max-width:190px;object-fit:contain;display:block;" />`
-        : `<span style="font-size:7px;color:#B0BDBA;letter-spacing:0.1em;text-transform:uppercase;">Sign above the line</span>`}
-    </div>
-    <div style="height:1px;background:${BRAND};"></div>
+    ${d.visit.doctorSignatureUrl
+        ? `<div style="height:34px;display:flex;align-items:flex-end;justify-content:center;padding-bottom:2px;">
+             <img src="${escapeHtml(d.visit.doctorSignatureUrl)}" alt="Signature of Dr. ${escapeHtml(d.visit.doctorName)}" style="max-height:32px;max-width:190px;object-fit:contain;display:block;" />
+           </div>
+           <div style="height:1px;background:${BRAND};"></div>`
+        : ""}
     <div style="font-size:7px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:${LABEL_C};margin-top:3px;">
       Doctor&rsquo;s Signature
     </div>
