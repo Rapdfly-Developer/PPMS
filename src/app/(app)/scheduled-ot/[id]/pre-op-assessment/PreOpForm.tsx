@@ -31,6 +31,8 @@ export function PreOpForm({
   const [err, setErr] = useState("");
   const [saved, setSaved] = useState(false);
 
+  type BoolKey = "hasDiabetes" | "hasHypertension" | "hasCardiacDisease" | "hasAsthma" | "hasKidneyDisease" | "nkda";
+
   const [form, setForm] = useState<Existing>({
     hasDiabetes:       existing?.hasDiabetes       ?? false,
     hasHypertension:   existing?.hasHypertension   ?? false,
@@ -51,7 +53,7 @@ export function PreOpForm({
     assessedBy:        existing?.assessedBy         ?? "",
   });
 
-  function check(key: keyof Existing) {
+  function check(key: BoolKey) {
     setForm((f) => ({ ...f, [key]: !f[key] }));
   }
 
@@ -93,7 +95,7 @@ export function PreOpForm({
             { key: "hasCardiacDisease", label: "Cardiac Disease" },
             { key: "hasAsthma",         label: "Asthma" },
             { key: "hasKidneyDisease",  label: "Kidney Disease" },
-          ] as { key: keyof Existing; label: string }[]).map(({ key, label }) => (
+          ] as { key: BoolKey; label: string }[]).map(({ key, label }) => (
             <label key={key} className="flex items-center gap-2 cursor-pointer">
               <input
                 type="checkbox"

@@ -23,6 +23,8 @@ export function ConsentForm({
   const [err, setErr] = useState("");
   const [saved, setSaved] = useState(false);
 
+  type BoolKey = "surgeryExplained" | "risksExplained" | "alternativesExplained" | "questionsAnswered" | "consentGiven";
+
   const [form, setForm] = useState<Existing>({
     patientName:           existing?.patientName           ?? patientName,
     attendantName:         existing?.attendantName         ?? "",
@@ -35,7 +37,7 @@ export function ConsentForm({
     notes:                 existing?.notes                 ?? "",
   });
 
-  function toggle(key: keyof Existing) {
+  function toggle(key: BoolKey) {
     setForm((f) => ({ ...f, [key]: !f[key] }));
   }
 
@@ -108,7 +110,7 @@ export function ConsentForm({
             { key: "risksExplained",        label: "Risks and potential complications have been explained." },
             { key: "alternativesExplained", label: "Alternative treatments have been discussed." },
             { key: "questionsAnswered",     label: "Patient's questions have been answered satisfactorily." },
-          ] as { key: keyof Existing; label: string }[]).map(({ key, label }) => (
+          ] as { key: BoolKey; label: string }[]).map(({ key, label }) => (
             <label key={key} className="flex items-start gap-3 cursor-pointer group">
               <div
                 onClick={() => toggle(key)}
@@ -129,7 +131,7 @@ export function ConsentForm({
         <h2 className="text-sm font-bold text-[var(--color-ink-700)]">Final Consent Decision</h2>
         <label className="flex items-center gap-3 cursor-pointer">
           <div
-            onClick={() => toggle("consentGiven")}
+            onClick={() => toggle("consentGiven" as BoolKey)}
             className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 transition-colors ${
               form.consentGiven ? "bg-emerald-600 border-emerald-600" : "border-[var(--color-border)] bg-white hover:border-emerald-400"
             }`}
