@@ -310,13 +310,12 @@ export function FollowUpdatesPanel({ visit, udid, priorVisits = [] }: { visit: a
 }
 
 export function SurgicalPanel({ visit, udid }: { visit: any; udid: string }) {
-  const [advised,    setAdvised]    = useState<boolean>(visit.surgeryAdvised ?? false);
-  const [procedure,  setProcedure]  = useState<string>(visit.advisedSurgeryName ?? "");
-  const [surgDate,   setSurgDate]   = useState<string>(
+  const [advised,  setAdvised]  = useState<boolean>(visit.surgeryAdvised ?? false);
+  const [surgDate, setSurgDate] = useState<string>(
     visit.advisedSurgeryDate ? new Date(visit.advisedSurgeryDate).toISOString().slice(0, 10) : ""
   );
-  const [pending,    startTransition] = useTransition();
-  const [saved,      setSaved]      = useState(false);
+  const [pending, startTransition] = useTransition();
+  const [saved,   setSaved]        = useState(false);
 
   const FIELD = "w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-3 py-2 text-sm text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent";
 
@@ -324,7 +323,6 @@ export function SurgicalPanel({ visit, udid }: { visit: any; udid: string }) {
     startTransition(async () => {
       await saveSurgicalCounselling(visit.id, udid, {
         surgeryAdvised:     advised,
-        advisedSurgeryName: procedure || undefined,
         advisedSurgeryDate: surgDate || undefined,
       });
       setSaved(true);
@@ -346,29 +344,14 @@ export function SurgicalPanel({ visit, udid }: { visit: any; udid: string }) {
       </label>
 
       {advised && (
-        <div className="flex flex-col gap-3">
-          {/* Minor Procedure */}
-          <div>
-            <p className="text-[10px] font-semibold text-[var(--color-ink-500)] uppercase tracking-wide mb-1.5">Minor Procedure</p>
-            <input
-              type="text"
-              value={procedure}
-              onChange={(e) => { setProcedure(e.target.value); setSaved(false); }}
-              placeholder="e.g. YAG Laser, Intravitreal Injection, LASIK"
-              className={FIELD}
-            />
-          </div>
-
-          {/* Tentative Date of Surgery */}
-          <div>
-            <p className="text-[10px] font-semibold text-[var(--color-ink-500)] uppercase tracking-wide mb-1.5">Tentative Date of Surgery</p>
-            <input
-              type="date"
-              value={surgDate}
-              onChange={(e) => { setSurgDate(e.target.value); setSaved(false); }}
-              className={FIELD}
-            />
-          </div>
+        <div>
+          <p className="text-[10px] font-semibold text-[var(--color-ink-500)] uppercase tracking-wide mb-1.5">Tentative Date of Surgery</p>
+          <input
+            type="date"
+            value={surgDate}
+            onChange={(e) => { setSurgDate(e.target.value); setSaved(false); }}
+            className={FIELD}
+          />
         </div>
       )}
 
