@@ -1,10 +1,65 @@
 "use client";
 
-import { useState, useTransition, useRef } from "react";
+import { useState, useTransition, useRef, useEffect } from "react";
 import { SingleChipSelect } from "@/components/ui/Chip";
 import { WARDS, ANAESTHESIA_TYPES, SURGERY_TYPES } from "@/lib/constants";
 import { saveDispense, saveAdmission, saveFollowUp, saveSurgicalCounselling } from "./actions";
 import { AlertTriangle, History, Plus, X, Scissors } from "lucide-react";
+
+// ── Searchable dropdown (combobox) ────────────────────────────────────────────
+function SearchCombobox({
+  value, onChange, options, placeholder,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  options: readonly string[];
+  placeholder: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const filtered = options.filter((o) => o.toLowerCase().includes(value.toLowerCase()));
+
+  useEffect(() => {
+    function handler(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  return (
+    <div ref={ref} className="relative">
+      <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-300)] pointer-events-none" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+      </svg>
+      <input
+        type="text"
+        value={value}
+        placeholder={placeholder}
+        onChange={(e) => { onChange(e.target.value); setOpen(true); }}
+        onFocus={() => setOpen(true)}
+        className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-3 py-2 pl-8 text-sm text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent"
+      />
+      {open && filtered.length > 0 && (
+        <ul className="absolute z-50 mt-1 w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-lg max-h-48 overflow-y-auto">
+          {filtered.map((opt) => (
+            <li key={opt}>
+              <button
+                type="button"
+                onMouseDown={(e) => { e.preventDefault(); onChange(opt); setOpen(false); }}
+                className={`w-full text-left px-3 py-2 text-sm transition-colors hover:bg-[var(--color-primary-50)] hover:text-[var(--color-primary-700)] ${
+                  value === opt ? "bg-[var(--color-primary-50)] text-[var(--color-primary-700)] font-semibold" : "text-[var(--color-ink-700)]"
+                }`}
+              >
+                {opt}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
 
 
 const IN_VIEW_OF_KEYWORDS: { group: string; items: string[] }[] = [
@@ -378,31 +433,23 @@ export function SurgicalPanel({ visit, udid }: { visit: any; udid: string }) {
             {/* Procedure */}
             <div>
               <p className={LABEL}>Procedure</p>
-              <div className="relative">
-                <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-300)] pointer-events-none" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-                <input
-                  type="text"
-                  value={procedure}
-                  onChange={(e) => { setProcedure(e.target.value); setSaved(false); }}
-                  placeholder="Search procedure..."
-                  className={FIELD}
-                />
-              </div>
+              <SearchCombobox
+                value={procedure}
+                onChange={(v) => { setProcedure(v); setSaved(false); }}
+                options={SURGERY_TYPES}
+                placeholder="Search procedure..."
+              />
             </div>
 
             {/* Anesthesia */}
             <div>
               <p className={LABEL}>Type of Anesthesia</p>
-              <div className="relative">
-                <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-300)] pointer-events-none" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-                <input
-                  type="text"
-                  value={anesthesia}
-                  onChange={(e) => { setAnesthesia(e.target.value); setSaved(false); }}
-                  placeholder="Search anesthesia..."
-                  className={FIELD}
-                />
-              </div>
+              <SearchCombobox
+                value={anesthesia}
+                onChange={(v) => { setAnesthesia(v); setSaved(false); }}
+                options={ANAESTHESIA_TYPES}
+                placeholder="Search anesthesia..."
+              />
             </div>
           </div>
 
