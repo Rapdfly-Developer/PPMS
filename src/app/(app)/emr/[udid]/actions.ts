@@ -536,17 +536,18 @@ export async function saveFollowUp(visitId: string, udid: string, data: { follow
 export async function saveSurgicalCounselling(
   visitId: string,
   udid: string,
-  data: { surgeryAdvised: boolean; advisedSurgeryName?: string; advisedSurgeryEye?: string; advisedSurgeryNotes?: string }
+  data: { surgeryAdvised: boolean; advisedSurgeryName?: string; advisedSurgeryEye?: string; advisedSurgeryNotes?: string; advisedSurgeryDate?: string }
 ) {
   await requireRole("DOCTOR");
   await assertVisitAccess(visitId);
-  await prisma.visit.update({
+  await (prisma.visit.update as any)({
     where: { id: visitId },
     data: {
       surgeryAdvised:      data.surgeryAdvised,
       advisedSurgeryName:  data.advisedSurgeryName ?? null,
       advisedSurgeryEye:   data.advisedSurgeryEye ?? null,
       advisedSurgeryNotes: data.advisedSurgeryNotes ?? null,
+      advisedSurgeryDate:  data.advisedSurgeryDate ? new Date(data.advisedSurgeryDate) : null,
     },
   });
   revalidate(udid);
