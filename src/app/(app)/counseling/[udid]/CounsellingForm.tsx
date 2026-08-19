@@ -141,11 +141,18 @@ export default function CounsellingForm({
   const [schemeName,  setSchemeName]  = useState(ex?.schemeName  ?? "");
   const [schemeType,  setSchemeType]  = useState(ex?.schemeType  ?? "");
   const [outOfPocket, setOutOfPocket] = useState(ex?.outOfPocket ?? "");
-  const [iolType,     setIolType]     = useState(ex?.iolType     ?? "");
   const [iolLensName, setIolLensName] = useState(ex?.iolLensName ?? "");
-  const [iolPower,    setIolPower]    = useState(ex?.iolPower    ?? "");
   const [iolBrand,    setIolBrand]    = useState(ex?.iolBrand    ?? "");
   const [iolToric,    setIolToric]    = useState(ex?.iolToric    ?? false);
+  // Focal = sign + numeric value, stored together in iolPower
+  const [focalSign,   setFocalSign]   = useState<"+" | "-">(() => {
+    const p = ex?.iolPower ?? "";
+    return p.startsWith("-") ? "-" : "+";
+  });
+  const [iolPower,    setIolPower]    = useState(() => {
+    const p = ex?.iolPower ?? "";
+    return p.startsWith("+") || p.startsWith("-") ? p.slice(1) : p;
+  });
   const [laterality,  setLaterality]  = useState(ex?.laterality  ?? "");
   const [procedure,   setProcedure]   = useState(ex?.procedure   ?? "");
   const [anaesthesia, setAnaesthesia] = useState(ex?.anaesthesia ?? "");
@@ -167,9 +174,8 @@ export default function CounsellingForm({
       schemeName:     schemeName   || undefined,
       schemeType:     schemeType   || undefined,
       outOfPocket:    outOfPocket  || undefined,
-      iolType:        iolType      || undefined,
       iolLensName:    iolLensName  || undefined,
-      iolPower:       iolPower     || undefined,
+      iolPower:       iolPower ? `${focalSign}${iolPower}` : undefined,
       iolBrand:       iolBrand     || undefined,
       iolToric,
       laterality:     laterality   || undefined,
@@ -192,7 +198,7 @@ export default function CounsellingForm({
   }
 
   function isValid() {
-    return !!paymentType && !!laterality && !!procedure.trim();
+    return !!laterality && !!procedure.trim();
   }
 
   function handleSubmitTentative() {
@@ -214,50 +220,32 @@ export default function CounsellingForm({
   return (
     <div className="flex flex-col gap-5">
 
-      {/* ── 1. Payment / Finance ── */}
+      {/* ── 1. Tentative Overall Insurance ── */}
       <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
-        <SectionHeader icon={<CreditCard size={14} />} title="Payment / Finance" />
+        <SectionHeader icon={<CreditCard size={14} />} title="Tentative Overall Insurance" />
         <div className="flex flex-col gap-4">
           <div>
-            <FieldLabel required={!ro}>Payment Type</FieldLabel>
-            <div className={`flex flex-wrap gap-2 ${submitted && !paymentType ? "p-2 rounded-lg border border-red-300 bg-red-50" : ""}`}>
-              {["TENTATIVE", "OVERALL", "INSURANCE"].map((t) => (
-                <Chip key={t}
-                  label={t === "TENTATIVE" ? "Tentative" : t === "OVERALL" ? "Overall" : "Insurance"}
-                  active={paymentType === t}
-                  onClick={() => setPaymentType(paymentType === t ? "" : t)}
+            <FieldLabel>Cash / Cashless</FieldLabel>
+            <div className="flex flex-wrap gap-2">
+              {["CASH", "CASHLESS"].map((m) => (
+                <Chip key={m} label={m === "CASH" ? "Cash" : "Cashless"}
+                  active={paymentMode === m}
+                  onClick={() => setPaymentMode(paymentMode === m ? "" : m)}
                   disabled={ro}
                 />
               ))}
             </div>
-            <FieldError show={submitted && !paymentType} message="Payment type is required" />
           </div>
-          {paymentType && (
-            <>
-              <div>
-                <FieldLabel>Cash / Cashless</FieldLabel>
-                <div className="flex flex-wrap gap-2">
-                  {["CASH", "CASHLESS"].map((m) => (
-                    <Chip key={m} label={m === "CASH" ? "Cash" : "Cashless"}
-                      active={paymentMode === m}
-                      onClick={() => setPaymentMode(paymentMode === m ? "" : m)}
-                      disabled={ro}
-                    />
-                  ))}
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <FieldLabel>Name</FieldLabel>
-                  <TextInput value={schemeName} onChange={setSchemeName} placeholder="e.g. PMJAY, TN CM Scheme" disabled={ro} />
-                </div>
-                <div>
-                  <FieldLabel>Type</FieldLabel>
-                  <TextInput value={schemeType} onChange={setSchemeType} placeholder="e.g. Full, Cap, Commission" disabled={ro} />
-                </div>
-              </div>
-            </>
-          )}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <FieldLabel>Name</FieldLabel>
+              <TextInput value={schemeName} onChange={setSchemeName} placeholder="e.g. PMJAY, TN CM Scheme" disabled={ro} />
+            </div>
+            <div>
+              <FieldLabel>Type</FieldLabel>
+              <TextInput value={schemeType} onChange={setSchemeType} placeholder="e.g. Full, Cap, Commission" disabled={ro} />
+            </div>
+          </div>
         </div>
       </div>
 
@@ -265,13 +253,36 @@ export default function CounsellingForm({
       <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
         <SectionHeader icon={<Eye size={14} />} title="IOL" />
         <div className="flex flex-col gap-4">
+          {/* Focal with +/- sign toggle */}
           <div>
-            <FieldLabel>IOL Type</FieldLabel>
-            <div className="flex flex-wrap gap-2">
-              {["MONO", "MULTIFOCAL", "TRIFOCAL", "TORIC", "EDF", "PHAKIC"].map((t) => (
-                <Chip key={t} label={t} active={iolType === t}
-                  onClick={() => setIolType(iolType === t ? "" : t)} disabled={ro} />
-              ))}
+            <FieldLabel>Focal</FieldLabel>
+            <div className="flex gap-0 rounded-lg border border-[var(--color-border)] overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setFocalSign("+")}
+                disabled={ro}
+                className={`px-3 py-2 text-sm font-bold border-r border-[var(--color-border)] transition-colors disabled:cursor-not-allowed ${
+                  focalSign === "+" ? "bg-teal-500 text-white" : "bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)] hover:bg-teal-50 hover:text-teal-700"
+                }`}
+              >+</button>
+              <button
+                type="button"
+                onClick={() => setFocalSign("-")}
+                disabled={ro}
+                className={`px-3 py-2 text-sm font-bold border-r border-[var(--color-border)] transition-colors disabled:cursor-not-allowed ${
+                  focalSign === "-" ? "bg-teal-500 text-white" : "bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)] hover:bg-teal-50 hover:text-teal-700"
+                }`}
+              >−</button>
+              <input
+                type="number"
+                min="0"
+                step="0.25"
+                value={iolPower}
+                onChange={(e) => setIolPower(e.target.value)}
+                placeholder="0.00"
+                disabled={ro}
+                className="flex-1 px-3 py-2 text-sm text-[var(--color-ink-800)] bg-[var(--color-surface)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-inset focus:ring-teal-400 disabled:opacity-60 disabled:cursor-not-allowed"
+              />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -280,21 +291,16 @@ export default function CounsellingForm({
               <TextInput value={iolLensName} onChange={setIolLensName} placeholder="e.g. AcrySof IQ" disabled={ro} />
             </div>
             <div>
-              <FieldLabel>Power</FieldLabel>
-              <TextInput value={iolPower} onChange={setIolPower} placeholder="e.g. +21.5D" disabled={ro} />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-3 items-end">
-            <div>
               <FieldLabel>Brand</FieldLabel>
               <TextInput value={iolBrand} onChange={setIolBrand} placeholder="e.g. Alcon" disabled={ro} />
             </div>
-            <label className="flex items-center gap-2 cursor-pointer select-none">
-              <input type="checkbox" checked={iolToric}
-                onChange={(e) => setIolToric(e.target.checked)}
-                disabled={ro} className="w-4 h-4 accent-teal-500" />
-              <span className="text-sm text-[var(--color-ink-700)]">Toric</span>
-            </label>
+          </div>
+          <div>
+            <FieldLabel>Torique</FieldLabel>
+            <div className="flex flex-wrap gap-2">
+              <Chip label="Yes" active={iolToric} onClick={() => setIolToric(!iolToric)} disabled={ro} />
+              <Chip label="No"  active={!iolToric} onClick={() => setIolToric(false)}    disabled={ro} />
+            </div>
           </div>
         </div>
       </div>
