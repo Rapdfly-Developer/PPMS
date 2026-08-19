@@ -371,12 +371,6 @@ export default function CounsellingForm({
                 disabled={ro} className="w-4 h-4 accent-amber-500" />
               <span className="text-sm text-[var(--color-ink-700)]">Vague estimate</span>
             </label>
-            <label className="flex items-center gap-2 cursor-pointer select-none">
-              <input type="checkbox" checked={fitForSurgery}
-                onChange={(e) => setFitForSurgery(e.target.checked)}
-                disabled={ro} className="w-4 h-4 accent-amber-500" />
-              <span className="text-sm text-[var(--color-ink-700)]">Fit for Surgery ✓ by Dr.</span>
-            </label>
           </div>
         </div>
       </div>
