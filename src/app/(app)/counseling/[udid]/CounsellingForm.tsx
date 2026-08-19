@@ -34,12 +34,18 @@ function Chip({
   );
 }
 
-function FieldLabel({ children }: { children: React.ReactNode }) {
+function FieldLabel({ children, required }: { children: React.ReactNode; required?: boolean }) {
   return (
     <label className="block text-[11px] font-bold text-[var(--color-ink-500)] uppercase tracking-wide mb-1">
       {children}
+      {required && <span className="ml-0.5 text-red-500">*</span>}
     </label>
   );
+}
+
+function FieldError({ show, message }: { show: boolean; message: string }) {
+  if (!show) return null;
+  return <p className="mt-1 text-[11px] text-red-500 font-medium">{message}</p>;
 }
 
 function TextInput({
@@ -149,7 +155,8 @@ export default function CounsellingForm({
   const [advancePaid, setAdvancePaid] = useState(ex?.advancePaid ?? "");
   const [dateOfSurgery, setDateOfSurgery] = useState(ex?.dateOfSurgery ?? "");
 
-  const [saved,   setSaved]   = useState(false);
+  const [saved,     setSaved]     = useState(false);
+  const [submitted, setSubmitted] = useState(false); // tracks submit attempt for validation
   const [pending, startTransition] = useTransition();
 
   function buildPayload(): CounsellingFormData {
@@ -184,13 +191,21 @@ export default function CounsellingForm({
     });
   }
 
+  function isValid() {
+    return !!paymentType && !!laterality && !!procedure.trim();
+  }
+
   function handleSubmitTentative() {
+    setSubmitted(true);
+    if (!isValid()) return;
     startTransition(async () => {
       await submitTentativeCounselling(udid, buildPayload());
     });
   }
 
   function handleSubmitConfirmation() {
+    setSubmitted(true);
+    if (!isValid()) return;
     startTransition(async () => {
       await submitConfirmationCounselling(udid, buildPayload());
     });
@@ -207,8 +222,8 @@ export default function CounsellingForm({
         <SectionHeader icon={<CreditCard size={14} />} title="Payment / Finance" />
         <div className="flex flex-col gap-4">
           <div>
-            <FieldLabel>Payment Type</FieldLabel>
-            <div className="flex flex-wrap gap-2">
+            <FieldLabel required={!ro}>Payment Type</FieldLabel>
+            <div className={`flex flex-wrap gap-2 ${submitted && !paymentType ? "p-2 rounded-lg border border-red-300 bg-red-50" : ""}`}>
               {["TENTATIVE", "OVERALL", "INSURANCE"].map((t) => (
                 <Chip key={t}
                   label={t === "TENTATIVE" ? "Tentative" : t === "OVERALL" ? "Overall" : "Insurance"}
@@ -218,6 +233,7 @@ export default function CounsellingForm({
                 />
               ))}
             </div>
+            <FieldError show={submitted && !paymentType} message="Payment type is required" />
           </div>
           {paymentType && (
             <div>
@@ -312,17 +328,21 @@ export default function CounsellingForm({
         <SectionHeader icon={<Scissors size={14} />} title="Surgery" />
         <div className="flex flex-col gap-4">
           <div>
-            <FieldLabel>Laterality</FieldLabel>
-            <div className="flex flex-wrap gap-2">
+            <FieldLabel required={!ro}>Laterality</FieldLabel>
+            <div className={`flex flex-wrap gap-2 ${submitted && !laterality ? "p-2 rounded-lg border border-red-300 bg-red-50" : ""}`}>
               {[{ k: "RE", l: "Right Eye" }, { k: "LE", l: "Left Eye" }, { k: "OU", l: "Both Eyes" }].map(({ k, l }) => (
                 <Chip key={k} label={l} active={laterality === k}
                   onClick={() => setLaterality(laterality === k ? "" : k)} disabled={ro} />
               ))}
             </div>
+            <FieldError show={submitted && !laterality} message="Laterality is required" />
           </div>
           <div>
-            <FieldLabel>Procedure</FieldLabel>
-            <TextInput value={procedure} onChange={setProcedure} placeholder="e.g. Phacoemulsification" disabled={ro} />
+            <FieldLabel required={!ro}>Procedure</FieldLabel>
+            <div className={submitted && !procedure.trim() ? "rounded-lg border border-red-300 bg-red-50" : ""}>
+              <TextInput value={procedure} onChange={setProcedure} placeholder="e.g. Phacoemulsification" disabled={ro} />
+            </div>
+            <FieldError show={submitted && !procedure.trim()} message="Procedure is required" />
           </div>
           <div>
             <FieldLabel>Anaesthesia</FieldLabel>
