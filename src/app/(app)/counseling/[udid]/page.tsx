@@ -195,6 +195,7 @@ export default async function CounselingPatientPage({
         select: {
           id: true, date: true,
           advisedSurgeryName: true, advisedSurgeryEye: true, advisedSurgeryNotes: true,
+          advisedSurgeryDate: true,
           doctor:   { select: { name: true } },
           counsellingRecord: true,
         },
@@ -242,7 +243,20 @@ export default async function CounselingPatientPage({
         estimateVague:  rec.estimateVague,
         fitForSurgery:  rec.fitForSurgery,
         advancePaid:    rec.advancePaid ? String(rec.advancePaid) : null,
-        dateOfSurgery:  rec.dateOfSurgery ? rec.dateOfSurgery.toISOString().slice(0, 10) : null,
+        dateOfSurgery:  rec.dateOfSurgery
+          ? rec.dateOfSurgery.toISOString().slice(0, 10)
+          : (visit as any).advisedSurgeryDate
+          ? new Date((visit as any).advisedSurgeryDate).toISOString().slice(0, 10)
+          : null,
+      }
+    : (visit as any).advisedSurgeryDate
+    ? {
+        paymentType: null, paymentMode: null, schemeName: null, schemeType: null,
+        outOfPocket: null, iolType: null, iolLensName: null, iolPower: null,
+        iolBrand: null, iolToric: false, laterality: null, procedure: null,
+        anaesthesia: null, estimateAmount: null, estimateVague: false,
+        fitForSurgery: false, advancePaid: null,
+        dateOfSurgery: new Date((visit as any).advisedSurgeryDate).toISOString().slice(0, 10),
       }
     : null;
 
