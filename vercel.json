@@ -3,6 +3,7 @@
     "src/app/api/dispense-pdf/[visitId]/route.ts": { "maxDuration": 30 },
     "src/app/api/prescription-pdf/[visitId]/route.ts": { "maxDuration": 30 },
     "src/app/api/discharge-summary-pdf/[admissionId]/route.ts": { "maxDuration": 30 },
+    "src/app/api/consent-pdf/[udid]/route.ts": { "maxDuration": 30 },
     "src/app/api/ocr/route.ts": { "maxDuration": 30 }
   },
   "crons": [
@@ -13,6 +14,10 @@
     {
       "path": "/api/cron/close-visits",
       "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/cron/surgery-reminders",
+      "schedule": "0 12 * * *"
     }
   ]
 }

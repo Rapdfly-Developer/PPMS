@@ -5,6 +5,7 @@ import { requireRole, requirePermission } from "@/lib/rbac";
 import { revalidatePath } from "next/cache";
 import { createNotification } from "@/lib/notify";
 import { writeAudit } from "@/lib/audit";
+import { sendSurgeryBooking, sendSurgeryCancellation } from "@/lib/sms";
 
 export type SurgeryScheduleInput = {
   patientId:              string;
@@ -80,31 +81,50 @@ export async function saveSurgerySchedule(
     status:      input.status,
   });
 
-  // Notify the operating surgeon
+  // Notify surgeon + send patient SMS
   try {
-    const [doctor, patient] = await Promise.all([
+    const [doctor, patient, hospital] = await Promise.all([
       prisma.doctor.findUnique({
         where:  { id: input.operatingSurgeonId },
         select: { userId: true, name: true },
       }),
       prisma.patient.findUnique({
         where:  { id: input.patientId },
+        select: { name: true, mobile: true },
+      }),
+      prisma.hospital.findUnique({
+        where:  { id: input.hospitalId },
         select: { name: true },
       }),
     ]);
+
+    const dt = new Date(input.plannedDateTime);
+    const plannedDate = dt.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+    const plannedTime = dt.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true });
+
     if (doctor?.userId && patient) {
-      const dt = new Date(input.plannedDateTime).toLocaleDateString("en-IN", {
-        day: "2-digit", month: "short", year: "numeric",
-      });
       await createNotification(
         doctor.userId,
         "SURGERY_SCHEDULED",
-        `Surgery scheduled: ${input.surgeryName} for ${patient.name} on ${dt}${input.otRoom ? ` — ${input.otRoom}` : ""}.`,
+        `Surgery scheduled: ${input.surgeryName} for ${patient.name} on ${plannedDate}${input.otRoom ? ` — ${input.otRoom}` : ""}.`,
         record.id
       );
     }
+
+    // SMS to patient
+    if (patient?.mobile && hospital && doctor) {
+      await sendSurgeryBooking(patient.mobile, {
+        patientName:  patient.name,
+        surgeryName:  input.surgeryName,
+        plannedDate,
+        plannedTime,
+        hospitalName: hospital.name,
+        doctorName:   doctor.name,
+        otRoom:       input.otRoom ?? null,
+      });
+    }
   } catch {
-    // notification failure must never break the save
+    // notification / SMS failure must never break the save
   }
 
   revalidatePath("/scheduled-ot");
@@ -251,7 +271,14 @@ export async function updateSurgeryDate(
 export async function cancelScheduledSurgery(id: string, reason?: string): Promise<{ error?: string }> {
   const user = await requirePermission("appointments.view");
 
-  const rec = await prisma.surgerySchedule.findUnique({ where: { id }, select: { hospitalId: true, surgeryName: true } });
+  const rec = await prisma.surgerySchedule.findUnique({
+    where: { id },
+    select: {
+      hospitalId: true, surgeryName: true, plannedDateTime: true,
+      patient: { select: { name: true, mobile: true } },
+      hospital: { select: { name: true } },
+    },
+  });
   if (!rec) return { error: "Record not found." };
 
   await prisma.surgerySchedule.update({
@@ -260,6 +287,21 @@ export async function cancelScheduledSurgery(id: string, reason?: string): Promi
   });
 
   await writeAudit(user.id, "SurgerySchedule", id, "UPDATE", { status: "CANCELLED", reason });
+
+  // SMS cancellation alert to patient
+  try {
+    if (rec.patient?.mobile) {
+      const plannedDate = rec.plannedDateTime.toLocaleDateString("en-IN", {
+        day: "2-digit", month: "short", year: "numeric",
+      });
+      await sendSurgeryCancellation(rec.patient.mobile, {
+        patientName:  rec.patient.name,
+        surgeryName:  rec.surgeryName,
+        plannedDate,
+        hospitalName: rec.hospital?.name ?? "",
+      });
+    }
+  } catch { /* non-fatal */ }
 
   revalidatePath("/scheduled-ot");
   return {};
