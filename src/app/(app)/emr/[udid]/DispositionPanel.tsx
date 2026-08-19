@@ -310,20 +310,27 @@ export function FollowUpdatesPanel({ visit, udid, priorVisits = [] }: { visit: a
 }
 
 export function SurgicalPanel({ visit, udid }: { visit: any; udid: string }) {
-  const [advised,  setAdvised]  = useState<boolean>(visit.surgeryAdvised ?? false);
-  const [surgDate, setSurgDate] = useState<string>(
+  const [advised,    setAdvised]    = useState<boolean>(visit.surgeryAdvised ?? false);
+  const [laterality, setLaterality] = useState<string>(visit.advisedSurgeryEye ?? "");
+  const [procedure,  setProcedure]  = useState<string>(visit.advisedSurgeryName ?? "");
+  const [anesthesia, setAnesthesia] = useState<string>(visit.advisedSurgeryNotes ?? "");
+  const [surgDate,   setSurgDate]   = useState<string>(
     visit.advisedSurgeryDate ? new Date(visit.advisedSurgeryDate).toISOString().slice(0, 10) : ""
   );
   const [pending, startTransition] = useTransition();
   const [saved,   setSaved]        = useState(false);
 
-  const FIELD = "w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-3 py-2 text-sm text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent";
+  const FIELD = "w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-3 py-2 pl-8 text-sm text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent";
+  const LABEL = "text-[10px] font-semibold text-[var(--color-ink-500)] uppercase tracking-wide mb-1.5";
 
   const save = () =>
     startTransition(async () => {
       await saveSurgicalCounselling(visit.id, udid, {
-        surgeryAdvised:     advised,
-        advisedSurgeryDate: surgDate || undefined,
+        surgeryAdvised:      advised,
+        advisedSurgeryEye:   laterality || undefined,
+        advisedSurgeryName:  procedure || undefined,
+        advisedSurgeryNotes: anesthesia || undefined,
+        advisedSurgeryDate:  surgDate || undefined,
       });
       setSaved(true);
     });
@@ -344,14 +351,71 @@ export function SurgicalPanel({ visit, udid }: { visit: any; udid: string }) {
       </label>
 
       {advised && (
-        <div>
-          <p className="text-[10px] font-semibold text-[var(--color-ink-500)] uppercase tracking-wide mb-1.5">Tentative Date of Surgery</p>
-          <input
-            type="date"
-            value={surgDate}
-            onChange={(e) => { setSurgDate(e.target.value); setSaved(false); }}
-            className={FIELD}
-          />
+        <div className="flex flex-col gap-3">
+          {/* Row 1: Laterality · Procedure · Anesthesia */}
+          <div className="grid grid-cols-1 sm:grid-cols-[auto_1fr_1fr] gap-3 items-start">
+            {/* Laterality chips */}
+            <div>
+              <p className={LABEL}>Laterality</p>
+              <div className="flex gap-1">
+                {(["RE", "LE", "OU"] as const).map((lat) => (
+                  <button
+                    key={lat}
+                    type="button"
+                    onClick={() => { setLaterality(laterality === lat ? "" : lat); setSaved(false); }}
+                    className={`w-12 py-2 rounded-lg border text-xs font-bold transition-colors ${
+                      laterality === lat
+                        ? "bg-[var(--color-primary-600)] border-[var(--color-primary-600)] text-white"
+                        : "border-[var(--color-border)] text-[var(--color-ink-500)] hover:border-[var(--color-primary-300)] hover:text-[var(--color-primary-700)] hover:bg-[var(--color-primary-50)]"
+                    }`}
+                  >
+                    {lat}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Procedure */}
+            <div>
+              <p className={LABEL}>Procedure</p>
+              <div className="relative">
+                <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-300)] pointer-events-none" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                <input
+                  type="text"
+                  value={procedure}
+                  onChange={(e) => { setProcedure(e.target.value); setSaved(false); }}
+                  placeholder="Search procedure..."
+                  className={FIELD}
+                />
+              </div>
+            </div>
+
+            {/* Anesthesia */}
+            <div>
+              <p className={LABEL}>Type of Anesthesia</p>
+              <div className="relative">
+                <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-300)] pointer-events-none" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                <input
+                  type="text"
+                  value={anesthesia}
+                  onChange={(e) => { setAnesthesia(e.target.value); setSaved(false); }}
+                  placeholder="Search anesthesia..."
+                  className={FIELD}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Tentative Date of Surgery */}
+          <div>
+            <p className={LABEL}>Tentative Date of Surgery</p>
+            <input
+              type="date"
+              value={surgDate}
+              onChange={(e) => { setSurgDate(e.target.value); setSaved(false); }}
+              className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-3 py-2 text-sm text-[var(--color-ink-800)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent"
+            />
+          </div>
         </div>
       )}
 
