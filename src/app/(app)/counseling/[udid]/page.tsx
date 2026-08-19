@@ -240,7 +240,7 @@ export default async function CounselingPatientPage({
             </div>
           </div>
           <Link
-            href="/scheduled-ot"
+            href={`/scheduled-ot/new?visitId=${visit.id}`}
             className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-teal-600 text-white text-sm font-semibold hover:bg-teal-700 transition-colors shrink-0"
           >
             <CalendarCheck size={15} />
