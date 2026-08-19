@@ -5,7 +5,7 @@ import { format } from "date-fns";
 import Link from "next/link";
 import {
   Scissors, ChevronLeft, User, CheckCircle2, XCircle, Clock,
-  FlaskConical, CalendarCheck, ClipboardList, Stethoscope, ShieldCheck,
+  FlaskConical, CalendarCheck, ClipboardList, Stethoscope, ShieldCheck, FileText,
 } from "lucide-react";
 import CounsellingForm, { ExistingRecord } from "./CounsellingForm";
 import DoctorReviewPanel from "./DoctorReviewPanel";
@@ -447,13 +447,22 @@ export default async function CounselingPatientPage({
                   </p>
                 </div>
               </div>
-              <Link
-                href={`/scheduled-ot/new?visitId=${visit.id}`}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-teal-600 text-white text-sm font-semibold hover:bg-teal-700 transition-colors shrink-0"
-              >
-                <CalendarCheck size={15} />
-                Proceed to OT Scheduling
-              </Link>
+              <div className="flex flex-col sm:flex-row gap-2 shrink-0">
+                <Link
+                  href={`/counseling/${udid}/consent`}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-teal-300 bg-teal-50 text-teal-700 text-sm font-semibold hover:bg-teal-100 transition-colors"
+                >
+                  <FileText size={15} />
+                  Consent Form
+                </Link>
+                <Link
+                  href={`/scheduled-ot/new?visitId=${visit.id}`}
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-teal-600 text-white text-sm font-semibold hover:bg-teal-700 transition-colors"
+                >
+                  <CalendarCheck size={15} />
+                  Proceed to OT Scheduling
+                </Link>
+              </div>
             </div>
           )}
         </div>

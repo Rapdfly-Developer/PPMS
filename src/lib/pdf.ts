@@ -2154,3 +2154,168 @@ export async function generateVisitSummaryPdf(visit: any): Promise<Buffer> {
 
   return htmlToPdf(await renderFullEmrHtml(data));
 }
+
+// ── Surgical Consent Form ─────────────────────────────────────────────────────
+
+export interface ConsentPdfData {
+  hospital: { name: string; address: string | null; contact: string | null; };
+  patient:  { name: string; udid: string | null; age: number; sex: string; mobile: string; };
+  doctor:   { name: string; };
+  surgery: {
+    advisedSurgeryName: string | null;
+    advisedSurgeryEye:  string | null;
+    procedure:          string | null;
+    laterality:         string | null;
+    anaesthesia:        string | null;
+    iolLensName:        string | null;
+    iolPower:           string | null;
+    iolBrand:           string | null;
+    iolToric:           boolean;
+    estimateAmount:     string | null;
+    dateOfSurgery:      string | null;
+    paymentMode:        string | null;
+    schemeName:         string | null;
+  };
+  confirmedAt: Date | null;
+}
+
+function renderConsentHtml(d: ConsentPdfData): string {
+  const v = (x: string | null | undefined, fb = "—") => x && x.trim() ? escapeHtml(x.trim()) : fb;
+  const LAT: Record<string, string> = { RE: "Right Eye", LE: "Left Eye", OU: "Both Eyes" };
+  const latLabel = d.surgery.laterality ? (LAT[d.surgery.laterality] ?? d.surgery.laterality) : null;
+  const eyeLabel = d.surgery.advisedSurgeryEye ? (LAT[d.surgery.advisedSurgeryEye] ?? d.surgery.advisedSurgeryEye) : null;
+  const today = format(d.confirmedAt ?? new Date(), "dd MMMM yyyy");
+  const iolParts = [
+    d.surgery.iolLensName ? `Lens: ${escapeHtml(d.surgery.iolLensName)}` : null,
+    d.surgery.iolPower    ? `Power: ${escapeHtml(d.surgery.iolPower)}` : null,
+    d.surgery.iolBrand    ? `Brand: ${escapeHtml(d.surgery.iolBrand)}` : null,
+    d.surgery.iolToric    ? "Toric" : null,
+  ].filter(Boolean).join(" &nbsp;|&nbsp; ");
+
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Times New Roman',Times,serif;font-size:12pt;color:#111;background:#fff;padding:36pt 48pt;line-height:1.6}
+.hdr{display:flex;align-items:flex-start;gap:16pt;border-bottom:2pt solid #222;padding-bottom:12pt;margin-bottom:16pt}
+.h-name{font-size:16pt;font-weight:bold;text-transform:uppercase;letter-spacing:.02em}
+.h-sub{font-size:9.5pt;color:#444;margin-top:3pt}
+.doc-title{text-align:center;font-size:14pt;font-weight:bold;text-transform:uppercase;letter-spacing:.08em;border:2pt solid #111;padding:7pt 0;margin-bottom:18pt}
+.sec{margin-bottom:16pt}
+.sec-title{font-size:10pt;font-weight:bold;text-transform:uppercase;letter-spacing:.06em;border-bottom:1pt solid #bbb;padding-bottom:3pt;margin-bottom:8pt;color:#222}
+table.info{width:100%;border-collapse:collapse}
+table.info td{padding:4pt 6pt;font-size:11pt;vertical-align:top}
+td.lbl{font-weight:bold;color:#444;width:140pt;white-space:nowrap}
+.body-text{font-size:11.5pt;line-height:1.75;text-align:justify}
+.body-text p{margin-bottom:9pt}
+.body-text ol{padding-left:18pt;margin-bottom:9pt}
+.body-text li{margin-bottom:5pt}
+.sig-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:24pt;margin-top:32pt}
+.sig-line{border-bottom:1pt solid #555;height:38pt;margin-bottom:5pt}
+.sig-name{font-size:10.5pt;font-weight:bold}
+.sig-lbl{font-size:9.5pt;color:#666;margin-top:3pt}
+.footer{margin-top:28pt;border-top:1pt solid #ccc;padding-top:7pt;font-size:8.5pt;color:#888;text-align:center}
+</style></head><body>
+
+<div class="hdr">
+  <div>
+    <div class="h-name">${v(d.hospital.name)}</div>
+    ${d.hospital.address ? `<div class="h-sub">${escapeHtml(d.hospital.address)}</div>` : ""}
+    ${d.hospital.contact ? `<div class="h-sub">Tel: ${escapeHtml(d.hospital.contact)}</div>` : ""}
+  </div>
+</div>
+
+<div class="doc-title">Informed Consent for Surgical Procedure</div>
+
+<div class="sec">
+  <div class="sec-title">Patient Information</div>
+  <table class="info">
+    <tr>
+      <td class="lbl">Patient Name</td><td>${v(d.patient.name)}</td>
+      <td class="lbl">Patient ID</td><td>${v(d.patient.udid)}</td>
+    </tr>
+    <tr>
+      <td class="lbl">Age / Sex</td>
+      <td>${d.patient.age} yrs / ${d.patient.sex === "MALE" ? "Male" : d.patient.sex === "FEMALE" ? "Female" : d.patient.sex}</td>
+      <td class="lbl">Mobile</td><td>${v(d.patient.mobile)}</td>
+    </tr>
+    <tr>
+      <td class="lbl">Treating Surgeon</td><td>Dr. ${v(d.doctor.name)}</td>
+      <td class="lbl">Consent Date</td><td>${today}</td>
+    </tr>
+  </table>
+</div>
+
+<div class="sec">
+  <div class="sec-title">Procedure Details</div>
+  <table class="info">
+    <tr>
+      <td class="lbl">Surgery Advised</td>
+      <td>${v(d.surgery.advisedSurgeryName)}${eyeLabel ? ` (${escapeHtml(eyeLabel)})` : ""}</td>
+      <td class="lbl">Laterality</td>
+      <td>${latLabel ? escapeHtml(latLabel) : "—"}</td>
+    </tr>
+    <tr>
+      <td class="lbl">Procedure</td><td>${v(d.surgery.procedure)}</td>
+      <td class="lbl">Anaesthesia</td><td>${v(d.surgery.anaesthesia)}</td>
+    </tr>
+    ${iolParts ? `<tr><td class="lbl">IOL Details</td><td colspan="3">${iolParts}</td></tr>` : ""}
+    ${d.surgery.dateOfSurgery ? `<tr>
+      <td class="lbl">Planned Date</td><td>${escapeHtml(d.surgery.dateOfSurgery)}</td>
+      <td class="lbl">Estimate</td><td>${d.surgery.estimateAmount ? `&#8377; ${escapeHtml(d.surgery.estimateAmount)}` : "—"}</td>
+    </tr>` : ""}
+    ${d.surgery.paymentMode ? `<tr>
+      <td class="lbl">Payment Mode</td><td>${escapeHtml(d.surgery.paymentMode)}</td>
+      ${d.surgery.schemeName ? `<td class="lbl">Scheme</td><td>${escapeHtml(d.surgery.schemeName)}</td>` : "<td></td><td></td>"}
+    </tr>` : ""}
+  </table>
+</div>
+
+<div class="sec">
+  <div class="sec-title">Declaration of Informed Consent</div>
+  <div class="body-text">
+    <p>I, the undersigned patient / legal guardian of the above-named patient, hereby voluntarily consent to the performance of the surgical procedure described above. I confirm that the nature, purpose, risks, benefits, and alternatives of the procedure have been explained to me in a language I understand, and I have had the opportunity to ask questions.</p>
+    <p><strong>I understand and acknowledge the following:</strong></p>
+    <ol>
+      <li>The nature, purpose, and expected benefits of the surgical procedure have been fully explained.</li>
+      <li>Alternative treatments (including non-surgical options) and their respective risks have been discussed.</li>
+      <li>All surgical procedures carry inherent risks including infection, bleeding, anaesthetic reactions, and unforeseen complications.</li>
+      <li>In ophthalmic surgery, specific risks include: posterior capsule rupture, endophthalmitis, retinal detachment, corneal decompensation, cystoid macular oedema, suprachoroidal haemorrhage, and reduced or loss of vision.</li>
+      <li>Estimated visual outcomes cannot be guaranteed; results may vary depending on individual healing and pre-existing conditions.</li>
+      <li>I consent to anaesthesia as deemed appropriate by the anaesthetist/surgeon.</li>
+      <li>The surgical team may need to alter the planned procedure based on intra-operative findings.</li>
+      <li>All my questions have been answered to my satisfaction prior to signing.</li>
+      <li>I am free to withdraw this consent at any time before the procedure commences.</li>
+    </ol>
+    <p>Having understood the foregoing, I give my full and free consent to proceed with the planned surgical procedure.</p>
+  </div>
+</div>
+
+<div class="sig-grid">
+  <div>
+    <div class="sig-line"></div>
+    <div class="sig-name">Patient / Guardian Signature</div>
+    <div class="sig-lbl">Name: _______________________</div>
+    <div class="sig-lbl">Relationship: ________________</div>
+  </div>
+  <div>
+    <div class="sig-line"></div>
+    <div class="sig-name">Witness Signature</div>
+    <div class="sig-lbl">Name: _______________________</div>
+    <div class="sig-lbl">Date: ${today}</div>
+  </div>
+  <div>
+    <div class="sig-line"></div>
+    <div class="sig-name">Dr. ${v(d.doctor.name)}</div>
+    <div class="sig-lbl">Treating Surgeon</div>
+    <div class="sig-lbl">Date: ${today}</div>
+  </div>
+</div>
+
+<div class="footer">${v(d.hospital.name)} &nbsp;|&nbsp; Informed Consent Form &nbsp;|&nbsp; Generated: ${today}</div>
+
+</body></html>`;
+}
+
+export async function generateConsentPdf(data: ConsentPdfData): Promise<Buffer> {
+  return htmlToPdf(renderConsentHtml(data));
+}
