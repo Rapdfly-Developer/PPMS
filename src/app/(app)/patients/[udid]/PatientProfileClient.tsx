@@ -592,13 +592,13 @@ export function PatientProfileClient({
       {surgeryAdvisedVisitId && (
         <Link
           href={`/counseling/${udid}`}
-          className="block mt-4 rounded-xl border border-amber-300 bg-amber-50 overflow-hidden hover:border-amber-400 hover:bg-amber-100/60 transition-colors group"
+          className="block mt-4 rounded-xl border border-teal-300 bg-teal-50 overflow-hidden hover:border-teal-400 hover:bg-teal-100/60 transition-colors group"
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 bg-amber-100 border-b border-amber-200">
+          <div className="flex items-center justify-between px-4 py-3 bg-teal-100 border-b border-teal-200">
             <div className="flex items-center gap-2">
-              <Scissors size={15} className="text-amber-700" />
-              <p className="text-sm font-semibold text-amber-900">Surgical Counselling</p>
+              <Scissors size={15} className="text-teal-700" />
+              <p className="text-sm font-semibold text-teal-900">Surgical Counselling</p>
             </div>
             <div className="flex items-center gap-2">
               {counsellingStatus && counsellingStatus !== "DRAFT" && (
@@ -608,7 +608,7 @@ export function PatientProfileClient({
                   counsellingStatus === "NOT_FIT"               ? "bg-red-100 text-red-700 border-red-200" :
                   counsellingStatus === "DEFERRED"              ? "bg-orange-100 text-orange-700 border-orange-200" :
                   counsellingStatus === "INVESTIGATIONS_REQUIRED" ? "bg-blue-100 text-blue-700 border-blue-200" :
-                  "bg-amber-200 text-amber-800 border-amber-300"
+                  "bg-teal-200 text-teal-800 border-teal-300"
                 }`}>
                   {counsellingStatus === "TENTATIVE_COMPLETED"     ? "Tentative Submitted" :
                    counsellingStatus === "FIT_FOR_SURGERY"         ? "Fit for Surgery" :
@@ -618,14 +618,14 @@ export function PatientProfileClient({
                    counsellingStatus === "CONFIRMED"               ? "Confirmed" : counsellingStatus}
                 </span>
               )}
-              <ChevronRight size={14} className="text-amber-500 group-hover:text-amber-700 transition-colors" />
+              <ChevronRight size={14} className="text-teal-500 group-hover:text-teal-700 transition-colors" />
             </div>
           </div>
 
           {/* Details */}
           <div className="px-4 py-3 flex flex-col gap-2.5">
             {surgeryAdvisedDate && (
-              <p className="text-[10px] font-semibold text-amber-600 uppercase tracking-widest">
+              <p className="text-[10px] font-semibold text-teal-600 uppercase tracking-widest">
                 Counselled on {format(new Date(surgeryAdvisedDate), "dd MMM yyyy")}
               </p>
             )}
@@ -633,27 +633,27 @@ export function PatientProfileClient({
             <div className="flex flex-wrap gap-x-6 gap-y-2">
               {surgeryAdvisedName && (
                 <div>
-                  <p className="text-[10px] font-bold text-amber-700 uppercase tracking-wide mb-0.5">Procedure</p>
-                  <p className="text-sm font-medium text-amber-900">{surgeryAdvisedName}</p>
+                  <p className="text-[10px] font-bold text-teal-700 uppercase tracking-wide mb-0.5">Procedure</p>
+                  <p className="text-sm font-medium text-teal-900">{surgeryAdvisedName}</p>
                 </div>
               )}
               {surgeryAdvisedEye && (
                 <div>
-                  <p className="text-[10px] font-bold text-amber-700 uppercase tracking-wide mb-0.5">Eye</p>
-                  <p className="text-sm font-semibold text-amber-900">{surgeryAdvisedEye}</p>
+                  <p className="text-[10px] font-bold text-teal-700 uppercase tracking-wide mb-0.5">Eye</p>
+                  <p className="text-sm font-semibold text-teal-900">{surgeryAdvisedEye}</p>
                 </div>
               )}
             </div>
 
             {surgeryAdvisedNotes && (
               <div>
-                <p className="text-[10px] font-bold text-amber-700 uppercase tracking-wide mb-0.5">Counselling Notes</p>
-                <p className="text-sm text-amber-800 whitespace-pre-line">{surgeryAdvisedNotes}</p>
+                <p className="text-[10px] font-bold text-teal-700 uppercase tracking-wide mb-0.5">Counselling Notes</p>
+                <p className="text-sm text-teal-800 whitespace-pre-line">{surgeryAdvisedNotes}</p>
               </div>
             )}
 
             {!surgeryAdvisedName && !surgeryAdvisedEye && !surgeryAdvisedNotes && (
-              <p className="text-xs text-amber-700 italic">Surgery advised — no details recorded yet.</p>
+              <p className="text-xs text-teal-700 italic">Surgery advised — no details recorded yet.</p>
             )}
           </div>
         </Link>

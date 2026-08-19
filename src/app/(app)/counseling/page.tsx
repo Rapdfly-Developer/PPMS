@@ -40,8 +40,8 @@ function StageTracker({ status }: { status: string | undefined }) {
             <div className="flex flex-col items-center">
               <div
                 className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold border transition-colors ${
-                  done    ? "bg-amber-500 border-amber-500 text-white"
-                  : current ? "bg-white border-amber-500 text-amber-600 ring-2 ring-amber-200"
+                  done    ? "bg-teal-500 border-teal-500 text-white"
+                  : current ? "bg-white border-teal-500 text-teal-600 ring-2 ring-teal-200"
                   : "bg-white border-[var(--color-border)] text-[var(--color-ink-300)]"
                 }`}
               >
@@ -49,8 +49,8 @@ function StageTracker({ status }: { status: string | undefined }) {
               </div>
               <span
                 className={`mt-0.5 text-[9px] whitespace-nowrap font-medium transition-colors ${
-                  done    ? "text-amber-500"
-                  : current ? "text-amber-600"
+                  done    ? "text-teal-500"
+                  : current ? "text-teal-600"
                   : "text-[var(--color-ink-300)]"
                 }`}
               >
@@ -58,7 +58,7 @@ function StageTracker({ status }: { status: string | undefined }) {
               </span>
             </div>
             {i < STAGE_STEPS.length - 1 && (
-              <div className={`h-px flex-1 mx-1 mb-3.5 transition-colors ${done ? "bg-amber-400" : "bg-[var(--color-border)]"}`} />
+              <div className={`h-px flex-1 mx-1 mb-3.5 transition-colors ${done ? "bg-teal-400" : "bg-[var(--color-border)]"}`} />
             )}
           </React.Fragment>
         );
@@ -69,7 +69,7 @@ function StageTracker({ status }: { status: string | undefined }) {
 
 const STATUS_BADGE: Record<string, { label: string; cls: string; Icon: React.ElementType }> = {
   DRAFT:                   { label: "Draft",                   cls: "bg-gray-100 text-gray-600 border-gray-200",          Icon: Clock },
-  TENTATIVE_COMPLETED:     { label: "Tentative Submitted",     cls: "bg-amber-100 text-amber-700 border-amber-200",       Icon: Clock },
+  TENTATIVE_COMPLETED:     { label: "Tentative Submitted",     cls: "bg-teal-100 text-teal-700 border-teal-200",       Icon: Clock },
   FIT_FOR_SURGERY:         { label: "Fit for Surgery",         cls: "bg-emerald-100 text-emerald-700 border-emerald-200", Icon: CheckCircle2 },
   NOT_FIT:                 { label: "Not Fit",                 cls: "bg-red-100 text-red-700 border-red-200",             Icon: XCircle },
   DEFERRED:                { label: "Deferred",                cls: "bg-orange-100 text-orange-700 border-orange-200",    Icon: Clock },
@@ -121,8 +121,8 @@ export default async function CounselingPage() {
     <div className="fade-in">
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
-        <div className="w-9 h-9 rounded-xl bg-amber-100 flex items-center justify-center">
-          <Scissors size={17} className="text-amber-700" />
+        <div className="w-9 h-9 rounded-xl bg-teal-100 flex items-center justify-center">
+          <Scissors size={17} className="text-teal-700" />
         </div>
         <div>
           <h1 className="text-xl font-bold text-[var(--color-ink-900)]">Surgical Counseling</h1>
@@ -132,8 +132,8 @@ export default async function CounselingPage() {
 
       {visits.length === 0 ? (
         <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] flex flex-col items-center justify-center py-20 gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-amber-100 flex items-center justify-center">
-            <Scissors size={22} className="text-amber-600" />
+          <div className="w-12 h-12 rounded-2xl bg-teal-100 flex items-center justify-center">
+            <Scissors size={22} className="text-teal-600" />
           </div>
           <p className="text-sm font-semibold text-[var(--color-ink-600)]">No surgical counselling records</p>
           <p className="text-xs text-[var(--color-ink-400)]">Patients advised for surgery will appear here.</p>
@@ -144,11 +144,11 @@ export default async function CounselingPage() {
             <Link
               key={v.id}
               href={`/counseling/${v.patient.udid}`}
-              className="group flex items-center gap-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] hover:border-amber-300 hover:bg-amber-50/40 transition-colors p-4"
+              className="group flex items-center gap-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] hover:border-teal-300 hover:bg-teal-50/40 transition-colors p-4"
             >
               {/* Avatar */}
-              <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
-                <User size={16} className="text-amber-700" />
+              <div className="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center shrink-0">
+                <User size={16} className="text-teal-700" />
               </div>
 
               {/* Main info */}
@@ -165,8 +165,8 @@ export default async function CounselingPage() {
                 </div>
                 <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1">
                   {v.advisedSurgeryName && (
-                    <span className="flex items-center gap-1 text-xs text-amber-800">
-                      <Scissors size={11} className="text-amber-600 shrink-0" />
+                    <span className="flex items-center gap-1 text-xs text-teal-800">
+                      <Scissors size={11} className="text-teal-600 shrink-0" />
                       {v.advisedSurgeryName}
                     </span>
                   )}
@@ -189,7 +189,7 @@ export default async function CounselingPage() {
                 <StageTracker status={v.counsellingRecord?.status} />
               </div>
 
-              <ChevronRight size={16} className="shrink-0 text-[var(--color-ink-300)] group-hover:text-amber-500 transition-colors" />
+              <ChevronRight size={16} className="shrink-0 text-[var(--color-ink-300)] group-hover:text-teal-500 transition-colors" />
             </Link>
           ))}
         </div>

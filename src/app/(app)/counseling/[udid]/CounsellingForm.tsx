@@ -25,8 +25,8 @@ function Chip({
       disabled={disabled}
       className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors disabled:cursor-not-allowed ${
         active
-          ? "bg-amber-500 border-amber-500 text-white"
-          : "bg-[var(--color-surface)] border-[var(--color-border)] text-[var(--color-ink-600)] hover:border-amber-300 hover:text-amber-700 disabled:opacity-50 disabled:hover:border-[var(--color-border)] disabled:hover:text-[var(--color-ink-600)]"
+          ? "bg-teal-500 border-teal-500 text-white"
+          : "bg-[var(--color-surface)] border-[var(--color-border)] text-[var(--color-ink-600)] hover:border-teal-300 hover:text-teal-700 disabled:opacity-50 disabled:hover:border-[var(--color-border)] disabled:hover:text-[var(--color-ink-600)]"
       }`}
     >
       {label}
@@ -60,7 +60,7 @@ function TextInput({
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
       disabled={disabled}
-      className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:border-amber-400 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+      className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:border-teal-400 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
     />
   );
 }
@@ -81,7 +81,7 @@ function AmountInput({
         onChange={(e) => onChange(e.target.value)}
         placeholder="0.00"
         disabled={disabled}
-        className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] pl-7 pr-3 py-2 text-sm text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:border-amber-400 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+        className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] pl-7 pr-3 py-2 text-sm text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:border-teal-400 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
       />
     </div>
   );
@@ -90,8 +90,8 @@ function AmountInput({
 function SectionHeader({ icon, title }: { icon: React.ReactNode; title: string }) {
   return (
     <div className="flex items-center gap-2 mb-4">
-      <div className="w-7 h-7 rounded-lg bg-amber-100 flex items-center justify-center shrink-0">
-        <span className="text-amber-600">{icon}</span>
+      <div className="w-7 h-7 rounded-lg bg-teal-100 flex items-center justify-center shrink-0">
+        <span className="text-teal-600">{icon}</span>
       </div>
       <h3 className="text-sm font-bold text-[var(--color-ink-800)]">{title}</h3>
     </div>
@@ -316,7 +316,7 @@ export default function CounsellingForm({
             <label className="flex items-center gap-2 cursor-pointer select-none">
               <input type="checkbox" checked={iolToric}
                 onChange={(e) => setIolToric(e.target.checked)}
-                disabled={ro} className="w-4 h-4 accent-amber-500" />
+                disabled={ro} className="w-4 h-4 accent-teal-500" />
               <span className="text-sm text-[var(--color-ink-700)]">Toric</span>
             </label>
           </div>
@@ -368,7 +368,7 @@ export default function CounsellingForm({
             <label className="flex items-center gap-2 cursor-pointer select-none">
               <input type="checkbox" checked={estimateVague}
                 onChange={(e) => setEstimateVague(e.target.checked)}
-                disabled={ro} className="w-4 h-4 accent-amber-500" />
+                disabled={ro} className="w-4 h-4 accent-teal-500" />
               <span className="text-sm text-[var(--color-ink-700)]">Vague estimate</span>
             </label>
           </div>
@@ -391,7 +391,7 @@ export default function CounsellingForm({
           value={dateOfSurgery}
           onChange={(e) => setDateOfSurgery(e.target.value)}
           disabled={ro}
-          className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-ink-800)] focus:outline-none focus:border-amber-400 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+          className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-ink-800)] focus:outline-none focus:border-teal-400 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
         />
       </div>
 
@@ -418,7 +418,7 @@ export default function CounsellingForm({
                 type="button"
                 onClick={handleSubmitTentative}
                 disabled={pending}
-                className="flex items-center gap-2 px-5 py-2 rounded-xl bg-amber-500 text-white text-sm font-semibold hover:bg-amber-600 disabled:opacity-50 transition-colors"
+                className="flex items-center gap-2 px-5 py-2 rounded-xl bg-teal-500 text-white text-sm font-semibold hover:bg-teal-600 disabled:opacity-50 transition-colors"
               >
                 <Send size={14} />
                 {pending ? "Submitting…" : "Submit Tentative Counseling"}

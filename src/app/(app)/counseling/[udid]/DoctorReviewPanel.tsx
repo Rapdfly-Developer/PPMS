@@ -107,9 +107,9 @@ const COLOR_MAP = {
     icon:   "text-red-600",
   },
   amber: {
-    card:   "border-amber-200 bg-amber-50 hover:border-amber-400",
-    active: "border-amber-500 bg-amber-50 ring-2 ring-amber-300",
-    icon:   "text-amber-600",
+    card:   "border-teal-200 bg-teal-50 hover:border-teal-400",
+    active: "border-teal-500 bg-teal-50 ring-2 ring-teal-300",
+    icon:   "text-teal-600",
   },
   blue: {
     card:   "border-blue-200 bg-blue-50 hover:border-blue-400",

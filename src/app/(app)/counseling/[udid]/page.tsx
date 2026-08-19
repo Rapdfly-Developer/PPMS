@@ -53,21 +53,21 @@ function StepTracker({ status }: { status: string }) {
                 <div
                   className={`relative w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all ${
                     done
-                      ? "bg-amber-500 border-amber-500"
+                      ? "bg-teal-500 border-teal-500"
                       : current
-                      ? "bg-white border-amber-500"
+                      ? "bg-white border-teal-500"
                       : "bg-[var(--color-surface-sunken)] border-[var(--color-border)]"
                   }`}
                 >
                   {current && (
-                    <span className="absolute inset-0 rounded-full animate-ping bg-amber-300 opacity-30" />
+                    <span className="absolute inset-0 rounded-full animate-ping bg-teal-300 opacity-30" />
                   )}
                   {done ? (
                     <CheckCircle2 size={18} className="text-white" />
                   ) : (
                     <StepIcon
                       size={16}
-                      className={current ? "text-amber-600" : "text-[var(--color-ink-300)]"}
+                      className={current ? "text-teal-600" : "text-[var(--color-ink-300)]"}
                     />
                   )}
                 </div>
@@ -77,9 +77,9 @@ function StepTracker({ status }: { status: string }) {
                   <p
                     className={`text-[11px] font-bold leading-tight ${
                       done
-                        ? "text-amber-600"
+                        ? "text-teal-600"
                         : current
-                        ? "text-amber-700"
+                        ? "text-teal-700"
                         : "text-[var(--color-ink-300)]"
                     }`}
                   >
@@ -90,7 +90,7 @@ function StepTracker({ status }: { status: string }) {
                       done
                         ? "text-emerald-500"
                         : current
-                        ? "text-amber-500"
+                        ? "text-teal-500"
                         : "text-[var(--color-ink-300)]"
                     }`}
                   >
@@ -104,7 +104,7 @@ function StepTracker({ status }: { status: string }) {
                 <div className="flex-1 mt-5 mx-1">
                   <div
                     className={`h-0.5 rounded-full transition-all ${
-                      i < activeStep || isComplete ? "bg-amber-400" : "bg-[var(--color-border)]"
+                      i < activeStep || isComplete ? "bg-teal-400" : "bg-[var(--color-border)]"
                     }`}
                   />
                 </div>
@@ -129,7 +129,7 @@ function StepTracker({ status }: { status: string }) {
 
 const STATUS_META: Record<string, { label: string; color: string; Icon: React.ElementType }> = {
   DRAFT:                   { label: "Draft",                    color: "bg-gray-100 text-gray-600 border-gray-200",          Icon: Clock },
-  TENTATIVE_COMPLETED:     { label: "Tentative Submitted",      color: "bg-amber-100 text-amber-700 border-amber-200",       Icon: Clock },
+  TENTATIVE_COMPLETED:     { label: "Tentative Submitted",      color: "bg-teal-100 text-teal-700 border-teal-200",       Icon: Clock },
   FIT_FOR_SURGERY:         { label: "Fit for Surgery",          color: "bg-emerald-100 text-emerald-700 border-emerald-200", Icon: CheckCircle2 },
   NOT_FIT:                 { label: "Not Fit for Surgery",      color: "bg-red-100 text-red-700 border-red-200",             Icon: XCircle },
   DEFERRED:                { label: "Surgery Deferred",         color: "bg-orange-100 text-orange-700 border-orange-200",    Icon: Clock },
@@ -160,8 +160,8 @@ function StepHeading({
       <div
         className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
           done
-            ? "bg-amber-500 text-white"
-            : "bg-amber-100 text-amber-700"
+            ? "bg-teal-500 text-white"
+            : "bg-teal-100 text-teal-700"
         }`}
       >
         {done ? <CheckCircle2 size={14} /> : number}
@@ -282,8 +282,8 @@ export default async function CounselingPatientPage({
       {/* Patient header */}
       <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 mb-4">
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
-            <User size={20} className="text-amber-700" />
+          <div className="w-12 h-12 rounded-full bg-teal-100 flex items-center justify-center shrink-0">
+            <User size={20} className="text-teal-700" />
           </div>
           <div className="flex-1 min-w-0">
             <h1 className="text-lg font-bold text-[var(--color-ink-900)]">{patient.name}</h1>
@@ -302,19 +302,19 @@ export default async function CounselingPatientPage({
       </div>
 
       {/* Visit summary strip */}
-      <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 mb-5 flex flex-wrap gap-x-5 gap-y-1 items-center">
+      <div className="rounded-xl border border-teal-200 bg-teal-50 px-4 py-3 mb-5 flex flex-wrap gap-x-5 gap-y-1 items-center">
         <div className="flex items-center gap-1.5">
-          <Scissors size={13} className="text-amber-600 shrink-0" />
-          <span className="text-sm font-semibold text-amber-900">
+          <Scissors size={13} className="text-teal-600 shrink-0" />
+          <span className="text-sm font-semibold text-teal-900">
             {visit.advisedSurgeryName ?? "Surgery advised"}
           </span>
         </div>
         {visit.advisedSurgeryEye && (
-          <span className="text-xs text-amber-700">
+          <span className="text-xs text-teal-700">
             {EYE_LABEL[visit.advisedSurgeryEye] ?? visit.advisedSurgeryEye}
           </span>
         )}
-        <span className="text-xs text-amber-600 ml-auto">
+        <span className="text-xs text-teal-600 ml-auto">
           {format(new Date(visit.date), "dd MMM yyyy")}
           {visit.doctor?.name && ` · Dr. ${visit.doctor.name}`}
         </span>
