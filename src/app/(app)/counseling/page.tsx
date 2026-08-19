@@ -9,6 +9,64 @@ export const metadata = { title: "Counseling" };
 
 const EYE_LABEL: Record<string, string> = { RE: "Right Eye", LE: "Left Eye", OU: "Both Eyes" };
 
+const STAGE_STEPS = [
+  { label: "Counselling Entry" },
+  { label: "Doctor Review" },
+  { label: "Decision Made" },
+  { label: "Confirmed for OT" },
+];
+
+function statusToStep(status: string | undefined): number {
+  switch (status) {
+    case "TENTATIVE_COMPLETED":                                             return 1;
+    case "FIT_FOR_SURGERY":
+    case "NOT_FIT":
+    case "DEFERRED":
+    case "INVESTIGATIONS_REQUIRED":                                         return 2;
+    case "CONFIRMED":                                                       return 3;
+    default:                                                                return 0;
+  }
+}
+
+function StageTracker({ status }: { status: string | undefined }) {
+  const active = statusToStep(status);
+  return (
+    <div className="flex items-center gap-0 mt-2">
+      {STAGE_STEPS.map((step, i) => {
+        const done    = i < active;
+        const current = i === active;
+        return (
+          <React.Fragment key={i}>
+            <div className="flex flex-col items-center">
+              <div
+                className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold border transition-colors ${
+                  done    ? "bg-amber-500 border-amber-500 text-white"
+                  : current ? "bg-white border-amber-500 text-amber-600 ring-2 ring-amber-200"
+                  : "bg-white border-[var(--color-border)] text-[var(--color-ink-300)]"
+                }`}
+              >
+                {done ? "✓" : i + 1}
+              </div>
+              <span
+                className={`mt-0.5 text-[9px] whitespace-nowrap font-medium transition-colors ${
+                  done    ? "text-amber-500"
+                  : current ? "text-amber-600"
+                  : "text-[var(--color-ink-300)]"
+                }`}
+              >
+                {step.label}
+              </span>
+            </div>
+            {i < STAGE_STEPS.length - 1 && (
+              <div className={`h-px flex-1 mx-1 mb-3.5 transition-colors ${done ? "bg-amber-400" : "bg-[var(--color-border)]"}`} />
+            )}
+          </React.Fragment>
+        );
+      })}
+    </div>
+  );
+}
+
 const STATUS_BADGE: Record<string, { label: string; cls: string; Icon: React.ElementType }> = {
   DRAFT:                   { label: "Draft",                   cls: "bg-gray-100 text-gray-600 border-gray-200",          Icon: Clock },
   TENTATIVE_COMPLETED:     { label: "Tentative Submitted",     cls: "bg-amber-100 text-amber-700 border-amber-200",       Icon: Clock },
@@ -128,6 +186,7 @@ export default async function CounselingPage() {
                     {v.advisedSurgeryNotes}
                   </p>
                 )}
+                <StageTracker status={v.counsellingRecord?.status} />
               </div>
 
               <ChevronRight size={16} className="shrink-0 text-[var(--color-ink-300)] group-hover:text-amber-500 transition-colors" />
