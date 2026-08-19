@@ -6,49 +6,54 @@ import { useRouter, usePathname } from "next/navigation";
 /**
  * Keeps server-rendered data current without a manual reload.
  *
- * router.refresh() re-runs the entire server component tree for the route, so
- * every tick costs that page's full query set plus the auth and licence checks.
- * This is mounted in the app layout, so a single cadence applied to all ~36
- * screens: pages that never change (settings, a finalized EMR, a patient
- * profile) were re-querying the database as often as the live queue board.
+ * Cadence tiers (chosen to cut function invocations while keeping data fresh):
+ *   /queue          — 30 s  (live board; was 5 s — 6× reduction)
+ *   /dashboard      — 120 s (summary data; already covered by layout refresh)
+ *   /appointments   — 120 s (booking changes are infrequent)
+ *   static routes   — never auto-refresh (settings, patient profiles, EMR, counseling)
+ *   everything else — 120 s (was 30 s — 4× reduction)
  *
- * The cadence is therefore chosen per route — the boards people actually watch
- * keep their original pulse, everything else backs off — plus two guards that
- * apply everywhere:
+ * Two guards apply everywhere:
+ *   - hidden tab → no poll (background tabs cost nothing)
+ *   - user is typing → tick skipped (avoids disturbing in-progress input)
  *
- *   - a hidden tab never polls, so background tabs cost nothing;
- *   - a tick is skipped while the user is typing, since re-rendering the tree
- *     under an open form is wasted work and can disturb in-progress input.
+ * On tab re-focus an immediate catch-up refresh fires (replaces most missed polls).
  */
 
-/** Routes whose whole purpose is watching live movement. Unchanged cadence. */
-const LIVE_ROUTES = ["/queue"];
-const LIVE_INTERVAL = 5000;
+/** Routes that never need auto-refresh — data only changes on explicit user action. */
+const STATIC_PREFIXES = [
+  "/settings",
+  "/counseling/",  // individual counselling detail page
+  "/emr/",         // individual EMR — saved explicitly
+  "/patients/",    // patient profile — rarely changes
+  "/scheduled-ot/", // OT detail pages
+  "/ipd/",
+  "/follow-ups/",
+];
 
-/** Everything else: still auto-refreshes, just not six times a minute. */
-const DEFAULT_INTERVAL = 30000;
+/** Live-board route with the shortest acceptable interval. */
+const LIVE_ROUTES = ["/queue"];
+const LIVE_INTERVAL = 30_000;   // was 5 000 — 6× reduction
+
+/** Everything else. */
+const DEFAULT_INTERVAL = 120_000; // was 30 000 — 4× reduction
 
 export function AutoRefresh({ interval }: { interval?: number }) {
-  const router = useRouter();
+  const router   = useRouter();
   const pathname = usePathname();
 
-  const isLive = LIVE_ROUTES.some(
-    (r) => pathname === r || pathname.startsWith(`${r}/`),
-  );
+  const isStatic = STATIC_PREFIXES.some((p) => pathname.startsWith(p));
+  if (isStatic) return null; // no polling for these routes
+
+  const isLive    = LIVE_ROUTES.some((r) => pathname === r || pathname.startsWith(`${r}/`));
   const effective = interval ?? (isLive ? LIVE_INTERVAL : DEFAULT_INTERVAL);
 
   useEffect(() => {
-    /** True while focus sits in a field, so a tick cannot churn the tree mid-edit. */
     function isEditing() {
       const el = document.activeElement as HTMLElement | null;
       if (!el) return false;
       const tag = el.tagName;
-      return (
-        tag === "INPUT" ||
-        tag === "TEXTAREA" ||
-        tag === "SELECT" ||
-        el.isContentEditable
-      );
+      return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || el.isContentEditable;
     }
 
     const id = setInterval(() => {
@@ -58,7 +63,6 @@ export function AutoRefresh({ interval }: { interval?: number }) {
     }, effective);
 
     function handleVisibility() {
-      // Immediate catch-up when the tab regains focus — unchanged behaviour.
       if (document.visibilityState === "visible" && !isEditing()) {
         router.refresh();
       }

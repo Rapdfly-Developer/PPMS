@@ -326,10 +326,6 @@ export function DashboardClient({
   const [, startMove]                       = useTransition();
 
   useEffect(() => { setGreetHour(new Date().getHours()); }, []);
-  useEffect(() => {
-    const id = setInterval(() => router.refresh(), 60_000);
-    return () => clearInterval(id);
-  }, [router]);
 
   /* Filter appts by selected hospital (DOCTOR) or doctor (HOSPITAL) */
   const filteredAppts = useMemo(() => {

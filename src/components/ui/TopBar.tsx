@@ -147,7 +147,9 @@ export function TopBar({ name, role }: { name: string; role: string }) {
     return () => window.removeEventListener("keydown", handler);
   }, []);
 
-  // Poll for unread notifications
+  // Fetch unread notifications — polled every 5 min (was 30s → 10× reduction).
+  // Tab re-focus triggers an immediate catch-up so users see fresh counts when
+  // they return to the app without waiting for the next scheduled tick.
   const fetchUnread = useCallback(async () => {
     try {
       const res = await fetch("/api/notifications/unread");
@@ -160,8 +162,17 @@ export function TopBar({ name, role }: { name: string; role: string }) {
 
   useEffect(() => {
     fetchUnread();
-    const id = setInterval(fetchUnread, 30_000);
-    return () => clearInterval(id);
+    const id = setInterval(fetchUnread, 300_000); // 5 minutes
+
+    function handleVisibility() {
+      if (document.visibilityState === "visible") fetchUnread();
+    }
+    document.addEventListener("visibilitychange", handleVisibility);
+
+    return () => {
+      clearInterval(id);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
   }, [fetchUnread]);
 
   // Click-outside to close dropdown

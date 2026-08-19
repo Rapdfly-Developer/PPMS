@@ -3,7 +3,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { format } from "date-fns";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   ChevronDown, Plus,
   Building2, Scissors,
@@ -127,7 +126,6 @@ function wardLabel(w: string) {
 
 /* ── Main component ─────────────────────────────────────────────────────── */
 export function HospitalDashboardClient({ hospitalName, kpis, appointments, surgeries, admissions, doctors, todayLabel }: Props) {
-  const router = useRouter();
   const [selectedDoctor, setSelectedDoctor] = useState<string>("all");
   const [statusFilter, setStatusFilter]     = useState<string>("ALL");
 
@@ -135,11 +133,7 @@ export function HospitalDashboardClient({ hospitalName, kpis, appointments, surg
   const [greetHour, setGreetHour] = useState<number | null>(null);
   useEffect(() => { setGreetHour(new Date().getHours()); }, []);
 
-  /* Auto-refresh every 60s */
-  useEffect(() => {
-    const id = setInterval(() => router.refresh(), 60_000);
-    return () => clearInterval(id);
-  }, [router]);
+  // Dashboard auto-refresh is handled by the shared AutoRefresh component in the app layout.
 
   const filtered = useMemo(
     () => selectedDoctor === "all"
