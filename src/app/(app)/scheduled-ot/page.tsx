@@ -16,6 +16,10 @@ export default async function ScheduledOtPage() {
       hospital: true,
       surgeon:  true,
       preAuth:  { include: { insuranceCompany: true } },
+      surgeryConsent:  { select: { id: true, createdAt: true } },
+      preOpAssessment: { select: { id: true, assessedAt: true, createdAt: true } },
+      otRecord:        { select: { id: true, status: true } },
+      postOpReview:    { select: { id: true, createdAt: true } },
     },
     orderBy: { plannedDateTime: "asc" },
   });
@@ -49,6 +53,10 @@ export default async function ScheduledOtPage() {
     status:            r.status,
     department:        r.department ?? null,
     remarks:           r.remarks ?? null,
+    anesthetistName:   r.anesthetistName ?? null,
+    nursingStaff:      r.nursingStaff ?? null,
+    admissionDate:     r.admissionDate ? r.admissionDate.toISOString().slice(0, 10) : null,
+    paymentStatus:     r.paymentStatus ?? null,
     consentReceived:   r.consentReceived,
     reportsUploaded:   r.reportsUploaded,
     otAvailable:       r.otAvailable,
@@ -63,6 +71,12 @@ export default async function ScheduledOtPage() {
     patient:  { id: r.patient.id, name: r.patient.name, udid: r.patient.udid ?? "", uhid: (r.patient as any).uhid ?? null, age: r.patient.age, sex: r.patient.sex },
     hospital: { name: r.hospital.name, id: r.hospital.id },
     doctor:   { name: r.surgeon.name,  id: r.surgeon.id  },
+    workflow: {
+      consent:  r.surgeryConsent  ? { id: r.surgeryConsent.id,  doneAt: r.surgeryConsent.createdAt.toISOString() } : null,
+      preOp:    r.preOpAssessment ? { id: r.preOpAssessment.id, doneAt: (r.preOpAssessment.assessedAt ?? r.preOpAssessment.createdAt).toISOString() } : null,
+      otRecord: r.otRecord        ? { id: r.otRecord.id, status: r.otRecord.status } : null,
+      postOp:   r.postOpReview    ? { id: r.postOpReview.id,    doneAt: r.postOpReview.createdAt.toISOString() } : null,
+    },
   });
 
   const waiting   = scheduleRecords.filter((r) => WAITING_STATUSES.includes(r.status)).map(shapeSchedule);

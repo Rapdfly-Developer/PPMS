@@ -25,14 +25,24 @@ interface PreAuthInfo {
   insuranceName: string;
 }
 
+interface WorkflowStep { id: string; doneAt?: string; status?: string }
+
 interface ScheduleRecord {
   id: string; surgeryName: string; surgeryCategory: string; urgencyType: string;
   priority: string; plannedDateTime: string; otRoom: string | null;
   estimatedDuration: number | null; status: string; department: string | null;
-  remarks: string | null; consentReceived: boolean; reportsUploaded: boolean;
+  remarks: string | null; anesthetistName: string | null; nursingStaff: string | null;
+  admissionDate: string | null; paymentStatus: string | null;
+  consentReceived: boolean; reportsUploaded: boolean;
   otAvailable: boolean; bloodArranged: boolean; patientInformed: boolean;
   preAuth: PreAuthInfo | null;
   patient: Patient; hospital: Hospital; doctor: Doctor;
+  workflow: {
+    consent:  WorkflowStep | null;
+    preOp:    WorkflowStep | null;
+    otRecord: WorkflowStep | null;
+    postOp:   WorkflowStep | null;
+  };
 }
 
 interface Counts { waiting: number; scheduled: number; completed: number; cancelled: number }
@@ -140,6 +150,110 @@ function PreAuthBadge({ p }: { p: PreAuthInfo }) {
       {p.authCode && (
         <span className="font-mono opacity-80">Auth: {p.authCode}</span>
       )}
+    </div>
+  );
+}
+
+/* ── Workflow Details Panel ──────────────────────────────────────────────── */
+function DetailsPanel({ rec }: { rec: ScheduleRecord }) {
+  const wf = rec.workflow;
+  const otDone = !!wf.otRecord && wf.otRecord.status === "COMPLETED";
+
+  const steps = [
+    { key: "consent",  label: "Consent Form",       icon: FileSignature, done: !!wf.consent,  doneAt: wf.consent?.doneAt,  href: `/scheduled-ot/${rec.id}/consent`,          color: "violet" },
+    { key: "preOp",    label: "Pre-Op Assessment",   icon: Activity,      done: !!wf.preOp,    doneAt: wf.preOp?.doneAt,    href: `/scheduled-ot/${rec.id}/pre-op-assessment`, color: "amber"  },
+    { key: "otRecord", label: "OT / Surgery",        icon: DoorOpen,      done: otDone,        doneAt: undefined,           href: `/scheduled-ot/${rec.id}/ot-room`,           color: "red", otStatus: wf.otRecord?.status },
+    { key: "postOp",   label: "Post-Op Review",      icon: Stethoscope,   done: !!wf.postOp,   doneAt: wf.postOp?.doneAt,   href: `/scheduled-ot/${rec.id}/post-op-review`,    color: "teal"   },
+  ] as const;
+
+  const OT_STATUS_LABEL: Record<string, string> = {
+    CHECKIN: "Check-in", PREP: "Prep", IN_PROGRESS: "In Progress",
+    COMPLETED: "Completed", RECOVERY: "Recovery",
+  };
+
+  const COLOR: Record<string, { pill: string; dot: string }> = {
+    violet: { pill: "bg-violet-50 text-violet-700 border-violet-200", dot: "bg-violet-500" },
+    amber:  { pill: "bg-amber-50  text-amber-700  border-amber-200",  dot: "bg-amber-500"  },
+    red:    { pill: "bg-red-50    text-red-700    border-red-200",    dot: "bg-red-500"    },
+    teal:   { pill: "bg-teal-50   text-teal-700   border-teal-200",   dot: "bg-teal-500"   },
+  };
+
+  return (
+    <div className="border-t border-[var(--color-border)] px-4 py-4 space-y-5">
+
+      {/* ── Workflow steps ── */}
+      <div>
+        <p className="text-[10px] font-bold text-[var(--color-ink-400)] uppercase tracking-wide mb-3">Workflow Progress</p>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          {steps.map((s) => {
+            const Icon = s.icon;
+            const c = COLOR[s.color];
+            return (
+              <div
+                key={s.key}
+                className={`rounded-xl border p-3 flex flex-col gap-1.5 ${
+                  s.done ? c.pill : "bg-[var(--color-surface-sunken)] border-[var(--color-border)]"
+                }`}
+              >
+                <div className="flex items-center gap-1.5">
+                  <div className={`w-2 h-2 rounded-full shrink-0 ${s.done ? c.dot : "bg-slate-300"}`} />
+                  <Icon size={12} className={s.done ? "" : "text-[var(--color-ink-300)]"} />
+                  <span className={`text-[10px] font-bold uppercase tracking-wide ${s.done ? "" : "text-[var(--color-ink-400)]"}`}>
+                    {s.done ? "Done" : "Pending"}
+                  </span>
+                </div>
+                <p className={`text-xs font-semibold leading-tight ${s.done ? "" : "text-[var(--color-ink-500)]"}`}>
+                  {s.label}
+                </p>
+                {"otStatus" in s && s.otStatus && !s.done && (
+                  <span className="text-[10px] text-[var(--color-ink-500)]">
+                    {OT_STATUS_LABEL[s.otStatus] ?? s.otStatus}
+                  </span>
+                )}
+                {s.doneAt && (
+                  <span className="text-[10px] text-[var(--color-ink-400)]">
+                    {format(new Date(s.doneAt), "d MMM, h:mm a")}
+                  </span>
+                )}
+                <Link
+                  href={s.href}
+                  className={`mt-auto inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-1 rounded-lg border transition-colors ${
+                    s.done
+                      ? `${c.pill} hover:opacity-80`
+                      : "border-[var(--color-border)] text-[var(--color-ink-500)] hover:bg-[var(--color-surface)] bg-white"
+                  }`}
+                >
+                  {s.done ? "View" : "Open"}
+                  <ChevronRight size={9} />
+                </Link>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ── Extra details ── */}
+      <div>
+        <p className="text-[10px] font-bold text-[var(--color-ink-400)] uppercase tracking-wide mb-3">Schedule Details</p>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-2 text-xs">
+          {[
+            { label: "Priority",       value: rec.priority },
+            { label: "Department",     value: rec.department },
+            { label: "Est. Duration",  value: rec.estimatedDuration ? `${rec.estimatedDuration} min` : null },
+            { label: "OT Room",        value: rec.otRoom },
+            { label: "Anesthetist",    value: rec.anesthetistName },
+            { label: "Nursing Staff",  value: rec.nursingStaff },
+            { label: "Admission Date", value: rec.admissionDate ? format(new Date(rec.admissionDate), "d MMM yyyy") : null },
+            { label: "Payment",        value: rec.paymentStatus },
+            { label: "Remarks",        value: rec.remarks },
+          ].filter((f) => f.value).map(({ label, value }) => (
+            <div key={label}>
+              <p className="text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-wide">{label}</p>
+              <p className="text-[var(--color-ink-700)] font-medium mt-0.5">{value}</p>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
@@ -424,21 +538,7 @@ function WaitingCard({ rec, role, idx }: { rec: ScheduleRecord; role: "DOCTOR" |
       </div>
 
       {/* Expandable details */}
-      {open && (
-        <div className="border-t border-[var(--color-border)] px-4 py-3 grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-2 text-xs">
-          {[
-            { label: "Department",   value: rec.department },
-            { label: "Priority",     value: rec.priority },
-            { label: "Est. Duration",value: rec.estimatedDuration ? `${rec.estimatedDuration} min` : null },
-            { label: "OT Room",      value: rec.otRoom },
-          ].filter((f) => f.value).map(({ label, value }) => (
-            <div key={label}>
-              <p className="text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-wide">{label}</p>
-              <p className="text-[var(--color-ink-700)] font-medium mt-0.5">{value}</p>
-            </div>
-          ))}
-        </div>
-      )}
+      {open && <DetailsPanel rec={rec} />}
     </div>
   );
 }
@@ -622,21 +722,7 @@ function ConfirmedCard({ rec, role, idx }: { rec: ScheduleRecord; role: "DOCTOR"
         </div>
       </div>
 
-      {open && (
-        <div className="border-t border-[var(--color-border)] px-4 py-3 grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-2 text-xs">
-          {[
-            { label: "Department",    value: rec.department },
-            { label: "Priority",      value: rec.priority },
-            { label: "Est. Duration", value: rec.estimatedDuration ? `${rec.estimatedDuration} min` : null },
-            { label: "OT Room",       value: rec.otRoom },
-          ].filter((f) => f.value).map(({ label, value }) => (
-            <div key={label}>
-              <p className="text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-wide">{label}</p>
-              <p className="text-[var(--color-ink-700)] font-medium mt-0.5">{value}</p>
-            </div>
-          ))}
-        </div>
-      )}
+      {open && <DetailsPanel rec={rec} />}
     </div>
   );
 }
