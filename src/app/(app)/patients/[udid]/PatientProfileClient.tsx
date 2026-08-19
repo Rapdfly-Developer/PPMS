@@ -592,7 +592,7 @@ export function PatientProfileClient({
       {surgeryAdvisedVisitId && (
         <Link
           href={`/counseling/${udid}`}
-          className="block rounded-xl border border-amber-300 bg-amber-50 overflow-hidden hover:border-amber-400 hover:bg-amber-100/60 transition-colors group"
+          className="block mt-4 rounded-xl border border-amber-300 bg-amber-50 overflow-hidden hover:border-amber-400 hover:bg-amber-100/60 transition-colors group"
         >
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 bg-amber-100 border-b border-amber-200">
