@@ -211,9 +211,6 @@ export default function CounsellingForm({
     });
   }
 
-  const showScheme   = paymentMode === "CASHLESS";
-  const showCashOpts = paymentType === "OVERALL" || paymentType === "TENTATIVE";
-
   return (
     <div className="flex flex-col gap-5">
 
@@ -236,51 +233,30 @@ export default function CounsellingForm({
             <FieldError show={submitted && !paymentType} message="Payment type is required" />
           </div>
           {paymentType && (
-            <div>
-              <FieldLabel>Payment Mode</FieldLabel>
-              <div className="flex flex-wrap gap-2">
-                {["CASH", "CASHLESS"].map((m) => (
-                  <Chip key={m} label={m === "CASH" ? "Cash" : "Cashless"}
-                    active={paymentMode === m}
-                    onClick={() => setPaymentMode(paymentMode === m ? "" : m)}
-                    disabled={ro}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-          {showScheme && (
-            <div className="grid grid-cols-2 gap-3">
+            <>
               <div>
-                <FieldLabel>Scheme Name</FieldLabel>
-                <TextInput value={schemeName} onChange={setSchemeName} placeholder="e.g. PMJAY" disabled={ro} />
-              </div>
-              <div>
-                <FieldLabel>Scheme Type</FieldLabel>
+                <FieldLabel>Cash / Cashless</FieldLabel>
                 <div className="flex flex-wrap gap-2">
-                  {["FULL", "CAP", "COMM"].map((s) => (
-                    <Chip key={s} label={s} active={schemeType === s}
-                      onClick={() => setSchemeType(schemeType === s ? "" : s)} disabled={ro} />
+                  {["CASH", "CASHLESS"].map((m) => (
+                    <Chip key={m} label={m === "CASH" ? "Cash" : "Cashless"}
+                      active={paymentMode === m}
+                      onClick={() => setPaymentMode(paymentMode === m ? "" : m)}
+                      disabled={ro}
+                    />
                   ))}
                 </div>
               </div>
-            </div>
-          )}
-          {showCashOpts && (
-            <div>
-              <FieldLabel>Out of Pocket</FieldLabel>
-              <div className="flex flex-wrap gap-2">
-                {[
-                  { k: "FULL_CASH",   l: "Full Cash"   },
-                  { k: "GOVT_SCHEME", l: "Govt Scheme" },
-                  { k: "CAMP",        l: "Camp"        },
-                  { k: "OTHERS",      l: "Others"      },
-                ].map(({ k, l }) => (
-                  <Chip key={k} label={l} active={outOfPocket === k}
-                    onClick={() => setOutOfPocket(outOfPocket === k ? "" : k)} disabled={ro} />
-                ))}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <FieldLabel>Name</FieldLabel>
+                  <TextInput value={schemeName} onChange={setSchemeName} placeholder="e.g. PMJAY, TN CM Scheme" disabled={ro} />
+                </div>
+                <div>
+                  <FieldLabel>Type</FieldLabel>
+                  <TextInput value={schemeType} onChange={setSchemeType} placeholder="e.g. Full, Cap, Commission" disabled={ro} />
+                </div>
               </div>
-            </div>
+            </>
           )}
         </div>
       </div>
