@@ -906,16 +906,6 @@ export function PlanTab({ visit, udid, patientSex, priorVisits = [] }: { visit: 
   );
 }
 
-const PROCEDURE_KEYWORDS = [
-  { group: "Cataract", items: ["Phacoemulsification", "SICS", "ECCE", "ICCE", "IOL Implantation", "IOL Exchange", "Posterior Capsulotomy (YAG)"] },
-  { group: "Glaucoma", items: ["Trabeculectomy", "Ahmed Valve Implant", "Molteno Implant", "SLT", "ALT", "Goniotomy", "Cyclophotocoagulation"] },
-  { group: "Vitreoretina", items: ["Intravitreal Injection", "Vitrectomy (PPV)", "Scleral Buckling", "Retinal Laser (Photocoagulation)", "Pan-retinal Photocoagulation (PRP)", "Pneumatic Retinopexy", "Membrane Peeling"] },
-  { group: "Cornea", items: ["Penetrating Keratoplasty (PK)", "DSEK / DMEK", "Corneal Suturing", "Pterygium Excision", "Corneal Biopsy", "Superficial Keratectomy"] },
-  { group: "Lid & Adnexa", items: ["Chalazion Excision", "Entropion Repair", "Ectropion Repair", "Ptosis Correction", "Blepharoplasty", "Lid Laceration Repair", "Trichiasis Treatment"] },
-  { group: "Lacrimal", items: ["DCR (External)", "DCR (Endoscopic)", "Probing & Syringing", "Jones Tube Placement"] },
-  { group: "Squint", items: ["Strabismus Surgery (Recession)", "Strabismus Surgery (Resection)", "Adjustable Suture Squint Surgery"] },
-  { group: "Minor / Injection", items: ["Subconjunctival Injection", "Sub-Tenon Injection", "Botox Injection", "Foreign Body Removal", "Conjunctival Biopsy", "Anterior Chamber Paracentesis"] },
-] as const;
 
 const ANESTHESIA_KEYWORDS = [
   "Topical Anesthesia",
@@ -933,9 +923,7 @@ function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: st
   const [procedureName,  setProcedureName]  = useState<string>(visit.procedureName ?? "");
   const [anesthesia,     setAnesthesia]     = useState<string>(visit.anesthesiaType ?? "");
   const [showHistory,    setShowHistory]    = useState(false);
-  const [procOpen,       setProcOpen]       = useState(false);
   const [anesthesiaOpen, setAnesthesiaOpen] = useState(false);
-  const procBlurTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useAutoSave(laterality,    (val) => saveProcedureLaterality(visit.id, udid, val));
   useAutoSave(procedureName, (val) => saveProcedureName(visit.id, udid, val));
@@ -991,62 +979,17 @@ function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: st
           </div>
         </div>
 
-        {/* 2. Procedure Name — searchable dropdown */}
-        <div className="flex-1 min-w-0 relative">
+        {/* 2. Procedure Name — plain text input */}
+        <div className="flex-1 min-w-0">
           <label className="text-[10px] font-semibold text-[var(--color-ink-500)] uppercase tracking-wide block mb-1.5">
             Procedure
           </label>
-          <div className="relative">
-            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-300)] pointer-events-none" />
-            <input
-              value={procedureName}
-              onChange={(e) => { setProcedureName(e.target.value); setProcOpen(true); }}
-              onFocus={() => { if (procBlurTimer.current) clearTimeout(procBlurTimer.current); setProcOpen(true); }}
-              onBlur={() => { procBlurTimer.current = setTimeout(() => setProcOpen(false), 150); }}
-              placeholder="Search procedure…"
-              className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] pl-8 pr-7 py-2 text-sm text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent"
-            />
-            {procedureName && (
-              <button
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => { setProcedureName(""); setProcOpen(true); }}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-300)] hover:text-[var(--color-ink-600)]"
-              >
-                <X size={13} />
-              </button>
-            )}
-          </div>
-          {procOpen && (() => {
-            const q = procedureName.toLowerCase();
-            const filtered = PROCEDURE_KEYWORDS.map((g) => ({
-              group: g.group,
-              items: g.items.filter((kw) => !q || kw.toLowerCase().includes(q)),
-            })).filter((g) => g.items.length > 0);
-            return filtered.length > 0 ? (
-              <div className="absolute z-20 mt-1 w-full rounded-xl border border-[var(--color-border)] bg-white shadow-lg max-h-64 overflow-y-auto">
-                {filtered.map((g) => (
-                  <div key={g.group}>
-                    <p className="px-3 pt-2 pb-0.5 text-[9px] font-bold uppercase tracking-widest text-[var(--color-ink-400)]">{g.group}</p>
-                    {g.items.map((kw) => (
-                      <button
-                        key={kw}
-                        onMouseDown={(e) => e.preventDefault()}
-                        onClick={() => { setProcedureName(kw); setProcOpen(false); }}
-                        className={`w-full text-left px-3 py-2 text-sm transition-colors flex items-center justify-between gap-2 ${
-                          procedureName === kw
-                            ? "bg-[var(--color-primary-50)] text-[var(--color-primary-700)] font-medium"
-                            : "text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]"
-                        }`}
-                      >
-                        {kw}
-                        {procedureName === kw && <Check size={13} className="shrink-0 text-[var(--color-primary-600)]" />}
-                      </button>
-                    ))}
-                  </div>
-                ))}
-              </div>
-            ) : null;
-          })()}
+          <input
+            value={procedureName}
+            onChange={(e) => setProcedureName(e.target.value)}
+            placeholder="Enter procedure…"
+            className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-3 py-2 text-sm text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent"
+          />
         </div>
 
         {/* 3. Type of Anesthesia — search dropdown */}
