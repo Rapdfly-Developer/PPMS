@@ -872,17 +872,43 @@ export function AssessmentTab({
                     key={gi}
                     onDoubleClick={() => handleProvGroupDoubleClick(g.diagnoses)}
                     title="Double-click to add these diagnoses"
-                    className="cursor-pointer rounded-lg p-1.5 -mx-1.5 hover:bg-[#DCF3F1] transition-colors select-none"
+                    className="cursor-pointer rounded-lg px-2 py-1.5 -mx-1.5 hover:bg-[#DCF3F1] transition-colors select-none"
                   >
-                    <p className="text-[10px] font-semibold text-[var(--color-ink-400)] mb-1">{format(new Date(g.date), "d MMM yyyy")}</p>
-                    {g.diagnoses.map((d: any, di: number) => (
-                      <div key={di} className="flex items-center gap-2 text-xs text-[var(--color-ink-700)] mb-0.5">
-                        <span className="font-medium">{d.description}</span>
-                        {d.laterality && <span className="text-[var(--color-ink-400)]">{d.laterality}</span>}
-                        {d.icd10Code && <span className="font-mono text-[var(--color-ink-400)]">{d.icd10Code}</span>}
-                        <span className="ml-auto text-[10px] text-[var(--color-ink-400)]">{d.status}</span>
-                      </div>
-                    ))}
+                    <p className="text-[10px] font-semibold text-[var(--color-ink-400)] mb-2">{format(new Date(g.date), "d MMM yyyy")}</p>
+                    <div className="flex flex-col gap-1.5">
+                      {g.diagnoses.map((d: any, di: number) => {
+                        const sm = ({
+                          ACTIVE:   { pill: "bg-amber-100 text-amber-700 border-amber-200",   label: "Active" },
+                          CHRONIC:  { pill: "bg-orange-100 text-orange-700 border-orange-200", label: "Chronic" },
+                          RESOLVED: { pill: "bg-emerald-100 text-emerald-700 border-emerald-200", label: "Resolved" },
+                        } as Record<string, { pill: string; label: string }>)[d.status] ?? { pill: "bg-slate-100 text-slate-500 border-slate-200", label: d.status ?? "—" };
+                        const nextStatus = d.status === "RESOLVED" ? "ACTIVE" : "RESOLVED";
+                        const nextLabel  = d.status === "RESOLVED" ? "Still Active" : "Resolved";
+                        return (
+                          <div key={di} className="flex items-center gap-2 py-1 border-b border-[#B2DEDA]/40 last:border-0">
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-semibold text-[var(--color-ink-800)] leading-tight truncate">{d.description}</p>
+                              {(d.laterality || d.icd10Code) && (
+                                <p className="text-[10px] font-mono text-[var(--color-ink-400)] mt-0.5">
+                                  {[d.laterality, d.icd10Code].filter(Boolean).join(" · ")}
+                                </p>
+                              )}
+                            </div>
+                            <span className={`inline-flex shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full border whitespace-nowrap ${sm.pill}`}>
+                              {sm.label}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); handleStatusChange(d, nextStatus); }}
+                              disabled={pending}
+                              className="shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-lg border border-[var(--color-border)] bg-white text-[var(--color-ink-600)] hover:border-[var(--color-primary-300)] hover:text-[var(--color-primary-700)] transition-colors disabled:opacity-40"
+                            >
+                              {nextLabel}
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -1019,17 +1045,43 @@ export function AssessmentTab({
                     key={gi}
                     onDoubleClick={() => handleDxGroupDoubleClick(g.diagnoses)}
                     title="Double-click to add these diagnoses"
-                    className="cursor-pointer rounded-lg p-1.5 -mx-1.5 hover:bg-[#DCF3F1] transition-colors select-none"
+                    className="cursor-pointer rounded-lg px-2 py-1.5 -mx-1.5 hover:bg-[#DCF3F1] transition-colors select-none"
                   >
-                    <p className="text-[10px] font-semibold text-[var(--color-ink-400)] mb-1">{format(new Date(g.date), "d MMM yyyy")}</p>
-                    {g.diagnoses.map((d: any, di: number) => (
-                      <div key={di} className="flex items-center gap-2 text-xs text-[var(--color-ink-700)] mb-0.5">
-                        <span className="font-medium">{d.description}</span>
-                        {d.laterality && <span className="text-[var(--color-ink-400)]">{d.laterality}</span>}
-                        <span className="font-mono text-[var(--color-ink-400)]">{d.icd10Code}</span>
-                        <span className="ml-auto text-[10px] text-[var(--color-ink-400)]">{d.status}</span>
-                      </div>
-                    ))}
+                    <p className="text-[10px] font-semibold text-[var(--color-ink-400)] mb-2">{format(new Date(g.date), "d MMM yyyy")}</p>
+                    <div className="flex flex-col gap-1.5">
+                      {g.diagnoses.map((d: any, di: number) => {
+                        const sm = ({
+                          ACTIVE:   { pill: "bg-amber-100 text-amber-700 border-amber-200",   label: "Active" },
+                          CHRONIC:  { pill: "bg-orange-100 text-orange-700 border-orange-200", label: "Chronic" },
+                          RESOLVED: { pill: "bg-emerald-100 text-emerald-700 border-emerald-200", label: "Resolved" },
+                        } as Record<string, { pill: string; label: string }>)[d.status] ?? { pill: "bg-slate-100 text-slate-500 border-slate-200", label: d.status ?? "—" };
+                        const nextStatus = d.status === "RESOLVED" ? "ACTIVE" : "RESOLVED";
+                        const nextLabel  = d.status === "RESOLVED" ? "Still Active" : "Resolved";
+                        return (
+                          <div key={di} className="flex items-center gap-2 py-1 border-b border-[#B2DEDA]/40 last:border-0">
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-semibold text-[var(--color-ink-800)] leading-tight truncate">{d.description}</p>
+                              {(d.laterality || d.icd10Code) && (
+                                <p className="text-[10px] font-mono text-[var(--color-ink-400)] mt-0.5">
+                                  {[d.laterality, d.icd10Code].filter(Boolean).join(" · ")}
+                                </p>
+                              )}
+                            </div>
+                            <span className={`inline-flex shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full border whitespace-nowrap ${sm.pill}`}>
+                              {sm.label}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); handleStatusChange(d, nextStatus); }}
+                              disabled={pending}
+                              className="shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-lg border border-[var(--color-border)] bg-white text-[var(--color-ink-600)] hover:border-[var(--color-primary-300)] hover:text-[var(--color-primary-700)] transition-colors disabled:opacity-40"
+                            >
+                              {nextLabel}
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 ))}
               </div>
