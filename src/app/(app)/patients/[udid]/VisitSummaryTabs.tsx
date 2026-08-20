@@ -447,30 +447,25 @@ function LongContent({
       {/* Diagnoses */}
       {hasDiag && (
         <Block label="Diagnoses">
-          <DataTable minWidth={360}>
-            <Cols widths={COLS_DIAGNOSIS} />
-            <tbody>
-              {data.diagnoses.map((d: any, i: number) => (
-                <tr key={i}>
-                  <td className={TD}>
-                    {d.laterality && (
-                      <span className="font-bold text-[var(--color-primary-700)] mr-1.5">{d.laterality}</span>
-                    )}
-                    {d.description}
-                    {d.provisional && <span className="text-amber-500 italic ml-1">(P)</span>}
-                  </td>
-                  <td className={`${TD_MUTED} font-mono text-[10px]`}>{d.icd10Code || DASH}</td>
-                  <td className={TD}>
-                    <span className={`text-[9px] font-bold uppercase ${
-                      d.status === "RESOLVED" ? "text-emerald-600"
-                      : d.status === "CHRONIC" ? "text-amber-600"
-                      : "text-red-500"
-                    }`}>{d.status}</span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </DataTable>
+          <div className="flex flex-wrap gap-1.5">
+            {data.diagnoses.map((d: any, i: number) => (
+              <span key={i} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[var(--color-surface-sunken)] border border-[var(--color-border)] text-[11px] text-[var(--color-ink-700)]">
+                {d.laterality && (
+                  <span className="font-bold text-[var(--color-primary-700)]">{d.laterality}</span>
+                )}
+                {d.description}
+                {d.provisional && <span className="text-amber-500 italic">(P)</span>}
+                {d.icd10Code && (
+                  <span className="font-mono text-[9px] text-[var(--color-ink-400)]">{d.icd10Code}</span>
+                )}
+                <span className={`text-[9px] font-bold uppercase ${
+                  d.status === "RESOLVED" ? "text-emerald-600"
+                  : d.status === "CHRONIC" ? "text-amber-600"
+                  : "text-red-500"
+                }`}>{d.status}</span>
+              </span>
+            ))}
+          </div>
         </Block>
       )}
 
@@ -491,7 +486,12 @@ function LongContent({
             <tbody>
               {data.medications.map((m: any, i: number) => (
                 <tr key={i}>
-                  <td className={`${TD} font-semibold`}>{m.drugName}</td>
+                  <td className={`${TD} font-semibold`}>
+                    {m.laterality && (
+                      <span className="font-bold text-[var(--color-primary-700)] mr-1.5">{m.laterality}</span>
+                    )}
+                    {m.drugName}
+                  </td>
                   <td className={TD_MUTED}>{m.dosage || DASH}</td>
                   <td className={TD_MUTED}>{m.frequency || DASH}</td>
                   <td className={TD_MUTED}>{m.duration || DASH}</td>

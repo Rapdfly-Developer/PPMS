@@ -435,22 +435,20 @@ function LastVisitSummarySection({ summary }: { summary: LastVisitSummary }) {
 
                 {summary.diagnoses.length > 0 && (
                   <Block label="Diagnoses">
-                    <div className="space-y-1.5">
+                    <div className="flex flex-wrap gap-1.5">
                       {summary.diagnoses.map((d) => (
-                        <div key={d.id} className="flex items-center gap-2 text-[11px]">
+                        <span key={d.id} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[var(--color-surface-sunken)] border border-[var(--color-border)] text-[11px] text-[var(--color-ink-700)]">
                           {d.laterality && (
                             <span className="font-bold text-[var(--color-primary-700)]">{d.laterality}</span>
                           )}
-                          <span className="text-[var(--color-ink-700)]">
-                            {d.description}
-                            {d.provisional && <span className="text-amber-500 italic ml-1">(P)</span>}
-                          </span>
+                          {d.description}
+                          {d.provisional && <span className="text-amber-500 italic">(P)</span>}
                           <span className={`text-[9px] font-bold uppercase ${
                             d.status === "RESOLVED" ? "text-emerald-600"
                             : d.status === "CHRONIC" ? "text-amber-600"
                             : "text-red-500"
                           }`}>{d.status}</span>
-                        </div>
+                        </span>
                       ))}
                     </div>
                   </Block>
@@ -470,7 +468,12 @@ function LastVisitSummarySection({ summary }: { summary: LastVisitSummary }) {
                       <tbody>
                         {summary.medications.map((m) => (
                           <tr key={m.id}>
-                            <td className={`${TD} font-semibold`}>{m.drugName}</td>
+                            <td className={`${TD} font-semibold`}>
+                              {(m as any).laterality && (
+                                <span className="font-bold text-[var(--color-primary-700)] mr-1.5">{(m as any).laterality}</span>
+                              )}
+                              {m.drugName}
+                            </td>
                             <td className={TD_MUTED}>{m.dosage || DASH}</td>
                             <td className={TD_MUTED}>{m.frequency || DASH}</td>
                           </tr>
