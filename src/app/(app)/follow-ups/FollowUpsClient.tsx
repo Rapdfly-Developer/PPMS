@@ -642,7 +642,7 @@ export function FollowUpsClient({
   doctorOptions: { id: string; name: string }[];
 }) {
   const [search, setSearch]             = useState("");
-  const [statusFilter, setStatusFilter] = useState<FollowUpStatus | "ALL">("ALL");
+  const [statusFilter, setStatusFilter] = useState<FollowUpStatus | "ALL">("DUE_TODAY");
   const [doctorFilter, setDoctorFilter] = useState("ALL");
   const [activeReschedule, setActiveReschedule] = useState<string | null>(null);
   const [activeCancel, setActiveCancel]         = useState<string | null>(null);
@@ -725,7 +725,7 @@ export function FollowUpsClient({
           count={counts.OVERDUE}
           icon={<AlertCircle size={17} className="text-red-600" />}
           accent="text-red-700" iconBg="bg-red-50"
-          onClick={() => setStatusFilter(statusFilter === "OVERDUE" ? "ALL" : "OVERDUE")}
+          onClick={() => setStatusFilter(statusFilter === "OVERDUE" ? "DUE_TODAY" : "OVERDUE")}
           active={statusFilter === "OVERDUE"}
         />
         <StatCard
@@ -792,7 +792,7 @@ export function FollowUpsClient({
 
           {(search || statusFilter !== "ALL" || doctorFilter !== "ALL") && (
             <button
-              onClick={() => { setSearch(""); setStatusFilter("ALL"); setDoctorFilter("ALL"); }}
+              onClick={() => { setSearch(""); setStatusFilter("DUE_TODAY"); setDoctorFilter("ALL"); }}
               className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-2 rounded-xl border border-[var(--color-border)] text-[var(--color-ink-500)] hover:bg-[var(--color-surface-sunken)] transition-colors"
             >
               <X size={12} /> Clear
@@ -812,11 +812,17 @@ export function FollowUpsClient({
         <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] flex flex-col items-center gap-3 py-16 text-center">
           <CalendarClock size={36} className="text-[var(--color-ink-200)]" />
           <p className="text-sm font-semibold text-[var(--color-ink-500)]">
-            {visits.length === 0 ? "No follow-ups scheduled" : "No results match your filters"}
+            {visits.length === 0
+              ? "No follow-ups scheduled"
+              : statusFilter === "DUE_TODAY"
+              ? "No follow-ups due today"
+              : "No results match your filters"}
           </p>
           <p className="text-xs text-[var(--color-ink-400)]">
             {visits.length === 0
               ? "Set a follow-up date in the EMR to see patients here."
+              : statusFilter === "DUE_TODAY"
+              ? "Check the Overdue or Upcoming cards to see other follow-ups."
               : "Try adjusting your search or filter criteria."}
           </p>
         </div>
