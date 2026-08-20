@@ -454,18 +454,18 @@ function LongContent({
                 return (ord[a.status] ?? 3) - (ord[b.status] ?? 3);
               })
               .map((d: any, i: number) => (
-                <div key={i} className="flex items-baseline justify-between gap-2">
+                <div key={i} className="flex items-baseline gap-2">
+                  <span className={`text-[9px] font-bold uppercase shrink-0 ${
+                    d.status === "RESOLVED" ? "text-emerald-600"
+                    : d.status === "CHRONIC" ? "text-amber-600"
+                    : "text-red-500"
+                  }`}>{d.status}</span>
                   <span className="text-[11px] text-[var(--color-ink-700)] min-w-0">
                     {d.laterality && <span className="font-bold text-[var(--color-primary-700)] mr-1">{d.laterality}</span>}
                     {d.description}
                     {d.provisional && <span className="text-amber-500 italic ml-1">(P)</span>}
                     {d.icd10Code && <span className="font-mono text-[9px] text-[var(--color-ink-400)] ml-1.5">{d.icd10Code}</span>}
                   </span>
-                  <span className={`text-[9px] font-bold uppercase shrink-0 ${
-                    d.status === "RESOLVED" ? "text-emerald-600"
-                    : d.status === "CHRONIC" ? "text-amber-600"
-                    : "text-red-500"
-                  }`}>{d.status}</span>
                 </div>
               ))}
           </div>
