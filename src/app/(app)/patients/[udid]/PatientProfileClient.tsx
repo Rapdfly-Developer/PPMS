@@ -656,6 +656,24 @@ export function PatientProfileClient({
         ) : null}
       </div>
 
+      {/* Finalize time badge */}
+      {todayIsFinalized && todayVisit?.finalizedAt && (
+        <div className="flex items-center gap-1.5 mt-2">
+          <CheckCircle2 size={12} className="text-emerald-500 shrink-0" />
+          <span className="text-[11px] text-[var(--color-ink-500)]">
+            Finalized at{" "}
+            <span className="font-semibold text-emerald-600">
+              {new Date(todayVisit.finalizedAt).toLocaleTimeString("en-IN", {
+                hour: "numeric",
+                minute: "2-digit",
+                hour12: true,
+                timeZone: "Asia/Kolkata",
+              })}
+            </span>
+          </span>
+        </div>
+      )}
+
       {/* ── Surgical Counselling card ─────────────────────────────────── */}
       {surgeryAdvisedVisitId && (
         <Link
