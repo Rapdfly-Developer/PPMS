@@ -435,22 +435,21 @@ function LastVisitSummarySection({ summary }: { summary: LastVisitSummary }) {
 
                 {summary.diagnoses.length > 0 && (
                   <Block label="Diagnoses">
-                    <div className="flex flex-wrap gap-1.5">
-                      {summary.diagnoses.map((d) => (
-                        <span key={d.id} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[var(--color-surface-sunken)] border border-[var(--color-border)] text-[11px] text-[var(--color-ink-700)]">
-                          {d.laterality && (
-                            <span className="font-bold text-[var(--color-primary-700)]">{d.laterality}</span>
-                          )}
+                    <p className="text-[11px] text-[var(--color-ink-700)] leading-relaxed">
+                      {summary.diagnoses.map((d, i) => (
+                        <span key={d.id}>
+                          {i > 0 && <span className="text-[var(--color-ink-300)] mx-1">,</span>}
+                          {d.laterality && <span className="font-bold text-[var(--color-primary-700)] mr-1">{d.laterality}</span>}
                           {d.description}
-                          {d.provisional && <span className="text-amber-500 italic">(P)</span>}
-                          <span className={`text-[9px] font-bold uppercase ${
+                          {d.provisional && <span className="text-amber-500 italic ml-1">(P)</span>}
+                          <span className={`ml-1 text-[9px] font-bold uppercase ${
                             d.status === "RESOLVED" ? "text-emerald-600"
                             : d.status === "CHRONIC" ? "text-amber-600"
                             : "text-red-500"
                           }`}>{d.status}</span>
                         </span>
                       ))}
-                    </div>
+                    </p>
                   </Block>
                 )}
 
