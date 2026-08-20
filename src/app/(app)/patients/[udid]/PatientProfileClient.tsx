@@ -435,29 +435,24 @@ function LastVisitSummarySection({ summary }: { summary: LastVisitSummary }) {
 
                 {summary.diagnoses.length > 0 && (
                   <Block label="Diagnoses">
-                    <DataTable minWidth={300}>
-                      <Cols widths={["68%", "32%"]} />
-                      <tbody>
-                        {summary.diagnoses.map((d) => (
-                          <tr key={d.id}>
-                            <td className={TD}>
-                              {d.laterality && (
-                                <span className="font-bold text-[var(--color-primary-700)] mr-1.5">{d.laterality}</span>
-                              )}
-                              {d.description}
-                              {d.provisional && <span className="text-amber-500 italic ml-1">(P)</span>}
-                            </td>
-                            <td className={TD}>
-                              <span className={`text-[9px] font-bold uppercase ${
-                                d.status === "RESOLVED" ? "text-emerald-600"
-                                : d.status === "CHRONIC" ? "text-amber-600"
-                                : "text-red-500"
-                              }`}>{d.status}</span>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </DataTable>
+                    <div className="space-y-1.5">
+                      {summary.diagnoses.map((d) => (
+                        <div key={d.id} className="flex items-center gap-2 text-[11px]">
+                          {d.laterality && (
+                            <span className="font-bold text-[var(--color-primary-700)]">{d.laterality}</span>
+                          )}
+                          <span className="text-[var(--color-ink-700)]">
+                            {d.description}
+                            {d.provisional && <span className="text-amber-500 italic ml-1">(P)</span>}
+                          </span>
+                          <span className={`text-[9px] font-bold uppercase ${
+                            d.status === "RESOLVED" ? "text-emerald-600"
+                            : d.status === "CHRONIC" ? "text-amber-600"
+                            : "text-red-500"
+                          }`}>{d.status}</span>
+                        </div>
+                      ))}
+                    </div>
                   </Block>
                 )}
 
