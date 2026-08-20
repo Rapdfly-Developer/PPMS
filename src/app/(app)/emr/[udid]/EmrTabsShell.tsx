@@ -18,15 +18,21 @@ export function EmrTabsShell({
   udid,
   patientName,
   showActionBar,
+  finalizedToday,
 }: {
   tabs: TabDef[];
   visit: any;
   udid: string;
   patientName?: string;
   showActionBar: boolean;
+  finalizedToday?: boolean;
 }) {
   const [activeTab, setActiveTab] = useState(tabs[0]?.id);
+  const [editMode, setEditMode] = useState(false);
   const currentIndex = tabs.findIndex((t) => t.id === activeTab);
+
+  const closed = visit.status === "CLOSED";
+  const showEditGate = closed && !!finalizedToday && !editMode;
 
   function nextSection() {
     const next = tabs[currentIndex + 1];
@@ -35,7 +41,9 @@ export function EmrTabsShell({
 
   return (
     <div>
-      <Tabs tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
+      <div className={showEditGate ? "pointer-events-none select-none opacity-70" : ""}>
+        <Tabs tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
+      </div>
       {showActionBar && (
         <div className="no-print">
           <EmrActionBar
@@ -45,6 +53,8 @@ export function EmrTabsShell({
             currentTabIndex={currentIndex}
             totalTabs={tabs.length}
             onNextSection={nextSection}
+            editMode={editMode}
+            onEnterEditMode={() => setEditMode(true)}
           />
         </div>
       )}

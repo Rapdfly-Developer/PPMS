@@ -228,7 +228,7 @@ export default async function PatientDetailedEMR({
             {autoClosed
               ? "Auto-closed at EOD — Read-only"
               : finalizedToday
-              ? "Finalized & Signed — Editable until EOD"
+              ? "Finalized & Signed — Click to Edit"
               : "Finalized & Signed — Read-only"}
           </span>
         </div>
@@ -250,7 +250,7 @@ export default async function PatientDetailedEMR({
             {autoClosed
               ? "This consultation was left open past end of day and closed automatically. The EMR is permanently read-only."
               : finalizedToday
-              ? "This consultation has been finalized and signed. As the treating physician, you may still amend this record until midnight (end of day). After EOD, the record will be permanently locked."
+              ? "This consultation has been finalized and signed. Click 'Click to Edit' in the action bar below to make amendments. The record locks permanently at midnight."
               : "This consultation has been finalized and signed. The EMR is permanently read-only."}
           </span>
         </div>
@@ -460,6 +460,7 @@ export default async function PatientDetailedEMR({
             udid={udid}
             patientName={patient.name}
             showActionBar={user.role === "DOCTOR"}
+            finalizedToday={finalizedToday}
             tabs={[
               {
                 id: "general",

@@ -258,9 +258,11 @@ function SuccessModal({ udid, onClose }: { udid: string; onClose: () => void }) 
 
 export function EmrActionBar({
   visit, udid, patientName, currentTabIndex = 0, totalTabs = 1, onNextSection,
+  editMode, onEnterEditMode,
 }: {
   visit: any; udid: string; patientName?: string;
   currentTabIndex?: number; totalTabs?: number; onNextSection?: () => void;
+  editMode?: boolean; onEnterEditMode?: () => void;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -402,9 +404,14 @@ export function EmrActionBar({
             </span>
           ) : finalizedToday ? (
             <>
-              <span className="flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-xl bg-blue-50 border border-blue-200 text-blue-600">
-                <PenLine size={13} /> Editable until EOD
-              </span>
+              {!editMode && (
+                <button
+                  onClick={onEnterEditMode}
+                  className="flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-xl bg-blue-50 border border-blue-200 text-blue-600 hover:bg-blue-100 hover:border-blue-300 transition-colors"
+                >
+                  <PenLine size={13} /> Click to Edit
+                </button>
+              )}
               <button
                 disabled={pending}
                 onClick={() =>
@@ -415,7 +422,7 @@ export function EmrActionBar({
                 }
                 className="flex items-center gap-2 text-sm font-medium px-5 py-2 rounded-xl bg-[var(--color-primary-900)] text-white hover:bg-[var(--color-primary-700)] transition-colors disabled:opacity-60"
               >
-                <FileSignature size={15} /> {pending ? "Re-signing…" : "Re-sign & Lock"}
+                <FileSignature size={15} /> {pending ? "Finalizing…" : "Finalize & Sign"}
               </button>
             </>
           ) : (
