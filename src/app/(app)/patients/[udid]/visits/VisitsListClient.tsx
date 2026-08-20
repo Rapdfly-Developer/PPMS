@@ -14,7 +14,7 @@ export interface VisitRow {
   visitType:   string | null;
   hospital:    { name: string } | null;
   doctor:      { name: string } | null;
-  generalExam: { chiefComplaint: string } | null;
+  generalExam: { chiefComplaint: string | null } | null;
   diagnoses:   { description: string }[];
 }
 
