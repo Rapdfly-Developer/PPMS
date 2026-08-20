@@ -306,59 +306,85 @@ export default function CounsellingForm({
         </div>
       </div>
 
-      {/* ── 2. IOL ── */}
+      {/* ── 2. IOL Type ── */}
       <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
-        <SectionHeader icon={<Eye size={14} />} title="IOL" />
+        <SectionHeader icon={<Eye size={14} />} title="IOL Type" />
         <div className="flex flex-col gap-4">
-          {/* Focal with +/- sign toggle */}
+          {/* Focality */}
           <div>
-            <FieldLabel>Focal</FieldLabel>
-            <div className="flex gap-0 rounded-lg border border-[var(--color-border)] overflow-hidden">
-              <button
-                type="button"
-                onClick={() => setFocalSign("+")}
-                disabled={ro}
-                className={`px-3 py-2 text-sm font-bold border-r border-[var(--color-border)] transition-colors disabled:cursor-not-allowed ${
-                  focalSign === "+" ? "bg-teal-500 text-white" : "bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)] hover:bg-teal-50 hover:text-teal-700"
-                }`}
-              >+</button>
-              <button
-                type="button"
-                onClick={() => setFocalSign("-")}
-                disabled={ro}
-                className={`px-3 py-2 text-sm font-bold border-r border-[var(--color-border)] transition-colors disabled:cursor-not-allowed ${
-                  focalSign === "-" ? "bg-teal-500 text-white" : "bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)] hover:bg-teal-50 hover:text-teal-700"
-                }`}
-              >−</button>
-              <input
-                type="number"
-                min="0"
-                step="0.25"
-                value={iolPower}
-                onChange={(e) => setIolPower(e.target.value)}
-                placeholder="0.00"
-                disabled={ro}
-                className="flex-1 px-3 py-2 text-sm text-[var(--color-ink-800)] bg-[var(--color-surface)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-inset focus:ring-teal-400 disabled:opacity-60 disabled:cursor-not-allowed"
-              />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <FieldLabel>Lens Name</FieldLabel>
-              <TextInput value={iolLensName} onChange={setIolLensName} placeholder="e.g. AcrySof IQ" disabled={ro} />
-            </div>
-            <div>
-              <FieldLabel>Brand</FieldLabel>
-              <TextInput value={iolBrand} onChange={setIolBrand} placeholder="e.g. Alcon" disabled={ro} />
-            </div>
-          </div>
-          <div>
-            <FieldLabel>Torique</FieldLabel>
+            <FieldLabel>Focality</FieldLabel>
             <div className="flex flex-wrap gap-2">
-              <Chip label="Yes" active={iolToric} onClick={() => setIolToric(!iolToric)} disabled={ro} />
-              <Chip label="No"  active={!iolToric} onClick={() => setIolToric(false)}    disabled={ro} />
+              {[
+                { value: "MONOFOCAL",  label: "Monofocal" },
+                { value: "MULTIFOCAL", label: "Multifocal" },
+                { value: "TRIFOCAL",   label: "Trifocal" },
+                { value: "EDOF",       label: "EDOF" },
+              ].map((opt) => (
+                <Chip key={opt.value} label={opt.label}
+                  active={iolType === opt.value}
+                  onClick={() => setIolType(iolType === opt.value ? "" : opt.value)}
+                  disabled={ro}
+                />
+              ))}
             </div>
           </div>
+
+          {/* Necessary inputs — shown once focality is chosen */}
+          {iolType && (
+            <>
+              {/* Power of Lens */}
+              <div>
+                <FieldLabel>Power of Lens</FieldLabel>
+                <div className="flex gap-0 rounded-lg border border-[var(--color-border)] overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => setFocalSign("+")}
+                    disabled={ro}
+                    className={`px-3 py-2 text-sm font-bold border-r border-[var(--color-border)] transition-colors disabled:cursor-not-allowed ${
+                      focalSign === "+" ? "bg-teal-500 text-white" : "bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)] hover:bg-teal-50 hover:text-teal-700"
+                    }`}
+                  >+</button>
+                  <button
+                    type="button"
+                    onClick={() => setFocalSign("-")}
+                    disabled={ro}
+                    className={`px-3 py-2 text-sm font-bold border-r border-[var(--color-border)] transition-colors disabled:cursor-not-allowed ${
+                      focalSign === "-" ? "bg-teal-500 text-white" : "bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)] hover:bg-teal-50 hover:text-teal-700"
+                    }`}
+                  >−</button>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.25"
+                    value={iolPower}
+                    onChange={(e) => setIolPower(e.target.value)}
+                    placeholder="0.00"
+                    disabled={ro}
+                    className="flex-1 px-3 py-2 text-sm text-[var(--color-ink-800)] bg-[var(--color-surface)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-inset focus:ring-teal-400 disabled:opacity-60 disabled:cursor-not-allowed"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <FieldLabel>Lens Name</FieldLabel>
+                  <TextInput value={iolLensName} onChange={setIolLensName} placeholder="e.g. AcrySof IQ" disabled={ro} />
+                </div>
+                <div>
+                  <FieldLabel>Brand</FieldLabel>
+                  <TextInput value={iolBrand} onChange={setIolBrand} placeholder="e.g. Alcon" disabled={ro} />
+                </div>
+              </div>
+
+              <div>
+                <FieldLabel>Toric</FieldLabel>
+                <div className="flex flex-wrap gap-2">
+                  <Chip label="Yes" active={iolToric}  onClick={() => setIolToric(true)}  disabled={ro} />
+                  <Chip label="No"  active={!iolToric} onClick={() => setIolToric(false)} disabled={ro} />
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </div>
 
