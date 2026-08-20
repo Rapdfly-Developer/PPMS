@@ -105,6 +105,7 @@ export interface ExistingRecord {
   paymentMode: string | null;
   schemeName: string | null;
   schemeType: string | null;
+  policyNumber: string | null;
   outOfPocket: string | null;
   iolType: string | null;
   iolLensName: string | null;
@@ -136,10 +137,11 @@ export default function CounsellingForm({
   const ex = existing;
   const ro = mode === "readonly";
 
-  const [paymentType, setPaymentType] = useState(ex?.paymentType ?? "");
-  const [paymentMode, setPaymentMode] = useState(ex?.paymentMode ?? "");
-  const [schemeName,  setSchemeName]  = useState(ex?.schemeName  ?? "");
-  const [schemeType,  setSchemeType]  = useState(ex?.schemeType  ?? "");
+  const [paymentType,   setPaymentType]   = useState(ex?.paymentType   ?? "");
+  const [paymentMode,   setPaymentMode]   = useState(ex?.paymentMode   ?? "");
+  const [schemeName,    setSchemeName]    = useState(ex?.schemeName    ?? "");
+  const [schemeType,    setSchemeType]    = useState(ex?.schemeType    ?? "");
+  const [policyNumber,  setPolicyNumber]  = useState(ex?.policyNumber  ?? "");
   const [outOfPocket, setOutOfPocket] = useState(ex?.outOfPocket ?? "");
   const [iolLensName, setIolLensName] = useState(ex?.iolLensName ?? "");
   const [iolBrand,    setIolBrand]    = useState(ex?.iolBrand    ?? "");
@@ -170,9 +172,10 @@ export default function CounsellingForm({
     return {
       visitId,
       paymentType:    paymentType  || undefined,
-      paymentMode:    paymentMode  || undefined,
-      schemeName:     schemeName   || undefined,
-      schemeType:     schemeType   || undefined,
+      paymentMode:    paymentMode   || undefined,
+      schemeName:     schemeName    || undefined,
+      schemeType:     schemeType    || undefined,
+      policyNumber:   policyNumber  || undefined,
       outOfPocket:    outOfPocket  || undefined,
       iolLensName:    iolLensName  || undefined,
       iolPower:       iolPower ? `${focalSign}${iolPower}` : undefined,
@@ -269,17 +272,35 @@ export default function CounsellingForm({
             </div>
           )}
 
-          {/* Name + Type — only for Insurance / Government Scheme */}
+          {/* Insurance company fields */}
           {(paymentType === "INSURANCE" || paymentType === "GOVERNMENT_SCHEME") && (
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <FieldLabel>Name</FieldLabel>
-                <TextInput value={schemeName} onChange={setSchemeName} placeholder="e.g. PMJAY, TN CM Scheme" disabled={ro} />
+            <div className="flex flex-col gap-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <FieldLabel>{paymentType === "INSURANCE" ? "Insurance Company Name" : "Scheme Name"}</FieldLabel>
+                  <TextInput value={schemeName} onChange={setSchemeName} placeholder="e.g. Star Health, PMJAY" disabled={ro} />
+                </div>
+                <div>
+                  <FieldLabel>Type</FieldLabel>
+                  <select
+                    value={schemeType}
+                    onChange={(e) => setSchemeType(e.target.value)}
+                    disabled={ro}
+                    className="w-full px-3 py-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] text-sm text-[var(--color-ink-700)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <option value="">Select type…</option>
+                    <option value="PRIVATE">Private</option>
+                    <option value="CORPORATE">Corporate</option>
+                    <option value="OTHERS">Others</option>
+                  </select>
+                </div>
               </div>
-              <div>
-                <FieldLabel>Type</FieldLabel>
-                <TextInput value={schemeType} onChange={setSchemeType} placeholder="e.g. Full, Cap, Commission" disabled={ro} />
-              </div>
+              {paymentType === "INSURANCE" && (
+                <div>
+                  <FieldLabel>Policy Name / No.</FieldLabel>
+                  <TextInput value={policyNumber} onChange={setPolicyNumber} placeholder="e.g. POL-2024-001234" disabled={ro} />
+                </div>
+              )}
             </div>
           )}
         </div>

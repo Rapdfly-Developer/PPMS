@@ -40,7 +40,7 @@ export default async function ConsentFormPage({
               procedure: true, laterality: true, anaesthesia: true,
               iolLensName: true, iolPower: true, iolBrand: true, iolToric: true,
               estimateAmount: true, dateOfSurgery: true,
-              paymentType: true, paymentMode: true, schemeName: true, schemeType: true,
+              paymentType: true, paymentMode: true, schemeName: true, schemeType: true, policyNumber: true,
             },
           },
         },
@@ -183,7 +183,13 @@ export default async function ConsentFormPage({
                     } />
                   )}
                   {(rec.paymentType === "INSURANCE" || rec.paymentType === "GOVERNMENT_SCHEME") && rec.schemeName && (
-                    <Row label="Scheme" value={`${rec.schemeName}${rec.schemeType ? ` · ${rec.schemeType}` : ""}`} />
+                    <Row label={rec.paymentType === "INSURANCE" ? "Insurance Company" : "Scheme"} value={`${rec.schemeName}${rec.schemeType ? ` · ${
+                      rec.schemeType === "PRIVATE" ? "Private" :
+                      rec.schemeType === "CORPORATE" ? "Corporate" : "Others"
+                    }` : ""}`} />
+                  )}
+                  {rec.paymentType === "INSURANCE" && rec.policyNumber && (
+                    <Row label="Policy No." value={rec.policyNumber} />
                   )}
                 </>
               )}

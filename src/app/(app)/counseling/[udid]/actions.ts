@@ -12,6 +12,7 @@ export interface CounsellingFormData {
   paymentMode?: string;
   schemeName?: string;
   schemeType?: string;
+  policyNumber?: string;
   outOfPocket?: string;
   iolType?: string;
   iolLensName?: string;

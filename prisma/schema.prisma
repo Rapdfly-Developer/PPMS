@@ -1438,11 +1438,12 @@ model CounsellingRecord {
   updatedAt DateTime @updatedAt
 
   // 1. Payment / Finance
-  paymentType   String?  // TENTATIVE | OVERALL | INSURANCE
-  paymentMode   String?  // CASH | CASHLESS
-  schemeName    String?
-  schemeType    String?  // FULL | CAP | COMM
-  outOfPocket   String?  // FULL_CASH | GOVT_SCHEME | CAMP | OTHERS
+  paymentType   String?  // INSURANCE | NON_INSURANCE | GOVERNMENT_SCHEME | CAMP
+  paymentMode   String?  // OUT_OF_POCKET | FREE_CASH (when paymentType=NON_INSURANCE)
+  schemeName    String?  // Insurance company name / scheme name
+  schemeType    String?  // PRIVATE | CORPORATE | OTHERS
+  policyNumber  String?  // Policy name / number
+  outOfPocket   String?  // legacy — unused
 
   // 2. IOL
   iolType       String?

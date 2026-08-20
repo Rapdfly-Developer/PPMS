@@ -230,6 +230,7 @@ export default async function CounselingPatientPage({
         paymentMode:    rec.paymentMode,
         schemeName:     rec.schemeName,
         schemeType:     rec.schemeType,
+        policyNumber:   rec.policyNumber,
         outOfPocket:    rec.outOfPocket,
         iolType:        rec.iolType,
         iolLensName:    rec.iolLensName,
@@ -251,7 +252,7 @@ export default async function CounselingPatientPage({
       }
     : (visit as any).advisedSurgeryDate
     ? {
-        paymentType: null, paymentMode: null, schemeName: null, schemeType: null,
+        paymentType: null, paymentMode: null, schemeName: null, schemeType: null, policyNumber: null,
         outOfPocket: null, iolType: null, iolLensName: null, iolPower: null,
         iolBrand: null, iolToric: false, laterality: null, procedure: null,
         anaesthesia: null, estimateAmount: null, estimateVague: false,
