@@ -25,6 +25,8 @@ export interface PatientRow {
   createdAt: string;
   hospitalName: string | null;
   lastVisit: string | null;
+  queueTime: string | null;
+  finalizeTime: string | null;
   chiefComplaint: string | null;
   photoUrl: string | null;
   dispensedApptId?: string | null;
@@ -547,28 +549,16 @@ export function PatientsClient({
               </div>
             ) : (
               <>
-              {/* Column headers — padding and gaps match card rows exactly */}
+              {/* Column headers */}
               <div className="hidden xl:flex items-center gap-4 px-7 py-2.5 border-b border-[var(--color-border)] bg-[var(--color-surface-sunken)]">
-                {/* token spacer */}
                 <div className="size-8 shrink-0" />
-                {/* patient col — avatar (w-9) + gap-3 + text = matches w-44 container */}
-                <div className="w-44 shrink-0">
+                <div className="w-48 shrink-0">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">Patient</span>
                 </div>
                 <div className="flex-1 min-w-0">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">Chief Complaint</span>
                 </div>
-                <div className="w-24 shrink-0">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">Age / Sex</span>
-                </div>
-                <div className="w-28 shrink-0">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">Mobile</span>
-                </div>
-                <div className="w-32 shrink-0">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">UHID</span>
-                </div>
-
-                <div className="w-28 shrink-0">
+                <div className="w-44 shrink-0">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">Last Visit</span>
                 </div>
                 <div className="w-20 shrink-0" />
@@ -579,8 +569,10 @@ export function PatientsClient({
                   const av  = avatarColor(p.name);
                   const cat = CAT[p.category] ?? { label: p.category, cls: "bg-slate-100 text-slate-700" };
                   const token = (page - 1) * pageSize + idx + 1;
-                  const lastVisitStr = p.lastVisit ? format(new Date(p.lastVisit), "dd MMM yyyy") : null;
-                  const sexLabel = p.sex.charAt(0).toUpperCase() + p.sex.slice(1).toLowerCase();
+                  const lastVisitStr   = p.lastVisit    ? format(new Date(p.lastVisit),    "dd MMM yyyy") : null;
+                  const queueTimeStr  = p.queueTime    ? format(new Date(p.queueTime),    "h:mm a")      : null;
+                  const finalTimeStr  = p.finalizeTime ? format(new Date(p.finalizeTime), "h:mm a")      : null;
+                  const sexLabel = p.sex.charAt(0).toUpperCase();
                   return (
                     <li
                       key={p.id}
@@ -595,8 +587,8 @@ export function PatientsClient({
                         {token}
                       </div>
 
-                      {/* Avatar + name + UHID — fixed width */}
-                      <div className="flex items-center gap-3 w-44 shrink-0 min-w-0">
+                      {/* Avatar + name + UDID + age/sex */}
+                      <div className="flex items-center gap-3 w-48 shrink-0 min-w-0">
                         {p.photoUrl ? (
                           <img
                             src={photoSrc(p.photoUrl)}
@@ -613,9 +605,12 @@ export function PatientsClient({
                         )}
                         <div className="min-w-0">
                           <p className="text-sm font-semibold text-[var(--color-ink-900)] truncate">{p.name}</p>
-                          <span className="font-mono text-[10px] bg-[#F0F8F6] text-[#115E59] px-1.5 py-0.5 rounded">
-                            {p.udid}
-                          </span>
+                          <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                            <span className="font-mono text-[10px] bg-[#F0F8F6] text-[#115E59] px-1.5 py-0.5 rounded">
+                              {p.udid}
+                            </span>
+                            <span className="text-[10px] text-[var(--color-ink-400)]">{p.age}y · {sexLabel}</span>
+                          </div>
                         </div>
                       </div>
 
@@ -628,26 +623,27 @@ export function PatientsClient({
                         )}
                       </div>
 
-                      {/* Age / Sex — fixed width */}
-                      <div className="hidden sm:block w-24 shrink-0">
-                        <p className="text-sm text-[var(--color-ink-700)]">{p.age}y · {sexLabel.charAt(0)}</p>
-                      </div>
-
-                      {/* Mobile — fixed width */}
-                      <div className="hidden md:block w-28 shrink-0">
-                        <p className="text-sm text-[var(--color-ink-700)]">{p.mobile || <span className="text-[var(--color-ink-300)]">—</span>}</p>
-                      </div>
-
-                      {/* UHID — fixed width, xl+ only */}
-                      <div className="hidden xl:block w-32 shrink-0">
-                        <span className="font-mono text-[10px] bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded">
-                          {p.uhid || <span className="text-[var(--color-ink-300)]">—</span>}
-                        </span>
-                      </div>
-
-                      {/* Last Visit — fixed width */}
-                      <div className="hidden xl:block w-28 shrink-0">
-                        <p className="text-sm text-[var(--color-ink-700)]">{lastVisitStr || <span className="text-[var(--color-ink-300)]">—</span>}</p>
+                      {/* Last Visit + queue/finalize times */}
+                      <div className="hidden xl:block w-44 shrink-0">
+                        {lastVisitStr ? (
+                          <>
+                            <p className="text-sm font-medium text-[var(--color-ink-800)]">{lastVisitStr}</p>
+                            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                              {queueTimeStr && (
+                                <span className="text-[10px] text-[var(--color-ink-400)]">
+                                  <span className="font-semibold text-[var(--color-ink-500)]">Q</span> {queueTimeStr}
+                                </span>
+                              )}
+                              {finalTimeStr && (
+                                <span className="text-[10px] text-[var(--color-ink-400)]">
+                                  <span className="font-semibold text-emerald-600">F</span> {finalTimeStr}
+                                </span>
+                              )}
+                            </div>
+                          </>
+                        ) : (
+                          <span className="text-[11px] text-[var(--color-ink-300)]">—</span>
+                        )}
                       </div>
 
                       {/* Category + Undo — fixed width */}
