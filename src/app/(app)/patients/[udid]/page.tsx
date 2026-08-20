@@ -176,7 +176,7 @@ export default async function PatientProfilePage({
       prisma.doctor.findUnique({ where: { id: lastPastVisit.doctorId }, select: { name: true } }),
       prisma.generalExamination.findUnique({ where: { visitId: lastPastVisit.id }, select: { chiefComplaint: true } }),
       prisma.diagnosis.findMany({ where: { visitId: lastPastVisit.id }, select: { id: true, description: true, icd10Code: true, laterality: true, status: true, provisional: true } }),
-      prisma.medication.findMany({ where: { visitId: lastPastVisit.id }, select: { id: true, drugName: true, dosage: true, frequency: true, duration: true, instructions: true } }),
+      prisma.medication.findMany({ where: { visitId: lastPastVisit.id }, select: { id: true, drugName: true, dosage: true, frequency: true, duration: true, laterality: true } }),
       invVisitId
         ? prisma.investigationOrder.findMany({ where: { visitId: invVisitId, createdAt: { lt: todayStart } }, select: { id: true, category: true, testName: true, priority: true, laterality: true, status: true, notes: true, resultRef: true, createdAt: true }, orderBy: { createdAt: "asc" } })
         : Promise.resolve([]),

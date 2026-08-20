@@ -214,7 +214,7 @@ export type LastVisitSummary = {
   doctorName: string | null;
   chiefComplaint: string | null;
   diagnoses: { id: string; description: string; icd10Code: string; laterality: string | null; status: string; provisional: boolean }[];
-  medications: { id: string; drugName: string; dosage: string | null; frequency: string | null; duration: string | null; instructions: string | null }[];
+  medications: { id: string; drugName: string; dosage: string | null; frequency: string | null; duration: string | null; laterality: string | null }[];
   investigations: { id: string; category: string; testName: string; priority: string; laterality: string | null; status: string; notes: string | null; resultRef: string | null; createdAt: string }[];
 };
 
@@ -468,8 +468,8 @@ function LastVisitSummarySection({ summary }: { summary: LastVisitSummary }) {
                         {summary.medications.map((m) => (
                           <tr key={m.id}>
                             <td className={`${TD} font-semibold`}>
-                              {(m as any).laterality && (
-                                <span className="font-bold text-[var(--color-primary-700)] mr-1.5">{(m as any).laterality}</span>
+                              {m.laterality && (
+                                <span className="font-bold text-[var(--color-primary-700)] mr-2">{m.laterality}</span>
                               )}
                               {m.drugName}
                             </td>

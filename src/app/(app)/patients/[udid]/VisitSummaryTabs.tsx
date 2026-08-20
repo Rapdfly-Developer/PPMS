@@ -469,15 +469,14 @@ function LongContent({
       {/* Medications */}
       {hasMeds && (
         <Block label="Medications">
-          <DataTable minWidth={440}>
-            <Cols widths={COLS_MEDICATION} />
+          <DataTable minWidth={380}>
+            <Cols widths={["40%", "18%", "24%", "18%"]} />
             <thead>
               <tr>
                 <th className={TH}>Drug</th>
                 <th className={TH}>Dose</th>
                 <th className={TH}>Frequency</th>
                 <th className={TH}>Duration</th>
-                <th className={TH}>Instructions</th>
               </tr>
             </thead>
             <tbody>
@@ -485,14 +484,13 @@ function LongContent({
                 <tr key={i}>
                   <td className={`${TD} font-semibold`}>
                     {m.laterality && (
-                      <span className="font-bold text-[var(--color-primary-700)] mr-1.5">{m.laterality}</span>
+                      <span className="font-bold text-[var(--color-primary-700)] mr-2">{m.laterality}</span>
                     )}
                     {m.drugName}
                   </td>
                   <td className={TD_MUTED}>{m.dosage || DASH}</td>
                   <td className={TD_MUTED}>{m.frequency || DASH}</td>
                   <td className={TD_MUTED}>{m.duration || DASH}</td>
-                  <td className={TD_MUTED}>{m.instructions || DASH}</td>
                 </tr>
               ))}
             </tbody>
