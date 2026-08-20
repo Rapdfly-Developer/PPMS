@@ -80,12 +80,12 @@ export default async function PatientsPage({
     visits: {
       orderBy: { date: "desc" as const },
       take: 1,
-      select: { date: true, finalizedAt: true, generalExam: { select: { chiefComplaint: true } } },
-    },
-    appointments: {
-      orderBy: { dateTime: "desc" as const },
-      take: 1,
-      select: { notes: true, arrivedAt: true },
+      select: {
+        date: true,
+        finalizedAt: true,
+        generalExam: { select: { chiefComplaint: true } },
+        appointment: { select: { arrivedAt: true } },
+      },
     },
   };
 
@@ -206,9 +206,9 @@ export default async function PatientsPage({
     createdAt:     p.createdAt.toISOString(),
     hospitalName:  p.registeredAt?.name ?? null,
     lastVisit:     p.visits[0]?.date.toISOString() ?? null,
-    queueTime:     p.appointments[0]?.arrivedAt?.toISOString() ?? null,
+    queueTime:     p.visits[0]?.appointment?.arrivedAt?.toISOString() ?? null,
     finalizeTime:  p.visits[0]?.finalizedAt?.toISOString() ?? null,
-    chiefComplaint: p.visits[0]?.generalExam?.chiefComplaint ?? p.complaint ?? (p as any).appointments?.[0]?.notes ?? null,
+    chiefComplaint: p.visits[0]?.generalExam?.chiefComplaint ?? p.complaint ?? null,
     photoUrl:      p.photoUrl ?? null,
     dispensedApptId: dispensedApptIds[p.id] ?? null,
   }));
