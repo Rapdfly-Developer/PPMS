@@ -225,9 +225,9 @@ export default function CounsellingForm({
   return (
     <div className="flex flex-col gap-5">
 
-      {/* ── 1. Tentative Overall Insurance ── */}
+      {/* ── 1. Overall Insurance Details ── */}
       <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
-        <SectionHeader icon={<CreditCard size={14} />} title="Tentative Overall Insurance" />
+        <SectionHeader icon={<CreditCard size={14} />} title="Overall Insurance Details" />
         <div className="flex flex-col gap-4">
           {/* Payment / Coverage Type */}
           <div>
@@ -305,6 +305,15 @@ export default function CounsellingForm({
               )}
             </div>
           )}
+
+          {/* Cash / Cashless */}
+          <div>
+            <FieldLabel>Cash / Cashless</FieldLabel>
+            <div className="flex flex-wrap gap-2">
+              <Chip label="Cash"     active={outOfPocket === "CASH"}     onClick={() => setOutOfPocket(outOfPocket === "CASH"     ? "" : "CASH")}     disabled={ro} />
+              <Chip label="Cashless" active={outOfPocket === "CASHLESS"} onClick={() => setOutOfPocket(outOfPocket === "CASHLESS" ? "" : "CASHLESS")} disabled={ro} />
+            </div>
+          </div>
         </div>
       </div>
 
