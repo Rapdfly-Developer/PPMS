@@ -435,21 +435,27 @@ function LastVisitSummarySection({ summary }: { summary: LastVisitSummary }) {
 
                 {summary.diagnoses.length > 0 && (
                   <Block label="Diagnoses">
-                    <p className="text-[11px] text-[var(--color-ink-700)] leading-relaxed">
-                      {summary.diagnoses.map((d, i) => (
-                        <span key={d.id}>
-                          {i > 0 && <span className="text-[var(--color-ink-300)] mx-1">,</span>}
-                          {d.laterality && <span className="font-bold text-[var(--color-primary-700)] mr-1">{d.laterality}</span>}
-                          {d.description}
-                          {d.provisional && <span className="text-amber-500 italic ml-1">(P)</span>}
-                          <span className={`ml-1 text-[9px] font-bold uppercase ${
-                            d.status === "RESOLVED" ? "text-emerald-600"
-                            : d.status === "CHRONIC" ? "text-amber-600"
-                            : "text-red-500"
-                          }`}>{d.status}</span>
-                        </span>
-                      ))}
-                    </p>
+                    <div className="flex flex-col gap-1.5">
+                      {[...summary.diagnoses]
+                        .sort((a, b) => {
+                          const ord: Record<string, number> = { ACTIVE: 0, CHRONIC: 1, RESOLVED: 2 };
+                          return (ord[a.status] ?? 3) - (ord[b.status] ?? 3);
+                        })
+                        .map((d) => (
+                          <div key={d.id} className="flex items-baseline justify-between gap-2">
+                            <span className="text-[11px] text-[var(--color-ink-700)] min-w-0">
+                              {d.laterality && <span className="font-bold text-[var(--color-primary-700)] mr-1">{d.laterality}</span>}
+                              {d.description}
+                              {d.provisional && <span className="text-amber-500 italic ml-1">(P)</span>}
+                            </span>
+                            <span className={`text-[9px] font-bold uppercase shrink-0 ${
+                              d.status === "RESOLVED" ? "text-emerald-600"
+                              : d.status === "CHRONIC" ? "text-amber-600"
+                              : "text-red-500"
+                            }`}>{d.status}</span>
+                          </div>
+                        ))}
+                    </div>
                   </Block>
                 )}
 
