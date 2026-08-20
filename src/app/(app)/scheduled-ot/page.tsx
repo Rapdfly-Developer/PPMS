@@ -68,7 +68,7 @@ export default async function ScheduledOtPage() {
       authCode:      r.preAuth.authCode ?? null,
       insuranceName: r.preAuth.insuranceCompany.name,
     } : null,
-    patient:  { id: r.patient.id, name: r.patient.name, udid: r.patient.udid ?? "", uhid: (r.patient as any).uhid ?? null, age: r.patient.age, sex: r.patient.sex, mobile: (r.patient as any).mobile ?? null },
+    patient:  { id: r.patient.id, name: r.patient.name, udid: r.patient.udid ?? "", uhid: (r.patient as any).uhid ?? null, age: r.patient.age, sex: r.patient.sex },
     hospital: { name: r.hospital.name, id: r.hospital.id },
     doctor:   { name: r.surgeon.name,  id: r.surgeon.id  },
     workflow: {

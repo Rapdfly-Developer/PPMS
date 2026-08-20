@@ -14,10 +14,6 @@
     {
       "path": "/api/cron/close-visits",
       "schedule": "0 0 * * *"
-    },
-    {
-      "path": "/api/cron/surgery-reminders",
-      "schedule": "0 12 * * *"
     }
   ]
 }
