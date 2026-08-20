@@ -40,7 +40,7 @@ export default async function ConsentFormPage({
               procedure: true, laterality: true, anaesthesia: true,
               iolLensName: true, iolPower: true, iolBrand: true, iolToric: true,
               estimateAmount: true, dateOfSurgery: true,
-              paymentMode: true, schemeName: true,
+              paymentType: true, paymentMode: true, schemeName: true, schemeType: true,
             },
           },
         },
@@ -166,10 +166,25 @@ export default async function ConsentFormPage({
                   />
                 </>
               )}
-              {rec.paymentMode && (
+              {rec.paymentType && (
                 <>
-                  <Row label="Payment Mode" value={rec.paymentMode} />
-                  <Row label="Scheme" value={rec.schemeName ?? "—"} />
+                  <Row label="Coverage Type" value={
+                    rec.paymentType === "INSURANCE"         ? "Insurance" :
+                    rec.paymentType === "NON_INSURANCE"     ? "Non-Insurance" :
+                    rec.paymentType === "GOVERNMENT_SCHEME" ? "Government Scheme" :
+                    rec.paymentType === "CAMP"              ? "Camp" :
+                    rec.paymentType
+                  } />
+                  {rec.paymentType === "NON_INSURANCE" && rec.paymentMode && (
+                    <Row label="Sub-type" value={
+                      rec.paymentMode === "OUT_OF_POCKET" ? "Out of Pocket" :
+                      rec.paymentMode === "FREE_CASH"     ? "Free Cash" :
+                      rec.paymentMode
+                    } />
+                  )}
+                  {(rec.paymentType === "INSURANCE" || rec.paymentType === "GOVERNMENT_SCHEME") && rec.schemeName && (
+                    <Row label="Scheme" value={`${rec.schemeName}${rec.schemeType ? ` · ${rec.schemeType}` : ""}`} />
+                  )}
                 </>
               )}
             </div>

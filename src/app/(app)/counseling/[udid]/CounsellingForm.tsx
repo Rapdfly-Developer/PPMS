@@ -224,28 +224,64 @@ export default function CounsellingForm({
       <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
         <SectionHeader icon={<CreditCard size={14} />} title="Tentative Overall Insurance" />
         <div className="flex flex-col gap-4">
+          {/* Payment / Coverage Type */}
           <div>
-            <FieldLabel>Cash / Cashless</FieldLabel>
+            <FieldLabel>Payment / Coverage Type</FieldLabel>
             <div className="flex flex-wrap gap-2">
-              {["CASH", "CASHLESS"].map((m) => (
-                <Chip key={m} label={m === "CASH" ? "Cash" : "Cashless"}
-                  active={paymentMode === m}
-                  onClick={() => setPaymentMode(paymentMode === m ? "" : m)}
+              {[
+                { value: "INSURANCE",        label: "Insurance" },
+                { value: "NON_INSURANCE",    label: "Non-Insurance" },
+                { value: "GOVERNMENT_SCHEME", label: "Government Scheme" },
+                { value: "CAMP",             label: "Camp" },
+              ].map((opt) => (
+                <Chip key={opt.value} label={opt.label}
+                  active={paymentType === opt.value}
+                  onClick={() => {
+                    const next = paymentType === opt.value ? "" : opt.value;
+                    setPaymentType(next);
+                    if (next !== "NON_INSURANCE") setPaymentMode("");
+                    if (next === "NON_INSURANCE" || next === "CAMP") {
+                      setSchemeName(""); setSchemeType("");
+                    }
+                  }}
                   disabled={ro}
                 />
               ))}
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+
+          {/* Non-Insurance sub-type */}
+          {paymentType === "NON_INSURANCE" && (
             <div>
-              <FieldLabel>Name</FieldLabel>
-              <TextInput value={schemeName} onChange={setSchemeName} placeholder="e.g. PMJAY, TN CM Scheme" disabled={ro} />
+              <FieldLabel>Sub-type</FieldLabel>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { value: "OUT_OF_POCKET", label: "Out of Pocket" },
+                  { value: "FREE_CASH",     label: "Free Cash" },
+                ].map((opt) => (
+                  <Chip key={opt.value} label={opt.label}
+                    active={paymentMode === opt.value}
+                    onClick={() => setPaymentMode(paymentMode === opt.value ? "" : opt.value)}
+                    disabled={ro}
+                  />
+                ))}
+              </div>
             </div>
-            <div>
-              <FieldLabel>Type</FieldLabel>
-              <TextInput value={schemeType} onChange={setSchemeType} placeholder="e.g. Full, Cap, Commission" disabled={ro} />
+          )}
+
+          {/* Name + Type — only for Insurance / Government Scheme */}
+          {(paymentType === "INSURANCE" || paymentType === "GOVERNMENT_SCHEME") && (
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <FieldLabel>Name</FieldLabel>
+                <TextInput value={schemeName} onChange={setSchemeName} placeholder="e.g. PMJAY, TN CM Scheme" disabled={ro} />
+              </div>
+              <div>
+                <FieldLabel>Type</FieldLabel>
+                <TextInput value={schemeType} onChange={setSchemeType} placeholder="e.g. Full, Cap, Commission" disabled={ro} />
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
 
