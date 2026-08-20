@@ -611,6 +611,24 @@ export function PatientsClient({
                             </span>
                             <span className="text-[10px] text-[var(--color-ink-400)]">{p.age}y · {sexLabel}</span>
                           </div>
+                          {/* Queue + finalize times — visible on mobile/tablet where Last Visit column is hidden */}
+                          {(lastVisitStr || queueTimeStr || finalTimeStr) && (
+                            <div className="xl:hidden flex items-center gap-2 mt-1 flex-wrap">
+                              {lastVisitStr && (
+                                <span className="text-[10px] font-medium text-[var(--color-ink-600)]">{lastVisitStr}</span>
+                              )}
+                              {queueTimeStr && (
+                                <span className="text-[10px] text-[var(--color-ink-400)]">
+                                  <span className="font-semibold text-[var(--color-ink-500)]">Q</span> {queueTimeStr}
+                                </span>
+                              )}
+                              {finalTimeStr && (
+                                <span className="text-[10px] text-[var(--color-ink-400)]">
+                                  <span className="font-semibold text-emerald-600">F</span> {finalTimeStr}
+                                </span>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </div>
 
