@@ -143,6 +143,7 @@ export default function CounsellingForm({
   const [schemeType,    setSchemeType]    = useState(ex?.schemeType    ?? "");
   const [policyNumber,  setPolicyNumber]  = useState(ex?.policyNumber  ?? "");
   const [outOfPocket, setOutOfPocket] = useState(ex?.outOfPocket ?? "");
+  const [iolType,     setIolType]     = useState(ex?.iolType     ?? "");
   const [iolLensName, setIolLensName] = useState(ex?.iolLensName ?? "");
   const [iolBrand,    setIolBrand]    = useState(ex?.iolBrand    ?? "");
   const [iolToric,    setIolToric]    = useState(ex?.iolToric    ?? false);
@@ -177,6 +178,7 @@ export default function CounsellingForm({
       schemeType:     schemeType    || undefined,
       policyNumber:   policyNumber  || undefined,
       outOfPocket:    outOfPocket  || undefined,
+      iolType:        iolType      || undefined,
       iolLensName:    iolLensName  || undefined,
       iolPower:       iolPower ? `${focalSign}${iolPower}` : undefined,
       iolBrand:       iolBrand     || undefined,
