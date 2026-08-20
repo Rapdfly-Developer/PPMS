@@ -196,6 +196,8 @@ export type SerialVisit = {
 export type TodayVisit = {
   id: string;
   appointmentId: string | null;
+  status: string;
+  finalizedAt: string | null;
 } | null;
 
 export type TimelineEntry = {
@@ -502,6 +504,50 @@ function LastVisitSummarySection({ summary }: { summary: LastVisitSummary }) {
   );
 }
 
+/* ── Finalized visit confirmation modal ──────────────────────────────────────── */
+function FinalizedVisitModal({
+  visitId,
+  udid,
+  onClose,
+}: {
+  visitId: string;
+  udid: string;
+  onClose: () => void;
+}) {
+  const router = useRouter();
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
+        <div className="px-6 py-5 flex flex-col items-center text-center gap-3">
+          <div className="w-11 h-11 rounded-full bg-blue-50 flex items-center justify-center">
+            <CheckCircle2 size={20} className="text-blue-500" />
+          </div>
+          <div>
+            <p className="text-base font-bold text-[var(--color-ink-900)]">Finalized &amp; Signed</p>
+            <p className="text-sm text-[var(--color-ink-500)] mt-1">
+              You can only view. Do you wish to edit?
+            </p>
+          </div>
+        </div>
+        <div className="flex gap-3 px-6 pb-5">
+          <button
+            onClick={() => { onClose(); router.push(`/emr/${udid}?visit=${visitId}`); }}
+            className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium border border-[var(--color-border)] text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] transition-colors"
+          >
+            View Only
+          </button>
+          <button
+            onClick={() => { onClose(); router.push(`/emr/${udid}?visit=${visitId}&edit=1`); }}
+            className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold bg-[var(--color-primary-900)] text-white hover:bg-[var(--color-primary-700)] transition-colors"
+          >
+            Edit
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ── Main export ─────────────────────────────────────────────────────────────── */
 export function PatientProfileClient({
   udid,
@@ -534,9 +580,18 @@ export function PatientProfileClient({
 }) {
   const hasToday = todayVisit !== null;
   const hasPendingAppointment = !hasToday && !!todayAppointmentId;
+  const todayIsFinalized = hasToday && todayVisit!.status === "CLOSED";
+  const [showFinalizedModal, setShowFinalizedModal] = useState(false);
 
   return (
     <>
+      {showFinalizedModal && todayVisit && (
+        <FinalizedVisitModal
+          visitId={todayVisit.id}
+          udid={udid}
+          onClose={() => setShowFinalizedModal(false)}
+        />
+      )}
       {/* ── Action buttons ───────────────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row gap-3">
         {/* Previous Visits */}
@@ -564,13 +619,23 @@ export function PatientProfileClient({
         {/* Today's Visit */}
         {userRole === "DOCTOR" ? (
           hasToday ? (
-            <Link
-              href={`/emr/${udid}?visit=${todayVisit!.id}`}
-              className="flex-1 flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-xl font-semibold text-sm bg-emerald-600 text-white hover:bg-emerald-700 transition-colors shadow-sm"
-            >
-              <Stethoscope size={16} />
-              Today's Visit
-            </Link>
+            todayIsFinalized ? (
+              <button
+                onClick={() => setShowFinalizedModal(true)}
+                className="flex-1 flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-xl font-semibold text-sm bg-emerald-600 text-white hover:bg-emerald-700 transition-colors shadow-sm"
+              >
+                <Stethoscope size={16} />
+                Today's Visit
+              </button>
+            ) : (
+              <Link
+                href={`/emr/${udid}?visit=${todayVisit!.id}`}
+                className="flex-1 flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-xl font-semibold text-sm bg-emerald-600 text-white hover:bg-emerald-700 transition-colors shadow-sm"
+              >
+                <Stethoscope size={16} />
+                Today's Visit
+              </Link>
+            )
           ) : hasPendingAppointment ? (
             <Link
               href={`/emr/${udid}`}

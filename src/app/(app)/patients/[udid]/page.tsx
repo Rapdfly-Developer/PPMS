@@ -97,7 +97,12 @@ export default async function PatientProfilePage({
   }
 
   const todayVisit: TodayVisit = todayVisitRecord
-    ? { id: todayVisitRecord.id, appointmentId: todayVisitRecord.appointmentId }
+    ? {
+        id: todayVisitRecord.id,
+        appointmentId: todayVisitRecord.appointmentId,
+        status: todayVisitRecord.status,
+        finalizedAt: (todayVisitRecord as any).finalizedAt?.toISOString() ?? null,
+      }
     : null;
 
   // Most recent visit (any date) where surgery was counselled

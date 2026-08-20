@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, ReactNode } from "react";
+import { useSearchParams } from "next/navigation";
 import { Tabs } from "@/components/ui/Tabs";
 import { EmrActionBar } from "./EmrActionBar";
 
@@ -27,8 +28,9 @@ export function EmrTabsShell({
   showActionBar: boolean;
   finalizedToday?: boolean;
 }) {
+  const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState(tabs[0]?.id);
-  const [editMode, setEditMode] = useState(false);
+  const [editMode, setEditMode] = useState(searchParams.get("edit") === "1");
   const currentIndex = tabs.findIndex((t) => t.id === activeTab);
 
   const closed = visit.status === "CLOSED";
