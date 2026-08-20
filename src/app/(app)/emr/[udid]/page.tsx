@@ -435,6 +435,12 @@ export default async function PatientDetailedEMR({
                         {new Date(activeVisit.appointment.dateTime).toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit", hour12: true, timeZone: "Asia/Kolkata" })}
                       </div>
                     )}
+                    {activeVisit.finalizedAt && (
+                      <div className="flex items-center gap-1 text-[11px] text-emerald-300/80 pt-0.5 border-t border-white/10 mt-1">
+                        <CheckCircle2 size={10} className="shrink-0" />
+                        {new Date(activeVisit.finalizedAt).toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit", hour12: true, timeZone: "Asia/Kolkata" })}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
