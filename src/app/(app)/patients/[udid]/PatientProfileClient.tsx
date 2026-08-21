@@ -463,18 +463,21 @@ function LastVisitSummarySection({ summary }: { summary: LastVisitSummary }) {
 
                 {summary.medications.length > 0 && (
                   <Block label="Medications">
-                    <DataTable minWidth={300}>
-                      <Cols widths={["48%", "22%", "30%"]} />
+                    <DataTable minWidth={360}>
+                      <Cols widths={["6%", "38%", "18%", "20%", "18%"]} />
                       <thead>
                         <tr>
+                          <th className={TH}>#</th>
                           <th className={TH}>Drug</th>
                           <th className={TH}>Dose</th>
                           <th className={TH}>Frequency</th>
+                          <th className={TH}>Duration</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {summary.medications.map((m) => (
+                        {summary.medications.map((m, idx) => (
                           <tr key={m.id}>
+                            <td className={TD_MUTED}>{idx + 1}</td>
                             <td className={`${TD} font-semibold`}>
                               {m.laterality && (
                                 <span className="font-bold text-[var(--color-primary-700)] mr-2">{m.laterality}</span>
@@ -483,6 +486,7 @@ function LastVisitSummarySection({ summary }: { summary: LastVisitSummary }) {
                             </td>
                             <td className={TD_MUTED}>{m.dosage || DASH}</td>
                             <td className={TD_MUTED}>{m.frequency || DASH}</td>
+                            <td className={TD_MUTED}>{m.duration || DASH}</td>
                           </tr>
                         ))}
                       </tbody>
