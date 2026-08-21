@@ -85,6 +85,27 @@ export function ComplaintCombobox({
   return (
     <div className="flex flex-col gap-3">
 
+      {/* ── Custom input row ─────────────────────────────────────────── */}
+      <div className="flex gap-2">
+        <input
+          ref={inputRef}
+          type="text"
+          value={customInput}
+          onChange={(e) => setCustomInput(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder={placeholder}
+          className={`${inputCls} flex-1`}
+        />
+        <button
+          type="button"
+          onClick={addCustom}
+          disabled={!customInput.trim()}
+          className="shrink-0 flex items-center gap-1 px-3 py-2 rounded-xl border border-[var(--color-border)] text-xs font-semibold text-[var(--color-ink-600)] bg-white hover:bg-[var(--color-surface-sunken)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+        >
+          <Plus size={12} /> Add
+        </button>
+      </div>
+
       {/* ── Standard keyword chips ───────────────────────────────────── */}
       <div className="flex flex-wrap gap-1.5">
         {OPHTHALMIC_COMPLAINTS.map((keyword) => {
@@ -142,27 +163,6 @@ export function ComplaintCombobox({
           })}
         </div>
       )}
-
-      {/* ── Custom input row ─────────────────────────────────────────── */}
-      <div className="flex gap-2">
-        <input
-          ref={inputRef}
-          type="text"
-          value={customInput}
-          onChange={(e) => setCustomInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder={placeholder}
-          className={`${inputCls} flex-1`}
-        />
-        <button
-          type="button"
-          onClick={addCustom}
-          disabled={!customInput.trim()}
-          className="shrink-0 flex items-center gap-1 px-3 py-2 rounded-xl border border-[var(--color-border)] text-xs font-semibold text-[var(--color-ink-600)] bg-white hover:bg-[var(--color-surface-sunken)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-        >
-          <Plus size={12} /> Add
-        </button>
-      </div>
 
       {/* ── Selected value display ───────────────────────────────────── */}
       {value && (
