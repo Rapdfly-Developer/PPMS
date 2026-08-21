@@ -11,8 +11,8 @@ import {
   MapPin,
   Phone,
   Mail,
-  Instagram,
-  Twitter,
+  ExternalLink,
+  Share2,
   ChevronDown,
   Stethoscope,
   Clock,
@@ -594,7 +594,7 @@ export default function DrSaiLandingPage() {
               className="flex-1 flex items-center justify-center gap-2 py-3 rounded-full border text-sm font-semibold transition-all hover:border-slate-500"
               style={{ borderColor: BORDER, color: "rgb(148,163,184)" }}
             >
-              <Twitter size={16} /> @vitreous_void
+              <ExternalLink size={16} /> @vitreous_void
             </a>
             <a
               href="https://instagram.com/vitreous_void"
@@ -603,7 +603,7 @@ export default function DrSaiLandingPage() {
               className="flex-1 flex items-center justify-center gap-2 py-3 rounded-full border text-sm font-semibold transition-all hover:border-slate-500"
               style={{ borderColor: BORDER, color: "rgb(148,163,184)" }}
             >
-              <Instagram size={16} /> Instagram
+              <Share2 size={16} /> Instagram
             </a>
           </FadeUp>
         </div>
