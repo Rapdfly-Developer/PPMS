@@ -6,9 +6,27 @@ export default auth((req) => {
   const isLoggedIn = !!req.auth;
   const { pathname } = req.nextUrl;
 
+  // ── Subdomain routing ──────────────────────────────────────────────────────
+  // doctorsai.ppmsai.com → rewrite to /sub/doctorsai (public, no auth needed)
+  const host = req.headers.get("host") ?? "";
+  const isLocalhost = host.includes("localhost");
+  const parts = host.split(".");
+  let subdomain: string | null = null;
+  if (isLocalhost && parts.length >= 2) {
+    subdomain = parts[0] === "localhost" ? null : parts[0];
+  } else if (!isLocalhost && parts.length >= 3) {
+    subdomain = parts[0];
+  }
+  if (subdomain && subdomain !== "www" && subdomain !== "ppmsai" && !pathname.startsWith("/sub/")) {
+    const url = req.nextUrl.clone();
+    url.pathname = `/sub/${subdomain}${pathname}`;
+    return NextResponse.rewrite(url);
+  }
+  // ──────────────────────────────────────────────────────────────────────────
+
   const isLoginPage        = pathname.startsWith("/login");
   const isLandingPage      = pathname === "/";
-  const isSubPage          = pathname.startsWith("/sub_page");
+  const isSubPage          = pathname.startsWith("/sub_page") || pathname.startsWith("/sub/");
   const isLicensePage      = pathname.startsWith("/license");
   const isLicenseApi       = pathname.startsWith("/api/license");
   const isSetupPage        = pathname.startsWith("/setup");
