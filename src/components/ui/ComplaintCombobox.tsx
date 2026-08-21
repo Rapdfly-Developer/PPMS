@@ -40,34 +40,32 @@ export function ComplaintCombobox({
   placeholder = "Or type a custom complaint…",
   inputCls = "",
 }: Props) {
-  const [customInput, setCustomInput] = useState("");
   const [customKeywords, setCustomKeywords] = useState<string[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const allKeywords = [...OPHTHALMIC_COMPLAINTS, ...customKeywords];
+  const allStandard = OPHTHALMIC_COMPLAINTS as readonly string[];
 
-  // Whether the current value matches a chip (standard or custom)
-  const selectedChip = allKeywords.find(
+  // Whether the current value matches a chip exactly
+  const selectedChip = [...allStandard, ...customKeywords].find(
     (k) => k.toLowerCase() === value.toLowerCase()
   ) ?? null;
 
+  // Clicking a chip fills the input; clicking the active chip clears it
   function selectChip(keyword: string) {
-    // Toggle: click the active chip to deselect
     onChange(selectedChip === keyword ? "" : keyword);
   }
 
+  // Add current input value as a new custom keyword chip
   function addCustom() {
-    const trimmed = customInput.trim();
+    const trimmed = value.trim();
     if (!trimmed) return;
-    // If it already exists as a chip, just select it
-    if (allKeywords.some((k) => k.toLowerCase() === trimmed.toLowerCase())) {
-      onChange(trimmed);
-      setCustomInput("");
-      return;
+    const exists = [...allStandard, ...customKeywords].some(
+      (k) => k.toLowerCase() === trimmed.toLowerCase()
+    );
+    if (!exists) {
+      setCustomKeywords((prev) => [...prev, trimmed]);
     }
-    setCustomKeywords((prev) => [...prev, trimmed]);
-    onChange(trimmed);
-    setCustomInput("");
+    // Value stays selected; chip just gets added / already highlighted
   }
 
   function removeCustom(keyword: string) {
@@ -82,16 +80,21 @@ export function ComplaintCombobox({
     }
   }
 
+  // Whether the current value is not already a chip (so Add button is meaningful)
+  const isCustomValue =
+    value.trim() &&
+    !selectedChip;
+
   return (
     <div className="flex flex-col gap-3">
 
-      {/* ── Custom input row ─────────────────────────────────────────── */}
+      {/* ── Input — shows selected value; typing sets a custom complaint ── */}
       <div className="flex gap-2">
         <input
           ref={inputRef}
           type="text"
-          value={customInput}
-          onChange={(e) => setCustomInput(e.target.value)}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
           className={`${inputCls} flex-1`}
@@ -99,7 +102,8 @@ export function ComplaintCombobox({
         <button
           type="button"
           onClick={addCustom}
-          disabled={!customInput.trim()}
+          disabled={!isCustomValue}
+          title="Save as keyword"
           className="shrink-0 flex items-center gap-1 px-3 py-2 rounded-xl border border-[var(--color-border)] text-xs font-semibold text-[var(--color-ink-600)] bg-white hover:bg-[var(--color-surface-sunken)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         >
           <Plus size={12} /> Add
@@ -161,24 +165,6 @@ export function ComplaintCombobox({
               </span>
             );
           })}
-        </div>
-      )}
-
-      {/* ── Selected value display ───────────────────────────────────── */}
-      {value && (
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-[var(--color-ink-400)]">Selected:</span>
-          <span className="text-xs font-semibold text-[var(--color-ink-800)] bg-[var(--color-primary-50)] border border-[var(--color-primary-200)] px-2 py-0.5 rounded-md">
-            {value}
-          </span>
-          <button
-            type="button"
-            onClick={() => onChange("")}
-            className="text-[var(--color-ink-400)] hover:text-[var(--color-danger-600)] transition-colors"
-            aria-label="Clear complaint"
-          >
-            <X size={12} />
-          </button>
         </div>
       )}
     </div>
