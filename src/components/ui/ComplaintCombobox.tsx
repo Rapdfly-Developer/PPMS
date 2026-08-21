@@ -1,30 +1,30 @@
 "use client";
 
-import { useState, useRef, useEffect, useId } from "react";
-import { ChevronDown, X } from "lucide-react";
+import { useState, useRef, KeyboardEvent } from "react";
+import { Plus, X } from "lucide-react";
 
 export const OPHTHALMIC_COMPLAINTS = [
   "Blurred Vision",
+  "Decreased Vision",
+  "Sudden Vision Loss",
+  "Distorted Vision",
+  "Double Vision",
+  "Difficulty Seeing at Night",
+  "Halos Around Lights",
   "Eye Pain",
   "Redness",
   "Itching",
   "Watering",
   "Dryness",
   "Burning",
+  "Eye Discharge",
+  "Swelling",
   "Foreign Body Sensation",
   "Photophobia",
+  "Eye Strain",
   "Floaters",
   "Flashes",
   "Headache",
-  "Double Vision",
-  "Eye Discharge",
-  "Swelling",
-  "Decreased Vision",
-  "Sudden Vision Loss",
-  "Distorted Vision",
-  "Halos Around Lights",
-  "Difficulty Seeing at Night",
-  "Eye Strain",
 ] as const;
 
 interface Props {
@@ -37,167 +37,149 @@ interface Props {
 export function ComplaintCombobox({
   value,
   onChange,
-  placeholder = "Select or type a complaint…",
+  placeholder = "Or type a custom complaint…",
   inputCls = "",
 }: Props) {
-  const [open, setOpen] = useState(false);
-  const [query, setQuery] = useState(value);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const [customInput, setCustomInput] = useState("");
+  const [customKeywords, setCustomKeywords] = useState<string[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
-  const listId = useId();
 
-  // Keep query in sync when value is set externally (e.g. cleared)
-  useEffect(() => {
-    setQuery(value);
-  }, [value]);
+  const allKeywords = [...OPHTHALMIC_COMPLAINTS, ...customKeywords];
 
-  // Close on outside click
-  useEffect(() => {
-    function handle(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
+  // Whether the current value matches a chip (standard or custom)
+  const selectedChip = allKeywords.find(
+    (k) => k.toLowerCase() === value.toLowerCase()
+  ) ?? null;
+
+  function selectChip(keyword: string) {
+    // Toggle: click the active chip to deselect
+    onChange(selectedChip === keyword ? "" : keyword);
+  }
+
+  function addCustom() {
+    const trimmed = customInput.trim();
+    if (!trimmed) return;
+    // If it already exists as a chip, just select it
+    if (allKeywords.some((k) => k.toLowerCase() === trimmed.toLowerCase())) {
+      onChange(trimmed);
+      setCustomInput("");
+      return;
     }
-    document.addEventListener("mousedown", handle);
-    return () => document.removeEventListener("mousedown", handle);
-  }, []);
-
-  const filtered = query.trim()
-    ? OPHTHALMIC_COMPLAINTS.filter((c) =>
-        c.toLowerCase().includes(query.toLowerCase())
-      )
-    : [...OPHTHALMIC_COMPLAINTS];
-
-  function select(complaint: string) {
-    onChange(complaint);
-    setQuery(complaint);
-    setOpen(false);
+    setCustomKeywords((prev) => [...prev, trimmed]);
+    onChange(trimmed);
+    setCustomInput("");
   }
 
-  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const v = e.target.value;
-    setQuery(v);
-    onChange(v);
-    setOpen(true);
+  function removeCustom(keyword: string) {
+    setCustomKeywords((prev) => prev.filter((k) => k !== keyword));
+    if (value === keyword) onChange("");
   }
 
-  function handleClear() {
-    onChange("");
-    setQuery("");
-    inputRef.current?.focus();
-    setOpen(true);
-  }
-
-  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === "Escape") { setOpen(false); inputRef.current?.blur(); }
-    if (e.key === "ArrowDown" && filtered.length > 0) {
+  function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Enter") {
       e.preventDefault();
-      const first = containerRef.current?.querySelector<HTMLButtonElement>("[data-opt]");
-      first?.focus();
-    }
-  }
-
-  function handleOptionKeyDown(e: React.KeyboardEvent<HTMLButtonElement>, complaint: string, idx: number) {
-    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); select(complaint); }
-    if (e.key === "Escape") { setOpen(false); inputRef.current?.focus(); }
-    if (e.key === "ArrowDown") {
-      e.preventDefault();
-      const opts = containerRef.current?.querySelectorAll<HTMLButtonElement>("[data-opt]");
-      opts?.[idx + 1]?.focus();
-    }
-    if (e.key === "ArrowUp") {
-      e.preventDefault();
-      if (idx === 0) { inputRef.current?.focus(); return; }
-      const opts = containerRef.current?.querySelectorAll<HTMLButtonElement>("[data-opt]");
-      opts?.[idx - 1]?.focus();
+      addCustom();
     }
   }
 
   return (
-    <div ref={containerRef} className="relative">
-      {/* Input row */}
-      <div className="relative">
+    <div className="flex flex-col gap-3">
+
+      {/* ── Standard keyword chips ───────────────────────────────────── */}
+      <div className="flex flex-wrap gap-1.5">
+        {OPHTHALMIC_COMPLAINTS.map((keyword) => {
+          const active = selectedChip === keyword;
+          return (
+            <button
+              key={keyword}
+              type="button"
+              onClick={() => selectChip(keyword)}
+              className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-all ${
+                active
+                  ? "bg-[var(--color-primary-700)] border-[var(--color-primary-700)] text-white"
+                  : "bg-white border-[var(--color-border)] text-[var(--color-ink-600)] hover:border-[var(--color-primary-400)] hover:text-[var(--color-primary-700)]"
+              }`}
+            >
+              {keyword}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* ── Custom keyword chips ─────────────────────────────────────── */}
+      {customKeywords.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {customKeywords.map((keyword) => {
+            const active = selectedChip === keyword;
+            return (
+              <span
+                key={keyword}
+                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border transition-all ${
+                  active
+                    ? "bg-[var(--color-primary-700)] border-[var(--color-primary-700)] text-white"
+                    : "bg-[var(--color-surface-sunken)] border-[var(--color-border)] text-[var(--color-ink-700)]"
+                }`}
+              >
+                <button
+                  type="button"
+                  onClick={() => selectChip(keyword)}
+                  className="focus:outline-none"
+                >
+                  {keyword}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => removeCustom(keyword)}
+                  className={`rounded-full p-0.5 transition-colors ${
+                    active ? "hover:bg-white/20" : "hover:bg-[var(--color-border)]"
+                  }`}
+                  aria-label={`Remove ${keyword}`}
+                >
+                  <X size={9} />
+                </button>
+              </span>
+            );
+          })}
+        </div>
+      )}
+
+      {/* ── Custom input row ─────────────────────────────────────────── */}
+      <div className="flex gap-2">
         <input
           ref={inputRef}
           type="text"
-          role="combobox"
-          aria-expanded={open}
-          aria-controls={listId}
-          aria-autocomplete="list"
-          value={query}
-          onChange={handleChange}
-          onFocus={() => setOpen(true)}
+          value={customInput}
+          onChange={(e) => setCustomInput(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
-          className={`${inputCls} pr-14`}
+          className={`${inputCls} flex-1`}
         />
-        <div className="absolute inset-y-0 right-0 flex items-center gap-0.5 pr-2">
-          {query && (
-            <button
-              type="button"
-              onClick={handleClear}
-              className="p-1 text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)] transition-colors rounded"
-              aria-label="Clear"
-            >
-              <X size={13} />
-            </button>
-          )}
-          <button
-            type="button"
-            onClick={() => { setOpen((o) => !o); inputRef.current?.focus(); }}
-            className="p-1 text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)] transition-colors rounded"
-            aria-label="Toggle suggestions"
-            tabIndex={-1}
-          >
-            <ChevronDown
-              size={14}
-              className={`transition-transform duration-200 ${open ? "rotate-180" : ""}`}
-            />
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={addCustom}
+          disabled={!customInput.trim()}
+          className="shrink-0 flex items-center gap-1 px-3 py-2 rounded-xl border border-[var(--color-border)] text-xs font-semibold text-[var(--color-ink-600)] bg-white hover:bg-[var(--color-surface-sunken)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+        >
+          <Plus size={12} /> Add
+        </button>
       </div>
 
-      {/* Dropdown */}
-      {open && filtered.length > 0 && (
-        <ul
-          id={listId}
-          role="listbox"
-          className="absolute z-50 mt-1 w-full max-h-52 overflow-y-auto rounded-xl border border-[var(--color-border)] bg-white shadow-lg py-1"
-        >
-          {filtered.map((complaint, idx) => (
-            <li key={complaint} role="option" aria-selected={value === complaint}>
-              <button
-                data-opt
-                type="button"
-                onClick={() => select(complaint)}
-                onKeyDown={(e) => handleOptionKeyDown(e, complaint, idx)}
-                className={[
-                  "w-full text-left px-3.5 py-2 text-sm transition-colors",
-                  value === complaint
-                    ? "bg-[var(--color-primary-50)] text-[var(--color-primary-800)] font-medium"
-                    : "text-[var(--color-ink-800)] hover:bg-[var(--color-surface-sunken)]",
-                ].join(" ")}
-              >
-                {complaint}
-              </button>
-            </li>
-          ))}
-          {query.trim() && !OPHTHALMIC_COMPLAINTS.some(
-            (c) => c.toLowerCase() === query.toLowerCase()
-          ) && (
-            <li role="option" aria-selected={false}>
-              <button
-                data-opt
-                type="button"
-                onClick={() => select(query.trim())}
-                onKeyDown={(e) => handleOptionKeyDown(e, query.trim(), filtered.length)}
-                className="w-full text-left px-3.5 py-2 text-sm text-[var(--color-ink-500)] hover:bg-[var(--color-surface-sunken)] transition-colors border-t border-[var(--color-border)] mt-1 pt-2"
-              >
-                Use &ldquo;<span className="font-medium text-[var(--color-ink-800)]">{query.trim()}</span>&rdquo;
-              </button>
-            </li>
-          )}
-        </ul>
+      {/* ── Selected value display ───────────────────────────────────── */}
+      {value && (
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-[var(--color-ink-400)]">Selected:</span>
+          <span className="text-xs font-semibold text-[var(--color-ink-800)] bg-[var(--color-primary-50)] border border-[var(--color-primary-200)] px-2 py-0.5 rounded-md">
+            {value}
+          </span>
+          <button
+            type="button"
+            onClick={() => onChange("")}
+            className="text-[var(--color-ink-400)] hover:text-[var(--color-danger-600)] transition-colors"
+            aria-label="Clear complaint"
+          >
+            <X size={12} />
+          </button>
+        </div>
       )}
     </div>
   );

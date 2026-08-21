@@ -477,7 +477,6 @@ export function NewEncounterForm({
               <ComplaintCombobox
                 value={complaint}
                 onChange={setComplaint}
-                placeholder="Select or type a complaint…"
                 inputCls={inputCls}
               />
             </div>

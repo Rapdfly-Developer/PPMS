@@ -761,7 +761,6 @@ export function BookAppointmentForm({
               <ComplaintCombobox
                 value={notes}
                 onChange={setNotes}
-                placeholder="Select or type a complaint…"
                 inputCls={inputCls}
               />
             </div>
