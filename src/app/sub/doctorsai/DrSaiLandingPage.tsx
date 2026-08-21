@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
 import {
@@ -309,16 +310,17 @@ export default function DrSaiLandingPage() {
             className="relative"
           >
             <div
-              className="w-32 h-32 md:w-40 md:h-40 rounded-full overflow-hidden ring-2 ring-offset-4"
-              style={{ ringColor: TEAL, ringOffsetColor: BG, boxShadow: `0 0 0 2px ${TEAL}, 0 0 0 6px ${BG}, 0 0 40px ${TEAL}30` }}
+              className="w-32 h-32 md:w-40 md:h-40 rounded-full overflow-hidden"
+              style={{ boxShadow: `0 0 0 2px ${TEAL}, 0 0 0 6px ${BG}, 0 0 40px ${TEAL}30` }}
             >
-              {/* fallback gradient if portrait image unavailable */}
-              <div
-                className="w-full h-full flex items-center justify-center text-4xl font-serif font-bold"
-                style={{ background: `linear-gradient(135deg, ${CARD} 0%, #0f1520 100%)`, color: TEAL }}
-              >
-                S
-              </div>
+              <Image
+                src="/doctors/dr-sai-portrait.jpeg"
+                alt="Dr. Sai Dharshan"
+                width={160}
+                height={160}
+                className="w-full h-full object-cover object-top"
+                priority
+              />
             </div>
             {/* online indicator */}
             <span
@@ -412,14 +414,21 @@ export default function DrSaiLandingPage() {
         <div className="max-w-4xl mx-auto grid md:grid-cols-2 gap-12 items-center">
           <FadeUp>
             <div
-              className="rounded-3xl overflow-hidden aspect-[4/5] flex items-center justify-center"
-              style={{ background: `linear-gradient(145deg, ${CARD} 0%, #0d1220 100%)`, border: `1px solid ${BORDER}` }}
+              className="rounded-3xl overflow-hidden aspect-[4/5] relative"
+              style={{ border: `1px solid ${BORDER}` }}
             >
-              {/* placeholder for actual portrait */}
-              <div className="flex flex-col items-center gap-4 opacity-40">
-                <Eye size={48} style={{ color: TEAL }} />
-                <p className="font-mono text-xs text-slate-500">doc_portrait.jpg</p>
-              </div>
+              <Image
+                src="/doctors/dr-sai-portrait.jpeg"
+                alt="Dr. Sai Dharshan"
+                fill
+                className="object-cover object-top"
+                sizes="(max-width: 768px) 100vw, 50vw"
+              />
+              {/* subtle teal gradient overlay at the bottom */}
+              <div
+                className="absolute inset-x-0 bottom-0 h-32 pointer-events-none"
+                style={{ background: `linear-gradient(to top, ${BG}CC, transparent)` }}
+              />
             </div>
           </FadeUp>
           <div className="flex flex-col gap-6">
