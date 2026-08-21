@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import {
   Search, Stethoscope, UserPlus, Users,
   User, Phone, FileText, CalendarDays,
-  Calendar, Building2,
+  Building2, Clock, AlertCircle, CheckCircle2,
 } from "lucide-react";
 import { BackButton } from "@/components/ui/BackButton";
 import { SmartUploadBox, type UploadedFile } from "@/components/ui/SmartUploadBox";
@@ -43,10 +43,12 @@ const inputCls =
 
 export function NewEncounterForm({
   patients,
-  hospitals,
+  autoHospital,
+  currentTimeIST,
 }: {
   patients: Patient[];
-  hospitals: { id: string; name: string }[];
+  autoHospital: { id: string; name: string } | null;
+  currentTimeIST: string;
 }) {
   const searchParams = useSearchParams();
   const returnTo = searchParams.get("returnTo") ?? "/dashboard";
@@ -76,11 +78,8 @@ export function NewEncounterForm({
 
   // ── shared ───────────────────────────────────────────────────────────────
   const [visitType, setVisitType] = useState("General OPD");
-  const [hospitalId, setHospitalId] = useState(hospitals[0]?.id ?? "");
+  const hospitalId = autoHospital?.id ?? "";
   const [error, setError] = useState("");
-
-  const todayStr = new Date().toISOString().split("T")[0];
-  const [date, setDate] = useState(todayStr);
 
   const filtered = search.trim()
     ? patients.filter(
@@ -94,13 +93,13 @@ export function NewEncounterForm({
     e.preventDefault();
     setError("");
 
-    if (!hospitalId) { setError("Please select a hospital."); return; }
+    if (!hospitalId) { setError("No hospital detected for the current time. Please check your schedule."); return; }
 
     const fd = new FormData();
     fd.set("mode", patientMode);
     fd.set("visitType", visitType);
     fd.set("hospitalId", hospitalId);
-    fd.set("date", date);
+    // date and time are intentionally omitted — the server action defaults to now()
 
     const isGeneralOPD = visitType === "General OPD";
     if (isGeneralOPD && !laterality) { setError("Please select laterality — RE, LE, or OU."); return; }
@@ -366,44 +365,37 @@ export function NewEncounterForm({
           </div>
 
           <div className="flex flex-col gap-5">
-            {/* Hospital — radio grid */}
-            {hospitals.length >= 1 && (
-              <div>
-                <FieldLabel icon={<Building2 size={12} />}>Hospital *</FieldLabel>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {hospitals.map((h) => (
-                    <label key={h.id} className={`flex items-center gap-2 px-4 py-3 rounded-xl border cursor-pointer transition-all ${
-                      hospitalId === h.id
-                        ? "border-[var(--color-primary-600)] bg-[var(--color-primary-50)]"
-                        : "border-[var(--color-border)] bg-white hover:bg-[var(--color-surface-sunken)]"
-                    }`}>
-                      <input
-                        type="radio"
-                        name="hospital"
-                        value={h.id}
-                        checked={hospitalId === h.id}
-                        onChange={() => setHospitalId(h.id)}
-                        className="accent-[var(--color-primary-600)]"
-                      />
-                      <span className="text-sm font-medium text-[var(--color-ink-900)]">{h.name}</span>
-                    </label>
-                  ))}
+
+            {/* Auto-detected Hospital + Time */}
+            {autoHospital ? (
+              <div className="flex flex-col gap-3">
+                {/* Hospital card */}
+                <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-emerald-200 bg-emerald-50">
+                  <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold uppercase tracking-widest text-emerald-700 mb-0.5">Hospital</p>
+                    <p className="text-sm font-semibold text-[var(--color-ink-900)] truncate">{autoHospital.name}</p>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-xs text-emerald-600 shrink-0">
+                    <Clock size={12} />
+                    <span className="font-semibold">{currentTimeIST}</span>
+                  </div>
+                </div>
+                <p className="text-xs text-[var(--color-ink-400)] -mt-1">
+                  Auto-detected based on your current schedule. Date and time are set to now.
+                </p>
+              </div>
+            ) : (
+              <div className="flex items-start gap-3 px-4 py-3 rounded-xl border border-amber-200 bg-amber-50">
+                <AlertCircle size={16} className="text-amber-600 shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-semibold text-amber-800">No schedule found for {currentTimeIST}</p>
+                  <p className="text-xs text-amber-700 mt-0.5">
+                    The doctor is not currently scheduled at any hospital. Please check your availability settings or contact the administrator.
+                  </p>
                 </div>
               </div>
             )}
-
-            {/* Date */}
-            <div>
-              <FieldLabel icon={<Calendar size={12} />}>Date *</FieldLabel>
-              <input
-                type="date"
-                value={date}
-                min={todayStr}
-                max={todayStr}
-                onChange={(e) => setDate(e.target.value)}
-                className={inputCls}
-              />
-            </div>
 
             {/* Visit Type */}
             <div>
@@ -500,7 +492,7 @@ export function NewEncounterForm({
 
         <button
           type="submit"
-          disabled={pending || (patientMode === "existing" && !selectedPatient)}
+          disabled={pending || !autoHospital || (patientMode === "existing" && !selectedPatient)}
           className="flex items-center justify-center gap-2 bg-[var(--color-primary-900)] text-white text-sm font-semibold px-6 py-3 rounded-xl hover:bg-[var(--color-primary-700)] disabled:opacity-50 transition-colors"
         >
           <Stethoscope size={16} />
