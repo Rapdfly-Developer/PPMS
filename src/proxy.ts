@@ -17,7 +17,8 @@ export default auth((req) => {
   } else if (!isLocalhost && parts.length >= 3) {
     subdomain = parts[0];
   }
-  if (subdomain && subdomain !== "www" && subdomain !== "ppmsai" && !pathname.startsWith("/sub/")) {
+  const isStaticFile = /\.(?:jpg|jpeg|png|gif|svg|ico|webp|avif|woff2?|ttf|otf|css|js|json|txt|xml)$/i.test(pathname);
+  if (subdomain && subdomain !== "www" && subdomain !== "ppmsai" && !pathname.startsWith("/sub/") && !isStaticFile) {
     const url = req.nextUrl.clone();
     url.pathname = `/sub/${subdomain}${pathname}`;
     return NextResponse.rewrite(url);

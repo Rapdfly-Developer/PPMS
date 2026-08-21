@@ -319,6 +319,7 @@ export default function DrSaiLandingPage() {
                 width={160}
                 height={160}
                 className="w-full h-full object-cover object-top"
+                unoptimized
                 priority
               />
             </div>
@@ -421,6 +422,7 @@ export default function DrSaiLandingPage() {
                 src="/doctors/dr-sai-portrait.jpeg"
                 alt="Dr. Sai Dharshan"
                 fill
+                unoptimized
                 className="object-cover object-top"
                 sizes="(max-width: 768px) 100vw, 50vw"
               />
