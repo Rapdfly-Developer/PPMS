@@ -114,6 +114,7 @@ export function AppointmentRow({ appt, role, token }: { appt: any; role: string;
           const seenAt     = appt.visit?.date        ? new Date(appt.visit.date)          : null;
           const finalizedAt = appt.visit?.finalizedAt ? new Date(appt.visit.finalizedAt)
                             : appt.completedAt       ? new Date(appt.completedAt)         : null;
+          const fmtWait = (m: number) => m < 60 ? `${m}m` : `${Math.floor(m / 60)}h ${m % 60}m`;
           if (!arrivedAt && !finalizedAt) return null;
           return (
             <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] mt-1.5">
