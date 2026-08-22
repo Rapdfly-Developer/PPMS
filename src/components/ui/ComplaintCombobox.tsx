@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, KeyboardEvent } from "react";
+import { useState, useEffect, useRef, KeyboardEvent } from "react";
 import { Plus, X } from "lucide-react";
 
 export const OPHTHALMIC_COMPLAINTS = [
@@ -40,8 +40,27 @@ export function ComplaintCombobox({
   placeholder = "Or type a custom complaint…",
   inputCls = "",
 }: Props) {
-  const [customKeywords, setCustomKeywords] = useState<string[]>([]);
+  const STORAGE_KEY = "ppms:complaint-keywords";
+
+  const [customKeywords, setCustomKeywords] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Persist to localStorage whenever the list changes
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(customKeywords));
+    } catch {
+      // storage unavailable — silently skip
+    }
+  }, [customKeywords]);
 
   const allStandard = OPHTHALMIC_COMPLAINTS as readonly string[];
 
