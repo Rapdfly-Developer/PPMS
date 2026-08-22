@@ -3,7 +3,7 @@
 import { format } from "date-fns";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { Phone, Tag, FileText, CalendarPlus, Printer, UserRound, Clock, Timer, LogIn, CheckCircle2, Calendar } from "lucide-react";
+import { Phone, Tag, FileText, CalendarPlus, Printer, UserRound, Clock, Timer, LogIn, CheckCircle2, Calendar, UserX } from "lucide-react";
 import { hospitalUpdateAppointmentStatus, doctorUpdateAppointmentStatus, doctorConfirmAppointment, doctorCancelAppointment } from "./actions";
 import { formatComplaintDisplay } from "@/lib/appointment-cc";
 import { ScheduleNextSlotModal } from "./ScheduleNextSlotModal";
@@ -54,7 +54,13 @@ export function AppointmentRow({ appt, role, token }: { appt: any; role: string;
   const showCancelConfirmed =
     role === "HOSPITAL" && !isCompleted && appt.status === "CONFIRMED" && !appt.isWalkIn;
 
-  const hasActions = isCompleted || showScheduleNext || showCancelConfirmed;
+  // No Show: doctor marks a confirmed appointment where the patient never arrived
+  const showNoShow =
+    role === "DOCTOR" &&
+    appt.status === "CONFIRMED" &&
+    !appt.arrivedAt;
+
+  const hasActions = isCompleted || showScheduleNext || showCancelConfirmed || showNoShow;
 
   return (
     <div
@@ -177,6 +183,15 @@ export function AppointmentRow({ appt, role, token }: { appt: any; role: string;
                 className="text-xs font-medium px-3 py-1 rounded-lg bg-white border border-[var(--color-border)] text-[var(--color-danger-600)] hover:bg-[var(--color-danger-50)] disabled:opacity-50"
               >
                 Cancel
+              </button>
+            )}
+            {showNoShow && (
+              <button
+                disabled={pending}
+                onClick={() => doctorSetStatus("NO_SHOW")}
+                className="flex items-center gap-1 text-xs font-medium px-3 py-1 rounded-lg bg-white border border-[var(--color-border)] text-red-500 hover:bg-red-50 hover:border-red-200 disabled:opacity-50 transition-colors"
+              >
+                <UserX size={11} /> No Show
               </button>
             )}
           </div>
