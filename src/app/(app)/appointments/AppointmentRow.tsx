@@ -3,7 +3,7 @@
 import { format } from "date-fns";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { Phone, Stethoscope, Tag, FileText, CalendarPlus, Printer, UserRound, Clock, Timer, LogIn, CheckCircle2, Calendar } from "lucide-react";
+import { Phone, Tag, FileText, CalendarPlus, Printer, UserRound, Clock, Timer, LogIn, CheckCircle2, Calendar } from "lucide-react";
 import { hospitalUpdateAppointmentStatus, doctorUpdateAppointmentStatus, doctorConfirmAppointment, doctorCancelAppointment } from "./actions";
 import { formatComplaintDisplay } from "@/lib/appointment-cc";
 import { ScheduleNextSlotModal } from "./ScheduleNextSlotModal";
@@ -114,26 +114,12 @@ export function AppointmentRow({ appt, role, token }: { appt: any; role: string;
           const seenAt     = appt.visit?.date        ? new Date(appt.visit.date)          : null;
           const finalizedAt = appt.visit?.finalizedAt ? new Date(appt.visit.finalizedAt)
                             : appt.completedAt       ? new Date(appt.completedAt)         : null;
-          const waitMins   = arrivedAt && seenAt
-            ? Math.max(0, Math.round((seenAt.getTime() - arrivedAt.getTime()) / 60000))
-            : null;
-          const fmtWait = (m: number) => m < 60 ? `${m}m` : `${Math.floor(m / 60)}h ${m % 60}m`;
-          if (!arrivedAt && !seenAt && !finalizedAt) return null;
+          if (!arrivedAt && !finalizedAt) return null;
           return (
             <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] mt-1.5">
               {arrivedAt && (
                 <span className="flex items-center gap-1 text-blue-500" title="Patient arrived at clinic">
                   <LogIn size={10} /> Arrived: {format(arrivedAt, "h:mm a")}
-                </span>
-              )}
-              {seenAt && (
-                <span className="flex items-center gap-1 text-[var(--color-primary-600)]" title="Doctor started consultation">
-                  <Stethoscope size={10} /> Seen: {format(seenAt, "h:mm a")}
-                  {waitMins !== null && (
-                    <span className="text-amber-500 ml-0.5" title="Wait time from arrival to being seen">
-                      ({fmtWait(waitMins)} wait)
-                    </span>
-                  )}
                 </span>
               )}
               {finalizedAt && (
