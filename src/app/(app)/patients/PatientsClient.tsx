@@ -95,34 +95,41 @@ function exportCSV(patients: PatientRow[], selected: Set<string>) {
 }
 
 // ── KPI Card ─────────────────────────────────────────────────────────────────
-function KpiCard({ icon, label, value, sub, color, href }: {
-  icon: React.ReactNode; label: string; value: number; sub?: string; color: string; href?: string;
+function KpiCard({ icon, label, value, sub, color, href, isActive, onSelect }: {
+  icon: React.ReactNode; label: string; value: number; sub?: string; color: string;
+  href?: string; isActive?: boolean; onSelect?: () => void;
 }) {
-  const C: Record<string, { icon: string; val: string; border: string }> = {
-    teal:   { icon: "bg-[#DCEFEC] text-[#115E59]", val: "text-[#115E59]",   border: "border-[#C7E4E0]" },
-    blue:   { icon: "bg-blue-50 text-blue-600",     val: "text-blue-700",    border: "border-blue-100"  },
-    green:  { icon: "bg-green-50 text-green-600",   val: "text-green-700",   border: "border-green-100" },
-    purple: { icon: "bg-purple-50 text-purple-600", val: "text-purple-700",  border: "border-purple-100"},
-    amber:  { icon: "bg-amber-50 text-amber-600",   val: "text-amber-700",   border: "border-amber-100" },
+  const C: Record<string, { icon: string; val: string; border: string; activeBg: string; activeBorder: string; activeIcon: string }> = {
+    teal:   { icon: "bg-[#DCEFEC] text-[#115E59]", val: "text-[#115E59]",  border: "border-[#C7E4E0]", activeBg: "bg-[#115E59]",  activeBorder: "border-[#0D4A45]", activeIcon: "bg-white/15 text-white" },
+    blue:   { icon: "bg-blue-50 text-blue-600",    val: "text-blue-700",   border: "border-blue-100",  activeBg: "bg-blue-600",   activeBorder: "border-blue-700",  activeIcon: "bg-white/15 text-white" },
+    green:  { icon: "bg-green-50 text-green-600",  val: "text-green-700",  border: "border-green-100", activeBg: "bg-green-600",  activeBorder: "border-green-700", activeIcon: "bg-white/15 text-white" },
+    purple: { icon: "bg-purple-50 text-purple-600",val: "text-purple-700", border: "border-purple-100",activeBg: "bg-purple-600", activeBorder: "border-purple-700",activeIcon: "bg-white/15 text-white" },
+    amber:  { icon: "bg-amber-50 text-amber-600",  val: "text-amber-700",  border: "border-amber-100", activeBg: "bg-amber-500",  activeBorder: "border-amber-600", activeIcon: "bg-white/15 text-white" },
   };
   const c = C[color] ?? C.teal;
+
+  const baseClass = isActive
+    ? `${c.activeBg} ${c.activeBorder} rounded-2xl border p-4 flex items-start gap-3 shadow-lg cursor-pointer transition-all`
+    : `bg-white rounded-2xl border ${c.border} p-4 flex items-start gap-3 shadow-sm hover:shadow-md hover:border-[var(--color-primary-300)] cursor-pointer transition-all`;
+
   const inner = (
     <>
-      <div className={`${c.icon} rounded-xl p-2.5 flex-shrink-0`}>{icon}</div>
+      <div className={`${isActive ? c.activeIcon : c.icon} rounded-xl p-2.5 flex-shrink-0`}>{icon}</div>
       <div className="min-w-0 flex-1">
-        <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--color-ink-400)] truncate">{label}</p>
-        <p className={`text-[26px] font-bold leading-none mt-1 ${c.val}`}>{value}</p>
-        {sub && <p className="text-[11px] text-[var(--color-ink-400)] mt-1">{sub}</p>}
+        <p className={`text-[11px] font-semibold uppercase tracking-wide truncate ${isActive ? "text-white/70" : "text-[var(--color-ink-400)]"}`}>{label}</p>
+        <p className={`text-[26px] font-bold leading-none mt-1 ${isActive ? "text-white" : c.val}`}>{value}</p>
+        {sub && <p className={`text-[11px] mt-1 ${isActive ? "text-white/60" : "text-[var(--color-ink-400)]"}`}>{sub}</p>}
       </div>
     </>
   );
+
   if (href) return (
-    <Link href={href} className={`bg-white rounded-2xl border ${c.border} p-4 flex items-start gap-3 shadow-sm hover:shadow-md hover:border-[var(--color-primary-300)] transition-all`}>
+    <Link href={href} onClick={onSelect} className={baseClass}>
       {inner}
     </Link>
   );
   return (
-    <div className={`bg-white rounded-2xl border ${c.border} p-4 flex items-start gap-3 shadow-sm`}>
+    <div onClick={onSelect} className={baseClass}>
       {inner}
     </div>
   );
@@ -298,6 +305,7 @@ export function PatientsClient({
   doctorHospitals, sortBy, kpis, trendData, catDist, recentReg,
 }: Props) {
   const router = useRouter();
+  const [activeCard, setActiveCard] = useState<string | null>(null);
   const [searchVal, setSearchVal] = useState(q);
   const [showFilters, setShowFilters] = useState(
     !!(categoryFilter || sexFilter || hospitalFilter || (opStatusFilter && opStatusFilter !== "dispensed"))
@@ -399,10 +407,10 @@ export function PatientsClient({
 
       {/* ── KPI Cards ──────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
-        <KpiCard icon={<Users size={17} />}         label="Total Patients"    value={kpis.totalPatients}  color="teal"  href="/patients?opStatus=all" />
-        <KpiCard icon={<CalendarCheck size={17} />} label="Total Operated"    value={kpis.todayReg}       color="blue"  sub="New today" />
-        <KpiCard icon={<CalendarClock size={17} />} label="Lost to Follow Up" value={kpis.followUpCount}  color="green" sub="Overdue" />
-        <KpiCard icon={<ClipboardList size={17} />} label="Pending Requests"  value={kpis.pendingRequests} color="amber" sub="Awaiting confirmation" />
+        <KpiCard icon={<Users size={17} />}         label="Total Patients"    value={kpis.totalPatients}  color="teal"  href="/patients?opStatus=all" isActive={activeCard === "total"}      onSelect={() => setActiveCard(activeCard === "total" ? null : "total")} />
+        <KpiCard icon={<CalendarCheck size={17} />} label="Total Operated"    value={kpis.todayReg}       color="blue"  sub="New today"                isActive={activeCard === "operated"}   onSelect={() => setActiveCard(activeCard === "operated" ? null : "operated")} />
+        <KpiCard icon={<CalendarClock size={17} />} label="Lost to Follow Up" value={kpis.followUpCount}  color="green" sub="Overdue"                  isActive={activeCard === "followup"}   onSelect={() => setActiveCard(activeCard === "followup" ? null : "followup")} />
+        <KpiCard icon={<ClipboardList size={17} />} label="Pending Requests"  value={kpis.pendingRequests} color="amber" sub="Awaiting confirmation"   isActive={activeCard === "pending"}    onSelect={() => setActiveCard(activeCard === "pending" ? null : "pending")} />
       </div>
 
       {/* ── Table + Analytics ──────────────────────────────────────────── */}
