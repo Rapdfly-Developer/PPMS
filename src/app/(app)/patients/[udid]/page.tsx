@@ -2,7 +2,7 @@ import { requirePermission } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import { format, startOfDay, endOfDay } from "date-fns";
-import { Phone, MapPin, Calendar, Hash, IdCard, Briefcase, FileText } from "lucide-react";
+import { Phone, MapPin, Calendar, Hash, IdCard, Briefcase, FileText, UserX } from "lucide-react";
 import { decryptAadhaar, maskAadhaar } from "@/lib/crypto";
 import { PatientProfileClient, TimeStampButton, type SerialVisit, type TodayVisit, type LastVisitSummary } from "./PatientProfileClient";
 import { InvestigationsButton, TreatmentHistoryButton, SpectacleHistoryButton } from "./PatientHistoryButtons";
@@ -113,6 +113,11 @@ export default async function PatientProfilePage({
   const surgeryAdvisedNotes   = (surgeryAdvisedVisit as any)?.advisedSurgeryNotes as string | null ?? null;
   const surgeryAdvisedDate    = surgeryAdvisedVisit ? (surgeryAdvisedVisit as any).date as Date : null;
   const counsellingStatus     = (surgeryAdvisedVisit as any)?.counsellingRecord?.status as string | null ?? null;
+
+  /* ── No Show count ───────────────────────────────────────────────────── */
+  const noShowCount = await prisma.appointment.count({
+    where: { patientId: patient.id, status: "NO_SHOW" },
+  });
 
   /* ── Patient timeline — finalization audit entries ───────────────────── */
   const appointmentIds = await prisma.appointment.findMany({
@@ -351,6 +356,13 @@ export default async function PatientProfilePage({
                 <span className="font-semibold text-[var(--color-ink-700)]">
                   {format(new Date(lastVisit.date), "dd MMM yyyy")}
                 </span>
+              </p>
+            )}
+            {noShowCount > 0 && (
+              <p className="flex items-center justify-end gap-1 text-red-500">
+                <UserX size={11} />
+                <span className="font-semibold">{noShowCount}</span>
+                <span className="text-red-400">No Show{noShowCount > 1 ? "s" : ""}</span>
               </p>
             )}
           </div>
