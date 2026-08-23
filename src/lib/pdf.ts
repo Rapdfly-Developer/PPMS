@@ -756,6 +756,7 @@ export type ShortSummaryData = {
     followUpDate?: Date | null;
     referralEnabled?: boolean;
     referralNote?: string | null;
+    inViewOf?: string | null;
   };
   chiefComplaint?: string | null;
   /** Visit.adviseNotes — the doctor's own advice text, printed verbatim. */
@@ -986,11 +987,8 @@ async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
       <div style="font-size:6.5px;font-weight:700;letter-spacing:0.28em;text-transform:uppercase;color:${MINT};margin-bottom:5px;">
         Clinical Report
       </div>
-      <div style="font-size:18px;font-weight:900;color:${INK};letter-spacing:0.07em;text-transform:uppercase;line-height:1.0;white-space:nowrap;">
-        CONSULTATION
-      </div>
-      <div style="font-size:18px;font-weight:900;color:${INK};letter-spacing:0.07em;text-transform:uppercase;line-height:1.05;white-space:nowrap;margin-top:1px;">
-        SUMMARY
+      <div style="font-size:8.5px;font-weight:900;color:${INK};letter-spacing:0.07em;text-transform:uppercase;white-space:nowrap;">
+        CONSULTATION SUMMARY
       </div>
       <div style="height:2px;width:100%;background:linear-gradient(90deg,transparent,${BRAND},${MINT});border-radius:1px;margin:6px 0 0;"></div>
     </div>
@@ -1032,7 +1030,7 @@ ${inlineCard("Clinical Impression",
         <tbody>
           ${d.diagnoses.map((dx, i) =>
             `<tr>` +
-            `<td style="padding:3.5px 7px;font-size:9.5px;text-align:center;color:#8A9793;width:22px;">${i + 1}</td>` +
+            `<td style="padding:3.5px 7px;font-size:11px;text-align:center;color:${BRAND};width:16px;">·</td>` +
             `<td style="padding:3.5px 7px;font-size:9.5px;font-weight:600;">` +
             (dx.laterality ? `<span style="color:#4A5A57;font-weight:400;margin-right:5px;">${escapeHtml(dx.laterality)}</span>` : "") +
             escapeHtml(dx.description) +
@@ -1061,11 +1059,10 @@ ${card("Medications",
     <tbody>${medRows}</tbody>
   </table>`)}
 
-<!-- 4 · ADVICE NOTES -->
-${inlineCard("Advice Notes",
-  d.advice && d.advice.trim()
-    ? `<div style="font-size:9.5px;color:#1a1a1a;white-space:pre-wrap;line-height:1.5;">${escapeHtml(d.advice.trim())}</div>`
-    : none("No advice recorded"))}
+<!-- 4 · ADVICE NOTES (no heading, content only) -->
+${d.advice && d.advice.trim()
+  ? `<div class="no-break" style="font-size:9.5px;color:#1a1a1a;white-space:pre-wrap;line-height:1.5;margin-bottom:11px;border:1px solid ${LINE};border-radius:4px;padding:5px 9px;">${escapeHtml(d.advice.trim())}</div>`
+  : ""}
 
 <!-- 5 · SPECTACLES / REFRACTION (only if an Rx exists) -->
 ${hasRx
@@ -1089,6 +1086,12 @@ ${hasRx
 ${d.visit.followUpDate
   ? inlineCard("Follow-up",
       `<div style="font-size:10.5px;font-weight:600;color:${INK};">${format(new Date(d.visit.followUpDate), "EEEE, dd MMM yyyy")}</div>`)
+  : ""}
+
+<!-- 7 · IN VIEW OF -->
+${d.visit.inViewOf && d.visit.inViewOf.trim()
+  ? inlineCard("In View Of",
+      `<div style="font-size:9.5px;color:#1a1a1a;line-height:1.5;">${escapeHtml(d.visit.inViewOf.trim())}</div>`)
   : ""}
 
 <!-- SPACER: pushes signature to the bottom of the page -->

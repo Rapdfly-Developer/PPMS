@@ -69,6 +69,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
       followUpDate: (visit as any).followUpDate ?? null,
       referralEnabled: (visit as any).referralEnabled ?? false,
       referralNote: (visit as any).referralNote ?? null,
+      inViewOf: (visit as any).inViewOf ?? null,
     },
     chiefComplaint: (visit as any).generalExam?.chiefComplaint ?? null,
     advice: (visit as any).adviseNotes ?? null,
