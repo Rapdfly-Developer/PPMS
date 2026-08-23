@@ -3,8 +3,63 @@
 import { useState, useTransition, useRef, useEffect } from "react";
 import { SingleChipSelect } from "@/components/ui/Chip";
 import { WARDS, ANAESTHESIA_TYPES, SURGERY_TYPES } from "@/lib/constants";
-import { saveDispense, saveAdmission, saveFollowUp, saveSurgicalCounselling } from "./actions";
-import { AlertTriangle, History, Plus, X, Scissors } from "lucide-react";
+import { saveDispense, saveAdmission, saveFollowUp, saveSurgicalCounselling, addInvestigationOrder } from "./actions";
+import { AlertTriangle, History, Plus, X, Scissors, Check, Pencil, Trash2, ClipboardList, ChevronDown, ChevronUp } from "lucide-react";
+
+/* ── Surgery Investigation Presets ───────────────────────────────────────── */
+
+interface SurgeryInvPreset { surgeryName: string; investigations: string[]; }
+
+const SURGERY_INV_KEY = "ppms_surgery_inv_presets_v1";
+
+const DEFAULT_SURGERY_INV_PRESETS: SurgeryInvPreset[] = [
+  {
+    surgeryName: "Cataract Surgery",
+    investigations: ["CBC", "Blood Sugar (Fasting)", "ECG", "Blood Pressure", "HIV", "HBsAg", "Serum Creatinine"],
+  },
+  {
+    surgeryName: "LASIK",
+    investigations: ["Corneal Topography", "Pachymetry", "Refraction", "Schirmer Test", "Keratometry", "Pupil Dilation Test"],
+  },
+  {
+    surgeryName: "Glaucoma Surgery (Trabeculectomy)",
+    investigations: ["CBC", "Blood Sugar", "Blood Pressure", "Coagulation Profile (PT/INR)", "ECG", "Chest X-ray"],
+  },
+  {
+    surgeryName: "Pterygium Excision",
+    investigations: ["CBC", "Blood Sugar", "Blood Pressure", "HIV", "HBsAg"],
+  },
+  {
+    surgeryName: "Vitreoretinal Surgery",
+    investigations: ["CBC", "Blood Sugar", "ECG", "Blood Pressure", "Coagulation Profile (PT/INR)", "HIV", "HBsAg", "Serum Creatinine"],
+  },
+  {
+    surgeryName: "DCR (Dacryocystorhinostomy)",
+    investigations: ["CBC", "Blood Sugar", "ECG", "Blood Pressure", "Nasal Endoscopy", "CT PNS"],
+  },
+];
+
+function getSurgeryInvPresets(): SurgeryInvPreset[] {
+  try {
+    const stored = localStorage.getItem(SURGERY_INV_KEY);
+    if (!stored) return DEFAULT_SURGERY_INV_PRESETS;
+    const parsed: SurgeryInvPreset[] = JSON.parse(stored);
+    // Merge: keep custom, fill in defaults for missing surgeries
+    const names = new Set(parsed.map((p) => p.surgeryName));
+    const merged = [...parsed, ...DEFAULT_SURGERY_INV_PRESETS.filter((p) => !names.has(p.surgeryName))];
+    return merged;
+  } catch { return DEFAULT_SURGERY_INV_PRESETS; }
+}
+
+function saveSurgeryInvPresets(presets: SurgeryInvPreset[]) {
+  localStorage.setItem(SURGERY_INV_KEY, JSON.stringify(presets));
+}
+
+function getPresetForSurgery(surgeryName: string): SurgeryInvPreset | null {
+  if (!surgeryName.trim()) return null;
+  const all = getSurgeryInvPresets();
+  return all.find((p) => p.surgeryName.toLowerCase() === surgeryName.toLowerCase()) ?? null;
+}
 
 // ── Searchable dropdown (combobox) ────────────────────────────────────────────
 function SearchCombobox({
@@ -365,23 +420,81 @@ export function FollowUpdatesPanel({ visit, udid, priorVisits = [] }: { visit: a
 }
 
 export function SurgicalPanel({ visit, udid }: { visit: any; udid: string }) {
-  const [advised,    setAdvised]    = useState<boolean>(true); // always advised; checkbox removed
   const [laterality, setLaterality] = useState<string>(visit.advisedSurgeryEye ?? "");
   const [procedure,  setProcedure]  = useState<string>(visit.advisedSurgeryName ?? "");
   const [anesthesia, setAnesthesia] = useState<string>(visit.advisedSurgeryNotes ?? "");
   const [surgDate,   setSurgDate]   = useState<string>(
     visit.advisedSurgeryDate ? new Date(visit.advisedSurgeryDate).toISOString().slice(0, 10) : ""
   );
-  const [pending, startTransition] = useTransition();
-  const [saved,   setSaved]        = useState(false);
+  const [pending,  startTransition]  = useTransition();
+  const [applying, startApply]       = useTransition();
+  const [saved,    setSaved]         = useState(false);
+  const [applied,  setApplied]       = useState(false);
 
-  const FIELD = "w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-3 py-2 pl-8 text-sm text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent";
+  // Investigation preset state
+  type InvItem = { name: string; checked: boolean };
+  const [invItems,       setInvItems]       = useState<InvItem[]>([]);
+  const [customInvInput, setCustomInvInput] = useState("");
+  const [showManage,     setShowManage]     = useState(false);
+  const [manageInput,    setManageInput]    = useState("");
+  const [editInvIdx,     setEditInvIdx]     = useState<number | null>(null);
+  const [editInvVal,     setEditInvVal]     = useState("");
+  const [presetLoaded,   setPresetLoaded]   = useState<string | null>(null);
+
   const LABEL = "text-[10px] font-semibold text-[var(--color-ink-500)] uppercase tracking-wide mb-1.5";
+
+  // Load preset when procedure changes
+  useEffect(() => {
+    if (!procedure.trim() || procedure === presetLoaded) return;
+    const preset = getPresetForSurgery(procedure);
+    if (preset) {
+      setInvItems(preset.investigations.map((name) => ({ name, checked: true })));
+    } else {
+      setInvItems([]);
+    }
+    setPresetLoaded(procedure);
+  }, [procedure, presetLoaded]);
+
+  const addCustomInv = () => {
+    const trimmed = customInvInput.trim();
+    if (!trimmed || invItems.some((i) => i.name.toLowerCase() === trimmed.toLowerCase())) return;
+    setInvItems((prev) => [...prev, { name: trimmed, checked: true }]);
+    setCustomInvInput("");
+  };
+
+  const savePreset = () => {
+    if (!procedure.trim()) return;
+    const all = getSurgeryInvPresets();
+    const names = invItems.map((i) => i.name);
+    const idx = all.findIndex((p) => p.surgeryName.toLowerCase() === procedure.toLowerCase());
+    if (idx >= 0) {
+      all[idx] = { ...all[idx], investigations: names };
+    } else {
+      all.push({ surgeryName: procedure, investigations: names });
+    }
+    saveSurgeryInvPresets(all);
+  };
+
+  const applyToInvestigations = () => {
+    const toAdd = invItems.filter((i) => i.checked);
+    if (!toAdd.length) return;
+    startApply(async () => {
+      for (const item of toAdd) {
+        await addInvestigationOrder(visit.id, udid, {
+          category: "Pre-operative",
+          testName: item.name,
+          priority: "ROUTINE",
+        });
+      }
+      setApplied(true);
+      setTimeout(() => setApplied(false), 3000);
+    });
+  };
 
   const save = () =>
     startTransition(async () => {
       await saveSurgicalCounselling(visit.id, udid, {
-        surgeryAdvised:      advised,
+        surgeryAdvised:      true,
         advisedSurgeryEye:   laterality || undefined,
         advisedSurgeryName:  procedure || undefined,
         advisedSurgeryNotes: anesthesia || undefined,
@@ -390,71 +503,264 @@ export function SurgicalPanel({ visit, udid }: { visit: any; udid: string }) {
       setSaved(true);
     });
 
+  const checkedCount = invItems.filter((i) => i.checked).length;
+
   return (
     <div className="rounded-xl border border-[var(--color-border)] p-4 flex flex-col gap-4">
       <p className="text-sm font-medium text-[var(--color-ink-700)]">Surgical Counselling</p>
 
-      {advised && (
-        <div className="flex flex-col gap-3">
-          {/* Row 1: Laterality · Procedure · Anesthesia */}
-          <div className="grid grid-cols-1 sm:grid-cols-[auto_1fr_1fr] gap-3 items-start">
-            {/* Laterality chips */}
-            <div>
-              <p className={LABEL}>Laterality</p>
-              <div className="flex gap-1">
-                {(["RE", "LE", "OU"] as const).map((lat) => (
-                  <button
-                    key={lat}
-                    type="button"
-                    onClick={() => { setLaterality(laterality === lat ? "" : lat); setSaved(false); }}
-                    className={`w-12 py-2 rounded-lg border text-xs font-bold transition-colors ${
-                      laterality === lat
-                        ? "bg-[var(--color-primary-600)] border-[var(--color-primary-600)] text-white"
-                        : "border-[var(--color-border)] text-[var(--color-ink-500)] hover:border-[var(--color-primary-300)] hover:text-[var(--color-primary-700)] hover:bg-[var(--color-primary-50)]"
-                    }`}
-                  >
-                    {lat}
-                  </button>
-                ))}
-              </div>
-            </div>
+      {/* Row: Laterality · Procedure · Anesthesia · Date */}
+      <div className="grid grid-cols-1 sm:grid-cols-[auto_1fr_1fr_auto] gap-3 items-end">
+        {/* Laterality */}
+        <div>
+          <p className={LABEL}>Laterality</p>
+          <div className="flex gap-1">
+            {(["RE", "LE", "OU"] as const).map((lat) => (
+              <button
+                key={lat}
+                type="button"
+                onClick={() => { setLaterality(laterality === lat ? "" : lat); setSaved(false); }}
+                className={`w-12 py-2 rounded-lg border text-xs font-bold transition-colors ${
+                  laterality === lat
+                    ? "bg-[var(--color-primary-600)] border-[var(--color-primary-600)] text-white"
+                    : "border-[var(--color-border)] text-[var(--color-ink-500)] hover:border-[var(--color-primary-300)] hover:text-[var(--color-primary-700)] hover:bg-[var(--color-primary-50)]"
+                }`}
+              >
+                {lat}
+              </button>
+            ))}
+          </div>
+        </div>
 
-            {/* Procedure */}
-            <div>
-              <p className={LABEL}>Procedure</p>
-              <SearchCombobox
-                value={procedure}
-                onChange={(v) => { setProcedure(v); setSaved(false); }}
-                options={SURGERY_TYPES}
-                placeholder="Search procedure..."
-              />
-            </div>
+        {/* Procedure */}
+        <div>
+          <p className={LABEL}>Procedure</p>
+          <SearchCombobox
+            value={procedure}
+            onChange={(v) => { setProcedure(v); setSaved(false); setPresetLoaded(null); }}
+            options={SURGERY_TYPES}
+            placeholder="Search procedure..."
+          />
+        </div>
 
-            {/* Anesthesia */}
-            <div>
-              <p className={LABEL}>Type of Anesthesia</p>
-              <SearchCombobox
-                value={anesthesia}
-                onChange={(v) => { setAnesthesia(v); setSaved(false); }}
-                options={ANAESTHESIA_TYPES}
-                placeholder="Search anesthesia..."
-              />
+        {/* Anesthesia */}
+        <div>
+          <p className={LABEL}>Type of Anesthesia</p>
+          <SearchCombobox
+            value={anesthesia}
+            onChange={(v) => { setAnesthesia(v); setSaved(false); }}
+            options={ANAESTHESIA_TYPES}
+            placeholder="Search anesthesia..."
+          />
+        </div>
+
+        {/* Date — compact */}
+        <div>
+          <p className={LABEL}>Tentative Date</p>
+          <input
+            type="date"
+            value={surgDate}
+            onChange={(e) => { setSurgDate(e.target.value); setSaved(false); }}
+            className="w-40 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-3 py-2 text-sm text-[var(--color-ink-800)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent"
+          />
+        </div>
+      </div>
+
+      {/* ── Investigation Preset ────────────────────────────────────────── */}
+      {procedure.trim() && (
+        <div className="rounded-xl border border-[var(--color-border)] overflow-hidden">
+          {/* Header */}
+          <div className="flex items-center justify-between px-4 py-3 bg-[var(--color-surface-sunken)] border-b border-[var(--color-border)]">
+            <div className="flex items-center gap-2">
+              <ClipboardList size={14} className="text-[var(--color-primary-600)]" />
+              <p className="text-xs font-semibold text-[var(--color-ink-700)]">
+                {invItems.length > 0
+                  ? `Investigations for ${procedure}`
+                  : `No preset for "${procedure}"`}
+              </p>
             </div>
+            <button
+              type="button"
+              onClick={() => setShowManage((v) => !v)}
+              className="flex items-center gap-1 text-[10px] font-semibold text-[var(--color-primary-600)] hover:text-[var(--color-primary-800)] transition-colors"
+            >
+              Manage Preset {showManage ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
+            </button>
           </div>
 
-          {/* Tentative Date of Surgery */}
-          <div>
-            <p className={LABEL}>Tentative Date of Surgery</p>
-            <input
-              type="date"
-              value={surgDate}
-              onChange={(e) => { setSurgDate(e.target.value); setSaved(false); }}
-              className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-3 py-2 text-sm text-[var(--color-ink-800)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent"
-            />
+          {/* Manage Preset panel */}
+          {showManage && (
+            <div className="px-4 py-3 border-b border-[var(--color-border)] bg-[var(--color-surface-sunken)]/50 flex flex-col gap-2">
+              <p className="text-[10px] font-bold text-[var(--color-ink-400)] uppercase tracking-widest">Edit preset for &quot;{procedure}&quot;</p>
+              <ul className="flex flex-col gap-1">
+                {invItems.map((item, i) => (
+                  <li key={i} className="flex items-center gap-2">
+                    {editInvIdx === i ? (
+                      <>
+                        <input
+                          autoFocus
+                          value={editInvVal}
+                          onChange={(e) => setEditInvVal(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              const t = editInvVal.trim();
+                              if (t) setInvItems((prev) => prev.map((it, idx) => idx === i ? { ...it, name: t } : it));
+                              setEditInvIdx(null);
+                            }
+                            if (e.key === "Escape") setEditInvIdx(null);
+                          }}
+                          className="flex-1 text-xs rounded border border-[var(--color-primary-300)] px-2 py-0.5 focus:outline-none"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const t = editInvVal.trim();
+                            if (t) setInvItems((prev) => prev.map((it, idx) => idx === i ? { ...it, name: t } : it));
+                            setEditInvIdx(null);
+                          }}
+                          className="text-[var(--color-primary-600)] hover:text-[var(--color-primary-800)]"
+                        >
+                          <Check size={13} />
+                        </button>
+                        <button type="button" onClick={() => setEditInvIdx(null)} className="text-[var(--color-ink-400)]">
+                          <X size={13} />
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <span className="flex-1 text-xs text-[var(--color-ink-700)]">{item.name}</span>
+                        <button
+                          type="button"
+                          onClick={() => { setEditInvIdx(i); setEditInvVal(item.name); }}
+                          className="text-[var(--color-ink-300)] hover:text-[var(--color-primary-600)] transition-colors"
+                        >
+                          <Pencil size={11} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setInvItems((prev) => prev.filter((_, idx) => idx !== i))}
+                          className="text-[var(--color-ink-300)] hover:text-red-500 transition-colors"
+                        >
+                          <Trash2 size={11} />
+                        </button>
+                      </>
+                    )}
+                  </li>
+                ))}
+              </ul>
+              <div className="flex gap-2 mt-1">
+                <input
+                  value={manageInput}
+                  onChange={(e) => setManageInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      const t = manageInput.trim();
+                      if (t && !invItems.some((i) => i.name.toLowerCase() === t.toLowerCase())) {
+                        setInvItems((prev) => [...prev, { name: t, checked: true }]);
+                        setManageInput("");
+                      }
+                    }
+                  }}
+                  placeholder="Add investigation to preset…"
+                  className="flex-1 text-xs rounded-lg border border-[var(--color-border)] px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-400)]"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    const t = manageInput.trim();
+                    if (t && !invItems.some((i) => i.name.toLowerCase() === t.toLowerCase())) {
+                      setInvItems((prev) => [...prev, { name: t, checked: true }]);
+                      setManageInput("");
+                    }
+                  }}
+                  disabled={!manageInput.trim()}
+                  className="px-2.5 py-1 rounded-lg bg-[var(--color-primary-600)] text-white text-xs font-medium disabled:opacity-40 hover:bg-[var(--color-primary-700)] transition-colors"
+                >
+                  <Plus size={12} />
+                </button>
+              </div>
+              <button
+                type="button"
+                onClick={() => { savePreset(); setShowManage(false); }}
+                className="self-start text-xs font-semibold px-3 py-1 rounded-lg bg-[var(--color-primary-50)] border border-[var(--color-primary-200)] text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] transition-colors mt-1"
+              >
+                Save Preset
+              </button>
+            </div>
+          )}
+
+          {/* Checklist */}
+          <div className="px-4 py-3 flex flex-col gap-2">
+            {invItems.length === 0 ? (
+              <p className="text-xs text-[var(--color-ink-400)] text-center py-2">
+                No investigations configured. Use &quot;Manage Preset&quot; to add them.
+              </p>
+            ) : (
+              <ul className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1.5">
+                {invItems.map((item, i) => (
+                  <li key={i} className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={item.checked}
+                      onChange={() => setInvItems((prev) => prev.map((it, idx) => idx === i ? { ...it, checked: !it.checked } : it))}
+                      className="w-3.5 h-3.5 accent-[var(--color-primary-600)] shrink-0 cursor-pointer"
+                      id={`inv-${i}`}
+                    />
+                    <label htmlFor={`inv-${i}`} className="text-xs text-[var(--color-ink-700)] cursor-pointer flex-1 leading-tight">
+                      {item.name}
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setInvItems((prev) => prev.filter((_, idx) => idx !== i))}
+                      className="text-[var(--color-ink-200)] hover:text-red-400 transition-colors shrink-0"
+                    >
+                      <X size={11} />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {/* Add custom investigation */}
+            <div className="flex gap-2 mt-1">
+              <input
+                value={customInvInput}
+                onChange={(e) => setCustomInvInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addCustomInv(); } }}
+                placeholder="Add custom investigation…"
+                className="flex-1 text-xs rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-400)]"
+              />
+              <button
+                type="button"
+                onClick={addCustomInv}
+                disabled={!customInvInput.trim()}
+                className="px-2.5 py-1 rounded-lg border border-[var(--color-border)] text-[var(--color-ink-500)] hover:border-[var(--color-primary-300)] hover:text-[var(--color-primary-700)] disabled:opacity-40 transition-colors"
+              >
+                <Plus size={12} />
+              </button>
+            </div>
+
+            {/* Apply button */}
+            <button
+              type="button"
+              disabled={checkedCount === 0 || applying}
+              onClick={applyToInvestigations}
+              className="mt-1 self-start flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[var(--color-primary-600)] text-white text-xs font-semibold hover:bg-[var(--color-primary-700)] disabled:opacity-40 transition-colors"
+            >
+              {applying ? (
+                <span>Applying…</span>
+              ) : applied ? (
+                <><Check size={12} /> Applied to Investigations</>
+              ) : (
+                <><ClipboardList size={12} /> Apply to Plan ({checkedCount})</>
+              )}
+            </button>
           </div>
         </div>
       )}
 
+      {/* Save row */}
       <div className="flex items-center gap-3">
         <button
           disabled={pending}
