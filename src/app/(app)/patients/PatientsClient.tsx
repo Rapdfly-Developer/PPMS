@@ -565,7 +565,7 @@ export function PatientsClient({
                 <div className="flex-1 min-w-0">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">Chief Complaint</span>
                 </div>
-                <div className="w-44 shrink-0">
+                <div className="w-48 shrink-0">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">Diagnoses</span>
                 </div>
                 <div className="w-28 shrink-0">
@@ -655,11 +655,11 @@ export function PatientsClient({
                       </div>
 
                       {/* Diagnoses */}
-                      <div className="hidden xl:block w-44 shrink-0">
+                      <div className="hidden xl:block w-48 shrink-0">
                         {p.diagnoses.length > 0 ? (
-                          <div className="space-y-0.5">
+                          <div className="space-y-1">
                             {p.diagnoses.slice(0, 2).map((d, i) => (
-                              <p key={i} className="text-[11px] text-[var(--color-ink-700)] truncate">
+                              <p key={i} className="text-[11px] text-[var(--color-ink-700)] leading-snug break-words">
                                 {d.laterality && (
                                   <span className="text-[10px] font-semibold text-[var(--color-primary-600)] mr-1">{d.laterality}</span>
                                 )}
