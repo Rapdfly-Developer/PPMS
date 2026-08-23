@@ -817,11 +817,13 @@ async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
   /* ── Muted empty state — states absence, never invents content ── */
   const none = (t: string) => `<span style="color:#9AA5A3;font-style:italic;font-size:9.5px;">${t}</span>`;
 
-  /* ── Patient info field box (rounded, reference style) ── */
+  /* ── Patient info field box: label + value inside a single teal-bordered box ── */
   const fbox = (label: string, value: string) =>
     `<td style="padding-right:10px;padding-bottom:6px;vertical-align:top;">` +
-    `<div style="font-size:8px;font-weight:700;color:${LABEL_C};margin-bottom:2px;letter-spacing:0.04em;">${label}</div>` +
-    `<div style="background:#fff;border:1px solid ${LINE};border-radius:4px;padding:4px 8px;font-size:9.5px;color:#111;min-height:20px;">${value || "&nbsp;"}</div>` +
+    `<div style="background:#fff;border:1.5px solid ${MINT};border-radius:5px;padding:4px 9px 5px;min-height:26px;">` +
+    `<div style="font-size:7.5px;font-weight:700;color:${LABEL_C};letter-spacing:0.05em;text-transform:uppercase;margin-bottom:1px;">${label}</div>` +
+    `<div style="font-size:9.5px;color:#111;font-weight:500;">${value || "&nbsp;"}</div>` +
+    `</div>` +
     `</td>`;
 
   /* ── Key-value row (follow-up): borderless, report style ── */
