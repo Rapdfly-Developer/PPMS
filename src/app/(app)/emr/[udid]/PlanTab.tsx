@@ -1095,7 +1095,6 @@ function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: st
   const [procedures, setProcedures] = useState<string[]>(() => parseProcedureList(visit.procedureName ?? ""));
   const [customKws, setCustomKws]   = useState<string[]>([]);
   const [procInput, setProcInput]   = useState("");
-  const [procOpen, setProcOpen]     = useState(false);
   const [editIndex, setEditIndex]   = useState<number | null>(null);
   const [editValue, setEditValue]   = useState("");
   const procInputRef = useRef<HTMLInputElement>(null);
@@ -1108,25 +1107,20 @@ function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: st
 
   const allKeywords = [...PROCEDURE_KEYWORDS, ...customKws];
 
-  const filteredProcs = procInput.trim()
-    ? allKeywords.filter((kw) => kw.toLowerCase().includes(procInput.toLowerCase()) && !procedures.includes(kw))
-    : allKeywords.filter((kw) => !procedures.includes(kw));
-
-  const inputIsNew = procInput.trim().length > 0 && !allKeywords.some((k) => k.toLowerCase() === procInput.trim().toLowerCase());
-
   const addProcedure = (name: string) => {
     const trimmed = name.trim();
     if (!trimmed || procedures.includes(trimmed)) return;
     setProcedures((prev) => [...prev, trimmed]);
     setProcInput("");
-    setProcOpen(false);
   };
 
   const addCustom = () => {
     const trimmed = procInput.trim();
     if (!trimmed) return;
-    saveCustomProcedureKw(trimmed);
-    setCustomKws(getCustomProcedureKws());
+    if (!allKeywords.some((k) => k.toLowerCase() === trimmed.toLowerCase())) {
+      saveCustomProcedureKw(trimmed);
+      setCustomKws(getCustomProcedureKws());
+    }
     addProcedure(trimmed);
   };
 
@@ -1191,72 +1185,32 @@ function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: st
           </div>
         </div>
 
-        {/* Procedure search */}
-        <div className="flex-1 min-w-0 relative">
+        {/* Procedure — custom input only, keywords shown as chips below */}
+        <div className="flex-1 min-w-0">
           <label className="text-[10px] font-semibold text-[var(--color-ink-500)] uppercase tracking-wide block mb-1.5">
             Procedure
           </label>
-          <div className="relative">
-            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-300)] pointer-events-none" />
+          <div className="flex gap-2">
             <input
               ref={procInputRef}
               value={procInput}
-              onChange={(e) => { setProcInput(e.target.value); setProcOpen(true); }}
-              onFocus={() => setProcOpen(true)}
-              onBlur={() => setTimeout(() => setProcOpen(false), 160)}
+              onChange={(e) => setProcInput(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === "Enter") { e.preventDefault(); inputIsNew ? addCustom() : (filteredProcs[0] && addProcedure(filteredProcs[0])); }
-                if (e.key === "Escape") setProcOpen(false);
+                if (e.key === "Enter") { e.preventDefault(); addCustom(); }
+                if (e.key === "Escape") setProcInput("");
               }}
-              placeholder="Search or type a procedure…"
-              className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] pl-8 pr-3 py-2 text-sm text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent"
+              placeholder="Type a custom procedure…"
+              className="flex-1 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-3 py-2 text-sm text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent"
             />
+            {procInput.trim() && (
+              <button
+                onClick={addCustom}
+                className="shrink-0 px-3 py-2 rounded-xl bg-[var(--color-primary-600)] text-white text-xs font-semibold hover:bg-[var(--color-primary-700)] transition-colors flex items-center gap-1"
+              >
+                <Plus size={12} /> Add
+              </button>
+            )}
           </div>
-          {/* Suggestions dropdown */}
-          {procOpen && (filteredProcs.length > 0 || inputIsNew) && (
-            <div className="absolute z-20 mt-1 w-full rounded-xl border border-[var(--color-border)] bg-white shadow-lg overflow-hidden">
-              <div className="max-h-52 overflow-y-auto">
-                {filteredProcs.slice(0, 20).map((kw) => {
-                  const isCustom = customKws.includes(kw);
-                  return (
-                    <div key={kw} className="flex items-center group">
-                      <button
-                        onMouseDown={(e) => e.preventDefault()}
-                        onClick={() => addProcedure(kw)}
-                        className="flex-1 text-left px-3 py-2.5 text-sm text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] transition-colors flex items-center gap-2"
-                      >
-                        <Plus size={12} className="text-[var(--color-ink-300)] shrink-0" />
-                        {kw}
-                        {isCustom && (
-                          <span className="ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 shrink-0">CUSTOM</span>
-                        )}
-                      </button>
-                      {isCustom && (
-                        <button
-                          onMouseDown={(e) => e.preventDefault()}
-                          onClick={() => { deleteCustomProcedureKw(kw); setCustomKws(getCustomProcedureKws()); }}
-                          className="px-2 py-2.5 text-[var(--color-ink-300)] hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                          title="Delete custom keyword"
-                        >
-                          <Trash2 size={12} />
-                        </button>
-                      )}
-                    </div>
-                  );
-                })}
-                {inputIsNew && (
-                  <button
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={addCustom}
-                    className="w-full text-left px-3 py-2.5 text-sm text-[var(--color-primary-700)] bg-[var(--color-primary-50)] hover:bg-[var(--color-primary-100)] transition-colors flex items-center gap-2 border-t border-[var(--color-border)]"
-                  >
-                    <Plus size={12} className="shrink-0" />
-                    Add &quot;<span className="font-semibold">{procInput.trim()}</span>&quot; as custom keyword
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Anesthesia */}
@@ -1305,6 +1259,39 @@ function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: st
           )}
         </div>
 
+      </div>
+
+      {/* Keyword chips */}
+      <div className="mt-3">
+        <p className="text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-wide mb-2">Quick Add</p>
+        <div className="flex flex-wrap gap-1.5">
+          {allKeywords.filter((kw) => !procedures.includes(kw)).map((kw) => {
+            const isCustom = customKws.includes(kw);
+            return (
+              <div key={kw} className="flex items-center">
+                <button
+                  onClick={() => addProcedure(kw)}
+                  className={`text-xs px-2.5 py-1 rounded-l-full border transition-colors ${
+                    isCustom
+                      ? "border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100"
+                      : "border-[var(--color-border)] bg-[var(--color-surface-sunken)] text-[var(--color-ink-700)] hover:border-[var(--color-primary-300)] hover:bg-[var(--color-primary-50)] hover:text-[var(--color-primary-700)]"
+                  } ${isCustom ? "" : "rounded-r-full"}`}
+                >
+                  {kw}
+                </button>
+                {isCustom && (
+                  <button
+                    onClick={() => { deleteCustomProcedureKw(kw); setCustomKws(getCustomProcedureKws()); }}
+                    className="px-1.5 py-1 rounded-r-full border border-l-0 border-amber-200 bg-amber-50 text-amber-400 hover:text-red-500 hover:bg-red-50 hover:border-red-200 transition-colors"
+                    title="Remove custom keyword"
+                  >
+                    <X size={10} />
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {/* Added procedures list */}
