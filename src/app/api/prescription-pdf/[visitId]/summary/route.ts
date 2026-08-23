@@ -40,10 +40,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
 
   // Only show spectacles when explicitly pinned from Previous Spectacle History
   const rc = spectRc ?? null;
-  const re = parseJSON((rc as any)?.re, { sph: "", cyl: "", axis: "", nearSph: "" });
-  const le = parseJSON((rc as any)?.le, { sph: "", cyl: "", axis: "", nearSph: "" });
+  const re = parseJSON((rc as any)?.re, { sph: "", cyl: "", axis: "", nearSph: "", va: "", nearVa: "" });
+  const le = parseJSON((rc as any)?.le, { sph: "", cyl: "", axis: "", nearSph: "", va: "", nearVa: "" });
 
-  const hasOptical = rc && (re.sph || re.cyl || re.axis || le.sph || le.cyl || le.axis || re.nearSph || le.nearSph);
+  const hasOptical = rc && (re.sph || re.cyl || re.axis || le.sph || le.cyl || le.axis || re.nearSph || le.nearSph || re.va || le.va);
 
   const pdf = await generateShortSummaryPdf({
     patient: {

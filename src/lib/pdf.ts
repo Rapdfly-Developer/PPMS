@@ -765,8 +765,8 @@ export type ShortSummaryData = {
   medications: { drugName: string; dosage?: string | null; frequency?: string | null; duration?: string | null; instructions?: string | null; route?: string | null; laterality?: string | null }[];
   investigations: { testName: string; category: string; priority: string; laterality?: string | null; status: string }[];
   opticalRx?: {
-    re: { sph?: string; cyl?: string; axis?: string; nearSph?: string };
-    le: { sph?: string; cyl?: string; axis?: string; nearSph?: string };
+    re: { sph?: string; cyl?: string; axis?: string; nearSph?: string; va?: string; nearVa?: string };
+    le: { sph?: string; cyl?: string; axis?: string; nearSph?: string; va?: string; nearVa?: string };
   } | null;
   minorProcedure?: { procedureName?: string | null; procedureLaterality?: string | null; anesthesiaType?: string | null } | null;
 };
@@ -893,9 +893,9 @@ async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
     d.opticalRx.re.nearSph || d.opticalRx.le.nearSph
   );
   const rxTd = (val?: string) => `<td style="${TD}text-align:center;">${v2(val)}</td>`;
-  const rxRowFn = (eye: string, sub: string, sph?: string, cyl?: string, axis?: string, near?: string) =>
-    `<tr><td style="${TD}font-weight:700;">${eye} <span style="font-weight:400;font-size:8.5px;color:#777;">(${sub})</span></td>` +
-    rxTd(sph) + rxTd(cyl) + rxTd(axis) + rxTd(near) + `</tr>`;
+  const rxRowFn = (eye: string, sph?: string, cyl?: string, axis?: string, va?: string, near?: string, nearVa?: string) =>
+    `<tr><td style="${TD}font-weight:700;color:#0B3D3A;">${eye}</td>` +
+    rxTd(sph) + rxTd(cyl) + rxTd(axis) + rxTd(va) + rxTd(near) + rxTd(nearVa) + `</tr>`;
 
   /* ── Investigations ── */
   const hasInv = d.investigations && d.investigations.length > 0;
@@ -1103,15 +1103,17 @@ ${hasRx
   ? card("Spectacles / Refraction",
       `<table>
         <thead><tr>
-          <th style="${TH}width:105px;">Eye</th>
-          <th style="${TH}text-align:center;">SPH</th>
-          <th style="${TH}text-align:center;">CYL</th>
-          <th style="${TH}text-align:center;">Axis</th>
-          <th style="${TH}text-align:center;">Near Add</th>
+          <th style="${TH}width:90px;">Eye</th>
+          <th style="${TH}text-align:center;">Sph</th>
+          <th style="${TH}text-align:center;">Cyl</th>
+          <th style="${TH}text-align:center;">Axis°</th>
+          <th style="${TH}text-align:center;">VA</th>
+          <th style="${TH}text-align:center;">Add</th>
+          <th style="${TH}text-align:center;">NV</th>
         </tr></thead>
         <tbody>
-          ${rxRowFn("RE", "Distance", d.opticalRx!.re.sph, d.opticalRx!.re.cyl, d.opticalRx!.re.axis, d.opticalRx!.re.nearSph)}
-          ${rxRowFn("LE", "Distance", d.opticalRx!.le.sph, d.opticalRx!.le.cyl, d.opticalRx!.le.axis, d.opticalRx!.le.nearSph)}
+          ${rxRowFn("Right Eye", d.opticalRx!.re.sph, d.opticalRx!.re.cyl, d.opticalRx!.re.axis, d.opticalRx!.re.va, d.opticalRx!.re.nearSph, d.opticalRx!.re.nearVa)}
+          ${rxRowFn("Left Eye", d.opticalRx!.le.sph, d.opticalRx!.le.cyl, d.opticalRx!.le.axis, d.opticalRx!.le.va, d.opticalRx!.le.nearSph, d.opticalRx!.le.nearVa)}
         </tbody>
       </table>`)
   : ""}

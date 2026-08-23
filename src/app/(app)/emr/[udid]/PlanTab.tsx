@@ -2130,71 +2130,42 @@ function OpticalPrescriptionCard({ visit }: { visit: any }) {
   const re: RxFields = parseJSON(rc?.re, emptyRx);
   const le: RxFields = parseJSON(rc?.le, emptyRx);
 
-  const SEL = "rounded border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-1.5 py-1 text-xs cursor-default";
+  const cell = (val: string) => (val && val !== "-" ? val : <span className="text-[var(--color-ink-300)]">—</span>);
 
-  const signedSelect = (label: string, value: string, mags: string[]) => {
-    const { sign, mag } = parseOptSignedVal(value);
-    return (
-      <div className="flex flex-col gap-0.5">
-        <label className="text-[10px] text-[var(--color-ink-400)] font-medium">{label}</label>
-        <div className="flex items-center gap-1">
-          <span
-            className="w-6 h-6 rounded flex items-center justify-center text-xs font-bold border"
-            style={sign === "-"
-              ? { background: "var(--color-primary-600)", color: "#fff", borderColor: "var(--color-primary-600)" }
-              : { background: "var(--color-surface-sunken)", color: "var(--color-ink-600)", borderColor: "var(--color-border)" }}
-          >
-            {sign}
-          </span>
-          <select disabled value={mag} onChange={() => {}} className={`w-full min-w-0 ${SEL}`}>
-            {mags.map((m) => <option key={m} value={m}>{m || "—"}</option>)}
-          </select>
-        </div>
-      </div>
-    );
-  };
-
-  const axisSelect = (label: string, value: string) => (
-    <div className="flex flex-col gap-0.5 min-w-0">
-      <label className="text-[10px] text-[var(--color-ink-400)] font-medium">{label}</label>
-      <select disabled value={parseOptSignedVal(value).mag} onChange={() => {}} className={`w-full min-w-0 ${SEL}`}>
-        {OPT_AXIS_OPTS.map((a) => <option key={a} value={a}>{a || "—"}</option>)}
-      </select>
-    </div>
-  );
-
-  const vaSelect = (label: string, value: string, options: readonly string[] = VA_SNELLEN_VALUES, className = "") => (
-    <div className={`flex flex-col gap-0.5 min-w-0 ${className}`}>
-      <label className="text-[10px] text-[var(--color-ink-400)] font-medium">{label}</label>
-      <select disabled value={value || "-"} onChange={() => {}} className={`w-full min-w-0 ${SEL}`}>
-        {options.map((v) => <option key={v} value={v}>{v}</option>)}
-      </select>
-    </div>
-  );
-
-  const SECTION_LABEL = "col-span-2 sm:col-span-5 text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-widest";
-
-  const eyeFields = (val: RxFields) => (
-    <div className="grid grid-cols-2 sm:grid-cols-[88px_88px_64px_20px_80px] gap-x-2 gap-y-2 items-end">
-      <p className={SECTION_LABEL}>Distance</p>
-      {signedSelect("Sph",       val.sph,     OPT_SPH_MAGS)}
-      {signedSelect("Cyl",       val.cyl,     OPT_CYL_MAGS)}
-      {axisSelect("Axis°",       val.axis)}
-      <div aria-hidden="true" className="hidden sm:block" />
-      {vaSelect("Resulting VA",  val.va)}
-      <p className={`${SECTION_LABEL} mt-2`}>Near</p>
-      {signedSelect("Sph (Add)", val.nearSph, OPT_ADD_MAGS)}
-      {vaSelect("Resulting NV",  val.nearVa,  OPT_VA_NEAR, "col-start-2 sm:col-start-5")}
-    </div>
-  );
+  const HEADERS = ["Sph", "Cyl", "Axis°", "VA", "Add", "NV"];
+  const ROWS: { label: string; rx: RxFields }[] = [
+    { label: "Right Eye", rx: re },
+    { label: "Left Eye",  rx: le },
+  ];
 
   return (
     <Card>
       <p className="text-sm font-medium text-[var(--color-ink-700)] mb-3">Optical Prescription</p>
-      <OptEyeColumns>
-        {eyeFields(re)}
-        {eyeFields(le)}
-      </OptEyeColumns>
+      <div className="overflow-x-auto">
+        <table className="w-full border-collapse">
+          <thead>
+            <tr className="border-b border-[var(--color-border)]">
+              <th className="text-left pb-2 pr-6 text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]" />
+              {HEADERS.map((h) => (
+                <th key={h} className="text-center pb-2 px-4 text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {ROWS.map(({ label, rx }, i) => (
+              <tr key={label} className={`border-b border-[var(--color-border)] ${i % 2 === 1 ? "bg-[var(--color-surface-sunken)]" : ""}`}>
+                <td className="py-3 pr-6 text-xs font-semibold text-[var(--color-primary-700)] whitespace-nowrap">{label}</td>
+                <td className="text-center py-3 px-4 text-sm text-[var(--color-ink-800)]">{cell(rx.sph)}</td>
+                <td className="text-center py-3 px-4 text-sm text-[var(--color-ink-800)]">{cell(rx.cyl)}</td>
+                <td className="text-center py-3 px-4 text-sm text-[var(--color-ink-800)]">{cell(rx.axis)}</td>
+                <td className="text-center py-3 px-4 text-sm text-[var(--color-ink-800)]">{cell(rx.va)}</td>
+                <td className="text-center py-3 px-4 text-sm text-[var(--color-ink-800)]">{cell(rx.nearSph)}</td>
+                <td className="text-center py-3 px-4 text-sm text-[var(--color-ink-800)]">{cell(rx.nearVa)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </Card>
   );
 }
