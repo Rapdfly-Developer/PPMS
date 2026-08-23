@@ -882,8 +882,10 @@ export function PlanTab({ visit, udid, patientSex, priorVisits = [] }: { visit: 
     setAppliedPresets(merged);
     const advice = selected.map((p) => p.advice).filter(Boolean).join("\n");
     if (advice) setAdviseNotes((prev) => {
-      const trimmed = prev.trim();
-      return trimmed ? `${trimmed}\n${advice}` : advice;
+      const existingLines = new Set(prev.split("\n").map((l) => l.trim()).filter(Boolean));
+      const newLines = advice.split("\n").map((l) => l.trim()).filter((l) => l && !existingLines.has(l));
+      if (!newLines.length) return prev;
+      return prev.trim() ? `${prev.trim()}\n${newLines.join("\n")}` : newLines.join("\n");
     });
     setToastNames(selected.map((p) => p.name));
     setPendingDiagPrompts((prev) => prev.filter((p) => p.diagnosisDesc !== diagnosisDesc));
