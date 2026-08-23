@@ -1025,16 +1025,130 @@ const ANESTHESIA_KEYWORDS = [
   "Sedation + Topical",
 ];
 
+const PROCEDURE_KEYWORDS = [
+  "Chalazion excision",
+  "Chalazion incision and curettage",
+  "Foreign body removal (corneal)",
+  "Foreign body removal (conjunctival)",
+  "Subconjunctival injection",
+  "Intravitreal anti-VEGF injection",
+  "Intravitreal triamcinolone injection",
+  "Punctal plug insertion",
+  "Punctal cautery",
+  "Epilation",
+  "Lid margin scrubbing",
+  "Corneal scraping for culture",
+  "Conjunctival swab",
+  "Lacrimal syringing",
+  "Lacrimal probing",
+  "Pterygium excision",
+  "Symblepharon release",
+  "Entropion correction",
+  "Ectropion correction",
+  "Eyelid laceration repair",
+  "YAG capsulotomy",
+  "Laser peripheral iridotomy (LPI)",
+  "Selective laser trabeculoplasty (SLT)",
+  "Argon laser photocoagulation",
+  "Pan-retinal photocoagulation (PRP)",
+  "Focal laser photocoagulation",
+  "Anterior chamber paracentesis",
+  "Subtenon injection",
+  "Botulinum toxin injection",
+  "Conjunctival peritomy",
+  "Amniotic membrane transplant",
+  "Corneal collagen cross-linking (CXL)",
+  "Superficial keratectomy",
+  "Cauterization of corneal ulcer",
+];
+
+const CUSTOM_PROC_KEY = "ppms_custom_procedure_kws";
+
+function getCustomProcedureKws(): string[] {
+  try { return JSON.parse(localStorage.getItem(CUSTOM_PROC_KEY) ?? "[]"); } catch { return []; }
+}
+function saveCustomProcedureKw(kw: string) {
+  const cur = getCustomProcedureKws();
+  if (!cur.includes(kw)) localStorage.setItem(CUSTOM_PROC_KEY, JSON.stringify([...cur, kw]));
+}
+function deleteCustomProcedureKw(kw: string) {
+  const cur = getCustomProcedureKws().filter((k) => k !== kw);
+  localStorage.setItem(CUSTOM_PROC_KEY, JSON.stringify(cur));
+}
+
+function parseProcedureList(raw: string): string[] {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) return parsed.filter((s): s is string => typeof s === "string");
+  } catch {}
+  return [raw];
+}
+
 function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: string; priorVisits: any[] }) {
   const [laterality,     setLaterality]     = useState<string>(visit.procedureLaterality ?? "OU");
-  const [procedureName,  setProcedureName]  = useState<string>(visit.procedureName ?? "");
   const [anesthesia,     setAnesthesia]     = useState<string>(visit.anesthesiaType ?? "");
   const [showHistory,    setShowHistory]    = useState(false);
   const [anesthesiaOpen, setAnesthesiaOpen] = useState(false);
 
-  useAutoSave(laterality,    (val) => saveProcedureLaterality(visit.id, udid, val));
-  useAutoSave(procedureName, (val) => saveProcedureName(visit.id, udid, val));
-  useAutoSave(anesthesia,    (val) => saveAnesthesiaType(visit.id, udid, val));
+  // Multi-procedure list stored as JSON in procedureName
+  const [procedures, setProcedures] = useState<string[]>(() => parseProcedureList(visit.procedureName ?? ""));
+  const [customKws, setCustomKws]   = useState<string[]>([]);
+  const [procInput, setProcInput]   = useState("");
+  const [procOpen, setProcOpen]     = useState(false);
+  const [editIndex, setEditIndex]   = useState<number | null>(null);
+  const [editValue, setEditValue]   = useState("");
+  const procInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => { setCustomKws(getCustomProcedureKws()); }, []);
+
+  useAutoSave(laterality,  (val) => saveProcedureLaterality(visit.id, udid, val));
+  useAutoSave(anesthesia,  (val) => saveAnesthesiaType(visit.id, udid, val));
+  useAutoSave(procedures,  (val) => saveProcedureName(visit.id, udid, JSON.stringify(val)));
+
+  const allKeywords = [...PROCEDURE_KEYWORDS, ...customKws];
+
+  const filteredProcs = procInput.trim()
+    ? allKeywords.filter((kw) => kw.toLowerCase().includes(procInput.toLowerCase()) && !procedures.includes(kw))
+    : allKeywords.filter((kw) => !procedures.includes(kw));
+
+  const inputIsNew = procInput.trim().length > 0 && !allKeywords.some((k) => k.toLowerCase() === procInput.trim().toLowerCase());
+
+  const addProcedure = (name: string) => {
+    const trimmed = name.trim();
+    if (!trimmed || procedures.includes(trimmed)) return;
+    setProcedures((prev) => [...prev, trimmed]);
+    setProcInput("");
+    setProcOpen(false);
+  };
+
+  const addCustom = () => {
+    const trimmed = procInput.trim();
+    if (!trimmed) return;
+    saveCustomProcedureKw(trimmed);
+    setCustomKws(getCustomProcedureKws());
+    addProcedure(trimmed);
+  };
+
+  const removeProcedure = (i: number) => {
+    setProcedures((prev) => prev.filter((_, idx) => idx !== i));
+  };
+
+  const startEdit = (i: number) => { setEditIndex(i); setEditValue(procedures[i]); };
+
+  const commitEdit = () => {
+    if (editIndex === null) return;
+    const trimmed = editValue.trim();
+    if (trimmed) {
+      setProcedures((prev) => prev.map((p, i) => (i === editIndex ? trimmed : p)));
+    }
+    setEditIndex(null);
+    setEditValue("");
+  };
+
+  const filteredAnesthesia = ANESTHESIA_KEYWORDS.filter((kw) =>
+    anesthesia.trim() === "" || kw.toLowerCase().includes(anesthesia.toLowerCase())
+  );
 
   const historyBtnCls = `flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-medium transition-colors ${
     showHistory
@@ -1042,29 +1156,133 @@ function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: st
       : "border-[var(--color-border)] text-[var(--color-ink-500)] hover:text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]"
   }`;
 
-  const filteredAnesthesia = ANESTHESIA_KEYWORDS.filter((kw) =>
-    anesthesia.trim() === "" || kw.toLowerCase().includes(anesthesia.toLowerCase())
-  );
-
   return (
     <Card>
       {/* Heading row */}
-      <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+      <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
         <p className="text-sm font-medium text-[var(--color-ink-700)]">Minor Procedure</p>
-        <div className="flex items-center gap-1.5">
-          <button
-            onClick={() => { setShowHistory((v) => !v); }}
-            className={historyBtnCls}
-          >
-            <History size={12} /> History
-          </button>
-        </div>
+        <button onClick={() => setShowHistory((v) => !v)} className={historyBtnCls}>
+          <History size={12} /> History
+        </button>
       </div>
 
-      {/* Single row: Laterality | Procedure Name | Anesthesia */}
-      <div className="flex gap-3 items-end">
+      {/* Procedure search + add */}
+      <div className="mb-3">
+        <label className="text-[10px] font-semibold text-[var(--color-ink-500)] uppercase tracking-wide block mb-1.5">
+          Procedure
+        </label>
+        <div className="relative">
+          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-300)] pointer-events-none" />
+          <input
+            ref={procInputRef}
+            value={procInput}
+            onChange={(e) => { setProcInput(e.target.value); setProcOpen(true); }}
+            onFocus={() => setProcOpen(true)}
+            onBlur={() => setTimeout(() => setProcOpen(false), 160)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") { e.preventDefault(); inputIsNew ? addCustom() : (filteredProcs[0] && addProcedure(filteredProcs[0])); }
+              if (e.key === "Escape") setProcOpen(false);
+            }}
+            placeholder="Search or type a procedure…"
+            className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] pl-8 pr-3 py-2 text-sm text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent"
+          />
+        </div>
 
-        {/* 1. Laterality */}
+        {/* Suggestions dropdown */}
+        {procOpen && (filteredProcs.length > 0 || inputIsNew) && (
+          <div className="relative z-20 mt-1 w-full rounded-xl border border-[var(--color-border)] bg-white shadow-lg overflow-hidden">
+            <div className="max-h-52 overflow-y-auto">
+              {filteredProcs.slice(0, 20).map((kw) => {
+                const isCustom = customKws.includes(kw);
+                return (
+                  <div key={kw} className="flex items-center group">
+                    <button
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => addProcedure(kw)}
+                      className="flex-1 text-left px-3 py-2.5 text-sm text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] transition-colors flex items-center gap-2"
+                    >
+                      <Plus size={12} className="text-[var(--color-ink-300)] shrink-0" />
+                      {kw}
+                      {isCustom && (
+                        <span className="ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 shrink-0">CUSTOM</span>
+                      )}
+                    </button>
+                    {isCustom && (
+                      <button
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => { deleteCustomProcedureKw(kw); setCustomKws(getCustomProcedureKws()); }}
+                        className="px-2 py-2.5 text-[var(--color-ink-300)] hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                        title="Delete custom keyword"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+              {inputIsNew && (
+                <button
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={addCustom}
+                  className="w-full text-left px-3 py-2.5 text-sm text-[var(--color-primary-700)] bg-[var(--color-primary-50)] hover:bg-[var(--color-primary-100)] transition-colors flex items-center gap-2 border-t border-[var(--color-border)]"
+                >
+                  <Plus size={12} className="shrink-0" />
+                  Add &quot;<span className="font-semibold">{procInput.trim()}</span>&quot; as custom keyword
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Added procedures list */}
+      {procedures.length > 0 && (
+        <ul className="flex flex-col gap-1.5 mb-4">
+          {procedures.map((name, i) => (
+            <li key={i} className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-3 py-2 flex items-center gap-2">
+              {editIndex === i ? (
+                <>
+                  <input
+                    autoFocus
+                    value={editValue}
+                    onChange={(e) => setEditValue(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") commitEdit(); if (e.key === "Escape") { setEditIndex(null); } }}
+                    className="flex-1 text-sm rounded-lg border border-[var(--color-primary-300)] px-2 py-0.5 focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-400)]"
+                  />
+                  <button onClick={commitEdit} className="text-[10px] font-semibold px-2 py-0.5 rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] transition-colors">
+                    Save
+                  </button>
+                  <button onClick={() => setEditIndex(null)} className="text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)]">
+                    <X size={13} />
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Scissors size={12} className="text-[var(--color-ink-400)] shrink-0" />
+                  <span className="flex-1 text-sm text-[var(--color-ink-800)]">{name}</span>
+                  <button
+                    onClick={() => startEdit(i)}
+                    className="text-[var(--color-ink-300)] hover:text-[var(--color-primary-600)] transition-colors"
+                    title="Edit"
+                  >
+                    <Pencil size={12} />
+                  </button>
+                  <button
+                    onClick={() => removeProcedure(i)}
+                    className="text-[var(--color-ink-300)] hover:text-red-500 transition-colors"
+                    title="Remove"
+                  >
+                    <X size={13} />
+                  </button>
+                </>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {/* Laterality + Anesthesia row */}
+      <div className="flex gap-3 items-end flex-wrap">
         <div className="shrink-0">
           <label className="text-[10px] font-semibold text-[var(--color-ink-500)] uppercase tracking-wide block mb-1.5">
             Laterality
@@ -1086,20 +1304,6 @@ function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: st
           </div>
         </div>
 
-        {/* 2. Procedure Name — plain text input */}
-        <div className="flex-1 min-w-0">
-          <label className="text-[10px] font-semibold text-[var(--color-ink-500)] uppercase tracking-wide block mb-1.5">
-            Procedure
-          </label>
-          <input
-            value={procedureName}
-            onChange={(e) => setProcedureName(e.target.value)}
-            placeholder="Enter procedure…"
-            className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-3 py-2 text-sm text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent"
-          />
-        </div>
-
-        {/* 3. Type of Anesthesia — search dropdown */}
         <div className="flex-1 min-w-0 relative">
           <label className="text-[10px] font-semibold text-[var(--color-ink-500)] uppercase tracking-wide block mb-1.5">
             Type of Anesthesia
@@ -1144,45 +1348,55 @@ function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: st
             </div>
           )}
         </div>
-
       </div>
 
       {/* History panel */}
       {showHistory && (
-        <div className="mt-3 rounded-xl border border-[var(--color-border)] bg-white shadow-sm overflow-hidden">
+        <div className="mt-4 rounded-xl border border-[var(--color-border)] bg-white shadow-sm overflow-hidden">
           <div className="px-3 py-2 bg-[var(--color-surface-sunken)] border-b border-[var(--color-border)] flex items-center justify-between">
             <span className="text-[10px] font-bold text-[var(--color-ink-400)] uppercase tracking-widest">Previous Procedures</span>
             <button onClick={() => setShowHistory(false)} className="text-[var(--color-ink-300)] hover:text-[var(--color-ink-700)]"><X size={12} /></button>
           </div>
-          <div className="max-h-48 overflow-y-auto divide-y divide-[var(--color-border)]">
+          <div className="max-h-52 overflow-y-auto divide-y divide-[var(--color-border)]">
             {priorVisits.filter((v) => v.id !== visit.id && (v.anesthesiaType || v.procedureName)).length === 0 ? (
               <p className="px-3 py-4 text-xs text-[var(--color-ink-400)] text-center">No previous records found.</p>
             ) : (
               priorVisits
                 .filter((v) => v.id !== visit.id && (v.anesthesiaType || v.procedureName))
-                .map((v) => (
-                  <div key={v.id} className="px-3 py-2.5 flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-[10px] font-semibold text-[var(--color-ink-400)] mb-0.5">
-                        {new Date(v.date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
-                        {v.procedureLaterality && <span className="ml-1.5 font-bold text-[var(--color-primary-600)]">{v.procedureLaterality}</span>}
-                      </p>
-                      {v.procedureName && <p className="text-xs font-medium text-[var(--color-ink-700)]">{v.procedureName}</p>}
-                      {v.anesthesiaType && <p className="text-xs text-[var(--color-ink-500)]">{v.anesthesiaType}</p>}
+                .map((v) => {
+                  const priorProcs = parseProcedureList(v.procedureName ?? "");
+                  return (
+                    <div key={v.id} className="px-3 py-2.5 flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="text-[10px] font-semibold text-[var(--color-ink-400)] mb-0.5">
+                          {new Date(v.date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+                          {v.procedureLaterality && <span className="ml-1.5 font-bold text-[var(--color-primary-600)]">{v.procedureLaterality}</span>}
+                        </p>
+                        {priorProcs.length > 0
+                          ? priorProcs.map((p, i) => <p key={i} className="text-xs font-medium text-[var(--color-ink-700)]">{p}</p>)
+                          : v.procedureName && <p className="text-xs font-medium text-[var(--color-ink-700)]">{v.procedureName}</p>
+                        }
+                        {v.anesthesiaType && <p className="text-xs text-[var(--color-ink-500)] mt-0.5">{v.anesthesiaType}</p>}
+                      </div>
+                      <button
+                        onClick={() => {
+                          if (v.procedureLaterality) setLaterality(v.procedureLaterality);
+                          if (v.anesthesiaType) setAnesthesia(v.anesthesiaType);
+                          if (priorProcs.length > 0) {
+                            setProcedures((prev) => {
+                              const existing = new Set(prev);
+                              return [...prev, ...priorProcs.filter((p) => !existing.has(p))];
+                            });
+                          }
+                          setShowHistory(false);
+                        }}
+                        className="shrink-0 text-[10px] font-medium text-[var(--color-primary-600)] hover:underline"
+                      >
+                        Use this
+                      </button>
                     </div>
-                    <button
-                      onClick={() => {
-                        if (v.procedureLaterality) setLaterality(v.procedureLaterality);
-                        if (v.procedureName) setProcedureName(v.procedureName);
-                        if (v.anesthesiaType) setAnesthesia(v.anesthesiaType);
-                        setShowHistory(false);
-                      }}
-                      className="shrink-0 text-[10px] font-medium text-[var(--color-primary-600)] hover:underline"
-                    >
-                      Use this
-                    </button>
-                  </div>
-                ))
+                  );
+                })
             )}
           </div>
         </div>
