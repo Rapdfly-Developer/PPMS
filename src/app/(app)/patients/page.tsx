@@ -16,6 +16,7 @@ export default async function PatientsPage({
   const categoryFilter = sp.category  ?? "";
   const sexFilter      = sp.sex       ?? "";
   const hospitalFilter = sp.hospital  ?? "";
+  const activeCard     = sp.card      ?? "";
   const rawOpStatus    = sp.opStatus  ?? "dispensed";
   const opStatusFilter = rawOpStatus === "all" ? "" : rawOpStatus;
   const sortBy         = sp.sort      ?? "lastvisit";
@@ -245,6 +246,7 @@ export default async function PatientsPage({
         doctorHospitals={doctorHospitals}
         sortBy={sortBy}
         isHospital={isHospital}
+        activeCard={activeCard}
         kpis={{ totalPatients, todayReg, followUpCount, insurancePatients, pendingRequests }}
         trendData={trendData}
         catDist={catGroups.map(g => ({ category: g.category, count: g._count.id }))}

@@ -95,9 +95,9 @@ function exportCSV(patients: PatientRow[], selected: Set<string>) {
 }
 
 // ── KPI Card ─────────────────────────────────────────────────────────────────
-function KpiCard({ icon, label, value, sub, color, href, isActive, onSelect }: {
+function KpiCard({ icon, label, value, sub, color, isActive, onSelect }: {
   icon: React.ReactNode; label: string; value: number; sub?: string; color: string;
-  href?: string; isActive?: boolean; onSelect?: () => void;
+  isActive?: boolean; onSelect?: () => void;
 }) {
   const C: Record<string, { icon: string; val: string; border: string }> = {
     teal:   { icon: "bg-[#DCEFEC] text-[#115E59]", val: "text-[#115E59]",  border: "border-[#C7E4E0]" },
@@ -109,8 +109,10 @@ function KpiCard({ icon, label, value, sub, color, href, isActive, onSelect }: {
   const c = C[color] ?? C.teal;
 
   const baseClass = isActive
-    ? `bg-white rounded-2xl border-2 border-black p-4 flex items-start gap-3 shadow-sm cursor-pointer transition-all`
+    ? `bg-white rounded-2xl p-4 flex items-start gap-3 shadow-sm cursor-pointer transition-all`
     : `bg-white rounded-2xl border ${c.border} p-4 flex items-start gap-3 shadow-sm hover:shadow-md hover:border-[var(--color-primary-300)] cursor-pointer transition-all`;
+
+  const activeStyle: React.CSSProperties = isActive ? { border: '2px solid #000' } : {};
 
   const inner = (
     <>
@@ -123,13 +125,8 @@ function KpiCard({ icon, label, value, sub, color, href, isActive, onSelect }: {
     </>
   );
 
-  if (href) return (
-    <Link href={href} onClick={onSelect} className={baseClass}>
-      {inner}
-    </Link>
-  );
   return (
-    <div onClick={onSelect} className={baseClass}>
+    <div onClick={onSelect} className={baseClass} style={activeStyle}>
       {inner}
     </div>
   );
@@ -294,6 +291,7 @@ interface Props {
   doctorHospitals: { id: string; name: string }[];
   sortBy: string;
   isHospital: boolean;
+  activeCard: string;
   kpis: Kpis;
   trendData: TrendPoint[];
   catDist: CatPoint[];
@@ -302,10 +300,9 @@ interface Props {
 
 export function PatientsClient({
   patients, total, page, pageSize, q, categoryFilter, sexFilter, hospitalFilter, opStatusFilter,
-  doctorHospitals, sortBy, kpis, trendData, catDist, recentReg,
+  doctorHospitals, sortBy, activeCard, kpis, trendData, catDist, recentReg,
 }: Props) {
   const router = useRouter();
-  const [activeCard, setActiveCard] = useState<string | null>(null);
   const [searchVal, setSearchVal] = useState(q);
   const [showFilters, setShowFilters] = useState(
     !!(categoryFilter || sexFilter || hospitalFilter || (opStatusFilter && opStatusFilter !== "dispensed"))
@@ -333,7 +330,7 @@ export function PatientsClient({
   const to   = Math.min(page * pageSize, total);
 
   function navigate(overrides: Record<string, string>) {
-    const base = { q, category: categoryFilter, sex: sexFilter, hospital: hospitalFilter, opStatus: opStatusFilter, sort: sortBy, size: String(pageSize), page: String(page) };
+    const base = { q, category: categoryFilter, sex: sexFilter, hospital: hospitalFilter, opStatus: opStatusFilter, sort: sortBy, size: String(pageSize), page: String(page), card: activeCard };
     const merged = { ...base, ...overrides };
     const params = new URLSearchParams();
     if (merged.q)                         params.set("q",        merged.q);
@@ -341,6 +338,7 @@ export function PatientsClient({
     if (merged.sex)                       params.set("sex",      merged.sex);
     if (merged.hospital)                  params.set("hospital",  merged.hospital);
     if (merged.opStatus)                  params.set("opStatus",  merged.opStatus);
+    if (merged.card)                      params.set("card",      merged.card);
     if (merged.sort && merged.sort !== "lastvisit") params.set("sort", merged.sort);
     if (merged.size && merged.size !== "25")     params.set("size", merged.size);
     if (merged.page && merged.page !== "1")      params.set("page", merged.page);
@@ -407,10 +405,10 @@ export function PatientsClient({
 
       {/* ── KPI Cards ──────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
-        <KpiCard icon={<Users size={17} />}         label="Total Patients"    value={kpis.totalPatients}  color="teal"  href="/patients?opStatus=all" isActive={activeCard === "total"}      onSelect={() => setActiveCard(activeCard === "total" ? null : "total")} />
-        <KpiCard icon={<CalendarCheck size={17} />} label="Total Operated"    value={kpis.todayReg}       color="blue"  sub="New today"                isActive={activeCard === "operated"}   onSelect={() => setActiveCard(activeCard === "operated" ? null : "operated")} />
-        <KpiCard icon={<CalendarClock size={17} />} label="Lost to Follow Up" value={kpis.followUpCount}  color="green" sub="Overdue"                  isActive={activeCard === "followup"}   onSelect={() => setActiveCard(activeCard === "followup" ? null : "followup")} />
-        <KpiCard icon={<ClipboardList size={17} />} label="Pending Requests"  value={kpis.pendingRequests} color="amber" sub="Awaiting confirmation"   isActive={activeCard === "pending"}    onSelect={() => setActiveCard(activeCard === "pending" ? null : "pending")} />
+        <KpiCard icon={<Users size={17} />}         label="Total Patients"    value={kpis.totalPatients}   color="teal"  isActive={activeCard === "total"}    onSelect={() => navigate({ opStatus: "all", card: activeCard === "total" ? "" : "total", page: "1" })} />
+        <KpiCard icon={<CalendarCheck size={17} />} label="Total Operated"    value={kpis.todayReg}        color="blue"  sub="New today"                       isActive={activeCard === "operated"} onSelect={() => navigate({ card: activeCard === "operated" ? "" : "operated" })} />
+        <KpiCard icon={<CalendarClock size={17} />} label="Lost to Follow Up" value={kpis.followUpCount}   color="green" sub="Overdue"                         isActive={activeCard === "followup"} onSelect={() => navigate({ card: activeCard === "followup" ? "" : "followup" })} />
+        <KpiCard icon={<ClipboardList size={17} />} label="Pending Requests"  value={kpis.pendingRequests} color="amber" sub="Awaiting confirmation"            isActive={activeCard === "pending"}  onSelect={() => navigate({ card: activeCard === "pending" ? "" : "pending" })} />
       </div>
 
       {/* ── Table + Analytics ──────────────────────────────────────────── */}
