@@ -12,7 +12,7 @@ import {
 import { rescheduleFollowUp, cancelFollowUp, completeFollowUp } from "./actions";
 
 /* ── Types ─────────────────────────────────────────────────────────────── */
-export type FollowUpStatus = "DUE_TODAY" | "UPCOMING" | "OVERDUE" | "COMPLETED" | "CANCELLED";
+export type FollowUpStatus = "DUE_TODAY" | "UPCOMING" | "OVERDUE" | "COMPLETED" | "CANCELLED" | "SCHEDULED";
 
 export interface FuVisit {
   id: string;
@@ -36,6 +36,7 @@ const STATUS_META: Record<FollowUpStatus, { label: string; pill: string; dot: st
   OVERDUE:   { label: "Overdue",    pill: "bg-red-100 text-red-700 border border-red-200",         dot: "bg-red-500" },
   COMPLETED: { label: "Completed",  pill: "bg-emerald-100 text-emerald-700 border border-emerald-200", dot: "bg-emerald-500" },
   CANCELLED: { label: "Cancelled",  pill: "bg-slate-100 text-slate-500 border border-slate-200",  dot: "bg-slate-400" },
+  SCHEDULED: { label: "Scheduled",  pill: "bg-teal-100 text-teal-700 border border-teal-200",     dot: "bg-teal-500" },
 };
 
 const OUTCOMES = [
@@ -429,7 +430,7 @@ function FollowUpRow({
   activeCancel: string | null;
   onClosePanel: () => void;
 }) {
-  const isDone = v.status === "COMPLETED" || v.status === "CANCELLED";
+  const isDone = v.status === "COMPLETED" || v.status === "CANCELLED" || v.status === "SCHEDULED";
 
   return (
     <>
@@ -532,7 +533,7 @@ function FollowUpCard({
   activeCancel: string | null;
   onClosePanel: () => void;
 }) {
-  const isDone = v.status === "COMPLETED" || v.status === "CANCELLED";
+  const isDone = v.status === "COMPLETED" || v.status === "CANCELLED" || v.status === "SCHEDULED";
 
   return (
     <div className={`rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 space-y-3 ${isDone ? "opacity-60" : ""}`}>
@@ -629,6 +630,7 @@ export function FollowUpsClient({
     DUE_TODAY: visits.filter((v) => v.status === "DUE_TODAY").length,
     UPCOMING:  visits.filter((v) => v.status === "UPCOMING").length,
     OVERDUE:   visits.filter((v) => v.status === "OVERDUE").length,
+    SCHEDULED: visits.filter((v) => v.status === "SCHEDULED").length,
     COMPLETED: visits.filter((v) => v.status === "COMPLETED").length,
     CANCELLED: visits.filter((v) => v.status === "CANCELLED").length,
   }), [visits]);
@@ -679,7 +681,7 @@ export function FollowUpsClient({
       </div>
 
       {/* Stat cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
         <StatCard
           label="Due Today"
           count={counts.DUE_TODAY}
@@ -703,6 +705,14 @@ export function FollowUpsClient({
           accent="text-red-700" iconBg="bg-red-50"
           onClick={() => setStatusFilter(statusFilter === "OVERDUE" ? "DUE_TODAY" : "OVERDUE")}
           active={statusFilter === "OVERDUE"}
+        />
+        <StatCard
+          label="Scheduled"
+          count={counts.SCHEDULED}
+          icon={<CalendarClock size={17} className="text-teal-600" />}
+          accent="text-teal-700" iconBg="bg-teal-50"
+          onClick={() => setStatusFilter(statusFilter === "SCHEDULED" ? "ALL" : "SCHEDULED")}
+          active={statusFilter === "SCHEDULED"}
         />
         <StatCard
           label="Completed"
@@ -748,6 +758,7 @@ export function FollowUpsClient({
             <option value="DUE_TODAY">Due Today</option>
             <option value="UPCOMING">Upcoming</option>
             <option value="OVERDUE">Overdue</option>
+            <option value="SCHEDULED">Scheduled</option>
             <option value="COMPLETED">Completed</option>
             <option value="CANCELLED">Cancelled</option>
           </select>
