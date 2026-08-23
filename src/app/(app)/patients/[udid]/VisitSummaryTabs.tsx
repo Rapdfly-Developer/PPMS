@@ -476,9 +476,10 @@ function LongContent({
       {hasMeds && (
         <Block label="Medications">
           <DataTable minWidth={380}>
-            <Cols widths={["40%", "18%", "24%", "18%"]} />
+            <Cols widths={["5%", "37%", "18%", "22%", "18%"]} />
             <thead>
               <tr>
+                <th className={TH}>#</th>
                 <th className={TH}>Drug</th>
                 <th className={TH}>Dose</th>
                 <th className={TH}>Frequency</th>
@@ -488,6 +489,7 @@ function LongContent({
             <tbody>
               {data.medications.map((m: any, i: number) => (
                 <tr key={i}>
+                  <td className={TD_MUTED}>{i + 1}</td>
                   <td className={`${TD} font-semibold`}>
                     {m.laterality && (
                       <span className="font-bold text-[var(--color-primary-700)] mr-2">{m.laterality}</span>
