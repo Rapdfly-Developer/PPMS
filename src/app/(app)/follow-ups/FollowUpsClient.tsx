@@ -484,24 +484,12 @@ function FollowUpRow({
         {/* Actions */}
         <td className="px-4 py-3">
           <div className="flex items-center gap-1.5 flex-wrap">
-            <Link href={`/patients/${v.patient.udid}`}>
-              <ActionButton icon={<Eye size={11} />} label="View" />
-            </Link>
             {!isDone && (
               <>
-                <Link href={`/emr/${v.patient.udid}`}>
-                  <ActionButton icon={<Stethoscope size={11} />} label="Start" variant="primary" />
-                </Link>
                 <ActionButton
                   icon={<RotateCcw size={11} />}
                   label="Reschedule"
                   onClick={() => activeReschedule === v.id ? onClosePanel() : onReschedule(v.id)}
-                />
-                <ActionButton
-                  icon={<CheckCircle2 size={11} />}
-                  label="Complete"
-                  variant="primary"
-                  onClick={() => onComplete(v)}
                 />
                 <ActionButton
                   icon={<Ban size={11} />}
@@ -594,22 +582,10 @@ function FollowUpCard({
       {/* Actions */}
       {!isDone && (
         <div className="flex flex-wrap gap-1.5 pt-1 border-t border-[var(--color-border)]">
-          <Link href={`/patients/${v.patient.udid}`}>
-            <ActionButton icon={<Eye size={11} />} label="View" />
-          </Link>
-          <Link href={`/emr/${v.patient.udid}`}>
-            <ActionButton icon={<Stethoscope size={11} />} label="Start Follow-up" variant="primary" />
-          </Link>
           <ActionButton
             icon={<RotateCcw size={11} />}
             label="Reschedule"
             onClick={() => activeReschedule === v.id ? onClosePanel() : onReschedule(v.id)}
-          />
-          <ActionButton
-            icon={<CheckCircle2 size={11} />}
-            label="Complete"
-            variant="primary"
-            onClick={() => onComplete(v)}
           />
           <ActionButton
             icon={<Ban size={11} />}
