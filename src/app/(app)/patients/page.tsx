@@ -86,6 +86,7 @@ export default async function PatientsPage({
         finalizedAt: true,
         generalExam: { select: { chiefComplaint: true } },
         appointment: { select: { arrivedAt: true } },
+        diagnoses: { select: { description: true, laterality: true }, orderBy: { createdAt: "asc" as const }, take: 4 },
       },
     },
   };
@@ -209,9 +210,10 @@ export default async function PatientsPage({
     lastVisit:     p.visits[0]?.date.toISOString() ?? null,
     queueTime:     p.visits[0]?.appointment?.arrivedAt?.toISOString() ?? null,
     finalizeTime:  p.visits[0]?.finalizedAt?.toISOString() ?? null,
-    chiefComplaint: p.visits[0]?.generalExam?.chiefComplaint ?? p.complaint ?? null,
+    chiefComplaint: p.visits[0]?.generalExam?.chiefComplaint ?? (p as any).complaint ?? null,
     photoUrl:      p.photoUrl ?? null,
     dispensedApptId: dispensedApptIds[p.id] ?? null,
+    diagnoses: (p.visits[0] as any)?.diagnoses?.map((d: any) => ({ description: d.description, laterality: d.laterality ?? null })) ?? [],
   }));
 
   const recentSerialized = recentReg.map(p => ({

@@ -30,6 +30,7 @@ export interface PatientRow {
   chiefComplaint: string | null;
   photoUrl: string | null;
   dispensedApptId?: string | null;
+  diagnoses: { description: string; laterality?: string | null }[];
 }
 export interface TrendPoint { label: string; count: number; isToday: boolean; }
 export interface CatPoint   { category: string; count: number; }
@@ -558,14 +559,20 @@ export function PatientsClient({
               {/* Column headers */}
               <div className="hidden xl:flex items-center gap-4 px-7 py-2.5 border-b border-[var(--color-border)] bg-[var(--color-surface-sunken)]">
                 <div className="size-8 shrink-0" />
-                <div className="w-48 shrink-0">
+                <div className="w-40 shrink-0">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">Patient</span>
                 </div>
                 <div className="flex-1 min-w-0">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">Chief Complaint</span>
                 </div>
                 <div className="w-44 shrink-0">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">Diagnoses</span>
+                </div>
+                <div className="w-28 shrink-0">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">Last Visit</span>
+                </div>
+                <div className="w-28 shrink-0">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">Q &amp; F Time</span>
                 </div>
                 <div className="w-20 shrink-0" />
               </div>
@@ -594,7 +601,7 @@ export function PatientsClient({
                       </div>
 
                       {/* Avatar + name + UDID + age/sex */}
-                      <div className="flex items-center gap-3 w-48 shrink-0 min-w-0">
+                      <div className="flex items-center gap-3 w-40 shrink-0 min-w-0">
                         {p.photoUrl ? (
                           <img
                             src={photoSrc(p.photoUrl)}
@@ -647,27 +654,53 @@ export function PatientsClient({
                         )}
                       </div>
 
-                      {/* Last Visit + queue/finalize times */}
+                      {/* Diagnoses */}
                       <div className="hidden xl:block w-44 shrink-0">
-                        {lastVisitStr ? (
-                          <>
-                            <p className="text-sm font-medium text-[var(--color-ink-800)]">{lastVisitStr}</p>
-                            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                              {queueTimeStr && (
-                                <span className="text-[10px] text-[var(--color-ink-400)]">
-                                  <span className="font-semibold text-[var(--color-ink-500)]">Q</span> {queueTimeStr}
-                                </span>
-                              )}
-                              {finalTimeStr && (
-                                <span className="text-[10px] text-[var(--color-ink-400)]">
-                                  <span className="font-semibold text-emerald-600">F</span> {finalTimeStr}
-                                </span>
-                              )}
-                            </div>
-                          </>
+                        {p.diagnoses.length > 0 ? (
+                          <div className="space-y-0.5">
+                            {p.diagnoses.slice(0, 2).map((d, i) => (
+                              <p key={i} className="text-[11px] text-[var(--color-ink-700)] truncate">
+                                {d.laterality && (
+                                  <span className="text-[10px] font-semibold text-[var(--color-primary-600)] mr-1">{d.laterality}</span>
+                                )}
+                                {d.description}
+                              </p>
+                            ))}
+                            {p.diagnoses.length > 2 && (
+                              <p className="text-[10px] text-[var(--color-ink-400)]">+{p.diagnoses.length - 2} more</p>
+                            )}
+                          </div>
                         ) : (
                           <span className="text-[11px] text-[var(--color-ink-300)]">—</span>
                         )}
+                      </div>
+
+                      {/* Last Visit (date only) */}
+                      <div className="hidden xl:block w-28 shrink-0">
+                        {lastVisitStr ? (
+                          <p className="text-sm font-medium text-[var(--color-ink-800)]">{lastVisitStr}</p>
+                        ) : (
+                          <span className="text-[11px] text-[var(--color-ink-300)]">—</span>
+                        )}
+                      </div>
+
+                      {/* Q & F Time */}
+                      <div className="hidden xl:block w-28 shrink-0">
+                        <div className="space-y-0.5">
+                          {queueTimeStr && (
+                            <p className="text-[11px] text-[var(--color-ink-600)]">
+                              <span className="font-bold text-[var(--color-ink-500)] mr-1">Q</span>{queueTimeStr}
+                            </p>
+                          )}
+                          {finalTimeStr && (
+                            <p className="text-[11px] text-[var(--color-ink-600)]">
+                              <span className="font-bold text-emerald-600 mr-1">F</span>{finalTimeStr}
+                            </p>
+                          )}
+                          {!queueTimeStr && !finalTimeStr && (
+                            <span className="text-[11px] text-[var(--color-ink-300)]">—</span>
+                          )}
+                        </div>
                       </div>
 
                       {/* Category + Undo — fixed width */}
