@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useTransition, useRef, useEffect, useMemo, useCallback } from "react";
+import { useState, useTransition, useRef, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/Card";
 import { SingleChipSelect } from "@/components/ui/Chip";
 import { ICD10_OPHTHALMOLOGY, DIAGNOSIS_STATUSES, LATERALITY } from "@/lib/constants";
-import { addDiagnosis, updateDiagnosisStatus, removeDiagnosis, addMedication, removeMedication, saveFollowUp, confirmDiagnosis, setDiagnosisProtocol } from "./actions";
+import { addDiagnosis, updateDiagnosisStatus, removeDiagnosis, removeMedication, confirmDiagnosis } from "./actions";
 import { useAutoSave, SaveIndicator } from "@/lib/useAutoSave";
 import { X, History, ChevronDown, Search, PenLine, Plus, Check, Ban, Stethoscope, FileText, Lock, AlertTriangle } from "lucide-react";
 
@@ -102,7 +102,7 @@ function PresetFieldCombobox({
   );
 }
 import {
-  getTreatmentPresets, saveTreatmentPresets, matchPresets, mergeMeds,
+  getTreatmentPresets, saveTreatmentPresets,
   getApplied, setApplied,
   type TreatmentPreset,
   type TreatmentPresetMed,
@@ -135,23 +135,18 @@ type CustomModalState = {
 // defining it inside AssessmentTab would remount every row on each render and
 // steal focus from the status select.
 function DiagnosisRow({
-  d, provisional = false, isCustom, protocols, pending,
-  onConfirm, onReject, onChangeProtocol, onStatusChange,
+  d, provisional = false, isCustom, pending,
+  onConfirm, onReject, onStatusChange,
 }: {
   d: any;
   provisional?: boolean;
   isCustom: boolean;
-  protocols: TreatmentPreset[];
   pending: boolean;
   onConfirm: (d: any) => void;
   onReject: (d: any) => void;
-  onChangeProtocol: (d: any, p: TreatmentPreset) => void;
   onStatusChange: (d: any, status: string) => void;
 }) {
   const confirmed = !!d.confirmedAt;
-  // Fall back to the first protocol so the selection is never visually empty on
-  // a row confirmed before any protocol existed for that diagnosis.
-  const selectedId = d.protocolId ?? protocols[0]?.id;
 
   return (
     <li className="rounded-xl border border-[var(--color-border)] px-3.5 py-2.5">
@@ -217,40 +212,6 @@ function DiagnosisRow({
         </div>
       </div>
 
-      {confirmed && (
-        <div className="mt-2.5 pt-2.5 border-t border-[var(--color-border)]">
-          {protocols.length === 0 ? (
-            <p className="text-xs text-[var(--color-ink-400)]">
-              No treatment protocol is configured for this diagnosis.
-            </p>
-          ) : (
-            <div className="flex items-baseline gap-2 flex-wrap">
-              <span className="text-[10px] font-semibold uppercase tracking-wide text-[var(--color-ink-500)] shrink-0">
-                Protocol
-              </span>
-              <div className="flex items-center gap-1.5 flex-wrap">
-                {protocols.map((p, i) => (
-                  <button
-                    key={p.id}
-                    type="button"
-                    onClick={() => onChangeProtocol(d, p)}
-                    disabled={pending}
-                    title={p.name}
-                    className={`text-xs font-medium px-2.5 py-1 rounded-lg border transition-colors disabled:opacity-50 ${
-                      p.id === selectedId
-                        ? "bg-[var(--color-primary-600)] border-[var(--color-primary-600)] text-white"
-                        : "bg-white border-[var(--color-border)] text-[var(--color-ink-600)] hover:border-[var(--color-primary-400)] hover:text-[var(--color-primary-700)]"
-                    }`}
-                  >
-                    Protocol {i + 1}
-                    <span className="opacity-70"> · {p.name}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
     </li>
   );
 }
@@ -471,7 +432,6 @@ export function AssessmentTab({
   const [presetInvestigations, setPresetInvestigations] = useState("");
   const [medDropdownOpen, setMedDropdownOpen] = useState(-1);
   const [allKnownMeds, setAllKnownMeds] = useState<import("./treatmentPresets").TreatmentPresetMed[]>([]);
-  const [pendingProtocolDx, setPendingProtocolDx] = useState<any | null>(null);
 
   useEffect(() => {
     setCustomDxList(getCustomDiagnoses());
@@ -649,90 +609,10 @@ export function AssessmentTab({
     return new Set(medsToDelete.map((m) => m.id));
   };
 
-  /* ── Protocols (treatment presets matched to a single diagnosis) ───────── */
-
-  // Every preset that matches this diagnosis. Index 0 is "Protocol 1".
-  const protocolsFor = useCallback((d: { icd10Code: string; description: string }): TreatmentPreset[] =>
-    matchPresets([{ icd10Code: d.icd10Code ?? "", description: d.description }], getTreatmentPresets())
-      .map((m) => m.preset),
-  []);
-
-  // Apply exactly one protocol's medications to the Plan.
-  // `excludeMedIds` are rows deleted earlier in this same transition.
-  const applyProtocol = async (d: any, preset: TreatmentPreset, excludeMedIds: Set<string> = new Set()) => {
-    const applied = getApplied(visit.id);
-    setApplied(visit.id, [
-      ...applied.filter((a) => a.diagnosisDesc !== d.description),
-      { presetId: preset.id, presetName: preset.name, appliedAt: new Date().toISOString(), diagnosisDesc: d.description },
-    ]);
-
-    const currentMeds: any[] = (visit.medications ?? []).filter((m: any) => !excludeMedIds.has(m.id));
-    const newMeds = mergeMeds([preset], currentMeds);
-    const lat = d.laterality ?? undefined;
-
-    for (const med of newMeds) {
-      if (med.taperingSteps && med.taperingSteps.length > 0) {
-        for (const step of med.taperingSteps) {
-          await addMedication(visit.id, udid, {
-            drugName: med.drugName,
-            dosage: step.dosage || undefined,
-            frequency: step.frequency || undefined,
-            duration: step.duration || undefined,
-            instructions: med.instructions || undefined,
-            laterality: lat,
-          });
-        }
-      } else {
-        await addMedication(visit.id, udid, { ...med, laterality: lat });
-      }
-    }
-
-    if (!visit.followUpDate && preset.followUpDays) {
-      const fuDate = new Date();
-      fuDate.setDate(fuDate.getDate() + preset.followUpDays);
-      await saveFollowUp(visit.id, udid, {
-        followUpDate:    fuDate.toISOString(),
-        referralEnabled: visit.referralEnabled ?? false,
-        referralNote:    visit.referralNote ?? null,
-      });
-    }
-  };
-
-  // Open the protocol picker before confirming.
+  // Confirm a diagnosis — protocol is applied later in the Plan tab.
   const handleConfirm = (d: any) => {
-    setPendingProtocolDx(d);
-  };
-
-  // Called from ProtocolPickerModal once the doctor selects a protocol.
-  const handleConfirmWithProtocol = (
-    preset: TreatmentPreset | null,
-    customName: string,
-  ) => {
-    const d = pendingProtocolDx;
-    if (!d) return;
-    setPendingProtocolDx(null);
     run(async () => {
-      if (preset) {
-        await applyProtocol(d, preset);
-        await confirmDiagnosis(d.id, udid, { protocolId: preset.id, protocolName: preset.name });
-        setPresetToast([preset.name]);
-        setTimeout(() => setPresetToast([]), 5000);
-      } else {
-        // Custom protocol — confirm with free-text name, no auto-medication
-        await confirmDiagnosis(d.id, udid, { protocolName: customName });
-      }
-    });
-  };
-
-  // Swap the confirmed diagnosis onto a different protocol.
-  const handleChangeProtocol = (d: any, preset: TreatmentPreset) => {
-    if (d.protocolId === preset.id) return;
-    run(async () => {
-      const removedIds = await autoRemovePresetMeds(d.description, true);
-      await applyProtocol(d, preset, removedIds);
-      await setDiagnosisProtocol(d.id, udid, { protocolId: preset.id, protocolName: preset.name });
-      setPresetToast([preset.name]);
-      setTimeout(() => setPresetToast([]), 5000);
+      await confirmDiagnosis(d.id, udid, {});
     });
   };
 
@@ -1002,11 +882,9 @@ export function AssessmentTab({
                 d={d}
                 provisional
                 isCustom={isCustomDiagnosis(d)}
-                protocols={d.confirmedAt ? protocolsFor(d) : []}
                 pending={pending}
                 onConfirm={handleConfirm}
                 onReject={handleReject}
-                onChangeProtocol={handleChangeProtocol}
                 onStatusChange={handleStatusChange}
               />
             ))}
@@ -1169,11 +1047,9 @@ export function AssessmentTab({
                 key={d.id}
                 d={d}
                 isCustom={isCustomDiagnosis(d)}
-                protocols={d.confirmedAt ? protocolsFor(d) : []}
                 pending={pending}
                 onConfirm={handleConfirm}
                 onReject={handleReject}
-                onChangeProtocol={handleChangeProtocol}
                 onStatusChange={handleStatusChange}
               />
             ))}
@@ -1509,15 +1385,6 @@ export function AssessmentTab({
         />
       )}
 
-      {pendingProtocolDx && (
-        <ProtocolPickerModal
-          diagnosis={pendingProtocolDx}
-          protocols={protocolsFor(pendingProtocolDx)}
-          pending={pending}
-          onConfirm={handleConfirmWithProtocol}
-          onCancel={() => setPendingProtocolDx(null)}
-        />
-      )}
     </>
   );
 }

@@ -239,11 +239,13 @@ function PresetAppliedBadge({
   presetMatches,
   onRemove,
   onChange,
+  diagnosisLabel,
 }: {
   applied: AppliedPreset[];
   presetMatches: PresetMatch[];
   onRemove: () => void;
   onChange: () => void;
+  diagnosisLabel?: string;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [editing, setEditing]   = useState(false);
@@ -296,7 +298,9 @@ function PresetAppliedBadge({
       <div className="px-4 py-3 flex items-center gap-3 flex-wrap">
         <CheckCircle2 size={15} className="text-[#0F766E] shrink-0" />
         <div className="flex-1 min-w-0">
-          <span className="text-xs font-semibold text-[#0F766E]">Preset Applied: </span>
+          <span className="text-xs font-semibold text-[#0F766E]">
+            {diagnosisLabel ? `${diagnosisLabel}: ` : "Preset Applied: "}
+          </span>
           <span className="text-xs text-[#0F766E]/80">{applied.map((a) => a.presetName).join(", ")}</span>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
@@ -727,6 +731,47 @@ function PresetSelectDialog({
   );
 }
 
+/* ── Protocol prompt card ────────────────────────────────────────────────── */
+
+function ProtocolPromptCard({
+  diagnosisDesc,
+  onConfirm,
+  onDismiss,
+}: {
+  diagnosisDesc: string;
+  onConfirm: () => void;
+  onDismiss: () => void;
+}) {
+  return (
+    <div className="rounded-2xl border border-[var(--color-primary-200)] bg-[var(--color-primary-50)] px-4 py-3 flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-200">
+      <div className="w-7 h-7 rounded-xl bg-[var(--color-primary-600)] flex items-center justify-center shrink-0">
+        <Stethoscope size={13} className="text-white" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-xs font-semibold text-[var(--color-primary-800)]">
+          Do you wish to apply <span className="font-bold">{diagnosisDesc}</span> protocol?
+        </p>
+      </div>
+      <div className="flex items-center gap-2 shrink-0">
+        <button
+          type="button"
+          onClick={onDismiss}
+          className="text-xs font-medium px-3 py-1.5 rounded-lg border border-[var(--color-border)] hover:bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)] transition-colors"
+        >
+          No
+        </button>
+        <button
+          type="button"
+          onClick={onConfirm}
+          className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] transition-colors"
+        >
+          Confirm
+        </button>
+      </div>
+    </div>
+  );
+}
+
 /* ── PlanTab ─────────────────────────────────────────────────────────────── */
 
 export function PlanTab({ visit, udid, patientSex, priorVisits = [] }: { visit: any; udid: string; patientSex: string; priorVisits?: any[] }) {
@@ -734,8 +779,9 @@ export function PlanTab({ visit, udid, patientSex, priorVisits = [] }: { visit: 
   const [appliedPresets, setAppliedPresets] = useState<AppliedPreset[]>([]);
   const [dismissedIds, setDismissedIds]     = useState<string[]>([]);
   const [toastNames, setToastNames]         = useState<string[]>([]);
-  const [showDialog, setShowDialog]         = useState(false);
   const [applying, startApply]              = useTransition();
+  const [pendingDiagPrompts, setPendingDiagPrompts] = useState<{ diagnosisDesc: string; matches: PresetMatch[] }[]>([]);
+  const [activeDialogDiag, setActiveDialogDiag]     = useState<{ diagnosisDesc: string; matches: PresetMatch[]; isChanging: boolean } | null>(null);
   const [adviseNotes, setAdviseNotes]       = useState<string>(visit.adviseNotes ?? "");
   useAutoSave(adviseNotes, (notes) => saveAdviseNotes(visit.id, udid, notes));
 
@@ -767,138 +813,176 @@ export function PlanTab({ visit, udid, patientSex, priorVisits = [] }: { visit: 
     const dismissed      = getDismissedPresets(visit.id);
     setDismissedIds(dismissed);
 
-    // Find presets that haven't been applied or dismissed yet
-    const appliedIds   = new Set(alreadyApplied.map((a) => a.presetId));
-    const dismissedSet = new Set(dismissed);
-    const toApply      = matches.filter((m) => !appliedIds.has(m.preset.id) && !dismissedSet.has(m.preset.id));
-
-    if (toApply.length > 0) {
-      // Persist to localStorage immediately to prevent double-application
-      const newRecords: AppliedPreset[] = toApply.map((m) => ({
-        presetId:      m.preset.id,
-        presetName:    m.preset.name,
-        appliedAt:     new Date().toISOString(),
-        diagnosisDesc: m.diagnosisDesc,
-      }));
-      const allRecords = [...alreadyApplied, ...newRecords];
-      setApplied(visit.id, allRecords);
-      setAppliedPresets(allRecords);
-
-      // Auto-apply server-side (medications + follow-up)
-      const presetsToApply = toApply.map((m) => m.preset);
-      startApply(async () => {
-        const newMeds = mergeMeds(presetsToApply, medications);
-        for (const med of newMeds) {
-          await addMedication(visit.id, udid, { ...med, laterality: (med as any).laterality ?? diagLaterality });
-        }
-
-        // Set follow-up only if not already set; use minimum days across matched presets
-        if (!visit.followUpDate) {
-          const days = presetsToApply.map((p) => p.followUpDays).filter((d): d is number => !!d);
-          if (days.length > 0) {
-            const fuDate = new Date();
-            fuDate.setDate(fuDate.getDate() + Math.min(...days));
-            await saveFollowUp(visit.id, udid, {
-              followUpDate:    fuDate.toISOString(),
-              referralEnabled: visit.referralEnabled ?? false,
-              referralNote:    visit.referralNote ?? null,
-            });
-          }
-        }
-
-        // Push advice into Advise Notes
-        const advice = presetsToApply.map((p) => p.advice).filter(Boolean).join("\n");
-        if (advice) setAdviseNotes((prev) => {
-          const trimmed = prev.trim();
-          return trimmed ? `${trimmed}\n${advice}` : advice;
-        });
-
-        // Show toast with names of newly applied presets
-        setToastNames(presetsToApply.map((p) => p.name));
-      });
+    // Group matches by diagnosis description
+    const byDiag: Record<string, PresetMatch[]> = {};
+    for (const m of matches) {
+      (byDiag[m.diagnosisDesc] = byDiag[m.diagnosisDesc] ?? []).push(m);
     }
 
+    const appliedIds   = new Set(alreadyApplied.map((a) => a.presetId));
+    const dismissedSet = new Set(dismissed);
+
+    // A diagnosis gets a prompt card when it has matching presets but none are applied or dismissed yet
+    const pending = Object.entries(byDiag)
+      .filter(([, diagMatches]) =>
+        !diagMatches.some((m) => appliedIds.has(m.preset.id)) &&
+        !diagMatches.some((m) => dismissedSet.has(m.preset.id))
+      )
+      .map(([diagnosisDesc, diagMatches]) => ({ diagnosisDesc, matches: diagMatches }));
+
+    setPendingDiagPrompts(pending);
     setDiagnosisSnapshot(visit.id, diagnoses.map((d) => d.icd10Code));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [diagKey]);
 
-  // Manual apply from "Change" dialog — merges on top of already-applied
-  const handleManualApply = (selected: TreatmentPreset[]) => {
-    startApply(async () => {
-      const newMeds = mergeMeds(selected, medications);
-      for (const med of newMeds) {
-        await addMedication(visit.id, udid, { ...med, laterality: (med as any).laterality ?? diagLaterality });
-      }
-
-      const followUpDays = selected.map((p) => p.followUpDays).filter((d): d is number => !!d);
-      if (followUpDays.length > 0 && !visit.followUpDate) {
-        const fuDate = new Date();
-        fuDate.setDate(fuDate.getDate() + Math.min(...followUpDays));
-        await saveFollowUp(visit.id, udid, {
-          followUpDate:    fuDate.toISOString(),
-          referralEnabled: visit.referralEnabled ?? false,
-          referralNote:    visit.referralNote ?? null,
-        });
-      }
-
-      const newRecords: AppliedPreset[] = selected.map((p) => ({
-        presetId:      p.id,
-        presetName:    p.name,
-        appliedAt:     new Date().toISOString(),
-        diagnosisDesc: presetMatches.find((m) => m.preset.id === p.id)?.diagnosisDesc ?? "",
-      }));
-      // Merge: keep existing applied records, add new ones (skip duplicates)
-      const existingIds = new Set(appliedPresets.map((a) => a.presetId));
-      const merged = [...appliedPresets, ...newRecords.filter((r) => !existingIds.has(r.presetId))];
-      setApplied(visit.id, merged);
-      setAppliedPresets(merged);
-      const advice = selected.map((p) => p.advice).filter(Boolean).join("\n");
-      if (advice) setAdviseNotes((prev) => {
-        const trimmed = prev.trim();
-        return trimmed ? `${trimmed}\n${advice}` : advice;
+  // Core logic: add meds + follow-up + track applied record for a diagnosis
+  const applyPresetsForDiag = async (selected: TreatmentPreset[], diagnosisDesc: string, baselineMeds: any[]) => {
+    const newMeds = mergeMeds(selected, baselineMeds);
+    for (const med of newMeds) {
+      await addMedication(visit.id, udid, { ...med, laterality: (med as any).laterality ?? diagLaterality });
+    }
+    const followUpDays = selected.map((p) => p.followUpDays).filter((d): d is number => !!d);
+    if (followUpDays.length > 0 && !visit.followUpDate) {
+      const fuDate = new Date();
+      fuDate.setDate(fuDate.getDate() + Math.min(...followUpDays));
+      await saveFollowUp(visit.id, udid, {
+        followUpDate:    fuDate.toISOString(),
+        referralEnabled: visit.referralEnabled ?? false,
+        referralNote:    visit.referralNote ?? null,
       });
+    }
+    const newRecords: AppliedPreset[] = selected.map((p) => ({
+      presetId:      p.id,
+      presetName:    p.name,
+      appliedAt:     new Date().toISOString(),
+      diagnosisDesc,
+    }));
+    const base = appliedPresets.filter((a) => a.diagnosisDesc !== diagnosisDesc);
+    const existingIds = new Set(base.map((a) => a.presetId));
+    const merged = [...base, ...newRecords.filter((r) => !existingIds.has(r.presetId))];
+    setApplied(visit.id, merged);
+    setAppliedPresets(merged);
+    const advice = selected.map((p) => p.advice).filter(Boolean).join("\n");
+    if (advice) setAdviseNotes((prev) => {
+      const trimmed = prev.trim();
+      return trimmed ? `${trimmed}\n${advice}` : advice;
+    });
+    setToastNames(selected.map((p) => p.name));
+    setPendingDiagPrompts((prev) => prev.filter((p) => p.diagnosisDesc !== diagnosisDesc));
+    setActiveDialogDiag(null);
+  };
 
-      setToastNames(selected.map((p) => p.name));
-      setShowDialog(false);
+  // Initial apply — no old meds to remove
+  const handleInitialApply = (selected: TreatmentPreset[], diagnosisDesc: string) => {
+    startApply(() => applyPresetsForDiag(selected, diagnosisDesc, medications));
+  };
+
+  // Change protocol — remove old preset meds for this diagnosis, then add new ones
+  const handleChangeProtocolForDiag = (selected: TreatmentPreset[], diagnosisDesc: string) => {
+    startApply(async () => {
+      const diagApplied = appliedPresets.filter((a) => a.diagnosisDesc === diagnosisDesc);
+      const oldPresetIds = new Set(diagApplied.map((a) => a.presetId));
+      const allPresets = getTreatmentPresets();
+      const oldPresets = allPresets.filter((p) => oldPresetIds.has(p.id));
+      const oldDrugNames = new Set(oldPresets.flatMap((p) => p.medications.map((m) => m.drugName.toLowerCase())));
+      const medsToDelete = (visit.medications ?? []).filter((m: any) => oldDrugNames.has(m.drugName.toLowerCase()));
+      for (const med of medsToDelete) {
+        await removeMedication(med.id, udid);
+      }
+      const remainingMeds = (visit.medications ?? []).filter((m: any) => !oldDrugNames.has(m.drugName.toLowerCase()));
+      await applyPresetsForDiag(selected, diagnosisDesc, remainingMeds);
     });
   };
 
-  const handleRemovePreset = () => {
-    clearApplied(visit.id);
-    clearDismissedPresets(visit.id);
-    setAppliedPresets([]);
-    setDismissedIds([]);
-    setToastNames([]);
+  // Dismiss a protocol prompt for a diagnosis
+  const handleDismissPrompt = (diagnosisDesc: string, matches: PresetMatch[]) => {
+    matches.forEach((m) => addDismissedPreset(visit.id, m.preset.id));
+    setDismissedIds((prev) => [...prev, ...matches.map((m) => m.preset.id)]);
+    setPendingDiagPrompts((prev) => prev.filter((p) => p.diagnosisDesc !== diagnosisDesc));
   };
+
+  // Delete protocol and remove its medications from Plan
+  const handleRemoveAppliedForDiag = (diagnosisDesc: string) => {
+    startApply(async () => {
+      const diagApplied = appliedPresets.filter((a) => a.diagnosisDesc === diagnosisDesc);
+      const oldPresetIds = new Set(diagApplied.map((a) => a.presetId));
+      const allPresets = getTreatmentPresets();
+      const oldPresets = allPresets.filter((p) => oldPresetIds.has(p.id));
+      const oldDrugNames = new Set(oldPresets.flatMap((p) => p.medications.map((m) => m.drugName.toLowerCase())));
+      const medsToDelete = (visit.medications ?? []).filter((m: any) => oldDrugNames.has(m.drugName.toLowerCase()));
+      for (const med of medsToDelete) {
+        await removeMedication(med.id, udid);
+      }
+      const updated = appliedPresets.filter((a) => a.diagnosisDesc !== diagnosisDesc);
+      setApplied(visit.id, updated);
+      setAppliedPresets(updated);
+      // Restore prompt so doctor can re-apply if desired
+      const diagMatches = presetMatches.filter((m) => m.diagnosisDesc === diagnosisDesc);
+      if (diagMatches.length > 0) {
+        setPendingDiagPrompts((prev) =>
+          prev.some((p) => p.diagnosisDesc === diagnosisDesc) ? prev : [...prev, { diagnosisDesc, matches: diagMatches }]
+        );
+      }
+    });
+  };
+
+  // Group applied presets by diagnosis for per-diagnosis badges
+  const appliedByDiag = useMemo(() => {
+    const byDiag: Record<string, AppliedPreset[]> = {};
+    for (const a of appliedPresets) {
+      (byDiag[a.diagnosisDesc] = byDiag[a.diagnosisDesc] ?? []).push(a);
+    }
+    return byDiag;
+  }, [appliedPresets]);
 
   return (
     <div className="flex flex-col gap-5">
-      {/* Temporary auto-apply toast */}
+      {/* Protocol-applied toast */}
       {toastNames.length > 0 && (
         <AutoApplyToast names={toastNames} onClose={() => setToastNames([])} />
       )}
 
-      {/* Persistent applied indicator */}
-      {appliedPresets.length > 0 && (
-        <PresetAppliedBadge
-          applied={appliedPresets}
-          presetMatches={presetMatches}
-          onRemove={handleRemovePreset}
-          onChange={() => setShowDialog(true)}
+      {/* Per-diagnosis protocol prompt cards */}
+      {pendingDiagPrompts.map(({ diagnosisDesc, matches }) => (
+        <ProtocolPromptCard
+          key={diagnosisDesc}
+          diagnosisDesc={diagnosisDesc}
+          onConfirm={() => setActiveDialogDiag({ diagnosisDesc, matches, isChanging: false })}
+          onDismiss={() => handleDismissPrompt(diagnosisDesc, matches)}
         />
-      )}
+      ))}
+
+      {/* Per-diagnosis applied protocol badges */}
+      {Object.entries(appliedByDiag).map(([diagnosisDesc, diagApplied]) => (
+        <PresetAppliedBadge
+          key={diagnosisDesc}
+          applied={diagApplied}
+          presetMatches={presetMatches.filter((m) => m.diagnosisDesc === diagnosisDesc)}
+          diagnosisLabel={diagnosisDesc}
+          onRemove={() => handleRemoveAppliedForDiag(diagnosisDesc)}
+          onChange={() => setActiveDialogDiag({
+            diagnosisDesc,
+            matches: presetMatches.filter((m) => m.diagnosisDesc === diagnosisDesc),
+            isChanging: true,
+          })}
+        />
+      ))}
 
       <PrescriptionCard visit={visit} udid={udid} priorVisits={priorVisits} defaultLaterality={diagLaterality} adviseNotes={adviseNotes} onAdviseChange={setAdviseNotes} />
       <MinorProcedureCard visit={visit} udid={udid} priorVisits={priorVisits} />
       <OpticalPrescriptionCard visit={visit} />
       <DispositionCard visit={visit} udid={udid} patientSex={patientSex} priorVisits={priorVisits} />
 
-      {/* "Change Preset" dialog */}
-      {showDialog && (
+      {/* Protocol selection dialog */}
+      {activeDialogDiag && (
         <PresetSelectDialog
-          matches={presetMatches}
-          onApply={handleManualApply}
-          onClose={() => setShowDialog(false)}
+          matches={activeDialogDiag.matches}
+          onApply={(selected) =>
+            activeDialogDiag.isChanging
+              ? handleChangeProtocolForDiag(selected, activeDialogDiag.diagnosisDesc)
+              : handleInitialApply(selected, activeDialogDiag.diagnosisDesc)
+          }
+          onClose={() => setActiveDialogDiag(null)}
           applying={applying}
         />
       )}
