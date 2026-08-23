@@ -432,7 +432,9 @@ function PresetSelectDialog({
   type FormMed = { drugName: string; dosage: string; frequency: string; duration: string };
   const blankMed = (): FormMed => ({ drugName: "", dosage: "", frequency: "", duration: "" });
 
-  const [selected, setSelected] = useState<Set<string>>(new Set([matches[0]?.preset.id]));
+  const [selected, setSelected] = useState<Set<string>>(
+    matches[0]?.preset.id ? new Set([matches[0].preset.id]) : new Set()
+  );
   const [customPresets, setCustomPresets] = useState<TreatmentPreset[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [formName, setFormName] = useState("");
@@ -731,6 +733,21 @@ function PresetSelectDialog({
   );
 }
 
+/* ── Per-diagnosis dismissal helpers ─────────────────────────────────────── */
+
+const diagDismissedKey = (visitId: string) => `ppms_diag_dismissed_${visitId}`;
+const getDismissedDiagDescs = (visitId: string): string[] => {
+  try { return JSON.parse(localStorage.getItem(diagDismissedKey(visitId)) ?? "[]"); } catch { return []; }
+};
+const addDismissedDiagDesc = (visitId: string, desc: string) => {
+  const cur = getDismissedDiagDescs(visitId);
+  if (!cur.includes(desc)) localStorage.setItem(diagDismissedKey(visitId), JSON.stringify([...cur, desc]));
+};
+const removeDismissedDiagDesc = (visitId: string, desc: string) => {
+  const cur = getDismissedDiagDescs(visitId).filter((d) => d !== desc);
+  localStorage.setItem(diagDismissedKey(visitId), JSON.stringify(cur));
+};
+
 /* ── Protocol prompt card ────────────────────────────────────────────────── */
 
 function ProtocolPromptCard({
@@ -780,8 +797,8 @@ export function PlanTab({ visit, udid, patientSex, priorVisits = [] }: { visit: 
   const [dismissedIds, setDismissedIds]     = useState<string[]>([]);
   const [toastNames, setToastNames]         = useState<string[]>([]);
   const [applying, startApply]              = useTransition();
-  const [pendingDiagPrompts, setPendingDiagPrompts] = useState<{ diagnosisDesc: string; matches: PresetMatch[] }[]>([]);
-  const [activeDialogDiag, setActiveDialogDiag]     = useState<{ diagnosisDesc: string; matches: PresetMatch[]; isChanging: boolean } | null>(null);
+  const [pendingDiagPrompts, setPendingDiagPrompts] = useState<{ diagnosisDesc: string; laterality?: string; matches: PresetMatch[] }[]>([]);
+  const [activeDialogDiag, setActiveDialogDiag]     = useState<{ diagnosisDesc: string; laterality?: string; matches: PresetMatch[]; isChanging: boolean } | null>(null);
   const [adviseNotes, setAdviseNotes]       = useState<string>(visit.adviseNotes ?? "");
   useAutoSave(adviseNotes, (notes) => saveAdviseNotes(visit.id, udid, notes));
 
@@ -813,22 +830,23 @@ export function PlanTab({ visit, udid, patientSex, priorVisits = [] }: { visit: 
     const dismissed      = getDismissedPresets(visit.id);
     setDismissedIds(dismissed);
 
-    // Group matches by diagnosis description
-    const byDiag: Record<string, PresetMatch[]> = {};
+    const appliedDiagDescs   = new Set(alreadyApplied.map((a) => a.diagnosisDesc));
+    const dismissedDiagDescs = new Set(getDismissedDiagDescs(visit.id));
+
+    // Build a lookup of preset matches by diagnosis description
+    const matchesByDesc: Record<string, PresetMatch[]> = {};
     for (const m of matches) {
-      (byDiag[m.diagnosisDesc] = byDiag[m.diagnosisDesc] ?? []).push(m);
+      (matchesByDesc[m.diagnosisDesc] = matchesByDesc[m.diagnosisDesc] ?? []).push(m);
     }
 
-    const appliedIds   = new Set(alreadyApplied.map((a) => a.presetId));
-    const dismissedSet = new Set(dismissed);
-
-    // A diagnosis gets a prompt card when it has matching presets but none are applied or dismissed yet
-    const pending = Object.entries(byDiag)
-      .filter(([, diagMatches]) =>
-        !diagMatches.some((m) => appliedIds.has(m.preset.id)) &&
-        !diagMatches.some((m) => dismissedSet.has(m.preset.id))
-      )
-      .map(([diagnosisDesc, diagMatches]) => ({ diagnosisDesc, matches: diagMatches }));
+    // ALL diagnoses get a prompt card — unless the doctor already applied or dismissed this diagnosis
+    const pending = diagnoses
+      .filter((d) => !appliedDiagDescs.has(d.description) && !dismissedDiagDescs.has(d.description))
+      .map((d) => ({
+        diagnosisDesc: d.description,
+        laterality: d.laterality,
+        matches: matchesByDesc[d.description] ?? [],
+      }));
 
     setPendingDiagPrompts(pending);
     setDiagnosisSnapshot(visit.id, diagnoses.map((d) => d.icd10Code));
@@ -896,6 +914,7 @@ export function PlanTab({ visit, udid, patientSex, priorVisits = [] }: { visit: 
 
   // Dismiss a protocol prompt for a diagnosis
   const handleDismissPrompt = (diagnosisDesc: string, matches: PresetMatch[]) => {
+    addDismissedDiagDesc(visit.id, diagnosisDesc);
     matches.forEach((m) => addDismissedPreset(visit.id, m.preset.id));
     setDismissedIds((prev) => [...prev, ...matches.map((m) => m.preset.id)]);
     setPendingDiagPrompts((prev) => prev.filter((p) => p.diagnosisDesc !== diagnosisDesc));
@@ -916,13 +935,15 @@ export function PlanTab({ visit, udid, patientSex, priorVisits = [] }: { visit: 
       const updated = appliedPresets.filter((a) => a.diagnosisDesc !== diagnosisDesc);
       setApplied(visit.id, updated);
       setAppliedPresets(updated);
-      // Restore prompt so doctor can re-apply if desired
+      // Restore prompt so doctor can re-apply — always show for any diagnosis
+      removeDismissedDiagDesc(visit.id, diagnosisDesc);
       const diagMatches = presetMatches.filter((m) => m.diagnosisDesc === diagnosisDesc);
-      if (diagMatches.length > 0) {
-        setPendingDiagPrompts((prev) =>
-          prev.some((p) => p.diagnosisDesc === diagnosisDesc) ? prev : [...prev, { diagnosisDesc, matches: diagMatches }]
-        );
-      }
+      const diag = diagnoses.find((d) => d.description === diagnosisDesc);
+      setPendingDiagPrompts((prev) =>
+        prev.some((p) => p.diagnosisDesc === diagnosisDesc)
+          ? prev
+          : [...prev, { diagnosisDesc, laterality: diag?.laterality, matches: diagMatches }]
+      );
     });
   };
 
@@ -943,11 +964,11 @@ export function PlanTab({ visit, udid, patientSex, priorVisits = [] }: { visit: 
       )}
 
       {/* Per-diagnosis protocol prompt cards */}
-      {pendingDiagPrompts.map(({ diagnosisDesc, matches }) => (
+      {pendingDiagPrompts.map(({ diagnosisDesc, laterality: diagLat, matches }) => (
         <ProtocolPromptCard
           key={diagnosisDesc}
-          diagnosisDesc={diagnosisDesc}
-          onConfirm={() => setActiveDialogDiag({ diagnosisDesc, matches, isChanging: false })}
+          diagnosisDesc={diagLat ? `${diagnosisDesc} (${diagLat})` : diagnosisDesc}
+          onConfirm={() => setActiveDialogDiag({ diagnosisDesc, laterality: diagLat, matches, isChanging: false })}
           onDismiss={() => handleDismissPrompt(diagnosisDesc, matches)}
         />
       ))}
