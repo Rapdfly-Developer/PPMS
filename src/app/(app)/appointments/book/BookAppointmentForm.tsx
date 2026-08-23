@@ -94,8 +94,24 @@ export function BookAppointmentForm({
   // For DOCTOR role: selected hospital (since hospitalId is null)
   const doctorHospitals = hospitalsByDoctor[doctorId] ?? [];
   const [selectedHospitalId, setSelectedHospitalId] = useState<string>(() => doctorHospitals[0]?.id ?? "");
-  // Effective hospital for slot checking / booking
+  // Effective hospital for slot checking / booking (scheduled appointment)
   const effectiveHospitalId = hospitalId ?? selectedHospitalId;
+
+  // Auto-detect hospital for walk-in based on doctor's schedule at the current time
+  const walkinHospitalId = (() => {
+    const now = new Date();
+    const nowMins = now.getHours() * 60 + now.getMinutes();
+    const todayWeekday = now.getDay();
+    const match = (availabilityByDoctor[doctorId] ?? []).find(
+      (a) => a.weekday === todayWeekday && nowMins >= toMins(a.startTime) && nowMins < toMins(a.endTime)
+    );
+    return match?.hospitalId ?? null;
+  })();
+
+  // The hospital actually used for submission
+  const activeHospitalId = encounterType === "walkin"
+    ? (hospitalId ?? walkinHospitalId)
+    : effectiveHospitalId;
 
   // Reset selected hospital when doctor changes
   function handleDoctorChange(id: string) {
@@ -152,10 +168,10 @@ export function BookAppointmentForm({
 
   // Fetch booked slot counts whenever doctor, date or hospital changes
   useEffect(() => {
-    if (!doctorId || !date || !effectiveHospitalId) return;
-    getBookedSlots(doctorId, date, effectiveHospitalId).then(setBookedCounts).catch(() => {});
+    if (!doctorId || !date || !activeHospitalId) return;
+    getBookedSlots(doctorId, date, activeHospitalId).then(setBookedCounts).catch(() => {});
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [doctorId, date, effectiveHospitalId]);
+  }, [doctorId, date, activeHospitalId]);
 
   // Keep selected time pointing at a bookable slot when slots change
   useEffect(() => {
@@ -189,7 +205,12 @@ export function BookAppointmentForm({
     if (patientMode === "new" && !aadhaarPhoto) { setError("Aadhaar photocopy is required for new patients."); return; }
     if (patientMode === "new" && !patientPhoto) { setError("Patient photo is required for new patients."); return; }
     if (!doctorId) { setError("Please select a doctor."); return; }
-    if (!effectiveHospitalId) { setError("Please select a hospital."); return; }
+    if (!activeHospitalId) {
+      setError(encounterType === "walkin"
+        ? "No schedule found for the current time. Cannot determine hospital for walk-in."
+        : "Please select a hospital.");
+      return;
+    }
     const isGeneralOPD = visitType === "General OPD";
     if (isGeneralOPD && !laterality) { setError("Please select laterality — RE, LE, or OU."); return; }
     if (isGeneralOPD && !sinceNum) { setError("Please select the 'Since' duration."); return; }
@@ -206,7 +227,7 @@ export function BookAppointmentForm({
     fd.set("visitType",    visitType);
     fd.set("notes",        fullNotes);
     fd.set("encounterType", encounterType);
-    fd.set("hospitalId", effectiveHospitalId);
+    fd.set("hospitalId", activeHospitalId);
 
     // For walk-in, allocate the next available time slot after current time (skip already booked)
     if (encounterType === "walkin") {
@@ -586,8 +607,8 @@ export function BookAppointmentForm({
           </div>
 
           <div className="flex flex-col gap-5">
-            {/* Hospital selector — DOCTOR role only (hospital role has fixed hospitalId) */}
-            {!hospitalId && doctorHospitals.length >= 1 && (
+            {/* Hospital selector — scheduled appointments only; walk-in auto-detects from schedule */}
+            {!hospitalId && doctorHospitals.length >= 1 && encounterType !== "walkin" && (
               <div>
                 <FieldLabel icon={<Building2 size={12} />}>Hospital *</FieldLabel>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -608,6 +629,19 @@ export function BookAppointmentForm({
                       <span className="text-sm font-medium text-[var(--color-ink-900)]">{h.name}</span>
                     </label>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {/* Walk-in: warn when no schedule found for current time */}
+            {encounterType === "walkin" && !hospitalId && !walkinHospitalId && (
+              <div className="flex items-start gap-3 px-4 py-3 rounded-xl border border-amber-200 bg-amber-50">
+                <AlertCircle size={16} className="text-amber-600 shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-semibold text-amber-800">No schedule found for current time</p>
+                  <p className="text-xs text-amber-700 mt-0.5">
+                    This doctor has no hospital scheduled right now. Walk-in cannot be registered.
+                  </p>
                 </div>
               </div>
             )}
