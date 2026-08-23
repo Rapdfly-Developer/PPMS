@@ -365,7 +365,7 @@ export function FollowUpdatesPanel({ visit, udid, priorVisits = [] }: { visit: a
 }
 
 export function SurgicalPanel({ visit, udid }: { visit: any; udid: string }) {
-  const [advised,    setAdvised]    = useState<boolean>(visit.surgeryAdvised ?? false);
+  const [advised,    setAdvised]    = useState<boolean>(true); // always advised; checkbox removed
   const [laterality, setLaterality] = useState<string>(visit.advisedSurgeryEye ?? "");
   const [procedure,  setProcedure]  = useState<string>(visit.advisedSurgeryName ?? "");
   const [anesthesia, setAnesthesia] = useState<string>(visit.advisedSurgeryNotes ?? "");
@@ -393,17 +393,6 @@ export function SurgicalPanel({ visit, udid }: { visit: any; udid: string }) {
   return (
     <div className="rounded-xl border border-[var(--color-border)] p-4 flex flex-col gap-4">
       <p className="text-sm font-medium text-[var(--color-ink-700)]">Surgical Counselling</p>
-
-      {/* Advised toggle */}
-      <label className="flex items-center gap-2.5 cursor-pointer">
-        <input
-          type="checkbox"
-          checked={advised}
-          onChange={(e) => { setAdvised(e.target.checked); setSaved(false); }}
-          className="w-4 h-4 accent-[var(--color-primary-600)]"
-        />
-        <span className="text-sm text-[var(--color-ink-700)]">Surgery advised for this patient</span>
-      </label>
 
       {advised && (
         <div className="flex flex-col gap-3">
