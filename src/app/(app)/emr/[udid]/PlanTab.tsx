@@ -1166,123 +1166,10 @@ function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: st
         </button>
       </div>
 
-      {/* Procedure search + add */}
-      <div className="mb-3">
-        <label className="text-[10px] font-semibold text-[var(--color-ink-500)] uppercase tracking-wide block mb-1.5">
-          Procedure
-        </label>
-        <div className="relative">
-          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-300)] pointer-events-none" />
-          <input
-            ref={procInputRef}
-            value={procInput}
-            onChange={(e) => { setProcInput(e.target.value); setProcOpen(true); }}
-            onFocus={() => setProcOpen(true)}
-            onBlur={() => setTimeout(() => setProcOpen(false), 160)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") { e.preventDefault(); inputIsNew ? addCustom() : (filteredProcs[0] && addProcedure(filteredProcs[0])); }
-              if (e.key === "Escape") setProcOpen(false);
-            }}
-            placeholder="Search or type a procedure…"
-            className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] pl-8 pr-3 py-2 text-sm text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent"
-          />
-        </div>
+      {/* Single row: Laterality | Procedure | Anesthesia */}
+      <div className="flex gap-3 items-end">
 
-        {/* Suggestions dropdown */}
-        {procOpen && (filteredProcs.length > 0 || inputIsNew) && (
-          <div className="relative z-20 mt-1 w-full rounded-xl border border-[var(--color-border)] bg-white shadow-lg overflow-hidden">
-            <div className="max-h-52 overflow-y-auto">
-              {filteredProcs.slice(0, 20).map((kw) => {
-                const isCustom = customKws.includes(kw);
-                return (
-                  <div key={kw} className="flex items-center group">
-                    <button
-                      onMouseDown={(e) => e.preventDefault()}
-                      onClick={() => addProcedure(kw)}
-                      className="flex-1 text-left px-3 py-2.5 text-sm text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] transition-colors flex items-center gap-2"
-                    >
-                      <Plus size={12} className="text-[var(--color-ink-300)] shrink-0" />
-                      {kw}
-                      {isCustom && (
-                        <span className="ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 shrink-0">CUSTOM</span>
-                      )}
-                    </button>
-                    {isCustom && (
-                      <button
-                        onMouseDown={(e) => e.preventDefault()}
-                        onClick={() => { deleteCustomProcedureKw(kw); setCustomKws(getCustomProcedureKws()); }}
-                        className="px-2 py-2.5 text-[var(--color-ink-300)] hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                        title="Delete custom keyword"
-                      >
-                        <Trash2 size={12} />
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
-              {inputIsNew && (
-                <button
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={addCustom}
-                  className="w-full text-left px-3 py-2.5 text-sm text-[var(--color-primary-700)] bg-[var(--color-primary-50)] hover:bg-[var(--color-primary-100)] transition-colors flex items-center gap-2 border-t border-[var(--color-border)]"
-                >
-                  <Plus size={12} className="shrink-0" />
-                  Add &quot;<span className="font-semibold">{procInput.trim()}</span>&quot; as custom keyword
-                </button>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Added procedures list */}
-      {procedures.length > 0 && (
-        <ul className="flex flex-col gap-1.5 mb-4">
-          {procedures.map((name, i) => (
-            <li key={i} className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-3 py-2 flex items-center gap-2">
-              {editIndex === i ? (
-                <>
-                  <input
-                    autoFocus
-                    value={editValue}
-                    onChange={(e) => setEditValue(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === "Enter") commitEdit(); if (e.key === "Escape") { setEditIndex(null); } }}
-                    className="flex-1 text-sm rounded-lg border border-[var(--color-primary-300)] px-2 py-0.5 focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-400)]"
-                  />
-                  <button onClick={commitEdit} className="text-[10px] font-semibold px-2 py-0.5 rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] transition-colors">
-                    Save
-                  </button>
-                  <button onClick={() => setEditIndex(null)} className="text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)]">
-                    <X size={13} />
-                  </button>
-                </>
-              ) : (
-                <>
-                  <Scissors size={12} className="text-[var(--color-ink-400)] shrink-0" />
-                  <span className="flex-1 text-sm text-[var(--color-ink-800)]">{name}</span>
-                  <button
-                    onClick={() => startEdit(i)}
-                    className="text-[var(--color-ink-300)] hover:text-[var(--color-primary-600)] transition-colors"
-                    title="Edit"
-                  >
-                    <Pencil size={12} />
-                  </button>
-                  <button
-                    onClick={() => removeProcedure(i)}
-                    className="text-[var(--color-ink-300)] hover:text-red-500 transition-colors"
-                    title="Remove"
-                  >
-                    <X size={13} />
-                  </button>
-                </>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
-
-      {/* Laterality + Anesthesia row */}
-      <div className="flex gap-3 items-end flex-wrap">
+        {/* Laterality */}
         <div className="shrink-0">
           <label className="text-[10px] font-semibold text-[var(--color-ink-500)] uppercase tracking-wide block mb-1.5">
             Laterality
@@ -1304,6 +1191,75 @@ function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: st
           </div>
         </div>
 
+        {/* Procedure search */}
+        <div className="flex-1 min-w-0 relative">
+          <label className="text-[10px] font-semibold text-[var(--color-ink-500)] uppercase tracking-wide block mb-1.5">
+            Procedure
+          </label>
+          <div className="relative">
+            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-300)] pointer-events-none" />
+            <input
+              ref={procInputRef}
+              value={procInput}
+              onChange={(e) => { setProcInput(e.target.value); setProcOpen(true); }}
+              onFocus={() => setProcOpen(true)}
+              onBlur={() => setTimeout(() => setProcOpen(false), 160)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") { e.preventDefault(); inputIsNew ? addCustom() : (filteredProcs[0] && addProcedure(filteredProcs[0])); }
+                if (e.key === "Escape") setProcOpen(false);
+              }}
+              placeholder="Search or type a procedure…"
+              className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] pl-8 pr-3 py-2 text-sm text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent"
+            />
+          </div>
+          {/* Suggestions dropdown */}
+          {procOpen && (filteredProcs.length > 0 || inputIsNew) && (
+            <div className="absolute z-20 mt-1 w-full rounded-xl border border-[var(--color-border)] bg-white shadow-lg overflow-hidden">
+              <div className="max-h-52 overflow-y-auto">
+                {filteredProcs.slice(0, 20).map((kw) => {
+                  const isCustom = customKws.includes(kw);
+                  return (
+                    <div key={kw} className="flex items-center group">
+                      <button
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => addProcedure(kw)}
+                        className="flex-1 text-left px-3 py-2.5 text-sm text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] transition-colors flex items-center gap-2"
+                      >
+                        <Plus size={12} className="text-[var(--color-ink-300)] shrink-0" />
+                        {kw}
+                        {isCustom && (
+                          <span className="ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 shrink-0">CUSTOM</span>
+                        )}
+                      </button>
+                      {isCustom && (
+                        <button
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => { deleteCustomProcedureKw(kw); setCustomKws(getCustomProcedureKws()); }}
+                          className="px-2 py-2.5 text-[var(--color-ink-300)] hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                          title="Delete custom keyword"
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+                {inputIsNew && (
+                  <button
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={addCustom}
+                    className="w-full text-left px-3 py-2.5 text-sm text-[var(--color-primary-700)] bg-[var(--color-primary-50)] hover:bg-[var(--color-primary-100)] transition-colors flex items-center gap-2 border-t border-[var(--color-border)]"
+                  >
+                    <Plus size={12} className="shrink-0" />
+                    Add &quot;<span className="font-semibold">{procInput.trim()}</span>&quot; as custom keyword
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Anesthesia */}
         <div className="flex-1 min-w-0 relative">
           <label className="text-[10px] font-semibold text-[var(--color-ink-500)] uppercase tracking-wide block mb-1.5">
             Type of Anesthesia
@@ -1348,7 +1304,46 @@ function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: st
             </div>
           )}
         </div>
+
       </div>
+
+      {/* Added procedures list */}
+      {procedures.length > 0 && (
+        <ul className="flex flex-col gap-1.5 mt-3">
+          {procedures.map((name, i) => (
+            <li key={i} className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-3 py-2 flex items-center gap-2">
+              {editIndex === i ? (
+                <>
+                  <input
+                    autoFocus
+                    value={editValue}
+                    onChange={(e) => setEditValue(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") commitEdit(); if (e.key === "Escape") { setEditIndex(null); } }}
+                    className="flex-1 text-sm rounded-lg border border-[var(--color-primary-300)] px-2 py-0.5 focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-400)]"
+                  />
+                  <button onClick={commitEdit} className="text-[10px] font-semibold px-2 py-0.5 rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] transition-colors">
+                    Save
+                  </button>
+                  <button onClick={() => setEditIndex(null)} className="text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)]">
+                    <X size={13} />
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Scissors size={12} className="text-[var(--color-ink-400)] shrink-0" />
+                  <span className="flex-1 text-sm text-[var(--color-ink-800)]">{name}</span>
+                  <button onClick={() => startEdit(i)} className="text-[var(--color-ink-300)] hover:text-[var(--color-primary-600)] transition-colors" title="Edit">
+                    <Pencil size={12} />
+                  </button>
+                  <button onClick={() => removeProcedure(i)} className="text-[var(--color-ink-300)] hover:text-red-500 transition-colors" title="Remove">
+                    <X size={13} />
+                  </button>
+                </>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
 
       {/* History panel */}
       {showHistory && (
