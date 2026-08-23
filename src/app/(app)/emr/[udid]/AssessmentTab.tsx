@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/Card";
 import { SingleChipSelect } from "@/components/ui/Chip";
 import { ICD10_OPHTHALMOLOGY, DIAGNOSIS_STATUSES, LATERALITY } from "@/lib/constants";
-import { addDiagnosis, updateDiagnosisStatus, removeDiagnosis, removeMedication, confirmDiagnosis } from "./actions";
+import { addDiagnosis, updateDiagnosisStatus, removeDiagnosis, removeMedication } from "./actions";
 import { useAutoSave, SaveIndicator } from "@/lib/useAutoSave";
 import { X, History, ChevronDown, Search, PenLine, Plus, Check, Ban, Stethoscope, FileText, Lock, AlertTriangle } from "lucide-react";
 
@@ -136,17 +136,15 @@ type CustomModalState = {
 // steal focus from the status select.
 function DiagnosisRow({
   d, provisional = false, isCustom, pending,
-  onConfirm, onReject, onStatusChange,
+  onReject, onStatusChange,
 }: {
   d: any;
   provisional?: boolean;
   isCustom: boolean;
   pending: boolean;
-  onConfirm: (d: any) => void;
   onReject: (d: any) => void;
   onStatusChange: (d: any, status: string) => void;
 }) {
-  const confirmed = !!d.confirmedAt;
 
   return (
     <li className="rounded-xl border border-[var(--color-border)] px-3.5 py-2.5">
@@ -157,11 +155,6 @@ function DiagnosisRow({
             {isCustom && (
               <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">Custom</span>
             )}
-            {confirmed && (
-              <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 inline-flex items-center gap-1">
-                <Check size={10} /> Confirmed
-              </span>
-            )}
           </div>
           <p className="text-xs text-[var(--color-ink-400)] font-mono">
             {d.icd10Code || "—"} {d.laterality ? `· ${d.laterality}` : ""}{provisional ? " · Provisional" : ""}
@@ -169,46 +162,23 @@ function DiagnosisRow({
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          {!confirmed ? (
-            <>
-              <button
-                type="button"
-                onClick={() => onConfirm(d)}
-                disabled={pending}
-                className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 disabled:opacity-50 transition-colors"
-              >
-                <Check size={13} /> Confirm
-              </button>
-              <button
-                type="button"
-                onClick={() => onReject(d)}
-                disabled={pending}
-                className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border border-[var(--color-border)] bg-white text-[var(--color-ink-600)] hover:border-[var(--color-danger-300)] hover:text-[var(--color-danger-600)] disabled:opacity-50 transition-colors"
-              >
-                <Ban size={13} /> Reject
-              </button>
-            </>
-          ) : (
-            <>
-              <select
-                value={d.status}
-                onChange={(e) => onStatusChange(d, e.target.value)}
-                className="text-xs rounded-lg border border-[var(--color-border)] px-2 py-1 bg-white"
-              >
-                {DIAGNOSIS_STATUSES.map((s) => (
-                  <option key={s} value={s}>{s}</option>
-                ))}
-              </select>
-              <button
-                onClick={() => onReject(d)}
-                disabled={pending}
-                className="text-[var(--color-ink-400)] hover:text-[var(--color-danger-600)] disabled:opacity-50"
-                aria-label={`Remove ${d.description}`}
-              >
-                <X size={15} />
-              </button>
-            </>
-          )}
+          <select
+            value={d.status}
+            onChange={(e) => onStatusChange(d, e.target.value)}
+            className="text-xs rounded-lg border border-[var(--color-border)] px-2 py-1 bg-white"
+          >
+            {DIAGNOSIS_STATUSES.map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
+          <button
+            onClick={() => onReject(d)}
+            disabled={pending}
+            className="text-[var(--color-ink-400)] hover:text-[var(--color-danger-600)] disabled:opacity-50"
+            aria-label={`Remove ${d.description}`}
+          >
+            <X size={15} />
+          </button>
         </div>
       </div>
 
@@ -609,12 +579,6 @@ export function AssessmentTab({
     return new Set(medsToDelete.map((m) => m.id));
   };
 
-  // Confirm a diagnosis — protocol is applied later in the Plan tab.
-  const handleConfirm = (d: any) => {
-    run(async () => {
-      await confirmDiagnosis(d.id, udid, {});
-    });
-  };
 
   const handleStatusChange = (d: any, status: string) => {
     run(async () => {
@@ -883,7 +847,6 @@ export function AssessmentTab({
                 provisional
                 isCustom={isCustomDiagnosis(d)}
                 pending={pending}
-                onConfirm={handleConfirm}
                 onReject={handleReject}
                 onStatusChange={handleStatusChange}
               />
@@ -1048,7 +1011,6 @@ export function AssessmentTab({
                 d={d}
                 isCustom={isCustomDiagnosis(d)}
                 pending={pending}
-                onConfirm={handleConfirm}
                 onReject={handleReject}
                 onStatusChange={handleStatusChange}
               />
