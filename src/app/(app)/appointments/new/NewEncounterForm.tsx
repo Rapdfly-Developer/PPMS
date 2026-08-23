@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import {
   Search, Stethoscope, UserPlus, Users,
   User, Phone, FileText, CalendarDays,
-  Building2, Clock, AlertCircle, CheckCircle2,
+  Building2, AlertCircle,
 } from "lucide-react";
 import { BackButton } from "@/components/ui/BackButton";
 import { SmartUploadBox, type UploadedFile } from "@/components/ui/SmartUploadBox";
@@ -366,26 +366,8 @@ export function NewEncounterForm({
 
           <div className="flex flex-col gap-5">
 
-            {/* Auto-detected Hospital + Time */}
-            {autoHospital ? (
-              <div className="flex flex-col gap-3">
-                {/* Hospital card */}
-                <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-emerald-200 bg-emerald-50">
-                  <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold uppercase tracking-widest text-emerald-700 mb-0.5">Hospital</p>
-                    <p className="text-sm font-semibold text-[var(--color-ink-900)] truncate">{autoHospital.name}</p>
-                  </div>
-                  <div className="flex items-center gap-1.5 text-xs text-emerald-600 shrink-0">
-                    <Clock size={12} />
-                    <span className="font-semibold">{currentTimeIST}</span>
-                  </div>
-                </div>
-                <p className="text-xs text-[var(--color-ink-400)] -mt-1">
-                  Auto-detected based on your current schedule. Date and time are set to now.
-                </p>
-              </div>
-            ) : (
+            {/* No-schedule warning — shown only when auto-detection fails */}
+            {!autoHospital && (
               <div className="flex items-start gap-3 px-4 py-3 rounded-xl border border-amber-200 bg-amber-50">
                 <AlertCircle size={16} className="text-amber-600 shrink-0 mt-0.5" />
                 <div>
