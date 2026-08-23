@@ -899,6 +899,16 @@ async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
     `<tr><td style="${TD}font-weight:700;color:#0B3D3A;">${eye}</td>` +
     rxTd(sph) + rxTd(cyl) + rxTd(axis) + rxTd(va) + rxTd(near) + rxTd(nearVa) + `</tr>`;
 
+  /* ── Minor Procedure: procedureName stored as JSON array, join for display ── */
+  const rawProc = d.minorProcedure?.procedureName ?? "";
+  let procDisplay = rawProc;
+  if (rawProc) {
+    try {
+      const parsed = JSON.parse(rawProc);
+      if (Array.isArray(parsed)) procDisplay = parsed.filter((s: unknown) => typeof s === "string").join(", ");
+    } catch {}
+  }
+
   /* ── Investigations ── */
   const hasInv = d.investigations && d.investigations.length > 0;
 
@@ -1044,13 +1054,13 @@ ${inlineCard("Clinical Impression",
     : none("No diagnosis recorded"))}
 
 <!-- 2b · MINOR PROCEDURE (only when recorded) -->
-${d.minorProcedure?.procedureName
+${procDisplay
   ? inlineCard("Minor Procedure",
       `<div style="font-size:10.5px;font-weight:600;color:${INK};">` +
       [
-        d.minorProcedure.procedureLaterality ? escapeHtml(d.minorProcedure.procedureLaterality) : "",
-        escapeHtml(d.minorProcedure.procedureName),
-        d.minorProcedure.anesthesiaType ? `Under ${escapeHtml(d.minorProcedure.anesthesiaType)}` : "",
+        d.minorProcedure!.procedureLaterality ? escapeHtml(d.minorProcedure!.procedureLaterality!) : "",
+        escapeHtml(procDisplay),
+        d.minorProcedure!.anesthesiaType ? `Under ${escapeHtml(d.minorProcedure!.anesthesiaType!)}` : "",
       ].filter(Boolean).join(`<span style="color:#B0BDBA;margin:0 5px;">·</span>`) +
       `</div>`)
   : ""}
