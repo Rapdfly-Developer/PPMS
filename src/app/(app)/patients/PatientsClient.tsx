@@ -109,7 +109,7 @@ function KpiCard({ icon, label, value, sub, color, href, isActive, onSelect }: {
   const c = C[color] ?? C.teal;
 
   const baseClass = isActive
-    ? `bg-white rounded-2xl border-2 border-[var(--color-ink-900)] p-4 flex items-start gap-3 shadow-sm cursor-pointer transition-all`
+    ? `bg-white rounded-2xl border-2 border-black p-4 flex items-start gap-3 shadow-sm cursor-pointer transition-all`
     : `bg-white rounded-2xl border ${c.border} p-4 flex items-start gap-3 shadow-sm hover:shadow-md hover:border-[var(--color-primary-300)] cursor-pointer transition-all`;
 
   const inner = (
