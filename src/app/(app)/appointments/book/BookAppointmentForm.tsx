@@ -99,11 +99,12 @@ export function BookAppointmentForm({
 
   // Auto-detect hospital for walk-in based on doctor's schedule at the current time
   const walkinHospitalId = (() => {
+    const hhmm = (t: string) => { const [h, m] = t.split(":").map(Number); return h * 60 + m; };
     const now = new Date();
     const nowMins = now.getHours() * 60 + now.getMinutes();
     const todayWeekday = now.getDay();
     const match = (availabilityByDoctor[doctorId] ?? []).find(
-      (a) => a.weekday === todayWeekday && nowMins >= toMins(a.startTime) && nowMins < toMins(a.endTime)
+      (a) => a.weekday === todayWeekday && nowMins >= hhmm(a.startTime) && nowMins < hhmm(a.endTime)
     );
     return match?.hospitalId ?? null;
   })();
