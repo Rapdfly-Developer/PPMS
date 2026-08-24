@@ -543,20 +543,27 @@ export function AppointmentsClient({
                   slbl:  "text-[var(--color-ink-400)]",
                 },
               ].map(({ label: cl, count, sub: csub, bg, border, dot, cnt, lbl, slbl }) => (
-                <div key={cl} className={`rounded-xl border ${border} ${bg} px-4 py-3 flex flex-col gap-0.5`}>
+                <button
+                  key={cl}
+                  onClick={() => {
+                    const el = document.getElementById(`appt-section-${cl.toLowerCase()}`);
+                    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+                  }}
+                  className={`rounded-xl border ${border} ${bg} px-4 py-3 flex flex-col gap-0.5 text-left cursor-pointer hover:shadow-sm transition-shadow`}
+                >
                   <div className="flex items-center gap-1.5">
                     <span className={`w-2 h-2 rounded-full shrink-0 ${dot}`} />
                     <span className={`text-xs font-semibold ${lbl}`}>{cl}</span>
                   </div>
                   <p className={`text-2xl font-bold leading-none mt-1 ${cnt}`}>{count}</p>
                   <p className={`text-[11px] ${slbl}`}>{csub}</p>
-                </div>
+                </button>
               ))}
             </div>
 
             {groups.map(({ key, label, sub, appts: grpAppts, accent, badge, head }) =>
               grpAppts.length === 0 ? null : (
-                <div key={key}>
+                <div key={key} id={`appt-section-${key}`}>
                   {/* Section header */}
                   <div className="flex items-center gap-2 mb-3">
                     <h2 className={`text-sm font-bold uppercase tracking-wide ${head}`}>{label}</h2>
