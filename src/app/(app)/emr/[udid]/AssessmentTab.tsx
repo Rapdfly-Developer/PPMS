@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/Card";
 import { SingleChipSelect } from "@/components/ui/Chip";
 import { ICD10_OPHTHALMOLOGY, DIAGNOSIS_STATUSES, LATERALITY } from "@/lib/constants";
-import { addDiagnosis, updateDiagnosisStatus, removeDiagnosis, removeMedication } from "./actions";
+import { addDiagnosis, updateDiagnosisStatus, removeDiagnosis, removeMedication, saveAdviseNotes } from "./actions";
 import { useAutoSave, SaveIndicator } from "@/lib/useAutoSave";
 import { X, History, ChevronDown, Search, PenLine, Plus, Check, Ban, Stethoscope, FileText, Lock, AlertTriangle } from "lucide-react";
 
@@ -586,11 +586,12 @@ export function AssessmentTab({
     });
   };
 
-  // Reject removes the diagnosis outright, along with any meds it contributed.
+  // Reject removes the diagnosis outright, along with any meds it contributed, and clears advise notes.
   const handleReject = (d: any) => {
     run(async () => {
       await autoRemovePresetMeds(d.description);
       await removeDiagnosis(d.id, udid);
+      await saveAdviseNotes(visit.id, udid, "");
     });
   };
 
