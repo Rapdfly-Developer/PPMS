@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/Card";
 import { History } from "lucide-react";
 import { parseJSON } from "@/lib/json";
 import { useAutoSave, SaveIndicator } from "@/lib/useAutoSave";
-import { addMedication, removeMedication, updateMedication, clearAllMedications, saveRefraction, saveFollowUp, saveAdviseNotes, saveAnesthesiaType, saveProcedureLaterality, saveProcedureName, saveProcedureNotes } from "./actions";
+import { addMedication, removeMedication, updateMedication, clearAllMedications, saveRefraction, saveFollowUp, saveAdviseNotes, saveAnesthesiaType, saveProcedureLaterality, saveProcedureName, saveProcedureNotes, addInvestigationOrder } from "./actions";
 import { DispositionToggle, AdmitPanel, FollowUpdatesPanel, SurgicalPanel } from "./DispositionPanel";
 import { Plus, X, BedDouble, Stethoscope, ChevronDown, Pencil, Trash2, RefreshCw, Search, Pill, Sparkles, CheckCircle2, Check, AlertTriangle, Scissors } from "lucide-react";
 import {
@@ -240,15 +240,21 @@ function PresetAppliedBadge({
   onRemove,
   onChange,
   diagnosisLabel,
+  visitId,
+  udid,
 }: {
   applied: AppliedPreset[];
   presetMatches: PresetMatch[];
   onRemove: () => void;
   onChange: () => void;
   diagnosisLabel?: string;
+  visitId?: string;
+  udid?: string;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [editing, setEditing]   = useState(false);
+  const [addedInvs, setAddedInvs] = useState<Set<string>>(new Set());
+  const [, startInvTransition] = useTransition();
 
   // Collect advice + investigations from applied presets
   const details = applied
@@ -385,9 +391,35 @@ function PresetAppliedBadge({
                 </>
               ) : (
                 <div className="flex flex-wrap gap-1.5">
-                  {allInvestigations.map((inv) => (
-                    <span key={inv} className="text-[11px] px-2.5 py-0.5 rounded-full bg-white border border-[#B2DEDA] text-[#0F766E]">{inv}</span>
-                  ))}
+                  {allInvestigations.map((inv) => {
+                    const added = addedInvs.has(inv);
+                    return (
+                      <button
+                        key={inv}
+                        type="button"
+                        disabled={added || !visitId || !udid}
+                        onClick={() => {
+                          if (!visitId || !udid) return;
+                          setAddedInvs((prev) => new Set([...prev, inv]));
+                          startInvTransition(async () => {
+                            await addInvestigationOrder(visitId, udid, {
+                              category: "General",
+                              testName: inv,
+                              priority: "ROUTINE",
+                            });
+                          });
+                        }}
+                        className={`flex items-center gap-1 text-[11px] px-2.5 py-0.5 rounded-full border transition-colors ${
+                          added
+                            ? "bg-[#0F766E] border-[#0F766E] text-white cursor-default"
+                            : "bg-white border-[#B2DEDA] text-[#0F766E] hover:bg-[#DCF3F1] hover:border-[#0F766E] cursor-pointer"
+                        }`}
+                      >
+                        {added && <Check size={10} />}
+                        {inv}
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -1576,6 +1608,8 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
           applied={diagApplied}
           presetMatches={presetMatches.filter((m) => m.diagnosisDesc === diagnosisDesc)}
           diagnosisLabel={diagnosisDesc}
+          visitId={visit.id}
+          udid={udid}
           onRemove={() => onRemoveApplied(diagnosisDesc)}
           onChange={() => onChangeProtocol(diagnosisDesc, presetMatches.filter((m) => m.diagnosisDesc === diagnosisDesc))}
         />
@@ -1591,7 +1625,7 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
         />
       )}
 
-      <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+      <div className={`flex items-center justify-between mb-3 flex-wrap gap-2 ${Object.keys(appliedByDiag).length > 0 ? "mt-4" : ""}`}>
         <p className="text-sm font-medium text-[var(--color-ink-700)]">Prescription / Medications</p>
         <div className="flex items-center gap-2">
           {medications.length > 0 && (
