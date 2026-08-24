@@ -573,12 +573,15 @@ export function AppointmentsClient({
               })}
             </div>
 
-            {groups.filter(({ key }) => key === activeSection).map(({ key, label, sub, appts: grpAppts, accent, badge, head }) =>
-              grpAppts.length === 0 ? (
-                <div key={key} className="text-center py-12 text-[var(--color-ink-400)] text-sm">
-                  No {label.toLowerCase()} found.
-                </div>
-              ) : (
+            {groups.filter(({ key }) => key === activeSection).map(({ key, label, sub, appts: grpAppts, accent, badge, head }) => {
+              if (grpAppts.length === 0) {
+                return (
+                  <div key={key} className="text-center py-12 text-[var(--color-ink-400)] text-sm">
+                    No {label.toLowerCase()} found.
+                  </div>
+                );
+              }
+              return (
                 <div key={key} id={`appt-section-${key}`}>
                   {/* Section header */}
                   <div className="flex items-center gap-2 mb-3">
@@ -618,8 +621,8 @@ export function AppointmentsClient({
                       ))}
                   </div>
                 </div>
-              ))
-            )}
+              );
+            })}
           </div>
         );
       })()}
