@@ -1062,18 +1062,21 @@ const PROCEDURE_KEYWORDS = [
   "Cauterization of corneal ulcer",
 ];
 
-const CUSTOM_PROC_KEY = "ppms_custom_procedure_kws";
+// Scoped per-doctor, same pattern as seg_custom_* in Anterior Segment
+const procKwKey = (doctorId: string) => `proc_custom_${doctorId}`;
 
-function getCustomProcedureKws(): string[] {
-  try { return JSON.parse(localStorage.getItem(CUSTOM_PROC_KEY) ?? "[]"); } catch { return []; }
+function getCustomProcedureKws(doctorId: string): string[] {
+  try { return JSON.parse(localStorage.getItem(procKwKey(doctorId)) ?? "[]"); } catch { return []; }
 }
-function saveCustomProcedureKw(kw: string) {
-  const cur = getCustomProcedureKws();
-  if (!cur.includes(kw)) localStorage.setItem(CUSTOM_PROC_KEY, JSON.stringify([...cur, kw]));
+function saveCustomProcedureKw(doctorId: string, kw: string): void {
+  const cur = getCustomProcedureKws(doctorId);
+  // Case-insensitive duplicate guard — same logic as Anterior Segment's addKeyword
+  if (cur.some((k) => k.toLowerCase() === kw.toLowerCase())) return;
+  localStorage.setItem(procKwKey(doctorId), JSON.stringify([...cur, kw]));
 }
-function deleteCustomProcedureKw(kw: string) {
-  const cur = getCustomProcedureKws().filter((k) => k !== kw);
-  localStorage.setItem(CUSTOM_PROC_KEY, JSON.stringify(cur));
+function deleteCustomProcedureKw(doctorId: string, kw: string): void {
+  const cur = getCustomProcedureKws(doctorId).filter((k) => k !== kw);
+  localStorage.setItem(procKwKey(doctorId), JSON.stringify(cur));
 }
 
 function parseProcedureList(raw: string): string[] {
@@ -1097,7 +1100,10 @@ function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: st
   const [procInput, setProcInput]   = useState("");
   const procInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => { setCustomKws(getCustomProcedureKws()); }, []);
+  // Per-doctor scope — same as seg_custom_* in Anterior Segment
+  const doctorId: string = visit.doctorId ?? "";
+
+  useEffect(() => { setCustomKws(getCustomProcedureKws(doctorId)); }, [doctorId]);
 
   useAutoSave(laterality,  (val) => saveProcedureLaterality(visit.id, udid, val));
   useAutoSave(anesthesia,  (val) => saveAnesthesiaType(visit.id, udid, val));
@@ -1120,8 +1126,8 @@ function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: st
     const trimmed = procInput.trim();
     if (!trimmed) return;
     if (!allKeywords.some((k) => k.toLowerCase() === trimmed.toLowerCase())) {
-      saveCustomProcedureKw(trimmed);
-      setCustomKws(getCustomProcedureKws());
+      saveCustomProcedureKw(doctorId, trimmed);
+      setCustomKws(getCustomProcedureKws(doctorId));
     }
     addProcedure(trimmed);
   };
@@ -1285,7 +1291,7 @@ function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: st
                 </button>
                 {isCustom && (
                   <button
-                    onClick={() => { deleteCustomProcedureKw(kw); setCustomKws(getCustomProcedureKws()); }}
+                    onClick={() => { deleteCustomProcedureKw(doctorId, kw); setCustomKws(getCustomProcedureKws(doctorId)); }}
                     className="px-1.5 py-1 rounded-r-full border border-l-0 border-amber-200 bg-amber-50 text-amber-400 hover:text-red-500 hover:bg-red-50 hover:border-red-200 transition-colors"
                     title="Remove custom keyword"
                   >
