@@ -960,55 +960,28 @@ export function PlanTab({ visit, udid, patientSex, priorVisits = [] }: { visit: 
 
   return (
     <div className="flex flex-col gap-5">
-      {/* Protocol-applied toast */}
-      {toastNames.length > 0 && (
-        <AutoApplyToast names={toastNames} onClose={() => setToastNames([])} />
-      )}
-
-      {/* Per-diagnosis protocol prompt cards */}
-      {pendingDiagPrompts.map(({ diagnosisDesc, laterality: diagLat, matches }) => (
-        <ProtocolPromptCard
-          key={diagnosisDesc}
-          diagnosisDesc={diagLat ? `${diagnosisDesc} (${diagLat})` : diagnosisDesc}
-          onConfirm={() => setActiveDialogDiag({ diagnosisDesc, laterality: diagLat, matches, isChanging: false })}
-          onDismiss={() => handleDismissPrompt(diagnosisDesc, matches)}
-        />
-      ))}
-
-      {/* Per-diagnosis applied protocol badges */}
-      {Object.entries(appliedByDiag).map(([diagnosisDesc, diagApplied]) => (
-        <PresetAppliedBadge
-          key={diagnosisDesc}
-          applied={diagApplied}
-          presetMatches={presetMatches.filter((m) => m.diagnosisDesc === diagnosisDesc)}
-          diagnosisLabel={diagnosisDesc}
-          onRemove={() => handleRemoveAppliedForDiag(diagnosisDesc)}
-          onChange={() => setActiveDialogDiag({
-            diagnosisDesc,
-            matches: presetMatches.filter((m) => m.diagnosisDesc === diagnosisDesc),
-            isChanging: true,
-          })}
-        />
-      ))}
-
-      <PrescriptionCard visit={visit} udid={udid} priorVisits={priorVisits} defaultLaterality={diagLaterality} adviseNotes={adviseNotes} onAdviseChange={setAdviseNotes} />
+      <PrescriptionCard
+        visit={visit} udid={udid} priorVisits={priorVisits}
+        defaultLaterality={diagLaterality} adviseNotes={adviseNotes} onAdviseChange={setAdviseNotes}
+        toastNames={toastNames} onCloseToast={() => setToastNames([])}
+        pendingDiagPrompts={pendingDiagPrompts}
+        onConfirmPrompt={(diag) => setActiveDialogDiag({ ...diag, isChanging: false })}
+        onDismissPrompt={handleDismissPrompt}
+        appliedByDiag={appliedByDiag}
+        presetMatches={presetMatches}
+        onRemoveApplied={handleRemoveAppliedForDiag}
+        onChangeProtocol={(desc, matches) => setActiveDialogDiag({ diagnosisDesc: desc, matches, isChanging: true })}
+        activeDialogDiag={activeDialogDiag}
+        setActiveDialogDiag={setActiveDialogDiag}
+        applying={applying}
+        onApplyProtocol={(selected, diagnosisDesc, isChanging) =>
+          isChanging ? handleChangeProtocolForDiag(selected, diagnosisDesc) : handleInitialApply(selected, diagnosisDesc)
+        }
+      />
       <MinorProcedureCard visit={visit} udid={udid} priorVisits={priorVisits} />
       <OpticalPrescriptionCard visit={visit} />
       <DispositionCard visit={visit} udid={udid} patientSex={patientSex} priorVisits={priorVisits} />
 
-      {/* Protocol selection dialog */}
-      {activeDialogDiag && (
-        <PresetSelectDialog
-          matches={activeDialogDiag.matches}
-          onApply={(selected) =>
-            activeDialogDiag.isChanging
-              ? handleChangeProtocolForDiag(selected, activeDialogDiag.diagnosisDesc)
-              : handleInitialApply(selected, activeDialogDiag.diagnosisDesc)
-          }
-          onClose={() => setActiveDialogDiag(null)}
-          applying={applying}
-        />
-      )}
     </div>
   );
 }
@@ -1437,7 +1410,7 @@ function OptEyeColumns({ children }: { children: [React.ReactNode, React.ReactNo
 
 type EditDraft = { drugName: string; dosage: string; frequency: string; duration: string; instructions: string; route?: string; laterality?: string };
 
-function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", adviseNotes, onAdviseChange }: { visit: any; udid: string; priorVisits: any[]; defaultLaterality?: string; adviseNotes: string; onAdviseChange: (notes: string) => void }) {
+function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", adviseNotes, onAdviseChange, toastNames, onCloseToast, pendingDiagPrompts, onConfirmPrompt, onDismissPrompt, appliedByDiag, presetMatches, onRemoveApplied, onChangeProtocol, activeDialogDiag, setActiveDialogDiag, applying, onApplyProtocol }: { visit: any; udid: string; priorVisits: any[]; defaultLaterality?: string; adviseNotes: string; onAdviseChange: (notes: string) => void; toastNames: string[]; onCloseToast: () => void; pendingDiagPrompts: { diagnosisDesc: string; laterality?: string; matches: PresetMatch[] }[]; onConfirmPrompt: (diag: { diagnosisDesc: string; laterality?: string; matches: PresetMatch[] }) => void; onDismissPrompt: (desc: string, matches: PresetMatch[]) => void; appliedByDiag: Record<string, any[]>; presetMatches: PresetMatch[]; onRemoveApplied: (desc: string) => void; onChangeProtocol: (desc: string, matches: PresetMatch[]) => void; activeDialogDiag: any; setActiveDialogDiag: (v: any) => void; applying: boolean; onApplyProtocol: (selected: PresetDrug[], diagnosisDesc: string, isChanging: boolean) => void }) {
   const [pending, startTransition] = useTransition();
   const [showAddDrug, setShowAddDrug] = useState(false);
   const [showPresets, setShowPresets] = useState(false);
@@ -1575,6 +1548,43 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
 
   return (
     <Card>
+      {/* Protocol toast */}
+      {toastNames.length > 0 && (
+        <AutoApplyToast names={toastNames} onClose={onCloseToast} />
+      )}
+
+      {/* Per-diagnosis protocol prompt cards */}
+      {pendingDiagPrompts.map(({ diagnosisDesc, laterality: diagLat, matches }) => (
+        <ProtocolPromptCard
+          key={diagnosisDesc}
+          diagnosisDesc={diagLat ? `${diagnosisDesc} (${diagLat})` : diagnosisDesc}
+          onConfirm={() => onConfirmPrompt({ diagnosisDesc, laterality: diagLat, matches })}
+          onDismiss={() => onDismissPrompt(diagnosisDesc, matches)}
+        />
+      ))}
+
+      {/* Per-diagnosis applied protocol badges */}
+      {Object.entries(appliedByDiag).map(([diagnosisDesc, diagApplied]) => (
+        <PresetAppliedBadge
+          key={diagnosisDesc}
+          applied={diagApplied}
+          presetMatches={presetMatches.filter((m) => m.diagnosisDesc === diagnosisDesc)}
+          diagnosisLabel={diagnosisDesc}
+          onRemove={() => onRemoveApplied(diagnosisDesc)}
+          onChange={() => onChangeProtocol(diagnosisDesc, presetMatches.filter((m) => m.diagnosisDesc === diagnosisDesc))}
+        />
+      ))}
+
+      {/* Protocol selection dialog */}
+      {activeDialogDiag && (
+        <PresetSelectDialog
+          matches={activeDialogDiag.matches}
+          onApply={(selected) => onApplyProtocol(selected, activeDialogDiag.diagnosisDesc, activeDialogDiag.isChanging)}
+          onClose={() => setActiveDialogDiag(null)}
+          applying={applying}
+        />
+      )}
+
       <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
         <p className="text-sm font-medium text-[var(--color-ink-700)]">Prescription / Medications</p>
         <div className="flex items-center gap-2">
