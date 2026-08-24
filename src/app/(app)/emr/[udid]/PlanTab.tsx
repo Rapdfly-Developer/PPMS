@@ -542,20 +542,25 @@ function PresetSelectDialog({
             Select one or more presets to apply. Duplicate medications will be automatically skipped.
           </p>
 
-          {allMatches.map(({ preset, diagnosisDesc }) => {
+          {allMatches.map(({ preset, diagnosisDesc }, idx) => {
             const checked = selected.has(preset.id);
             const isCustom = !preset.isDefault;
+            const protocolNum = idx + 1;
             return (
               <label
                 key={preset.id}
-                className={`flex items-start gap-3 p-3.5 rounded-xl border cursor-pointer transition-colors ${
+                className={`flex items-start gap-3 p-4 rounded-xl border cursor-pointer transition-colors ${
                   checked ? "border-[#B2DEDA] bg-[#EEF8F7]" : "border-[var(--color-border)] hover:border-[#B2DEDA] hover:bg-[#EEF8F7]/40"
                 }`}
               >
-                <input type="checkbox" checked={checked} onChange={() => toggle(preset.id)} className="mt-0.5 accent-[#0F766E]" />
+                <input type="checkbox" checked={checked} onChange={() => toggle(preset.id)} className="mt-1 accent-[#0F766E]" />
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex items-center gap-1.5 flex-wrap">
+                  {/* Header row */}
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#0F766E] text-white shrink-0">
+                        Protocol {protocolNum}
+                      </span>
                       <p className="text-sm font-semibold text-[var(--color-ink-800)]">{preset.name}</p>
                       {isCustom && (
                         <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 shrink-0">CUSTOM</span>
@@ -567,21 +572,32 @@ function PresetSelectDialog({
                       </span>
                     )}
                   </div>
-                  <p className="text-[11px] text-[#0F766E]/70 mt-0.5 mb-2">Matched: {diagnosisDesc}</p>
-                  <ul className="space-y-0.5">
+
+                  {/* Medications */}
+                  <ul className="flex flex-col gap-1.5 mb-2">
                     {preset.medications.map((m, i) => (
-                      <li key={i} className="text-xs text-[var(--color-ink-600)]">
-                        · {m.drugName}{m.dosage ? ` ${m.dosage}` : ""}{m.frequency ? ` · ${m.frequency}` : ""}{m.duration ? ` · ${m.duration}` : ""}
+                      <li key={i} className="flex items-baseline gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#0F766E]/50 shrink-0 mt-1.5" />
+                        <span className="text-xs font-medium text-[var(--color-ink-800)]">{m.drugName}</span>
+                        {(m.dosage || m.frequency || m.duration) && (
+                          <span className="text-[11px] text-[var(--color-ink-400)]">
+                            {[m.dosage, m.frequency, m.duration].filter(Boolean).join(" · ")}
+                          </span>
+                        )}
                       </li>
                     ))}
                   </ul>
+
+                  {/* Extras */}
                   {preset.investigations && preset.investigations.length > 0 && (
-                    <p className="text-[11px] text-[var(--color-ink-400)] mt-1.5">
-                      Suggested investigations: {preset.investigations.join(", ")}
+                    <p className="text-[11px] text-[var(--color-ink-400)] mt-1">
+                      <span className="font-semibold">Investigations:</span> {preset.investigations.join(", ")}
                     </p>
                   )}
                   {preset.advice && (
-                    <p className="text-[11px] text-[var(--color-ink-400)] italic mt-1">Advice: {preset.advice}</p>
+                    <p className="text-[11px] text-[var(--color-ink-400)] italic mt-0.5">
+                      <span className="font-semibold not-italic">Advice:</span> {preset.advice}
+                    </p>
                   )}
                 </div>
               </label>
@@ -1553,16 +1569,6 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
         <AutoApplyToast names={toastNames} onClose={onCloseToast} />
       )}
 
-      {/* Per-diagnosis protocol prompt cards */}
-      {pendingDiagPrompts.map(({ diagnosisDesc, laterality: diagLat, matches }) => (
-        <ProtocolPromptCard
-          key={diagnosisDesc}
-          diagnosisDesc={diagLat ? `${diagnosisDesc} (${diagLat})` : diagnosisDesc}
-          onConfirm={() => onConfirmPrompt({ diagnosisDesc, laterality: diagLat, matches })}
-          onDismiss={() => onDismissPrompt(diagnosisDesc, matches)}
-        />
-      ))}
-
       {/* Per-diagnosis applied protocol badges */}
       {Object.entries(appliedByDiag).map(([diagnosisDesc, diagApplied]) => (
         <PresetAppliedBadge
@@ -1675,6 +1681,16 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
           </ul>
         )}
       </div>
+
+      {/* Per-diagnosis protocol prompt cards — shown below search */}
+      {pendingDiagPrompts.map(({ diagnosisDesc, laterality: diagLat, matches }) => (
+        <ProtocolPromptCard
+          key={diagnosisDesc}
+          diagnosisDesc={diagLat ? `${diagnosisDesc} (${diagLat})` : diagnosisDesc}
+          onConfirm={() => onConfirmPrompt({ diagnosisDesc, laterality: diagLat, matches })}
+          onDismiss={() => onDismissPrompt(diagnosisDesc, matches)}
+        />
+      ))}
 
       {showPresets && <PresetPanel onApply={applyPreset} onClose={() => setShowPresets(false)} />}
 
