@@ -1988,7 +1988,7 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
 
                     {/* Instructions sub-row */}
                     {(isEditing || m.instructions) && (
-                      <tr key={`${m.id}-note`} className={isEditing ? "bg-[var(--color-primary-50)]" : "bg-[var(--color-surface-sunken)]"}>
+                      <tr key={`${m.id}-note`} className={isEditing ? "bg-[var(--color-primary-50)]" : ""}>
                         <td />
                         <td colSpan={4} className="px-3 pb-2.5 pt-0">
                           {isEditing ? (
@@ -1999,7 +1999,7 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
                               className={cellCls + " w-full"}
                             />
                           ) : (
-                            <span className="text-xs text-[var(--color-ink-400)] italic">{m.instructions}</span>
+                            <span className="text-xs text-[var(--color-ink-600)]">{m.instructions}</span>
                           )}
                         </td>
                         <td />
