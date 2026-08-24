@@ -1114,7 +1114,11 @@ function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: st
     setProcInput("");
   };
 
-  const addCustom = () => {
+  const addFromInput = () => {
+    addProcedure(procInput);
+  };
+
+  const saveKeywordAndAdd = () => {
     const trimmed = procInput.trim();
     if (!trimmed) return;
     if (!allKeywords.some((k) => k.toLowerCase() === trimmed.toLowerCase())) {
@@ -1123,6 +1127,9 @@ function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: st
     }
     addProcedure(trimmed);
   };
+
+  const isNewKeyword = procInput.trim().length > 0 &&
+    !allKeywords.some((k) => k.toLowerCase() === procInput.trim().toLowerCase());
 
   const removeProcedure = (i: number) => {
     setProcedures((prev) => prev.filter((_, idx) => idx !== i));
@@ -1196,19 +1203,30 @@ function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: st
               value={procInput}
               onChange={(e) => setProcInput(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === "Enter") { e.preventDefault(); addCustom(); }
+                if (e.key === "Enter") { e.preventDefault(); addFromInput(); }
                 if (e.key === "Escape") setProcInput("");
               }}
-              placeholder="Type a custom procedure…"
+              placeholder="Select a keyword below or type a procedure…"
               className="flex-1 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-3 py-2 text-sm text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent"
             />
             {procInput.trim() && (
-              <button
-                onClick={addCustom}
-                className="shrink-0 px-3 py-2 rounded-xl bg-[var(--color-primary-600)] text-white text-xs font-semibold hover:bg-[var(--color-primary-700)] transition-colors flex items-center gap-1"
-              >
-                <Plus size={12} /> Add
-              </button>
+              <>
+                <button
+                  onClick={addFromInput}
+                  className="shrink-0 px-3 py-2 rounded-xl bg-[var(--color-primary-600)] text-white text-xs font-semibold hover:bg-[var(--color-primary-700)] transition-colors flex items-center gap-1"
+                >
+                  <Plus size={12} /> Add
+                </button>
+                {isNewKeyword && (
+                  <button
+                    onClick={saveKeywordAndAdd}
+                    className="shrink-0 px-3 py-2 rounded-xl border border-amber-300 bg-amber-50 text-amber-700 text-xs font-semibold hover:bg-amber-100 transition-colors flex items-center gap-1"
+                    title="Add to list and save as a permanent keyword"
+                  >
+                    Save keyword
+                  </button>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -1270,7 +1288,7 @@ function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: st
             return (
               <div key={kw} className="flex items-center">
                 <button
-                  onClick={() => addProcedure(kw)}
+                  onClick={() => { setProcInput(kw); procInputRef.current?.focus(); }}
                   className={`text-xs px-2.5 py-1 rounded-l-full border transition-colors ${
                     isCustom
                       ? "border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100"
