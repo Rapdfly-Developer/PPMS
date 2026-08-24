@@ -341,9 +341,9 @@ export function DashboardClient({
     [filteredAppts],
   );
 
-  /* Today's Queue: active only (non-REQUESTED, non-DISPENSED, non-PARTIAL_DISPENSE). */
+  /* Today's Queue: active only — exclude terminal/inactive statuses. */
   const queueGroups = useMemo(() => {
-    const queue     = filteredAppts.filter((a) => !["REQUESTED", "DISPENSED", "PARTIAL_DISPENSE"].includes(a.status));
+    const queue     = filteredAppts.filter((a) => !["REQUESTED", "DISPENSED", "PARTIAL_DISPENSE", "CANCELLED", "NO_SHOW", "RESCHEDULED"].includes(a.status));
     const dispensed = filteredAppts.filter((a) => a.status === "DISPENSED");
     if (role === "DOCTOR") {
       const hospitalsToShow = selectedFilter === "all"
@@ -463,7 +463,7 @@ export function DashboardClient({
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1 flex-wrap">
               {STATUS_FILTERS.map(({ key, label }) => {
-                const queueAppts = filteredAppts.filter((a) => a.status !== "REQUESTED" && a.status !== "DISPENSED");
+                const queueAppts = filteredAppts.filter((a) => !["REQUESTED", "DISPENSED", "PARTIAL_DISPENSE", "CANCELLED", "NO_SHOW", "RESCHEDULED"].includes(a.status));
                 const count = key === "ALL"
                   ? queueAppts.length
                   : queueAppts.filter((a) => a.status === key).length;
