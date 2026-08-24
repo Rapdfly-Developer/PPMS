@@ -874,7 +874,7 @@ async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
 
   const medRows = d.medications.length
     ? d.medications.map((m, i) =>
-        `<tr style="background:${i % 2 === 0 ? "#fff" : TINT};">` +
+        `<tr style="background:#fff;">` +
         `<td style="${MED_TD}text-align:center;color:#888;">${i + 1}</td>` +
         `<td style="${MED_TD}">` +
         pdfMedBadge2(m.route, m.laterality, m.drugName) +
