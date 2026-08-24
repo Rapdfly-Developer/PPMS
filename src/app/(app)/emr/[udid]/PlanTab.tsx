@@ -1094,10 +1094,12 @@ function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: st
   const [showHistory,    setShowHistory]    = useState(false);
   const [anesthesiaOpen, setAnesthesiaOpen] = useState(false);
 
-  // Multi-procedure list stored as JSON in procedureName
-  const [procedures, setProcedures] = useState<string[]>(() => parseProcedureList(visit.procedureName ?? ""));
+  // Input IS the procedure — auto-saved directly, no separate add step
+  const [procInput, setProcInput]   = useState<string>(() => {
+    const list = parseProcedureList(visit.procedureName ?? "");
+    return list.join(", ");
+  });
   const [customKws, setCustomKws]   = useState<string[]>([]);
-  const [procInput, setProcInput]   = useState("");
   const procInputRef = useRef<HTMLInputElement>(null);
 
   // Per-doctor scope — same as seg_custom_* in Anterior Segment
@@ -1105,39 +1107,24 @@ function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: st
 
   useEffect(() => { setCustomKws(getCustomProcedureKws(doctorId)); }, [doctorId]);
 
-  useAutoSave(laterality,  (val) => saveProcedureLaterality(visit.id, udid, val));
-  useAutoSave(anesthesia,  (val) => saveAnesthesiaType(visit.id, udid, val));
-  useAutoSave(procedures,  (val) => saveProcedureName(visit.id, udid, JSON.stringify(val)));
+  useAutoSave(laterality, (val) => saveProcedureLaterality(visit.id, udid, val));
+  useAutoSave(anesthesia, (val) => saveAnesthesiaType(visit.id, udid, val));
+  useAutoSave(procInput,  (val) => saveProcedureName(visit.id, udid, val));
 
   const allKeywords = [...PROCEDURE_KEYWORDS, ...customKws];
 
-  const addProcedure = (name: string) => {
-    const trimmed = name.trim();
-    if (!trimmed || procedures.includes(trimmed)) return;
-    setProcedures((prev) => [...prev, trimmed]);
-    setProcInput("");
-  };
-
-  const addFromInput = () => {
-    addProcedure(procInput);
-  };
-
-  const saveKeywordAndAdd = () => {
+  // Save the current input text as a permanent custom keyword (does not clear input)
+  const saveKeyword = () => {
     const trimmed = procInput.trim();
     if (!trimmed) return;
     if (!allKeywords.some((k) => k.toLowerCase() === trimmed.toLowerCase())) {
       saveCustomProcedureKw(doctorId, trimmed);
       setCustomKws(getCustomProcedureKws(doctorId));
     }
-    addProcedure(trimmed);
   };
 
   const isNewKeyword = procInput.trim().length > 0 &&
     !allKeywords.some((k) => k.toLowerCase() === procInput.trim().toLowerCase());
-
-  const removeProcedure = (i: number) => {
-    setProcedures((prev) => prev.filter((_, idx) => idx !== i));
-  };
 
   const filteredAnesthesia = ANESTHESIA_KEYWORDS.filter((kw) =>
     anesthesia.trim() === "" || kw.toLowerCase().includes(anesthesia.toLowerCase())
@@ -1194,31 +1181,18 @@ function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: st
               ref={procInputRef}
               value={procInput}
               onChange={(e) => setProcInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") { e.preventDefault(); addFromInput(); }
-                if (e.key === "Escape") setProcInput("");
-              }}
+              onKeyDown={(e) => { if (e.key === "Escape") setProcInput(""); }}
               placeholder="Select a keyword below or type a procedure…"
               className="flex-1 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-3 py-2 text-sm text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent"
             />
-            {procInput.trim() && (
-              <>
-                <button
-                  onClick={addFromInput}
-                  className="shrink-0 px-3 py-2 rounded-xl bg-[var(--color-primary-600)] text-white text-xs font-semibold hover:bg-[var(--color-primary-700)] transition-colors flex items-center gap-1"
-                >
-                  <Plus size={12} /> Add
-                </button>
-                {isNewKeyword && (
-                  <button
-                    onClick={saveKeywordAndAdd}
-                    className="shrink-0 px-3 py-2 rounded-xl border border-amber-300 bg-amber-50 text-amber-700 text-xs font-semibold hover:bg-amber-100 transition-colors flex items-center gap-1"
-                    title="Add to list and save as a permanent keyword"
-                  >
-                    Save keyword
-                  </button>
-                )}
-              </>
+            {isNewKeyword && (
+              <button
+                onClick={saveKeyword}
+                className="shrink-0 px-3 py-2 rounded-xl border border-amber-300 bg-amber-50 text-amber-700 text-xs font-semibold hover:bg-amber-100 transition-colors flex items-center gap-1"
+                title="Save as a permanent keyword"
+              >
+                Save keyword
+              </button>
             )}
           </div>
         </div>
@@ -1275,7 +1249,7 @@ function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: st
       <div className="mt-3">
         <p className="text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-wide mb-2">Quick Add</p>
         <div className="flex flex-wrap gap-1.5">
-          {allKeywords.filter((kw) => !procedures.includes(kw)).map((kw) => {
+          {allKeywords.map((kw) => {
             const isCustom = customKws.includes(kw);
             return (
               <div key={kw} className="flex items-center">
@@ -1303,25 +1277,6 @@ function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: st
           })}
         </div>
       </div>
-
-      {/* Added procedures — shown as chips */}
-      {procedures.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 mt-3">
-          {procedures.map((name, i) => (
-            <div key={i} className="flex items-center gap-1 bg-[var(--color-primary-50)] border border-[var(--color-primary-300)] text-[var(--color-primary-800)] text-xs font-semibold pl-2.5 pr-1.5 py-1 rounded-full">
-              <Scissors size={10} className="shrink-0 text-[var(--color-primary-400)]" />
-              <span>{name}</span>
-              <button
-                onClick={() => removeProcedure(i)}
-                className="ml-0.5 text-[var(--color-primary-400)] hover:text-red-500 transition-colors"
-                title="Remove"
-              >
-                <X size={10} />
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
 
       {/* History panel */}
       {showHistory && (
@@ -1355,12 +1310,7 @@ function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: st
                         onClick={() => {
                           if (v.procedureLaterality) setLaterality(v.procedureLaterality);
                           if (v.anesthesiaType) setAnesthesia(v.anesthesiaType);
-                          if (priorProcs.length > 0) {
-                            setProcedures((prev) => {
-                              const existing = new Set(prev);
-                              return [...prev, ...priorProcs.filter((p) => !existing.has(p))];
-                            });
-                          }
+                          if (priorProcs.length > 0) setProcInput(priorProcs.join(", "));
                           setShowHistory(false);
                         }}
                         className="shrink-0 text-[10px] font-medium text-[var(--color-primary-600)] hover:underline"
