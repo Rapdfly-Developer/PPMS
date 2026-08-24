@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/Card";
 import { History } from "lucide-react";
 import { parseJSON } from "@/lib/json";
 import { useAutoSave, SaveIndicator } from "@/lib/useAutoSave";
-import { addMedication, removeMedication, updateMedication, clearAllMedications, saveRefraction, saveFollowUp, saveAdviseNotes, saveAnesthesiaType, saveProcedureLaterality, saveProcedureName } from "./actions";
+import { addMedication, removeMedication, updateMedication, clearAllMedications, saveRefraction, saveFollowUp, saveAdviseNotes, saveAnesthesiaType, saveProcedureLaterality, saveProcedureName, saveProcedureNotes } from "./actions";
 import { DispositionToggle, AdmitPanel, FollowUpdatesPanel, SurgicalPanel } from "./DispositionPanel";
 import { Plus, X, BedDouble, Stethoscope, ChevronDown, Pencil, Trash2, RefreshCw, Search, Pill, Sparkles, CheckCircle2, Check, AlertTriangle, Scissors } from "lucide-react";
 import {
@@ -1031,20 +1031,14 @@ const PROCEDURE_KEYWORDS = [
   "Foreign body removal (corneal)",
   "Foreign body removal (conjunctival)",
   "Subconjunctival injection",
-  "Intravitreal anti-VEGF injection",
-  "Intravitreal triamcinolone injection",
   "Punctal plug insertion",
   "Punctal cautery",
   "Epilation",
   "Lid margin scrubbing",
   "Corneal scraping for culture",
   "Conjunctival swab",
-  "Lacrimal syringing",
   "Lacrimal probing",
-  "Pterygium excision",
   "Symblepharon release",
-  "Entropion correction",
-  "Ectropion correction",
   "Eyelid laceration repair",
   "YAG capsulotomy",
   "Laser peripheral iridotomy (LPI)",
@@ -1099,6 +1093,7 @@ function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: st
     const list = parseProcedureList(visit.procedureName ?? "");
     return list.join(", ");
   });
+  const [procNotes, setProcNotes]   = useState<string>(visit.procedureNotes ?? "");
   const [customKws, setCustomKws]   = useState<string[]>([]);
   const procInputRef = useRef<HTMLInputElement>(null);
 
@@ -1110,6 +1105,7 @@ function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: st
   useAutoSave(laterality, (val) => saveProcedureLaterality(visit.id, udid, val));
   useAutoSave(anesthesia, (val) => saveAnesthesiaType(visit.id, udid, val));
   useAutoSave(procInput,  (val) => saveProcedureName(visit.id, udid, val));
+  useAutoSave(procNotes,  (val) => saveProcedureNotes(visit.id, udid, val));
 
   const allKeywords = [...PROCEDURE_KEYWORDS, ...customKws];
 
@@ -1243,6 +1239,20 @@ function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: st
           )}
         </div>
 
+      </div>
+
+      {/* Procedure Notes */}
+      <div className="mt-3">
+        <label className="text-[10px] font-semibold text-[var(--color-ink-500)] uppercase tracking-wide block mb-1.5">
+          Procedure Notes
+        </label>
+        <textarea
+          value={procNotes}
+          onChange={(e) => setProcNotes(e.target.value)}
+          placeholder="Add notes about the procedure…"
+          rows={3}
+          className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-3 py-2 text-sm text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent resize-none"
+        />
       </div>
 
       {/* Keyword chips */}

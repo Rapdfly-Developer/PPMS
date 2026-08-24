@@ -487,6 +487,7 @@ model Visit {
   anesthesiaType      String?
   procedureLaterality String?
   procedureName       String?
+  procedureNotes      String?
   inViewOf            String?
   followUpCompleted   Boolean   @default(false)
   followUpCancelledAt DateTime?
