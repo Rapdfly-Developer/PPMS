@@ -506,6 +506,54 @@ export function AppointmentsClient({
 
         return (
           <div className="flex flex-col gap-6">
+            {/* Summary cards */}
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                {
+                  label: "Today",
+                  count: todayAppts.length,
+                  sub:   format(new Date(), "d MMM yyyy"),
+                  bg:    "bg-[var(--color-primary-50)]",
+                  border:"border-[var(--color-primary-200)]",
+                  dot:   "bg-[var(--color-primary-500)]",
+                  cnt:   "text-[var(--color-primary-700)]",
+                  lbl:   "text-[var(--color-primary-600)]",
+                  slbl:  "text-[var(--color-primary-400)]",
+                },
+                {
+                  label: "Upcoming",
+                  count: upcomingAppts.length,
+                  sub:   "Next 60 days",
+                  bg:    "bg-blue-50",
+                  border:"border-blue-200",
+                  dot:   "bg-blue-400",
+                  cnt:   "text-blue-700",
+                  lbl:   "text-blue-600",
+                  slbl:  "text-blue-400",
+                },
+                {
+                  label: "Previous",
+                  count: prevAppts.length,
+                  sub:   "Past 30 days",
+                  bg:    "bg-[var(--color-surface-sunken)]",
+                  border:"border-[var(--color-border)]",
+                  dot:   "bg-[var(--color-ink-400)]",
+                  cnt:   "text-[var(--color-ink-700)]",
+                  lbl:   "text-[var(--color-ink-500)]",
+                  slbl:  "text-[var(--color-ink-400)]",
+                },
+              ].map(({ label: cl, count, sub: csub, bg, border, dot, cnt, lbl, slbl }) => (
+                <div key={cl} className={`rounded-xl border ${border} ${bg} px-4 py-3 flex flex-col gap-0.5`}>
+                  <div className="flex items-center gap-1.5">
+                    <span className={`w-2 h-2 rounded-full shrink-0 ${dot}`} />
+                    <span className={`text-xs font-semibold ${lbl}`}>{cl}</span>
+                  </div>
+                  <p className={`text-2xl font-bold leading-none mt-1 ${cnt}`}>{count}</p>
+                  <p className={`text-[11px] ${slbl}`}>{csub}</p>
+                </div>
+              ))}
+            </div>
+
             {groups.map(({ key, label, sub, appts: grpAppts, accent, badge, head }) =>
               grpAppts.length === 0 ? null : (
                 <div key={key}>
