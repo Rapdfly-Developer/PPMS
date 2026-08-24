@@ -1295,32 +1295,50 @@ function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: st
             <span className="text-[10px] font-bold text-[var(--color-ink-400)] uppercase tracking-widest">Previous Procedures</span>
             <button onClick={() => setShowHistory(false)} className="text-[var(--color-ink-300)] hover:text-[var(--color-ink-700)]"><X size={12} /></button>
           </div>
-          <div className="max-h-52 overflow-y-auto divide-y divide-[var(--color-border)]">
-            {priorVisits.filter((v) => v.id !== visit.id && (v.anesthesiaType || v.procedureName)).length === 0 ? (
+          <div className="max-h-64 overflow-y-auto divide-y divide-[var(--color-border)]">
+            {priorVisits.filter((v) => v.id !== visit.id && (v.anesthesiaType || v.procedureName || v.procedureLaterality || v.procedureNotes)).length === 0 ? (
               <p className="px-3 py-4 text-xs text-[var(--color-ink-400)] text-center">No previous records found.</p>
             ) : (
               priorVisits
-                .filter((v) => v.id !== visit.id && (v.anesthesiaType || v.procedureName))
+                .filter((v) => v.id !== visit.id && (v.anesthesiaType || v.procedureName || v.procedureLaterality || v.procedureNotes))
                 .map((v) => {
                   const priorProcs = parseProcedureList(v.procedureName ?? "");
                   return (
                     <div key={v.id} className="px-3 py-2.5 flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="text-[10px] font-semibold text-[var(--color-ink-400)] mb-0.5">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[10px] font-semibold text-[var(--color-ink-400)] mb-1">
                           {new Date(v.date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
                           {v.procedureLaterality && <span className="ml-1.5 font-bold text-[var(--color-primary-600)]">{v.procedureLaterality}</span>}
                         </p>
-                        {priorProcs.length > 0
-                          ? priorProcs.map((p, i) => <p key={i} className="text-xs font-medium text-[var(--color-ink-700)]">{p}</p>)
-                          : v.procedureName && <p className="text-xs font-medium text-[var(--color-ink-700)]">{v.procedureName}</p>
-                        }
-                        {v.anesthesiaType && <p className="text-xs text-[var(--color-ink-500)] mt-0.5">{v.anesthesiaType}</p>}
+                        {(priorProcs.length > 0 || v.procedureName) && (
+                          <div className="mb-0.5">
+                            <span className="text-[9px] font-bold uppercase tracking-wide text-[var(--color-ink-300)]">Procedure</span>
+                            {priorProcs.length > 0
+                              ? priorProcs.map((p, i) => <p key={i} className="text-xs font-medium text-[var(--color-ink-700)]">{p}</p>)
+                              : <p className="text-xs font-medium text-[var(--color-ink-700)]">{v.procedureName}</p>
+                            }
+                          </div>
+                        )}
+                        {v.anesthesiaType && (
+                          <div className="mb-0.5">
+                            <span className="text-[9px] font-bold uppercase tracking-wide text-[var(--color-ink-300)]">Anesthesia</span>
+                            <p className="text-xs text-[var(--color-ink-600)]">{v.anesthesiaType}</p>
+                          </div>
+                        )}
+                        {v.procedureNotes && (
+                          <div>
+                            <span className="text-[9px] font-bold uppercase tracking-wide text-[var(--color-ink-300)]">Notes</span>
+                            <p className="text-xs text-[var(--color-ink-600)] whitespace-pre-wrap">{v.procedureNotes}</p>
+                          </div>
+                        )}
                       </div>
                       <button
                         onClick={() => {
                           if (v.procedureLaterality) setLaterality(v.procedureLaterality);
                           if (v.anesthesiaType) setAnesthesia(v.anesthesiaType);
                           if (priorProcs.length > 0) setProcInput(priorProcs.join(", "));
+                          else if (v.procedureName) setProcInput(v.procedureName);
+                          if (v.procedureNotes) setProcNotes(v.procedureNotes);
                           setShowHistory(false);
                         }}
                         className="shrink-0 text-[10px] font-medium text-[var(--color-primary-600)] hover:underline"
