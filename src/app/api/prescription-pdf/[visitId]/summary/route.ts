@@ -38,8 +38,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
     }
   }
 
-  // Only show spectacles when explicitly pinned from Previous Spectacle History
-  const rc = spectRc ?? null;
+  // Use pinned spectacle Rx if set, otherwise fall back to current visit's refraction
+  const rc = spectRc ?? visit.refraction ?? null;
   const re = parseJSON((rc as any)?.re, { sph: "", cyl: "", axis: "", nearSph: "", va: "", nearVa: "" });
   const le = parseJSON((rc as any)?.le, { sph: "", cyl: "", axis: "", nearSph: "", va: "", nearVa: "" });
 

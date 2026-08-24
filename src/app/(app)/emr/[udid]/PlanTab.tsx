@@ -2130,6 +2130,10 @@ function OpticalPrescriptionCard({ visit }: { visit: any }) {
   const re: RxFields = parseJSON(rc?.re, emptyRx);
   const le: RxFields = parseJSON(rc?.le, emptyRx);
 
+  const hasData = [re.sph, re.cyl, re.axis, re.va, re.nearSph, re.nearVa,
+                   le.sph, le.cyl, le.axis, le.va, le.nearSph, le.nearVa]
+    .some((v) => v && v !== "-");
+
   const cell = (val: string) => (val && val !== "-" ? val : <span className="text-[var(--color-ink-300)]">—</span>);
 
   const HEADERS = ["Sph", "Cyl", "Axis°", "VA", "Add", "NV"];
@@ -2140,7 +2144,15 @@ function OpticalPrescriptionCard({ visit }: { visit: any }) {
 
   return (
     <Card>
-      <p className="text-sm font-medium text-[var(--color-ink-700)] mb-3">Optical Prescription</p>
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-sm font-medium text-[var(--color-ink-700)]">Optical Prescription</p>
+        {hasData && (
+          <span className="flex items-center gap-1 text-[10px] font-semibold text-[var(--color-primary-600)] bg-[var(--color-primary-50)] border border-[var(--color-primary-200)] rounded-full px-2 py-0.5">
+            <CheckCircle2 size={10} />
+            Added to Summary
+          </span>
+        )}
+      </div>
       <div className="overflow-x-auto">
         <table className="w-full border-collapse">
           <thead>
