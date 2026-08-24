@@ -89,6 +89,9 @@ export function AppointmentsClient({
   // filter panel toggle (default closed)
   const [showFilters, setShowFilters] = useState(false);
 
+  // active section for default three-group view
+  const [activeSection, setActiveSection] = useState<"today" | "upcoming" | "previous">("today");
+
   // search debounce
   const [searchInput, setSearchInput] = useState(search);
   const debounceRef  = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -542,27 +545,40 @@ export function AppointmentsClient({
                   lbl:   "text-[var(--color-ink-500)]",
                   slbl:  "text-[var(--color-ink-400)]",
                 },
-              ].map(({ label: cl, count, sub: csub, bg, border, dot, cnt, lbl, slbl }) => (
-                <button
-                  key={cl}
-                  onClick={() => {
-                    const el = document.getElementById(`appt-section-${cl.toLowerCase()}`);
-                    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-                  }}
-                  className={`rounded-xl border ${border} ${bg} px-4 py-3 flex flex-col gap-0.5 text-left cursor-pointer hover:shadow-sm transition-shadow`}
-                >
-                  <div className="flex items-center gap-1.5">
-                    <span className={`w-2 h-2 rounded-full shrink-0 ${dot}`} />
-                    <span className={`text-xs font-semibold ${lbl}`}>{cl}</span>
-                  </div>
-                  <p className={`text-2xl font-bold leading-none mt-1 ${cnt}`}>{count}</p>
-                  <p className={`text-[11px] ${slbl}`}>{csub}</p>
-                </button>
-              ))}
+              ].map(({ label: cl, count, sub: csub, bg, border, dot, cnt, lbl, slbl }) => {
+                const sectionKey = cl.toLowerCase() as "today" | "upcoming" | "previous";
+                const isActive = activeSection === sectionKey;
+                return (
+                  <button
+                    key={cl}
+                    onClick={() => setActiveSection(sectionKey)}
+                    className={`rounded-xl border-2 px-4 py-3 flex flex-col gap-0.5 text-left cursor-pointer transition-all ${
+                      isActive
+                        ? `${border} ${bg} shadow-sm ring-2 ring-offset-1 ${
+                            sectionKey === "today"    ? "ring-[var(--color-primary-300)]" :
+                            sectionKey === "upcoming" ? "ring-blue-300" :
+                                                        "ring-[var(--color-border)]"
+                          }`
+                        : "border-[var(--color-border)] bg-white hover:bg-[var(--color-surface-sunken)] opacity-70"
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span className={`w-2 h-2 rounded-full shrink-0 ${isActive ? dot : "bg-[var(--color-ink-300)]"}`} />
+                      <span className={`text-xs font-semibold ${isActive ? lbl : "text-[var(--color-ink-400)]"}`}>{cl}</span>
+                    </div>
+                    <p className={`text-2xl font-bold leading-none mt-1 ${isActive ? cnt : "text-[var(--color-ink-600)]"}`}>{count}</p>
+                    <p className={`text-[11px] ${isActive ? slbl : "text-[var(--color-ink-400)]"}`}>{csub}</p>
+                  </button>
+                );
+              })}
             </div>
 
-            {groups.map(({ key, label, sub, appts: grpAppts, accent, badge, head }) =>
-              grpAppts.length === 0 ? null : (
+            {groups.filter(({ key }) => key === activeSection).map(({ key, label, sub, appts: grpAppts, accent, badge, head }) =>
+              grpAppts.length === 0 ? (
+                <div key={key} className="text-center py-12 text-[var(--color-ink-400)] text-sm">
+                  No {label.toLowerCase()} found.
+                </div>
+              ) : (
                 <div key={key} id={`appt-section-${key}`}>
                   {/* Section header */}
                   <div className="flex items-center gap-2 mb-3">
@@ -602,7 +618,7 @@ export function AppointmentsClient({
                       ))}
                   </div>
                 </div>
-              )
+              ))
             )}
           </div>
         );
