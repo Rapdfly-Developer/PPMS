@@ -452,11 +452,8 @@ function SpectacleDrawer({
       const res = await getPatientSpectacleHistory(patientId);
       setData(res);
       const stored = typeof window !== "undefined" ? localStorage.getItem(SPECT_LS_KEY(udid)) : null;
-      // Default: pin the most recent entry if nothing stored
-      setPinned(stored ?? (res[0]?.visitId ?? null));
-      if (!stored && res[0]?.visitId) {
-        localStorage.setItem(SPECT_LS_KEY(udid), res[0].visitId);
-      }
+      // Only restore an explicit user selection — never auto-pin
+      setPinned(stored ?? null);
     });
   }
 
