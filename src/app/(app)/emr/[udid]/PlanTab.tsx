@@ -2128,11 +2128,11 @@ function OpticalPrescriptionCard({ visit }: { visit: any }) {
             <tr className="border-b border-[var(--color-border)]">
               <th className="text-left pb-2 pr-6 text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]" />
               {HEADERS.map((h) => (
-                <th key={h} className={`text-center pb-2 px-4 text-[10px] font-bold uppercase tracking-wider ${
-                  h === "VA" || h === "NV"
-                    ? "text-[var(--color-ink-300)] bg-[var(--color-surface-sunken)]"
-                    : "text-[var(--color-ink-400)]"
-                }`}>{h}</th>
+                <th key={h} className="text-center pb-2 px-4 text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">
+                  {h === "VA" || h === "NV"
+                    ? <span className="inline-block px-2 py-0.5 rounded bg-[var(--color-surface-sunken)] text-[var(--color-ink-300)]">{h}</span>
+                    : h}
+                </th>
               ))}
             </tr>
           </thead>
@@ -2143,9 +2143,13 @@ function OpticalPrescriptionCard({ visit }: { visit: any }) {
                 <td className="text-center py-3 px-4 text-sm text-[var(--color-ink-800)]">{cell(rx.sph)}</td>
                 <td className="text-center py-3 px-4 text-sm text-[var(--color-ink-800)]">{cell(rx.cyl)}</td>
                 <td className="text-center py-3 px-4 text-sm text-[var(--color-ink-800)]">{cell(rx.axis)}</td>
-                <td className="text-center py-3 px-4 text-sm text-[var(--color-ink-400)] bg-[var(--color-surface-sunken)]">{cell(rx.va)}</td>
+                <td className="text-center py-3 px-4 text-sm">
+                  <span className="inline-block px-2.5 py-0.5 rounded bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)]">{cell(rx.va)}</span>
+                </td>
                 <td className="text-center py-3 px-4 text-sm text-[var(--color-ink-800)]">{cell(rx.nearSph)}</td>
-                <td className="text-center py-3 px-4 text-sm text-[var(--color-ink-400)] bg-[var(--color-surface-sunken)]">{cell(rx.nearVa)}</td>
+                <td className="text-center py-3 px-4 text-sm">
+                  <span className="inline-block px-2.5 py-0.5 rounded bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)]">{cell(rx.nearVa)}</span>
+                </td>
               </tr>
             ))}
           </tbody>
