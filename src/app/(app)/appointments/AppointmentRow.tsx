@@ -9,13 +9,25 @@ import { formatComplaintDisplay } from "@/lib/appointment-cc";
 import { ScheduleNextSlotModal } from "./ScheduleNextSlotModal";
 
 const STATUS_STYLES: Record<string, string> = {
-  SCHEDULED:   "bg-[var(--color-primary-50)] text-[var(--color-primary-700)]",
-  REQUESTED:   "bg-amber-100 text-amber-700",
-  CONFIRMED:   "bg-blue-100 text-blue-700",
-  RESCHEDULED: "bg-[var(--color-info-100)] text-[var(--color-info-600)]",
-  DISPENSED:   "bg-emerald-100 text-emerald-700",
-  CANCELLED:   "bg-red-100 text-red-700",
-  NO_SHOW:     "bg-red-100 text-red-700",
+  SCHEDULED:        "bg-[var(--color-primary-50)] text-[var(--color-primary-700)]",
+  REQUESTED:        "bg-amber-100 text-amber-700",
+  CONFIRMED:        "bg-blue-100 text-blue-700",
+  RESCHEDULED:      "bg-[var(--color-info-100)] text-[var(--color-info-600)]",
+  DISPENSED:        "bg-emerald-100 text-emerald-700",
+  CANCELLED:        "bg-red-100 text-red-700",
+  NO_SHOW:          "bg-red-100 text-red-700",
+  PARTIAL_DISPENSE: "bg-orange-100 text-orange-700",
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  SCHEDULED:        "Scheduled",
+  REQUESTED:        "Requested",
+  CONFIRMED:        "In Queue",
+  RESCHEDULED:      "Rescheduled",
+  DISPENSED:        "Dispensed",
+  CANCELLED:        "Cancelled",
+  NO_SHOW:          "No Show",
+  PARTIAL_DISPENSE: "Partial Dispense",
 };
 
 export function AppointmentRow({ appt, role, token }: { appt: any; role: string; token: number }) {
@@ -205,7 +217,7 @@ export function AppointmentRow({ appt, role, token }: { appt: any; role: string;
             {format(new Date(appt.dateTime), "h:mm a")}
           </p>
           <span className={`text-[11px] font-medium px-2.5 py-0.5 rounded-full whitespace-nowrap ${STATUS_STYLES[appt.status] ?? ""}`}>
-            {appt.status.replace(/_/g, " ")}
+            {STATUS_LABELS[appt.status] ?? appt.status.replace(/_/g, " ")}
           </span>
         </div>
         <span className="flex items-center gap-1 text-[11px] text-[var(--color-ink-400)]" title="Appointment booked at">
@@ -218,7 +230,7 @@ export function AppointmentRow({ appt, role, token }: { appt: any; role: string;
               onClick={() => hospitalSetStatus("CONFIRMED")}
               className="text-xs font-medium px-3 py-1 rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-50"
             >
-              {pending ? "…" : "Confirm"}
+              {pending ? "…" : "Add to Queue"}
             </button>
             <button
               disabled={pending}

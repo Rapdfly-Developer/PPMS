@@ -17,7 +17,7 @@ const STATUSES = [
   { value: "ALL",          label: "All Status"   },
   { value: "SCHEDULED",   label: "Scheduled"    },
   { value: "REQUESTED",   label: "Requested"    },
-  { value: "CONFIRMED",   label: "Confirmed"    },
+  { value: "CONFIRMED",   label: "In Queue"     },
   { value: "DISPENSED",   label: "Dispensed"    },
   { value: "CANCELLED",   label: "Cancelled"    },
   { value: "NO_SHOW",     label: "No Show"      },
@@ -49,6 +49,7 @@ export function AppointmentsClient({
   view,
   role,
   isHospital,
+  isDefaultView = false,
   dateParam,
   statusParam,
   search,
@@ -68,6 +69,7 @@ export function AppointmentsClient({
   view?:          string;
   role:           string;
   isHospital:     boolean;
+  isDefaultView?: boolean;
   dateParam:      string;
   statusParam:    string;
   search:         string;
@@ -127,7 +129,16 @@ export function AppointmentsClient({
     byHospital[a].name.localeCompare(byHospital[b].name)
   );
 
-  // default: expand first slot only
+  // ── Three-group view (default, no specific date selected) ──────────────
+  const todayStr = format(new Date(), "yyyy-MM-dd");
+  const prevAppts     = appointments.filter((a) => format(new Date(a.dateTime), "yyyy-MM-dd") < todayStr)
+    .sort((a, b) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime()); // newest first
+  const todayAppts    = appointments.filter((a) => format(new Date(a.dateTime), "yyyy-MM-dd") === todayStr)
+    .sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime()); // earliest first
+  const upcomingAppts = appointments.filter((a) => format(new Date(a.dateTime), "yyyy-MM-dd") > todayStr)
+    .sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime()); // earliest first
+
+  // ── default: expand first slot only ────────────────────────────────────
   const [expandedSlots, setExpandedSlots] = useState<Set<string>>(() => {
     const s = new Set<string>();
     if (dateKeys[0]) {
@@ -281,7 +292,7 @@ export function AppointmentsClient({
           <div className="relative inline-flex items-center gap-1.5 mt-0.5 cursor-pointer group">
             <Calendar size={13} className="text-[var(--color-ink-400)] shrink-0 pointer-events-none" />
             <span className="text-sm text-[var(--color-ink-500)] group-hover:text-[var(--color-primary-600)] transition-colors pointer-events-none">
-              {dateParam ? `Appointments for ${displayDate}` : `Today's appointments · ${displayDate}`}
+              {dateParam ? `Appointments for ${displayDate}` : `All appointments · ${displayDate}`}
             </span>
             <input
               ref={dateInputRef}
@@ -461,8 +472,89 @@ export function AppointmentsClient({
         </div>
       )}
 
-      {/* ── Hospital sections (Doctor role) ───────────────────────────────── */}
-      {appointments.length > 0 && role === "DOCTOR" && (
+      {/* ── Three-group view (default: no date selected) ─────────────────── */}
+      {appointments.length > 0 && isDefaultView && (() => {
+        const groups = [
+          {
+            key:    "today",
+            label:  `Today's Appointments`,
+            sub:    format(new Date(), "d MMM yyyy"),
+            appts:  todayAppts,
+            accent: "border-l-[var(--color-primary-500)] bg-[var(--color-primary-50)]/40",
+            badge:  "bg-[var(--color-primary-100)] text-[var(--color-primary-700)]",
+            head:   "text-[var(--color-primary-700)]",
+          },
+          {
+            key:    "upcoming",
+            label:  "Upcoming Appointments",
+            sub:    null,
+            appts:  upcomingAppts,
+            accent: "border-l-blue-400 bg-blue-50/30",
+            badge:  "bg-blue-100 text-blue-700",
+            head:   "text-blue-700",
+          },
+          {
+            key:    "previous",
+            label:  "Previous Appointments",
+            sub:    null,
+            appts:  prevAppts,
+            accent: "border-l-[var(--color-border)] bg-[var(--color-surface-sunken)]/20",
+            badge:  "bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)]",
+            head:   "text-[var(--color-ink-600)]",
+          },
+        ];
+
+        return (
+          <div className="flex flex-col gap-6">
+            {groups.map(({ key, label, sub, appts: grpAppts, accent, badge, head }) =>
+              grpAppts.length === 0 ? null : (
+                <div key={key}>
+                  {/* Section header */}
+                  <div className="flex items-center gap-2 mb-3">
+                    <h2 className={`text-sm font-bold uppercase tracking-wide ${head}`}>{label}</h2>
+                    {sub && <span className="text-xs text-[var(--color-ink-400)]">· {sub}</span>}
+                    <span className={`ml-auto text-xs font-bold px-2 py-0.5 rounded-full ${badge}`}>
+                      {grpAppts.length}
+                    </span>
+                  </div>
+
+                  {/* By-date sub-groups within each section */}
+                  <div className="flex flex-col gap-3">
+                    {Object.entries(
+                      grpAppts.reduce((acc: Record<string, any[]>, a: any) => {
+                        const dk = format(new Date(a.dateTime), "yyyy-MM-dd");
+                        (acc[dk] ??= []).push(a);
+                        return acc;
+                      }, {})
+                    )
+                      .sort(([a], [b]) =>
+                        key === "previous" ? b.localeCompare(a) : a.localeCompare(b)
+                      )
+                      .map(([dk, dkAppts]) => (
+                        <div key={dk} className={`surface-card p-4 border-l-4 ${accent}`}>
+                          <p className="text-xs font-semibold text-[var(--color-ink-500)] mb-3">
+                            {dayHeading(dk)}
+                            <span className="ml-2 font-normal text-[var(--color-ink-400)]">
+                              · {(dkAppts as any[]).length} appointment{(dkAppts as any[]).length !== 1 ? "s" : ""}
+                            </span>
+                          </p>
+                          <div className="flex flex-col gap-3">
+                            {(dkAppts as any[]).map((appt: any, idx: number) => (
+                              <AppointmentRow key={appt.id} appt={appt} role={role} token={idx + 1} />
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )
+            )}
+          </div>
+        );
+      })()}
+
+      {/* ── Hospital sections (Doctor role, specific date) ─────────────────── */}
+      {appointments.length > 0 && !isDefaultView && role === "DOCTOR" && (
         <div className="flex flex-col gap-5">
           {hospitalKeys.map((hid) => {
             const { name: hname, appts: happts } = byHospital[hid];
@@ -471,7 +563,6 @@ export function AppointmentsClient({
 
             return (
               <div key={hid} className="surface-card p-4 flex flex-col gap-3">
-                {/* Hospital heading */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
                     <div className="flex items-center justify-center w-8 h-8 rounded-lg"
@@ -490,8 +581,6 @@ export function AppointmentsClient({
                     {happts.length}
                   </span>
                 </div>
-
-                {/* Appointment rows */}
                 <div className="flex flex-col gap-3">
                   {happts
                     .slice()
@@ -506,18 +595,16 @@ export function AppointmentsClient({
         </div>
       )}
 
-      {/* ── Date sections (Hospital / other roles) ────────────────────────── */}
-      {appointments.length > 0 && role !== "DOCTOR" && (
+      {/* ── Date sections (Hospital / other roles, specific date) ─────────── */}
+      {appointments.length > 0 && !isDefaultView && role !== "DOCTOR" && (
         <div className="flex flex-col gap-5">
           {dateKeys.map((dk) => {
             const dateAppts = byDate[dk];
-            const hourGroups = byDateHour[dk];
-            const hourKeys   = Object.keys(hourGroups).sort((a, b) => +a - +b);
+            const hourKeys   = Object.keys(byDateHour[dk]).sort((a, b) => +a - +b);
             const dateAllExp = hourKeys.every((hk) => expandedSlots.has(`${dk}:${hk}`));
 
             return (
               <div key={dk} className="surface-card p-4 flex flex-col gap-3">
-                {/* Date heading */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <h2 className="text-base font-semibold text-[var(--color-ink-800)]">
@@ -531,15 +618,10 @@ export function AppointmentsClient({
                     onClick={() => toggleDateAll(dk)}
                     className="inline-flex items-center gap-1.5 text-sm font-medium text-[var(--color-primary-600)] hover:text-[var(--color-primary-800)] transition-colors"
                   >
-                    <ChevronDown
-                      size={15}
-                      className={clsx("transition-transform", !dateAllExp && "-rotate-90")}
-                    />
+                    <ChevronDown size={15} className={clsx("transition-transform", !dateAllExp && "-rotate-90")} />
                     {dateAllExp ? "Collapse All" : "Expand All"}
                   </button>
                 </div>
-
-                {/* Appointment rows */}
                 <div className="flex flex-col gap-3">
                   {dateAppts.map((appt: any) => (
                     <AppointmentRow key={appt.id} appt={appt} role={role} token={tokenMap[appt.id]} />

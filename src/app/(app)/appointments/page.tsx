@@ -40,11 +40,21 @@ export default async function AppointmentsPage({
   const booked         = !!sp.booked;
   const isHospital     = user.role === "HOSPITAL";
 
-  // ── Date range (IST calendar day) ──────────────────────────────────────
+  // ── Date range ─────────────────────────────────────────────────────────
   const today = istTodayStr();
   const validDateParam = /^\d{4}-\d{2}-\d{2}$/.test(dateParam) ? dateParam : "";
-  const { dayStart, dayEnd } = istDayRange(validDateParam || today);
-  const dateFilter = { gte: dayStart, lte: dayEnd };
+  const isDefaultView = !validDateParam; // no specific date → show previous + today + upcoming
+
+  const { dayStart: selDayStart, dayEnd: selDayEnd } = istDayRange(validDateParam || today);
+  const { dayStart: todayStart, dayEnd: todayEnd } = istDayRange(today);
+
+  // Default view: past 30 days → today → next 60 days
+  const dateFilter = isDefaultView
+    ? {
+        gte: new Date(todayStart.getTime() - 30 * 24 * 60 * 60 * 1000),
+        lte: new Date(todayStart.getTime() + 60 * 24 * 60 * 60 * 1000),
+      }
+    : { gte: selDayStart, lte: selDayEnd };
 
   // ── Build where clause ─────────────────────────────────────────────────
   const where: any = {};
@@ -53,22 +63,20 @@ export default async function AppointmentsPage({
 
   if (user.role === "DOCTOR") {
     where.doctorId = scopeDoctorId(user);
-    // Show only the selected day (defaults to today); other days via the date picker
     where.dateTime = dateFilter;
-    // For past dates show everything; for today/future show only pending (REQUESTED/SCHEDULED).
-    // CONFIRMED patients have moved to Today's Queue and are excluded here.
-    if (statusParam === "ALL" && !isPastDate) {
+    // For a specific today/future date with All Status: limit to pending only
+    if (!isDefaultView && statusParam === "ALL" && !isPastDate) {
       where.status = { in: ["REQUESTED", "SCHEDULED"] };
     }
   } else if (user.role === "HOSPITAL") {
     where.hospitalId = user.hospitalId;
     where.dateTime = dateFilter;
-    if (statusParam === "ALL" && !isPastDate) {
+    if (!isDefaultView && statusParam === "ALL" && !isPastDate) {
       where.status = { notIn: ["DISPENSED", "CANCELLED", "NO_SHOW", "CONFIRMED"] };
     }
   } else {
     where.dateTime = dateFilter;
-    if (statusParam === "ALL" && !isPastDate) {
+    if (!isDefaultView && statusParam === "ALL" && !isPastDate) {
       where.status = { notIn: ["DISPENSED", "CANCELLED", "NO_SHOW", "CONFIRMED"] };
     }
   }
@@ -100,7 +108,6 @@ export default async function AppointmentsPage({
   }
 
   // Pending requests for today (always today's range, ignoring dateParam)
-  const { dayStart: todayStart, dayEnd: todayEnd } = istDayRange(today);
   const pendingWhere: any = { status: "REQUESTED", dateTime: { gte: todayStart, lte: todayEnd } };
   if (user.role === "DOCTOR")   pendingWhere.doctorId   = scopeDoctorId(user);
   if (user.role === "HOSPITAL") pendingWhere.hospitalId = user.hospitalId;
@@ -145,6 +152,7 @@ export default async function AppointmentsPage({
         view={view}
         role={user.role}
         isHospital={isHospital}
+        isDefaultView={isDefaultView}
         dateParam={dateParam}
         statusParam={statusParam}
         search={search}
