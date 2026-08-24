@@ -75,6 +75,7 @@ export default async function PatientProfilePage({
     todayVisits.find((v) => v.hospitalId === patient.registeredAtId) ?? null;
   let todayAppointmentId: string | null = null;
 
+  let hasRequestedAppt = false;
   if (!todayVisitRecord) {
     const todayAppts = await prisma.appointment.findMany({
       where: {
@@ -83,17 +84,22 @@ export default async function PatientProfilePage({
         status: { in: ["CONFIRMED", "REQUESTED", "SCHEDULED"] },
       },
       orderBy: { dateTime: "asc" },
-      select: { id: true, hospitalId: true, visit: { select: { id: true } } },
+      select: { id: true, hospitalId: true, status: true, visit: { select: { id: true } } },
     });
+    // Only CONFIRMED appointments mean the patient has been pushed to the queue
+    const confirmedAppts = todayAppts.filter((a) => a.status === "CONFIRMED");
     const preferred =
-      todayAppts.find((a) => a.hospitalId === patient.registeredAtId && !a.visit) ??
-      (todayVisits.length === 0 ? todayAppts.find((a) => !a.visit) : undefined);
+      confirmedAppts.find((a) => a.hospitalId === patient.registeredAtId && !a.visit) ??
+      (todayVisits.length === 0 ? confirmedAppts.find((a) => !a.visit) : undefined);
     if (preferred) {
       todayAppointmentId = preferred.id;
     } else {
       // No usable appointment — fall back to a visit at another hospital
       todayVisitRecord = todayVisits[0] ?? null;
     }
+    // Detect a pending (REQUESTED/SCHEDULED) appointment that hasn't reached the queue yet
+    hasRequestedAppt = !todayVisitRecord && !todayAppointmentId &&
+      todayAppts.some((a) => a.status === "REQUESTED" || a.status === "SCHEDULED");
   }
 
   const todayVisit: TodayVisit = todayVisitRecord
@@ -383,6 +389,7 @@ export default async function PatientProfilePage({
         visits={serialVisits}
         todayVisit={todayVisit}
         todayAppointmentId={todayAppointmentId}
+        hasRequestedAppt={hasRequestedAppt}
         userRole={user.role}
         timelineEntries={timelineEntries}
         lastVisitSummary={lastVisitSummary}

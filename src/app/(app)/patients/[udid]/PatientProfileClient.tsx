@@ -558,6 +558,7 @@ export function PatientProfileClient({
   visits,
   todayVisit,
   todayAppointmentId,
+  hasRequestedAppt = false,
   userRole,
   timelineEntries = [],
   lastVisitSummary = null,
@@ -572,6 +573,7 @@ export function PatientProfileClient({
   visits: SerialVisit[];
   todayVisit: TodayVisit;
   todayAppointmentId?: string | null;
+  hasRequestedAppt?: boolean;
   userRole: string;
   timelineEntries?: TimelineEntry[];
   lastVisitSummary?: LastVisitSummary | null;
@@ -646,8 +648,17 @@ export function PatientProfileClient({
               className="flex-1 flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-xl font-semibold text-sm bg-emerald-600 text-white hover:bg-emerald-700 transition-colors shadow-sm"
             >
               <Stethoscope size={16} />
-              Open EMR
+              Today&apos;s Visit
             </Link>
+          ) : hasRequestedAppt ? (
+            <button
+              disabled
+              className="flex-1 flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-xl font-semibold text-sm bg-[var(--color-surface-sunken)] text-[var(--color-ink-400)] border border-[var(--color-border)] cursor-not-allowed"
+              title="Patient has an appointment today but has not been moved to the queue yet"
+            >
+              <Clock size={16} />
+              Not in Queue Yet
+            </button>
           ) : (
             <button
               disabled
