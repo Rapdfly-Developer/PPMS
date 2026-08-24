@@ -1071,7 +1071,12 @@ ${card("Medications",
     <tbody>${medRows}</tbody>
   </table>`)}
 
-<!-- 4 · INVESTIGATIONS -->
+<!-- 4 · ADVICE NOTES (below medications) -->
+${d.advice && d.advice.trim()
+  ? `<div class="no-break" style="font-size:9.5px;color:#1a1a1a;white-space:pre-wrap;line-height:1.5;margin-bottom:11px;border:1px solid ${LINE};border-radius:4px;padding:5px 9px;">${escapeHtml(d.advice.trim())}</div>`
+  : ""}
+
+<!-- 5 · INVESTIGATIONS -->
 ${d.investigations.length
   ? card("Investigations",
       `<table style="width:100%;">
@@ -1103,11 +1108,6 @@ ${d.investigations.length
           ).join("")}
         </tbody>
       </table>`)
-  : ""}
-
-<!-- 5 · ADVICE NOTES (no heading, content only) -->
-${d.advice && d.advice.trim()
-  ? `<div class="no-break" style="font-size:9.5px;color:#1a1a1a;white-space:pre-wrap;line-height:1.5;margin-bottom:11px;border:1px solid ${LINE};border-radius:4px;padding:5px 9px;">${escapeHtml(d.advice.trim())}</div>`
   : ""}
 
 <!-- 5 · SPECTACLES / REFRACTION (only if an Rx exists) -->
