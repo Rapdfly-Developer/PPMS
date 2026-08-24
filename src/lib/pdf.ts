@@ -870,7 +870,7 @@ async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
     return "";
   };
 
-  const MED_TD = `padding:6px 7px;border-bottom:1px solid #ECF3F1;font-size:9.5px;`;
+  const MED_TD = `padding:6px 7px;border-bottom:1px dotted #C8DBD8;font-size:9.5px;`;
 
   const medRows = d.medications.length
     ? d.medications.map((m, i) =>
