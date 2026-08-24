@@ -1095,8 +1095,6 @@ function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: st
   const [procedures, setProcedures] = useState<string[]>(() => parseProcedureList(visit.procedureName ?? ""));
   const [customKws, setCustomKws]   = useState<string[]>([]);
   const [procInput, setProcInput]   = useState("");
-  const [editIndex, setEditIndex]   = useState<number | null>(null);
-  const [editValue, setEditValue]   = useState("");
   const procInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { setCustomKws(getCustomProcedureKws()); }, []);
@@ -1133,18 +1131,6 @@ function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: st
 
   const removeProcedure = (i: number) => {
     setProcedures((prev) => prev.filter((_, idx) => idx !== i));
-  };
-
-  const startEdit = (i: number) => { setEditIndex(i); setEditValue(procedures[i]); };
-
-  const commitEdit = () => {
-    if (editIndex === null) return;
-    const trimmed = editValue.trim();
-    if (trimmed) {
-      setProcedures((prev) => prev.map((p, i) => (i === editIndex ? trimmed : p)));
-    }
-    setEditIndex(null);
-    setEditValue("");
   };
 
   const filteredAnesthesia = ANESTHESIA_KEYWORDS.filter((kw) =>
@@ -1312,42 +1298,23 @@ function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: st
         </div>
       </div>
 
-      {/* Added procedures list */}
+      {/* Added procedures — shown as chips */}
       {procedures.length > 0 && (
-        <ul className="flex flex-col gap-1.5 mt-3">
+        <div className="flex flex-wrap gap-1.5 mt-3">
           {procedures.map((name, i) => (
-            <li key={i} className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-3 py-2 flex items-center gap-2">
-              {editIndex === i ? (
-                <>
-                  <input
-                    autoFocus
-                    value={editValue}
-                    onChange={(e) => setEditValue(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === "Enter") commitEdit(); if (e.key === "Escape") { setEditIndex(null); } }}
-                    className="flex-1 text-sm rounded-lg border border-[var(--color-primary-300)] px-2 py-0.5 focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-400)]"
-                  />
-                  <button onClick={commitEdit} className="text-[10px] font-semibold px-2 py-0.5 rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] transition-colors">
-                    Save
-                  </button>
-                  <button onClick={() => setEditIndex(null)} className="text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)]">
-                    <X size={13} />
-                  </button>
-                </>
-              ) : (
-                <>
-                  <Scissors size={12} className="text-[var(--color-ink-400)] shrink-0" />
-                  <span className="flex-1 text-sm text-[var(--color-ink-800)]">{name}</span>
-                  <button onClick={() => startEdit(i)} className="text-[var(--color-ink-300)] hover:text-[var(--color-primary-600)] transition-colors" title="Edit">
-                    <Pencil size={12} />
-                  </button>
-                  <button onClick={() => removeProcedure(i)} className="text-[var(--color-ink-300)] hover:text-red-500 transition-colors" title="Remove">
-                    <X size={13} />
-                  </button>
-                </>
-              )}
-            </li>
+            <div key={i} className="flex items-center gap-1 bg-[var(--color-primary-50)] border border-[var(--color-primary-300)] text-[var(--color-primary-800)] text-xs font-semibold pl-2.5 pr-1.5 py-1 rounded-full">
+              <Scissors size={10} className="shrink-0 text-[var(--color-primary-400)]" />
+              <span>{name}</span>
+              <button
+                onClick={() => removeProcedure(i)}
+                className="ml-0.5 text-[var(--color-primary-400)] hover:text-red-500 transition-colors"
+                title="Remove"
+              >
+                <X size={10} />
+              </button>
+            </div>
           ))}
-        </ul>
+        </div>
       )}
 
       {/* History panel */}
