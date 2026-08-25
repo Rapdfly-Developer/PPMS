@@ -597,7 +597,7 @@ function PresetSelectDialog({
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden"
+        className="relative w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden"
         style={{ background: "var(--color-surface)" }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -616,7 +616,7 @@ function PresetSelectDialog({
         </div>
 
         {/* Preset list + form */}
-        <div className="p-5 flex flex-col gap-3 max-h-[65vh] overflow-y-auto">
+        <div className="p-5 flex flex-col gap-3 max-h-[78vh] overflow-y-auto">
           <p className="text-xs text-[var(--color-ink-400)]">
             Select one or more presets to apply. Duplicate medications will be automatically skipped.
           </p>
