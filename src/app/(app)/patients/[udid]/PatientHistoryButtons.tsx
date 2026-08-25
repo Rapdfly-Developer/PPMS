@@ -18,12 +18,14 @@ function Drawer({
   title,
   icon,
   children,
+  wide = false,
 }: {
   open: boolean;
   onClose: () => void;
   title: string;
   icon: React.ReactNode;
   children: React.ReactNode;
+  wide?: boolean;
 }) {
   if (!open) return null;
   return (
@@ -32,7 +34,7 @@ function Drawer({
       style={{ background: "rgba(0,0,0,0.45)" }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="bg-white w-full sm:max-w-lg sm:rounded-2xl shadow-2xl flex flex-col max-h-[90vh] rounded-t-2xl">
+      <div className={`bg-white w-full sm:rounded-2xl shadow-2xl flex flex-col max-h-[92vh] rounded-t-2xl ${wide ? "sm:max-w-2xl" : "sm:max-w-lg"}`}>
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--color-border)] shrink-0">
           <div className="flex items-center gap-2 text-[var(--color-ink-800)]">
@@ -303,7 +305,7 @@ function TreatmentDrawer({
   };
 
   return (
-    <Drawer open={open} onClose={onClose} title="Treatment History" icon={<Pill size={16} />}>
+    <Drawer open={open} onClose={onClose} title="Treatment History" icon={<Pill size={16} />} wide>
       {isPending && (
         <div className="flex justify-center py-10">
           <Loader2 size={22} className="animate-spin text-[var(--color-primary-500)]" />
@@ -335,15 +337,29 @@ function TreatmentDrawer({
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)] mb-1.5">Medications</p>
               <div className="flex flex-col gap-1.5">
-                {v.medications.map((m) => (
-                  <div key={m.id} className="rounded-lg bg-[var(--color-surface-sunken)] px-3 py-2">
-                    <p className="text-xs font-semibold text-[var(--color-ink-800)]">{m.drugName}</p>
-                    <p className="text-[10px] text-[var(--color-ink-500)] mt-0.5">
-                      {[m.dosage, m.frequency, m.duration].filter(Boolean).join(" · ")}
-                    </p>
-                    {m.instructions && (
-                      <p className="text-[10px] text-[var(--color-ink-400)] mt-0.5 italic">{m.instructions}</p>
-                    )}
+                {v.medications.map((m, idx) => (
+                  <div key={m.id} className="rounded-lg bg-[var(--color-surface-sunken)] px-3 py-2 flex items-start gap-2.5">
+                    {/* Number */}
+                    <span className="shrink-0 mt-0.5 w-5 h-5 rounded-full bg-[var(--color-primary-100)] text-[var(--color-primary-700)] text-[10px] font-bold flex items-center justify-center">
+                      {idx + 1}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                        {/* Laterality badge */}
+                        {m.laterality && (
+                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[var(--color-primary-600)] text-white shrink-0">
+                            {m.laterality}
+                          </span>
+                        )}
+                        <p className="text-xs font-semibold text-[var(--color-ink-800)]">{m.drugName}</p>
+                      </div>
+                      <p className="text-[10px] text-[var(--color-ink-500)]">
+                        {[m.dosage, m.frequency, m.duration].filter(Boolean).join(" · ")}
+                      </p>
+                      {m.instructions && (
+                        <p className="text-[10px] text-[var(--color-ink-400)] mt-0.5 italic">{m.instructions}</p>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>

@@ -328,7 +328,7 @@ export async function getPatientTreatmentHistory(patientId: string) {
       date: true,
       hospital: { select: { name: true } },
       medications: {
-        select: { id: true, drugName: true, dosage: true, frequency: true, duration: true, instructions: true },
+        select: { id: true, drugName: true, dosage: true, frequency: true, duration: true, instructions: true, laterality: true },
         orderBy: { createdAt: "asc" },
       },
       diagnoses: {
