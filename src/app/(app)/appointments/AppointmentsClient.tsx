@@ -92,6 +92,10 @@ export function AppointmentsClient({
   // active section for default three-group view
   const [activeSection, setActiveSection] = useState<"today" | "upcoming" | "previous">("today");
 
+  // previous section pagination
+  const PREV_PAGE_SIZE = 10;
+  const [prevPage, setPrevPage] = useState(1);
+
   // search debounce
   const [searchInput, setSearchInput] = useState(search);
   const debounceRef  = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -551,7 +555,7 @@ export function AppointmentsClient({
                 return (
                   <button
                     key={cl}
-                    onClick={() => setActiveSection(sectionKey)}
+                    onClick={() => { setActiveSection(sectionKey); if (sectionKey === "previous") setPrevPage(1); }}
                     className={`rounded-xl border-2 px-4 py-3 flex flex-col gap-0.5 text-left cursor-pointer transition-all ${
                       isActive
                         ? `${border} ${bg} shadow-sm ring-2 ring-offset-1 ${
@@ -581,6 +585,14 @@ export function AppointmentsClient({
                   </div>
                 );
               }
+
+              // For "previous", paginate the appointments before grouping by date
+              const isPrev = key === "previous";
+              const prevTotalPages = isPrev ? Math.ceil(grpAppts.length / PREV_PAGE_SIZE) : 1;
+              const visibleAppts = isPrev
+                ? grpAppts.slice((prevPage - 1) * PREV_PAGE_SIZE, prevPage * PREV_PAGE_SIZE)
+                : grpAppts;
+
               return (
                 <div key={key} id={`appt-section-${key}`}>
                   {/* Section header */}
@@ -595,7 +607,7 @@ export function AppointmentsClient({
                   {/* By-date sub-groups within each section */}
                   <div className="flex flex-col gap-3">
                     {Object.entries(
-                      grpAppts.reduce((acc: Record<string, any[]>, a: any) => {
+                      visibleAppts.reduce((acc: Record<string, any[]>, a: any) => {
                         const dk = format(new Date(a.dateTime), "yyyy-MM-dd");
                         (acc[dk] ??= []).push(a);
                         return acc;
@@ -620,6 +632,61 @@ export function AppointmentsClient({
                         </div>
                       ))}
                   </div>
+
+                  {/* Pagination for Previous section */}
+                  {isPrev && prevTotalPages > 1 && (
+                    <div className="flex items-center justify-between mt-4 flex-wrap gap-3">
+                      <span className="text-sm text-[var(--color-ink-500)]">
+                        Showing{" "}
+                        <span className="font-semibold text-[var(--color-ink-700)]">
+                          {(prevPage - 1) * PREV_PAGE_SIZE + 1}–{Math.min(prevPage * PREV_PAGE_SIZE, grpAppts.length)}
+                        </span>{" "}
+                        of{" "}
+                        <span className="font-semibold text-[var(--color-ink-700)]">{grpAppts.length}</span> appointments
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <button
+                          disabled={prevPage <= 1}
+                          onClick={() => setPrevPage((p) => p - 1)}
+                          className="px-3 py-1.5 text-sm font-medium rounded-lg border border-[var(--color-border)] bg-white text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                        >
+                          Previous
+                        </button>
+                        {Array.from({ length: prevTotalPages }, (_, i) => i + 1)
+                          .filter((p) => p === 1 || p === prevTotalPages || Math.abs(p - prevPage) <= 1)
+                          .reduce<(number | "…")[]>((acc, p, i, arr) => {
+                            if (i > 0 && p - (arr[i - 1] as number) > 1) acc.push("…");
+                            acc.push(p);
+                            return acc;
+                          }, [])
+                          .map((p, i) =>
+                            p === "…" ? (
+                              <span key={`e${i}`} className="px-2 text-sm text-[var(--color-ink-300)]">…</span>
+                            ) : (
+                              <button
+                                key={p}
+                                onClick={() => setPrevPage(p as number)}
+                                className={clsx(
+                                  "w-9 h-9 text-sm font-medium rounded-lg border transition-colors",
+                                  prevPage === p
+                                    ? "border-[var(--color-primary-600)] text-[var(--color-primary-600)] bg-[var(--color-primary-50)] font-semibold"
+                                    : "border-[var(--color-border)] text-[var(--color-ink-600)] bg-white hover:bg-[var(--color-surface-sunken)]"
+                                )}
+                              >
+                                {p}
+                              </button>
+                            )
+                          )}
+                        <button
+                          disabled={prevPage >= prevTotalPages}
+                          onClick={() => setPrevPage((p) => p + 1)}
+                          className="px-3 py-1.5 text-sm font-medium rounded-lg border border-[var(--color-border)] bg-white text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                        >
+                          Next
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })}
