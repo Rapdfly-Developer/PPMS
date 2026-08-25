@@ -469,11 +469,13 @@ function PresetSelectDialog({
   );
   const [customPresets, setCustomPresets] = useState<TreatmentPreset[]>([]);
   const [showForm, setShowForm] = useState(false);
+  const [editingPresetId, setEditingPresetId] = useState<string | null>(null);
   const [formName, setFormName] = useState("");
   const [formMeds, setFormMeds] = useState<FormMed[]>([blankMed()]);
   const [formAdvice, setFormAdvice] = useState("");
   const [formInvestigations, setFormInvestigations] = useState("");
   const [formFollowUp, setFormFollowUp] = useState("");
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   // Load matching custom presets from localStorage on mount
   useEffect(() => {
@@ -499,6 +501,17 @@ function PresetSelectDialog({
     setFormAdvice(base?.advice ?? "");
     setFormInvestigations(base?.investigations?.join(", ") ?? "");
     setFormFollowUp(base?.followUpDays ? String(base.followUpDays) : "");
+    setEditingPresetId(null);
+    setShowForm(true);
+  };
+
+  const openEditForm = (preset: TreatmentPreset) => {
+    setFormName(preset.name);
+    setFormMeds(preset.medications.map((m) => ({ drugName: m.drugName, dosage: m.dosage ?? "", frequency: m.frequency ?? "", duration: m.duration ?? "" })));
+    setFormAdvice(preset.advice ?? "");
+    setFormInvestigations(preset.investigations?.join(", ") ?? "");
+    setFormFollowUp(preset.followUpDays ? String(preset.followUpDays) : "");
+    setEditingPresetId(preset.id);
     setShowForm(true);
   };
 
@@ -521,6 +534,40 @@ function PresetSelectDialog({
     setCustomPresets((prev) => [...prev, newPreset]);
     setSelected((prev) => new Set([...prev, newPreset.id]));
     setShowForm(false);
+  };
+
+  const updateProtocol = () => {
+    if (!editingPresetId) return;
+    const meds = formMeds.filter((m) => m.drugName.trim());
+    if (!formName.trim() || !meds.length) return;
+    const all = getTreatmentPresets();
+    const existing = all.find((p) => p.id === editingPresetId);
+    const updated: TreatmentPreset = {
+      ...(existing ?? { id: editingPresetId, diagnosisCodes: matches.map((m) => m.diagnosisCode), diagnosisKeywords: [], isDefault: false, createdAt: new Date().toISOString() }),
+      name: formName.trim(),
+      medications: meds.map((m) => ({ drugName: m.drugName.trim(), dosage: m.dosage || undefined, frequency: m.frequency || undefined, duration: m.duration || undefined })),
+      advice: formAdvice.trim() || undefined,
+      investigations: formInvestigations ? formInvestigations.split(",").map((s) => s.trim()).filter(Boolean) : undefined,
+      followUpDays: formFollowUp ? Number(formFollowUp) : undefined,
+      isDefault: false,
+    };
+    const newAll = existing ? all.map((p) => p.id === editingPresetId ? updated : p) : [...all, updated];
+    saveTreatmentPresets(newAll);
+    // Refresh local custom list; if originally default now stored as custom override
+    setCustomPresets((prev) => {
+      const exists = prev.find((p) => p.id === editingPresetId);
+      return exists ? prev.map((p) => p.id === editingPresetId ? updated : p) : [...prev, updated];
+    });
+    setShowForm(false);
+    setEditingPresetId(null);
+  };
+
+  const deleteProtocol = (id: string) => {
+    const all = getTreatmentPresets().filter((p) => p.id !== id);
+    saveTreatmentPresets(all);
+    setCustomPresets((prev) => prev.filter((p) => p.id !== id));
+    setSelected((prev) => { const next = new Set(prev); next.delete(id); return next; });
+    setDeleteConfirmId(null);
   };
 
   const allMatches: PresetMatch[] = [
@@ -578,6 +625,7 @@ function PresetSelectDialog({
             const checked = selected.has(preset.id);
             const isCustom = !preset.isDefault;
             const protocolNum = idx + 1;
+            const isDelConfirm = deleteConfirmId === preset.id;
             return (
               <label
                 key={preset.id}
@@ -598,11 +646,48 @@ function PresetSelectDialog({
                         <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 shrink-0">CUSTOM</span>
                       )}
                     </div>
-                    {preset.followUpDays && (
-                      <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-[#EEF8F7] text-[#0F766E] border border-[#B2DEDA] shrink-0">
-                        F/U {preset.followUpDays}d
-                      </span>
-                    )}
+                    <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.preventDefault()}>
+                      {preset.followUpDays && (
+                        <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-[#EEF8F7] text-[#0F766E] border border-[#B2DEDA]">
+                          F/U {preset.followUpDays}d
+                        </span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={(e) => { e.preventDefault(); openEditForm(preset); }}
+                        className="p-1.5 rounded-lg text-[var(--color-ink-400)] hover:text-[#0F766E] hover:bg-[#DCF3F1] transition-colors"
+                        title="Edit protocol"
+                      >
+                        <Pencil size={11} />
+                      </button>
+                      {isDelConfirm ? (
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={(e) => { e.preventDefault(); deleteProtocol(preset.id); }}
+                            className="px-2 py-0.5 rounded-lg bg-red-500 text-white text-[10px] font-semibold hover:bg-red-600 transition-colors"
+                          >
+                            Confirm
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => { e.preventDefault(); setDeleteConfirmId(null); }}
+                            className="p-1 rounded-lg text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)] transition-colors"
+                          >
+                            <X size={11} />
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={(e) => { e.preventDefault(); setDeleteConfirmId(preset.id); }}
+                          className="p-1.5 rounded-lg text-[var(--color-ink-400)] hover:text-red-500 hover:bg-red-50 transition-colors"
+                          title="Delete protocol"
+                        >
+                          <Trash2 size={11} />
+                        </button>
+                      )}
+                    </div>
                   </div>
 
                   {/* Medications */}
@@ -636,7 +721,7 @@ function PresetSelectDialog({
             );
           })}
 
-          {/* ── Add Custom Protocol ─────────────────────────────────── */}
+          {/* ── Add / Edit Protocol ─────────────────────────────────── */}
           {!showForm ? (
             <button
               type="button"
@@ -648,8 +733,10 @@ function PresetSelectDialog({
           ) : (
             <div className="rounded-xl border-2 border-[#B2DEDA] bg-[#EEF8F7]/50 p-4 flex flex-col gap-3">
               <div className="flex items-center justify-between">
-                <p className="text-xs font-bold text-[#0F766E] uppercase tracking-wide">New Custom Protocol</p>
-                <button type="button" onClick={() => setShowForm(false)} className="text-[var(--color-ink-300)] hover:text-[var(--color-ink-700)]">
+                <p className="text-xs font-bold text-[#0F766E] uppercase tracking-wide">
+                  {editingPresetId ? "Edit Protocol" : "New Custom Protocol"}
+                </p>
+                <button type="button" onClick={() => { setShowForm(false); setEditingPresetId(null); }} className="text-[var(--color-ink-300)] hover:text-[var(--color-ink-700)]">
                   <X size={13} />
                 </button>
               </div>
@@ -739,11 +826,11 @@ function PresetSelectDialog({
 
               <button
                 type="button"
-                onClick={saveCustomProtocol}
+                onClick={editingPresetId ? updateProtocol : saveCustomProtocol}
                 disabled={!formName.trim() || !formMeds.some((m) => m.drugName.trim())}
                 className="w-full py-2 rounded-xl bg-[#0F766E] text-white text-xs font-semibold hover:bg-[#0D6862] disabled:opacity-40 transition-colors flex items-center justify-center gap-1.5"
               >
-                <Check size={12} /> Save & Add to List
+                <Check size={12} /> {editingPresetId ? "Update Protocol" : "Save & Add to List"}
               </button>
             </div>
           )}
