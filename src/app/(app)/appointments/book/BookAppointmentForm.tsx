@@ -7,7 +7,7 @@ import {
   Calendar, Clock, FileText, ChevronRight,
   User, Phone, AlertCircle, CheckCircle2, Building2,
 } from "lucide-react";
-import { bookAppointment, getBookedSlots } from "./actions";
+import { bookAppointment, getBookedSlots, getLastVisitCC } from "./actions";
 import { BackButton } from "@/components/ui/BackButton";
 import { SmartUploadBox, type UploadedFile } from "@/components/ui/SmartUploadBox";
 import { ComplaintCombobox } from "@/components/ui/ComplaintCombobox";
@@ -20,6 +20,27 @@ type AvailSlot = { weekday: number; startTime: string; endTime: string; slotMins
 type Doctor  = { id: string; name: string; specialty: string };
 type Patient = { id: string; name: string; udid: string; uhid: string; age: number | null; sex: string; mobile: string; registeredAtId: string | null };
 type Hospital = { id: string; name: string };
+
+function sinceToDays(sinceStr: string): number {
+  const m = sinceStr.match(/(\d+)\s*(days?|weeks?|months?|years?)/i);
+  if (!m) return 0;
+  const n = parseInt(m[1]);
+  const u = m[2].toLowerCase();
+  if (u.startsWith("day")) return n;
+  if (u.startsWith("week")) return n * 7;
+  if (u.startsWith("month")) return n * 30;
+  if (u.startsWith("year")) return n * 365;
+  return 0;
+}
+
+function daysToParts(days: number): { num: string; unit: string } {
+  if (days <= 30) return { num: String(days), unit: "days" };
+  const weeks = Math.round(days / 7);
+  if (weeks <= 30) return { num: String(weeks), unit: "weeks" };
+  const months = Math.round(days / 30);
+  if (months <= 30) return { num: String(months), unit: "months" };
+  return { num: String(Math.min(30, Math.round(days / 365))), unit: "years" };
+}
 
 function to12h(t: string): string {
   const [h, m] = t.split(":").map(Number);
@@ -90,6 +111,14 @@ export function BookAppointmentForm({
   const [sinceNum,   setSinceNum]   = useState("");
   const [sinceUnit,  setSinceUnit]  = useState("days");
   const [bookedCounts, setBookedCounts] = useState<Record<string, number>>({});
+
+  // Follow-up auto-fill
+  const [followUpBase, setFollowUpBase] = useState<{
+    lat: string;
+    text: string;
+    prevSinceDays: number;
+    prevVisitDate: string;
+  } | null>(null);
 
   // For DOCTOR role: selected hospital (since hospitalId is null)
   const doctorHospitals = hospitalsByDoctor[doctorId] ?? [];
@@ -173,6 +202,52 @@ export function BookAppointmentForm({
     getBookedSlots(doctorId, date, activeHospitalId).then(setBookedCounts).catch(() => {});
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [doctorId, date, activeHospitalId]);
+
+  // Auto-fill from previous visit when Follow-up is selected
+  useEffect(() => {
+    if (visitType !== "Follow-up" || !selectedPatient) {
+      setFollowUpBase(null);
+      return;
+    }
+    getLastVisitCC(selectedPatient.id).then((data) => {
+      if (!data) return;
+      // Parse "RE | Since: 10 days | Blurred vision" format
+      const parts = data.notes.split(" | ");
+      let lat = "";
+      let text = "";
+      let prevSinceDays = 0;
+      if (parts.length >= 3 && ["RE", "LE", "OU"].includes(parts[0].trim())) {
+        lat = parts[0].trim();
+        const sinceMatch = parts[1].match(/Since:\s*(.+)/i);
+        if (sinceMatch) prevSinceDays = sinceToDays(sinceMatch[1].trim());
+        text = parts.slice(2).join(" | ").trim();
+      } else {
+        text = data.notes;
+      }
+      const prevVisitDate = data.visitDate;
+      setFollowUpBase({ lat, text, prevSinceDays, prevVisitDate });
+      // Pre-fill fields
+      if (lat) setLaterality(lat);
+      if (text) setNotes(text);
+      const elapsed = Math.round((new Date(date + "T12:00:00").getTime() - new Date(prevVisitDate).getTime()) / 86_400_000);
+      const totalDays = prevSinceDays + Math.max(0, elapsed);
+      const { num, unit } = daysToParts(totalDays);
+      setSinceNum(num);
+      setSinceUnit(unit);
+    }).catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visitType, selectedPatient?.id]);
+
+  // Recalculate Since when date changes (follow-up mode)
+  useEffect(() => {
+    if (!followUpBase) return;
+    const elapsed = Math.round((new Date(date + "T12:00:00").getTime() - new Date(followUpBase.prevVisitDate).getTime()) / 86_400_000);
+    const totalDays = followUpBase.prevSinceDays + Math.max(0, elapsed);
+    const { num, unit } = daysToParts(totalDays);
+    setSinceNum(num);
+    setSinceUnit(unit);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [date, followUpBase]);
 
   // Keep selected time pointing at a bookable slot when slots change
   useEffect(() => {
@@ -744,7 +819,14 @@ export function BookAppointmentForm({
 
             {/* Notes */}
             <div>
-              <FieldLabel icon={<FileText size={12} />}>Chief Complaint *</FieldLabel>
+              <div className="flex items-center justify-between mb-1.5">
+                <FieldLabel icon={<FileText size={12} />}>Chief Complaint *</FieldLabel>
+                {followUpBase && (
+                  <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-teal-50 border border-teal-200 text-teal-700">
+                    Auto-filled from previous visit
+                  </span>
+                )}
+              </div>
               <div className="flex items-center justify-between gap-3 mt-1.5 mb-2">
                 {/* Laterality pills */}
                 <div className="flex gap-1.5">

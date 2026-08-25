@@ -8,6 +8,17 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { istDateTime, istParts, istHHMM, istDayRange } from "@/lib/ist";
 
+export async function getLastVisitCC(patientId: string): Promise<{ notes: string; visitDate: string } | null> {
+  await requireRole("HOSPITAL", "DOCTOR");
+  const appt = await prisma.appointment.findFirst({
+    where: { patientId, notes: { not: null } },
+    orderBy: { dateTime: "desc" },
+    select: { notes: true, dateTime: true },
+  });
+  if (!appt?.notes) return null;
+  return { notes: appt.notes, visitDate: appt.dateTime.toISOString() };
+}
+
 export async function getBookedSlots(doctorId: string, dateStr: string, hospitalId: string): Promise<Record<string, number>> {
   await requireRole("HOSPITAL", "DOCTOR");
   const { dayStart, dayEnd } = istDayRange(dateStr);
