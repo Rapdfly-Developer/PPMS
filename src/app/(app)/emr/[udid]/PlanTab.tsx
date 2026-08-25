@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/Card";
 import { History } from "lucide-react";
 import { parseJSON } from "@/lib/json";
 import { useAutoSave, SaveIndicator } from "@/lib/useAutoSave";
-import { addMedication, removeMedication, updateMedication, clearAllMedications, saveRefraction, saveFollowUp, saveAdviseNotes, saveAnesthesiaType, saveProcedureLaterality, saveProcedureName, saveProcedureNotes, addInvestigationOrder } from "./actions";
+import { addMedication, removeMedication, updateMedication, clearAllMedications, saveRefraction, saveFollowUp, saveAdviseNotes, saveAnesthesiaType, saveProcedureLaterality, saveProcedureName, saveProcedureNotes, addInvestigationOrder, deleteInvestigationOrder } from "./actions";
 import { DispositionToggle, AdmitPanel, FollowUpdatesPanel, SurgicalPanel } from "./DispositionPanel";
 import { Plus, X, BedDouble, Stethoscope, ChevronDown, Pencil, Trash2, RefreshCw, Search, Pill, Sparkles, CheckCircle2, Check, AlertTriangle, Scissors } from "lucide-react";
 import {
@@ -1577,8 +1577,15 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
     }
     return [...new Set(invs)];
   }, [appliedByDiag, presetMatches]);
-  const [addedInvs, setAddedInvs]           = useState<Set<string>>(new Set());
-  const [, startInvTransition]              = useTransition();
+  // Map of testName → orderId for investigations already in this visit
+  const buildInvMap = (orders: any[]) => {
+    const map = new Map<string, string>();
+    for (const o of orders) map.set((o.testName as string).toLowerCase(), o.id as string);
+    return map;
+  };
+  const [invOrderMap, setInvOrderMap] = useState<Map<string, string>>(() => buildInvMap(visit.investigationOrders ?? []));
+  useEffect(() => { setInvOrderMap(buildInvMap(visit.investigationOrders ?? [])); }, [visit.investigationOrders]);
+  const [, startInvTransition] = useTransition();
 
   // Medication search state
   const [searchQuery, setSearchQuery]     = useState("");
@@ -2242,25 +2249,32 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
           <p className="text-[10px] font-bold uppercase tracking-widest text-[#0F766E]/70 mb-2">Suggested Investigations</p>
           <div className="flex flex-wrap gap-1.5">
             {allSuggestedInvs.map((inv) => {
-              const added = addedInvs.has(inv);
+              const key   = inv.toLowerCase();
+              const added = invOrderMap.has(key);
               return (
                 <button
                   key={inv}
                   type="button"
-                  disabled={added}
                   onClick={() => {
-                    setAddedInvs((prev) => new Set([...prev, inv]));
-                    startInvTransition(async () => {
-                      await addInvestigationOrder(visit.id, udid, {
-                        category: "General",
-                        testName: inv,
-                        priority: "ROUTINE",
+                    if (added) {
+                      const orderId = invOrderMap.get(key)!;
+                      setInvOrderMap((prev) => { const m = new Map(prev); m.delete(key); return m; });
+                      startInvTransition(async () => { await deleteInvestigationOrder(orderId, udid); });
+                    } else {
+                      startInvTransition(async () => {
+                        await addInvestigationOrder(visit.id, udid, {
+                          category: "General",
+                          testName: inv,
+                          priority: "ROUTINE",
+                        });
                       });
-                    });
+                      // optimistic: we don't have the id yet, mark with a sentinel
+                      setInvOrderMap((prev) => { const m = new Map(prev); m.set(key, "__pending__"); return m; });
+                    }
                   }}
                   className={`flex items-center gap-1 text-[11px] px-2.5 py-0.5 rounded-full border transition-colors ${
                     added
-                      ? "bg-[#0F766E] border-[#0F766E] text-white cursor-default"
+                      ? "bg-[#0F766E] border-[#0F766E] text-white hover:bg-[#0D6862] cursor-pointer"
                       : "bg-white border-[#B2DEDA] text-[#0F766E] hover:bg-[#DCF3F1] hover:border-[#0F766E] cursor-pointer"
                   }`}
                 >
