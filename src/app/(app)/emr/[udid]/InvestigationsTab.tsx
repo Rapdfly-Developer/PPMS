@@ -4,12 +4,12 @@ import { useState, useTransition, useRef } from "react";
 import { Card } from "@/components/ui/Card";
 import { SingleChipSelect } from "@/components/ui/Chip";
 import { ORDER_PRIORITIES, LATERALITY } from "@/lib/constants";
-import { addInvestigationOrder, updateInvestigationStatus, attachResult } from "./actions";
+import { addInvestigationOrder, updateInvestigationStatus, attachResult, deleteInvestigationOrder } from "./actions";
 import { format } from "date-fns";
 import {
   Paperclip, ExternalLink, Upload, Download, Eye, Clock,
   CheckCircle2, XCircle, FlaskConical, Plus, History, Camera,
-  X, Search, Star,
+  X, Search, Star, Trash2,
 } from "lucide-react";
 
 const FAVES_KEY   = "ppms_inv_favorites";
@@ -230,6 +230,13 @@ function InvestigationCard({
   order: any; udid: string; readOnly: boolean; onView: (url: string) => void;
 }) {
   const isImage = order.resultRef && /\.(jpg|jpeg|png|webp)$/i.test(order.resultRef);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, startDelete]           = useTransition();
+
+  const handleDelete = () => {
+    if (!confirmDelete) { setConfirmDelete(true); setTimeout(() => setConfirmDelete(false), 3500); return; }
+    startDelete(async () => { await deleteInvestigationOrder(order.id, udid); });
+  };
 
   return (
     <Card className="p-4">
@@ -280,6 +287,21 @@ function InvestigationCard({
             <UploadButton orderId={order.id} udid={udid} />
           ) : (
             <span className="text-xs text-[var(--color-ink-400)]">Result pending</span>
+          )}
+          {!readOnly && (
+            <button
+              type="button"
+              onClick={handleDelete}
+              disabled={deleting}
+              className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border transition-colors disabled:opacity-50 ${
+                confirmDelete
+                  ? "border-red-300 bg-red-50 text-red-600 hover:bg-red-100"
+                  : "border-[var(--color-border)] text-[var(--color-ink-400)] hover:border-red-300 hover:text-red-600 hover:bg-red-50"
+              }`}
+            >
+              <Trash2 size={13} />
+              {confirmDelete ? "Confirm?" : "Delete"}
+            </button>
           )}
         </div>
       </div>

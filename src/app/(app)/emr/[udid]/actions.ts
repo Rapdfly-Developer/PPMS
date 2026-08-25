@@ -325,6 +325,13 @@ export async function addInvestigationOrder(
   revalidate(udid);
 }
 
+export async function deleteInvestigationOrder(id: string, udid: string) {
+  const user = await requireRole("DOCTOR");
+  await prisma.investigationOrder.delete({ where: { id } });
+  await writeAudit(user.id, "InvestigationOrder", id, "DELETE", {});
+  revalidate(udid);
+}
+
 export async function updateInvestigationStatus(id: string, udid: string, status: string) {
   const user = await requireRole("DOCTOR");
   await prisma.investigationOrder.update({ where: { id }, data: { status } });
