@@ -1485,33 +1485,36 @@ async function renderFullEmrHtml(d: FullEmrData): Promise<string> {
 
   const v2 = (x: unknown) => (x === null || x === undefined || x === "") ? "" : escapeHtml(String(x));
 
-  /* ── Shared style constants (matches short summary) ── */
-  const TH = `padding:4px 7px;background:#0C5A8C;color:#fff;font-size:8.5px;font-weight:700;text-align:left;`;
-  const TD = `padding:3.5px 7px;border-bottom:1px solid #EEEEEE;font-size:9.5px;`;
+  /* ── Brand palette (matches Short Summary exactly) ── */
+  const INK = "#0B3D3A", LABEL_C = "#115E59", BRAND = "#157A73", MINT = "#2BA89C";
+  const TINT = "#F0F8F6", LINE = "#D3E6E2";
 
-  const sec = (label: string) =>
-    `<div style="margin:10px 0 4px;page-break-after:avoid;break-after:avoid;">` +
-    `<span style="font-size:12px;font-weight:700;color:#0C5A8C;">${label}:</span>` +
+  /* ── Rounded section card (matches Short Summary) ── */
+  const card = (label: string, inner: string) =>
+    `<div class="no-break" style="border:1px solid ${LINE};border-radius:6px;overflow:hidden;margin-bottom:12px;">` +
+    `<div style="background:${TINT};border-bottom:1px solid ${LINE};padding:4.5px 10px;">` +
+    `<span style="font-size:8.5px;font-weight:800;letter-spacing:0.11em;text-transform:uppercase;color:${LABEL_C};">${label}</span>` +
+    `</div>` +
+    `<div style="padding:7px 10px;">${inner}</div>` +
     `</div>`;
 
+  /* ── Field box (matches Short Summary) ── */
   const fbox = (label: string, value: string) =>
     `<td style="padding-right:10px;padding-bottom:6px;vertical-align:top;">` +
-    `<div style="font-size:8.5px;font-weight:700;color:#0C4A7A;margin-bottom:2px;">${label}</div>` +
-    `<div style="background:#EBEBEB;border-radius:4px;padding:4px 8px;font-size:9.5px;color:#111;min-height:20px;">${value || "&nbsp;"}</div>` +
+    `<div style="background:#fff;border:1.5px solid ${MINT};border-radius:5px;padding:4px 9px 5px;min-height:26px;">` +
+    `<div style="font-size:7.5px;font-weight:700;color:${LABEL_C};letter-spacing:0.05em;text-transform:uppercase;margin-bottom:1px;">${label}</div>` +
+    `<div style="font-size:9.5px;color:#111;font-weight:500;">${value || "&nbsp;"}</div>` +
+    `</div>` +
     `</td>`;
 
-  const kvRow = (label: string, value: string) =>
-    `<tr>` +
-    `<td style="padding:2.5px 12px 2.5px 0;font-size:9.5px;font-weight:700;color:#444;width:34%;">${label}</td>` +
-    `<td style="padding:2.5px 0;font-size:9.5px;color:#1a1a1a;">${value}</td>` +
-    `</tr>`;
+  /* ── None / empty state ── */
+  const none = (t: string) => `<span style="color:#9AA5A3;font-style:italic;font-size:9.5px;">${t}</span>`;
+  const emptyNote = none("Not recorded");
 
-  const textBlock = (html: string) =>
-    `<div style="background:#F0F7FF;border-left:3px solid #0369A1;border-radius:0 4px 4px 0;` +
-    `padding:7px 11px;font-size:9.5px;line-height:1.65;color:#1a1a1a;white-space:pre-wrap;">` +
-    html + `</div>`;
-
-  const emptyNote = `<p style="font-size:9.5px;color:#aaa;font-style:italic;padding:2px 0;">Not recorded</p>`;
+  /* ── Table header / cell style (matches Short Summary) ── */
+  const TH = `padding:4px 7px;background:${BRAND};color:#fff;font-size:8.5px;font-weight:700;text-align:left;`;
+  const TD = `padding:3.5px 7px;border-bottom:1px solid #ECF3F1;font-size:9.5px;`;
+  const MED_TD = `padding:6px 7px;border-bottom:1px dotted #C8DBD8;font-size:9.5px;`;
 
   /* ── Diagnosis badge ── */
   const diagBadge = (s: string) => {
@@ -1527,7 +1530,7 @@ async function renderFullEmrHtml(d: FullEmrData): Promise<string> {
   /* ── Priority badge ── */
   const prioBadge = (p: string) => {
     const u = p.toUpperCase();
-    const [fg, bg] = u === "STAT" ? ["#92400E", "#FEF3C7"] : u === "URGENT" ? ["#B91C1C", "#FEE2E2"] : ["#0C5A8C", "#DBEAFE"];
+    const [fg, bg] = u === "STAT" ? ["#92400E", "#FEF3C7"] : u === "URGENT" ? ["#B91C1C", "#FEE2E2"] : [LABEL_C, "#DCF5EF"];
     return `<span style="font-size:8px;font-weight:700;color:${fg};background:${bg};padding:1px 6px;border-radius:3px;">${escapeHtml(p)}</span>`;
   };
 
@@ -1540,7 +1543,7 @@ async function renderFullEmrHtml(d: FullEmrData): Promise<string> {
     return `<span style="font-size:8px;font-weight:700;color:${fg};background:${bg};padding:1px 6px;border-radius:3px;">${escapeHtml(l)}</span>`;
   };
 
-  /* ── Medication badge ── */
+  /* ── Medication badge (matches Short Summary) ── */
   const medBadge = (route: string | null | undefined, lat: string | null | undefined, name: string) => {
     const r = route ?? "";
     if (r === "Topical" || /eye\s*drops?|eye\s*oint/i.test(name)) {
@@ -1549,8 +1552,10 @@ async function renderFullEmrHtml(d: FullEmrData): Promise<string> {
     }
     if (/syrup|suspension/i.test(r) || /syrup|suspension/i.test(name))
       return `<span style="display:inline-block;min-width:24px;padding:1px 4px;border-radius:3px;background:#D1FAE5;color:#065F46;font-size:7px;font-weight:700;text-align:center;margin-right:3px;">SYP</span>`;
+    if (r === "IM" || r === "IV" || r === "Intravitreal" || r === "Subconjunctival" || r === "Subtenon" || /inject/i.test(name))
+      return `<span style="display:inline-block;min-width:24px;padding:1px 4px;border-radius:3px;background:#FFE4E6;color:#9F1239;font-size:7px;font-weight:700;text-align:center;margin-right:3px;">INJ</span>`;
     if (r === "Oral" || /tablet|capsule/i.test(name))
-      return `<span style="display:inline-block;min-width:24px;padding:1px 4px;border-radius:3px;background:#FEF3C7;color:#92400E;font-size:7px;font-weight:700;text-align:center;margin-right:3px;">T</span>`;
+      return `<span style="display:inline-block;min-width:24px;padding:1px 4px;border-radius:3px;background:#FEF3C7;color:#92400E;font-size:7px;font-weight:700;text-align:center;margin-right:3px;">TAB</span>`;
     return "";
   };
 
@@ -1562,7 +1567,7 @@ async function renderFullEmrHtml(d: FullEmrData): Promise<string> {
       const re = Array.isArray(v?.re) ? v.re.join(", ") : (v?.re ?? "—");
       const le = Array.isArray(v?.le) ? v.le.join(", ") : (v?.le ?? "—");
       return `<tr>` +
-        `<td style="${TD}font-weight:600;color:#0C2461;width:130px;">${escapeHtml(label)}</td>` +
+        `<td style="${TD}font-weight:600;color:${LABEL_C};width:130px;">${escapeHtml(label)}</td>` +
         `<td style="${TD}">${escapeHtml(re || "—")}</td>` +
         `<td style="${TD}">${escapeHtml(le || "—")}</td>` +
         `</tr>`;
@@ -1578,7 +1583,7 @@ async function renderFullEmrHtml(d: FullEmrData): Promise<string> {
   /* ── Data rows ── */
   const diagRows = d.diagnoses.length
     ? d.diagnoses.map((dx, i) =>
-        `<tr style="background:${i % 2 === 0 ? "#fff" : "#F8FBFF"};">` +
+        `<tr style="background:${i % 2 === 0 ? "#fff" : TINT};">` +
         `<td style="${TD}text-align:center;color:#888;">${i + 1}</td>` +
         `<td style="${TD}font-weight:600;">${escapeHtml(dx.description)}</td>` +
         `<td style="${TD}color:#555;">${dx.laterality ? escapeHtml(dx.laterality) : ""}</td>` +
@@ -1589,21 +1594,21 @@ async function renderFullEmrHtml(d: FullEmrData): Promise<string> {
 
   const medRows = d.medications.length
     ? d.medications.map((m, i) =>
-        `<tr style="background:${i % 2 === 0 ? "#fff" : "#F8FBFF"};">` +
-        `<td style="${TD}text-align:center;color:#888;">${i + 1}</td>` +
-        `<td style="${TD}">${medBadge(m.route, m.laterality, m.drugName)}` +
+        `<tr style="background:#fff;">` +
+        `<td style="${MED_TD}text-align:center;color:#888;">${i + 1}</td>` +
+        `<td style="${MED_TD}">${medBadge(m.route, m.laterality, m.drugName)}` +
         `<span style="font-weight:700;color:#1a1a1a;">${escapeHtml(m.drugName)}</span>` +
         (m.instructions ? `<span style="font-size:8.5px;color:#777;margin-left:5px;">${escapeHtml(m.instructions)}</span>` : "") +
         `</td>` +
-        `<td style="${TD}">${v2(m.dosage)}</td>` +
-        `<td style="${TD}">${v2(m.frequency)}</td>` +
-        `<td style="${TD}">${v2(m.duration)}</td>` +
+        `<td style="${MED_TD}">${v2(m.dosage)}</td>` +
+        `<td style="${MED_TD}">${v2(m.frequency)}</td>` +
+        `<td style="${MED_TD}">${v2(m.duration)}</td>` +
         `</tr>`).join("")
-    : `<tr><td colspan="5" style="padding:6px 8px;font-size:9.5px;color:#aaa;font-style:italic;">No medications prescribed</td></tr>`;
+    : `<tr><td colspan="5" style="padding:4px 8px;border:none;">${none("No medications prescribed")}</td></tr>`;
 
   const invRows = d.investigations.length
     ? d.investigations.map((inv, i) =>
-        `<tr style="background:${i % 2 === 0 ? "#fff" : "#F8FBFF"};">` +
+        `<tr style="background:${i % 2 === 0 ? "#fff" : TINT};">` +
         `<td style="${TD}text-align:center;color:#888;">${i + 1}</td>` +
         `<td style="${TD}font-weight:600;">${escapeHtml(inv.testName)}</td>` +
         `<td style="${TD}">${prioBadge(inv.priority)}</td>` +
@@ -1616,7 +1621,7 @@ async function renderFullEmrHtml(d: FullEmrData): Promise<string> {
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
-      font-size: 9.5px; line-height: 1.45; color: #1a1a1a;
+      font-size: 9.5px; line-height: 1.4; color: #1a1a1a;
       background: #fff;
       -webkit-print-color-adjust: exact; print-color-adjust: exact;
     }
@@ -1641,285 +1646,313 @@ async function renderFullEmrHtml(d: FullEmrData): Promise<string> {
 <style>${CSS}</style>
 </head>
 <body>
+<div style="display:flex;flex-direction:column;">
 
-<!-- PREMIUM GRADIENT ACCENT LINE (full bleed) -->
-<div style="height:4px;background:linear-gradient(90deg,#0369A1 0%,#0EA5E9 50%,#0F766E 100%);margin:0 -14mm;"></div>
+<!-- BRAND ACCENT LINE (full bleed, matches Short Summary) -->
+<div style="height:4px;background:linear-gradient(90deg,${INK} 0%,${BRAND} 50%,${MINT} 100%);margin:0 -14mm;"></div>
 
-<!-- PREMIUM HEADER CARD (full bleed) -->
+<!-- HEADER CARD (full bleed, 3-column layout matching Short Summary) -->
 <div style="margin:0 -14mm;padding:11px 14mm 13px;
-            background:linear-gradient(135deg,#F8FBFF 0%,#EBF4FF 55%,#F4FAFF 100%);
+            background:linear-gradient(135deg,#F7FCFB 0%,#E8F5F2 55%,#F2FAF8 100%);
             page-break-after:avoid;">
-  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:18px;">
-    <div style="display:flex;align-items:flex-start;gap:12px;min-width:0;flex:1;">
+  <div style="display:grid;grid-template-columns:1fr auto 1fr;align-items:flex-start;gap:18px;">
+
+    <!-- Left: Logo + hospital name + contacts -->
+    <div style="display:flex;align-items:flex-start;gap:12px;min-width:0;">
       ${d.visit.hospitalLogo
-        ? `<div style="background:#fff;border:1.5px solid #BFDBFE;border-radius:10px;padding:5px;flex-shrink:0;box-shadow:0 1px 6px rgba(3,105,161,0.10);">` +
+        ? `<div style="background:#fff;border:1.5px solid #B8DED7;border-radius:10px;padding:5px;flex-shrink:0;box-shadow:0 1px 6px rgba(21,122,115,0.12);">` +
           `<img src="${escapeHtml(d.visit.hospitalLogo)}" alt="Logo" style="width:44px;height:44px;object-fit:contain;display:block;border-radius:6px;" /></div>`
-        : `<div style="background:linear-gradient(135deg,#EFF6FF,#DBEAFE);border:1.5px solid #BFDBFE;border-radius:10px;` +
-          `width:54px;height:54px;flex-shrink:0;display:flex;align-items:center;justify-content:center;` +
-          `color:#0369A1;font-size:24px;font-weight:900;">&#10010;</div>`}
+        : `<div style="background:linear-gradient(135deg,#F0F8F6,#DCEFEC);border:1.5px solid #B8DED7;` +
+          `border-radius:10px;width:54px;height:54px;flex-shrink:0;display:flex;align-items:center;` +
+          `justify-content:center;color:${BRAND};font-size:24px;font-weight:900;">&#10010;</div>`}
       <div style="min-width:0;padding-top:1px;">
-        <div style="font-size:15px;font-weight:800;color:#0C2461;letter-spacing:-0.2px;line-height:1.1;">
+        <div style="font-size:15px;font-weight:800;color:${INK};letter-spacing:-0.2px;line-height:1.1;">
           ${escapeHtml(d.visit.hospitalName)}
         </div>
-        <div style="font-size:8px;font-weight:600;color:#0369A1;margin-top:3px;letter-spacing:0.06em;text-transform:uppercase;">
+        <div style="font-size:8px;font-weight:600;color:${BRAND};margin-top:3px;letter-spacing:0.06em;text-transform:uppercase;">
           Ophthalmology &amp; Eye Care
         </div>
         ${(d.visit.hospitalAddress || d.visit.hospitalContact || d.visit.hospitalEmail)
           ? `<div style="margin-top:6px;display:flex;flex-direction:column;gap:2px;">` +
             (d.visit.hospitalAddress
-              ? `<div style="font-size:7.5px;color:#475569;display:flex;align-items:flex-start;gap:3px;"><span style="color:#0369A1;font-size:8px;flex-shrink:0;">&#9679;</span>${escapeHtml(d.visit.hospitalAddress)}</div>` : "") +
+              ? `<div style="font-size:7.5px;color:#4A5A57;display:flex;align-items:flex-start;gap:3px;">` +
+                `<span style="color:${BRAND};font-size:8px;flex-shrink:0;">&#9679;</span>${escapeHtml(d.visit.hospitalAddress)}</div>`
+              : "") +
             ((d.visit.hospitalContact || d.visit.hospitalEmail)
-              ? `<div style="font-size:7.5px;color:#475569;display:flex;align-items:center;gap:3px;"><span style="color:#0369A1;font-size:8px;flex-shrink:0;">&#9679;</span>` +
+              ? `<div style="font-size:7.5px;color:#4A5A57;display:flex;align-items:center;gap:3px;">` +
+                `<span style="color:${BRAND};font-size:8px;flex-shrink:0;">&#9679;</span>` +
                 (d.visit.hospitalContact ? `<span>${escapeHtml(d.visit.hospitalContact)}</span>` : "") +
-                (d.visit.hospitalContact && d.visit.hospitalEmail ? `<span style="color:#CBD5E1;padding:0 4px;">|</span>` : "") +
+                (d.visit.hospitalContact && d.visit.hospitalEmail ? `<span style="color:#B8CFCA;padding:0 4px;">|</span>` : "") +
                 (d.visit.hospitalEmail ? `<span>${escapeHtml(d.visit.hospitalEmail)}</span>` : "") +
-                `</div>` : "") +
-            `</div>` : ""}
+                `</div>`
+              : "") +
+            `</div>`
+          : ""}
       </div>
     </div>
-    <div style="text-align:right;flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;padding-top:2px;">
-      <div style="font-size:7px;font-weight:700;letter-spacing:0.28em;text-transform:uppercase;color:#0EA5E9;margin-bottom:5px;">
+
+    <!-- Center: Title block (matches Short Summary) -->
+    <div style="text-align:center;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding-top:4px;">
+      <div style="font-size:6.5px;font-weight:700;letter-spacing:0.28em;text-transform:uppercase;color:${MINT};margin-bottom:5px;">
         Clinical Record
       </div>
-      <div style="font-size:18px;font-weight:900;color:#0C2461;letter-spacing:0.07em;text-transform:uppercase;line-height:1.0;white-space:nowrap;">
-        COMPLETE
+      <div style="font-size:8.5px;font-weight:900;color:${INK};letter-spacing:0.07em;text-transform:uppercase;white-space:nowrap;">
+        COMPLETE EMR SUMMARY
       </div>
-      <div style="font-size:18px;font-weight:900;color:#0C2461;letter-spacing:0.07em;text-transform:uppercase;line-height:1.05;white-space:nowrap;margin-top:1px;">
-        EMR SUMMARY
-      </div>
-      <div style="height:2px;width:100%;background:linear-gradient(90deg,transparent,#0369A1,#0EA5E9);border-radius:1px;margin-top:6px;"></div>
+      <div style="height:2px;width:100%;background:linear-gradient(90deg,transparent,${BRAND},${MINT});border-radius:1px;margin:6px 0 0;"></div>
+    </div>
+
+    <!-- Right: Doctor name + date (matches Short Summary) -->
+    <div style="text-align:right;flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;justify-content:center;padding-top:2px;padding-right:6px;">
+      <div style="font-size:13px;font-weight:800;color:${INK};line-height:1.2;">Dr. ${escapeHtml(d.visit.doctorName)}</div>
+      <div style="font-size:9px;color:${BRAND};font-weight:600;margin-top:2px;">Consultant Ophthalmologist</div>
+      <div style="font-size:8.5px;color:#4A5A57;margin-top:4px;">${format(d.visit.date, "dd MMM yyyy, hh:mm a")} IST</div>
     </div>
   </div>
 </div>
 
-<!-- SOFT GRADIENT DIVIDER (full bleed) -->
-<div style="height:1px;background:linear-gradient(90deg,#BFDBFE,#BAE6FD,#BFDBFE);margin:0 -14mm 6px;"></div>
+<!-- SOFT DIVIDER (full bleed, matches Short Summary) -->
+<div style="height:1px;background:linear-gradient(90deg,#DCEFEC,#B8DED7,#DCEFEC);margin:0 -14mm 10px;"></div>
 
-<!-- PATIENT INFO -->
-<table style="width:100%;border-collapse:collapse;">
+<!-- PATIENT DETAIL STRIP (matches Short Summary fbox style) -->
+<table style="width:100%;border-collapse:collapse;margin-bottom:12px;">
   <tbody>
     <tr>
-      ${fbox("Patient Name", escapeHtml(d.patient.name))}
-      ${fbox("UHID / MR No.", escapeHtml(d.patient.udid))}
-      ${fbox("Date of Visit", format(d.visit.date, "dd MMM yyyy"))}
-    </tr>
-    <tr>
+      ${fbox("Patient", escapeHtml(d.patient.name))}
+      ${fbox("Patient ID", escapeHtml(d.patient.udid))}
       ${fbox("Age / Gender", `${d.patient.age} yrs / ${escapeHtml(d.patient.sex)}`)}
       ${fbox("Mobile", d.patient.mobile ? escapeHtml(d.patient.mobile) : "—")}
-      ${fbox("Consultant", `Dr. ${escapeHtml(d.visit.doctorName)}`)}
     </tr>
     <tr>
-      ${fbox("Visit Type", escapeHtml(d.visit.visitType ?? "Consultation"))}
+      ${fbox("Date of Visit", format(d.visit.date, "dd MMM yyyy"))}
       ${fbox("Visit Time", format(d.visit.date, "hh:mm a") + " IST")}
+      ${fbox("Visit Type", escapeHtml(d.visit.visitType ?? "Consultation"))}
       ${d.patient.address ? fbox("Address", escapeHtml(d.patient.address)) : `<td></td>`}
     </tr>
   </tbody>
 </table>
 
-<!-- CHIEF COMPLAINT & HPI -->
+<!-- 1 · CHIEF COMPLAINT & HPI -->
 ${ge?.chiefComplaint || ge?.hpi
-  ? sec("Chief Complaint & History of Present Illness") +
-    (ge.chiefComplaint
-      ? `<p style="font-size:10.5px;font-weight:600;color:#0C2E6B;padding:2px 0 3px;">${escapeHtml(ge.chiefComplaint)}</p>` : "") +
-    (ge.hpi ? textBlock(escapeHtml(ge.hpi)) : "")
+  ? card("Chief Complaint & History",
+      (ge.chiefComplaint
+        ? `<div style="font-size:10.5px;font-weight:600;color:${INK};${ge.hpi ? "padding-bottom:6px;" : ""}">${escapeHtml(ge.chiefComplaint)}</div>`
+        : "") +
+      (ge.hpi
+        ? `<div style="background:${TINT};border-left:3px solid ${BRAND};border-radius:0 4px 4px 0;padding:6px 10px;font-size:9.5px;line-height:1.65;white-space:pre-wrap;">${escapeHtml(ge.hpi)}</div>`
+        : ""))
   : ""}
 
-<!-- PAST MEDICAL & DRUG HISTORY -->
-${sec("Past Medical &amp; Drug History")}
-${ge
-  ? textBlock(
+<!-- 2 · PAST MEDICAL HISTORY -->
+${card("Past Medical & Drug History",
+  ge
+    ? `<div style="background:${TINT};border-left:3px solid ${BRAND};border-radius:0 4px 4px 0;padding:6px 10px;font-size:9.5px;line-height:1.7;white-space:pre-wrap;">` +
       `<strong>PMH:</strong> ${pmhList.length ? pmhList.map(escapeHtml).join(", ") + (ge.pmhOtherText ? `, ${escapeHtml(ge.pmhOtherText)}` : "") : "Nil"}` +
       (ge.medications ? `<br/><strong>Current Medications:</strong> ${escapeHtml(ge.medications)}` : "") +
       (ge.nkda ? `<br/><strong style="color:#059669;">✓ NKDA</strong> — No Known Drug Allergies`
         : ge.allergies ? `<br/><strong style="color:#DC2626;">Allergies:</strong> ${escapeHtml(ge.allergies)}` : "") +
       (ge.familyHistory ? `<br/><strong>Family History:</strong> ${escapeHtml(ge.familyHistory)}` : "") +
-      (ge.socialHistory ? `<br/><strong>Social History:</strong> ${escapeHtml(ge.socialHistory)}` : ""))
-  : emptyNote}
+      (ge.socialHistory ? `<br/><strong>Social History:</strong> ${escapeHtml(ge.socialHistory)}` : "") +
+      `</div>`
+    : emptyNote)}
 
-<!-- VITALS -->
-${sec("Vitals &amp; General Examination")}
-${ge
-  ? `<table style="width:100%;border-collapse:collapse;"><tbody><tr>` +
-    fbox("Blood Pressure", ge.bp ? escapeHtml(ge.bp) + " mmHg" : "—") +
-    fbox("Pulse Rate", ge.pulse ? escapeHtml(ge.pulse) + " bpm" : "—") +
-    fbox("Temperature", ge.temperature ? escapeHtml(ge.temperature) : "—") +
-    fbox("Body Weight", ge.weight ? escapeHtml(ge.weight) : "—") +
-    `</tr></tbody></table>`
-  : emptyNote}
+<!-- 3 · VITALS -->
+${card("Vitals & General Examination",
+  ge
+    ? `<table style="width:100%;border-collapse:collapse;"><tbody><tr>` +
+      fbox("Blood Pressure", ge.bp ? escapeHtml(ge.bp) + " mmHg" : "—") +
+      fbox("Pulse Rate", ge.pulse ? escapeHtml(ge.pulse) + " bpm" : "—") +
+      fbox("Temperature", ge.temperature ? escapeHtml(ge.temperature) : "—") +
+      fbox("Body Weight", ge.weight ? escapeHtml(ge.weight) : "—") +
+      `</tr></tbody></table>`
+    : emptyNote)}
 
-<!-- VISUAL ACUITY -->
-${sec("Visual Acuity")}
-${va
-  ? `<table style="width:100%;border-collapse:collapse;">
-      <thead><tr>
-        <th style="${TH}width:110px;"></th>
-        <th style="${TH}">Unaided / UCVA</th>
-        <th style="${TH}">Pinhole (PH)</th>
-        <th style="${TH}">Best Corrected (BCVA)</th>
-      </tr></thead>
-      <tbody>
-        <tr style="background:#fff;">
-          <td style="${TD}font-weight:600;color:#0C2461;">RE <span style="font-weight:400;color:#777;font-size:8.5px;">(Distance)</span></td>
-          <td style="${TD}">${v2(va.reDistance?.unaided)}</td>
-          <td style="${TD}">${v2(va.reDistance?.ph)}</td>
-          <td style="${TD}">${v2(va.reDistance?.bcva)}</td>
-        </tr>
-        <tr style="background:#F8FBFF;">
-          <td style="${TD}font-weight:600;color:#0C2461;">LE <span style="font-weight:400;color:#777;font-size:8.5px;">(Distance)</span></td>
-          <td style="${TD}">${v2(va.leDistance?.unaided)}</td>
-          <td style="${TD}">${v2(va.leDistance?.ph)}</td>
-          <td style="${TD}">${v2(va.leDistance?.bcva)}</td>
-        </tr>
-        <tr style="background:#fff;">
-          <td style="${TD}font-weight:600;color:#0C2461;">RE <span style="font-weight:400;color:#777;font-size:8.5px;">(Near)</span></td>
-          <td style="${TD}" colspan="2">${v2(va.reNear)}</td>
-          <td style="${TD}">${v2(va.reNearN)}</td>
-        </tr>
-        <tr style="background:#F8FBFF;">
-          <td style="${TD}font-weight:600;color:#0C2461;">LE <span style="font-weight:400;color:#777;font-size:8.5px;">(Near)</span></td>
-          <td style="${TD}" colspan="2">${v2(va.leNear)}</td>
-          <td style="${TD}">${v2(va.leNearN)}</td>
-        </tr>
-      </tbody>
-    </table>`
-  : emptyNote}
+<!-- 4 · VISUAL ACUITY -->
+${card("Visual Acuity",
+  va
+    ? `<table style="width:100%;border-collapse:collapse;">
+        <thead><tr>
+          <th style="${TH}width:110px;"></th>
+          <th style="${TH}">Unaided / UCVA</th>
+          <th style="${TH}">Pinhole (PH)</th>
+          <th style="${TH}">Best Corrected (BCVA)</th>
+        </tr></thead>
+        <tbody>
+          <tr style="background:#fff;">
+            <td style="${TD}font-weight:600;color:${LABEL_C};">RE <span style="font-weight:400;color:#777;font-size:8.5px;">(Distance)</span></td>
+            <td style="${TD}">${v2(va.reDistance?.unaided)}</td>
+            <td style="${TD}">${v2(va.reDistance?.ph)}</td>
+            <td style="${TD}">${v2(va.reDistance?.bcva)}</td>
+          </tr>
+          <tr style="background:${TINT};">
+            <td style="${TD}font-weight:600;color:${LABEL_C};">LE <span style="font-weight:400;color:#777;font-size:8.5px;">(Distance)</span></td>
+            <td style="${TD}">${v2(va.leDistance?.unaided)}</td>
+            <td style="${TD}">${v2(va.leDistance?.ph)}</td>
+            <td style="${TD}">${v2(va.leDistance?.bcva)}</td>
+          </tr>
+          <tr style="background:#fff;">
+            <td style="${TD}font-weight:600;color:${LABEL_C};">RE <span style="font-weight:400;color:#777;font-size:8.5px;">(Near)</span></td>
+            <td style="${TD}" colspan="2">${v2(va.reNear)}</td>
+            <td style="${TD}">${v2(va.reNearN)}</td>
+          </tr>
+          <tr style="background:${TINT};">
+            <td style="${TD}font-weight:600;color:${LABEL_C};">LE <span style="font-weight:400;color:#777;font-size:8.5px;">(Near)</span></td>
+            <td style="${TD}" colspan="2">${v2(va.leNear)}</td>
+            <td style="${TD}">${v2(va.leNearN)}</td>
+          </tr>
+        </tbody>
+      </table>`
+    : emptyNote)}
 
-<!-- IOP -->
-${sec("Intraocular Pressure (IOP)")}
-${d.iopReadings.length
-  ? `<table style="width:100%;border-collapse:collapse;">
-      <thead><tr>
-        <th style="${TH}">Method</th>
-        <th style="${TH}">Right Eye (RE)</th>
-        <th style="${TH}">Left Eye (LE)</th>
-        <th style="${TH}width:70px;">Time</th>
-      </tr></thead>
-      <tbody>
-        ${d.iopReadings.map((r, i) =>
-          `<tr style="background:${i % 2 === 0 ? "#fff" : "#F8FBFF"};">` +
-          `<td style="${TD}font-weight:600;color:#0C2461;">${v2(r.method)}</td>` +
-          `<td style="${TD}">${v2(r.re)}</td>` +
-          `<td style="${TD}">${v2(r.le)}</td>` +
-          `<td style="${TD}color:#555;">${format(new Date(r.takenAt), "hh:mm a")}</td>` +
-          `</tr>`).join("")}
-      </tbody>
-    </table>`
-  : emptyNote}
+<!-- 5 · IOP -->
+${card("Intraocular Pressure (IOP)",
+  d.iopReadings.length
+    ? `<table style="width:100%;border-collapse:collapse;">
+        <thead><tr>
+          <th style="${TH}">Method</th>
+          <th style="${TH}">Right Eye (RE)</th>
+          <th style="${TH}">Left Eye (LE)</th>
+          <th style="${TH}width:70px;">Time</th>
+        </tr></thead>
+        <tbody>
+          ${d.iopReadings.map((r, i) =>
+            `<tr style="background:${i % 2 === 0 ? "#fff" : TINT};">` +
+            `<td style="${TD}font-weight:600;color:${LABEL_C};">${v2(r.method)}</td>` +
+            `<td style="${TD}">${v2(r.re)}</td>` +
+            `<td style="${TD}">${v2(r.le)}</td>` +
+            `<td style="${TD}color:#555;">${format(new Date(r.takenAt), "hh:mm a")}</td>` +
+            `</tr>`).join("")}
+        </tbody>
+      </table>`
+    : emptyNote)}
 
-<!-- COLOUR VISION -->
+<!-- 6 · COLOUR VISION -->
 ${d.colourVision
-  ? sec("Colour Vision") +
-    `<table style="width:100%;border-collapse:collapse;"><tbody><tr>` +
-    fbox("Right Eye (RE)", v2(d.colourVision.re)) +
-    fbox("Left Eye (LE)", v2(d.colourVision.le)) +
-    (d.colourVision.notes ? fbox("Notes", escapeHtml(d.colourVision.notes)) : `<td></td>`) +
-    `</tr></tbody></table>`
+  ? card("Colour Vision",
+      `<table style="width:100%;border-collapse:collapse;"><tbody><tr>` +
+      fbox("Right Eye (RE)", v2(d.colourVision.re)) +
+      fbox("Left Eye (LE)", v2(d.colourVision.le)) +
+      (d.colourVision.notes ? fbox("Notes", escapeHtml(d.colourVision.notes)) : `<td></td>`) +
+      `</tr></tbody></table>`)
   : ""}
 
-<!-- ANTERIOR SEGMENT -->
-${sec("Anterior Segment Examination")}
-${renderSegment(d.anteriorSegment as any)}
+<!-- 7 · ANTERIOR SEGMENT -->
+${card("Anterior Segment Examination", renderSegment(d.anteriorSegment as any))}
 
-<!-- POSTERIOR SEGMENT -->
-${sec("Posterior Segment Examination")}
-${(() => {
-  const ps = d.posteriorSegment as any;
-  if (!ps) return emptyNote;
-  return renderSegment(ps.data) +
-    (ps.cdr
-      ? `<div style="margin-top:5px;font-size:9.5px;"><span style="font-weight:700;color:#0C2461;">CDR:</span> ${escapeHtml(ps.cdr)}</div>`
-      : "") +
-    (ps.notes ? `<div style="margin-top:4px;">${textBlock(escapeHtml(ps.notes))}</div>` : "");
-})()}
+<!-- 8 · POSTERIOR SEGMENT -->
+${card("Posterior Segment Examination",
+  (() => {
+    const ps = d.posteriorSegment as any;
+    if (!ps) return emptyNote;
+    return renderSegment(ps.data) +
+      (ps.cdr
+        ? `<div style="margin-top:5px;font-size:9.5px;"><span style="font-weight:700;color:${LABEL_C};">CDR:</span> ${escapeHtml(ps.cdr)}</div>`
+        : "") +
+      (ps.notes
+        ? `<div style="margin-top:4px;background:${TINT};border-left:3px solid ${BRAND};border-radius:0 4px 4px 0;padding:6px 10px;font-size:9.5px;white-space:pre-wrap;">${escapeHtml(ps.notes)}</div>`
+        : "");
+  })())}
 
-<!-- ASSESSMENT / DIAGNOSIS -->
-${sec("Assessment / Diagnosis")}
-${d.diagnoses.length
-  ? `<table style="width:100%;border-collapse:collapse;">
-      <thead><tr>
-        <th style="${TH}width:28px;text-align:center;">#</th>
-        <th style="${TH}">Diagnosis</th>
-        <th style="${TH}width:90px;">Laterality</th>
-        <th style="${TH}width:75px;">ICD-10</th>
-        <th style="${TH}width:78px;">Status</th>
-      </tr></thead>
-      <tbody>${diagRows}</tbody>
-    </table>`
-  : `<p style="color:#aaa;font-style:italic;padding:2px 0;font-size:9.5px;">No diagnosis recorded</p>`}
+<!-- 9 · ASSESSMENT / DIAGNOSIS -->
+${card("Assessment / Diagnosis",
+  d.diagnoses.length
+    ? `<table style="width:100%;border-collapse:collapse;">
+        <thead><tr>
+          <th style="${TH}width:28px;text-align:center;">#</th>
+          <th style="${TH}">Diagnosis</th>
+          <th style="${TH}width:90px;">Laterality</th>
+          <th style="${TH}width:75px;">ICD-10</th>
+          <th style="${TH}width:78px;">Status</th>
+        </tr></thead>
+        <tbody>${diagRows}</tbody>
+      </table>`
+    : none("No diagnoses recorded"))}
 
-<!-- MEDICATIONS PRESCRIBED -->
-${sec("Medications Prescribed")}
-<table style="width:100%;border-collapse:collapse;">
-  <thead><tr>
-    <th style="${TH}width:28px;text-align:center;">#</th>
-    <th style="${TH}">Medicine</th>
-    <th style="${TH}width:65px;">Dosage</th>
-    <th style="${TH}width:95px;">Frequency</th>
-    <th style="${TH}width:65px;">Duration</th>
-  </tr></thead>
-  <tbody>${medRows}</tbody>
-</table>
+<!-- 10 · MEDICATIONS PRESCRIBED -->
+${card("Medications Prescribed",
+  `<table style="width:100%;border-collapse:collapse;">
+    <thead><tr>
+      <th style="${TH}width:28px;text-align:center;">#</th>
+      <th style="${TH}">Medicine</th>
+      <th style="${TH}width:65px;">Dosage</th>
+      <th style="${TH}width:95px;">Frequency</th>
+      <th style="${TH}width:65px;">Duration</th>
+    </tr></thead>
+    <tbody>${medRows}</tbody>
+  </table>`)}
 
-<!-- OPTICAL PRESCRIPTION -->
-${sec("Optical Prescription (Refraction)")}
-<table style="width:100%;border-collapse:collapse;">
-  <thead><tr>
-    <th style="${TH}width:110px;">Eye</th>
-    <th style="${TH}text-align:center;">SPH</th>
-    <th style="${TH}text-align:center;">CYL</th>
-    <th style="${TH}text-align:center;">Axis</th>
-    <th style="${TH}text-align:center;">Near Add</th>
-  </tr></thead>
-  <tbody>
-    ${["re", "le"].flatMap((eye, ei) =>
-      [["Distance", "sph", "cyl", "axis", "nearSph"], ["Near Add", "nearSph", "nearCyl", "nearAxis", ""]].map(([sub, s, c, a, n], ri) => {
-        const rx = d.opticalRx[eye as "re" | "le"] as any;
-        const hasData = rx?.[s] || rx?.[c] || rx?.[a];
-        if (sub === "Near Add" && !hasData) return "";
-        return `<tr style="background:${(ei * 2 + ri) % 2 === 0 ? "#fff" : "#F8FBFF"};">` +
-          `<td style="${TD}font-weight:600;color:#0C2461;">${eye.toUpperCase()} <span style="font-weight:400;color:#777;font-size:8.5px;">(${sub})</span></td>` +
-          `<td style="${TD}text-align:center;">${v2(rx?.[s])}</td>` +
-          `<td style="${TD}text-align:center;">${v2(rx?.[c])}</td>` +
-          `<td style="${TD}text-align:center;">${v2(rx?.[a])}</td>` +
-          `<td style="${TD}text-align:center;">${sub === "Near Add" ? v2(rx?.[n]) : ""}</td>` +
-          `</tr>`;
-      })).join("")}
-  </tbody>
-</table>
+<!-- 11 · OPTICAL PRESCRIPTION -->
+${card("Optical Prescription (Refraction)",
+  `<table style="width:100%;border-collapse:collapse;">
+    <thead><tr>
+      <th style="${TH}width:110px;">Eye</th>
+      <th style="${TH}text-align:center;">SPH</th>
+      <th style="${TH}text-align:center;">CYL</th>
+      <th style="${TH}text-align:center;">Axis</th>
+      <th style="${TH}text-align:center;">Near Add</th>
+    </tr></thead>
+    <tbody>
+      ${["re", "le"].flatMap((eye, ei) =>
+        [["Distance", "sph", "cyl", "axis", "nearSph"], ["Near Add", "nearSph", "nearCyl", "nearAxis", ""]].map(([sub, s, c, a, n], ri) => {
+          const rx = d.opticalRx[eye as "re" | "le"] as any;
+          const hasData = rx?.[s] || rx?.[c] || rx?.[a];
+          if (sub === "Near Add" && !hasData) return "";
+          return `<tr style="background:${(ei * 2 + ri) % 2 === 0 ? "#fff" : TINT};">` +
+            `<td style="${TD}font-weight:600;color:${LABEL_C};">${eye.toUpperCase()} <span style="font-weight:400;color:#777;font-size:8.5px;">(${sub})</span></td>` +
+            `<td style="${TD}text-align:center;">${v2(rx?.[s])}</td>` +
+            `<td style="${TD}text-align:center;">${v2(rx?.[c])}</td>` +
+            `<td style="${TD}text-align:center;">${v2(rx?.[a])}</td>` +
+            `<td style="${TD}text-align:center;">${sub === "Near Add" ? v2(rx?.[n]) : ""}</td>` +
+            `</tr>`;
+        })).join("")}
+    </tbody>
+  </table>`)}
 
-<!-- INVESTIGATIONS -->
-${sec("Investigations Ordered")}
+<!-- 12 · INVESTIGATIONS -->
 ${d.investigations.length
-  ? `<table style="width:100%;border-collapse:collapse;">
-      <thead><tr>
-        <th style="${TH}width:28px;text-align:center;">#</th>
-        <th style="${TH}">Test / Investigation</th>
-        <th style="${TH}width:72px;">Priority</th>
-        <th style="${TH}width:80px;">Status</th>
-        <th style="${TH}">Result / Notes</th>
-      </tr></thead>
-      <tbody>${invRows}</tbody>
-    </table>`
-  : `<p style="color:#aaa;font-style:italic;padding:2px 0;font-size:9.5px;">No investigations ordered</p>`}
-
-<!-- ADMISSION / DISPOSITION -->
-${d.admission
-  ? sec("Admission / Disposition") +
-    `<table style="width:100%;border-collapse:collapse;"><tbody>` +
-    kvRow("Ward", v2(d.admission.wardName)) +
-    kvRow("Bed Number", v2(d.admission.bedNumber)) +
-    (d.admission.reason ? kvRow("Reason", escapeHtml(d.admission.reason)) : "") +
-    `</tbody></table>`
+  ? card("Investigations Ordered",
+      `<table style="width:100%;border-collapse:collapse;">
+        <thead><tr>
+          <th style="${TH}width:28px;text-align:center;">#</th>
+          <th style="${TH}">Test / Investigation</th>
+          <th style="${TH}width:72px;">Priority</th>
+          <th style="${TH}width:80px;">Status</th>
+          <th style="${TH}">Result / Notes</th>
+        </tr></thead>
+        <tbody>${invRows}</tbody>
+      </table>`)
   : ""}
 
-<!-- DOCTOR SIGNATURE -->
-<div class="no-break" style="margin-top:12px;padding-top:4px;">
-  <div style="font-size:11.5px;font-weight:700;color:#0C2E6B;">Dr. ${escapeHtml(d.visit.doctorName)}</div>
-  <div style="font-size:9px;color:#555;margin-top:2px;">Consultant Ophthalmologist</div>
-  <div style="font-size:8.5px;color:#888;margin-top:1px;">${escapeHtml(d.visit.hospitalName)}</div>
+<!-- 13 · ADMISSION / DISPOSITION -->
+${d.admission
+  ? card("Admission / Disposition",
+      `<table style="width:100%;border-collapse:collapse;"><tbody>` +
+      `<tr><td style="${TD}font-weight:700;color:#4A5A57;width:34%;">Ward</td><td style="${TD}">${v2(d.admission.wardName)}</td></tr>` +
+      `<tr><td style="${TD}font-weight:700;color:#4A5A57;">Bed Number</td><td style="${TD}">${v2(d.admission.bedNumber)}</td></tr>` +
+      (d.admission.reason ? `<tr><td style="${TD}font-weight:700;color:#4A5A57;">Reason</td><td style="${TD}">${escapeHtml(d.admission.reason)}</td></tr>` : "") +
+      `</tbody></table>`)
+  : ""}
+
+<!-- DOCTOR SIGNATURE (matches Short Summary sign-off block) -->
+<div class="no-break" style="margin-top:0;display:flex;justify-content:flex-end;">
+  <div style="width:210px;text-align:center;">
+    <div style="font-size:7px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:${LABEL_C};margin-top:3px;">
+      Doctor&rsquo;s Signature
+    </div>
+    <div style="font-size:11px;font-weight:700;color:${INK};margin-top:5px;">Dr. ${escapeHtml(d.visit.doctorName)}</div>
+    <div style="font-size:8.5px;color:#4A5A57;margin-top:1px;">Consultant Ophthalmologist</div>
+    <div style="font-size:7.5px;color:#8A9793;margin-top:1px;">${escapeHtml(d.visit.hospitalName)}</div>
+  </div>
 </div>
 
-<!-- RUNNING FOOTER -->
+<!-- CLOSING LINE (matches Short Summary) -->
+<div style="margin-top:12px;padding-top:7px;border-top:1px solid ${LINE};text-align:center;">
+  <span style="font-size:9px;font-style:italic;color:${LABEL_C};">Thank you for trusting us with your care.</span>
+</div>
+
+</div><!-- end flex-column page wrapper -->
+
+<!-- RUNNING FOOTER (matches Short Summary) -->
 <div class="footer">
   <span>CONFIDENTIAL — For authorized clinical use only</span>
   <span>UHID: ${escapeHtml(d.patient.udid)}</span>
