@@ -1,12 +1,17 @@
 "use client";
 
-import { useState, useTransition, useMemo } from "react";
-import { format, isToday, formatDistanceToNow } from "date-fns";
+import { useState, useEffect, useTransition, useMemo } from "react";
+import {
+  format, isToday, formatDistanceToNow,
+  startOfMonth, endOfMonth, startOfWeek, endOfWeek,
+  eachDayOfInterval, isSameMonth, addMonths, subMonths,
+} from "date-fns";
 import {
   X, Search, Stethoscope, FlaskConical, Scissors, BedDouble,
   Receipt, ArrowRightLeft, FileText, ChevronDown, ChevronUp,
-  Timer, Building2, UserRound, CalendarDays, SlidersHorizontal,
+  Timer, CalendarDays, SlidersHorizontal,
   Loader2, CheckCircle2, Clock, AlertCircle, LogIn, Calendar,
+  ChevronLeft, ChevronRight,
 } from "lucide-react";
 import { getPatientTimeline, type TimelineEvent, type TimelineEventType } from "../actions";
 
@@ -14,56 +19,60 @@ import { getPatientTimeline, type TimelineEvent, type TimelineEventType } from "
 const EVENT_CFG = {
   CONSULTATION: {
     label: "Consultation", Icon: Stethoscope,
-    dot: "bg-teal-500", border: "border-l-teal-400",
+    dot: "bg-teal-500", dotHex: "#14B8A6",
+    border: "border-l-teal-400",
     badge: "bg-teal-100 text-teal-700", card: "bg-teal-50/40",
   },
   INVESTIGATION: {
     label: "Investigation", Icon: FlaskConical,
-    dot: "bg-violet-500", border: "border-l-violet-400",
+    dot: "bg-violet-500", dotHex: "#8B5CF6",
+    border: "border-l-violet-400",
     badge: "bg-violet-100 text-violet-700", card: "bg-violet-50/40",
   },
   SURGERY: {
     label: "Surgery", Icon: Scissors,
-    dot: "bg-rose-500", border: "border-l-rose-400",
+    dot: "bg-rose-500", dotHex: "#F43F5E",
+    border: "border-l-rose-400",
     badge: "bg-rose-100 text-rose-700", card: "bg-rose-50/40",
   },
   ADMISSION: {
     label: "IPD / Admission", Icon: BedDouble,
-    dot: "bg-orange-500", border: "border-l-orange-400",
+    dot: "bg-orange-500", dotHex: "#F97316",
+    border: "border-l-orange-400",
     badge: "bg-orange-100 text-orange-700", card: "bg-orange-50/40",
   },
   BILLING: {
     label: "Billing", Icon: Receipt,
-    dot: "bg-emerald-500", border: "border-l-emerald-400",
+    dot: "bg-emerald-500", dotHex: "#10B981",
+    border: "border-l-emerald-400",
     badge: "bg-emerald-100 text-emerald-700", card: "bg-emerald-50/40",
   },
   TRANSFER: {
     label: "Transfer", Icon: ArrowRightLeft,
-    dot: "bg-amber-500", border: "border-l-amber-400",
+    dot: "bg-amber-500", dotHex: "#F59E0B",
+    border: "border-l-amber-400",
     badge: "bg-amber-100 text-amber-700", card: "bg-amber-50/40",
   },
   EXTERNAL: {
     label: "External Visit", Icon: FileText,
-    dot: "bg-slate-400", border: "border-l-slate-400",
+    dot: "bg-slate-400", dotHex: "#94A3B8",
+    border: "border-l-slate-400",
     badge: "bg-slate-100 text-slate-600", card: "bg-slate-50/40",
   },
 } as const;
 
 const ALL_TYPES = Object.keys(EVENT_CFG) as TimelineEventType[];
+const DAY_LABELS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 
-function relTime(iso: string) {
-  const d = new Date(iso);
-  return isToday(d)
-    ? formatDistanceToNow(d, { addSuffix: true })
-    : format(d, "dd MMM yyyy");
+function toDateKey(iso: string) {
+  return format(new Date(iso), "yyyy-MM-dd");
 }
 
 function fullTime(iso: string) {
-  const d = new Date(iso);
-  return format(d, "dd MMM yyyy · hh:mm a");
+  return format(new Date(iso), "hh:mm a");
 }
 
-/* ── Event detail expander ───────────────────────────────────────────────────── */
+/* ── EventDetail ─────────────────────────────────────────────────────────────── */
 function EventDetail({ ev }: { ev: TimelineEvent }) {
   const d = ev.detail;
 
@@ -81,64 +90,49 @@ function EventDetail({ ev }: { ev: TimelineEvent }) {
 
     return (
       <div className="mt-3 space-y-3 text-xs text-[var(--color-ink-700)]">
-
-        {/* ── Timestamp trail ─────────────────────────────────────── */}
         {(d.bookedAt || d.arrivedAt || d.seenAt || d.finalizedAt) && (
           <div className="rounded-xl border border-[var(--color-border)] overflow-hidden">
             <p className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-500)] bg-[var(--color-surface-sunken)] border-b border-[var(--color-border)]">
               Visit Timeline
             </p>
             <div className="divide-y divide-[var(--color-border)]">
-
-              {/* Booked */}
               {d.bookedAt && (
                 <div className="flex items-center justify-between px-3 py-2">
                   <span className="flex items-center gap-1.5 text-[var(--color-ink-500)]">
-                    <Clock size={11} className="shrink-0" />
-                    Appointment Booked
+                    <Clock size={11} className="shrink-0" /> Appointment Booked
                   </span>
                   <span className="font-semibold text-[var(--color-ink-800)]">
                     {format(new Date(d.bookedAt), "d MMM yyyy, h:mm a")}
                   </span>
                 </div>
               )}
-
-              {/* Scheduled slot */}
               {d.scheduledAt && (
                 <div className="flex items-center justify-between px-3 py-2">
                   <span className="flex items-center gap-1.5 text-[var(--color-ink-500)]">
-                    <Calendar size={11} className="shrink-0" />
-                    Appointment Time
+                    <Calendar size={11} className="shrink-0" /> Appointment Time
                   </span>
                   <span className="font-semibold text-[var(--color-ink-800)]">
                     {format(new Date(d.scheduledAt), "d MMM yyyy, h:mm a")}
                   </span>
                 </div>
               )}
-
-              {/* Arrived */}
               {arrivedAt && (
                 <div className="flex items-center justify-between px-3 py-2">
                   <span className="flex items-center gap-1.5 text-blue-500">
-                    <LogIn size={11} className="shrink-0" />
-                    Arrived at Clinic
+                    <LogIn size={11} className="shrink-0" /> Arrived at Clinic
                   </span>
                   <span className="font-semibold text-[var(--color-ink-800)]">
                     {format(arrivedAt, "h:mm a")}
                   </span>
                 </div>
               )}
-
-              {/* Seen by doctor */}
               {seenAt && (
                 <div className="flex items-center justify-between px-3 py-2">
                   <span className="flex items-center gap-1.5 text-teal-600">
                     <Stethoscope size={11} className="shrink-0" />
                     Seen by Doctor
                     {waitMins !== null && (
-                      <span className="ml-1 text-amber-500 font-medium">
-                        ({fmtDur(waitMins)} wait)
-                      </span>
+                      <span className="ml-1 text-amber-500 font-medium">({fmtDur(waitMins)} wait)</span>
                     )}
                   </span>
                   <span className="font-semibold text-[var(--color-ink-800)]">
@@ -146,21 +140,16 @@ function EventDetail({ ev }: { ev: TimelineEvent }) {
                   </span>
                 </div>
               )}
-
-              {/* Partial Dispense */}
               {d.partialDispenseAt && (
                 <div className="flex items-center justify-between px-3 py-2 bg-amber-50/60">
                   <span className="flex items-center gap-1.5 text-amber-600">
-                    <AlertCircle size={11} className="shrink-0" />
-                    Partial Dispense
+                    <AlertCircle size={11} className="shrink-0" /> Partial Dispense
                   </span>
                   <span className="font-semibold text-amber-700">
                     {format(new Date(d.partialDispenseAt), "h:mm a")}
                   </span>
                 </div>
               )}
-
-              {/* Dispensed */}
               {finalizedAt && (
                 <div className="flex items-center justify-between px-3 py-2 bg-emerald-50/60">
                   <span className="flex items-center gap-1.5 text-emerald-600">
@@ -180,7 +169,6 @@ function EventDetail({ ev }: { ev: TimelineEvent }) {
             </div>
           </div>
         )}
-
       </div>
     );
   }
@@ -240,9 +228,9 @@ function EventDetail({ ev }: { ev: TimelineEvent }) {
 
   if (ev.type === "TRANSFER") return (
     <div className="mt-3 text-xs text-[var(--color-ink-700)] space-y-1">
-      {d.fromHospital && <p><span className="font-semibold">From: </span>{d.fromHospital}</p>}
-      {d.toHospital   && <p><span className="font-semibold">To: </span>{d.toHospital}</p>}
-      {d.transferReason && <p><span className="font-semibold">Reason: </span>{d.transferReason}</p>}
+      {d.fromHospital    && <p><span className="font-semibold">From: </span>{d.fromHospital}</p>}
+      {d.toHospital      && <p><span className="font-semibold">To: </span>{d.toHospital}</p>}
+      {d.transferReason  && <p><span className="font-semibold">Reason: </span>{d.transferReason}</p>}
     </div>
   );
 
@@ -252,7 +240,8 @@ function EventDetail({ ev }: { ev: TimelineEvent }) {
       {d.externalDiagnosis && <p><span className="font-semibold">Diagnosis: </span>{d.externalDiagnosis}</p>}
       {d.externalTreatment && <p><span className="font-semibold">Treatment: </span>{d.externalTreatment}</p>}
       {d.scanRef && (
-        <a href={d.scanRef} target="_blank" rel="noopener noreferrer" className="text-[var(--color-primary-600)] underline">View Scan</a>
+        <a href={d.scanRef} target="_blank" rel="noopener noreferrer"
+          className="text-[var(--color-primary-600)] underline">View Scan</a>
       )}
       <p><span className="font-semibold">Status: </span>{d.verificationStatus?.replace("_", " ")}</p>
     </div>
@@ -263,10 +252,10 @@ function EventDetail({ ev }: { ev: TimelineEvent }) {
 
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, { label: string; cls: string; Icon: React.ElementType }> = {
-    ORDERED:          { label: "Ordered",     cls: "bg-blue-100 text-blue-700",    Icon: Clock },
-    IN_PROGRESS:      { label: "In Progress", cls: "bg-amber-100 text-amber-700",  Icon: Clock },
+    ORDERED:          { label: "Ordered",     cls: "bg-blue-100 text-blue-700",       Icon: Clock },
+    IN_PROGRESS:      { label: "In Progress", cls: "bg-amber-100 text-amber-700",     Icon: Clock },
     RESULT_AVAILABLE: { label: "Result",      cls: "bg-emerald-100 text-emerald-700", Icon: CheckCircle2 },
-    REVIEWED:         { label: "Reviewed",    cls: "bg-teal-100 text-teal-700",    Icon: CheckCircle2 },
+    REVIEWED:         { label: "Reviewed",    cls: "bg-teal-100 text-teal-700",       Icon: CheckCircle2 },
   };
   const cfg = map[status] ?? { label: status, cls: "bg-slate-100 text-slate-600", Icon: AlertCircle };
   return (
@@ -276,53 +265,239 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-/* ── Single event card ───────────────────────────────────────────────────────── */
+/* ── Single event card (calendar day view) ───────────────────────────────────── */
 function EventCard({ ev, isLast }: { ev: TimelineEvent; isLast: boolean }) {
   const [expanded, setExpanded] = useState(false);
   const cfg = EVENT_CFG[ev.type];
 
   return (
-    <div className="relative flex gap-4">
+    <div className="relative flex gap-3">
       {/* Vertical rail */}
       <div className="flex flex-col items-center shrink-0">
-        <div className={`w-3 h-3 rounded-full ${cfg.dot} ring-2 ring-white shadow-sm mt-1 shrink-0`} />
+        <div className={`w-2.5 h-2.5 rounded-full ${cfg.dot} ring-2 ring-white shadow-sm mt-1.5 shrink-0`} />
         {!isLast && <div className="w-px flex-1 bg-[var(--color-border)] mt-1" />}
       </div>
 
       {/* Card */}
-      <div className={`flex-1 mb-4 rounded-xl border border-[var(--color-border)] border-l-4 ${cfg.border} ${cfg.card} overflow-hidden`}>
-        <div
-          className="px-4 py-3 cursor-pointer select-none"
-          onClick={() => setExpanded((p) => !p)}
-        >
+      <div className={`flex-1 mb-3 rounded-xl border border-[var(--color-border)] border-l-4 ${cfg.border} ${cfg.card} overflow-hidden`}>
+        <div className="px-3 py-2.5 cursor-pointer select-none" onClick={() => setExpanded((p) => !p)}>
           <div className="flex items-start justify-between gap-2">
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap mb-0.5">
+              <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
                 <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide ${cfg.badge}`}>
                   <cfg.Icon size={9} />{cfg.label}
                 </span>
                 {ev.detail.visitStatus === "CLOSED" && (
-                  <span className="text-[10px] font-semibold bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full">Finalized</span>
+                  <span className="text-[10px] font-semibold bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full">
+                    Finalized
+                  </span>
                 )}
               </div>
-              <p className="text-sm font-semibold text-[var(--color-ink-800)] leading-tight line-clamp-2">{ev.title}</p>
+              <p className="text-sm font-semibold text-[var(--color-ink-800)] leading-tight">{ev.title}</p>
             </div>
-            <div className="text-right shrink-0">
-              <p className="text-xs font-medium text-[var(--color-ink-500)]">{relTime(ev.date)}</p>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <span className="text-[11px] font-medium text-[var(--color-ink-400)]">{fullTime(ev.date)}</span>
               {expanded
-                ? <ChevronUp size={14} className="ml-auto mt-1 text-[var(--color-ink-400)]" />
-                : <ChevronDown size={14} className="ml-auto mt-1 text-[var(--color-ink-400)]" />}
+                ? <ChevronUp size={13} className="text-[var(--color-ink-400)]" />
+                : <ChevronDown size={13} className="text-[var(--color-ink-400)]" />}
             </div>
           </div>
-
-          <div className="flex items-center gap-3 mt-1.5 text-[11px] text-[var(--color-ink-400)]">
-            <span className="flex items-center gap-1"><CalendarDays size={10} />{fullTime(ev.date)}</span>
+          {(ev.hospitalName || ev.doctorName) && (
+            <p className="mt-1 text-[11px] text-[var(--color-ink-400)] flex items-center gap-1.5 flex-wrap">
+              {ev.hospitalName && <span>{ev.hospitalName}</span>}
+              {ev.hospitalName && ev.doctorName && <span>·</span>}
+              {ev.doctorName && <span>{ev.doctorName}</span>}
+            </p>
+          )}
+        </div>
+        {expanded && (
+          <div className="px-3 pb-3 border-t border-[var(--color-border)]/60">
+            <EventDetail ev={ev} />
           </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ── Calendar month grid ─────────────────────────────────────────────────────── */
+function CalendarGrid({
+  currentMonth,
+  selectedKey,
+  eventsByDate,
+  onSelectDate,
+  onPrev,
+  onNext,
+  onToday,
+}: {
+  currentMonth: Date;
+  selectedKey: string;
+  eventsByDate: Record<string, TimelineEvent[]>;
+  onSelectDate: (key: string) => void;
+  onPrev: () => void;
+  onNext: () => void;
+  onToday: () => void;
+}) {
+  const todayKey = format(new Date(), "yyyy-MM-dd");
+
+  const cells = useMemo(() => {
+    const start = startOfWeek(startOfMonth(currentMonth));
+    const end   = endOfWeek(endOfMonth(currentMonth));
+    return eachDayOfInterval({ start, end });
+  }, [currentMonth]);
+
+  return (
+    <div className="bg-white border-b border-[var(--color-border)] shrink-0">
+      {/* Month navigation */}
+      <div className="flex items-center justify-between px-4 py-2.5 border-b border-[var(--color-border)]">
+        <button
+          onClick={onPrev}
+          className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)] transition-colors"
+        >
+          <ChevronLeft size={15} />
+        </button>
+
+        <div className="flex items-center gap-2">
+          <h3 className="text-sm font-bold text-[var(--color-ink-800)]">
+            {format(currentMonth, "MMMM yyyy")}
+          </h3>
+          <button
+            onClick={onToday}
+            className="text-[10px] font-semibold px-2 py-0.5 rounded-full border border-[var(--color-primary-300)] text-[var(--color-primary-600)] hover:bg-[var(--color-primary-50)] transition-colors"
+          >
+            Today
+          </button>
         </div>
 
-        {expanded && (
-          <div className="px-4 pb-3 border-t border-[var(--color-border)]/60">
-            <EventDetail ev={ev} />
+        <button
+          onClick={onNext}
+          className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)] transition-colors"
+        >
+          <ChevronRight size={15} />
+        </button>
+      </div>
+
+      {/* Day-of-week header */}
+      <div className="grid grid-cols-7 px-3 pt-2">
+        {DAY_LABELS.map((d) => (
+          <div key={d} className="text-center text-[10px] font-bold text-[var(--color-ink-400)] uppercase tracking-wide pb-1">
+            {d}
+          </div>
+        ))}
+      </div>
+
+      {/* Date cells */}
+      <div className="grid grid-cols-7 px-3 pb-3 gap-y-1">
+        {cells.map((day) => {
+          const key        = format(day, "yyyy-MM-dd");
+          const isThisMonth = isSameMonth(day, currentMonth);
+          const isTod      = key === todayKey;
+          const isSelected = key === selectedKey;
+          const dayEvents  = eventsByDate[key] ?? [];
+          const hasEvents  = dayEvents.length > 0;
+
+          // Collect distinct event types for dot indicators
+          const types = [...new Set(dayEvents.map((e) => e.type))] as TimelineEventType[];
+
+          return (
+            <button
+              key={key}
+              onClick={() => onSelectDate(key)}
+              className={[
+                "relative flex flex-col items-center pt-1 pb-1.5 rounded-xl transition-all",
+                isSelected
+                  ? "bg-[var(--color-primary-600)] text-white shadow-sm"
+                  : isTod
+                  ? "bg-[var(--color-primary-50)] text-[var(--color-primary-700)]"
+                  : isThisMonth
+                  ? "hover:bg-[var(--color-surface-sunken)] text-[var(--color-ink-700)]"
+                  : "text-[var(--color-ink-300)] hover:bg-[var(--color-surface-sunken)]",
+              ].join(" ")}
+            >
+              {/* Today ring */}
+              {isTod && !isSelected && (
+                <span className="absolute inset-0 rounded-xl ring-2 ring-[var(--color-primary-400)] ring-offset-0 pointer-events-none" />
+              )}
+
+              {/* Date number */}
+              <span className={[
+                "text-xs font-semibold leading-none",
+                isSelected ? "text-white" : isTod ? "text-[var(--color-primary-700)]" : "",
+              ].join(" ")}>
+                {format(day, "d")}
+              </span>
+
+              {/* Event type dots */}
+              {hasEvents && (
+                <div className="flex items-center justify-center gap-0.5 mt-1 min-h-[6px]">
+                  {types.slice(0, 3).map((t) => (
+                    <span
+                      key={t}
+                      className="w-1.5 h-1.5 rounded-full shrink-0"
+                      style={{
+                        background: isSelected ? "rgba(255,255,255,0.85)" : EVENT_CFG[t].dotHex,
+                      }}
+                    />
+                  ))}
+                  {types.length > 3 && (
+                    <span className={`text-[8px] font-bold leading-none ${isSelected ? "text-white/80" : "text-[var(--color-ink-400)]"}`}>
+                      +{types.length - 3}
+                    </span>
+                  )}
+                </div>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Legend */}
+      <div className="flex items-center gap-3 flex-wrap px-4 py-2 border-t border-[var(--color-border)] bg-[var(--color-surface-sunken)]">
+        {ALL_TYPES.map((t) => (
+          <span key={t} className="flex items-center gap-1 text-[10px] text-[var(--color-ink-400)]">
+            <span className="w-2 h-2 rounded-full shrink-0" style={{ background: EVENT_CFG[t].dotHex }} />
+            {EVENT_CFG[t].label}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ── Day events panel ────────────────────────────────────────────────────────── */
+function DayEventsPanel({ selectedKey, dayEvents }: { selectedKey: string; dayEvents: TimelineEvent[] }) {
+  const label = selectedKey
+    ? format(new Date(selectedKey), "EEEE, d MMMM yyyy")
+    : "";
+
+  return (
+    <div className="flex-1 overflow-y-auto">
+      {/* Panel header */}
+      <div className="sticky top-0 z-10 flex items-center justify-between px-4 py-2.5 bg-[var(--color-surface-sunken)] border-b border-[var(--color-border)]">
+        <div className="flex items-center gap-2">
+          <CalendarDays size={13} className="text-[var(--color-primary-500)]" />
+          <span className="text-xs font-bold text-[var(--color-ink-700)]">{label}</span>
+        </div>
+        {dayEvents.length > 0 && (
+          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[var(--color-primary-100)] text-[var(--color-primary-700)]">
+            {dayEvents.length} event{dayEvents.length !== 1 ? "s" : ""}
+          </span>
+        )}
+      </div>
+
+      {/* Events */}
+      <div className="px-4 py-4">
+        {dayEvents.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 gap-2 text-[var(--color-ink-400)]">
+            <CalendarDays size={32} className="opacity-25" />
+            <p className="text-sm font-medium text-[var(--color-ink-500)]">No events recorded for this date</p>
+            <p className="text-xs text-[var(--color-ink-400)]">Select a highlighted date to view patient activity</p>
+          </div>
+        ) : (
+          <div className="pl-1">
+            {dayEvents.map((ev, i) => (
+              <EventCard key={ev.id} ev={ev} isLast={i === dayEvents.length - 1} />
+            ))}
           </div>
         )}
       </div>
@@ -346,14 +521,17 @@ export function PatientTimelineModal({
   const [loaded, setLoaded]     = useState(false);
   const [isPending, startTrans] = useTransition();
 
+  // Calendar state
+  const todayKey = format(new Date(), "yyyy-MM-dd");
+  const [currentMonth,  setCurrentMonth]  = useState(() => new Date());
+  const [selectedKey,   setSelectedKey]   = useState(todayKey);
+
   // Filters
-  const [search,       setSearch]       = useState("");
-  const [typeFilter,   setTypeFilter]   = useState<TimelineEventType | "ALL">("ALL");
+  const [search,         setSearch]         = useState("");
+  const [typeFilter,     setTypeFilter]     = useState<TimelineEventType | "ALL">("ALL");
   const [hospitalFilter, setHospitalFilter] = useState("ALL");
   const [doctorFilter,   setDoctorFilter]   = useState("ALL");
-  const [dateFrom,     setDateFrom]     = useState("");
-  const [dateTo,       setDateTo]       = useState("");
-  const [showFilters,  setShowFilters]  = useState(false);
+  const [showFilters,    setShowFilters]    = useState(false);
 
   // Load once when first opened
   if (open && !loaded && !isPending) {
@@ -363,6 +541,18 @@ export function PatientTimelineModal({
       setLoaded(true);
     });
   }
+
+  // After load: if today has no events, jump to the most recent event date
+  useEffect(() => {
+    if (!events || events.length === 0) return;
+    const hasToday = events.some((ev) => toDateKey(ev.date) === todayKey);
+    if (!hasToday) {
+      const mostRecentDate = new Date(events[0].date);
+      setCurrentMonth(new Date(mostRecentDate.getFullYear(), mostRecentDate.getMonth(), 1));
+      setSelectedKey(toDateKey(events[0].date));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [events]);
 
   const hospitals = useMemo(() => {
     if (!events) return [];
@@ -380,15 +570,37 @@ export function PatientTimelineModal({
       if (typeFilter !== "ALL" && ev.type !== typeFilter) return false;
       if (hospitalFilter !== "ALL" && ev.hospitalName !== hospitalFilter) return false;
       if (doctorFilter   !== "ALL" && ev.doctorName   !== doctorFilter)   return false;
-      if (dateFrom && new Date(ev.date) < new Date(dateFrom)) return false;
-      if (dateTo   && new Date(ev.date) > new Date(dateTo + "T23:59:59")) return false;
       if (search) {
         const q = search.toLowerCase();
         if (!ev.searchText.includes(q) && !ev.title.toLowerCase().includes(q)) return false;
       }
       return true;
     });
-  }, [events, typeFilter, hospitalFilter, doctorFilter, dateFrom, dateTo, search]);
+  }, [events, typeFilter, hospitalFilter, doctorFilter, search]);
+
+  // Group filtered events by date key, sorted ascending within each day
+  const eventsByDate = useMemo(() => {
+    const map: Record<string, TimelineEvent[]> = {};
+    for (const ev of filtered) {
+      const key = toDateKey(ev.date);
+      (map[key] = map[key] ?? []).push(ev);
+    }
+    for (const key in map) {
+      map[key].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    }
+    return map;
+  }, [filtered]);
+
+  const dayEvents = eventsByDate[selectedKey] ?? [];
+
+  function goToday() {
+    setCurrentMonth(new Date());
+    setSelectedKey(todayKey);
+  }
+
+  function clearFilters() {
+    setSearch(""); setTypeFilter("ALL"); setHospitalFilter("ALL"); setDoctorFilter("ALL");
+  }
 
   if (!open) return null;
 
@@ -424,50 +636,51 @@ export function PatientTimelineModal({
           </button>
         </div>
 
-        {/* Search + filter bar */}
+        {/* Search + type chips */}
         <div className="px-4 py-3 border-b border-[var(--color-border)] bg-white shrink-0 space-y-2">
-          {/* Search */}
-          <div className="relative">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)]" />
-            <input
-              type="text"
-              placeholder="Search diagnosis, medication, test, hospital…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-8 pr-3 py-2 text-sm border border-[var(--color-border)] rounded-lg outline-none focus:border-[var(--color-primary-400)] bg-[var(--color-surface-sunken)]"
-            />
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)]" />
+              <input
+                type="text"
+                placeholder="Search diagnosis, medication, test, hospital…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full pl-8 pr-3 py-2 text-sm border border-[var(--color-border)] rounded-lg outline-none focus:border-[var(--color-primary-400)] bg-[var(--color-surface-sunken)]"
+              />
+            </div>
+            <button
+              onClick={() => setShowFilters((p) => !p)}
+              className={`shrink-0 flex items-center gap-1 px-3 py-2 rounded-lg text-xs font-semibold border transition-colors ${showFilters ? "bg-[var(--color-primary-50)] border-[var(--color-primary-400)] text-[var(--color-primary-700)]" : "border-[var(--color-border)] text-[var(--color-ink-600)]"}`}
+            >
+              <SlidersHorizontal size={12} /> Filters
+            </button>
           </div>
 
           {/* Type filter chips */}
           <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-hide">
             <button
               onClick={() => setTypeFilter("ALL")}
-              className={`shrink-0 px-3 py-1 rounded-full text-xs font-semibold border transition-colors ${typeFilter === "ALL" ? "bg-[var(--color-primary-600)] text-white border-[var(--color-primary-600)]" : "border-[var(--color-border)] text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)]"}`}
+              className={`shrink-0 px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-colors ${typeFilter === "ALL" ? "bg-[var(--color-primary-600)] text-white border-[var(--color-primary-600)]" : "border-[var(--color-border)] text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)]"}`}
             >
-              All Events
+              All
             </button>
             {ALL_TYPES.map((t) => {
-              const cfg = EVENT_CFG[t];
+              const cfg    = EVENT_CFG[t];
               const active = typeFilter === t;
               return (
                 <button
                   key={t}
                   onClick={() => setTypeFilter(active ? "ALL" : t)}
-                  className={`shrink-0 inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold border transition-colors ${active ? cfg.badge + " border-current" : "border-[var(--color-border)] text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)]"}`}
+                  className={`shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-colors ${active ? cfg.badge + " border-current" : "border-[var(--color-border)] text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)]"}`}
                 >
-                  <cfg.Icon size={10} />{cfg.label}
+                  <cfg.Icon size={9} />{cfg.label}
                 </button>
               );
             })}
-            <button
-              onClick={() => setShowFilters((p) => !p)}
-              className={`shrink-0 ml-auto flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold border transition-colors ${showFilters ? "bg-[var(--color-primary-50)] border-[var(--color-primary-400)] text-[var(--color-primary-700)]" : "border-[var(--color-border)] text-[var(--color-ink-600)]"}`}
-            >
-              <SlidersHorizontal size={10} /> Filters
-            </button>
           </div>
 
-          {/* Extra filters */}
+          {/* Advanced filters */}
           {showFilters && (
             <div className="grid grid-cols-2 gap-2 pt-1">
               <select
@@ -486,72 +699,57 @@ export function PatientTimelineModal({
                 <option value="ALL">All Doctors</option>
                 {doctors.map((d) => <option key={d} value={d}>{d}</option>)}
               </select>
-              <div className="flex items-center gap-1.5">
-                <label className="text-[10px] font-semibold text-[var(--color-ink-500)] shrink-0">From</label>
-                <input
-                  type="date"
-                  value={dateFrom}
-                  onChange={(e) => setDateFrom(e.target.value)}
-                  className="flex-1 text-xs border border-[var(--color-border)] rounded-lg px-2 py-1.5 bg-white outline-none focus:border-[var(--color-primary-400)]"
-                />
-              </div>
-              <div className="flex items-center gap-1.5">
-                <label className="text-[10px] font-semibold text-[var(--color-ink-500)] shrink-0">To</label>
-                <input
-                  type="date"
-                  value={dateTo}
-                  onChange={(e) => setDateTo(e.target.value)}
-                  className="flex-1 text-xs border border-[var(--color-border)] rounded-lg px-2 py-1.5 bg-white outline-none focus:border-[var(--color-primary-400)]"
-                />
-              </div>
-              {(hospitalFilter !== "ALL" || doctorFilter !== "ALL" || dateFrom || dateTo) && (
+              {(hospitalFilter !== "ALL" || doctorFilter !== "ALL" || search) && (
                 <button
-                  onClick={() => { setHospitalFilter("ALL"); setDoctorFilter("ALL"); setDateFrom(""); setDateTo(""); }}
+                  onClick={clearFilters}
                   className="col-span-2 text-xs text-[var(--color-primary-600)] hover:underline text-left"
                 >
-                  Clear filters
+                  Clear all filters
                 </button>
               )}
             </div>
           )}
         </div>
 
-        {/* Timeline body */}
-        <div className="flex-1 overflow-y-auto px-4 py-4">
-          {isPending && (
-            <div className="flex flex-col items-center justify-center h-40 gap-3 text-[var(--color-ink-400)]">
-              <Loader2 size={28} className="animate-spin text-[var(--color-primary-500)]" />
-              <p className="text-sm">Loading patient history…</p>
-            </div>
-          )}
+        {/* Body */}
+        {isPending ? (
+          <div className="flex-1 flex flex-col items-center justify-center gap-3 text-[var(--color-ink-400)]">
+            <Loader2 size={28} className="animate-spin text-[var(--color-primary-500)]" />
+            <p className="text-sm">Loading patient history…</p>
+          </div>
+        ) : (
+          <div className="flex-1 flex flex-col overflow-hidden">
+            {/* Calendar */}
+            <CalendarGrid
+              currentMonth={currentMonth}
+              selectedKey={selectedKey}
+              eventsByDate={eventsByDate}
+              onSelectDate={(key) => {
+                setSelectedKey(key);
+                // If selected date is in a different month, navigate there
+                const d = new Date(key);
+                if (
+                  d.getMonth() !== currentMonth.getMonth() ||
+                  d.getFullYear() !== currentMonth.getFullYear()
+                ) {
+                  setCurrentMonth(new Date(d.getFullYear(), d.getMonth(), 1));
+                }
+              }}
+              onPrev={() => setCurrentMonth((m) => subMonths(m, 1))}
+              onNext={() => setCurrentMonth((m) => addMonths(m, 1))}
+              onToday={goToday}
+            />
 
-          {!isPending && events && filtered.length === 0 && (
-            <div className="flex flex-col items-center justify-center h-40 gap-2 text-[var(--color-ink-400)]">
-              <Search size={28} className="opacity-30" />
-              <p className="text-sm font-medium">No events match your filters</p>
-              <button
-                onClick={() => { setSearch(""); setTypeFilter("ALL"); setHospitalFilter("ALL"); setDoctorFilter("ALL"); setDateFrom(""); setDateTo(""); }}
-                className="text-xs text-[var(--color-primary-600)] hover:underline"
-              >
-                Clear all filters
-              </button>
-            </div>
-          )}
-
-          {!isPending && filtered.length > 0 && (
-            <div className="pl-1">
-              {filtered.map((ev, i) => (
-                <EventCard key={ev.id} ev={ev} isLast={i === filtered.length - 1} />
-              ))}
-            </div>
-          )}
-        </div>
+            {/* Day events */}
+            <DayEventsPanel selectedKey={selectedKey} dayEvents={dayEvents} />
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
-/* ── Trigger button (exported for page.tsx) ──────────────────────────────────── */
+/* ── Trigger button ──────────────────────────────────────────────────────────── */
 export function TimeStampButton({ patientId, patientName }: { patientId: string; patientName: string }) {
   const [open, setOpen] = useState(false);
   return (
