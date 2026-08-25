@@ -531,6 +531,69 @@ function DrugNameInput({
   );
 }
 
+/* ── Generic autocomplete for short option lists (dose, duration) ────────────── */
+function OptionsInput({
+  value,
+  options,
+  onChange,
+  placeholder,
+  className,
+}: {
+  value: string;
+  options: string[];
+  onChange: (v: string) => void;
+  placeholder?: string;
+  className?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const blurRef         = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const filtered = useMemo(() => {
+    const q = value.trim().toLowerCase();
+    if (!q) return options;
+    return options.filter((o) => o.toLowerCase().includes(q));
+  }, [value, options]);
+
+  return (
+    <div className="relative">
+      <input
+        value={value}
+        onChange={(e) => { onChange(e.target.value); setOpen(true); }}
+        onFocus={() => setOpen(true)}
+        onBlur={() => { blurRef.current = setTimeout(() => setOpen(false), 150); }}
+        placeholder={placeholder}
+        className={className}
+        autoComplete="off"
+      />
+      {open && filtered.length > 0 && (
+        <div
+          className="absolute z-50 left-0 right-0 top-full mt-0.5 bg-white rounded-xl shadow-xl border border-[var(--color-border)] overflow-auto"
+          style={{ maxHeight: 180 }}
+          onMouseDown={(e) => {
+            e.preventDefault();
+            if (blurRef.current) clearTimeout(blurRef.current);
+          }}
+        >
+          {filtered.map((opt) => (
+            <button
+              key={opt}
+              type="button"
+              onClick={() => { onChange(opt); setOpen(false); }}
+              className={[
+                "w-full text-left px-3 py-1.5 text-xs font-medium text-[var(--color-ink-700)] transition-colors",
+                "hover:bg-[var(--color-primary-50)] hover:text-[var(--color-primary-700)]",
+                opt !== filtered[filtered.length - 1] ? "border-b border-[var(--color-border)]" : "",
+              ].join(" ")}
+            >
+              {opt}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function PresetSelectDialog({
   matches,
   onApply,
@@ -852,9 +915,10 @@ function PresetSelectDialog({
                         }}
                         className={inp}
                       />
-                      <input
+                      <OptionsInput
                         value={med.dosage}
-                        onChange={(e) => { const n = [...formMeds]; n[i] = { ...n[i], dosage: e.target.value }; setFormMeds(n); }}
+                        onChange={(v) => { const n = [...formMeds]; n[i] = { ...n[i], dosage: v }; setFormMeds(n); }}
+                        options={DOSE_OPTIONS}
                         placeholder="Dose"
                         className={inp}
                       />
@@ -866,9 +930,10 @@ function PresetSelectDialog({
                         <option value="">Frequency</option>
                         {FREQUENCY_OPTIONS.map((f) => <option key={f}>{f}</option>)}
                       </select>
-                      <input
+                      <OptionsInput
                         value={med.duration}
-                        onChange={(e) => { const n = [...formMeds]; n[i] = { ...n[i], duration: e.target.value }; setFormMeds(n); }}
+                        onChange={(v) => { const n = [...formMeds]; n[i] = { ...n[i], duration: v }; setFormMeds(n); }}
+                        options={DURATION_OPTIONS}
                         placeholder="Duration"
                         className={inp}
                       />
