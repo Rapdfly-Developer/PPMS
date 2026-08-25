@@ -649,29 +649,6 @@ export function PatientTimelineModal({
             </button>
           </div>
 
-          {/* Type filter chips */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-hide">
-            <button
-              onClick={() => setTypeFilter("ALL")}
-              className={`shrink-0 px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-colors ${typeFilter === "ALL" ? "bg-[var(--color-primary-600)] text-white border-[var(--color-primary-600)]" : "border-[var(--color-border)] text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)]"}`}
-            >
-              All
-            </button>
-            {ALL_TYPES.map((t) => {
-              const cfg    = EVENT_CFG[t];
-              const active = typeFilter === t;
-              return (
-                <button
-                  key={t}
-                  onClick={() => setTypeFilter(active ? "ALL" : t)}
-                  className={`shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-colors ${active ? cfg.badge + " border-current" : "border-[var(--color-border)] text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)]"}`}
-                >
-                  <cfg.Icon size={9} />{cfg.label}
-                </button>
-              );
-            })}
-          </div>
-
           {/* Advanced filters */}
           {showFilters && (
             <div className="grid grid-cols-2 gap-2 pt-1">
