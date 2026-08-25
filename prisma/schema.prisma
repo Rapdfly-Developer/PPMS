@@ -726,6 +726,7 @@ model InvestigationOrder {
   status     String        @default("ORDERED")
   resultRef  String?
   createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
 
   @@index([visitId])
 }

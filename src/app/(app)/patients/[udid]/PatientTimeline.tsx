@@ -148,6 +148,19 @@ function EventDetail({ ev }: { ev: TimelineEvent }) {
                 </div>
               )}
 
+              {/* Partial Dispense */}
+              {d.partialDispenseAt && (
+                <div className="flex items-center justify-between px-3 py-2 bg-amber-50/60">
+                  <span className="flex items-center gap-1.5 text-amber-600">
+                    <AlertCircle size={11} className="shrink-0" />
+                    Partial Dispense
+                  </span>
+                  <span className="font-semibold text-amber-700">
+                    {format(new Date(d.partialDispenseAt), "h:mm a")}
+                  </span>
+                </div>
+              )}
+
               {/* Dispensed */}
               {finalizedAt && (
                 <div className="flex items-center justify-between px-3 py-2 bg-emerald-50/60">
@@ -208,13 +221,29 @@ function EventDetail({ ev }: { ev: TimelineEvent }) {
   }
 
   if (ev.type === "INVESTIGATION") return (
-    <div className="mt-3 space-y-1.5">
+    <div className="mt-3 space-y-2">
       {d.orders?.map((o) => (
-        <div key={o.id} className="flex items-center justify-between text-xs bg-white rounded-lg px-3 py-2 border border-violet-100">
-          <span className="font-medium text-[var(--color-ink-800)]">{o.testName}</span>
-          <div className="flex items-center gap-2 shrink-0">
-            {o.laterality && <span className="text-[var(--color-ink-400)]">{o.laterality}</span>}
-            <StatusBadge status={o.status} />
+        <div key={o.id} className="text-xs bg-white rounded-lg px-3 py-2.5 border border-violet-100">
+          <div className="flex items-center justify-between gap-2 mb-1.5">
+            <span className="font-medium text-[var(--color-ink-800)]">{o.testName}</span>
+            <div className="flex items-center gap-2 shrink-0">
+              {o.laterality && <span className="text-[var(--color-ink-400)]">{o.laterality}</span>}
+              <StatusBadge status={o.status} />
+            </div>
+          </div>
+          <div className="flex flex-col gap-0.5">
+            {o.orderedAt && (
+              <span className="flex items-center gap-1.5 text-[10px] text-[var(--color-ink-400)]">
+                <Clock size={9} className="shrink-0 text-violet-400" />
+                Ordered: {format(new Date(o.orderedAt), "d MMM yyyy, h:mm a")}
+              </span>
+            )}
+            {o.reportUpdatedAt && (
+              <span className="flex items-center gap-1.5 text-[10px] text-emerald-600">
+                <CheckCircle2 size={9} className="shrink-0" />
+                Report updated: {format(new Date(o.reportUpdatedAt), "d MMM yyyy, h:mm a")}
+              </span>
+            )}
           </div>
         </div>
       ))}
@@ -322,13 +351,7 @@ function EventCard({ ev, isLast }: { ev: TimelineEvent; isLast: boolean }) {
           </div>
 
           <div className="flex items-center gap-3 mt-1.5 text-[11px] text-[var(--color-ink-400)]">
-            {ev.hospitalName && (
-              <span className="flex items-center gap-1"><Building2 size={10} />{ev.hospitalName}</span>
-            )}
-            {ev.doctorName && (
-              <span className="flex items-center gap-1"><UserRound size={10} />{ev.doctorName}</span>
-            )}
-            <span className="flex items-center gap-1 ml-auto"><CalendarDays size={10} />{fullTime(ev.date)}</span>
+            <span className="flex items-center gap-1"><CalendarDays size={10} />{fullTime(ev.date)}</span>
           </div>
         </div>
 

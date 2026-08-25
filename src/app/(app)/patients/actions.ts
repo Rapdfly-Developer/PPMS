@@ -50,13 +50,14 @@ export type TimelineEvent = {
     diagnoses?: { description: string; icd10Code: string; laterality?: string | null; provisional: boolean; status: string }[];
     medications?: { drugName: string; dosage?: string | null; frequency?: string | null; duration?: string | null }[];
     // CONSULTATION — timestamp trail
-    bookedAt?: string | null;        // Appointment.createdAt
-    scheduledAt?: string | null;     // Appointment.dateTime
-    arrivedAt?: string | null;       // Appointment.arrivedAt
-    seenAt?: string | null;          // Visit.date (consultation started)
-    finalizedAt?: string | null;     // Visit.finalizedAt (dispensed)
+    bookedAt?: string | null;           // Appointment.createdAt
+    scheduledAt?: string | null;        // Appointment.dateTime
+    arrivedAt?: string | null;          // Appointment.arrivedAt
+    seenAt?: string | null;             // Visit.date (consultation started)
+    partialDispenseAt?: string | null;  // Appointment.partialDispenseAt
+    finalizedAt?: string | null;        // Visit.finalizedAt (dispensed)
     // INVESTIGATION
-    orders?: { id: string; testName: string; category: string; status: string; laterality?: string | null; priority: string; resultRef?: string | null }[];
+    orders?: { id: string; testName: string; category: string; status: string; laterality?: string | null; priority: string; resultRef?: string | null; orderedAt?: string | null; reportUpdatedAt?: string | null }[];
     // SURGERY
     surgeryType?: string;
     surgeryDate?: string;
@@ -97,10 +98,10 @@ export async function getPatientTimeline(patientId: string): Promise<TimelineEve
         generalExam:        { select: { chiefComplaint: true, bp: true, pulse: true } },
         diagnoses:          { select: { description: true, icd10Code: true, laterality: true, provisional: true, status: true } },
         medications:        { select: { drugName: true, dosage: true, frequency: true, duration: true } },
-        investigationOrders:{ select: { id: true, testName: true, category: true, status: true, laterality: true, priority: true, resultRef: true, createdAt: true } },
+        investigationOrders:{ select: { id: true, testName: true, category: true, status: true, laterality: true, priority: true, resultRef: true, createdAt: true, updatedAt: true } },
         admission:          { select: { reason: true, ward: true, numberOfDays: true, discharged: true, dischargedAt: true } },
         dispense:           { select: { shortSummary: true } },
-        appointment:        { select: { createdAt: true, dateTime: true, arrivedAt: true } },
+        appointment:        { select: { createdAt: true, dateTime: true, arrivedAt: true, partialDispenseAt: true } },
       },
     }),
     prisma.pastExternalVisit.findMany({
@@ -140,11 +141,12 @@ export async function getPatientTimeline(patientId: string): Promise<TimelineEve
         diagnoses:   v.diagnoses,
         medications: v.medications,
         // Timestamp trail
-        bookedAt:    v.appointment?.createdAt?.toISOString() ?? null,
-        scheduledAt: v.appointment?.dateTime?.toISOString()  ?? null,
-        arrivedAt:   v.appointment?.arrivedAt?.toISOString() ?? null,
-        seenAt:      v.status === "CLOSED" ? v.date.toISOString() : null,
-        finalizedAt: v.finalizedAt?.toISOString() ?? null,
+        bookedAt:          v.appointment?.createdAt?.toISOString()          ?? null,
+        scheduledAt:       v.appointment?.dateTime?.toISOString()           ?? null,
+        arrivedAt:         v.appointment?.arrivedAt?.toISOString()          ?? null,
+        seenAt:            v.status === "CLOSED" ? v.date.toISOString() : null,
+        partialDispenseAt: v.appointment?.partialDispenseAt?.toISOString() ?? null,
+        finalizedAt:       v.finalizedAt?.toISOString()                     ?? null,
       },
     });
 
@@ -159,7 +161,15 @@ export async function getPatientTimeline(patientId: string): Promise<TimelineEve
         hospitalName: hospital,
         doctorName:   doctor,
         searchText:  [testNames, hospital, doctor].filter(Boolean).join(" ").toLowerCase(),
-        detail: { orders: v.investigationOrders.map((o) => ({ ...o, createdAt: undefined })) },
+        detail: {
+          orders: v.investigationOrders.map((o) => ({
+            ...o,
+            orderedAt: o.createdAt.toISOString(),
+            reportUpdatedAt: o.resultRef ? o.updatedAt.toISOString() : null,
+            createdAt: undefined,
+            updatedAt: undefined,
+          })),
+        },
       });
     }
 
