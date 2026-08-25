@@ -466,7 +466,7 @@ function letterhead(hospitalName: string, hospitalAddress: string | null | undef
   <div class="doc-type-bar">${escapeHtml(docLabel)}</div>`;
 }
 
-function patientCard(patient: { name: string; udid: string; age: number; sex: string; mobile?: string | null; address?: string | null }, doctorName: string, visitDate: Date, hospitalName: string): string {
+function patientCard(patient: { name: string; udid: string; uhid?: string | null; age: number; sex: string; mobile?: string | null; address?: string | null }, doctorName: string, visitDate: Date, hospitalName: string): string {
   return `
   <div class="patient-card">
     <div class="patient-card-head">Patient Information</div>
@@ -477,7 +477,7 @@ function patientCard(patient: { name: string; udid: string; age: number; sex: st
       </div>
       <div>
         <div class="pf-label">UHID / Patient ID</div>
-        <div class="pf-value mono">${escapeHtml(patient.udid)}${patient.uhid ? ' / ' + escapeHtml(patient.uhid) : ''}</div>
+        <div class="pf-value mono">${escapeHtml(patient.udid)}</div>
       </div>
       <div>
         <div class="pf-label">Age / Gender</div>
@@ -1022,7 +1022,7 @@ async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
   <tbody>
     <tr>
       ${fbox("Patient", escapeHtml(d.patient.name))}
-      ${fbox("Patient ID", escapeHtml(d.patient.udid))}
+      ${fbox("Patient ID", escapeHtml(d.patient.udid) + (d.patient.uhid ? ' / ' + escapeHtml(d.patient.uhid) : ''))}
       ${fbox("Age / Gender", `${d.patient.age} yrs / ${escapeHtml(d.patient.sex)}`)}
       ${fbox("Mobile", d.patient.mobile ? escapeHtml(d.patient.mobile) : "—")}
     </tr>
