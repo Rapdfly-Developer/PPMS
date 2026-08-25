@@ -62,13 +62,13 @@ export default async function PatientsPage({
   if (categoryFilter) listConds.push({ category: categoryFilter });
   if (sexFilter)      listConds.push({ sex: sexFilter });
   if (hospitalFilter) listConds.push({ registeredAtId: hospitalFilter });
+  const listToday    = startOfDay(new Date());
+  const listTodayEnd = new Date(listToday); listTodayEnd.setHours(23, 59, 59, 999);
   if (opStatusFilter === "dispensed") {
-    const dayStart = startOfDay(new Date());
-    const dayEnd   = new Date(dayStart); dayEnd.setHours(23, 59, 59, 999);
-    listConds.push({ appointments: { some: { status: "DISPENSED", dateTime: { gte: dayStart, lte: dayEnd } } } });
+    listConds.push({ appointments: { some: { status: "DISPENSED", dateTime: { gte: listToday, lte: listTodayEnd } } } });
   }
-  if (registered === "today") {
-    listConds.push({ createdAt: { gte: startOfDay(new Date()) } });
+  if (opStatusFilter === "operated") {
+    listConds.push({ surgerySchedules: { some: { plannedDateTime: { gte: listToday, lte: listTodayEnd }, otRecord: { status: "COMPLETED" } } } });
   }
   if (opStatusFilter === "admitted")   listConds.push({ visits: { some: { admission: { discharged: false } } } });
   if (opStatusFilter === "discharged") listConds.push({ visits: { some: { admission: { discharged: true  } } } });
@@ -128,7 +128,7 @@ export default async function PatientsPage({
 
   const [
     totalPatients,
-    todayReg,
+    todayOperated,
     insurancePatients,
     todayDispensed,
     catGroups,
@@ -136,7 +136,9 @@ export default async function PatientsPage({
     recentReg,
   ] = await Promise.all([
     prisma.patient.count({ where: scopeWhere }),
-    prisma.patient.count({ where: { AND: [...scopeConds, { createdAt: { gte: today } }] } }),
+    prisma.patient.count({
+      where: { AND: [...scopeConds, { surgerySchedules: { some: { plannedDateTime: { gte: today, lte: todayEnd }, otRecord: { status: "COMPLETED" } } } }] },
+    }),
     prisma.patient.count({ where: { AND: [...scopeConds, { category: { in: ["ECHS", "INSURANCE"] } }] } }),
     prisma.patient.count({
       where: { AND: [...scopeConds, { appointments: { some: { status: "DISPENSED", dateTime: { gte: today, lte: todayEnd } } } }] },
@@ -247,7 +249,7 @@ export default async function PatientsPage({
         sortBy={sortBy}
         isHospital={isHospital}
         activeCard={activeCard}
-        kpis={{ totalPatients, todayReg, insurancePatients, todayDispensed }}
+        kpis={{ totalPatients, todayOperated, insurancePatients, todayDispensed }}
         trendData={trendData}
         catDist={catGroups.map(g => ({ category: g.category, count: g._count.id }))}
         recentReg={recentSerialized}

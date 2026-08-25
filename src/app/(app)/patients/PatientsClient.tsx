@@ -39,7 +39,7 @@ export interface RecentPat  {
   category: string; createdAt: string; mobile: string; photoUrl?: string | null;
 }
 export interface Kpis {
-  totalPatients: number; todayReg: number;
+  totalPatients: number; todayOperated: number;
   insurancePatients: number; todayDispensed: number;
 }
 
@@ -406,9 +406,9 @@ export function PatientsClient({
 
       {/* ── KPI Cards ──────────────────────────────────────────────────── */}
       <div className="grid grid-cols-3 gap-3 mb-5">
-        <KpiCard icon={<Users size={17} />}         label="Total Patients"  value={kpis.totalPatients}  color="teal"  isActive={activeCard === "total"}    onSelect={() => navigate({ opStatus: "all", registered: "", card: activeCard === "total" ? "" : "total", page: "1" })} />
-        <KpiCard icon={<CalendarCheck size={17} />} label="Total Operated"  value={kpis.todayReg}       color="blue"  sub="New today"                       isActive={activeCard === "operated"} onSelect={() => navigate({ opStatus: "all", registered: activeCard === "operated" ? "" : "today", card: activeCard === "operated" ? "" : "operated", page: "1" })} />
-        <KpiCard icon={<PackageCheck size={17} />}  label="Today Dispensed" value={kpis.todayDispensed} color="green" sub="Dispensed today"                 isActive={activeCard === "dispensed"} onSelect={() => navigate({ opStatus: activeCard === "dispensed" ? "all" : "dispensed", registered: "", card: activeCard === "dispensed" ? "" : "dispensed", page: "1" })} />
+        <KpiCard icon={<PackageCheck size={17} />}  label="Today Dispensed" value={kpis.todayDispensed} color="green" sub="Dispensed today"   isActive={activeCard === "dispensed" || activeCard === ""} onSelect={() => navigate({ opStatus: activeCard === "dispensed" || activeCard === "" ? "all" : "dispensed", card: activeCard === "dispensed" || activeCard === "" ? "total" : "dispensed", page: "1" })} />
+        <KpiCard icon={<Users size={17} />}         label="Total Patients"  value={kpis.totalPatients}  color="teal"  isActive={activeCard === "total"}    onSelect={() => navigate({ opStatus: "all", card: activeCard === "total" ? "dispensed" : "total", page: "1" })} />
+        <KpiCard icon={<CalendarCheck size={17} />} label="Total Operated"  value={kpis.todayOperated}  color="blue"  sub="Surgery completed today" isActive={activeCard === "operated"} onSelect={() => navigate({ opStatus: activeCard === "operated" ? "dispensed" : "operated", card: activeCard === "operated" ? "" : "operated", page: "1" })} />
       </div>
 
       {/* ── Table + Analytics ──────────────────────────────────────────── */}
