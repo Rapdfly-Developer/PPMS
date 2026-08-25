@@ -450,6 +450,87 @@ function PresetAppliedBadge({
   );
 }
 
+/* ── Autocomplete drug-name input (used in the preset form) ─────────────────── */
+function DrugNameInput({
+  value,
+  onChange,
+  className,
+  placeholder,
+}: {
+  value: string;
+  onChange: (name: string, defaultDose?: string) => void;
+  className?: string;
+  placeholder?: string;
+}) {
+  const [open, setOpen]   = useState(false);
+  const [idx,  setIdx]    = useState(-1);
+  const blurRef           = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const suggestions       = useMemo(() => searchMedications(value), [value]);
+
+  const select = (med: MedEntry) => {
+    onChange(med.name, med.defaultDose);
+    setOpen(false);
+    setIdx(-1);
+  };
+
+  const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!open || !suggestions.length) return;
+    if (e.key === "ArrowDown") { e.preventDefault(); setIdx((i) => Math.min(i + 1, suggestions.length - 1)); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); setIdx((i) => Math.max(i - 1, -1)); }
+    else if (e.key === "Enter" && idx >= 0) { e.preventDefault(); select(suggestions[idx]); }
+    else if (e.key === "Escape") { setOpen(false); setIdx(-1); }
+  };
+
+  return (
+    <div className="relative">
+      <input
+        value={value}
+        onChange={(e) => { onChange(e.target.value); setOpen(true); setIdx(-1); }}
+        onFocus={() => setOpen(true)}
+        onBlur={() => { blurRef.current = setTimeout(() => setOpen(false), 150); }}
+        onKeyDown={onKeyDown}
+        placeholder={placeholder ?? "Drug name"}
+        className={className}
+        autoComplete="off"
+      />
+      {open && suggestions.length > 0 && (
+        <div
+          className="absolute z-50 left-0 right-0 top-full mt-0.5 bg-white rounded-xl shadow-xl border border-[var(--color-border)] overflow-auto"
+          style={{ maxHeight: 220 }}
+          onMouseDown={(e) => {
+            e.preventDefault();
+            if (blurRef.current) clearTimeout(blurRef.current);
+          }}
+        >
+          {suggestions.map((med, i) => (
+            <button
+              key={med.id}
+              type="button"
+              onClick={() => select(med)}
+              className={[
+                "w-full text-left px-3 py-2 flex items-start gap-2 transition-colors",
+                i === idx
+                  ? "bg-[var(--color-primary-50)]"
+                  : "hover:bg-[var(--color-surface-sunken)]",
+                i < suggestions.length - 1 ? "border-b border-[var(--color-border)]" : "",
+              ].join(" ")}
+            >
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-semibold text-[var(--color-ink-800)] truncate">{med.name}</p>
+                <p className="text-[10px] text-[var(--color-ink-400)] truncate">
+                  {med.category}
+                  {med.brand ? ` · ${med.brand}` : ""}
+                  {med.defaultDose ? ` · ${med.defaultDose}` : ""}
+                </p>
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function PresetSelectDialog({
   matches,
   onApply,
@@ -762,10 +843,13 @@ function PresetSelectDialog({
                 <div className="flex flex-col gap-1.5">
                   {formMeds.map((med, i) => (
                     <div key={i} className="grid gap-1 items-center" style={{ gridTemplateColumns: "1fr 70px 130px 70px 20px" }}>
-                      <input
+                      <DrugNameInput
                         value={med.drugName}
-                        onChange={(e) => { const n = [...formMeds]; n[i] = { ...n[i], drugName: e.target.value }; setFormMeds(n); }}
-                        placeholder="Drug name"
+                        onChange={(name, defaultDose) => {
+                          const n = [...formMeds];
+                          n[i] = { ...n[i], drugName: name, ...(defaultDose ? { dosage: defaultDose } : {}) };
+                          setFormMeds(n);
+                        }}
                         className={inp}
                       />
                       <input
