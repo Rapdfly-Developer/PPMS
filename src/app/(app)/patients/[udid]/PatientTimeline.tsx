@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useTransition, useMemo } from "react";
 import {
-  format, isToday, formatDistanceToNow,
+  format,
   startOfMonth, endOfMonth, startOfWeek, endOfWeek,
   eachDayOfInterval, isSameMonth, addMonths, subMonths,
 } from "date-fns";
@@ -69,7 +69,7 @@ function toDateKey(iso: string) {
 }
 
 function fullTime(iso: string) {
-  return format(new Date(iso), "hh:mm a");
+  return format(new Date(iso), "d MMM yyyy, h:mm a");
 }
 
 /* ── EventDetail ─────────────────────────────────────────────────────────────── */
@@ -122,7 +122,7 @@ function EventDetail({ ev }: { ev: TimelineEvent }) {
                     <LogIn size={11} className="shrink-0" /> Arrived at Clinic
                   </span>
                   <span className="font-semibold text-[var(--color-ink-800)]">
-                    {format(arrivedAt, "h:mm a")}
+                    {format(arrivedAt, "d MMM yyyy, h:mm a")}
                   </span>
                 </div>
               )}
@@ -136,7 +136,7 @@ function EventDetail({ ev }: { ev: TimelineEvent }) {
                     )}
                   </span>
                   <span className="font-semibold text-[var(--color-ink-800)]">
-                    {format(seenAt, "h:mm a")}
+                    {format(seenAt, "d MMM yyyy, h:mm a")}
                   </span>
                 </div>
               )}
@@ -146,7 +146,7 @@ function EventDetail({ ev }: { ev: TimelineEvent }) {
                     <AlertCircle size={11} className="shrink-0" /> Partial Dispense
                   </span>
                   <span className="font-semibold text-amber-700">
-                    {format(new Date(d.partialDispenseAt), "h:mm a")}
+                    {format(new Date(d.partialDispenseAt), "d MMM yyyy, h:mm a")}
                   </span>
                 </div>
               )}
@@ -162,7 +162,7 @@ function EventDetail({ ev }: { ev: TimelineEvent }) {
                     )}
                   </span>
                   <span className="font-semibold text-emerald-700">
-                    {format(finalizedAt, "h:mm a")}
+                    {format(finalizedAt, "d MMM yyyy, h:mm a")}
                   </span>
                 </div>
               )}
