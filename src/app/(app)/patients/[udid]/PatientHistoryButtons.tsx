@@ -501,17 +501,6 @@ function SpectacleDrawer({
                   </span>
                 )}
               </div>
-              <label className="flex items-center gap-1.5 cursor-pointer shrink-0">
-                <input
-                  type="checkbox"
-                  checked={isSelected}
-                  onChange={() => togglePin(v.visitId)}
-                  className="w-3.5 h-3.5 accent-[var(--color-primary-600)] cursor-pointer"
-                />
-                <span className="text-[10px] font-semibold text-[var(--color-primary-700)]">
-                  {isSelected ? "In Summary" : "Add to Summary"}
-                </span>
-              </label>
             </div>
 
             {/* Refraction table */}
