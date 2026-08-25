@@ -26,7 +26,7 @@ type TopNavItem = NavItem & { icon: any };
 type NavEntry = TopNavItem;
 
 const ALL_NAV: NavEntry[] = [
-  { href: "/dashboard",    label: "Dashboard",    icon: LayoutDashboard, permission: "dashboard.view"                                        },
+  { href: "/dashboard",    label: "OPD",          icon: LayoutDashboard, permission: "dashboard.view"                                        },
   { href: "/appointments", label: "Appointments", icon: CalendarDays,    permission: "appointments.view", roles: ["DOCTOR", "HOSPITAL"]      },
   { href: "/patients",     label: "Patients",     icon: Users,           permission: "patients.view"                                         },
   { href: "/follow-ups",   label: "Follow Ups",   icon: CalendarClock,   permission: "patients.view",     roles: ["DOCTOR", "HOSPITAL"]      },
