@@ -673,12 +673,27 @@ export function FollowUpsClient({
             </p>
           </div>
         </div>
-        {(counts.OVERDUE > 0 || counts.DUE_TODAY > 0) && (
-          <div className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl border border-red-200 bg-red-50 text-xs font-semibold text-red-700 shrink-0">
-            <Bell size={13} className="animate-pulse" />
-            {counts.OVERDUE + counts.DUE_TODAY} need attention
-          </div>
-        )}
+        <div className="flex items-center gap-2 shrink-0">
+          {(counts.OVERDUE > 0 || counts.DUE_TODAY > 0) && (
+            <div className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl border border-red-200 bg-red-50 text-xs font-semibold text-red-700">
+              <Bell size={13} className="animate-pulse" />
+              {counts.OVERDUE + counts.DUE_TODAY} need attention
+            </div>
+          )}
+          <button
+            onClick={() => setShowFilters((v) => !v)}
+            className={`relative inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border text-sm font-medium transition-colors
+              ${showFilters
+                ? "border-[var(--color-primary-400)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)]"
+                : "border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)]"}`}
+          >
+            <Filter size={14} />
+            Filters
+            {(search || statusFilter !== "ALL" || doctorFilter !== "ALL") && (
+              <span className="w-2 h-2 rounded-full bg-[var(--color-primary-500)] absolute -top-0.5 -right-0.5" />
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Stat cards */}
@@ -733,73 +748,59 @@ export function FollowUpsClient({
         />
       </div>
 
-      {/* Search + filter toggle */}
-      <div className="flex gap-2 mb-2">
-        <div className="relative flex-1">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] pointer-events-none" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by patient name, ID, doctor…"
-            className="w-full pl-9 pr-4 py-2 text-sm rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent"
-          />
-        </div>
-        <button
-          onClick={() => setShowFilters((v) => !v)}
-          className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border text-sm font-medium transition-colors shrink-0 relative
-            ${showFilters
-              ? "border-[var(--color-primary-400)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)]"
-              : "border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)]"}`}
-        >
-          <Filter size={14} />
-          Filters
-          {(statusFilter !== "ALL" || doctorFilter !== "ALL") && (
-            <span className="w-2 h-2 rounded-full bg-[var(--color-primary-500)] absolute -top-0.5 -right-0.5" />
-          )}
-        </button>
-      </div>
-
       {/* Collapsible filter panel */}
       {showFilters && (
-        <div className="flex flex-wrap gap-2 items-center mb-2 p-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)]">
-          {/* Status filter */}
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as FollowUpStatus | "ALL")}
-            className="text-sm rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] text-[var(--color-ink-700)]"
-          >
-            <option value="ALL">All Statuses</option>
-            <option value="DUE_TODAY">Due Today</option>
-            <option value="UPCOMING">Upcoming</option>
-            <option value="OVERDUE">Overdue</option>
-            <option value="SCHEDULED">Scheduled</option>
-            <option value="COMPLETED">Completed</option>
-            <option value="CANCELLED">Cancelled</option>
-          </select>
-
-          {/* Doctor filter (hospital role) */}
-          {role === "HOSPITAL" && doctorOptions.length > 1 && (
+        <div className="flex flex-col gap-2 mb-2 p-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)]">
+          {/* Search */}
+          <div className="relative">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] pointer-events-none" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search by patient name, ID, doctor…"
+              className="w-full pl-9 pr-4 py-2 text-sm rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent"
+            />
+          </div>
+          <div className="flex flex-wrap gap-2 items-center">
+            {/* Status filter */}
             <select
-              value={doctorFilter}
-              onChange={(e) => setDoctorFilter(e.target.value)}
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as FollowUpStatus | "ALL")}
               className="text-sm rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] text-[var(--color-ink-700)]"
             >
-              <option value="ALL">All Doctors</option>
-              {doctorOptions.map((d) => (
-                <option key={d.id} value={d.id}>Dr. {d.name}</option>
-              ))}
+              <option value="ALL">All Statuses</option>
+              <option value="DUE_TODAY">Due Today</option>
+              <option value="UPCOMING">Upcoming</option>
+              <option value="OVERDUE">Overdue</option>
+              <option value="SCHEDULED">Scheduled</option>
+              <option value="COMPLETED">Completed</option>
+              <option value="CANCELLED">Cancelled</option>
             </select>
-          )}
 
-          {(statusFilter !== "ALL" || doctorFilter !== "ALL") && (
-            <button
-              onClick={() => { setStatusFilter("DUE_TODAY"); setDoctorFilter("ALL"); }}
-              className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-ink-500)] hover:bg-white transition-colors"
-            >
-              <X size={12} /> Reset
-            </button>
-          )}
+            {/* Doctor filter (hospital role) */}
+            {role === "HOSPITAL" && doctorOptions.length > 1 && (
+              <select
+                value={doctorFilter}
+                onChange={(e) => setDoctorFilter(e.target.value)}
+                className="text-sm rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] text-[var(--color-ink-700)]"
+              >
+                <option value="ALL">All Doctors</option>
+                {doctorOptions.map((d) => (
+                  <option key={d.id} value={d.id}>Dr. {d.name}</option>
+                ))}
+              </select>
+            )}
+
+            {(search || statusFilter !== "ALL" || doctorFilter !== "ALL") && (
+              <button
+                onClick={() => { setSearch(""); setStatusFilter("DUE_TODAY"); setDoctorFilter("ALL"); }}
+                className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-ink-500)] hover:bg-white transition-colors"
+              >
+                <X size={12} /> Reset
+              </button>
+            )}
+          </div>
         </div>
       )}
 
