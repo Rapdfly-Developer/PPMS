@@ -251,51 +251,6 @@ function PresetAppliedBadge({
   visitId?: string;
   udid?: string;
 }) {
-  const [expanded, setExpanded] = useState(false);
-  const [editing, setEditing]   = useState(false);
-  const [addedInvs, setAddedInvs] = useState<Set<string>>(new Set());
-  const [, startInvTransition] = useTransition();
-
-  // Collect advice + investigations from applied presets
-  const details = applied
-    .map((a) => presetMatches.find((m) => m.preset.id === a.presetId)?.preset)
-    .filter((p): p is NonNullable<typeof p> => !!p);
-  const allAdvice          = details.map((p) => p.advice).filter((a): a is string => !!a);
-  const allInvestigations  = [...new Set(details.flatMap((p) => p.investigations ?? []))];
-
-  // Edit state
-  const [editInvestigations, setEditInvestigations] = useState<string[]>([]);
-  const [newInvInput, setNewInvInput]               = useState("");
-
-  const startEditing = () => {
-    setEditInvestigations([...allInvestigations]);
-    setNewInvInput("");
-    setEditing(true);
-    setExpanded(true);
-  };
-
-  const saveEdits = () => {
-    const all = getTreatmentPresets();
-    const updatedIds = new Set(applied.map((a) => a.presetId));
-    const updated = all.map((p) =>
-      updatedIds.has(p.id) ? { ...p, investigations: editInvestigations } : p
-    );
-    const storedIds = new Set(all.map((p) => p.id));
-    const missingDefaults = details.filter((p) => !storedIds.has(p.id)).map((p) => ({
-      ...p,
-      investigations: editInvestigations,
-    }));
-    saveTreatmentPresets([...updated, ...missingDefaults]);
-    setEditing(false);
-  };
-
-  const addInvestigation = () => {
-    const v = newInvInput.trim();
-    if (v && !editInvestigations.includes(v)) setEditInvestigations((prev) => [...prev, v]);
-    setNewInvInput("");
-  };
-
-  const hasDetails = allInvestigations.length > 0;
   const btnCls = "text-xs font-medium px-2.5 py-1 rounded-lg border transition-colors";
 
   return (
@@ -310,24 +265,6 @@ function PresetAppliedBadge({
           <span className="text-xs text-[#0F766E]/80">{applied.map((a) => a.presetName).join(", ")}</span>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          {hasDetails && (
-            <button
-              type="button"
-              onClick={() => { setExpanded((v) => !v); if (editing && expanded) setEditing(false); }}
-              className={`${btnCls} text-[#0F766E]/60 hover:text-[#0F766E] border-[#B2DEDA] hover:bg-[#DCF3F1]`}
-            >
-              {expanded ? "Hide details" : "Details"}
-            </button>
-          )}
-          {hasDetails && !editing && (
-            <button
-              type="button"
-              onClick={startEditing}
-              className={`${btnCls} text-[#0F766E]/60 hover:text-[#0F766E] border-[#B2DEDA] hover:bg-[#DCF3F1] flex items-center gap-1`}
-            >
-              <Pencil size={11} /> Edit
-            </button>
-          )}
           <button
             type="button"
             onClick={onChange}
@@ -345,107 +282,6 @@ function PresetAppliedBadge({
         </div>
       </div>
 
-      {/* Expandable details */}
-      {expanded && (
-        <div className="border-t border-[#B2DEDA] px-4 py-3 flex flex-col gap-3">
-          {/* Investigations */}
-          {(editing ? true : allInvestigations.length > 0) && (
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-[#0F766E]/60 mb-1.5">Suggested Investigations</p>
-              {editing ? (
-                <>
-                  <div className="flex flex-wrap gap-1.5 mb-2">
-                    {editInvestigations.map((inv) => (
-                      <span
-                        key={inv}
-                        className="flex items-center gap-1 text-[11px] pl-2.5 pr-1.5 py-0.5 rounded-full bg-white border border-[#B2DEDA] text-[#0F766E]"
-                      >
-                        {inv}
-                        <button
-                          type="button"
-                          onClick={() => setEditInvestigations((prev) => prev.filter((v) => v !== inv))}
-                          className="text-[#0F766E]/50 hover:text-red-500 transition-colors"
-                        >
-                          <X size={10} />
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                  <div className="flex gap-1.5">
-                    <input
-                      value={newInvInput}
-                      onChange={(e) => setNewInvInput(e.target.value)}
-                      onKeyDown={(e) => { if (e.key === "Enter" || e.key === ",") { e.preventDefault(); addInvestigation(); } }}
-                      placeholder="Type investigation and press Enter"
-                      className="flex-1 rounded-lg border border-[#B2DEDA] bg-white px-2.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-[#0F766E]"
-                    />
-                    <button
-                      type="button"
-                      onClick={addInvestigation}
-                      disabled={!newInvInput.trim()}
-                      className="px-2.5 py-1 rounded-lg bg-[#0F766E] text-white text-xs font-medium hover:bg-[#0D6862] disabled:opacity-40 transition-colors"
-                    >
-                      <Plus size={12} />
-                    </button>
-                  </div>
-                </>
-              ) : (
-                <div className="flex flex-wrap gap-1.5">
-                  {allInvestigations.map((inv) => {
-                    const added = addedInvs.has(inv);
-                    return (
-                      <button
-                        key={inv}
-                        type="button"
-                        disabled={added || !visitId || !udid}
-                        onClick={() => {
-                          if (!visitId || !udid) return;
-                          setAddedInvs((prev) => new Set([...prev, inv]));
-                          startInvTransition(async () => {
-                            await addInvestigationOrder(visitId, udid, {
-                              category: "General",
-                              testName: inv,
-                              priority: "ROUTINE",
-                            });
-                          });
-                        }}
-                        className={`flex items-center gap-1 text-[11px] px-2.5 py-0.5 rounded-full border transition-colors ${
-                          added
-                            ? "bg-[#0F766E] border-[#0F766E] text-white cursor-default"
-                            : "bg-white border-[#B2DEDA] text-[#0F766E] hover:bg-[#DCF3F1] hover:border-[#0F766E] cursor-pointer"
-                        }`}
-                      >
-                        {added && <Check size={10} />}
-                        {inv}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Edit action buttons */}
-          {editing && (
-            <div className="flex justify-end gap-2 pt-1">
-              <button
-                type="button"
-                onClick={() => setEditing(false)}
-                className="px-3 py-1.5 rounded-lg border border-[#B2DEDA] text-xs font-medium text-[#0F766E]/60 hover:bg-[#DCF3F1] transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={saveEdits}
-                className="px-3 py-1.5 rounded-lg bg-[#0F766E] text-white text-xs font-semibold hover:bg-[#0D6862] transition-colors flex items-center gap-1.5"
-              >
-                <Check size={11} /> Save Changes
-              </button>
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 }
@@ -1730,6 +1566,20 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
   const [taperLevels, setTaperLevels] = useState<TaperLevel[]>([]);
   const [instructions, setInstructions]   = useState("");
 
+  // Suggested investigations from all applied presets
+  const allSuggestedInvs = useMemo(() => {
+    const invs: string[] = [];
+    for (const diagApplied of Object.values(appliedByDiag)) {
+      for (const a of diagApplied) {
+        const preset = presetMatches.find((m) => m.preset.id === a.presetId)?.preset;
+        if (preset?.investigations) invs.push(...preset.investigations);
+      }
+    }
+    return [...new Set(invs)];
+  }, [appliedByDiag, presetMatches]);
+  const [addedInvs, setAddedInvs]           = useState<Set<string>>(new Set());
+  const [, startInvTransition]              = useTransition();
+
   // Medication search state
   const [searchQuery, setSearchQuery]     = useState("");
   const [activeIndex, setActiveIndex]     = useState(-1);
@@ -1846,11 +1696,6 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
 
   return (
     <Card>
-      {/* Protocol toast */}
-      {toastNames.length > 0 && (
-        <AutoApplyToast names={toastNames} onClose={onCloseToast} />
-      )}
-
       {/* Per-diagnosis applied protocol badges */}
       {Object.entries(appliedByDiag).map(([diagnosisDesc, diagApplied]) => (
         <PresetAppliedBadge
@@ -1993,7 +1838,12 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-2 max-w-3xl">
             <div className="col-span-2">
               <label className="text-[10px] font-medium text-[var(--color-ink-400)] uppercase tracking-wide block mb-0.5">Drug Name</label>
-              <input value={drugName} onChange={(e) => setDrugName(e.target.value)} placeholder="Drug name" className={inputCls} />
+              <DrugNameInput
+                value={drugName}
+                onChange={(name, defaultDose) => { setDrugName(name); if (defaultDose && !dose) setDose(defaultDose); }}
+                placeholder="Drug name"
+                className={inputCls}
+              />
             </div>
             <div>
               <label className="text-[10px] font-medium text-[var(--color-ink-400)] uppercase tracking-wide block mb-0.5">Dose</label>
@@ -2146,10 +1996,9 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
                       <td className="px-3 py-2.5">
                         {isEditing ? (
                           <div className="flex flex-col gap-1">
-                            <input
-                              autoFocus
+                            <DrugNameInput
                               value={editDraft.drugName}
-                              onChange={(e) => setEditDraft({ ...editDraft, drugName: e.target.value })}
+                              onChange={(name, defaultDose) => setEditDraft({ ...editDraft, drugName: name, ...(defaultDose && !editDraft.dosage ? { dosage: defaultDose } : {}) })}
                               className={cellCls}
                             />
                             <select
@@ -2398,6 +2247,43 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
           </div>
         )}
       </div>
+
+      {/* ── Suggested Investigations (from applied protocols) ───────────── */}
+      {allSuggestedInvs.length > 0 && (
+        <div className="mt-4 pt-4 border-t border-[var(--color-border)]">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-[#0F766E]/70 mb-2">Suggested Investigations</p>
+          <div className="flex flex-wrap gap-1.5">
+            {allSuggestedInvs.map((inv) => {
+              const added = addedInvs.has(inv);
+              return (
+                <button
+                  key={inv}
+                  type="button"
+                  disabled={added}
+                  onClick={() => {
+                    setAddedInvs((prev) => new Set([...prev, inv]));
+                    startInvTransition(async () => {
+                      await addInvestigationOrder(visit.id, udid, {
+                        category: "General",
+                        testName: inv,
+                        priority: "ROUTINE",
+                      });
+                    });
+                  }}
+                  className={`flex items-center gap-1 text-[11px] px-2.5 py-0.5 rounded-full border transition-colors ${
+                    added
+                      ? "bg-[#0F766E] border-[#0F766E] text-white cursor-default"
+                      : "bg-white border-[#B2DEDA] text-[#0F766E] hover:bg-[#DCF3F1] hover:border-[#0F766E] cursor-pointer"
+                  }`}
+                >
+                  {added && <Check size={10} />}
+                  {inv}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </Card>
   );
 }
