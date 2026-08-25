@@ -289,26 +289,23 @@ function VisitCard({ visit, udid }: { visit: SerialVisit; udid: string }) {
       </div>
 
       {visit.chiefComplaint && (
-        <div className="border-t border-[var(--color-border)] pt-2.5 space-y-0.5">
+        <div className="border-t border-[var(--color-border)] pt-2.5 flex flex-wrap gap-1">
           {parseComplaints(visit.chiefComplaint).map((c, i) => (
-            <p key={i} className="text-xs text-[var(--color-ink-600)]">
-              {c.lat && (
-                <span className="inline-block font-bold text-[var(--color-primary-700)] mr-1">{c.lat}</span>
-              )}
-              <span>{c.text}</span>
-              {c.since && (
-                <span className="text-[var(--color-ink-400)] ml-1">· Since {c.since}</span>
-              )}
-            </p>
+            <span key={i} className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-[11px] font-medium">
+              {[c.lat, c.text, c.since ? `· ${c.since}` : null].filter(Boolean).join(" ")}
+            </span>
           ))}
         </div>
       )}
 
-      {diagText && (
-        <p className="text-xs text-[var(--color-ink-500)]">
-          <span className="font-medium text-[var(--color-ink-400)]">Diagnosis: </span>
-          {diagText}
-        </p>
+      {visit.diagnoses.length > 0 && (
+        <div className="flex flex-wrap gap-1">
+          {visit.diagnoses.map((d, i) => (
+            <span key={i} className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-teal-50 border border-teal-200 text-teal-800 text-[11px] font-medium">
+              {d.description}
+            </span>
+          ))}
+        </div>
       )}
     </div>
   );

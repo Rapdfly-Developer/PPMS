@@ -292,9 +292,13 @@ function CompleteModal({ v, onDone, onClose }: { v: FuVisit; onDone: () => void;
               {v.diagnoses.length > 0 && (
                 <div className="flex items-start gap-2 text-xs">
                   <span className="text-[var(--color-ink-400)] shrink-0 w-24">Diagnoses</span>
-                  <span className="font-medium text-[var(--color-ink-700)]">
-                    {v.diagnoses.map((d) => d.description).join(", ")}
-                  </span>
+                  <div className="flex flex-wrap gap-1">
+                    {v.diagnoses.map((d, i) => (
+                      <span key={i} className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-teal-50 border border-teal-200 text-teal-800 text-[11px] font-medium">
+                        {d.description}
+                      </span>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
@@ -462,7 +466,9 @@ function FollowUpRow({
         <td className="px-4 py-3">
           <span className="text-xs text-[var(--color-ink-700)] max-w-[160px] block truncate">{followUpLabel(v)}</span>
           {v.diagnoses[0] && (
-            <span className="text-[11px] text-[var(--color-ink-400)] block truncate">{v.diagnoses[0].description}</span>
+            <span className="inline-flex items-center gap-1 mt-0.5 px-2.5 py-0.5 rounded-full bg-teal-50 border border-teal-200 text-teal-800 text-[11px] font-medium">
+              {v.diagnoses[0].description}
+            </span>
           )}
         </td>
         {/* Prev visit */}
@@ -566,7 +572,9 @@ function FollowUpCard({
         {v.diagnoses[0] && (
           <>
             <span className="text-[var(--color-ink-400)]">Diagnosis</span>
-            <span className="font-medium text-[var(--color-ink-700)] truncate">{v.diagnoses[0].description}</span>
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-teal-50 border border-teal-200 text-teal-800 text-[11px] font-medium">
+              {v.diagnoses[0].description}
+            </span>
           </>
         )}
         <span className="text-[var(--color-ink-400)]">Prev Visit</span>

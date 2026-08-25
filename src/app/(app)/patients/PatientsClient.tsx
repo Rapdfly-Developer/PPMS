@@ -647,26 +647,26 @@ export function PatientsClient({
                       {/* Chief Complaint — fills space, shown on lg+ */}
                       <div className="hidden lg:block flex-1 min-w-0">
                         {p.chiefComplaint ? (
-                          <p className="text-sm text-[var(--color-ink-700)] truncate">{formatComplaintDisplay(p.chiefComplaint)}</p>
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-[11px] font-medium max-w-full truncate">
+                            {formatComplaintDisplay(p.chiefComplaint)}
+                          </span>
                         ) : (
                           <span className="text-[11px] italic text-[var(--color-ink-300)]">Not recorded</span>
                         )}
                       </div>
 
                       {/* Diagnoses */}
-                      <div className="hidden xl:block w-48 shrink-0">
+                      <div className="hidden xl:block w-52 shrink-0">
                         {p.diagnoses.length > 0 ? (
-                          <div className="space-y-1">
+                          <div className="flex flex-wrap gap-1">
                             {p.diagnoses.slice(0, 2).map((d, i) => (
-                              <p key={i} className="text-[11px] text-[var(--color-ink-700)] leading-snug break-words">
-                                {d.laterality && (
-                                  <span className="text-[10px] font-semibold text-[var(--color-primary-600)] mr-1">{d.laterality}</span>
-                                )}
+                              <span key={i} className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-teal-50 border border-teal-200 text-teal-800 text-[11px] font-medium">
+                                {d.laterality && <span className="font-bold">{d.laterality}</span>}
                                 {d.description}
-                              </p>
+                              </span>
                             ))}
                             {p.diagnoses.length > 2 && (
-                              <p className="text-[10px] text-[var(--color-ink-400)]">+{p.diagnoses.length - 2} more</p>
+                              <span className="text-[10px] text-[var(--color-ink-400)] self-center">+{p.diagnoses.length - 2}</span>
                             )}
                           </div>
                         ) : (

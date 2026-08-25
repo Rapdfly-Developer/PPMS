@@ -215,7 +215,13 @@ function ShortContent({ complaint, diagText }: { complaint: string | null; diagT
       {diagText && (
         <div>
           <p className="text-[9px] font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-1">Diagnosis</p>
-          <p className="text-[11px] text-[var(--color-ink-700)]">{diagText}</p>
+          <div className="flex flex-wrap gap-1">
+            {diagText.split(", ").filter(Boolean).map((d, i) => (
+              <span key={i} className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-teal-50 border border-teal-200 text-teal-800 text-[11px] font-medium">
+                {d}
+              </span>
+            ))}
+          </div>
         </div>
       )}
     </div>
