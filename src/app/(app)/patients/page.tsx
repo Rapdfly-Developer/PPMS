@@ -67,6 +67,9 @@ export default async function PatientsPage({
     const dayEnd   = new Date(dayStart); dayEnd.setHours(23, 59, 59, 999);
     listConds.push({ appointments: { some: { status: "DISPENSED", dateTime: { gte: dayStart, lte: dayEnd } } } });
   }
+  if (registered === "today") {
+    listConds.push({ createdAt: { gte: startOfDay(new Date()) } });
+  }
   if (opStatusFilter === "admitted")   listConds.push({ visits: { some: { admission: { discharged: false } } } });
   if (opStatusFilter === "discharged") listConds.push({ visits: { some: { admission: { discharged: true  } } } });
 
@@ -121,12 +124,13 @@ export default async function PatientsPage({
     ? { doctorId }
     : {};
 
+  const todayEnd = new Date(today); todayEnd.setHours(23, 59, 59, 999);
+
   const [
     totalPatients,
     todayReg,
     insurancePatients,
-    followUpCount,
-    pendingRequests,
+    todayDispensed,
     catGroups,
     trendRaw,
     recentReg,
@@ -134,14 +138,8 @@ export default async function PatientsPage({
     prisma.patient.count({ where: scopeWhere }),
     prisma.patient.count({ where: { AND: [...scopeConds, { createdAt: { gte: today } }] } }),
     prisma.patient.count({ where: { AND: [...scopeConds, { category: { in: ["ECHS", "INSURANCE"] } }] } }),
-    prisma.visit.count({
-      where: {
-        ...apptScope,
-        followUpDate: { not: null, lt: today },
-      },
-    }),
-    prisma.appointment.count({
-      where: { ...apptScope, status: "REQUESTED" },
+    prisma.patient.count({
+      where: { AND: [...scopeConds, { appointments: { some: { status: "DISPENSED", dateTime: { gte: today, lte: todayEnd } } } }] },
     }),
     prisma.patient.groupBy({
       by:    ["category"],
@@ -249,7 +247,7 @@ export default async function PatientsPage({
         sortBy={sortBy}
         isHospital={isHospital}
         activeCard={activeCard}
-        kpis={{ totalPatients, todayReg, followUpCount, insurancePatients, pendingRequests }}
+        kpis={{ totalPatients, todayReg, insurancePatients, todayDispensed }}
         trendData={trendData}
         catDist={catGroups.map(g => ({ category: g.category, count: g._count.id }))}
         recentReg={recentSerialized}

@@ -6,7 +6,7 @@ import Link from "next/link";
 import { format } from "date-fns";
 import {
   Search, Download, Filter, X, Users, CalendarCheck,
-  CalendarClock, ShieldCheck, ClipboardList, ChevronLeft, ChevronRight, ChevronDown, Eye,
+  ShieldCheck, PackageCheck, ChevronLeft, ChevronRight, ChevronDown, Eye,
   Phone, Building2, Undo2,
 } from "lucide-react";
 import { undoDispense } from "./actions";
@@ -40,7 +40,7 @@ export interface RecentPat  {
 }
 export interface Kpis {
   totalPatients: number; todayReg: number;
-  followUpCount: number; insurancePatients: number; pendingRequests: number;
+  insurancePatients: number; todayDispensed: number;
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -405,11 +405,10 @@ export function PatientsClient({
       </div>
 
       {/* ── KPI Cards ──────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
-        <KpiCard icon={<Users size={17} />}         label="Total Patients"    value={kpis.totalPatients}   color="teal"  isActive={activeCard === "total"}    onSelect={() => navigate({ opStatus: "all", card: activeCard === "total" ? "" : "total", page: "1" })} />
-        <KpiCard icon={<CalendarCheck size={17} />} label="Total Operated"    value={kpis.todayReg}        color="blue"  sub="New today"                       isActive={activeCard === "operated"} onSelect={() => navigate({ card: activeCard === "operated" ? "" : "operated" })} />
-        <KpiCard icon={<CalendarClock size={17} />} label="Lost to Follow Up" value={kpis.followUpCount}   color="green" sub="Overdue"                         isActive={activeCard === "followup"} onSelect={() => navigate({ card: activeCard === "followup" ? "" : "followup" })} />
-        <KpiCard icon={<ClipboardList size={17} />} label="Pending Requests"  value={kpis.pendingRequests} color="amber" sub="Awaiting confirmation"            isActive={activeCard === "pending"}  onSelect={() => navigate({ card: activeCard === "pending" ? "" : "pending" })} />
+      <div className="grid grid-cols-3 gap-3 mb-5">
+        <KpiCard icon={<Users size={17} />}         label="Total Patients"  value={kpis.totalPatients}  color="teal"  isActive={activeCard === "total"}    onSelect={() => navigate({ opStatus: "all", registered: "", card: activeCard === "total" ? "" : "total", page: "1" })} />
+        <KpiCard icon={<CalendarCheck size={17} />} label="Total Operated"  value={kpis.todayReg}       color="blue"  sub="New today"                       isActive={activeCard === "operated"} onSelect={() => navigate({ opStatus: "all", registered: activeCard === "operated" ? "" : "today", card: activeCard === "operated" ? "" : "operated", page: "1" })} />
+        <KpiCard icon={<PackageCheck size={17} />}  label="Today Dispensed" value={kpis.todayDispensed} color="green" sub="Dispensed today"                 isActive={activeCard === "dispensed"} onSelect={() => navigate({ opStatus: activeCard === "dispensed" ? "all" : "dispensed", registered: "", card: activeCard === "dispensed" ? "" : "dispensed", page: "1" })} />
       </div>
 
       {/* ── Table + Analytics ──────────────────────────────────────────── */}
