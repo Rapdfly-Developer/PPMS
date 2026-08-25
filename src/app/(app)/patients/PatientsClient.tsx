@@ -647,7 +647,7 @@ export function PatientsClient({
                       {/* Chief Complaint — fills space, shown on lg+ */}
                       <div className="hidden lg:block flex-1 min-w-0">
                         {p.chiefComplaint ? (
-                          <span className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-[11px] font-medium min-w-0">
+                          <span className="inline-flex max-w-full items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-[11px] font-medium">
                             <span className="truncate">{formatComplaintDisplay(p.chiefComplaint)}</span>
                           </span>
                         ) : (

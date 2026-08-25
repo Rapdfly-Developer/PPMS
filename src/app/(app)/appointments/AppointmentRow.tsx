@@ -117,7 +117,7 @@ export function AppointmentRow({ appt, role, token }: { appt: any; role: string;
 
         {/* Chief complaint */}
         {(appt.notes || p.complaint) && (
-          <div className="mt-1.5 flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-xs font-medium min-w-0">
+          <div className="mt-1.5 inline-flex max-w-full sm:max-w-md items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-xs font-medium">
             <FileText size={11} className="shrink-0 text-amber-500" />
             <span className="truncate">{formatComplaintDisplay(appt.notes || p.complaint)}</span>
           </div>
