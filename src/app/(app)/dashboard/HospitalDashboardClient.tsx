@@ -63,7 +63,7 @@ const STATUS_CFG: Record<string, { label: string; color: string; dot: string }> 
 const STATUS_FILTERS = [
   { key: "ALL",       label: "All"       },
   { key: "CONFIRMED", label: "Waiting"   },
-  { key: "CANCELLED", label: "Cancelled" },
+  { key: "DISPENSED", label: "Dispensed" },
 ] as const;
 
 /* ── Single appointment row ─────────────────────────────────────────────── */
@@ -239,7 +239,9 @@ export function HospitalDashboardClient({ hospitalName, kpis, appointments, surg
               {STATUS_FILTERS.map(({ key, label }) => {
                 const count = key === "ALL"
                   ? queueAppts.length
-                  : queueAppts.filter((a) => a.status === key).length;
+                  : key === "DISPENSED"
+                    ? dispensedCount
+                    : queueAppts.filter((a) => a.status === key).length;
                 return (
                   <button
                     key={key}

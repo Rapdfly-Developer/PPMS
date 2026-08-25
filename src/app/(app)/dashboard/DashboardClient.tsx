@@ -68,7 +68,7 @@ const STATUS_CFG: Record<string, { label: string; color: string; dot: string }> 
 const STATUS_FILTERS = [
   { key: "ALL",       label: "All"       },
   { key: "CONFIRMED", label: "Waiting"   },
-  { key: "CANCELLED", label: "Cancelled" },
+  { key: "DISPENSED", label: "Dispensed" },
 ] as const;
 
 /* ── Live waiting timer ─────────────────────────────────────────────────── */
@@ -466,7 +466,9 @@ export function DashboardClient({
                 const queueAppts = filteredAppts.filter((a) => !["REQUESTED", "DISPENSED", "PARTIAL_DISPENSE", "CANCELLED", "NO_SHOW", "RESCHEDULED"].includes(a.status));
                 const count = key === "ALL"
                   ? queueAppts.length
-                  : queueAppts.filter((a) => a.status === key).length;
+                  : key === "DISPENSED"
+                    ? filteredAppts.filter((a) => a.status === "DISPENSED").length
+                    : queueAppts.filter((a) => a.status === key).length;
                 return (
                   <button
                     key={key}
