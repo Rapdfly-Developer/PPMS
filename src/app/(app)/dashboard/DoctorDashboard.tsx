@@ -32,7 +32,7 @@ export async function DoctorDashboard({
 
   const linkedHospitals = await prisma.doctorHospitalLink.findMany({
     where: { doctorId, active: true },
-    select: { hospital: { select: { id: true, name: true } } },
+    select: { hospital: { select: { id: true, name: true, logoUrl: true } } },
   });
 
   // Guard: doctor with no linked hospitals must complete setup first.
@@ -84,13 +84,13 @@ export async function DoctorDashboard({
     partialDispenseReason:  a.partialDispenseReason ?? null,
     partialDispenseAt:      (a as any).partialDispenseAt ? (a as any).partialDispenseAt.toISOString() : null,
     patient:     { name: a.patient.name, udid: a.patient.udid ?? "", uhid: a.patient.uhid ?? "", age: a.patient.age, sex: a.patient.sex, mobile: a.patient.mobile },
-    hospital:    { id: a.hospital.id, name: a.hospital.name },
+    hospital:    { id: a.hospital.id, name: a.hospital.name, logoUrl: (a.hospital as any).logoUrl ?? null },
     visitId:          a.visit?.id ?? null,
     visitStartedAt:   a.visit?.date?.toISOString() ?? null,
     visitFinalizedAt: a.visit?.finalizedAt?.toISOString() ?? null,
   }));
 
-  const hospitals = linkedHospitals.map((l) => ({ id: l.hospital.id, name: l.hospital.name }));
+  const hospitals = linkedHospitals.map((l) => ({ id: l.hospital.id, name: l.hospital.name, logoUrl: l.hospital.logoUrl ?? null }));
 
   const admissions = activeAdmissions.map((a) => ({
     id:          a.id,

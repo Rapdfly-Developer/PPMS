@@ -42,6 +42,7 @@ interface Admission {
 
 interface Props {
   hospitalName: string;
+  hospitalLogoUrl?: string | null;
   kpis: { totalToday: number; pendingOPD: number; consultedToday: number; surgeryCount: number; monthlyAppts: number };
   appointments: Appt[];
   surgeries: Surgery[];
@@ -125,7 +126,7 @@ function wardLabel(w: string) {
 }
 
 /* ── Main component ─────────────────────────────────────────────────────── */
-export function HospitalDashboardClient({ hospitalName, kpis, appointments, surgeries, admissions, doctors, todayLabel }: Props) {
+export function HospitalDashboardClient({ hospitalName, hospitalLogoUrl, kpis, appointments, surgeries, admissions, doctors, todayLabel }: Props) {
   const [selectedDoctor, setSelectedDoctor] = useState<string>("all");
   const [statusFilter, setStatusFilter]     = useState<string>("ALL");
 
@@ -271,8 +272,10 @@ export function HospitalDashboardClient({ hospitalName, kpis, appointments, surg
           {/* Hospital header row */}
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 min-w-0">
-              <div className="shrink-0 p-1.5 rounded-lg bg-[var(--color-primary-50)]">
-                <Building2 size={15} className="text-[var(--color-primary-700)]" />
+              <div className="shrink-0 w-8 h-8 rounded-lg bg-[var(--color-primary-50)] flex items-center justify-center overflow-hidden">
+                {hospitalLogoUrl
+                  ? <img src={hospitalLogoUrl} alt={hospitalName} className="w-full h-full object-cover" />
+                  : <Building2 size={15} className="text-[var(--color-primary-700)]" />}
               </div>
               <div className="min-w-0">
                 <p className="text-sm font-bold text-[var(--color-ink-900)] truncate">{hospitalName}</p>

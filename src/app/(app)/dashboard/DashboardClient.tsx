@@ -49,7 +49,8 @@ export interface DashboardProps {
   todayLabel:        string;
   appts:             Appt[];
   surgeries:         Surgery[];
-  filterOptions:     { id: string; name: string }[];  // hospitals for DOCTOR, doctors for HOSPITAL
+  filterOptions:     { id: string; name: string; logoUrl?: string | null }[];  // hospitals for DOCTOR, doctors for HOSPITAL
+  hospitalLogoUrl?:  string | null;
   newEncounterHref:  string;
   newEncounterLabel: string;
 }
@@ -316,7 +317,7 @@ function ApptRow({ appt, role, serial }: { appt: Appt; role: "DOCTOR" | "HOSPITA
 /* ── Main component ─────────────────────────────────────────────────────── */
 export function DashboardClient({
   role, displayName, todayLabel, appts, surgeries, filterOptions,
-  newEncounterHref, newEncounterLabel,
+  newEncounterHref, newEncounterLabel, hospitalLogoUrl,
 }: DashboardProps) {
   const router = useRouter();
   const [selectedFilter, setSelectedFilter] = useState<string>("all");
@@ -350,7 +351,7 @@ export function DashboardClient({
         ? filterOptions
         : filterOptions.filter((h) => h.id === selectedFilter);
       const map = new Map<string, { name: string; logoUrl?: string | null; appts: Appt[]; dispensed: number }>();
-      for (const h of hospitalsToShow) map.set(h.id, { name: h.name, appts: [], dispensed: 0 });
+      for (const h of hospitalsToShow) map.set(h.id, { name: h.name, logoUrl: h.logoUrl ?? null, appts: [], dispensed: 0 });
       for (const a of queue) {
         const key = a.hospital?.id ?? "unknown";
         if (!map.has(key)) map.set(key, { name: a.hospital?.name ?? "Unknown", logoUrl: a.hospital?.logoUrl, appts: [], dispensed: 0 });
@@ -366,7 +367,7 @@ export function DashboardClient({
         .filter((g) => g.appts.length > 0)
         .sort((a, b) => a.name.localeCompare(b.name));
     } else {
-      return [{ id: "self", name: displayName, logoUrl: null as string | null, appts: queue, dispensed: dispensed.length }];
+      return [{ id: "self", name: displayName, logoUrl: hospitalLogoUrl ?? null, appts: queue, dispensed: dispensed.length }];
     }
   }, [filteredAppts, role, displayName, filterOptions, selectedFilter]);
 

@@ -20,7 +20,7 @@ export async function HospitalDashboard({
   // Run sequentially to avoid exhausting Neon pgbouncer's connection pool
   const hospital = await prisma.hospital.findUnique({
     where: { id: hospitalId },
-    select: { name: true },
+    select: { name: true, logoUrl: true },
   });
 
   const license = await getLicenseForHospital(hospitalId);
@@ -103,6 +103,7 @@ export async function HospitalDashboard({
         appts={appts}
         surgeries={[]}
         filterOptions={doctors}
+        hospitalLogoUrl={hospital?.logoUrl ?? null}
         newEncounterHref="/appointments/book"
         newEncounterLabel="New Appointment"
       />
