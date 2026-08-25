@@ -179,7 +179,7 @@ export default async function QueuePage() {
                   {/* Row 2: complaint */}
                   {appt.patient.complaint && (
                     <div className="mt-0.5">
-                      <span className="text-[11px] text-[var(--color-ink-400)] truncate max-w-[180px] block">
+                      <span className="text-[11px] text-[var(--color-ink-400)] truncate block">
                         {appt.patient.complaint}
                       </span>
                     </div>

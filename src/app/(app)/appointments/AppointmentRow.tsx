@@ -117,7 +117,7 @@ export function AppointmentRow({ appt, role, token }: { appt: any; role: string;
 
         {/* Chief complaint */}
         {(appt.notes || p.complaint) && (
-          <div className="mt-1.5 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-xs font-medium max-w-full">
+          <div className="mt-1.5 flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-xs font-medium min-w-0">
             <FileText size={11} className="shrink-0 text-amber-500" />
             <span className="truncate">{formatComplaintDisplay(appt.notes || p.complaint)}</span>
           </div>
@@ -151,6 +151,26 @@ export function AppointmentRow({ appt, role, token }: { appt: any; role: string;
             </div>
           );
         })()}
+
+        {/* Confirm/reject buttons – visible on mobile only (sm+ sees them in right column) */}
+        {showConfirmReject && (
+          <div className="flex sm:hidden items-center gap-2 mt-2" onClick={(e) => e.stopPropagation()}>
+            <button
+              disabled={pending}
+              onClick={() => hospitalSetStatus("CONFIRMED")}
+              className="text-xs font-medium px-3 py-1 rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-50"
+            >
+              {pending ? "…" : "Add to Queue"}
+            </button>
+            <button
+              disabled={pending}
+              onClick={() => hospitalSetStatus("CANCELLED")}
+              className="text-xs font-medium px-3 py-1 rounded-lg bg-white border border-[var(--color-border)] text-[var(--color-danger-600)] hover:bg-[var(--color-danger-50)] disabled:opacity-50"
+            >
+              Reject
+            </button>
+          </div>
+        )}
 
         {/* Bottom actions: Prescription / Schedule / Cancel */}
         {hasActions && (
@@ -207,7 +227,7 @@ export function AppointmentRow({ appt, role, token }: { appt: any; role: string;
         )}
       </div>
 
-      {/* Right column: time → status → booked → confirm/reject */}
+      {/* Right column: time → status → booked */}
       <div className="flex flex-col items-end gap-1.5 shrink-0 self-start" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center gap-2">
           <p className="text-sm font-medium text-[var(--color-ink-700)] whitespace-nowrap">
@@ -221,7 +241,7 @@ export function AppointmentRow({ appt, role, token }: { appt: any; role: string;
           <Clock size={10} /> Booked: {format(new Date(appt.createdAt), "d MMM, h:mm a")}
         </span>
         {showConfirmReject && (
-          <div className="flex items-center gap-2 mt-0.5">
+          <div className="hidden sm:flex items-center gap-2 mt-0.5">
             <button
               disabled={pending}
               onClick={() => hospitalSetStatus("CONFIRMED")}
