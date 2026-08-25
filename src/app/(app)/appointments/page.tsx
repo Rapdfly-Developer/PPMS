@@ -123,8 +123,8 @@ export default async function AppointmentsPage({
         visit:    true,
       },
       orderBy: { dateTime: "asc" },
-      skip:    (page - 1) * pageSize,
-      take:    pageSize,
+      // Default three-group view: fetch all so every group is complete; paginate only on filtered views
+      ...(!isDefaultView ? { skip: (page - 1) * pageSize, take: pageSize } : {}),
     }),
     isHospital
       ? prisma.doctor.findMany({

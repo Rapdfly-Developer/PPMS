@@ -708,7 +708,7 @@ export function AppointmentsClient({
       )}
 
       {/* ── Bottom — Show / count / pagination ───────────────────────────── */}
-      {total > 0 && (
+      {total > 0 && !isDefaultView && (
         <div className="flex items-center justify-between mt-6 flex-wrap gap-3">
           <div className="flex items-center gap-2 text-sm text-[var(--color-ink-500)]">
             <span>Show</span>
