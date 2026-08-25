@@ -48,6 +48,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
   const pdf = await generateShortSummaryPdf({
     patient: {
       udid: visit.patient.udid ?? "",
+      uhid: visit.patient.uhid ?? null,
       name: visit.patient.name,
       age: visit.patient.age,
       sex: visit.patient.sex,

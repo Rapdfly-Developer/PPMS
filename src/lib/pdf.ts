@@ -477,7 +477,7 @@ function patientCard(patient: { name: string; udid: string; age: number; sex: st
       </div>
       <div>
         <div class="pf-label">UHID / Patient ID</div>
-        <div class="pf-value mono">${escapeHtml(patient.udid)}</div>
+        <div class="pf-value mono">${escapeHtml(patient.udid)}${patient.uhid ? ' / ' + escapeHtml(patient.uhid) : ''}</div>
       </div>
       <div>
         <div class="pf-label">Age / Gender</div>
@@ -742,7 +742,7 @@ export async function htmlToPdf(html: string): Promise<Buffer> {
 /* ─────────────────────────────────────────────────────────────────────────── */
 
 export type ShortSummaryData = {
-  patient: { udid: string; name: string; age: number; sex: string; mobile?: string | null };
+  patient: { udid: string; uhid?: string | null; name: string; age: number; sex: string; mobile?: string | null };
   visit: {
     date: Date; visitType?: string | null;
     hospitalName: string; hospitalLogo?: string | null; hospitalAddress?: string | null; hospitalContact?: string | null; hospitalEmail?: string | null;
