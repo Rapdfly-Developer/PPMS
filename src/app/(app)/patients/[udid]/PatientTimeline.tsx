@@ -349,21 +349,21 @@ function CalendarGrid({
   return (
     <div className="bg-white border-b border-[var(--color-border)] shrink-0">
       {/* Month navigation */}
-      <div className="flex items-center justify-between px-4 py-2.5 border-b border-[var(--color-border)]">
+      <div className="flex items-center justify-between px-3 py-1.5 border-b border-[var(--color-border)]">
         <button
           onClick={onPrev}
-          className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)] transition-colors"
+          className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)] transition-colors"
         >
-          <ChevronLeft size={15} />
+          <ChevronLeft size={13} />
         </button>
 
-        <div className="flex items-center gap-2">
-          <h3 className="text-sm font-bold text-[var(--color-ink-800)]">
+        <div className="flex items-center gap-1.5">
+          <h3 className="text-xs font-bold text-[var(--color-ink-800)]">
             {format(currentMonth, "MMMM yyyy")}
           </h3>
           <button
             onClick={onToday}
-            className="text-[10px] font-semibold px-2 py-0.5 rounded-full border border-[var(--color-primary-300)] text-[var(--color-primary-600)] hover:bg-[var(--color-primary-50)] transition-colors"
+            className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full border border-[var(--color-primary-300)] text-[var(--color-primary-600)] hover:bg-[var(--color-primary-50)] transition-colors"
           >
             Today
           </button>
@@ -371,32 +371,31 @@ function CalendarGrid({
 
         <button
           onClick={onNext}
-          className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)] transition-colors"
+          className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)] transition-colors"
         >
-          <ChevronRight size={15} />
+          <ChevronRight size={13} />
         </button>
       </div>
 
       {/* Day-of-week header */}
-      <div className="grid grid-cols-7 px-3 pt-2">
+      <div className="grid grid-cols-7 px-2 pt-1.5">
         {DAY_LABELS.map((d) => (
-          <div key={d} className="text-center text-[10px] font-bold text-[var(--color-ink-400)] uppercase tracking-wide pb-1">
+          <div key={d} className="text-center text-[9px] font-bold text-[var(--color-ink-400)] uppercase tracking-wide pb-0.5">
             {d}
           </div>
         ))}
       </div>
 
       {/* Date cells */}
-      <div className="grid grid-cols-7 px-3 pb-3 gap-y-1">
+      <div className="grid grid-cols-7 px-2 pb-2 gap-y-0.5">
         {cells.map((day) => {
-          const key        = format(day, "yyyy-MM-dd");
+          const key         = format(day, "yyyy-MM-dd");
           const isThisMonth = isSameMonth(day, currentMonth);
-          const isTod      = key === todayKey;
-          const isSelected = key === selectedKey;
-          const dayEvents  = eventsByDate[key] ?? [];
-          const hasEvents  = dayEvents.length > 0;
+          const isTod       = key === todayKey;
+          const isSelected  = key === selectedKey;
+          const dayEvents   = eventsByDate[key] ?? [];
+          const hasEvents   = dayEvents.length > 0;
 
-          // Collect distinct event types for dot indicators
           const types = [...new Set(dayEvents.map((e) => e.type))] as TimelineEventType[];
 
           return (
@@ -404,7 +403,7 @@ function CalendarGrid({
               key={key}
               onClick={() => onSelectDate(key)}
               className={[
-                "relative flex flex-col items-center pt-1 pb-1.5 rounded-xl transition-all",
+                "relative flex flex-col items-center py-0.5 rounded-lg transition-all",
                 isSelected
                   ? "bg-[var(--color-primary-600)] text-white shadow-sm"
                   : isTod
@@ -416,46 +415,39 @@ function CalendarGrid({
             >
               {/* Today ring */}
               {isTod && !isSelected && (
-                <span className="absolute inset-0 rounded-xl ring-2 ring-[var(--color-primary-400)] ring-offset-0 pointer-events-none" />
+                <span className="absolute inset-0 rounded-lg ring-2 ring-[var(--color-primary-400)] ring-offset-0 pointer-events-none" />
               )}
 
               {/* Date number */}
               <span className={[
-                "text-xs font-semibold leading-none",
+                "text-[11px] font-semibold leading-none",
                 isSelected ? "text-white" : isTod ? "text-[var(--color-primary-700)]" : "",
               ].join(" ")}>
                 {format(day, "d")}
               </span>
 
               {/* Event type dots */}
-              {hasEvents && (
-                <div className="flex items-center justify-center gap-0.5 mt-1 min-h-[6px]">
-                  {types.slice(0, 3).map((t) => (
-                    <span
-                      key={t}
-                      className="w-1.5 h-1.5 rounded-full shrink-0"
-                      style={{
-                        background: isSelected ? "rgba(255,255,255,0.85)" : EVENT_CFG[t].dotHex,
-                      }}
-                    />
-                  ))}
-                  {types.length > 3 && (
-                    <span className={`text-[8px] font-bold leading-none ${isSelected ? "text-white/80" : "text-[var(--color-ink-400)]"}`}>
-                      +{types.length - 3}
-                    </span>
-                  )}
-                </div>
-              )}
+              <div className="flex items-center justify-center gap-0.5 mt-0.5 min-h-[5px]">
+                {hasEvents && types.slice(0, 3).map((t) => (
+                  <span
+                    key={t}
+                    className="w-1 h-1 rounded-full shrink-0"
+                    style={{
+                      background: isSelected ? "rgba(255,255,255,0.85)" : EVENT_CFG[t].dotHex,
+                    }}
+                  />
+                ))}
+              </div>
             </button>
           );
         })}
       </div>
 
       {/* Legend */}
-      <div className="flex items-center gap-3 flex-wrap px-4 py-2 border-t border-[var(--color-border)] bg-[var(--color-surface-sunken)]">
+      <div className="flex items-center gap-2.5 flex-wrap px-3 py-1.5 border-t border-[var(--color-border)] bg-[var(--color-surface-sunken)]">
         {ALL_TYPES.map((t) => (
-          <span key={t} className="flex items-center gap-1 text-[10px] text-[var(--color-ink-400)]">
-            <span className="w-2 h-2 rounded-full shrink-0" style={{ background: EVENT_CFG[t].dotHex }} />
+          <span key={t} className="flex items-center gap-1 text-[9px] text-[var(--color-ink-400)]">
+            <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: EVENT_CFG[t].dotHex }} />
             {EVENT_CFG[t].label}
           </span>
         ))}
