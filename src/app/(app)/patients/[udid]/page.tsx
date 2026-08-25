@@ -4,8 +4,8 @@ import { notFound } from "next/navigation";
 import { format, startOfDay, endOfDay } from "date-fns";
 import { Phone, MapPin, Calendar, Hash, IdCard, Briefcase, FileText, UserX } from "lucide-react";
 import { decryptAadhaar, maskAadhaar } from "@/lib/crypto";
-import { PatientProfileClient, TimeStampButton, type SerialVisit, type TodayVisit, type LastVisitSummary } from "./PatientProfileClient";
-import { InvestigationsButton, TreatmentHistoryButton, SpectacleHistoryButton } from "./PatientHistoryButtons";
+import { PatientProfileClient, type SerialVisit, type TodayVisit, type LastVisitSummary } from "./PatientProfileClient";
+import { PatientActionsPanel } from "./PatientHistoryButtons";
 
 const CATEGORY_STYLES: Record<string, string> = {
   GENERAL:    "bg-white/20 text-white border border-white/30",
@@ -376,12 +376,7 @@ export default async function PatientProfilePage({
       </div>
 
       {/* ── Action buttons ───────────────────────────────────────────── */}
-      <div className="flex flex-wrap items-center gap-2 mb-4">
-        <TimeStampButton patientId={patient.id} patientName={patient.name} />
-        <InvestigationsButton patientId={patient.id} udid={udid} />
-        <TreatmentHistoryButton patientId={patient.id} />
-        <SpectacleHistoryButton patientId={patient.id} udid={udid} />
-      </div>
+      <PatientActionsPanel patientId={patient.id} patientName={patient.name} udid={udid} />
 
       {/* ── Action buttons + drawer (client) ──────────────────────────── */}
       <PatientProfileClient
