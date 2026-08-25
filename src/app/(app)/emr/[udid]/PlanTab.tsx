@@ -974,9 +974,23 @@ export function PlanTab({ visit, udid, patientSex, priorVisits = [] }: { visit: 
       (matchesByDesc[m.diagnosisDesc] = matchesByDesc[m.diagnosisDesc] ?? []).push(m);
     }
 
-    // ALL diagnoses get a prompt card — unless the doctor already applied or dismissed this diagnosis
+    // Suppress prompt if all preset meds for this diagnosis are already in the visit (DB source of truth)
+    const existingDrugNames = new Set(
+      (visit.medications ?? []).map((m: any) => m.drugName.toLowerCase())
+    );
+
+    // ALL diagnoses get a prompt card — unless already applied, dismissed, or meds already present
     const pending = diagnoses
-      .filter((d) => !appliedDiagDescs.has(d.description) && !dismissedDiagDescs.has(d.description))
+      .filter((d) => {
+        if (appliedDiagDescs.has(d.description))   return false;
+        if (dismissedDiagDescs.has(d.description)) return false;
+        const diagMatches = matchesByDesc[d.description] ?? [];
+        if (diagMatches.length > 0) {
+          const allDrugs = diagMatches.flatMap((m) => m.preset.medications.map((med) => med.drugName.toLowerCase()));
+          if (allDrugs.length > 0 && allDrugs.every((drug) => existingDrugNames.has(drug))) return false;
+        }
+        return true;
+      })
       .map((d) => ({
         diagnosisDesc: d.description,
         laterality: d.laterality,
