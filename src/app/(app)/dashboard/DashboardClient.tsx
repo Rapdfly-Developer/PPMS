@@ -628,9 +628,11 @@ export function DashboardClient({
                                 </span>
                               </div>
                               {a.complaint && (
-                                <span className="mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-50 border border-amber-100 text-amber-800 text-[11px] font-medium leading-relaxed">
-                                  {formatComplaintDisplay(a.complaint)}
-                                </span>
+                                <div className="mt-1.5 flex items-center gap-1 min-w-0">
+                                  <span className="px-2 py-0.5 rounded-lg bg-amber-50 border border-amber-100 text-amber-800 text-[11px] font-medium truncate">
+                                    {formatComplaintDisplay(a.complaint)}
+                                  </span>
+                                </div>
                               )}
                             </div>
                             <span className={clsx("text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0", cfg.color)}>
