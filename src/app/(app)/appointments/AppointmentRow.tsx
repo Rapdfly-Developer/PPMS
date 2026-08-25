@@ -110,9 +110,6 @@ export function AppointmentRow({ appt, role, token }: { appt: any; role: string;
           {p.mobile && (
             <span className="flex items-center gap-1"><Phone size={11} /> {p.mobile}</span>
           )}
-          {appt.doctor && (
-            <span className="flex items-center gap-1"><UserRound size={11} /> Dr. {appt.doctor.name}</span>
-          )}
           {appt.visitType && (
             <span className="flex items-center gap-1"><Tag size={11} /> {appt.visitType}</span>
           )}
