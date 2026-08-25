@@ -140,7 +140,8 @@ export function AppointmentsClient({
   const todayStr = format(new Date(), "yyyy-MM-dd");
   const prevAppts     = appointments.filter((a) => format(new Date(a.dateTime), "yyyy-MM-dd") < todayStr)
     .sort((a, b) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime()); // newest first
-  const todayAppts    = appointments.filter((a) => format(new Date(a.dateTime), "yyyy-MM-dd") === todayStr)
+  // Today's Appointments shows only patients still awaiting confirmation.
+  const todayAppts    = appointments.filter((a) => format(new Date(a.dateTime), "yyyy-MM-dd") === todayStr && a.status === "REQUESTED")
     .sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime()); // earliest first
   const upcomingAppts = appointments.filter((a) => format(new Date(a.dateTime), "yyyy-MM-dd") > todayStr)
     .sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime()); // earliest first
