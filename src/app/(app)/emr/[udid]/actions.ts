@@ -313,6 +313,9 @@ export async function saveLacrimalSac(visitId: string, udid: string, data: { re:
 
 // ── Investigations ───────────────────────────────────────────────────────
 
+const normalizeInvName = (s: string) =>
+  s.toLowerCase().replace(/&/g, "and").replace(/[^a-z0-9]+/g, " ").trim();
+
 export async function addInvestigationOrder(
   visitId: string,
   udid: string,
@@ -320,6 +323,13 @@ export async function addInvestigationOrder(
 ) {
   const user = await requireRole("DOCTOR");
   await assertVisitAccess(visitId);
+  // Prevent duplicate: check existing orders with normalized name match
+  const existing = await prisma.investigationOrder.findMany({ where: { visitId }, select: { testName: true } });
+  const norm = normalizeInvName(data.testName);
+  if (existing.some((o) => normalizeInvName(o.testName) === norm)) {
+    revalidate(udid);
+    return;
+  }
   await prisma.investigationOrder.create({ data: { visitId, ...data } });
   await writeAudit(user.id, "InvestigationOrder", visitId, "ADD", data);
   revalidate(udid);

@@ -1577,10 +1577,13 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
     }
     return [...new Set(invs)];
   }, [appliedByDiag, presetMatches]);
-  // Map of testName → orderId for investigations already in this visit
+  // Normalize investigation names the same way as the server action
+  const normInv = (s: string) => s.toLowerCase().replace(/&/g, "and").replace(/[^a-z0-9]+/g, " ").trim();
+
+  // Map of normalizedName → orderId for investigations already in this visit
   const buildInvMap = (orders: any[]) => {
     const map = new Map<string, string>();
-    for (const o of orders) map.set((o.testName as string).toLowerCase(), o.id as string);
+    for (const o of orders) map.set(normInv(o.testName as string), o.id as string);
     return map;
   };
   const [invOrderMap, setInvOrderMap] = useState<Map<string, string>>(() => buildInvMap(visit.investigationOrders ?? []));
@@ -2249,7 +2252,7 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
           <p className="text-[10px] font-bold uppercase tracking-widest text-[#0F766E]/70 mb-2">Suggested Investigations</p>
           <div className="flex flex-wrap gap-1.5">
             {allSuggestedInvs.map((inv) => {
-              const key   = inv.toLowerCase();
+              const key   = normInv(inv);
               const added = invOrderMap.has(key);
               return (
                 <button
