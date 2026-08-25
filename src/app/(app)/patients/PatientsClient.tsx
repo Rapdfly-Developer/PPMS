@@ -600,7 +600,7 @@ export function PatientsClient({
                       </div>
 
                       {/* Avatar + name + UDID + age/sex */}
-                      <div className="flex items-center gap-3 w-40 shrink-0 min-w-0">
+                      <div className="flex items-center gap-3 w-48 xl:w-56 shrink-0 min-w-0">
                         {p.photoUrl ? (
                           <img
                             src={photoSrc(p.photoUrl)}

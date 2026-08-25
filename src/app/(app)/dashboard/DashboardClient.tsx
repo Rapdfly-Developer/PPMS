@@ -551,7 +551,7 @@ export function DashboardClient({
       </div>
 
       {/* ── Surgeries + Visit time ────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
 
           {/* Partial Dispense */}
           <div className="surface-card p-5">
@@ -606,16 +606,16 @@ export function DashboardClient({
                         const cfg      = STATUS_CFG[a.status] ?? STATUS_CFG["REQUESTED"];
                         const isMoving = movingId === a.id;
                         return (
-                          <div key={a.id} className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-[var(--color-border)] bg-white">
-                            <div className="w-6 shrink-0 flex items-center justify-center">
+                          <div key={a.id} className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-[var(--color-border)] bg-white">
+                            <div className="w-5 shrink-0 flex items-center justify-center">
                               <span className="text-xs font-bold text-[var(--color-ink-400)]">{idx + 1}</span>
                             </div>
                             <div className="w-px self-stretch bg-[var(--color-border)]" />
                             <div className="w-16 shrink-0 flex flex-col items-center gap-0.5">
-                              <span className="text-sm font-bold text-[var(--color-ink-900)]" title="Scheduled appointment time">
+                              <span className="text-sm font-bold text-[var(--color-ink-900)] whitespace-nowrap" title="Scheduled appointment time">
                                 {format(new Date(a.dateTime), "h:mm a")}
                               </span>
-                              <span className="text-[9px] text-[var(--color-ink-400)]" title="Booked at">
+                              <span className="text-[9px] text-[var(--color-ink-400)] whitespace-nowrap" title="Booked at">
                                 Booked {format(new Date(a.createdAt), "h:mm a")}
                               </span>
                             </div>
