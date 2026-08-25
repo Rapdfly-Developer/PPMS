@@ -2,7 +2,7 @@ import { requirePermission } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import { format, startOfDay, endOfDay } from "date-fns";
-import { Phone, MapPin, Calendar, Hash, IdCard, Briefcase, FileText, UserX } from "lucide-react";
+import { Phone, MapPin, Calendar, Hash, IdCard, Briefcase, FileText } from "lucide-react";
 import { decryptAadhaar, maskAadhaar } from "@/lib/crypto";
 import { PatientProfileClient, type SerialVisit, type TodayVisit, type LastVisitSummary } from "./PatientProfileClient";
 import { PatientActionsPanel } from "./PatientHistoryButtons";
@@ -329,54 +329,16 @@ export default async function PatientProfilePage({
         </div>
       </div>
 
-      {/* ── Total Visits summary card ──────────────────────────────────── */}
-      <div className="rounded-xl border border-[var(--color-border)] bg-white p-5 mb-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="rounded-2xl bg-[var(--color-primary-50)] p-3">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-                className="text-[var(--color-primary-600)]">
-                <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>
-              </svg>
-            </div>
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Total Visits</p>
-              <p className="text-3xl font-bold text-[var(--color-primary-700)] mt-0.5">{totalVisits}</p>
-            </div>
-          </div>
-
-          <div className="text-right text-xs text-[var(--color-ink-500)] space-y-1.5">
-            {firstVisit ? (
-              <p>
-                <span className="text-[var(--color-ink-400)]">First </span>
-                <span className="font-semibold text-[var(--color-ink-700)]">
-                  {format(new Date(firstVisit.date), "dd MMM yyyy")}
-                </span>
-              </p>
-            ) : (
-              <p className="text-[var(--color-ink-300)]">No visits yet</p>
-            )}
-            {lastVisit && totalVisits > 1 && (
-              <p>
-                <span className="text-[var(--color-ink-400)]">Last </span>
-                <span className="font-semibold text-[var(--color-ink-700)]">
-                  {format(new Date(lastVisit.date), "dd MMM yyyy")}
-                </span>
-              </p>
-            )}
-            {noShowCount > 0 && (
-              <p className="flex items-center justify-end gap-1 text-red-500">
-                <UserX size={11} />
-                <span className="font-semibold">{noShowCount}</span>
-                <span className="text-red-400">No Show{noShowCount > 1 ? "s" : ""}</span>
-              </p>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* ── Action buttons ───────────────────────────────────────────── */}
-      <PatientActionsPanel patientId={patient.id} patientName={patient.name} udid={udid} />
+      {/* ── Total Visits card + toggleable action buttons ─────────────── */}
+      <PatientActionsPanel
+        patientId={patient.id}
+        patientName={patient.name}
+        udid={udid}
+        totalVisits={totalVisits}
+        firstVisitDate={firstVisit?.date.toISOString() ?? null}
+        lastVisitDate={lastVisit && totalVisits > 1 ? lastVisit.date.toISOString() : null}
+        noShowCount={noShowCount}
+      />
 
       {/* ── Action buttons + drawer (client) ──────────────────────────── */}
       <PatientProfileClient

@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useRef } from "react";
 import { format } from "date-fns";
-import { X, FlaskConical, Pill, Glasses, Loader2, ChevronDown, ChevronUp, Upload, Camera, Eye, AlignJustify } from "lucide-react";
+import { X, FlaskConical, Pill, Glasses, Loader2, ChevronDown, ChevronUp, Upload, Camera, Eye } from "lucide-react";
 import { parseJSON } from "@/lib/json";
 import {
   getPatientInvestigations,
@@ -554,29 +554,81 @@ export function PatientActionsPanel({
   patientId,
   patientName,
   udid,
+  totalVisits,
+  firstVisitDate,
+  lastVisitDate,
+  noShowCount,
 }: {
   patientId: string;
   patientName: string;
   udid: string;
+  totalVisits: number;
+  firstVisitDate?: string | null;
+  lastVisitDate?: string | null;
+  noShowCount: number;
 }) {
   const [showActions, setShowActions] = useState(true);
   return (
-    <div className="mb-4">
-      <button
-        onClick={() => setShowActions((v) => !v)}
-        className="flex items-center justify-center w-9 h-9 rounded-lg bg-teal-500 hover:bg-teal-600 text-white transition-colors mb-2"
-        aria-label="Toggle action buttons"
-      >
-        <AlignJustify size={18} />
-      </button>
+    <>
+      {/* Total Visits card — hamburger icon is the toggle */}
+      <div className="rounded-xl border border-[var(--color-border)] bg-white p-5 mb-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setShowActions((v) => !v)}
+              aria-label="Toggle action buttons"
+              className="rounded-2xl bg-[var(--color-primary-50)] p-3 hover:bg-[var(--color-primary-100)] transition-colors"
+            >
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                className="text-[var(--color-primary-600)]">
+                <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>
+              </svg>
+            </button>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Total Visits</p>
+              <p className="text-3xl font-bold text-[var(--color-primary-700)] mt-0.5">{totalVisits}</p>
+            </div>
+          </div>
+
+          <div className="text-right text-xs text-[var(--color-ink-500)] space-y-1.5">
+            {firstVisitDate ? (
+              <p>
+                <span className="text-[var(--color-ink-400)]">First </span>
+                <span className="font-semibold text-[var(--color-ink-700)]">
+                  {format(new Date(firstVisitDate), "dd MMM yyyy")}
+                </span>
+              </p>
+            ) : (
+              <p className="text-[var(--color-ink-300)]">No visits yet</p>
+            )}
+            {lastVisitDate && totalVisits > 1 && (
+              <p>
+                <span className="text-[var(--color-ink-400)]">Last </span>
+                <span className="font-semibold text-[var(--color-ink-700)]">
+                  {format(new Date(lastVisitDate), "dd MMM yyyy")}
+                </span>
+              </p>
+            )}
+            {noShowCount > 0 && (
+              <p className="flex items-center justify-end gap-1 text-red-500">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="17" y1="8" x2="23" y2="14"/><line x1="23" y1="8" x2="17" y2="14"/></svg>
+                <span className="font-semibold">{noShowCount}</span>
+                <span className="text-red-400">No Show{noShowCount > 1 ? "s" : ""}</span>
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Action buttons — toggled by the hamburger icon above */}
       {showActions && (
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 mb-4">
           <TimeStampButton patientId={patientId} patientName={patientName} />
           <InvestigationsButton patientId={patientId} udid={udid} />
           <TreatmentHistoryButton patientId={patientId} />
           <SpectacleHistoryButton patientId={patientId} udid={udid} />
         </div>
       )}
-    </div>
+    </>
   );
 }
