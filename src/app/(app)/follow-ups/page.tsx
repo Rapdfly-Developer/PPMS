@@ -43,7 +43,7 @@ export default async function FollowUpsPage() {
       followUpCancelledAt: true,
       inViewOf: true,
       patient: {
-        select: { id: true, name: true, udid: true, uhid: true, age: true, sex: true },
+        select: { id: true, name: true, udid: true, uhid: true, age: true, sex: true, photoUrl: true },
       },
       doctor: { select: { id: true, name: true } },
       hospital: { select: { id: true, name: true } },

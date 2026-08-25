@@ -22,7 +22,7 @@ export interface FuVisit {
   followUpCompleted: boolean;
   followUpCancelledAt: string | null;
   inViewOf: string | null;
-  patient: { id: string; name: string; udid: string; uhid: string | null; age: number; sex: string };
+  patient: { id: string; name: string; udid: string; uhid: string | null; age: number; sex: string; photoUrl: string | null };
   doctor: { id: string; name: string };
   hospital: { id: string; name: string };
   diagnoses: { description: string; icd10Code: string }[];
@@ -442,8 +442,10 @@ function FollowUpRow({
         {/* Patient */}
         <td className="px-4 py-3">
           <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-full bg-[var(--color-primary-100)] flex items-center justify-center shrink-0">
-              <User size={13} className="text-[var(--color-primary-700)]" />
+            <div className="w-7 h-7 rounded-full bg-[var(--color-primary-100)] flex items-center justify-center shrink-0 overflow-hidden">
+              {v.patient.photoUrl
+                ? <img src={v.patient.photoUrl} alt={v.patient.name} className="w-full h-full object-cover" />
+                : <User size={13} className="text-[var(--color-primary-700)]" />}
             </div>
             <div className="min-w-0">
               <Link
@@ -546,8 +548,10 @@ function FollowUpCard({
       {/* Header */}
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-8 h-8 rounded-full bg-[var(--color-primary-100)] flex items-center justify-center shrink-0">
-            <User size={14} className="text-[var(--color-primary-700)]" />
+          <div className="w-8 h-8 rounded-full bg-[var(--color-primary-100)] flex items-center justify-center shrink-0 overflow-hidden">
+            {v.patient.photoUrl
+              ? <img src={v.patient.photoUrl} alt={v.patient.name} className="w-full h-full object-cover" />
+              : <User size={14} className="text-[var(--color-primary-700)]" />}
           </div>
           <div className="min-w-0">
             <p className="text-sm font-bold text-[var(--color-ink-900)] truncate">{v.patient.name}</p>

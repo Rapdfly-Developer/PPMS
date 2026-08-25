@@ -24,7 +24,7 @@ export async function DoctorDashboard({
     where: { doctorId, dateTime: { gte: dayStart, lte: dayEnd } },
     include: {
       patient:  { select: { name: true, udid: true, uhid: true, age: true, sex: true, mobile: true, complaint: true } },
-      hospital: { select: { id: true, name: true } },
+      hospital: { select: { id: true, name: true, logoUrl: true } },
       visit:    { select: { id: true, date: true, finalizedAt: true } },
     },
     orderBy: { dateTime: "asc" },

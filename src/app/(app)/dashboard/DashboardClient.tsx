@@ -25,7 +25,7 @@ interface Appt {
   partialDispenseReason: string | null;
   partialDispenseAt:     string | null;
   patient: { name: string; udid: string; uhid?: string; age: number; sex: string; mobile?: string };
-  hospital?: { id: string; name: string };
+  hospital?: { id: string; name: string; logoUrl?: string | null };
   doctor?:   { id: string; name: string } | null;
   visitId:          string | null;
   visitStartedAt:   string | null;
@@ -349,11 +349,12 @@ export function DashboardClient({
       const hospitalsToShow = selectedFilter === "all"
         ? filterOptions
         : filterOptions.filter((h) => h.id === selectedFilter);
-      const map = new Map<string, { name: string; appts: Appt[]; dispensed: number }>();
+      const map = new Map<string, { name: string; logoUrl?: string | null; appts: Appt[]; dispensed: number }>();
       for (const h of hospitalsToShow) map.set(h.id, { name: h.name, appts: [], dispensed: 0 });
       for (const a of queue) {
         const key = a.hospital?.id ?? "unknown";
-        if (!map.has(key)) map.set(key, { name: a.hospital?.name ?? "Unknown", appts: [], dispensed: 0 });
+        if (!map.has(key)) map.set(key, { name: a.hospital?.name ?? "Unknown", logoUrl: a.hospital?.logoUrl, appts: [], dispensed: 0 });
+        else if (!map.get(key)!.logoUrl && a.hospital?.logoUrl) map.get(key)!.logoUrl = a.hospital.logoUrl;
         map.get(key)!.appts.push(a);
       }
       for (const a of dispensed) {
@@ -361,11 +362,11 @@ export function DashboardClient({
         if (map.has(key)) map.get(key)!.dispensed++;
       }
       return Array.from(map.entries())
-        .map(([id, { name, appts: gAppts, dispensed: d }]) => ({ id, name, appts: gAppts, dispensed: d }))
+        .map(([id, { name, logoUrl, appts: gAppts, dispensed: d }]) => ({ id, name, logoUrl, appts: gAppts, dispensed: d }))
         .filter((g) => g.appts.length > 0)
         .sort((a, b) => a.name.localeCompare(b.name));
     } else {
-      return [{ id: "self", name: displayName, appts: queue, dispensed: dispensed.length }];
+      return [{ id: "self", name: displayName, logoUrl: null as string | null, appts: queue, dispensed: dispensed.length }];
     }
   }, [filteredAppts, role, displayName, filterOptions, selectedFilter]);
 
@@ -514,14 +515,16 @@ export function DashboardClient({
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-4">
-            {queueGroups.map(({ id, name, appts: gAppts, dispensed }) => {
+            {queueGroups.map(({ id, name, logoUrl, appts: gAppts, dispensed }) => {
               const displayed = statusFilter === "ALL" ? gAppts : gAppts.filter((a) => a.status === statusFilter);
               return (
                 <div key={id} className="surface-card p-4 flex flex-col gap-3">
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0">
-                      <div className="shrink-0 p-1.5 rounded-lg bg-[var(--color-primary-50)]">
-                        <Building2 size={15} className="text-[var(--color-primary-700)]" />
+                      <div className="shrink-0 w-8 h-8 rounded-lg bg-[var(--color-primary-50)] flex items-center justify-center overflow-hidden">
+                        {logoUrl
+                          ? <img src={logoUrl} alt={name} className="w-full h-full object-cover" />
+                          : <Building2 size={15} className="text-[var(--color-primary-700)]" />}
                       </div>
                       <div className="min-w-0">
                         <p className="text-sm font-bold text-[var(--color-ink-900)] truncate">{name}</p>
