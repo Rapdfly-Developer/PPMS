@@ -1847,10 +1847,7 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
             </div>
             <div>
               <label className="text-[10px] font-medium text-[var(--color-ink-400)] uppercase tracking-wide block mb-0.5">Dose</label>
-              <select value={dose} onChange={(e) => setDose(e.target.value)} className={inputCls}>
-                <option value="">— Select dose —</option>
-                {DOSE_OPTIONS.map((d) => <option key={d} value={d}>{d}</option>)}
-              </select>
+              <OptionsInput value={dose} onChange={setDose} options={DOSE_OPTIONS} placeholder="Dose" className={inputCls} />
             </div>
             <div>
               <label className="text-[10px] font-medium text-[var(--color-ink-400)] uppercase tracking-wide block mb-0.5">Route</label>
@@ -1862,17 +1859,11 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-2 max-w-3xl">
             <div className="col-span-2">
               <label className="text-[10px] font-medium text-[var(--color-ink-400)] uppercase tracking-wide block mb-0.5">Frequency</label>
-              <select value={frequency} onChange={(e) => setFrequency(e.target.value)} className={inputCls}>
-                <option value="">— Select —</option>
-                {FREQUENCY_OPTIONS.map((f) => <option key={f}>{f}</option>)}
-              </select>
+              <OptionsInput value={frequency} onChange={setFrequency} options={FREQUENCY_OPTIONS} placeholder="Frequency" className={inputCls} />
             </div>
             <div>
               <label className="text-[10px] font-medium text-[var(--color-ink-400)] uppercase tracking-wide block mb-0.5">Duration</label>
-              <select value={durationSel} onChange={(e) => setDurationSel(e.target.value)} className={inputCls}>
-                <option value="">— Select —</option>
-                {DURATION_OPTIONS.map((d) => <option key={d} value={d}>{d}</option>)}
-              </select>
+              <OptionsInput value={durationSel} onChange={setDurationSel} options={DURATION_OPTIONS} placeholder="Duration" className={inputCls} />
             </div>
             <div className="flex flex-col justify-end">
               <button onClick={submitDrug} disabled={pending} className="w-full rounded-lg bg-[var(--color-primary-600)] text-white text-xs font-medium py-1.5 hover:bg-[var(--color-primary-700)] transition-colors disabled:opacity-60">
@@ -2031,14 +2022,13 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
                       {/* Dose */}
                       <td className="px-3 py-2.5">
                         {isEditing ? (
-                          <select
+                          <OptionsInput
                             value={editDraft.dosage}
-                            onChange={(e) => setEditDraft({ ...editDraft, dosage: e.target.value })}
+                            onChange={(v) => setEditDraft({ ...editDraft, dosage: v })}
+                            options={DOSE_OPTIONS}
+                            placeholder="Dose"
                             className={cellCls}
-                          >
-                            <option value="">— Select —</option>
-                            {DOSE_OPTIONS.map((d) => <option key={d} value={d}>{d}</option>)}
-                          </select>
+                          />
                         ) : (
                           <span className="text-xs text-[var(--color-ink-600)]">{m.dosage || <span className="text-[var(--color-ink-300)]">—</span>}</span>
                         )}
@@ -2047,14 +2037,13 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
                       {/* Frequency */}
                       <td className="px-3 py-2.5">
                         {isEditing ? (
-                          <select
+                          <OptionsInput
                             value={editDraft.frequency}
-                            onChange={(e) => setEditDraft({ ...editDraft, frequency: e.target.value })}
+                            onChange={(v) => setEditDraft({ ...editDraft, frequency: v })}
+                            options={FREQUENCY_OPTIONS}
+                            placeholder="Frequency"
                             className={cellCls}
-                          >
-                            <option value="">— Select —</option>
-                            {FREQUENCY_OPTIONS.map((f) => <option key={f}>{f}</option>)}
-                          </select>
+                          />
                         ) : (
                           <span className="text-xs text-[var(--color-ink-600)]">{m.frequency || <span className="text-[var(--color-ink-300)]">—</span>}</span>
                         )}
@@ -2063,14 +2052,13 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
                       {/* Duration */}
                       <td className="px-3 py-2.5">
                         {isEditing ? (
-                          <select
+                          <OptionsInput
                             value={editDraft.duration}
-                            onChange={(e) => setEditDraft({ ...editDraft, duration: e.target.value })}
+                            onChange={(v) => setEditDraft({ ...editDraft, duration: v })}
+                            options={DURATION_OPTIONS}
+                            placeholder="Duration"
                             className={cellCls}
-                          >
-                            <option value="">— Select —</option>
-                            {DURATION_OPTIONS.map((d) => <option key={d} value={d}>{d}</option>)}
-                          </select>
+                          />
                         ) : (
                           <span className="text-xs text-[var(--color-ink-600)]">{m.duration || <span className="text-[var(--color-ink-300)]">—</span>}</span>
                         )}
