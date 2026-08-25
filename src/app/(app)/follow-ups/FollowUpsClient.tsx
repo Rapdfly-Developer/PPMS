@@ -621,6 +621,7 @@ export function FollowUpsClient({
   const [search, setSearch]             = useState("");
   const [statusFilter, setStatusFilter] = useState<FollowUpStatus | "ALL">("DUE_TODAY");
   const [doctorFilter, setDoctorFilter] = useState("ALL");
+  const [showFilters, setShowFilters]   = useState(false);
   const [activeReschedule, setActiveReschedule] = useState<string | null>(null);
   const [activeCancel, setActiveCancel]         = useState<string | null>(null);
   const [completeVisit, setCompleteVisit]       = useState<FuVisit | null>(null);
@@ -732,8 +733,8 @@ export function FollowUpsClient({
         />
       </div>
 
-      {/* Search + filters */}
-      <div className="flex flex-col sm:flex-row gap-2 mb-4">
+      {/* Search + filter toggle */}
+      <div className="flex gap-2 mb-2">
         <div className="relative flex-1">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] pointer-events-none" />
           <input
@@ -744,10 +745,24 @@ export function FollowUpsClient({
             className="w-full pl-9 pr-4 py-2 text-sm rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent"
           />
         </div>
+        <button
+          onClick={() => setShowFilters((v) => !v)}
+          className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border text-sm font-medium transition-colors shrink-0 relative
+            ${showFilters
+              ? "border-[var(--color-primary-400)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)]"
+              : "border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)]"}`}
+        >
+          <Filter size={14} />
+          Filters
+          {(statusFilter !== "ALL" || doctorFilter !== "ALL") && (
+            <span className="w-2 h-2 rounded-full bg-[var(--color-primary-500)] absolute -top-0.5 -right-0.5" />
+          )}
+        </button>
+      </div>
 
-        <div className="flex gap-2 items-center">
-          <Filter size={14} className="text-[var(--color-ink-400)] shrink-0 hidden sm:block" />
-
+      {/* Collapsible filter panel */}
+      {showFilters && (
+        <div className="flex flex-wrap gap-2 items-center mb-2 p-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)]">
           {/* Status filter */}
           <select
             value={statusFilter}
@@ -777,19 +792,19 @@ export function FollowUpsClient({
             </select>
           )}
 
-          {(search || statusFilter !== "ALL" || doctorFilter !== "ALL") && (
+          {(statusFilter !== "ALL" || doctorFilter !== "ALL") && (
             <button
-              onClick={() => { setSearch(""); setStatusFilter("DUE_TODAY"); setDoctorFilter("ALL"); }}
-              className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-2 rounded-xl border border-[var(--color-border)] text-[var(--color-ink-500)] hover:bg-[var(--color-surface-sunken)] transition-colors"
+              onClick={() => { setStatusFilter("DUE_TODAY"); setDoctorFilter("ALL"); }}
+              className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-ink-500)] hover:bg-white transition-colors"
             >
-              <X size={12} /> Clear
+              <X size={12} /> Reset
             </button>
           )}
         </div>
-      </div>
+      )}
 
       {/* Result count */}
-      <p className="text-xs text-[var(--color-ink-400)] mb-3">
+      <p className="text-xs text-[var(--color-ink-400)] mb-3 mt-2">
         Showing {filtered.length} of {visits.length} follow-ups
         {statusFilter !== "ALL" && ` · ${STATUS_META[statusFilter].label}`}
       </p>
