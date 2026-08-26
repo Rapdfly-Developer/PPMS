@@ -241,21 +241,23 @@ function ApptRow({ appt, role, serial }: { appt: Appt; role: "DOCTOR" | "HOSPITA
            title={arrivedAt ? `Arrived at ${format(arrivedAt, "h:mm a")}` : "Appointment time"}>
           {primaryTime}
         </p>
-        {appt.isWalkIn ? (
-          <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-orange-50 text-orange-600">
-            <PersonStanding size={9} /> Walk-in
-          </span>
-        ) : (
-          <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-600">
-            <Calendar size={9} /> Appt
-          </span>
-        )}
-        {/* Scheduled time — only show when different from primary time */}
-        {apptTime !== primaryTime && (
-          <span className="text-[9px] text-[var(--color-ink-300)]" title="Scheduled appointment time">
-            {apptTime}
-          </span>
-        )}
+        {/* Badge + scheduled time on one line */}
+        <div className="flex items-center gap-1">
+          {appt.isWalkIn ? (
+            <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-orange-50 text-orange-600">
+              <PersonStanding size={9} /> Walk-in
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-600">
+              <Calendar size={9} /> Appt
+            </span>
+          )}
+          {apptTime !== primaryTime && (
+            <span className="text-[9px] text-[var(--color-ink-300)]" title="Scheduled appointment time">
+              {apptTime}
+            </span>
+          )}
+        </div>
       </div>
       <div className="w-px self-stretch bg-[var(--color-border)]" />
       <Link href={`/patients/${appt.patient.udid}?returnTo=/dashboard`} className="flex-1 min-w-0 hover:opacity-80 transition-opacity">
@@ -277,12 +279,12 @@ function ApptRow({ appt, role, serial }: { appt: Appt; role: "DOCTOR" | "HOSPITA
               Dr. {appt.doctor.name}
             </span>
           )}
+          {appt.complaint && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-50 border border-amber-100 text-amber-800 text-[11px] font-medium">
+              {formatComplaintDisplay(appt.complaint)}
+            </span>
+          )}
         </div>
-        {appt.complaint && (
-          <span className="mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-50 border border-amber-100 text-amber-800 text-[11px] font-medium leading-relaxed">
-            {formatComplaintDisplay(appt.complaint)}
-          </span>
-        )}
       </Link>
       <div className="flex flex-col items-end gap-1 shrink-0">
         <div className="flex items-center gap-1.5">
