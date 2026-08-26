@@ -8,10 +8,13 @@ function computeStatus(
   followUpCompleted: boolean,
   followUpCancelledAt: Date | null,
   hasAppointment: boolean,
+  hasConsulted: boolean,
   today: Date,
 ): FollowUpStatus {
   if (followUpCancelledAt) return "CANCELLED";
-  if (followUpCompleted) return "COMPLETED";
+  // Auto-complete when the patient actually attended a visit on the follow-up date,
+  // or when the doctor manually marked it complete.
+  if (hasConsulted || followUpCompleted) return "COMPLETED";
   if (hasAppointment) return "SCHEDULED";
   const fuDay = startOfDay(followUpDate);
   const todayDay = startOfDay(today);
@@ -56,36 +59,55 @@ export default async function FollowUpsPage() {
     },
   });
 
-  // Batch-check whether each patient has an appointment booked on their follow-up date.
-  // Only for pending (non-completed, non-cancelled) visits to keep the query tight.
+  // Batch-check whether each patient has an appointment booked on their follow-up date,
+  // and whether they actually attended a visit on that date (successful consultation).
+  // Only for pending (non-completed, non-cancelled) visits to keep the queries tight.
   const pendingVisits = rawVisits.filter(v => !v.followUpCompleted && !v.followUpCancelledAt);
-  const apptSet = new Set<string>(); // "patientId_YYYY-MM-DD"
+  const apptSet = new Set<string>();    // "patientId_YYYY-MM-DD"
+  const consultSet = new Set<string>(); // "patientId_YYYY-MM-DD"
 
   if (pendingVisits.length > 0) {
     const patientIds = [...new Set(pendingVisits.map(v => v.patient.id))];
-    const fuDates = pendingVisits.map(v => v.followUpDate!);
-    const minDate = new Date(Math.min(...fuDates.map(d => d.getTime())));
-    const maxDate = new Date(Math.max(...fuDates.map(d => d.getTime())));
+    const originIds  = new Set(pendingVisits.map(v => v.id));
+    const fuDates    = pendingVisits.map(v => v.followUpDate!);
+    const minDate    = new Date(Math.min(...fuDates.map(d => d.getTime())));
+    const maxDate    = new Date(Math.max(...fuDates.map(d => d.getTime())));
     minDate.setHours(0, 0, 0, 0);
     maxDate.setHours(23, 59, 59, 999);
 
-    const appts = await prisma.appointment.findMany({
-      where: {
-        patientId: { in: patientIds },
-        status: { not: "CANCELLED" },
-        dateTime: { gte: minDate, lte: maxDate },
-      },
-      select: { patientId: true, dateTime: true },
-    });
+    const [appts, consultVisits] = await Promise.all([
+      prisma.appointment.findMany({
+        where: {
+          patientId: { in: patientIds },
+          status: { not: "CANCELLED" },
+          dateTime: { gte: minDate, lte: maxDate },
+        },
+        select: { patientId: true, dateTime: true },
+      }),
+      // A "successful consultation" is any visit for the patient on the follow-up
+      // date that is NOT the original visit that set the follow-up date.
+      prisma.visit.findMany({
+        where: {
+          patientId: { in: patientIds },
+          id: { notIn: [...originIds] },
+          date: { gte: minDate, lte: maxDate },
+        },
+        select: { patientId: true, date: true },
+      }),
+    ]);
 
     for (const a of appts) {
       apptSet.add(`${a.patientId}_${format(a.dateTime, "yyyy-MM-dd")}`);
     }
+    for (const c of consultVisits) {
+      consultSet.add(`${c.patientId}_${format(c.date, "yyyy-MM-dd")}`);
+    }
   }
 
   const visits: FuVisit[] = rawVisits.map((v) => {
-    const fuDateKey = format(v.followUpDate!, "yyyy-MM-dd");
+    const fuDateKey    = format(v.followUpDate!, "yyyy-MM-dd");
     const hasAppointment = apptSet.has(`${v.patient.id}_${fuDateKey}`);
+    const hasConsulted   = consultSet.has(`${v.patient.id}_${fuDateKey}`);
     return {
       id: v.id,
       date: v.date.toISOString(),
@@ -98,7 +120,7 @@ export default async function FollowUpsPage() {
       doctor: v.doctor,
       hospital: v.hospital,
       diagnoses: v.diagnoses,
-      status: computeStatus(v.followUpDate!, v.followUpCompleted, v.followUpCancelledAt, hasAppointment, today),
+      status: computeStatus(v.followUpDate!, v.followUpCompleted, v.followUpCancelledAt, hasAppointment, hasConsulted, today),
     };
   });
 
