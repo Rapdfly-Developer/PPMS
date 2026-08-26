@@ -14,7 +14,7 @@ import { EmrViewerButton, VisitDownloadButton } from "./EmrViewerModal";
 import {
   VisitSummaryTabs, useVisitSummaryState, VisitSummaryTabBar, VisitSummaryTabBody,
   Block, DataTable, Cols, DASH,
-  TH, TD, TD_MUTED,
+  TH, TD, TD_MUTED, COLS_INVESTIGATION,
 } from "./VisitSummaryTabs";
 import { transferPatient } from "../actions";
 import { convertNotesToCC } from "@/lib/appointment-cc";
@@ -221,6 +221,7 @@ export type LastVisitSummary = {
   diagnoses: { id: string; description: string; icd10Code: string; laterality: string | null; status: string; provisional: boolean }[];
   medications: { id: string; drugName: string; dosage: string | null; frequency: string | null; duration: string | null; laterality: string | null }[];
   investigations: { id: string; category: string; testName: string; priority: string; laterality: string | null; status: string; notes: string | null; resultRef: string | null; createdAt: string }[];
+  followUpDate: string | null;
 };
 
 /* ── Status badge ────────────────────────────────────────────────────────────── */
@@ -446,26 +447,23 @@ function LastVisitSummarySection({ summary }: { summary: LastVisitSummary }) {
 
                 {summary.diagnoses.length > 0 && (
                   <Block label="Diagnoses">
-                    <div className="flex flex-col gap-1.5">
+                    <div className="flex items-center gap-2 flex-wrap">
                       {[...summary.diagnoses]
                         .sort((a, b) => {
                           const ord: Record<string, number> = { ACTIVE: 0, CHRONIC: 1, RESOLVED: 2 };
                           return (ord[a.status] ?? 3) - (ord[b.status] ?? 3);
                         })
-                        .map((d) => (
-                          <div key={d.id} className="flex items-baseline gap-2">
-                            <span className={`text-[9px] font-bold uppercase shrink-0 ${
-                              d.status === "RESOLVED" ? "text-emerald-600"
-                              : d.status === "CHRONIC" ? "text-amber-600"
-                              : "text-red-500"
-                            }`}>{d.status}</span>
-                            <span className="text-[11px] text-[var(--color-ink-700)] min-w-0">
-                              {d.laterality && <span className="font-bold text-[var(--color-primary-700)] mr-1">{d.laterality}</span>}
-                              {d.description}
-                              {d.provisional && <span className="text-amber-500 italic ml-1">(P)</span>}
+                        .map((d) => {
+                          const palette =
+                            d.status === "RESOLVED" ? "bg-emerald-50 border-emerald-200 text-emerald-800"
+                            : d.status === "CHRONIC" ? "bg-amber-50 border-amber-200 text-amber-800"
+                            : "bg-red-50 border-red-200 text-red-800";
+                          return (
+                            <span key={d.id} className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-medium ${palette}`}>
+                              {[d.status, d.laterality, `${d.description}${d.provisional ? " (P)" : ""}`].filter(Boolean).join(" · ")}
                             </span>
-                          </div>
-                        ))}
+                          );
+                        })}
                     </div>
                   </Block>
                 )}
@@ -503,7 +501,54 @@ function LastVisitSummarySection({ summary }: { summary: LastVisitSummary }) {
                   </Block>
                 )}
 
-                {!summary.chiefComplaint && summary.diagnoses.length === 0 && summary.medications.length === 0 && (
+                {summary.investigations.length > 0 && (
+                  <Block label="Investigations">
+                    <DataTable minWidth={420}>
+                      <Cols widths={COLS_INVESTIGATION} />
+                      <thead>
+                        <tr>
+                          <th className={TH}>Test</th>
+                          <th className={TH}>Eye</th>
+                          <th className={TH}>Category</th>
+                          <th className={TH}>Priority</th>
+                          <th className={TH}>Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {summary.investigations.map((inv) => (
+                          <tr key={inv.id}>
+                            <td className={`${TD} font-semibold`}>{inv.testName}</td>
+                            <td className={TD_MUTED}>{inv.laterality || DASH}</td>
+                            <td className={TD_MUTED}>{inv.category}</td>
+                            <td className={TD}>
+                              <span className={`text-[9px] font-bold uppercase ${inv.priority === "URGENT" ? "text-red-600" : "text-amber-600"}`}>
+                                {inv.priority}
+                              </span>
+                            </td>
+                            <td className={TD}>
+                              <span className={`text-[9px] font-bold uppercase ${
+                                inv.status === "COMPLETED" ? "text-emerald-600"
+                                : inv.status === "ORDERED" ? "text-blue-600"
+                                : "text-amber-600"
+                              }`}>{inv.status}</span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </DataTable>
+                  </Block>
+                )}
+
+                {summary.followUpDate && (
+                  <Block label="Follow-up">
+                    <p className="text-[11px] font-semibold text-[var(--color-ink-800)]">
+                      {format(new Date(summary.followUpDate), "EEEE, dd MMM yyyy")}
+                    </p>
+                  </Block>
+                )}
+
+                {!summary.chiefComplaint && summary.diagnoses.length === 0 && summary.medications.length === 0
+                  && summary.investigations.length === 0 && !summary.followUpDate && (
                   <p className="text-[11px] italic text-[var(--color-ink-300)]">
                     No clinical data recorded for this visit.
                   </p>

@@ -18,6 +18,7 @@ import {
 } from "./treatmentPresets";
 import { type MedEntry, searchMedications, categoryColor } from "@/lib/ophthalmic-medications";
 import { VA_SNELLEN_VALUES } from "@/lib/constants";
+import { INV_CATALOG } from "@/lib/investigation-catalog";
 
 /* ── Preset types & storage ──────────────────────────────────────────────── */
 
@@ -453,7 +454,9 @@ function PresetSelectDialog({
   const [formName, setFormName] = useState("");
   const [formMeds, setFormMeds] = useState<FormMed[]>([blankMed()]);
   const [formAdvice, setFormAdvice] = useState("");
-  const [formInvestigations, setFormInvestigations] = useState("");
+  const [formInvestigations, setFormInvestigations] = useState<string[]>([]);
+  const [editingInvIndex, setEditingInvIndex] = useState<number | null>(null);
+  const [showInvPicker, setShowInvPicker] = useState(false);
   const [formFollowUp, setFormFollowUp] = useState("");
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
@@ -479,7 +482,7 @@ function PresetSelectDialog({
         : [blankMed()]
     );
     setFormAdvice(base?.advice ?? "");
-    setFormInvestigations(base?.investigations?.join(", ") ?? "");
+    setFormInvestigations(base?.investigations ?? []);
     setFormFollowUp(base?.followUpDays ? String(base.followUpDays) : "");
     setEditingPresetId(null);
     setShowForm(true);
@@ -489,7 +492,7 @@ function PresetSelectDialog({
     setFormName(preset.name);
     setFormMeds(preset.medications.map((m) => ({ drugName: m.drugName, dosage: m.dosage ?? "", frequency: m.frequency ?? "", duration: m.duration ?? "" })));
     setFormAdvice(preset.advice ?? "");
-    setFormInvestigations(preset.investigations?.join(", ") ?? "");
+    setFormInvestigations(preset.investigations ?? []);
     setFormFollowUp(preset.followUpDays ? String(preset.followUpDays) : "");
     setEditingPresetId(preset.id);
     setShowForm(true);
@@ -505,7 +508,7 @@ function PresetSelectDialog({
       diagnosisKeywords: [],
       medications: meds.map((m) => ({ drugName: m.drugName.trim(), dosage: m.dosage || undefined, frequency: m.frequency || undefined, duration: m.duration || undefined })),
       advice: formAdvice.trim() || undefined,
-      investigations: formInvestigations ? formInvestigations.split(",").map((s) => s.trim()).filter(Boolean) : undefined,
+      investigations: formInvestigations.length ? formInvestigations : undefined,
       followUpDays: formFollowUp ? Number(formFollowUp) : undefined,
       isDefault: false,
       createdAt: new Date().toISOString(),
@@ -527,7 +530,7 @@ function PresetSelectDialog({
       name: formName.trim(),
       medications: meds.map((m) => ({ drugName: m.drugName.trim(), dosage: m.dosage || undefined, frequency: m.frequency || undefined, duration: m.duration || undefined })),
       advice: formAdvice.trim() || undefined,
-      investigations: formInvestigations ? formInvestigations.split(",").map((s) => s.trim()).filter(Boolean) : undefined,
+      investigations: formInvestigations.length ? formInvestigations : undefined,
       followUpDays: formFollowUp ? Number(formFollowUp) : undefined,
       isDefault: false,
     };
@@ -785,16 +788,67 @@ function PresetSelectDialog({
                 </div>
               </div>
 
-              {/* F/U + Investigations */}
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-wide block mb-1">Follow-up Days</label>
-                  <input type="number" min="1" value={formFollowUp} onChange={(e) => setFormFollowUp(e.target.value)} placeholder="e.g. 7" className={inp} />
+              {/* Follow-up */}
+              <div>
+                <label className="text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-wide block mb-1">Follow-up Days</label>
+                <input type="number" min="1" value={formFollowUp} onChange={(e) => setFormFollowUp(e.target.value)} placeholder="e.g. 7" className={inp} />
+              </div>
+
+              {/* Investigations */}
+              <div>
+                <label className="text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-wide block mb-1">Investigations</label>
+                <div className="flex flex-col gap-1">
+                  {formInvestigations.map((inv, i) => (
+                    <div key={i} className="flex items-center gap-2 rounded-lg border border-[var(--color-border)] bg-white px-2.5 py-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#0F766E]/50 shrink-0" />
+                      {editingInvIndex === i ? (
+                        <input
+                          autoFocus
+                          value={inv}
+                          onChange={(e) => {
+                            const next = [...formInvestigations];
+                            next[i] = e.target.value;
+                            setFormInvestigations(next);
+                          }}
+                          onBlur={() => setEditingInvIndex(null)}
+                          onKeyDown={(e) => { if (e.key === "Enter") setEditingInvIndex(null); }}
+                          className="flex-1 min-w-0 text-xs bg-transparent outline-none border-b border-[#0F766E]"
+                        />
+                      ) : (
+                        <span className="flex-1 min-w-0 text-xs text-[var(--color-ink-700)] truncate">{inv}</span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => setEditingInvIndex(i)}
+                        className="shrink-0 p-1 rounded-lg text-[var(--color-ink-400)] hover:text-[#0F766E] hover:bg-[#DCF3F1] transition-colors"
+                        title="Edit investigation"
+                      >
+                        <Pencil size={11} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFormInvestigations(formInvestigations.filter((_, j) => j !== i));
+                          setEditingInvIndex(null);
+                        }}
+                        className="shrink-0 p-1 rounded-lg text-[var(--color-ink-400)] hover:text-red-500 hover:bg-red-50 transition-colors"
+                        title="Remove investigation"
+                      >
+                        <Trash2 size={11} />
+                      </button>
+                    </div>
+                  ))}
+                  {formInvestigations.length === 0 && (
+                    <p className="text-[11px] text-[var(--color-ink-300)] italic px-0.5">No investigations added.</p>
+                  )}
                 </div>
-                <div>
-                  <label className="text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-wide block mb-1">Investigations</label>
-                  <input value={formInvestigations} onChange={(e) => setFormInvestigations(e.target.value)} placeholder="Comma-separated" className={inp} />
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowInvPicker(true)}
+                  className="mt-1.5 flex items-center gap-1 text-[10px] font-semibold text-[#0F766E] hover:underline"
+                >
+                  <Plus size={10} /> Add
+                </button>
               </div>
 
               {/* Advice */}
@@ -845,6 +899,160 @@ function PresetSelectDialog({
               ) : (
                 <><Sparkles size={13} /> Apply Selected</>
               )}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Investigation picker — same catalog as the Investigations tab */}
+      {showInvPicker && (
+        <InvestigationPickerModal
+          existing={formInvestigations}
+          onAdd={(names) => {
+            setFormInvestigations((prev) => [...prev, ...names.filter((n) => !prev.includes(n))]);
+            setShowInvPicker(false);
+          }}
+          onClose={() => setShowInvPicker(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+/* ── Investigation picker modal ────────────────────────────────────────────
+   Reuses INV_CATALOG (the same data source as the Investigations tab) so
+   protocol investigations stay in sync with the actual test catalog.       */
+function InvestigationPickerModal({
+  existing,
+  onAdd,
+  onClose,
+}: {
+  existing: string[];
+  onAdd: (names: string[]) => void;
+  onClose: () => void;
+}) {
+  const categories = Object.keys(INV_CATALOG);
+  const [activeCategory, setActiveCategory] = useState(categories[0]);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [query, setQuery] = useState("");
+
+  const toggle = (name: string) =>
+    setSelected((prev) => {
+      const next = new Set(prev);
+      next.has(name) ? next.delete(name) : next.add(name);
+      return next;
+    });
+
+  const items = query.trim()
+    ? Object.values(INV_CATALOG).flat().filter((i) => i.name.toLowerCase().includes(query.toLowerCase()))
+    : INV_CATALOG[activeCategory] ?? [];
+
+  return (
+    <div
+      className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+      style={{ background: "rgba(0,0,0,0.45)" }}
+      onClick={onClose}
+    >
+      <div
+        className="relative w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh]"
+        style={{ background: "var(--color-surface)" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div
+          className="px-5 py-4 flex items-center justify-between shrink-0"
+          style={{ background: "linear-gradient(135deg, #0F766E 0%, #0D9488 100%)" }}
+        >
+          <p className="text-sm font-semibold text-white">Add Investigation</p>
+          <button type="button" onClick={onClose} className="text-white/60 hover:text-white p-1">
+            <X size={16} />
+          </button>
+        </div>
+
+        {/* Search */}
+        <div className="px-5 pt-4 pb-2 shrink-0">
+          <div className="relative">
+            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)]" />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search investigations…"
+              className="w-full rounded-lg border border-[var(--color-border)] pl-8 pr-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-[#0F766E] focus:border-[#0F766E]"
+            />
+          </div>
+        </div>
+
+        {/* Category tabs (hidden while searching) */}
+        {!query.trim() && (
+          <div className="flex overflow-x-auto scrollbar-thin border-b border-[var(--color-border)] shrink-0">
+            {categories.map((cat) => (
+              <button
+                key={cat}
+                type="button"
+                onClick={() => setActiveCategory(cat)}
+                className={`px-3 py-2 text-xs whitespace-nowrap transition-colors border-b-2 ${
+                  activeCategory === cat
+                    ? "border-[#0F766E] text-[#0F766E] font-semibold bg-[#EEF8F7]"
+                    : "border-transparent text-[var(--color-ink-500)] font-medium hover:text-[var(--color-ink-700)]"
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Test list */}
+        <div className="p-4 flex flex-col gap-1.5 overflow-y-auto">
+          {items.map((item) => {
+            const checked = selected.has(item.name);
+            const alreadyAdded = existing.includes(item.name);
+            return (
+              <label
+                key={item.name}
+                className={`flex items-center gap-2.5 px-3 py-2 rounded-lg border text-xs cursor-pointer transition-colors ${
+                  alreadyAdded
+                    ? "border-[var(--color-border)] bg-[var(--color-surface-sunken)] text-[var(--color-ink-300)] cursor-not-allowed"
+                    : checked
+                    ? "border-[#B2DEDA] bg-[#EEF8F7] text-[var(--color-ink-800)]"
+                    : "border-[var(--color-border)] text-[var(--color-ink-700)] hover:border-[#B2DEDA] hover:bg-[#EEF8F7]/40"
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={checked || alreadyAdded}
+                  disabled={alreadyAdded}
+                  onChange={() => toggle(item.name)}
+                  className="accent-[#0F766E]"
+                />
+                {item.name}
+                {alreadyAdded && <span className="ml-auto text-[10px] italic">Added</span>}
+              </label>
+            );
+          })}
+          {items.length === 0 && (
+            <p className="text-xs text-[var(--color-ink-400)] text-center py-6">No matching investigations.</p>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="px-5 py-3.5 border-t border-[var(--color-border)] flex items-center justify-between gap-3 shrink-0">
+          <span className="text-xs text-[var(--color-ink-400)]">{selected.size} selected</span>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-1.5 rounded-xl border border-[var(--color-border)] text-xs font-medium text-[var(--color-ink-500)] hover:bg-[var(--color-surface-sunken)] transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              disabled={selected.size === 0}
+              onClick={() => onAdd([...selected])}
+              className="px-4 py-1.5 rounded-xl bg-[#0F766E] text-white text-xs font-semibold hover:bg-[#0D6862] disabled:opacity-40 transition-colors"
+            >
+              Add {selected.size > 0 ? selected.size : ""}
             </button>
           </div>
         </div>

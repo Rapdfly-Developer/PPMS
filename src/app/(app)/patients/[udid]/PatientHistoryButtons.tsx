@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useRef } from "react";
+import { useState, useTransition, useRef, useEffect } from "react";
 import { format } from "date-fns";
 import { X, FlaskConical, Pill, Glasses, Loader2, ChevronDown, ChevronUp, Upload, Camera, Eye } from "lucide-react";
 import { parseJSON } from "@/lib/json";
@@ -163,9 +163,11 @@ function InvestigationsDrawer({
   const [isPending, start] = useTransition();
   const [lightbox, setLightbox] = useState<string | null>(null);
 
-  if (open && data === null && !isPending) {
+  useEffect(() => {
+    if (!open || data !== null || isPending) return;
     start(async () => setData(await getPatientInvestigations(patientId)));
-  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, data]);
 
   const catPalette = (category: string) => {
     const k = (category ?? "").toLowerCase();
@@ -195,11 +197,11 @@ function InvestigationsDrawer({
               {v.hospitalName && <span className="text-[10px] text-[var(--color-ink-300)]">· {v.hospitalName}</span>}
               <div className="flex-1 h-px bg-[var(--color-border)]" />
             </div>
-            {/* Orders timeline — show only the most recent order per date */}
+            {/* Orders timeline — one entry per investigation ordered that date */}
             <ul className="space-y-0">
-              {v.orders.slice(-1).map((o, idx) => {
+              {v.orders.map((o, idx) => {
                 const p = catPalette(o.category);
-                const isLast = true;
+                const isLast = idx === v.orders.length - 1;
                 return (
                   <li key={o.id} className="flex gap-3">
                     <div className="flex flex-col items-center shrink-0">
@@ -292,12 +294,14 @@ function TreatmentDrawer({
   const [data, setData] = useState<TreatVisit[] | null>(null);
   const [isPending, start] = useTransition();
 
-  if (open && data === null && !isPending) {
+  useEffect(() => {
+    if (!open || data !== null || isPending) return;
     start(async () => {
       const res = await getPatientTreatmentHistory(patientId);
       setData(res);
     });
-  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, data]);
 
   const DIAG_STATUS: Record<string, string> = {
     ACTIVE: "bg-red-100 text-red-700",
@@ -464,7 +468,8 @@ function SpectacleDrawer({
   const [pinned, setPinned] = useState<string | null>(null);
 
   // Load data and initialise pin from localStorage
-  if (open && data === null && !isPending) {
+  useEffect(() => {
+    if (!open || data !== null || isPending) return;
     start(async () => {
       const res = await getPatientSpectacleHistory(patientId);
       setData(res);
@@ -472,7 +477,8 @@ function SpectacleDrawer({
       // Only restore an explicit user selection — never auto-pin
       setPinned(stored ?? null);
     });
-  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, data]);
 
   const togglePin = (visitId: string) => {
     const next = pinned === visitId ? null : visitId;

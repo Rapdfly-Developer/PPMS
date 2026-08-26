@@ -210,6 +210,7 @@ export default async function PatientProfilePage({
       diagnoses:      diags,
       medications:    meds,
       investigations: filteredOrders.map((o) => ({ ...o, createdAt: o.createdAt.toISOString() })),
+      followUpDate:   lastPastVisit.followUpDate ? lastPastVisit.followUpDate.toISOString() : null,
     };
   }
 

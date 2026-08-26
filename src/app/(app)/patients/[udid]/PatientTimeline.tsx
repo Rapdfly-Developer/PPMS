@@ -72,6 +72,10 @@ function fullTime(iso: string) {
   return format(new Date(iso), "d MMM yyyy, h:mm a");
 }
 
+function timeOnly(date: Date) {
+  return format(date, "h:mm a");
+}
+
 /* ── EventDetail ─────────────────────────────────────────────────────────────── */
 function EventDetail({ ev }: { ev: TimelineEvent }) {
   const d = ev.detail;
@@ -102,7 +106,7 @@ function EventDetail({ ev }: { ev: TimelineEvent }) {
                     <Clock size={11} className="shrink-0" /> Appointment Booked
                   </span>
                   <span className="font-semibold text-[var(--color-ink-800)]">
-                    {format(new Date(d.bookedAt), "d MMM yyyy, h:mm a")}
+                    {timeOnly(new Date(d.bookedAt))}
                   </span>
                 </div>
               )}
@@ -112,7 +116,7 @@ function EventDetail({ ev }: { ev: TimelineEvent }) {
                     <Calendar size={11} className="shrink-0" /> Appointment Time
                   </span>
                   <span className="font-semibold text-[var(--color-ink-800)]">
-                    {format(new Date(d.scheduledAt), "d MMM yyyy, h:mm a")}
+                    {timeOnly(new Date(d.scheduledAt))}
                   </span>
                 </div>
               )}
@@ -122,7 +126,7 @@ function EventDetail({ ev }: { ev: TimelineEvent }) {
                     <LogIn size={11} className="shrink-0" /> Arrived at Clinic
                   </span>
                   <span className="font-semibold text-[var(--color-ink-800)]">
-                    {format(arrivedAt, "d MMM yyyy, h:mm a")}
+                    {timeOnly(arrivedAt)}
                   </span>
                 </div>
               )}
@@ -136,7 +140,7 @@ function EventDetail({ ev }: { ev: TimelineEvent }) {
                     )}
                   </span>
                   <span className="font-semibold text-[var(--color-ink-800)]">
-                    {format(seenAt, "d MMM yyyy, h:mm a")}
+                    {timeOnly(seenAt)}
                   </span>
                 </div>
               )}
@@ -146,7 +150,7 @@ function EventDetail({ ev }: { ev: TimelineEvent }) {
                     <AlertCircle size={11} className="shrink-0" /> Partial Dispense
                   </span>
                   <span className="font-semibold text-amber-700">
-                    {format(new Date(d.partialDispenseAt), "d MMM yyyy, h:mm a")}
+                    {timeOnly(new Date(d.partialDispenseAt))}
                   </span>
                 </div>
               )}
@@ -162,7 +166,7 @@ function EventDetail({ ev }: { ev: TimelineEvent }) {
                     )}
                   </span>
                   <span className="font-semibold text-emerald-700">
-                    {format(finalizedAt, "d MMM yyyy, h:mm a")}
+                    {timeOnly(finalizedAt)}
                   </span>
                 </div>
               )}
@@ -175,31 +179,24 @@ function EventDetail({ ev }: { ev: TimelineEvent }) {
 
   if (ev.type === "INVESTIGATION") return (
     <div className="mt-3 space-y-2">
-      {d.orders?.map((o) => (
-        <div key={o.id} className="text-xs bg-white rounded-lg px-3 py-2.5 border border-violet-100">
-          <div className="flex items-center justify-between gap-2 mb-1.5">
-            <span className="font-medium text-[var(--color-ink-800)]">{o.testName}</span>
-            <div className="flex items-center gap-2 shrink-0">
-              {o.laterality && <span className="text-[var(--color-ink-400)]">{o.laterality}</span>}
-              <StatusBadge status={o.status} />
-            </div>
-          </div>
-          <div className="flex flex-col gap-0.5">
-            {o.orderedAt && (
-              <span className="flex items-center gap-1.5 text-[10px] text-[var(--color-ink-400)]">
-                <Clock size={9} className="shrink-0 text-violet-400" />
-                Ordered: {format(new Date(o.orderedAt), "d MMM yyyy, h:mm a")}
-              </span>
+      {d.orders?.map((o) => {
+        const hasReport = !!o.reportUpdatedAt;
+        const time = hasReport ? o.reportUpdatedAt : o.orderedAt;
+        return (
+          <div key={o.id} className="flex items-center gap-2 text-xs bg-white rounded-lg px-3 py-2.5 border border-violet-100">
+            {o.laterality && (
+              <span className="shrink-0 text-[10px] font-bold text-violet-600">{o.laterality}</span>
             )}
-            {o.reportUpdatedAt && (
-              <span className="flex items-center gap-1.5 text-[10px] text-emerald-600">
-                <CheckCircle2 size={9} className="shrink-0" />
-                Report updated: {format(new Date(o.reportUpdatedAt), "d MMM yyyy, h:mm a")}
+            <span className="flex-1 min-w-0 font-medium text-[var(--color-ink-800)] truncate">{o.testName}</span>
+            {time && (
+              <span className={`shrink-0 flex items-center gap-1 text-[10px] ${hasReport ? "text-emerald-600" : "text-[var(--color-ink-400)]"}`}>
+                {hasReport ? <CheckCircle2 size={9} className="shrink-0" /> : <Clock size={9} className="shrink-0" />}
+                {hasReport ? "Report updated" : "Ordered"}: {format(new Date(time), "d MMM yyyy, h:mm a")}
               </span>
             )}
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 
@@ -248,21 +245,6 @@ function EventDetail({ ev }: { ev: TimelineEvent }) {
   );
 
   return null;
-}
-
-function StatusBadge({ status }: { status: string }) {
-  const map: Record<string, { label: string; cls: string; Icon: React.ElementType }> = {
-    ORDERED:          { label: "Ordered",     cls: "bg-blue-100 text-blue-700",       Icon: Clock },
-    IN_PROGRESS:      { label: "In Progress", cls: "bg-amber-100 text-amber-700",     Icon: Clock },
-    RESULT_AVAILABLE: { label: "Result",      cls: "bg-emerald-100 text-emerald-700", Icon: CheckCircle2 },
-    REVIEWED:         { label: "Reviewed",    cls: "bg-teal-100 text-teal-700",       Icon: CheckCircle2 },
-  };
-  const cfg = map[status] ?? { label: status, cls: "bg-slate-100 text-slate-600", Icon: AlertCircle };
-  return (
-    <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${cfg.cls}`}>
-      <cfg.Icon size={9} />{cfg.label}
-    </span>
-  );
 }
 
 /* ── Single event card (calendar day view) ───────────────────────────────────── */
@@ -526,13 +508,15 @@ export function PatientTimelineModal({
   const [showFilters,    setShowFilters]    = useState(false);
 
   // Load once when first opened
-  if (open && !loaded && !isPending) {
+  useEffect(() => {
+    if (!open || loaded || isPending) return;
     startTrans(async () => {
       const data = await getPatientTimeline(patientId);
       setEvents(data);
       setLoaded(true);
     });
-  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, loaded]);
 
   // After load: if today has no events, jump to the most recent event date
   useEffect(() => {
