@@ -66,11 +66,15 @@ const STATUS_CFG: Record<string, { label: string; color: string; dot: string }> 
   PARTIAL_DISPENSE: { label: "Partial Dispense",color: "bg-orange-100 text-orange-700",dot: "bg-orange-500" },
 };
 
-const STATUS_FILTERS = [
-  { key: "ALL",       label: "All"       },
-  { key: "CONFIRMED", label: "Waiting"   },
-  { key: "DISPENSED", label: "Dispensed" },
+const VISIT_TYPE_FILTERS = [
+  { key: "ALL",         label: "All"         },
+  { key: "WALK_IN",     label: "Walk-in"     },
+  { key: "General OPD", label: "General OPD" },
+  { key: "Follow-up",   label: "Follow-up"   },
+  { key: "Emergency",   label: "Emergency"   },
 ] as const;
+
+type VisitTypeFilterKey = typeof VISIT_TYPE_FILTERS[number]["key"];
 
 /* ── Live waiting timer ─────────────────────────────────────────────────── */
 function LiveTimer({ since }: { since: string }) {
@@ -323,7 +327,7 @@ export function DashboardClient({
 }: DashboardProps) {
   const router = useRouter();
   const [selectedFilter, setSelectedFilter] = useState<string>("all");
-  const [statusFilter, setStatusFilter]     = useState<string>("ALL");
+  const [statusFilter, setStatusFilter]     = useState<VisitTypeFilterKey>("ALL");
   const [movingId, setMovingId]             = useState<string | null>(null);
   const [greetHour, setGreetHour]           = useState<number | null>(null);
   const [, startMove]                       = useTransition();
@@ -466,13 +470,13 @@ export function DashboardClient({
           </h2>
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1 flex-wrap">
-              {STATUS_FILTERS.map(({ key, label }) => {
+              {VISIT_TYPE_FILTERS.map(({ key, label }) => {
                 const queueAppts = filteredAppts.filter((a) => !["REQUESTED", "DISPENSED", "PARTIAL_DISPENSE", "CANCELLED", "NO_SHOW", "RESCHEDULED"].includes(a.status));
                 const count = key === "ALL"
                   ? queueAppts.length
-                  : key === "DISPENSED"
-                    ? filteredAppts.filter((a) => a.status === "DISPENSED").length
-                    : queueAppts.filter((a) => a.status === key).length;
+                  : key === "WALK_IN"
+                    ? queueAppts.filter((a) => a.isWalkIn).length
+                    : queueAppts.filter((a) => a.visitType === key).length;
                 return (
                   <button
                     key={key}
@@ -519,7 +523,11 @@ export function DashboardClient({
         ) : (
           <div className="grid grid-cols-1 gap-4">
             {queueGroups.map(({ id, name, logoUrl, appts: gAppts, dispensed }) => {
-              const displayed = statusFilter === "ALL" ? gAppts : gAppts.filter((a) => a.status === statusFilter);
+              const displayed = statusFilter === "ALL"
+                ? gAppts
+                : statusFilter === "WALK_IN"
+                  ? gAppts.filter((a) => a.isWalkIn)
+                  : gAppts.filter((a) => a.visitType === statusFilter);
               return (
                 <div key={id} className="surface-card p-4 flex flex-col gap-3">
                   <div className="flex items-center justify-between gap-2">
