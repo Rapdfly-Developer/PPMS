@@ -72,6 +72,10 @@ function fullTime(iso: string) {
   return format(new Date(iso), "d MMM yyyy, h:mm a");
 }
 
+function timeOnly(date: Date) {
+  return format(date, "h:mm a");
+}
+
 /* ── EventDetail ─────────────────────────────────────────────────────────────── */
 function EventDetail({ ev }: { ev: TimelineEvent }) {
   const d = ev.detail;
@@ -102,7 +106,7 @@ function EventDetail({ ev }: { ev: TimelineEvent }) {
                     <Clock size={11} className="shrink-0" /> Appointment Booked
                   </span>
                   <span className="font-semibold text-[var(--color-ink-800)]">
-                    {format(new Date(d.bookedAt), "d MMM yyyy, h:mm a")}
+                    {timeOnly(new Date(d.bookedAt))}
                   </span>
                 </div>
               )}
@@ -112,7 +116,7 @@ function EventDetail({ ev }: { ev: TimelineEvent }) {
                     <Calendar size={11} className="shrink-0" /> Appointment Time
                   </span>
                   <span className="font-semibold text-[var(--color-ink-800)]">
-                    {format(new Date(d.scheduledAt), "d MMM yyyy, h:mm a")}
+                    {timeOnly(new Date(d.scheduledAt))}
                   </span>
                 </div>
               )}
@@ -122,7 +126,7 @@ function EventDetail({ ev }: { ev: TimelineEvent }) {
                     <LogIn size={11} className="shrink-0" /> Arrived at Clinic
                   </span>
                   <span className="font-semibold text-[var(--color-ink-800)]">
-                    {format(arrivedAt, "d MMM yyyy, h:mm a")}
+                    {timeOnly(arrivedAt)}
                   </span>
                 </div>
               )}
@@ -136,7 +140,7 @@ function EventDetail({ ev }: { ev: TimelineEvent }) {
                     )}
                   </span>
                   <span className="font-semibold text-[var(--color-ink-800)]">
-                    {format(seenAt, "d MMM yyyy, h:mm a")}
+                    {timeOnly(seenAt)}
                   </span>
                 </div>
               )}
@@ -146,7 +150,7 @@ function EventDetail({ ev }: { ev: TimelineEvent }) {
                     <AlertCircle size={11} className="shrink-0" /> Partial Dispense
                   </span>
                   <span className="font-semibold text-amber-700">
-                    {format(new Date(d.partialDispenseAt), "d MMM yyyy, h:mm a")}
+                    {timeOnly(new Date(d.partialDispenseAt))}
                   </span>
                 </div>
               )}
@@ -162,7 +166,7 @@ function EventDetail({ ev }: { ev: TimelineEvent }) {
                     )}
                   </span>
                   <span className="font-semibold text-emerald-700">
-                    {format(finalizedAt, "d MMM yyyy, h:mm a")}
+                    {timeOnly(finalizedAt)}
                   </span>
                 </div>
               )}
