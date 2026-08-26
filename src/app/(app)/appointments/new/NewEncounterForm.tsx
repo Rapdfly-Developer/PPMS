@@ -5,12 +5,34 @@ import { useSearchParams } from "next/navigation";
 import {
   Search, Stethoscope, UserPlus, Users,
   User, Phone, FileText, CalendarDays,
-  Building2, AlertCircle,
+  Building2, AlertCircle, Download, Loader2,
 } from "lucide-react";
 import { BackButton } from "@/components/ui/BackButton";
 import { SmartUploadBox, type UploadedFile } from "@/components/ui/SmartUploadBox";
 import { createWalkInEncounter } from "./actions";
+import { getLastVisitCC } from "@/app/(app)/appointments/book/actions";
 import { ComplaintCombobox } from "@/components/ui/ComplaintCombobox";
+
+function sinceToDays(sinceStr: string): number {
+  const m = sinceStr.match(/(\d+)\s*(days?|weeks?|months?|years?)/i);
+  if (!m) return 0;
+  const n = parseInt(m[1]);
+  const u = m[2].toLowerCase();
+  if (u.startsWith("day")) return n;
+  if (u.startsWith("week")) return n * 7;
+  if (u.startsWith("month")) return n * 30;
+  if (u.startsWith("year")) return n * 365;
+  return 0;
+}
+
+function daysToParts(days: number): { num: string; unit: string } {
+  if (days <= 30) return { num: String(days), unit: "days" };
+  const weeks = Math.round(days / 7);
+  if (weeks <= 30) return { num: String(weeks), unit: "weeks" };
+  const months = Math.round(days / 30);
+  if (months <= 30) return { num: String(months), unit: "months" };
+  return { num: String(Math.min(30, Math.round(days / 365))), unit: "years" };
+}
 
 const VISIT_TYPES = [
   "General OPD",
@@ -80,6 +102,39 @@ export function NewEncounterForm({
   const [visitType, setVisitType] = useState("General OPD");
   const hospitalId = autoHospital?.id ?? "";
   const [error, setError] = useState("");
+  const [importing, setImporting] = useState(false);
+
+  async function handleImportPrevCC() {
+    if (!selectedPatient) return;
+    setImporting(true);
+    try {
+      const data = await getLastVisitCC(selectedPatient.id);
+      if (!data) return;
+      const parts = data.notes.split(" | ");
+      let lat = "";
+      let text = "";
+      let prevSinceDays = 0;
+      if (parts.length >= 3 && ["RE", "LE", "OU"].includes(parts[0].trim())) {
+        lat = parts[0].trim();
+        const sinceMatch = parts[1].match(/Since:\s*(.+)/i);
+        if (sinceMatch) prevSinceDays = sinceToDays(sinceMatch[1].trim());
+        text = parts.slice(2).join(" | ").trim();
+      } else {
+        text = data.notes;
+      }
+      const elapsed = Math.max(0, Math.round((Date.now() - new Date(data.visitDate).getTime()) / 86_400_000));
+      const totalDays = prevSinceDays + elapsed;
+      const { num, unit } = daysToParts(totalDays);
+      if (lat) setLaterality(lat);
+      if (text) setComplaint(text);
+      setSinceNum(num);
+      setSinceUnit(unit);
+    } catch {
+      // silently ignore — fields remain as-is
+    } finally {
+      setImporting(false);
+    }
+  }
 
   const filtered = search.trim()
     ? patients.filter(
@@ -407,7 +462,20 @@ export function NewEncounterForm({
 
             {/* Chief Complaint */}
             <div>
-              <FieldLabel icon={<FileText size={12} />}>Chief Complaint *</FieldLabel>
+              <div className="flex items-center justify-between mb-1.5">
+                <FieldLabel icon={<FileText size={12} />}>Chief Complaint *</FieldLabel>
+                {visitType === "Follow-up" && patientMode === "existing" && selectedPatient && (
+                  <button
+                    type="button"
+                    onClick={handleImportPrevCC}
+                    disabled={importing}
+                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold border border-[var(--color-primary-200)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] disabled:opacity-60 transition-colors"
+                  >
+                    {importing ? <Loader2 size={11} className="animate-spin" /> : <Download size={11} />}
+                    {importing ? "Importing…" : "Import from last visit"}
+                  </button>
+                )}
+              </div>
               <div className="flex items-center justify-between gap-3 mt-1.5 mb-2">
                 {/* Laterality pills */}
                 <div className="flex gap-1.5">
