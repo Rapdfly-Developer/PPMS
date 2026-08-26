@@ -17,12 +17,14 @@ import {
   TH, TD, TD_MUTED,
 } from "./VisitSummaryTabs";
 import { transferPatient } from "../actions";
+import { convertNotesToCC } from "@/lib/appointment-cc";
 export { TimeStampButton } from "./PatientTimeline";
 
 /* ── Chief complaint parser (mirrors GeneralExamTab storage format) ──────────
-   Stored as "[RE] [3 days] Redness | [LE] Watering"                          */
+   Stored as "[RE] [3 days] Redness | [LE] Watering". Appointment booking
+   saves "RE | Since: 1 days | text" — convertNotesToCC normalises that first. */
 function parseComplaints(raw: string) {
-  return raw.split("|").map((s) => s.trim()).filter(Boolean).map((seg) => {
+  return convertNotesToCC(raw).split("|").map((s) => s.trim()).filter(Boolean).map((seg) => {
     let rest = seg;
     const latM = rest.match(/^\[(RE|LE|OU)\]\s*/);
     const lat = latM ? latM[1] : null;
