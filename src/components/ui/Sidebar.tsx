@@ -7,7 +7,7 @@ import {
   LayoutDashboard, CalendarDays, Users, Eye,
   BedDouble, Settings, X,
   CalendarClock, BarChart2, Lock,
-  CreditCard, Scissors, HeartHandshake,
+  CreditCard, Scissors, HeartHandshake, LayoutGrid,
 } from "lucide-react";
 import clsx from "clsx";
 import type { Role } from "@/lib/constants";
@@ -26,6 +26,7 @@ type TopNavItem = NavItem & { icon: any };
 type NavEntry = TopNavItem;
 
 const ALL_NAV: NavEntry[] = [
+  { href: "/overview",     label: "Dashboard",    icon: LayoutGrid,      permission: "dashboard.view"                                        },
   { href: "/dashboard",    label: "OPD",          icon: LayoutDashboard, permission: "dashboard.view"                                        },
   { href: "/appointments", label: "Appointments", icon: CalendarDays,    permission: "appointments.view", roles: ["DOCTOR", "HOSPITAL"]      },
   { href: "/patients",     label: "Patients",     icon: Users,           permission: "patients.view"                                         },
