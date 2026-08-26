@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Sparkles, Loader2, Activity, AlertCircle, FileText } from "lucide-react";
-import { formatComplaintDisplay } from "@/lib/appointment-cc";
+import { formatComplaintDisplay, convertNotesToCC } from "@/lib/appointment-cc";
 import { getVisitEmrData } from "./emr-viewer-action";
 import { generateAiSummary } from "@/app/(app)/patients/actions";
 
@@ -321,7 +321,7 @@ function parseJSON<T>(val: string | null | undefined, fallback: T): T {
 }
 
 function parseComplaints(raw: string) {
-  return raw.split("|").map((s) => s.trim()).filter(Boolean).map((seg) => {
+  return convertNotesToCC(raw).split("|").map((s) => s.trim()).filter(Boolean).map((seg) => {
     let rest = seg;
     const latM = rest.match(/^\[(RE|LE|OU)\]\s*/);
     const lat = latM ? latM[1] : null;
@@ -374,6 +374,11 @@ function LongContent({
 
   return (
     <div className="space-y-4">
+
+      {/* Visit type chip */}
+      {data.visitType && (
+        <span className="inline-block px-2 py-0.5 rounded-full text-[11px] font-medium bg-[var(--color-primary-50)] text-[var(--color-primary-600)]">{data.visitType}</span>
+      )}
 
       {/* Chief Complaint — inline single line */}
       {g?.chiefComplaint && (
