@@ -508,13 +508,15 @@ export function PatientTimelineModal({
   const [showFilters,    setShowFilters]    = useState(false);
 
   // Load once when first opened
-  if (open && !loaded && !isPending) {
+  useEffect(() => {
+    if (!open || loaded || isPending) return;
     startTrans(async () => {
       const data = await getPatientTimeline(patientId);
       setEvents(data);
       setLoaded(true);
     });
-  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, loaded]);
 
   // After load: if today has no events, jump to the most recent event date
   useEffect(() => {
