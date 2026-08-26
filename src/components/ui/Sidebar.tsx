@@ -138,7 +138,7 @@ export function Sidebar({
   }, [open]);
 
   useEffect(() => {
-    const onResize = () => { if (window.innerWidth >= 1024) close(); };
+    const onResize = () => { if (window.innerWidth > 1024) close(); };
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, [close]);
@@ -149,7 +149,7 @@ export function Sidebar({
       <div
         aria-hidden
         onClick={close}
-        className="lg:hidden"
+        className="min-[1025px]:hidden"
         style={{
           position: "fixed", inset: 0, zIndex: 40,
           background: "rgba(0,0,0,0.5)", backdropFilter: "blur(2px)",
@@ -201,7 +201,7 @@ export function Sidebar({
           <button
             onClick={close}
             aria-label="Close menu"
-            className="lg:hidden"
+            className="min-[1025px]:hidden"
             style={{ flexShrink: 0, padding: 6, borderRadius: 8, color: "#7FAAA3", background: "transparent", border: "none", cursor: "pointer", display: "flex", alignItems: "center" }}
           >
             <X size={17} />
@@ -260,7 +260,7 @@ export function Sidebar({
       </aside>
 
       <style>{`
-        @media (max-width: 1023px) {
+        @media (max-width: 1024px) {
           [data-sidebar] {
             position: fixed !important;
             top: 0 !important;
@@ -270,7 +270,7 @@ export function Sidebar({
             z-index: 50 !important;
           }
         }
-        @media (min-width: 1024px) {
+        @media (min-width: 1025px) {
           [data-sidebar] {
             position: sticky !important;
             transform: translateX(0) !important;

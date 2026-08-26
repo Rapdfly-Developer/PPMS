@@ -203,11 +203,11 @@ export function TopBar({ name, role }: { name: string; role: string }) {
   return (
     <header className="h-14 shrink-0 flex items-center gap-2 px-4 lg:px-6 bg-white border-b border-[var(--color-border)] z-30 relative">
 
-      {/* Hamburger — mobile + tablet */}
+      {/* Hamburger — mobile + tablet (≤1024px) */}
       <button
         onClick={toggle}
         aria-label="Open menu"
-        className="lg:hidden shrink-0 p-1.5 rounded-lg text-[var(--color-ink-500)] hover:text-[var(--color-ink-800)] hover:bg-[var(--color-surface-sunken)] transition-colors"
+        className="min-[1025px]:hidden shrink-0 p-1.5 rounded-lg text-[var(--color-ink-500)] hover:text-[var(--color-ink-800)] hover:bg-[var(--color-surface-sunken)] transition-colors"
       >
         <Menu size={20} />
       </button>
