@@ -107,7 +107,8 @@ export function Cols({ widths }: { widths: string[] }) {
   );
 }
 
-export function VisitSummaryTabs({ visitId, complaint, diagnoses, shortContent, bare }: Props) {
+/* ─── Shared state hook (used by both the combined and split renderings) ─── */
+export function useVisitSummaryState(visitId: string) {
   const [tab, setTab] = useState<Tab>("short");
   const [emrData, setEmrData] = useState<any>(null);
   const [aiText, setAiText] = useState<string | null>(null);
@@ -146,52 +147,114 @@ export function VisitSummaryTabs({ visitId, complaint, diagnoses, shortContent, 
     }
   }
 
+  return { tab, switchTab, loading, emrData, aiText, aiSource, aiNotice, aiError };
+}
+
+/* ─── Standalone tab bar (compact variant for embedding in card headers) ─── */
+export function VisitSummaryTabBar({
+  tab,
+  switchTab,
+  loading,
+  compact = false,
+}: {
+  tab: Tab;
+  switchTab: (t: Tab) => void;
+  loading: boolean;
+  compact?: boolean;
+}) {
+  return (
+    <div className={`inline-flex items-center gap-0.5 rounded-md bg-[var(--color-surface-sunken)] ${compact ? "p-[2px]" : "p-0.5"}`}>
+      {(["short", "long", "ai"] as const).map((t) => (
+        <button
+          key={t}
+          disabled={loading}
+          onClick={() => switchTab(t)}
+          className={`
+            relative flex items-center gap-0.5 rounded
+            transition-all duration-150 disabled:cursor-not-allowed
+            ${compact ? "px-2 py-0.5 text-[10px]" : "px-3 py-1.5 text-[11px]"}
+            font-semibold
+            ${tab === t
+              ? t === "ai"
+                ? "bg-white shadow-sm text-violet-700 shadow-violet-100"
+                : "bg-white shadow-sm text-[var(--color-ink-800)]"
+              : "text-[var(--color-ink-400)] hover:text-[var(--color-ink-600)]"
+            }
+          `}
+        >
+          {t === "ai" && (
+            <Sparkles
+              size={compact ? 8 : 10}
+              className={tab === "ai" ? "text-violet-500" : "text-[var(--color-ink-300)]"}
+            />
+          )}
+          {t === "short" ? "Short" : t === "long" ? "Long" : "AI"}
+          {!compact && " Summary"}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/* ─── Standalone tab body ─── */
+export function VisitSummaryTabBody({
+  tab,
+  loading,
+  emrData,
+  aiText,
+  aiSource,
+  aiNotice,
+  aiError,
+  complaint,
+  diagnoses,
+  shortContent,
+}: {
+  tab: Tab;
+  loading: boolean;
+  emrData: any;
+  aiText: string | null;
+  aiSource: "claude" | "local";
+  aiNotice: string | null;
+  aiError: string | null;
+  complaint: string | null;
+  diagnoses: string[];
+  shortContent?: React.ReactNode;
+}) {
   const diagText = diagnoses.filter(Boolean).join(", ");
+  if (loading) {
+    return (
+      <div className="flex items-center gap-2 py-2 text-[11px] text-[var(--color-ink-400)]">
+        <Loader2 size={13} className="animate-spin shrink-0" />
+        {tab === "ai" ? "Generating AI summary…" : "Loading visit details…"}
+      </div>
+    );
+  }
+  return (
+    <div className="animate-fade-in">
+      {tab === "short" && (shortContent ?? <ShortContent complaint={complaint} diagText={diagText} />)}
+      {tab === "long" && <LongContent data={emrData} complaint={complaint} diagText={diagText} />}
+      {tab === "ai" && <AIContent text={aiText} error={aiError} source={aiSource} notice={aiNotice} />}
+    </div>
+  );
+}
+
+export function VisitSummaryTabs({ visitId, complaint, diagnoses, shortContent, bare }: Props) {
+  const state = useVisitSummaryState(visitId);
+  const { tab, switchTab, loading, emrData, aiText, aiSource, aiNotice, aiError } = state;
 
   return (
     <div className={bare ? "" : "border-t border-[var(--color-border)] pt-3"}>
       {/* Segmented tab selector */}
-      <div className="inline-flex items-center gap-0.5 p-0.5 rounded-lg bg-[var(--color-surface-sunken)] mb-3">
-        {(["short", "long", "ai"] as const).map((t) => (
-          <button
-            key={t}
-            disabled={loading}
-            onClick={() => switchTab(t)}
-            className={`
-              relative flex items-center gap-1 px-3 py-1.5 rounded-md text-[11px] font-semibold
-              transition-all duration-150 disabled:cursor-not-allowed
-              ${tab === t
-                ? t === "ai"
-                  ? "bg-white shadow-sm text-violet-700 shadow-violet-100"
-                  : "bg-white shadow-sm text-[var(--color-ink-800)]"
-                : "text-[var(--color-ink-400)] hover:text-[var(--color-ink-600)]"
-              }
-            `}
-          >
-            {t === "ai" && (
-              <Sparkles
-                size={10}
-                className={tab === "ai" ? "text-violet-500" : "text-[var(--color-ink-300)]"}
-              />
-            )}
-            {t === "short" ? "Short" : t === "long" ? "Long" : "AI"} Summary
-          </button>
-        ))}
+      <div className="mb-3">
+        <VisitSummaryTabBar tab={tab} switchTab={switchTab} loading={loading} />
       </div>
 
       {/* Body */}
-      {loading ? (
-        <div className="flex items-center gap-2 py-2 text-[11px] text-[var(--color-ink-400)]">
-          <Loader2 size={13} className="animate-spin shrink-0" />
-          {tab === "ai" ? "Generating AI summary…" : "Loading visit details…"}
-        </div>
-      ) : (
-        <div className="animate-fade-in">
-          {tab === "short" && (shortContent ?? <ShortContent complaint={complaint} diagText={diagText} />)}
-          {tab === "long" && <LongContent data={emrData} complaint={complaint} diagText={diagText} />}
-          {tab === "ai" && <AIContent text={aiText} error={aiError} source={aiSource} notice={aiNotice} />}
-        </div>
-      )}
+      <VisitSummaryTabBody
+        tab={tab} loading={loading} emrData={emrData}
+        aiText={aiText} aiSource={aiSource} aiNotice={aiNotice} aiError={aiError}
+        complaint={complaint} diagnoses={diagnoses} shortContent={shortContent}
+      />
     </div>
   );
 }

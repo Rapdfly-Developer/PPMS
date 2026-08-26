@@ -12,7 +12,8 @@ import {
 } from "lucide-react";
 import { EmrViewerButton, VisitDownloadButton } from "./EmrViewerModal";
 import {
-  VisitSummaryTabs, Block, DataTable, Cols, DASH,
+  VisitSummaryTabs, useVisitSummaryState, VisitSummaryTabBar, VisitSummaryTabBody,
+  Block, DataTable, Cols, DASH,
   TH, TD, TD_MUTED,
 } from "./VisitSummaryTabs";
 import { transferPatient } from "../actions";
@@ -383,16 +384,23 @@ function PreviousVisitsPanel({ visits, udid }: { visits: SerialVisit[]; udid: st
 
 /* ── Last Visit Summary section ─────────────────────────────────────────────── */
 function LastVisitSummarySection({ summary }: { summary: LastVisitSummary }) {
+  const tabState = useVisitSummaryState(summary.id);
   return (
     <div className="mt-4 space-y-3">
       {/* ── Last Visit Summary ── */}
       <div className="rounded-xl border border-[var(--color-border)] bg-white overflow-hidden">
-        <div className="px-4 py-2.5 border-b border-[var(--color-border)] flex items-center justify-between gap-2">
-          <div className="flex items-center gap-1.5 min-w-0">
+        <div className="px-4 py-2 border-b border-[var(--color-border)] flex items-center justify-between gap-2 flex-wrap">
+          <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
             <Activity size={13} className="text-[var(--color-primary-600)] shrink-0" />
             <span className="text-xs font-semibold text-[var(--color-ink-800)]">Last Visit Summary</span>
-            <span className="text-[var(--color-ink-300)] text-xs">·</span>
-            <span className="text-xs text-[var(--color-ink-400)]">{format(new Date(summary.date), "dd MMM yyyy")}</span>
+            <span className="text-[var(--color-ink-300)] text-[10px]">·</span>
+            <span className="text-[10px] text-[var(--color-ink-400)]">{format(new Date(summary.date), "dd MMM yyyy")}</span>
+            <VisitSummaryTabBar
+              tab={tabState.tab}
+              switchTab={tabState.switchTab}
+              loading={tabState.loading}
+              compact
+            />
           </div>
           {summary.hospitalName && (
             <span className="flex items-center gap-1 text-[11px] text-[var(--color-ink-400)] shrink-0">
@@ -403,9 +411,14 @@ function LastVisitSummarySection({ summary }: { summary: LastVisitSummary }) {
 
         <div className="px-4 py-3 space-y-3">
 
-          <VisitSummaryTabs
-            bare
-            visitId={summary.id}
+          <VisitSummaryTabBody
+            tab={tabState.tab}
+            loading={tabState.loading}
+            emrData={tabState.emrData}
+            aiText={tabState.aiText}
+            aiSource={tabState.aiSource}
+            aiNotice={tabState.aiNotice}
+            aiError={tabState.aiError}
             complaint={summary.chiefComplaint}
             diagnoses={summary.diagnoses.map((d) => d.description)}
             shortContent={
