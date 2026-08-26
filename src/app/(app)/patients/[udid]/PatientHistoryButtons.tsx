@@ -195,11 +195,11 @@ function InvestigationsDrawer({
               {v.hospitalName && <span className="text-[10px] text-[var(--color-ink-300)]">· {v.hospitalName}</span>}
               <div className="flex-1 h-px bg-[var(--color-border)]" />
             </div>
-            {/* Orders timeline — show only the most recent order per date */}
+            {/* Orders timeline — one entry per investigation ordered that date */}
             <ul className="space-y-0">
-              {v.orders.slice(-1).map((o, idx) => {
+              {v.orders.map((o, idx) => {
                 const p = catPalette(o.category);
-                const isLast = true;
+                const isLast = idx === v.orders.length - 1;
                 return (
                   <li key={o.id} className="flex gap-3">
                     <div className="flex flex-col items-center shrink-0">
