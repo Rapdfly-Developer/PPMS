@@ -446,26 +446,26 @@ function LastVisitSummarySection({ summary }: { summary: LastVisitSummary }) {
                 )}
 
                 {summary.diagnoses.length > 0 && (
-                  <Block label="Diagnoses">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      {[...summary.diagnoses]
-                        .sort((a, b) => {
-                          const ord: Record<string, number> = { ACTIVE: 0, CHRONIC: 1, RESOLVED: 2 };
-                          return (ord[a.status] ?? 3) - (ord[b.status] ?? 3);
-                        })
-                        .map((d) => {
-                          const palette =
-                            d.status === "RESOLVED" ? "bg-emerald-50 border-emerald-200 text-emerald-800"
-                            : d.status === "CHRONIC" ? "bg-amber-50 border-amber-200 text-amber-800"
-                            : "bg-red-50 border-red-200 text-red-800";
-                          return (
-                            <span key={d.id} className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-medium ${palette}`}>
-                              {[d.status, d.laterality, `${d.description}${d.provisional ? " (P)" : ""}`].filter(Boolean).join(" · ")}
-                            </span>
-                          );
-                        })}
-                    </div>
-                  </Block>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-ink-400)] shrink-0">Diagnoses</span>
+                    {[...summary.diagnoses]
+                      .sort((a, b) => {
+                        const ord: Record<string, number> = { ACTIVE: 0, CHRONIC: 1, RESOLVED: 2 };
+                        return (ord[a.status] ?? 3) - (ord[b.status] ?? 3);
+                      })
+                      .map((d) => (
+                        <span key={d.id} className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium border ${
+                          d.status === "RESOLVED" ? "bg-emerald-50 border-emerald-200 text-emerald-800"
+                          : d.status === "CHRONIC" ? "bg-amber-50 border-amber-200 text-amber-800"
+                          : "bg-red-50 border-red-200 text-red-800"
+                        }`}>
+                          <span className="font-bold text-[9px] uppercase opacity-70">{d.status}</span>
+                          {d.laterality && <span className="font-bold">· {d.laterality}</span>}
+                          · {d.description}
+                          {d.provisional && <span className="italic opacity-70">(P)</span>}
+                        </span>
+                      ))}
+                  </div>
                 )}
 
                 {summary.medications.length > 0 && (
