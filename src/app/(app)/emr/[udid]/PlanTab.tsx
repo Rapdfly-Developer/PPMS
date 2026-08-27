@@ -441,8 +441,9 @@ function PresetSelectDialog({
   onClose: () => void;
   applying: boolean;
 }) {
-  type FormMed = { drugName: string; dosage: string; frequency: string; duration: string };
-  const blankMed = (): FormMed => ({ drugName: "", dosage: "", frequency: "", duration: "" });
+  type TaperStep = { frequency: string; durationNum: string; durationUnit: string };
+  type FormMed = { drugName: string; dosage: string; frequency: string; duration: string; taperLevels: TaperStep[] };
+  const blankMed = (): FormMed => ({ drugName: "", dosage: "", frequency: "", duration: "", taperLevels: [] });
 
   const [selected, setSelected] = useState<Set<string>>(
     matches[0]?.preset.id ? new Set([matches[0].preset.id]) : new Set()
@@ -475,7 +476,7 @@ function PresetSelectDialog({
     setFormName(`Protocol ${matches.length + customPresets.length + 1}`);
     setFormMeds(
       base?.medications.length
-        ? base.medications.map((m) => ({ drugName: m.drugName, dosage: m.dosage ?? "", frequency: m.frequency ?? "", duration: m.duration ?? "" }))
+        ? base.medications.map((m) => ({ drugName: m.drugName, dosage: m.dosage ?? "", frequency: m.frequency ?? "", duration: m.duration ?? "", taperLevels: [] }))
         : [blankMed()]
     );
     setFormAdvice(base?.advice ?? "");
@@ -487,7 +488,7 @@ function PresetSelectDialog({
 
   const openEditForm = (preset: TreatmentPreset) => {
     setFormName(preset.name);
-    setFormMeds(preset.medications.map((m) => ({ drugName: m.drugName, dosage: m.dosage ?? "", frequency: m.frequency ?? "", duration: m.duration ?? "" })));
+    setFormMeds(preset.medications.map((m) => ({ drugName: m.drugName, dosage: m.dosage ?? "", frequency: m.frequency ?? "", duration: m.duration ?? "", taperLevels: [] })));
     setFormAdvice(preset.advice ?? "");
     setFormInvestigations(preset.investigations?.join(", ") ?? "");
     setFormFollowUp(preset.followUpDays ? String(preset.followUpDays) : "");
@@ -503,7 +504,11 @@ function PresetSelectDialog({
       name: formName.trim(),
       diagnosisCodes: matches.map((m) => m.diagnosisCode),
       diagnosisKeywords: [],
-      medications: meds.map((m) => ({ drugName: m.drugName.trim(), dosage: m.dosage || undefined, frequency: m.frequency || undefined, duration: m.duration || undefined })),
+      medications: meds.map((m) => {
+        const tapParts = m.taperLevels.filter((l) => l.frequency && l.durationNum).map((l) => `${l.frequency} × ${l.durationNum} ${l.durationUnit}`);
+        const tapStr   = tapParts.length ? ` → Taper: ${tapParts.join(" → ")}` : "";
+        return { drugName: m.drugName.trim(), dosage: m.dosage || undefined, frequency: m.frequency || undefined, duration: (m.duration + tapStr) || undefined };
+      }),
       advice: formAdvice.trim() || undefined,
       investigations: formInvestigations ? formInvestigations.split(",").map((s) => s.trim()).filter(Boolean) : undefined,
       followUpDays: formFollowUp ? Number(formFollowUp) : undefined,
@@ -525,7 +530,11 @@ function PresetSelectDialog({
     const updated: TreatmentPreset = {
       ...(existing ?? { id: editingPresetId, diagnosisCodes: matches.map((m) => m.diagnosisCode), diagnosisKeywords: [], isDefault: false, createdAt: new Date().toISOString() }),
       name: formName.trim(),
-      medications: meds.map((m) => ({ drugName: m.drugName.trim(), dosage: m.dosage || undefined, frequency: m.frequency || undefined, duration: m.duration || undefined })),
+      medications: meds.map((m) => {
+        const tapParts = m.taperLevels.filter((l) => l.frequency && l.durationNum).map((l) => `${l.frequency} × ${l.durationNum} ${l.durationUnit}`);
+        const tapStr   = tapParts.length ? ` → Taper: ${tapParts.join(" → ")}` : "";
+        return { drugName: m.drugName.trim(), dosage: m.dosage || undefined, frequency: m.frequency || undefined, duration: (m.duration + tapStr) || undefined };
+      }),
       advice: formAdvice.trim() || undefined,
       investigations: formInvestigations ? formInvestigations.split(",").map((s) => s.trim()).filter(Boolean) : undefined,
       followUpDays: formFollowUp ? Number(formFollowUp) : undefined,
@@ -737,45 +746,127 @@ function PresetSelectDialog({
                 </div>
                 <div className="flex flex-col gap-1.5">
                   {formMeds.map((med, i) => (
-                    <div key={i} className="grid gap-1 items-center" style={{ gridTemplateColumns: "1fr 70px 130px 70px 20px" }}>
-                      <DrugNameInput
-                        value={med.drugName}
-                        onChange={(name, defaultDose) => {
-                          const n = [...formMeds];
-                          n[i] = { ...n[i], drugName: name, ...(defaultDose ? { dosage: defaultDose } : {}) };
-                          setFormMeds(n);
-                        }}
-                        className={inp}
-                      />
-                      <OptionsInput
-                        value={med.dosage}
-                        onChange={(v) => { const n = [...formMeds]; n[i] = { ...n[i], dosage: v }; setFormMeds(n); }}
-                        options={DOSE_OPTIONS}
-                        placeholder="Dose"
-                        className={inp}
-                      />
-                      <select
-                        value={med.frequency}
-                        onChange={(e) => { const n = [...formMeds]; n[i] = { ...n[i], frequency: e.target.value }; setFormMeds(n); }}
-                        className={inp}
-                      >
-                        <option value="">Frequency</option>
-                        {FREQUENCY_OPTIONS.map((f) => <option key={f}>{f}</option>)}
-                      </select>
-                      <OptionsInput
-                        value={med.duration}
-                        onChange={(v) => { const n = [...formMeds]; n[i] = { ...n[i], duration: v }; setFormMeds(n); }}
-                        options={DURATION_OPTIONS}
-                        placeholder="Duration"
-                        className={inp}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setFormMeds(formMeds.filter((_, j) => j !== i))}
-                        className="text-[var(--color-ink-300)] hover:text-red-500 transition-colors"
-                      >
-                        <X size={12} />
-                      </button>
+                    <div key={i} className="flex flex-col gap-1">
+                      {/* Main drug row */}
+                      <div className="grid gap-1 items-center" style={{ gridTemplateColumns: "1fr 70px 130px 70px 20px" }}>
+                        <DrugNameInput
+                          value={med.drugName}
+                          onChange={(name, defaultDose) => {
+                            const n = [...formMeds];
+                            n[i] = { ...n[i], drugName: name, ...(defaultDose ? { dosage: defaultDose } : {}) };
+                            setFormMeds(n);
+                          }}
+                          className={inp}
+                        />
+                        <OptionsInput
+                          value={med.dosage}
+                          onChange={(v) => { const n = [...formMeds]; n[i] = { ...n[i], dosage: v }; setFormMeds(n); }}
+                          options={DOSE_OPTIONS}
+                          placeholder="Dose"
+                          className={inp}
+                        />
+                        <select
+                          value={med.frequency}
+                          onChange={(e) => { const n = [...formMeds]; n[i] = { ...n[i], frequency: e.target.value }; setFormMeds(n); }}
+                          className={inp}
+                        >
+                          <option value="">Frequency</option>
+                          {FREQUENCY_OPTIONS.map((f) => <option key={f}>{f}</option>)}
+                        </select>
+                        <OptionsInput
+                          value={med.duration}
+                          onChange={(v) => { const n = [...formMeds]; n[i] = { ...n[i], duration: v }; setFormMeds(n); }}
+                          options={DURATION_OPTIONS}
+                          placeholder="Duration"
+                          className={inp}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setFormMeds(formMeds.filter((_, j) => j !== i))}
+                          className="text-[var(--color-ink-300)] hover:text-red-500 transition-colors"
+                        >
+                          <X size={12} />
+                        </button>
+                      </div>
+
+                      {/* Tapering toggle */}
+                      <div className="pl-1">
+                        <label className="flex items-center gap-1.5 cursor-pointer w-fit">
+                          <input
+                            type="checkbox"
+                            checked={med.taperLevels.length > 0}
+                            onChange={(e) => {
+                              const n = [...formMeds];
+                              n[i] = { ...n[i], taperLevels: e.target.checked ? [{ frequency: "", durationNum: "", durationUnit: "days" }] : [] };
+                              setFormMeds(n);
+                            }}
+                            className="accent-[var(--color-primary-600)] w-3 h-3 rounded"
+                          />
+                          <span className="text-[11px] font-medium text-[var(--color-ink-500)]">Tapering dose</span>
+                        </label>
+                      </div>
+
+                      {/* Tapering levels */}
+                      {med.taperLevels.map((level, li) => (
+                        <div key={li} className="pl-4 border-l-2 border-[var(--color-primary-300)]" style={{ marginLeft: `${li * 10 + 4}px` }}>
+                          <p className="text-[9px] font-bold uppercase tracking-widest text-[var(--color-primary-600)] mb-1">
+                            ↓ Taper{med.taperLevels.length > 1 ? ` ${li + 1}` : ""}
+                          </p>
+                          <div className="grid gap-1 items-center" style={{ gridTemplateColumns: "130px 50px 80px auto" }}>
+                            <select
+                              value={level.frequency}
+                              onChange={(e) => {
+                                const n = [...formMeds]; const t = [...n[i].taperLevels]; t[li] = { ...t[li], frequency: e.target.value }; n[i] = { ...n[i], taperLevels: t }; setFormMeds(n);
+                              }}
+                              className={inp}
+                            >
+                              <option value="">Frequency</option>
+                              {FREQUENCY_OPTIONS.map((f) => <option key={f}>{f}</option>)}
+                            </select>
+                            <select
+                              value={level.durationNum}
+                              onChange={(e) => {
+                                const n = [...formMeds]; const t = [...n[i].taperLevels]; t[li] = { ...t[li], durationNum: e.target.value }; n[i] = { ...n[i], taperLevels: t }; setFormMeds(n);
+                              }}
+                              className={inp}
+                            >
+                              <option value="">—</option>
+                              {Array.from({ length: 12 }, (_, k) => k + 1).map((v) => <option key={v} value={String(v)}>{v}</option>)}
+                            </select>
+                            <select
+                              value={level.durationUnit}
+                              onChange={(e) => {
+                                const n = [...formMeds]; const t = [...n[i].taperLevels]; t[li] = { ...t[li], durationUnit: e.target.value }; n[i] = { ...n[i], taperLevels: t }; setFormMeds(n);
+                              }}
+                              className={inp}
+                            >
+                              {["days", "weeks", "months"].map((u) => <option key={u}>{u}</option>)}
+                            </select>
+                            {/* Add next level */}
+                            {li === med.taperLevels.length - 1 && li < 4 && (
+                              <label className="flex items-center gap-1 cursor-pointer whitespace-nowrap">
+                                <input
+                                  type="checkbox"
+                                  checked={false}
+                                  onChange={(e) => {
+                                    if (!e.target.checked) return;
+                                    const n = [...formMeds]; n[i] = { ...n[i], taperLevels: [...n[i].taperLevels, { frequency: "", durationNum: "", durationUnit: "days" }] }; setFormMeds(n);
+                                  }}
+                                  className="accent-[var(--color-primary-600)] w-3 h-3"
+                                />
+                                <span className="text-[10px] text-[var(--color-ink-500)]">+ Taper</span>
+                              </label>
+                            )}
+                            {li < med.taperLevels.length - 1 && (
+                              <button type="button" onClick={() => {
+                                const n = [...formMeds]; n[i] = { ...n[i], taperLevels: n[i].taperLevels.filter((_, k) => k <= li) }; setFormMeds(n);
+                              }} className="text-[var(--color-ink-300)] hover:text-red-500 transition-colors">
+                                <X size={11} />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   ))}
                 </div>
