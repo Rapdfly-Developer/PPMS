@@ -1404,10 +1404,10 @@ export function AvailabilityClient({
   return (
     <div className="fade-in flex flex-col gap-5">
       {/* ── Hero ── */}
-      <div className="relative overflow-hidden rounded-[20px] px-5 sm:px-8 pt-7 pb-6 text-white"
-        style={{ background: "linear-gradient(135deg,#071a19 0%,#0d2d29 55%,#0F4039 100%)" }}>
-        <div className="pointer-events-none absolute -top-24 -right-16 w-72 h-72 rounded-full bg-[#18D2C3]/10 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-32 -left-10 w-80 h-80 rounded-full bg-[var(--color-primary-600)]/10 blur-3xl" />
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[var(--color-primary-900)] via-[var(--color-primary-700)] to-[var(--color-primary-500)] px-5 sm:px-8 pt-7 pb-6 text-white shadow-lg">
+        <div className="pointer-events-none absolute -top-10 -right-10 h-48 w-48 rounded-full bg-white/5" />
+        <div className="pointer-events-none absolute -bottom-12 -right-20 h-64 w-64 rounded-full bg-white/5" />
+        <div className="pointer-events-none absolute top-4 right-32 h-16 w-16 rounded-full bg-white/5" />
 
         <div className="relative flex flex-col sm:flex-row sm:items-start gap-4 sm:gap-6">
           <div className="flex-1 min-w-0">
