@@ -1083,9 +1083,6 @@ ${d.investigations.length
         <thead><tr>
           <th style="${TH}width:36px;text-align:center;">#</th>
           <th style="${TH}">Investigation</th>
-          <th style="${TH}width:80px;">Category</th>
-          <th style="${TH}width:64px;text-align:center;">Priority</th>
-          <th style="${TH}width:64px;text-align:center;">Status</th>
         </tr></thead>
         <tbody>
           ${d.investigations.map((inv, i) =>
@@ -1095,15 +1092,6 @@ ${d.investigations.length
             (inv.laterality ? `<span style="font-size:8px;font-weight:700;color:${BRAND};margin-right:4px;">${escapeHtml(inv.laterality)}</span>` : "") +
             escapeHtml(inv.testName) +
             `</td>` +
-            `<td style="${TD}font-size:9px;color:#4A5A57;">${escapeHtml(inv.category)}</td>` +
-            `<td style="${TD}text-align:center;">` +
-            `<span style="font-size:8px;font-weight:700;padding:1px 5px;border-radius:3px;` +
-            (inv.priority === "URGENT" ? `color:#B91C1C;background:#FEF2F2;">URGENT` : `color:#B45309;background:#FFFBEB;">ROUTINE`) +
-            `</span></td>` +
-            `<td style="${TD}text-align:center;">` +
-            `<span style="font-size:8px;font-weight:700;padding:1px 5px;border-radius:3px;` +
-            (inv.status === "COMPLETED" ? `color:#15803D;background:#F0FDF4;">Done` : `color:#1D4ED8;background:#EFF6FF;">Pending`) +
-            `</span></td>` +
             `</tr>`
           ).join("")}
         </tbody>

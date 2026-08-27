@@ -570,7 +570,7 @@ export async function saveSurgicalCounselling(
   revalidate(udid);
 }
 
-export async function saveGonioNotes(visitId: string, udid: string, data: { re: string; le: string }) {
+export async function saveGonioNotes(visitId: string, udid: string, data: { re: string; le: string; reDeg?: string; leDeg?: string }) {
   await requireRole("DOCTOR");
   await assertVisitAccess(visitId);
   await prisma.visit.update({ where: { id: visitId }, data: { gonioNotes: JSON.stringify(data) } });
