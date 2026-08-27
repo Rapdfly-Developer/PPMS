@@ -405,7 +405,7 @@ function CalendarGrid({
               className={[
                 "relative flex flex-col items-center py-0.5 rounded-lg transition-all",
                 isSelected
-                  ? "bg-[var(--color-primary-600)] text-white shadow-sm"
+                  ? "bg-gray-200 text-gray-700 shadow-sm"
                   : isTod
                   ? "bg-[var(--color-primary-50)] text-[var(--color-primary-700)]"
                   : isThisMonth
@@ -421,7 +421,7 @@ function CalendarGrid({
               {/* Date number */}
               <span className={[
                 "text-[11px] font-semibold leading-none",
-                isSelected ? "text-white" : isTod ? "text-[var(--color-primary-700)]" : "",
+                isSelected ? "text-gray-700" : isTod ? "text-[var(--color-primary-700)]" : "",
               ].join(" ")}>
                 {format(day, "d")}
               </span>
@@ -433,7 +433,7 @@ function CalendarGrid({
                     key={t}
                     className="w-1 h-1 rounded-full shrink-0"
                     style={{
-                      background: isSelected ? "rgba(255,255,255,0.85)" : EVENT_CFG[t].dotHex,
+                      background: EVENT_CFG[t].dotHex,
                     }}
                   />
                 ))}
