@@ -560,11 +560,7 @@ function PresetSelectDialog({
   ];
 
   const toggle = (id: string) =>
-    setSelected((prev) => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
+    setSelected(new Set([id]));
 
   const selectedPresets = allMatches.filter((m) => selected.has(m.preset.id)).map((m) => m.preset);
 
@@ -598,7 +594,7 @@ function PresetSelectDialog({
         {/* Preset list + form */}
         <div className="p-5 flex flex-col gap-3 max-h-[78vh] overflow-y-auto">
           <p className="text-xs text-[var(--color-ink-400)]">
-            Select one or more presets to apply. Duplicate medications will be automatically skipped.
+            Select one preset to apply. Selecting a new protocol automatically deselects the previous one.
           </p>
 
           {allMatches.map(({ preset, diagnosisDesc }, idx) => {
@@ -613,7 +609,7 @@ function PresetSelectDialog({
                   checked ? "border-[#B2DEDA] bg-[#EEF8F7]" : "border-[var(--color-border)] hover:border-[#B2DEDA] hover:bg-[#EEF8F7]/40"
                 }`}
               >
-                <input type="checkbox" checked={checked} onChange={() => toggle(preset.id)} className="mt-1 accent-[#0F766E]" />
+                <input type="radio" checked={checked} onChange={() => toggle(preset.id)} className="mt-1 accent-[#0F766E]" />
                 <div className="flex-1 min-w-0">
                   {/* Header row */}
                   <div className="flex items-start justify-between gap-2 mb-2">
