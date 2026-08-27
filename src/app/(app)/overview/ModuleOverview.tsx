@@ -67,7 +67,7 @@ const ALL_MODULES: ModuleDef[] = [
   },
   {
     section: "Practice Management", accent: "blue",
-    href: "/availability", label: "Availability", icon: Clock,
+    href: "/appointments/availability", label: "Availability", icon: Clock,
     description: "Configure doctor slot availability and session schedules.",
     permission: "appointments.view",
   },
