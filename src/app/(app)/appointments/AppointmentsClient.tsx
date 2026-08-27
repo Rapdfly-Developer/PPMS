@@ -503,7 +503,7 @@ export function AppointmentsClient({
           },
           {
             key:    "previous",
-            label:  "Previous Appointments",
+            label:  "Overall",
             sub:    null,
             appts:  prevAppts,
             accent: "border-l-[var(--color-border)] bg-[var(--color-surface-sunken)]/20",
@@ -540,7 +540,7 @@ export function AppointmentsClient({
                   slbl:  "text-blue-400",
                 },
                 {
-                  label: "Previous",
+                  label: "Overall",
                   count: prevAppts.length,
                   sub:   "Past 30 days",
                   bg:    "bg-[var(--color-surface-sunken)]",
@@ -551,7 +551,7 @@ export function AppointmentsClient({
                   slbl:  "text-[var(--color-ink-400)]",
                 },
               ].map(({ label: cl, count, sub: csub, bg, border, dot, cnt, lbl, slbl }) => {
-                const sectionKey = cl.toLowerCase() as "today" | "upcoming" | "previous";
+                const sectionKey = (cl === "Overall" ? "previous" : cl.toLowerCase()) as "today" | "upcoming" | "previous";
                 const isActive = activeSection === sectionKey;
                 return (
                   <button
