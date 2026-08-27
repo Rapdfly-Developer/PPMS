@@ -930,26 +930,32 @@ const GONIO_KEYWORDS = [
 const ALL_GONIO_KW = GONIO_KEYWORDS.flatMap((g) => g.keywords);
 
 /* ── Gonioscopy findings input with live keyword search ───────────────────── */
+const GONIO_DEGREE_OPTIONS = [
+  "10", "15", "20", "25", "30", "35", "40", "45",
+  "0", "5", "50", "60", "90", "120", "180", "270", "360",
+];
+
 function GonioFindingsInput({
   value,
   onChange,
   disabled,
   placeholder,
   fieldKey,
+  recentHistory,
 }: {
   value: string;
   onChange: (v: string) => void;
   disabled: boolean;
   placeholder: string;
   fieldKey: string;
+  recentHistory?: string[];
 }) {
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [tick, setTick] = useState(0);
 
   function handleChange(text: string) {
     onChange(text);
-    // derive the current word being typed
-    const word = text.split(/[\s,\n]+/).pop()?.trim() ?? "";
+    const word = text.split(/[\s,]+/).pop()?.trim() ?? "";
     if (word.length >= 2) {
       const lw = word.toLowerCase();
       setSuggestions(ALL_GONIO_KW.filter((k) => k.toLowerCase().includes(lw)));
@@ -959,8 +965,7 @@ function GonioFindingsInput({
   }
 
   function applySuggestion(kw: string) {
-    // replace the last partial word with the chosen keyword
-    const parts = value.split(/(\s|,|\n)+/);
+    const parts = value.split(/(\s|,)+/);
     parts[parts.length - 1] = kw;
     onChange(parts.join(""));
     setSuggestions([]);
@@ -980,20 +985,21 @@ function GonioFindingsInput({
     setTick((t) => t + 1);
   }
 
-  // load saved keywords from localStorage (refreshed via tick)
   const [savedKws, setSavedKws] = useState<string[]>([]);
   useEffect(() => { setSavedKws(loadKws(fieldKey)); }, [fieldKey, tick]);
 
+  const historyChips = recentHistory?.filter((h) => h && h !== value).slice(0, 4) ?? [];
+
   return (
-    <div className="flex flex-col gap-1.5 relative">
-      <textarea
+    <div className="flex flex-col gap-1 relative flex-1 min-w-0">
+      <input
+        type="text"
         disabled={disabled}
         value={value}
         onChange={(e) => handleChange(e.target.value)}
         onBlur={() => setTimeout(() => setSuggestions([]), 150)}
         placeholder={placeholder}
-        rows={3}
-        className="w-full rounded-xl border border-[var(--color-border)] bg-white px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] disabled:bg-[var(--color-surface-sunken)]"
+        className="w-full rounded-lg border border-[var(--color-border)] bg-white px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] disabled:bg-[var(--color-surface-sunken)]"
       />
       {/* Live keyword suggestions */}
       {suggestions.length > 0 && !disabled && (
@@ -1011,27 +1017,54 @@ function GonioFindingsInput({
           ))}
         </ul>
       )}
-      {!disabled && (
-        <div className="flex flex-wrap items-center gap-1.5">
+      {/* History + saved keyword chips */}
+      {(historyChips.length > 0 || savedKws.length > 0) && (
+        <div className="flex flex-wrap items-center gap-1">
+          {historyChips.map((h) => (
+            <button
+              key={h}
+              type="button"
+              onClick={() => onChange(h)}
+              className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full border border-[var(--color-ink-200)] bg-[var(--color-surface-sunken)] text-[10px] text-[var(--color-ink-500)] hover:border-[var(--color-primary-300)] hover:text-[var(--color-primary-700)] hover:bg-[var(--color-primary-50)] transition-colors"
+              title="Load from history"
+            >
+              <History size={8} /> {h.length > 20 ? `${h.slice(0, 20)}…` : h}
+            </button>
+          ))}
+          {!disabled && (
+            <>
+              <button
+                type="button"
+                onClick={addKeyword}
+                className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-[10px] font-medium text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] transition-colors whitespace-nowrap"
+              >
+                <Plus size={11} strokeWidth={2.5} /> Keyword
+              </button>
+              {savedKws.map((kw) => (
+                <span key={kw} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-[11px] text-[var(--color-primary-700)]">
+                  <button type="button" onClick={() => onChange(value ? `${value} ${kw}` : kw)} className="hover:underline">{kw}</button>
+                  <button
+                    type="button"
+                    onClick={() => { const n = savedKws.filter((k) => k !== kw); saveKws(fieldKey, n); setSavedKws(n); }}
+                    className="ml-0.5 text-[var(--color-ink-400)] hover:text-red-500 transition-colors"
+                  >
+                    <X size={9} strokeWidth={2.5} />
+                  </button>
+                </span>
+              ))}
+            </>
+          )}
+        </div>
+      )}
+      {!disabled && historyChips.length === 0 && savedKws.length === 0 && (
+        <div className="flex flex-wrap items-center gap-1">
           <button
             type="button"
             onClick={addKeyword}
-            className="self-start inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-[10px] font-medium text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] transition-colors whitespace-nowrap"
+            className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-[10px] font-medium text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] transition-colors whitespace-nowrap"
           >
             <Plus size={11} strokeWidth={2.5} /> Keyword
           </button>
-          {savedKws.map((kw) => (
-            <span key={kw} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-[11px] text-[var(--color-primary-700)]">
-              <button type="button" onClick={() => onChange(value ? `${value} ${kw}` : kw)} className="hover:underline">{kw}</button>
-              <button
-                type="button"
-                onClick={() => { const n = savedKws.filter((k) => k !== kw); saveKws(fieldKey, n); setSavedKws(n); }}
-                className="ml-0.5 text-[var(--color-ink-400)] hover:text-red-500 transition-colors"
-              >
-                <X size={9} strokeWidth={2.5} />
-              </button>
-            </span>
-          ))}
         </div>
       )}
     </div>
@@ -1143,7 +1176,12 @@ function GonioscopyCard({
     setLoadToast(true);
   }
 
-  const inputCls = "w-full rounded-lg border border-[var(--color-border)] bg-white px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] disabled:bg-[var(--color-surface-sunken)] [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none";
+  const selCls = "rounded-lg border border-[var(--color-border)] bg-white px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] disabled:bg-[var(--color-surface-sunken)]";
+
+  const recentReDeg = [...new Set(historyRows.map((r) => r.reDeg).filter(Boolean))];
+  const recentLeDeg = [...new Set(historyRows.map((r) => r.leDeg).filter(Boolean))];
+  const recentRe    = [...new Set(historyRows.map((r) => r.re).filter(Boolean))];
+  const recentLe    = [...new Set(historyRows.map((r) => r.le).filter(Boolean))];
 
   return (
     <Card>
@@ -1166,57 +1204,93 @@ function GonioscopyCard({
 
       <div className="grid grid-cols-2 gap-4">
         {/* ── RE ── */}
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-1.5">
           <label className="text-xs font-semibold tracking-widest text-[var(--color-ink-500)] uppercase">RE Gonioscopy</label>
-          {/* Degrees */}
-          <div className="flex items-center gap-1.5">
-            <input
-              type="number"
-              min={0}
-              max={360}
-              step={1}
-              placeholder="Degrees"
-              value={reDeg}
-              onChange={(e) => setReDeg(e.target.value)}
+          {/* Inline: degrees dropdown + findings input */}
+          <div className="flex items-start gap-2">
+            <div className="flex flex-col gap-1 shrink-0">
+              <select
+                value={reDeg}
+                onChange={(e) => setReDeg(e.target.value)}
+                disabled={!editable}
+                className={`${selCls} w-[88px]`}
+              >
+                <option value="">° Deg</option>
+                {GONIO_DEGREE_OPTIONS.map((d) => (
+                  <option key={d} value={d}>{d}°</option>
+                ))}
+              </select>
+              {/* Degree history chips */}
+              {recentReDeg.length > 0 && (
+                <div className="flex flex-wrap gap-1">
+                  {recentReDeg.slice(0, 4).map((d) => (
+                    <button
+                      key={d}
+                      type="button"
+                      onClick={() => setReDeg(d)}
+                      className="px-1.5 py-0.5 rounded border border-[var(--color-ink-200)] bg-[var(--color-surface-sunken)] text-[10px] text-[var(--color-ink-500)] hover:border-[var(--color-primary-300)] hover:text-[var(--color-primary-700)] hover:bg-[var(--color-primary-50)] transition-colors"
+                      title="Load from history"
+                    >
+                      {d}°
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            <GonioFindingsInput
+              value={re}
+              onChange={setRe}
               disabled={!editable}
-              className={`${inputCls} w-24`}
+              placeholder="Right eye gonioscopy findings…"
+              fieldKey="gonio_re"
+              recentHistory={recentRe}
             />
-            <span className="text-sm font-medium text-[var(--color-ink-500)]">°</span>
           </div>
-          <GonioFindingsInput
-            value={re}
-            onChange={setRe}
-            disabled={!editable}
-            placeholder="Right eye gonioscopy findings…"
-            fieldKey="gonio_re"
-          />
         </div>
 
         {/* ── LE ── */}
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-1.5">
           <label className="text-xs font-semibold tracking-widest text-[var(--color-ink-500)] uppercase">LE Gonioscopy</label>
-          {/* Degrees */}
-          <div className="flex items-center gap-1.5">
-            <input
-              type="number"
-              min={0}
-              max={360}
-              step={1}
-              placeholder="Degrees"
-              value={leDeg}
-              onChange={(e) => setLeDeg(e.target.value)}
+          {/* Inline: degrees dropdown + findings input */}
+          <div className="flex items-start gap-2">
+            <div className="flex flex-col gap-1 shrink-0">
+              <select
+                value={leDeg}
+                onChange={(e) => setLeDeg(e.target.value)}
+                disabled={!editable}
+                className={`${selCls} w-[88px]`}
+              >
+                <option value="">° Deg</option>
+                {GONIO_DEGREE_OPTIONS.map((d) => (
+                  <option key={d} value={d}>{d}°</option>
+                ))}
+              </select>
+              {/* Degree history chips */}
+              {recentLeDeg.length > 0 && (
+                <div className="flex flex-wrap gap-1">
+                  {recentLeDeg.slice(0, 4).map((d) => (
+                    <button
+                      key={d}
+                      type="button"
+                      onClick={() => setLeDeg(d)}
+                      className="px-1.5 py-0.5 rounded border border-[var(--color-ink-200)] bg-[var(--color-surface-sunken)] text-[10px] text-[var(--color-ink-500)] hover:border-[var(--color-primary-300)] hover:text-[var(--color-primary-700)] hover:bg-[var(--color-primary-50)] transition-colors"
+                      title="Load from history"
+                    >
+                      {d}°
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            <GonioFindingsInput
+              value={le}
+              onChange={setLe}
               disabled={!editable}
-              className={`${inputCls} w-24`}
+              placeholder="Left eye gonioscopy findings…"
+              fieldKey="gonio_le"
+              recentHistory={recentLe}
             />
-            <span className="text-sm font-medium text-[var(--color-ink-500)]">°</span>
           </div>
-          <GonioFindingsInput
-            value={le}
-            onChange={setLe}
-            disabled={!editable}
-            placeholder="Left eye gonioscopy findings…"
-            fieldKey="gonio_le"
-          />
         </div>
       </div>
 
