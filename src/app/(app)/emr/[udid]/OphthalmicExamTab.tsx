@@ -927,6 +927,178 @@ const GONIO_KEYWORDS = [
   },
 ];
 
+const ALL_GONIO_KW = GONIO_KEYWORDS.flatMap((g) => g.keywords);
+
+/* ── Gonioscopy findings input with live keyword search ───────────────────── */
+function GonioFindingsInput({
+  value,
+  onChange,
+  disabled,
+  placeholder,
+  fieldKey,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  disabled: boolean;
+  placeholder: string;
+  fieldKey: string;
+}) {
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [tick, setTick] = useState(0);
+
+  function handleChange(text: string) {
+    onChange(text);
+    // derive the current word being typed
+    const word = text.split(/[\s,\n]+/).pop()?.trim() ?? "";
+    if (word.length >= 2) {
+      const lw = word.toLowerCase();
+      setSuggestions(ALL_GONIO_KW.filter((k) => k.toLowerCase().includes(lw)));
+    } else {
+      setSuggestions([]);
+    }
+  }
+
+  function applySuggestion(kw: string) {
+    // replace the last partial word with the chosen keyword
+    const parts = value.split(/(\s|,|\n)+/);
+    parts[parts.length - 1] = kw;
+    onChange(parts.join(""));
+    setSuggestions([]);
+  }
+
+  function loadKws(fk: string): string[] {
+    try { return JSON.parse(localStorage.getItem(`kw_${fk}`) ?? "[]"); } catch { return []; }
+  }
+  function saveKws(fk: string, kws: string[]) {
+    localStorage.setItem(`kw_${fk}`, JSON.stringify(kws));
+  }
+  function addKeyword() {
+    const raw = value.trim();
+    if (!raw) return;
+    const kws = loadKws(fieldKey);
+    if (!kws.includes(raw)) saveKws(fieldKey, [...kws, raw]);
+    setTick((t) => t + 1);
+  }
+
+  // load saved keywords from localStorage (refreshed via tick)
+  const [savedKws, setSavedKws] = useState<string[]>([]);
+  useEffect(() => { setSavedKws(loadKws(fieldKey)); }, [fieldKey, tick]);
+
+  return (
+    <div className="flex flex-col gap-1.5 relative">
+      <textarea
+        disabled={disabled}
+        value={value}
+        onChange={(e) => handleChange(e.target.value)}
+        onBlur={() => setTimeout(() => setSuggestions([]), 150)}
+        placeholder={placeholder}
+        rows={3}
+        className="w-full rounded-xl border border-[var(--color-border)] bg-white px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] disabled:bg-[var(--color-surface-sunken)]"
+      />
+      {/* Live keyword suggestions */}
+      {suggestions.length > 0 && !disabled && (
+        <ul className="absolute top-full left-0 right-0 z-20 mt-0.5 max-h-44 overflow-y-auto bg-white border border-[var(--color-border)] rounded-xl shadow-lg text-sm">
+          {suggestions.map((s) => (
+            <li key={s}>
+              <button
+                type="button"
+                onMouseDown={() => applySuggestion(s)}
+                className="w-full text-left px-3.5 py-2 hover:bg-[var(--color-primary-50)] hover:text-[var(--color-primary-700)] transition-colors"
+              >
+                {s}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      {!disabled && (
+        <div className="flex flex-wrap items-center gap-1.5">
+          <button
+            type="button"
+            onClick={addKeyword}
+            className="self-start inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-[10px] font-medium text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] transition-colors whitespace-nowrap"
+          >
+            <Plus size={11} strokeWidth={2.5} /> Keyword
+          </button>
+          {savedKws.map((kw) => (
+            <span key={kw} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-[11px] text-[var(--color-primary-700)]">
+              <button type="button" onClick={() => onChange(value ? `${value} ${kw}` : kw)} className="hover:underline">{kw}</button>
+              <button
+                type="button"
+                onClick={() => { const n = savedKws.filter((k) => k !== kw); saveKws(fieldKey, n); setSavedKws(n); }}
+                className="ml-0.5 text-[var(--color-ink-400)] hover:text-red-500 transition-colors"
+              >
+                <X size={9} strokeWidth={2.5} />
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Gonioscopy history table ─────────────────────────────────────────────── */
+type GonioRow = { date: string; reDeg: string; re: string; leDeg: string; le: string };
+
+function GonioHistoryTable({
+  rows,
+  onSelect,
+}: {
+  rows: GonioRow[];
+  onSelect: (row: GonioRow) => void;
+}) {
+  if (rows.length === 0) return null;
+  return (
+    <div className="mt-4 rounded-xl border border-[var(--color-border)] overflow-hidden">
+      <div className="px-3 py-2 bg-[var(--color-surface-sunken)] border-b border-[var(--color-border)] flex items-center gap-2">
+        <History size={13} className="text-[#0F766E]" />
+        <span className="text-xs font-semibold text-[var(--color-ink-600)] uppercase tracking-widest">Previous Gonioscopy</span>
+        <span className="text-[10px] text-[var(--color-ink-400)]">· double-click to load</span>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-xs">
+          <thead className="bg-[var(--color-surface-sunken)]">
+            <tr>
+              <th className="text-left px-3 py-1.5 font-semibold text-[var(--color-ink-500)] whitespace-nowrap">Date</th>
+              <th className="text-left px-3 py-1.5 font-semibold text-[var(--color-ink-500)]">RE °</th>
+              <th className="text-left px-3 py-1.5 font-semibold text-[var(--color-ink-500)]">RE Findings</th>
+              <th className="text-left px-3 py-1.5 font-semibold text-[var(--color-ink-500)]">LE °</th>
+              <th className="text-left px-3 py-1.5 font-semibold text-[var(--color-ink-500)]">LE Findings</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-[var(--color-border)]">
+            {rows.map((r, i) => (
+              <tr
+                key={i}
+                onDoubleClick={() => onSelect(r)}
+                className="hover:bg-[var(--color-primary-50)] cursor-pointer transition-colors"
+                title="Double-click to load this entry"
+              >
+                <td className="px-3 py-2 whitespace-nowrap text-[var(--color-ink-500)]">
+                  {format(new Date(r.date), "dd MMM yy")}
+                </td>
+                <td className="px-3 py-2 font-medium text-[var(--color-ink-700)]">
+                  {r.reDeg ? `${r.reDeg}°` : <span className="text-[var(--color-ink-300)]">—</span>}
+                </td>
+                <td className="px-3 py-2 text-[var(--color-ink-700)] max-w-[160px]">
+                  <span className="line-clamp-2">{r.re || <span className="text-[var(--color-ink-300)]">—</span>}</span>
+                </td>
+                <td className="px-3 py-2 font-medium text-[var(--color-ink-700)]">
+                  {r.leDeg ? `${r.leDeg}°` : <span className="text-[var(--color-ink-300)]">—</span>}
+                </td>
+                <td className="px-3 py-2 text-[var(--color-ink-700)] max-w-[160px]">
+                  <span className="line-clamp-2">{r.le || <span className="text-[var(--color-ink-300)]">—</span>}</span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 function GonioscopyCard({
   visit,
   udid,
@@ -938,64 +1110,121 @@ function GonioscopyCard({
   editable: boolean;
   priorVisits: any[];
 }) {
-  const initial = parseJSON<{ re: string; le: string }>(visit.gonioNotes, { re: "", le: "" });
+  const initial = parseJSON<{ re: string; le: string; reDeg?: string; leDeg?: string }>(visit.gonioNotes, { re: "", le: "", reDeg: "", leDeg: "" });
   const [re, setRe] = useState(initial.re);
   const [le, setLe] = useState(initial.le);
+  const [reDeg, setReDeg] = useState(initial.reDeg ?? "");
+  const [leDeg, setLeDeg] = useState(initial.leDeg ?? "");
+  const [showHistory, setShowHistory] = useState(false);
+  const [loadToast, setLoadToast] = useState(false);
 
   const state = useAutoSave(
-    { re, le },
+    { re, le, reDeg, leDeg },
     async (data) => { await saveGonioNotes(visit.id, udid, data); },
     1500,
   );
 
-  const empty: { re: string; le: string } = { re: "", le: "" };
+  const empty = { re: "", le: "", reDeg: "", leDeg: "" };
 
-  const reHistory: HistoryEntry[] = priorVisits
+  const historyRows: GonioRow[] = priorVisits
     .map((v) => {
-      const d = parseJSON<{ re: string; le: string }>(v.gonioNotes, empty);
-      return d.re ? { date: v.createdAt, value: d.re } : null;
+      const d = parseJSON<typeof empty>(v.gonioNotes, empty);
+      if (!d.re && !d.le && !d.reDeg && !d.leDeg) return null;
+      return { date: v.createdAt, reDeg: d.reDeg ?? "", re: d.re ?? "", leDeg: d.leDeg ?? "", le: d.le ?? "" };
     })
-    .filter(Boolean) as HistoryEntry[];
+    .filter(Boolean) as GonioRow[];
 
-  const leHistory: HistoryEntry[] = priorVisits
-    .map((v) => {
-      const d = parseJSON<{ re: string; le: string }>(v.gonioNotes, empty);
-      return d.le ? { date: v.createdAt, value: d.le } : null;
-    })
-    .filter(Boolean) as HistoryEntry[];
+  function handleLoadHistory(row: GonioRow) {
+    if (row.re)    setRe(row.re);
+    if (row.reDeg) setReDeg(row.reDeg);
+    if (row.le)    setLe(row.le);
+    if (row.leDeg) setLeDeg(row.leDeg);
+    setShowHistory(false);
+    setLoadToast(true);
+  }
+
+  const inputCls = "w-full rounded-lg border border-[var(--color-border)] bg-white px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] disabled:bg-[var(--color-surface-sunken)] [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none";
 
   return (
     <Card>
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-semibold text-[var(--color-ink-700)]">Gonioscopy</h3>
-        <SaveIndicator state={state} />
+        <div className="flex items-center gap-2">
+          {historyRows.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setShowHistory((v) => !v)}
+              className="flex items-center gap-1 text-xs text-[#0F766E] bg-[#EEF8F7] hover:bg-[#DCF3F1] font-medium px-2.5 py-0.5 rounded-full border border-[#B2DEDA] transition-colors"
+            >
+              <History size={11} />
+              History ({historyRows.length})
+            </button>
+          )}
+          <SaveIndicator state={state} />
+        </div>
       </div>
+
       <div className="grid grid-cols-2 gap-4">
-        <div>
-          <FieldWithHistory history={reHistory} label="RE Gonioscopy">
-            <KeywordTextarea
-              value={re}
-              onChange={setRe}
+        {/* ── RE ── */}
+        <div className="flex flex-col gap-2">
+          <label className="text-xs font-semibold tracking-widest text-[var(--color-ink-500)] uppercase">RE Gonioscopy</label>
+          {/* Degrees */}
+          <div className="flex items-center gap-1.5">
+            <input
+              type="number"
+              min={0}
+              max={360}
+              step={1}
+              placeholder="Degrees"
+              value={reDeg}
+              onChange={(e) => setReDeg(e.target.value)}
               disabled={!editable}
-              placeholder="Right eye gonioscopy findings…"
-              fieldKey="gonio_re"
-              rows={3}
+              className={`${inputCls} w-24`}
             />
-          </FieldWithHistory>
+            <span className="text-sm font-medium text-[var(--color-ink-500)]">°</span>
+          </div>
+          <GonioFindingsInput
+            value={re}
+            onChange={setRe}
+            disabled={!editable}
+            placeholder="Right eye gonioscopy findings…"
+            fieldKey="gonio_re"
+          />
         </div>
-        <div>
-          <FieldWithHistory history={leHistory} label="LE Gonioscopy">
-            <KeywordTextarea
-              value={le}
-              onChange={setLe}
+
+        {/* ── LE ── */}
+        <div className="flex flex-col gap-2">
+          <label className="text-xs font-semibold tracking-widest text-[var(--color-ink-500)] uppercase">LE Gonioscopy</label>
+          {/* Degrees */}
+          <div className="flex items-center gap-1.5">
+            <input
+              type="number"
+              min={0}
+              max={360}
+              step={1}
+              placeholder="Degrees"
+              value={leDeg}
+              onChange={(e) => setLeDeg(e.target.value)}
               disabled={!editable}
-              placeholder="Left eye gonioscopy findings…"
-              fieldKey="gonio_le"
-              rows={3}
+              className={`${inputCls} w-24`}
             />
-          </FieldWithHistory>
+            <span className="text-sm font-medium text-[var(--color-ink-500)]">°</span>
+          </div>
+          <GonioFindingsInput
+            value={le}
+            onChange={setLe}
+            disabled={!editable}
+            placeholder="Left eye gonioscopy findings…"
+            fieldKey="gonio_le"
+          />
         </div>
       </div>
+
+      {showHistory && (
+        <GonioHistoryTable rows={historyRows} onSelect={handleLoadHistory} />
+      )}
+
+      {loadToast && <Toast message="Gonioscopy record loaded." onDone={() => setLoadToast(false)} />}
     </Card>
   );
 }
