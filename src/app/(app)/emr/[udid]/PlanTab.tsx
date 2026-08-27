@@ -512,7 +512,7 @@ function PresetSelectDialog({
     };
     saveTreatmentPresets([...getTreatmentPresets(), newPreset]);
     setCustomPresets((prev) => [...prev, newPreset]);
-    setSelected((prev) => new Set([...prev, newPreset.id]));
+    setSelected(new Set([newPreset.id]));
     setShowForm(false);
   };
 
