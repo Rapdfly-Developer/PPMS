@@ -6,7 +6,7 @@ import {
   Plus, Pencil, Trash2, Clock, Building2, CalendarDays, Users,
   Loader2, AlertTriangle, X, Save, ToggleLeft, ToggleRight, Power,
   ChevronLeft, ChevronRight, CalendarOff, Zap, Copy, Layers,
-  CheckSquare, Square, Info, RefreshCw,
+  CheckSquare, Square, Info, RefreshCw, Timer,
 } from "lucide-react";
 import {
   upsertWeekly, deleteWeekly, toggleWeeklyStatus,
@@ -33,10 +33,6 @@ function nextDateForWeekday(wd: number): Date {
   const d = new Date(today);
   d.setDate(today.getDate() + diff);
   return d;
-}
-function fmtWeekdayDate(wd: number): string {
-  const d = nextDateForWeekday(wd);
-  return d.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
 }
 function isToday(wd: number): boolean {
   return new Date().getDay() === wd;
@@ -473,68 +469,139 @@ function TemplateTab({ weekly, hospitals, onGenerate }: {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-            {[1,2,3,4,5,6,0].map(wd => {
-              const slots = (byDay[wd] ?? []).sort((a, b) => a.startTime.localeCompare(b.startTime));
+          {/* Hospital colour legend */}
+          <div className="flex flex-wrap items-center gap-2 mb-3">
+            {hospitals.map((h, i) => {
+              const c = getColor(i);
               return (
-                <div key={wd} className="bg-white rounded-2xl border border-[var(--color-border)] p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <p className="font-bold text-[var(--color-ink-900)] text-sm">{WEEKDAYS_FULL[wd]}</p>
-                        {isToday(wd) && (
-                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-[var(--color-primary-100)] text-[var(--color-primary-700)]">Today</span>
-                        )}
-                      </div>
-                      <p className="text-[11px] font-semibold text-[var(--color-ink-500)] tabular-nums">{fmtWeekdayDate(wd)}</p>
-                      <p className="text-[10px] text-[var(--color-ink-400)]">{slots.length > 0 ? `${slots.length} hospital${slots.length > 1 ? "s" : ""}` : "No schedule"}</p>
+                <span key={h.id}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold text-white shadow-sm"
+                  style={{ background: c.bg }}>
+                  <Building2 size={12} strokeWidth={2.5} className="shrink-0" />
+                  <span className="truncate max-w-[180px]">{h.name}</span>
+                </span>
+              );
+            })}
+          </div>
+
+          {/* Week strip — 7 day columns, scrolls horizontally on narrow screens */}
+          <div className="overflow-x-auto -mx-1 px-1 pb-1">
+            <div className="grid grid-cols-7 min-w-[1120px] bg-white rounded-2xl border border-[var(--color-border)] shadow-[0_1px_2px_rgba(16,42,39,.04),0_4px_16px_rgba(16,42,39,.05)] overflow-hidden">
+              {[1,2,3,4,5,6,0].map(wd => {
+                const slots   = (byDay[wd] ?? []).sort((a, b) => a.startTime.localeCompare(b.startTime));
+                const today   = isToday(wd);
+                const dt      = nextDateForWeekday(wd);
+                const dayNum  = dt.getDate();
+                const monLbl  = dt.toLocaleDateString("en-IN", { month: "short" });
+                const fullLbl = dt.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+                return (
+                  <div key={wd}
+                    className={`flex flex-col border-r border-[var(--color-border)] last:border-r-0 ${today ? "bg-[var(--color-primary-50)]/60" : ""}`}>
+
+                    {/* Day header */}
+                    <div className="relative flex flex-col items-center gap-1 px-2 pt-3 pb-3 border-b border-[var(--color-border)]">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">
+                        {WEEKDAYS[wd].toUpperCase()}
+                      </p>
+                      <span className={`flex items-center justify-center tabular-nums leading-none ${
+                        today
+                          ? "w-9 h-9 rounded-full bg-[var(--color-primary-700)] text-white text-base font-bold shadow-sm"
+                          : "h-9 text-xl font-bold text-[var(--color-ink-900)]"
+                      }`}>
+                        {dayNum}
+                      </span>
+                      <p className="text-[10px] text-[var(--color-ink-400)]">{monLbl}</p>
+                      <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                        today
+                          ? "bg-[var(--color-primary-100)] text-[var(--color-primary-700)]"
+                          : "bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)]"
+                      }`}>
+                        {slots.length} session{slots.length === 1 ? "" : "s"}
+                      </span>
+                      <button
+                        onClick={() => { setAddPreWeekday(wd); setShowAddSlot(true); }}
+                        title={`Add slot on ${WEEKDAYS_FULL[wd]}`}
+                        className="absolute top-2 right-2 p-1.5 rounded-lg text-[var(--color-ink-300)] hover:text-[var(--color-primary-600)] hover:bg-[var(--color-primary-50)] transition-colors">
+                        <Plus size={13} strokeWidth={2.5} />
+                      </button>
                     </div>
-                    <button onClick={() => { setAddPreWeekday(wd); setShowAddSlot(true); }}
-                      className="p-1.5 rounded-lg bg-[var(--color-primary-50)] text-[var(--color-primary-600)] hover:bg-[var(--color-primary-100)] transition-colors">
-                      <Plus size={13} />
-                    </button>
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    {slots.map(slot => {
-                      const active = slot.status === "ACTIVE";
-                      const idx    = hospitals.findIndex(h => h.id === slot.hospitalId);
-                      const color  = getColor(idx);
-                      return (
-                        <div key={slot.id}
-                          className={`rounded-xl border p-2.5 transition-all ${active ? "bg-white border-[var(--color-border)]" : "bg-[var(--color-surface-sunken)]/40 border-[var(--color-border)] opacity-60"}`}>
-                          <div className="flex items-center gap-2 mb-1.5">
-                            <span className="w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-extrabold text-white shrink-0"
-                              style={{ background: color.bg }}>{hospCode(slot.hospital.name)}</span>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-xs font-semibold text-[var(--color-ink-800)] truncate">{slot.hospital.name}</p>
-                              <p className="text-[11px] font-bold text-[var(--color-ink-900)] tabular-nums">{fmt12(slot.startTime)} – {fmt12(slot.endTime)}</p>
+
+                    {/* Sessions */}
+                    <div className="flex flex-col gap-2.5 p-2.5 flex-1">
+                      {slots.map(slot => {
+                        const active = slot.status === "ACTIVE";
+                        const idx    = hospitals.findIndex(h => h.id === slot.hospitalId);
+                        const c      = getColor(idx);
+                        return (
+                          <div key={slot.id}
+                            className={`rounded-xl border p-2.5 flex flex-col gap-1.5 transition-all ${active ? "" : "opacity-60"}`}
+                            style={{
+                              background:  active ? c.light : "var(--color-surface-sunken)",
+                              borderColor: active ? c.border : "var(--color-border)",
+                            }}>
+
+                            {/* Hospital + status */}
+                            <div className="flex items-center gap-1.5">
+                              <span className="inline-flex items-center gap-1 min-w-0 px-1.5 py-0.5 rounded-md text-[9px] font-bold text-white"
+                                style={{ background: c.bg }}>
+                                <Building2 size={9} strokeWidth={2.5} className="shrink-0" />
+                                <span className="truncate">{slot.hospital.name}</span>
+                              </span>
+                              <span className={`ml-auto shrink-0 text-[8px] font-bold tracking-wide px-1.5 py-0.5 rounded-md ${
+                                active ? "bg-emerald-100 text-emerald-700" : "bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)]"
+                              }`}>
+                                {active ? "ACTIVE" : "PAUSED"}
+                              </span>
                             </div>
-                          </div>
-                          <div className="flex items-center justify-between text-[10px] text-[var(--color-ink-400)]">
-                            <span><span className="font-semibold text-[var(--color-ink-600)]">{slot.slotMins}m</span> · {slotsCount(slot.startTime, slot.endTime, slot.slotMins)} slots · <Users size={9} className="inline" /> {slot.maxPatients}</span>
-                            <div className="flex items-center gap-0.5">
-                              <button onClick={() => setEditTarget(slot as WeeklySlot)} className="p-1 rounded text-[var(--color-ink-400)] hover:text-[var(--color-primary-600)] hover:bg-[var(--color-primary-50)] transition-colors"><Pencil size={11} /></button>
-                              <button onClick={() => setDelTarget(slot)} className="p-1 rounded text-[var(--color-ink-400)] hover:text-red-600 hover:bg-red-50 transition-colors"><Trash2 size={11} /></button>
+
+                            {/* Date */}
+                            <p className="text-[10px] text-[var(--color-ink-400)] tabular-nums">{fullLbl}</p>
+
+                            {/* Time range */}
+                            <p className="flex items-center gap-1 text-[11px] font-bold tabular-nums" style={{ color: c.text }}>
+                              <Clock size={10} strokeWidth={2.5} className="shrink-0" />
+                              {fmt12(slot.startTime)} – {fmt12(slot.endTime)}
+                            </p>
+
+                            {/* Meta */}
+                            <div className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[10px] text-[var(--color-ink-500)]">
+                              <span className="inline-flex items-center gap-1"><Timer size={9} className="shrink-0" />{slot.slotMins} min</span>
+                              <span className="inline-flex items-center gap-1"><Layers size={9} className="shrink-0" />{slotsCount(slot.startTime, slot.endTime, slot.slotMins)} slots</span>
+                              <span className="inline-flex items-center gap-1"><Users size={9} className="shrink-0" />{slot.maxPatients}/slot</span>
+                            </div>
+
+                            {/* Actions */}
+                            <div className="flex items-center gap-1 pt-1.5 mt-0.5 border-t" style={{ borderColor: active ? c.border : "var(--color-border)" }}>
+                              <button onClick={() => setEditTarget(slot as WeeklySlot)}
+                                title="Edit slot"
+                                className="p-1 rounded-md text-[var(--color-ink-400)] hover:text-[var(--color-primary-700)] hover:bg-white/70 transition-colors">
+                                <Pencil size={11} />
+                              </button>
                               <button disabled={pending}
                                 onClick={() => start(async () => toggleWeeklyStatus(slot.id, active ? "INACTIVE" : "ACTIVE"))}
-                                className={`p-1 rounded transition-colors ${active ? "text-[var(--color-ink-400)] hover:text-amber-600 hover:bg-amber-50" : "text-[var(--color-primary-600)] hover:bg-[var(--color-primary-50)]"}`}>
-                                <Power size={11} />
+                                className="inline-flex items-center gap-1 px-1.5 py-1 rounded-md text-[10px] font-semibold text-[var(--color-ink-500)] hover:text-amber-700 hover:bg-white/70 disabled:opacity-50 transition-colors">
+                                <Power size={11} className="shrink-0" />{active ? "Pause" : "Resume"}
+                              </button>
+                              <button onClick={() => setDelTarget(slot)}
+                                className="ml-auto inline-flex items-center gap-1 px-1.5 py-1 rounded-md text-[10px] font-semibold text-red-500 hover:text-red-700 hover:bg-white/70 transition-colors">
+                                <Trash2 size={11} className="shrink-0" />Delete
                               </button>
                             </div>
                           </div>
-                        </div>
-                      );
-                    })}
-                    {slots.length === 0 && (
-                      <button onClick={() => { setAddPreWeekday(wd); setShowAddSlot(true); }}
-                        className="text-xs text-[var(--color-ink-400)] border border-dashed border-[var(--color-border)] rounded-xl py-3 hover:border-[var(--color-primary-300)] hover:text-[var(--color-primary-600)] transition-colors">
-                        + Add Slot
-                      </button>
-                    )}
+                        );
+                      })}
+
+                      {slots.length === 0 && (
+                        <button onClick={() => { setAddPreWeekday(wd); setShowAddSlot(true); }}
+                          className="flex-1 min-h-[72px] text-xs text-[var(--color-ink-400)] border border-dashed border-[var(--color-border)] rounded-xl py-3 hover:border-[var(--color-primary-300)] hover:text-[var(--color-primary-600)] hover:bg-[var(--color-primary-50)]/40 transition-colors">
+                          + Add Slot
+                        </button>
+                      )}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
 
           {/* Generate CTA */}
@@ -1404,10 +1471,10 @@ export function AvailabilityClient({
   return (
     <div className="fade-in flex flex-col gap-5">
       {/* ── Hero ── */}
-      <div className="relative overflow-hidden rounded-[20px] px-5 sm:px-8 pt-7 pb-6 text-white"
-        style={{ background: "linear-gradient(135deg,#071a19 0%,#0d2d29 55%,#0F4039 100%)" }}>
-        <div className="pointer-events-none absolute -top-24 -right-16 w-72 h-72 rounded-full bg-[#18D2C3]/10 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-32 -left-10 w-80 h-80 rounded-full bg-[var(--color-primary-600)]/10 blur-3xl" />
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[var(--color-primary-900)] via-[var(--color-primary-700)] to-[var(--color-primary-500)] px-5 sm:px-8 pt-7 pb-6 text-white shadow-lg">
+        <div className="pointer-events-none absolute -top-10 -right-10 h-48 w-48 rounded-full bg-white/5" />
+        <div className="pointer-events-none absolute -bottom-12 -right-20 h-64 w-64 rounded-full bg-white/5" />
+        <div className="pointer-events-none absolute top-4 right-32 h-16 w-16 rounded-full bg-white/5" />
 
         <div className="relative flex flex-col sm:flex-row sm:items-start gap-4 sm:gap-6">
           <div className="flex-1 min-w-0">
