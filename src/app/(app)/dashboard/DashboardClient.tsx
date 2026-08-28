@@ -218,10 +218,8 @@ function ApptRow({ appt, role, serial }: { appt: Appt; role: "DOCTOR" | "HOSPITA
   const apptTime = format(new Date(appt.dateTime), "h:mm a");
   const arrivedAt      = appt.arrivedAt      ? new Date(appt.arrivedAt)      : null;
   const visitStartedAt = appt.visitStartedAt ? new Date(appt.visitStartedAt) : null;
-  // Walk-ins: show registration (createdAt) time. Booked appts: show arrived time or scheduled time.
-  const primaryTime = appt.isWalkIn
-    ? format(new Date(appt.createdAt), "h:mm a")
-    : (arrivedAt ? format(arrivedAt, "h:mm a") : apptTime);
+  // Always show scheduled appointment time as primary — consistent across walk-in and booked.
+  const primaryTime = apptTime;
   // Timer runs from arrival; fall back to appt time if not yet arrived
   const timerSince  = appt.arrivedAt ?? appt.dateTime;
   // Wait time = from arrival to when doctor opened the case
@@ -241,26 +239,14 @@ function ApptRow({ appt, role, serial }: { appt: Appt; role: "DOCTOR" | "HOSPITA
       {/* Time + visit-type column */}
       <div className="w-20 shrink-0 flex flex-col items-center gap-0.5">
         {/* Primary time: arrived or scheduled */}
-        <p className="text-sm font-bold text-[var(--color-ink-900)]"
-           title={arrivedAt ? `Arrived at ${format(arrivedAt, "h:mm a")}` : "Appointment time"}>
+        <p className="text-sm font-bold text-[var(--color-ink-900)]" title="Appointment time">
           {primaryTime}
         </p>
         {/* Badge + scheduled time on one line */}
         <div className="flex items-center gap-1">
-          {appt.isWalkIn ? (
-            <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-orange-50 text-orange-600">
-              <PersonStanding size={9} /> Walk-in
-            </span>
-          ) : (
-            <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-600">
-              <Calendar size={9} /> Appt
-            </span>
-          )}
-          {apptTime !== primaryTime && (
-            <span className="text-[9px] text-[var(--color-ink-300)]" title="Scheduled appointment time">
-              {apptTime}
-            </span>
-          )}
+          <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-600">
+            <Calendar size={9} /> Appt
+          </span>
         </div>
       </div>
       <div className="w-px self-stretch bg-[var(--color-border)]" />
