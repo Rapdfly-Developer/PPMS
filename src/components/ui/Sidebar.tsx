@@ -202,7 +202,7 @@ export function Sidebar({
           <button
             onClick={close}
             aria-label="Close menu"
-            className="lg:hidden"
+            className="min-[1025px]:hidden"
             style={{ flexShrink: 0, padding: 6, borderRadius: 8, color: "#7FAAA3", background: "transparent", border: "none", cursor: "pointer", display: "flex", alignItems: "center" }}
           >
             <X size={17} />

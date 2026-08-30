@@ -405,7 +405,7 @@ export function PatientsClient({
       </div>
 
       {/* ── KPI Cards ──────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-3 gap-3 mb-5">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
         <KpiCard icon={<PackageCheck size={17} />}  label="Today Dispensed" value={kpis.todayDispensed} color="green" sub="Dispensed today"   isActive={activeCard === "dispensed" || activeCard === ""} onSelect={() => navigate({ opStatus: activeCard === "dispensed" || activeCard === "" ? "all" : "dispensed", card: activeCard === "dispensed" || activeCard === "" ? "total" : "dispensed", page: "1" })} />
         <KpiCard icon={<Users size={17} />}         label="Total Patients"  value={kpis.totalPatients}  color="teal"  isActive={activeCard === "total"}    onSelect={() => navigate({ opStatus: "all", card: activeCard === "total" ? "dispensed" : "total", page: "1" })} />
         <KpiCard icon={<CalendarCheck size={17} />} label="Total Operated"  value={kpis.todayOperated}  color="blue"  sub="Surgery completed today" isActive={activeCard === "operated"} onSelect={() => navigate({ opStatus: activeCard === "operated" ? "dispensed" : "operated", card: activeCard === "operated" ? "" : "operated", page: "1" })} />

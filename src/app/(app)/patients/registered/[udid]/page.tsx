@@ -102,7 +102,7 @@ export default async function RegistrationSuccessPage({
         </div>
 
         {/* Actions */}
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <PrintButton />
           <Link
             href="/appointments"

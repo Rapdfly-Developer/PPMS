@@ -86,7 +86,7 @@ export default async function QueuePage() {
       </div>
 
       {/* KPI strip */}
-      <div className="grid grid-cols-3 gap-3 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
         {[
           { icon: <Users       size={15} />, value: total,   label: "Total today",   color: "text-[var(--color-ink-900)]",      bg: "bg-[var(--color-surface-raised)]" },
           { icon: <ClipboardList size={15} />, value: started, label: "Visit started", color: "text-[var(--color-primary-700)]",   bg: "bg-[var(--color-primary-50)]" },
