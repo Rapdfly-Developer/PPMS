@@ -16,6 +16,7 @@ const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
     "billing.view", "billing.create", "billing.edit", "billing.print",
     "reports.view", "reports.export",
     "settings.view", "settings.manage",
+    "plugins.view",
   ],
 };
 

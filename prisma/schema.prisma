@@ -65,6 +65,10 @@ model Doctor {
   surgerySchedules            SurgerySchedule[]
   dischargeSummaries          DischargeSummary[]
   postOpReviews               PostOpReview[]
+
+  // Plugin Framework
+  pluginRegistrations PluginRegistration[]
+  pluginLicenses      PluginLicense[]
 }
 
 model Hospital {
@@ -99,6 +103,9 @@ model Hospital {
   preAuths           InsurancePreAuthorization[]
   surgerySchedules   SurgerySchedule[]
   insuranceClaims    InsuranceClaim[]
+
+  // Plugin Framework
+  pluginConfigs PluginConfig[]
 }
 
 // ──────────────────────────────────────────────────────────────────────────
@@ -1489,4 +1496,69 @@ model CounsellingRecord {
   doctorDecisionNotes String?
   doctorReviewedAt    DateTime?
   confirmedAt         DateTime?
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// Plugin Framework
+// Generic infrastructure for installable plugins (AI Copilot, Voice-to-EMR,
+// etc.). Plugins register here; the framework enforces permissions, licensing,
+// and tenant isolation without touching PPMS Core models.
+// ──────────────────────────────────────────────────────────────────────────
+
+enum PluginStatus {
+  INSTALLED
+  ENABLED
+  DISABLED
+}
+
+// One row per (plugin, doctor). Tracks install state and version.
+model PluginRegistration {
+  id          String       @id @default(cuid())
+  pluginId    String
+  doctorId    String
+  doctor      Doctor       @relation(fields: [doctorId], references: [id])
+  status      PluginStatus @default(INSTALLED)
+  version     String       // semver from manifest at install time
+  installedAt DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@unique([pluginId, doctorId])
+  @@index([doctorId, status])
+}
+
+// Per-hospital key-value configuration bag for any plugin.
+// Plugins declare their config schema in their manifest; the framework
+// stores the actual values here without knowing their semantics.
+model PluginConfig {
+  id         String   @id @default(cuid())
+  pluginId   String
+  hospitalId String
+  hospital   Hospital @relation(fields: [hospitalId], references: [id])
+  key        String
+  value      Json
+  updatedAt  DateTime @updatedAt
+
+  @@unique([pluginId, hospitalId, key])
+  @@index([pluginId, hospitalId])
+}
+
+// Per-plugin, per-doctor licensing record (separate from the core
+// TenantLicense which covers base PPMS features).
+model PluginLicense {
+  id           String    @id @default(cuid())
+  pluginId     String
+  doctorId     String
+  doctor       Doctor    @relation(fields: [doctorId], references: [id])
+  // TRIAL | ACTIVE | EXPIRED | SUSPENDED
+  status       String    @default("TRIAL")
+  trialEndsAt  DateTime?
+  expiresAt    DateTime?
+  usageLimit   Int?      // monthly inference cap (null = unlimited)
+  usageCount   Int       @default(0)
+  usageResetAt DateTime? // when the monthly counter last reset
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@unique([pluginId, doctorId])
+  @@index([doctorId, status])
 }

@@ -7,6 +7,7 @@
  */
 
 import { seedRolesAndPermissions } from "@/app/(app)/settings/roles/actions";
+import { initPluginFramework } from "@/plugin-framework/startup";
 
 let done = false;
 
@@ -17,5 +18,10 @@ export async function runStartup() {
     await seedRolesAndPermissions();
   } catch {
     // Never block the request — seeding is best-effort
+  }
+  try {
+    await initPluginFramework();
+  } catch {
+    // Plugin framework init failures must never block PPMS Core
   }
 }

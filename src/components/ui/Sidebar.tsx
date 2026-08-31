@@ -7,7 +7,7 @@ import {
   LayoutDashboard, CalendarDays, Users, Eye,
   BedDouble, Settings, X,
   CalendarClock, BarChart2, Lock,
-  CreditCard, Scissors, HeartHandshake, LayoutGrid,
+  CreditCard, Scissors, HeartHandshake, LayoutGrid, Puzzle,
 } from "lucide-react";
 import clsx from "clsx";
 import type { Role } from "@/lib/constants";
@@ -36,6 +36,7 @@ const ALL_NAV: NavEntry[] = [
   { href: "/counseling",   label: "Counseling",    icon: HeartHandshake, permission: "patients.view",     roles: ["DOCTOR", "HOSPITAL"]      },
   { href: "/analytics",    label: "Analytics",     icon: BarChart2,      permission: "reports.view"                                          },
   { href: "/billing", label: "Billing & Insurance", icon: CreditCard, permission: "insurance.view", roles: ["DOCTOR", "HOSPITAL"] },
+  { href: "/settings/plugins", label: "Plugins", icon: Puzzle, permission: "plugins.view" },
   { href: "/settings",     label: "Settings",     icon: Settings,        permission: "settings.view"                                         },
 ];
 
