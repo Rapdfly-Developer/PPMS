@@ -113,7 +113,7 @@ function PolicyModal({
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className="block text-xs font-medium text-[var(--color-ink-500)] mb-1.5">Coverage %</label>
               <input name="coveragePercent" type="number" min="0" max="100" defaultValue={editing?.coveragePercent ?? 80} className="w-full rounded-xl px-3.5 py-2.5 text-sm bg-[var(--color-surface-2)] border border-[var(--color-border)] text-[var(--color-ink-900)] focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500/50" />
