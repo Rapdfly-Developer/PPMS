@@ -8,6 +8,8 @@
 
 import { seedRolesAndPermissions } from "@/app/(app)/settings/roles/actions";
 import { initPluginFramework } from "@/plugin-framework/startup";
+// Composition root — registers every plugin shipped in this build.
+import "@/plugins";
 
 let done = false;
 

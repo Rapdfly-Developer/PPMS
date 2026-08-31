@@ -1,5 +1,6 @@
 "use server";
 
+import "@/plugins";
 import { requireRole, requirePermission } from "@/lib/rbac";
 import { writeAudit } from "@/lib/audit";
 import { revalidatePath } from "next/cache";

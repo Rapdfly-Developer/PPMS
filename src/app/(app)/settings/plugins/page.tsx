@@ -1,3 +1,4 @@
+import "@/plugins";
 import { requirePermission } from "@/lib/rbac";
 import { listPluginsForDoctor } from "@/plugin-framework";
 import { checkPluginLicense } from "@/plugin-framework/license";

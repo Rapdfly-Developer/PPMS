@@ -20,6 +20,7 @@ export function EmrTabsShell({
   patientName,
   showActionBar,
   finalizedToday,
+  pluginSlot,
 }: {
   tabs: TabDef[];
   visit: any;
@@ -27,6 +28,12 @@ export function EmrTabsShell({
   patientName?: string;
   showActionBar: boolean;
   finalizedToday?: boolean;
+  /**
+   * Generic plugin UI extension point, rendered by PPMS Core and passed in as
+   * an opaque node. The shell knows nothing about which plugins exist, or
+   * whether any are enabled — when none are, this is null.
+   */
+  pluginSlot?: ReactNode;
 }) {
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState(tabs[0]?.id);
@@ -46,6 +53,7 @@ export function EmrTabsShell({
       <div className={showEditGate ? "pointer-events-none select-none opacity-70" : ""}>
         <Tabs tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
       </div>
+      {pluginSlot}
       {showActionBar && (
         <div className="no-print">
           <EmrActionBar

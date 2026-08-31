@@ -5,6 +5,8 @@
  * No AI, voice, or feature-specific logic lives here.
  */
 
+import type { ComponentType } from "react";
+
 // ── Plugin status (mirrors the Prisma enum) ───────────────────────────────
 
 export type PluginStatus = "INSTALLED" | "ENABLED" | "DISABLED";
@@ -170,11 +172,38 @@ export type PluginLifecycleHooks = {
   onUpdate?:  (payload: UpdatePayload)  => Promise<void>;
 };
 
-// ── The full Plugin definition (manifest + hooks) ─────────────────────────
+// ── UI component contracts ────────────────────────────────────────────────
+
+/**
+ * Props every EMR panel plugin component receives from the generic EMR slot.
+ * The slot supplies only identifiers already visible on the EMR page — the
+ * plugin must fetch anything further through the gateway, under its own
+ * permission checks.
+ */
+export type PluginEmrPanelProps = {
+  patientUdid: string;
+  patientName: string;
+  visitId: string;
+  /** True when the visit is CLOSED — panels should render read-only. */
+  visitClosed: boolean;
+};
+
+/**
+ * React components a plugin contributes to PPMS UI extension points.
+ * Kept separate from the manifest because the manifest is serialisable data
+ * while these are live component references.
+ */
+export type PluginComponents = {
+  /** Rendered by the generic EMR slot when ui.emrPanel.enabled is true. */
+  emrPanel?: ComponentType<PluginEmrPanelProps>;
+};
+
+// ── The full Plugin definition (manifest + hooks + components) ────────────
 
 export type Plugin = {
   manifest: PluginManifest;
   hooks?: PluginLifecycleHooks;
+  components?: PluginComponents;
 };
 
 // ── Error types ───────────────────────────────────────────────────────────

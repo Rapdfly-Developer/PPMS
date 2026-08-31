@@ -13,6 +13,8 @@ export type {
   PluginLicenseStatus,
   PluginRecord,
   PluginLifecycleHooks,
+  PluginComponents,
+  PluginEmrPanelProps,
   GatewayContext,
   ConfigField,
   ConfigFieldType,
