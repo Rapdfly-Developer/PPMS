@@ -46,6 +46,13 @@ function baseOpts() {
     visitId: "visit-001",
     pluginId: "ppms.plugin.ai-clinical-copilot",
     permissions: ["ai.copilot.view", "ai.copilot.draft"],
+    dataScopes: [
+      "patient.demographics",
+      "visit.context",
+      "visit.history",
+      "patient.timeline",
+      "appointment.history",
+    ],
   };
 }
 

@@ -44,8 +44,21 @@ export type PluginTokenPayload = {
   visitId: string;
   /** Resolved pluginId — duplicates sub for clarity at verification */
   pluginId: string;
-  /** Plugin permissions the doctor holds */
+  /** Plugin permissions the doctor holds (PPMS role permissions) */
   permissions: string[];
+  /**
+   * Data-access scopes this token grants, derived from manifest.requiredApis
+   * at issuance time. The server populates this — clients cannot choose or
+   * expand scopes. Tampering invalidates the HMAC signature.
+   *
+   * Each scope corresponds to one /api/v1/patients/* endpoint group:
+   *   "patient.demographics" → GET /api/v1/patients/[ref]
+   *   "visit.history"        → GET /api/v1/patients/[ref]/visits
+   *   "visit.context"        → GET /api/v1/patients/[ref]/visits/[id]
+   *   "appointment.history"  → GET /api/v1/patients/[ref]/appointments
+   *   "patient.timeline"     → GET /api/v1/patients/[ref]/timeline
+   */
+  dataScopes: string[];
   /** Issued-at (unix seconds) */
   iat: number;
   /** Expiry (unix seconds) — maximum 10 minutes from iat */
@@ -98,6 +111,11 @@ export type SignOptions = {
   visitId: string;
   pluginId: string;
   permissions: string[];
+  /**
+   * Data-access scopes to embed. Pass manifest.requiredApis from the
+   * plugin-token issuance route. Never accept this from the client.
+   */
+  dataScopes: string[];
   /** Lifetime in seconds — capped at 600 regardless of what is passed. */
   lifetimeSec?: number;
 };
@@ -121,6 +139,7 @@ export function signPluginToken(opts: SignOptions): string {
     visitId: opts.visitId,
     pluginId: opts.pluginId,
     permissions: opts.permissions,
+    dataScopes: opts.dataScopes,
     iat: now,
     exp: now + lifetime,
   };
@@ -192,7 +211,8 @@ export function verifyPluginToken(authorizationHeader: string | null): VerifyRes
     !payload.pluginId ||
     !payload.patientRef ||
     !payload.exp ||
-    !payload.iat
+    !payload.iat ||
+    !Array.isArray(payload.dataScopes)
   ) {
     return { ok: false, reason: "MALFORMED" };
   }

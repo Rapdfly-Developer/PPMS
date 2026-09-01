@@ -20,7 +20,7 @@ export async function GET(
 ) {
   const { patientRef, visitId } = await params;
 
-  const auth = await authorizeTokenRequest(req, "ai.copilot.view");
+  const auth = await authorizeTokenRequest(req, "visit.context");
   if (!auth.ok) return auth.response;
   const { ctx } = auth;
 

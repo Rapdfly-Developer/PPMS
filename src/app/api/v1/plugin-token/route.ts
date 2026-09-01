@@ -170,7 +170,9 @@ export async function POST(req: Request) {
     );
   }
 
-  // 10. Issue token — no patient medical data inside the token
+  // 10. Issue token — no patient medical data inside the token.
+  // dataScopes are derived from the manifest's requiredApis — the server
+  // decides what data the plugin may access; the client never chooses.
   let token: string;
   try {
     token = signPluginToken({
@@ -180,6 +182,7 @@ export async function POST(req: Request) {
       visitId,
       pluginId,
       permissions,
+      dataScopes: pluginManifest.requiredApis,
     });
   } catch (err) {
     console.error("[plugin-token] signPluginToken failed:", (err as Error).message);

@@ -16,7 +16,7 @@ export async function GET(
 ) {
   const { patientRef } = await params;
 
-  const auth = await authorizeTokenRequest(req, "ai.copilot.view");
+  const auth = await authorizeTokenRequest(req, "appointment.history");
   if (!auth.ok) return auth.response;
   const { ctx } = auth;
 

@@ -97,6 +97,7 @@ export async function ExternalPluginSlot({
       visitId,
       pluginId,
       permissions: user.permissions ?? [],
+      dataScopes: pluginRecord.manifest.requiredApis,
     });
   } catch {
     return null;

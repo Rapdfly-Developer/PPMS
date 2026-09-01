@@ -1,9 +1,12 @@
 /**
  * External Plugin Gateway Tests
  *
- * Tests for the token-auth middleware and security properties of the
- * external gateway layer. No database required — tests the pure logic
- * in plugin-token.ts and token-auth.ts contracts.
+ * Tests for the generic data-scope authorization mechanism and security
+ * properties of the external plugin gateway.
+ *
+ * No database required — tests pure logic in plugin-token.ts.
+ * The authorizeTokenRequest DB checks (isPluginRegistered, isPluginEnabled)
+ * are tested separately via integration tests.
  *
  * Run with:
  *   npx tsx src/app/api/v1/__tests__/external-gateway.test.ts
@@ -36,56 +39,104 @@ function assert(condition: boolean, message: string) {
   if (!condition) throw new Error(message);
 }
 
-// ── Token-level security tests ────────────────────────────────────────────
+// ── Shared test fixtures ──────────────────────────────────────────────────
 
-console.log("\nExternal Gateway Security Tests\n");
-
-// Base token opts for Doctor A / Hospital A / Patient A
 const DOCTOR_A = "doctor-aaa";
 const HOSPITAL_A = "hosp-aaa";
 const PATIENT_A = "patient-aaa";
 const VISIT_A = "visit-aaa";
-const PLUGIN_ID = "ppms.plugin.ai-clinical-copilot";
 
-function tokenForDoctorA(overrides: Record<string, unknown> = {}) {
+// Plugin IDs
+const COPILOT_PLUGIN_ID   = "ppms.plugin.ai-clinical-copilot";
+const VOICE_EMR_PLUGIN_ID = "ppms.plugin.voice-to-emr";
+const MEDICAL_CODING_ID   = "ppms.plugin.ai-medical-coding"; // hypothetical third plugin
+
+// Data scopes per plugin — must match manifest.requiredApis
+const COPILOT_SCOPES: string[] = [
+  "patient.demographics",
+  "visit.context",
+  "visit.history",
+  "patient.timeline",
+  "appointment.history",
+];
+
+const VOICE_EMR_SCOPES: string[] = [
+  "patient.demographics",
+  "visit.context",
+];
+
+const MEDICAL_CODING_SCOPES: string[] = [
+  "patient.demographics",
+  "visit.context",
+];
+
+// Helpers
+function copilotToken(overrides: Record<string, unknown> = {}) {
   return signPluginToken({
     doctorId: DOCTOR_A,
     hospitalId: HOSPITAL_A,
     patientRef: PATIENT_A,
     visitId: VISIT_A,
-    pluginId: PLUGIN_ID,
+    pluginId: COPILOT_PLUGIN_ID,
     permissions: ["ai.copilot.view", "ai.copilot.draft"],
+    dataScopes: COPILOT_SCOPES,
     ...overrides,
   } as Parameters<typeof signPluginToken>[0]);
 }
 
-// 1. Valid token for correct doctor/patient/hospital
-test("Doctor A + Patient A + Hospital A: token verifies ok", () => {
-  const token = tokenForDoctorA();
+function voiceEmrToken(overrides: Record<string, unknown> = {}) {
+  return signPluginToken({
+    doctorId: DOCTOR_A,
+    hospitalId: HOSPITAL_A,
+    patientRef: PATIENT_A,
+    visitId: VISIT_A,
+    pluginId: VOICE_EMR_PLUGIN_ID,
+    permissions: ["ai.voice-emr.view", "ai.voice-emr.transcribe"],
+    dataScopes: VOICE_EMR_SCOPES,
+    ...overrides,
+  } as Parameters<typeof signPluginToken>[0]);
+}
+
+function medicalCodingToken(overrides: Record<string, unknown> = {}) {
+  return signPluginToken({
+    doctorId: DOCTOR_A,
+    hospitalId: HOSPITAL_A,
+    patientRef: PATIENT_A,
+    visitId: VISIT_A,
+    pluginId: MEDICAL_CODING_ID,
+    permissions: ["ai.medical-coding.view"],
+    dataScopes: MEDICAL_CODING_SCOPES,
+    ...overrides,
+  } as Parameters<typeof signPluginToken>[0]);
+}
+
+// ── Section 1: Core token security (unchanged from baseline) ─────────────
+
+console.log("\nExternal Gateway Security Tests\n");
+console.log("── Section 1: Token security ──────────────────────────────────");
+
+test("Valid Copilot token verifies ok", () => {
+  const token = copilotToken();
   const result = verifyPluginToken(`Bearer ${token}`);
   assert(result.ok === true, "Expected ok=true");
   if (!result.ok) return;
   assert(result.payload.doctorId === DOCTOR_A, "doctorId mismatch");
   assert(result.payload.patientRef === PATIENT_A, "patientRef mismatch");
   assert(result.payload.hospitalId === HOSPITAL_A, "hospitalId mismatch");
+  assert(result.payload.pluginId === COPILOT_PLUGIN_ID, "pluginId mismatch");
 });
 
-// 2. Token scoped to Patient A cannot be used with a different patientRef
-// (The API route enforces auth.patientRef === URL patientRef)
-test("Token's patientRef field is locked to the issued patient", () => {
-  const token = tokenForDoctorA();
+test("Token's patientRef is locked to the issued patient", () => {
+  const token = copilotToken();
   const result = verifyPluginToken(`Bearer ${token}`);
   assert(result.ok === true, "Token should be valid");
   if (!result.ok) return;
-  // Simulate the API route check
-  const urlPatientRef = "patient-bbb"; // Different patient
-  const tokenPatientRef = result.payload.patientRef;
-  assert(tokenPatientRef !== urlPatientRef, "patientRef mismatch should be caught by route");
+  const urlPatientRef = "patient-bbb";
+  assert(result.payload.patientRef !== urlPatientRef, "patientRef mismatch should be caught by route");
 });
 
-// 3. Token signed with wrong secret is rejected
-test("Token with wrong secret: SIGNATURE failure", () => {
-  const token = tokenForDoctorA();
+test("Token with wrong HMAC secret: SIGNATURE failure", () => {
+  const token = copilotToken();
   const orig = process.env.PLUGIN_TOKEN_SECRET;
   process.env.PLUGIN_TOKEN_SECRET = "d".repeat(64);
   const result = verifyPluginToken(`Bearer ${token}`);
@@ -94,15 +145,13 @@ test("Token with wrong secret: SIGNATURE failure", () => {
   if (!result.ok) assert(result.reason === "SIGNATURE", `Expected SIGNATURE, got ${result.reason}`);
 });
 
-// 4. Expired token
 test("Expired token: EXPIRED failure", () => {
-  const token = tokenForDoctorA();
+  const token = copilotToken();
   const parts = token.split(".");
   const payload = JSON.parse(Buffer.from(parts[1], "base64url").toString());
-  payload.exp = Math.floor(Date.now() / 1000) - 60; // expired 1 min ago
+  payload.exp = Math.floor(Date.now() / 1000) - 60;
   const tamperedPayload = Buffer.from(JSON.stringify(payload)).toString("base64url");
-  const tamperedToken = `${parts[0]}.${tamperedPayload}.${parts[2]}`;
-  const result = verifyPluginToken(`Bearer ${tamperedToken}`);
+  const result = verifyPluginToken(`Bearer ${parts[0]}.${tamperedPayload}.${parts[2]}`);
   assert(result.ok === false, "Expected rejection for expired token");
   if (!result.ok) {
     assert(
@@ -112,9 +161,8 @@ test("Expired token: EXPIRED failure", () => {
   }
 });
 
-// 5. Replayed token (jti already consumed)
 test("Replayed token: REPLAYED failure on second use", () => {
-  const token = tokenForDoctorA();
+  const token = copilotToken();
   const r1 = verifyPluginToken(`Bearer ${token}`);
   assert(r1.ok === true, "First use should succeed");
   const r2 = verifyPluginToken(`Bearer ${token}`);
@@ -122,16 +170,20 @@ test("Replayed token: REPLAYED failure on second use", () => {
   if (!r2.ok) assert(r2.reason === "REPLAYED", `Expected REPLAYED, got ${r2.reason}`);
 });
 
-// 6. Missing Authorization header
-test("No Authorization header: MISSING", () => {
+test("Missing Authorization header: MISSING", () => {
   const result = verifyPluginToken(null);
   assert(result.ok === false, "Expected ok=false");
   if (!result.ok) assert(result.reason === "MISSING", `Expected MISSING, got ${result.reason}`);
 });
 
-// 7. Tampered doctorId in payload — signature check catches it
+test("Empty Bearer token: MALFORMED", () => {
+  const result = verifyPluginToken("Bearer ");
+  assert(result.ok === false, "Expected ok=false");
+  if (!result.ok) assert(result.reason === "MALFORMED", `Expected MALFORMED, got ${result.reason}`);
+});
+
 test("Tampered doctorId in payload: SIGNATURE failure", () => {
-  const token = tokenForDoctorA();
+  const token = copilotToken();
   const parts = token.split(".");
   const payload = JSON.parse(Buffer.from(parts[1], "base64url").toString());
   payload.doctorId = "evil-doctor";
@@ -141,9 +193,8 @@ test("Tampered doctorId in payload: SIGNATURE failure", () => {
   if (!result.ok) assert(result.reason === "SIGNATURE", `Expected SIGNATURE, got ${result.reason}`);
 });
 
-// 8. Tampered hospitalId in payload
 test("Tampered hospitalId in payload: SIGNATURE failure", () => {
-  const token = tokenForDoctorA();
+  const token = copilotToken();
   const parts = token.split(".");
   const payload = JSON.parse(Buffer.from(parts[1], "base64url").toString());
   payload.hospitalId = "hosp-evil";
@@ -153,59 +204,27 @@ test("Tampered hospitalId in payload: SIGNATURE failure", () => {
   if (!result.ok) assert(result.reason === "SIGNATURE", `Expected SIGNATURE, got ${result.reason}`);
 });
 
-// 9. Tampered permissions in payload
 test("Tampered permissions in payload: SIGNATURE failure", () => {
-  const token = tokenForDoctorA();
+  const token = copilotToken();
   const parts = token.split(".");
   const payload = JSON.parse(Buffer.from(parts[1], "base64url").toString());
-  payload.permissions = ["*"]; // Escalation attempt
+  payload.permissions = ["*"];
   const tampered = Buffer.from(JSON.stringify(payload)).toString("base64url");
   const result = verifyPluginToken(`Bearer ${parts[0]}.${tampered}.${parts[2]}`);
   assert(result.ok === false, "Permission escalation must be rejected");
   if (!result.ok) assert(result.reason === "SIGNATURE", `Expected SIGNATURE, got ${result.reason}`);
 });
 
-// 10. Token for Hospital A cannot authenticate for Hospital B's data
-//     (The token's hospitalId is bound; route resolves tenant from it)
 test("Token's hospitalId is locked to the issued hospital", () => {
-  const token = tokenForDoctorA();
+  const token = copilotToken();
   const result = verifyPluginToken(`Bearer ${token}`);
   assert(result.ok === true, "Token should verify");
   if (!result.ok) return;
-  assert(result.payload.hospitalId === HOSPITAL_A, "hospitalId in payload must match issued value");
-  // The gateway uses payload.hospitalId as the tenant scope — a different
-  // hospital's data is unreachable because resolveScopedPatientId() checks
-  // DoctorHospitalLink for this hospitalId.
+  assert(result.payload.hospitalId === HOSPITAL_A, "hospitalId must match issued value");
 });
 
-// 11. Missing permission in token
-test("Token without ai.copilot.view cannot view patient", () => {
-  const token = signPluginToken({
-    doctorId: DOCTOR_A,
-    hospitalId: HOSPITAL_A,
-    patientRef: PATIENT_A,
-    visitId: VISIT_A,
-    pluginId: PLUGIN_ID,
-    permissions: [], // No permissions at all
-  });
-  const result = verifyPluginToken(`Bearer ${token}`);
-  assert(result.ok === true, "Token itself is structurally valid");
-  if (!result.ok) return;
-  // The authorizeTokenRequest helper checks userCan() against these permissions
-  const hasPermission = result.payload.permissions.includes("ai.copilot.view");
-  assert(!hasPermission, "Token should not have ai.copilot.view");
-});
-
-// 12. Empty Bearer token
-test("Empty Bearer token: MALFORMED", () => {
-  const result = verifyPluginToken("Bearer ");
-  assert(result.ok === false, "Expected ok=false");
-  if (!result.ok) assert(result.reason === "MALFORMED", `Expected MALFORMED, got ${result.reason}`);
-});
-
-// 13. Token does not contain sensitive data fields
 test("Token payload does not leak clinical data field names", () => {
-  const token = tokenForDoctorA();
+  const token = copilotToken();
   const rawPayload = token.split(".")[1];
   const payloadStr = Buffer.from(rawPayload, "base64url").toString();
   const sensitiveFields = [
@@ -217,38 +236,227 @@ test("Token payload does not leak clinical data field names", () => {
   }
 });
 
-// 14. Unique jti per token — cannot pre-compute tokens
 test("Each signPluginToken call produces a unique jti", () => {
   const jtis = new Set<string>();
   for (let i = 0; i < 5; i++) {
-    const token = tokenForDoctorA();
+    const token = copilotToken();
     const payload = JSON.parse(Buffer.from(token.split(".")[1], "base64url").toString());
     jtis.add(payload.jti);
   }
   assert(jtis.size === 5, `Expected 5 unique jtis, got ${jtis.size}`);
 });
 
-// 15. postMessage origin validation logic (documented contract)
-test("postMessage: non-matching origin must be ignored (documented contract)", () => {
-  const copilotOrigin = process.env.NEXT_PUBLIC_COPILOT_ORIGIN ?? "https://copilot.ppmsai.com";
-  const evilOrigin = "https://evil.example.com";
-  // The client component does: if (event.origin !== copilotOrigin) return;
-  assert(evilOrigin !== copilotOrigin, "Evil origin must not match copilot origin");
-  assert(copilotOrigin.startsWith("https://"), "Copilot origin must be https");
+// ── Section 2: Data-scope contents per plugin ─────────────────────────────
+
+console.log("\n── Section 2: Data scopes per plugin ──────────────────────────");
+
+test("Copilot token: all five data scopes are present", () => {
+  const token = copilotToken();
+  const result = verifyPluginToken(`Bearer ${token}`);
+  assert(result.ok === true, "Token should verify");
+  if (!result.ok) return;
+  const scopes = result.payload.dataScopes;
+  assert(scopes.includes("patient.demographics"), "Missing patient.demographics");
+  assert(scopes.includes("visit.context"),        "Missing visit.context");
+  assert(scopes.includes("visit.history"),        "Missing visit.history");
+  assert(scopes.includes("patient.timeline"),     "Missing patient.timeline");
+  assert(scopes.includes("appointment.history"),  "Missing appointment.history");
 });
 
-// 16. postMessage: wildcard '*' is never used (documented contract)
-test("postMessage target is never '*' — exact origin required (documented contract)", () => {
-  // In ExternalPluginSlotClient.tsx:
-  //   iframe.contentWindow.postMessage({...}, copilotOrigin)
-  //                                          ^ exact string, never "*"
-  const copilotOrigin = process.env.NEXT_PUBLIC_COPILOT_ORIGIN ?? "https://copilot.ppmsai.com";
-  assert(copilotOrigin !== "*", "postMessage target must not be '*'");
+test("Voice-to-EMR token: only patient.demographics and visit.context", () => {
+  const token = voiceEmrToken();
+  const result = verifyPluginToken(`Bearer ${token}`);
+  assert(result.ok === true, "Token should verify");
+  if (!result.ok) return;
+  const scopes = result.payload.dataScopes;
+  assert(scopes.includes("patient.demographics"), "Missing patient.demographics");
+  assert(scopes.includes("visit.context"),        "Missing visit.context");
+  assert(!scopes.includes("visit.history"),       "Should NOT have visit.history");
+  assert(!scopes.includes("patient.timeline"),    "Should NOT have patient.timeline");
+  assert(!scopes.includes("appointment.history"), "Should NOT have appointment.history");
+});
+
+test("Third-plugin (Medical Coding) token: scopes match its manifest", () => {
+  const token = medicalCodingToken();
+  const result = verifyPluginToken(`Bearer ${token}`);
+  assert(result.ok === true, "Token should verify");
+  if (!result.ok) return;
+  const scopes = result.payload.dataScopes;
+  assert(scopes.includes("patient.demographics"), "Missing patient.demographics");
+  assert(scopes.includes("visit.context"),        "Missing visit.context");
+  assert(!scopes.includes("visit.history"),       "Should NOT have visit.history (not declared)");
+  assert(!scopes.includes("patient.timeline"),    "Should NOT have patient.timeline (not declared)");
+  assert(result.payload.pluginId === MEDICAL_CODING_ID, "pluginId must match");
+});
+
+// ── Section 3: Data-scope enforcement (simulated route checks) ────────────
+
+console.log("\n── Section 3: Data-scope enforcement ──────────────────────────");
+
+function scopeCheck(token: string, requiredScope: string): boolean {
+  const result = verifyPluginToken(`Bearer ${token}`);
+  if (!result.ok) return false;
+  return result.payload.dataScopes.includes(requiredScope);
+}
+
+test("Copilot token + patient.demographics → allowed", () => {
+  assert(scopeCheck(copilotToken(), "patient.demographics"), "Should be allowed");
+});
+
+test("Copilot token + visit.history → allowed", () => {
+  assert(scopeCheck(copilotToken(), "visit.history"), "Should be allowed");
+});
+
+test("Copilot token + patient.timeline → allowed", () => {
+  assert(scopeCheck(copilotToken(), "patient.timeline"), "Should be allowed");
+});
+
+test("Voice-to-EMR token + patient.demographics → allowed", () => {
+  assert(scopeCheck(voiceEmrToken(), "patient.demographics"), "Should be allowed");
+});
+
+test("Voice-to-EMR token + visit.context → allowed", () => {
+  assert(scopeCheck(voiceEmrToken(), "visit.context"), "Should be allowed");
+});
+
+test("Voice-to-EMR token + visit.history → REJECTED (not in manifest)", () => {
+  assert(!scopeCheck(voiceEmrToken(), "visit.history"), "Should be rejected — Voice-to-EMR does not declare visit.history");
+});
+
+test("Voice-to-EMR token + patient.timeline → REJECTED (not in manifest)", () => {
+  assert(!scopeCheck(voiceEmrToken(), "patient.timeline"), "Should be rejected — Voice-to-EMR does not declare patient.timeline");
+});
+
+test("Voice-to-EMR token + appointment.history → REJECTED (not in manifest)", () => {
+  assert(!scopeCheck(voiceEmrToken(), "appointment.history"), "Should be rejected — Voice-to-EMR does not declare appointment.history");
+});
+
+test("Third-plugin token + patient.demographics → allowed", () => {
+  assert(scopeCheck(medicalCodingToken(), "patient.demographics"), "Third plugin can access declared scope");
+});
+
+test("Third-plugin token + visit.history → REJECTED (not in manifest)", () => {
+  assert(!scopeCheck(medicalCodingToken(), "visit.history"), "Third plugin cannot access undeclared scope");
+});
+
+test("Token with empty dataScopes → all scope checks fail", () => {
+  // A token with no scopes should be rejected at every endpoint
+  const token = signPluginToken({
+    doctorId: DOCTOR_A,
+    hospitalId: HOSPITAL_A,
+    patientRef: PATIENT_A,
+    visitId: VISIT_A,
+    pluginId: COPILOT_PLUGIN_ID,
+    permissions: ["ai.copilot.view"],
+    dataScopes: [],
+  });
+  const allScopes = [
+    "patient.demographics", "visit.context", "visit.history",
+    "patient.timeline", "appointment.history",
+  ];
+  for (const scope of allScopes) {
+    assert(!scopeCheck(token, scope), `Empty-scope token must not pass ${scope} check`);
+  }
+});
+
+// ── Section 4: Tamper-resistance for dataScopes ───────────────────────────
+
+console.log("\n── Section 4: Scope tamper-resistance ─────────────────────────");
+
+test("Tampered dataScopes in payload: SIGNATURE failure", () => {
+  // Voice-to-EMR only has patient.demographics + visit.context.
+  // Attacker tries to add patient.timeline to the payload.
+  const token = voiceEmrToken();
+  const parts = token.split(".");
+  const payload = JSON.parse(Buffer.from(parts[1], "base64url").toString());
+  payload.dataScopes = [...payload.dataScopes, "patient.timeline", "appointment.history"];
+  const tampered = Buffer.from(JSON.stringify(payload)).toString("base64url");
+  const result = verifyPluginToken(`Bearer ${parts[0]}.${tampered}.${parts[2]}`);
+  assert(result.ok === false, "Scope escalation attempt must be rejected");
+  if (!result.ok) assert(result.reason === "SIGNATURE", `Expected SIGNATURE, got ${result.reason}`);
+});
+
+test("Tampered pluginId in payload: SIGNATURE failure", () => {
+  // Attacker tries to swap the pluginId to claim a different plugin's identity
+  const token = voiceEmrToken();
+  const parts = token.split(".");
+  const payload = JSON.parse(Buffer.from(parts[1], "base64url").toString());
+  payload.pluginId = COPILOT_PLUGIN_ID;
+  payload.sub = COPILOT_PLUGIN_ID;
+  const tampered = Buffer.from(JSON.stringify(payload)).toString("base64url");
+  const result = verifyPluginToken(`Bearer ${parts[0]}.${tampered}.${parts[2]}`);
+  assert(result.ok === false, "Plugin identity swap must be rejected");
+  if (!result.ok) assert(result.reason === "SIGNATURE", `Expected SIGNATURE, got ${result.reason}`);
+});
+
+test("Missing dataScopes field → token is MALFORMED", () => {
+  // Simulate a pre-migration token (before dataScopes was added to the schema)
+  const token = copilotToken();
+  const parts = token.split(".");
+  const payload = JSON.parse(Buffer.from(parts[1], "base64url").toString());
+  delete payload.dataScopes;
+  const tampered = Buffer.from(JSON.stringify(payload)).toString("base64url");
+  // Re-sign with current secret so the structure test is triggered
+  const { createHmac } = require("crypto");
+  const secret = process.env.PLUGIN_TOKEN_SECRET!;
+  const signingInput = `${parts[0]}.${tampered}`;
+  const newSig = createHmac("sha256", secret).update(signingInput).digest("base64url");
+  const result = verifyPluginToken(`Bearer ${signingInput}.${newSig}`);
+  // Must be rejected as MALFORMED (missing required dataScopes array)
+  assert(result.ok === false, "Token without dataScopes must be rejected");
+  if (!result.ok) {
+    assert(result.reason === "MALFORMED", `Expected MALFORMED, got ${result.reason}`);
+  }
+});
+
+// ── Section 5: Tenant and patient isolation ──────────────────────────────
+
+console.log("\n── Section 5: Tenant and patient isolation ─────────────────────");
+
+test("Token scoped to Patient A: patientRef locked in payload", () => {
+  const token = copilotToken();
+  const result = verifyPluginToken(`Bearer ${token}`);
+  assert(result.ok === true, "Token should verify");
+  if (!result.ok) return;
+  // The API route enforces: auth.patientRef === URL patientRef
+  assert(result.payload.patientRef === PATIENT_A, "patientRef must be Patient A");
+  const differentPatient = "patient-bbb";
+  assert(result.payload.patientRef !== differentPatient, "Different patient must not match");
+});
+
+test("Token for Doctor A cannot claim Hospital B's data", () => {
+  const token = copilotToken();
+  const result = verifyPluginToken(`Bearer ${token}`);
+  assert(result.ok === true, "Token should verify");
+  if (!result.ok) return;
+  assert(result.payload.hospitalId === HOSPITAL_A, "hospitalId must match issued value");
+  const differentHospital = "hosp-bbb";
+  assert(result.payload.hospitalId !== differentHospital, "Different hospital must not match");
+});
+
+// ── Section 6: postMessage origin contract (documented) ──────────────────
+
+console.log("\n── Section 6: postMessage origin contract ──────────────────────");
+
+test("postMessage target is never '*' — exact plugin origin required", () => {
+  // ExternalPluginSlotClient.tsx: iframe.contentWindow.postMessage({...}, pluginOrigin)
+  // The origin is always the specific plugin origin, never "*"
+  const pluginOrigin = process.env.NEXT_PUBLIC_COPILOT_ORIGIN ?? "https://copilot.ppmsai.com";
+  assert(pluginOrigin !== "*", "postMessage target must not be '*'");
+  assert(pluginOrigin.startsWith("https://"), "Plugin origin must be https");
+});
+
+test("postMessage inbound: non-matching origin must be ignored", () => {
+  // ExternalPluginSlotClient.tsx: if (event.origin !== pluginOrigin) return;
+  const pluginOrigin = process.env.NEXT_PUBLIC_COPILOT_ORIGIN ?? "https://copilot.ppmsai.com";
+  const evilOrigin = "https://evil.example.com";
+  assert(evilOrigin !== pluginOrigin, "Evil origin must not match plugin origin");
 });
 
 // ── Summary ───────────────────────────────────────────────────────────────
 
 setTimeout(() => {
-  console.log(`\nResults: ${passed} passed, ${failed} failed\n`);
+  console.log(`\n${"─".repeat(60)}`);
+  console.log(`Results: ${passed} passed, ${failed} failed\n`);
   if (failed > 0) process.exit(1);
-}, 200);
+}, 400);

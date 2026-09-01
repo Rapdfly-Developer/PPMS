@@ -2,9 +2,50 @@ import { auth } from "@/auth";
 import { NextResponse } from "next/server";
 import { roleHome } from "@/lib/rbac";
 
+// ── External plugin CORS ──────────────────────────────────────────────────
+// One entry per registered external plugin — add a line when a new external
+// plugin is deployed. Order does not matter.
+const ALLOWED_PLUGIN_ORIGINS: string[] = [
+  process.env.NEXT_PUBLIC_COPILOT_ORIGIN,
+  process.env.NEXT_PUBLIC_VOICE_EMR_ORIGIN,
+].filter((v): v is string => typeof v === "string" && v.length > 0);
+
+const CORS_METHODS = "GET, POST, OPTIONS";
+const CORS_HEADERS = "Authorization, Content-Type";
+const CORS_MAX_AGE = "86400";
+
 export default auth((req) => {
   const isLoggedIn = !!req.auth;
   const { pathname } = req.nextUrl;
+
+  // ── External plugin API — handle CORS and pass through ────────────────────
+  // /api/v1/* routes authenticate via HMAC-signed Bearer token — they must NOT
+  // be redirected to /login. Handle OPTIONS preflight and attach CORS headers,
+  // then return immediately without touching the auth-redirect logic below.
+  if (pathname.startsWith("/api/v1/")) {
+    const origin = req.headers.get("origin") ?? "";
+    const isAllowed = ALLOWED_PLUGIN_ORIGINS.includes(origin);
+
+    if (req.method === "OPTIONS") {
+      const res = new NextResponse(null, { status: 204 });
+      if (isAllowed) {
+        res.headers.set("Access-Control-Allow-Origin", origin);
+        res.headers.set("Access-Control-Allow-Methods", CORS_METHODS);
+        res.headers.set("Access-Control-Allow-Headers", CORS_HEADERS);
+        res.headers.set("Access-Control-Max-Age", CORS_MAX_AGE);
+      }
+      return res;
+    }
+
+    const res = NextResponse.next();
+    if (isAllowed) {
+      res.headers.set("Access-Control-Allow-Origin", origin);
+      res.headers.set("Access-Control-Allow-Methods", CORS_METHODS);
+      res.headers.set("Access-Control-Allow-Headers", CORS_HEADERS);
+    }
+    return res;
+  }
+  // ─────────────────────────────────────────────────────────────────────────
 
   // ── Subdomain routing ──────────────────────────────────────────────────────
   // doctorsai.ppmsai.com → rewrite to /sub/doctorsai (public, no auth needed)
