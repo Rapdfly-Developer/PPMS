@@ -1,18 +1,17 @@
 /**
  * ExternalPluginSlot — Server Component
  *
- * Generic iframe integration point for externally-deployed plugins.
- * Parameterised by pluginId so it works for any future external plugin,
- * not just the AI Copilot.
+ * Generic iframe integration point for any externally-deployed plugin registered
+ * in this PPMS build. Parameterised by pluginId — works for AI Clinical Copilot,
+ * Voice-to-EMR, and any future external plugin without modification.
  *
- * Responsibilities:
- *   1. Check that the external plugin is enabled for this doctor.
- *   2. Check that the user holds the required trigger permission.
- *   3. Issue a short-lived signed plugin token (server-side, never in URL).
- *   4. Pass token + origin to the client component for postMessage delivery.
- *
- * Renders nothing if the plugin is disabled, permission is absent, or
- * NEXT_PUBLIC_COPILOT_ORIGIN is not configured.
+ * Renders nothing when:
+ *   - the pluginId is not registered in this PPMS build
+ *   - the plugin has no externalOrigin configured (in-process plugin)
+ *   - the plugin is disabled for this doctor
+ *   - the user does not hold the plugin's trigger permission
+ *   - the license is blocked
+ *   - PLUGIN_TOKEN_SECRET is not configured
  */
 
 import { auth } from "@/auth";
@@ -20,6 +19,7 @@ import { userCan } from "@/lib/rbac";
 import { isPluginEnabled } from "@/plugin-framework/manager";
 import { checkPluginLicense } from "@/plugin-framework/license";
 import { signPluginToken } from "@/lib/plugin-token";
+import { isPluginRegistered, getPlugin } from "@/plugin-framework/registry";
 import { ExternalPluginSlotClient } from "./ExternalPluginSlotClient";
 
 type Props = {
@@ -35,13 +35,17 @@ export async function ExternalPluginSlot({
   patientUdid,
   visitId,
 }: Props) {
-  const copilotOrigin = process.env.NEXT_PUBLIC_COPILOT_ORIGIN;
-  if (!copilotOrigin) return null;
-
   // Only render when PLUGIN_TOKEN_SECRET is configured
   if (!process.env.PLUGIN_TOKEN_SECRET || process.env.PLUGIN_TOKEN_SECRET.length < 32) {
     return null;
   }
+
+  // Plugin must be registered and must declare an external deployment origin
+  if (!isPluginRegistered(pluginId)) return null;
+  const pluginRecord = getPlugin(pluginId);
+  const pluginOrigin = pluginRecord.manifest.externalOrigin ?? null;
+  if (!pluginOrigin) return null;
+  const pluginName = pluginRecord.manifest.name;
 
   const session = await auth();
   if (!session?.user) return null;
@@ -95,13 +99,13 @@ export async function ExternalPluginSlot({
       permissions: user.permissions ?? [],
     });
   } catch {
-    // PLUGIN_TOKEN_SECRET not configured — slot is unavailable
     return null;
   }
 
   return (
     <ExternalPluginSlotClient
-      copilotOrigin={copilotOrigin}
+      pluginOrigin={pluginOrigin}
+      pluginName={pluginName}
       token={token}
       patientRef={patientUdid}
       visitId={visitId}

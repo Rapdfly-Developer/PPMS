@@ -126,4 +126,6 @@ export const manifest: PluginManifest = {
     trialDays: 14,
     monthlyUsageLimit: 500,
   },
+
+  externalOrigin: process.env.NEXT_PUBLIC_COPILOT_ORIGIN ?? null,
 };

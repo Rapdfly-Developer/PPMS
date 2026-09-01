@@ -22,7 +22,7 @@ import { EmrTabsShell } from "./EmrTabsShell";
 import "@/plugins";
 import { PluginEmrSlot } from "@/plugin-framework/ui/PluginEmrSlot";
 import { ExternalPluginSlot } from "./ExternalPluginSlot";
-import { PLUGIN_ID as COPILOT_PLUGIN_ID } from "@/plugins/ai-clinical-copilot/manifest";
+import { getAllRegisteredPlugins } from "@/plugin-framework/registry";
 import { RequestUnlockButton } from "./RequestUnlockButton";
 import { PrintHeader, PrintFooter } from "@/components/ui/PrintLayout";
 
@@ -481,12 +481,17 @@ export default async function PatientDetailedEMR({
                   visitId={activeVisit.id}
                   visitClosed={activeVisit.status === "CLOSED"}
                 />
-                <ExternalPluginSlot
-                  pluginId={COPILOT_PLUGIN_ID}
-                  triggerPermission="ai.copilot.view"
-                  patientUdid={udid}
-                  visitId={activeVisit.id}
-                />
+                {getAllRegisteredPlugins()
+                  .filter((p) => p.manifest.externalOrigin)
+                  .map((p) => (
+                    <ExternalPluginSlot
+                      key={p.manifest.pluginId}
+                      pluginId={p.manifest.pluginId}
+                      triggerPermission={p.manifest.ui?.emrPanel?.triggerPermission ?? ""}
+                      patientUdid={udid}
+                      visitId={activeVisit.id}
+                    />
+                  ))}
               </>
             }
             tabs={[

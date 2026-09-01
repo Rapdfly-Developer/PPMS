@@ -1,35 +1,55 @@
 /**
  * POST /api/v1/plugin-audit
  *
- * Receives audit events from an external plugin and persists them via the
- * existing writePluginAudit() function. The external plugin must never write
- * to AuditLog directly — this endpoint is the only permitted path.
+ * Receives audit events from any registered external plugin and persists them
+ * via writePluginAudit(). External plugins must never write to AuditLog
+ * directly — this endpoint is the only permitted path.
  *
- * Authentication: Bearer plugin token.
- * Privacy: clinical content (prompts, AI output, notes) must not be included.
- *          Only identifiers, counts, model names, and outcome flags are accepted.
+ * Authentication: Bearer plugin token (any registered, enabled plugin).
+ * Privacy: clinical content (transcripts, AI output, notes) must not be
+ *          included. Only identifiers, counts, labels, and outcome flags
+ *          are accepted. Object-valued metadata fields are stripped.
+ *
+ * Action format: any string matching ^[A-Z][A-Z0-9_]{0,63}$
+ *   Copilot examples: COPILOT_REQUEST, COPILOT_DRAFT_CONFIRMED
+ *   Voice-to-EMR examples: VOICE_TRANSCRIBE_START, VOICE_DRAFT_CREATED
  */
 
 import { NextResponse } from "next/server";
+import { verifyPluginToken } from "@/lib/plugin-token";
+import { isPluginEnabled } from "@/plugin-framework/manager";
 import { writePluginAudit } from "@/plugin-framework/gateway/audit";
-import { authorizeTokenRequest } from "../_lib/token-auth";
+import type { GatewayContext } from "@/plugin-framework/types";
 
-const ALLOWED_ACTIONS = new Set([
-  "COPILOT_REQUEST",
-  "COPILOT_STREAM",
-  "COPILOT_COMPLETE",
-  "COPILOT_ERROR",
-  "COPILOT_DRAFT_SHOWN",
-  "COPILOT_DRAFT_COPIED",
-  "COPILOT_DRAFT_CONFIRMED",
-  "COPILOT_CAPABILITY_USED",
-]);
+// Capitalized alphanumeric + underscore, max 64 chars.
+// Intentionally broad: each plugin uses its own namespace prefix by convention
+// (COPILOT_*, VOICE_*, etc.) but PPMS does not enforce the prefix.
+const ACTION_PATTERN = /^[A-Z][A-Z0-9_]{0,63}$/;
 
 export async function POST(req: Request) {
-  const auth = await authorizeTokenRequest(req, "ai.copilot.view");
-  if (!auth.ok) return auth.response;
-  const { ctx } = auth;
+  // 1. Verify token — signature, expiry, jti replay
+  const verified = verifyPluginToken(req.headers.get("authorization"));
+  if (!verified.ok) {
+    return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  }
+  const { payload } = verified;
 
+  // 2. Live plugin-enabled check — token may predate a disable event
+  const enabled = await isPluginEnabled(payload.pluginId, payload.doctorId);
+  if (!enabled) {
+    return NextResponse.json({ error: "Plugin is disabled." }, { status: 403 });
+  }
+
+  const ctx: GatewayContext = {
+    userId: payload.doctorId,
+    role: "DOCTOR",
+    doctorId: payload.doctorId,
+    hospitalId: payload.hospitalId,
+    permissions: payload.permissions,
+    pluginId: payload.pluginId,
+  };
+
+  // 3. Parse body
   let body: { action?: string; entityId?: string; entityType?: string; metadata?: Record<string, unknown> };
   try {
     body = await req.json();
@@ -43,10 +63,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "action is required." }, { status: 400 });
   }
 
-  // Allowlist prevents external plugins from injecting arbitrary action labels
-  if (!ALLOWED_ACTIONS.has(action)) {
+  // 4. Action format validation
+  if (!ACTION_PATTERN.test(action)) {
     return NextResponse.json(
-      { error: `Unknown action: ${action}. Allowed: ${[...ALLOWED_ACTIONS].join(", ")}` },
+      { error: "action must match ^[A-Z][A-Z0-9_]{0,63}$ (e.g. PLUGIN_DRAFT_CONFIRMED)." },
       { status: 400 },
     );
   }
@@ -55,7 +75,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "entityId is required." }, { status: 400 });
   }
 
-  // Scrub any field that looks like clinical content — only primitives accepted
+  // 5. Scrub any field that looks like clinical content — only primitives accepted
   const cleanMetadata: Record<string, unknown> = {};
   if (metadata && typeof metadata === "object") {
     for (const [k, v] of Object.entries(metadata)) {

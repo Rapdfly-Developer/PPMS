@@ -1,10 +1,12 @@
 import type { NextConfig } from "next";
 
-// External Copilot origin — used for CORS and CSP iframe permissions.
-// NEXT_PUBLIC_COPILOT_ORIGIN is public (not a secret) because the Copilot
-// URL is visible in the iframe src attribute. It is undefined in development
-// unless explicitly set, which safely disables the external slot.
-const COPILOT_ORIGIN = process.env.NEXT_PUBLIC_COPILOT_ORIGIN ?? "";
+// Registered external plugin origins — add one entry per externally-deployed plugin.
+// CORS is handled dynamically in src/middleware.ts (supports multiple origins).
+// CSP frame-src is built here from the same list.
+const EXTERNAL_PLUGIN_ORIGINS: string[] = [
+  process.env.NEXT_PUBLIC_COPILOT_ORIGIN,
+  process.env.NEXT_PUBLIC_VOICE_EMR_ORIGIN,
+].filter((v): v is string => typeof v === "string" && v.length > 0);
 
 const nextConfig: NextConfig = {
   // Silence the workspace root warning when there are multiple lockfiles
@@ -31,31 +33,18 @@ const nextConfig: NextConfig = {
   async headers() {
     const headers = [];
 
-    // ── CORS for external plugin API (/api/v1/*) ────────────────────────────
-    // ONLY the configured Copilot origin is allowed. Never "*".
-    // Applied only to the /api/v1 namespace — does not weaken PPMS session routes.
-    if (COPILOT_ORIGIN) {
-      const corsHeaders = [
-        { key: "Access-Control-Allow-Origin", value: COPILOT_ORIGIN },
-        { key: "Access-Control-Allow-Methods", value: "GET, POST, OPTIONS" },
-        {
-          key: "Access-Control-Allow-Headers",
-          value: "Authorization, Content-Type",
-        },
-        { key: "Access-Control-Max-Age", value: "86400" },
-      ];
-
-      headers.push({
-        source: "/api/v1/:path*",
-        headers: corsHeaders,
-      });
-    }
-
     // ── Content-Security-Policy ─────────────────────────────────────────────
-    // frame-src: allow the Copilot iframe only when origin is configured.
-    // frame-ancestors 'none': the PPMS app itself must not be embeddable.
-    // Applied to all routes via the wildcard source.
-    const frameSrc = COPILOT_ORIGIN ? `${COPILOT_ORIGIN}` : "'none'";
+    // frame-src: allow iframes from all registered external plugin origins.
+    //   Space-separated list per CSP spec — any number of origins supported.
+    // frame-ancestors 'none': PPMS itself must not be embeddable anywhere.
+    //
+    // CORS for /api/v1/* is handled dynamically in src/middleware.ts, which
+    // reflects the matching origin rather than emitting a static single-origin
+    // header — the only correct approach when multiple plugins are allowed.
+    const frameSrc = EXTERNAL_PLUGIN_ORIGINS.length > 0
+      ? EXTERNAL_PLUGIN_ORIGINS.join(" ")
+      : "'none'";
+
     const csp = [
       `frame-src ${frameSrc}`,
       "frame-ancestors 'none'",

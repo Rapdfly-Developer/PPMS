@@ -126,6 +126,17 @@ export type PluginManifest = {
 
   /** Plugin licensing spec. */
   licensing: PluginLicensingSpec;
+
+  /**
+   * Deployment origin of an externally-hosted plugin (e.g. "https://voice.ppmsai.com").
+   * null or omitted = in-process plugin rendered directly inside PPMS.
+   * Set = external plugin, loaded in an isolated iframe via ExternalPluginSlot.
+   *
+   * Resolve from a per-environment NEXT_PUBLIC_ variable so the origin is
+   * configurable without rebuilding the manifest:
+   *   externalOrigin: process.env.NEXT_PUBLIC_VOICE_EMR_ORIGIN ?? null
+   */
+  externalOrigin?: string | null;
 };
 
 // ── Runtime plugin record (Manifest + DB state) ───────────────────────────

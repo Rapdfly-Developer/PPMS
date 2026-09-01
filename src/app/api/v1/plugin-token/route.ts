@@ -21,6 +21,7 @@ import { checkPluginLicense } from "@/plugin-framework/license";
 import { assertPatientInScope } from "@/plugin-framework/gateway/data";
 import { writePluginAudit } from "@/plugin-framework/gateway/audit";
 import { signPluginToken } from "@/lib/plugin-token";
+import { isPluginRegistered, getPlugin } from "@/plugin-framework/registry";
 import type { GatewayContext } from "@/plugin-framework/types";
 
 export async function POST(req: Request) {
@@ -81,10 +82,26 @@ export async function POST(req: Request) {
     permissions,
   };
 
-  // 4. Permission check — doctor must hold ai.copilot.view at minimum
-  if (!userCan(userLike, "ai.copilot.view")) {
+  // 4. Plugin must be registered in this PPMS build
+  if (!isPluginRegistered(pluginId)) {
     return NextResponse.json(
-      { error: "Missing permission: ai.copilot.view" },
+      { error: `Plugin not registered: ${pluginId}` },
+      { status: 400 },
+    );
+  }
+  const pluginManifest = getPlugin(pluginId).manifest;
+  const triggerPermission = pluginManifest.ui?.emrPanel?.triggerPermission;
+  if (!triggerPermission) {
+    return NextResponse.json(
+      { error: `Plugin "${pluginId}" does not declare an EMR panel trigger permission.` },
+      { status: 400 },
+    );
+  }
+
+  // Permission check — doctor must hold this plugin's declared trigger permission
+  if (!userCan(userLike, triggerPermission)) {
+    return NextResponse.json(
+      { error: `Missing permission: ${triggerPermission}` },
       { status: 403 },
     );
   }
