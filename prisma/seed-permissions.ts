@@ -44,6 +44,14 @@ const ALL_PERMISSIONS: { key: string; label: string }[] = [
   { key: "settings.manage",       label: "Manage Settings" },
   { key: "users.manage",          label: "Manage Users" },
   { key: "roles.manage",          label: "Manage Roles & Permissions" },
+  // ── AI Clinical Copilot plugin permissions ────────────────────────────────
+  // Seeded here so they exist in the database independently of plugin
+  // installation. The external Copilot gateway requires these keys to be
+  // present in the Permission table before it can authorize any request.
+  { key: "ai.copilot.view",      label: "View AI Clinical Copilot" },
+  { key: "ai.copilot.summarize", label: "AI Copilot — Summarise Patient Record" },
+  { key: "ai.copilot.ask",       label: "AI Copilot — Ask Questions" },
+  { key: "ai.copilot.draft",     label: "AI Copilot — Generate Consultation Drafts" },
 ];
 
 const ROLE_PERMISSIONS: Record<string, string[]> = {

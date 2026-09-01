@@ -21,6 +21,8 @@ import { EmrTabsShell } from "./EmrTabsShell";
 // unaware of which plugins exist; the slot renders whatever is enabled.
 import "@/plugins";
 import { PluginEmrSlot } from "@/plugin-framework/ui/PluginEmrSlot";
+import { ExternalPluginSlot } from "./ExternalPluginSlot";
+import { PLUGIN_ID as COPILOT_PLUGIN_ID } from "@/plugins/ai-clinical-copilot/manifest";
 import { RequestUnlockButton } from "./RequestUnlockButton";
 import { PrintHeader, PrintFooter } from "@/components/ui/PrintLayout";
 
@@ -472,12 +474,20 @@ export default async function PatientDetailedEMR({
             showActionBar={user.role === "DOCTOR"}
             finalizedToday={finalizedToday}
             pluginSlot={
-              <PluginEmrSlot
-                patientUdid={udid}
-                patientName={patient.name}
-                visitId={activeVisit.id}
-                visitClosed={activeVisit.status === "CLOSED"}
-              />
+              <>
+                <PluginEmrSlot
+                  patientUdid={udid}
+                  patientName={patient.name}
+                  visitId={activeVisit.id}
+                  visitClosed={activeVisit.status === "CLOSED"}
+                />
+                <ExternalPluginSlot
+                  pluginId={COPILOT_PLUGIN_ID}
+                  triggerPermission="ai.copilot.view"
+                  patientUdid={udid}
+                  visitId={activeVisit.id}
+                />
+              </>
             }
             tabs={[
               {
