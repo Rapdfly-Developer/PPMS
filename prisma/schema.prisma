@@ -498,6 +498,12 @@ model Visit {
   followUpCompleted   Boolean   @default(false)
   followUpCancelledAt DateTime?
   gonioNotes          String?  // JSON: { re: string, le: string }
+
+  // AI Clinical Copilot draft — written only after the doctor explicitly confirms
+  aiDraftText         String?
+  aiDraftType         String?  // "consultation_note" | "follow_up_summary"
+  aiDraftConfirmedAt  DateTime?
+
   surgeryAdvised      Boolean  @default(false)
   advisedSurgeryName  String?
   advisedSurgeryEye   String?
