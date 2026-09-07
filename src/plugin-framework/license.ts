@@ -123,17 +123,23 @@ export async function createPluginTrial(
   const trialEndsAt = new Date();
   trialEndsAt.setDate(trialEndsAt.getDate() + trialDays);
 
+  const trialData = {
+    status: "TRIAL" as const,
+    trialEndsAt,
+    usageLimit: spec.monthlyUsageLimit ?? null,
+    usageResetAt: new Date(),
+  };
+
   await prisma.pluginLicense.upsert({
     where: { pluginId_doctorId: { pluginId, doctorId } },
-    update: {},
-    create: {
-      pluginId,
-      doctorId,
+    // Reset expired or suspended licenses so re-install starts a fresh trial
+    update: {
       status: "TRIAL",
       trialEndsAt,
-      usageLimit: spec.monthlyUsageLimit ?? null,
       usageResetAt: new Date(),
+      usageCount: 0,
     },
+    create: { pluginId, doctorId, ...trialData },
   });
 
   // Invalidate cache

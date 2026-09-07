@@ -59,25 +59,34 @@ export function ExternalPluginSlotClient({
   const [editedDraftText, setEditedDraftText] = useState("");
   const [saveState, setSaveState] = useState<SaveState>("idle");
 
-  // Send PPMS_INIT once the iframe signals it has loaded
-  useEffect(() => {
-    if (!loaded) return;
+  const sendInit = useCallback(() => {
     const iframe = iframeRef.current;
     if (!iframe?.contentWindow) return;
-
     iframe.contentWindow.postMessage(
-      {
-        type: "PPMS_INIT",
-        version: "1",
-        pluginId,
-        token,
-        patientRef,
-        visitId,
-        ppmsVersion: "16.2.9",
-      },
+      { type: "PPMS_INIT", version: "1", pluginId, token, patientRef, visitId, ppmsVersion: "16.2.9" },
       pluginOrigin,
     );
-  }, [loaded, token, patientRef, visitId, pluginId, pluginOrigin]);
+  }, [pluginId, token, patientRef, visitId, pluginOrigin]);
+
+  // Send PPMS_INIT once the iframe's HTML has loaded (may race with React hydration)
+  useEffect(() => {
+    if (!loaded) return;
+    sendInit();
+  }, [loaded, sendInit]);
+
+  // Re-send PPMS_INIT when Copilot signals its message listener is ready (PLUGIN_MOUNTED).
+  // This resolves the race between iframe onLoad and React hydration in the Copilot.
+  useEffect(() => {
+    function onMounted(event: MessageEvent) {
+      if (event.origin !== pluginOrigin) return;
+      const msg = event.data as Record<string, unknown>;
+      if (msg?.type === "PLUGIN_MOUNTED" && msg?.pluginId === pluginId) {
+        sendInit();
+      }
+    }
+    window.addEventListener("message", onMounted);
+    return () => window.removeEventListener("message", onMounted);
+  }, [pluginOrigin, pluginId, sendInit]);
 
   // Listen for plugin messages
   useEffect(() => {

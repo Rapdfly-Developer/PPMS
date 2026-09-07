@@ -223,14 +223,6 @@ export function verifyPluginToken(authorizationHeader: string | null): VerifyRes
     return { ok: false, reason: "EXPIRED" };
   }
 
-  // Replay check
-  if (isSeen(payload.jti)) {
-    return { ok: false, reason: "REPLAYED" };
-  }
-
-  // Mark jti as seen so it cannot be replayed
-  markSeen(payload.jti, payload.exp * 1000);
-
   return { ok: true, payload };
 }
 

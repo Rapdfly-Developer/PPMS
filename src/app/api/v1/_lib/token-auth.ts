@@ -23,6 +23,11 @@ import { verifyPluginToken } from "@/lib/plugin-token";
 import { isPluginRegistered } from "@/plugin-framework/registry";
 import { isPluginEnabled } from "@/plugin-framework/manager";
 import type { GatewayContext } from "@/plugin-framework/types";
+// Composition root — ensures every plugin is registered before authorization
+// runs. The RSC layout registers plugins for page renders; API routes need this
+// separate import because they run in a different bundle with their own module
+// registry.
+import "@/plugins";
 
 export type TokenAuthResult =
   | { ok: true; ctx: GatewayContext; patientRef: string; visitId: string }
