@@ -44,6 +44,15 @@ const ALL_PERMISSIONS: { key: string; label: string }[] = [
   { key: "settings.manage",       label: "Manage Settings" },
   { key: "users.manage",          label: "Manage Users" },
   { key: "roles.manage",          label: "Manage Roles & Permissions" },
+  // ── AI Clinical Copilot plugin permissions ───────────────────────────────
+  { key: "ai.copilot.view",      label: "View AI Clinical Copilot" },
+  { key: "ai.copilot.summarize", label: "AI Copilot — Summarise Patient Record" },
+  { key: "ai.copilot.ask",       label: "AI Copilot — Ask Questions" },
+  { key: "ai.copilot.draft",     label: "AI Copilot — Generate Consultation Drafts" },
+  // ── Voice-to-EMR plugin permissions ─────────────────────────────────────
+  { key: "ai.voice-emr.view",         label: "View Voice-to-EMR Panel" },
+  { key: "ai.voice-emr.transcribe",   label: "Voice-to-EMR — Transcribe Recording" },
+  { key: "ai.voice-emr.create-draft", label: "Voice-to-EMR — Create EMR Draft" },
 ];
 
 const ROLE_PERMISSIONS: Record<string, string[]> = {

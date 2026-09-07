@@ -27,6 +27,13 @@
       "runtimeExecutable": "node",
       "runtimeArgs": ["serve-landing.js"],
       "port": 8081
+    },
+    {
+      "name": "ppms-copilot",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": ["/c", "cd /d C:\\Users\\ELCOT\\Desktop\\ppms-copilot && node --max-old-space-size=4096 node_modules/next/dist/bin/next dev --webpack --port 3001"],
+      "port": 3001,
+      "url": "http://localhost:3001"
     }
   ]
 }

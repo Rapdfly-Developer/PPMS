@@ -82,4 +82,11 @@ export const PERMISSION_GROUPS: {
       { key: "reports.export", label: "Export Reports", description: "Download reports as CSV or PDF" },
     ],
   },
+  {
+    category: "Plugins",
+    permissions: [
+      { key: "plugins.view",   label: "View Plugins",   description: "See installed plugins and their status" },
+      { key: "plugins.manage", label: "Manage Plugins", description: "Install, enable, disable, and configure plugins" },
+    ],
+  },
 ];

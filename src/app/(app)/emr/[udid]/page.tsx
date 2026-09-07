@@ -17,6 +17,12 @@ import { InvestigationsTab } from "./InvestigationsTab";
 import { AssessmentTab } from "./AssessmentTab";
 import { PlanTab } from "./PlanTab";
 import { EmrTabsShell } from "./EmrTabsShell";
+// Composition root + generic plugin UI extension point. PPMS Core stays
+// unaware of which plugins exist; the slot renders whatever is enabled.
+import "@/plugins";
+import { PluginEmrSlot } from "@/plugin-framework/ui/PluginEmrSlot";
+import { ExternalPluginSlot } from "./ExternalPluginSlot";
+import { getAllRegisteredPlugins } from "@/plugin-framework/registry";
 import { RequestUnlockButton } from "./RequestUnlockButton";
 import { PrintHeader, PrintFooter } from "@/components/ui/PrintLayout";
 
@@ -467,6 +473,27 @@ export default async function PatientDetailedEMR({
             patientName={patient.name}
             showActionBar={user.role === "DOCTOR"}
             finalizedToday={finalizedToday}
+            pluginSlot={
+              <>
+                <PluginEmrSlot
+                  patientUdid={udid}
+                  patientName={patient.name}
+                  visitId={activeVisit.id}
+                  visitClosed={activeVisit.status === "CLOSED"}
+                />
+                {getAllRegisteredPlugins()
+                  .filter((p) => p.manifest.externalOrigin)
+                  .map((p) => (
+                    <ExternalPluginSlot
+                      key={p.manifest.pluginId}
+                      pluginId={p.manifest.pluginId}
+                      triggerPermission={p.manifest.ui?.emrPanel?.triggerPermission ?? ""}
+                      patientUdid={udid}
+                      visitId={activeVisit.id}
+                    />
+                  ))}
+              </>
+            }
             tabs={[
               {
                 id: "general",
