@@ -28,6 +28,7 @@ import {
   AiProviderError,
   AI_ERROR_MESSAGES,
   DEFAULT_ANTHROPIC_MODEL,
+  DEFAULT_GEMINI_MODEL,
   type AIProvider,
   type AiRequest,
   type ProviderId,
@@ -420,12 +421,18 @@ async function resolveConfig(ctx: GatewayContext): Promise<{
     // Config read failure falls through to manifest defaults.
   }
 
+  const envProvider = process.env.AI_PROVIDER as ProviderId | undefined;
+  const provider = (typeof raw.provider === "string" ? raw.provider : envProvider ?? "anthropic") as ProviderId;
+
+  const defaultModel = provider === "gemini" ? DEFAULT_GEMINI_MODEL : DEFAULT_ANTHROPIC_MODEL;
+  const model =
+    typeof raw.model === "string" && raw.model.trim()
+      ? raw.model
+      : process.env.AI_MODEL?.trim() || defaultModel;
+
   return {
-    provider: (typeof raw.provider === "string" ? raw.provider : "anthropic") as ProviderId,
-    model:
-      typeof raw.model === "string" && raw.model.trim()
-        ? raw.model
-        : DEFAULT_ANTHROPIC_MODEL,
+    provider,
+    model,
     streaming: raw.streaming !== false,
     maxHistoryVisits:
       typeof raw.maxHistoryVisits === "number" ? raw.maxHistoryVisits : 8,

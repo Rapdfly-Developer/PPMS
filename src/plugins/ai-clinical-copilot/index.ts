@@ -23,9 +23,14 @@ export const aiClinicalCopilot: Plugin = {
     async onEnable({ doctorId }) {
       // Surface a missing key at enable time rather than on the doctor's first
       // request. Never throws — the framework treats hooks as best-effort.
-      if (!process.env.ANTHROPIC_API_KEY) {
+      const provider = process.env.AI_PROVIDER ?? "anthropic";
+      const hasKey =
+        provider === "gemini"
+          ? !!process.env.GEMINI_API_KEY
+          : !!process.env.ANTHROPIC_API_KEY;
+      if (!hasKey) {
         console.warn(
-          `[Copilot] enabled for doctor ${doctorId} but ANTHROPIC_API_KEY is not set — requests will fail until it is configured.`,
+          `[Copilot] enabled for doctor ${doctorId} but the AI key for provider "${provider}" is not set — requests will fail until it is configured.`,
         );
       }
     },
