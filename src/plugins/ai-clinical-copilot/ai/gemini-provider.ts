@@ -176,7 +176,7 @@ function normalizeError(err: unknown, provider: string): AiProviderError {
 
   if (err instanceof GoogleGenerativeAIFetchError) {
     const s = err.status;
-    if (s === 400) return new AiProviderError("BAD_REQUEST", "Invalid request to AI provider.", provider);
+    if (s === 400) return new AiProviderError("UNKNOWN", "Invalid request to AI provider.", provider);
     if (s === 429) return new AiProviderError("RATE_LIMITED", "Rate limited.", provider);
     if (s === 401 || s === 403) return new AiProviderError("NOT_CONFIGURED", "Provider rejected credentials.", provider);
     if (typeof s === "number" && s >= 500) return new AiProviderError("UNAVAILABLE", "Provider error.", provider);
