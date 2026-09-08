@@ -12,10 +12,13 @@ import {
 
 export const DEFAULT_GEMINI_MODEL = "gemini-2.0-flash";
 
-// gemini-3.x-flash is a thinking model — cap thinking tokens so the
-// response budget is predictable. Non-thinking models ignore this field.
-const THINKING_BUDGET = 8192;
 const REQUEST_TIMEOUT_MS = 120_000;
+
+// Only Gemini 2.5+ thinking models support thinkingConfig.
+// Passing it to gemini-2.0-flash causes a 400 API error.
+function isThinkingModel(model: string): boolean {
+  return model.includes("2.5") || model.includes("thinking");
+}
 
 export class GeminiProvider implements AIProvider {
   readonly id = "gemini";
@@ -141,13 +144,15 @@ export class GeminiProvider implements AIProvider {
   }
 
   private buildModel(client: GoogleGenerativeAI, req: AiRequest) {
+    const thinking = isThinkingModel(this.model);
+    const thinkingBudget = thinking ? 8192 : 0;
     return client.getGenerativeModel({
       model: this.model,
       systemInstruction: req.system,
       generationConfig: {
-        maxOutputTokens: req.maxTokens + THINKING_BUDGET,
+        maxOutputTokens: req.maxTokens + thinkingBudget,
         temperature: req.temperature ?? 0,
-        thinkingConfig: { thinkingBudget: THINKING_BUDGET },
+        ...(thinking && { thinkingConfig: { thinkingBudget } }),
       } as Record<string, unknown>,
     });
   }
@@ -171,6 +176,7 @@ function normalizeError(err: unknown, provider: string): AiProviderError {
 
   if (err instanceof GoogleGenerativeAIFetchError) {
     const s = err.status;
+    if (s === 400) return new AiProviderError("UNKNOWN", "Invalid request to AI provider.", provider);
     if (s === 429) return new AiProviderError("RATE_LIMITED", "Rate limited.", provider);
     if (s === 401 || s === 403) return new AiProviderError("NOT_CONFIGURED", "Provider rejected credentials.", provider);
     if (typeof s === "number" && s >= 500) return new AiProviderError("UNAVAILABLE", "Provider error.", provider);

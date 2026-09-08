@@ -47,10 +47,10 @@ type Props = {
 
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, { label: string; className: string; icon: React.ReactNode }> = {
-    ENABLED:       { label: "Enabled",       className: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20", icon: <CheckCircle2 size={11} /> },
-    DISABLED:      { label: "Disabled",      className: "bg-zinc-500/10 text-zinc-400 border-zinc-500/20",         icon: <XCircle size={11} /> },
-    INSTALLED:     { label: "Installed",     className: "bg-blue-500/10 text-blue-400 border-blue-500/20",         icon: <Clock size={11} /> },
-    NOT_INSTALLED: { label: "Not Installed", className: "bg-zinc-800/60 text-zinc-500 border-zinc-700",            icon: <AlertCircle size={11} /> },
+    ENABLED:       { label: "Enabled",       className: "bg-emerald-50 text-emerald-700 border-emerald-200",   icon: <CheckCircle2 size={11} /> },
+    DISABLED:      { label: "Disabled",      className: "bg-gray-100 text-gray-500 border-gray-200",           icon: <XCircle size={11} /> },
+    INSTALLED:     { label: "Installed",     className: "bg-blue-50 text-blue-700 border-blue-200",            icon: <Clock size={11} /> },
+    NOT_INSTALLED: { label: "Not Installed", className: "bg-gray-50 text-gray-400 border-gray-200",            icon: <AlertCircle size={11} /> },
   };
   const s = map[status] ?? map.NOT_INSTALLED;
   return (
@@ -63,13 +63,13 @@ function StatusBadge({ status }: { status: string }) {
 function LicenseBadge({ info }: { info: LicenseInfo | null }) {
   if (!info) return null;
   const map: Record<string, string> = {
-    TRIAL:     "bg-amber-500/10 text-amber-400 border-amber-500/20",
-    ACTIVE:    "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
-    EXPIRED:   "bg-red-500/10 text-red-400 border-red-500/20",
-    SUSPENDED: "bg-red-500/10 text-red-400 border-red-500/20",
+    TRIAL:     "bg-amber-50 text-amber-700 border-amber-200",
+    ACTIVE:    "bg-emerald-50 text-emerald-700 border-emerald-200",
+    EXPIRED:   "bg-red-50 text-red-600 border-red-200",
+    SUSPENDED: "bg-red-50 text-red-600 border-red-200",
   };
   return (
-    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10.5px] font-semibold border ${map[info.status] ?? ""}`}>
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10.5px] font-semibold border ${map[info.status] ?? "bg-gray-100 text-gray-500 border-gray-200"}`}>
       {info.status}
     </span>
   );
@@ -89,9 +89,9 @@ function ActionBtn({
 }) {
   const base = "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed";
   const variants = {
-    default:  "bg-white/5 hover:bg-white/10 text-zinc-300 border border-white/10",
-    danger:   "bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20",
-    primary:  "bg-teal-500/10 hover:bg-teal-500/20 text-teal-400 border border-teal-500/20",
+    default: "bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 shadow-sm",
+    danger:  "bg-red-50 hover:bg-red-100 text-red-600 border border-red-200",
+    primary: "bg-teal-50 hover:bg-teal-100 text-teal-700 border border-teal-200",
   };
   return (
     <button onClick={onClick} disabled={disabled || pending} className={`${base} ${variants[variant]}`}>
@@ -117,27 +117,31 @@ function PluginCard({
   const [showPerms, setShowPerms] = useState(false);
 
   return (
-    <div className="bg-white/[0.03] border border-white/[0.08] rounded-xl p-5">
+    <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
       <div className="flex items-start gap-4">
-        <div className="w-10 h-10 rounded-xl bg-teal-500/10 border border-teal-500/20 grid place-items-center flex-shrink-0">
-          <Puzzle size={18} className="text-teal-400" />
+        {/* Icon */}
+        <div className="w-10 h-10 rounded-xl bg-teal-50 border border-teal-200 grid place-items-center flex-shrink-0">
+          <Puzzle size={18} className="text-teal-600" />
         </div>
 
+        {/* Content */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-sm font-semibold text-white truncate">{plugin.name}</span>
-            <span className="text-[10px] text-zinc-500 font-mono">v{plugin.version}</span>
+            <span className="text-sm font-semibold text-gray-900 truncate">{plugin.name}</span>
+            <span className="text-[10px] text-gray-400 font-mono">v{plugin.version}</span>
             <StatusBadge status={plugin.status} />
             <LicenseBadge info={plugin.license} />
           </div>
-          <p className="text-xs text-zinc-400 mt-1 leading-relaxed">{plugin.description}</p>
-          <div className="flex items-center gap-3 mt-2 text-[10.5px] text-zinc-500">
+          <p className="text-xs text-gray-500 mt-1 leading-relaxed">{plugin.description}</p>
+          <div className="flex items-center gap-3 mt-2 text-[10.5px] text-gray-400">
             <span>By {plugin.author}</span>
             {plugin.installedAt && (
               <span>Installed {new Date(plugin.installedAt).toLocaleDateString()}</span>
             )}
             {plugin.license?.usageLimit !== null && plugin.license && (
-              <span>{plugin.license.usageCount}/{plugin.license.usageLimit} uses this month</span>
+              <span className="text-teal-600 font-medium">
+                {plugin.license.usageCount}/{plugin.license.usageLimit} uses this month
+              </span>
             )}
           </div>
 
@@ -145,7 +149,7 @@ function PluginCard({
           {showPerms && (
             <div className="flex flex-wrap gap-1.5 mt-3">
               {plugin.permissions.map((p) => (
-                <span key={p} className="px-2 py-0.5 rounded text-[10px] font-mono bg-zinc-800 text-zinc-400 border border-zinc-700">
+                <span key={p} className="px-2 py-0.5 rounded text-[10px] font-mono bg-gray-100 text-gray-600 border border-gray-200">
                   {p}
                 </span>
               ))}
@@ -212,7 +216,7 @@ function PluginCard({
             )}
             <button
               onClick={() => setShowPerms((v) => !v)}
-              className="p-1.5 rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-white/5"
+              className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
               title="Toggle permissions"
             >
               <Info size={13} />
@@ -264,12 +268,12 @@ export function PluginManagerClient({ plugins, canManage }: Props) {
     <div style={{ maxWidth: 860 }}>
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
-        <div className="w-10 h-10 rounded-xl bg-teal-500/10 border border-teal-500/20 grid place-items-center">
-          <Puzzle size={20} className="text-teal-400" />
+        <div className="w-10 h-10 rounded-xl bg-teal-50 border border-teal-200 grid place-items-center">
+          <Puzzle size={20} className="text-teal-600" />
         </div>
         <div>
-          <h1 className="text-lg font-bold text-white">Plugin Manager</h1>
-          <p className="text-xs text-zinc-400">
+          <h1 className="text-lg font-bold text-gray-900">Plugin Manager</h1>
+          <p className="text-xs text-gray-500">
             {installedCount} installed · {enabledCount} enabled
           </p>
         </div>
@@ -279,8 +283,8 @@ export function PluginManagerClient({ plugins, canManage }: Props) {
       {toast && (
         <div className={`mb-4 px-4 py-3 rounded-xl text-sm font-medium border ${
           toast.ok
-            ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-            : "bg-red-500/10 text-red-400 border-red-500/20"
+            ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+            : "bg-red-50 text-red-600 border-red-200"
         }`}>
           {toast.message}
         </div>
@@ -288,7 +292,7 @@ export function PluginManagerClient({ plugins, canManage }: Props) {
 
       {/* Plugin list */}
       {plugins.length === 0 ? (
-        <div className="text-center py-16 text-zinc-500">
+        <div className="text-center py-16 text-gray-400">
           <Puzzle size={32} className="mx-auto mb-3 opacity-30" />
           <p className="text-sm">No plugins registered in this PPMS build.</p>
         </div>
@@ -307,7 +311,7 @@ export function PluginManagerClient({ plugins, canManage }: Props) {
       )}
 
       {!canManage && (
-        <p className="mt-4 text-xs text-zinc-500 text-center">
+        <p className="mt-4 text-xs text-gray-400 text-center">
           Only the Doctor account can install and manage plugins.
         </p>
       )}

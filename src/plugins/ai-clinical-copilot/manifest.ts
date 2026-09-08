@@ -64,8 +64,8 @@ export const manifest: PluginManifest = {
       label: "AI Provider",
       type: "select",
       description: "Which AI service the Copilot calls.",
-      options: ["anthropic"],
-      default: "anthropic",
+      options: ["gemini", "anthropic"],
+      default: "gemini",
       required: true,
     },
     {
@@ -73,8 +73,15 @@ export const manifest: PluginManifest = {
       label: "Model",
       type: "select",
       description: "Model used for Copilot requests.",
-      options: ["claude-opus-4-8", "claude-sonnet-4-6", "claude-haiku-4-5"],
-      default: "claude-opus-4-8",
+      options: [
+        "gemini-2.0-flash",
+        "gemini-2.5-flash",
+        "gemini-2.5-pro",
+        "claude-opus-4-8",
+        "claude-sonnet-4-6",
+        "claude-haiku-4-5",
+      ],
+      default: "gemini-2.0-flash",
       required: true,
     },
     {
