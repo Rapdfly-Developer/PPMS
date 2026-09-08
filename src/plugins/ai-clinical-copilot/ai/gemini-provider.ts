@@ -10,14 +10,14 @@ import {
   type AiStreamEvent,
 } from "./provider";
 
-export const DEFAULT_GEMINI_MODEL = "gemini-2.0-flash";
+export const DEFAULT_GEMINI_MODEL = "gemini-3.6-flash";
 
 const REQUEST_TIMEOUT_MS = 120_000;
 
-// Only Gemini 2.5+ thinking models support thinkingConfig.
-// Passing it to gemini-2.0-flash causes a 400 API error.
+// Only Pro thinking models support thinkingConfig.
+// Flash models and older models will error if thinkingConfig is passed.
 function isThinkingModel(model: string): boolean {
-  return model.includes("2.5") || model.includes("thinking");
+  return (model.includes("pro") && !model.includes("flash")) || model.includes("thinking");
 }
 
 export class GeminiProvider implements AIProvider {
