@@ -230,6 +230,14 @@ export function FollowUpdatesPanel({ visit, udid, priorVisits = [] }: { visit: a
   const [saved, setSaved]                     = useState(false);
   const inViewOfRef = useRef<HTMLInputElement>(null);
 
+  /* Applying a treatment preset writes followUpDate straight to the visit, but
+     this panel stays mounted throughout — so the initial useState value would
+     keep showing the pre-preset date. Adopt the server value whenever it
+     changes; only this field is synced, the rest of the panel is left alone. */
+  useEffect(() => {
+    setFollowUpDate(toInputDate(visit.followUpDate));
+  }, [visit.followUpDate]);
+
   const addWeeks = (weeks: number) => {
     const d = new Date();
     d.setDate(d.getDate() + weeks * 7);
