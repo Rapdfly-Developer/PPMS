@@ -66,15 +66,17 @@ const STATUS_CFG: Record<string, { label: string; color: string; dot: string }> 
   PARTIAL_DISPENSE: { label: "Partial Dispense",color: "bg-orange-100 text-orange-700",dot: "bg-orange-500" },
 };
 
+/* Visit-type filters. "All" is not one of them — the "N total" count beside the
+   heading already states it. It survives only as the unfiltered state value,
+   reached by deselecting whichever filter is active. */
 const VISIT_TYPE_FILTERS = [
-  { key: "ALL",         label: "All"         },
   { key: "WALK_IN",     label: "Walk-in"     },
   { key: "General OPD", label: "General OPD" },
   { key: "Follow-up",   label: "Follow-up"   },
   { key: "Emergency",   label: "Emergency"   },
 ] as const;
 
-type VisitTypeFilterKey = typeof VISIT_TYPE_FILTERS[number]["key"];
+type VisitTypeFilterKey = typeof VISIT_TYPE_FILTERS[number]["key"] | "ALL";
 
 /* ── Live waiting timer ─────────────────────────────────────────────────── */
 function LiveTimer({ since }: { since: string }) {
@@ -335,8 +337,13 @@ export function DashboardClient({
   );
 
   /* Today's Queue: active only — exclude terminal/inactive statuses. */
+  const queueAppts = useMemo(
+    () => filteredAppts.filter((a) => !["REQUESTED", "DISPENSED", "PARTIAL_DISPENSE", "CANCELLED", "NO_SHOW", "RESCHEDULED"].includes(a.status)),
+    [filteredAppts],
+  );
+
   const queueGroups = useMemo(() => {
-    const queue     = filteredAppts.filter((a) => !["REQUESTED", "DISPENSED", "PARTIAL_DISPENSE", "CANCELLED", "NO_SHOW", "RESCHEDULED"].includes(a.status));
+    const queue     = queueAppts;
     const dispensed = filteredAppts.filter((a) => a.status === "DISPENSED");
     if (role === "DOCTOR") {
       const hospitalsToShow = selectedFilter === "all"
@@ -361,9 +368,27 @@ export function DashboardClient({
     } else {
       return [{ id: "self", name: displayName, logoUrl: hospitalLogoUrl ?? null, appts: queue, dispensed: dispensed.length }];
     }
-  }, [filteredAppts, role, displayName, filterOptions, selectedFilter]);
+  }, [queueAppts, filteredAppts, role, displayName, filterOptions, selectedFilter]);
 
   const totalQueue = queueGroups.reduce((s, g) => s + g.appts.length, 0);
+
+  /* Only visit types actually present in today's queue get a button. */
+  const visibleVisitTypeFilters = useMemo(
+    () =>
+      VISIT_TYPE_FILTERS.map(({ key, label }) => ({
+        key,
+        label,
+        count: key === "WALK_IN"
+          ? queueAppts.filter((a) => a.isWalkIn).length
+          : queueAppts.filter((a) => a.visitType === key).length,
+      })).filter((f) => f.count > 0),
+    [queueAppts],
+  );
+
+  /* A filter whose button has just disappeared (its last patient was dispensed)
+     must not leave the queue filtered to nothing with no way back. */
+  const activeVisitType: VisitTypeFilterKey =
+    visibleVisitTypeFilters.some((f) => f.key === statusFilter) ? statusFilter : "ALL";
 
   /* Visit time — all today's appointments (REQUESTED + CONFIRMED + IN_PROGRESS), grouped by hospital for DOCTOR */
   const bookedGroups = useMemo(() => {
@@ -456,26 +481,23 @@ export function DashboardClient({
           </h2>
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1 flex-wrap">
-              {VISIT_TYPE_FILTERS.map(({ key, label }) => {
-                const queueAppts = filteredAppts.filter((a) => !["REQUESTED", "DISPENSED", "PARTIAL_DISPENSE", "CANCELLED", "NO_SHOW", "RESCHEDULED"].includes(a.status));
-                const count = key === "ALL"
-                  ? queueAppts.length
-                  : key === "WALK_IN"
-                    ? queueAppts.filter((a) => a.isWalkIn).length
-                    : queueAppts.filter((a) => a.visitType === key).length;
+              {visibleVisitTypeFilters.map(({ key, label, count }) => {
+                const active = activeVisitType === key;
                 return (
                   <button
                     key={key}
-                    onClick={() => setStatusFilter(key)}
+                    onClick={() => setStatusFilter(active ? "ALL" : key)}
+                    aria-pressed={active}
+                    title={active ? `Show all ${totalQueue}` : `Show only ${label}`}
                     className={clsx(
                       "px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors",
-                      statusFilter === key
+                      active
                         ? "bg-[var(--color-primary-600)] text-white"
                         : "bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)] hover:bg-[var(--color-primary-50)] hover:text-[var(--color-primary-700)]"
                     )}
                   >
                     {label}
-                    <span className={clsx("ml-1.5 font-bold", statusFilter === key ? "text-white/80" : "text-[var(--color-ink-400)]")}>
+                    <span className={clsx("ml-1.5 font-bold", active ? "text-white/80" : "text-[var(--color-ink-400)]")}>
                       {count}
                     </span>
                   </button>
@@ -509,11 +531,11 @@ export function DashboardClient({
         ) : (
           <div className="grid grid-cols-1 gap-4">
             {queueGroups.map(({ id, name, logoUrl, appts: gAppts, dispensed }) => {
-              const displayed = statusFilter === "ALL"
+              const displayed = activeVisitType === "ALL"
                 ? gAppts
-                : statusFilter === "WALK_IN"
+                : activeVisitType === "WALK_IN"
                   ? gAppts.filter((a) => a.isWalkIn)
-                  : gAppts.filter((a) => a.visitType === statusFilter);
+                  : gAppts.filter((a) => a.visitType === activeVisitType);
               return (
                 <div key={id} className="surface-card p-4 flex flex-col gap-3">
                   <div className="flex items-center justify-between gap-2">

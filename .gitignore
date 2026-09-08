@@ -46,5 +46,9 @@ dev.log
 dev-out.log
 dev-err.log
 
+# runtime uploads — written by /api/uploads when BLOB_READ_WRITE_TOKEN is unset
+# (local dev fallback). Files already tracked here stay tracked.
+/public/uploads/
+
 .vercel
 .env*
