@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import Link from "next/link";
 import {
   LayoutDashboard, CalendarDays, Users, BedDouble, Settings,
-  CalendarClock, BarChart2, CreditCard, Scissors, HeartHandshake,
+  CalendarClock, BarChart2, Scissors, HeartHandshake,
   Clock, ClipboardList, UserCog, ShieldCheck, Bell, Package,
   Search, ChevronRight, LayoutGrid, X,
 } from "lucide-react";
@@ -84,12 +84,6 @@ const ALL_MODULES: ModuleDef[] = [
     href: "/scheduled-ot", label: "Scheduled OT", icon: Scissors,
     description: "Operation theatre scheduling, pre-op assessments, and post-op reviews.",
     permission: "appointments.view", roles: ["DOCTOR", "HOSPITAL"],
-  },
-  {
-    section: "Operations", accent: "amber",
-    href: "/billing", label: "Billing & Insurance", icon: CreditCard,
-    description: "Claims, pre-authorizations, insurance policies, and settlements.",
-    permission: "insurance.view", roles: ["DOCTOR", "HOSPITAL"],
   },
   {
     section: "Operations", accent: "amber",
