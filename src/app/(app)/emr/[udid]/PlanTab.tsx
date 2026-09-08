@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useEffect, useRef, useMemo } from "react";
+import { useState, useTransition, useEffect, useRef, useMemo, Fragment } from "react";
 import { Card } from "@/components/ui/Card";
 import { History } from "lucide-react";
 import { parseJSON } from "@/lib/json";
@@ -562,14 +562,31 @@ function PresetSelectDialog({
     setDeleteConfirmId(null);
   };
 
-  const allMatches: PresetMatch[] = [
-    ...matches,
-    ...customPresets.map((p) => ({
-      preset: p,
-      diagnosisCode: matches[0]?.diagnosisCode ?? "",
-      diagnosisDesc: matches[0]?.diagnosisDesc ?? "Custom",
-    })),
-  ];
+  /* Exactly one entry per preset id.
+     Editing a built-in default stores an override under the SAME id (that is how
+     getTreatmentPresets overrides defaults), so the same preset arrives twice:
+     from `matches` — the original default, captured once at mount — and from
+     `customPresets`, the refreshed override. Concatenating them produced two
+     cards sharing an id, which React warned about, showed as two selected
+     radios, and let a stale entry into selectedPresets — dragging its
+     followUpDays into the Math.min() that sets the follow-up date.
+     The override replaces the default in place, keeping its position and the
+     real diagnosis metadata for that match. */
+  const allMatches: PresetMatch[] = (() => {
+    const byId = new Map<string, PresetMatch>();
+    for (const m of matches) byId.set(m.preset.id, m);
+    for (const p of customPresets) {
+      const existing = byId.get(p.id);
+      byId.set(p.id, existing
+        ? { ...existing, preset: p }
+        : {
+            preset: p,
+            diagnosisCode: matches[0]?.diagnosisCode ?? "",
+            diagnosisDesc: matches[0]?.diagnosisDesc ?? "Custom",
+          });
+    }
+    return [...byId.values()];
+  })();
 
   const toggle = (id: string) =>
     setSelected(new Set([id]));
@@ -1296,6 +1313,9 @@ export function PlanTab({ visit, udid, patientSex, priorVisits = [] }: { visit: 
         followUpDate:    fuDate.toISOString(),
         referralEnabled: visit.referralEnabled ?? false,
         referralNote:    visit.referralNote ?? null,
+        // saveFollowUp writes `data.inViewOf ?? null`, so omitting this wipes
+        // any "In view of" text the doctor already entered.
+        inViewOf:        visit.inViewOf ?? null,
       });
     }
     const newRecords: AppliedPreset[] = selected.map((p) => ({
@@ -2284,8 +2304,11 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
                 const isEditing = editingId === m.id;
                 const cellCls = "w-full rounded border border-[var(--color-primary-300)] bg-white px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)]";
                 return (
-                  <>
-                    <tr key={m.id} className={isEditing ? "bg-[var(--color-primary-50)]" : "bg-white hover:bg-[var(--color-surface-sunken)] transition-colors"}>
+                  /* Key belongs on the element `.map()` returns — the fragment.
+                     A `<>` shorthand cannot carry one, so each medication row
+                     went unkeyed even though the inner <tr> had key={m.id}. */
+                  <Fragment key={m.id}>
+                    <tr className={isEditing ? "bg-[var(--color-primary-50)]" : "bg-white hover:bg-[var(--color-surface-sunken)] transition-colors"}>
                       <td className="px-3 py-3 text-xs font-bold text-[var(--color-primary-600)] whitespace-nowrap">{idx + 1}</td>
 
                       {/* Drug Name */}
@@ -2431,7 +2454,7 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
                         <td />
                       </tr>
                     )}
-                  </>
+                  </Fragment>
                 );
               })}
             </tbody>
