@@ -3,13 +3,12 @@
 import { useState, useMemo, useEffect, useTransition } from "react";
 import { format } from "date-fns";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   ChevronDown, Plus, Building2, Phone, LogIn, Loader2,
   Sun, Sunset, Moon, CalendarX2, Calendar, PersonStanding, Clock, Undo2, Timer, Stethoscope, CheckCircle2,
 } from "lucide-react";
 import clsx from "clsx";
-import { doctorConfirmAppointment, hospitalUpdateAppointmentStatus, undoQueueEntry, undoPartialDispense } from "@/app/(app)/appointments/actions";
+import { undoQueueEntry, undoPartialDispense } from "@/app/(app)/appointments/actions";
 import { formatComplaintDisplay } from "@/lib/appointment-cc";
 
 /* ── Types ─────────────────────────────────────────────────────────────── */
@@ -313,12 +312,9 @@ export function DashboardClient({
   role, displayName, todayLabel, appts, surgeries, filterOptions,
   newEncounterHref, newEncounterLabel, hospitalLogoUrl,
 }: DashboardProps) {
-  const router = useRouter();
   const [selectedFilter, setSelectedFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter]     = useState<VisitTypeFilterKey>("ALL");
-  const [movingId, setMovingId]             = useState<string | null>(null);
   const [greetHour, setGreetHour]           = useState<number | null>(null);
-  const [, startMove]                       = useTransition();
 
   useEffect(() => { setGreetHour(new Date().getHours()); }, []);
 
@@ -389,23 +385,6 @@ export function DashboardClient({
      must not leave the queue filtered to nothing with no way back. */
   const activeVisitType: VisitTypeFilterKey =
     visibleVisitTypeFilters.some((f) => f.key === statusFilter) ? statusFilter : "ALL";
-
-  /* Visit time — all today's appointments (REQUESTED + CONFIRMED + IN_PROGRESS), grouped by hospital for DOCTOR */
-  const bookedGroups = useMemo(() => {
-    // Only REQUESTED — once moved to today's queue (CONFIRMED+) the patient leaves Visit time
-    const booked = filteredAppts.filter((a) => a.status === "REQUESTED");
-    if (role === "DOCTOR") {
-      const map = new Map<string, { name: string; appts: Appt[] }>();
-      for (const a of booked) {
-        const key = a.hospital?.id ?? "unknown";
-        if (!map.has(key)) map.set(key, { name: a.hospital?.name ?? "Unknown", appts: [] });
-        map.get(key)!.appts.push(a);
-      }
-      return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
-    } else {
-      return booked.length > 0 ? [{ name: displayName, appts: booked }] : [];
-    }
-  }, [filteredAppts, role, displayName]);
 
   /* Surgeries — optionally filtered by selected hospital when DOCTOR */
   const filteredSurgeries = useMemo(() => {
@@ -568,127 +547,24 @@ export function DashboardClient({
         )}
       </div>
 
-      {/* ── Surgeries + Visit time ────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-
-          {/* Partial Dispense */}
-          <div className="surface-card p-5">
-            <h2 className="text-base font-semibold text-[var(--color-ink-900)] mb-4">
-              Partial Dispense
-              {partialDispenseAppts.length > 0 && (
-                <span className="ml-2 text-xs font-normal text-[var(--color-ink-400)]">{partialDispenseAppts.length} pending</span>
-              )}
-            </h2>
-            {partialDispenseAppts.length === 0 ? (
-              <p className="text-center text-xs text-[var(--color-ink-400)] py-6">No partial dispense patients</p>
-            ) : (
-              <div className="space-y-2">
-                {partialDispenseAppts.map((a, idx) => (
-                  <PartialDispenseRow key={a.id} appt={a} role={role} serial={idx + 1} />
-                ))}
-              </div>
-            )}
+      {/* ── Partial Dispense ─────────────────────────────────────────────── */}
+      <div className="surface-card p-5">
+        <h2 className="text-base font-semibold text-[var(--color-ink-900)] mb-4">
+          Partial Dispense
+          {partialDispenseAppts.length > 0 && (
+            <span className="ml-2 text-xs font-normal text-[var(--color-ink-400)]">{partialDispenseAppts.length} pending</span>
+          )}
+        </h2>
+        {partialDispenseAppts.length === 0 ? (
+          <p className="text-center text-xs text-[var(--color-ink-400)] py-6">No partial dispense patients</p>
+        ) : (
+          <div className="space-y-2">
+            {partialDispenseAppts.map((a, idx) => (
+              <PartialDispenseRow key={a.id} appt={a} role={role} serial={idx + 1} />
+            ))}
           </div>
-
-          {/* Visit time */}
-          <div className="surface-card p-5">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-base font-semibold text-[var(--color-ink-900)]">
-                Appointment time
-                {bookedGroups.length > 0 && (
-                  <span className="ml-2 text-xs font-normal text-[var(--color-ink-400)]">
-                    {bookedGroups.reduce((s, g) => s + g.appts.length, 0)} booked
-                  </span>
-                )}
-              </h2>
-              <Link href="/appointments" className="text-xs font-semibold text-[var(--color-primary-600)] hover:underline">View all →</Link>
-            </div>
-            {bookedGroups.length === 0 && (
-              <p className="text-center text-xs text-[var(--color-ink-400)] py-6">No patients booked for visit</p>
-            )}
-            {bookedGroups.length > 0 && (
-              <div className="space-y-4">
-                {bookedGroups.map(({ name, appts: gAppts }) => (
-                  <div key={name}>
-                    {role === "DOCTOR" && (
-                      <div className="flex items-center gap-1.5 mb-2">
-                        <div className="shrink-0 p-1 rounded-md bg-[var(--color-primary-50)]">
-                          <Building2 size={11} className="text-[var(--color-primary-700)]" />
-                        </div>
-                        <p className="text-xs font-bold text-[var(--color-ink-700)] uppercase tracking-wide">{name}</p>
-                        <span className="text-[10px] text-[var(--color-ink-400)]">· {gAppts.length}</span>
-                      </div>
-                    )}
-                    <div className={clsx("space-y-1.5", role === "DOCTOR" && "pl-1")}>
-                      {gAppts.map((a, idx) => {
-                        const cfg      = STATUS_CFG[a.status] ?? STATUS_CFG["REQUESTED"];
-                        const isMoving = movingId === a.id;
-                        return (
-                          <div key={a.id} className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-[var(--color-border)] bg-white">
-                            <div className="w-5 shrink-0 flex items-center justify-center">
-                              <span className="text-xs font-bold text-[var(--color-ink-400)]">{idx + 1}</span>
-                            </div>
-                            <div className="w-px self-stretch bg-[var(--color-border)]" />
-                            <div className="w-16 shrink-0 flex flex-col items-center gap-0.5">
-                              <span className="text-sm font-bold text-[var(--color-ink-900)] whitespace-nowrap" title="Scheduled appointment time">
-                                {format(new Date(a.dateTime), "h:mm a")}
-                              </span>
-                              <span className="text-[9px] text-[var(--color-ink-400)] whitespace-nowrap" title="Booked at">
-                                Booked {format(new Date(a.createdAt), "h:mm a")}
-                              </span>
-                            </div>
-                            <div className="w-px self-stretch bg-[var(--color-border)]" />
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-semibold text-[var(--color-ink-900)] truncate">{a.patient.name}</p>
-                              <div className="flex items-center gap-1 flex-wrap mt-0.5">
-                                <span title="UDID (Doctor ID)" className="font-mono text-[10px] text-[#115E59] bg-[#F0F8F6] px-1.5 py-0.5 rounded">
-                                  {a.patient.udid}
-                                </span>
-                              </div>
-                              {a.complaint && (
-                                <div className="mt-1.5 flex items-center gap-1 min-w-0">
-                                  <span className="px-2 py-0.5 rounded-lg bg-amber-50 border border-amber-100 text-amber-800 text-[11px] font-medium truncate">
-                                    {formatComplaintDisplay(a.complaint)}
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                            <span className={clsx("text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0", cfg.color)}>
-                              {cfg.label}
-                            </span>
-                            {a.status === "REQUESTED" && (
-                              <button
-                                disabled={isMoving}
-                                title="Move to Today's Queue"
-                                onClick={() => {
-                                  setMovingId(a.id);
-                                  startMove(async () => {
-                                    if (role === "DOCTOR") {
-                                      await doctorConfirmAppointment(a.id);
-                                    } else {
-                                      await hospitalUpdateAppointmentStatus(a.id, "CONFIRMED");
-                                    }
-                                    setMovingId(null);
-                                    router.refresh();
-                                  });
-                                }}
-                                className="shrink-0 flex items-center justify-center w-7 h-7 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 disabled:opacity-50 transition-colors"
-                              >
-                                {isMoving ? <Loader2 size={13} className="animate-spin" /> : <LogIn size={13} />}
-                              </button>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                  ))}
-
-              </div>
-            )}
-          </div>
-
-        </div>
+        )}
+      </div>
 
     </div>
   );
