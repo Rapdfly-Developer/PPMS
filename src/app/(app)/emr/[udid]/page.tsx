@@ -6,7 +6,7 @@ import { format, isSameDay } from "date-fns";
 import {
   User, Eye, Activity, Link2, FileText, FolderOpen, Lock,
   Phone, Building2, Stethoscope, Calendar, AlertTriangle,
-  Pill, CalendarCheck, Hash, Clock, CheckCircle2,
+  Pill, CalendarCheck, Hash, Clock, CheckCircle2, Sparkles,
 } from "lucide-react";
 import { BackButton } from "@/components/ui/BackButton";
 import { convertNotesToCC, parseEMRComplaints } from "@/lib/appointment-cc";
@@ -474,25 +474,12 @@ export default async function PatientDetailedEMR({
             showActionBar={user.role === "DOCTOR"}
             finalizedToday={finalizedToday}
             pluginSlot={
-              <>
-                <PluginEmrSlot
-                  patientUdid={udid}
-                  patientName={patient.name}
-                  visitId={activeVisit.id}
-                  visitClosed={activeVisit.status === "CLOSED"}
-                />
-                {getAllRegisteredPlugins()
-                  .filter((p) => p.manifest.externalOrigin)
-                  .map((p) => (
-                    <ExternalPluginSlot
-                      key={p.manifest.pluginId}
-                      pluginId={p.manifest.pluginId}
-                      triggerPermission={p.manifest.ui?.emrPanel?.triggerPermission ?? ""}
-                      patientUdid={udid}
-                      visitId={activeVisit.id}
-                    />
-                  ))}
-              </>
+              <PluginEmrSlot
+                patientUdid={udid}
+                patientName={patient.name}
+                visitId={activeVisit.id}
+                visitClosed={activeVisit.status === "CLOSED"}
+              />
             }
             tabs={[
               {
@@ -563,6 +550,26 @@ export default async function PatientDetailedEMR({
                 badge: activeVisit.investigationOrders.filter((o) => !o.resultRef && o.status !== "REVIEWED" && o.status !== "CANCELLED").length,
                 content:
                   <InvestigationsTab visit={activeVisit} priorVisits={priorVisits} udid={udid} readOnly={readOnly} />,
+              },
+              {
+                id: "ai-copilot",
+                label: "AI Clinical Copilot",
+                icon: <Sparkles size={14} />,
+                content: (
+                  <>
+                    {getAllRegisteredPlugins()
+                      .filter((p) => p.manifest.externalOrigin)
+                      .map((p) => (
+                        <ExternalPluginSlot
+                          key={p.manifest.pluginId}
+                          pluginId={p.manifest.pluginId}
+                          triggerPermission={p.manifest.ui?.emrPanel?.triggerPermission ?? ""}
+                          patientUdid={udid}
+                          visitId={activeVisit.id}
+                        />
+                      ))}
+                  </>
+                ),
               },
               {
                 id: "plan",
