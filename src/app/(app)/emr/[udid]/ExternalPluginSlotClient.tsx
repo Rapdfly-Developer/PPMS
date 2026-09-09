@@ -74,13 +74,17 @@ export function ExternalPluginSlotClient({
     sendInit();
   }, [loaded, sendInit]);
 
-  // Re-send PPMS_INIT when Copilot signals its message listener is ready (PLUGIN_MOUNTED).
-  // This resolves the race between iframe onLoad and React hydration in the Copilot.
+  // Re-send PPMS_INIT once when Copilot signals its message listener is ready
+  // (PLUGIN_MOUNTED). Respond only to the FIRST PLUGIN_MOUNTED per mount — after
+  // that the Copilot has its session and further sends must not re-trigger auto-start.
   useEffect(() => {
+    let responded = false;
     function onMounted(event: MessageEvent) {
       if (event.origin !== pluginOrigin) return;
       const msg = event.data as Record<string, unknown>;
       if (msg?.type === "PLUGIN_MOUNTED" && msg?.pluginId === pluginId) {
+        if (responded) return;
+        responded = true;
         sendInit();
       }
     }
