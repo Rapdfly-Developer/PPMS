@@ -1,38 +1,30 @@
 /**
  * AI Clinical Copilot — plugin entry point.
  *
- * Importing this module registers the plugin with the framework registry.
- * Registration is idempotent: registerPlugin() rejects duplicates, and Next.js
- * may evaluate this module once per server bundle, so the guard is required.
+ * Registers the plugin manifest with the framework so that:
+ *   - ExternalPluginSlot can resolve the plugin, sign a scoped token, and
+ *     render the externally-deployed Copilot inside the EMR iframe.
+ *   - The plugin token API (/api/v1/plugin-token) can issue tokens restricted
+ *     to this plugin's declared requiredApis (data scopes).
+ *
+ * There is no in-process AI implementation here. The actual Copilot logic
+ * (Claude API calls, prompts, UI) lives in the separately deployed Vercel
+ * project pointed to by NEXT_PUBLIC_COPILOT_ORIGIN.
  */
 
 import { registerPlugin, isPluginRegistered, type Plugin } from "@/plugin-framework";
 
 import { manifest, PLUGIN_ID, COPILOT_PERMISSIONS } from "./manifest";
-import { CopilotPanel } from "./ui/CopilotPanel";
 
 export const aiClinicalCopilot: Plugin = {
   manifest,
 
   hooks: {
     async onInstall({ doctorId, version }) {
-      console.info(
-        `[Copilot] installed v${version} for doctor ${doctorId}`,
-      );
+      console.info(`[Copilot] installed v${version} for doctor ${doctorId}`);
     },
     async onEnable({ doctorId }) {
-      // Surface a missing key at enable time rather than on the doctor's first
-      // request. Never throws — the framework treats hooks as best-effort.
-      const provider = process.env.AI_PROVIDER ?? "anthropic";
-      const hasKey =
-        provider === "gemini"
-          ? !!process.env.GEMINI_API_KEY
-          : !!process.env.ANTHROPIC_API_KEY;
-      if (!hasKey) {
-        console.warn(
-          `[Copilot] enabled for doctor ${doctorId} but the AI key for provider "${provider}" is not set — requests will fail until it is configured.`,
-        );
-      }
+      console.info(`[Copilot] enabled for doctor ${doctorId}`);
     },
     async onDisable({ doctorId }) {
       console.info(`[Copilot] disabled for doctor ${doctorId}`);
@@ -42,9 +34,8 @@ export const aiClinicalCopilot: Plugin = {
     },
   },
 
-  components: {
-    emrPanel: CopilotPanel,
-  },
+  // No in-process emrPanel component — the Copilot renders via ExternalPluginSlot
+  // as an iframe loaded from NEXT_PUBLIC_COPILOT_ORIGIN.
 };
 
 if (!isPluginRegistered(PLUGIN_ID)) {

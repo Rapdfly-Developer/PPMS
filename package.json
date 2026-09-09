@@ -16,7 +16,6 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.112.5",
-    "@google/generative-ai": "^0.24.1",
     "@prisma/client": "^5.22.0",
     "@sparticuz/chromium": "^133.0.0",
     "@types/qrcode": "^1.5.6",
