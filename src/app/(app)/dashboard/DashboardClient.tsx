@@ -111,7 +111,7 @@ function SurgeryRow({ s, role }: { s: Surgery; role: "DOCTOR" | "HOSPITAL" }) {
     : (s.doctor ? `Dr. ${s.doctor.name}` : null);
   return (
     <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-[var(--color-border)] bg-white">
-      <div className="w-20 shrink-0 text-center">
+      <div className="w-20 shrink-0 text-center hidden sm:block">
         <p className="text-xs font-bold text-[var(--color-ink-900)]">{format(new Date(s.surgeryDate), "d MMM")}</p>
         <p className="text-[10px] text-[var(--color-ink-400)]">{format(new Date(s.surgeryDate), "hh:mm a")}</p>
       </div>
