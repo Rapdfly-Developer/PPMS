@@ -955,130 +955,35 @@ export default function LoginPage() {
       {/* Light background */}
       <LightBackground px={par.x} py={par.y} />
 
-      {/* Page layout */}
-      <div className="relative flex w-full h-full overflow-hidden">
+      {/* Page layout — full-width centered */}
+      <div className="relative w-full h-full overflow-y-auto flex flex-col">
 
-        {/* ══ LEFT PANEL — brand, product preview, proof ═══════════════════ */}
-        <div className="hidden lg:flex flex-col justify-between lg:w-[46%] shrink-0 px-9 xl:px-14 py-8 xl:py-10 min-w-0 relative overflow-hidden"
-          style={{ borderRight: `1px solid ${T.border}`, background: "#FAFFFE" }}>
+        <div className="w-full flex-1 flex flex-col justify-center items-center py-10 px-4" style={{ minHeight: "min-content" }}>
 
-          {/* Logo */}
-          <div className="lp-a0 shrink-0">
-            <div className="flex items-center gap-3">
-              <img
-                src="/landing/logo-ppms-new.png"
-                alt="PPMS-AI"
-                className="shrink-0"
-                style={{ width: "44px", height: "44px", objectFit: "contain" }}
-              />
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-[22px] font-black" style={{ color: T.text, letterSpacing: "-0.035em" }}>PPMS-AI</span>
-                  <span className="text-[9px] font-bold px-2 py-0.5 rounded-full"
-                    style={{ background: "rgba(13,148,136,.08)", color: T.accent, border: "1px solid rgba(13,148,136,.2)", letterSpacing: "0.04em" }}>v2.0 Cloud</span>
-                </div>
-                <p className="text-[9px] font-semibold" style={{ color: T.faint, letterSpacing: "0.07em" }}>
-                  PERSONAL PATIENT MANAGEMENT SYSTEM
-                </p>
-              </div>
+          {/* Brand header */}
+          <div className="lp-a0 shrink-0 flex flex-col items-center text-center mb-7">
+            <img
+              src="/landing/logo-ppms-new.png"
+              alt="PPMS-AI"
+              className="shrink-0 mb-3"
+              style={{ width: "52px", height: "52px", objectFit: "contain" }}
+            />
+            <div className="flex items-center gap-2 mb-1">
+              <span className="font-black" style={{ fontSize: "24px", color: T.text, letterSpacing: "-0.03em" }}>PPMS-AI</span>
+              <span className="text-[9px] font-bold px-2 py-0.5 rounded-full"
+                style={{ background: "rgba(13,148,136,.08)", color: T.accent, border: "1px solid rgba(13,148,136,.2)", letterSpacing: "0.04em" }}>v2.0</span>
             </div>
-          </div>
-
-          {/* Hero */}
-          <div className="flex-1 flex flex-col justify-center py-7 min-w-0">
-
-            {/* Badge */}
-            <div className="lp-a1 mb-4">
-              <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full" style={{
-                background: "rgba(13,148,136,.06)",
-                border: "1px solid rgba(13,148,136,.18)",
-              }}>
-                <span className="lp-dot" style={{ width: 6, height: 6, borderRadius: "50%", background: T.accent }} />
-                <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.12em", color: T.accent }}>
-                  ENTERPRISE HEALTHCARE PLATFORM
-                </span>
-              </span>
-            </div>
-
-            {/* Headline */}
-            <h1 className="lp-a1 font-black leading-[1.08] mb-3"
-              style={{ fontSize: "clamp(26px,2.4vw,38px)", color: T.text, letterSpacing: "-0.028em" }}>
-              Better <span className="lp-grad-text">Healthcare.</span>
-              <br />Better Management.
-            </h1>
-
-            {/* Description */}
-            <p className="lp-a2 leading-relaxed mb-3" style={{ fontSize: "14px", color: T.muted, maxWidth: "400px" }}>
-              Secure enterprise healthcare platform for hospitals, clinics,
-              laboratories, pharmacies and healthcare networks.
+            <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.15em", color: T.faint }}>
+              PRIVATE PATIENT MANAGEMENT SYSTEM
             </p>
-
-            {/* Motto */}
-            <p className="lp-a2 mb-7" style={{
-              fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em",
-              color: T.accent2, textTransform: "uppercase",
-            }}>
-              One Doctor&nbsp;&nbsp;·&nbsp;&nbsp;Multiple Hospitals&nbsp;&nbsp;·&nbsp;&nbsp;One Smart System
+            <p className="mt-2" style={{ fontSize: "13.5px", color: T.muted, maxWidth: "340px", lineHeight: 1.55 }}>
+              Secure, intelligent healthcare management for hospitals, clinics and healthcare networks.
             </p>
-
-            {/* Dashboard mockup */}
-            <DashboardMockup px={par.x} py={par.y} />
-
-            {/* Stat cards */}
-            <div className="lp-a4 grid grid-cols-3 gap-2.5 mt-11" style={{ maxWidth: "400px" }}>
-              <GlassStat icon={<Building2 size={15} />}   value={500} suffix="+"  label="Hospitals"       delay="0s"   />
-              <GlassStat icon={<Stethoscope size={15} />} value={12}  suffix="K+" label="Doctors"         delay="0.9s" />
-              <GlassStat icon={<FileText size={15} />}    value={2}   suffix="M+" label="Patient Records" delay="1.8s" />
-            </div>
           </div>
-
-          {/* Trust footer */}
-          <div className="lp-a4 shrink-0">
-            <div className="mb-3" style={{ height: "1px", background: T.border }} />
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
-              {[
-                { icon: <ShieldCheck size={12} />, label: "HIPAA Ready"     },
-                { icon: <Building2 size={12} />,   label: "NABH Workflow"   },
-                { icon: <FileText size={12} />,    label: "ABDM Compatible" },
-                { icon: <Cloud size={12} />,       label: "Cloud Hosted"    },
-                { icon: <Zap size={12} />,         label: "99.98% Uptime"   },
-              ].map((t, i) => (
-                <span key={i} className="flex items-center gap-1.5" style={{ fontSize: "10.5px", fontWeight: 500, color: T.faint }}>
-                  <span style={{ color: T.accent }}>{t.icon}</span> {t.label}
-                </span>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* ══ RIGHT PANEL — login card ══════════════════════════════════════ */}
-        <div className="w-full lg:w-[54%] shrink-0 flex flex-col overflow-y-auto"
-          style={{ background: T.bg }}>
-
-          <div className="w-full flex-1 flex flex-col justify-center items-center py-8 px-4 lg:py-10 lg:px-8" style={{ minHeight: "min-content" }}>
-
-            {/* Mobile hero */}
-            <div className="lg:hidden lp-a0 shrink-0 flex flex-col items-center text-center mb-6">
-              <div className="flex items-center gap-3 mb-1.5">
-                <img
-                  src="/landing/logo-ppms-new.png"
-                  alt="PPMS-AI"
-                  className="shrink-0"
-                  style={{ width: "40px", height: "40px", objectFit: "contain" }}
-                />
-                <span className="text-[24px] font-black" style={{ color: T.text, letterSpacing: "-0.03em" }}>PPMS-AI</span>
-              </div>
-              <p style={{ fontSize: "9px", fontWeight: 700, letterSpacing: "0.16em", color: T.faint }}>
-                PERSONAL PATIENT MANAGEMENT SYSTEM
-              </p>
-              <h1 className="font-black leading-snug mt-3" style={{ fontSize: "20px", color: T.text, letterSpacing: "-0.02em" }}>
-                Better <span className="lp-grad-text">Healthcare.</span> Better Management.
-              </h1>
-            </div>
 
             {/* Login card */}
             <div
-              className="lp-card lp-card-levitate w-full max-w-[420px] shrink-0"
+              className="lp-card w-full max-w-[420px] shrink-0"
               style={{
                 background: T.surface,
                 borderRadius: "20px",
@@ -1092,20 +997,6 @@ export default function LoginPage() {
               <div style={{ height: "3px", background: "linear-gradient(90deg,#0D9488,#10B981,#0F766E)" }} />
 
               <div className="px-5 py-6 sm:px-7">
-
-                {/* Welcome */}
-                <div className="text-center mb-5">
-                  <div className="flex items-center justify-center gap-2.5 mb-2">
-                    <div className="w-8 h-8 rounded-xl flex items-center justify-center"
-                      style={{ background: "rgba(13,148,136,.08)", border: "1px solid rgba(13,148,136,.18)" }}>
-                      <ShieldCheck size={16} style={{ color: T.accent }} />
-                    </div>
-                    <h2 className="text-[24px] font-bold" style={{ color: T.text, letterSpacing: "-0.02em" }}>
-                      Welcome Back
-                    </h2>
-                  </div>
-                  <p style={{ fontSize: "14px", color: T.muted }}>Sign in to your secure healthcare workspace.</p>
-                </div>
 
                 {/* Segmented tab control */}
                 <div className="relative flex rounded-xl p-1 mb-4"
@@ -1411,7 +1302,6 @@ export default function LoginPage() {
               </div>
             </div>
 
-          </div>
         </div>
       </div>
     </div>
