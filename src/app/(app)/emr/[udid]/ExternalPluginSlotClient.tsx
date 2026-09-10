@@ -39,6 +39,18 @@ type PendingDraft = {
 
 type SaveState = "idle" | "saving" | "saved" | "error";
 
+/** Strip common markdown syntax so drafts render as clean plain text in the textarea. */
+function stripMarkdown(text: string): string {
+  return text
+    .replace(/\*\*(.+?)\*\*/g, "$1")   // **bold**
+    .replace(/\*(.+?)\*/g, "$1")        // *italic*
+    .replace(/^#{1,6}\s+/gm, "")        // # headings
+    .replace(/^[-*]{3,}\s*$/gm, "---")  // *** or --- separators → plain ---
+    .replace(/`(.+?)`/g, "$1")          // `code`
+    .replace(/_{2}(.+?)_{2}/g, "$1")    // __bold__
+    .replace(/_(.+?)_/g, "$1");         // _italic_
+}
+
 const DRAFT_TYPE_LABELS: Record<string, string> = {
   consultation_note: "Consultation Note",
   follow_up_summary: "Follow-up Summary",
@@ -117,12 +129,13 @@ export function ExternalPluginSlotClient({
           return;
         }
 
+        const cleanText = stripMarkdown(rawDraftText.trim());
         setPendingDraft({
           draftType: rawDraftType,
-          draftText: rawDraftText.trim(),
+          draftText: cleanText,
           visitId: rawVisitId,
         });
-        setEditedDraftText(rawDraftText.trim());
+        setEditedDraftText(cleanText);
         setSaveState("idle");
         return;
       }
