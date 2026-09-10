@@ -158,7 +158,7 @@ function PartialDispenseRow({ appt: a, role, serial }: { appt: Appt; role: "DOCT
       <div className="w-6 shrink-0 text-center">
         <span className="text-xs font-bold text-orange-400">{serial}</span>
       </div>
-      <div className="w-px self-stretch bg-orange-200" />
+      <div className="w-px self-stretch bg-orange-200 hidden sm:block" />
 
       {/* Patient info — grows to fill */}
       <Link href={`/patients/${a.patient.udid}?returnTo=/dashboard`} className="flex-1 min-w-0 hover:opacity-80 transition-opacity">
@@ -236,9 +236,9 @@ function ApptRow({ appt, role, serial }: { appt: Appt; role: "DOCTOR" | "HOSPITA
       <div className="w-6 shrink-0 flex items-center justify-center">
         <span className="text-xs font-bold text-[var(--color-ink-400)] tabular-nums">{serial}</span>
       </div>
-      <div className="w-px self-stretch bg-[var(--color-border)]" />
+      <div className="w-px self-stretch bg-[var(--color-border)] hidden sm:block" />
       {/* Time + visit-type column */}
-      <div className="w-20 shrink-0 flex flex-col items-center gap-0.5">
+      <div className="w-20 shrink-0 hidden sm:flex flex-col items-center gap-0.5">
         {/* Primary time: arrived or scheduled */}
         <p className="text-sm font-bold text-[var(--color-ink-900)]" title="Appointment time">
           {primaryTime}
@@ -250,7 +250,7 @@ function ApptRow({ appt, role, serial }: { appt: Appt; role: "DOCTOR" | "HOSPITA
           </span>
         </div>
       </div>
-      <div className="w-px self-stretch bg-[var(--color-border)]" />
+      <div className="w-px self-stretch bg-[var(--color-border)] hidden sm:block" />
       <Link href={`/patients/${appt.patient.udid}?returnTo=/dashboard`} className="flex-1 min-w-0 hover:opacity-80 transition-opacity">
         <p className="font-semibold text-[var(--color-ink-900)] text-sm truncate">{appt.patient.name}</p>
         <div className="flex items-center gap-2 mt-0.5 flex-wrap">
@@ -280,7 +280,7 @@ function ApptRow({ appt, role, serial }: { appt: Appt; role: "DOCTOR" | "HOSPITA
       <div className="flex flex-col items-end gap-1 shrink-0">
         <div className="flex items-center gap-1.5">
           {appt.visitType && (
-            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)] whitespace-nowrap">
+            <span className="hidden sm:inline text-[10px] font-medium px-2 py-0.5 rounded-full bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)] whitespace-nowrap">
               {appt.visitType}
             </span>
           )}

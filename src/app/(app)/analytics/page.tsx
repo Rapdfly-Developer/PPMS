@@ -161,7 +161,7 @@ export default async function AnalyticsPage() {
     <div className="fade-in space-y-6 max-w-6xl">
 
       {/* ── Header ─────────────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <div className="flex items-center gap-2 text-[var(--color-ink-400)] text-xs mb-1">
             <Link href="/dashboard" className="hover:text-[var(--color-primary-600)]">Dashboard</Link>
@@ -246,7 +246,7 @@ export default async function AnalyticsPage() {
               Avg: {Math.round(trendDays.reduce((s, d) => s + d.total, 0) / 7)}/day
             </p>
           </div>
-          <div className="flex items-center gap-4 text-xs">
+          <div className="hidden sm:flex items-center gap-4 text-xs">
             <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-[var(--color-primary-500)]" /> Total</span>
             <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-emerald-500" /> Completed</span>
           </div>

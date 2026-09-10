@@ -85,7 +85,7 @@ export function AppointmentRow({ appt, role, token }: { appt: any; role: string;
         {token}
       </div>
 
-      <div className="w-px self-stretch bg-[var(--color-border)]" />
+      <div className="w-px self-stretch bg-[var(--color-border)] hidden sm:block" />
 
       {/* Left: patient info stacked directly, no gap from right column */}
       <div className="flex-1 min-w-0">
@@ -237,7 +237,7 @@ export function AppointmentRow({ appt, role, token }: { appt: any; role: string;
             {STATUS_LABELS[appt.status] ?? appt.status.replace(/_/g, " ")}
           </span>
         </div>
-        <span className="flex items-center gap-1 text-[11px] text-[var(--color-ink-400)]" title="Appointment booked at">
+        <span className="hidden sm:flex items-center gap-1 text-[11px] text-[var(--color-ink-400)]" title="Appointment booked at">
           <Clock size={10} /> Booked: {format(new Date(appt.createdAt), "d MMM, h:mm a")}
         </span>
         {showConfirmReject && (

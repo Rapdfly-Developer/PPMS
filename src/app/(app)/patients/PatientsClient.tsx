@@ -601,7 +601,7 @@ export function PatientsClient({
                       </div>
 
                       {/* Avatar + name + UDID + age/sex */}
-                      <div className="flex items-center gap-3 w-48 xl:w-56 shrink-0 min-w-0">
+                      <div className="flex items-center gap-3 flex-1 min-w-0 xl:w-56 xl:flex-none xl:shrink-0">
                         {p.photoUrl ? (
                           <img
                             src={photoSrc(p.photoUrl)}
@@ -703,8 +703,8 @@ export function PatientsClient({
                         </div>
                       </div>
 
-                      {/* Category + Undo — fixed width */}
-                      <div className="flex items-center gap-2 w-20 shrink-0 justify-end">
+                      {/* Category + Undo — right side */}
+                      <div className="flex items-center gap-2 shrink-0 justify-end">
                         <span className={`hidden sm:inline-flex text-[10px] font-semibold px-2 py-0.5 rounded-full ${cat.cls}`}>
                           {cat.label}
                         </span>
@@ -731,7 +731,7 @@ export function PatientsClient({
 
             {/* Pagination */}
             {total > 0 && (
-              <div className="flex items-center justify-between px-4 py-3 border-t border-[var(--color-border)]">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 px-4 py-3 border-t border-[var(--color-border)]">
                 <div className="flex items-center gap-2">
                   <select
                     value={pageSize}
