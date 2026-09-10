@@ -6,16 +6,24 @@ import { htmlToPdf } from "@/lib/pdf";
 export const maxDuration = 30;
 
 export async function GET(req: NextRequest) {
-  await requireRole("DOCTOR");
+  const user = await requireRole("DOCTOR");
 
-  const sp         = req.nextUrl.searchParams;
-  const hospitalId = sp.get("hospitalId") || undefined;
-  const category   = sp.get("category")   || undefined;
-  const sex        = sp.get("sex")        || undefined;
-  const ageMin     = sp.get("ageMin") ? Number(sp.get("ageMin")) : undefined;
-  const ageMax     = sp.get("ageMax") ? Number(sp.get("ageMax")) : undefined;
-  const fromDate   = sp.get("fromDate") || undefined;
-  const toDate     = sp.get("toDate")   || undefined;
+  const sp                  = req.nextUrl.searchParams;
+  const requestedHospitalId = sp.get("hospitalId") || undefined;
+  const category            = sp.get("category")   || undefined;
+  const sex                 = sp.get("sex")        || undefined;
+  const ageMin              = sp.get("ageMin") ? Number(sp.get("ageMin")) : undefined;
+  const ageMax              = sp.get("ageMax") ? Number(sp.get("ageMax")) : undefined;
+  const fromDate            = sp.get("fromDate") || undefined;
+  const toDate              = sp.get("toDate")   || undefined;
+
+  // F-10: scope export to the authenticated doctor's own hospital.
+  // Reject requests for a different hospital to prevent cross-tenant data leakage.
+  const effectiveHospitalId = user.hospitalId;
+  if (requestedHospitalId && requestedHospitalId !== effectiveHospitalId) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+  const hospitalId = effectiveHospitalId;
 
   const where: any = hospitalId ? { registeredAtId: hospitalId } : {};
   if (category) where.category = category;

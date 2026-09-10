@@ -428,6 +428,8 @@ model Patient {
   pastExternalVisits PastExternalVisit[]
   insurancePolicies  PatientInsurance[]
   surgerySchedules   SurgerySchedule[]
+  consents           PatientConsent[]
+  dataRightsRequests DataRightsRequest[]
 
   @@index([doctorId])
   @@index([registeredAtId])
@@ -1567,4 +1569,51 @@ model PluginLicense {
 
   @@unique([pluginId, doctorId])
   @@index([doctorId, status])
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// DPDP Act 2023 — Consent & Data Principal Rights
+// ──────────────────────────────────────────────────────────────────────────
+
+// Records the patient's explicit, informed consent for data processing
+// (DPDP Act 2023, Sections 5-6). One row per consent event; a new row is
+// inserted on withdrawal and re-grant so the full audit trail is preserved.
+// purpose: TREATMENT | RESEARCH | INSURANCE | REFERRAL | MARKETING
+// method:  VERBAL | WRITTEN | ELECTRONIC
+// status:  GRANTED | WITHDRAWN
+model PatientConsent {
+  id          String   @id @default(cuid())
+  patientId   String
+  patient     Patient  @relation(fields: [patientId], references: [id])
+  purpose     String   @default("TREATMENT")
+  method      String   @default("ELECTRONIC")
+  status      String   @default("GRANTED")
+  noticeText  String?
+  capturedBy  String?
+  consentedAt DateTime @default(now())
+  withdrawnAt DateTime?
+  createdAt   DateTime @default(now())
+
+  @@index([patientId, status])
+  @@index([patientId, consentedAt])
+}
+
+// Tracks data principal rights requests under DPDP Act 2023, Sections 11-15.
+// type: ACCESS | CORRECTION | ERASURE | NOMINATION | GRIEVANCE
+// status: PENDING | IN_PROGRESS | RESOLVED | REJECTED
+model DataRightsRequest {
+  id          String   @id @default(cuid())
+  patientId   String
+  patient     Patient  @relation(fields: [patientId], references: [id])
+  type        String
+  description String?
+  status      String   @default("PENDING")
+  resolution  String?
+  resolvedBy  String?
+  resolvedAt  DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([patientId, type])
+  @@index([status, createdAt])
 }
