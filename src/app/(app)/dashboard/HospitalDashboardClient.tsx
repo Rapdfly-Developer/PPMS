@@ -75,11 +75,11 @@ function ApptRow({ appt }: { appt: Appt }) {
   return (
     <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-[var(--color-border)] bg-white hover:bg-[var(--color-primary-50)] hover:border-[var(--color-primary-200)] transition-colors group">
       {/* Time */}
-      <div className="w-16 shrink-0 text-center">
+      <div className="w-16 shrink-0 text-center hidden sm:block">
         <p className="text-sm font-bold text-[var(--color-ink-900)]">{time}</p>
       </div>
 
-      <div className="w-px self-stretch bg-[var(--color-border)]" />
+      <div className="w-px self-stretch bg-[var(--color-border)] hidden sm:block" />
 
       {/* Patient info */}
       <div className="flex-1 min-w-0">
@@ -316,11 +316,11 @@ export function HospitalDashboardClient({ hospitalName, hospitalLogoUrl, kpis, a
               <div className="space-y-2">
                 {surgeries.map((s) => (
                   <div key={s.id} className="flex items-center gap-3 px-4 py-3 rounded-xl border border-[var(--color-border)] bg-white">
-                    <div className="w-20 shrink-0 text-center">
+                    <div className="w-20 shrink-0 text-center hidden sm:block">
                       <p className="text-xs font-bold text-[var(--color-ink-900)]">{format(new Date(s.surgeryDate), "d MMM")}</p>
                       <p className="text-[10px] text-[var(--color-ink-400)]">{format(new Date(s.surgeryDate), "hh:mm a")}</p>
                     </div>
-                    <div className="w-px self-stretch bg-[var(--color-border)]" />
+                    <div className="w-px self-stretch bg-[var(--color-border)] hidden sm:block" />
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-sm text-[var(--color-ink-900)] truncate">{s.patient.name}</p>
                       <div className="flex items-center gap-2 mt-0.5 flex-wrap">
@@ -330,7 +330,7 @@ export function HospitalDashboardClient({ hospitalName, hospitalLogoUrl, kpis, a
                         )}
                       </div>
                     </div>
-                    <span className="shrink-0 text-xs font-medium text-purple-700 bg-purple-50 px-2.5 py-1 rounded-full truncate max-w-[140px]">
+                    <span className="hidden sm:inline shrink-0 text-xs font-medium text-purple-700 bg-purple-50 px-2.5 py-1 rounded-full truncate max-w-[140px]">
                       {s.surgeryType}
                     </span>
                     <span className="shrink-0 text-[10px] text-[var(--color-ink-400)]">
