@@ -453,19 +453,19 @@ function AddHospitalModal({ doctorId, onClose }: { doctorId: string | null; onCl
             {/* Hospital details */}
             <div>
               <p className="text-xs font-bold text-[var(--color-ink-400)] uppercase tracking-widest mb-3">Hospital Details</p>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="col-span-2"><label className={LBL}>Hospital Name *</label><input name="name" required placeholder="e.g. Sunrise Eye Hospital" className={INP} /></div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="sm:col-span-2"><label className={LBL}>Hospital Name *</label><input name="name" required placeholder="e.g. Sunrise Eye Hospital" className={INP} /></div>
                 <div><label className={LBL}>Short Code *</label><input name="shortCode" required placeholder="SEH" maxLength={8} className={INP} /></div>
                 <div><label className={LBL}>Contact</label><input name="contact" placeholder="9876543210" className={INP} /></div>
-                <div className="col-span-2"><label className={LBL}>Address</label><input name="address" placeholder="123, Main Road, City" className={INP} /></div>
+                <div className="sm:col-span-2"><label className={LBL}>Address</label><input name="address" placeholder="123, Main Road, City" className={INP} /></div>
               </div>
             </div>
 
             {/* Login account */}
             <div>
               <p className="text-xs font-bold text-[var(--color-ink-400)] uppercase tracking-widest mb-3">Hospital Login Account</p>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="col-span-2"><label className={LBL}>Contact Person Name *</label><input name="staffName" required placeholder="e.g. Admin Staff" className={INP} /></div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="sm:col-span-2"><label className={LBL}>Contact Person Name *</label><input name="staffName" required placeholder="e.g. Admin Staff" className={INP} /></div>
                 <div><label className={LBL}>Username *</label><input name="username" required placeholder="sunrise.admin" className={INP} /></div>
                 <div><label className={LBL}>Password *</label><input name="password" type="password" required placeholder="Min 6 chars" className={INP} /></div>
                 <div><label className={LBL}>Mobile</label><input name="mobile" placeholder="10-digit number" maxLength={10} className={INP} /></div>
@@ -598,7 +598,7 @@ function AddUserModal({ hospitals, assignableRoles, doctorId, onClose, presetHos
             </div>
 
             {/* Mobile + Email */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className={L}>Mobile Number</label>
                 <input name="mobile" placeholder="10-digit number" maxLength={10} className={F} />
@@ -610,7 +610,7 @@ function AddUserModal({ hospitals, assignableRoles, doctorId, onClose, presetHos
             </div>
 
             {/* Password + Confirm Password */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className={L}>Password *</label>
                 <input
@@ -627,7 +627,7 @@ function AddUserModal({ hospitals, assignableRoles, doctorId, onClose, presetHos
                   className={`${F} ${pwMismatch ? "border-red-400 focus:ring-red-400" : ""}`}
                 />
               </div>
-              {pwMismatch && <p className="col-span-2 text-xs text-red-600 -mt-2">Passwords do not match.</p>}
+              {pwMismatch && <p className="sm:col-span-2 text-xs text-red-600 -mt-2">Passwords do not match.</p>}
             </div>
 
             {/* Status */}
@@ -720,11 +720,11 @@ function EditHospitalModal({ hospital, onClose }: { hospital: HospitalRow; onClo
         ) : (
           <form onSubmit={handleSubmit} className="px-6 py-5 flex flex-col gap-4">
             {error && <p className="text-xs text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="col-span-2"><label className={L}>Hospital Name *</label><input value={form.name} onChange={(e) => set("name", e.target.value)} required className={F} /></div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="sm:col-span-2"><label className={L}>Hospital Name *</label><input value={form.name} onChange={(e) => set("name", e.target.value)} required className={F} /></div>
               <div><label className={L}>Short Code *</label><input value={form.shortCode} onChange={(e) => set("shortCode", e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))} required maxLength={8} className={`${F} font-mono uppercase`} /></div>
               <div><label className={L}>Contact</label><input value={form.contact} onChange={(e) => set("contact", e.target.value)} className={F} /></div>
-              <div className="col-span-2"><label className={L}>Address</label><input value={form.address} onChange={(e) => set("address", e.target.value)} className={F} /></div>
+              <div className="sm:col-span-2"><label className={L}>Address</label><input value={form.address} onChange={(e) => set("address", e.target.value)} className={F} /></div>
             </div>
 
             {/* Activate / Deactivate */}
@@ -829,11 +829,11 @@ function EditUserModal({ user, onClose }: { user: UserRow; onClose: () => void }
         ) : (
           <form onSubmit={handleSubmit} className="overflow-y-auto px-6 py-5 flex flex-col gap-4">
             {error && <p className="text-xs text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="col-span-2"><label className={L}>Full Name *</label><input value={form.name} onChange={(e) => set("name", e.target.value)} required className={F} /></div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="sm:col-span-2"><label className={L}>Full Name *</label><input value={form.name} onChange={(e) => set("name", e.target.value)} required className={F} /></div>
               <div><label className={L}>Email</label><input type="email" value={form.email} onChange={(e) => set("email", e.target.value)} className={F} /></div>
               <div><label className={L}>Mobile</label><input value={form.mobile} onChange={(e) => set("mobile", e.target.value)} maxLength={10} className={F} /></div>
-              <div className="col-span-2">
+              <div className="sm:col-span-2">
                 <label className={L}>New Password <span className="normal-case font-normal text-[var(--color-ink-400)]">(leave blank to keep current)</span></label>
                 <input type="password" value={form.newPassword} onChange={(e) => set("newPassword", e.target.value)} placeholder="••••••••" className={F} />
               </div>

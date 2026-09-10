@@ -373,7 +373,7 @@ export function BookAppointmentForm({
           <p className="text-xs font-semibold uppercase tracking-widest text-[var(--color-ink-400)] mb-3">
             Appointment Type
           </p>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {/* Walk-in */}
             <button
               type="button"
@@ -652,7 +652,7 @@ export function BookAppointmentForm({
               {/* Photos & Documents */}
               <div className="sm:col-span-2">
                 <FieldLabel>Photos & Documents *</FieldLabel>
-                <div className="grid grid-cols-2 gap-3 mt-0.5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-0.5">
                   <SmartUploadBox
                     label="Aadhaar Photocopy *"
                     uploadLabel="Upload Aadhaar"

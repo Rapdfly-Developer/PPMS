@@ -225,7 +225,7 @@ export default async function ConsentFormPage({
 
           {/* Signature blocks */}
           <section className="mt-2">
-            <div className="grid grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
               <SigBlock label="Patient / Guardian Signature" sub="Name: ________________________" sub2="Relationship: ________________" />
               <SigBlock label="Witness Signature"            sub="Name: ________________________" sub2={`Date: ${today}`} />
               <SigBlock label={`Dr. ${visit.doctor?.name ?? "Surgeon"}`} sub="Treating Surgeon" sub2={`Date: ${today}`} />

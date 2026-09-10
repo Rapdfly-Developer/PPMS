@@ -73,7 +73,7 @@ export default async function RegistrationSuccessPage({
 
         {/* Patient details */}
         <div className="rounded-2xl border border-[var(--color-border)] bg-white p-6">
-          <div className="grid grid-cols-2 gap-y-4 text-sm">
+          <div className="grid grid-cols-1 xs:grid-cols-2 gap-y-4 text-sm">
             <div>
               <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)] mb-0.5">Patient</p>
               <p className="font-semibold text-[var(--color-ink-900)]">{patient.name}</p>

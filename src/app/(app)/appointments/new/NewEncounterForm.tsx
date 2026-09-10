@@ -386,7 +386,7 @@ export function NewEncounterForm({
               {/* Photos */}
               <div>
                 <FieldLabel>Photos *</FieldLabel>
-                <div className="grid grid-cols-2 gap-3 mt-0.5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-0.5">
                   <SmartUploadBox
                     label="Aadhaar Photocopy"
                     uploadLabel="Upload Aadhaar"

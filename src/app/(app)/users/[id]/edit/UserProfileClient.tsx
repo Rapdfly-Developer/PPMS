@@ -243,7 +243,7 @@ export function UserProfileClient({
               <p className="text-xs text-[var(--color-ink-400)] mt-0.5">Update the user's email address and mobile number.</p>
             </div>
             <form onSubmit={handleContact} className="px-5 py-4 flex flex-col gap-4">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1.5">
                   <label className="text-xs font-semibold text-[var(--color-ink-500)] uppercase tracking-wider">Email</label>
                   <InputIcon
@@ -288,7 +288,7 @@ export function UserProfileClient({
               <p className="text-sm font-semibold text-[var(--color-ink-900)]">Account Information</p>
               <p className="text-xs text-[var(--color-ink-400)] mt-0.5">Read-only account identity and role details.</p>
             </div>
-            <div className="px-5 py-4 grid grid-cols-2 gap-3">
+            <div className="px-5 py-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
               <ReadOnlyRow icon={AtSign} label="Username" value={`@${username}`} />
               <ReadOnlyRow icon={Shield} label="Role" value={roleMeta.label} />
             </div>
