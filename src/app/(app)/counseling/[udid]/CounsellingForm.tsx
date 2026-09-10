@@ -286,7 +286,7 @@ export default function CounsellingForm({
           {/* Insurance company fields */}
           {(paymentType === "INSURANCE" || paymentType === "GOVERNMENT_SCHEME") && (
             <div className="flex flex-col gap-3">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <FieldLabel>{paymentType === "INSURANCE" ? "Insurance Company Name" : "Scheme Name"}</FieldLabel>
                   <TextInput value={schemeName} onChange={setSchemeName} placeholder="e.g. Star Health, PMJAY" disabled={ro} />
@@ -377,7 +377,7 @@ export default function CounsellingForm({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <FieldLabel>Lens Name</FieldLabel>
                   <TextInput value={iolLensName} onChange={setIolLensName} placeholder="e.g. AcrySof IQ" disabled={ro} />

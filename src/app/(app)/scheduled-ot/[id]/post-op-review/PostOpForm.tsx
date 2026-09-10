@@ -75,7 +75,7 @@ export function PostOpForm({
         <h2 className="text-sm font-bold text-[var(--color-ink-700)] flex items-center gap-2">
           <Eye size={14} className="text-[var(--color-primary-500)]" /> Visual Acuity
         </h2>
-        <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
           <Field label="RE VA Unaided">
             <input value={form.reVaUnaided} onChange={(e) => setForm((f) => ({ ...f, reVaUnaided: e.target.value }))} placeholder="e.g. 6/60" className={INPUT} />
           </Field>

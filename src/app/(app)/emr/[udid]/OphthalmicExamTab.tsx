@@ -1202,7 +1202,7 @@ function GonioscopyCard({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {/* ── RE ── */}
         <div className="flex flex-col gap-1.5">
           <label className="text-xs font-semibold tracking-widest text-[var(--color-ink-500)] uppercase">RE Gonioscopy</label>
