@@ -444,7 +444,7 @@ function FollowUpRow({
           <div className="flex items-center gap-2.5">
             <div className="w-7 h-7 rounded-full bg-[var(--color-primary-100)] flex items-center justify-center shrink-0 overflow-hidden">
               {v.patient.photoUrl
-                ? <img src={v.patient.photoUrl} alt={v.patient.name} className="w-full h-full object-cover" />
+                ? <img src={v.patient.photoUrl.startsWith("http") ? `/api/secure-blob?url=${encodeURIComponent(v.patient.photoUrl)}` : `/api/upload?file=${encodeURIComponent(v.patient.photoUrl)}`} alt={v.patient.name} className="w-full h-full object-cover" />
                 : <User size={13} className="text-[var(--color-primary-700)]" />}
             </div>
             <div className="min-w-0">

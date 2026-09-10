@@ -318,7 +318,7 @@ export default async function PatientDetailedEMR({
                     {patient.photoUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
-                        src={patient.photoUrl.startsWith("http") ? patient.photoUrl : `/api/upload?file=${encodeURIComponent(patient.photoUrl)}`}
+                        src={patient.photoUrl.startsWith("http") ? `/api/secure-blob?url=${encodeURIComponent(patient.photoUrl)}` : `/api/upload?file=${encodeURIComponent(patient.photoUrl)}`}
                         alt={patient.name}
                         className="w-full h-full object-cover"
                       />

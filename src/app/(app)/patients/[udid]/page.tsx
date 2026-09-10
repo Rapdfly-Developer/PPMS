@@ -258,7 +258,7 @@ export default async function PatientProfilePage({
             <img
               src={
                 patient.photoUrl.startsWith("http")
-                  ? patient.photoUrl
+                  ? `/api/secure-blob?url=${encodeURIComponent(patient.photoUrl)}`
                   : `/api/upload?file=${encodeURIComponent(patient.photoUrl)}`
               }
               alt={patient.name}
@@ -307,7 +307,7 @@ export default async function PatientProfilePage({
                   <a
                     href={
                       patient.aadhaarPhotoUrl.startsWith("http")
-                        ? patient.aadhaarPhotoUrl
+                        ? `/api/secure-blob?url=${encodeURIComponent(patient.aadhaarPhotoUrl)}`
                         : `/api/upload?file=${encodeURIComponent(patient.aadhaarPhotoUrl)}`
                     }
                     target="_blank"

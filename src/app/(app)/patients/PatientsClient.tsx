@@ -68,9 +68,10 @@ function avatarColor(name: string) {
   return AVATAR_COLORS[name.charCodeAt(0) % AVATAR_COLORS.length];
 }
 function photoSrc(photoUrl: string) {
-  // Production uploads store the full Vercel Blob URL; local dev stores a bare filename.
+  // Blob URLs are proxied through the authenticated secure-blob route.
+  // Local dev stores a bare filename served by /api/upload.
   return photoUrl.startsWith("http")
-    ? photoUrl
+    ? `/api/secure-blob?url=${encodeURIComponent(photoUrl)}`
     : `/api/upload?file=${encodeURIComponent(photoUrl)}`;
 }
 function initials(name: string) {
