@@ -73,7 +73,7 @@ function BellDropdown({ items, onRead }: {
 
   return (
     <div
-      className="absolute right-0 top-full mt-1 w-80 rounded-xl border border-[var(--color-border)] bg-white shadow-xl z-50 overflow-hidden"
+      className="absolute right-0 top-full mt-1 w-[min(320px,calc(100vw-1rem))] rounded-xl border border-[var(--color-border)] bg-white shadow-xl z-50 overflow-hidden"
       style={{ boxShadow: "0 8px 30px -8px rgba(0,0,0,0.18), 0 2px 8px -2px rgba(0,0,0,0.08)" }}
     >
       <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--color-border)]">

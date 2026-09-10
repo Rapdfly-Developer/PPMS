@@ -115,7 +115,7 @@ function SurgeryRow({ s, role }: { s: Surgery; role: "DOCTOR" | "HOSPITAL" }) {
         <p className="text-xs font-bold text-[var(--color-ink-900)]">{format(new Date(s.surgeryDate), "d MMM")}</p>
         <p className="text-[10px] text-[var(--color-ink-400)]">{format(new Date(s.surgeryDate), "hh:mm a")}</p>
       </div>
-      <div className="w-px self-stretch bg-[var(--color-border)]" />
+      <div className="w-px self-stretch bg-[var(--color-border)] hidden sm:block" />
       <div className="flex-1 min-w-0">
         <p className="font-semibold text-sm text-[var(--color-ink-900)] truncate">{s.patient.name}</p>
         <div className="flex items-center gap-2 mt-0.5 flex-wrap">
@@ -132,7 +132,7 @@ function SurgeryRow({ s, role }: { s: Surgery; role: "DOCTOR" | "HOSPITAL" }) {
           )}
         </div>
       </div>
-      <span className="shrink-0 text-xs font-medium text-purple-700 bg-purple-50 px-2.5 py-1 rounded-full truncate max-w-[160px]">
+      <span className="hidden sm:inline shrink-0 text-xs font-medium text-purple-700 bg-purple-50 px-2.5 py-1 rounded-full truncate max-w-[160px]">
         {s.surgeryType}
       </span>
       <span className="shrink-0 text-[10px] text-[var(--color-ink-400)]">
