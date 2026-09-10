@@ -642,6 +642,36 @@ export function PatientsClient({
                               )}
                             </div>
                           )}
+                          {/* Chief complaint — the lg+ column is hidden below lg, so mirror it
+                              here. Breakpoints are exact complements: never both, never neither. */}
+                          {p.chiefComplaint && (
+                            <div className="lg:hidden mt-1">
+                              <span className="inline-flex max-w-full items-center px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-[10px] font-medium">
+                                <span className="truncate">{formatComplaintDisplay(p.chiefComplaint)}</span>
+                              </span>
+                            </div>
+                          )}
+                          {/* Diagnoses — same mirroring for the xl+ column. Without this a doctor
+                              on a tablet loses the working diagnosis entirely. Two pills then a
+                              count; that count is bounded by the `take: 4` fetch in page.tsx. */}
+                          {p.diagnoses.length > 0 && (
+                            <div className="xl:hidden flex items-center gap-1 mt-1 flex-wrap">
+                              {p.diagnoses.slice(0, 2).map((d, i) => (
+                                <span
+                                  key={i}
+                                  className="inline-flex max-w-full items-center gap-1 px-2 py-0.5 rounded-full bg-teal-50 border border-teal-200 text-teal-800 text-[10px] font-medium"
+                                >
+                                  {d.laterality && <span className="font-bold shrink-0">{d.laterality}</span>}
+                                  <span className="truncate">{d.description}</span>
+                                </span>
+                              ))}
+                              {p.diagnoses.length > 2 && (
+                                <span className="text-[10px] text-[var(--color-ink-400)]">
+                                  +{p.diagnoses.length - 2} more
+                                </span>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </div>
 
