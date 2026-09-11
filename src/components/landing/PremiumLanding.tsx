@@ -214,7 +214,7 @@ const CAPABILITIES = [
 const FAQ_ITEMS: FaqItem[] = [
   {
     q: "Can one doctor really work across several hospitals in one account?",
-    a: "Yes — that is the core of PPMS. You sign in once and switch hospitals from a single control, and the patient record travels with you. Each hospital keeps its own schedule, billing and staff roles, while the clinical history stays unified under the patient.",
+    a: "Yes — that is the core of RF Health. You sign in once and switch hospitals from a single control, and the patient record travels with you. Each hospital keeps its own schedule, billing and staff roles, while the clinical history stays unified under the patient.",
   },
   {
     q: "What happens to our existing patient records?",
@@ -229,7 +229,7 @@ const FAQ_ITEMS: FaqItem[] = [
     a: "Access is role-based, not blanket. Doctors, front desk, billing and administrators each see only the parts of a record their role requires, and every view and edit is written to an audit log that administrators can review.",
   },
   {
-    q: "Does PPMS work on a phone or tablet at the bedside?",
+    q: "Does RF Health work on a phone or tablet at the bedside?",
     a: "Yes. The console is responsive and designed for touch, so a tablet at the bedside or a phone between consultations works the same as a desktop at the front desk. There is nothing to install.",
   },
   {
@@ -242,7 +242,7 @@ const TESTIMONIALS = [
   {
     name: "Dr. Aravind Patel",
     role: "Ophthalmologist · 3 hospitals",
-    text: "PPMS transformed how I manage my three eye care centres. One login, all patient records, seamless billing — I save two hours every single day.",
+    text: "RF Health transformed how I manage my three eye care centres. One login, all patient records, seamless billing — I save two hours every single day.",
   },
   {
     name: "Dr. Meera Krishnan",
@@ -252,7 +252,7 @@ const TESTIMONIALS = [
   {
     name: "Sundar Rajan",
     role: "Hospital administrator",
-    text: "Staff onboarded in a day. Reports that used to take hours now generate in seconds. PPMS is enterprise-grade at an accessible price.",
+    text: "Staff onboarded in a day. Reports that used to take hours now generate in seconds. RF Health is enterprise-grade at an accessible price.",
   },
 ];
 
@@ -394,7 +394,7 @@ export function PremiumLanding() {
           <Reveal y={40} delay={0.1} className="relative">
             <Frame
               src={`${IMG}/hero-clinician-tablet-dashboard.jpg`}
-              alt="A clinician in gloves reviewing a PPMS patient dashboard on a tablet in a hospital corridor"
+              alt="A clinician in gloves reviewing a RF Health patient dashboard on a tablet in a hospital corridor"
               aspect="aspect-[3/4]"
               sizes="(max-width: 1024px) 92vw, 46vw"
               priority
@@ -446,7 +446,7 @@ export function PremiumLanding() {
             <div className="mt-10 grid gap-3 sm:grid-cols-2">
               {[
                 { k: "Before", v: "Three logins, three calendars, one patient split across all of them." },
-                { k: "With PPMS", v: "One login, one calendar, one continuous record per patient." },
+                { k: "With RF Health", v: "One login, one calendar, one continuous record per patient." },
               ].map((row, i) => (
                 <div
                   key={row.k}
@@ -880,7 +880,7 @@ export function PremiumLanding() {
         <SectionHead
           eyebrow="Security"
           title={<>Built to be defensible, not just encrypted.</>}
-          lede="Patient data carries obligations. PPMS is designed so that who saw what, and when, is always answerable — and so that access is granted by role rather than by trust."
+          lede="Patient data carries obligations. RF Health is designed so that who saw what, and when, is always answerable — and so that access is granted by role rather than by trust."
         />
 
         <RevealGroup className="mt-8 grid grid-cols-2 gap-3 sm:mt-10 sm:grid-cols-4" stagger={0.05}>
@@ -1172,18 +1172,18 @@ export function PremiumLanding() {
           <Reveal className="lg:sticky lg:top-28">
             <Eyebrow>Free Demo</Eyebrow>
             <h2 className="font-display mt-5 text-[clamp(1.6rem,5.4vw,3rem)] font-bold leading-[1.07] tracking-[-0.03em] text-balance text-emerald-950 sm:mt-6">
-              See How PPMS Can Transform Your Practice
+              See How RF Health Can Transform Your Practice
             </h2>
             <p className="mt-5 text-[16px] leading-relaxed text-slate-600">
               Book a free, personalised demo with our team. We will walk you through
-              PPMS features, discuss your specific practice requirements and show you
+              RF Health features, discuss your specific practice requirements and show you
               how it fits into your day-to-day workflow — no commitment required.
             </p>
 
             <ul className="mt-8 flex flex-col gap-3.5">
               {[
                 { icon: <CheckCircle2 size={16} strokeWidth={1.5} />, label: "Free personalised demo", desc: "A live walkthrough tailored to your specialty and practice size." },
-                { icon: <Users size={16} strokeWidth={1.5} />, label: "Discuss your requirements", desc: "Tell us how you work — we will show you how PPMS adapts to it." },
+                { icon: <Users size={16} strokeWidth={1.5} />, label: "Discuss your requirements", desc: "Tell us how you work — we will show you how RF Health adapts to it." },
                 { icon: <Stethoscope size={16} strokeWidth={1.5} />, label: "Features & workflows", desc: "EMR, appointments, prescriptions, surgery notes, billing and more." },
                 { icon: <BadgeCheck size={16} strokeWidth={1.5} />, label: "Implementation guidance", desc: "Understand onboarding, data migration and go-live timelines." },
               ].map((p) => (
@@ -1279,7 +1279,7 @@ export function PremiumLanding() {
                 className="h-8 w-8 rounded-lg object-contain"
               />
               <span className="font-display text-[16px] font-bold tracking-tight text-emerald-950">
-                PPMS
+                RF Health
               </span>
             </div>
             <p className="mt-4 max-w-xs text-[14px] leading-relaxed text-slate-500">

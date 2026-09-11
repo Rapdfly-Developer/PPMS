@@ -234,11 +234,11 @@ function LeftPanel() {
     <div className="hidden lg:flex lg:w-[45%] flex-col justify-between px-9 xl:px-14 py-8 xl:py-10 shrink-0 relative overflow-hidden">
       <div className="lg-a0 shrink-0">
         <div className="flex items-center gap-3.5">
-          <img src="/landing/logo-ppms-new.png" alt="PPMS-AI" className="shrink-0"
+          <img src="/landing/logo-ppms-new.png" alt="RF Health" className="shrink-0"
             style={{ width: "48px", height: "48px", objectFit: "contain" }} />
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-[25px] font-black" style={{ color: T.text, letterSpacing: "-0.035em" }}>PPMS-AI</span>
+              <span className="text-[25px] font-black" style={{ color: T.text, letterSpacing: "-0.035em" }}>RF Health</span>
               <span className="text-[9.5px] font-bold px-2 py-0.5 rounded-full"
                 style={{ background: "rgba(15,143,111,.1)", color: T.accent, border: "1px solid rgba(15,143,111,.24)", letterSpacing: "0.04em" }}>
                 v2.0 Cloud
@@ -570,9 +570,9 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
 
               {/* Mobile logo */}
               <div className="flex lg:hidden items-center gap-2.5 justify-center mb-8 lg-a0">
-                <img src="/landing/logo-ppms-new.png" alt="PPMS-AI"
+                <img src="/landing/logo-ppms-new.png" alt="RF Health"
                   style={{ width: "36px", height: "36px", objectFit: "contain" }} />
-                <p className="text-2xl font-black" style={{ color: T.text, letterSpacing: "-0.03em" }}>PPMS-AI</p>
+                <p className="text-2xl font-black" style={{ color: T.text, letterSpacing: "-0.03em" }}>RF Health</p>
               </div>
 
               {/* ── NO_LICENSE: Registration ── */}
@@ -580,7 +580,7 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
                 <GlassCard>
                   <div className="text-center mb-6">
                     <CardIcon icon={Star} />
-                    <h2 className="text-2xl font-black mb-1" style={{ color: T.text, letterSpacing: "-0.025em" }}>Welcome to PPMS</h2>
+                    <h2 className="text-2xl font-black mb-1" style={{ color: T.text, letterSpacing: "-0.025em" }}>Welcome to RF Health</h2>
                     <p className="text-sm" style={{ color: T.muted }}>
                       Start your <span style={{ color: T.accent, fontWeight: 700 }}>FREE 30-Day Trial</span>
                     </p>
@@ -722,7 +722,7 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
                         </svg>
                       </div>
                       <h2 className="text-2xl font-black" style={{ color: T.text }}>License Overview</h2>
-                      <p className="text-xs mt-1" style={{ color: T.faint }}>Your PPMS license details and status.</p>
+                      <p className="text-xs mt-1" style={{ color: T.faint }}>Your RF Health license details and status.</p>
                     </div>
 
                     <div className="flex items-center justify-center gap-2 mb-5 px-4 py-2.5 rounded-xl text-sm font-semibold"
@@ -764,7 +764,7 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
                     <div>
                       <p className="font-bold text-sm" style={{ color: "#FCA5A5" }}>Your Trial Has Expired</p>
                       <p className="text-xs mt-0.5" style={{ color: "#F87171" }}>
-                        Activate your purchased license to continue using PPMS.
+                        Activate your purchased license to continue using RF Health.
                       </p>
                     </div>
                   </div>
@@ -825,7 +825,7 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
                         </svg>
                       </div>
                       <h2 className="text-2xl font-black" style={{ color: T.text }}>License Overview</h2>
-                      <p className="text-xs mt-1" style={{ color: T.faint }}>Your PPMS license details and status.</p>
+                      <p className="text-xs mt-1" style={{ color: T.faint }}>Your RF Health license details and status.</p>
                     </div>
 
                     {status === "SUBSCRIBED" ? (
@@ -881,7 +881,7 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
 
               {/* Footer */}
               <div className="mt-5 flex items-center justify-between text-xs" style={{ color: T.faint }}>
-                <span>PPMS v2.0 &nbsp;·&nbsp; Build 2025</span>
+                <span>RF Health v2.0 &nbsp;·&nbsp; Build 2025</span>
                 <a href="mailto:support@ppms.in" style={{ color: T.faint }}
                   onMouseEnter={e => (e.currentTarget.style.color = T.accent)}
                   onMouseLeave={e => (e.currentTarget.style.color = T.faint)}>
@@ -938,7 +938,7 @@ function PlansModal({ onClose, onActivateKey }: { onClose: () => void; onActivat
         <div className="p-6 sm:p-8">
           <div className="flex items-start justify-between mb-6">
             <div>
-              <h2 className="text-xl font-black" style={{ color: T.text }}>Choose your PPMS plan</h2>
+              <h2 className="text-xl font-black" style={{ color: T.text }}>Choose your RF Health plan</h2>
               <p className="text-sm mt-1" style={{ color: T.muted }}>Pick a plan and we&apos;ll send your license key by email.</p>
             </div>
             <button onClick={onClose} className="p-1.5 rounded-xl hover:bg-white/10 transition-colors" style={{ color: T.faint }}>
@@ -973,7 +973,7 @@ function PlansModal({ onClose, onActivateKey }: { onClose: () => void; onActivat
                   ))}
                 </ul>
                 <a
-                  href={`mailto:support@ppms.in?subject=${encodeURIComponent(`PPMS License Purchase — ${p.name} plan (${p.price}${p.per})`)}&body=${encodeURIComponent("Hi,\n\nI would like to buy the " + p.name + " plan for PPMS. Please share the payment details and license key.\n\nThank you.")}`}
+                  href={`mailto:support@ppms.in?subject=${encodeURIComponent(`RF Health License Purchase — ${p.name} plan (${p.price}${p.per})`)}&body=${encodeURIComponent("Hi,\n\nI would like to buy the " + p.name + " plan for RF Health. Please share the payment details and license key.\n\nThank you.")}`}
                   className="lg-btn w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-bold"
                   style={p.highlight
                     ? { background: "linear-gradient(135deg,#0F8F6F,#16A34A)", color: "white", boxShadow: "0 4px 14px rgba(21,122,115,.35)" }

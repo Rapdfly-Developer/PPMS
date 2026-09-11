@@ -121,7 +121,7 @@ export function DemoForm() {
         </div>
         <div>
           <h3 className="font-display text-[20px] font-bold text-emerald-950">
-            Thank you for your interest in PPMS!
+            Thank you for your interest in RF Health!
           </h3>
           <p className="mt-3 text-[14.5px] leading-relaxed text-slate-600">
             Your free demo request has been received. Our team will contact you

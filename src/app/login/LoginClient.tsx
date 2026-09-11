@@ -218,7 +218,7 @@ function DashboardMockup({ px, py }: { px: number; py: number }) {
               <span key={c} style={{ width: 6, height: 6, borderRadius: "50%", background: c, opacity: .55 }} />
             ))}
             <span style={{ marginLeft: 7, fontSize: "8.5px", fontWeight: 700, letterSpacing: "0.1em", color: T.faint }}>
-              PPMS-AI · OVERVIEW
+              RF Health · OVERVIEW
             </span>
           </div>
           <span className="flex items-center gap-1">
@@ -1139,13 +1139,13 @@ export default function LoginPage() {
             <div className="flex items-center gap-3.5">
               <img
                 src="/landing/logo-ppms-new.png"
-                alt="PPMS-AI"
+                alt="RF Health"
                 className="shrink-0"
                 style={{ width: "48px", height: "48px", objectFit: "contain" }}
               />
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="text-[25px] font-black" style={{ color: T.text, letterSpacing: "-0.035em" }}>PPMS-AI</span>
+                  <span className="text-[25px] font-black" style={{ color: T.text, letterSpacing: "-0.035em" }}>RF Health</span>
                   <span className="text-[9.5px] font-bold px-2 py-0.5 rounded-full"
                     style={{ background: "rgba(15,143,111,.1)", color: T.accent, border: "1px solid rgba(15,143,111,.24)", letterSpacing: "0.04em" }}>v2.0 Cloud</span>
                 </div>
@@ -1239,11 +1239,11 @@ export default function LoginPage() {
             <div className="flex items-center gap-3 mb-1.5">
               <img
                 src="/landing/logo-ppms-new.png"
-                alt="PPMS-AI"
+                alt="RF Health"
                 className="shrink-0"
                 style={{ width: "44px", height: "44px", objectFit: "contain" }}
               />
-              <span className="text-[26px] font-black" style={{ color: T.text, letterSpacing: "-0.03em" }}>PPMS-AI</span>
+              <span className="text-[26px] font-black" style={{ color: T.text, letterSpacing: "-0.03em" }}>RF Health</span>
             </div>
             <p style={{ fontSize: "9.5px", fontWeight: 700, letterSpacing: "0.16em", color: T.faint }}>
               PERSONAL PATIENT MANAGEMENT SYSTEM
@@ -1611,7 +1611,7 @@ export default function LoginPage() {
           <div className="lp-a4 w-full max-w-[420px] shrink-0 mt-5 mb-1">
             <div className="mb-3" style={{ height: "1px", background: "linear-gradient(90deg,transparent,rgba(255,255,255,.1),transparent)" }} />
             <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1.5" style={{ fontSize: "10.5px", color: T.faint }}>
-              <span style={{ fontWeight: 600 }}>© 2026 PPMS-AI</span>
+              <span style={{ fontWeight: 600 }}>© 2026 RF Health</span>
               <span style={{ color: "rgba(255,255,255,.16)" }}>·</span>
               <span>Version 2.0 Cloud</span>
               <span style={{ color: "rgba(255,255,255,.16)" }}>·</span>

@@ -69,14 +69,14 @@ export function Nav() {
           <a href="#top" className="flex shrink-0 items-center gap-2 rounded-full pr-1 sm:gap-2.5 sm:pl-1 sm:pr-2">
             <Image
               src="/landing/logo-ppms-new.png"
-              alt="PPMS"
+              alt="RF Health"
               width={30}
               height={30}
               priority
               className="h-[30px] w-[30px] rounded-lg object-contain"
             />
             <span className="font-display text-[15px] font-bold tracking-tight text-emerald-950">
-              PPMS
+              RF Health
             </span>
           </a>
 
