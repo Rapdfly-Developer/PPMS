@@ -1631,3 +1631,22 @@ model DataRightsRequest {
   @@index([patientId, type])
   @@index([status, createdAt])
 }
+
+// Landing-page demo request submissions
+model DemoRequest {
+  id             String   @id @default(cuid())
+  fullName       String
+  email          String
+  phone          String
+  clinicName     String?
+  specialization String?
+  city           String?
+  preferredDate  String?
+  preferredTime  String?
+  message        String?
+  status         String   @default("NEW")  // NEW | CONTACTED | DEMO_DONE
+  createdAt      DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([status, createdAt])
+}

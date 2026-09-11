@@ -7,6 +7,7 @@ import {
   CalendarRange,
   ChartNoAxesColumn,
   Check,
+  CheckCircle2,
   ClipboardPlus,
   Cloud,
   Database,
@@ -26,7 +27,8 @@ import {
 
 import { Faq, type FaqItem } from "./Faq";
 import { Nav } from "./Nav";
-import { Counter, Magnetic, Marquee, Parallax, Reveal, RevealGroup, RevealItem } from "./ui";
+import { DemoForm } from "./DemoForm";
+import { Magnetic, Marquee, Parallax, Reveal, RevealGroup, RevealItem } from "./ui";
 
 const IMG = "/landing/v3";
 
@@ -425,37 +427,6 @@ export function PremiumLanding() {
           <Marquee items={CAPABILITIES} className="mt-7" />
         </Reveal>
 
-        <div className="mt-10 grid items-center gap-8 sm:mt-12 sm:gap-10 lg:grid-cols-[1fr_1.25fr] lg:gap-16">
-          <Reveal>
-            <Frame
-              src={`${IMG}/gloved-hand-care-network.jpg`}
-              alt="A gloved hand touching a connected network of hospital care services"
-              aspect="aspect-square"
-              sizes="(max-width: 1024px) 92vw, 38vw"
-              radius="1.75rem"
-            />
-          </Reveal>
-
-          <RevealGroup className="grid grid-cols-2 gap-x-5 gap-y-9 xs:gap-x-8 sm:gap-x-14 sm:gap-y-12">
-            {[
-              { to: 500, suffix: "+", label: "Doctors on the platform" },
-              { to: 100, suffix: "+", label: "Hospitals & clinics" },
-              { to: 100000, suffix: "+", label: "Patient records managed" },
-              { to: 99.9, suffix: "%", label: "Uptime target", decimals: 1 },
-            ].map((s) => (
-              <RevealItem key={s.label} className="min-w-0">
-                {/* "100,000+" is the long one — the lower clamp bound is set so
-                    it still fits a half-column at 320px. */}
-                <div className="font-display text-[clamp(1.6rem,6.4vw,2.875rem)] font-bold leading-none tracking-[-0.03em] text-emerald-950">
-                  <Counter to={s.to} suffix={s.suffix} decimals={s.decimals ?? 0} />
-                </div>
-                <div className="mt-2 text-[13px] leading-snug text-slate-500 sm:text-[14px]">
-                  {s.label}
-                </div>
-              </RevealItem>
-            ))}
-          </RevealGroup>
-        </div>
       </Section>
 
       {/* ── The shift ────────────────────────────────────────────────────── */}
@@ -1193,8 +1164,70 @@ export function PremiumLanding() {
         </div>
       </Section>
 
+      {/* ── Book a Free Demo ─────────────────────────────────────────────── */}
+      <Section id="contact" className="bg-gradient-to-b from-slate-50/60 via-white to-white">
+        <div className="grid items-start gap-10 lg:grid-cols-[1fr_1.1fr] lg:gap-16 xl:gap-20">
+
+          {/* Left — value prop */}
+          <Reveal className="lg:sticky lg:top-28">
+            <Eyebrow>Free Demo</Eyebrow>
+            <h2 className="font-display mt-5 text-[clamp(1.6rem,5.4vw,3rem)] font-bold leading-[1.07] tracking-[-0.03em] text-balance text-emerald-950 sm:mt-6">
+              See How PPMS Can Transform Your Practice
+            </h2>
+            <p className="mt-5 text-[16px] leading-relaxed text-slate-600">
+              Book a free, personalised demo with our team. We will walk you through
+              PPMS features, discuss your specific practice requirements and show you
+              how it fits into your day-to-day workflow — no commitment required.
+            </p>
+
+            <ul className="mt-8 flex flex-col gap-3.5">
+              {[
+                { icon: <CheckCircle2 size={16} strokeWidth={1.5} />, label: "Free personalised demo", desc: "A live walkthrough tailored to your specialty and practice size." },
+                { icon: <Users size={16} strokeWidth={1.5} />, label: "Discuss your requirements", desc: "Tell us how you work — we will show you how PPMS adapts to it." },
+                { icon: <Stethoscope size={16} strokeWidth={1.5} />, label: "Features & workflows", desc: "EMR, appointments, prescriptions, surgery notes, billing and more." },
+                { icon: <BadgeCheck size={16} strokeWidth={1.5} />, label: "Implementation guidance", desc: "Understand onboarding, data migration and go-live timelines." },
+              ].map((p) => (
+                <li key={p.label} className="flex gap-3.5">
+                  <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-900/[0.07]">
+                    {p.icon}
+                  </span>
+                  <div>
+                    <p className="text-[14.5px] font-semibold text-emerald-950">{p.label}</p>
+                    <p className="mt-0.5 text-[13.5px] leading-relaxed text-slate-500">{p.desc}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+
+            {/* Social proof strip */}
+            <div className="mt-10 flex flex-wrap gap-5 border-t border-slate-100 pt-8">
+              {[
+                { num: "500+", sub: "Doctors on the platform" },
+                { num: "100+", sub: "Hospitals & clinics" },
+                { num: "99.9%", sub: "Uptime target" },
+              ].map((s) => (
+                <div key={s.sub}>
+                  <p className="font-display text-[1.6rem] font-bold leading-none tracking-tight text-emerald-950">{s.num}</p>
+                  <p className="mt-1 text-[12.5px] text-slate-500">{s.sub}</p>
+                </div>
+              ))}
+            </div>
+          </Reveal>
+
+          {/* Right — form */}
+          <Reveal delay={0.08}>
+            <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-[0_4px_24px_-4px_rgba(6,60,45,0.08)] sm:p-8">
+              <p className="mb-5 text-[13px] font-semibold uppercase tracking-[0.15em] text-emerald-700">
+                Book a Free Demo
+              </p>
+              <DemoForm />
+            </div>
+          </Reveal>
+        </div>
+      </Section>
+
       {/* ── CTA ──────────────────────────────────────────────────────────── */}
-      <Section id="contact" className="pb-16 md:pb-20 lg:pb-24">
+      <Section id="cta" className="pb-16 md:pb-20 lg:pb-24">
         <Reveal>
           <div className="relative overflow-hidden rounded-[2.5rem] bg-emerald-950 p-2 ring-1 ring-inset ring-emerald-950">
             <div
