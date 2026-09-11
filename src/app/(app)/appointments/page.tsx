@@ -120,7 +120,20 @@ export default async function AppointmentsPage({
         hospital: true,
         patient:  true,
         doctor:   { select: { id: true, name: true, specialty: true } },
-        visit:    true,
+        // `include` keeps every Visit scalar the row already relies on
+        // (date, finalizedAt, id) and adds the provisional diagnoses the card
+        // shows. Filtered in the query, so the card renders what it receives.
+        // Deliberately unbounded: the "+N more" count must be exact, and a
+        // visit carries only a handful of diagnoses.
+        visit: {
+          include: {
+            diagnoses: {
+              where:   { provisional: true },
+              select:  { description: true, laterality: true, provisional: true },
+              orderBy: { createdAt: "asc" },
+            },
+          },
+        },
       },
       orderBy: { dateTime: "asc" },
       // Default three-group view: fetch all so every group is complete; paginate only on filtered views

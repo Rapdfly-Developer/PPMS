@@ -30,11 +30,23 @@ const STATUS_LABELS: Record<string, string> = {
   PARTIAL_DISPENSE: "Partial Dispense",
 };
 
+/** Shape selected by the appointments query for each provisional diagnosis. */
+type ProvisionalDx = {
+  description: string;
+  laterality: string | null;
+  provisional: boolean;
+};
+
 export function AppointmentRow({ appt, role, token }: { appt: any; role: string; token: number }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [showSlotModal, setShowSlotModal] = useState(false);
   const p = appt.patient;
+  // Mirrors AssessmentTab's filter. The query already narrows to provisional
+  // rows; this guards the card if that ever widens.
+  const provisionalDx: ProvisionalDx[] = (appt.visit?.diagnoses ?? []).filter(
+    (d: ProvisionalDx) => d.provisional,
+  );
 
   function hospitalSetStatus(status: "CONFIRMED" | "CANCELLED") {
     if (role === "DOCTOR") {
@@ -120,6 +132,32 @@ export function AppointmentRow({ appt, role, token }: { appt: any; role: string;
           <div className="mt-1.5 inline-flex max-w-full sm:max-w-md items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-xs font-medium">
             <FileText size={11} className="shrink-0 text-amber-500" />
             <span className="truncate">{formatComplaintDisplay(appt.notes || p.complaint)}</span>
+          </div>
+        )}
+
+        {/* Provisional diagnosis — the query already filters to provisional:true,
+            so everything here carries that status; label it once rather than per
+            pill. Two pills then a count, matching the Patients tab, so the card
+            height stays fixed no matter how many were recorded. */}
+        {provisionalDx.length > 0 && (
+          <div className="mt-1.5 flex items-center gap-1.5 flex-wrap max-w-full sm:max-w-md">
+            <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">
+              Provisional
+            </span>
+            {provisionalDx.slice(0, 2).map((d, i) => (
+              <span
+                key={i}
+                className="inline-flex min-w-0 max-w-full items-center gap-1 px-2.5 py-1 rounded-lg bg-teal-50 border border-teal-200 text-teal-800 text-xs font-medium"
+              >
+                {d.laterality && <span className="font-bold shrink-0">{d.laterality}</span>}
+                <span className="truncate">{d.description}</span>
+              </span>
+            ))}
+            {provisionalDx.length > 2 && (
+              <span className="shrink-0 text-[11px] text-[var(--color-ink-400)]">
+                +{provisionalDx.length - 2} more
+              </span>
+            )}
           </div>
         )}
 
