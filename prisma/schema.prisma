@@ -939,6 +939,20 @@ model ExportOtp {
   @@index([userId, expiresAt])
 }
 
+// Short-lived OTP record for email login
+model EmailOtp {
+  id         String    @id @default(cuid())
+  email      String
+  otpHash    String
+  loginToken String?   @unique  // set after OTP verified; used to complete sign-in
+  tokenExpAt DateTime?           // 5 min window to exchange token → session
+  expiresAt  DateTime
+  used       Boolean   @default(false)
+  createdAt  DateTime  @default(now())
+
+  @@index([email, createdAt])
+}
+
 // Short-lived OTP record for mobile-number login
 model MobileOtp {
   id         String    @id @default(cuid())

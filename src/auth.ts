@@ -133,7 +133,52 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       },
     }),
 
-    /* ── 2. Mobile OTP — exchange a verified loginToken for a session ── */
+    /* ── 2. Email OTP — exchange a verified loginToken for a session ── */
+    Credentials({
+      id: "email-otp",
+      credentials: { token: { label: "Login Token" } },
+      authorize: async (creds) => {
+        const token = creds?.token as string | undefined;
+        if (!token) return null;
+
+        const record = await prisma.emailOtp.findFirst({
+          where: {
+            loginToken: token,
+            used: false,
+            tokenExpAt: { gt: new Date() },
+          },
+        });
+        if (!record) return null;
+
+        await prisma.emailOtp.update({
+          where: { id: record.id },
+          data: { used: true },
+        });
+
+        const user = await fetchUserWithRelations({
+          email: { equals: record.email, mode: "insensitive" },
+          active: true,
+        });
+        if (!user) return null;
+
+        const payload = await buildPayload(user);
+
+        prisma.userLoginHistory.create({
+          data: {
+            userId: user.id,
+            userName: payload.name,
+            role: user.role,
+            hospitalId: payload.hospitalId,
+            status: "SUCCESS",
+            isActive: true,
+          },
+        }).catch(() => {});
+
+        return payload;
+      },
+    }),
+
+    /* ── 3. Mobile OTP — exchange a verified loginToken for a session ── */
     Credentials({
       id: "mobile-otp",
       credentials: { token: { label: "Login Token" } },

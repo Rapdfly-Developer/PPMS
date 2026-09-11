@@ -1,9 +1,9 @@
 "use client";
 
 import { useActionState, useState, useRef, useEffect, useCallback } from "react";
-import { loginAction, mobileOtpLoginAction } from "./actions";
+import { loginAction, emailOtpLoginAction } from "./actions";
 import {
-  Eye, EyeOff, User, Lock, Phone, AlertCircle, CheckCircle2,
+  Eye, EyeOff, User, Lock, AlertCircle, CheckCircle2,
   ShieldCheck, ArrowRight, Loader2, Check, Mail, X, KeyRound, RotateCcw,
   FileText, CalendarDays, CreditCard, UserPlus, Pill, FlaskConical,
   Building2, Cloud, Zap, Stethoscope, HeartPulse, TrendingUp,
@@ -27,7 +27,7 @@ const T = {
 };
 
 /* ── Types ─────────────────────────────────────────────────────────────── */
-type FieldErrors = { username?: string; password?: string; mobile?: string; otp?: string };
+type FieldErrors = { username?: string; password?: string; email?: string; otp?: string };
 
 /* ── Constants ──────────────────────────────────────────────────────────── */
 const SHOW_TEST_ACCOUNTS =
@@ -71,15 +71,15 @@ function validate(fields: { username?: string; password?: string }): FieldErrors
   return e;
 }
 
-function validateOtp(fields: { mobile?: string; otp?: string; otpSent?: boolean }): FieldErrors {
+function validateOtp(fields: { email?: string; otp?: string; otpSent?: boolean }): FieldErrors {
   const e: FieldErrors = {};
-  const m = (fields.mobile ?? "").replace(/\D/g, "");
-  if (!m) e.mobile = "Mobile number is required.";
-  else if (m.length !== 10) e.mobile = "Enter a valid 10-digit mobile number.";
+  const em = (fields.email ?? "").trim();
+  if (!em) e.email = "Email address is required.";
+  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) e.email = "Enter a valid email address.";
   if (fields.otpSent) {
     const o = fields.otp ?? "";
     if (!o) e.otp = "OTP is required.";
-    else if (!/^\d{6}$/.test(o)) e.otp = "Enter the 6-digit OTP sent to your number.";
+    else if (!/^\d{6}$/.test(o)) e.otp = "Enter the 6-digit OTP sent to your email.";
   }
   return e;
 }
@@ -876,8 +876,6 @@ export default function LoginPage() {
   const [rememberMe, setRememberMe]     = useState(false);
   const [tab, setTab]                   = useState<"password" | "otp">("password");
   const [showForgotPw, setShowForgotPw] = useState(false);
-  // Microsoft SSO is not provisioned yet — surface an honest notice instead of a dead button.
-  const [ssoNotice, setSsoNotice]       = useState(false);
   const par = useParallax();
 
   // Password tab
@@ -887,7 +885,7 @@ export default function LoginPage() {
   const [touched, setTouched]       = useState<Record<string, boolean>>({});
 
   // OTP tab
-  const [mobile, setMobile]                       = useState("");
+  const [otpEmail, setOtpEmail]                   = useState("");
   const [otpSent, setOtpSent]                     = useState(false);
   const [otpValue, setOtpValue]                   = useState("");
   const [otpMsg, setOtpMsg]                       = useState("");
@@ -915,46 +913,46 @@ export default function LoginPage() {
   }
 
   async function handleSendOtp(isResend = false) {
-    if (!isResend) touchOtpField("mobile");
-    const errs = validateOtp({ mobile, otpSent: false });
+    if (!isResend) touchOtpField("email");
+    const errs = validateOtp({ email: otpEmail, otpSent: false });
     if (!isResend) setOtpErrors(errs);
-    if (errs.mobile) return;
+    if (errs.email) return;
 
     setOtpLoading(true);
     setOtpMsg("");
     try {
-      const res = await fetch("/api/auth/send-mobile-otp", {
+      const res = await fetch("/api/auth/send-email-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mobile }),
+        body: JSON.stringify({ email: otpEmail }),
       });
       const data = await res.json();
       if (!data.success) {
-        setOtpErrors(p => ({ ...p, mobile: data.error ?? "Failed to send OTP." }));
+        setOtpErrors(p => ({ ...p, email: data.error ?? "Failed to send OTP." }));
         return;
       }
       setOtpSent(true);
       startOtpResendCountdown();
-      setOtpMsg(`OTP sent to +91 ${mobile}`);
+      setOtpMsg(`OTP sent to ${otpEmail}`);
     } catch {
-      setOtpErrors(p => ({ ...p, mobile: "Network error. Please try again." }));
+      setOtpErrors(p => ({ ...p, email: "Network error. Please try again." }));
     } finally {
       setOtpLoading(false);
     }
   }
 
   async function handleVerifyOtp() {
-    setOtpTouched({ mobile: true, otp: true });
-    const errs = validateOtp({ mobile, otp: otpValue, otpSent: true });
+    setOtpTouched({ email: true, otp: true });
+    const errs = validateOtp({ email: otpEmail, otp: otpValue, otpSent: true });
     setOtpErrors(errs);
     if (Object.keys(errs).length > 0) return;
 
     setOtpLoading(true);
     try {
-      const res = await fetch("/api/auth/verify-mobile-otp", {
+      const res = await fetch("/api/auth/verify-email-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mobile, otp: otpValue }),
+        body: JSON.stringify({ email: otpEmail, otp: otpValue }),
       });
       const data = await res.json();
       if (!data.success) {
@@ -962,7 +960,7 @@ export default function LoginPage() {
         return;
       }
       // OTP verified — exchange the one-time token for a real session
-      const result = await mobileOtpLoginAction(data.loginToken);
+      const result = await emailOtpLoginAction(data.loginToken);
       if (result?.error) {
         setOtpErrors(p => ({ ...p, otp: result.error }));
       }
@@ -1319,7 +1317,7 @@ export default function LoginPage() {
                     }}>
                     {t === "password"
                       ? <><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><rect x="5" y="11" width="14" height="10" rx="2.5" stroke="currentColor" strokeWidth="2"/><path d="M8 11V7a4 4 0 018 0v4" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg> Password</>
-                      : <><Phone size={13} /> Mobile OTP</>}
+                      : <><Mail size={13} /> Email OTP</>}
                   </button>
                 ))}
               </div>
@@ -1444,35 +1442,28 @@ export default function LoginPage() {
               {/* ── OTP form ── */}
               {tab === "otp" && (
                 <div className="flex flex-col gap-4">
-                  {/* Mobile input + Send OTP */}
+                  {/* Email input + Send OTP */}
                   <div>
                     <div className="flex flex-col min-[480px]:flex-row gap-2 items-stretch min-[480px]:items-start">
-                      <div className="flex gap-2 items-start flex-1 min-w-0">
-                        <div className="flex items-center justify-center shrink-0 font-semibold"
-                          style={{ height: "58px", width: "58px", borderRadius: "14px", border: `1px solid ${T.border}`, background: T.field, color: T.muted, fontSize: "14px" }}>
-                          +91
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <FloatingInput
-                            label="Mobile Number"
-                            type="tel"
-                            maxLength={10}
-                            value={mobile}
-                            autoFocus
-                            autoComplete="tel"
-                            onChange={v => { const c = v.replace(/\D/g, ""); setMobile(c); setOtpMsg(""); if (otpTouched.mobile) setOtpErrors(p => ({ ...p, mobile: undefined })); }}
-                            onBlur={() => { touchOtpField("mobile"); setOtpErrors(p => ({ ...p, mobile: validateOtp({ mobile, otpSent: false }).mobile })); }}
-                            onKeyDown={e => { if (e.key === "Enter" && mobile.length === 10 && !otpSent) handleSendOtp(); }}
-                            error={otpTouched.mobile ? otpErrors.mobile : undefined}
-                          />
-                        </div>
+                      <div className="flex-1 min-w-0">
+                        <FloatingInput
+                          label="Email Address"
+                          type="email"
+                          value={otpEmail}
+                          autoFocus
+                          autoComplete="email"
+                          onChange={v => { setOtpEmail(v); setOtpMsg(""); if (otpTouched.email) setOtpErrors(p => ({ ...p, email: undefined })); }}
+                          onBlur={() => { touchOtpField("email"); setOtpErrors(p => ({ ...p, email: validateOtp({ email: otpEmail, otpSent: false }).email })); }}
+                          onKeyDown={e => { if (e.key === "Enter" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(otpEmail) && !otpSent) handleSendOtp(); }}
+                          error={otpTouched.email ? otpErrors.email : undefined}
+                        />
                       </div>
                       <button
                         type="button"
-                        disabled={otpLoading || mobile.length !== 10}
+                        disabled={otpLoading || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(otpEmail)}
                         onClick={() => handleSendOtp()}
                         className="lp-btn shrink-0 text-sm font-semibold flex items-center justify-center gap-1.5"
-                        style={mobile.length === 10 && !otpLoading
+                        style={/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(otpEmail) && !otpLoading
                           ? { height: "58px", borderRadius: "14px", padding: "0 20px", background: "linear-gradient(135deg,#0F8F6F,#16A34A)", color: "#03181C", boxShadow: "0 6px 20px rgba(15,143,111,.34), 0 0 26px rgba(22,163,74,.2)" }
                           : { height: "58px", borderRadius: "14px", padding: "0 20px", background: "rgba(255,255,255,.05)", color: T.faint, border: `1px solid ${T.border}`, cursor: "not-allowed" }}>
                         {otpLoading && !otpSent
@@ -1494,7 +1485,7 @@ export default function LoginPage() {
                         icon={<KeyRound size={15} />}
                         value={otpValue}
                         onChange={v => { const c = v.replace(/\D/g, "").slice(0, 6); setOtpValue(c); if (otpTouched.otp) setOtpErrors(p => ({ ...p, otp: undefined })); }}
-                        onBlur={() => { setOtpTouched(t => ({ ...t, otp: true })); setOtpErrors(p => ({ ...p, otp: validateOtp({ mobile, otp: otpValue, otpSent: true }).otp })); }}
+                        onBlur={() => { setOtpTouched(t => ({ ...t, otp: true })); setOtpErrors(p => ({ ...p, otp: validateOtp({ email: otpEmail, otp: otpValue, otpSent: true }).otp })); }}
                         onKeyDown={e => { if (e.key === "Enter" && otpValue.length === 6) handleVerifyOtp(); }}
                         error={otpTouched.otp ? otpErrors.otp : undefined}
                       />
@@ -1537,49 +1528,6 @@ export default function LoginPage() {
                 </div>
               )}
 
-              {/* ── OR divider ── */}
-              <div className="lp-f5 flex items-center gap-3 my-4">
-                <div className="flex-1" style={{ height: "1px", background: "linear-gradient(90deg,transparent,rgba(255,255,255,.13))" }} />
-                <span style={{ fontSize: "10.5px", fontWeight: 700, letterSpacing: "0.12em", color: T.faint }}>OR</span>
-                <div className="flex-1" style={{ height: "1px", background: "linear-gradient(90deg,rgba(255,255,255,.13),transparent)" }} />
-              </div>
-
-              {/* ── Microsoft SSO ── */}
-              <button
-                type="button"
-                onClick={() => setSsoNotice(true)}
-                className="lp-sso lp-f5 w-full flex items-center justify-center gap-2.5 font-semibold"
-                style={{
-                  height: "54px",
-                  borderRadius: "14px",
-                  fontSize: "14px",
-                  color: "#E2E8F0",
-                  background: "rgba(255,255,255,.045)",
-                  backdropFilter: "blur(14px)",
-                  WebkitBackdropFilter: "blur(14px)",
-                  border: `1px solid ${T.border2}`,
-                }}>
-                {/* Microsoft four-square mark */}
-                <svg width="16" height="16" viewBox="0 0 23 23" aria-hidden="true">
-                  <rect x="1"  y="1"  width="10" height="10" fill="#F25022" />
-                  <rect x="12" y="1"  width="10" height="10" fill="#7FBA00" />
-                  <rect x="1"  y="12" width="10" height="10" fill="#00A4EF" />
-                  <rect x="12" y="12" width="10" height="10" fill="#FFB900" />
-                </svg>
-                Continue with Microsoft
-                <span className="px-1.5 py-0.5 rounded-md" style={{
-                  fontSize: "9px", fontWeight: 800, letterSpacing: "0.05em",
-                  background: "rgba(255,255,255,.07)", color: T.faint, border: `1px solid ${T.border}`,
-                }}>SOON</span>
-              </button>
-
-              {ssoNotice && (
-                <p className="flex items-start gap-2 rounded-xl px-3.5 py-2.5 mt-2.5"
-                  style={{ fontSize: "12px", background: "rgba(255,255,255,.04)", color: T.muted, border: `1px solid ${T.border}`, animation: "lp-slide-up .22s both" }}>
-                  <AlertCircle size={13} className="shrink-0 mt-px" style={{ color: T.faint }} />
-                  Microsoft single sign-on isn&apos;t enabled for your organisation yet. Please sign in with your username or mobile OTP.
-                </p>
-              )}
 
               {/* ── Test accounts ── */}
               {SHOW_TEST_ACCOUNTS && (
@@ -1608,33 +1556,25 @@ export default function LoginPage() {
 
               {/* ── Premium trial promo card ── */}
               <a href="/license"
-                className="lp-trial mt-3.5 flex items-center justify-between gap-3 rounded-2xl px-4 py-2.5 no-underline group"
+                className="lp-trial mt-3.5 flex items-center gap-3 rounded-2xl px-4 py-2.5 no-underline group"
                 style={{
                   backgroundImage: "linear-gradient(105deg,rgba(6,26,32,.9) 0%,rgba(13,60,62,.85) 32%,rgba(15,90,92,.8) 62%,rgba(6,26,32,.9) 100%)",
                   backgroundSize: "300% auto",
                   border: "1px solid rgba(15,143,111,.22)",
-                  display: "flex",
                 }}>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-                    style={{ background: "rgba(15,143,111,.14)", border: "1px solid rgba(15,143,111,.24)" }}>
-                    <svg width="19" height="19" viewBox="0 0 24 24" fill={T.accent}>
-                      <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
-                    </svg>
-                  </div>
-                  <div>
-                    <p style={{ fontSize: "14px", fontWeight: 800, color: T.text, letterSpacing: "-0.015em", lineHeight: 1.2 }}>
-                      Start Your Free Trial
-                    </p>
-                    <p style={{ fontSize: "11px", color: T.muted, marginTop: "2px" }}>
-                      30 Days · Unlimited Modules · No Credit Card
-                    </p>
-                  </div>
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                  style={{ background: "rgba(15,143,111,.14)", border: "1px solid rgba(15,143,111,.24)" }}>
+                  <svg width="19" height="19" viewBox="0 0 24 24" fill={T.accent}>
+                    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+                  </svg>
                 </div>
-                <div className="flex items-center gap-1.5 shrink-0 rounded-lg px-2.5 sm:px-3 py-1.5 transition-transform group-hover:translate-x-0.5"
-                  style={{ background: "rgba(15,143,111,.14)", border: "1px solid rgba(15,143,111,.2)" }}>
-                  <span className="hidden sm:inline" style={{ fontSize: "11px", fontWeight: 700, color: T.accent }}>Create Workspace</span>
-                  <ArrowRight size={12} color={T.accent} />
+                <div>
+                  <p style={{ fontSize: "14px", fontWeight: 800, color: T.text, letterSpacing: "-0.015em", lineHeight: 1.2 }}>
+                    Start Your Free Trial
+                  </p>
+                  <p style={{ fontSize: "11px", color: T.muted, marginTop: "2px" }}>
+                    30 Days · Unlimited Modules · No Credit Card
+                  </p>
                 </div>
               </a>
 
