@@ -238,7 +238,7 @@ function ApptRow({ appt, role, serial }: { appt: Appt; role: "DOCTOR" | "HOSPITA
       </div>
       <div className="w-px self-stretch bg-[var(--color-border)] hidden sm:block" />
       {/* Time + visit-type column */}
-      <div className="w-20 shrink-0 hidden sm:flex flex-col items-center gap-0.5">
+      <div className="w-32 shrink-0 hidden sm:flex flex-col items-center gap-0.5">
         {/* Primary time: arrived or scheduled */}
         <p className="text-sm font-bold text-[var(--color-ink-900)]" title="Appointment time">
           {primaryTime}
@@ -249,6 +249,17 @@ function ApptRow({ appt, role, serial }: { appt: Appt; role: "DOCTOR" | "HOSPITA
             <Calendar size={9} /> Appt
           </span>
         </div>
+        {/* When the appointment was booked. Same field the Appointments tab
+            shows. Walk-ins were never booked, so the label is omitted for them
+            rather than repurposing their row-creation time. */}
+        {!appt.isWalkIn && (
+          <p
+            className="text-[10px] text-blue-600 whitespace-nowrap"
+            title="When this appointment was booked"
+          >
+            Booked: {format(new Date(appt.createdAt), "d MMM, h:mm a")}
+          </p>
+        )}
       </div>
       <div className="w-px self-stretch bg-[var(--color-border)] hidden sm:block" />
       <Link href={`/patients/${appt.patient.udid}?returnTo=/dashboard`} className="flex-1 min-w-0 hover:opacity-80 transition-opacity">
