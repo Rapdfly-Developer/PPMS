@@ -15,6 +15,30 @@ const nextConfig: NextConfig = {
   // resolve files relative to their own location in node_modules - bundling
   // them breaks that resolution, so they must run as real, unbundled deps.
   serverExternalPackages: ["tesseract.js", "puppeteer", "puppeteer-core", "@sparticuz/chromium"],
+
+  // Exclude the large Chromium binary (~135 MB) and Tesseract WASM from every
+  // function's deployment bundle. Without this, Vercel output-file-tracing
+  // copies them into ALL ~50 serverless functions, bloating Functions Storage
+  // by 135 MB × N functions per deployment. Re-include them only in the
+  // routes that actually launch a browser / run OCR.
+  outputFileTracingExcludes: {
+    "/**": [
+      "./node_modules/@sparticuz/chromium/**",
+      "./node_modules/puppeteer-core/**",
+      "./node_modules/tesseract.js/**",
+      "./node_modules/tesseract.js-core/**",
+    ],
+  },
+  outputFileTracingIncludes: {
+    // PDF generation routes — need Chromium + puppeteer-core
+    "/api/dispense-pdf/**":          ["./node_modules/@sparticuz/chromium/**", "./node_modules/puppeteer-core/**"],
+    "/api/prescription-pdf/**":      ["./node_modules/@sparticuz/chromium/**", "./node_modules/puppeteer-core/**"],
+    "/api/visit-summary-pdf/**":     ["./node_modules/@sparticuz/chromium/**", "./node_modules/puppeteer-core/**"],
+    "/api/discharge-summary-pdf/**": ["./node_modules/@sparticuz/chromium/**", "./node_modules/puppeteer-core/**"],
+    "/api/consent-pdf/**":           ["./node_modules/@sparticuz/chromium/**", "./node_modules/puppeteer-core/**"],
+    // OCR route — needs Tesseract WASM
+    "/api/ocr":                      ["./node_modules/tesseract.js/**", "./node_modules/tesseract.js-core/**"],
+  },
   images: {
     // Next 16 only generates the quality levels declared here. The marketing
     // page tunes quality per image (85 for the hero and the two text-bearing

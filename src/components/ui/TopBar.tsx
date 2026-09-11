@@ -162,7 +162,7 @@ export function TopBar({ name, role }: { name: string; role: string }) {
 
   useEffect(() => {
     fetchUnread();
-    const id = setInterval(fetchUnread, 300_000); // 5 minutes
+    const id = setInterval(fetchUnread, 600_000); // 10 minutes
 
     function handleVisibility() {
       if (document.visibilityState === "visible") fetchUnread();

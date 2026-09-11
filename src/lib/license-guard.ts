@@ -205,11 +205,12 @@ export async function licenseeDoctorIdForUser(user: SessionUser): Promise<string
   return doctorId;
 }
 
-// Small cache so AutoRefresh (5s) doesn't hammer the DB. Expiry itself is
-// computed against `new Date()` on every call, so an expiry is never delayed
-// by caching — only tamper/suspension detection can lag by up to the TTL.
+// Small cache to reduce DB queries. AutoRefresh polls every 5 minutes (300 s),
+// so 60 s TTL gives a comfortable margin while cutting DB hits significantly.
+// Expiry is computed against `new Date()` on every call, so a license expiry
+// is never delayed by caching — only tamper/suspension detection can lag by TTL.
 const cache = new Map<string, { at: number; license: LicenseRecord | null }>();
-const CACHE_TTL_MS = 15_000;
+const CACHE_TTL_MS = 60_000;
 
 /** Post-login check for a session user. Machine binding is NOT enforced here —
  *  staff work from their own devices; they are gated by expiry/status. */

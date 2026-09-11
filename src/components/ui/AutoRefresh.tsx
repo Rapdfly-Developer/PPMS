@@ -23,20 +23,22 @@ import { useRouter, usePathname } from "next/navigation";
 /** Routes that never need auto-refresh — data only changes on explicit user action. */
 const STATIC_PREFIXES = [
   "/settings",
-  "/counseling/",  // individual counselling detail page
-  "/emr/",         // individual EMR — saved explicitly
-  "/patients/",    // patient profile — rarely changes
+  "/counseling/",   // individual counselling detail page
+  "/emr/",          // individual EMR — saved explicitly
+  "/patients/",     // patient profile — rarely changes
   "/scheduled-ot/", // OT detail pages
   "/ipd/",
   "/follow-ups/",
+  "/analytics",     // heavy query page; manual refresh is sufficient
+  "/audit",         // audit logs don't need polling
 ];
 
 /** Live-board route with the shortest acceptable interval. */
 const LIVE_ROUTES = ["/queue"];
-const LIVE_INTERVAL = 30_000;   // was 5 000 — 6× reduction
+const LIVE_INTERVAL = 60_000;   // was 30 000 — 2× further reduction
 
-/** Everything else. */
-const DEFAULT_INTERVAL = 120_000; // was 30 000 — 4× reduction
+/** Everything else (dashboard, appointments, patients list). */
+const DEFAULT_INTERVAL = 300_000; // was 120 000 — 2.5× further reduction
 
 export function AutoRefresh({ interval }: { interval?: number }) {
   const router   = useRouter();
