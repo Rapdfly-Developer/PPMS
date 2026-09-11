@@ -49,12 +49,17 @@ function RoleFormModal({
         if (initial) {
           await updateRoleMeta(initial.id, { label: label.trim(), description: desc.trim() || null, color });
           onSaved({ ...initial, label: label.trim(), description: desc.trim() || null, color });
+          onClose();
         } else {
           const name = label.trim().toUpperCase().replace(/[^A-Z0-9]/g, "_");
-          const created = await createRole({ name, label: label.trim(), description: desc.trim() || null, color });
-          onSaved({ ...created, permissionKeys: [], totalPerms: 0 });
+          const result = await createRole({ name, label: label.trim(), description: desc.trim() || null, color });
+          if (result.error || !result.role) {
+            setError(result.error ?? "Failed to create role");
+            return;
+          }
+          onSaved({ ...result.role, permissionKeys: [], totalPerms: 0 });
+          onClose();
         }
-        onClose();
       } catch (err: any) {
         setError(err?.message ?? "Failed to save role");
       }

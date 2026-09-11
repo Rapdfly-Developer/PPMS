@@ -182,27 +182,39 @@ export async function createRole(data: {
   label: string;
   description?: string | null;
   color: string;
-}) {
+}): Promise<{ role: Awaited<ReturnType<typeof prisma.role.create>> | null; error: string | null }> {
   const user = await requireRole("DOCTOR");
   const name = data.name.toUpperCase().replace(/[^A-Z0-9_]/g, "_");
   const doctorId = user.profileId;
 
-  const role = await prisma.role.create({
-    data: { name, label: data.label, description: data.description, color: data.color, isSystem: false, createdByDoctorId: doctorId },
-  });
+  const existing = await prisma.role.findUnique({ where: { name } });
+  if (existing) {
+    return { role: null, error: `A role named "${name}" already exists. Choose a different name.` };
+  }
 
-  await prisma.auditLog.create({
-    data: {
-      userId: user.id,
-      entityType: "Role",
-      entityId: role.id,
-      action: "CREATE",
-      newValue: JSON.stringify({ name, label: data.label }),
-    },
-  });
+  try {
+    const role = await prisma.role.create({
+      data: { name, label: data.label, description: data.description, color: data.color, isSystem: false, createdByDoctorId: doctorId },
+    });
 
-  revalidatePath("/settings/roles");
-  return role;
+    await prisma.auditLog.create({
+      data: {
+        userId: user.id,
+        entityType: "Role",
+        entityId: role.id,
+        action: "CREATE",
+        newValue: JSON.stringify({ name, label: data.label }),
+      },
+    });
+
+    revalidatePath("/settings/roles");
+    return { role, error: null };
+  } catch (err: any) {
+    if (err?.code === "P2002") {
+      return { role: null, error: `A role named "${name}" already exists. Choose a different name.` };
+    }
+    return { role: null, error: "Failed to create role. Please try again." };
+  }
 }
 
 export async function updateRoleMeta(
