@@ -18,6 +18,19 @@ function getUA(hdrs: Headers) {
   return hdrs.get("user-agent") ?? undefined;
 }
 
+/* ── Email OTP login ─────────────────────────────────────────────────── */
+export async function emailOtpLoginAction(loginToken: string): Promise<{ error?: string }> {
+  try {
+    await signIn("email-otp", { token: loginToken, redirectTo: "/" });
+    return {};
+  } catch (err) {
+    if (err instanceof AuthError) {
+      return { error: "Sign-in failed. Please try again." };
+    }
+    throw err;
+  }
+}
+
 /* ── Mobile OTP login ────────────────────────────────────────────────── */
 export async function mobileOtpLoginAction(loginToken: string): Promise<{ error?: string }> {
   try {

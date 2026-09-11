@@ -243,10 +243,13 @@ function ApptRow({ appt, role, serial }: { appt: Appt; role: "DOCTOR" | "HOSPITA
         <p className="text-sm font-bold text-[var(--color-ink-900)]" title="Appointment time">
           {primaryTime}
         </p>
-        {/* Badge + scheduled time on one line */}
-        <div className="flex items-center gap-1">
+        {/* Badge + registered time */}
+        <div className="flex flex-col items-center gap-0.5">
           <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-600">
             <Calendar size={9} /> Appt
+          </span>
+          <span className="text-[9px] font-medium text-blue-500 tabular-nums">
+            {format(new Date(appt.createdAt), "h:mm a")}
           </span>
         </div>
         {/* When the appointment was booked. Same field the Appointments tab

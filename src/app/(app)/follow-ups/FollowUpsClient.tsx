@@ -97,17 +97,18 @@ function StatCard({
   return (
     <button
       onClick={onClick}
-      className={`flex items-center gap-3 px-4 py-4 rounded-xl border bg-[var(--color-surface)] transition-all text-left w-full
+      className={`flex flex-col items-center gap-1.5 px-2 py-3 rounded-xl border bg-[var(--color-surface)] transition-all text-center w-full
+        sm:flex-row sm:items-center sm:gap-3 sm:px-4 sm:py-4 sm:text-left
         ${active ? "border-[var(--color-primary-400)] shadow-md ring-1 ring-[var(--color-primary-300)]" : "border-[var(--color-border)] hover:border-[var(--color-primary-300)] hover:shadow-sm hover:-translate-y-0.5"}`}
     >
-      <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${iconBg}`}>
+      <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center shrink-0 ${iconBg}`}>
         {icon}
       </div>
       <div>
-        <p className={`text-2xl font-bold leading-none tabular-nums ${count > 0 ? accent : "text-[var(--color-ink-300)]"}`}>
+        <p className={`text-xl sm:text-2xl font-bold leading-none tabular-nums ${count > 0 ? accent : "text-[var(--color-ink-300)]"}`}>
           {count}
         </p>
-        <p className="text-xs text-[var(--color-ink-500)] mt-0.5">{label}</p>
+        <p className="text-[10px] sm:text-xs text-[var(--color-ink-500)] mt-0.5 leading-tight">{label}</p>
       </div>
     </button>
   );

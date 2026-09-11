@@ -939,6 +939,20 @@ model ExportOtp {
   @@index([userId, expiresAt])
 }
 
+// Short-lived OTP record for email login
+model EmailOtp {
+  id         String    @id @default(cuid())
+  email      String
+  otpHash    String
+  loginToken String?   @unique  // set after OTP verified; used to complete sign-in
+  tokenExpAt DateTime?           // 5 min window to exchange token → session
+  expiresAt  DateTime
+  used       Boolean   @default(false)
+  createdAt  DateTime  @default(now())
+
+  @@index([email, createdAt])
+}
+
 // Short-lived OTP record for mobile-number login
 model MobileOtp {
   id         String    @id @default(cuid())
@@ -1615,5 +1629,24 @@ model DataRightsRequest {
   updatedAt   DateTime @updatedAt
 
   @@index([patientId, type])
+  @@index([status, createdAt])
+}
+
+// Landing-page demo request submissions
+model DemoRequest {
+  id             String   @id @default(cuid())
+  fullName       String
+  email          String
+  phone          String
+  clinicName     String?
+  specialization String?
+  city           String?
+  preferredDate  String?
+  preferredTime  String?
+  message        String?
+  status         String   @default("NEW")  // NEW | CONTACTED | DEMO_DONE
+  createdAt      DateTime @default(now())
+
+  @@index([createdAt])
   @@index([status, createdAt])
 }
