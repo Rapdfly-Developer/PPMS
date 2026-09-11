@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 
 import { Faq, type FaqItem } from "./Faq";
+import { WorkflowTabs } from "./WorkflowTabs";
 import { Nav } from "./Nav";
 import { DemoForm } from "./DemoForm";
 import { Magnetic, Marquee, Parallax, Reveal, RevealGroup, RevealItem } from "./ui";
@@ -125,14 +126,15 @@ function SectionHead({
   lede,
   align = "center",
 }: {
-  eyebrow: string;
+  /** Omitted inside WorkflowTabs, where the tab label already names the panel. */
+  eyebrow?: string;
   title: React.ReactNode;
   lede?: string;
   align?: "center" | "left";
 }) {
   return (
     <Reveal className={align === "center" ? "mx-auto max-w-2xl text-center" : "max-w-2xl"}>
-      <Eyebrow>{eyebrow}</Eyebrow>
+      {eyebrow && <Eyebrow>{eyebrow}</Eyebrow>}
       {/* Fluid between 320px and ~1536px, then pinned — clamp keeps the headline
           inside a 320px viewport without a stack of breakpoint overrides. */}
       <h2 className="font-display mt-4 text-[clamp(1.75rem,6.2vw,3.5rem)] font-bold leading-[1.06] tracking-[-0.03em] text-balance text-emerald-950 sm:mt-5">
@@ -156,7 +158,8 @@ function Split({
   flip = false,
   children,
 }: {
-  eyebrow: string;
+  /** Omitted inside WorkflowTabs, where the tab label already names the panel. */
+  eyebrow?: string;
   title: React.ReactNode;
   lede: string;
   points: { icon: React.ReactNode; label: string; desc: string }[];
@@ -167,7 +170,7 @@ function Split({
     <div className="grid items-center gap-8 sm:gap-10 lg:grid-cols-2 lg:gap-12 xl:gap-16">
       <div className={flip ? "lg:order-2" : ""}>
         <Reveal>
-          <Eyebrow>{eyebrow}</Eyebrow>
+          {eyebrow && <Eyebrow>{eyebrow}</Eyebrow>}
           <h2 className="font-display mt-4 text-[clamp(1.6rem,5.4vw,3rem)] font-bold leading-[1.07] tracking-[-0.03em] text-balance text-emerald-950 sm:mt-5">
             {title}
           </h2>
@@ -199,6 +202,174 @@ function Split({
 
       <div className={flip ? "lg:order-1" : ""}>{children}</div>
     </div>
+  );
+}
+
+
+/* ── WorkflowTabs panels ───────────────────────────────────────────────────
+   Bodies of the former #journey / #surgery / #analytics sections, moved here
+   verbatim apart from the eyebrow, which the tab label above now supplies. */
+
+function JourneyPanel() {
+  return (
+    <>
+      <SectionHead
+        title={<>From first call to follow-up, on one thread.</>}
+        lede="Every stage writes to the same record, so the next person to see the patient starts from what actually happened rather than from what was remembered."
+      />
+
+      <div className="mt-8 grid gap-5 sm:mt-10 lg:grid-cols-[1.1fr_0.9fr]">
+        <Reveal>
+          <Frame
+            src={`${IMG}/patient-preliminary-analysis-scan.jpg`}
+            alt="A clinician reviewing a patient's preliminary analysis on a full-body diagnostic display"
+            aspect="aspect-[2/3]"
+            sizes="(max-width: 1024px) 92vw, 50vw"
+            quality={82}
+            radius="2.25rem"
+          />
+        </Reveal>
+
+        <div className="flex flex-col gap-6">
+          <Reveal delay={0.08}>
+            <Frame
+              src={`${IMG}/wearable-vitals-hologram.jpg`}
+              alt="Vital signs displayed above a wearable device during remote patient monitoring"
+              aspect="aspect-[4/3]"
+              sizes="(max-width: 1024px) 92vw, 42vw"
+              quality={80}
+              radius="2rem"
+            />
+          </Reveal>
+
+          <RevealGroup className="flex flex-1 flex-col gap-3" stagger={0.07}>
+            {[
+              { n: "01", t: "Booking", d: "Front desk or patient books against your real availability at that hospital." },
+              { n: "02", t: "Consultation", d: "Vitals, notes, diagnosis and plan captured in the room." },
+              { n: "03", t: "Investigation", d: "Labs and imaging ordered, results attached back to the same visit." },
+              { n: "04", t: "Follow-up", d: "Next appointment, repeat prescription and reminders scheduled before they leave." },
+            ].map((s) => (
+              <RevealItem key={s.n}>
+                <div className="flex items-start gap-5 rounded-2xl bg-white p-5 ring-1 ring-inset ring-emerald-950/[0.07] transition-[transform,box-shadow] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:-translate-y-1 hover:shadow-[0_20px_44px_-34px_rgba(6,60,45,0.5)]">
+                  <span className="font-display text-[13px] font-bold tracking-[0.1em] text-emerald-500">
+                    {s.n}
+                  </span>
+                  <div>
+                    <div className="text-[15px] font-semibold tracking-tight text-emerald-950">
+                      {s.t}
+                    </div>
+                    <p className="mt-1.5 text-[14px] leading-relaxed text-slate-600">{s.d}</p>
+                  </div>
+                </div>
+              </RevealItem>
+            ))}
+          </RevealGroup>
+        </div>
+      </div>
+    </>
+  );
+}
+
+function SurgeryPanel() {
+  return (
+      <Split
+        title={<>Every operation, documented the same way.</>}
+        lede="Schedule the theatre, record the operative note against a consistent structure, and keep the pre-op diagnosis, findings and post-op plan attached to the patient's timeline."
+        points={[
+          {
+            icon: <Stethoscope size={17} strokeWidth={1.25} />,
+            label: "Structured operative notes",
+            desc: "Pre-op and post-op diagnosis, procedure, surgeon, anaesthesia and complications — the same fields every time.",
+          },
+          {
+            icon: <CalendarRange size={17} strokeWidth={1.25} />,
+            label: "Theatre scheduling",
+            desc: "Book the slot against the hospital's calendar, with the surgical team attached.",
+          },
+          {
+            icon: <ScanLine size={17} strokeWidth={1.25} />,
+            label: "Imaging alongside the note",
+            desc: "Scans and reports sit with the operative record instead of in a separate folder.",
+          },
+        ]}
+      >
+        <div className="relative">
+          <Reveal>
+            <Frame
+              src={`${IMG}/surgery-operative-report.jpg`}
+              alt="A structured surgery operative report template showing pre-operative diagnosis, procedure and clinical findings"
+              aspect="aspect-[3/4]"
+              sizes="(max-width: 1024px) 92vw, 46vw"
+              quality={85}
+              radius="2.25rem"
+            />
+          </Reveal>
+          <div className="ppms-float pointer-events-none absolute -bottom-10 -right-3 hidden w-[42%] lg:block">
+            <Reveal delay={0.14}>
+              <Frame
+                src={`${IMG}/neuro-imaging-analysis-screen.jpg`}
+                alt="A radiologist reviewing neuro-imaging analysis with region-of-interest findings on a diagnostic workstation"
+                aspect="aspect-[2/3]"
+                sizes="20vw"
+                radius="1.5rem"
+                className="shadow-[0_40px_70px_-35px_rgba(6,60,45,0.5)]"
+              />
+            </Reveal>
+          </div>
+        </div>
+      </Split>
+  );
+}
+
+function AnalyticsPanel() {
+  return (
+      <Split
+        flip
+        title={<>The numbers you actually run the practice on.</>}
+        lede="Today's queue, this month's revenue by hospital, no-show rate, repeat-visit rate — computed from the same records your staff are already entering, so there is no separate reporting exercise."
+        points={[
+          {
+            icon: <ChartNoAxesColumn size={17} strokeWidth={1.25} />,
+            label: "Revenue by hospital and by month",
+            desc: "Split per site or combined, with collections and outstanding shown separately.",
+          },
+          {
+            icon: <Activity size={17} strokeWidth={1.25} />,
+            label: "Operational load at a glance",
+            desc: "Queue length, average consultation time and cancellations for each working day.",
+          },
+          {
+            icon: <Database size={17} strokeWidth={1.25} />,
+            label: "Exportable, always",
+            desc: "Any view can be exported for your accountant or your own spreadsheet.",
+          },
+        ]}
+      >
+        <div className="relative">
+          <Reveal>
+            <Frame
+              src={`${IMG}/clinician-analytics-wall.jpg`}
+              alt="A doctor reviewing practice analytics charts on a large transparent display"
+              aspect="aspect-[2/3]"
+              sizes="(max-width: 1024px) 92vw, 46vw"
+              quality={82}
+              radius="2.25rem"
+            />
+          </Reveal>
+          <div className="ppms-float-slow pointer-events-none absolute -bottom-10 -left-3 hidden w-[40%] lg:block">
+            <Reveal delay={0.14}>
+              <Frame
+                src={`${IMG}/printed-clinical-reports.jpg`}
+                alt="Printed clinical summary reports and charts beside a stethoscope"
+                aspect="aspect-[3/4]"
+                sizes="20vw"
+                radius="1.5rem"
+                className="shadow-[0_40px_70px_-35px_rgba(6,60,45,0.5)]"
+              />
+            </Reveal>
+          </div>
+        </div>
+      </Split>
   );
 }
 
@@ -714,166 +885,19 @@ export function PremiumLanding() {
         </Split>
       </Section>
 
-      {/* ── Patient journey ──────────────────────────────────────────────── */}
-      <Section id="journey" className="bg-gradient-to-b from-white via-emerald-50/40 to-white">
-        <SectionHead
-          eyebrow="Patient journey"
-          title={<>From first call to follow-up, on one thread.</>}
-          lede="Every stage writes to the same record, so the next person to see the patient starts from what actually happened rather than from what was remembered."
+      {/* ── Patient journey · Surgery · Analytics (tabbed) ───────────────────
+          Three former sections in one. Only the active panel mounts, so this
+          costs the height of one section instead of three. */}
+      <Section className="bg-gradient-to-b from-white via-emerald-50/40 to-white">
+        <WorkflowTabs
+          tabs={[
+            { id: "journey",   label: "Patient Journey",  content: <JourneyPanel /> },
+            { id: "surgery",   label: "Surgery Workflow", content: <SurgeryPanel /> },
+            { id: "analytics", label: "Analytics",        content: <AnalyticsPanel /> },
+          ]}
         />
-
-        <div className="mt-8 grid gap-5 sm:mt-10 lg:grid-cols-[1.1fr_0.9fr]">
-          <Reveal>
-            <Frame
-              src={`${IMG}/patient-preliminary-analysis-scan.jpg`}
-              alt="A clinician reviewing a patient's preliminary analysis on a full-body diagnostic display"
-              aspect="aspect-[2/3]"
-              sizes="(max-width: 1024px) 92vw, 50vw"
-              quality={82}
-              radius="2.25rem"
-            />
-          </Reveal>
-
-          <div className="flex flex-col gap-6">
-            <Reveal delay={0.08}>
-              <Frame
-                src={`${IMG}/wearable-vitals-hologram.jpg`}
-                alt="Vital signs displayed above a wearable device during remote patient monitoring"
-                aspect="aspect-[4/3]"
-                sizes="(max-width: 1024px) 92vw, 42vw"
-                quality={80}
-                radius="2rem"
-              />
-            </Reveal>
-
-            <RevealGroup className="flex flex-1 flex-col gap-3" stagger={0.07}>
-              {[
-                { n: "01", t: "Booking", d: "Front desk or patient books against your real availability at that hospital." },
-                { n: "02", t: "Consultation", d: "Vitals, notes, diagnosis and plan captured in the room." },
-                { n: "03", t: "Investigation", d: "Labs and imaging ordered, results attached back to the same visit." },
-                { n: "04", t: "Follow-up", d: "Next appointment, repeat prescription and reminders scheduled before they leave." },
-              ].map((s) => (
-                <RevealItem key={s.n}>
-                  <div className="flex items-start gap-5 rounded-2xl bg-white p-5 ring-1 ring-inset ring-emerald-950/[0.07] transition-[transform,box-shadow] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:-translate-y-1 hover:shadow-[0_20px_44px_-34px_rgba(6,60,45,0.5)]">
-                    <span className="font-display text-[13px] font-bold tracking-[0.1em] text-emerald-500">
-                      {s.n}
-                    </span>
-                    <div>
-                      <div className="text-[15px] font-semibold tracking-tight text-emerald-950">
-                        {s.t}
-                      </div>
-                      <p className="mt-1.5 text-[14px] leading-relaxed text-slate-600">{s.d}</p>
-                    </div>
-                  </div>
-                </RevealItem>
-              ))}
-            </RevealGroup>
-          </div>
-        </div>
       </Section>
 
-      {/* ── Surgery ──────────────────────────────────────────────────────── */}
-      <Section id="surgery">
-        <Split
-          eyebrow="Surgery workflow"
-          title={<>Every operation, documented the same way.</>}
-          lede="Schedule the theatre, record the operative note against a consistent structure, and keep the pre-op diagnosis, findings and post-op plan attached to the patient's timeline."
-          points={[
-            {
-              icon: <Stethoscope size={17} strokeWidth={1.25} />,
-              label: "Structured operative notes",
-              desc: "Pre-op and post-op diagnosis, procedure, surgeon, anaesthesia and complications — the same fields every time.",
-            },
-            {
-              icon: <CalendarRange size={17} strokeWidth={1.25} />,
-              label: "Theatre scheduling",
-              desc: "Book the slot against the hospital's calendar, with the surgical team attached.",
-            },
-            {
-              icon: <ScanLine size={17} strokeWidth={1.25} />,
-              label: "Imaging alongside the note",
-              desc: "Scans and reports sit with the operative record instead of in a separate folder.",
-            },
-          ]}
-        >
-          <div className="relative">
-            <Reveal>
-              <Frame
-                src={`${IMG}/surgery-operative-report.jpg`}
-                alt="A structured surgery operative report template showing pre-operative diagnosis, procedure and clinical findings"
-                aspect="aspect-[3/4]"
-                sizes="(max-width: 1024px) 92vw, 46vw"
-                quality={85}
-                radius="2.25rem"
-              />
-            </Reveal>
-            <div className="ppms-float pointer-events-none absolute -bottom-10 -right-3 hidden w-[42%] lg:block">
-              <Reveal delay={0.14}>
-                <Frame
-                  src={`${IMG}/neuro-imaging-analysis-screen.jpg`}
-                  alt="A radiologist reviewing neuro-imaging analysis with region-of-interest findings on a diagnostic workstation"
-                  aspect="aspect-[2/3]"
-                  sizes="20vw"
-                  radius="1.5rem"
-                  className="shadow-[0_40px_70px_-35px_rgba(6,60,45,0.5)]"
-                />
-              </Reveal>
-            </div>
-          </div>
-        </Split>
-      </Section>
-
-      {/* ── Analytics ────────────────────────────────────────────────────── */}
-      <Section id="analytics" className="bg-gradient-to-b from-white via-slate-50/60 to-white">
-        <Split
-          flip
-          eyebrow="Dashboard & analytics"
-          title={<>The numbers you actually run the practice on.</>}
-          lede="Today's queue, this month's revenue by hospital, no-show rate, repeat-visit rate — computed from the same records your staff are already entering, so there is no separate reporting exercise."
-          points={[
-            {
-              icon: <ChartNoAxesColumn size={17} strokeWidth={1.25} />,
-              label: "Revenue by hospital and by month",
-              desc: "Split per site or combined, with collections and outstanding shown separately.",
-            },
-            {
-              icon: <Activity size={17} strokeWidth={1.25} />,
-              label: "Operational load at a glance",
-              desc: "Queue length, average consultation time and cancellations for each working day.",
-            },
-            {
-              icon: <Database size={17} strokeWidth={1.25} />,
-              label: "Exportable, always",
-              desc: "Any view can be exported for your accountant or your own spreadsheet.",
-            },
-          ]}
-        >
-          <div className="relative">
-            <Reveal>
-              <Frame
-                src={`${IMG}/clinician-analytics-wall.jpg`}
-                alt="A doctor reviewing practice analytics charts on a large transparent display"
-                aspect="aspect-[2/3]"
-                sizes="(max-width: 1024px) 92vw, 46vw"
-                quality={82}
-                radius="2.25rem"
-              />
-            </Reveal>
-            <div className="ppms-float-slow pointer-events-none absolute -bottom-10 -left-3 hidden w-[40%] lg:block">
-              <Reveal delay={0.14}>
-                <Frame
-                  src={`${IMG}/printed-clinical-reports.jpg`}
-                  alt="Printed clinical summary reports and charts beside a stethoscope"
-                  aspect="aspect-[3/4]"
-                  sizes="20vw"
-                  radius="1.5rem"
-                  className="shadow-[0_40px_70px_-35px_rgba(6,60,45,0.5)]"
-                />
-              </Reveal>
-            </div>
-          </div>
-        </Split>
-      </Section>
 
       {/* ── Security ─────────────────────────────────────────────────────── */}
       <Section id="security">
