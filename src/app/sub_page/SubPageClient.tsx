@@ -187,7 +187,7 @@ function Navbar() {
         </div>
         <div className="hide-sm" style={{ display: "flex", gap: 10 }}>
           <a href="/login" className="btn-g" style={{ padding: "8px 18px", fontSize: 13 }}>Book Demo</a>
-          <a href="/login" className="btn-p" style={{ padding: "8px 18px", fontSize: 13 }}>Free Trial</a>
+          <a href="/license" className="btn-p" style={{ padding: "8px 18px", fontSize: 13 }}>Free Trial</a>
         </div>
         <button onClick={() => setOpen(!open)} style={{ marginLeft: "auto", background: "none", border: "none", color: "#fff", cursor: "pointer", display: "none" }} className="show-sm-flex">
           {open ? <X size={22} /> : <Menu size={22} />}
@@ -198,7 +198,7 @@ function Navbar() {
           {links.map(l => <a key={l} href={`#${l.toLowerCase()}`} className="nav-a" style={{ display: "block", padding: "12px 0", borderBottom: "1px solid rgba(255,255,255,.06)", fontSize: 15 }} onClick={() => setOpen(false)}>{l}</a>)}
           <div style={{ display: "flex", gap: 12, marginTop: 20 }}>
             <a href="/login" className="btn-g" style={{ flex: 1, justifyContent: "center", fontSize: 14 }}>Book Demo</a>
-            <a href="/login" className="btn-p" style={{ flex: 1, justifyContent: "center", fontSize: 14 }}>Free Trial</a>
+            <a href="/license" className="btn-p" style={{ flex: 1, justifyContent: "center", fontSize: 14 }}>Free Trial</a>
           </div>
         </div>
       )}
@@ -228,7 +228,7 @@ function Hero() {
             Manage appointments, EMR, prescriptions, billing, and multiple hospitals from one secure cloud platform. Built for doctors who work across multiple hospitals.
           </p>
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 36, animation: "fade-up .8s .3s ease both" }}>
-            <a href="/login" className="btn-p">Start 30-Day Free Trial <ArrowRight size={16} /></a>
+            <a href="/license" className="btn-p">Start 30-Day Free Trial <ArrowRight size={16} /></a>
             <a href="#contact" className="btn-g">Book Free Demo</a>
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "8px 20px", animation: "fade-up .8s .4s ease both" }}>
@@ -672,7 +672,7 @@ function Pricing() {
                 <div style={{ display: "flex", flexDirection: "column", gap: 11, flex: 1 }}>
                   {p.features.map((f, j) => <div key={j} style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 13 }}><Check size={14} color="#22C55E" strokeWidth={2.5} style={{ flexShrink: 0 }} />{f}</div>)}
                 </div>
-                <a href="/login" className={p.featured ? "btn-p" : "btn-g"} style={{ marginTop: 28, justifyContent: "center", textAlign: "center" }}>
+                <a href={p.cta === "Contact Sales" ? "mailto:support@ppmsai.com" : "/license"} className={p.featured ? "btn-p" : "btn-g"} style={{ marginTop: 28, justifyContent: "center", textAlign: "center" }}>
                   {p.cta} <ArrowRight size={14} />
                 </a>
               </div>
@@ -697,7 +697,7 @@ function CTA() {
             </h2>
             <p style={{ fontSize: 17, color: C.muted, maxWidth: 520, margin: "0 auto 36px" }}>Join 500+ doctors who manage their multi-hospital practice with PPMS. Start your 30-day free trial, no credit card required.</p>
             <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" }}>
-              <a href="/login" className="btn-p" style={{ fontSize: 16, padding: "15px 34px" }}>Start 30-Day Free Trial <ArrowRight size={17} /></a>
+              <a href="/license" className="btn-p" style={{ fontSize: 16, padding: "15px 34px" }}>Start 30-Day Free Trial <ArrowRight size={17} /></a>
               <a href="#contact" className="btn-g" style={{ fontSize: 16, padding: "15px 34px" }}>Schedule Free Demo</a>
             </div>
           </div>
@@ -822,7 +822,7 @@ function Footer() {
           <div>
             <PPMSLogo size={30} />
             <p style={{ fontSize: 13, color: C.muted, marginTop: 18, lineHeight: 1.7, maxWidth: 280 }}>One intelligent cloud platform to manage patients, appointments, EMR, billing and hospital operations.</p>
-            <a href="/login" className="btn-p" style={{ marginTop: 22, padding: "9px 18px", fontSize: 13, display: "inline-flex" }}>Start Free Trial</a>
+            <a href="/license" className="btn-p" style={{ marginTop: 22, padding: "9px 18px", fontSize: 13, display: "inline-flex" }}>Start Free Trial</a>
           </div>
           {cols.map((col, i) => (
             <div key={i}>
