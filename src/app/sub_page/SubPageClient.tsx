@@ -841,7 +841,36 @@ function Footer() {
             </div>
           </div>
         </div>
-        <div style={{ borderTop: "1px solid rgba(255,255,255,.08)", paddingTop: 28, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
+        {/* ── RAPDFLY attribution strip ── */}
+        <div style={{
+          borderTop: "1px solid rgba(255,255,255,.08)",
+          paddingTop: 36,
+          paddingBottom: 36,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 32,
+          flexWrap: "wrap",
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 16, minWidth: 0 }}>
+            <RFLogo size={36} />
+            <div style={{ width: 1, height: 40, background: "rgba(255,255,255,.1)", flexShrink: 0 }} />
+            <div style={{ minWidth: 0 }}>
+              <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.15em", color: "rgba(255,255,255,.35)", textTransform: "uppercase", marginBottom: 4 }}>
+                Built &amp; Powered by
+              </p>
+              <p className="font-sora" style={{ fontSize: 15, fontWeight: 800, color: "#fff", letterSpacing: "-0.01em", lineHeight: 1 }}>
+                RAPDFLY Private Limited
+              </p>
+            </div>
+          </div>
+          <p style={{ fontSize: 13, color: "rgba(255,255,255,.38)", lineHeight: 1.7, maxWidth: 480 }}>
+            RAPDFLY Private Limited is a modern technology and software solutions company specialising in AI, software, automation, and digital transformation.
+          </p>
+        </div>
+
+        {/* ── Legal bottom bar ── */}
+        <div style={{ borderTop: "1px solid rgba(255,255,255,.06)", paddingTop: 24, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap" }}>
             <PPMSLogo size={22} />
             <div style={{ width: 1, height: 18, background: "rgba(255,255,255,.15)" }} />
