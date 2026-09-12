@@ -221,7 +221,7 @@ export function ActivationClient({ initial }: { initial: ActivationPageData }) {
             </div>
             <div className="text-left">
               <h1 className="text-2xl font-black text-slate-900 leading-none">License Activation</h1>
-              <p className="text-xs text-slate-500 mt-1">Activate your PPMS license to continue using the application.</p>
+              <p className="text-xs text-slate-500 mt-1">Activate your RF Health license to continue using the application.</p>
             </div>
           </div>
           <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/70 border border-[#b8dcd6] text-xs font-semibold" style={{ color: TEAL }}>
@@ -238,7 +238,7 @@ export function ActivationClient({ initial }: { initial: ActivationPageData }) {
               </div>
               <h3 className="text-xl font-black text-slate-900 mb-1.5">License Activated Successfully</h3>
               <p className="text-sm text-slate-500 mb-6">
-                Your PPMS license has been verified and activated. You can now continue to the Login page.
+                Your RF Health license has been verified and activated. You can now continue to the Login page.
               </p>
               <a
                 href="/login"
@@ -301,7 +301,7 @@ export function ActivationClient({ initial }: { initial: ActivationPageData }) {
                     className="w-full rounded-xl border-2 border-slate-100 bg-slate-50 px-3.5 py-2.5 text-xs text-slate-500 cursor-default outline-none" />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1.5">PPMS Version</label>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1.5">RF Health Version</label>
                   <input readOnly value={PPMS_VERSION}
                     className="w-full rounded-xl border-2 border-slate-100 bg-slate-50 px-3.5 py-2.5 text-xs font-mono text-slate-500 cursor-default outline-none" />
                 </div>
@@ -381,7 +381,7 @@ export function ActivationClient({ initial }: { initial: ActivationPageData }) {
             <div className="flex items-center gap-2.5">
               <Package size={16} className="text-slate-400 shrink-0" />
               <div>
-                <p className="text-[10px] text-slate-400 uppercase tracking-wide font-semibold">PPMS Version</p>
+                <p className="text-[10px] text-slate-400 uppercase tracking-wide font-semibold">RF Health Version</p>
                 <p className="text-xs font-mono text-slate-700">{PPMS_VERSION}</p>
               </div>
             </div>

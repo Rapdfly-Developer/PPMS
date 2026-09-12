@@ -284,7 +284,7 @@ export function Marquee({
   return (
     <div
       className={`relative overflow-hidden ${className ?? ""}`}
-      aria-label="Capabilities included in every PPMS plan"
+      aria-label="Capabilities included in every RF Health plan"
     >
       <div
         className="ppms-marquee-track flex w-max will-change-transform"

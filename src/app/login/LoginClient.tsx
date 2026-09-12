@@ -23,7 +23,9 @@ const T = {
   border:   "rgba(255,255,255,.08)",
   border2:  "rgba(255,255,255,.14)",
   field:    "rgba(2,15,14,.65)",
-  glow:     "0 0 0 4px rgba(15,143,111,.12), 0 0 22px rgba(34,197,94,.18)",
+  // Focus ring only. Halved from its original bloom so a focused field reads as
+  // active without glowing as hard as the Sign In button sitting below it.
+  glow:     "0 0 0 3px rgba(15,143,111,.10)",
 };
 
 /* ── Types ─────────────────────────────────────────────────────────────── */
@@ -218,7 +220,7 @@ function DashboardMockup({ px, py }: { px: number; py: number }) {
               <span key={c} style={{ width: 6, height: 6, borderRadius: "50%", background: c, opacity: .55 }} />
             ))}
             <span style={{ marginLeft: 7, fontSize: "8.5px", fontWeight: 700, letterSpacing: "0.1em", color: T.faint }}>
-              PPMS-AI · OVERVIEW
+              RF Health · OVERVIEW
             </span>
           </div>
           <span className="flex items-center gap-1">
@@ -1139,13 +1141,13 @@ export default function LoginPage() {
             <div className="flex items-center gap-3.5">
               <img
                 src="/landing/logo-ppms-new.png"
-                alt="PPMS-AI"
+                alt="RF Health"
                 className="shrink-0"
                 style={{ width: "48px", height: "48px", objectFit: "contain" }}
               />
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="text-[25px] font-black" style={{ color: T.text, letterSpacing: "-0.035em" }}>PPMS-AI</span>
+                  <span className="text-[25px] font-black" style={{ color: T.text, letterSpacing: "-0.035em" }}>RF Health</span>
                   <span className="text-[9.5px] font-bold px-2 py-0.5 rounded-full"
                     style={{ background: "rgba(15,143,111,.1)", color: T.accent, border: "1px solid rgba(15,143,111,.24)", letterSpacing: "0.04em" }}>v2.0 Cloud</span>
                 </div>
@@ -1169,7 +1171,7 @@ export default function LoginPage() {
                 boxShadow: "0 0 22px rgba(15,143,111,.1)",
               }}>
                 <span className="lp-dot" style={{ width: 6, height: 6, borderRadius: "50%", background: T.accent }} />
-                <span style={{ fontSize: "10px", fontWeight: 800, letterSpacing: "0.14em", color: T.accent }}>
+                <span style={{ fontSize: "10.5px", fontWeight: 700, letterSpacing: "0.08em", color: T.muted }}>
                   ENTERPRISE HEALTHCARE PLATFORM
                 </span>
               </span>
@@ -1239,11 +1241,11 @@ export default function LoginPage() {
             <div className="flex items-center gap-3 mb-1.5">
               <img
                 src="/landing/logo-ppms-new.png"
-                alt="PPMS-AI"
+                alt="RF Health"
                 className="shrink-0"
                 style={{ width: "44px", height: "44px", objectFit: "contain" }}
               />
-              <span className="text-[26px] font-black" style={{ color: T.text, letterSpacing: "-0.03em" }}>PPMS-AI</span>
+              <span className="text-[26px] font-black" style={{ color: T.text, letterSpacing: "-0.03em" }}>RF Health</span>
             </div>
             <p style={{ fontSize: "9.5px", fontWeight: 700, letterSpacing: "0.16em", color: T.faint }}>
               PERSONAL PATIENT MANAGEMENT SYSTEM
@@ -1382,18 +1384,22 @@ export default function LoginPage() {
                         className="flex items-center justify-center rounded-md shrink-0"
                         style={{
                           width: 18, height: 18,
-                          background: rememberMe ? "linear-gradient(135deg,#0F8F6F,#16A34A)" : "rgba(10,16,26,.7)",
-                          border: `1px solid ${rememberMe ? T.accent : "rgba(255,255,255,.18)"}`,
-                          boxShadow: rememberMe ? "0 0 14px rgba(15,143,111,.4)" : "none",
+                          // Flat accent2 rather than the Sign In gradient: a checkbox
+                          // should not carry the same fill as the primary action.
+                          background: rememberMe ? T.accent2 : "rgba(10,16,26,.7)",
+                          border: `1px solid ${rememberMe ? T.accent2 : "rgba(255,255,255,.18)"}`,
+                          boxShadow: "none",
                           transition: "all .25s cubic-bezier(.34,1.56,.64,1)",
                         }}>
                         {rememberMe && <Check size={10} color="#04141A" strokeWidth={3.5} />}
                       </div>
                       <span style={{ fontSize: "13px", color: T.muted }}>Remember me</span>
                     </label>
+                    {/* Muted by default: a 13px link directly above the primary
+                        CTA should not share the CTA's colour. Accent on hover. */}
                     <button type="button" onClick={() => setShowForgotPw(true)}
-                      style={{ fontSize: "13px", fontWeight: 600, color: T.accent }}
-                      className="hover:underline transition-colors">
+                      style={{ fontSize: "13px", fontWeight: 500, color: T.muted }}
+                      className="hover:underline hover:!text-[#22C55E] transition-colors">
                       Forgot password?
                     </button>
                   </div>
@@ -1534,7 +1540,7 @@ export default function LoginPage() {
                 <div className="mt-3.5 rounded-2xl px-4 py-3" style={{ background: "rgba(255,255,255,.03)", border: `1px dashed ${T.border2}` }}>
                   <div className="flex items-center gap-1.5 mb-2">
                     <span className="font-mono text-[9px] font-bold px-1.5 py-0.5 rounded"
-                      style={{ background: "rgba(15,143,111,.16)", color: T.accent, border: "1px solid rgba(15,143,111,.28)", letterSpacing: "0.05em" }}>TEST</span>
+                      style={{ background: "rgba(15,143,111,.16)", color: T.accent, border: "1px solid rgba(15,143,111,.28)", fontSize: "10.5px", fontWeight: 700, letterSpacing: "0.08em" }}>TEST</span>
                     <p style={{ fontSize: "12px", fontWeight: 700, color: T.muted }}>Test Accounts</p>
                     <p style={{ fontSize: "11px", color: T.faint, marginLeft: "2px" }}>— click to fill</p>
                   </div>
@@ -1543,7 +1549,7 @@ export default function LoginPage() {
                       <button key={a.username} type="button" onClick={() => fillTestAccount(a.username, a.password)}
                         className="flex items-center gap-2 px-2.5 py-2 rounded-xl text-left transition-all"
                         style={{ background: username === a.username ? "rgba(15,143,111,.1)" : "rgba(255,255,255,.03)", border: `1px solid ${username === a.username ? "rgba(15,143,111,.4)" : T.border}` }}>
-                        <User size={12} className="shrink-0" style={{ color: T.accent }} />
+                        <User size={12} className="shrink-0" style={{ color: T.faint }} />
                         <span className="min-w-0">
                           <span className="block truncate" style={{ fontSize: "12px", fontWeight: 600, color: "#E2E8F0" }}>{a.label}</span>
                           <span className="block font-mono truncate" style={{ fontSize: "10px", color: T.faint }}>{a.username}</span>
@@ -1560,10 +1566,13 @@ export default function LoginPage() {
                 style={{
                   backgroundImage: "linear-gradient(105deg,rgba(6,26,32,.9) 0%,rgba(13,60,62,.85) 32%,rgba(15,90,92,.8) 62%,rgba(6,26,32,.9) 100%)",
                   backgroundSize: "300% auto",
-                  border: "1px solid rgba(15,143,111,.22)",
+                  border: "1px solid rgba(15,143,111,.14)",
                 }}>
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
                   style={{ background: "rgba(15,143,111,.14)", border: "1px solid rgba(15,143,111,.24)" }}>
+                  {/* Stays full accent: the banner's gradient animates across
+                      300% width, and accent2 drops to 1.8:1 against its lighter
+                      stops. The softened border below does the demoting instead. */}
                   <svg width="19" height="19" viewBox="0 0 24 24" fill={T.accent}>
                     <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
                   </svg>
@@ -1593,7 +1602,7 @@ export default function LoginPage() {
                 boxShadow: "0 0 24px rgba(15,143,111,.12)",
               }}>
                 <Lock size={11} style={{ color: T.accent }} />
-                <span style={{ fontSize: "10px", fontWeight: 800, letterSpacing: "0.1em", color: T.accent }}>
+                <span style={{ fontSize: "10.5px", fontWeight: 700, letterSpacing: "0.08em", color: T.muted }}>
                   ENTERPRISE SECURE LOGIN
                 </span>
               </span>
@@ -1601,7 +1610,7 @@ export default function LoginPage() {
             <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5">
               {SECURITY_FEATURES.map((f) => (
                 <span key={f} className="flex items-center gap-1" style={{ fontSize: "11px", fontWeight: 500, color: T.muted }}>
-                  <Check size={11} strokeWidth={3} style={{ color: T.accent }} /> {f}
+                  <Check size={11} strokeWidth={3} style={{ color: T.accent2 }} /> {f}
                 </span>
               ))}
             </div>
@@ -1611,7 +1620,7 @@ export default function LoginPage() {
           <div className="lp-a4 w-full max-w-[420px] shrink-0 mt-5 mb-1">
             <div className="mb-3" style={{ height: "1px", background: "linear-gradient(90deg,transparent,rgba(255,255,255,.1),transparent)" }} />
             <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1.5" style={{ fontSize: "10.5px", color: T.faint }}>
-              <span style={{ fontWeight: 600 }}>© 2026 PPMS-AI</span>
+              <span style={{ fontWeight: 600 }}>© 2026 RF Health</span>
               <span style={{ color: "rgba(255,255,255,.16)" }}>·</span>
               <span>Version 2.0 Cloud</span>
               <span style={{ color: "rgba(255,255,255,.16)" }}>·</span>

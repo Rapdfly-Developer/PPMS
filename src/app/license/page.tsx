@@ -37,7 +37,7 @@ export default async function LicensePage({
         <div className="fixed top-3 left-1/2 -translate-x-1/2 z-50 max-w-md w-[calc(100%-2rem)] rounded-xl bg-amber-50 border border-amber-300 px-4 py-3 shadow-lg">
           <p className="text-sm font-bold text-amber-800">You have been signed out</p>
           <p className="text-xs text-amber-700 mt-0.5">
-            Your license has expired. Please renew your license to continue using PPMS.
+            Your license has expired. Please renew your license to continue using RF Health.
           </p>
         </div>
       )}
