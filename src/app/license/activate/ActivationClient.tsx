@@ -87,19 +87,23 @@ function Card({ title, icon: Icon, children, className = "" }: {
   title?: string; icon?: React.ElementType; children: React.ReactNode; className?: string;
 }) {
   return (
-    <div className={`rounded-2xl p-6 animate-fade-in ${className}`}
-      style={{ background: "rgba(4,26,24,.80)", backdropFilter: "blur(18px)", WebkitBackdropFilter: "blur(18px)", border: "1px solid rgba(255,255,255,.10)", boxShadow: "0 8px 32px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.06)" }}>
-      {title && (
-        <div className="flex items-center gap-2 mb-4">
-          {Icon && (
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "rgba(15,143,111,.18)", border: "1px solid rgba(15,143,111,.28)" }}>
-              <Icon size={15} style={{ color: TEAL }} />
-            </div>
-          )}
-          <h3 className="text-sm font-bold text-white">{title}</h3>
-        </div>
-      )}
-      {children}
+    <div className={`rounded-2xl overflow-hidden animate-fade-in ${className}`}
+      style={{ background: "rgba(4,26,24,.82)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", border: "1px solid rgba(255,255,255,.10)", boxShadow: "0 20px 60px rgba(0,0,0,.55), 0 0 40px rgba(15,143,111,.06), inset 0 1px 0 rgba(255,255,255,.07)" }}>
+      {/* Top accent line */}
+      <div style={{ height: "1.5px", background: "linear-gradient(90deg,transparent,#0F8F6F 35%,#22C55E 55%,transparent)" }} />
+      <div className="p-6">
+        {title && (
+          <div className="flex items-center gap-3 mb-5">
+            {Icon && (
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: "linear-gradient(135deg,rgba(15,143,111,.22),rgba(22,163,74,.14))", border: "1px solid rgba(15,143,111,.32)", boxShadow: "0 0 20px rgba(15,143,111,.18)" }}>
+                <Icon size={16} style={{ color: TEAL }} />
+              </div>
+            )}
+            <h3 className="text-sm font-bold tracking-tight text-white">{title}</h3>
+          </div>
+        )}
+        {children}
+      </div>
     </div>
   );
 }
@@ -284,15 +288,17 @@ export function ActivationClient({ initial }: { initial: ActivationPageData }) {
           <Card title="Activate Your License" icon={Key}>
             <div className="flex flex-col gap-3">
               <div>
-                <label className="block text-xs font-semibold mb-1.5" style={{ color: "rgba(255,255,255,.55)" }}>License Key *</label>
+                <label className="block text-[11px] font-bold mb-2 uppercase tracking-wider" style={{ color: "rgba(255,255,255,.4)", letterSpacing: "0.1em" }}>License Key *</label>
                 <div className="relative flex items-center">
-                  <Key size={14} className="absolute left-3.5 pointer-events-none" style={{ color: "rgba(255,255,255,.3)" }} />
+                  <Key size={15} className="absolute left-4 pointer-events-none" style={{ color: TEAL_DARK }} />
                   <input
                     value={licKey}
                     onChange={(e) => handleKeyInput(e.target.value)}
                     placeholder="PPMS-XXXX-XXXX-XXXX-XXXX"
-                    className="w-full rounded-xl pl-10 pr-3.5 py-2.5 text-sm font-mono outline-none transition-all"
-                    style={{ background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.12)", color: "white", caretColor: TEAL }}
+                    className="w-full rounded-xl pl-11 pr-4 outline-none transition-all font-mono"
+                    style={{ height: "52px", fontSize: "14px", letterSpacing: "0.06em", background: "rgba(15,143,111,.06)", border: "1.5px solid rgba(15,143,111,.22)", color: "white", caretColor: TEAL }}
+                    onFocus={e => { e.currentTarget.style.borderColor = "rgba(15,143,111,.5)"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(15,143,111,.12)"; }}
+                    onBlur={e => { e.currentTarget.style.borderColor = "rgba(15,143,111,.22)"; e.currentTarget.style.boxShadow = "none"; }}
                   />
                 </div>
               </div>

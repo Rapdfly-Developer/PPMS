@@ -1271,7 +1271,7 @@ export default function LoginPage() {
             }}
           >
             {/* Animated top edge */}
-            <div className="lp-border-glow" style={{ height: "1px", background: "linear-gradient(90deg,transparent,#0F8F6F 30%,#22C55E 50%,#0F8F6F 70%,transparent)" }} />
+            <div style={{ height: "2px", background: "linear-gradient(90deg,transparent 0%,#0F8F6F 30%,#22C55E 50%,#0F8F6F 70%,transparent 100%)", backgroundSize: "200% 100%", animation: "lp-sheen 4s ease-in-out infinite" }} />
             {/* Glass reflection sweep across the card */}
             <div className="lp-reflect absolute pointer-events-none" style={{
               top: 0, bottom: 0, width: "40%",
