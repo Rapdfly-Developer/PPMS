@@ -1555,7 +1555,7 @@ export default function LoginPage() {
               )}
 
               {/* ── Premium trial promo card ── */}
-              <a href="/license"
+              <a href="/sign-up"
                 className="lp-trial mt-3.5 flex items-center gap-3 rounded-2xl px-4 py-2.5 no-underline group"
                 style={{
                   backgroundImage: "linear-gradient(105deg,rgba(6,26,32,.9) 0%,rgba(13,60,62,.85) 32%,rgba(15,90,92,.8) 62%,rgba(6,26,32,.9) 100%)",
