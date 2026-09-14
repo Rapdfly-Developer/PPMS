@@ -52,3 +52,10 @@ dev-err.log
 
 .vercel
 .env*
+
+# Capacitor
+/www/
+# android/ and ios/ are generated — commit only capacitor.config.ts
+# Uncomment below to exclude from git (recommended for large teams):
+# /android/
+# /ios/

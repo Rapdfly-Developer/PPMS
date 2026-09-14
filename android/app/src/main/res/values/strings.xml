@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">PPMS-AI</string>
+    <string name="title_activity_main">PPMS-AI</string>
+    <string name="package_name">com.ppmsai.app</string>
+    <string name="custom_url_scheme">com.ppmsai.app</string>
+</resources>
