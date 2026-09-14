@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState, useRef, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { loginAction, emailOtpLoginAction } from "./actions";
 import {
   Eye, EyeOff, User, Lock, AlertCircle, CheckCircle2,
@@ -870,6 +871,7 @@ function DarkBackground({ px, py }: { px: number; py: number }) {
 
 /* ── Main page ───────────────────────────────────────────────────────────── */
 export default function LoginPage() {
+  const router = useRouter();
   const [state, formAction, pending] = useActionState(loginAction, {});
   const [showPassword, setShowPassword] = useState(false);
   const [capsLock, setCapsLock]         = useState(false);
@@ -1555,12 +1557,15 @@ export default function LoginPage() {
               )}
 
               {/* ── Premium trial promo card ── */}
-              <a href="/sign-up"
-                className="lp-trial mt-3.5 flex items-center gap-3 rounded-2xl px-4 py-2.5 no-underline group"
+              <button
+                type="button"
+                onClick={() => router.push("/sign-up")}
+                className="lp-trial mt-3.5 flex items-center gap-3 rounded-2xl px-4 py-2.5 group w-full text-left"
                 style={{
                   backgroundImage: "linear-gradient(105deg,rgba(6,26,32,.9) 0%,rgba(13,60,62,.85) 32%,rgba(15,90,92,.8) 62%,rgba(6,26,32,.9) 100%)",
                   backgroundSize: "300% auto",
                   border: "1px solid rgba(15,143,111,.22)",
+                  cursor: "pointer",
                 }}>
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
                   style={{ background: "rgba(15,143,111,.14)", border: "1px solid rgba(15,143,111,.24)" }}>
@@ -1576,7 +1581,7 @@ export default function LoginPage() {
                     30 Days · Unlimited Modules · No Credit Card
                   </p>
                 </div>
-              </a>
+              </button>
 
 
             </div>
