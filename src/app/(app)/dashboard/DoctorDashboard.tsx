@@ -130,6 +130,7 @@ export async function DoctorDashboard({
   return (
     <DashboardClient
       role="DOCTOR"
+      permissions={user.permissions ?? []}
       displayName={doctorProfile?.name ?? user.name}
       todayLabel={format(toISTWall(now), "EEEE, d MMM yyyy")}
       appts={appts}

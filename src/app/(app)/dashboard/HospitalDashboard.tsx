@@ -98,6 +98,7 @@ export async function HospitalDashboard({
       <LicenseBanner license={license} role="HOSPITAL" />
       <DashboardClient
         role="HOSPITAL"
+        permissions={user.permissions ?? []}
         displayName={hospital?.name ?? "Hospital"}
         todayLabel={format(toISTWall(now), "EEEE, d MMM yyyy")}
         appts={appts}

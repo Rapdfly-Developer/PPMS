@@ -22,6 +22,17 @@ export const PERMISSION_GROUPS: {
     ],
   },
   {
+    // The /dashboard page itself stays open to any signed-in user; these keys
+    // control which pieces render inside it.
+    category: "OPD",
+    permissions: [
+      { key: "opd.view",          label: "View OPD Queue", description: "See today's queue and the partial-dispense list" },
+      { key: "opd.walkin.create", label: "Add Walk-in",    description: "Start a new encounter from the OPD screen" },
+      { key: "opd.queue.manage",  label: "Manage Queue",   description: "Move a waiting patient back to their appointment time" },
+      { key: "opd.dispense",      label: "Mark Dispensed", description: "Move a partial-dispense patient back into the queue" },
+    ],
+  },
+  {
     category: "Appointments",
     permissions: [
       { key: "appointments.view",   label: "View Appointments",   description: "See appointment list and details" },

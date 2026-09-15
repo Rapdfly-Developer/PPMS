@@ -44,6 +44,8 @@ interface Surgery {
 
 export interface DashboardProps {
   role:              "DOCTOR" | "HOSPITAL";
+  /** Session permission keys. Mirrors userCan() on the server — "*" grants all. */
+  permissions:       string[];
   displayName:       string;   // doctor's name or hospital name
   todayLabel:        string;
   appts:             Appt[];
@@ -143,7 +145,7 @@ function SurgeryRow({ s, role }: { s: Surgery; role: "DOCTOR" | "HOSPITAL" }) {
 }
 
 /* ── Partial Dispense row ───────────────────────────────────────────────── */
-function PartialDispenseRow({ appt: a, role, serial }: { appt: Appt; role: "DOCTOR" | "HOSPITAL"; serial: number }) {
+function PartialDispenseRow({ appt: a, role, serial, canDispense }: { appt: Appt; role: "DOCTOR" | "HOSPITAL"; serial: number; canDispense: boolean }) {
   const [undoing, startUndo] = useTransition();
   const arrivedAt = a.arrivedAt ? new Date(a.arrivedAt) : null;
   const apptTime  = format(new Date(a.dateTime), "h:mm a");
@@ -199,22 +201,24 @@ function PartialDispenseRow({ appt: a, role, serial }: { appt: Appt; role: "DOCT
         >
           <LiveTimer since={timerSince} />
         </span>
-        <button
-          disabled={undoing}
-          title="Move back to Today's Queue"
-          onClick={() => startUndo(async () => { await undoPartialDispense(a.id); })}
-          className="flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-lg bg-white border border-orange-300 text-orange-700 hover:bg-orange-100 disabled:opacity-50 transition-all"
-        >
-          {undoing ? <Loader2 size={11} className="animate-spin" /> : <LogIn size={11} />}
-          {!undoing && "To Queue"}
-        </button>
+        {canDispense && (
+          <button
+            disabled={undoing}
+            title="Move back to Today's Queue"
+            onClick={() => startUndo(async () => { await undoPartialDispense(a.id); })}
+            className="flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-lg bg-white border border-orange-300 text-orange-700 hover:bg-orange-100 disabled:opacity-50 transition-all"
+          >
+            {undoing ? <Loader2 size={11} className="animate-spin" /> : <LogIn size={11} />}
+            {!undoing && "To Queue"}
+          </button>
+        )}
       </div>
     </div>
   );
 }
 
 /* ── Appointment row ────────────────────────────────────────────────────── */
-function ApptRow({ appt, role, serial }: { appt: Appt; role: "DOCTOR" | "HOSPITAL"; serial: number }) {
+function ApptRow({ appt, role, serial, canManageQueue }: { appt: Appt; role: "DOCTOR" | "HOSPITAL"; serial: number; canManageQueue: boolean }) {
   const cfg      = STATUS_CFG[appt.status] ?? STATUS_CFG["REQUESTED"];
   const apptTime = format(new Date(appt.dateTime), "h:mm a");
   const arrivedAt      = appt.arrivedAt      ? new Date(appt.arrivedAt)      : null;
@@ -293,7 +297,7 @@ function ApptRow({ appt, role, serial }: { appt: Appt; role: "DOCTOR" | "HOSPITA
               {cfg.label}
             </span>
           )}
-          {appt.status === "CONFIRMED" && (
+          {appt.status === "CONFIRMED" && canManageQueue && (
             <button
               disabled={undoing}
               title={`Move back to appointment time (${apptTime})`}
@@ -312,9 +316,12 @@ function ApptRow({ appt, role, serial }: { appt: Appt; role: "DOCTOR" | "HOSPITA
 
 /* ── Main component ─────────────────────────────────────────────────────── */
 export function DashboardClient({
-  role, displayName, todayLabel, appts, surgeries, filterOptions,
+  role, permissions, displayName, todayLabel, appts, surgeries, filterOptions,
   newEncounterHref, newEncounterLabel, hospitalLogoUrl,
 }: DashboardProps) {
+  // Same rule as userCan() in lib/rbac, so the UI hides exactly what the server
+  // would refuse. The server actions enforce it independently.
+  const can = (p: string) => permissions.includes("*") || permissions.includes(p);
   const [selectedFilter, setSelectedFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter]     = useState<VisitTypeFilterKey>("ALL");
   const [greetHour, setGreetHour]           = useState<number | null>(null);
@@ -427,12 +434,14 @@ export function DashboardClient({
             <p className="mt-1 text-sm text-white/60">{todayLabel}</p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
-            <Link
-              href={newEncounterHref}
-              className="inline-flex items-center gap-2 bg-white text-[var(--color-primary-800)] text-sm font-semibold px-4 py-2 rounded-xl hover:bg-white/90 transition-colors shadow-sm"
-            >
-              <Plus size={15} /> {newEncounterLabel}
-            </Link>
+            {can("opd.walkin.create") && (
+              <Link
+                href={newEncounterHref}
+                className="inline-flex items-center gap-2 bg-white text-[var(--color-primary-800)] text-sm font-semibold px-4 py-2 rounded-xl hover:bg-white/90 transition-colors shadow-sm"
+              >
+                <Plus size={15} /> {newEncounterLabel}
+              </Link>
+            )}
             {filterOptions.length > 0 && (
               <div className="relative">
                 <select
@@ -454,7 +463,10 @@ export function DashboardClient({
         </div>
       </div>
 
-      {/* ── Today's Queue ────────────────────────────────────────────────── */}
+      {/* ── Today's Queue ──────────────────────────────────────────────────
+          Whole section is omitted without opd.view — an empty queue heading
+          would read as "no patients today" rather than "not yours to see". */}
+      {can("opd.view") && (
       <div>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
           <h2 className="text-base font-semibold text-[var(--color-ink-900)]">
@@ -503,12 +515,14 @@ export function DashboardClient({
                 Confirmed appointments will appear here once patients are moved into the queue.
               </p>
             </div>
-            <Link
-              href={newEncounterHref}
-              className="inline-flex items-center gap-2 text-sm font-semibold text-[var(--color-primary-600)] hover:underline"
-            >
-              <Plus size={14} /> {newEncounterLabel}
-            </Link>
+            {can("opd.walkin.create") && (
+              <Link
+                href={newEncounterHref}
+                className="inline-flex items-center gap-2 text-sm font-semibold text-[var(--color-primary-600)] hover:underline"
+              >
+                <Plus size={14} /> {newEncounterLabel}
+              </Link>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-4">
@@ -540,7 +554,7 @@ export function DashboardClient({
                   </div>
                   {displayed.length > 0 && (
                     <div className="space-y-2">
-                      {displayed.map((a, idx) => <ApptRow key={a.id} appt={a} role={role} serial={idx + 1} />)}
+                      {displayed.map((a, idx) => <ApptRow key={a.id} appt={a} role={role} serial={idx + 1} canManageQueue={can("opd.queue.manage")} />)}
                     </div>
                   )}
                 </div>
@@ -549,8 +563,10 @@ export function DashboardClient({
           </div>
         )}
       </div>
+      )}
 
       {/* ── Partial Dispense ─────────────────────────────────────────────── */}
+      {can("opd.view") && (
       <div className="surface-card p-5">
         <h2 className="text-base font-semibold text-[var(--color-ink-900)] mb-4">
           Partial Dispense
@@ -563,11 +579,12 @@ export function DashboardClient({
         ) : (
           <div className="space-y-2">
             {partialDispenseAppts.map((a, idx) => (
-              <PartialDispenseRow key={a.id} appt={a} role={role} serial={idx + 1} />
+              <PartialDispenseRow key={a.id} appt={a} role={role} serial={idx + 1} canDispense={can("opd.dispense")} />
             ))}
           </div>
         )}
       </div>
+      )}
 
     </div>
   );

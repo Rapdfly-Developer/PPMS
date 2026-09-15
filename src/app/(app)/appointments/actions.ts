@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { requireRole, requireUser, scopeDoctorId } from "@/lib/rbac";
+import { requireRole, requireUser, requirePermission, scopeDoctorId } from "@/lib/rbac";
 import { revalidatePath } from "next/cache";
 import { startOfDay } from "date-fns";
 import { notifyAppointmentRequested, notifyAppointmentStatus } from "@/lib/mailer";
@@ -183,15 +183,10 @@ export async function doctorConfirmAppointment(appointmentId: string): Promise<v
 
 // ── Undo queue entry: revert CONFIRMED → REQUESTED (move patient back to Visit time) ──
 export async function undoQueueEntry(appointmentId: string): Promise<void> {
-  // Works for both DOCTOR and HOSPITAL roles
-  let userId: string;
-  try {
-    const u = await requireRole("DOCTOR");
-    userId = u.id;
-  } catch {
-    const u = await requireRole("HOSPITAL");
-    userId = u.id;
-  }
+  // Permission, not role: the old requireRole("DOCTOR") locked this away from
+  // hospital staff who are granted it, and handed it to every doctor whether or
+  // not the permission was revoked.
+  const { id: userId } = await requirePermission("opd.queue.manage");
 
   const appt = await prisma.appointment.findUnique({
     where: { id: appointmentId },
@@ -215,14 +210,7 @@ export async function undoQueueEntry(appointmentId: string): Promise<void> {
 }
 
 export async function undoPartialDispense(appointmentId: string): Promise<void> {
-  let userId: string;
-  try {
-    const u = await requireRole("DOCTOR");
-    userId = u.id;
-  } catch {
-    const u = await requireRole("HOSPITAL");
-    userId = u.id;
-  }
+  const { id: userId } = await requirePermission("opd.dispense");
 
   const appt = await prisma.appointment.findUnique({
     where: { id: appointmentId },
