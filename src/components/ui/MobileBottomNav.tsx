@@ -9,7 +9,7 @@ const ACTIVE_COLOR = "#1C9388";
 const INACTIVE_COLOR = "#94A3B8";
 
 const NAV_ITEMS = [
-  { href: "/queue",          label: "Home",         icon: LayoutGrid  },
+  { href: "/dashboard",      label: "Home",         icon: LayoutGrid  },
   { href: "/patients",      label: "Patients",     icon: Users       },
   { href: "/appointments",  label: "Appointments", icon: CalendarDays},
   { href: "/notifications", label: "Alerts",       icon: Bell        },
