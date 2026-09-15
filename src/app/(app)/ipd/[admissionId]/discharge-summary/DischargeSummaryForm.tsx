@@ -16,7 +16,8 @@ type Props = {
   admission: { id: string; discharged: boolean; dischargedAt: string | null; createdAt: string; ward: string; reason: string };
   patient: { name: string; udid: string; age: number; sex: string; mobile: string | null };
   visit: { date: string; doctorName: string; hospitalName: string };
-  otRecord: { procedurePerformed: string | null; iolModel: string | null; iolPower: string | null; complications: string | null; anesthesiaTypeRecorded: string | null; surgeryScheduleId: string } | null;
+  /** Retained for the page's call signature; Scheduled OT was removed, so this is always null. */
+  otRecord: null;
   medications: { drugName: string; dosage: string; frequency: string; duration: string; instructions: string }[];
   diagnoses: { description: string; laterality: string | null }[];
   existing: {
@@ -62,20 +63,20 @@ const inputCls = "w-full rounded-lg border border-[var(--color-border)] bg-white
 const textareaCls = inputCls + " resize-none";
 
 export default function DischargeSummaryForm({
-  admission, patient, visit, otRecord, medications, diagnoses, existing,
+  admission, patient, visit, medications, diagnoses, existing,
 }: Props) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Pre-fill from OT record
-  const defaultSurgery = otRecord?.procedurePerformed ?? "";
+  // Surgery details are entered by hand; the OT-record prefill went with Scheduled OT.
+  const defaultSurgery = "";
   const defaultEye = "";
-  const defaultAnesthesia = otRecord?.anesthesiaTypeRecorded ?? "";
-  const defaultIol = otRecord?.iolModel && otRecord?.iolPower ? `${otRecord.iolModel} ${otRecord.iolPower}` : "";
+  const defaultAnesthesia = "";
+  const defaultIol = "";
   const defaultDiagnosis = diagnoses.map(d => (d.laterality ? `${d.laterality} ` : "") + d.description).join("; ");
-  const defaultComplications = otRecord?.complications ?? "";
+  const defaultComplications = "";
   const defaultMeds = medications.length
     ? JSON.stringify(medications.map(m => ({ drugName: m.drugName, dosage: m.dosage, frequency: m.frequency, duration: m.duration, instructions: m.instructions })))
     : "";

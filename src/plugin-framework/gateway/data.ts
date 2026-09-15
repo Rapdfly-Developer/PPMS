@@ -404,8 +404,8 @@ export async function getAppointments(
 // ── Timeline ──────────────────────────────────────────────────────────────
 
 /**
- * Chronological clinical timeline for a patient: visits, admissions and
- * scheduled surgeries merged and sorted newest first.
+ * Chronological clinical timeline for a patient: visits and admissions merged
+ * and sorted newest first. SURGERY events were dropped with Scheduled OT.
  */
 export async function getPatientTimeline(
   ctx: GatewayContext,
@@ -418,39 +418,22 @@ export async function getPatientTimeline(
   const hospitalIds = await linkedHospitalIds(ctx);
   const take = Math.min(Math.max(opts.limit ?? 15, 1), 40);
 
-  const [visits, surgeries] = await Promise.all([
-    prisma.visit.findMany({
-      where: {
-        patientId,
-        doctorId: ctx.doctorId,
-        hospitalId: { in: hospitalIds },
-      },
-      orderBy: { date: "desc" },
-      take,
-      select: {
-        date: true,
-        visitType: true,
-        status: true,
-        diagnoses: { select: { description: true } },
-        admission: { select: { reason: true, ward: true, discharged: true } },
-      },
-    }),
-    prisma.surgerySchedule.findMany({
-      where: {
-        patientId,
-        operatingSurgeonId: ctx.doctorId,
-        hospitalId: { in: hospitalIds },
-      },
-      orderBy: { plannedDateTime: "desc" },
-      take,
-      select: {
-        plannedDateTime: true,
-        surgeryName: true,
-        status: true,
-        surgeryCategory: true,
-      },
-    }),
-  ]);
+  const visits = await prisma.visit.findMany({
+    where: {
+      patientId,
+      doctorId: ctx.doctorId,
+      hospitalId: { in: hospitalIds },
+    },
+    orderBy: { date: "desc" },
+    take,
+    select: {
+      date: true,
+      visitType: true,
+      status: true,
+      diagnoses: { select: { description: true } },
+      admission: { select: { reason: true, ward: true, discharged: true } },
+    },
+  });
 
   const events: TimelineEventDTO[] = [];
 
@@ -472,15 +455,6 @@ export async function getPatientTimeline(
           : v.admission.reason,
       });
     }
-  }
-
-  for (const s of surgeries) {
-    events.push({
-      date: s.plannedDateTime.toISOString(),
-      kind: "SURGERY",
-      label: s.surgeryName,
-      detail: `${s.surgeryCategory} · ${s.status}`,
-    });
   }
 
   return events
