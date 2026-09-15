@@ -120,9 +120,9 @@ function KpiCard({ icon, label, value, sub, color, isActive, onSelect }: {
     <>
       <div className={`${c.icon} rounded-xl p-1.5 sm:p-2.5 flex-shrink-0`}>{icon}</div>
       <div className="min-w-0 flex-1">
-        <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wide text-[var(--color-ink-400)] truncate">{label}</p>
+        <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wide text-[var(--color-ink-400)] leading-tight">{label}</p>
         <p className={`text-xl sm:text-[26px] font-bold leading-none mt-0.5 sm:mt-1 ${c.val}`}>{value}</p>
-        {sub && <p className="text-[10px] sm:text-[11px] text-[var(--color-ink-400)] mt-0.5 sm:mt-1 truncate">{sub}</p>}
+        {sub && <p className="text-[10px] sm:text-[11px] text-[var(--color-ink-400)] mt-0.5 sm:mt-1 leading-tight">{sub}</p>}
       </div>
     </>
   );

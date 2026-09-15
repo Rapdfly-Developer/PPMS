@@ -574,7 +574,7 @@ export function AppointmentsClient({
                       <span className={`text-[11px] sm:text-xs font-semibold ${isActive ? lbl : "text-[var(--color-ink-400)]"}`}>{cl}</span>
                     </div>
                     <p className={`text-xl sm:text-2xl font-bold leading-none mt-0.5 sm:mt-1 ${isActive ? cnt : "text-[var(--color-ink-600)]"}`}>{count}</p>
-                    <p className={`text-[10px] sm:text-[11px] truncate ${isActive ? slbl : "text-[var(--color-ink-400)]"}`}>{csub}</p>
+                    <p className={`text-[10px] sm:text-[11px] leading-tight ${isActive ? slbl : "text-[var(--color-ink-400)]"}`}>{csub}</p>
                   </button>
                 );
               })}
