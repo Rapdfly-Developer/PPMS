@@ -558,7 +558,7 @@ function TemplateTab({ weekly, hospitals, onGenerate }: {
                             <p className="text-[10px] text-[var(--color-ink-400)] tabular-nums">{fullLbl}</p>
 
                             {/* Time range */}
-                            <p className="flex items-center gap-1 text-[11px] font-bold tabular-nums" style={{ color: c.text }}>
+                            <p className="flex items-center gap-1 text-[11px] font-bold tabular-nums whitespace-nowrap" style={{ color: c.text }}>
                               <Clock size={10} strokeWidth={2.5} className="shrink-0" />
                               {fmt12(slot.startTime)} – {fmt12(slot.endTime)}
                             </p>
