@@ -772,6 +772,7 @@ export function PatientsClient({
                     <option value="50">50 / page</option>
                   </select>
                 </div>
+                <div className="overflow-x-auto">
                 <div className="flex items-center gap-1">
                   {page > 1 ? (
                     <Link href={pageUrl(page - 1)} className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-[var(--color-border)] bg-white text-[var(--color-ink-600)] hover:bg-[var(--color-ink-50)] transition-colors">
@@ -805,6 +806,7 @@ export function PatientsClient({
                     </span>
                   )}
                 </div>
+                </div>{/* /overflow-x-auto pagination */}
                 <p className="text-sm text-[var(--color-ink-500)]">
                   Showing <span className="font-semibold text-[var(--color-primary-700)]">{from}–{to}</span> of {total} patients
                   {(q || categoryFilter || sexFilter || hospitalFilter || opStatusFilter) && (

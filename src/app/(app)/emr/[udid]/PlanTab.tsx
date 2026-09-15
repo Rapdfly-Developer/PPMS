@@ -769,8 +769,9 @@ function PresetSelectDialog({
                 <div className="flex flex-col gap-1.5">
                   {formMeds.map((med, i) => (
                     <div key={i} className="flex flex-col gap-1">
-                      {/* Main drug row */}
-                      <div className="grid gap-1 items-center" style={{ gridTemplateColumns: "1fr 70px 130px 70px 20px" }}>
+                      {/* Main drug row — scrolls horizontally on narrow screens */}
+                      <div className="overflow-x-auto">
+                      <div className="grid gap-1 items-center min-w-[380px]" style={{ gridTemplateColumns: "1fr 70px 130px 70px 20px" }}>
                         <DrugNameInput
                           value={med.drugName}
                           onChange={(name, defaultDose) => {
@@ -810,6 +811,7 @@ function PresetSelectDialog({
                           <X size={12} />
                         </button>
                       </div>
+                      </div>{/* /overflow-x-auto drug row */}
 
                       {/* Tapering toggle */}
                       <div className="pl-1">
@@ -834,7 +836,8 @@ function PresetSelectDialog({
                           <p className="text-[9px] font-bold uppercase tracking-widest text-[var(--color-primary-600)] mb-1">
                             ↓ Taper{med.taperLevels.length > 1 ? ` ${li + 1}` : ""}
                           </p>
-                          <div className="grid gap-1 items-center" style={{ gridTemplateColumns: "130px 50px 80px auto" }}>
+                          <div className="overflow-x-auto">
+                          <div className="grid gap-1 items-center min-w-[300px]" style={{ gridTemplateColumns: "130px 50px 80px auto" }}>
                             <select
                               value={level.frequency}
                               onChange={(e) => {
@@ -887,6 +890,7 @@ function PresetSelectDialog({
                               </button>
                             )}
                           </div>
+                          </div>{/* /overflow-x-auto taper row */}
                         </div>
                       ))}
                     </div>

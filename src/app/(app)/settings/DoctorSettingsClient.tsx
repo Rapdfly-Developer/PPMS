@@ -2431,8 +2431,8 @@ function ProfileSection({ doctor }: { doctor: DoctorProfile | null }) {
         <Card className="p-5">
           <p className="text-sm font-semibold text-[var(--color-ink-900)] mb-1">Digital Signature</p>
           <p className="text-xs text-[var(--color-ink-400)] mb-4">Used on printed prescriptions and EMR reports. PNG with transparent background recommended.</p>
-          <div className="flex items-start gap-4">
-            <div className="w-48 h-20 rounded-xl border-2 border-dashed border-[var(--color-border)] flex items-center justify-center bg-[var(--color-surface-sunken)] overflow-hidden shrink-0">
+          <div className="flex flex-col sm:flex-row items-start gap-4">
+            <div className="w-full sm:w-48 h-20 rounded-xl border-2 border-dashed border-[var(--color-border)] flex items-center justify-center bg-[var(--color-surface-sunken)] overflow-hidden sm:shrink-0">
               {signatureUrl ? (
                 <img src={signatureUrl} alt="Signature" className="max-h-full max-w-full object-contain p-1" />
               ) : (

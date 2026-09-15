@@ -322,7 +322,7 @@ export default async function AnalyticsPage() {
         <h2 className="text-base font-semibold text-[var(--color-ink-900)] mb-1">Monthly Summary</h2>
         <p className="text-xs text-[var(--color-ink-400)] mb-5">{format(monthStart, "MMMM yyyy")} · key metrics at a glance</p>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-sm min-w-[360px]">
             <thead>
               <tr className="border-b border-[var(--color-border)]">
                 {["Metric", "This Month", "Last Month", "Change"].map((h) => (
