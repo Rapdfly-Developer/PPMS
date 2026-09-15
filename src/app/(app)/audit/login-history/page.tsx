@@ -157,14 +157,14 @@ export default async function LoginHistoryPage({
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)] border-b border-[var(--color-border)]">
-                  <th className="px-5 py-3">User</th>
-                  <th className="px-3 py-3">Role</th>
-                  <th className="px-3 py-3">Hospital</th>
-                  <th className="px-3 py-3">Login Time</th>
-                  <th className="px-3 py-3">Logout</th>
-                  <th className="px-3 py-3">IP Address</th>
-                  <th className="px-3 py-3">Device</th>
-                  <th className="px-5 py-3">Status</th>
+                  <th className="px-5 py-3 whitespace-nowrap">User</th>
+                  <th className="px-3 py-3 whitespace-nowrap hidden sm:table-cell">Role</th>
+                  <th className="px-3 py-3 whitespace-nowrap hidden md:table-cell">Hospital</th>
+                  <th className="px-3 py-3 whitespace-nowrap">Login Time</th>
+                  <th className="px-3 py-3 whitespace-nowrap hidden sm:table-cell">Logout</th>
+                  <th className="px-3 py-3 whitespace-nowrap hidden md:table-cell">IP Address</th>
+                  <th className="px-3 py-3 whitespace-nowrap hidden md:table-cell">Device</th>
+                  <th className="px-5 py-3 whitespace-nowrap">Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--color-border)]">
@@ -185,26 +185,26 @@ export default async function LoginHistoryPage({
                       <td className="px-5 py-3">
                         <p className="font-medium text-[var(--color-ink-800)]">{row.userName}</p>
                       </td>
-                      <td className="px-3 py-3 text-xs text-[var(--color-ink-500)]">
+                      <td className="px-3 py-3 text-xs text-[var(--color-ink-500)] hidden sm:table-cell">
                         {ROLE_LABEL[row.role] ?? row.role}
                       </td>
-                      <td className="px-3 py-3 text-xs text-[var(--color-ink-500)] max-w-[120px] truncate">
+                      <td className="px-3 py-3 text-xs text-[var(--color-ink-500)] max-w-[120px] truncate hidden md:table-cell">
                         {row.hospitalName ?? "—"}
                       </td>
                       <td className="px-3 py-3 text-xs font-mono text-[var(--color-ink-600)] whitespace-nowrap">
                         {format(new Date(row.loginAt), "HH:mm:ss")}
                       </td>
-                      <td className="px-3 py-3 text-xs text-[var(--color-ink-400)]">
+                      <td className="px-3 py-3 text-xs text-[var(--color-ink-400)] hidden sm:table-cell">
                         {row.logoutAt
                           ? <span>{format(new Date(row.logoutAt), "HH:mm:ss")}{duration !== null && <span className="ml-1 text-[10px]">({duration}m)</span>}</span>
                           : row.isActive
                             ? <span className="text-emerald-600 font-medium">Active</span>
                             : "—"}
                       </td>
-                      <td className="px-3 py-3 text-xs font-mono text-[var(--color-ink-500)]">
+                      <td className="px-3 py-3 text-xs font-mono text-[var(--color-ink-500)] hidden md:table-cell">
                         {row.ipAddress ?? "—"}
                       </td>
-                      <td className="px-3 py-3 text-xs text-[var(--color-ink-500)]">
+                      <td className="px-3 py-3 text-xs text-[var(--color-ink-500)] hidden md:table-cell">
                         <span className="flex items-center gap-1"><Monitor size={11} /> {browser} · {device}</span>
                       </td>
                       <td className="px-5 py-3">

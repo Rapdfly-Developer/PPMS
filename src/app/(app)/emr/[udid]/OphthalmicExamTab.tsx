@@ -682,38 +682,36 @@ function ColourContrastTab({ visit, udid, editable, priorVisits = [] }: { visit:
           ))}
         </div>
         {priorCv.length > 0 && (
-          <div className="mt-5 rounded-xl border border-[#B2DEDA] bg-[#EEF8F7] overflow-hidden w-fit">
+          <div className="mt-5 rounded-xl border border-[#B2DEDA] bg-[#EEF8F7] overflow-x-auto">
             <div className="px-3 pt-2.5 pb-2 border-b border-[#B2DEDA]">
               <p className="text-[10px] font-bold text-[#0F766E] uppercase tracking-widest">Previous</p>
             </div>
-            <div className="overflow-x-auto">
-              <table className="text-xs">
-                <thead>
-                  <tr className="border-b border-[#B2DEDA]">
-                    <th className="py-1.5 px-3 text-left font-semibold text-[var(--color-ink-400)] uppercase tracking-wide whitespace-nowrap">Method</th>
-                    <th className="py-1.5 px-3 text-left font-semibold text-[var(--color-ink-400)] uppercase tracking-wide whitespace-nowrap">Date</th>
-                    <th className="py-1.5 px-3 text-left font-semibold text-[var(--color-ink-400)] uppercase tracking-wide whitespace-nowrap">Time</th>
-                    <th className="py-1.5 px-3 text-center font-semibold text-[#0F766E] uppercase tracking-wide w-24">RE</th>
-                    <th className="py-1.5 px-3 text-center font-semibold text-[#0F766E] uppercase tracking-wide w-24">LE</th>
+            <table className="text-xs">
+              <thead>
+                <tr className="border-b border-[#B2DEDA]">
+                  <th className="py-1.5 px-3 text-left font-semibold text-[var(--color-ink-400)] uppercase tracking-wide whitespace-nowrap">Method</th>
+                  <th className="py-1.5 px-3 text-left font-semibold text-[var(--color-ink-400)] uppercase tracking-wide whitespace-nowrap">Date</th>
+                  <th className="py-1.5 px-3 text-left font-semibold text-[var(--color-ink-400)] uppercase tracking-wide whitespace-nowrap">Time</th>
+                  <th className="py-1.5 px-3 text-center font-semibold text-[#0F766E] uppercase tracking-wide w-24">RE</th>
+                  <th className="py-1.5 px-3 text-center font-semibold text-[#0F766E] uppercase tracking-wide w-24">LE</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#D5EFED]">
+                {priorCv.slice(0, 5).map((p, i) => (
+                  <tr key={i} className="hover:bg-[#DCF3F1]/60 transition-colors">
+                    <td className="py-2 px-3 text-[var(--color-ink-500)] whitespace-nowrap">{p.re.cvMethod || cvMethod}</td>
+                    <td className="py-2 px-3 text-[var(--color-ink-600)] whitespace-nowrap">{format(new Date(p.date), "d MMM yyyy")}</td>
+                    <td className="py-2 px-3 text-[var(--color-ink-400)] whitespace-nowrap">{p.updatedAt ? format(new Date(p.updatedAt), "h:mm a") : "—"}</td>
+                    <td className={`py-2 px-3 text-center font-medium ${!p.re.result ? "text-[var(--color-ink-400)]" : p.re.result === "Normal" ? "text-emerald-700" : p.re.result === "Defective" ? "text-red-600" : "text-[var(--color-ink-500)]"}`}>
+                      {p.re.result || "—"}
+                    </td>
+                    <td className={`py-2 px-3 text-center font-medium ${!p.le.result ? "text-[var(--color-ink-400)]" : p.le.result === "Normal" ? "text-emerald-700" : p.le.result === "Defective" ? "text-red-600" : "text-[var(--color-ink-500)]"}`}>
+                      {p.le.result || "—"}
+                    </td>
                   </tr>
-                </thead>
-                <tbody className="divide-y divide-[#D5EFED]">
-                  {priorCv.slice(0, 5).map((p, i) => (
-                    <tr key={i} className="hover:bg-[#DCF3F1]/60 transition-colors">
-                      <td className="py-2 px-3 text-[var(--color-ink-500)] whitespace-nowrap">{p.re.cvMethod || cvMethod}</td>
-                      <td className="py-2 px-3 text-[var(--color-ink-600)] whitespace-nowrap">{format(new Date(p.date), "d MMM yyyy")}</td>
-                      <td className="py-2 px-3 text-[var(--color-ink-400)] whitespace-nowrap">{p.updatedAt ? format(new Date(p.updatedAt), "h:mm a") : "—"}</td>
-                      <td className={`py-2 px-3 text-center font-medium ${!p.re.result ? "text-[var(--color-ink-400)]" : p.re.result === "Normal" ? "text-emerald-700" : p.re.result === "Defective" ? "text-red-600" : "text-[var(--color-ink-500)]"}`}>
-                        {p.re.result || "—"}
-                      </td>
-                      <td className={`py-2 px-3 text-center font-medium ${!p.le.result ? "text-[var(--color-ink-400)]" : p.le.result === "Normal" ? "text-emerald-700" : p.le.result === "Defective" ? "text-red-600" : "text-[var(--color-ink-500)]"}`}>
-                        {p.le.result || "—"}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </Card>
@@ -747,38 +745,36 @@ function ColourContrastTab({ visit, udid, editable, priorVisits = [] }: { visit:
           ))}
         </div>
         {priorCv.length > 0 && (
-          <div className="mt-5 rounded-xl border border-[#B2DEDA] bg-[#EEF8F7] overflow-hidden w-fit">
+          <div className="mt-5 rounded-xl border border-[#B2DEDA] bg-[#EEF8F7] overflow-x-auto">
             <div className="px-3 pt-2.5 pb-2 border-b border-[#B2DEDA]">
               <p className="text-[10px] font-bold text-[#0F766E] uppercase tracking-widest">Previous</p>
             </div>
-            <div className="overflow-x-auto">
-              <table className="text-xs">
-                <thead>
-                  <tr className="border-b border-[#B2DEDA]">
-                    <th className="py-1.5 px-3 text-left font-semibold text-[var(--color-ink-400)] uppercase tracking-wide whitespace-nowrap">Method</th>
-                    <th className="py-1.5 px-3 text-left font-semibold text-[var(--color-ink-400)] uppercase tracking-wide whitespace-nowrap">Date</th>
-                    <th className="py-1.5 px-3 text-left font-semibold text-[var(--color-ink-400)] uppercase tracking-wide whitespace-nowrap">Time</th>
-                    <th className="py-1.5 px-3 text-center font-semibold text-[#0F766E] uppercase tracking-wide w-24">RE</th>
-                    <th className="py-1.5 px-3 text-center font-semibold text-[#0F766E] uppercase tracking-wide w-24">LE</th>
+            <table className="text-xs">
+              <thead>
+                <tr className="border-b border-[#B2DEDA]">
+                  <th className="py-1.5 px-3 text-left font-semibold text-[var(--color-ink-400)] uppercase tracking-wide whitespace-nowrap">Method</th>
+                  <th className="py-1.5 px-3 text-left font-semibold text-[var(--color-ink-400)] uppercase tracking-wide whitespace-nowrap">Date</th>
+                  <th className="py-1.5 px-3 text-left font-semibold text-[var(--color-ink-400)] uppercase tracking-wide whitespace-nowrap">Time</th>
+                  <th className="py-1.5 px-3 text-center font-semibold text-[#0F766E] uppercase tracking-wide w-24">RE</th>
+                  <th className="py-1.5 px-3 text-center font-semibold text-[#0F766E] uppercase tracking-wide w-24">LE</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#D5EFED]">
+                {priorCv.slice(0, 5).map((p, i) => (
+                  <tr key={i} className="hover:bg-[#DCF3F1]/60 transition-colors">
+                    <td className="py-2 px-3 text-[var(--color-ink-500)] whitespace-nowrap">{p.re.csMethod || csMethod}</td>
+                    <td className="py-2 px-3 text-[var(--color-ink-600)] whitespace-nowrap">{format(new Date(p.date), "d MMM yyyy")}</td>
+                    <td className="py-2 px-3 text-[var(--color-ink-400)] whitespace-nowrap">{p.updatedAt ? format(new Date(p.updatedAt), "h:mm a") : "—"}</td>
+                    <td className={`py-2 px-3 text-center font-medium ${!p.re.csResult ? "text-[var(--color-ink-400)]" : p.re.csResult === "Normal" ? "text-emerald-700" : p.re.csResult === "Defective" ? "text-red-600" : "text-[var(--color-ink-500)]"}`}>
+                      {p.re.csResult || "—"}
+                    </td>
+                    <td className={`py-2 px-3 text-center font-medium ${!p.le.csResult ? "text-[var(--color-ink-400)]" : p.le.csResult === "Normal" ? "text-emerald-700" : p.le.csResult === "Defective" ? "text-red-600" : "text-[var(--color-ink-500)]"}`}>
+                      {p.le.csResult || "—"}
+                    </td>
                   </tr>
-                </thead>
-                <tbody className="divide-y divide-[#D5EFED]">
-                  {priorCv.slice(0, 5).map((p, i) => (
-                    <tr key={i} className="hover:bg-[#DCF3F1]/60 transition-colors">
-                      <td className="py-2 px-3 text-[var(--color-ink-500)] whitespace-nowrap">{p.re.csMethod || csMethod}</td>
-                      <td className="py-2 px-3 text-[var(--color-ink-600)] whitespace-nowrap">{format(new Date(p.date), "d MMM yyyy")}</td>
-                      <td className="py-2 px-3 text-[var(--color-ink-400)] whitespace-nowrap">{p.updatedAt ? format(new Date(p.updatedAt), "h:mm a") : "—"}</td>
-                      <td className={`py-2 px-3 text-center font-medium ${!p.re.csResult ? "text-[var(--color-ink-400)]" : p.re.csResult === "Normal" ? "text-emerald-700" : p.re.csResult === "Defective" ? "text-red-600" : "text-[var(--color-ink-500)]"}`}>
-                        {p.re.csResult || "—"}
-                      </td>
-                      <td className={`py-2 px-3 text-center font-medium ${!p.le.csResult ? "text-[var(--color-ink-400)]" : p.le.csResult === "Normal" ? "text-emerald-700" : p.le.csResult === "Defective" ? "text-red-600" : "text-[var(--color-ink-500)]"}`}>
-                        {p.le.csResult || "—"}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </Card>
@@ -834,8 +830,8 @@ function IOPCard({ visit, udid, editable, priorVisits }: { visit: any; udid: str
       )}
 
       {/* Combined IOP Table */}
-      <div className="rounded-xl border border-[#B2DEDA] bg-[#EEF8F7] overflow-hidden w-fit">
-        <div className="overflow-x-auto">
+      <div className="rounded-xl border border-[#B2DEDA] bg-[#EEF8F7] overflow-x-auto">
+        <div>
           <table className="text-xs">
             <thead>
               <tr className="border-b border-[#B2DEDA]">
