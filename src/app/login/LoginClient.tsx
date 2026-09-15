@@ -1236,7 +1236,7 @@ export default function LoginPage() {
 
           {/* flex-1+min-h-full so the card is centred when viewport is tall,
               but the panel scrolls when the content overflows on short screens. */}
-          <div className="w-full flex-1 flex flex-col justify-center items-center py-6 px-4 lg:py-8 lg:px-6" style={{ minHeight: "min-content" }}>
+          <div className="w-full flex-1 flex flex-col justify-center items-center py-6 px-4 lg:py-8 lg:px-6" style={{ minHeight: "min-content", paddingTop: "max(1.5rem, calc(env(safe-area-inset-top, 0px) + 0.75rem))" }}>
 
           {/* Mobile hero — centered logo + concise headline (below lg only) */}
           <div className="lg:hidden lp-a0 shrink-0 flex flex-col items-center text-center mb-6">
