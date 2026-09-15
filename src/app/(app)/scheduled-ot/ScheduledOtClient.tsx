@@ -763,7 +763,7 @@ export function ScheduledOtClient({
   const totalToday = [...waiting, ...confirmed].filter((r) => isToday(new Date(r.plannedDateTime))).length;
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <div className="max-w-5xl mx-auto py-4 space-y-8">
 
       {/* Header */}
       <div className="flex items-center justify-between gap-4 flex-wrap">

@@ -48,7 +48,7 @@ function StageTracker({ status }: { status: string | undefined }) {
                 {done ? "✓" : i + 1}
               </div>
               <span
-                className={`mt-0.5 text-[9px] whitespace-nowrap font-medium transition-colors ${
+                className={`mt-0.5 text-[9px] font-medium transition-colors text-center leading-tight max-w-[56px] break-words ${
                   done    ? "text-teal-500"
                   : current ? "text-teal-600"
                   : "text-[var(--color-ink-300)]"

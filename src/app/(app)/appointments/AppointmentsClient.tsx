@@ -246,7 +246,8 @@ export function AppointmentsClient({
   // Pagination block (reused top + bottom)
   function PaginationRow() {
     return totalPages > 1 ? (
-      <div className="flex items-center gap-1">
+      <div className="overflow-x-auto">
+      <div className="flex items-center gap-1 min-w-max">
         <button
           disabled={page <= 1}
           onClick={() => navigate({ page: page - 1 })}
@@ -279,6 +280,7 @@ export function AppointmentsClient({
         >
           Next
         </button>
+      </div>
       </div>
     ) : null;
   }
