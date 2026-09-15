@@ -163,7 +163,7 @@ export function IpdClient({
                 <span className="flex items-center gap-1.5"><span className="inline-block size-2.5 rounded-full bg-emerald-500"/> Available</span>
                 <span className="flex items-center gap-1.5"><span className="inline-block size-2.5 rounded-full bg-yellow-400"/> Reserved</span>
               </div>
-              <p className="text-[var(--color-ink-400)]">Click occupied bed to view patient</p>
+              <p className="text-[var(--color-ink-400)] hidden sm:block">Click occupied bed to view patient</p>
             </div>
 
             {/* Ward sections */}
@@ -321,7 +321,7 @@ function AdmissionsList({ admissions }: { admissions: Admission[] }) {
         </div>
       ) : (
         <div className="overflow-x-auto rounded-xl border border-[var(--color-border)] mb-6">
-          <table className="w-full text-sm">
+          <table className="w-full text-sm min-w-[480px]">
             <thead>
               <tr className="border-b border-[var(--color-border)] bg-[var(--color-surface-sunken)]">
                 {["Patient", "Ward", "Reason / Surgery", "Admitted", "Actions"].map((h) => (
@@ -342,7 +342,7 @@ function AdmissionsList({ admissions }: { admissions: Admission[] }) {
             Recently Discharged <span className="font-normal">({discharged.length})</span>
           </h3>
           <div className="overflow-x-auto rounded-xl border border-[var(--color-border)] opacity-60">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm min-w-[480px]">
               <thead>
                 <tr className="border-b border-[var(--color-border)] bg-[var(--color-surface-sunken)]">
                   {["Patient", "Ward", "Reason / Surgery", "Admitted", "Actions"].map((h) => (

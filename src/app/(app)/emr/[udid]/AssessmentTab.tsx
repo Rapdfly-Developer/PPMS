@@ -746,7 +746,7 @@ export function AssessmentTab({
                               type="button"
                               onClick={(e) => { e.stopPropagation(); handleStatusChange(d, nextStatus); }}
                               disabled={pending}
-                              className="shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-lg border border-[var(--color-border)] bg-white text-[var(--color-ink-600)] hover:border-[var(--color-primary-300)] hover:text-[var(--color-primary-700)] transition-colors disabled:opacity-40"
+                              className="shrink-0 text-[10px] font-semibold px-2.5 py-1.5 rounded-lg border border-[var(--color-border)] bg-white text-[var(--color-ink-600)] hover:border-[var(--color-primary-300)] hover:text-[var(--color-primary-700)] transition-colors disabled:opacity-40"
                             >
                               {nextLabel}
                             </button>
@@ -916,7 +916,7 @@ export function AssessmentTab({
                               type="button"
                               onClick={(e) => { e.stopPropagation(); handleStatusChange(d, nextStatus); }}
                               disabled={pending}
-                              className="shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-lg border border-[var(--color-border)] bg-white text-[var(--color-ink-600)] hover:border-[var(--color-primary-300)] hover:text-[var(--color-primary-700)] transition-colors disabled:opacity-40"
+                              className="shrink-0 text-[10px] font-semibold px-2.5 py-1.5 rounded-lg border border-[var(--color-border)] bg-white text-[var(--color-ink-600)] hover:border-[var(--color-primary-300)] hover:text-[var(--color-primary-700)] transition-colors disabled:opacity-40"
                             >
                               {nextLabel}
                             </button>
