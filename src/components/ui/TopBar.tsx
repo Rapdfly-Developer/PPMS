@@ -201,7 +201,10 @@ export function TopBar({ name, role }: { name: string; role: string }) {
   const initials = getInitials(name);
 
   return (
-    <header className="h-14 shrink-0 flex items-center gap-2 px-4 lg:px-6 bg-white border-b border-[var(--color-border)] z-30 relative">
+    <header
+      className="shrink-0 flex items-center gap-2 px-4 lg:px-6 bg-white border-b border-[var(--color-border)] z-30 relative"
+      style={{ paddingTop: "env(safe-area-inset-top, 0px)", minHeight: "calc(3.5rem + env(safe-area-inset-top, 0px))" }}
+    >
 
       {/* Hamburger — mobile + tablet (≤1024px) */}
       <button
