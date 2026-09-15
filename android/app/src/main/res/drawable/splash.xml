@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Dark teal background matching PPMS theme -->
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#041A18" />
+        </shape>
+    </item>
+    <!-- Subtle radial gradient overlay -->
+    <item>
+        <shape android:shape="oval">
+            <gradient
+                android:type="radial"
+                android:gradientRadius="600"
+                android:centerX="0.2"
+                android:centerY="0.15"
+                android:startColor="#1A0F8F6F"
+                android:endColor="#00041A18" />
+        </shape>
+    </item>
+</layer-list>

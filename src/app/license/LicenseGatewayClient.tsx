@@ -274,17 +274,37 @@ function LeftPanel() {
           A comprehensive solution to manage patients, doctors, appointments, billing, and much more — all in one place.
         </p>
 
-        <div className="lg-a3 grid grid-cols-2 gap-2.5 mb-8" style={{ maxWidth: "430px" }}>
+        <div className="lg-a3 grid grid-cols-2 gap-2 mb-7" style={{ maxWidth: "430px" }}>
           {FEATURES.map(({ icon: Icon, label }) => (
-            <div key={label} className="flex items-center gap-2.5 rounded-xl px-3 py-2.5" style={{
-              background: "rgba(15,143,111,.06)", border: "1px solid rgba(15,143,111,.14)",
-            }}>
-              <div className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0" style={{
-                background: "rgba(15,143,111,.16)", border: "1px solid rgba(15,143,111,.22)",
+            <div key={label} className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 transition-all" style={{
+              background: "rgba(15,143,111,.05)", border: "1px solid rgba(15,143,111,.12)",
+              boxShadow: "inset 0 1px 0 rgba(255,255,255,.03)",
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = "rgba(15,143,111,.1)"; e.currentTarget.style.borderColor = "rgba(15,143,111,.28)"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "rgba(15,143,111,.05)"; e.currentTarget.style.borderColor = "rgba(15,143,111,.12)"; }}>
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{
+                background: "linear-gradient(135deg,rgba(15,143,111,.2),rgba(22,163,74,.12))",
+                border: "1px solid rgba(15,143,111,.25)",
+                boxShadow: "0 0 12px rgba(15,143,111,.12)",
               }}>
-                <Icon size={12} style={{ color: T.accent }} />
+                <Icon size={13} style={{ color: T.accent }} />
               </div>
-              <span style={{ fontSize: "11.5px", fontWeight: 500, color: T.muted, lineHeight: 1.3 }}>{label}</span>
+              <span style={{ fontSize: "11.5px", fontWeight: 600, color: "rgba(255,255,255,.72)", lineHeight: 1.3 }}>{label}</span>
+            </div>
+          ))}
+        </div>
+
+        <div className="lg-a3 grid grid-cols-3 gap-2 mb-8" style={{ maxWidth: "430px" }}>
+          {[
+            { val: "5,000+", label: "Doctors" },
+            { val: "99.98%", label: "Uptime" },
+            { val: "30-day", label: "Free Trial" },
+          ].map(({ val, label }) => (
+            <div key={label} className="text-center rounded-xl py-3 px-2" style={{
+              background: "rgba(15,143,111,.06)", border: "1px solid rgba(15,143,111,.12)",
+            }}>
+              <div style={{ fontSize: "15px", fontWeight: 800, color: T.accent, letterSpacing: "-0.02em" }}>{val}</div>
+              <div style={{ fontSize: "10px", fontWeight: 500, color: T.faint, marginTop: "2px" }}>{label}</div>
             </div>
           ))}
         </div>
@@ -315,12 +335,15 @@ function GlassCard({ children }: { children: React.ReactNode }) {
   return (
     <div className="relative w-full rounded-3xl overflow-hidden lg-card" style={{
       background: T.surface,
-      backdropFilter: "blur(25px)", WebkitBackdropFilter: "blur(25px)",
+      backdropFilter: "blur(28px)", WebkitBackdropFilter: "blur(28px)",
       border: `1px solid ${T.border2}`,
-      boxShadow: "0 40px 100px rgba(0,0,0,.72), 0 12px 32px rgba(0,0,0,.5), 0 0 60px rgba(15,143,111,.1)",
+      boxShadow: "0 40px 100px rgba(0,0,0,.75), 0 12px 32px rgba(0,0,0,.5), 0 0 80px rgba(15,143,111,.12), inset 0 0 40px rgba(15,143,111,.025)",
     }}>
-      <div style={{ height: "1px", background: "linear-gradient(90deg,transparent,#0F8F6F 40%,#22C55E 60%,transparent)" }} />
-      <div className="px-7 py-7 lg:px-8">{children}</div>
+      {/* Animated top gradient line */}
+      <div style={{ height: "2px", background: "linear-gradient(90deg,transparent 0%,#0F8F6F 30%,#22C55E 50%,#0F8F6F 70%,transparent 100%)", backgroundSize: "200% 100%", animation: "lg-sheen 4s ease-in-out infinite" }} />
+      {/* Inner corner glow */}
+      <div className="absolute top-0 right-0 w-32 h-32 pointer-events-none" style={{ background: "radial-gradient(circle at top right, rgba(15,143,111,.06), transparent 70%)" }} />
+      <div className="px-7 py-7 lg:px-8 relative">{children}</div>
     </div>
   );
 }
@@ -328,11 +351,16 @@ function GlassCard({ children }: { children: React.ReactNode }) {
 /* ── Card icon header ──────────────────────────────────────────────────────── */
 function CardIcon({ icon: Icon }: { icon: React.ElementType }) {
   return (
-    <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{
-      background: "linear-gradient(135deg,rgba(15,143,111,.18),rgba(22,163,74,.12))",
-      border: "1px solid rgba(15,143,111,.28)", boxShadow: "0 0 30px rgba(15,143,111,.18)",
-    }}>
-      <Icon size={24} style={{ color: T.accent }} />
+    <div className="flex items-center justify-center mx-auto mb-4" style={{ width: "fit-content", position: "relative" }}>
+      {/* Outer glow ring */}
+      <div className="absolute inset-0 rounded-2xl" style={{ boxShadow: "0 0 0 6px rgba(15,143,111,.08), 0 0 40px rgba(15,143,111,.22)", borderRadius: "18px" }} />
+      <div className="w-[58px] h-[58px] rounded-2xl flex items-center justify-center relative" style={{
+        background: "linear-gradient(135deg,rgba(15,143,111,.22),rgba(22,163,74,.14))",
+        border: "1px solid rgba(15,143,111,.35)",
+        boxShadow: "0 0 30px rgba(15,143,111,.22), inset 0 1px 0 rgba(255,255,255,.1)",
+      }}>
+        <Icon size={26} style={{ color: T.accent }} />
+      </div>
     </div>
   );
 }
@@ -363,16 +391,17 @@ function InfoGrid({ rows }: {
 }) {
   const colors: Record<string, string> = { green: T.accent, amber: "#FBBF24", red: "#F87171" };
   return (
-    <div className="rounded-xl overflow-hidden" style={{ border: `1px solid ${T.border}`, background: "rgba(255,255,255,.03)" }}>
+    <div className="rounded-xl overflow-hidden" style={{ border: "1px solid rgba(255,255,255,.08)", background: "rgba(255,255,255,.025)" }}>
       {rows.map(({ label, value, mono, small, highlight }, i) => (
-        <div key={label} className="flex items-center justify-between px-4 py-2.5"
-          style={{ borderBottom: i < rows.length - 1 ? `1px solid ${T.border}` : "none" }}>
-          <span className="text-xs" style={{ color: T.faint }}>{label}</span>
-          <span className="text-xs max-w-[55%] truncate text-right" style={{
-            fontFamily: mono ? "monospace" : undefined,
-            fontSize: small ? "11px" : undefined,
-            fontWeight: highlight ? 600 : 500,
-            color: highlight ? colors[highlight] : T.muted,
+        <div key={label} className="flex items-center justify-between px-4 py-3 transition-colors hover:bg-white/[0.02]"
+          style={{ borderBottom: i < rows.length - 1 ? "1px solid rgba(255,255,255,.06)" : "none" }}>
+          <span className="text-xs tracking-wide" style={{ color: "rgba(255,255,255,.38)" }}>{label}</span>
+          <span className="text-xs max-w-[58%] truncate text-right" style={{
+            fontFamily: mono ? "'Courier New', monospace" : undefined,
+            fontSize: small ? "11px" : "12.5px",
+            fontWeight: highlight ? 700 : 600,
+            color: highlight ? colors[highlight] : "rgba(255,255,255,.82)",
+            letterSpacing: mono ? "0.04em" : undefined,
           }}>
             {value}
           </span>
@@ -385,16 +414,37 @@ function InfoGrid({ rows }: {
 /* ── Dark progress bar ──────────────────────────────────────────────────────── */
 function DayProgressBar({ remaining, total }: { remaining: number; total: number }) {
   const pct = Math.max(0, Math.min(100, (remaining / total) * 100));
-  const color = remaining <= 5 ? "#F59E0B" : remaining <= 10 ? "#0F8F6F" : "#22C55E";
+  const urgent = remaining <= 5;
+  const warning = remaining <= 10 && !urgent;
+  const color = urgent ? "#F59E0B" : warning ? "#0F8F6F" : "#22C55E";
+  const glowColor = urgent ? "rgba(245,158,11,.45)" : warning ? "rgba(15,143,111,.5)" : "rgba(34,197,94,.45)";
+  const used = total - remaining;
   return (
-    <div className="mt-4">
-      <div className="flex justify-between text-xs mb-1.5" style={{ color: T.faint }}>
-        <span>Trial progress</span>
-        <span>{remaining} / {total} days left</span>
+    <div className="mt-5">
+      <div className="flex justify-between items-center mb-2">
+        <span style={{ fontSize: "11px", fontWeight: 700, letterSpacing: "0.06em", color: "rgba(255,255,255,.35)", textTransform: "uppercase" }}>
+          Trial Period
+        </span>
+        <span style={{ fontSize: "12px", fontWeight: 700, color }}>
+          {remaining} <span style={{ fontWeight: 400, color: "rgba(255,255,255,.38)" }}>/ {total} days left</span>
+        </span>
       </div>
-      <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,.08)" }}>
-        <div className="h-full rounded-full transition-all duration-700"
-          style={{ width: `${pct}%`, background: color, boxShadow: `0 0 10px ${color}88` }} />
+      <div className="relative rounded-full overflow-hidden" style={{ height: "6px", background: "rgba(255,255,255,.07)" }}>
+        <div className="absolute inset-y-0 left-0 rounded-full"
+          style={{
+            width: `${(used / total) * 100}%`,
+            background: `linear-gradient(90deg, ${color}88, ${color})`,
+            boxShadow: `0 0 12px ${glowColor}, 0 0 4px ${glowColor}`,
+            transition: "width .8s cubic-bezier(.22,1,.36,1)",
+          }} />
+        <div className="absolute inset-y-0 rounded-full" style={{
+          left: `${(used / total) * 100}%`, right: 0,
+          background: "rgba(255,255,255,.05)",
+        }} />
+      </div>
+      <div className="flex justify-between mt-1.5" style={{ fontSize: "10px", color: "rgba(255,255,255,.25)" }}>
+        <span>Day 1</span>
+        <span>Day {total}</span>
       </div>
     </div>
   );

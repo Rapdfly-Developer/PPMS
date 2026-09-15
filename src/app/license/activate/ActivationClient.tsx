@@ -13,7 +13,8 @@ import { activateLicenseKey, reactivateLicense, verifyLicense } from "../actions
 import type { ActivationPageData } from "../getLicenseData";
 
 const PPMS_VERSION = "v2.0.0";
-const TEAL = "#157A73";
+const TEAL = "#22C55E";
+const TEAL_DARK = "#0F8F6F";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function fmt(iso: string | null) {
@@ -66,16 +67,16 @@ const ALL_FEATURES = [
 
 // ── Status badge ──────────────────────────────────────────────────────────────
 function StatusBadge({ status }: { status: string }) {
-  const map: Record<string, { label: string; cls: string; Icon: React.ElementType }> = {
-    SUBSCRIBED:           { label: "Active",     cls: "bg-emerald-50 border-emerald-300 text-emerald-700", Icon: CheckCircle2 },
-    TRIAL_ACTIVE:         { label: "Trial",      cls: "bg-amber-50 border-amber-300 text-amber-700",       Icon: Clock },
-    TRIAL_EXPIRED:        { label: "Expired",    cls: "bg-red-50 border-red-300 text-red-700",             Icon: XCircle },
-    SUBSCRIPTION_EXPIRED: { label: "Expired",    cls: "bg-red-50 border-red-300 text-red-700",             Icon: XCircle },
-    NO_LICENSE:           { label: "No License", cls: "bg-slate-100 border-slate-300 text-slate-600",      Icon: Lock },
+  const map: Record<string, { label: string; style: React.CSSProperties; Icon: React.ElementType }> = {
+    SUBSCRIBED:           { label: "Active",     style: { background: "rgba(16,185,129,.12)", border: "1px solid rgba(16,185,129,.35)", color: "#34D399" }, Icon: CheckCircle2 },
+    TRIAL_ACTIVE:         { label: "Trial",      style: { background: "rgba(245,158,11,.10)", border: "1px solid rgba(245,158,11,.30)", color: "#FCD34D" }, Icon: Clock },
+    TRIAL_EXPIRED:        { label: "Expired",    style: { background: "rgba(239,68,68,.10)",  border: "1px solid rgba(239,68,68,.30)",  color: "#FCA5A5" }, Icon: XCircle },
+    SUBSCRIPTION_EXPIRED: { label: "Expired",    style: { background: "rgba(239,68,68,.10)",  border: "1px solid rgba(239,68,68,.30)",  color: "#FCA5A5" }, Icon: XCircle },
+    NO_LICENSE:           { label: "No License", style: { background: "rgba(255,255,255,.06)", border: "1px solid rgba(255,255,255,.14)", color: "rgba(255,255,255,.55)" }, Icon: Lock },
   };
-  const { label, cls, Icon } = map[status] ?? map.NO_LICENSE;
+  const { label, style, Icon } = map[status] ?? map.NO_LICENSE;
   return (
-    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg border text-xs font-bold ${cls}`}>
+    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold" style={style}>
       <Icon size={13} /> {label}
     </span>
   );
@@ -86,18 +87,23 @@ function Card({ title, icon: Icon, children, className = "" }: {
   title?: string; icon?: React.ElementType; children: React.ReactNode; className?: string;
 }) {
   return (
-    <div className={`bg-white rounded-2xl shadow-lg shadow-teal-900/5 border border-slate-100 p-6 animate-fade-in ${className}`}>
-      {title && (
-        <div className="flex items-center gap-2 mb-4">
-          {Icon && (
-            <div className="w-8 h-8 rounded-lg bg-[#e8f5f2] flex items-center justify-center">
-              <Icon size={15} style={{ color: TEAL }} />
-            </div>
-          )}
-          <h3 className="text-sm font-bold text-slate-800">{title}</h3>
-        </div>
-      )}
-      {children}
+    <div className={`rounded-2xl overflow-hidden animate-fade-in ${className}`}
+      style={{ background: "rgba(4,26,24,.82)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", border: "1px solid rgba(255,255,255,.10)", boxShadow: "0 20px 60px rgba(0,0,0,.55), 0 0 40px rgba(15,143,111,.06), inset 0 1px 0 rgba(255,255,255,.07)" }}>
+      {/* Top accent line */}
+      <div style={{ height: "1.5px", background: "linear-gradient(90deg,transparent,#0F8F6F 35%,#22C55E 55%,transparent)" }} />
+      <div className="p-6">
+        {title && (
+          <div className="flex items-center gap-3 mb-5">
+            {Icon && (
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: "linear-gradient(135deg,rgba(15,143,111,.22),rgba(22,163,74,.14))", border: "1px solid rgba(15,143,111,.32)", boxShadow: "0 0 20px rgba(15,143,111,.18)" }}>
+                <Icon size={16} style={{ color: TEAL }} />
+              </div>
+            )}
+            <h3 className="text-sm font-bold tracking-tight text-white">{title}</h3>
+          </div>
+        )}
+        {children}
+      </div>
     </div>
   );
 }
@@ -106,9 +112,9 @@ function Row({ label, value, mono, valueClass = "" }: {
   label: string; value: React.ReactNode; mono?: boolean; valueClass?: string;
 }) {
   return (
-    <div className="flex items-center justify-between py-2 border-b border-slate-50 last:border-0">
-      <span className="text-xs text-slate-500">{label}</span>
-      <span className={`text-xs ${mono ? "font-mono" : "font-semibold"} text-slate-800 text-right max-w-[55%] truncate ${valueClass}`}>
+    <div className="flex items-center justify-between py-2 last:border-0" style={{ borderBottom: "1px solid rgba(255,255,255,.06)" }}>
+      <span className="text-xs" style={{ color: "rgba(255,255,255,.45)" }}>{label}</span>
+      <span className={`text-xs ${mono ? "font-mono" : "font-semibold"} text-white text-right max-w-[55%] truncate ${valueClass}`}>
         {value}
       </span>
     </div>
@@ -204,46 +210,46 @@ export function ActivationClient({ initial }: { initial: ActivationPageData }) {
   };
 
   return (
-    <div className="min-h-screen" style={{ background: "linear-gradient(110deg, #f0fcfa 0%, #dcf5f1 60%, #c8eee9 100%)" }}>
+    <div className="min-h-screen relative" style={{ background: "radial-gradient(ellipse 80% 60% at 15% 5%,rgba(15,143,111,.22) 0%,transparent 60%), radial-gradient(ellipse 60% 50% at 85% 85%,rgba(22,163,74,.13) 0%,transparent 55%), linear-gradient(160deg,#051F1C 0%,#041A18 50%,#030F0D 100%)" }}>
       <div className="max-w-6xl mx-auto px-4 md:px-8 py-8 md:py-12">
 
         {/* ── Header ── */}
         <div className="flex flex-col items-center text-center mb-8">
-          <Link href="/license" className="self-start inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-[#115E59] mb-6">
+          <Link href="/license" className="self-start inline-flex items-center gap-1.5 text-xs font-medium mb-6 transition-colors" style={{ color: "rgba(255,255,255,.45)" }}>
             <ArrowLeft size={13} /> Back to License Overview
           </Link>
           <div className="flex items-center gap-3 mb-3">
-            <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ background: TEAL }}>
+            <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,#0F8F6F,#157A73)", boxShadow: "0 4px 18px rgba(15,143,111,.45)" }}>
               <svg width="22" height="22" viewBox="0 0 52 52" fill="none">
                 <rect x="20" y="4" width="12" height="44" rx="5" fill="white" />
                 <rect x="4" y="20" width="44" height="12" rx="5" fill="white" />
               </svg>
             </div>
             <div className="text-left">
-              <h1 className="text-2xl font-black text-slate-900 leading-none">License Activation</h1>
-              <p className="text-xs text-slate-500 mt-1">Activate your RF Health license to continue using the application.</p>
+              <h1 className="text-2xl font-black text-white leading-none">License Activation</h1>
+              <p className="text-xs mt-1" style={{ color: "rgba(255,255,255,.45)" }}>Activate your RF Health license to continue using the application.</p>
             </div>
           </div>
-          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/70 border border-[#b8dcd6] text-xs font-semibold" style={{ color: TEAL }}>
+          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold" style={{ background: "rgba(15,143,111,.12)", border: "1px solid rgba(15,143,111,.28)", color: TEAL }}>
             <ShieldCheck size={13} /> Secure License Verification
           </div>
         </div>
 
         {/* ── Success dialog ── */}
         {showSuccess && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 animate-fade-in">
-            <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-8 text-center">
-              <div className="w-16 h-16 rounded-full bg-emerald-50 flex items-center justify-center mx-auto mb-4">
-                <BadgeCheck size={30} className="text-emerald-500" />
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in" style={{ background: "rgba(2,5,10,.82)", backdropFilter: "blur(12px)" }}>
+            <div className="rounded-2xl shadow-2xl max-w-sm w-full p-8 text-center" style={{ background: "rgba(4,26,24,.96)", border: "1px solid rgba(255,255,255,.12)", boxShadow: "0 40px 100px rgba(0,0,0,.72), 0 0 60px rgba(15,143,111,.12)" }}>
+              <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ background: "rgba(15,143,111,.14)", border: "1px solid rgba(15,143,111,.28)" }}>
+                <BadgeCheck size={30} style={{ color: TEAL }} />
               </div>
-              <h3 className="text-xl font-black text-slate-900 mb-1.5">License Activated Successfully</h3>
-              <p className="text-sm text-slate-500 mb-6">
+              <h3 className="text-xl font-black text-white mb-1.5">License Activated Successfully</h3>
+              <p className="text-sm mb-6" style={{ color: "rgba(255,255,255,.5)" }}>
                 Your RF Health license has been verified and activated. You can now continue to the Login page.
               </p>
               <a
                 href="/login"
                 className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold text-white"
-                style={{ background: TEAL, boxShadow: "0 4px 14px rgba(21,122,115,0.35)" }}
+                style={{ background: "linear-gradient(135deg,#0F8F6F,#16A34A)", boxShadow: "0 4px 14px rgba(15,143,111,0.4)" }}
               >
                 <ArrowRight size={15} /> Continue to Login
               </a>
@@ -263,14 +269,14 @@ export function ActivationClient({ initial }: { initial: ActivationPageData }) {
                 <Row label="Registered Email" value={data.adminEmail ?? "—"} />
                 <Row label="Registered Phone" value={data.adminPhone ?? "—"} />
                 <Row label="License Holder ID" value={data.orgShortId ?? "—"} mono />
-                <p className="mt-3 text-[11px] text-slate-400 leading-relaxed">
+                <p className="mt-3 text-[11px] leading-relaxed" style={{ color: "rgba(255,255,255,.35)" }}>
                   The license belongs to the doctor and covers every hospital they operate.
                 </p>
               </div>
             ) : (
               <div className="flex flex-col items-center py-8 text-center">
-                <Lock size={22} className="text-slate-300 mb-2" />
-                <p className="text-sm font-semibold text-slate-500">Doctor not registered</p>
+                <Lock size={22} className="mb-2" style={{ color: "rgba(255,255,255,.25)" }} />
+                <p className="text-sm font-semibold" style={{ color: "rgba(255,255,255,.45)" }}>Doctor not registered</p>
                 <Link href="/license" className="mt-3 text-xs font-semibold hover:underline" style={{ color: TEAL }}>
                   Start a free trial →
                 </Link>
@@ -282,61 +288,66 @@ export function ActivationClient({ initial }: { initial: ActivationPageData }) {
           <Card title="Activate Your License" icon={Key}>
             <div className="flex flex-col gap-3">
               <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1.5">License Key *</label>
+                <label className="block text-[11px] font-bold mb-2 uppercase tracking-wider" style={{ color: "rgba(255,255,255,.4)", letterSpacing: "0.1em" }}>License Key *</label>
                 <div className="relative flex items-center">
-                  <Key size={14} className="absolute left-3.5 text-slate-400 pointer-events-none" />
+                  <Key size={15} className="absolute left-4 pointer-events-none" style={{ color: TEAL_DARK }} />
                   <input
                     value={licKey}
                     onChange={(e) => handleKeyInput(e.target.value)}
                     placeholder="PPMS-XXXX-XXXX-XXXX-XXXX"
-                    className="w-full rounded-xl border-2 border-slate-200 pl-10 pr-3.5 py-2.5 text-sm font-mono outline-none transition-all focus:border-[#157A73] focus:ring-2 focus:ring-[#d0ede8]"
+                    className="w-full rounded-xl pl-11 pr-4 outline-none transition-all font-mono"
+                    style={{ height: "52px", fontSize: "14px", letterSpacing: "0.06em", background: "rgba(15,143,111,.06)", border: "1.5px solid rgba(15,143,111,.22)", color: "white", caretColor: TEAL }}
+                    onFocus={e => { e.currentTarget.style.borderColor = "rgba(15,143,111,.5)"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(15,143,111,.12)"; }}
+                    onBlur={e => { e.currentTarget.style.borderColor = "rgba(15,143,111,.22)"; e.currentTarget.style.boxShadow = "none"; }}
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1.5">Device Name</label>
+                  <label className="block text-xs font-semibold mb-1.5" style={{ color: "rgba(255,255,255,.55)" }}>Device Name</label>
                   <input readOnly value={deviceName}
-                    className="w-full rounded-xl border-2 border-slate-100 bg-slate-50 px-3.5 py-2.5 text-xs text-slate-500 cursor-default outline-none" />
+                    className="w-full rounded-xl px-3.5 py-2.5 text-xs cursor-default outline-none"
+                    style={{ background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.08)", color: "rgba(255,255,255,.4)" }} />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1.5">RF Health Version</label>
+                  <label className="block text-xs font-semibold mb-1.5" style={{ color: "rgba(255,255,255,.55)" }}>RF Health Version</label>
                   <input readOnly value={PPMS_VERSION}
-                    className="w-full rounded-xl border-2 border-slate-100 bg-slate-50 px-3.5 py-2.5 text-xs font-mono text-slate-500 cursor-default outline-none" />
+                    className="w-full rounded-xl px-3.5 py-2.5 text-xs font-mono cursor-default outline-none"
+                    style={{ background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.08)", color: "rgba(255,255,255,.4)" }} />
                 </div>
               </div>
 
               {isPending && (
-                <div className="flex items-center gap-2 rounded-xl bg-[#e8f5f2] border border-[#b8dcd6] px-4 py-3 text-sm" style={{ color: TEAL }}>
+                <div className="flex items-center gap-2 rounded-xl px-4 py-3 text-sm" style={{ background: "rgba(15,143,111,.12)", border: "1px solid rgba(15,143,111,.3)", color: TEAL }}>
                   <Loader2 size={15} className="animate-spin" /> Verifying license securely...
                 </div>
               )}
               {error && !isPending && (
-                <div className="flex items-start gap-2 rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+                <div className="flex items-start gap-2 rounded-xl px-4 py-3 text-sm" style={{ background: "rgba(239,68,68,.08)", border: "1px solid rgba(239,68,68,.25)", color: "#FCA5A5" }}>
                   <XCircle size={15} className="shrink-0 mt-0.5" /> {error}
                 </div>
               )}
               {info && !isPending && (
-                <div className="flex items-start gap-2 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-sm text-emerald-700">
+                <div className="flex items-start gap-2 rounded-xl px-4 py-3 text-sm" style={{ background: "rgba(15,143,111,.10)", border: "1px solid rgba(15,143,111,.28)", color: TEAL }}>
                   <CheckCircle2 size={15} className="shrink-0 mt-0.5" /> {info}
                 </div>
               )}
 
               <button onClick={() => run("activate")} disabled={isPending}
                 className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold text-white transition-all disabled:opacity-60"
-                style={{ background: TEAL, boxShadow: "0 4px 14px rgba(21,122,115,0.3)" }}>
+                style={{ background: "linear-gradient(135deg,#0F8F6F,#16A34A)", boxShadow: "0 4px 14px rgba(15,143,111,0.35)" }}>
                 {busy === "activate" ? <Loader2 size={15} className="animate-spin" /> : <Key size={15} />} Activate License
               </button>
               <div className="grid grid-cols-2 gap-2.5">
                 <button onClick={() => run("reactivate")} disabled={isPending}
                   className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold text-white transition-all disabled:opacity-60"
-                  style={{ background: "#34474F" }}>
+                  style={{ background: "rgba(255,255,255,.08)", border: "1px solid rgba(255,255,255,.12)" }}>
                   {busy === "reactivate" ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />} Reactivate
                 </button>
                 <button onClick={() => run("verify")} disabled={isPending}
-                  className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl border-2 text-xs font-semibold transition-all disabled:opacity-60 hover:bg-[#e8f5f2]"
-                  style={{ borderColor: TEAL, color: TEAL }}>
+                  className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold transition-all disabled:opacity-60"
+                  style={{ border: `1px solid rgba(15,143,111,.4)`, color: TEAL, background: "rgba(15,143,111,.06)" }}>
                   {busy === "verify" ? <Loader2 size={13} className="animate-spin" /> : <ShieldCheck size={13} />} Verify License
                 </button>
               </div>
@@ -351,7 +362,7 @@ export function ActivationClient({ initial }: { initial: ActivationPageData }) {
             <Row label="Expiry Date" value={fmt(data.expiryDate ?? data.trialEndDate)} />
             <Row label="Remaining Days"
               value={`${data.daysRemaining} day${data.daysRemaining !== 1 ? "s" : ""}`}
-              valueClass={data.daysRemaining <= 5 ? "text-red-600" : "text-emerald-700"} />
+              valueClass={data.daysRemaining <= 5 ? "!text-red-400" : "!text-emerald-400"} />
             <Row label="Max Hospitals" value={limits.hospitals} />
             <Row label="Max Doctors" value={limits.doctors} />
             <Row label="Max Users" value={limits.users} />
@@ -363,33 +374,33 @@ export function ActivationClient({ initial }: { initial: ActivationPageData }) {
         <Card>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <div className="flex items-center gap-2.5">
-              <Server size={16} className="text-slate-400 shrink-0" />
+              <Server size={16} className="shrink-0" style={{ color: "rgba(255,255,255,.35)" }} />
               <div>
-                <p className="text-[10px] text-slate-400 uppercase tracking-wide font-semibold">License Server</p>
-                <p className={`text-xs font-semibold ${data.serverOnline ? "text-emerald-600" : "text-red-500"}`}>
+                <p className="text-[10px] uppercase tracking-wide font-semibold" style={{ color: "rgba(255,255,255,.35)" }}>License Server</p>
+                <p className={`text-xs font-semibold ${data.serverOnline ? "text-emerald-400" : "text-red-400"}`}>
                   {data.serverOnline ? "● Connected" : "● Offline"}
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-2.5">
-              <Clock size={16} className="text-slate-400 shrink-0" />
+              <Clock size={16} className="shrink-0" style={{ color: "rgba(255,255,255,.35)" }} />
               <div>
-                <p className="text-[10px] text-slate-400 uppercase tracking-wide font-semibold">Last Verification</p>
-                <p className="text-xs text-slate-700">{fmtDateTime(data.lastVerifiedAt)}</p>
+                <p className="text-[10px] uppercase tracking-wide font-semibold" style={{ color: "rgba(255,255,255,.35)" }}>Last Verification</p>
+                <p className="text-xs" style={{ color: "rgba(255,255,255,.7)" }}>{fmtDateTime(data.lastVerifiedAt)}</p>
               </div>
             </div>
             <div className="flex items-center gap-2.5">
-              <Package size={16} className="text-slate-400 shrink-0" />
+              <Package size={16} className="shrink-0" style={{ color: "rgba(255,255,255,.35)" }} />
               <div>
-                <p className="text-[10px] text-slate-400 uppercase tracking-wide font-semibold">RF Health Version</p>
-                <p className="text-xs font-mono text-slate-700">{PPMS_VERSION}</p>
+                <p className="text-[10px] uppercase tracking-wide font-semibold" style={{ color: "rgba(255,255,255,.35)" }}>RF Health Version</p>
+                <p className="text-xs font-mono" style={{ color: "rgba(255,255,255,.7)" }}>{PPMS_VERSION}</p>
               </div>
             </div>
           </div>
-          <div className="mt-4 pt-4 border-t border-slate-50 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400">
+          <div className="mt-4 pt-4 flex flex-wrap items-center justify-between gap-2 text-xs" style={{ borderTop: "1px solid rgba(255,255,255,.07)", color: "rgba(255,255,255,.35)" }}>
             <span>Need help? Contact Support</span>
             <div className="flex items-center gap-4">
-              <a href="mailto:support@ppms.in" className="flex items-center gap-1 hover:text-[#115E59]">
+              <a href="mailto:support@ppms.in" className="flex items-center gap-1 hover:text-white transition-colors">
                 <Mail size={12} /> support@ppms.in
               </a>
               <span className="flex items-center gap-1"><Phone size={12} /> +91 98765 43210</span>
