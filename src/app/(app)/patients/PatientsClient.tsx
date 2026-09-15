@@ -111,18 +111,17 @@ function KpiCard({ icon, label, value, sub, color, isActive, onSelect }: {
   const c = C[color] ?? C.teal;
 
   const baseClass = isActive
-    ? `bg-white rounded-2xl p-2.5 sm:p-4 flex items-start gap-2 sm:gap-3 shadow-sm cursor-pointer transition-all`
-    : `bg-white rounded-2xl border ${c.border} p-2.5 sm:p-4 flex items-start gap-2 sm:gap-3 shadow-sm hover:shadow-md hover:border-[var(--color-primary-300)] cursor-pointer transition-all`;
+    ? `bg-white rounded-2xl p-2.5 sm:p-4 flex flex-col items-center gap-1.5 shadow-sm cursor-pointer transition-all text-center`
+    : `bg-white rounded-2xl border ${c.border} p-2.5 sm:p-4 flex flex-col items-center gap-1.5 shadow-sm hover:shadow-md hover:border-[var(--color-primary-300)] cursor-pointer transition-all text-center`;
 
   const activeStyle: React.CSSProperties = isActive ? { border: '2px solid #000' } : {};
 
   const inner = (
     <>
-      <div className={`${c.icon} rounded-xl p-1.5 sm:p-2.5 flex-shrink-0`}>{icon}</div>
-      <div className="min-w-0 flex-1">
-        <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wide text-[var(--color-ink-400)] leading-tight">{label}</p>
-        <p className={`text-xl sm:text-[26px] font-bold leading-none mt-0.5 sm:mt-1 ${c.val}`}>{value}</p>
-        {sub && <p className="text-[10px] sm:text-[11px] text-[var(--color-ink-400)] mt-0.5 sm:mt-1 leading-tight">{sub}</p>}
+      <div className={`${c.icon} rounded-xl p-1.5 sm:p-2 flex-shrink-0`}>{icon}</div>
+      <div className="min-w-0 w-full">
+        <p className={`text-xl sm:text-[26px] font-bold leading-none ${c.val}`}>{value}</p>
+        <p className="text-[10px] sm:text-[11px] font-medium text-[var(--color-ink-400)] leading-tight mt-0.5">{label}</p>
       </div>
     </>
   );
@@ -407,9 +406,9 @@ export function PatientsClient({
 
       {/* ── KPI Cards ──────────────────────────────────────────────────── */}
       <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-5">
-        <KpiCard icon={<PackageCheck size={17} />}  label="Today Dispensed" value={kpis.todayDispensed} color="green" sub="Dispensed today"   isActive={activeCard === "dispensed" || activeCard === ""} onSelect={() => navigate({ opStatus: activeCard === "dispensed" || activeCard === "" ? "all" : "dispensed", card: activeCard === "dispensed" || activeCard === "" ? "total" : "dispensed", page: "1" })} />
+        <KpiCard icon={<PackageCheck size={17} />}  label="Today Dispensed" value={kpis.todayDispensed} color="green" isActive={activeCard === "dispensed" || activeCard === ""} onSelect={() => navigate({ opStatus: activeCard === "dispensed" || activeCard === "" ? "all" : "dispensed", card: activeCard === "dispensed" || activeCard === "" ? "total" : "dispensed", page: "1" })} />
         <KpiCard icon={<Users size={17} />}         label="Total Patients"  value={kpis.totalPatients}  color="teal"  isActive={activeCard === "total"}    onSelect={() => navigate({ opStatus: "all", card: activeCard === "total" ? "dispensed" : "total", page: "1" })} />
-        <KpiCard icon={<CalendarCheck size={17} />} label="Total Operated"  value={kpis.todayOperated}  color="blue"  sub="Surgery completed today" isActive={activeCard === "operated"} onSelect={() => navigate({ opStatus: activeCard === "operated" ? "dispensed" : "operated", card: activeCard === "operated" ? "" : "operated", page: "1" })} />
+        <KpiCard icon={<CalendarCheck size={17} />} label="Total Operated"  value={kpis.todayOperated}  color="blue"  isActive={activeCard === "operated"} onSelect={() => navigate({ opStatus: activeCard === "operated" ? "dispensed" : "operated", card: activeCard === "operated" ? "" : "operated", page: "1" })} />
       </div>
 
       {/* ── Table + Analytics ──────────────────────────────────────────── */}
