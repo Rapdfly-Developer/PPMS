@@ -228,7 +228,7 @@ export default async function QueuePage() {
                     <Link
                       href={`/emr/${appt.patient.udid}?visit=${v.id}`}
                       className={clsx(
-                        "text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap",
+                        "text-xs font-semibold px-3 py-2 rounded-lg transition-colors whitespace-nowrap min-h-[44px] flex items-center",
                         allTestsDone
                           ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200"
                           : "bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)]",
