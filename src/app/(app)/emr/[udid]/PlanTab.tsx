@@ -6,8 +6,8 @@ import { History } from "lucide-react";
 import { parseJSON } from "@/lib/json";
 import { useAutoSave, SaveIndicator } from "@/lib/useAutoSave";
 import { addMedication, removeMedication, updateMedication, clearAllMedications, saveRefraction, saveFollowUp, saveAdviseNotes, saveAnesthesiaType, saveProcedureLaterality, saveProcedureName, saveProcedureNotes, addInvestigationOrder, deleteInvestigationOrder } from "./actions";
-import { DispositionToggle, AdmitPanel, FollowUpdatesPanel, SurgicalPanel } from "./DispositionPanel";
-import { Plus, X, BedDouble, Stethoscope, ChevronDown, Pencil, Trash2, RefreshCw, Search, Pill, Sparkles, CheckCircle2, Check, AlertTriangle, Scissors } from "lucide-react";
+import { DispositionToggle, AdmitPanel, FollowUpdatesPanel } from "./DispositionPanel";
+import { Plus, X, BedDouble, Stethoscope, ChevronDown, Pencil, Trash2, RefreshCw, Search, Pill, Sparkles, CheckCircle2, Check, AlertTriangle } from "lucide-react";
 import {
   type TreatmentPreset, type PresetMatch, type AppliedPreset,
   getTreatmentPresets, matchPresets, mergeMeds,
@@ -2684,7 +2684,6 @@ function DispositionCard({ visit, udid, patientSex, priorVisits = [] }: { visit:
   const [activePanels, setActivePanels] = useState<string[]>(
     [
       visit.admission && "admit",
-      visit.surgeryAdvised && "surgical",
     ].filter(Boolean) as string[]
   );
   const togglePanel = (id: string) =>
@@ -2695,12 +2694,10 @@ function DispositionCard({ visit, udid, patientSex, priorVisits = [] }: { visit:
       <p className="text-sm font-medium text-[var(--color-ink-700)] mb-3">Patient Disposition</p>
       <div className="flex gap-3 flex-wrap mb-2">
         <DispositionToggle icon={<BedDouble size={16} />}  label="Admit"                active={activePanels.includes("admit")}    onClick={() => togglePanel("admit")} />
-        <DispositionToggle icon={<Scissors size={16} />}   label="Surgical Counselling" active={activePanels.includes("surgical")} onClick={() => togglePanel("surgical")} />
         <DispositionToggle icon={<RefreshCw size={16} />}  label="Follow Up Dates"      active={activePanels.includes("follow")}   onClick={() => togglePanel("follow")} />
       </div>
       <div className="flex flex-col gap-4">
         {activePanels.includes("admit")    && <AdmitPanel          visit={visit} udid={udid} patientSex={patientSex} />}
-        {activePanels.includes("surgical") && <SurgicalPanel        visit={visit} udid={udid} />}
         {activePanels.includes("follow")   && <FollowUpdatesPanel   visit={visit} udid={udid} priorVisits={priorVisits} />}
       </div>
     </Card>
