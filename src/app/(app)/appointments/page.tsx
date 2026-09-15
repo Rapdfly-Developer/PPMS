@@ -68,13 +68,12 @@ export default async function AppointmentsPage({
     if (!isDefaultView && statusParam === "ALL" && !isPastDate) {
       where.status = { in: ["REQUESTED", "SCHEDULED"] };
     }
-  } else if (user.role === "HOSPITAL") {
-    where.hospitalId = user.hospitalId;
-    where.dateTime = dateFilter;
-    if (!isDefaultView && statusParam === "ALL" && !isPastDate) {
-      where.status = { notIn: ["DISPENSED", "CANCELLED", "NO_SHOW", "CONFIRMED"] };
-    }
   } else {
+    // Any hospital-affiliated user — the shared HOSPITAL login and every named
+    // staff role alike — sees only their own hospital's appointments. Without a
+    // hospitalId there is no scope to apply, so match nothing rather than
+    // leaving hospitalId unset, which would return every hospital's data.
+    where.hospitalId = user.hospitalId ?? "__no_scope__";
     where.dateTime = dateFilter;
     if (!isDefaultView && statusParam === "ALL" && !isPastDate) {
       where.status = { notIn: ["DISPENSED", "CANCELLED", "NO_SHOW", "CONFIRMED"] };
@@ -109,8 +108,8 @@ export default async function AppointmentsPage({
 
   // Pending requests for today (always today's range, ignoring dateParam)
   const pendingWhere: any = { status: "REQUESTED", dateTime: { gte: todayStart, lte: todayEnd } };
-  if (user.role === "DOCTOR")   pendingWhere.doctorId   = scopeDoctorId(user);
-  if (user.role === "HOSPITAL") pendingWhere.hospitalId = user.hospitalId;
+  if (user.role === "DOCTOR") pendingWhere.doctorId   = scopeDoctorId(user);
+  else                        pendingWhere.hospitalId = user.hospitalId ?? "__no_scope__";
 
   const [total, appts, doctors, hospitals, pendingCount] = await Promise.all([
     prisma.appointment.count({ where }),

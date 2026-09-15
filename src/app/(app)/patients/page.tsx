@@ -42,8 +42,14 @@ export default async function PatientsPage({
         ...(hospitalIds.length > 0 ? [{ registeredAtId: { in: hospitalIds } }] : []),
       ],
     });
-  } else if (user.role === "HOSPITAL") {
+  } else if (user.hospitalId) {
+    // Any hospital-affiliated user — the shared HOSPITAL login and every named
+    // staff role alike — sees only their own hospital's patients.
     scopeConds.push({ registeredAtId: user.hospitalId });
+  } else {
+    // No doctor scope and no hospital: match nothing. An empty condition list
+    // would fall through to `{}` and return every patient in the database.
+    scopeConds.push({ id: "__no_scope__" });
   }
 
   const scopeWhere: any = scopeConds.length > 0 ? { AND: scopeConds } : {};

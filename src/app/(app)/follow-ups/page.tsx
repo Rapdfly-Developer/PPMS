@@ -27,12 +27,12 @@ export default async function FollowUpsPage() {
   const user = await requirePermission("patients.view");
   const today = new Date();
 
+  // Any hospital-affiliated user is scoped to their own hospital; an unscoped
+  // `{}` here would return every hospital's visits.
   const whereClause =
     user.role === "DOCTOR"
       ? { doctorId: user.profileId }
-      : user.role === "HOSPITAL"
-      ? { hospitalId: user.hospitalId }
-      : {};
+      : { hospitalId: user.hospitalId ?? "__no_scope__" };
 
   const rawVisits = await prisma.visit.findMany({
     where: { ...whereClause, followUpDate: { not: null } },
