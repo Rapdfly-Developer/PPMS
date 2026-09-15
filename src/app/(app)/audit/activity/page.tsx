@@ -172,12 +172,12 @@ export default async function ActivityLogsPage({
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)] border-b border-[var(--color-border)]">
-                  <th className="px-5 py-3">Time</th>
-                  <th className="px-3 py-3">User</th>
-                  <th className="px-3 py-3">Module</th>
-                  <th className="px-3 py-3">Action</th>
-                  <th className="px-3 py-3">Record ID</th>
-                  <th className="px-5 py-3">Detail</th>
+                  <th className="px-5 py-3 whitespace-nowrap">Time</th>
+                  <th className="px-3 py-3 whitespace-nowrap">User</th>
+                  <th className="px-3 py-3 whitespace-nowrap hidden sm:table-cell">Module</th>
+                  <th className="px-3 py-3 whitespace-nowrap">Action</th>
+                  <th className="px-3 py-3 whitespace-nowrap hidden md:table-cell">Record ID</th>
+                  <th className="px-5 py-3 whitespace-nowrap hidden sm:table-cell">Detail</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--color-border)]">
@@ -197,19 +197,19 @@ export default async function ActivityLogsPage({
                       <td className="px-5 py-3 text-xs font-mono text-[var(--color-ink-400)] whitespace-nowrap">
                         {format(new Date(log.timestamp), "HH:mm:ss")}
                       </td>
-                      <td className="px-3 py-3 text-xs font-medium text-[var(--color-ink-700)]">
+                      <td className="px-3 py-3 text-xs font-medium text-[var(--color-ink-700)] whitespace-nowrap">
                         {log.userName ?? log.userId.slice(-8)}
                       </td>
-                      <td className="px-3 py-3 text-xs text-[var(--color-ink-600)]">
+                      <td className="px-3 py-3 text-xs text-[var(--color-ink-600)] hidden sm:table-cell">
                         {log.moduleName ?? log.entityType}
                       </td>
                       <td className="px-3 py-3">
                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${cls}`}>{type}</span>
                       </td>
-                      <td className="px-3 py-3 text-[10px] font-mono text-[var(--color-ink-400)]">
+                      <td className="px-3 py-3 text-[10px] font-mono text-[var(--color-ink-400)] hidden md:table-cell">
                         {log.entityId.slice(-10)}
                       </td>
-                      <td className="px-5 py-3 text-xs text-[var(--color-ink-500)] max-w-[200px] truncate">
+                      <td className="px-5 py-3 text-xs text-[var(--color-ink-500)] max-w-[200px] truncate hidden sm:table-cell">
                         {detail}
                       </td>
                     </tr>

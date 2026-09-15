@@ -55,7 +55,7 @@ function Card({ children, className = "" }: { children: React.ReactNode; classNa
 
 function FieldRow({ label, desc, children }: { label: string; desc?: string; children: React.ReactNode }) {
   return (
-    <div className="flex items-start justify-between gap-6 py-4 border-b border-[var(--color-border)] last:border-0">
+    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-6 py-4 border-b border-[var(--color-border)] last:border-0">
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-[var(--color-ink-800)]">{label}</p>
         {desc && <p className="text-xs text-[var(--color-ink-400)] mt-0.5">{desc}</p>}

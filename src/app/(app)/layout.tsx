@@ -7,6 +7,7 @@ import { SidebarProvider } from "@/components/ui/SidebarContext";
 import { IdleTimeout } from "@/components/ui/IdleTimeout";
 import { AutoRefresh } from "@/components/ui/AutoRefresh";
 import { LicenseGate } from "@/components/ui/LicenseGate";
+import { MobileBottomNav } from "@/components/ui/MobileBottomNav";
 import { runStartup } from "@/lib/startup";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -46,7 +47,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <div className="flex-1 min-w-0 flex flex-col min-h-screen">
           <TopBar name={user.name} role={user.role} />
           <main className="flex-1 bg-[var(--color-bg)] overflow-auto" data-main-content>
-            <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-5 lg:py-7">
+            <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-5 lg:py-7 pb-24 lg:pb-7">
               <LicenseGate
                 active={licenseActive}
                 status={licenseResult?.status ?? "NONE"}
@@ -61,6 +62,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </div>
 
       </div>
+
+      {/* Fixed bottom nav — mobile only (<lg), hidden on desktop */}
+      <MobileBottomNav />
     </SidebarProvider>
   );
 }
