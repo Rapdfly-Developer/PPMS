@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useMemo, useEffect, useTransition } from "react";
+import { useState, useMemo, useEffect, useTransition, type ReactNode } from "react";
 import { format } from "date-fns";
 import Link from "next/link";
 import {
   ChevronDown, Plus, Building2, Phone, LogIn, Loader2,
-  Sun, Sunset, Moon, CalendarX2, Calendar, PersonStanding, Clock, Undo2, Timer, Stethoscope, CheckCircle2,
+  Sun, Sunset, Moon, CalendarX2, Calendar, PersonStanding, Clock, Undo2, Timer, CheckCircle2,
 } from "lucide-react";
 import clsx from "clsx";
 import { undoQueueEntry, undoPartialDispense } from "@/app/(app)/appointments/actions";
@@ -31,25 +31,19 @@ interface Appt {
   visitFinalizedAt: string | null;
 }
 
-interface Surgery {
-  id: string;
-  surgeryType: string;
-  surgeryDate: string;
-  rightEye: boolean;
-  leftEye: boolean;
-  patient:  { name: string; udid: string };
-  hospital?: { name: string } | null;
-  doctor?:   { name: string } | null;
-}
-
 export interface DashboardProps {
-  role:              "DOCTOR" | "HOSPITAL";
+  scope:              "DOCTOR" | "HOSPITAL";
   /** Session permission keys. Mirrors userCan() on the server — "*" grants all. */
   permissions:       string[];
-  displayName:       string;   // doctor's name or hospital name
+  displayName:       string;   // doctor's name or hospital name; also names the queue group
+  /** Banner heading. The wrapper decides: "Dr. X", the hospital name, or a
+   *  named staff member's own name — the client no longer infers it. */
+  bannerTitle:       string;
+  /** Optional line under the heading. Named staff get "Role · Hospital" so a
+   *  personal greeting still says which hospital they are working. */
+  bannerSubtitle?:   string;
   todayLabel:        string;
   appts:             Appt[];
-  surgeries:         Surgery[];
   filterOptions:     { id: string; name: string; logoUrl?: string | null }[];  // hospitals for DOCTOR, doctors for HOSPITAL
   hospitalLogoUrl?:  string | null;
   newEncounterHref:  string;
@@ -106,46 +100,23 @@ function LiveTimer({ since }: { since: string }) {
   );
 }
 
-/* ── Surgery row ───────────────────────────────────────────────────────── */
-function SurgeryRow({ s, role }: { s: Surgery; role: "DOCTOR" | "HOSPITAL" }) {
-  const subLabel = role === "DOCTOR"
-    ? (s.hospital?.name ?? null)
-    : (s.doctor ? `Dr. ${s.doctor.name}` : null);
+/* Patient block — links into the record only when the viewer holds
+   patients.view. Without it the same details still render as plain text: the
+   queue has to stay readable for a role that may work it but not open records.
+   /patients/[udid] enforces the permission server-side either way. */
+function PatientBlock({ udid, canView, className, children }: {
+  udid: string; canView: boolean; className: string; children: ReactNode;
+}) {
+  if (!canView) return <div className={className}>{children}</div>;
   return (
-    <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-[var(--color-border)] bg-white">
-      <div className="w-20 shrink-0 text-center hidden sm:block">
-        <p className="text-xs font-bold text-[var(--color-ink-900)]">{format(new Date(s.surgeryDate), "d MMM")}</p>
-        <p className="text-[10px] text-[var(--color-ink-400)]">{format(new Date(s.surgeryDate), "hh:mm a")}</p>
-      </div>
-      <div className="w-px self-stretch bg-[var(--color-border)] hidden sm:block" />
-      <div className="flex-1 min-w-0">
-        <p className="font-semibold text-sm text-[var(--color-ink-900)] truncate">{s.patient.name}</p>
-        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-          <span className="font-mono text-[10px] text-[#115E59] bg-[#F0F8F6] px-1.5 py-0.5 rounded">
-            {s.patient.udid}
-          </span>
-          {subLabel && role === "DOCTOR" && (
-            <span className="inline-flex items-center gap-1 text-[11px] text-[var(--color-ink-400)]">
-              <Building2 size={10} /> {subLabel}
-            </span>
-          )}
-          {subLabel && role === "HOSPITAL" && (
-            <span className="text-[11px] text-[var(--color-ink-400)]">{subLabel}</span>
-          )}
-        </div>
-      </div>
-      <span className="hidden sm:inline shrink-0 text-xs font-medium text-purple-700 bg-purple-50 px-2.5 py-1 rounded-full truncate max-w-[160px]">
-        {s.surgeryType}
-      </span>
-      <span className="shrink-0 text-[10px] text-[var(--color-ink-400)]">
-        {s.rightEye && s.leftEye ? "OU" : s.rightEye ? "RE" : "LE"}
-      </span>
-    </div>
+    <Link href={`/patients/${udid}?returnTo=/dashboard`} className={className}>
+      {children}
+    </Link>
   );
 }
 
 /* ── Partial Dispense row ───────────────────────────────────────────────── */
-function PartialDispenseRow({ appt: a, role, serial, canDispense }: { appt: Appt; role: "DOCTOR" | "HOSPITAL"; serial: number; canDispense: boolean }) {
+function PartialDispenseRow({ appt: a, scope, serial, canDispense, canViewPatient }: { appt: Appt; scope: "DOCTOR" | "HOSPITAL"; serial: number; canDispense: boolean; canViewPatient: boolean }) {
   const [undoing, startUndo] = useTransition();
   const arrivedAt = a.arrivedAt ? new Date(a.arrivedAt) : null;
   const apptTime  = format(new Date(a.dateTime), "h:mm a");
@@ -163,7 +134,7 @@ function PartialDispenseRow({ appt: a, role, serial, canDispense }: { appt: Appt
       <div className="w-px self-stretch bg-orange-200 hidden sm:block" />
 
       {/* Patient info — grows to fill */}
-      <Link href={`/patients/${a.patient.udid}?returnTo=/dashboard`} className="flex-1 min-w-0 hover:opacity-80 transition-opacity">
+      <PatientBlock udid={a.patient.udid} canView={canViewPatient} className="flex-1 min-w-0 hover:opacity-80 transition-opacity">
         <p className="font-semibold text-sm text-[var(--color-ink-900)] truncate">{a.patient.name}</p>
         <div className="flex items-center gap-2 mt-0.5 flex-wrap">
           <span className="font-mono text-[10px] text-[#115E59] bg-[#F0F8F6] px-1.5 py-0.5 rounded">
@@ -177,7 +148,7 @@ function PartialDispenseRow({ appt: a, role, serial, canDispense }: { appt: Appt
               <Clock size={10} /> Added at {format(new Date(a.partialDispenseAt), "h:mm a")}
             </span>
           )}
-          {role === "HOSPITAL" && a.doctor && (
+          {scope === "HOSPITAL" && a.doctor && (
             <span className="text-[11px] text-[var(--color-ink-400)]">Dr. {a.doctor.name}</span>
           )}
         </div>
@@ -191,7 +162,7 @@ function PartialDispenseRow({ appt: a, role, serial, canDispense }: { appt: Appt
             {formatComplaintDisplay(a.complaint)}
           </span>
         )}
-      </Link>
+      </PatientBlock>
 
       {/* Right side: wait time + undo */}
       <div className="shrink-0 flex flex-col items-end gap-1.5">
@@ -218,7 +189,7 @@ function PartialDispenseRow({ appt: a, role, serial, canDispense }: { appt: Appt
 }
 
 /* ── Appointment row ────────────────────────────────────────────────────── */
-function ApptRow({ appt, role, serial, canManageQueue }: { appt: Appt; role: "DOCTOR" | "HOSPITAL"; serial: number; canManageQueue: boolean }) {
+function ApptRow({ appt, scope, serial, canManageQueue, canViewPatient }: { appt: Appt; scope: "DOCTOR" | "HOSPITAL"; serial: number; canManageQueue: boolean; canViewPatient: boolean }) {
   const cfg      = STATUS_CFG[appt.status] ?? STATUS_CFG["REQUESTED"];
   const apptTime = format(new Date(appt.dateTime), "h:mm a");
   const arrivedAt      = appt.arrivedAt      ? new Date(appt.arrivedAt)      : null;
@@ -258,7 +229,7 @@ function ApptRow({ appt, role, serial, canManageQueue }: { appt: Appt; role: "DO
         </div>
       </div>
       <div className="w-px self-stretch bg-[var(--color-border)] hidden sm:block" />
-      <Link href={`/patients/${appt.patient.udid}?returnTo=/dashboard`} className="flex-1 min-w-0 hover:opacity-80 transition-opacity">
+      <PatientBlock udid={appt.patient.udid} canView={canViewPatient} className="flex-1 min-w-0 hover:opacity-80 transition-opacity">
         <p className="font-semibold text-[var(--color-ink-900)] text-sm truncate">{appt.patient.name}</p>
         <div className="flex items-center gap-2 mt-0.5 flex-wrap">
           <span title="UDID (Doctor ID)" className="font-mono text-[10px] text-[#115E59] bg-[#F0F8F6] px-1.5 py-0.5 rounded">
@@ -267,12 +238,12 @@ function ApptRow({ appt, role, serial, canManageQueue }: { appt: Appt; role: "DO
           <span className="text-[11px] text-[var(--color-ink-400)]">
             {appt.patient.age}y / {appt.patient.sex === "MALE" ? "M" : appt.patient.sex === "FEMALE" ? "F" : "O"}
           </span>
-          {role === "DOCTOR" && appt.patient.mobile && (
+          {scope === "DOCTOR" && canViewPatient && appt.patient.mobile && (
             <span className="inline-flex items-center gap-0.5 text-[11px] text-[var(--color-ink-400)]">
               <Phone size={9} /> {appt.patient.mobile}
             </span>
           )}
-          {role === "HOSPITAL" && appt.doctor && (
+          {scope === "HOSPITAL" && appt.doctor && (
             <span className="text-[11px] text-[var(--color-ink-400)]">
               Dr. {appt.doctor.name}
             </span>
@@ -283,7 +254,7 @@ function ApptRow({ appt, role, serial, canManageQueue }: { appt: Appt; role: "DO
             </span>
           )}
         </div>
-      </Link>
+      </PatientBlock>
       <div className="flex flex-col items-end gap-1 shrink-0">
         <div className="flex items-center gap-1.5">
           {appt.visitType && (
@@ -316,7 +287,7 @@ function ApptRow({ appt, role, serial, canManageQueue }: { appt: Appt; role: "DO
 
 /* ── Main component ─────────────────────────────────────────────────────── */
 export function DashboardClient({
-  role, permissions, displayName, todayLabel, appts, surgeries, filterOptions,
+  scope, permissions, displayName, bannerTitle, bannerSubtitle, todayLabel, appts, filterOptions,
   newEncounterHref, newEncounterLabel, hospitalLogoUrl,
 }: DashboardProps) {
   // Same rule as userCan() in lib/rbac, so the UI hides exactly what the server
@@ -331,10 +302,10 @@ export function DashboardClient({
   /* Filter appts by selected hospital (DOCTOR) or doctor (HOSPITAL) */
   const filteredAppts = useMemo(() => {
     if (selectedFilter === "all") return appts;
-    return role === "DOCTOR"
+    return scope === "DOCTOR"
       ? appts.filter((a) => a.hospital?.id === selectedFilter)
       : appts.filter((a) => a.doctor?.id === selectedFilter);
-  }, [appts, selectedFilter, role]);
+  }, [appts, selectedFilter, scope]);
 
   /* Partial dispense patients */
   const partialDispenseAppts = useMemo(
@@ -351,7 +322,7 @@ export function DashboardClient({
   const queueGroups = useMemo(() => {
     const queue     = queueAppts;
     const dispensed = filteredAppts.filter((a) => a.status === "DISPENSED");
-    if (role === "DOCTOR") {
+    if (scope === "DOCTOR") {
       const hospitalsToShow = selectedFilter === "all"
         ? filterOptions
         : filterOptions.filter((h) => h.id === selectedFilter);
@@ -374,7 +345,7 @@ export function DashboardClient({
     } else {
       return [{ id: "self", name: displayName, logoUrl: hospitalLogoUrl ?? null, appts: queue, dispensed: dispensed.length }];
     }
-  }, [queueAppts, filteredAppts, role, displayName, filterOptions, selectedFilter]);
+  }, [queueAppts, filteredAppts, scope, displayName, filterOptions, selectedFilter]);
 
   const totalQueue = queueGroups.reduce((s, g) => s + g.appts.length, 0);
 
@@ -396,15 +367,6 @@ export function DashboardClient({
   const activeVisitType: VisitTypeFilterKey =
     visibleVisitTypeFilters.some((f) => f.key === statusFilter) ? statusFilter : "ALL";
 
-  /* Surgeries — optionally filtered by selected hospital when DOCTOR */
-  const filteredSurgeries = useMemo(() => {
-    if (role === "DOCTOR" && selectedFilter !== "all") {
-      const hName = filterOptions.find((h) => h.id === selectedFilter)?.name;
-      return surgeries.filter((s) => s.hospital?.name === hName);
-    }
-    return surgeries;
-  }, [surgeries, role, selectedFilter, filterOptions]);
-
   /* Greeting */
   const h           = greetHour ?? 8;
   const isEvening   = h >= 18;
@@ -412,8 +374,7 @@ export function DashboardClient({
   const greeting    = isEvening ? "Good Evening" : isAfternoon ? "Good Afternoon" : "Good Morning";
   const GreetIcon   = isEvening ? Moon : isAfternoon ? Sunset : Sun;
   const iconColor   = isEvening ? "text-indigo-300" : isAfternoon ? "text-orange-300" : "text-amber-300";
-  const bannerTitle = role === "DOCTOR" ? `Dr. ${displayName}` : displayName;
-  const filterLabel = role === "DOCTOR" ? "All Hospitals" : "All Doctors";
+  const filterLabel = scope === "DOCTOR" ? "All Hospitals" : "All Doctors";
 
   return (
     <div className="fade-in space-y-5">
@@ -431,6 +392,7 @@ export function DashboardClient({
               <span className="text-sm font-medium text-white/70 tracking-wide">{greeting}</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">{bannerTitle}</h1>
+            {bannerSubtitle && <p className="mt-0.5 text-sm text-white/70">{bannerSubtitle}</p>}
             <p className="mt-1 text-sm text-white/60">{todayLabel}</p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
@@ -442,7 +404,7 @@ export function DashboardClient({
                 <Plus size={15} /> {newEncounterLabel}
               </Link>
             )}
-            {filterOptions.length > 0 && (
+            {can("appointments.view") && filterOptions.length > 0 && (
               <div className="relative">
                 <select
                   value={selectedFilter}
@@ -452,7 +414,7 @@ export function DashboardClient({
                   <option value="all" className="text-[var(--color-ink-800)]">{filterLabel}</option>
                   {filterOptions.map((opt) => (
                     <option key={opt.id} value={opt.id} className="text-[var(--color-ink-800)]">
-                      {role === "HOSPITAL" ? `Dr. ${opt.name}` : opt.name}
+                      {scope === "HOSPITAL" ? `Dr. ${opt.name}` : opt.name}
                     </option>
                   ))}
                 </select>
@@ -498,9 +460,11 @@ export function DashboardClient({
                 );
               })}
             </div>
-            <Link href="/appointments" className="text-xs font-semibold text-[var(--color-primary-600)] hover:underline whitespace-nowrap">
-              View all →
-            </Link>
+            {can("appointments.view") && (
+              <Link href="/appointments" className="text-xs font-semibold text-[var(--color-primary-600)] hover:underline whitespace-nowrap">
+                View all →
+              </Link>
+            )}
           </div>
         </div>
 
@@ -554,7 +518,7 @@ export function DashboardClient({
                   </div>
                   {displayed.length > 0 && (
                     <div className="space-y-2">
-                      {displayed.map((a, idx) => <ApptRow key={a.id} appt={a} role={role} serial={idx + 1} canManageQueue={can("opd.queue.manage")} />)}
+                      {displayed.map((a, idx) => <ApptRow key={a.id} appt={a} scope={scope} serial={idx + 1} canManageQueue={can("opd.queue.manage")} canViewPatient={can("patients.view")} />)}
                     </div>
                   )}
                 </div>
@@ -579,7 +543,7 @@ export function DashboardClient({
         ) : (
           <div className="space-y-2">
             {partialDispenseAppts.map((a, idx) => (
-              <PartialDispenseRow key={a.id} appt={a} role={role} serial={idx + 1} canDispense={can("opd.dispense")} />
+              <PartialDispenseRow key={a.id} appt={a} scope={scope} serial={idx + 1} canDispense={can("opd.dispense")} canViewPatient={can("patients.view")} />
             ))}
           </div>
         )}
