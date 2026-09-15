@@ -178,7 +178,7 @@ export function Sidebar({
         <div aria-hidden style={{ position: "absolute", top: 0, right: 0, bottom: 0, width: 1, background: "rgba(255,255,255,0.06)", pointerEvents: "none" }} />
 
         {/* Brand */}
-        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "28px 20px 24px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "20px 20px 24px", paddingTop: "calc(28px + env(safe-area-inset-top, 0px))" }}>
           <div style={{ position: "relative", flexShrink: 0 }}>
             <div style={{
               display: "grid", placeItems: "center",
