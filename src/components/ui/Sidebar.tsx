@@ -28,11 +28,15 @@ type NavEntry = TopNavItem;
 const ALL_NAV: NavEntry[] = [
   { href: "/overview",     label: "Dashboard",    icon: LayoutGrid,      permission: "dashboard.view"                                        },
   { href: "/dashboard",    label: "OPD",          icon: LayoutDashboard, permission: "dashboard.view"                                        },
-  { href: "/appointments", label: "Appointments", icon: CalendarDays,    permission: "appointments.view", roles: ["DOCTOR", "HOSPITAL"]      },
+  // `roles` mirrors a page that enforces requireRole; where the page enforces a
+  // permission instead, the permission alone gates the link. Keeping a roles
+  // list on a permission-gated page hid Appointments and Follow Ups from staff
+  // who held the permission and could open the page by URL.
+  { href: "/appointments", label: "Appointments", icon: CalendarDays,    permission: "appointments.view"                                     },
   { href: "/patients",     label: "Patients",     icon: Users,           permission: "patients.view"                                         },
-  { href: "/follow-ups",   label: "Follow Ups",   icon: CalendarClock,   permission: "patients.view",     roles: ["DOCTOR", "HOSPITAL"]      },
+  { href: "/follow-ups",   label: "Follow Ups",   icon: CalendarClock,   permission: "patients.view"                                         },
   { href: "/ipd",          label: "IPD",          icon: BedDouble,       permission: "ipd.view",          roles: ["DOCTOR"]                  },
-  { href: "/analytics",    label: "Analytics",     icon: BarChart2,      permission: "reports.view"                                          },
+  { href: "/analytics",    label: "Analytics",     icon: BarChart2,      permission: "reports.view",      roles: ["DOCTOR", "HOSPITAL"]      },
   { href: "/settings/plugins", label: "Plugins", icon: Puzzle, permission: "plugins.view" },
   { href: "/settings",     label: "Settings",     icon: Settings,        permission: "settings.view"                                         },
 ];
