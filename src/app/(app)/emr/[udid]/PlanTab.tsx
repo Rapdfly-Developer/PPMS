@@ -130,7 +130,7 @@ function PresetPanel({ onApply, onClose }: { onApply: (drugs: PresetDrug[]) => v
     <div className="border border-[var(--color-border)] rounded-xl bg-white mb-4 overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--color-border)]">
-        <p className="text-sm font-semibold text-[var(--color-ink-700)]">Medication Presets</p>
+        <p className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-700)]">Medication Presets</p>
         <div className="flex items-center gap-2">
           <button
             onClick={() => { resetForm(); setShowForm(true); }}
@@ -174,7 +174,7 @@ function PresetPanel({ onApply, onClose }: { onApply: (drugs: PresetDrug[]) => v
       {/* Preset list */}
       <div className="px-4 py-3 max-h-96 overflow-y-auto">
         {Object.keys(grouped).length === 0 ? (
-          <p className="text-sm text-[var(--color-ink-400)] text-center py-6">No presets yet. Click &quot;+ New Preset&quot; to create one.</p>
+          <p className="text-[13px] sm:text-sm text-[var(--color-ink-400)] text-center py-6">No presets yet. Click &quot;+ New Preset&quot; to create one.</p>
         ) : (
           Object.entries(grouped).map(([cat, items]) => (
             <div key={cat} className="mb-5">
@@ -615,7 +615,7 @@ function PresetSelectDialog({
         >
           <div className="flex items-center gap-2.5">
             <Sparkles size={17} className="text-white/80" />
-            <p className="text-sm font-semibold text-white">Select Treatment Preset</p>
+            <p className="text-[13px] sm:text-sm font-semibold text-white">Select Treatment Preset</p>
           </div>
           <button type="button" onClick={onClose} className="text-white/60 hover:text-white p-1">
             <X size={16} />
@@ -648,7 +648,7 @@ function PresetSelectDialog({
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#0F766E] text-white shrink-0">
                         Protocol {protocolNum}
                       </span>
-                      <p className="text-sm font-semibold text-[var(--color-ink-800)]">{preset.name}</p>
+                      <p className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-800)]">{preset.name}</p>
                       {isCustom && (
                         <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 shrink-0">CUSTOM</span>
                       )}
@@ -994,7 +994,7 @@ function PresetSelectDialog({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-xl border border-[var(--color-border)] text-sm font-medium text-[var(--color-ink-500)] hover:bg-[var(--color-surface-sunken)] transition-colors"
+              className="px-4 py-2 rounded-xl border border-[var(--color-border)] text-[13px] sm:text-sm font-medium text-[var(--color-ink-500)] hover:bg-[var(--color-surface-sunken)] transition-colors"
             >
               Cancel
             </button>
@@ -1002,7 +1002,7 @@ function PresetSelectDialog({
               type="button"
               disabled={selected.size === 0 || applying}
               onClick={() => onApply(selectedPresets)}
-              className="px-5 py-2 rounded-xl bg-[#0F766E] text-white text-sm font-semibold hover:bg-[#0D6862] transition-colors disabled:opacity-40 flex items-center gap-2"
+              className="px-5 py-2 rounded-xl bg-[#0F766E] text-white text-[13px] sm:text-sm font-semibold hover:bg-[#0D6862] transition-colors disabled:opacity-40 flex items-center gap-2"
             >
               {applying ? (
                 <><RefreshCw size={13} className="animate-spin" /> Applying…</>
@@ -1073,7 +1073,7 @@ function InvestigationPickerModal({
           className="px-5 py-4 flex items-center justify-between shrink-0"
           style={{ background: "linear-gradient(135deg, #0F766E 0%, #0D9488 100%)" }}
         >
-          <p className="text-sm font-semibold text-white">Add Investigation</p>
+          <p className="text-[13px] sm:text-sm font-semibold text-white">Add Investigation</p>
           <button type="button" onClick={onClose} className="text-white/60 hover:text-white p-1">
             <X size={16} />
           </button>
@@ -1564,7 +1564,7 @@ function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: st
     <Card>
       {/* Heading row */}
       <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-        <p className="text-sm font-medium text-[var(--color-ink-700)]">Minor Procedure</p>
+        <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)]">Minor Procedure</p>
         <button onClick={() => setShowHistory((v) => !v)} className={historyBtnCls}>
           <History size={12} /> History
         </button>
@@ -1653,7 +1653,7 @@ function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: st
                   key={kw}
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => { setAnesthesia(kw); setAnesthesiaOpen(false); }}
-                  className={`w-full text-left px-3 py-2.5 text-sm transition-colors flex items-center justify-between gap-2 ${
+                  className={`w-full text-left px-3 py-2.5 text-[13px] sm:text-sm transition-colors flex items-center justify-between gap-2 ${
                     anesthesia === kw
                       ? "bg-[var(--color-primary-50)] text-[var(--color-primary-700)] font-medium"
                       : "text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]"
@@ -2052,7 +2052,7 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
       )}
 
       <div className={`flex items-center justify-between mb-3 flex-wrap gap-2 ${Object.keys(appliedByDiag).length > 0 ? "mt-4" : ""}`}>
-        <p className="text-sm font-medium text-[var(--color-ink-700)]">Prescription / Medications</p>
+        <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)]">Prescription / Medications</p>
         <div className="flex items-center gap-2">
           {medications.length > 0 && (
             <button
@@ -2128,7 +2128,7 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
                   })()}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm font-medium text-[var(--color-ink-900)]">{med.name}</span>
+                      <span className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-900)]">{med.name}</span>
                       <span className={`text-[10px] px-1.5 py-0.5 rounded-full border font-medium shrink-0 ${categoryColor(med.category)}`}>
                         {med.category}
                       </span>
@@ -2290,7 +2290,7 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
           <div className="w-10 h-10 rounded-xl bg-[var(--color-surface-sunken)] flex items-center justify-center">
             <Pill size={20} className="text-[var(--color-ink-300)]" />
           </div>
-          <p className="text-sm text-[var(--color-ink-400)]">Search for a medication above to add it to the prescription.</p>
+          <p className="text-[13px] sm:text-sm text-[var(--color-ink-400)]">Search for a medication above to add it to the prescription.</p>
         </div>
       ) : (
         <div className="mt-1">
@@ -2348,7 +2348,7 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
                                 </div>
                               );
                             })()}
-                            <span className="text-sm font-semibold text-[var(--color-ink-900)]">{m.drugName}</span>
+                            <span className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-900)]">{m.drugName}</span>
                           </div>
                         )}
                       </td>
@@ -2639,7 +2639,7 @@ function OpticalPrescriptionCard({ visit }: { visit: any }) {
   return (
     <Card>
       <div className="flex items-center justify-between mb-3">
-        <p className="text-sm font-medium text-[var(--color-ink-700)]">Optical Prescription</p>
+        <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)]">Optical Prescription</p>
         {hasData && (
           <span className="flex items-center gap-1 text-[10px] font-semibold text-[var(--color-primary-600)] bg-[var(--color-primary-50)] border border-[var(--color-primary-200)] rounded-full px-2 py-0.5">
             <CheckCircle2 size={10} />
@@ -2664,14 +2664,14 @@ function OpticalPrescriptionCard({ visit }: { visit: any }) {
           {ROWS.map(({ label, rx }) => (
             <tr key={label} className="border-b border-[var(--color-border)]">
               <td className="py-3 pr-2 text-xs font-semibold text-[var(--color-primary-700)] whitespace-nowrap">{label}</td>
-              <td className="text-center py-3 px-1 text-sm text-[var(--color-ink-800)]">{cell(rx.sph)}</td>
-              <td className="text-center py-3 px-1 text-sm text-[var(--color-ink-800)]">{cell(rx.cyl)}</td>
-              <td className="text-center py-3 px-1 text-sm text-[var(--color-ink-800)]">{cell(rx.axis)}</td>
-              <td className="text-center py-3 px-1 text-sm">
+              <td className="text-center py-3 px-1 text-[13px] sm:text-sm text-[var(--color-ink-800)]">{cell(rx.sph)}</td>
+              <td className="text-center py-3 px-1 text-[13px] sm:text-sm text-[var(--color-ink-800)]">{cell(rx.cyl)}</td>
+              <td className="text-center py-3 px-1 text-[13px] sm:text-sm text-[var(--color-ink-800)]">{cell(rx.axis)}</td>
+              <td className="text-center py-3 px-1 text-[13px] sm:text-sm">
                 <span className="inline-block px-1.5 py-0.5 rounded bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)]">{cell(rx.va)}</span>
               </td>
-              <td className="text-center py-3 px-1 text-sm text-[var(--color-ink-800)]">{cell(rx.nearSph)}</td>
-              <td className="text-center py-3 px-1 text-sm">
+              <td className="text-center py-3 px-1 text-[13px] sm:text-sm text-[var(--color-ink-800)]">{cell(rx.nearSph)}</td>
+              <td className="text-center py-3 px-1 text-[13px] sm:text-sm">
                 <span className="inline-block px-1.5 py-0.5 rounded bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)]">{cell(rx.nearVa)}</span>
               </td>
             </tr>
@@ -2694,7 +2694,7 @@ function DispositionCard({ visit, udid, patientSex, priorVisits = [] }: { visit:
 
   return (
     <Card>
-      <p className="text-sm font-medium text-[var(--color-ink-700)] mb-3">Patient Disposition</p>
+      <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)] mb-3">Patient Disposition</p>
       <div className="flex gap-3 flex-wrap mb-2">
         <DispositionToggle icon={<BedDouble size={16} />}  label="Admit"                active={activePanels.includes("admit")}    onClick={() => togglePanel("admit")} />
         <DispositionToggle icon={<Scissors size={16} />}   label="Surgical Counselling" active={activePanels.includes("surgical")} onClick={() => togglePanel("surgical")} />
