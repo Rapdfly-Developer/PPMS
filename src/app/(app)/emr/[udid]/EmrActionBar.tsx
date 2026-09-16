@@ -313,7 +313,7 @@ export function EmrActionBar({
         />
       )}
 
-      <div className="fixed bottom-16 lg:bottom-0 left-0 lg:left-60 right-0 z-20 border-t border-[var(--color-border)] bg-white/95 backdrop-blur-sm px-2 md:px-8 py-2 md:py-3 flex flex-nowrap items-center justify-end gap-1 md:gap-3 shadow-[0_-4px_16px_rgba(20,36,43,0.06)]">
+      <div className="fixed bottom-20 lg:bottom-0 left-0 lg:left-60 right-0 z-20 border-t border-[var(--color-border)] bg-white/95 backdrop-blur-sm px-2 md:px-8 py-2 md:py-3 flex flex-nowrap items-center justify-end gap-1 md:gap-3 shadow-[0_-4px_16px_rgba(20,36,43,0.06)]">
         {!closed && !isLastTab && (
           <button
             onClick={onNextSection}
