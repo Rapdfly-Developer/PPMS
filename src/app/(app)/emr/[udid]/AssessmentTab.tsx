@@ -151,7 +151,7 @@ function DiagnosisRow({
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <p className="text-sm font-medium text-[var(--color-ink-900)]">{d.description}</p>
+            <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-900)]">{d.description}</p>
             {isCustom && (
               <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">Custom</span>
             )}
@@ -266,7 +266,7 @@ function ProtocolPickerModal({
               >
                 <div className="flex items-center justify-between gap-2">
                   <div>
-                    <p className="text-sm font-semibold text-[var(--color-ink-800)]">{label}</p>
+                    <p className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-800)]">{label}</p>
                     {preset && (
                       <p className="text-xs text-[var(--color-ink-500)] mt-0.5">{preset.name}</p>
                     )}
@@ -292,7 +292,7 @@ function ProtocolPickerModal({
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <FileText size={15} className="text-amber-600 shrink-0" />
-                <p className="text-sm font-semibold text-[var(--color-ink-800)]">Custom</p>
+                <p className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-800)]">Custom</p>
               </div>
               {selected === "custom" && <Check size={16} className="text-amber-600 shrink-0" />}
             </div>
@@ -314,7 +314,7 @@ function ProtocolPickerModal({
           <button
             type="button"
             onClick={onCancel}
-            className="px-4 py-2 rounded-lg text-sm font-medium text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)] transition-colors"
+            className="px-4 py-2 rounded-lg text-[13px] sm:text-sm font-medium text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)] transition-colors"
           >
             Cancel
           </button>
@@ -322,7 +322,7 @@ function ProtocolPickerModal({
             type="button"
             disabled={!canSubmit || pending}
             onClick={handleConfirm}
-            className="flex items-center gap-1.5 px-5 py-2 rounded-lg bg-[var(--color-primary-600)] text-white text-sm font-semibold hover:bg-[var(--color-primary-700)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="flex items-center gap-1.5 px-5 py-2 rounded-lg bg-[var(--color-primary-600)] text-white text-[13px] sm:text-sm font-semibold hover:bg-[var(--color-primary-700)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             <Check size={14} />
             Confirm Diagnosis
@@ -688,7 +688,7 @@ export function AssessmentTab({
       {/* ── Provisional Diagnosis ─────────────────────────────────────────── */}
       <Card>
         <div className="flex items-center justify-between mb-3">
-          <p className="text-sm font-medium text-[var(--color-ink-700)]">Provisional Diagnosis</p>
+          <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)]">Provisional Diagnosis</p>
           <button
             type="button"
             onClick={() => setProvHistoryOpen((v) => !v)}
@@ -838,7 +838,7 @@ export function AssessmentTab({
         </div>
 
         {provisionalDiagnoses.length === 0 ? (
-          <p className="text-sm text-[var(--color-ink-400)] py-4 text-center">No provisional diagnoses added yet. Search above to begin.</p>
+          <p className="text-[13px] sm:text-sm text-[var(--color-ink-400)] py-4 text-center">No provisional diagnoses added yet. Search above to begin.</p>
         ) : (
           <ul className="flex flex-col gap-2">
             {provisionalDiagnoses.map((d) => (
@@ -859,7 +859,7 @@ export function AssessmentTab({
       {/* ── Diagnosis (ICD-10) ────────────────────────────────────────────── */}
       <Card>
         <div className="flex items-center justify-between mb-3">
-          <p className="text-sm font-medium text-[var(--color-ink-700)]">Diagnosis (ICD-10)</p>
+          <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)]">Diagnosis (ICD-10)</p>
           <button
             type="button"
             onClick={() => setHistoryOpen((v) => !v)}
@@ -1003,7 +1003,7 @@ export function AssessmentTab({
         </div>
 
         {diagnoses.length === 0 ? (
-          <p className="text-sm text-[var(--color-ink-400)] py-4 text-center">No diagnoses added yet. Search above to begin.</p>
+          <p className="text-[13px] sm:text-sm text-[var(--color-ink-400)] py-4 text-center">No diagnoses added yet. Search above to begin.</p>
         ) : (
           <ul className="flex flex-col gap-2">
             {diagnoses.map((d) => (
@@ -1041,7 +1041,7 @@ export function AssessmentTab({
                   <Plus size={15} className="text-white" />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-white">
+                  <p className="text-[13px] sm:text-sm font-semibold text-white">
                     {customModal.step === "preset" ? "Add Treatment Preset" : "Add Custom Diagnosis"}
                   </p>
                   {customModal.step === "preset" && (
@@ -1122,11 +1122,11 @@ export function AssessmentTab({
                 </div>
                 <div className="px-5 py-4 border-t border-[var(--color-border)] flex items-center justify-end gap-2">
                   <button type="button" onClick={() => setCustomModal(null)}
-                    className="px-4 py-2 rounded-xl border border-[var(--color-border)] text-sm font-medium text-[var(--color-ink-500)] hover:bg-[var(--color-surface-sunken)] transition-colors">
+                    className="px-4 py-2 rounded-xl border border-[var(--color-border)] text-[13px] sm:text-sm font-medium text-[var(--color-ink-500)] hover:bg-[var(--color-surface-sunken)] transition-colors">
                     Cancel
                   </button>
                   <button type="button" disabled={!customModal.name.trim()} onClick={handleSaveCustomDx}
-                    className="px-5 py-2 rounded-xl bg-[#0F766E] text-white text-sm font-semibold hover:bg-[#0D6862] transition-colors disabled:opacity-40">
+                    className="px-5 py-2 rounded-xl bg-[#0F766E] text-white text-[13px] sm:text-sm font-semibold hover:bg-[#0D6862] transition-colors disabled:opacity-40">
                     Save &amp; Add →
                   </button>
                 </div>
@@ -1308,7 +1308,7 @@ export function AssessmentTab({
                     <button type="button"
                       disabled={!presetMeds.some((m) => m.drugName.trim())}
                       onClick={handleSavePreset}
-                      className="px-5 py-2 rounded-xl bg-[#0F766E] text-white text-sm font-semibold hover:bg-[#0D6862] transition-colors disabled:opacity-40">
+                      className="px-5 py-2 rounded-xl bg-[#0F766E] text-white text-[13px] sm:text-sm font-semibold hover:bg-[#0D6862] transition-colors disabled:opacity-40">
                       Save Preset &amp; Apply to Plan
                     </button>
                   </div>
