@@ -215,7 +215,6 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, customPmhCh
                         <X size={13} strokeWidth={2.5} />
                       </button>
                     )}
-                  </div>
                 </div>
 
                 {/* Complaint textarea — full width; "+ Add Chief Complaint" sits next to "+ Keyword" on the last item */}
