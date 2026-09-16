@@ -95,7 +95,7 @@ function Field({
     "w-full rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] disabled:bg-[var(--color-surface-sunken)] disabled:text-[var(--color-ink-400)]";
   return (
     <div>
-      <label className="block text-xs font-semibold text-[var(--color-ink-600)] mb-1">{label}</label>
+      <label className="block text-[11px] sm:text-xs font-semibold text-[var(--color-ink-600)] mb-1">{label}</label>
       {multiline ? (
         <textarea
           value={value} onChange={(e) => onChange(e.target.value)}
@@ -115,7 +115,7 @@ function Field({
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
-    <p className="text-[11px] font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-3">
+    <p className="text-[10px] sm:text-[11px] font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-3">
       {children}
     </p>
   );
@@ -137,7 +137,7 @@ function CheckRow({
         onChange={(e) => onChange(e.target.checked)}
         className="mt-0.5 w-4 h-4 accent-emerald-600 shrink-0"
       />
-      <span className={`text-sm ${checked ? "text-emerald-800 font-medium" : "text-[var(--color-ink-700)]"}`}>
+      <span className={`text-[13px] sm:text-sm ${checked ? "text-emerald-800 font-medium" : "text-[var(--color-ink-700)]"}`}>
         {label}
       </span>
     </label>
@@ -146,7 +146,7 @@ function CheckRow({
 
 function ErrMsg({ msg }: { msg: string }) {
   return msg ? (
-    <div className="flex items-center gap-2 text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+    <div className="flex items-center gap-2 text-[11px] sm:text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
       <AlertCircle size={13} /> {msg}
     </div>
   ) : null;
@@ -156,7 +156,7 @@ function SaveBtn({ pending, label, disabled = false }: { pending: boolean; label
   return (
     <button
       type="submit" disabled={pending || disabled}
-      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[var(--color-primary-600)] text-white text-sm font-semibold hover:bg-[var(--color-primary-700)] disabled:opacity-50 transition-colors"
+      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[var(--color-primary-600)] text-white text-[13px] sm:text-sm font-semibold hover:bg-[var(--color-primary-700)] disabled:opacity-50 transition-colors"
     >
       {pending ? <Loader2 size={15} className="animate-spin" /> : <ChevronRight size={15} />}
       {pending ? "Saving…" : label}
@@ -225,7 +225,7 @@ function StepCheckIn({
         </>
       )}
       {done && rec?.checkInTime && (
-        <p className="text-xs text-emerald-700 font-medium flex items-center gap-1.5">
+        <p className="text-[11px] sm:text-xs text-emerald-700 font-medium flex items-center gap-1.5">
           <CheckCircle2 size={13} /> Check-in completed at {format(new Date(rec.checkInTime), "h:mm a, d MMM yyyy")}
         </p>
       )}
@@ -303,7 +303,7 @@ function StepOtPrep({
         </>
       )}
       {done && (
-        <p className="text-xs text-emerald-700 font-medium flex items-center gap-1.5">
+        <p className="text-[11px] sm:text-xs text-emerald-700 font-medium flex items-center gap-1.5">
           <CheckCircle2 size={13} /> OT preparation and WHO Sign-In completed.
         </p>
       )}
@@ -336,8 +336,8 @@ function StepSurgeryStart({
           <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center">
             <PlayCircle size={32} className="text-emerald-600" />
           </div>
-          <p className="text-lg font-bold text-[var(--color-ink-900)]">Surgery In Progress</p>
-          <p className="text-sm text-[var(--color-ink-500)] flex items-center gap-1.5">
+          <p className="text-[17px] sm:text-lg font-bold text-[var(--color-ink-900)]">Surgery In Progress</p>
+          <p className="text-[13px] sm:text-sm text-[var(--color-ink-500)] flex items-center gap-1.5">
             <Clock size={13} /> Started at {format(new Date(rec.surgeryStartTime), "h:mm a, d MMM yyyy")}
           </p>
         </div>
@@ -347,13 +347,13 @@ function StepSurgeryStart({
             <PlayCircle size={32} className="text-amber-600" />
           </div>
           <div className="text-center">
-            <p className="text-base font-bold text-[var(--color-ink-900)] mb-1">Ready to begin?</p>
-            <p className="text-sm text-[var(--color-ink-500)]">Click to record surgery start time and mark patient as In OT.</p>
+            <p className="text-[15px] sm:text-base font-bold text-[var(--color-ink-900)] mb-1">Ready to begin?</p>
+            <p className="text-[13px] sm:text-sm text-[var(--color-ink-500)]">Click to record surgery start time and mark patient as In OT.</p>
           </div>
           <ErrMsg msg={err} />
           <button
             onClick={handleStart} disabled={pending}
-            className="inline-flex items-center gap-2 px-8 py-3 rounded-xl bg-emerald-600 text-white text-base font-bold hover:bg-emerald-700 disabled:opacity-50 transition-colors shadow-sm"
+            className="inline-flex items-center gap-2 px-8 py-3 rounded-xl bg-emerald-600 text-white text-[15px] sm:text-base font-bold hover:bg-emerald-700 disabled:opacity-50 transition-colors shadow-sm"
           >
             {pending ? <Loader2 size={18} className="animate-spin" /> : <PlayCircle size={18} />}
             {pending ? "Recording…" : "Start Surgery"}
@@ -453,7 +453,7 @@ function StepIntraOp({
         </>
       )}
       {done && (
-        <p className="text-xs text-emerald-700 font-medium flex items-center gap-1.5">
+        <p className="text-[11px] sm:text-xs text-emerald-700 font-medium flex items-center gap-1.5">
           <CheckCircle2 size={13} /> Intra-operative data saved.
         </p>
       )}
@@ -495,7 +495,7 @@ function StepCompletion({
           <ErrMsg msg={err} />
           <button
             type="submit" disabled={pending}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-bold hover:bg-emerald-700 disabled:opacity-50 transition-colors"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 text-white text-[13px] sm:text-sm font-bold hover:bg-emerald-700 disabled:opacity-50 transition-colors"
           >
             {pending ? <Loader2 size={15} className="animate-spin" /> : <CheckSquare size={15} />}
             {pending ? "Completing…" : "Mark Surgery as Completed"}
@@ -503,7 +503,7 @@ function StepCompletion({
         </>
       )}
       {done && rec?.surgeryEndTime && (
-        <p className="text-xs text-emerald-700 font-medium flex items-center gap-1.5">
+        <p className="text-[11px] sm:text-xs text-emerald-700 font-medium flex items-center gap-1.5">
           <CheckCircle2 size={13} /> Surgery completed at {format(new Date(rec.surgeryEndTime), "h:mm a, d MMM yyyy")}
         </p>
       )}
@@ -546,7 +546,7 @@ function StepRecovery({
           <ErrMsg msg={err} />
           <button
             type="submit" disabled={pending}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[var(--color-primary-600)] text-white text-sm font-bold hover:bg-[var(--color-primary-700)] disabled:opacity-50 transition-colors"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[var(--color-primary-600)] text-white text-[13px] sm:text-sm font-bold hover:bg-[var(--color-primary-700)] disabled:opacity-50 transition-colors"
           >
             {pending ? <Loader2 size={15} className="animate-spin" /> : <HeartPulse size={15} />}
             {pending ? "Transferring…" : "Transfer to Recovery Room"}
@@ -555,15 +555,15 @@ function StepRecovery({
       )}
       {done && rec?.transferTime && (
         <div className="flex flex-col gap-3">
-          <p className="text-xs text-emerald-700 font-medium flex items-center gap-1.5">
+          <p className="text-[11px] sm:text-xs text-emerald-700 font-medium flex items-center gap-1.5">
             <CheckCircle2 size={13} /> Transferred to recovery at {format(new Date(rec.transferTime), "h:mm a, d MMM yyyy")}
           </p>
           <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-center space-y-2">
             <CheckCircle2 size={32} className="text-emerald-600 mx-auto" />
-            <p className="text-base font-bold text-emerald-800">OT Workflow Complete</p>
-            <p className="text-sm text-emerald-700">Surgery record, operative notes, and audit timeline have been saved.</p>
+            <p className="text-[15px] sm:text-base font-bold text-emerald-800">OT Workflow Complete</p>
+            <p className="text-[13px] sm:text-sm text-emerald-700">Surgery record, operative notes, and audit timeline have been saved.</p>
             <Link href="/scheduled-ot"
-              className="inline-flex items-center gap-1.5 mt-2 text-sm font-semibold text-[var(--color-primary-700)] hover:underline">
+              className="inline-flex items-center gap-1.5 mt-2 text-[13px] sm:text-sm font-semibold text-[var(--color-primary-700)] hover:underline">
               <ArrowLeft size={14} /> Back to Scheduled OT
             </Link>
           </div>
@@ -578,18 +578,18 @@ function TimelineSidebar({ entries }: { entries: TimelineEntry[] }) {
   if (entries.length === 0) return null;
   return (
     <div className="rounded-xl border border-[var(--color-border)] bg-white p-4">
-      <p className="text-[11px] font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-4 flex items-center gap-1.5">
+      <p className="text-[10px] sm:text-[11px] font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-4 flex items-center gap-1.5">
         <Clock size={11} /> Surgery Timeline
       </p>
       <ol className="relative border-l border-[var(--color-border)] ml-1.5 space-y-4">
         {entries.map((entry, i) => (
           <li key={i} className="pl-4">
             <div className="absolute -left-1.5 mt-1 w-3 h-3 rounded-full bg-[var(--color-primary-400)] border-2 border-white" />
-            <p className="text-[11px] text-[var(--color-ink-400)]">
+            <p className="text-[10px] sm:text-[11px] text-[var(--color-ink-400)]">
               {format(new Date(entry.performedAt), "h:mm a, d MMM")}
             </p>
-            <p className="text-xs font-medium text-[var(--color-ink-800)]">{entry.action}</p>
-            <p className="text-[10px] text-[var(--color-ink-400)]">by {entry.performedBy}</p>
+            <p className="text-[11px] sm:text-xs font-medium text-[var(--color-ink-800)]">{entry.action}</p>
+            <p className="text-[9px] sm:text-[10px] text-[var(--color-ink-400)]">by {entry.performedBy}</p>
           </li>
         ))}
       </ol>
@@ -669,15 +669,15 @@ export function OtRoomClient({
         </Link>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap mb-1">
-            <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-700 border border-red-200 uppercase tracking-wide">
+            <span className="inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-700 border border-red-200 uppercase tracking-wide">
               OT Room
             </span>
-            <span className="text-xs font-medium px-2 py-0.5 rounded bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)]">
+            <span className="text-[11px] sm:text-xs font-medium px-2 py-0.5 rounded bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)]">
               {surgeryCategory}
             </span>
           </div>
-          <h1 className="text-xl font-bold text-[var(--color-ink-900)] leading-tight">{surgeryName}</h1>
-          <div className="flex flex-wrap gap-x-4 gap-y-0.5 mt-1 text-xs text-[var(--color-ink-500)]">
+          <h1 className="text-lg sm:text-xl font-bold text-[var(--color-ink-900)] leading-tight">{surgeryName}</h1>
+          <div className="flex flex-wrap gap-x-4 gap-y-0.5 mt-1 text-[11px] sm:text-xs text-[var(--color-ink-500)]">
             <span className="flex items-center gap-1"><User size={11} /> {patient.name}, {patient.age}y</span>
             {patient.uhid && <span className="font-mono text-teal-700">{patient.uhid}</span>}
             <span className="flex items-center gap-1"><Building2 size={11} /> {hospital.name}</span>
@@ -740,8 +740,8 @@ export function OtRoomClient({
                 {(() => { const Icon = STEPS[activeStep].icon; return <Icon size={16} />; })()}
               </div>
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-ink-400)]">Step {activeStep + 1} of {STEPS.length}</p>
-                <h2 className="text-base font-bold text-[var(--color-ink-900)]">{STEPS[activeStep].label}</h2>
+                <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-[var(--color-ink-400)]">Step {activeStep + 1} of {STEPS.length}</p>
+                <h2 className="text-[15px] sm:text-base font-bold text-[var(--color-ink-900)]">{STEPS[activeStep].label}</h2>
               </div>
             </div>
 
@@ -787,7 +787,7 @@ export function OtRoomClient({
               <div className="mt-5 pt-4 border-t border-[var(--color-border)]">
                 <button
                   onClick={() => setActiveStep((s) => s + 1)}
-                  className="inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--color-primary-700)] hover:underline"
+                  className="inline-flex items-center gap-1.5 text-[13px] sm:text-sm font-semibold text-[var(--color-primary-700)] hover:underline"
                 >
                   Continue to {STEPS[activeStep + 1].label} <ChevronRight size={14} />
                 </button>
@@ -799,8 +799,8 @@ export function OtRoomClient({
         {/* Timeline */}
         <div className="lg:col-span-1 space-y-4">
           {/* Surgery summary card */}
-          <div className="rounded-xl border border-[var(--color-border)] bg-white p-4 space-y-3 text-xs">
-            <p className="text-[11px] font-bold uppercase tracking-widest text-[var(--color-ink-400)] flex items-center gap-1.5">
+          <div className="rounded-xl border border-[var(--color-border)] bg-white p-4 space-y-3 text-[11px] sm:text-xs">
+            <p className="text-[10px] sm:text-[11px] font-bold uppercase tracking-widest text-[var(--color-ink-400)] flex items-center gap-1.5">
               <FileText size={11} /> Surgery Summary
             </p>
             {[
