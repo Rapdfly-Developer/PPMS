@@ -39,8 +39,8 @@ const DIVIDERS = new Set([4, 7, 10]);
 function SectionHeader({ title, desc }: { title: string; desc: string }) {
   return (
     <div className="mb-5">
-      <h2 className="text-lg font-semibold text-[var(--color-ink-900)]">{title}</h2>
-      <p className="text-sm text-[var(--color-ink-500)] mt-0.5">{desc}</p>
+      <h2 className="text-base sm:text-lg font-semibold text-[var(--color-ink-900)]">{title}</h2>
+      <p className="text-[13px] sm:text-sm text-[var(--color-ink-500)] mt-0.5">{desc}</p>
     </div>
   );
 }
@@ -57,8 +57,8 @@ function FieldRow({ label, desc, children }: { label: string; desc?: string; chi
   return (
     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-6 py-4 border-b border-[var(--color-border)] last:border-0">
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-[var(--color-ink-800)]">{label}</p>
-        {desc && <p className="text-xs text-[var(--color-ink-400)] mt-0.5">{desc}</p>}
+        <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-800)]">{label}</p>
+        {desc && <p className="text-[11px] sm:text-xs text-[var(--color-ink-400)] mt-0.5">{desc}</p>}
       </div>
       <div className="flex-shrink-0">{children}</div>
     </div>
@@ -85,7 +85,7 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
 
 function SoonBadge() {
   return (
-    <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700 border border-amber-200">
+    <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] sm:text-[10px] font-bold bg-amber-100 text-amber-700 border border-amber-200">
       Soon
     </span>
   );
@@ -97,7 +97,7 @@ function SaveRow({ onSave, pending }: { onSave: () => void; pending: boolean }) 
       <button
         onClick={onSave}
         disabled={pending}
-        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[var(--color-primary-600)] text-white text-sm font-medium hover:bg-[var(--color-primary-700)] disabled:opacity-50 transition-colors"
+        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[var(--color-primary-600)] text-white text-[13px] sm:text-sm font-medium hover:bg-[var(--color-primary-700)] disabled:opacity-50 transition-colors"
       >
         <Save size={14} />{pending ? "Saving…" : "Save Changes"}
       </button>
@@ -107,8 +107,8 @@ function SaveRow({ onSave, pending }: { onSave: () => void; pending: boolean }) 
 
 const SEL = "rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-sm text-[var(--color-ink-700)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] bg-white";
 const INP = "w-full rounded-xl border border-[var(--color-border)] px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] bg-white";
-const LBL = "block text-xs font-medium text-[var(--color-ink-500)] mb-1.5";
-const SEC = "text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)] mb-4";
+const LBL = "block text-[11px] sm:text-xs font-medium text-[var(--color-ink-500)] mb-1.5";
+const SEC = "text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)] mb-4";
 
 // ── Section: General ──────────────────────────────────────────────────────────
 function GeneralSection() {
@@ -147,7 +147,7 @@ function GeneralSection() {
             <div className="flex gap-1.5">
               {(["light", "dark", "system"] as const).map(t => (
                 <button key={t} onClick={() => setTheme(t)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium border capitalize transition-colors ${
+                  className={`px-3 py-1.5 rounded-lg text-[11px] sm:text-xs font-medium border capitalize transition-colors ${
                     theme === t
                       ? "bg-[var(--color-primary-600)] text-white border-[var(--color-primary-600)]"
                       : "bg-white text-[var(--color-ink-600)] border-[var(--color-border)] hover:bg-[var(--color-ink-50)]"
@@ -216,7 +216,7 @@ function HospitalInfoSection({ hospital, onSaved }: { hospital: Hospital; onSave
 
       {/* Logo */}
       <Card className="mb-4 p-5">
-        <p className="text-sm font-semibold text-[var(--color-ink-900)] mb-3">Hospital Logo</p>
+        <p className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-900)] mb-3">Hospital Logo</p>
         <div className="flex items-center gap-4">
           <div className="w-20 h-20 rounded-2xl border-2 border-dashed border-[var(--color-border)] bg-[var(--color-surface-sunken)] flex items-center justify-center overflow-hidden shrink-0">
             {logoPreview
@@ -224,7 +224,7 @@ function HospitalInfoSection({ hospital, onSaved }: { hospital: Hospital; onSave
               : <Building2 size={28} className="text-[var(--color-ink-300)]" />}
           </div>
           <div>
-            <label className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-[var(--color-border)] bg-white text-sm font-medium text-[var(--color-ink-700)] cursor-pointer hover:bg-[var(--color-ink-50)] transition-colors ${logoUploading ? "opacity-50 pointer-events-none" : ""}`}>
+            <label className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-[var(--color-border)] bg-white text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)] cursor-pointer hover:bg-[var(--color-ink-50)] transition-colors ${logoUploading ? "opacity-50 pointer-events-none" : ""}`}>
               <Upload size={14} /> {logoUploading ? "Uploading…" : "Upload Logo"}
               <input
                 type="file"
@@ -234,9 +234,9 @@ function HospitalInfoSection({ hospital, onSaved }: { hospital: Hospital; onSave
                 disabled={logoUploading}
               />
             </label>
-            <p className="text-xs text-[var(--color-ink-400)] mt-1.5">PNG or SVG · max 2 MB · 200×200 px recommended</p>
+            <p className="text-[11px] sm:text-xs text-[var(--color-ink-400)] mt-1.5">PNG or SVG · max 2 MB · 200×200 px recommended</p>
             {logoMsg && (
-              <p className={`text-xs mt-1 ${logoMsg.type === "ok" ? "text-emerald-600" : "text-red-500"}`}>
+              <p className={`text-[11px] sm:text-xs mt-1 ${logoMsg.type === "ok" ? "text-emerald-600" : "text-red-500"}`}>
                 {logoMsg.text}
               </p>
             )}
@@ -246,12 +246,12 @@ function HospitalInfoSection({ hospital, onSaved }: { hospital: Hospital; onSave
 
       {/* Identity */}
       <Card className="mb-4 p-5">
-        <p className="text-sm font-semibold text-[var(--color-ink-900)] mb-4">Identity</p>
+        <p className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-900)] mb-4">Identity</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className={LBL}>Hospital Name</label>
             <input value={hospital.name} disabled className={`${INP} opacity-50 cursor-not-allowed`} />
-            <p className="text-[10px] text-[var(--color-ink-400)] mt-1">Contact support to change.</p>
+            <p className="text-[9px] sm:text-[10px] text-[var(--color-ink-400)] mt-1">Contact support to change.</p>
           </div>
           <div>
             <label className={LBL}>Short Code</label>
@@ -276,7 +276,7 @@ function HospitalInfoSection({ hospital, onSaved }: { hospital: Hospital; onSave
         </div>
       </Card>
 
-      {error && <p className="text-sm text-red-600 mb-3">{error}</p>}
+      {error && <p className="text-[13px] sm:text-sm text-red-600 mb-3">{error}</p>}
       <SaveRow onSave={save} pending={pending} />
     </>
   );
@@ -305,13 +305,13 @@ function DepartmentsSection() {
           <input value={newDept} onChange={e => setNewDept(e.target.value)} onKeyDown={e => e.key === "Enter" && add()}
             placeholder="Add new department…" className={`${INP} flex-1`} />
           <button onClick={add}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[var(--color-primary-600)] text-white text-sm font-medium hover:bg-[var(--color-primary-700)] transition-colors">
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[var(--color-primary-600)] text-white text-[13px] sm:text-sm font-medium hover:bg-[var(--color-primary-700)] transition-colors">
             <Plus size={14} /> Add
           </button>
         </div>
         <div className="flex flex-wrap gap-2">
           {depts.map(d => (
-            <span key={d} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[var(--color-surface-sunken)] border border-[var(--color-border)] text-sm font-medium text-[var(--color-ink-700)]">
+            <span key={d} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[var(--color-surface-sunken)] border border-[var(--color-border)] text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)]">
               {d}
               <button onClick={() => setDepts(depts.filter(x => x !== d))} className="text-[var(--color-ink-400)] hover:text-red-600 transition-colors">
                 <X size={13} />
@@ -319,7 +319,7 @@ function DepartmentsSection() {
             </span>
           ))}
         </div>
-        <p className="text-xs text-[var(--color-ink-400)] mt-4">{depts.length} departments configured</p>
+        <p className="text-[11px] sm:text-xs text-[var(--color-ink-400)] mt-4">{depts.length} departments configured</p>
       </Card>
     </>
   );
@@ -370,12 +370,12 @@ function UsersRolesSection() {
           return (
             <Card key={role.key} className="p-4">
               <div className="flex items-center gap-2 mb-2">
-                <span className={`w-7 h-7 rounded-lg flex items-center justify-center text-white text-[11px] font-bold ${role.bg}`}>
+                <span className={`w-7 h-7 rounded-lg flex items-center justify-center text-white text-[10px] sm:text-[11px] font-bold ${role.bg}`}>
                   {role.short}
                 </span>
                 <div>
-                  <p className="text-xs font-semibold text-[var(--color-ink-900)] leading-tight">{role.label}</p>
-                  <p className="text-[10px] text-[var(--color-ink-400)]">{count}/{totalPerms} permissions</p>
+                  <p className="text-[11px] sm:text-xs font-semibold text-[var(--color-ink-900)] leading-tight">{role.label}</p>
+                  <p className="text-[9px] sm:text-[10px] text-[var(--color-ink-400)]">{count}/{totalPerms} permissions</p>
                 </div>
               </div>
               <div className="h-1.5 rounded-full bg-[var(--color-surface-sunken)]">
@@ -389,14 +389,14 @@ function UsersRolesSection() {
       {/* Permission matrix */}
       <Card className="overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm min-w-[480px]">
+          <table className="w-full text-[13px] sm:text-sm min-w-[480px]">
             <thead>
               <tr className="border-b border-[var(--color-border)] bg-[var(--color-surface-sunken)]">
-                <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)] w-[52%]">Permission</th>
+                <th className="px-4 py-3 text-left text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)] w-[52%]">Permission</th>
                 {ROLES_DEF.map(r => (
-                  <th key={r.key} className="px-3 py-3 text-center text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">
-                    <span className={`inline-flex items-center justify-center w-5 h-5 rounded text-white text-[10px] font-bold ${r.bg}`}>{r.short}</span>
-                    <span className="block mt-1 text-[9px] whitespace-nowrap">{r.label.split(" ")[0]}</span>
+                  <th key={r.key} className="px-3 py-3 text-center text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">
+                    <span className={`inline-flex items-center justify-center w-5 h-5 rounded text-white text-[9px] sm:text-[10px] font-bold ${r.bg}`}>{r.short}</span>
+                    <span className="block mt-1 text-[9px] sm:text-[9px] whitespace-nowrap">{r.label.split(" ")[0]}</span>
                   </th>
                 ))}
               </tr>
@@ -405,15 +405,15 @@ function UsersRolesSection() {
               {PERM_MATRIX.map(group => (
                 <React.Fragment key={group.cat}>
                   <tr>
-                    <td colSpan={4} className="px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)] bg-[var(--color-surface-sunken)]/50">
+                    <td colSpan={4} className="px-4 py-2 text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)] bg-[var(--color-surface-sunken)]/50">
                       {group.cat}
                     </td>
                   </tr>
                   {group.perms.map(perm => (
                     <tr key={perm.label} className="border-t border-[var(--color-border)] hover:bg-[var(--color-ink-50)] transition-colors">
                       <td className="px-4 py-2.5">
-                        <p className="text-xs font-medium text-[var(--color-ink-800)]">{perm.label}</p>
-                        <p className="text-[10px] text-[var(--color-ink-400)]">{perm.desc}</p>
+                        <p className="text-[11px] sm:text-xs font-medium text-[var(--color-ink-800)]">{perm.label}</p>
+                        <p className="text-[9px] sm:text-[10px] text-[var(--color-ink-400)]">{perm.desc}</p>
                       </td>
                       {ROLES_DEF.map(role => {
                         const isAdmin  = role.key === "DOCTOR";
@@ -438,7 +438,7 @@ function UsersRolesSection() {
             </tbody>
           </table>
         </div>
-        <div className="px-4 py-2.5 border-t border-[var(--color-border)] bg-[var(--color-surface-sunken)] flex gap-4 text-[10px] text-[var(--color-ink-400)]">
+        <div className="px-4 py-2.5 border-t border-[var(--color-border)] bg-[var(--color-surface-sunken)] flex gap-4 text-[9px] sm:text-[10px] text-[var(--color-ink-400)]">
           <span className="flex items-center gap-1"><span className="w-4 h-4 rounded-full bg-[var(--color-primary-100)] inline-flex items-center justify-center"><Crown size={8} className="text-[var(--color-primary-600)]" /></span> Super Admin</span>
           <span className="flex items-center gap-1"><span className="w-4 h-4 rounded-full bg-emerald-100 inline-flex items-center justify-center"><Check size={8} className="text-emerald-600" strokeWidth={2.5} /></span> Allowed</span>
           <span className="flex items-center gap-1"><span className="w-4 h-4 rounded-full bg-[var(--color-surface-sunken)] inline-flex items-center justify-center"><Minus size={8} className="text-[var(--color-ink-300)]" /></span> Restricted</span>
@@ -467,7 +467,7 @@ function AppointmentsSection() {
           <div className="flex gap-1.5 flex-wrap">
             {[10,15,20,30,45,60].map(m => (
               <button key={m} onClick={() => setSlotMins(m)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                className={`px-3 py-1.5 rounded-lg text-[11px] sm:text-xs font-medium border transition-colors ${
                   slotMins === m ? "bg-[var(--color-primary-600)] text-white border-[var(--color-primary-600)]"
                                  : "bg-white text-[var(--color-ink-600)] border-[var(--color-border)] hover:bg-[var(--color-ink-50)]"
                 }`}>{m}m</button>
@@ -478,7 +478,7 @@ function AppointmentsSection() {
           <div className="flex items-center gap-2">
             <input type="number" value={maxPerDay} onChange={e => setMaxPerDay(Number(e.target.value))} min={1} max={500}
               className="w-20 rounded-lg border border-[var(--color-border)] px-2 py-1.5 text-sm text-center focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]" />
-            <span className="text-xs text-[var(--color-ink-400)]">appts</span>
+            <span className="text-[11px] sm:text-xs text-[var(--color-ink-400)]">appts</span>
           </div>
         </FieldRow>
         <FieldRow label="Advance Booking Window" desc="How far ahead patients can book">
@@ -522,20 +522,20 @@ function NotificationsSection() {
       <SectionHeader title="Notification Preferences" desc="Control when and how the hospital receives system notifications." />
       <Card className="overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-[13px] sm:text-sm">
             <thead>
               <tr className="border-b border-[var(--color-border)] bg-[var(--color-surface-sunken)]">
-                <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)] w-[60%]">Event</th>
-                <th className="px-4 py-3 text-center text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">Email</th>
-                <th className="px-4 py-3 text-center text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">SMS</th>
+                <th className="px-4 py-3 text-left text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)] w-[60%]">Event</th>
+                <th className="px-4 py-3 text-center text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">Email</th>
+                <th className="px-4 py-3 text-center text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">SMS</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--color-border)]">
               {NOTIF_EVENTS.map((ev, i) => (
                 <tr key={ev.label} className="hover:bg-[var(--color-ink-50)] transition-colors">
                   <td className="px-4 py-3.5">
-                    <p className="text-sm font-medium text-[var(--color-ink-800)]">{ev.label}</p>
-                    <p className="text-xs text-[var(--color-ink-400)] mt-0.5">{ev.desc}</p>
+                    <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-800)]">{ev.label}</p>
+                    <p className="text-[11px] sm:text-xs text-[var(--color-ink-400)] mt-0.5">{ev.desc}</p>
                   </td>
                   <td className="px-4 py-3.5 text-center"><Toggle checked={prefs[i].email} onChange={() => toggle(i, "email")} /></td>
                   <td className="px-4 py-3.5 text-center"><Toggle checked={prefs[i].sms}   onChange={() => toggle(i, "sms")}   /></td>
@@ -556,8 +556,8 @@ function BillingSection() {
       <SectionHeader title="Billing & Payments" desc="Fee structures, payment methods, and invoice configuration." />
       <Card className="p-12 text-center">
         <CreditCard size={36} className="mx-auto text-[var(--color-ink-300)] mb-3" />
-        <p className="text-base font-semibold text-[var(--color-ink-700)]">Billing module coming soon</p>
-        <p className="text-sm text-[var(--color-ink-400)] mt-1 max-w-xs mx-auto">
+        <p className="text-[15px] sm:text-base font-semibold text-[var(--color-ink-700)]">Billing module coming soon</p>
+        <p className="text-[13px] sm:text-sm text-[var(--color-ink-400)] mt-1 max-w-xs mx-auto">
           Fee collection, invoicing, payment gateway integration, and revenue analytics will be available in a future release.
         </p>
       </Card>
@@ -587,7 +587,7 @@ function SecuritySection() {
           <div className="flex gap-1.5">
             {[3,5,10,20].map(n => (
               <button key={n} onClick={() => setMaxAttempts(n)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                className={`px-3 py-1.5 rounded-lg text-[11px] sm:text-xs font-medium border transition-colors ${
                   maxAttempts === n ? "bg-[var(--color-primary-600)] text-white border-[var(--color-primary-600)]"
                                    : "bg-white text-[var(--color-ink-600)] border-[var(--color-border)] hover:bg-[var(--color-ink-50)]"
                 }`}>{n}×</button>
@@ -601,7 +601,7 @@ function SecuritySection() {
           <div className="flex items-center gap-2">
             <input type="number" value={minPwd} onChange={e => setMinPwd(Number(e.target.value))} min={6} max={32}
               className="w-16 rounded-lg border border-[var(--color-border)] px-2 py-1.5 text-sm text-center focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]" />
-            <span className="text-xs text-[var(--color-ink-400)]">characters</span>
+            <span className="text-[11px] sm:text-xs text-[var(--color-ink-400)]">characters</span>
           </div>
         </FieldRow>
       </Card>
@@ -635,16 +635,16 @@ function IntegrationsSection() {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {INTEGRATIONS.map(int => (
           <Card key={int.name} className="p-4 flex items-start gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[var(--color-surface-sunken)] flex items-center justify-center text-xl flex-shrink-0">
+            <div className="w-10 h-10 rounded-xl bg-[var(--color-surface-sunken)] flex items-center justify-center text-lg sm:text-xl flex-shrink-0">
               {int.icon}
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between gap-2 mb-0.5">
-                <p className="text-sm font-semibold text-[var(--color-ink-900)]">{int.name}</p>
+                <p className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-900)]">{int.name}</p>
                 <SoonBadge />
               </div>
-              <p className="text-xs text-[var(--color-ink-400)]">{int.desc}</p>
-              <button className="mt-2 text-xs font-medium text-[var(--color-ink-300)] cursor-not-allowed">Configure →</button>
+              <p className="text-[11px] sm:text-xs text-[var(--color-ink-400)]">{int.desc}</p>
+              <button className="mt-2 text-[11px] sm:text-xs font-medium text-[var(--color-ink-300)] cursor-not-allowed">Configure →</button>
             </div>
           </Card>
         ))}
@@ -678,24 +678,24 @@ function DataBackupSection({ hospital, onSaved }: { hospital: Hospital; onSaved:
       <Card className="mb-4 p-5">
         <div className="flex items-center gap-2 mb-1">
           <Clock size={15} className="text-[var(--color-primary-600)]" />
-          <p className="text-sm font-semibold text-[var(--color-ink-900)]">Data Retention Policy</p>
+          <p className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-900)]">Data Retention Policy</p>
         </div>
-        <p className="text-xs text-[var(--color-ink-400)] mb-4">Patient records are retained for this period per compliance requirements.</p>
+        <p className="text-[11px] sm:text-xs text-[var(--color-ink-400)] mb-4">Patient records are retained for this period per compliance requirements.</p>
         <div className="flex flex-wrap gap-2 mb-3">
           {RETENTION.map(y => (
             <button key={y} onClick={() => setYears(y)}
-              className={`px-4 py-2 rounded-xl text-sm font-medium border transition-colors ${
+              className={`px-4 py-2 rounded-xl text-[13px] sm:text-sm font-medium border transition-colors ${
                 years === y ? "bg-[var(--color-primary-600)] text-white border-[var(--color-primary-600)]"
                             : "bg-white text-[var(--color-ink-600)] border-[var(--color-border)] hover:bg-[var(--color-ink-50)]"
               }`}>{y} yr{y !== 1 ? "s" : ""}</button>
           ))}
         </div>
-        <p className="text-xs text-[var(--color-ink-400)]">Currently <strong>{years} years</strong>. Older records may be archived.</p>
+        <p className="text-[11px] sm:text-xs text-[var(--color-ink-400)]">Currently <strong>{years} years</strong>. Older records may be archived.</p>
       </Card>
 
       {/* Export */}
       <Card className="mb-4 p-5">
-        <p className="text-sm font-semibold text-[var(--color-ink-900)] mb-3">Export Data</p>
+        <p className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-900)] mb-3">Export Data</p>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {[
             { label: "Patient Records",     icon: <Users size={15} />,    desc: "All patient demographics"  },
@@ -706,8 +706,8 @@ function DataBackupSection({ hospital, onSaved }: { hospital: Hospital; onSaved:
               className="flex flex-col items-start gap-2 p-3.5 rounded-xl border border-[var(--color-border)] bg-white hover:bg-[var(--color-ink-50)] transition-colors text-left">
               <div className="flex items-center gap-1.5 text-[var(--color-primary-600)]">{ex.icon}<Download size={13} /></div>
               <div>
-                <p className="text-xs font-semibold text-[var(--color-ink-800)]">{ex.label}</p>
-                <p className="text-[10px] text-[var(--color-ink-400)]">{ex.desc}</p>
+                <p className="text-[11px] sm:text-xs font-semibold text-[var(--color-ink-800)]">{ex.label}</p>
+                <p className="text-[9px] sm:text-[10px] text-[var(--color-ink-400)]">{ex.desc}</p>
               </div>
             </button>
           ))}
@@ -717,28 +717,28 @@ function DataBackupSection({ hospital, onSaved }: { hospital: Hospital; onSaved:
       {/* Backup schedule */}
       <Card className="mb-5 p-5">
         <div className="flex items-center justify-between mb-3">
-          <p className="text-sm font-semibold text-[var(--color-ink-900)]">Automated Backup</p>
+          <p className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-900)]">Automated Backup</p>
           <SoonBadge />
         </div>
         <div className="grid grid-cols-2 gap-3 opacity-40 pointer-events-none">
           <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center gap-2">
             <RefreshCw size={14} className="text-emerald-600" />
             <div>
-              <p className="text-xs font-semibold text-emerald-800">Daily at 2:00 AM</p>
-              <p className="text-[10px] text-emerald-600">Last run: —</p>
+              <p className="text-[11px] sm:text-xs font-semibold text-emerald-800">Daily at 2:00 AM</p>
+              <p className="text-[9px] sm:text-[10px] text-emerald-600">Last run: —</p>
             </div>
           </div>
           <div className="p-3 rounded-xl bg-[var(--color-surface-sunken)] border border-[var(--color-border)] flex items-center gap-2">
             <CheckCircle2 size={14} className="text-[var(--color-ink-400)]" />
             <div>
-              <p className="text-xs font-semibold text-[var(--color-ink-600)]">7-day retention</p>
-              <p className="text-[10px] text-[var(--color-ink-400)]">Stored in cloud</p>
+              <p className="text-[11px] sm:text-xs font-semibold text-[var(--color-ink-600)]">7-day retention</p>
+              <p className="text-[9px] sm:text-[10px] text-[var(--color-ink-400)]">Stored in cloud</p>
             </div>
           </div>
         </div>
       </Card>
 
-      {error && <p className="text-sm text-red-600 mb-3">{error}</p>}
+      {error && <p className="text-[13px] sm:text-sm text-red-600 mb-3">{error}</p>}
       <SaveRow onSave={save} pending={pending} />
     </>
   );
@@ -761,8 +761,8 @@ function AuditLogsSection() {
     <>
       <SectionHeader title="Audit Logs" desc="A chronological record of all system actions performed by staff." />
       <div className="flex items-center justify-between mb-3">
-        <p className="text-xs text-[var(--color-ink-400)]">27 Jun 2026 — 8 most recent events</p>
-        <button className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border border-[var(--color-border)] bg-white text-[var(--color-ink-700)] hover:bg-[var(--color-ink-50)] transition-colors">
+        <p className="text-[11px] sm:text-xs text-[var(--color-ink-400)]">27 Jun 2026 — 8 most recent events</p>
+        <button className="inline-flex items-center gap-1.5 text-[11px] sm:text-xs font-medium px-3 py-1.5 rounded-lg border border-[var(--color-border)] bg-white text-[var(--color-ink-700)] hover:bg-[var(--color-ink-50)] transition-colors">
           <Download size={12} /> Export Log
         </button>
       </div>
@@ -773,18 +773,18 @@ function AuditLogsSection() {
               <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${log.dot}`} />
               <div className="flex-1 min-w-0 flex items-start justify-between gap-4">
                 <div>
-                  <p className="text-xs font-semibold text-[var(--color-ink-800)]">{log.action}</p>
-                  <p className="text-[10px] text-[var(--color-ink-400)] mt-0.5">{log.subject}</p>
+                  <p className="text-[11px] sm:text-xs font-semibold text-[var(--color-ink-800)]">{log.action}</p>
+                  <p className="text-[9px] sm:text-[10px] text-[var(--color-ink-400)] mt-0.5">{log.subject}</p>
                 </div>
                 <div className="text-right flex-shrink-0">
-                  <p className="text-[10px] font-medium text-[var(--color-ink-500)]">{log.time}</p>
-                  <p className="text-[10px] text-[var(--color-ink-400)] mt-0.5">{log.user}</p>
+                  <p className="text-[9px] sm:text-[10px] font-medium text-[var(--color-ink-500)]">{log.time}</p>
+                  <p className="text-[9px] sm:text-[10px] text-[var(--color-ink-400)] mt-0.5">{log.user}</p>
                 </div>
               </div>
             </div>
           ))}
         </div>
-        <div className="px-4 py-2.5 border-t border-[var(--color-border)] bg-[var(--color-surface-sunken)] text-center text-xs text-[var(--color-ink-400)]">
+        <div className="px-4 py-2.5 border-t border-[var(--color-border)] bg-[var(--color-surface-sunken)] text-center text-[11px] sm:text-xs text-[var(--color-ink-400)]">
           Full audit log persistence coming in a future release
         </div>
       </Card>
@@ -818,15 +818,15 @@ export function HospitalSettingsClient({ hospital }: { hospital: Hospital }) {
     <div className="fade-in">
       {/* Toast */}
       {savedToast && (
-        <div className="fixed top-4 right-4 z-50 flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-medium shadow-lg animate-in slide-in-from-top-2">
+        <div className="fixed top-4 right-4 z-50 flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 text-white text-[13px] sm:text-sm font-medium shadow-lg animate-in slide-in-from-top-2">
           <CheckCircle2 size={15} /> Settings saved successfully
         </div>
       )}
 
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-[var(--color-ink-900)] tracking-tight">Settings</h1>
-        <p className="text-sm text-[var(--color-ink-500)] mt-0.5">{hospital.name} · Hospital Management System configuration</p>
+        <h1 className="text-xl sm:text-2xl font-semibold text-[var(--color-ink-900)] tracking-tight">Settings</h1>
+        <p className="text-[13px] sm:text-sm text-[var(--color-ink-500)] mt-0.5">{hospital.name} · Hospital Management System configuration</p>
       </div>
 
       {/* Mobile horizontal tabs */}
@@ -834,7 +834,7 @@ export function HospitalSettingsClient({ hospital }: { hospital: Hospital }) {
         <div className="flex gap-1 min-w-max">
           {NAV.map(item => (
             <button key={item.key} onClick={() => setSection(item.key)}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition-colors ${
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] sm:text-xs font-medium whitespace-nowrap transition-colors ${
                 section === item.key
                   ? "bg-[var(--color-primary-600)] text-white"
                   : "bg-white border border-[var(--color-border)] text-[var(--color-ink-600)]"
@@ -858,7 +858,7 @@ export function HospitalSettingsClient({ hospital }: { hospital: Hospital }) {
                   {DIVIDERS.has(idx) && <div className="h-px bg-[var(--color-border)]" />}
                   <button
                     onClick={() => setSection(item.key)}
-                    className={`w-full flex items-center justify-between gap-2 px-3.5 py-2.5 text-sm font-medium transition-colors text-left ${
+                    className={`w-full flex items-center justify-between gap-2 px-3.5 py-2.5 text-[13px] sm:text-sm font-medium transition-colors text-left ${
                       active
                         ? "bg-[var(--color-primary-50)] text-[var(--color-primary-700)]"
                         : "text-[var(--color-ink-600)] hover:bg-[var(--color-ink-50)] hover:text-[var(--color-ink-900)]"

@@ -246,7 +246,8 @@ export function AppointmentsClient({
   // Pagination block (reused top + bottom)
   function PaginationRow() {
     return totalPages > 1 ? (
-      <div className="flex items-center gap-1">
+      <div className="overflow-x-auto">
+      <div className="flex items-center gap-1 min-w-max">
         <button
           disabled={page <= 1}
           onClick={() => navigate({ page: page - 1 })}
@@ -279,6 +280,7 @@ export function AppointmentsClient({
         >
           Next
         </button>
+      </div>
       </div>
     ) : null;
   }
@@ -515,7 +517,7 @@ export function AppointmentsClient({
         return (
           <div className="flex flex-col gap-6">
             {/* Summary cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-3 gap-2 sm:gap-3">
               {[
                 {
                   label: "Today",
@@ -557,7 +559,7 @@ export function AppointmentsClient({
                   <button
                     key={cl}
                     onClick={() => { setActiveSection(sectionKey); if (sectionKey === "previous") setPrevPage(1); }}
-                    className={`rounded-xl border-2 px-4 py-3 flex flex-col gap-0.5 text-left cursor-pointer transition-all ${
+                    className={`rounded-xl border-2 px-2.5 sm:px-4 py-2.5 sm:py-3 flex flex-col gap-0.5 text-left cursor-pointer transition-all ${
                       isActive
                         ? `${border} ${bg} shadow-sm ring-2 ring-offset-1 ${
                             sectionKey === "today"    ? "ring-[var(--color-primary-300)]" :
@@ -567,12 +569,12 @@ export function AppointmentsClient({
                         : "border-[var(--color-border)] bg-white hover:bg-[var(--color-surface-sunken)] opacity-70"
                     }`}
                   >
-                    <div className="flex items-center gap-1.5">
-                      <span className={`w-2 h-2 rounded-full shrink-0 ${isActive ? dot : "bg-[var(--color-ink-300)]"}`} />
-                      <span className={`text-xs font-semibold ${isActive ? lbl : "text-[var(--color-ink-400)]"}`}>{cl}</span>
+                    <div className="flex items-center gap-1">
+                      <span className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full shrink-0 ${isActive ? dot : "bg-[var(--color-ink-300)]"}`} />
+                      <span className={`text-[11px] sm:text-xs font-semibold ${isActive ? lbl : "text-[var(--color-ink-400)]"}`}>{cl}</span>
                     </div>
-                    <p className={`text-2xl font-bold leading-none mt-1 ${isActive ? cnt : "text-[var(--color-ink-600)]"}`}>{count}</p>
-                    <p className={`text-[11px] ${isActive ? slbl : "text-[var(--color-ink-400)]"}`}>{csub}</p>
+                    <p className={`text-xl sm:text-2xl font-bold leading-none mt-0.5 sm:mt-1 ${isActive ? cnt : "text-[var(--color-ink-600)]"}`}>{count}</p>
+                    <p className={`text-[10px] sm:text-[11px] leading-tight ${isActive ? slbl : "text-[var(--color-ink-400)]"}`}>{csub}</p>
                   </button>
                 );
               })}

@@ -103,8 +103,8 @@ export default async function AuditDashboardPage() {
           <ShieldCheck size={18} style={{ color: "var(--color-primary-700)" }} />
         </div>
         <div>
-          <h1 className="text-2xl font-semibold text-[var(--color-ink-900)] tracking-tight">Audit Dashboard</h1>
-          <p className="text-sm text-[var(--color-ink-500)] mt-0.5">{format(now, "EEEE, d MMMM yyyy")}</p>
+          <h1 className="text-xl sm:text-2xl font-semibold text-[var(--color-ink-900)] tracking-tight">Audit Dashboard</h1>
+          <p className="text-[13px] sm:text-sm text-[var(--color-ink-500)] mt-0.5">{format(now, "EEEE, d MMMM yyyy")}</p>
         </div>
       </div>
 
@@ -116,8 +116,8 @@ export default async function AuditDashboardPage() {
               <Icon size={20} className={color} />
             </div>
             <div>
-              <p className="text-2xl font-bold text-[var(--color-ink-900)]">{value}</p>
-              <p className="text-xs text-[var(--color-ink-500)] leading-tight mt-0.5">{label}</p>
+              <p className="text-xl sm:text-2xl font-bold text-[var(--color-ink-900)]">{value}</p>
+              <p className="text-[11px] sm:text-xs text-[var(--color-ink-500)] leading-tight mt-0.5">{label}</p>
             </div>
           </Card>
         ))}
@@ -128,10 +128,10 @@ export default async function AuditDashboardPage() {
         <Card>
           <div className="flex items-center gap-2 mb-4">
             <Building2 size={15} className="text-[var(--color-ink-400)]" />
-            <h3 className="text-sm font-semibold text-[var(--color-ink-800)]">Hospital Activity Today</h3>
+            <h3 className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-800)]">Hospital Activity Today</h3>
           </div>
           {hospitalActivity.length === 0 ? (
-            <p className="text-xs text-[var(--color-ink-400)] py-4 text-center">No hospital activity recorded today</p>
+            <p className="text-[11px] sm:text-xs text-[var(--color-ink-400)] py-4 text-center">No hospital activity recorded today</p>
           ) : (
             <div className="space-y-3">
               {hospitalActivity.map((h) => {
@@ -140,7 +140,7 @@ export default async function AuditDashboardPage() {
                 const max = hospitalActivity[0]._count._all;
                 return (
                   <div key={h.hospitalId}>
-                    <div className="flex items-center justify-between text-xs mb-1">
+                    <div className="flex items-center justify-between text-[11px] sm:text-xs mb-1">
                       <span className="font-medium text-[var(--color-ink-700)] truncate max-w-[180px]">{name}</span>
                       <span className="font-bold text-[var(--color-ink-900)] ml-2">{count}</span>
                     </div>
@@ -161,10 +161,10 @@ export default async function AuditDashboardPage() {
         <Card>
           <div className="flex items-center gap-2 mb-4">
             <TrendingUp size={15} className="text-[var(--color-ink-400)]" />
-            <h3 className="text-sm font-semibold text-[var(--color-ink-800)]">Most Active Users Today</h3>
+            <h3 className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-800)]">Most Active Users Today</h3>
           </div>
           {userActivity.length === 0 ? (
-            <p className="text-xs text-[var(--color-ink-400)] py-4 text-center">No activity recorded today</p>
+            <p className="text-[11px] sm:text-xs text-[var(--color-ink-400)] py-4 text-center">No activity recorded today</p>
           ) : (
             <div className="space-y-3">
               {userActivity.map((u) => {
@@ -173,7 +173,7 @@ export default async function AuditDashboardPage() {
                 const max = userActivity[0]._count._all;
                 return (
                   <div key={u.userId}>
-                    <div className="flex items-center justify-between text-xs mb-1">
+                    <div className="flex items-center justify-between text-[11px] sm:text-xs mb-1">
                       <span className="font-medium text-[var(--color-ink-700)] truncate max-w-[180px]">{name}</span>
                       <span className="font-bold text-[var(--color-ink-900)] ml-2">{count}</span>
                     </div>
@@ -194,10 +194,10 @@ export default async function AuditDashboardPage() {
       {/* Recent activity */}
       <Card className="p-0 overflow-hidden">
         <div className="px-5 py-3.5 border-b border-[var(--color-border)]">
-          <h3 className="text-sm font-semibold text-[var(--color-ink-800)]">Recent Activity</h3>
+          <h3 className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-800)]">Recent Activity</h3>
         </div>
         {recentLogs.length === 0 ? (
-          <p className="text-sm text-[var(--color-ink-400)] py-10 text-center">No activity yet today</p>
+          <p className="text-[13px] sm:text-sm text-[var(--color-ink-400)] py-10 text-center">No activity yet today</p>
         ) : (
           <div className="divide-y divide-[var(--color-border)]">
             {recentLogs.map((log) => {
@@ -205,18 +205,18 @@ export default async function AuditDashboardPage() {
               const cls = ACTION_COLOR[type] ?? "bg-slate-100 text-slate-600";
               return (
                 <div key={log.id} className="flex items-center gap-3 px-5 py-3">
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${cls}`}>
+                  <span className={`text-[9px] sm:text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${cls}`}>
                     {type}
                   </span>
                   <div className="flex-1 min-w-0">
-                    <span className="text-sm text-[var(--color-ink-700)]">
+                    <span className="text-[13px] sm:text-sm text-[var(--color-ink-700)]">
                       {log.moduleName ?? log.entityType}
                     </span>
                     {log.userName && (
-                      <span className="text-xs text-[var(--color-ink-400)] ml-2">by {log.userName}</span>
+                      <span className="text-[11px] sm:text-xs text-[var(--color-ink-400)] ml-2">by {log.userName}</span>
                     )}
                   </div>
-                  <time className="text-xs text-[var(--color-ink-400)] font-mono shrink-0">
+                  <time className="text-[11px] sm:text-xs text-[var(--color-ink-400)] font-mono shrink-0">
                     {format(new Date(log.timestamp), "HH:mm:ss")}
                   </time>
                 </div>

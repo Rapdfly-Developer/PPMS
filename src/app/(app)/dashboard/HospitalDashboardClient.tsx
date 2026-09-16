@@ -76,34 +76,34 @@ function ApptRow({ appt }: { appt: Appt }) {
     <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-[var(--color-border)] bg-white hover:bg-[var(--color-primary-50)] hover:border-[var(--color-primary-200)] transition-colors group">
       {/* Time */}
       <div className="w-16 shrink-0 text-center hidden sm:block">
-        <p className="text-sm font-bold text-[var(--color-ink-900)]">{time}</p>
+        <p className="text-[13px] sm:text-sm font-bold text-[var(--color-ink-900)]">{time}</p>
       </div>
 
       <div className="w-px self-stretch bg-[var(--color-border)] hidden sm:block" />
 
       {/* Patient info */}
       <div className="flex-1 min-w-0">
-        <p className="font-semibold text-[var(--color-ink-900)] text-sm truncate">{appt.patient.name}</p>
+        <p className="font-semibold text-[var(--color-ink-900)] text-[13px] sm:text-sm truncate">{appt.patient.name}</p>
         <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-          <span className="font-mono text-[10px] text-[#115E59] bg-[#F0F8F6] px-1.5 py-0.5 rounded">
+          <span className="font-mono text-[9px] sm:text-[10px] text-[#115E59] bg-[#F0F8F6] px-1.5 py-0.5 rounded">
             {appt.patient.udid}
           </span>
-          <span className="text-[11px] text-[var(--color-ink-400)]">
+          <span className="text-[10px] sm:text-[11px] text-[var(--color-ink-400)]">
             {appt.patient.age}y / {appt.patient.sex === "MALE" ? "M" : appt.patient.sex === "FEMALE" ? "F" : "O"}
           </span>
           {appt.doctor && (
-            <span className="text-[11px] text-[var(--color-ink-400)]">Dr. {appt.doctor.name}</span>
+            <span className="text-[10px] sm:text-[11px] text-[var(--color-ink-400)]">Dr. {appt.doctor.name}</span>
           )}
         </div>
       </div>
 
       {/* Visit type */}
-      <span className="hidden md:block text-[11px] text-[var(--color-ink-400)] shrink-0 max-w-[120px] truncate">
+      <span className="hidden md:block text-[10px] sm:text-[11px] text-[var(--color-ink-400)] shrink-0 max-w-[120px] truncate">
         {appt.visitType}
       </span>
 
       {/* Status badge */}
-      <span className={clsx("inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold shrink-0", cfg.color)}>
+      <span className={clsx("inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] sm:text-[11px] font-semibold shrink-0", cfg.color)}>
         <span className={clsx("w-1.5 h-1.5 rounded-full shrink-0", cfg.dot)} />
         {cfg.label}
       </span>
@@ -111,7 +111,7 @@ function ApptRow({ appt }: { appt: Appt }) {
       {/* EMR link */}
       <Link
         href={appt.visitId ? `/emr/${appt.patient.udid}?visit=${appt.visitId}` : `/emr/${appt.patient.udid}`}
-        className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--color-primary-50)] text-[var(--color-primary-700)] text-xs font-semibold hover:bg-[var(--color-primary-100)] transition-colors"
+        className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--color-primary-50)] text-[var(--color-primary-700)] text-[11px] sm:text-xs font-semibold hover:bg-[var(--color-primary-100)] transition-colors"
         onClick={(e) => e.stopPropagation()}
       >
         <ClipboardList size={13} /> EMR
@@ -188,19 +188,19 @@ export function HospitalDashboardClient({ hospitalName, hospitalLogoUrl, kpis, a
               <div>
                 <div className="flex items-center gap-2 mb-1">
                   <GreetIcon size={17} className={iconColor} />
-                  <span className="text-sm font-medium text-white/70 tracking-wide">{greeting}</span>
+                  <span className="text-[13px] sm:text-sm font-medium text-white/70 tracking-wide">{greeting}</span>
                 </div>
-                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
+                <h1 className="text-xl sm:text-3xl font-bold tracking-tight text-white">
                   {hospitalName}
                 </h1>
-                <p className="mt-1 text-sm text-white/60">{todayLabel}</p>
+                <p className="mt-1 text-[13px] sm:text-sm text-white/60">{todayLabel}</p>
               </div>
 
               {/* Right — controls */}
               <div className="flex items-center gap-2 flex-wrap">
                 <Link
                   href="/appointments/book"
-                  className="inline-flex items-center gap-2 bg-white text-[var(--color-primary-800)] text-sm font-semibold px-4 py-2 rounded-xl hover:bg-white/90 transition-colors shadow-sm"
+                  className="inline-flex items-center gap-2 bg-white text-[var(--color-primary-800)] text-[13px] sm:text-sm font-semibold px-4 py-2 rounded-xl hover:bg-white/90 transition-colors shadow-sm"
                 >
                   <Plus size={15} /> New Appointment
                 </Link>
@@ -228,9 +228,9 @@ export function HospitalDashboardClient({ hospitalName, hospitalLogoUrl, kpis, a
       {/* ── Today's Queue ────────────────────────────────────────────────── */}
       <div>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
-          <h2 className="text-base font-semibold text-[var(--color-ink-900)]">
+          <h2 className="text-[15px] sm:text-base font-semibold text-[var(--color-ink-900)]">
             Today's Queue
-            <span className="ml-2 text-sm font-normal text-[var(--color-ink-400)]">
+            <span className="ml-2 text-[13px] sm:text-sm font-normal text-[var(--color-ink-400)]">
               {queueAppts.length} total
             </span>
           </h2>
@@ -248,7 +248,7 @@ export function HospitalDashboardClient({ hospitalName, hospitalLogoUrl, kpis, a
                     key={key}
                     onClick={() => setStatusFilter(key)}
                     className={clsx(
-                      "px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors",
+                      "px-3 py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold transition-colors",
                       statusFilter === key
                         ? "bg-[var(--color-primary-600)] text-white"
                         : "bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)] hover:bg-[var(--color-primary-50)] hover:text-[var(--color-primary-700)]"
@@ -262,7 +262,7 @@ export function HospitalDashboardClient({ hospitalName, hospitalLogoUrl, kpis, a
                 );
               })}
             </div>
-            <Link href="/appointments" className="text-xs font-semibold text-[var(--color-primary-600)] hover:underline whitespace-nowrap">
+            <Link href="/appointments" className="text-[11px] sm:text-xs font-semibold text-[var(--color-primary-600)] hover:underline whitespace-nowrap">
               View all →
             </Link>
           </div>
@@ -278,20 +278,20 @@ export function HospitalDashboardClient({ hospitalName, hospitalLogoUrl, kpis, a
                   : <Building2 size={15} className="text-[var(--color-primary-700)]" />}
               </div>
               <div className="min-w-0">
-                <p className="text-sm font-bold text-[var(--color-ink-900)] truncate">{hospitalName}</p>
-                <p className="text-[11px] text-[var(--color-ink-400)]">
+                <p className="text-[13px] sm:text-sm font-bold text-[var(--color-ink-900)] truncate">{hospitalName}</p>
+                <p className="text-[10px] sm:text-[11px] text-[var(--color-ink-400)]">
                   {queueAppts.length} in queue{dispensedCount > 0 ? ` · ${dispensedCount} Dispensed` : ""}
                 </p>
               </div>
             </div>
-            <span className="shrink-0 text-[11px] font-bold px-2.5 py-1 rounded-full bg-[var(--color-primary-50)] text-[var(--color-primary-700)]">
+            <span className="shrink-0 text-[10px] sm:text-[11px] font-bold px-2.5 py-1 rounded-full bg-[var(--color-primary-50)] text-[var(--color-primary-700)]">
               {queueAppts.length}
             </span>
           </div>
 
           {/* Appointment rows or empty state */}
           {statusFiltered.length === 0 ? (
-            <p className="text-center text-xs text-[var(--color-ink-400)] py-4">
+            <p className="text-center text-[11px] sm:text-xs text-[var(--color-ink-400)] py-4">
               No patients in queue yet
             </p>
           ) : (
@@ -309,31 +309,31 @@ export function HospitalDashboardClient({ hospitalName, hospitalLogoUrl, kpis, a
           {/* Scheduled Surgeries */}
           {surgeries.length > 0 && (
             <div className="surface-card p-5">
-              <h2 className="text-base font-semibold text-[var(--color-ink-900)] mb-4">
+              <h2 className="text-[15px] sm:text-base font-semibold text-[var(--color-ink-900)] mb-4">
                 Scheduled OT
-                <span className="ml-2 text-xs font-normal text-[var(--color-ink-400)]">{surgeries.length} upcoming</span>
+                <span className="ml-2 text-[11px] sm:text-xs font-normal text-[var(--color-ink-400)]">{surgeries.length} upcoming</span>
               </h2>
               <div className="space-y-2">
                 {surgeries.map((s) => (
                   <div key={s.id} className="flex items-center gap-3 px-4 py-3 rounded-xl border border-[var(--color-border)] bg-white">
                     <div className="w-20 shrink-0 text-center hidden sm:block">
-                      <p className="text-xs font-bold text-[var(--color-ink-900)]">{format(new Date(s.surgeryDate), "d MMM")}</p>
-                      <p className="text-[10px] text-[var(--color-ink-400)]">{format(new Date(s.surgeryDate), "hh:mm a")}</p>
+                      <p className="text-[11px] sm:text-xs font-bold text-[var(--color-ink-900)]">{format(new Date(s.surgeryDate), "d MMM")}</p>
+                      <p className="text-[9px] sm:text-[10px] text-[var(--color-ink-400)]">{format(new Date(s.surgeryDate), "hh:mm a")}</p>
                     </div>
                     <div className="w-px self-stretch bg-[var(--color-border)] hidden sm:block" />
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-sm text-[var(--color-ink-900)] truncate">{s.patient.name}</p>
+                      <p className="font-semibold text-[13px] sm:text-sm text-[var(--color-ink-900)] truncate">{s.patient.name}</p>
                       <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                        <span className="font-mono text-[10px] text-[#115E59] bg-[#F0F8F6] px-1.5 py-0.5 rounded">{s.patient.udid}</span>
+                        <span className="font-mono text-[9px] sm:text-[10px] text-[#115E59] bg-[#F0F8F6] px-1.5 py-0.5 rounded">{s.patient.udid}</span>
                         {s.doctor && (
-                          <span className="text-[11px] text-[var(--color-ink-400)]">Dr. {s.doctor.name}</span>
+                          <span className="text-[10px] sm:text-[11px] text-[var(--color-ink-400)]">Dr. {s.doctor.name}</span>
                         )}
                       </div>
                     </div>
-                    <span className="hidden sm:inline shrink-0 text-xs font-medium text-purple-700 bg-purple-50 px-2.5 py-1 rounded-full truncate max-w-[140px]">
+                    <span className="hidden sm:inline shrink-0 text-[11px] sm:text-xs font-medium text-purple-700 bg-purple-50 px-2.5 py-1 rounded-full truncate max-w-[140px]">
                       {s.surgeryType}
                     </span>
-                    <span className="shrink-0 text-[10px] text-[var(--color-ink-400)]">
+                    <span className="shrink-0 text-[9px] sm:text-[10px] text-[var(--color-ink-400)]">
                       {s.rightEye && s.leftEye ? "OU" : s.rightEye ? "RE" : "LE"}
                     </span>
                   </div>
@@ -346,31 +346,31 @@ export function HospitalDashboardClient({ hospitalName, hospitalLogoUrl, kpis, a
           {bookedAppts.length > 0 && (
             <div className="surface-card p-5">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-base font-semibold text-[var(--color-ink-900)]">
+                <h2 className="text-[15px] sm:text-base font-semibold text-[var(--color-ink-900)]">
                   Appointment time
-                  <span className="ml-2 text-xs font-normal text-[var(--color-ink-400)]">{bookedAppts.length} booked</span>
+                  <span className="ml-2 text-[11px] sm:text-xs font-normal text-[var(--color-ink-400)]">{bookedAppts.length} booked</span>
                 </h2>
-                <Link href="/appointments" className="text-xs font-semibold text-[var(--color-primary-600)] hover:underline">View all →</Link>
+                <Link href="/appointments" className="text-[11px] sm:text-xs font-semibold text-[var(--color-primary-600)] hover:underline">View all →</Link>
               </div>
               <div className="space-y-1.5">
                 {bookedAppts.map((a) => {
                   const cfg = STATUS_CFG[a.status] ?? STATUS_CFG["REQUESTED"];
                   return (
                     <div key={a.id} className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-[var(--color-border)] bg-white">
-                      <span className="text-sm font-bold text-[var(--color-ink-900)] w-16 shrink-0">
+                      <span className="text-[13px] sm:text-sm font-bold text-[var(--color-ink-900)] w-16 shrink-0">
                         {format(new Date(a.dateTime), "h:mm a")}
                       </span>
                       <div className="w-px self-stretch bg-[var(--color-border)]" />
                       <Link href={`/patients/${a.patient.udid}?returnTo=/dashboard`} className="flex-1 min-w-0 hover:opacity-80 transition-opacity">
-                        <p className="text-sm font-semibold text-[var(--color-ink-900)] truncate">{a.patient.name}</p>
-                        <span className="font-mono text-[10px] text-[#115E59] bg-[#F0F8F6] px-1.5 py-0.5 rounded">
+                        <p className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-900)] truncate">{a.patient.name}</p>
+                        <span className="font-mono text-[9px] sm:text-[10px] text-[#115E59] bg-[#F0F8F6] px-1.5 py-0.5 rounded">
                           {a.patient.udid}
                         </span>
                       </Link>
                       {a.doctor && (
-                        <span className="text-[11px] text-[var(--color-ink-400)] shrink-0">Dr. {a.doctor.name}</span>
+                        <span className="text-[10px] sm:text-[11px] text-[var(--color-ink-400)] shrink-0">Dr. {a.doctor.name}</span>
                       )}
-                      <span className={clsx("text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0", cfg.color)}>
+                      <span className={clsx("text-[9px] sm:text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0", cfg.color)}>
                         {cfg.label}
                       </span>
                     </div>

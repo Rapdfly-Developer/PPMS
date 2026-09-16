@@ -48,7 +48,7 @@ export function InvestigationsTab({
 
   const tabCls = (id: "previous" | "new") =>
     clsx(
-      "flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-xl border transition-colors",
+      "flex items-center gap-2 px-5 py-2.5 text-[13px] sm:text-sm font-medium rounded-xl border transition-colors",
       activeTab === id
         ? "bg-[var(--color-primary-600)] text-white border-[var(--color-primary-600)]"
         : "bg-white text-[var(--color-ink-600)] border-[var(--color-border)] hover:border-[var(--color-primary-400)]"
@@ -87,7 +87,7 @@ export function InvestigationsTab({
         <NewInvestigations visit={visit} udid={udid} todayOrders={todayOrders} onOrdered={() => {}} />
       )}
       {activeTab === "new" && readOnly && (
-        <p className="text-sm text-[var(--color-ink-400)] text-center py-8">This visit is closed — no new orders can be placed.</p>
+        <p className="text-[13px] sm:text-sm text-[var(--color-ink-400)] text-center py-8">This visit is closed — no new orders can be placed.</p>
       )}
     </div>
   );
@@ -103,7 +103,7 @@ function PreviousInvestigations({ orders, udid, readOnly }: { orders: any[]; udi
       <Card>
         <div className="flex flex-col items-center justify-center py-12 text-center gap-2">
           <FlaskConical size={36} className="text-[var(--color-ink-300)]" />
-          <p className="text-sm font-medium text-[var(--color-ink-500)]">No previous investigations</p>
+          <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-500)]">No previous investigations</p>
           <p className="text-xs text-[var(--color-ink-400)]">Switch to New Investigations to place an order.</p>
         </div>
       </Card>
@@ -125,7 +125,7 @@ function PreviousInvestigations({ orders, udid, readOnly }: { orders: any[]; udi
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setViewUrl(null)}>
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl mx-4 max-h-[90vh] flex flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--color-border)]">
-              <p className="text-sm font-medium text-[var(--color-ink-700)]">Result Viewer</p>
+              <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)]">Result Viewer</p>
               <div className="flex items-center gap-2">
                 <a href={viewUrl} download target="_blank" rel="noreferrer"
                   className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-[var(--color-border)] hover:border-[var(--color-primary-400)] text-[var(--color-ink-600)] transition-colors">
@@ -192,7 +192,7 @@ function InvestigationCard({
         {/* Left: test name + meta */}
         <div className="flex flex-col gap-1.5 min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <p className="text-sm font-semibold text-[var(--color-ink-900)]">{order.testName}</p>
+            <p className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-900)]">{order.testName}</p>
             <PriorityPill priority={order.priority} />
             {order.laterality && (
               <span className="text-[11px] px-2 py-0.5 rounded-full border border-[var(--color-border)] text-[var(--color-ink-500)]">
@@ -391,7 +391,7 @@ function AddCustomTestModal({
         >
           <div className="flex items-center gap-2.5">
             <FlaskConical size={17} className="text-white/80" />
-            <p className="text-sm font-semibold text-white tracking-tight">Add Test</p>
+            <p className="text-[13px] sm:text-sm font-semibold text-white tracking-tight">Add Test</p>
           </div>
           <button
             type="button"
@@ -479,14 +479,14 @@ function AddCustomTestModal({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-xl border border-[var(--color-border)] text-sm font-medium text-[var(--color-ink-500)] hover:bg-[var(--color-surface-sunken)] transition-colors"
+              className="px-4 py-2 rounded-xl border border-[var(--color-border)] text-[13px] sm:text-sm font-medium text-[var(--color-ink-500)] hover:bg-[var(--color-surface-sunken)] transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={!query.trim()}
-              className="px-5 py-2 rounded-xl bg-[#0F766E] text-white text-sm font-semibold hover:bg-[#0D6862] transition-colors disabled:opacity-40"
+              className="px-5 py-2 rounded-xl bg-[#0F766E] text-white text-[13px] sm:text-sm font-semibold hover:bg-[#0D6862] transition-colors disabled:opacity-40"
             >
               Add Test
             </button>
@@ -627,7 +627,7 @@ function NewInvestigations({
               key={cat}
               onClick={() => setActiveCategory(cat)}
               className={clsx(
-                "px-4 py-2.5 text-sm whitespace-nowrap transition-colors border-b-2",
+                "px-4 py-2.5 text-[13px] sm:text-sm whitespace-nowrap transition-colors border-b-2",
                 activeCategory === cat
                   ? "border-[var(--color-primary-600)] text-[var(--color-primary-700)] font-semibold bg-[var(--color-primary-50)]"
                   : "border-transparent text-[var(--color-ink-500)] font-medium hover:text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]"
@@ -652,7 +652,7 @@ function NewInvestigations({
                     : "border-[var(--color-border)] hover:border-[var(--color-primary-300)] hover:bg-[var(--color-surface-sunken)]"
                 )}
               >
-                <span className="flex items-center gap-2.5 text-sm text-[var(--color-ink-700)]">
+                <span className="flex items-center gap-2.5 text-[13px] sm:text-sm text-[var(--color-ink-700)]">
                   <input
                     type="checkbox"
                     checked={checked}
@@ -687,7 +687,7 @@ function NewInvestigations({
             <button
               disabled={pending || selected.length === 0}
               onClick={placeOrders}
-              className="rounded-xl bg-[var(--color-primary-600)] text-white text-sm font-medium px-5 py-2 hover:bg-[var(--color-primary-700)] disabled:opacity-50"
+              className="rounded-xl bg-[var(--color-primary-600)] text-white text-[13px] sm:text-sm font-medium px-5 py-2 hover:bg-[var(--color-primary-700)] disabled:opacity-50"
             >
               {pending ? "Placing…" : `Place Order${selected.length > 1 ? "s" : ""}`}
             </button>
@@ -701,7 +701,7 @@ function NewInvestigations({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <CheckCircle2 size={15} className="text-[var(--color-success-600)]" />
-              <p className="text-sm font-semibold text-[var(--color-ink-800)]">Today&apos;s Orders</p>
+              <p className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-800)]">Today&apos;s Orders</p>
               <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-[var(--color-primary-100)] text-[var(--color-primary-700)]">
                 {todayOrders.length}
               </span>
@@ -719,7 +719,7 @@ function NewInvestigations({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setViewUrl(null)}>
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl mx-4 max-h-[90vh] flex flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--color-border)]">
-              <p className="text-sm font-medium text-[var(--color-ink-700)]">Result Viewer</p>
+              <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)]">Result Viewer</p>
               <div className="flex items-center gap-2">
                 <a href={viewUrl} download target="_blank" rel="noreferrer"
                   className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-[var(--color-border)] hover:border-[var(--color-primary-400)] text-[var(--color-ink-600)] transition-colors">

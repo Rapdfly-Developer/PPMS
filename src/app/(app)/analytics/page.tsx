@@ -16,7 +16,7 @@ function Bar({ value, max, color = "bg-[var(--color-primary-500)]" }: { value: n
       <div className="flex-1 h-2 rounded-full bg-[var(--color-surface-sunken)]">
         <div className={`h-2 rounded-full ${color}`} style={{ width: `${w}%` }} />
       </div>
-      <span className="text-xs font-bold text-[var(--color-ink-700)] w-6 text-right tabular-nums">{value}</span>
+      <span className="text-[11px] sm:text-xs font-bold text-[var(--color-ink-700)] w-6 text-right tabular-nums">{value}</span>
     </div>
   );
 }
@@ -32,17 +32,17 @@ function KPI({
     <div className="surface-card p-5">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">{label}</p>
-          <p className={`text-3xl font-bold mt-1.5 tracking-tight ${color}`}>{value}</p>
-          <p className="text-xs text-[var(--color-ink-400)] mt-1">{sub}</p>
+          <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">{label}</p>
+          <p className={`text-2xl sm:text-3xl font-bold mt-1.5 tracking-tight ${color}`}>{value}</p>
+          <p className="text-[11px] sm:text-xs text-[var(--color-ink-400)] mt-1">{sub}</p>
           {trend !== undefined && (
-            <p className={`text-xs mt-2 font-semibold flex items-center gap-1 ${trend >= 0 ? "text-emerald-600" : "text-red-500"}`}>
+            <p className={`text-[11px] sm:text-xs mt-2 font-semibold flex items-center gap-1 ${trend >= 0 ? "text-emerald-600" : "text-red-500"}`}>
               {trend >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
               {Math.abs(trend)}% vs last month
             </p>
           )}
           {trendLabel && !trend && (
-            <p className="text-xs mt-2 text-[var(--color-ink-400)]">{trendLabel}</p>
+            <p className="text-[11px] sm:text-xs mt-2 text-[var(--color-ink-400)]">{trendLabel}</p>
           )}
         </div>
         <div className={`shrink-0 p-2.5 rounded-xl ${color.replace("text-", "bg-").replace("-700", "-100").replace("-600", "-100")}`}>
@@ -163,16 +163,16 @@ export default async function AnalyticsPage() {
       {/* ── Header ─────────────────────────────────────────────────────── */}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <div className="flex items-center gap-2 text-[var(--color-ink-400)] text-xs mb-1">
+          <div className="flex items-center gap-2 text-[var(--color-ink-400)] text-[11px] sm:text-xs mb-1">
             <Link href="/dashboard" className="hover:text-[var(--color-primary-600)]">Dashboard</Link>
             <span>/</span>
             <span className="text-[var(--color-ink-700)] font-medium">Analytics</span>
           </div>
-          <h1 className="text-2xl font-bold text-[var(--color-ink-900)] flex items-center gap-2.5">
+          <h1 className="text-xl sm:text-2xl font-bold text-[var(--color-ink-900)] flex items-center gap-2.5">
             <BarChart2 size={22} className="text-[var(--color-primary-600)]" />
             Analytics & Reports
           </h1>
-          <p className="text-sm text-[var(--color-ink-400)] mt-1">
+          <p className="text-[13px] sm:text-sm text-[var(--color-ink-400)] mt-1">
             {format(now, "EEEE, d MMMM yyyy")} · Data for {user.role === "DOCTOR" ? "your practice" : "this hospital"}
           </p>
         </div>
@@ -240,13 +240,13 @@ export default async function AnalyticsPage() {
       <div className="surface-card p-6">
         <div className="flex items-center justify-between mb-5">
           <div>
-            <h2 className="text-base font-semibold text-[var(--color-ink-900)]">7-Day Appointment Trend</h2>
-            <p className="text-xs text-[var(--color-ink-400)] mt-0.5">
+            <h2 className="text-[15px] sm:text-base font-semibold text-[var(--color-ink-900)]">7-Day Appointment Trend</h2>
+            <p className="text-[11px] sm:text-xs text-[var(--color-ink-400)] mt-0.5">
               Total vs completed · Peak: {Math.max(...trendDays.map((d) => d.total))} ·
               Avg: {Math.round(trendDays.reduce((s, d) => s + d.total, 0) / 7)}/day
             </p>
           </div>
-          <div className="hidden sm:flex items-center gap-4 text-xs">
+          <div className="hidden sm:flex items-center gap-4 text-[11px] sm:text-xs">
             <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-[var(--color-primary-500)]" /> Total</span>
             <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-emerald-500" /> Completed</span>
           </div>
@@ -257,7 +257,7 @@ export default async function AnalyticsPage() {
             const doneH  = trendMax > 0 ? Math.round((d.completed / trendMax) * 100) : 0;
             return (
               <div key={d.label} className="flex-1 flex flex-col items-center gap-1">
-                <span className="text-[10px] font-semibold text-[var(--color-ink-600)]">{d.total > 0 ? d.total : ""}</span>
+                <span className="text-[9px] sm:text-[10px] font-semibold text-[var(--color-ink-600)]">{d.total > 0 ? d.total : ""}</span>
                 <div className="w-full flex items-end gap-0.5" style={{ height: 100 }}>
                   <div
                     className="flex-1 rounded-t-md bg-[var(--color-primary-200)] transition-all"
@@ -268,7 +268,7 @@ export default async function AnalyticsPage() {
                     style={{ height: `${doneH}%`, minHeight: d.completed > 0 ? 4 : 0 }}
                   />
                 </div>
-                <span className="text-[10px] font-medium text-[var(--color-ink-400)]">{d.label}</span>
+                <span className="text-[9px] sm:text-[10px] font-medium text-[var(--color-ink-400)]">{d.label}</span>
                 <span className="text-[9px] text-[var(--color-ink-300)]">{d.date}</span>
               </div>
             );
@@ -281,17 +281,17 @@ export default async function AnalyticsPage() {
 
         {/* Status distribution */}
         <div className="surface-card p-6">
-          <h2 className="text-base font-semibold text-[var(--color-ink-900)] mb-1">Appointment Status</h2>
-          <p className="text-xs text-[var(--color-ink-400)] mb-5">This month · {statusTotal} total</p>
+          <h2 className="text-[15px] sm:text-base font-semibold text-[var(--color-ink-900)] mb-1">Appointment Status</h2>
+          <p className="text-[11px] sm:text-xs text-[var(--color-ink-400)] mb-5">This month · {statusTotal} total</p>
           {statusRows.length === 0 ? (
-            <p className="text-sm text-[var(--color-ink-400)] py-6 text-center">No data yet.</p>
+            <p className="text-[13px] sm:text-sm text-[var(--color-ink-400)] py-6 text-center">No data yet.</p>
           ) : (
             <div className="space-y-3">
               {statusRows.map((r) => (
                 <div key={r.label} className="flex items-center gap-3">
-                  <span className="text-xs text-[var(--color-ink-600)] w-24 shrink-0">{r.label}</span>
+                  <span className="text-[11px] sm:text-xs text-[var(--color-ink-600)] w-24 shrink-0">{r.label}</span>
                   <Bar value={r.count} max={statusTotal} color={r.color} />
-                  <span className="text-[10px] text-[var(--color-ink-400)] w-8 text-right shrink-0">{pct(r.count, statusTotal)}%</span>
+                  <span className="text-[9px] sm:text-[10px] text-[var(--color-ink-400)] w-8 text-right shrink-0">{pct(r.count, statusTotal)}%</span>
                 </div>
               ))}
             </div>
@@ -300,15 +300,15 @@ export default async function AnalyticsPage() {
 
         {/* Visit type distribution */}
         <div className="surface-card p-6">
-          <h2 className="text-base font-semibold text-[var(--color-ink-900)] mb-1">Visit Types</h2>
-          <p className="text-xs text-[var(--color-ink-400)] mb-5">This month · top 6</p>
+          <h2 className="text-[15px] sm:text-base font-semibold text-[var(--color-ink-900)] mb-1">Visit Types</h2>
+          <p className="text-[11px] sm:text-xs text-[var(--color-ink-400)] mb-5">This month · top 6</p>
           {typeRows.length === 0 ? (
-            <p className="text-sm text-[var(--color-ink-400)] py-6 text-center">No data yet.</p>
+            <p className="text-[13px] sm:text-sm text-[var(--color-ink-400)] py-6 text-center">No data yet.</p>
           ) : (
             <div className="space-y-3">
               {typeRows.map((r, idx) => (
                 <div key={r.label} className="flex items-center gap-3">
-                  <span className="text-xs text-[var(--color-ink-600)] w-28 shrink-0 truncate capitalize">{r.label}</span>
+                  <span className="text-[11px] sm:text-xs text-[var(--color-ink-600)] w-28 shrink-0 truncate capitalize">{r.label}</span>
                   <Bar value={r.count} max={typeMax} color={TYPE_COLORS[idx % TYPE_COLORS.length]} />
                 </div>
               ))}
@@ -319,14 +319,14 @@ export default async function AnalyticsPage() {
 
       {/* ── Monthly summary table ───────────────────────────────────────── */}
       <div className="surface-card p-6">
-        <h2 className="text-base font-semibold text-[var(--color-ink-900)] mb-1">Monthly Summary</h2>
-        <p className="text-xs text-[var(--color-ink-400)] mb-5">{format(monthStart, "MMMM yyyy")} · key metrics at a glance</p>
+        <h2 className="text-[15px] sm:text-base font-semibold text-[var(--color-ink-900)] mb-1">Monthly Summary</h2>
+        <p className="text-[11px] sm:text-xs text-[var(--color-ink-400)] mb-5">{format(monthStart, "MMMM yyyy")} · key metrics at a glance</p>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm min-w-[360px]">
+          <table className="w-full text-[13px] sm:text-sm min-w-[360px]">
             <thead>
               <tr className="border-b border-[var(--color-border)]">
                 {["Metric", "This Month", "Last Month", "Change"].map((h) => (
-                  <th key={h} className="px-4 py-2.5 text-left text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">{h}</th>
+                  <th key={h} className="px-4 py-2.5 text-left text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">{h}</th>
                 ))}
               </tr>
             </thead>
@@ -346,11 +346,11 @@ export default async function AnalyticsPage() {
                     <td className="px-4 py-3 text-[var(--color-ink-500)]">{row.prev ?? "—"}</td>
                     <td className="px-4 py-3">
                       {diff !== null ? (
-                        <span className={`text-xs font-semibold ${diff > 0 ? "text-emerald-600" : diff < 0 ? "text-red-500" : "text-[var(--color-ink-400)]"}`}>
+                        <span className={`text-[11px] sm:text-xs font-semibold ${diff > 0 ? "text-emerald-600" : diff < 0 ? "text-red-500" : "text-[var(--color-ink-400)]"}`}>
                           {diff > 0 ? "+" : ""}{diff}
                         </span>
                       ) : (
-                        <span className="text-[var(--color-ink-300)] text-xs">—</span>
+                        <span className="text-[var(--color-ink-300)] text-[11px] sm:text-xs">—</span>
                       )}
                     </td>
                   </tr>
@@ -364,21 +364,21 @@ export default async function AnalyticsPage() {
       {/* ── Investigations breakdown ────────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <div className="surface-card p-6">
-          <h2 className="text-base font-semibold text-[var(--color-ink-900)] mb-1">Investigation Summary</h2>
-          <p className="text-xs text-[var(--color-ink-400)] mb-5">All time · ordered tests</p>
+          <h2 className="text-[15px] sm:text-base font-semibold text-[var(--color-ink-900)] mb-1">Investigation Summary</h2>
+          <p className="text-[11px] sm:text-xs text-[var(--color-ink-400)] mb-5">All time · ordered tests</p>
           <div className="grid grid-cols-2 gap-4">
             {[
               { label: "Pending Review", value: pendingInvestigations, color: "text-amber-700", bg: "bg-amber-50 border border-amber-200" },
               { label: "Completed",      value: completedInvestigations, color: "text-emerald-700", bg: "bg-emerald-50 border border-emerald-200" },
             ].map((s) => (
               <div key={s.label} className={`rounded-xl p-4 ${s.bg}`}>
-                <p className={`text-3xl font-bold ${s.color}`}>{s.value}</p>
-                <p className="text-xs font-medium text-[var(--color-ink-500)] mt-1">{s.label}</p>
+                <p className={`text-2xl sm:text-3xl font-bold ${s.color}`}>{s.value}</p>
+                <p className="text-[11px] sm:text-xs font-medium text-[var(--color-ink-500)] mt-1">{s.label}</p>
               </div>
             ))}
           </div>
           <div className="mt-4">
-            <div className="flex items-center justify-between text-xs text-[var(--color-ink-500)] mb-1.5">
+            <div className="flex items-center justify-between text-[11px] sm:text-xs text-[var(--color-ink-500)] mb-1.5">
               <span>Completion rate</span>
               <span className="font-semibold">{pct(completedInvestigations, pendingInvestigations + completedInvestigations)}%</span>
             </div>
@@ -392,9 +392,9 @@ export default async function AnalyticsPage() {
         </div>
 
         <div className="surface-card p-6">
-          <h2 className="text-base font-semibold text-[var(--color-ink-900)] mb-1">IPD Activity</h2>
-          <p className="text-xs text-[var(--color-ink-400)] mb-5">Current in-patient admissions</p>
-          <div className="mt-2 flex items-center gap-2 text-xs text-[var(--color-ink-500)]">
+          <h2 className="text-[15px] sm:text-base font-semibold text-[var(--color-ink-900)] mb-1">IPD Activity</h2>
+          <p className="text-[11px] sm:text-xs text-[var(--color-ink-400)] mb-5">Current in-patient admissions</p>
+          <div className="mt-2 flex items-center gap-2 text-[11px] sm:text-xs text-[var(--color-ink-500)]">
             <RefreshCw size={12} />
             <span>Active admissions: <strong className="text-[var(--color-ink-800)]">{activeAdmissions}</strong></span>
           </div>

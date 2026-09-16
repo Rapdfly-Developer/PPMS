@@ -26,11 +26,11 @@ export default async function NotificationsPage() {
     <div className="fade-in max-w-2xl">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-semibold text-[var(--color-ink-900)] tracking-tight">
+          <h1 className="text-xl sm:text-2xl font-semibold text-[var(--color-ink-900)] tracking-tight">
             Notifications
           </h1>
           {unreadCount > 0 && (
-            <p className="text-sm text-[var(--color-ink-500)] mt-1">
+            <p className="text-[13px] sm:text-sm text-[var(--color-ink-500)] mt-1">
               {unreadCount} unread notification{unreadCount !== 1 ? "s" : ""}
             </p>
           )}
@@ -40,7 +40,7 @@ export default async function NotificationsPage() {
           <form action={markAllRead}>
             <button
               type="submit"
-              className="flex items-center gap-2 px-4 py-2 rounded-xl border border-[var(--color-border)] text-sm font-medium text-[var(--color-ink-700)] hover:bg-[var(--color-ink-50)] transition-colors"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl border border-[var(--color-border)] text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)] hover:bg-[var(--color-ink-50)] transition-colors"
             >
               <CheckCheck size={15} />
               Mark all as read
@@ -51,7 +51,7 @@ export default async function NotificationsPage() {
 
       <div className="surface-card divide-y divide-[var(--color-border)] overflow-hidden">
         {notifications.length === 0 ? (
-          <div className="py-16 text-center text-[var(--color-ink-400)] text-sm">
+          <div className="py-16 text-center text-[var(--color-ink-400)] text-[13px] sm:text-sm">
             No notifications yet.
           </div>
         ) : (
@@ -67,7 +67,7 @@ export default async function NotificationsPage() {
               <NotificationIcon type={n.type} />
               <div className="flex-1 min-w-0">
                 <p
-                  className={`text-sm leading-snug ${
+                  className={`text-[13px] sm:text-sm leading-snug ${
                     !n.read
                       ? "font-medium text-[var(--color-ink-900)]"
                       : "text-[var(--color-ink-700)]"
@@ -75,7 +75,7 @@ export default async function NotificationsPage() {
                 >
                   {n.message}
                 </p>
-                <p className="text-xs text-[var(--color-ink-400)] mt-1">
+                <p className="text-[11px] sm:text-xs text-[var(--color-ink-400)] mt-1">
                   {formatDistanceToNow(new Date(n.createdAt), { addSuffix: true })}
                 </p>
               </div>

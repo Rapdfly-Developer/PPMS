@@ -111,18 +111,17 @@ function KpiCard({ icon, label, value, sub, color, isActive, onSelect }: {
   const c = C[color] ?? C.teal;
 
   const baseClass = isActive
-    ? `bg-white rounded-2xl p-4 flex items-start gap-3 shadow-sm cursor-pointer transition-all`
-    : `bg-white rounded-2xl border ${c.border} p-4 flex items-start gap-3 shadow-sm hover:shadow-md hover:border-[var(--color-primary-300)] cursor-pointer transition-all`;
+    ? `bg-white rounded-2xl p-2.5 sm:p-4 flex flex-col items-center gap-1.5 shadow-sm cursor-pointer transition-all text-center`
+    : `bg-white rounded-2xl border ${c.border} p-2.5 sm:p-4 flex flex-col items-center gap-1.5 shadow-sm hover:shadow-md hover:border-[var(--color-primary-300)] cursor-pointer transition-all text-center`;
 
   const activeStyle: React.CSSProperties = isActive ? { border: '2px solid #000' } : {};
 
   const inner = (
     <>
-      <div className={`${c.icon} rounded-xl p-2.5 flex-shrink-0`}>{icon}</div>
-      <div className="min-w-0 flex-1">
-        <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--color-ink-400)] truncate">{label}</p>
-        <p className={`text-[26px] font-bold leading-none mt-1 ${c.val}`}>{value}</p>
-        {sub && <p className="text-[11px] text-[var(--color-ink-400)] mt-1">{sub}</p>}
+      <div className={`${c.icon} rounded-xl p-1.5 sm:p-2 flex-shrink-0`}>{icon}</div>
+      <div className="min-w-0 w-full">
+        <p className={`text-lg sm:text-[26px] font-bold leading-none ${c.val}`}>{value}</p>
+        <p className="text-[9px] sm:text-[11px] font-medium text-[var(--color-ink-400)] leading-tight mt-0.5">{label}</p>
       </div>
     </>
   );
@@ -142,8 +141,8 @@ function CategoryChart({ catDist, total }: { catDist: CatPoint[]; total: number 
   const max = Math.max(...sorted.map(c => c.count), 1);
   return (
     <div className="bg-white rounded-2xl border border-[var(--color-border)] p-4 shadow-sm">
-      <h3 className="text-sm font-semibold text-[var(--color-ink-900)]">Category Distribution</h3>
-      <p className="text-xs text-[var(--color-ink-400)] mb-4 mt-0.5">Across {total} patients</p>
+      <h3 className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-900)]">Category Distribution</h3>
+      <p className="text-[11px] sm:text-xs text-[var(--color-ink-400)] mb-4 mt-0.5">Across {total} patients</p>
       <div className="space-y-3">
         {sorted.map(({ category, count }) => {
           const cat = CAT[category] ?? { label: category, color: "#94a3b8", cls: "" };
@@ -179,8 +178,8 @@ function TrendChart({ trendData }: { trendData: TrendPoint[] }) {
   const max = Math.max(...trendData.map(d => d.count), 1);
   return (
     <div className="bg-white rounded-2xl border border-[var(--color-border)] p-4 shadow-sm">
-      <h3 className="text-sm font-semibold text-[var(--color-ink-900)]">Registration Trend</h3>
-      <p className="text-xs text-[var(--color-ink-400)] mb-4 mt-0.5">New patients — last 7 days</p>
+      <h3 className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-900)]">Registration Trend</h3>
+      <p className="text-[11px] sm:text-xs text-[var(--color-ink-400)] mb-4 mt-0.5">New patients — last 7 days</p>
       <div className="flex items-end gap-1.5" style={{ height: 80 }}>
         {trendData.map((d, i) => {
           const pct = Math.max((d.count / max) * 100, d.count > 0 ? 8 : 0);
@@ -215,13 +214,13 @@ function RecentPanel({ recentReg }: { recentReg: RecentPat[] }) {
   return (
     <div className="bg-white rounded-2xl border border-[var(--color-border)] p-4 shadow-sm">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold text-[var(--color-ink-900)]">Recent Registrations</h3>
-        <Link href="/patients" className="text-xs text-[var(--color-primary-600)] font-medium hover:underline">
+        <h3 className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-900)]">Recent Registrations</h3>
+        <Link href="/patients" className="text-[11px] sm:text-xs text-[var(--color-primary-600)] font-medium hover:underline">
           View all
         </Link>
       </div>
       {recentReg.length === 0 ? (
-        <p className="text-xs text-[var(--color-ink-400)] text-center py-6">No registrations yet</p>
+        <p className="text-[11px] sm:text-xs text-[var(--color-ink-400)] text-center py-6">No registrations yet</p>
       ) : (
         <div className="space-y-3">
           {recentReg.map((p, i) => {
@@ -247,19 +246,19 @@ function RecentPanel({ recentReg }: { recentReg: RecentPat[] }) {
                   <div className="flex items-center gap-1.5">
                     <Link
                       href={`/patients/${p.udid}?returnTo=/patients`}
-                      className="text-xs font-semibold text-[var(--color-ink-900)] hover:text-[var(--color-primary-600)] truncate transition-colors"
+                      className="text-[11px] sm:text-xs font-semibold text-[var(--color-ink-900)] hover:text-[var(--color-primary-600)] truncate transition-colors"
                     >
                       {p.name}
                     </Link>
-                    <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full flex-shrink-0 ${cat.cls}`}>
+                    <span className={`text-[9px] sm:text-[10px] font-semibold px-1.5 py-0.5 rounded-full flex-shrink-0 ${cat.cls}`}>
                       {cat.label}
                     </span>
                   </div>
                   <div className="flex items-center gap-2 mt-0.5">
-                    <span className="font-mono text-[10px] text-[#115E59] bg-[#F0F8F6] px-1.5 py-0.5 rounded">
+                    <span className="font-mono text-[9px] sm:text-[10px] text-[#115E59] bg-[#F0F8F6] px-1.5 py-0.5 rounded">
                       {p.udid}
                     </span>
-                    <span className="text-[10px] text-[var(--color-ink-400)]">
+                    <span className="text-[9px] sm:text-[10px] text-[var(--color-ink-400)]">
                       {p.age}y {p.sex.charAt(0)}
                     </span>
                   </div>
@@ -382,14 +381,14 @@ export function PatientsClient({
       {/* ── Header ─────────────────────────────────────────────────────── */}
       <div className="flex items-start justify-between gap-3 mb-5 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold text-[var(--color-ink-900)] tracking-tight">Patients</h1>
-          <p className="text-sm text-[var(--color-ink-500)] mt-0.5">HMIS patient directory · UHID auto-assigned on registration</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-[var(--color-ink-900)] tracking-tight">Patients</h1>
+          <p className="text-[13px] sm:text-sm text-[var(--color-ink-500)] mt-0.5">HMIS patient directory · UHID auto-assigned on registration</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <button
             ref={filterBtnRef}
             onClick={() => setShowFilters(v => !v)}
-            className={`inline-flex items-center gap-2 text-sm font-medium px-3.5 py-2.5 rounded-xl border transition-colors ${
+            className={`inline-flex items-center gap-2 text-[13px] sm:text-sm font-medium px-3.5 py-2.5 rounded-xl border transition-colors ${
               showFilters
                 ? "border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)]"
                 : "border-[var(--color-border)] bg-white text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]"
@@ -406,8 +405,8 @@ export function PatientsClient({
       </div>
 
       {/* ── KPI Cards ──────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
-        <KpiCard icon={<PackageCheck size={17} />}  label="Today Dispensed" value={kpis.todayDispensed} color="green" sub="Dispensed today"   isActive={activeCard === "dispensed" || activeCard === ""} onSelect={() => navigate({ opStatus: activeCard === "dispensed" || activeCard === "" ? "all" : "dispensed", card: activeCard === "dispensed" || activeCard === "" ? "total" : "dispensed", page: "1" })} />
+      <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-5">
+        <KpiCard icon={<PackageCheck size={17} />}  label="Today Dispensed" value={kpis.todayDispensed} color="green" isActive={activeCard === "dispensed" || activeCard === ""} onSelect={() => navigate({ opStatus: activeCard === "dispensed" || activeCard === "" ? "all" : "dispensed", card: activeCard === "dispensed" || activeCard === "" ? "total" : "dispensed", page: "1" })} />
         <KpiCard icon={<Users size={17} />}         label="Total Patients"  value={kpis.totalPatients}  color="teal"  isActive={activeCard === "total"}    onSelect={() => navigate({ opStatus: "all", card: activeCard === "total" ? "dispensed" : "total", page: "1" })} />
       </div>
 
@@ -424,7 +423,7 @@ export function PatientsClient({
 
                 {/* Search */}
                 <div className="flex flex-col gap-1 flex-1 min-w-[180px] max-w-xs">
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Search Patient</label>
+                  <label className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Search Patient</label>
                   <div className="relative">
                     <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)]" />
                     <input
@@ -444,7 +443,7 @@ export function PatientsClient({
 
                 {/* Sort */}
                 <div className="flex flex-col gap-1">
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Sort By</label>
+                  <label className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Sort By</label>
                   <div className="relative">
                     <select value={sortBy} onChange={e => navigate({ sort: e.target.value, page: "1" })} className={SEL}>
                       <option value="newest">Newest first</option>
@@ -458,7 +457,7 @@ export function PatientsClient({
 
                 {/* Sex */}
                 <div className="flex flex-col gap-1">
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Sex</label>
+                  <label className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Sex</label>
                   <div className="relative">
                     <select value={sexFilter} onChange={e => navigate({ sex: e.target.value, page: "1" })} className={SEL}>
                       <option value="">All</option>
@@ -472,7 +471,7 @@ export function PatientsClient({
 
                 {/* Category */}
                 <div className="flex flex-col gap-1">
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Category</label>
+                  <label className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Category</label>
                   <div className="relative">
                     <select value={categoryFilter} onChange={e => navigate({ category: e.target.value, page: "1" })} className={SEL}>
                       <option value="">All Categories</option>
@@ -489,7 +488,7 @@ export function PatientsClient({
                 {/* Hospital (multi-hospital doctors only) */}
                 {doctorHospitals.length > 1 && (
                   <div className="flex flex-col gap-1">
-                    <label className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Hospital</label>
+                    <label className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Hospital</label>
                     <div className="relative">
                       <select value={hospitalFilter} onChange={e => navigate({ hospital: e.target.value, page: "1" })} className={SEL}>
                         <option value="">All Hospitals</option>
@@ -504,7 +503,7 @@ export function PatientsClient({
 
                 {/* Visit Status */}
                 <div className="flex flex-col gap-1">
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Visit Status</label>
+                  <label className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Visit Status</label>
                   <div className="relative">
                     <select value={opStatusFilter} onChange={e => navigate({ opStatus: e.target.value, page: "1" })} className={SEL}>
                       <option value="all">All Patients</option>
@@ -521,7 +520,7 @@ export function PatientsClient({
                 {activeFilters > 0 && (
                   <button
                     onClick={() => { handleSearch(""); navigate({ q: "", category: "", sex: "", hospital: "", opStatus: "dispensed", page: "1" }); }}
-                    className="text-sm font-medium text-[var(--color-primary-600)] hover:text-[var(--color-primary-800)] whitespace-nowrap pb-2"
+                    className="text-[13px] sm:text-sm font-medium text-[var(--color-primary-600)] hover:text-[var(--color-primary-800)] whitespace-nowrap pb-2"
                   >
                     Clear all
                   </button>
@@ -536,18 +535,18 @@ export function PatientsClient({
             {patients.length === 0 ? (
               <div className="py-16 text-center">
                 <Users size={36} className="mx-auto text-[var(--color-ink-300)] mb-3" />
-                <p className="text-sm font-medium text-[var(--color-ink-500)]">
+                <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-500)]">
                   {q || categoryFilter || sexFilter || hospitalFilter || opStatusFilter
                     ? "No patients match the current filters."
                     : "No patients registered yet."}
                 </p>
                 {!q && !categoryFilter && !sexFilter && !hospitalFilter && !opStatusFilter && (
-                  <p className="mt-3 text-sm text-[var(--color-ink-400)]">No patients registered yet.</p>
+                  <p className="mt-3 text-[13px] sm:text-sm text-[var(--color-ink-400)]">No patients registered yet.</p>
                 )}
                 {(q || categoryFilter || sexFilter || hospitalFilter || opStatusFilter) && (
                   <button
                     onClick={() => navigate({ q: "", category: "", sex: "", hospital: "", opStatus: "", page: "1" })}
-                    className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-[var(--color-ink-500)] hover:text-[var(--color-ink-700)]"
+                    className="mt-3 inline-flex items-center gap-1.5 text-[13px] sm:text-sm font-medium text-[var(--color-ink-500)] hover:text-[var(--color-ink-700)]"
                   >
                     <X size={13} /> Clear all filters
                   </button>
@@ -593,7 +592,7 @@ export function PatientsClient({
                     >
                       {/* Token */}
                       <div
-                        className="size-8 rounded-xl flex items-center justify-center shrink-0 text-sm font-bold"
+                        className="size-8 rounded-xl flex items-center justify-center shrink-0 text-[13px] sm:text-sm font-bold"
                         style={{ background: "var(--color-primary-100)", color: "var(--color-primary-700)" }}
                       >
                         {token}
@@ -616,26 +615,26 @@ export function PatientsClient({
                           </div>
                         )}
                         <div className="min-w-0">
-                          <p className="text-sm font-semibold text-[var(--color-ink-900)] truncate">{p.name}</p>
+                          <p className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-900)] truncate">{p.name}</p>
                           <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                            <span className="font-mono text-[10px] bg-[#F0F8F6] text-[#115E59] px-1.5 py-0.5 rounded">
+                            <span className="font-mono text-[9px] sm:text-[10px] bg-[#F0F8F6] text-[#115E59] px-1.5 py-0.5 rounded">
                               {p.udid}
                             </span>
-                            <span className="text-[10px] text-[var(--color-ink-400)]">{p.age}y · {sexLabel}</span>
+                            <span className="text-[9px] sm:text-[10px] text-[var(--color-ink-400)]">{p.age}y · {sexLabel}</span>
                           </div>
                           {/* Queue + finalize times — visible on mobile/tablet where Last Visit column is hidden */}
                           {(lastVisitStr || queueTimeStr || finalTimeStr) && (
                             <div className="xl:hidden flex items-center gap-2 mt-1 flex-wrap">
                               {lastVisitStr && (
-                                <span className="text-[10px] font-medium text-[var(--color-ink-600)]">{lastVisitStr}</span>
+                                <span className="text-[9px] sm:text-[10px] font-medium text-[var(--color-ink-600)]">{lastVisitStr}</span>
                               )}
                               {queueTimeStr && (
-                                <span className="text-[10px] text-[var(--color-ink-400)]">
+                                <span className="text-[9px] sm:text-[10px] text-[var(--color-ink-400)]">
                                   <span className="font-semibold text-[var(--color-ink-500)]">Q</span> {queueTimeStr}
                                 </span>
                               )}
                               {finalTimeStr && (
-                                <span className="text-[10px] text-[var(--color-ink-400)]">
+                                <span className="text-[9px] sm:text-[10px] text-[var(--color-ink-400)]">
                                   <span className="font-semibold text-emerald-600">F</span> {finalTimeStr}
                                 </span>
                               )}
@@ -645,7 +644,7 @@ export function PatientsClient({
                               here. Breakpoints are exact complements: never both, never neither. */}
                           {p.chiefComplaint && (
                             <div className="lg:hidden mt-1">
-                              <span className="inline-flex max-w-full items-center px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-[10px] font-medium">
+                              <span className="inline-flex max-w-full items-center px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-[9px] sm:text-[10px] font-medium">
                                 <span className="truncate">{formatComplaintDisplay(p.chiefComplaint)}</span>
                               </span>
                             </div>
@@ -658,14 +657,14 @@ export function PatientsClient({
                               {p.diagnoses.slice(0, 2).map((d, i) => (
                                 <span
                                   key={i}
-                                  className="inline-flex max-w-full items-center gap-1 px-2 py-0.5 rounded-full bg-teal-50 border border-teal-200 text-teal-800 text-[10px] font-medium"
+                                  className="inline-flex max-w-full items-center gap-1 px-2 py-0.5 rounded-full bg-teal-50 border border-teal-200 text-teal-800 text-[9px] sm:text-[10px] font-medium"
                                 >
                                   {d.laterality && <span className="font-bold shrink-0">{d.laterality}</span>}
                                   <span className="truncate">{d.description}</span>
                                 </span>
                               ))}
                               {p.diagnoses.length > 2 && (
-                                <span className="text-[10px] text-[var(--color-ink-400)]">
+                                <span className="text-[9px] sm:text-[10px] text-[var(--color-ink-400)]">
                                   +{p.diagnoses.length - 2} more
                                 </span>
                               )}
@@ -677,11 +676,11 @@ export function PatientsClient({
                       {/* Chief Complaint — fills space, shown on lg+ */}
                       <div className="hidden lg:block flex-1 min-w-0">
                         {p.chiefComplaint ? (
-                          <span className="inline-flex max-w-full items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-[11px] font-medium">
+                          <span className="inline-flex max-w-full items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-[10px] sm:text-[11px] font-medium">
                             <span className="truncate">{formatComplaintDisplay(p.chiefComplaint)}</span>
                           </span>
                         ) : (
-                          <span className="text-[11px] italic text-[var(--color-ink-300)]">Not recorded</span>
+                          <span className="text-[10px] sm:text-[11px] italic text-[var(--color-ink-300)]">Not recorded</span>
                         )}
                       </div>
 
@@ -690,26 +689,26 @@ export function PatientsClient({
                         {p.diagnoses.length > 0 ? (
                           <div className="flex flex-wrap gap-1">
                             {p.diagnoses.slice(0, 2).map((d, i) => (
-                              <span key={i} className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-teal-50 border border-teal-200 text-teal-800 text-[11px] font-medium">
+                              <span key={i} className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-teal-50 border border-teal-200 text-teal-800 text-[10px] sm:text-[11px] font-medium">
                                 {d.laterality && <span className="font-bold">{d.laterality}</span>}
                                 {d.description}
                               </span>
                             ))}
                             {p.diagnoses.length > 2 && (
-                              <span className="text-[10px] text-[var(--color-ink-400)] self-center">+{p.diagnoses.length - 2}</span>
+                              <span className="text-[9px] sm:text-[10px] text-[var(--color-ink-400)] self-center">+{p.diagnoses.length - 2}</span>
                             )}
                           </div>
                         ) : (
-                          <span className="text-[11px] text-[var(--color-ink-300)]">—</span>
+                          <span className="text-[10px] sm:text-[11px] text-[var(--color-ink-300)]">—</span>
                         )}
                       </div>
 
                       {/* Last Visit (date only) */}
                       <div className="hidden xl:block w-28 shrink-0">
                         {lastVisitStr ? (
-                          <p className="text-sm font-medium text-[var(--color-ink-800)]">{lastVisitStr}</p>
+                          <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-800)]">{lastVisitStr}</p>
                         ) : (
-                          <span className="text-[11px] text-[var(--color-ink-300)]">—</span>
+                          <span className="text-[10px] sm:text-[11px] text-[var(--color-ink-300)]">—</span>
                         )}
                       </div>
 
@@ -717,24 +716,24 @@ export function PatientsClient({
                       <div className="hidden xl:block w-28 shrink-0">
                         <div className="space-y-0.5">
                           {queueTimeStr && (
-                            <p className="text-[11px] text-[var(--color-ink-600)]">
+                            <p className="text-[10px] sm:text-[11px] text-[var(--color-ink-600)]">
                               <span className="font-bold text-[var(--color-ink-500)] mr-1">Q</span>{queueTimeStr}
                             </p>
                           )}
                           {finalTimeStr && (
-                            <p className="text-[11px] text-[var(--color-ink-600)]">
+                            <p className="text-[10px] sm:text-[11px] text-[var(--color-ink-600)]">
                               <span className="font-bold text-emerald-600 mr-1">F</span>{finalTimeStr}
                             </p>
                           )}
                           {!queueTimeStr && !finalTimeStr && (
-                            <span className="text-[11px] text-[var(--color-ink-300)]">—</span>
+                            <span className="text-[10px] sm:text-[11px] text-[var(--color-ink-300)]">—</span>
                           )}
                         </div>
                       </div>
 
                       {/* Category + Undo — right side */}
                       <div className="flex items-center gap-2 shrink-0 justify-end">
-                        <span className={`hidden sm:inline-flex text-[10px] font-semibold px-2 py-0.5 rounded-full ${cat.cls}`}>
+                        <span className={`hidden sm:inline-flex text-[9px] sm:text-[10px] font-semibold px-2 py-0.5 rounded-full ${cat.cls}`}>
                           {cat.label}
                         </span>
                         {opStatusFilter === "dispensed" && p.dispensedApptId && (
@@ -744,7 +743,7 @@ export function PatientsClient({
                               startTransition(() => undoDispense(p.dispensedApptId!));
                             }}
                             title="Undo dispense — move back to queue"
-                            className="shrink-0 flex items-center gap-1 text-[10px] font-medium px-2 py-1 rounded-lg border border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors"
+                            className="shrink-0 flex items-center gap-1 text-[9px] sm:text-[10px] font-medium px-2 py-1 rounded-lg border border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors"
                           >
                             <Undo2 size={11} />
                             Undo
@@ -787,7 +786,7 @@ export function PatientsClient({
                     <Link
                       key={n}
                       href={pageUrl(n)}
-                      className={`inline-flex items-center justify-center w-8 h-8 rounded-lg text-sm font-medium border transition-colors ${
+                      className={`inline-flex items-center justify-center w-8 h-8 rounded-lg text-[13px] sm:text-sm font-medium border transition-colors ${
                         n === page
                           ? "bg-[var(--color-primary-600)] text-white border-[var(--color-primary-600)]"
                           : "border-[var(--color-border)] bg-white text-[var(--color-ink-600)] hover:bg-[var(--color-ink-50)]"
@@ -807,7 +806,7 @@ export function PatientsClient({
                   )}
                 </div>
                 </div>{/* /overflow-x-auto pagination */}
-                <p className="text-sm text-[var(--color-ink-500)]">
+                <p className="text-[13px] sm:text-sm text-[var(--color-ink-500)]">
                   Showing <span className="font-semibold text-[var(--color-primary-700)]">{from}–{to}</span> of {total} patients
                   {(q || categoryFilter || sexFilter || hospitalFilter || opStatusFilter) && (
                     <span className="text-[var(--color-ink-400)] font-normal"> (filtered)</span>

@@ -86,16 +86,16 @@ export default async function QueuePage() {
       </div>
 
       {/* KPI strip */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
+      <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-6">
         {[
           { icon: <Users       size={15} />, value: total,   label: "Total today",   color: "text-[var(--color-ink-900)]",      bg: "bg-[var(--color-surface-raised)]" },
           { icon: <ClipboardList size={15} />, value: started, label: "Visit started", color: "text-[var(--color-primary-700)]",   bg: "bg-[var(--color-primary-50)]" },
           { icon: <UserCheck   size={15} />, value: allDone, label: "All tests done", color: "text-emerald-700",                  bg: "bg-emerald-50" },
         ].map(({ icon, value, label, color, bg }) => (
-          <div key={label} className={clsx("surface-card px-4 py-3 flex flex-col items-center gap-1", bg)}>
+          <div key={label} className={clsx("surface-card px-2.5 sm:px-4 py-2.5 sm:py-3 flex flex-col items-center gap-1", bg)}>
             <span className={clsx("opacity-60", color)}>{icon}</span>
-            <p className={clsx("text-2xl font-bold tabular-nums leading-none", color)}>{value}</p>
-            <p className="text-[11px] text-[var(--color-ink-400)] text-center leading-tight">{label}</p>
+            <p className={clsx("text-xl sm:text-2xl font-bold tabular-nums leading-none", color)}>{value}</p>
+            <p className="text-[10px] sm:text-[11px] text-[var(--color-ink-400)] text-center leading-tight">{label}</p>
           </div>
         ))}
       </div>
@@ -228,7 +228,7 @@ export default async function QueuePage() {
                     <Link
                       href={`/emr/${appt.patient.udid}?visit=${v.id}`}
                       className={clsx(
-                        "text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap",
+                        "text-xs font-semibold px-3 py-2 rounded-lg transition-colors whitespace-nowrap min-h-[44px] flex items-center",
                         allTestsDone
                           ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200"
                           : "bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)]",

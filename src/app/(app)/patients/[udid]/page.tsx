@@ -264,20 +264,20 @@ export default async function PatientProfilePage({
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-2 flex-wrap">
               <div>
-                <h1 className="text-xl font-bold leading-tight">{patient.name}</h1>
+                <h1 className="text-lg sm:text-xl font-bold leading-tight">{patient.name}</h1>
                 <div className="flex items-center gap-2 mt-1 flex-wrap">
-                  <span className="font-mono text-[11px] bg-white/10 px-2 py-0.5 rounded" title="UDID (Doctor ID)">
+                  <span className="font-mono text-[10px] sm:text-[11px] bg-white/10 px-2 py-0.5 rounded" title="UDID (Doctor ID)">
                     <Hash size={9} className="inline mr-0.5" />{patient.udid ?? "—"}
                   </span>
                   {patient.uhid && (
-                    <span className="font-mono text-[11px] bg-white/10 px-2 py-0.5 rounded" title="UHID (Hospital ID)">
+                    <span className="font-mono text-[10px] sm:text-[11px] bg-white/10 px-2 py-0.5 rounded" title="UHID (Hospital ID)">
                       <Hash size={9} className="inline mr-0.5" />{patient.uhid}
                     </span>
                   )}
-                  <span className="text-sm text-white/80">
+                  <span className="text-[13px] sm:text-sm text-white/80">
                     {patient.age}y · {patient.sex.charAt(0) + patient.sex.slice(1).toLowerCase()}
                   </span>
-                  <span className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full ${CATEGORY_STYLES[patient.category] ?? CATEGORY_STYLES.GENERAL}`}>
+                  <span className={`text-[10px] sm:text-[11px] font-semibold px-2.5 py-0.5 rounded-full ${CATEGORY_STYLES[patient.category] ?? CATEGORY_STYLES.GENERAL}`}>
                     {patient.category}
                   </span>
                 </div>
@@ -286,7 +286,7 @@ export default async function PatientProfilePage({
 
             {/* Extra info chips */}
             {(bannerItems.length > 0 || patient.aadhaarPhotoUrl) && (
-              <div className="flex flex-wrap gap-x-4 gap-y-1.5 mt-3 text-xs text-white/70">
+              <div className="flex flex-wrap gap-x-4 gap-y-1.5 mt-3 text-[11px] sm:text-xs text-white/70">
                 {bannerItems.map((item, i) => (
                   <span key={i} className="flex items-center gap-1.5">
                     <span className="text-white/50">{item.icon}</span>
@@ -311,7 +311,7 @@ export default async function PatientProfilePage({
               </div>
             )}
             {patient.notes && (
-              <div className="flex items-start gap-1.5 mt-2 text-xs text-white/70">
+              <div className="flex items-start gap-1.5 mt-2 text-[11px] sm:text-xs text-white/70">
                 <span className="text-white/50 mt-0.5 shrink-0"><FileText size={13} /></span>
                 <span>{patient.notes}</span>
               </div>

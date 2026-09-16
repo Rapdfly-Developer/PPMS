@@ -44,10 +44,10 @@ export function AppointmentTableRow({
       {/* Time */}
       <td className="px-4 py-3 whitespace-nowrap">
         <div className="flex flex-col gap-0.5">
-          <span className="text-sm font-medium text-[var(--color-ink-700)]">
+          <span className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)]">
             {format(new Date(appt.dateTime), "h:mm a")}
           </span>
-          <span className="text-[10px] text-[var(--color-ink-400)]">
+          <span className="text-[9px] sm:text-[10px] text-[var(--color-ink-400)]">
             Booked {format(new Date(appt.createdAt), "d MMM, h:mm a")}
           </span>
           {appt.completedAt && (() => {
@@ -56,7 +56,7 @@ export function AppointmentTableRow({
             );
             const waitStr = mins < 60 ? `${mins} min` : `${Math.floor(mins / 60)}h ${mins % 60}m`;
             return (
-              <span className="text-[10px] text-emerald-600 flex items-center gap-0.5">
+              <span className="text-[9px] sm:text-[10px] text-emerald-600 flex items-center gap-0.5">
                 <Timer size={9} /> Waited {waitStr}
               </span>
             );
@@ -68,7 +68,7 @@ export function AppointmentTableRow({
       <td className="px-4 py-3 whitespace-nowrap">
         <Link
           href={`/patients/${p.udid}?returnTo=/appointments`}
-          className="font-mono text-xs text-[var(--color-primary-600)] hover:underline"
+          className="font-mono text-[11px] sm:text-xs text-[var(--color-primary-600)] hover:underline"
         >
           {p.udid}
         </Link>
@@ -79,14 +79,14 @@ export function AppointmentTableRow({
         {appt.visit ? (
           <Link
             href={`/emr/${p.udid}?visit=${appt.visit.id}&returnTo=/appointments`}
-            className="text-sm font-semibold text-[var(--color-ink-900)] hover:text-[var(--color-primary-600)] transition-colors"
+            className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-900)] hover:text-[var(--color-primary-600)] transition-colors"
           >
             {p.name}
           </Link>
         ) : (
           <Link
             href={`/patients/${p.udid}?returnTo=/appointments`}
-            className="text-sm font-semibold text-[var(--color-ink-900)] hover:text-[var(--color-primary-600)] transition-colors"
+            className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-900)] hover:text-[var(--color-primary-600)] transition-colors"
           >
             {p.name}
           </Link>
@@ -95,31 +95,31 @@ export function AppointmentTableRow({
 
       {/* Age / Gender */}
       <td className="px-4 py-3 whitespace-nowrap">
-        <span className="text-sm text-[var(--color-ink-600)]">
+        <span className="text-[13px] sm:text-sm text-[var(--color-ink-600)]">
           {p.age}y / {p.sex.charAt(0).toUpperCase() + p.sex.slice(1).toLowerCase()}
         </span>
       </td>
 
       {/* Doctor */}
       <td className="px-4 py-3 whitespace-nowrap">
-        <span className="text-sm text-[var(--color-ink-600)]">
+        <span className="text-[13px] sm:text-sm text-[var(--color-ink-600)]">
           {appt.doctor ? `Dr. ${appt.doctor.name}` : "—"}
         </span>
       </td>
 
       {/* Department */}
       <td className="px-4 py-3 whitespace-nowrap">
-        <span className="text-sm text-[var(--color-ink-600)]">{dept}</span>
+        <span className="text-[13px] sm:text-sm text-[var(--color-ink-600)]">{dept}</span>
       </td>
 
       {/* Type */}
       <td className="px-4 py-3 whitespace-nowrap">
-        <span className="text-sm text-[var(--color-ink-600)]">{type}</span>
+        <span className="text-[13px] sm:text-sm text-[var(--color-ink-600)]">{type}</span>
       </td>
 
       {/* Status badge */}
       <td className="px-4 py-3 whitespace-nowrap">
-        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold tracking-wide ${badge.cls}`}>
+        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold tracking-wide ${badge.cls}`}>
           {badge.label}
         </span>
       </td>
@@ -133,13 +133,13 @@ export function AppointmentTableRow({
             <>
               <Link
                 href={`/patients/${p.udid}?returnTo=/appointments`}
-                className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border border-[var(--color-border)] bg-white text-[var(--color-ink-700)] hover:bg-[var(--color-ink-50)] transition-colors"
+                className="inline-flex items-center gap-1.5 text-[11px] sm:text-xs font-medium px-3 py-1.5 rounded-lg border border-[var(--color-border)] bg-white text-[var(--color-ink-700)] hover:bg-[var(--color-ink-50)] transition-colors"
               >
                 <Eye size={12} /> View
               </Link>
               <button
                 onClick={() => setShowReschedule(true)}
-                className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border border-[var(--color-border)] bg-white text-[var(--color-ink-700)] hover:bg-[var(--color-ink-50)] transition-colors"
+                className="inline-flex items-center gap-1.5 text-[11px] sm:text-xs font-medium px-3 py-1.5 rounded-lg border border-[var(--color-border)] bg-white text-[var(--color-ink-700)] hover:bg-[var(--color-ink-50)] transition-colors"
               >
                 <Calendar size={12} /> Reschedule
               </button>
@@ -152,14 +152,14 @@ export function AppointmentTableRow({
               <button
                 disabled={pending}
                 onClick={() => hospitalSet("CONFIRMED")}
-                className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-emerald-500 text-white hover:bg-emerald-600 disabled:opacity-50 transition-colors"
+                className="inline-flex items-center gap-1.5 text-[11px] sm:text-xs font-semibold px-3 py-1.5 rounded-lg bg-emerald-500 text-white hover:bg-emerald-600 disabled:opacity-50 transition-colors"
               >
                 <Check size={12} /> Confirm
               </button>
               <button
                 disabled={pending}
                 onClick={() => hospitalSet("CANCELLED")}
-                className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border border-red-300 text-red-600 bg-white hover:bg-red-50 disabled:opacity-50 transition-colors"
+                className="inline-flex items-center gap-1.5 text-[11px] sm:text-xs font-semibold px-3 py-1.5 rounded-lg border border-red-300 text-red-600 bg-white hover:bg-red-50 disabled:opacity-50 transition-colors"
               >
                 <X size={12} /> Reject
               </button>
@@ -170,7 +170,7 @@ export function AppointmentTableRow({
           {role === "HOSPITAL" && appt.status === "CONFIRMED" && appt.isWalkIn && (
             <button
               onClick={() => setShowSlot(true)}
-              className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] transition-colors"
+              className="inline-flex items-center gap-1.5 text-[11px] sm:text-xs font-medium px-3 py-1.5 rounded-lg border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] transition-colors"
             >
               <CalendarPlus size={12} /> Schedule Next Slot
             </button>
