@@ -57,7 +57,7 @@ export default async function PatientVisitsPage({
       {/* Header */}
       <div className="flex items-center justify-between mb-5">
         <div>
-          <h1 className="text-xl font-bold text-[var(--color-ink-900)]">Previous Visits</h1>
+          <h1 className="text-lg sm:text-xl font-bold text-[var(--color-ink-900)]">Previous Visits</h1>
           <p className="text-sm text-[var(--color-ink-400)] mt-0.5">
             {totalVisits} visit{totalVisits !== 1 ? "s" : ""} on record
           </p>

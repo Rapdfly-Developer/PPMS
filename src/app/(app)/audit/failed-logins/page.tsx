@@ -55,7 +55,7 @@ export default async function FailedLoginsPage({
           <AlertTriangle size={18} className="text-red-600" />
         </div>
         <div>
-          <h1 className="text-xl font-semibold text-[var(--color-ink-900)]">Failed Login Attempts</h1>
+          <h1 className="text-lg sm:text-xl font-semibold text-[var(--color-ink-900)]">Failed Login Attempts</h1>
           <p className="text-sm text-[var(--color-ink-500)] mt-0.5">
             {total} failures on {format(new Date(selectedDate), "d MMM yyyy")}
           </p>

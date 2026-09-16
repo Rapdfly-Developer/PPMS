@@ -191,7 +191,7 @@ export function UserProfileClient({
             {/* Info */}
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="text-lg font-bold text-[var(--color-ink-900)]">{name || username}</h1>
+                <h1 className="text-base sm:text-lg font-bold text-[var(--color-ink-900)]">{name || username}</h1>
                 <span className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full ring-1 ${roleMeta.color} ${roleMeta.ring}`}>
                   {roleMeta.label}
                 </span>

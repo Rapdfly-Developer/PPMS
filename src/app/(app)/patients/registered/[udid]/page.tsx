@@ -34,7 +34,7 @@ export default async function RegistrationSuccessPage({
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
             <CheckCircle2 className="h-8 w-8 text-green-600" strokeWidth={1.75} />
           </div>
-          <h1 className="text-2xl font-semibold text-[var(--color-ink-900)]">Registration Complete</h1>
+          <h1 className="text-xl sm:text-2xl font-semibold text-[var(--color-ink-900)]">Registration Complete</h1>
           <p className="text-sm text-[var(--color-ink-500)] mt-1">Patient has been successfully registered in HMIS</p>
         </div>
 

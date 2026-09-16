@@ -156,7 +156,7 @@ export function SubscriptionClient({ hospitalId, hospitalName, license }: Props)
           </div>
         )}
 
-        <h1 className="text-2xl font-bold text-[var(--color-ink-900)] mb-2">
+        <h1 className="text-xl sm:text-2xl font-bold text-[var(--color-ink-900)] mb-2">
           {hospitalName ? `${hospitalName} · ` : ""}PPMS Subscription
         </h1>
         <p className="text-sm text-[var(--color-ink-500)]">

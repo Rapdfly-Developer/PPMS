@@ -116,7 +116,7 @@ export function ChipOptionsClient({ hospitals, defaultChips }: {
   return (
     <div className="fade-in max-w-xl">
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-[var(--color-ink-900)] tracking-tight">PMH Chip Options</h1>
+        <h1 className="text-xl sm:text-2xl font-semibold text-[var(--color-ink-900)] tracking-tight">PMH Chip Options</h1>
         <p className="text-sm text-[var(--color-ink-500)] mt-0.5">
           Customise which past medical history chips appear in the EMR for each hospital.
           When custom options are set, they replace the defaults for that hospital.

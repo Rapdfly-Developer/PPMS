@@ -37,7 +37,7 @@ export default async function NewUserPage({
         <ArrowLeft size={15} />
         Back
       </Link>
-      <h1 className="text-2xl font-semibold text-[var(--color-ink-900)] tracking-tight mb-1">
+      <h1 className="text-xl sm:text-2xl font-semibold text-[var(--color-ink-900)] tracking-tight mb-1">
         Add User
       </h1>
       <p className="text-sm text-[var(--color-ink-500)] mb-6">

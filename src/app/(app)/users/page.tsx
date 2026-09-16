@@ -28,7 +28,7 @@ export default async function UsersPage() {
     <div className="fade-in">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-semibold text-[var(--color-ink-900)] tracking-tight">
+          <h1 className="text-xl sm:text-2xl font-semibold text-[var(--color-ink-900)] tracking-tight">
             User Management
           </h1>
           <p className="text-sm text-[var(--color-ink-500)] mt-1">

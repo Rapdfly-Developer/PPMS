@@ -126,7 +126,7 @@ function ConfigModal({ hospital, onClose }: { hospital: HospitalRow; onClose: ()
     >
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 my-8 text-[var(--color-ink-900)]">
         <div className="flex items-center justify-between mb-1">
-          <h2 className="text-base font-bold text-[var(--color-ink-800)]">Integration — {hospital.name}</h2>
+          <h2 className="text-[15px] sm:text-base font-bold text-[var(--color-ink-800)]">Integration — {hospital.name}</h2>
           <button onClick={onClose} className="text-[var(--color-ink-400)] hover:text-[var(--color-ink-800)]"><X size={18} /></button>
         </div>
         <p className="text-xs text-[var(--color-ink-400)] mb-3">
@@ -350,7 +350,7 @@ export function IntegrationsClient({
           <Plug size={18} className="text-[var(--color-primary-600)]" />
         </div>
         <div>
-          <h1 className="text-xl font-bold text-[var(--color-ink-900)]">Hospital Integrations</h1>
+          <h1 className="text-lg sm:text-xl font-bold text-[var(--color-ink-900)]">Hospital Integrations</h1>
           <p className="text-sm text-[var(--color-ink-400)]">
             Finalized visits are converted to a standard clinical record and pushed to each hospital&apos;s system via its adapter.
           </p>

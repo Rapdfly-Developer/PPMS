@@ -247,7 +247,7 @@ function SuccessModal({ udid, onClose }: { udid: string; onClose: () => void }) 
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden">
         <div className="bg-emerald-600 px-6 py-6 text-white text-center">
           <CheckCircle2 size={40} className="mx-auto mb-2" />
-          <h2 className="text-lg font-bold">Consultation Completed</h2>
+          <h2 className="text-base sm:text-lg font-bold">Consultation Completed</h2>
           <p className="text-sm text-emerald-100 mt-1">EMR has been finalized and signed.</p>
           <p className="text-xs text-emerald-200 mt-3 opacity-80">Redirecting to patient profile…</p>
         </div>

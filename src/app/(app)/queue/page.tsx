@@ -77,7 +77,7 @@ export default async function QueuePage() {
 
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-xl font-bold text-[var(--color-ink-900)] tracking-tight">
+        <h1 className="text-lg sm:text-xl font-bold text-[var(--color-ink-900)] tracking-tight">
           Today&apos;s Queue
         </h1>
         <p className="text-sm text-[var(--color-ink-400)] mt-0.5">

@@ -360,7 +360,7 @@ export function BookAppointmentForm({
 
 
       <div className="mb-6">
-        <h1 className="text-xl font-semibold text-[var(--color-ink-900)]">Book Appointment</h1>
+        <h1 className="text-lg sm:text-xl font-semibold text-[var(--color-ink-900)]">Book Appointment</h1>
         <p className="text-sm text-[var(--color-ink-500)] mt-0.5">
           Fill in patient, doctor and slot details to book a new appointment.
         </p>

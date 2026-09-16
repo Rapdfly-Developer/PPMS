@@ -272,7 +272,7 @@ export function PluginManagerClient({ plugins, canManage }: Props) {
           <Puzzle size={20} className="text-teal-600" />
         </div>
         <div>
-          <h1 className="text-lg font-bold text-gray-900">Plugin Manager</h1>
+          <h1 className="text-base sm:text-lg font-bold text-gray-900">Plugin Manager</h1>
           <p className="text-xs text-gray-500">
             {installedCount} installed · {enabledCount} enabled
           </p>

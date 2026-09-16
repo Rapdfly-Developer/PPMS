@@ -87,7 +87,7 @@ export default async function ActivityLogsPage({
             <Activity size={18} className="text-purple-700" />
           </div>
           <div>
-            <h1 className="text-xl font-semibold text-[var(--color-ink-900)]">Activity Logs</h1>
+            <h1 className="text-lg sm:text-xl font-semibold text-[var(--color-ink-900)]">Activity Logs</h1>
             <p className="text-sm text-[var(--color-ink-500)] mt-0.5">
               {total} events · {format(new Date(selectedDate), "d MMM yyyy")}
             </p>

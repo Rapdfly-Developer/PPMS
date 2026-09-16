@@ -73,7 +73,7 @@ export default async function LoginHistoryPage({
             <LogIn size={18} className="text-blue-700" />
           </div>
           <div>
-            <h1 className="text-xl font-semibold text-[var(--color-ink-900)]">Login History</h1>
+            <h1 className="text-lg sm:text-xl font-semibold text-[var(--color-ink-900)]">Login History</h1>
             <p className="text-sm text-[var(--color-ink-500)] mt-0.5">{total} records for {format(new Date(selectedDate), "d MMM yyyy")}</p>
           </div>
         </div>

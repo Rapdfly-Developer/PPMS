@@ -911,7 +911,7 @@ export function LicenseSection({ initialTab = "overview" }: { initialTab?: LicTa
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-[var(--color-ink-900)]">License Management</h2>
+          <h2 className="text-base sm:text-lg font-semibold text-[var(--color-ink-900)]">License Management</h2>
           <p className="text-sm text-[var(--color-ink-500)] mt-0.5">Manage your PPMS license, subscription, and access control.</p>
         </div>
         {data && (

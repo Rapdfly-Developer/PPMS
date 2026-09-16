@@ -20,7 +20,7 @@ export default function AppError({
       <div className="rounded-full bg-[var(--color-danger-100)] p-4 mb-4">
         <AlertTriangle size={28} className="text-[var(--color-danger-600)]" />
       </div>
-      <h2 className="text-lg font-semibold text-[var(--color-ink-900)] mb-1">
+      <h2 className="text-base sm:text-lg font-semibold text-[var(--color-ink-900)] mb-1">
         Something went wrong
       </h2>
       <p className="text-sm text-[var(--color-ink-500)] mb-6 max-w-xs">

@@ -199,7 +199,7 @@ export function NewEncounterForm({
 
   return (
     <div className="max-w-2xl mx-auto fade-in">
-      <h1 className="text-xl font-semibold text-[var(--color-ink-900)] mb-1">New Encounter</h1>
+      <h1 className="text-lg sm:text-xl font-semibold text-[var(--color-ink-900)] mb-1">New Encounter</h1>
       <p className="text-sm text-[var(--color-ink-500)] mb-6">
         Start a walk-in visit and open the patient&apos;s EMR immediately.
       </p>

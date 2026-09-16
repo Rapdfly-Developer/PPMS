@@ -42,7 +42,7 @@ export default async function ActiveSessionsPage() {
           <Monitor size={18} className="text-emerald-700" />
         </div>
         <div>
-          <h1 className="text-xl font-semibold text-[var(--color-ink-900)]">Sessions</h1>
+          <h1 className="text-lg sm:text-xl font-semibold text-[var(--color-ink-900)]">Sessions</h1>
           <p className="text-sm text-[var(--color-ink-500)] mt-0.5">
             {active.length} active · {recent.length} recently ended
           </p>
