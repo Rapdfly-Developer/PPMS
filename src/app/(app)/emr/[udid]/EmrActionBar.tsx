@@ -313,7 +313,19 @@ export function EmrActionBar({
         />
       )}
 
-      <div className="fixed bottom-20 lg:bottom-0 left-0 lg:left-60 right-0 z-20 border-t border-[var(--color-border)] bg-white/95 backdrop-blur-sm px-2 md:px-8 py-2 md:py-3 flex flex-nowrap items-center justify-end gap-1 md:gap-3 shadow-[0_-4px_16px_rgba(20,36,43,0.06)]">
+      {/* justify-end-safe, not justify-end: with plain flex-end an over-wide row
+          overflows past the START edge, which is not counted in scrollWidth and
+          cannot be scrolled to — the first button (Next) was simply stranded
+          off-screen. "safe" keeps end-alignment while the row fits and falls
+          back to start-alignment when it does not, so any overflow lands on the
+          END edge where overflow-x-auto can reach it.
+
+          overflow-x-auto is dropped while the Print Rx menu is open: a scroll
+          container computes overflow-y to auto as well, which would clip that
+          menu (it renders above the bar via bottom-full). The row fits outright
+          at >=360px now, so the scroll only ever engages on very narrow phones,
+          and never while the menu is open. */}
+      <div className={`fixed bottom-20 lg:bottom-0 left-0 lg:left-60 right-0 z-20 border-t border-[var(--color-border)] bg-white/95 backdrop-blur-sm px-2 md:px-8 py-2 md:py-3 flex flex-nowrap items-center justify-end-safe gap-1 md:gap-3 shadow-[0_-4px_16px_rgba(20,36,43,0.06)] ${printOpen ? "" : "overflow-x-auto"}`}>
         {!closed && !isLastTab && (
           <button
             onClick={onNextSection}
@@ -422,7 +434,7 @@ export function EmrActionBar({
                 }
                 className="flex items-center gap-1 text-[11px] sm:text-sm font-medium px-2.5 py-1.5 md:px-5 md:py-2 rounded-xl bg-[var(--color-primary-900)] text-white hover:bg-[var(--color-primary-700)] transition-colors disabled:opacity-60 whitespace-nowrap"
               >
-                <FileSignature size={13} /> {pending ? "Saving…" : "Finalize & Sign"}
+                <FileSignature size={13} /> {pending ? "Saving…" : <><span className="hidden sm:inline">Finalize &amp; </span>Sign</>}
               </button>
             </>
           ) : (
@@ -441,7 +453,7 @@ export function EmrActionBar({
             }
             className="flex items-center gap-1 text-[11px] sm:text-sm font-medium px-2.5 py-1.5 md:px-5 md:py-2 rounded-xl bg-[var(--color-primary-900)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-60 whitespace-nowrap"
           >
-            <FileSignature size={13} /> {pending ? "Saving…" : "Finalize & Sign"}
+            <FileSignature size={13} /> {pending ? "Saving…" : <><span className="hidden sm:inline">Finalize &amp; </span>Sign</>}
           </button>
         )}
       </div>
