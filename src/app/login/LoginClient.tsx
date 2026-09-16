@@ -744,8 +744,41 @@ function ForgotPasswordModal({ onClose }: { onClose: () => void }) {
   );
 }
 
+/* ── Keyboard-proof background height ─────────────────────────────────────
+   The soft keyboard shrinks the viewport, and when the WebView itself is
+   resized — which Capacitor's Android activity does — EVERY viewport unit
+   shrinks with it: measured 812 -> 450 for vh, svh, lvh and dvh alike, so
+   100svh is no defence here. That drags the bottom-anchored orb and the 18
+   percentage-positioned decorations around, and a blur(64-80px) element that
+   moves has to be fully re-rasterised every step of the keyboard animation.
+   So the background layer's height is pinned in pixels on mount and re-pinned
+   only when the WIDTH changes — a rotation or a real resize — never for a
+   height-only change, which is exactly what a keyboard is. 100svh stays as the
+   server-rendered default so the first paint is right before JS runs. Written
+   straight to the node instead of through state: this is DOM synchronisation,
+   and it keeps the effect from triggering a render. */
+function usePinnedBackgroundHeight() {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    let width = window.innerWidth;
+    const pin = () => { el.style.height = `${window.innerHeight}px`; };
+    pin();
+    const onResize = () => {
+      if (window.innerWidth === width) return; // height-only => keyboard, ignore
+      width = window.innerWidth;
+      pin();
+    };
+    window.addEventListener("resize", onResize, { passive: true });
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+  return ref;
+}
+
 /* ── Cinematic dark background ──────────────────────────────────────────── */
 function DarkBackground({ px, py }: { px: number; py: number }) {
+  const bgRef = usePinnedBackgroundHeight();
   const particles = [
     { x: "11%", y: "34%", d: 8  }, { x: "79%", y: "24%", d: 12 },
     { x: "44%", y: "64%", d: 10 }, { x: "89%", y: "56%", d: 14 },
@@ -764,7 +797,12 @@ function DarkBackground({ px, py }: { px: number; py: number }) {
   ];
 
   return (
-    <div className="absolute inset-0 pointer-events-none overflow-hidden" style={{ background: T.bg }}>
+    // inset-x-0 + top-0 + an explicit height, NOT inset-0 — inset-0 pins the
+    // bottom edge to the live viewport rect, which is the thing the keyboard
+    // moves. usePinnedBackgroundHeight overwrites this 100svh with a fixed px
+    // value on mount.
+    <div ref={bgRef} className="absolute inset-x-0 top-0 pointer-events-none overflow-hidden"
+      style={{ background: T.bg, height: "100svh" }}>
       {/* Dark emerald base gradient — matches landing page */}
       <div className="absolute inset-0" style={{
         background: "radial-gradient(ellipse 80% 60% at 15% 5%,rgba(15,143,111,.22) 0%,transparent 60%)," +

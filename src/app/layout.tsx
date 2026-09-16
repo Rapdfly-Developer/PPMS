@@ -15,6 +15,11 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
+  // Keep the soft keyboard out of the LAYOUT viewport: it resizes only the
+  // visual viewport, so position:fixed boxes and every vh/svh/lvh unit stay
+  // put when a field is focused. Without this, opening the keyboard drags the
+  // login page's blurred background around and forces a full re-raster.
+  interactiveWidget: "resizes-visual",
 };
 
 export default function RootLayout({
