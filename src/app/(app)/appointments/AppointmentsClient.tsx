@@ -251,19 +251,19 @@ export function AppointmentsClient({
         <button
           disabled={page <= 1}
           onClick={() => navigate({ page: page - 1 })}
-          className="px-3 py-1.5 text-sm font-medium rounded-lg border border-[var(--color-border)] bg-white text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          className="px-3 py-1.5 text-[13px] sm:text-sm font-medium rounded-lg border border-[var(--color-border)] bg-white text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         >
           Previous
         </button>
         {pageRange().map((p, i) =>
           p === "…" ? (
-            <span key={`e${i}`} className="px-2 text-sm text-[var(--color-ink-300)]">…</span>
+            <span key={`e${i}`} className="px-2 text-[13px] sm:text-sm text-[var(--color-ink-300)]">…</span>
           ) : (
             <button
               key={p}
               onClick={() => navigate({ page: p as number })}
               className={clsx(
-                "w-9 h-9 text-sm font-medium rounded-lg border transition-colors",
+                "w-9 h-9 text-[13px] sm:text-sm font-medium rounded-lg border transition-colors",
                 page === p
                   ? "border-[var(--color-primary-600)] text-[var(--color-primary-600)] bg-[var(--color-primary-50)] font-semibold"
                   : "border-[var(--color-border)] text-[var(--color-ink-600)] bg-white hover:bg-[var(--color-surface-sunken)]"
@@ -276,7 +276,7 @@ export function AppointmentsClient({
         <button
           disabled={page >= totalPages}
           onClick={() => navigate({ page: page + 1 })}
-          className="px-3 py-1.5 text-sm font-medium rounded-lg border border-[var(--color-border)] bg-white text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          className="px-3 py-1.5 text-[13px] sm:text-sm font-medium rounded-lg border border-[var(--color-border)] bg-white text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         >
           Next
         </button>
@@ -290,7 +290,7 @@ export function AppointmentsClient({
 
       {/* booked banner */}
       {booked && (
-        <div className="mb-4 px-4 py-3 rounded-xl bg-[var(--color-success-100)] border border-[var(--color-success-200)] text-sm font-medium text-[var(--color-success-700)]">
+        <div className="mb-4 px-4 py-3 rounded-xl bg-[var(--color-success-100)] border border-[var(--color-success-200)] text-[13px] sm:text-sm font-medium text-[var(--color-success-700)]">
           Appointment booked successfully. Please confirm or reject it below.
         </div>
       )}
@@ -298,10 +298,10 @@ export function AppointmentsClient({
       {/* ── Page header ───────────────────────────────────────────────────── */}
       <div className="flex items-start justify-between gap-3 mb-5 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold text-[var(--color-ink-900)] tracking-tight">Appointments</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-[var(--color-ink-900)] tracking-tight">Appointments</h1>
           <div className="relative inline-flex items-center gap-1.5 mt-0.5 cursor-pointer group">
             <Calendar size={13} className="text-[var(--color-ink-400)] shrink-0 pointer-events-none" />
-            <span className="text-sm text-[var(--color-ink-500)] group-hover:text-[var(--color-primary-600)] transition-colors pointer-events-none">
+            <span className="text-[13px] sm:text-sm text-[var(--color-ink-500)] group-hover:text-[var(--color-primary-600)] transition-colors pointer-events-none">
               {dateParam ? `Appointments for ${displayDate}` : `All appointments · ${displayDate}`}
             </span>
             <input
@@ -318,7 +318,7 @@ export function AppointmentsClient({
           </div>
           {pendingCount > 0 && (
             <div className="flex items-center gap-1.5 mt-1.5">
-              <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-700">
+              <span className="inline-flex items-center gap-1 text-[11px] sm:text-xs font-semibold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-700">
                 {pendingCount} pending {pendingCount === 1 ? "request" : "requests"}
               </span>
             </div>
@@ -328,7 +328,7 @@ export function AppointmentsClient({
           {role === "DOCTOR" && (
             <Link
               href="/appointments/availability"
-              className="inline-flex items-center gap-2 bg-[var(--color-primary-600)] text-white text-sm font-semibold px-4 py-2.5 rounded-xl hover:bg-[var(--color-primary-700)] transition-colors shadow-sm"
+              className="inline-flex items-center gap-2 bg-[var(--color-primary-600)] text-white text-[13px] sm:text-sm font-semibold px-4 py-2.5 rounded-xl hover:bg-[var(--color-primary-700)] transition-colors shadow-sm"
             >
               Hospital Appointment
             </Link>
@@ -336,7 +336,7 @@ export function AppointmentsClient({
           {(isHospital || role === "DOCTOR") && (
             <Link
               href="/appointments/book"
-              className="inline-flex items-center gap-2 bg-[var(--color-primary-600)] text-white text-sm font-semibold px-4 py-2.5 rounded-xl hover:bg-[var(--color-primary-700)] transition-colors shadow-sm"
+              className="inline-flex items-center gap-2 bg-[var(--color-primary-600)] text-white text-[13px] sm:text-sm font-semibold px-4 py-2.5 rounded-xl hover:bg-[var(--color-primary-700)] transition-colors shadow-sm"
             >
               <Plus size={15} /> {role === "DOCTOR" ? "Patient Appointment" : "Book Appointment"}
             </Link>
@@ -345,7 +345,7 @@ export function AppointmentsClient({
           <button
             onClick={() => setShowFilters((v) => !v)}
             className={clsx(
-              "inline-flex items-center gap-2 text-sm font-medium px-3.5 py-2.5 rounded-xl border transition-colors",
+              "inline-flex items-center gap-2 text-[13px] sm:text-sm font-medium px-3.5 py-2.5 rounded-xl border transition-colors",
               showFilters
                 ? "border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)]"
                 : "border-[var(--color-border)] bg-white text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]"
@@ -362,10 +362,10 @@ export function AppointmentsClient({
           <div className="flex flex-wrap items-end gap-3">
             {/* Date */}
             <div className="flex flex-col gap-1">
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Date</span>
+              <span className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Date</span>
               <div className="relative inline-flex items-center gap-2 border border-[var(--color-border)] bg-white rounded-lg pl-3 pr-4 py-2 select-none">
                 <Calendar size={13} className="text-[var(--color-ink-400)] shrink-0 pointer-events-none" />
-                <span className="text-sm text-[var(--color-ink-700)] pointer-events-none">{displayDate}</span>
+                <span className="text-[13px] sm:text-sm text-[var(--color-ink-700)] pointer-events-none">{displayDate}</span>
                 {/* Full-size overlay — the input itself receives every click and opens the native picker */}
                 <input
                   type="date"
@@ -382,7 +382,7 @@ export function AppointmentsClient({
 
             {/* Search */}
             <div className="flex flex-col gap-1 flex-1 min-w-[180px] max-w-xs">
-              <label className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Search Patient</label>
+              <label className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Search Patient</label>
               <div className="relative">
                 <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)]" />
                 <input
@@ -402,7 +402,7 @@ export function AppointmentsClient({
 
             {/* Status */}
             <div className="flex flex-col gap-1">
-              <label className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Status</label>
+              <label className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Status</label>
               <div className="relative">
                 <select value={statusParam} onChange={(e) => navigate({ status: e.target.value, page: 1 })} className={SEL}>
                   {STATUSES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
@@ -414,7 +414,7 @@ export function AppointmentsClient({
             {/* Hospital (Doctor role only, multi-hospital) */}
             {hospitals.length > 1 && (
               <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Hospital</label>
+                <label className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Hospital</label>
                 <div className="relative">
                   <select value={hospitalParam} onChange={(e) => navigate({ hospital: e.target.value, page: 1 })} className={SEL}>
                     <option value="">All Hospitals</option>
@@ -428,7 +428,7 @@ export function AppointmentsClient({
             {/* Doctor (Hospital role only) */}
             {doctors.length > 0 && (
               <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Doctor</label>
+                <label className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Doctor</label>
                 <div className="relative">
                   <select value={doctorIdParam} onChange={(e) => navigate({ doctor: e.target.value, page: 1 })} className={SEL}>
                     <option value="">All Doctors</option>
@@ -441,7 +441,7 @@ export function AppointmentsClient({
 
             {/* Visit Type */}
             <div className="flex flex-col gap-1">
-              <label className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Visit Type</label>
+              <label className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Visit Type</label>
               <div className="relative">
                 <select value={visitTypeParam} onChange={(e) => navigate({ visitType: e.target.value, page: 1 })} className={SEL}>
                   <option value="">All Types</option>
@@ -455,7 +455,7 @@ export function AppointmentsClient({
             {hasFilters && (
               <button
                 onClick={() => navigate({ search: "", status: "ALL", doctor: "", visitType: "", dept: "", hospital: "", date: "", page: 1 })}
-                className="text-sm font-medium text-[var(--color-primary-600)] hover:text-[var(--color-primary-800)] whitespace-nowrap pb-2"
+                className="text-[13px] sm:text-sm font-medium text-[var(--color-primary-600)] hover:text-[var(--color-primary-800)] whitespace-nowrap pb-2"
               >
                 Clear all
               </button>
@@ -468,13 +468,13 @@ export function AppointmentsClient({
       {/* ── Empty state ───────────────────────────────────────────────────── */}
       {appointments.length === 0 && (
         <div className="surface-card py-16 text-center">
-          <p className="text-sm text-[var(--color-ink-400)]">
+          <p className="text-[13px] sm:text-sm text-[var(--color-ink-400)]">
             {search ? `No appointments match "${search}".` : "No appointments found."}
           </p>
           {hasFilters && (
             <button
               onClick={() => navigate({ search: "", status: "ALL", doctor: "", visitType: "", dept: "", page: 1 })}
-              className="mt-2 text-xs text-[var(--color-primary-600)] hover:underline"
+              className="mt-2 text-[11px] sm:text-xs text-[var(--color-primary-600)] hover:underline"
             >
               Clear filters
             </button>
@@ -583,7 +583,7 @@ export function AppointmentsClient({
             {groups.filter(({ key }) => key === activeSection).map(({ key, label, sub, appts: grpAppts, accent, badge, head }) => {
               if (grpAppts.length === 0) {
                 return (
-                  <div key={key} className="text-center py-12 text-[var(--color-ink-400)] text-sm">
+                  <div key={key} className="text-center py-12 text-[var(--color-ink-400)] text-[13px] sm:text-sm">
                     No {label.toLowerCase()} found.
                   </div>
                 );
@@ -600,9 +600,9 @@ export function AppointmentsClient({
                 <div key={key} id={`appt-section-${key}`}>
                   {/* Section header */}
                   <div className="flex items-center gap-2 mb-3">
-                    <h2 className={`text-sm font-bold uppercase tracking-wide ${head}`}>{label}</h2>
-                    {sub && <span className="text-xs text-[var(--color-ink-400)]">· {sub}</span>}
-                    <span className={`ml-auto text-xs font-bold px-2 py-0.5 rounded-full ${badge}`}>
+                    <h2 className={`text-[13px] sm:text-sm font-bold uppercase tracking-wide ${head}`}>{label}</h2>
+                    {sub && <span className="text-[11px] sm:text-xs text-[var(--color-ink-400)]">· {sub}</span>}
+                    <span className={`ml-auto text-[11px] sm:text-xs font-bold px-2 py-0.5 rounded-full ${badge}`}>
                       {grpAppts.length}
                     </span>
                   </div>
@@ -621,7 +621,7 @@ export function AppointmentsClient({
                       )
                       .map(([dk, dkAppts]) => (
                         <div key={dk} className={`surface-card p-4 border-l-4 ${accent}`}>
-                          <p className="text-xs font-semibold text-[var(--color-ink-500)] mb-3">
+                          <p className="text-[11px] sm:text-xs font-semibold text-[var(--color-ink-500)] mb-3">
                             {dayHeading(dk)}
                             <span className="ml-2 font-normal text-[var(--color-ink-400)]">
                               · {(dkAppts as any[]).length} appointment{(dkAppts as any[]).length !== 1 ? "s" : ""}
@@ -639,7 +639,7 @@ export function AppointmentsClient({
                   {/* Pagination for Previous section */}
                   {isPrev && prevTotalPages > 1 && (
                     <div className="flex items-center justify-between mt-4 flex-wrap gap-3">
-                      <span className="text-sm text-[var(--color-ink-500)]">
+                      <span className="text-[13px] sm:text-sm text-[var(--color-ink-500)]">
                         Showing{" "}
                         <span className="font-semibold text-[var(--color-ink-700)]">
                           {(prevPage - 1) * PREV_PAGE_SIZE + 1}–{Math.min(prevPage * PREV_PAGE_SIZE, grpAppts.length)}
@@ -651,7 +651,7 @@ export function AppointmentsClient({
                         <button
                           disabled={prevPage <= 1}
                           onClick={() => setPrevPage((p) => p - 1)}
-                          className="px-3 py-1.5 text-sm font-medium rounded-lg border border-[var(--color-border)] bg-white text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                          className="px-3 py-1.5 text-[13px] sm:text-sm font-medium rounded-lg border border-[var(--color-border)] bg-white text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                         >
                           Previous
                         </button>
@@ -664,13 +664,13 @@ export function AppointmentsClient({
                           }, [])
                           .map((p, i) =>
                             p === "…" ? (
-                              <span key={`e${i}`} className="px-2 text-sm text-[var(--color-ink-300)]">…</span>
+                              <span key={`e${i}`} className="px-2 text-[13px] sm:text-sm text-[var(--color-ink-300)]">…</span>
                             ) : (
                               <button
                                 key={p}
                                 onClick={() => setPrevPage(p as number)}
                                 className={clsx(
-                                  "w-9 h-9 text-sm font-medium rounded-lg border transition-colors",
+                                  "w-9 h-9 text-[13px] sm:text-sm font-medium rounded-lg border transition-colors",
                                   prevPage === p
                                     ? "border-[var(--color-primary-600)] text-[var(--color-primary-600)] bg-[var(--color-primary-50)] font-semibold"
                                     : "border-[var(--color-border)] text-[var(--color-ink-600)] bg-white hover:bg-[var(--color-surface-sunken)]"
@@ -683,7 +683,7 @@ export function AppointmentsClient({
                         <button
                           disabled={prevPage >= prevTotalPages}
                           onClick={() => setPrevPage((p) => p + 1)}
-                          className="px-3 py-1.5 text-sm font-medium rounded-lg border border-[var(--color-border)] bg-white text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                          className="px-3 py-1.5 text-[13px] sm:text-sm font-medium rounded-lg border border-[var(--color-border)] bg-white text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                         >
                           Next
                         </button>
@@ -714,13 +714,13 @@ export function AppointmentsClient({
                       <Building2 size={15} style={{ color: "var(--color-primary-600)" }} />
                     </div>
                     <div>
-                      <h2 className="text-base font-semibold text-[var(--color-ink-800)]">{hname}</h2>
-                      <p className="text-xs text-[var(--color-ink-400)]">
+                      <h2 className="text-[15px] sm:text-base font-semibold text-[var(--color-ink-800)]">{hname}</h2>
+                      <p className="text-[11px] sm:text-xs text-[var(--color-ink-400)]">
                         {inQueue} in queue{dispensed > 0 ? ` · ${dispensed} dispensed` : ""}
                       </p>
                     </div>
                   </div>
-                  <span className="flex items-center justify-center w-7 h-7 rounded-full text-sm font-bold"
+                  <span className="flex items-center justify-center w-7 h-7 rounded-full text-[13px] sm:text-sm font-bold"
                     style={{ background: "var(--color-primary-100)", color: "var(--color-primary-700)" }}>
                     {happts.length}
                   </span>
@@ -751,16 +751,16 @@ export function AppointmentsClient({
               <div key={dk} className="surface-card p-4 flex flex-col gap-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <h2 className="text-base font-semibold text-[var(--color-ink-800)]">
+                    <h2 className="text-[15px] sm:text-base font-semibold text-[var(--color-ink-800)]">
                       {dayHeading(dk)}
                     </h2>
-                    <span className="text-sm text-[var(--color-ink-400)]">
+                    <span className="text-[13px] sm:text-sm text-[var(--color-ink-400)]">
                       ({dateAppts.length} Appointment{dateAppts.length !== 1 ? "s" : ""})
                     </span>
                   </div>
                   <button
                     onClick={() => toggleDateAll(dk)}
-                    className="inline-flex items-center gap-1.5 text-sm font-medium text-[var(--color-primary-600)] hover:text-[var(--color-primary-800)] transition-colors"
+                    className="inline-flex items-center gap-1.5 text-[13px] sm:text-sm font-medium text-[var(--color-primary-600)] hover:text-[var(--color-primary-800)] transition-colors"
                   >
                     <ChevronDown size={15} className={clsx("transition-transform", !dateAllExp && "-rotate-90")} />
                     {dateAllExp ? "Collapse All" : "Expand All"}
@@ -780,7 +780,7 @@ export function AppointmentsClient({
       {/* ── Bottom — Show / count / pagination ───────────────────────────── */}
       {total > 0 && !isDefaultView && (
         <div className="flex items-center justify-between mt-6 flex-wrap gap-3">
-          <div className="flex items-center gap-2 text-sm text-[var(--color-ink-500)]">
+          <div className="flex items-center gap-2 text-[13px] sm:text-sm text-[var(--color-ink-500)]">
             <span>Show</span>
             <div className="relative">
               <select
