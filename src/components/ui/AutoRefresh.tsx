@@ -42,13 +42,19 @@ export function AutoRefresh({ interval }: { interval?: number }) {
   const router   = useRouter();
   const pathname = usePathname();
 
-  const isStatic = STATIC_PREFIXES.some((p) => pathname.startsWith(p));
-  if (isStatic) return null; // no polling for these routes
-
+  const isStatic  = STATIC_PREFIXES.some((p) => pathname.startsWith(p));
   const isLive    = LIVE_ROUTES.some((r) => pathname === r || pathname.startsWith(`${r}/`));
   const effective = interval ?? (isLive ? LIVE_INTERVAL : DEFAULT_INTERVAL);
 
   useEffect(() => {
+    // Static routes never poll. This guard has to live INSIDE the effect: as an
+    // early return above it, it changed the hook count between routes (2 vs 3),
+    // and because this component sits in the persistent (app) layout the same
+    // fiber saw both shapes — "Internal React error: Expected static flag was
+    // missing" on the first static -> polling navigation of every page load.
+    // isStatic is in the deps so crossing the boundary tears the interval down.
+    if (isStatic) return;
+
     function isEditing() {
       const el = document.activeElement as HTMLElement | null;
       if (!el) return false;
@@ -74,7 +80,7 @@ export function AutoRefresh({ interval }: { interval?: number }) {
       clearInterval(id);
       document.removeEventListener("visibilitychange", handleVisibility);
     };
-  }, [router, effective]);
+  }, [router, effective, isStatic]);
 
   return null;
 }
