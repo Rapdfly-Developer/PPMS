@@ -43,7 +43,7 @@ export function Nav() {
 
   return (
     <>
-      <header className="pointer-events-none fixed inset-x-0 top-0 z-40 flex justify-center px-3 pt-4 sm:px-4 sm:pt-6">
+      <header className="pointer-events-none fixed inset-x-0 top-0 z-40 flex justify-center px-3 pt-10 sm:px-4 sm:pt-6">
         <nav
           className={[
             "pointer-events-auto flex w-full max-w-5xl items-center gap-1.5 rounded-full sm:gap-2 xl:max-w-6xl",
