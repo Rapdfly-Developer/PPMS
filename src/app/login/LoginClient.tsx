@@ -1077,10 +1077,14 @@ export default function LoginPage() {
         .lp-dash{animation:lp-flowdash 11s linear infinite}
         .lp-stat{animation:lp-floaty 9s ease-in-out infinite}
 
-        /* Orb drift — layered over the inline parallax transform via a wrapper-free
-           filter/scale animation so it never fights the translate3d. */
-        @keyframes lp-orbA{0%,100%{filter:blur(70px) brightness(1)}50%{filter:blur(78px) brightness(1.16)}}
-        @keyframes lp-orbB{0%,100%{filter:blur(80px) brightness(1)}50%{filter:blur(88px) brightness(1.14)}}
+        /* Orb pulse — opacity + the INDEPENDENT scale property, never filter.
+           Animating filter:blur() re-rasterises ~1.5M px of large-radius blur every
+           frame; opacity and scale stay on the compositor. The independent scale
+           property (not transform:scale) composes with the inline translate3d
+           parallax instead of overriding it. Blur radius is now static, set once
+           per orb inline. */
+        @keyframes lp-orbA{0%,100%{opacity:.9;scale:1}50%{opacity:1;scale:1.05}}
+        @keyframes lp-orbB{0%,100%{opacity:.9;scale:1}50%{opacity:1;scale:1.04}}
         .lp-orb1{animation:lp-orbA 14s ease-in-out infinite;transition:transform .5s cubic-bezier(.22,1,.36,1)}
         .lp-orb2{animation:lp-orbB 18s ease-in-out infinite;transition:transform .5s cubic-bezier(.22,1,.36,1)}
         .lp-orb3{animation:lp-orbA 16s ease-in-out 2s infinite;transition:transform .5s cubic-bezier(.22,1,.36,1)}
@@ -1260,9 +1264,13 @@ export default function LoginPage() {
           <div
             className="lp-card lp-card-levitate w-full max-w-[420px] shrink-0"
             style={{
+              // No backdrop-filter here on purpose. The right panel already applies
+              // blur(18px) to everything behind this card, and T.surface is 80%
+              // opaque, so a second 25px pass was near-invisible — while nesting a
+              // backdrop-filter inside another one, on an element that is itself
+              // transform-animated (lp-card-levitate), is the combination Chromium
+              // flickers on. Flattening it removes that path entirely.
               background: T.surface,
-              backdropFilter: "blur(25px)",
-              WebkitBackdropFilter: "blur(25px)",
               borderRadius: "26px",
               border: `1px solid ${T.border2}`,
               boxShadow:
