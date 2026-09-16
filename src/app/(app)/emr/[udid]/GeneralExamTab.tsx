@@ -149,11 +149,11 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, customPmhCh
                 key={i}
                 className={i > 0 ? "pt-3 border-t border-dashed border-[var(--color-border)]" : ""}
               >
-                {/* Laterality + Since + remove */}
-                <div className="flex items-center gap-2 flex-wrap mb-2">
+                {/* Row 1: Laterality + remove */}
+                <div className="flex items-center gap-2 mb-2">
                   {complaints.length > 1 && (
                     <span className="text-[11px] font-bold tracking-wider text-[var(--color-ink-400)] uppercase">
-                      Chief Complaint {i + 1}
+                      CC {i + 1}
                     </span>
                   )}
                   {LATERALITY_OPTIONS.map((opt) => {
@@ -179,30 +179,32 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, customPmhCh
                       </button>
                     );
                   })}
-                  {/* Since controls — inline with laterality */}
-                  <div className="flex items-center gap-1 ml-auto shrink-0">
-                    <span className="text-xs font-semibold text-[var(--color-ink-400)]">Since</span>
-                    <select
-                      value={c.sinceNum}
-                      onChange={(e) => patchComplaint(i, { sinceNum: e.target.value })}
-                      disabled={readOnly}
-                      className="text-xs border border-[var(--color-border)] rounded-lg px-2 py-1 bg-white text-[var(--color-ink-700)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] disabled:opacity-50"
-                    >
-                      <option value="">—</option>
-                      {Array.from({ length: 30 }, (_, n) => n + 1).map((n) => (
-                        <option key={n} value={String(n)}>{n}</option>
-                      ))}
-                    </select>
-                    <select
-                      value={c.sinceUnit}
-                      onChange={(e) => patchComplaint(i, { sinceUnit: e.target.value })}
-                      disabled={readOnly || !c.sinceNum}
-                      className="text-xs border border-[var(--color-border)] rounded-lg px-2 py-1 bg-white text-[var(--color-ink-700)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] disabled:opacity-50"
-                    >
-                      {SINCE_UNITS.map((u) => (
-                        <option key={u} value={u}>{u}</option>
-                      ))}
-                    </select>
+                </div>
+
+                {/* Row 2: Since controls */}
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-xs font-semibold text-[var(--color-ink-400)] w-10 shrink-0">Since</span>
+                  <select
+                    value={c.sinceNum}
+                    onChange={(e) => patchComplaint(i, { sinceNum: e.target.value })}
+                    disabled={readOnly}
+                    className="text-xs border border-[var(--color-border)] rounded-lg px-2 py-1 bg-white text-[var(--color-ink-700)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] disabled:opacity-50 w-16"
+                  >
+                    <option value="">—</option>
+                    {Array.from({ length: 30 }, (_, n) => n + 1).map((n) => (
+                      <option key={n} value={String(n)}>{n}</option>
+                    ))}
+                  </select>
+                  <select
+                    value={c.sinceUnit}
+                    onChange={(e) => patchComplaint(i, { sinceUnit: e.target.value })}
+                    disabled={readOnly || !c.sinceNum}
+                    className="text-xs border border-[var(--color-border)] rounded-lg px-2 py-1 bg-white text-[var(--color-ink-700)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] disabled:opacity-50 w-20"
+                  >
+                    {SINCE_UNITS.map((u) => (
+                      <option key={u} value={u}>{u}</option>
+                    ))}
+                  </select>
                     {!readOnly && complaints.length > 1 && (
                       <button
                         type="button"
