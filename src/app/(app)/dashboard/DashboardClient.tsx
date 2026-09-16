@@ -114,8 +114,8 @@ function SurgeryRow({ s, role }: { s: Surgery; role: "DOCTOR" | "HOSPITAL" }) {
   return (
     <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-[var(--color-border)] bg-white">
       <div className="w-20 shrink-0 text-center hidden sm:block">
-        <p className="text-xs font-bold text-[var(--color-ink-900)]">{format(new Date(s.surgeryDate), "d MMM")}</p>
-        <p className="text-[10px] text-[var(--color-ink-400)]">{format(new Date(s.surgeryDate), "hh:mm a")}</p>
+        <p className="text-[11px] sm:text-xs font-bold text-[var(--color-ink-900)]">{format(new Date(s.surgeryDate), "d MMM")}</p>
+        <p className="text-[9px] sm:text-[10px] text-[var(--color-ink-400)]">{format(new Date(s.surgeryDate), "hh:mm a")}</p>
       </div>
       <div className="w-px self-stretch bg-[var(--color-border)] hidden sm:block" />
       <div className="flex-1 min-w-0">
@@ -134,7 +134,7 @@ function SurgeryRow({ s, role }: { s: Surgery; role: "DOCTOR" | "HOSPITAL" }) {
           )}
         </div>
       </div>
-      <span className="hidden sm:inline shrink-0 text-xs font-medium text-purple-700 bg-purple-50 px-2.5 py-1 rounded-full truncate max-w-[160px]">
+      <span className="hidden sm:inline shrink-0 text-[11px] sm:text-xs font-medium text-purple-700 bg-purple-50 px-2.5 py-1 rounded-full truncate max-w-[160px]">
         {s.surgeryType}
       </span>
       <span className="shrink-0 text-[9px] sm:text-[10px] text-[var(--color-ink-400)]">
@@ -244,12 +244,12 @@ function ApptRow({ appt, role, serial, canManageQueue }: { appt: Appt; role: "DO
       {/* Time + visit-type column */}
       <div className="w-20 shrink-0 hidden sm:flex flex-col items-center gap-0.5">
         {/* Primary time: arrived or scheduled */}
-        <p className="text-sm font-bold text-[var(--color-ink-900)]" title="Appointment time">
+        <p className="text-[13px] sm:text-sm font-bold text-[var(--color-ink-900)]" title="Appointment time">
           {primaryTime}
         </p>
         {/* Badge + registered time */}
         <div className="flex flex-col items-center gap-0.5">
-          <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-600">
+          <span className="inline-flex items-center gap-0.5 text-[9px] sm:text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-600">
             <Calendar size={9} /> Appt
           </span>
           <span className="text-[9px] font-medium text-blue-500 tabular-nums">
@@ -430,7 +430,7 @@ export function DashboardClient({
               <GreetIcon size={17} className={iconColor} />
               <span className="text-[13px] sm:text-sm font-medium text-white/70 tracking-wide">{greeting}</span>
             </div>
-            <h1 className="text-xl sm:text-3xl font-bold tracking-tight text-white">{bannerTitle}</h1>
+            <h1 className="text-lg sm:text-3xl font-bold tracking-tight text-white">{bannerTitle}</h1>
             <p className="mt-1 text-[13px] sm:text-sm text-white/60">{todayLabel}</p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
