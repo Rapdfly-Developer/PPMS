@@ -2647,39 +2647,37 @@ function OpticalPrescriptionCard({ visit }: { visit: any }) {
           </span>
         )}
       </div>
-      <div className="overflow-x-auto">
-        <table className="w-full border-collapse">
-          <thead>
-            <tr className="border-b border-[var(--color-border)]">
-              <th className="text-left pb-2 pr-6 text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]" />
-              {HEADERS.map((h) => (
-                <th key={h} className="text-center pb-2 px-4 text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">
-                  {h === "VA" || h === "NV"
-                    ? <span className="inline-block px-2 py-0.5 rounded bg-[var(--color-surface-sunken)] text-[var(--color-ink-300)]">{h}</span>
-                    : h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {ROWS.map(({ label, rx }) => (
-              <tr key={label} className="border-b border-[var(--color-border)]">
-                <td className="py-3 pr-6 text-xs font-semibold text-[var(--color-primary-700)] whitespace-nowrap">{label}</td>
-                <td className="text-center py-3 px-4 text-sm text-[var(--color-ink-800)]">{cell(rx.sph)}</td>
-                <td className="text-center py-3 px-4 text-sm text-[var(--color-ink-800)]">{cell(rx.cyl)}</td>
-                <td className="text-center py-3 px-4 text-sm text-[var(--color-ink-800)]">{cell(rx.axis)}</td>
-                <td className="text-center py-3 px-4 text-sm">
-                  <span className="inline-block px-2.5 py-0.5 rounded bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)]">{cell(rx.va)}</span>
-                </td>
-                <td className="text-center py-3 px-4 text-sm text-[var(--color-ink-800)]">{cell(rx.nearSph)}</td>
-                <td className="text-center py-3 px-4 text-sm">
-                  <span className="inline-block px-2.5 py-0.5 rounded bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)]">{cell(rx.nearVa)}</span>
-                </td>
-              </tr>
+      <table className="w-full table-fixed border-collapse">
+        <thead>
+          <tr className="border-b border-[var(--color-border)]">
+            <th className="text-left pb-2 pr-2 text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)] w-[22%]" />
+            {HEADERS.map((h) => (
+              <th key={h} className="text-center pb-2 px-1 text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">
+                {h === "VA" || h === "NV"
+                  ? <span className="inline-block px-1.5 py-0.5 rounded bg-[var(--color-surface-sunken)] text-[var(--color-ink-300)]">{h}</span>
+                  : h}
+              </th>
             ))}
-          </tbody>
-        </table>
-      </div>
+          </tr>
+        </thead>
+        <tbody>
+          {ROWS.map(({ label, rx }) => (
+            <tr key={label} className="border-b border-[var(--color-border)]">
+              <td className="py-3 pr-2 text-xs font-semibold text-[var(--color-primary-700)] whitespace-nowrap">{label}</td>
+              <td className="text-center py-3 px-1 text-sm text-[var(--color-ink-800)]">{cell(rx.sph)}</td>
+              <td className="text-center py-3 px-1 text-sm text-[var(--color-ink-800)]">{cell(rx.cyl)}</td>
+              <td className="text-center py-3 px-1 text-sm text-[var(--color-ink-800)]">{cell(rx.axis)}</td>
+              <td className="text-center py-3 px-1 text-sm">
+                <span className="inline-block px-1.5 py-0.5 rounded bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)]">{cell(rx.va)}</span>
+              </td>
+              <td className="text-center py-3 px-1 text-sm text-[var(--color-ink-800)]">{cell(rx.nearSph)}</td>
+              <td className="text-center py-3 px-1 text-sm">
+                <span className="inline-block px-1.5 py-0.5 rounded bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)]">{cell(rx.nearVa)}</span>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </Card>
   );
 }
