@@ -47,15 +47,15 @@ function OccupiedBed({ bedNum, admission }: { bedNum: string; admission: Admissi
   return (
     <div className="rounded-2xl border border-[var(--color-border)] bg-white p-4 shadow-sm flex flex-col gap-1 min-h-[140px]">
       <div className="flex items-center justify-between mb-1">
-        <span className="text-xs font-bold text-[var(--color-ink-500)]">{bedNum}</span>
-        <span className="text-[11px] font-semibold text-[var(--color-ink-400)]">Day {dayIn + 1}</span>
+        <span className="text-[11px] sm:text-xs font-bold text-[var(--color-ink-500)]">{bedNum}</span>
+        <span className="text-[10px] sm:text-[11px] font-semibold text-[var(--color-ink-400)]">Day {dayIn + 1}</span>
       </div>
-      <p className="font-semibold text-[var(--color-ink-900)] text-sm leading-tight">{admission.visit.patient.name}</p>
-      <p className="text-[11px] font-mono text-[var(--color-ink-400)]">{admission.visit.patient.udid}</p>
+      <p className="font-semibold text-[var(--color-ink-900)] text-[13px] sm:text-sm leading-tight">{admission.visit.patient.name}</p>
+      <p className="text-[10px] sm:text-[11px] font-mono text-[var(--color-ink-400)]">{admission.visit.patient.udid}</p>
       {admission.visit.doctor && (
-        <p className="text-[11px] text-[var(--color-ink-500)]">Dr. {admission.visit.doctor.name}</p>
+        <p className="text-[10px] sm:text-[11px] text-[var(--color-ink-500)]">Dr. {admission.visit.doctor.name}</p>
       )}
-      <p className="text-[11px] text-[var(--color-ink-600)]">{admission.reason}</p>
+      <p className="text-[10px] sm:text-[11px] text-[var(--color-ink-600)]">{admission.reason}</p>
     </div>
   );
 }
@@ -65,10 +65,10 @@ function AvailableBed({ bedNum }: { bedNum: string }) {
     <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 flex flex-col items-center justify-center gap-3 min-h-[140px]">
       <div className="flex items-center gap-1.5">
         <span className="inline-block size-2 rounded-full bg-emerald-500" />
-        <span className="text-xs font-bold text-[var(--color-ink-400)]">{bedNum}</span>
+        <span className="text-[11px] sm:text-xs font-bold text-[var(--color-ink-400)]">{bedNum}</span>
       </div>
-      <p className="text-sm font-semibold text-emerald-700">Available</p>
-      <button className="w-full rounded-xl border border-emerald-300 bg-white py-1.5 text-sm font-medium text-emerald-700 hover:bg-emerald-100 transition-colors">
+      <p className="text-[13px] sm:text-sm font-semibold text-emerald-700">Available</p>
+      <button className="w-full rounded-xl border border-emerald-300 bg-white py-1.5 text-[13px] sm:text-sm font-medium text-emerald-700 hover:bg-emerald-100 transition-colors">
         Admit
       </button>
     </div>
@@ -111,16 +111,16 @@ export function IpdClient({
       {/* ── Header ─────────────────────────────────────────────────────── */}
       <div className="flex flex-wrap items-start justify-between gap-3 mb-6">
         <div>
-          <h1 className="text-2xl font-semibold text-[var(--color-ink-900)]">
+          <h1 className="text-xl sm:text-2xl font-semibold text-[var(--color-ink-900)]">
             In-Patient Department
           </h1>
-          <p className="text-sm text-[var(--color-ink-400)] mt-0.5">
+          <p className="text-[13px] sm:text-sm text-[var(--color-ink-400)] mt-0.5">
             Ward management, nursing station &amp; discharge — ophthalmology IPD
           </p>
         </div>
         <Link
           href="/appointments"
-          className="inline-flex items-center gap-2 rounded-xl bg-[var(--color-primary-600)] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[var(--color-primary-700)] transition-colors shadow-sm"
+          className="inline-flex items-center gap-2 rounded-xl bg-[var(--color-primary-600)] px-5 py-2.5 text-[13px] sm:text-sm font-semibold text-white hover:bg-[var(--color-primary-700)] transition-colors shadow-sm"
         >
           <Plus size={16} />
           New Admission
@@ -142,7 +142,7 @@ export function IpdClient({
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
-              className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 -mb-px transition-colors ${
+              className={`flex items-center gap-2 px-4 py-3 text-[13px] sm:text-sm font-medium border-b-2 -mb-px transition-colors ${
                 tab === t.id
                   ? "border-[var(--color-primary-600)] text-[var(--color-primary-700)]"
                   : "border-transparent text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)]"
@@ -157,7 +157,7 @@ export function IpdClient({
         {tab === "bed-board" && (
           <div className="p-5 space-y-8">
             {/* Legend */}
-            <div className="flex items-center justify-between text-xs text-[var(--color-ink-500)]">
+            <div className="flex items-center justify-between text-[11px] sm:text-xs text-[var(--color-ink-500)]">
               <div className="flex items-center gap-4">
                 <span className="flex items-center gap-1.5"><span className="inline-block size-2.5 rounded-full bg-red-500"/> Occupied</span>
                 <span className="flex items-center gap-1.5"><span className="inline-block size-2.5 rounded-full bg-emerald-500"/> Available</span>
@@ -176,12 +176,12 @@ export function IpdClient({
                 <div key={ward.id}>
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
-                      <h2 className="text-base font-semibold text-[var(--color-ink-900)]">{ward.label}</h2>
-                      <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold tracking-wide ${ward.badgeColor}`}>
+                      <h2 className="text-[15px] sm:text-base font-semibold text-[var(--color-ink-900)]">{ward.label}</h2>
+                      <span className={`rounded-full px-2.5 py-0.5 text-[10px] sm:text-[11px] font-bold tracking-wide ${ward.badgeColor}`}>
                         {ward.badge}
                       </span>
                     </div>
-                    <span className="text-sm text-[var(--color-ink-400)]">
+                    <span className="text-[13px] sm:text-sm text-[var(--color-ink-400)]">
                       {wardAdmissions.length}/{ward.total} ({pct}%)
                     </span>
                   </div>
@@ -219,14 +219,14 @@ export function IpdClient({
         {tab === "nursing" && (
           <div className="p-8 flex flex-col items-center justify-center gap-3 text-[var(--color-ink-400)] min-h-[300px]">
             <Stethoscope size={32} className="opacity-30" />
-            <p className="text-sm">Nursing station module — coming soon</p>
+            <p className="text-[13px] sm:text-sm">Nursing station module — coming soon</p>
           </div>
         )}
 
         {tab === "discharge" && (
           <div className="p-8 flex flex-col items-center justify-center gap-3 text-[var(--color-ink-400)] min-h-[300px]">
             <LogOut size={32} className="opacity-30" />
-            <p className="text-sm">Discharge planning module — coming soon</p>
+            <p className="text-[13px] sm:text-sm">Discharge planning module — coming soon</p>
           </div>
         )}
       </div>
@@ -264,24 +264,24 @@ function AdmissionsList({ admissions }: { admissions: Admission[] }) {
     return (
       <tr className="hover:bg-[var(--color-surface-sunken)] transition-colors">
         <td className="px-5 py-3.5">
-          <p className="font-semibold text-[var(--color-ink-900)] text-sm">{a.visit.patient.name}</p>
-          <p className="text-xs font-mono text-[var(--color-ink-400)]">{a.visit.patient.udid} · {a.visit.patient.age}y</p>
+          <p className="font-semibold text-[var(--color-ink-900)] text-[13px] sm:text-sm">{a.visit.patient.name}</p>
+          <p className="text-[11px] sm:text-xs font-mono text-[var(--color-ink-400)]">{a.visit.patient.udid} · {a.visit.patient.age}y</p>
         </td>
         <td className="px-5 py-3.5">
-          <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${wc}`}>{a.ward.replace(/_/g, " ")}</span>
+          <span className={`text-[10px] sm:text-[11px] font-bold px-2.5 py-0.5 rounded-full ${wc}`}>{a.ward.replace(/_/g, " ")}</span>
         </td>
         <td className="px-5 py-3.5">
-          <p className="text-sm text-[var(--color-ink-600)]">{a.reason}</p>
+          <p className="text-[13px] sm:text-sm text-[var(--color-ink-600)]">{a.reason}</p>
         </td>
-        <td className="px-5 py-3.5 text-sm text-[var(--color-ink-600)]">
+        <td className="px-5 py-3.5 text-[13px] sm:text-sm text-[var(--color-ink-600)]">
           {format(new Date(a.createdAt), "dd MMM yyyy")}
-          <span className="text-xs text-[var(--color-ink-400)] ml-1">(Day {dayIn})</span>
+          <span className="text-[11px] sm:text-xs text-[var(--color-ink-400)] ml-1">(Day {dayIn})</span>
         </td>
         <td className="px-5 py-3.5">
           <div className="flex flex-col gap-1.5">
             <Link
               href={`/ipd/${a.id}/discharge-summary`}
-              className="text-xs font-medium px-3 py-1.5 rounded-lg bg-[var(--color-primary-50)] text-[var(--color-primary-700)] border border-[var(--color-primary-200)] hover:bg-[var(--color-primary-100)] transition-colors text-center"
+              className="text-[11px] sm:text-xs font-medium px-3 py-1.5 rounded-lg bg-[var(--color-primary-50)] text-[var(--color-primary-700)] border border-[var(--color-primary-200)] hover:bg-[var(--color-primary-100)] transition-colors text-center"
             >
               Discharge Summary
             </Link>
@@ -289,13 +289,13 @@ function AdmissionsList({ admissions }: { admissions: Admission[] }) {
               <button
                 disabled={pending}
                 onClick={() => discharge(a.id)}
-                className="text-xs font-medium px-3 py-1.5 rounded-lg bg-[var(--color-danger-100)] text-[var(--color-danger-700)] hover:bg-[var(--color-danger-600)] hover:text-white transition-colors disabled:opacity-50"
+                className="text-[11px] sm:text-xs font-medium px-3 py-1.5 rounded-lg bg-[var(--color-danger-100)] text-[var(--color-danger-700)] hover:bg-[var(--color-danger-600)] hover:text-white transition-colors disabled:opacity-50"
               >
                 Mark Discharged
               </button>
             )}
             {a.discharged && (
-              <span className="text-[11px] text-[var(--color-ink-400)] text-center">
+              <span className="text-[10px] sm:text-[11px] text-[var(--color-ink-400)] text-center">
                 Discharged {a.dischargedAt ? format(new Date(a.dischargedAt), "dd MMM") : ""}
               </span>
             )}
@@ -308,24 +308,24 @@ function AdmissionsList({ admissions }: { admissions: Admission[] }) {
   return (
     <div className="p-5">
       {error && (
-        <div className="mb-4 rounded-xl bg-red-50 border border-red-200 px-4 py-2.5 text-sm text-red-700">{error}</div>
+        <div className="mb-4 rounded-xl bg-red-50 border border-red-200 px-4 py-2.5 text-[13px] sm:text-sm text-red-700">{error}</div>
       )}
 
-      <h3 className="text-sm font-semibold text-[var(--color-ink-700)] mb-3">
+      <h3 className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-700)] mb-3">
         Active Admissions <span className="text-[var(--color-ink-400)] font-normal">({active.length})</span>
       </h3>
       {active.length === 0 ? (
         <div className="flex items-center justify-center gap-3 py-10 text-[var(--color-ink-400)]">
           <UserCheck size={24} className="opacity-30" />
-          <p className="text-sm">No active admissions.</p>
+          <p className="text-[13px] sm:text-sm">No active admissions.</p>
         </div>
       ) : (
         <div className="overflow-x-auto rounded-xl border border-[var(--color-border)] mb-6">
-          <table className="w-full text-sm min-w-[480px]">
+          <table className="w-full text-[13px] sm:text-sm min-w-[480px]">
             <thead>
               <tr className="border-b border-[var(--color-border)] bg-[var(--color-surface-sunken)]">
                 {["Patient", "Ward", "Reason / Surgery", "Admitted", "Actions"].map((h) => (
-                  <th key={h} className="px-5 py-2.5 text-left text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">{h}</th>
+                  <th key={h} className="px-5 py-2.5 text-left text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">{h}</th>
                 ))}
               </tr>
             </thead>
@@ -338,15 +338,15 @@ function AdmissionsList({ admissions }: { admissions: Admission[] }) {
 
       {discharged.length > 0 && (
         <>
-          <h3 className="text-sm font-semibold text-[var(--color-ink-400)] mb-3">
+          <h3 className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-400)] mb-3">
             Recently Discharged <span className="font-normal">({discharged.length})</span>
           </h3>
           <div className="overflow-x-auto rounded-xl border border-[var(--color-border)] opacity-60">
-            <table className="w-full text-sm min-w-[480px]">
+            <table className="w-full text-[13px] sm:text-sm min-w-[480px]">
               <thead>
                 <tr className="border-b border-[var(--color-border)] bg-[var(--color-surface-sunken)]">
                   {["Patient", "Ward", "Reason / Surgery", "Admitted", "Actions"].map((h) => (
-                    <th key={h} className="px-5 py-2.5 text-left text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">{h}</th>
+                    <th key={h} className="px-5 py-2.5 text-left text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -374,7 +374,7 @@ function StatPill({
 }) {
   return (
     <div className={`rounded-2xl border p-5 ${bg}`}>
-      <p className="text-xs text-[var(--color-ink-500)] mb-2">{label}</p>
+      <p className="text-[11px] sm:text-xs text-[var(--color-ink-500)] mb-2">{label}</p>
       <p className={`text-3xl font-semibold ${color}`}>{value}</p>
     </div>
   );
