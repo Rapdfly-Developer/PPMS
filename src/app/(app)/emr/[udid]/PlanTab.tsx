@@ -1570,8 +1570,8 @@ function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: st
         </button>
       </div>
 
-      {/* Single row: Laterality | Procedure | Anesthesia */}
-      <div className="flex gap-3 items-end">
+      {/* Laterality | Procedure | Anesthesia */}
+      <div className="grid grid-cols-1 sm:grid-cols-[auto_1fr_1fr] gap-3 items-start">
 
         {/* Laterality */}
         <div className="shrink-0">
@@ -1596,7 +1596,7 @@ function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: st
         </div>
 
         {/* Procedure — custom input only, keywords shown as chips below */}
-        <div className="flex-1 min-w-0">
+        <div className="min-w-0">
           <label className="text-[10px] font-semibold text-[var(--color-ink-500)] uppercase tracking-wide block mb-1.5">
             Procedure
           </label>
@@ -1622,7 +1622,7 @@ function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: st
         </div>
 
         {/* Anesthesia */}
-        <div className="flex-1 min-w-0 relative">
+        <div className="min-w-0 relative">
           <label className="text-[10px] font-semibold text-[var(--color-ink-500)] uppercase tracking-wide block mb-1.5">
             Type of Anesthesia
           </label>
