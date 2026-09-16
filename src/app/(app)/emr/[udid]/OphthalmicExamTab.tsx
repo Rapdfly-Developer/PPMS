@@ -470,7 +470,7 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
   return (
     <Card>
       {/* ── Correction 1 (primary) ── */}
-      <div className="flex items-center justify-between mb-3 flex-wrap gap-3">
+      <div className="flex items-center mb-3 gap-3">
         <div className="flex items-center gap-3 flex-wrap">
           <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)]">Correction 1</p>
           <div className="flex items-center gap-2">
@@ -485,7 +485,7 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
             </select>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 ml-auto shrink-0">
           {priorRefractions.length > 0 && (
             <button
               type="button"
@@ -506,7 +506,7 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
       {/* ── Extra corrections ── */}
       {extras.map((ex, idx) => (
         <div key={idx} className="mt-5 pt-4 border-t border-[var(--color-border)]">
-          <div className="flex items-center justify-between mb-3 flex-wrap gap-3">
+          <div className="flex items-center mb-3 gap-3">
             <div className="flex items-center gap-3 flex-wrap">
               <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)]">{ex.label}</p>
               <div className="flex items-center gap-2">
@@ -525,7 +525,7 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
               <button
                 type="button"
                 onClick={() => removeCorrection(idx)}
-                className="text-[11px] sm:text-xs text-red-500 hover:text-red-700 hover:bg-red-50 px-2.5 py-0.5 rounded-full border border-red-200 transition-colors"
+                className="ml-auto shrink-0 text-[11px] sm:text-xs text-red-500 hover:text-red-700 hover:bg-red-50 px-2.5 py-0.5 rounded-full border border-red-200 transition-colors"
               >
                 Remove
               </button>
@@ -1501,7 +1501,7 @@ function AnteriorSegmentCard({ visit, udid, editable, priorVisits = [] }: { visi
 
   return (
     <Card>
-      <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+      <div className="flex items-center mb-4 gap-3">
         <div className="flex items-center gap-3 flex-wrap">
           <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)]">Anterior Segment</p>
           <div className="flex items-center gap-2">
@@ -1527,7 +1527,7 @@ function AnteriorSegmentCard({ visit, udid, editable, priorVisits = [] }: { visi
             </label>
           )}
         </div>
-        <SaveIndicator state={state} />
+        <div className="ml-auto shrink-0"><SaveIndicator state={state} /></div>
       </div>
 
       {/* Column headers — the three-column layout only exists from sm up, so
@@ -1665,7 +1665,7 @@ function PosteriorSegmentCard({ visit, udid, editable, priorVisits = [] }: { vis
 
   return (
     <Card>
-      <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+      <div className="flex items-center mb-4 gap-3">
         <div className="flex items-center gap-3 flex-wrap">
           <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)]">Posterior Segment</p>
           <div className="flex items-center gap-2">
@@ -1691,7 +1691,7 @@ function PosteriorSegmentCard({ visit, udid, editable, priorVisits = [] }: { vis
             </label>
           )}
         </div>
-        <SaveIndicator state={state} />
+        <div className="ml-auto shrink-0"><SaveIndicator state={state} /></div>
       </div>
 
       {/* Column headers — the three-column layout only exists from sm up, so

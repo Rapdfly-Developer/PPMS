@@ -179,7 +179,7 @@ export default async function AnalyticsPage() {
       </div>
 
       {/* ── KPI row ────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 items-start">
         <KPI
           label="This Month"
           value={thisMonthAppts}
@@ -212,7 +212,7 @@ export default async function AnalyticsPage() {
         />
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 items-start">
         <KPI
           label="Completion Rate"
           value={`${completionRate}%`}

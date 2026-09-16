@@ -163,7 +163,7 @@ function PresetPanel({ onApply, onClose }: { onApply: (drugs: PresetDrug[]) => v
           </div>
           <div className="flex gap-2 mt-2">
             <button onClick={() => setFormDrugs([...formDrugs, { drugName: "", dosage: "", frequency: "", duration: "" }])} className="text-xs text-[var(--color-primary-700)] hover:underline">+ Add drug row</button>
-            <div className="ml-auto flex gap-2">
+            <div className="ml-auto flex gap-2 shrink-0">
               <button onClick={resetForm} className="text-xs px-3 py-1 rounded-lg border border-[var(--color-border)] hover:bg-white">Cancel</button>
               <button onClick={saveForm} className="text-xs px-3 py-1 rounded-lg bg-[var(--color-primary-600)] text-white font-medium hover:bg-[var(--color-primary-700)]">Save Preset</button>
             </div>
@@ -1563,9 +1563,9 @@ function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: st
   return (
     <Card>
       {/* Heading row */}
-      <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+      <div className="flex items-center mb-4 gap-2">
         <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)]">Minor Procedure</p>
-        <button onClick={() => setShowHistory((v) => !v)} className={historyBtnCls}>
+        <button onClick={() => setShowHistory((v) => !v)} className={`${historyBtnCls} ml-auto shrink-0`}>
           <History size={12} /> History
         </button>
       </div>
@@ -2051,9 +2051,9 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
         />
       )}
 
-      <div className={`flex items-center justify-between mb-3 flex-wrap gap-2 ${Object.keys(appliedByDiag).length > 0 ? "mt-4" : ""}`}>
+      <div className={`flex items-center mb-3 gap-2 ${Object.keys(appliedByDiag).length > 0 ? "mt-4" : ""}`}>
         <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)]">Prescription / Medications</p>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 ml-auto shrink-0">
           {medications.length > 0 && (
             <button
               onClick={handleClearAll}

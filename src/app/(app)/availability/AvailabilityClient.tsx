@@ -365,7 +365,7 @@ export function AvailabilityClient({
             Weekly consultation schedule for Dr. {doctorName}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <Link
             href="/settings?section=add-hospital&returnTo=/availability"
             className="flex items-center gap-2 border border-[var(--color-border)] text-[var(--color-ink-700)] text-[13px] sm:text-sm font-medium px-4 py-2.5 rounded-xl hover:bg-[var(--color-surface-sunken)] transition-colors"

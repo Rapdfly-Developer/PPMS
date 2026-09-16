@@ -338,7 +338,7 @@ function CompleteModal({ v, onDone, onClose }: { v: FuVisit; onDone: () => void;
           {showNext && (
             <div className="rounded-xl border border-[var(--color-primary-200)] bg-[var(--color-primary-50)] p-3.5 space-y-3">
               <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-[var(--color-primary-700)]">Schedule Next Follow-up</p>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-3 items-end">
                 <div>
                   <label className="text-[9px] sm:text-[10px] font-semibold text-[var(--color-ink-500)] uppercase tracking-wide block mb-1">Date <span className="text-red-500">*</span></label>
                   <input

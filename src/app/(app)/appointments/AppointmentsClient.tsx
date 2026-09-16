@@ -517,7 +517,7 @@ export function AppointmentsClient({
         return (
           <div className="flex flex-col gap-6">
             {/* Summary cards */}
-            <div className="grid grid-cols-3 gap-2 sm:gap-3">
+            <div className="grid grid-cols-3 gap-1.5 sm:gap-3">
               {[
                 {
                   label: "Today",
@@ -602,7 +602,7 @@ export function AppointmentsClient({
                   <div className="flex items-center gap-2 mb-3">
                     <h2 className={`text-[13px] sm:text-sm font-bold uppercase tracking-wide ${head}`}>{label}</h2>
                     {sub && <span className="text-[11px] sm:text-xs text-[var(--color-ink-400)]">· {sub}</span>}
-                    <span className={`ml-auto text-[11px] sm:text-xs font-bold px-2 py-0.5 rounded-full ${badge}`}>
+                    <span className={`ml-auto shrink-0 text-[11px] sm:text-xs font-bold px-2 py-0.5 rounded-full ${badge}`}>
                       {grpAppts.length}
                     </span>
                   </div>
