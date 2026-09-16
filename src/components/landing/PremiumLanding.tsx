@@ -482,7 +482,7 @@ export function PremiumLanding() {
       <Nav />
 
       {/* ── Hero ─────────────────────────────────────────────────────────── */}
-      <section className={`relative overflow-hidden ${GUTTER} pb-14 pt-28 sm:pb-16 sm:pt-32 lg:pb-20 lg:pt-36`}>
+      <section className={`relative overflow-hidden ${GUTTER} pb-14 pt-36 sm:pb-16 sm:pt-36 lg:pb-20 lg:pt-40`}>
         {/* Two soft emerald orbs, well below the content — the only colour in the
             page background. Fixed-size, blurred once, never animated. */}
         <div
