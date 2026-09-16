@@ -1,7 +1,7 @@
 import { getActivationData } from "../getLicenseData";
 import { ActivationClient } from "./ActivationClient";
 
-export const metadata = { title: "License Activation — PPMS" };
+export const metadata = { title: "License Activation — RF Health" };
 export const dynamic = "force-dynamic";
 
 const REASON_MESSAGES: Record<string, { title: string; body: string }> = {

@@ -2,7 +2,7 @@ import { requireUser } from "@/lib/rbac";
 import { ROLE_DEFAULT_PERMISSIONS } from "@/lib/permissions";
 import { ModuleOverview } from "./ModuleOverview";
 
-export const metadata = { title: "Dashboard — PPMS" };
+export const metadata = { title: "Dashboard — RF Health" };
 
 export default async function OverviewPage() {
   const user = await requireUser();

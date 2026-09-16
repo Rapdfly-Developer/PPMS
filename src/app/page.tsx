@@ -21,7 +21,7 @@ const body = Plus_Jakarta_Sans({
   display: "swap",
 });
 
-const TITLE = "PPMS — One Doctor. Every Hospital. One Record.";
+const TITLE = "RF Health — One Doctor. Every Hospital. One Record.";
 const DESCRIPTION =
   "Patient practice management for doctors working across multiple hospitals. Appointments, electronic medical records, prescriptions, surgery notes, billing and analytics in one secure account.";
 
@@ -42,7 +42,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     url: "https://ppmsai.com",
-    siteName: "PPMS",
+    siteName: "RF Health",
     title: TITLE,
     description: DESCRIPTION,
     images: [
@@ -50,7 +50,7 @@ export const metadata: Metadata = {
         url: "/landing/v3/hero-clinician-tablet-dashboard.jpg",
         width: 736,
         height: 1318,
-        alt: "A clinician reviewing a PPMS patient dashboard on a tablet",
+        alt: "A clinician reviewing an RF Health patient dashboard on a tablet",
       },
     ],
   },
@@ -70,7 +70,7 @@ const JSON_LD = {
   "@graph": [
     {
       "@type": "SoftwareApplication",
-      name: "PPMS",
+      name: "RF Health",
       applicationCategory: "HealthApplication",
       operatingSystem: "Web",
       description: DESCRIPTION,

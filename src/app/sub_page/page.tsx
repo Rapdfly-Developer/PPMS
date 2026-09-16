@@ -7,7 +7,7 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const manrope = Manrope({ subsets: ["latin"], weight: ["400","500","600","700","800"], variable: "--font-manrope" });
 
 export const metadata: Metadata = {
-  title: "PPMS — One Doctor. Multiple Hospitals. One Intelligent Platform.",
+  title: "RF Health — One Doctor. Multiple Hospitals. One Intelligent Platform.",
   description:
     "Manage appointments, EMR, prescriptions, billing, insurance, patient history and multiple hospitals from one secure cloud platform. Powered by RAPDFLY PRIVATE LIMITED.",
 };
