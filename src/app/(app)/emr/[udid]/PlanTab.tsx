@@ -1609,14 +1609,21 @@ function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: st
           <label className="text-[10px] font-semibold text-[var(--color-ink-500)] uppercase tracking-wide block mb-1.5">
             Procedure
           </label>
-          <div className="flex gap-2">
+          {/* min-w-0 is the fix: an input is a flex item with min-width:auto, which
+              resolves to its intrinsic size, so flex-1 could grow it but never shrink
+              it — the row demanded a constant 206+8+100px and the shrink-0 button was
+              pushed past the right edge (clipped at 320px, spilling its column even at
+              768px). basis-full also drops the button to its own line below sm, and
+              grow is used rather than flex-1 because flex-1 sets flex-basis and would
+              override basis-full. */}
+          <div className="flex flex-wrap gap-2">
             <input
               ref={procInputRef}
               value={procInput}
               onChange={(e) => setProcInput(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Escape") setProcInput(""); }}
               placeholder="Select a keyword below or type a procedure…"
-              className="flex-1 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-3 py-2 text-sm text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent"
+              className="grow basis-full sm:basis-0 min-w-0 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-3 py-2 text-sm text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent"
             />
             {isNewKeyword && (
               <button
