@@ -27,7 +27,7 @@ export function FieldWithHistory({
   headerExtra?: React.ReactNode;
   onLoad?: (value: string) => void;
   currentValue?: string;
-  buttonPosition?: "above" | "below";
+  buttonPosition?: "above" | "below" | "below-label";
 }) {
   const [open, setOpen] = useState(false);
   const [toast, setToast] = useState(false);
@@ -52,14 +52,25 @@ export function FieldWithHistory({
 
   return (
     <div className="relative">
-      {(label || headerExtra || (buttonPosition === "above" && history.length > 0)) && (
-        <div className="flex items-center justify-between mb-1.5 gap-2 flex-wrap">
-          <div className="flex items-center gap-3 flex-wrap">
-            {label && <label className="text-xs font-semibold tracking-widest text-[var(--color-ink-500)] uppercase">{label}</label>}
-            {headerExtra}
+      {buttonPosition === "below-label" ? (
+        <>
+          {label && (
+            <label className="text-xs font-semibold tracking-widest text-[var(--color-ink-500)] uppercase block">{label}</label>
+          )}
+          <div className="h-5 flex items-center mt-0.5 mb-0.5">
+            {history.length > 0 ? historyBtn : null}
           </div>
-          {buttonPosition === "above" && history.length > 0 && historyBtn}
-        </div>
+        </>
+      ) : (
+        (label || headerExtra || (buttonPosition === "above" && history.length > 0)) && (
+          <div className="flex items-center justify-between mb-1.5 gap-2 flex-wrap">
+            <div className="flex items-center gap-3 flex-wrap">
+              {label && <label className="text-xs font-semibold tracking-widest text-[var(--color-ink-500)] uppercase">{label}</label>}
+              {headerExtra}
+            </div>
+            {buttonPosition === "above" && history.length > 0 && historyBtn}
+          </div>
+        )
       )}
 
       {children}
