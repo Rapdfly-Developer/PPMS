@@ -744,41 +744,62 @@ function ForgotPasswordModal({ onClose }: { onClose: () => void }) {
   );
 }
 
-/* ── Keyboard-proof background height ─────────────────────────────────────
+/* ── Keyboard-proof geometry ───────────────────────────────────────────────
    The soft keyboard shrinks the viewport, and when the WebView itself is
    resized — which Capacitor's Android activity does — EVERY viewport unit
    shrinks with it: measured 812 -> 450 for vh, svh, lvh and dvh alike, so
-   100svh is no defence here. That drags the bottom-anchored orb and the 18
-   percentage-positioned decorations around, and a blur(64-80px) element that
-   moves has to be fully re-rasterised every step of the keyboard animation.
-   So the background layer's height is pinned in pixels on mount and re-pinned
-   only when the WIDTH changes — a rotation or a real resize — never for a
-   height-only change, which is exactly what a keyboard is. 100svh stays as the
-   server-rendered default so the first paint is right before JS runs. Written
-   straight to the node instead of through state: this is DOM synchronisation,
-   and it keeps the effect from triggering a render. */
-function usePinnedBackgroundHeight() {
+   100svh is no defence here. Anything sized or positioned against the live
+   viewport therefore moves mid-keyboard, and a blur(64-80px) element that
+   moves has to be fully re-rasterised on every step of that animation — the
+   blink. env(safe-area-inset-*) is the same class of hazard: it is resolved
+   live, and some Android WebViews report it as 0 while the window animates.
+
+   So both are measured once and written as static pixels, re-measured only
+   when the WIDTH changes — a rotation or a genuine resize — never for a
+   height-only change, which is exactly what a keyboard is. The CSS values
+   stay in the markup as the server-rendered default so the first paint is
+   right before JS runs. Written straight to the node rather than through
+   state: this is DOM synchronisation, and it keeps the effect render-free.
+   The apply callbacks live at module scope so they are stable references and
+   the effect never re-subscribes. */
+function pinViewportHeight(el: HTMLElement) {
+  el.style.height = `${window.innerHeight}px`;
+}
+
+function pinSafeAreaTop(el: HTMLElement) {
+  // Let the browser resolve the exact expression the markup uses — including
+  // rem — through a throwaway probe, then freeze the result in pixels.
+  const probe = document.createElement("div");
+  probe.style.cssText =
+    "position:fixed;top:0;left:0;width:0;visibility:hidden;pointer-events:none";
+  probe.style.height = "max(1.5rem, calc(env(safe-area-inset-top, 0px) + 0.75rem))";
+  document.body.appendChild(probe);
+  const resolved = probe.getBoundingClientRect().height;
+  probe.remove();
+  if (resolved > 0) el.style.paddingTop = `${resolved}px`;
+}
+
+function usePinnedToStableViewport(apply: (el: HTMLElement) => void) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
     let width = window.innerWidth;
-    const pin = () => { el.style.height = `${window.innerHeight}px`; };
-    pin();
+    apply(el);
     const onResize = () => {
       if (window.innerWidth === width) return; // height-only => keyboard, ignore
       width = window.innerWidth;
-      pin();
+      apply(el);
     };
     window.addEventListener("resize", onResize, { passive: true });
     return () => window.removeEventListener("resize", onResize);
-  }, []);
+  }, [apply]);
   return ref;
 }
 
 /* ── Cinematic dark background ──────────────────────────────────────────── */
 function DarkBackground({ px, py }: { px: number; py: number }) {
-  const bgRef = usePinnedBackgroundHeight();
+  const bgRef = usePinnedToStableViewport(pinViewportHeight);
   const particles = [
     { x: "11%", y: "34%", d: 8  }, { x: "79%", y: "24%", d: 12 },
     { x: "44%", y: "64%", d: 10 }, { x: "89%", y: "56%", d: 14 },
@@ -799,7 +820,7 @@ function DarkBackground({ px, py }: { px: number; py: number }) {
   return (
     // inset-x-0 + top-0 + an explicit height, NOT inset-0 — inset-0 pins the
     // bottom edge to the live viewport rect, which is the thing the keyboard
-    // moves. usePinnedBackgroundHeight overwrites this 100svh with a fixed px
+    // moves. pinViewportHeight overwrites this 100svh with a fixed px
     // value on mount.
     <div ref={bgRef} className="absolute inset-x-0 top-0 pointer-events-none overflow-hidden"
       style={{ background: T.bg, height: "100svh" }}>
@@ -919,6 +940,8 @@ export default function LoginPage() {
   const [tab, setTab]                   = useState<"password" | "otp">("password");
   const [showForgotPw, setShowForgotPw] = useState(false);
   const par = useParallax();
+  // Freezes the resolved safe-area top padding so the keyboard cannot relayout it.
+  const safeTopRef = usePinnedToStableViewport(pinSafeAreaTop);
 
   // Password tab
   const [username, setUsername]     = useState("");
@@ -1274,11 +1297,23 @@ export default function LoginPage() {
 
         {/* ══ RIGHT PANEL — Frosted glass card ══════════════════════════════ */}
         <div className="w-full lg:w-[55%] shrink-0 flex flex-col overflow-y-auto relative"
-          style={{ background: "linear-gradient(200deg,rgba(13,22,36,.5) 0%,rgba(6,11,20,.28) 100%)", backdropFilter: "blur(18px)", WebkitBackdropFilter: "blur(18px)", borderLeft: `1px solid ${T.border}` }}>
+          style={{
+            // No backdrop-filter. It was re-sampling 305k px on every step of the
+            // keyboard resize AND on every scroll-into-view step, which is the
+            // remaining blink. Measured: everything painted behind this panel is a
+            // flat fill, a gradient, or an orb already blurred at 64-80px — no
+            // high-frequency detail for an 18px blur to remove. The gradient is
+            // nudged denser to carry the frosted separation on its own.
+            background: "linear-gradient(200deg,rgba(13,22,36,.60) 0%,rgba(6,11,20,.40) 100%)",
+            borderLeft: `1px solid ${T.border}`,
+          }}>
 
           {/* flex-1+min-h-full so the card is centred when viewport is tall,
               but the panel scrolls when the content overflows on short screens. */}
-          <div className="w-full flex-1 flex flex-col justify-center items-center py-6 px-4 lg:py-8 lg:px-6" style={{ minHeight: "min-content", paddingTop: "max(1.5rem, calc(env(safe-area-inset-top, 0px) + 0.75rem))" }}>
+          {/* paddingTop below is the SSR default; pinSafeAreaTop freezes the
+              resolved value in px on mount so a WebView that briefly reports
+              env(safe-area-inset-top) as 0 mid-keyboard cannot relayout it. */}
+          <div ref={safeTopRef} className="w-full flex-1 flex flex-col justify-center items-center py-6 px-4 lg:py-8 lg:px-6" style={{ minHeight: "min-content", paddingTop: "max(1.5rem, calc(env(safe-area-inset-top, 0px) + 0.75rem))" }}>
 
           {/* Mobile hero — centered logo + concise headline (below lg only) */}
           <div className="lg:hidden lp-a0 shrink-0 flex flex-col items-center text-center mb-6">
@@ -1646,9 +1681,11 @@ export default function LoginPage() {
           <div className="lp-a4 w-full max-w-[420px] shrink-0 mt-5">
             <div className="flex items-center justify-center gap-2 mb-3">
               <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full" style={{
-                background: "rgba(15,143,111,.07)",
-                backdropFilter: "blur(12px)",
-                WebkitBackdropFilter: "blur(12px)",
+                // Last backdrop-filter inside the scrolling panel, dropped so that
+                // a scroll-into-view costs no backdrop re-sample at all. At 7%
+                // opacity over the panel gradient it had nothing to blur; the fill
+                // is nudged up slightly to keep the pill readable without it.
+                background: "rgba(15,143,111,.10)",
                 border: "1px solid rgba(15,143,111,.22)",
                 boxShadow: "0 0 24px rgba(15,143,111,.12)",
               }}>
