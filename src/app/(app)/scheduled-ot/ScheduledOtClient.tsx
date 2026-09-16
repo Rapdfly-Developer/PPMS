@@ -90,8 +90,8 @@ function StatCard({ icon, label, value, color, active, onClick }: {
         {icon}
       </div>
       <div>
-        <p className="text-2xl font-bold leading-none mb-0.5">{value}</p>
-        <p className="text-[11px] font-medium opacity-80">{label}</p>
+        <p className="text-lg sm:text-2xl font-bold leading-none mb-0.5">{value}</p>
+        <p className="text-[10px] sm:text-[11px] font-medium opacity-80">{label}</p>
       </div>
     </button>
   );
@@ -102,10 +102,10 @@ function DateHeader({ iso, count }: { iso: string; count: number }) {
   const isNow = isToday(new Date(iso));
   return (
     <div className="flex items-center gap-2 mb-2">
-      <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${isNow ? "bg-[var(--color-primary-100)] text-[var(--color-primary-700)]" : "bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)]"}`}>
+      <span className={`text-[10px] sm:text-[11px] font-bold px-2.5 py-0.5 rounded-full ${isNow ? "bg-[var(--color-primary-100)] text-[var(--color-primary-700)]" : "bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)]"}`}>
         {label}
       </span>
-      <span className="text-[11px] text-[var(--color-ink-400)]">
+      <span className="text-[10px] sm:text-[11px] text-[var(--color-ink-400)]">
         {format(new Date(iso), "d MMM yyyy")} · {count} procedure{count !== 1 ? "s" : ""}
       </span>
       <div className="flex-1 h-px bg-[var(--color-border)]" />
@@ -117,8 +117,8 @@ function EmptySection({ icon, label, sub }: { icon: React.ReactNode; label: stri
   return (
     <div className="flex flex-col items-center gap-2 py-10 text-center">
       <div className="w-12 h-12 rounded-xl bg-[var(--color-surface-sunken)] flex items-center justify-center">{icon}</div>
-      <p className="text-sm font-medium text-[var(--color-ink-500)]">{label}</p>
-      {sub && <p className="text-xs text-[var(--color-ink-400)] max-w-xs">{sub}</p>}
+      <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-500)]">{label}</p>
+      {sub && <p className="text-[11px] sm:text-xs text-[var(--color-ink-400)] max-w-xs">{sub}</p>}
     </div>
   );
 }
@@ -137,7 +137,7 @@ const PREAUTH_CONFIG: Record<string, { label: string; icon: React.ReactNode; cls
 function PreAuthBadge({ p }: { p: PreAuthInfo }) {
   const cfg = PREAUTH_CONFIG[p.status] ?? PREAUTH_CONFIG["PENDING"];
   return (
-    <div className={`flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-1.5 rounded-lg border text-[10px] ${cfg.cls}`}>
+    <div className={`flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-1.5 rounded-lg border text-[9px] sm:text-[10px] ${cfg.cls}`}>
       <span className="flex items-center gap-1 font-bold uppercase tracking-widest text-inherit opacity-70">
         <ShieldCheck size={9} /> {p.insuranceName}
       </span>
@@ -183,7 +183,7 @@ function DetailsPanel({ rec }: { rec: ScheduleRecord }) {
 
       {/* ── Workflow steps ── */}
       <div>
-        <p className="text-[10px] font-bold text-[var(--color-ink-400)] uppercase tracking-wide mb-3">Workflow Progress</p>
+        <p className="text-[9px] sm:text-[10px] font-bold text-[var(--color-ink-400)] uppercase tracking-wide mb-3">Workflow Progress</p>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           {steps.map((s) => {
             const Icon = s.icon;
@@ -198,26 +198,26 @@ function DetailsPanel({ rec }: { rec: ScheduleRecord }) {
                 <div className="flex items-center gap-1.5">
                   <div className={`w-2 h-2 rounded-full shrink-0 ${s.done ? c.dot : "bg-slate-300"}`} />
                   <Icon size={12} className={s.done ? "" : "text-[var(--color-ink-300)]"} />
-                  <span className={`text-[10px] font-bold uppercase tracking-wide ${s.done ? "" : "text-[var(--color-ink-400)]"}`}>
+                  <span className={`text-[9px] sm:text-[10px] font-bold uppercase tracking-wide ${s.done ? "" : "text-[var(--color-ink-400)]"}`}>
                     {s.done ? "Done" : "Pending"}
                   </span>
                 </div>
-                <p className={`text-xs font-semibold leading-tight ${s.done ? "" : "text-[var(--color-ink-500)]"}`}>
+                <p className={`text-[11px] sm:text-xs font-semibold leading-tight ${s.done ? "" : "text-[var(--color-ink-500)]"}`}>
                   {s.label}
                 </p>
                 {"otStatus" in s && s.otStatus && !s.done && (
-                  <span className="text-[10px] text-[var(--color-ink-500)]">
+                  <span className="text-[9px] sm:text-[10px] text-[var(--color-ink-500)]">
                     {OT_STATUS_LABEL[s.otStatus] ?? s.otStatus}
                   </span>
                 )}
                 {s.doneAt && (
-                  <span className="text-[10px] text-[var(--color-ink-400)]">
+                  <span className="text-[9px] sm:text-[10px] text-[var(--color-ink-400)]">
                     {format(new Date(s.doneAt), "d MMM, h:mm a")}
                   </span>
                 )}
                 <Link
                   href={s.href}
-                  className={`mt-auto inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-1 rounded-lg border transition-colors ${
+                  className={`mt-auto inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-semibold px-2 py-1 rounded-lg border transition-colors ${
                     s.done
                       ? `${c.pill} hover:opacity-80`
                       : "border-[var(--color-border)] text-[var(--color-ink-500)] hover:bg-[var(--color-surface)] bg-white"
@@ -234,7 +234,7 @@ function DetailsPanel({ rec }: { rec: ScheduleRecord }) {
 
       {/* ── Extra details ── */}
       <div>
-        <p className="text-[10px] font-bold text-[var(--color-ink-400)] uppercase tracking-wide mb-3">Schedule Details</p>
+        <p className="text-[9px] sm:text-[10px] font-bold text-[var(--color-ink-400)] uppercase tracking-wide mb-3">Schedule Details</p>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-2 text-xs">
           {[
             { label: "Priority",       value: rec.priority },
@@ -248,7 +248,7 @@ function DetailsPanel({ rec }: { rec: ScheduleRecord }) {
             { label: "Remarks",        value: rec.remarks },
           ].filter((f) => f.value).map(({ label, value }) => (
             <div key={label}>
-              <p className="text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-wide">{label}</p>
+              <p className="text-[9px] sm:text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-wide">{label}</p>
               <p className="text-[var(--color-ink-700)] font-medium mt-0.5">{value}</p>
             </div>
           ))}
@@ -311,7 +311,7 @@ function WaitingCard({ rec, role, idx }: { rec: ScheduleRecord; role: "DOCTOR" |
       <div className="flex items-start gap-3 px-4 py-3.5">
         {/* Serial */}
         <div className="w-6 h-6 rounded-lg bg-amber-100 flex items-center justify-center shrink-0 mt-0.5">
-          <span className="text-[10px] font-bold text-amber-700">{idx + 1}</span>
+          <span className="text-[9px] sm:text-[10px] font-bold text-amber-700">{idx + 1}</span>
         </div>
 
         {/* Info */}
@@ -319,36 +319,36 @@ function WaitingCard({ rec, role, idx }: { rec: ScheduleRecord; role: "DOCTOR" |
           {/* Patient row */}
           <div className="flex items-start justify-between gap-2 flex-wrap mb-1">
             <div className="flex items-center gap-2 flex-wrap">
-              <Link href={`/patients/${rec.patient.udid}`} className="text-sm font-bold text-[var(--color-ink-900)] hover:text-[var(--color-primary-700)] hover:underline">
+              <Link href={`/patients/${rec.patient.udid}`} className="text-[13px] sm:text-sm font-bold text-[var(--color-ink-900)] hover:text-[var(--color-primary-700)] hover:underline">
                 {rec.patient.name}
               </Link>
-              <span className="text-xs text-[var(--color-ink-400)]">{rec.patient.age}y / {SEX_SHORT[rec.patient.sex] ?? rec.patient.sex}</span>
-              {rec.patient.uhid && <span className="font-mono text-[10px] bg-teal-50 text-teal-700 px-1.5 py-0.5 rounded">{rec.patient.uhid}</span>}
-              <span className="font-mono text-[10px] bg-[var(--color-primary-50)] text-[var(--color-primary-700)] px-1.5 py-0.5 rounded">{rec.patient.udid}</span>
+              <span className="text-[11px] sm:text-xs text-[var(--color-ink-400)]">{rec.patient.age}y / {SEX_SHORT[rec.patient.sex] ?? rec.patient.sex}</span>
+              {rec.patient.uhid && <span className="font-mono text-[9px] sm:text-[10px] bg-teal-50 text-teal-700 px-1.5 py-0.5 rounded">{rec.patient.uhid}</span>}
+              <span className="font-mono text-[9px] sm:text-[10px] bg-[var(--color-primary-50)] text-[var(--color-primary-700)] px-1.5 py-0.5 rounded">{rec.patient.udid}</span>
               {rec.urgencyType === "EMERGENCY" && (
-                <span className="flex items-center gap-0.5 text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-50 text-red-600 border border-red-200">
+                <span className="flex items-center gap-0.5 text-[9px] sm:text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-50 text-red-600 border border-red-200">
                   <AlertTriangle size={9} /> EMERGENCY
                 </span>
               )}
             </div>
             {/* Status badge */}
             {isChangesRequested ? (
-              <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-amber-100 text-amber-700 border border-amber-200 whitespace-nowrap">
+              <span className="text-[9px] sm:text-[10px] font-bold px-2.5 py-1 rounded-full bg-amber-100 text-amber-700 border border-amber-200 whitespace-nowrap">
                 Changes Requested
               </span>
             ) : (
-              <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-amber-50 text-amber-600 border border-amber-200 whitespace-nowrap">
+              <span className="text-[9px] sm:text-[10px] font-bold px-2.5 py-1 rounded-full bg-amber-50 text-amber-600 border border-amber-200 whitespace-nowrap">
                 Awaiting Doctor Confirmation
               </span>
             )}
           </div>
 
           {/* Surgery detail row */}
-          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-[var(--color-ink-600)] mb-2.5">
+          <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] sm:text-xs text-[var(--color-ink-600)] mb-2.5">
             <span className="flex items-center gap-1 font-semibold text-[var(--color-ink-800)]">
               <Scissors size={11} className="text-[var(--color-primary-500)]" />
               {rec.surgeryName}
-              <span className="ml-1 text-[10px] font-medium px-1.5 py-0.5 rounded bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)]">
+              <span className="ml-1 text-[9px] sm:text-[10px] font-medium px-1.5 py-0.5 rounded bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)]">
                 {rec.surgeryCategory}
               </span>
             </span>
@@ -377,7 +377,7 @@ function WaitingCard({ rec, role, idx }: { rec: ScheduleRecord; role: "DOCTOR" |
               { label: "Blood",    ok: rec.bloodArranged },
               { label: "Informed", ok: rec.patientInformed },
             ].map(({ label, ok }) => (
-              <span key={label} className="flex items-center gap-1 text-[10px] text-[var(--color-ink-400)]">
+              <span key={label} className="flex items-center gap-1 text-[9px] sm:text-[10px] text-[var(--color-ink-400)]">
                 <ChecklistDot ok={ok} /> {label}
               </span>
             ))}
@@ -385,19 +385,19 @@ function WaitingCard({ rec, role, idx }: { rec: ScheduleRecord; role: "DOCTOR" |
 
           {/* Remarks if changes requested */}
           {isChangesRequested && rec.remarks && (
-            <div className="mb-2.5 px-3 py-2 rounded-lg bg-amber-100 border border-amber-200 text-xs text-amber-800">
+            <div className="mb-2.5 px-3 py-2 rounded-lg bg-amber-100 border border-amber-200 text-[11px] sm:text-xs text-amber-800">
               <span className="font-semibold">Change note: </span>{rec.remarks}
             </div>
           )}
 
-          {err && <p className="text-xs text-red-600 mb-2">{err}</p>}
+          {err && <p className="text-[11px] sm:text-xs text-red-600 mb-2">{err}</p>}
 
           {/* Action buttons */}
           <div className="flex flex-wrap gap-2">
             {/* View details toggle */}
             <button
               onClick={() => setOpen((v) => !v)}
-              className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 rounded-lg border border-[var(--color-border)] text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)] transition-colors"
+              className="inline-flex items-center gap-1 text-[11px] sm:text-xs font-medium px-2.5 py-1.5 rounded-lg border border-[var(--color-border)] text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)] transition-colors"
             >
               <FileCheck size={12} />
               {open ? "Hide Details" : "View Details"}
@@ -409,7 +409,7 @@ function WaitingCard({ rec, role, idx }: { rec: ScheduleRecord; role: "DOCTOR" |
                 <button
                   onClick={handleApprove}
                   disabled={pending}
-                  className="inline-flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 transition-colors disabled:opacity-50"
+                  className="inline-flex items-center gap-1 text-[11px] sm:text-xs font-semibold px-3 py-1.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 transition-colors disabled:opacity-50"
                 >
                   {pending ? <Loader2 size={12} className="animate-spin" /> : <ThumbsUp size={12} />}
                   Approve Surgery
@@ -417,14 +417,14 @@ function WaitingCard({ rec, role, idx }: { rec: ScheduleRecord; role: "DOCTOR" |
                 <button
                   onClick={() => { setShowEdit(true); setChanges(false); setCancel(false); }}
                   disabled={pending}
-                  className="inline-flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] transition-colors disabled:opacity-50"
+                  className="inline-flex items-center gap-1 text-[11px] sm:text-xs font-semibold px-3 py-1.5 rounded-lg border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] transition-colors disabled:opacity-50"
                 >
                   <CalendarClock size={12} /> Update Date &amp; Time
                 </button>
                 <button
                   onClick={() => { setChanges(true); setCancel(false); setShowEdit(false); }}
                   disabled={pending}
-                  className="inline-flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg border border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors disabled:opacity-50"
+                  className="inline-flex items-center gap-1 text-[11px] sm:text-xs font-semibold px-3 py-1.5 rounded-lg border border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors disabled:opacity-50"
                 >
                   <MessageSquare size={12} /> Request Changes
                 </button>
@@ -435,7 +435,7 @@ function WaitingCard({ rec, role, idx }: { rec: ScheduleRecord; role: "DOCTOR" |
               <button
                 onClick={() => { setShowEdit(true); setCancel(false); setChanges(false); }}
                 disabled={pending}
-                className="inline-flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] transition-colors disabled:opacity-50"
+                className="inline-flex items-center gap-1 text-[11px] sm:text-xs font-semibold px-3 py-1.5 rounded-lg border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] transition-colors disabled:opacity-50"
               >
                 <CalendarClock size={12} /> Update Date &amp; Time
               </button>
@@ -444,7 +444,7 @@ function WaitingCard({ rec, role, idx }: { rec: ScheduleRecord; role: "DOCTOR" |
             <button
               onClick={() => { setCancel(true); setChanges(false); setShowEdit(false); }}
               disabled={pending}
-              className="inline-flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 transition-colors disabled:opacity-50"
+              className="inline-flex items-center gap-1 text-[11px] sm:text-xs font-semibold px-3 py-1.5 rounded-lg border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 transition-colors disabled:opacity-50"
             >
               <Ban size={12} /> Cancel Surgery
             </button>
@@ -453,7 +453,7 @@ function WaitingCard({ rec, role, idx }: { rec: ScheduleRecord; role: "DOCTOR" |
           {/* Request Changes panel */}
           {showChanges && (
             <div className="mt-3 p-3 rounded-xl border border-amber-200 bg-amber-50">
-              <p className="text-xs font-semibold text-amber-800 mb-2">Describe the changes needed:</p>
+              <p className="text-[11px] sm:text-xs font-semibold text-amber-800 mb-2">Describe the changes needed:</p>
               <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
@@ -463,10 +463,10 @@ function WaitingCard({ rec, role, idx }: { rec: ScheduleRecord; role: "DOCTOR" |
               />
               <div className="flex gap-2 mt-2">
                 <button onClick={handleChanges} disabled={pending}
-                  className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-amber-600 text-white hover:bg-amber-700 disabled:opacity-50 transition-colors">
+                  className="text-[11px] sm:text-xs font-semibold px-3 py-1.5 rounded-lg bg-amber-600 text-white hover:bg-amber-700 disabled:opacity-50 transition-colors">
                   {pending ? "Sending…" : "Send Request"}
                 </button>
-                <button onClick={() => setChanges(false)} className="text-xs px-3 py-1.5 rounded-lg border border-[var(--color-border)] text-[var(--color-ink-500)] hover:bg-white transition-colors">
+                <button onClick={() => setChanges(false)} className="text-[11px] sm:text-xs px-3 py-1.5 rounded-lg border border-[var(--color-border)] text-[var(--color-ink-500)] hover:bg-white transition-colors">
                   Cancel
                 </button>
               </div>
@@ -476,7 +476,7 @@ function WaitingCard({ rec, role, idx }: { rec: ScheduleRecord; role: "DOCTOR" |
           {/* Cancel panel */}
           {showCancel && (
             <div className="mt-3 p-3 rounded-xl border border-red-200 bg-red-50">
-              <p className="text-xs font-semibold text-red-800 mb-2">Reason for cancellation (optional):</p>
+              <p className="text-[11px] sm:text-xs font-semibold text-red-800 mb-2">Reason for cancellation (optional):</p>
               <textarea
                 value={cancelReason}
                 onChange={(e) => setCancelReason(e.target.value)}
@@ -486,10 +486,10 @@ function WaitingCard({ rec, role, idx }: { rec: ScheduleRecord; role: "DOCTOR" |
               />
               <div className="flex gap-2 mt-2">
                 <button onClick={handleCancel} disabled={pending}
-                  className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 transition-colors">
+                  className="text-[11px] sm:text-xs font-semibold px-3 py-1.5 rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 transition-colors">
                   {pending ? "Cancelling…" : "Confirm Cancel"}
                 </button>
-                <button onClick={() => setCancel(false)} className="text-xs px-3 py-1.5 rounded-lg border border-[var(--color-border)] text-[var(--color-ink-500)] hover:bg-white transition-colors">
+                <button onClick={() => setCancel(false)} className="text-[11px] sm:text-xs px-3 py-1.5 rounded-lg border border-[var(--color-border)] text-[var(--color-ink-500)] hover:bg-white transition-colors">
                   Back
                 </button>
               </div>
@@ -499,10 +499,10 @@ function WaitingCard({ rec, role, idx }: { rec: ScheduleRecord; role: "DOCTOR" |
           {/* Update date panel (hospital, changes requested) */}
           {showEdit && (
             <div className="mt-3 p-3 rounded-xl border border-[var(--color-primary-200)] bg-[var(--color-primary-50)]">
-              <p className="text-xs font-semibold text-[var(--color-primary-800)] mb-2.5">Update Surgery Date &amp; Time</p>
+              <p className="text-[11px] sm:text-xs font-semibold text-[var(--color-primary-800)] mb-2.5">Update Surgery Date &amp; Time</p>
               <div className="flex gap-3 flex-wrap">
                 <div className="flex flex-col gap-1">
-                  <label className="text-[10px] font-semibold text-[var(--color-ink-500)] uppercase tracking-wide">Date</label>
+                  <label className="text-[9px] sm:text-[10px] font-semibold text-[var(--color-ink-500)] uppercase tracking-wide">Date</label>
                   <input
                     type="date"
                     value={newDate}
@@ -511,7 +511,7 @@ function WaitingCard({ rec, role, idx }: { rec: ScheduleRecord; role: "DOCTOR" |
                   />
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label className="text-[10px] font-semibold text-[var(--color-ink-500)] uppercase tracking-wide">Time</label>
+                  <label className="text-[9px] sm:text-[10px] font-semibold text-[var(--color-ink-500)] uppercase tracking-wide">Time</label>
                   <input
                     type="time"
                     value={newTime}
@@ -524,11 +524,11 @@ function WaitingCard({ rec, role, idx }: { rec: ScheduleRecord; role: "DOCTOR" |
                 <button
                   onClick={handleUpdateDate}
                   disabled={pending || !newDate || !newTime}
-                  className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-50 transition-colors"
+                  className="text-[11px] sm:text-xs font-semibold px-3 py-1.5 rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-50 transition-colors"
                 >
                   {pending ? "Saving…" : "Save & Notify Doctor"}
                 </button>
-                <button onClick={() => setShowEdit(false)} className="text-xs px-3 py-1.5 rounded-lg border border-[var(--color-border)] text-[var(--color-ink-500)] hover:bg-white transition-colors">
+                <button onClick={() => setShowEdit(false)} className="text-[11px] sm:text-xs px-3 py-1.5 rounded-lg border border-[var(--color-border)] text-[var(--color-ink-500)] hover:bg-white transition-colors">
                   Cancel
                 </button>
               </div>
@@ -565,36 +565,36 @@ function ConfirmedCard({ rec, role, idx }: { rec: ScheduleRecord; role: "DOCTOR"
     <div className="rounded-xl border border-emerald-200 bg-white">
       <div className="flex items-start gap-3 px-4 py-3.5">
         <div className="w-6 h-6 rounded-lg bg-emerald-100 flex items-center justify-center shrink-0 mt-0.5">
-          <span className="text-[10px] font-bold text-emerald-700">{idx + 1}</span>
+          <span className="text-[9px] sm:text-[10px] font-bold text-emerald-700">{idx + 1}</span>
         </div>
 
         <div className="flex-1 min-w-0">
           {/* Patient row */}
           <div className="flex items-start justify-between gap-2 flex-wrap mb-1">
             <div className="flex items-center gap-2 flex-wrap">
-              <Link href={`/patients/${rec.patient.udid}`} className="text-sm font-bold text-[var(--color-ink-900)] hover:text-[var(--color-primary-700)] hover:underline">
+              <Link href={`/patients/${rec.patient.udid}`} className="text-[13px] sm:text-sm font-bold text-[var(--color-ink-900)] hover:text-[var(--color-primary-700)] hover:underline">
                 {rec.patient.name}
               </Link>
-              <span className="text-xs text-[var(--color-ink-400)]">{rec.patient.age}y / {SEX_SHORT[rec.patient.sex] ?? rec.patient.sex}</span>
-              {rec.patient.uhid && <span className="font-mono text-[10px] bg-teal-50 text-teal-700 px-1.5 py-0.5 rounded">{rec.patient.uhid}</span>}
-              <span className="font-mono text-[10px] bg-[var(--color-primary-50)] text-[var(--color-primary-700)] px-1.5 py-0.5 rounded">{rec.patient.udid}</span>
+              <span className="text-[11px] sm:text-xs text-[var(--color-ink-400)]">{rec.patient.age}y / {SEX_SHORT[rec.patient.sex] ?? rec.patient.sex}</span>
+              {rec.patient.uhid && <span className="font-mono text-[9px] sm:text-[10px] bg-teal-50 text-teal-700 px-1.5 py-0.5 rounded">{rec.patient.uhid}</span>}
+              <span className="font-mono text-[9px] sm:text-[10px] bg-[var(--color-primary-50)] text-[var(--color-primary-700)] px-1.5 py-0.5 rounded">{rec.patient.udid}</span>
               {rec.urgencyType === "EMERGENCY" && (
-                <span className="flex items-center gap-0.5 text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-50 text-red-600 border border-red-200">
+                <span className="flex items-center gap-0.5 text-[9px] sm:text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-50 text-red-600 border border-red-200">
                   <AlertTriangle size={9} /> EMERGENCY
                 </span>
               )}
             </div>
-            <span className="flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 whitespace-nowrap">
+            <span className="flex items-center gap-1 text-[9px] sm:text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 whitespace-nowrap">
               <CheckCircle2 size={11} /> Surgery Confirmed
             </span>
           </div>
 
           {/* Surgery details */}
-          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-[var(--color-ink-600)] mb-2.5">
+          <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] sm:text-xs text-[var(--color-ink-600)] mb-2.5">
             <span className="flex items-center gap-1 font-semibold text-[var(--color-ink-800)]">
               <Scissors size={11} className="text-emerald-500" />
               {rec.surgeryName}
-              <span className="ml-1 text-[10px] font-medium px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700">{rec.surgeryCategory}</span>
+              <span className="ml-1 text-[9px] sm:text-[10px] font-medium px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700">{rec.surgeryCategory}</span>
             </span>
             <span className="flex items-center gap-1 text-[var(--color-ink-400)]">
               <Clock size={11} /> {format(new Date(rec.plannedDateTime), "h:mm a")}
@@ -621,46 +621,46 @@ function ConfirmedCard({ rec, role, idx }: { rec: ScheduleRecord; role: "DOCTOR"
               { label: "Blood",    ok: rec.bloodArranged },
               { label: "Informed", ok: rec.patientInformed },
             ].map(({ label, ok }) => (
-              <span key={label} className="flex items-center gap-1 text-[10px] text-[var(--color-ink-400)]">
+              <span key={label} className="flex items-center gap-1 text-[9px] sm:text-[10px] text-[var(--color-ink-400)]">
                 <ChecklistDot ok={ok} /> {label}
               </span>
             ))}
           </div>
 
-          {err && <p className="text-xs text-red-600 mb-2">{err}</p>}
+          {err && <p className="text-[11px] sm:text-xs text-red-600 mb-2">{err}</p>}
 
           <div className="flex items-center gap-2 flex-wrap">
             {role === "DOCTOR" && (
               <>
                 <Link
                   href={`/scheduled-ot/${rec.id}/ot-room`}
-                  className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors"
+                  className="inline-flex items-center gap-1.5 text-[11px] sm:text-xs font-bold px-3 py-1.5 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors"
                 >
                   <DoorOpen size={13} /> Enter Surgery Room
                 </Link>
                 <Link
                   href={`/scheduled-ot/${rec.id}/consent`}
-                  className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border border-violet-300 bg-violet-50 text-violet-700 hover:bg-violet-100 transition-colors"
+                  className="inline-flex items-center gap-1.5 text-[11px] sm:text-xs font-semibold px-3 py-1.5 rounded-lg border border-violet-300 bg-violet-50 text-violet-700 hover:bg-violet-100 transition-colors"
                 >
                   <FileSignature size={12} /> Consent
                   {rec.consentReceived && <CheckCircle2 size={10} className="text-emerald-500" />}
                 </Link>
                 <Link
                   href={`/scheduled-ot/${rec.id}/pre-op-assessment`}
-                  className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors"
+                  className="inline-flex items-center gap-1.5 text-[11px] sm:text-xs font-semibold px-3 py-1.5 rounded-lg border border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors"
                 >
                   <Activity size={12} /> Pre-Op
                 </Link>
                 <Link
                   href={`/scheduled-ot/${rec.id}/post-op-review`}
-                  className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border border-teal-300 bg-teal-50 text-teal-700 hover:bg-teal-100 transition-colors"
+                  className="inline-flex items-center gap-1.5 text-[11px] sm:text-xs font-semibold px-3 py-1.5 rounded-lg border border-teal-300 bg-teal-50 text-teal-700 hover:bg-teal-100 transition-colors"
                 >
                   <Stethoscope size={12} /> Post-Op Review
                 </Link>
                 <button
                   onClick={() => setShowEdit((v) => !v)}
                   disabled={pending}
-                  className="inline-flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] transition-colors disabled:opacity-50"
+                  className="inline-flex items-center gap-1 text-[11px] sm:text-xs font-semibold px-3 py-1.5 rounded-lg border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] transition-colors disabled:opacity-50"
                 >
                   <CalendarClock size={12} /> Update Date &amp; Time
                 </button>
@@ -668,14 +668,14 @@ function ConfirmedCard({ rec, role, idx }: { rec: ScheduleRecord; role: "DOCTOR"
             )}
             <button
               onClick={() => setOpen((v) => !v)}
-              className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 rounded-lg border border-[var(--color-border)] text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)] transition-colors"
+              className="inline-flex items-center gap-1 text-[11px] sm:text-xs font-medium px-2.5 py-1.5 rounded-lg border border-[var(--color-border)] text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)] transition-colors"
             >
               <FileCheck size={12} />
               {open ? "Hide Details" : "View Details"}
               {open ? <ChevronDown size={11} /> : <ChevronRight size={11} />}
             </button>
             {role !== "DOCTOR" && (
-              <span className="flex items-center gap-1 text-[10px] text-[var(--color-ink-400)]">
+              <span className="flex items-center gap-1 text-[9px] sm:text-[10px] text-[var(--color-ink-400)]">
                 <Lock size={10} /> Schedule locked
               </span>
             )}
@@ -684,10 +684,10 @@ function ConfirmedCard({ rec, role, idx }: { rec: ScheduleRecord; role: "DOCTOR"
           {/* Inline date editor (doctor only) */}
           {showEdit && (
             <div className="mt-3 p-3 rounded-xl border border-[var(--color-primary-200)] bg-[var(--color-primary-50)]">
-              <p className="text-xs font-semibold text-[var(--color-primary-800)] mb-2.5">Update Surgery Date &amp; Time</p>
+              <p className="text-[11px] sm:text-xs font-semibold text-[var(--color-primary-800)] mb-2.5">Update Surgery Date &amp; Time</p>
               <div className="flex gap-3 flex-wrap">
                 <div className="flex flex-col gap-1">
-                  <label className="text-[10px] font-semibold text-[var(--color-ink-500)] uppercase tracking-wide">Date</label>
+                  <label className="text-[9px] sm:text-[10px] font-semibold text-[var(--color-ink-500)] uppercase tracking-wide">Date</label>
                   <input
                     type="date"
                     value={newDate}
@@ -696,7 +696,7 @@ function ConfirmedCard({ rec, role, idx }: { rec: ScheduleRecord; role: "DOCTOR"
                   />
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label className="text-[10px] font-semibold text-[var(--color-ink-500)] uppercase tracking-wide">Time</label>
+                  <label className="text-[9px] sm:text-[10px] font-semibold text-[var(--color-ink-500)] uppercase tracking-wide">Time</label>
                   <input
                     type="time"
                     value={newTime}
@@ -709,11 +709,11 @@ function ConfirmedCard({ rec, role, idx }: { rec: ScheduleRecord; role: "DOCTOR"
                 <button
                   onClick={handleUpdateDate}
                   disabled={pending || !newDate || !newTime}
-                  className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-50 transition-colors"
+                  className="text-[11px] sm:text-xs font-semibold px-3 py-1.5 rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-50 transition-colors"
                 >
                   {pending ? "Saving…" : "Save & Notify Admin"}
                 </button>
-                <button onClick={() => setShowEdit(false)} className="text-xs px-3 py-1.5 rounded-lg border border-[var(--color-border)] text-[var(--color-ink-500)] hover:bg-white transition-colors">
+                <button onClick={() => setShowEdit(false)} className="text-[11px] sm:text-xs px-3 py-1.5 rounded-lg border border-[var(--color-border)] text-[var(--color-ink-500)] hover:bg-white transition-colors">
                   Cancel
                 </button>
               </div>
@@ -772,8 +772,8 @@ export function ScheduledOtClient({
             <Scissors size={18} className="text-[var(--color-primary-700)]" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-[var(--color-ink-900)] leading-tight">Scheduled OT</h1>
-            <p className="text-xs text-[var(--color-ink-400)]">
+            <h1 className="text-lg sm:text-xl font-bold text-[var(--color-ink-900)] leading-tight">Scheduled OT</h1>
+            <p className="text-[11px] sm:text-xs text-[var(--color-ink-400)]">
               {totalToday > 0 ? `${totalToday} procedure${totalToday !== 1 ? "s" : ""} today` : "No procedures today"}
             </p>
           </div>
@@ -826,8 +826,8 @@ export function ScheduledOtClient({
           <section>
             <div className="flex items-center gap-2 mb-4">
               <div className="w-2 h-6 rounded-full bg-emerald-500" />
-              <h2 className="text-base font-bold text-[var(--color-ink-900)]">Scheduled OT</h2>
-              <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-200">
+              <h2 className="text-[15px] sm:text-base font-bold text-[var(--color-ink-900)]">Scheduled OT</h2>
+              <span className="text-[11px] sm:text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-200">
                 {filteredConfirmed.length}
               </span>
             </div>
@@ -856,8 +856,8 @@ export function ScheduledOtClient({
           <section className="pt-2 border-t border-[var(--color-border)]">
             <div className="flex items-center gap-2 mb-4">
               <div className="w-2 h-6 rounded-full bg-amber-400" />
-              <h2 className="text-base font-bold text-[var(--color-ink-900)]">Waiting for Doctor Confirmation</h2>
-              <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-200">
+              <h2 className="text-[15px] sm:text-base font-bold text-[var(--color-ink-900)]">Waiting for Doctor Confirmation</h2>
+              <span className="text-[11px] sm:text-xs font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-200">
                 {filteredWaiting.length}
               </span>
             </div>
@@ -889,8 +889,8 @@ export function ScheduledOtClient({
         <section>
           <div className="flex items-center gap-2 mb-4">
             <div className="w-2 h-6 rounded-full bg-[var(--color-primary-500)]" />
-            <h2 className="text-base font-bold text-[var(--color-ink-900)]">Completed OT</h2>
-            <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-[var(--color-primary-100)] text-[var(--color-primary-700)] border border-[var(--color-primary-200)]">
+            <h2 className="text-[15px] sm:text-base font-bold text-[var(--color-ink-900)]">Completed OT</h2>
+            <span className="text-[11px] sm:text-xs font-bold px-2 py-0.5 rounded-full bg-[var(--color-primary-100)] text-[var(--color-primary-700)] border border-[var(--color-primary-200)]">
               {filteredCompleted.length}
             </span>
           </div>
