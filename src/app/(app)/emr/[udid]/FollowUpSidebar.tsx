@@ -42,7 +42,7 @@ export function FollowUpSidebar({ visit, udid }: { visit: any; udid: string }) {
       setSaved(true);
     });
 
-  const chip = "px-2.5 py-1 rounded-full text-[11px] border border-[var(--color-border)] bg-white text-[var(--color-ink-600)] hover:border-[var(--color-primary-400)] hover:bg-[var(--color-primary-50)] transition-colors cursor-pointer";
+  const chip = "px-2.5 py-1 rounded-full text-[10px] sm:text-[11px] border border-[var(--color-border)] bg-white text-[var(--color-ink-600)] hover:border-[var(--color-primary-400)] hover:bg-[var(--color-primary-50)] transition-colors cursor-pointer";
 
   return (
     <div className="rounded-xl border border-[var(--color-border)] bg-white p-4 flex flex-col gap-3 no-print">
@@ -72,7 +72,7 @@ export function FollowUpSidebar({ visit, udid }: { visit: any; udid: string }) {
 
       {/* Formatted display */}
       {followUpDate && (
-        <p className="text-xs text-[var(--color-primary-700)] font-medium bg-[var(--color-primary-50)] px-3 py-1.5 rounded-lg">
+        <p className="text-[11px] sm:text-xs text-[var(--color-primary-700)] font-medium bg-[var(--color-primary-50)] px-3 py-1.5 rounded-lg">
           {formatDisplay(followUpDate)}
         </p>
       )}
@@ -81,7 +81,7 @@ export function FollowUpSidebar({ visit, udid }: { visit: any; udid: string }) {
       <button
         disabled={pending}
         onClick={save}
-        className="w-full flex items-center justify-center gap-1.5 text-sm font-medium px-4 py-2 rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-60 transition-colors"
+        className="w-full flex items-center justify-center gap-1.5 text-[13px] sm:text-sm font-medium px-4 py-2 rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-60 transition-colors"
       >
         {saved ? <><Check size={13} /> Saved</> : pending ? "Saving…" : "Save Follow-up"}
       </button>

@@ -147,7 +147,7 @@ export function DispositionToggle({ icon, label, active, onClick }: { icon: Reac
   return (
     <button
       onClick={onClick}
-      className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium border transition-colors ${
+      className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-[13px] sm:text-sm font-medium border transition-colors ${
         active
           ? "bg-[var(--color-primary-600)] text-white border-[var(--color-primary-600)]"
           : "bg-white text-[var(--color-ink-700)] border-[var(--color-border)] hover:border-[var(--color-primary-500)]"
@@ -168,7 +168,7 @@ export function DispensePanel({ visit, udid }: { visit: any; udid: string }) {
 
   return (
     <div className="rounded-xl border border-[var(--color-border)] p-4">
-      <p className="text-sm font-medium text-[var(--color-ink-700)] mb-2">Patient Dispense — Short Summary</p>
+      <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)] mb-2">Patient Dispense — Short Summary</p>
       <textarea
         value={summary}
         onChange={(e) => setSummary(e.target.value)}
@@ -189,7 +189,7 @@ export function AdmitPanel({ visit, udid, patientSex }: { visit: any; udid: stri
 
   return (
     <div className="rounded-xl border border-[var(--color-border)] p-4">
-      <p className="text-sm font-medium text-[var(--color-ink-700)] mb-3">Admission</p>
+      <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)] mb-3">Admission</p>
       <div className="flex flex-col gap-3">
         <textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Reason for admission" rows={2} className="w-full rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm" />
         <div>
@@ -209,7 +209,7 @@ export function AdmitPanel({ visit, udid, patientSex }: { visit: any; udid: stri
             setSaved(true);
           })
         }
-        className="mt-3 text-sm font-medium px-4 py-2 rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)]"
+        className="mt-3 text-[13px] sm:text-sm font-medium px-4 py-2 rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)]"
       >
         Save Admission
       </button>
@@ -295,7 +295,7 @@ export function FollowUpdatesPanel({ visit, udid, priorVisits = [] }: { visit: a
           <button className={chipCls} onClick={() => addMonths(3)}>3m</button>
           <button className={chipCls} onClick={() => addMonths(6)}>6m</button>
           {followUpDate && (
-            <span className="text-sm text-[var(--color-ink-500)]">{formatDate(followUpDate)}</span>
+            <span className="text-[13px] sm:text-sm text-[var(--color-ink-500)]">{formatDate(followUpDate)}</span>
           )}
         </div>
       </div>
@@ -394,7 +394,7 @@ export function FollowUpdatesPanel({ visit, udid, priorVisits = [] }: { visit: a
       {/* Referral */}
       <div>
         <p className="text-[10px] font-semibold tracking-widest text-[var(--color-ink-400)] uppercase mb-2">Referral</p>
-        <label className="flex items-center gap-2 text-sm text-[var(--color-ink-700)] cursor-pointer">
+        <label className="flex items-center gap-2 text-[13px] sm:text-sm text-[var(--color-ink-700)] cursor-pointer">
           <input
             type="checkbox"
             checked={referralEnabled}
@@ -417,7 +417,7 @@ export function FollowUpdatesPanel({ visit, udid, priorVisits = [] }: { visit: a
         <button
           disabled={pending}
           onClick={save}
-          className="text-sm font-medium px-4 py-2 rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-60 transition-colors"
+          className="text-[13px] sm:text-sm font-medium px-4 py-2 rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-60 transition-colors"
         >
           Save
         </button>
@@ -515,7 +515,7 @@ export function SurgicalPanel({ visit, udid }: { visit: any; udid: string }) {
 
   return (
     <div className="rounded-xl border border-[var(--color-border)] p-4 flex flex-col gap-4">
-      <p className="text-sm font-medium text-[var(--color-ink-700)]">Surgical Counselling</p>
+      <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)]">Surgical Counselling</p>
 
       {/* Row: Laterality · Procedure · Anesthesia · Date */}
       <div className="grid grid-cols-1 sm:grid-cols-[auto_1fr_1fr_auto] gap-3 items-end">
@@ -773,7 +773,7 @@ export function SurgicalPanel({ visit, udid }: { visit: any; udid: string }) {
         <button
           disabled={pending}
           onClick={save}
-          className="text-sm font-medium px-4 py-2 rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-60 transition-colors"
+          className="text-[13px] sm:text-sm font-medium px-4 py-2 rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-60 transition-colors"
         >
           Save
         </button>
