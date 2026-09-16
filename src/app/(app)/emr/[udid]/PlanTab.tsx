@@ -2293,8 +2293,10 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
           <p className="text-[13px] sm:text-sm text-[var(--color-ink-400)]">Search for a medication above to add it to the prescription.</p>
         </div>
       ) : (
-        <div className="mt-1">
-          <table className="w-full text-sm">
+        // The columns are fixed-width and total ~470px, so on a phone the table
+        // scrolls inside its own card rather than pushing the page sideways.
+        <div className="mt-1 overflow-x-auto">
+          <table className="w-full min-w-[470px] text-sm">
             <thead>
               <tr className="border-b border-[var(--color-border)]">
                 <th className="px-3 py-1.5 text-left text-[10px] font-bold text-[var(--color-ink-300)] uppercase tracking-widest w-12">#</th>
