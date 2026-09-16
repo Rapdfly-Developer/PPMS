@@ -40,10 +40,10 @@ export async function StaffDashboard({
     <div className="fade-in">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-xl font-bold text-[var(--color-ink-900)]">
+        <h1 className="text-lg sm:text-xl font-bold text-[var(--color-ink-900)]">
           Welcome, {user.name}
         </h1>
-        <p className="text-sm text-[var(--color-ink-500)] mt-0.5">
+        <p className="text-[13px] sm:text-sm text-[var(--color-ink-500)] mt-0.5">
           {user.role.charAt(0) + user.role.slice(1).toLowerCase().replace(/_/g, " ")}
           {hospital?.name ? ` · ${hospital.name}` : ""}
         </p>
@@ -54,14 +54,14 @@ export async function StaffDashboard({
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
           {todayAppts !== null && (
             <div className="rounded-xl border border-[var(--color-border)] bg-white p-5">
-              <p className="text-xs font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Today's Appointments</p>
-              <p className="text-3xl font-bold text-[var(--color-primary-700)] mt-1">{todayAppts}</p>
+              <p className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Today's Appointments</p>
+              <p className="text-2xl sm:text-3xl font-bold text-[var(--color-primary-700)] mt-1">{todayAppts}</p>
             </div>
           )}
           {totalPatients !== null && (
             <div className="rounded-xl border border-[var(--color-border)] bg-white p-5">
-              <p className="text-xs font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Total Patients</p>
-              <p className="text-3xl font-bold text-[var(--color-primary-700)] mt-1">{totalPatients}</p>
+              <p className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Total Patients</p>
+              <p className="text-2xl sm:text-3xl font-bold text-[var(--color-primary-700)] mt-1">{totalPatients}</p>
             </div>
           )}
         </div>
@@ -70,7 +70,7 @@ export async function StaffDashboard({
       {/* Quick links */}
       {QUICK_LINKS.length > 0 && (
         <div>
-          <p className="text-xs font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-3">Quick Access</p>
+          <p className="text-[11px] sm:text-xs font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-3">Quick Access</p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {QUICK_LINKS.map(({ href, label, icon: Icon }) => (
               <Link
@@ -81,7 +81,7 @@ export async function StaffDashboard({
                 <div className="w-10 h-10 rounded-xl bg-[var(--color-primary-50)] flex items-center justify-center">
                   <Icon size={20} className="text-[var(--color-primary-600)]" />
                 </div>
-                <span className="text-sm font-semibold text-[var(--color-ink-800)]">{label}</span>
+                <span className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-800)]">{label}</span>
               </Link>
             ))}
           </div>
@@ -90,8 +90,8 @@ export async function StaffDashboard({
 
       {QUICK_LINKS.length === 0 && (
         <div className="rounded-xl border border-[var(--color-border)] bg-white p-10 text-center">
-          <p className="text-sm text-[var(--color-ink-400)]">No permissions assigned yet.</p>
-          <p className="text-xs text-[var(--color-ink-300)] mt-1">Ask your doctor to assign permissions to your role in Settings → Roles.</p>
+          <p className="text-[13px] sm:text-sm text-[var(--color-ink-400)]">No permissions assigned yet.</p>
+          <p className="text-[11px] sm:text-xs text-[var(--color-ink-300)] mt-1">Ask your doctor to assign permissions to your role in Settings → Roles.</p>
         </div>
       )}
     </div>
