@@ -28,8 +28,8 @@ interface Props {
 
 export const TH =
   "pb-2 pr-4 text-left align-bottom text-[9px] font-bold uppercase tracking-widest text-[var(--color-ink-400)]";
-export const TD = "py-1.5 pr-4 align-top text-[11px] leading-snug text-[var(--color-ink-700)]";
-export const TD_MUTED = "py-1.5 pr-4 align-top text-[11px] leading-snug text-[var(--color-ink-500)]";
+export const TD = "py-1.5 pr-4 align-top text-[10px] sm:text-[11px] leading-snug text-[var(--color-ink-700)]";
+export const TD_MUTED = "py-1.5 pr-4 align-top text-[10px] sm:text-[11px] leading-snug text-[var(--color-ink-500)]";
 
 /** Wraps a table so narrow screens scroll it rather than crushing the columns. */
 export function DataTable({
@@ -52,7 +52,7 @@ function SectionLabel({ icon, label }: { icon?: React.ReactNode; label: string }
   return (
     <div className="flex items-center gap-1.5 mb-1">
       {icon}
-      <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-ink-400)]">
+      <span className="text-[9px] sm:text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-[var(--color-ink-400)]">
         {label}
       </span>
     </div>
@@ -83,7 +83,7 @@ function EmptyNote({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex items-start gap-2.5 py-2 px-3 rounded-xl bg-[var(--color-surface-sunken)]">
       <AlertCircle size={13} className="shrink-0 mt-0.5 text-[var(--color-ink-300)]" />
-      <p className="text-[11px] text-[var(--color-ink-400)]">{children}</p>
+      <p className="text-[10px] sm:text-[11px] text-[var(--color-ink-400)]">{children}</p>
     </div>
   );
 }
@@ -172,7 +172,7 @@ export function VisitSummaryTabBar({
           className={`
             relative flex items-center gap-0.5 rounded
             transition-all duration-150 disabled:cursor-not-allowed
-            ${compact ? "px-2 py-0.5 text-[10px]" : "px-3 py-1.5 text-[11px]"}
+            ${compact ? "px-2 py-0.5 text-[9px] sm:text-[10px]" : "px-3 py-1.5 text-[10px] sm:text-[11px]"}
             font-semibold
             ${tab === t
               ? t === "ai"
@@ -223,7 +223,7 @@ export function VisitSummaryTabBody({
   const diagText = diagnoses.filter(Boolean).join(", ");
   if (loading) {
     return (
-      <div className="flex items-center gap-2 py-2 text-[11px] text-[var(--color-ink-400)]">
+      <div className="flex items-center gap-2 py-2 text-[10px] sm:text-[11px] text-[var(--color-ink-400)]">
         <Loader2 size={13} className="animate-spin shrink-0" />
         {tab === "ai" ? "Generating AI summary…" : "Loading visit details…"}
       </div>
@@ -269,7 +269,7 @@ function ShortContent({ complaint, diagText }: { complaint: string | null; diagT
       {complaint && (
         <div>
           <p className="text-[9px] font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-1.5">Chief Complaint</p>
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-[11px] font-medium">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-[10px] sm:text-[11px] font-medium">
             <FileText size={11} className="shrink-0 text-amber-500" />
             {formatComplaintDisplay(complaint)}
           </span>
@@ -280,7 +280,7 @@ function ShortContent({ complaint, diagText }: { complaint: string | null; diagT
           <p className="text-[9px] font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-1">Diagnosis</p>
           <div className="flex flex-wrap gap-1">
             {diagText.split(", ").filter(Boolean).map((d, i) => (
-              <span key={i} className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-teal-50 border border-teal-200 text-teal-800 text-[11px] font-medium">
+              <span key={i} className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-teal-50 border border-teal-200 text-teal-800 text-[10px] sm:text-[11px] font-medium">
                 {d}
               </span>
             ))}
@@ -377,15 +377,15 @@ function LongContent({
 
       {/* Visit type chip */}
       {data.visitType && (
-        <span className="inline-block px-2 py-0.5 rounded-full text-[11px] font-medium bg-[var(--color-primary-50)] text-[var(--color-primary-600)]">{data.visitType}</span>
+        <span className="inline-block px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-medium bg-[var(--color-primary-50)] text-[var(--color-primary-600)]">{data.visitType}</span>
       )}
 
       {/* Chief Complaint — inline single line */}
       {g?.chiefComplaint && (
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-ink-400)] shrink-0">Chief Complaint</span>
+          <span className="text-[9px] sm:text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-[var(--color-ink-400)] shrink-0">Chief Complaint</span>
           {parseComplaints(g.chiefComplaint).map((c, i) => (
-            <span key={i} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-[11px] font-medium">
+            <span key={i} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-[10px] sm:text-[11px] font-medium">
               <FileText size={11} className="shrink-0 text-amber-500" />
               {[c.lat, c.text, c.since ? `· ${c.since}` : null].filter(Boolean).join(" ")}
             </span>
@@ -396,8 +396,8 @@ function LongContent({
       {/* HPI — inline single line */}
       {g?.hpi && (
         <div className="flex items-baseline gap-2">
-          <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-ink-400)] shrink-0 whitespace-nowrap">History</span>
-          <p className="text-[11px] leading-relaxed text-[var(--color-ink-700)]">{g.hpi}</p>
+          <span className="text-[9px] sm:text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-[var(--color-ink-400)] shrink-0 whitespace-nowrap">History</span>
+          <p className="text-[10px] sm:text-[11px] leading-relaxed text-[var(--color-ink-700)]">{g.hpi}</p>
         </div>
       )}
 
@@ -512,7 +512,7 @@ function LongContent({
               </tbody>
             </DataTable>
             {pos.notes && (
-              <p className="mt-1.5 text-[11px] italic leading-snug text-[var(--color-ink-500)]">{pos.notes}</p>
+              <p className="mt-1.5 text-[10px] sm:text-[11px] italic leading-snug text-[var(--color-ink-500)]">{pos.notes}</p>
             )}
           </Block>
         );
@@ -534,7 +534,7 @@ function LongContent({
                     : d.status === "CHRONIC" ? "text-amber-600"
                     : "text-red-500"
                   }`}>{d.status}</span>
-                  <span className="text-[11px] text-[var(--color-ink-700)] min-w-0">
+                  <span className="text-[10px] sm:text-[11px] text-[var(--color-ink-700)] min-w-0">
                     {d.laterality && <span className="font-bold text-[var(--color-primary-700)] mr-1">{d.laterality}</span>}
                     {d.description}
                     {d.provisional && <span className="text-amber-500 italic ml-1">(P)</span>}
@@ -552,7 +552,7 @@ function LongContent({
           <div className="flex flex-col divide-y divide-[var(--color-border)]">
             {data.medications.map((m: any, i: number) => (
               <div key={i} className="flex items-start gap-2.5 py-2 first:pt-0 last:pb-0">
-                <span className="text-[10px] text-[var(--color-ink-400)] font-medium w-4 shrink-0 mt-0.5 tabular-nums">{i + 1}</span>
+                <span className="text-[9px] sm:text-[10px] text-[var(--color-ink-400)] font-medium w-4 shrink-0 mt-0.5 tabular-nums">{i + 1}</span>
                 <div className="flex-1 min-w-0">
                   <p className="text-[12px] font-semibold text-[var(--color-ink-800)] leading-snug">
                     {m.laterality && (
@@ -561,9 +561,9 @@ function LongContent({
                     {m.drugName}
                   </p>
                   <div className="flex flex-wrap items-center gap-x-1 gap-y-0.5 mt-0.5">
-                    {m.dosage && <span className="text-[11px] text-[var(--color-ink-500)]">{m.dosage}</span>}
-                    {m.frequency && <><span className="text-[var(--color-ink-300)] text-[10px]">·</span><span className="text-[11px] text-[var(--color-ink-500)]">{m.frequency}</span></>}
-                    {m.duration && <><span className="text-[var(--color-ink-300)] text-[10px]">·</span><span className="text-[11px] text-[var(--color-ink-500)]">{m.duration}</span></>}
+                    {m.dosage && <span className="text-[10px] sm:text-[11px] text-[var(--color-ink-500)]">{m.dosage}</span>}
+                    {m.frequency && <><span className="text-[var(--color-ink-300)] text-[10px]">·</span><span className="text-[10px] sm:text-[11px] text-[var(--color-ink-500)]">{m.frequency}</span></>}
+                    {m.duration && <><span className="text-[var(--color-ink-300)] text-[10px]">·</span><span className="text-[10px] sm:text-[11px] text-[var(--color-ink-500)]">{m.duration}</span></>}
                   </div>
                 </div>
               </div>
@@ -581,20 +581,20 @@ function LongContent({
                 <div className="flex-1 min-w-0">
                   <p className="text-[12px] font-semibold text-[var(--color-ink-800)] leading-snug">{o.testName}</p>
                   <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
-                    {o.laterality && <span className="text-[11px] font-semibold text-[var(--color-primary-700)]">{o.laterality}</span>}
-                    <span className={`text-[10px] font-semibold uppercase ${
+                    {o.laterality && <span className="text-[10px] sm:text-[11px] font-semibold text-[var(--color-primary-700)]">{o.laterality}</span>}
+                    <span className={`text-[9px] sm:text-[10px] font-semibold uppercase ${
                       o.priority === "URGENT" ? "text-amber-600" : "text-[var(--color-ink-400)]"
                     }`}>{o.priority}</span>
                   </div>
                 </div>
                 <div className="flex flex-col items-end gap-1 shrink-0">
-                  <span className={`text-[10px] font-bold uppercase ${
+                  <span className={`text-[9px] sm:text-[10px] font-bold uppercase ${
                     o.status === "COMPLETED" ? "text-emerald-600"
                     : o.status === "ORDERED" ? "text-blue-600"
                     : "text-amber-600"
                   }`}>{o.status}</span>
                   {o.resultRef
-                    ? <a href={o.resultRef} target="_blank" rel="noreferrer" className="text-[10px] text-[var(--color-primary-600)] underline">View</a>
+                    ? <a href={o.resultRef} target="_blank" rel="noreferrer" className="text-[9px] sm:text-[10px] text-[var(--color-primary-600)] underline">View</a>
                     : null}
                 </div>
               </div>
@@ -621,7 +621,7 @@ function AIContent({
 }) {
   if (error) {
     return (
-      <div className="flex items-start gap-2 p-3 rounded-xl bg-red-50 text-[11px] text-red-700">
+      <div className="flex items-start gap-2 p-3 rounded-xl bg-red-50 text-[10px] sm:text-[11px] text-red-700">
         <AlertCircle size={12} className="shrink-0 mt-0.5" />
         <span>{error}</span>
       </div>
@@ -636,17 +636,17 @@ function AIContent({
     <div className="rounded-xl bg-violet-50/50 p-3.5">
       <div className="flex items-center gap-1.5 mb-1.5">
         <Sparkles size={11} className="text-violet-500" />
-        <span className="text-[10px] font-bold uppercase tracking-widest text-violet-600">
+        <span className="text-[9px] sm:text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-violet-600">
           {source === "claude" ? "Claude AI Summary" : "Auto-Generated Summary"}
         </span>
       </div>
       <div className="space-y-1.5">
         {text.split(/\n+/).filter(Boolean).map((line, i) => (
-          <p key={i} className="text-[11px] leading-relaxed text-[var(--color-ink-700)]">{line}</p>
+          <p key={i} className="text-[10px] sm:text-[11px] leading-relaxed text-[var(--color-ink-700)]">{line}</p>
         ))}
       </div>
       {notice && (
-        <p className="mt-2.5 text-[10px] leading-snug text-amber-700">{notice}</p>
+        <p className="mt-2.5 text-[9px] sm:text-[10px] leading-snug text-amber-700">{notice}</p>
       )}
     </div>
   );
