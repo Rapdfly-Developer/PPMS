@@ -549,73 +549,57 @@ function LongContent({
       {/* Medications */}
       {hasMeds && (
         <Block label="Medications">
-          <DataTable minWidth={380}>
-            <Cols widths={["5%", "37%", "18%", "22%", "18%"]} />
-            <thead>
-              <tr>
-                <th className={TH}>#</th>
-                <th className={TH}>Drug</th>
-                <th className={TH}>Dose</th>
-                <th className={TH}>Frequency</th>
-                <th className={TH}>Duration</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.medications.map((m: any, i: number) => (
-                <tr key={i}>
-                  <td className={TD_MUTED}>{i + 1}</td>
-                  <td className={`${TD} font-semibold`}>
+          <div className="flex flex-col divide-y divide-[var(--color-border)]">
+            {data.medications.map((m: any, i: number) => (
+              <div key={i} className="flex items-start gap-2.5 py-2 first:pt-0 last:pb-0">
+                <span className="text-[10px] text-[var(--color-ink-400)] font-medium w-4 shrink-0 mt-0.5 tabular-nums">{i + 1}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[12px] font-semibold text-[var(--color-ink-800)] leading-snug">
                     {m.laterality && (
-                      <span className="font-bold text-[var(--color-primary-700)] mr-2">{m.laterality}</span>
+                      <span className="font-bold text-[var(--color-primary-700)] mr-1.5">{m.laterality}</span>
                     )}
                     {m.drugName}
-                  </td>
-                  <td className={TD_MUTED}>{m.dosage || DASH}</td>
-                  <td className={TD_MUTED}>{m.frequency || DASH}</td>
-                  <td className={TD_MUTED}>{m.duration || DASH}</td>
-                </tr>
-              ))}
-            </tbody>
-          </DataTable>
+                  </p>
+                  <div className="flex flex-wrap items-center gap-x-1 gap-y-0.5 mt-0.5">
+                    {m.dosage && <span className="text-[11px] text-[var(--color-ink-500)]">{m.dosage}</span>}
+                    {m.frequency && <><span className="text-[var(--color-ink-300)] text-[10px]">·</span><span className="text-[11px] text-[var(--color-ink-500)]">{m.frequency}</span></>}
+                    {m.duration && <><span className="text-[var(--color-ink-300)] text-[10px]">·</span><span className="text-[11px] text-[var(--color-ink-500)]">{m.duration}</span></>}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </Block>
       )}
 
       {/* Investigations */}
       {hasInv && (
         <Block label="Investigations">
-          <DataTable minWidth={420}>
-            <Cols widths={COLS_INVESTIGATION} />
-            <thead>
-              <tr>
-                <th className={TH}>Test</th>
-                <th className={TH}>Eye</th>
-                <th className={TH}>Priority</th>
-                <th className={TH}>Status</th>
-                <th className={TH}>Result</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.investigationOrders.map((o: any, i: number) => (
-                <tr key={i}>
-                  <td className={TD}>{o.testName}</td>
-                  <td className={TD_MUTED}>{o.laterality || DASH}</td>
-                  <td className={TD_MUTED}>{o.priority}</td>
-                  <td className={TD}>
-                    <span className={`text-[9px] font-bold uppercase ${
-                      o.status === "COMPLETED" ? "text-emerald-600"
-                      : o.status === "ORDERED" ? "text-blue-600"
-                      : "text-amber-600"
-                    }`}>{o.status}</span>
-                  </td>
-                  <td className={TD}>
-                    {o.resultRef
-                      ? <a href={o.resultRef} target="_blank" rel="noreferrer" className="text-[var(--color-primary-600)] underline">View</a>
-                      : DASH}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </DataTable>
+          <div className="flex flex-col divide-y divide-[var(--color-border)]">
+            {data.investigationOrders.map((o: any, i: number) => (
+              <div key={i} className="flex items-start justify-between gap-3 py-2 first:pt-0 last:pb-0">
+                <div className="flex-1 min-w-0">
+                  <p className="text-[12px] font-semibold text-[var(--color-ink-800)] leading-snug">{o.testName}</p>
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
+                    {o.laterality && <span className="text-[11px] font-semibold text-[var(--color-primary-700)]">{o.laterality}</span>}
+                    <span className={`text-[10px] font-semibold uppercase ${
+                      o.priority === "URGENT" ? "text-amber-600" : "text-[var(--color-ink-400)]"
+                    }`}>{o.priority}</span>
+                  </div>
+                </div>
+                <div className="flex flex-col items-end gap-1 shrink-0">
+                  <span className={`text-[10px] font-bold uppercase ${
+                    o.status === "COMPLETED" ? "text-emerald-600"
+                    : o.status === "ORDERED" ? "text-blue-600"
+                    : "text-amber-600"
+                  }`}>{o.status}</span>
+                  {o.resultRef
+                    ? <a href={o.resultRef} target="_blank" rel="noreferrer" className="text-[10px] text-[var(--color-primary-600)] underline">View</a>
+                    : null}
+                </div>
+              </div>
+            ))}
+          </div>
         </Block>
       )}
 
