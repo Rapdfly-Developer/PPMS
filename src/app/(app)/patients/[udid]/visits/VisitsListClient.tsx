@@ -26,7 +26,7 @@ export function VisitsListClient({ visits, udid }: { visits: VisitRow[]; udid: s
   if (visits.length === 0) {
     return (
       <div className="text-center py-16 text-[var(--color-ink-400)]">
-        <p className="text-base">No visits recorded yet.</p>
+        <p className="text-[15px] sm:text-base">No visits recorded yet.</p>
       </div>
     );
   }
@@ -78,10 +78,10 @@ export function VisitsListClient({ visits, udid }: { visits: VisitRow[]; udid: s
                     : "border-[var(--color-border)] bg-white text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)]"
                 }`}
               >
-                <span className={`text-[10px] font-bold ${active ? "text-white/80" : "text-[var(--color-primary-600)]"}`}>
+                <span className={`text-[9px] sm:text-[10px] font-bold ${active ? "text-white/80" : "text-[var(--color-primary-600)]"}`}>
                   Visit #{visit.visitNumber}
                 </span>
-                <span className={`text-xs font-semibold leading-tight ${active ? "text-white" : "text-[var(--color-ink-800)]"}`}>
+                <span className={`text-[11px] sm:text-xs font-semibold leading-tight ${active ? "text-white" : "text-[var(--color-ink-800)]"}`}>
                   {format(new Date(visit.date), "dd MMM")}
                 </span>
               </button>
@@ -106,19 +106,19 @@ export function VisitsListClient({ visits, udid }: { visits: VisitRow[]; udid: s
         <div className="flex items-start justify-between gap-2">
           <div>
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs font-bold text-[var(--color-primary-700)] bg-[var(--color-primary-50)] px-2 py-0.5 rounded-md">
+              <span className="text-[11px] sm:text-xs font-bold text-[var(--color-primary-700)] bg-[var(--color-primary-50)] px-2 py-0.5 rounded-md">
                 Visit #{v.visitNumber}
               </span>
               {isClosed ? (
-                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">Completed</span>
+                <span className="text-[9px] sm:text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">Completed</span>
               ) : (
-                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">In Progress</span>
+                <span className="text-[9px] sm:text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">In Progress</span>
               )}
               {v.visitType && (
-                <span className="text-[10px] text-[var(--color-ink-400)] font-medium">{v.visitType}</span>
+                <span className="text-[9px] sm:text-[10px] text-[var(--color-ink-400)] font-medium">{v.visitType}</span>
               )}
             </div>
-            <p className="text-sm font-semibold text-[var(--color-ink-800)] mt-1.5">
+            <p className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-800)] mt-1.5">
               {format(new Date(v.date), "dd MMM yyyy")}
             </p>
           </div>
@@ -129,14 +129,14 @@ export function VisitsListClient({ visits, udid }: { visits: VisitRow[]; udid: s
               <VisitDownloadButton visitId={v.id} />
             </div>
           ) : (
-            <span className="shrink-0 inline-flex items-center text-xs font-semibold px-3 py-1.5 rounded-lg bg-[var(--color-surface-sunken)] text-[var(--color-ink-400)] cursor-not-allowed">
+            <span className="shrink-0 inline-flex items-center text-[11px] sm:text-xs font-semibold px-3 py-1.5 rounded-lg bg-[var(--color-surface-sunken)] text-[var(--color-ink-400)] cursor-not-allowed">
               No EMR
             </span>
           )}
         </div>
 
         {/* Hospital / Doctor */}
-        <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs text-[var(--color-ink-600)]">
+        <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[11px] sm:text-xs text-[var(--color-ink-600)]">
           {v.hospital && (
             <span className="flex items-center gap-1.5 col-span-2 sm:col-span-1">
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0 text-[var(--color-ink-400)]">
@@ -163,7 +163,7 @@ export function VisitsListClient({ visits, udid }: { visits: VisitRow[]; udid: s
       </div>
 
       {/* ── Visit counter ────────────────────────────────────────────── */}
-      <p className="text-center text-xs text-[var(--color-ink-400)]">
+      <p className="text-center text-[11px] sm:text-xs text-[var(--color-ink-400)]">
         Showing visit {visits.length - selectedIdx} of {visits.length}
       </p>
 
