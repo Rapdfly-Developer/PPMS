@@ -259,15 +259,24 @@ function PresetAppliedBadge({
   return (
     <div className="rounded-2xl border border-[#B2DEDA] bg-[#EEF8F7] overflow-hidden">
       {/* Header row */}
-      <div className="px-4 py-3 flex items-center gap-3 flex-wrap">
-        <CheckCircle2 size={15} className="text-[#0F766E] shrink-0" />
-        <div className="flex-1 min-w-0">
-          <span className="text-xs font-semibold text-[#0F766E]">
-            {diagnosisLabel ? `${diagnosisLabel}: ` : "Preset Applied: "}
-          </span>
-          <span className="text-xs text-[#0F766E]/80">{applied.map((a) => a.presetName).join(", ")}</span>
+      {/* grow + basis-full (NOT flex-1): flex-1 is shorthand that sets flex-basis
+          to 0, which let this column shrink to ~44px at 320px while flex-wrap
+          never fired — a long diagnosis like "Corneal neovascularisation" then
+          painted its glyphs straight over the Change button. basis-full gives
+          the text its own row below sm so the buttons wrap beneath it, and
+          sm:basis-0 restores the original side-by-side row. break-words is a
+          second, independent guard so no single token can ever overflow its box. */}
+      <div className="px-4 py-3 flex flex-wrap items-center gap-x-3 gap-y-2">
+        <div className="flex items-start gap-3 grow basis-full sm:basis-0 min-w-0">
+          <CheckCircle2 size={15} className="text-[#0F766E] shrink-0 mt-0.5" />
+          <div className="min-w-0 break-words">
+            <span className="text-xs font-semibold text-[#0F766E]">
+              {diagnosisLabel ? `${diagnosisLabel}: ` : "Preset Applied: "}
+            </span>
+            <span className="text-xs text-[#0F766E]/80">{applied.map((a) => a.presetName).join(", ")}</span>
+          </div>
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-2 shrink-0 ml-auto">
           <button
             type="button"
             onClick={onChange}
