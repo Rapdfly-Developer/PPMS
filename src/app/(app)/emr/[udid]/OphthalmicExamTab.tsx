@@ -83,11 +83,11 @@ function EyeColumns({ children }: { children: [React.ReactNode, React.ReactNode]
     // left column 32px narrower than the right.
     <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6">
       <div className="min-w-0 md:pr-8">
-        <p className="text-xs font-semibold text-[var(--color-primary-700)] uppercase tracking-wide mb-3">Right Eye</p>
+        <p className="text-[11px] sm:text-xs font-semibold text-[var(--color-primary-700)] uppercase tracking-wide mb-3">Right Eye</p>
         {children[0]}
       </div>
       <div className="min-w-0 md:pl-8">
-        <p className="text-xs font-semibold text-[var(--color-primary-700)] uppercase tracking-wide mb-3">Left Eye</p>
+        <p className="text-[11px] sm:text-xs font-semibold text-[var(--color-primary-700)] uppercase tracking-wide mb-3">Left Eye</p>
         {children[1]}
       </div>
     </div>
@@ -141,7 +141,7 @@ function VisualAcuityCard({ visit, udid, editable, priorVisits = [] }: { visit: 
       <button
         type="button"
         onClick={() => setOpenHist(active ? null : k)}
-        className={`px-2.5 py-0.5 rounded-full text-xs font-medium shrink-0 transition-colors ${
+        className={`px-2.5 py-0.5 rounded-full text-[11px] sm:text-xs font-medium shrink-0 transition-colors ${
           active
             ? "bg-[var(--color-primary-600)] text-white"
             : "bg-[var(--color-primary-100)] text-[var(--color-primary-700)] hover:bg-[var(--color-primary-200)]"
@@ -161,18 +161,18 @@ function VisualAcuityCard({ visit, udid, editable, priorVisits = [] }: { visit: 
     const heading = `${section === "dist" ? "Distance" : "Near"} · ${col?.label ?? key} · ${eyeKey.toUpperCase()}`;
     return (
       <div className="mt-1 rounded-lg border border-[var(--color-primary-200)] bg-[var(--color-primary-50)] px-2 py-1.5 w-full text-left">
-        <p className="text-[10px] font-semibold text-[var(--color-primary-600)] uppercase tracking-wide mb-1">
+        <p className="text-[9px] sm:text-[10px] font-semibold text-[var(--color-primary-600)] uppercase tracking-wide mb-1">
           {heading}
         </p>
         {entries.length === 0 ? (
-          <p className="text-[10px] text-[var(--color-ink-400)]">No prior values.</p>
+          <p className="text-[9px] sm:text-[10px] text-[var(--color-ink-400)]">No prior values.</p>
         ) : (
           <ol className="space-y-0.5">
             {entries.map((e, i) => (
               <li
                 key={i}
                 onDoubleClick={() => { if (!editable) return; setEye((prev: any) => ({ ...prev, [key]: e.value })); setOpenHist(null); }}
-                className={`flex gap-2 text-[10px] py-0.5 ${editable ? "cursor-pointer hover:bg-[var(--color-primary-100)]" : ""}`}
+                className={`flex gap-2 text-[9px] sm:text-[10px] py-0.5 ${editable ? "cursor-pointer hover:bg-[var(--color-primary-100)]" : ""}`}
               >
                 <span className="text-[var(--color-ink-400)] whitespace-nowrap">{format(new Date(e.date), "d MMM yy")}</span>
                 <span className="text-[var(--color-ink-700)] font-medium">{e.value}</span>
@@ -222,16 +222,16 @@ function VisualAcuityCard({ visit, udid, editable, priorVisits = [] }: { visit: 
     <Card>
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-sm font-medium text-[var(--color-ink-700)]">Method:</span>
+          <span className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)]">Method:</span>
           <SingleChipSelect options={VA_TEST_METHODS} value={testMethod} onChange={editable ? setTestMethod : () => {}} />
         </div>
         <SaveIndicator state={state} />
       </div>
 
       {/* Distance VA — measurements as rows, RE/LE as columns */}
-      <p className="text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-widest mb-3">Distance</p>
+      <p className="text-[9px] sm:text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-widest mb-3">Distance</p>
       <div className="overflow-x-auto mb-8">
-        <table className="text-xs table-fixed" style={{ width: "auto" }}>
+        <table className="text-[11px] sm:text-xs table-fixed" style={{ width: "auto" }}>
           <colgroup>
             <col style={{ width: 110 }} />
             <col style={{ width: 155 }} />
@@ -257,9 +257,9 @@ function VisualAcuityCard({ visit, udid, editable, priorVisits = [] }: { visit: 
       </div>
 
       {/* Near VA — measurements as rows, RE/LE as columns */}
-      <p className="text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-widest mb-3">Near</p>
+      <p className="text-[9px] sm:text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-widest mb-3">Near</p>
       <div className="overflow-x-auto">
-        <table className="text-xs table-fixed" style={{ width: "auto" }}>
+        <table className="text-[11px] sm:text-xs table-fixed" style={{ width: "auto" }}>
           <colgroup>
             <col style={{ width: 110 }} />
             <col style={{ width: 155 }} />
@@ -357,13 +357,13 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
     };
     return (
       <div className="flex flex-col gap-0.5">
-        <label className="text-[10px] text-[var(--color-ink-400)] font-medium">{label}</label>
+        <label className="text-[9px] sm:text-[10px] text-[var(--color-ink-400)] font-medium">{label}</label>
         <div className="flex items-center gap-1">
           <button
             type="button"
             disabled={!editable}
             onClick={toggle}
-            className="w-6 h-6 rounded flex items-center justify-center text-xs font-bold border transition-colors disabled:opacity-40"
+            className="w-6 h-6 rounded flex items-center justify-center text-[11px] sm:text-xs font-bold border transition-colors disabled:opacity-40"
             style={sign === "-"
               ? { background: "var(--color-primary-600)", color: "#fff", borderColor: "var(--color-primary-600)" }
               : { background: "#fff", color: "var(--color-ink-600)", borderColor: "var(--color-border)" }}
@@ -387,7 +387,7 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
   // stored value so rows saved earlier as "+90" render as 90 rather than blank.
   const axisSelect = (label: string, value: string, onChange: (v: string) => void) => (
     <div className="flex flex-col gap-0.5 min-w-0">
-      <label className="text-[10px] text-[var(--color-ink-400)] font-medium">{label}</label>
+      <label className="text-[9px] sm:text-[10px] text-[var(--color-ink-400)] font-medium">{label}</label>
       <select
         disabled={!editable}
         value={parseSignedVal(value).mag}
@@ -401,7 +401,7 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
 
   const vaSelect = (label: string, value: string, onChange: (v: string) => void, options: readonly string[] = VA_SNELLEN_VALUES, className = "") => (
     <div className={`flex flex-col gap-0.5 min-w-0 ${className}`}>
-      <label className="text-[10px] text-[var(--color-ink-400)] font-medium">{label}</label>
+      <label className="text-[9px] sm:text-[10px] text-[var(--color-ink-400)] font-medium">{label}</label>
       <select disabled={!editable} value={value || "-"} onChange={(e) => onChange(e.target.value)} className={`w-full min-w-0 ${SEL}`}>
         {options.map((v) => <option key={v} value={v}>{v}</option>)}
       </select>
@@ -412,7 +412,7 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
   // sits in the same column as Resulting VA. That holds in either track count —
   // last column at 4-up, second column at 2-up (where VA wraps to row 2).
   // Axis and VA get wider tracks than Sph/Cyl, which lose width to the +/- toggle.
-  const SECTION_LABEL = "col-span-2 sm:col-span-5 text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-widest";
+  const SECTION_LABEL = "col-span-2 sm:col-span-5 text-[9px] sm:text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-widest";
 
   const eyeFields = (val: typeof re, setVal: typeof setRe) => (
     <div className="grid grid-cols-2 sm:grid-cols-[88px_88px_64px_20px_80px] gap-x-2 gap-y-2 items-end">
@@ -432,8 +432,8 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
   const fmtSigned = (v: string) => { const { sign, mag } = parseSignedVal(v); return mag ? `${sign}${mag}` : "—"; };
   const roBox = (label: string, value: string, className = "") => (
     <div className={`flex flex-col gap-0.5 min-w-0 ${className}`}>
-      <span className="text-[10px] text-[var(--color-ink-400)] font-medium">{label}</span>
-      <div className="w-full min-w-0 rounded border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-1.5 py-1 text-xs text-[var(--color-ink-800)] tabular-nums">{value}</div>
+      <span className="text-[9px] sm:text-[10px] text-[var(--color-ink-400)] font-medium">{label}</span>
+      <div className="w-full min-w-0 rounded border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-1.5 py-1 text-[11px] sm:text-xs text-[var(--color-ink-800)] tabular-nums">{value}</div>
     </div>
   );
   const historyEyeFields = (rx: RxFields) => (
@@ -472,9 +472,9 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
       {/* ── Correction 1 (primary) ── */}
       <div className="flex items-center justify-between mb-3 flex-wrap gap-3">
         <div className="flex items-center gap-3 flex-wrap">
-          <p className="text-sm font-medium text-[var(--color-ink-700)]">Correction 1</p>
+          <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)]">Correction 1</p>
           <div className="flex items-center gap-2">
-            <span className="text-xs text-[var(--color-ink-400)]">Method:</span>
+            <span className="text-[11px] sm:text-xs text-[var(--color-ink-400)]">Method:</span>
             <select
               disabled={!editable}
               value={re.method || REFRACTION_METHODS[0]}
@@ -490,7 +490,7 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
             <button
               type="button"
               onClick={() => setShowHistory((v) => !v)}
-              className="text-xs text-[#0F766E] bg-[#EEF8F7] hover:bg-[#DCF3F1] font-medium px-2.5 py-0.5 rounded-full border border-[#B2DEDA] transition-colors"
+              className="text-[11px] sm:text-xs text-[#0F766E] bg-[#EEF8F7] hover:bg-[#DCF3F1] font-medium px-2.5 py-0.5 rounded-full border border-[#B2DEDA] transition-colors"
             >
               History ({priorRefractions.length})
             </button>
@@ -508,9 +508,9 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
         <div key={idx} className="mt-5 pt-4 border-t border-[var(--color-border)]">
           <div className="flex items-center justify-between mb-3 flex-wrap gap-3">
             <div className="flex items-center gap-3 flex-wrap">
-              <p className="text-sm font-medium text-[var(--color-ink-700)]">{ex.label}</p>
+              <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)]">{ex.label}</p>
               <div className="flex items-center gap-2">
-                <span className="text-xs text-[var(--color-ink-400)]">Method:</span>
+                <span className="text-[11px] sm:text-xs text-[var(--color-ink-400)]">Method:</span>
                 <select
                   disabled={!editable}
                   value={ex.re.method || REFRACTION_METHODS[0]}
@@ -525,7 +525,7 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
               <button
                 type="button"
                 onClick={() => removeCorrection(idx)}
-                className="text-xs text-red-500 hover:text-red-700 hover:bg-red-50 px-2.5 py-0.5 rounded-full border border-red-200 transition-colors"
+                className="text-[11px] sm:text-xs text-red-500 hover:text-red-700 hover:bg-red-50 px-2.5 py-0.5 rounded-full border border-red-200 transition-colors"
               >
                 Remove
               </button>
@@ -543,7 +543,7 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
         <button
           type="button"
           onClick={addCorrection}
-          className="mt-4 flex items-center gap-1.5 text-xs font-medium text-[var(--color-primary-700)] hover:text-[var(--color-primary-900)] hover:bg-[var(--color-primary-50)] px-3 py-1.5 rounded-lg border border-[var(--color-primary-200)] transition-colors"
+          className="mt-4 flex items-center gap-1.5 text-[11px] sm:text-xs font-medium text-[var(--color-primary-700)] hover:text-[var(--color-primary-900)] hover:bg-[var(--color-primary-50)] px-3 py-1.5 rounded-lg border border-[var(--color-primary-200)] transition-colors"
         >
           <span className="text-base leading-none">+</span> Add Correction
         </button>
@@ -552,8 +552,8 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
       {showHistory && priorRefractions.length > 0 && (
         <div className="mt-4 rounded-xl border border-[#B2DEDA] bg-[#EEF8F7] p-3">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-xs font-semibold text-[#0F766E] uppercase tracking-wide">Previous Spectacles</p>
-            <p className="text-[10px] text-[#0D9488]">Double-click an entry to load it</p>
+            <p className="text-[11px] sm:text-xs font-semibold text-[#0F766E] uppercase tracking-wide">Previous Spectacles</p>
+            <p className="text-[9px] sm:text-[10px] text-[#0D9488]">Double-click an entry to load it</p>
           </div>
           <div className="flex flex-col gap-3">
             {priorRefractions.map((pr, i) => (
@@ -563,7 +563,7 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
                 title="Double-click to load this prescription"
                 className="rounded-lg border border-[#B2DEDA] bg-white p-4 cursor-pointer select-none transition-all hover:border-[#0F766E]/40 hover:shadow-sm"
               >
-                <p className="text-[11px] font-bold text-[#0F766E] mb-3">{format(new Date(pr.date), "dd MMM yyyy")}</p>
+                <p className="text-[10px] sm:text-[11px] font-bold text-[#0F766E] mb-3">{format(new Date(pr.date), "dd MMM yyyy")}</p>
                 <EyeColumns>
                   {historyEyeFields(pr.re)}
                   {historyEyeFields(pr.le)}
@@ -637,7 +637,7 @@ function ColourContrastTab({ visit, udid, editable, priorVisits = [] }: { visit:
       key={opt}
       disabled={!editable}
       onClick={() => setResult(result === opt ? "" : opt)}
-      className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+      className={`px-3 py-1.5 rounded-lg text-[11px] sm:text-xs font-medium border transition-colors ${
         result === opt
           ? opt === "Normal"    ? "bg-emerald-100 border-emerald-400 text-emerald-700"
           : opt === "Defective" ? "bg-red-100 border-red-400 text-red-700"
@@ -656,9 +656,9 @@ function ColourContrastTab({ visit, udid, editable, priorVisits = [] }: { visit:
       {/* Colour Vision */}
       <Card>
         <div className="flex items-center gap-3 mb-5 flex-wrap">
-          <p className="text-sm font-medium text-[var(--color-ink-700)]">Colour Vision</p>
+          <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)]">Colour Vision</p>
           <div className="flex items-center gap-2">
-            <span className="text-xs text-[var(--color-ink-400)]">Method:</span>
+            <span className="text-[11px] sm:text-xs text-[var(--color-ink-400)]">Method:</span>
             <select
               disabled={!editable}
               value={cvMethod}
@@ -675,7 +675,7 @@ function ColourContrastTab({ visit, udid, editable, priorVisits = [] }: { visit:
             { label: "Left Eye",  result: leResult, setResult: setLeResult, notes: leNotes, setNotes: setLeNotes },
           ].map(({ label, result, setResult, notes, setNotes }) => (
             <div key={label} className="flex flex-col gap-4">
-              <p className="text-xs font-semibold text-[var(--color-primary-700)] uppercase tracking-wide">{label}</p>
+              <p className="text-[11px] sm:text-xs font-semibold text-[var(--color-primary-700)] uppercase tracking-wide">{label}</p>
               <div className="flex gap-2 flex-wrap">{resultBtns(result, setResult)}</div>
               <KeywordInput fieldKey={`cv_${label}`} value={notes} onChange={setNotes} disabled={!editable} placeholder="Notes..." className="w-56 rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-xs disabled:bg-[var(--color-surface-sunken)]" />
             </div>
@@ -684,9 +684,9 @@ function ColourContrastTab({ visit, udid, editable, priorVisits = [] }: { visit:
         {priorCv.length > 0 && (
           <div className="mt-5 rounded-xl border border-[#B2DEDA] bg-[#EEF8F7] overflow-x-auto">
             <div className="px-3 pt-2.5 pb-2 border-b border-[#B2DEDA]">
-              <p className="text-[10px] font-bold text-[#0F766E] uppercase tracking-widest">Previous</p>
+              <p className="text-[9px] sm:text-[10px] font-bold text-[#0F766E] uppercase tracking-widest">Previous</p>
             </div>
-            <table className="text-xs">
+            <table className="text-[11px] sm:text-xs">
               <thead>
                 <tr className="border-b border-[#B2DEDA]">
                   <th className="py-1.5 px-3 text-left font-semibold text-[var(--color-ink-400)] uppercase tracking-wide whitespace-nowrap">Method</th>
@@ -719,9 +719,9 @@ function ColourContrastTab({ visit, udid, editable, priorVisits = [] }: { visit:
       {/* Contrast Vision */}
       <Card>
         <div className="flex items-center gap-3 mb-5 flex-wrap">
-          <p className="text-sm font-medium text-[var(--color-ink-700)]">Contrast Vision</p>
+          <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)]">Contrast Vision</p>
           <div className="flex items-center gap-2">
-            <span className="text-xs text-[var(--color-ink-400)]">Method:</span>
+            <span className="text-[11px] sm:text-xs text-[var(--color-ink-400)]">Method:</span>
             <select
               disabled={!editable}
               value={csMethod}
@@ -738,7 +738,7 @@ function ColourContrastTab({ visit, udid, editable, priorVisits = [] }: { visit:
             { label: "Left Eye",  result: csLeResult, setResult: setCsLeResult, notes: csLeNotes, setNotes: setCsLeNotes },
           ].map(({ label, result, setResult, notes, setNotes }) => (
             <div key={label} className="flex flex-col gap-4">
-              <p className="text-xs font-semibold text-[var(--color-primary-700)] uppercase tracking-wide">{label}</p>
+              <p className="text-[11px] sm:text-xs font-semibold text-[var(--color-primary-700)] uppercase tracking-wide">{label}</p>
               <div className="flex gap-2 flex-wrap">{resultBtns(result, setResult)}</div>
               <KeywordInput fieldKey={`cs_${label}`} value={notes} onChange={setNotes} disabled={!editable} placeholder="Notes..." className="w-56 rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-xs disabled:bg-[var(--color-surface-sunken)]" />
             </div>
@@ -747,9 +747,9 @@ function ColourContrastTab({ visit, udid, editable, priorVisits = [] }: { visit:
         {priorCv.length > 0 && (
           <div className="mt-5 rounded-xl border border-[#B2DEDA] bg-[#EEF8F7] overflow-x-auto">
             <div className="px-3 pt-2.5 pb-2 border-b border-[#B2DEDA]">
-              <p className="text-[10px] font-bold text-[#0F766E] uppercase tracking-widest">Previous</p>
+              <p className="text-[9px] sm:text-[10px] font-bold text-[#0F766E] uppercase tracking-widest">Previous</p>
             </div>
-            <table className="text-xs">
+            <table className="text-[11px] sm:text-xs">
               <thead>
                 <tr className="border-b border-[#B2DEDA]">
                   <th className="py-1.5 px-3 text-left font-semibold text-[var(--color-ink-400)] uppercase tracking-wide whitespace-nowrap">Method</th>
@@ -809,12 +809,12 @@ function IOPCard({ visit, udid, editable, priorVisits }: { visit: any; udid: str
 
   return (
     <Card>
-      <p className="text-sm font-medium text-[var(--color-ink-700)] mb-3">Intra-Ocular Pressure (mmHg)</p>
+      <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)] mb-3">Intra-Ocular Pressure (mmHg)</p>
 
       {editable && (
         <div className="flex items-end gap-3 mb-4 flex-wrap">
           <div>
-            <label className="text-xs text-[var(--color-ink-400)] block mb-1">Method</label>
+            <label className="text-[11px] sm:text-xs text-[var(--color-ink-400)] block mb-1">Method</label>
             <select value={method} onChange={(e) => setMethod(e.target.value)}
               className="rounded-lg border border-[var(--color-border)] text-sm px-2.5 py-1.5 bg-white">
               {IOP_METHODS.map((m) => <option key={m}>{m}</option>)}
@@ -823,7 +823,7 @@ function IOPCard({ visit, udid, editable, priorVisits }: { visit: any; udid: str
           <LabeledInput label="RE" value={re} onChange={setRe} compact numeric />
           <LabeledInput label="LE" value={le} onChange={setLe} compact numeric />
           <button onClick={add}
-            className="rounded-lg bg-[var(--color-primary-600)] text-white text-xs font-medium px-3 py-1.5 hover:bg-[var(--color-primary-700)]">
+            className="rounded-lg bg-[var(--color-primary-600)] text-white text-[11px] sm:text-xs font-medium px-3 py-1.5 hover:bg-[var(--color-primary-700)]">
             Add Reading
           </button>
         </div>
@@ -832,7 +832,7 @@ function IOPCard({ visit, udid, editable, priorVisits }: { visit: any; udid: str
       {/* Combined IOP Table */}
       <div className="rounded-xl border border-[#B2DEDA] bg-[#EEF8F7] overflow-x-auto">
         <div>
-          <table className="text-xs">
+          <table className="text-[11px] sm:text-xs">
             <thead>
               <tr className="border-b border-[#B2DEDA]">
                 <th className="py-1.5 px-3 text-left font-semibold text-[var(--color-ink-400)] uppercase tracking-wide whitespace-nowrap">Method</th>
@@ -846,7 +846,7 @@ function IOPCard({ visit, udid, editable, priorVisits }: { visit: any; udid: str
             <tbody className="divide-y divide-[#D5EFED]">
               {/* Current readings section label */}
               <tr className="bg-[#E0F2F0]">
-                <td colSpan={editable ? 6 : 5} className="px-3 py-1 text-[10px] font-bold text-[#0F766E] uppercase tracking-widest">Current Readings</td>
+                <td colSpan={editable ? 6 : 5} className="px-3 py-1 text-[9px] sm:text-[10px] font-bold text-[#0F766E] uppercase tracking-widest">Current Readings</td>
               </tr>
               {readings.length === 0 ? (
                 <tr><td colSpan={editable ? 6 : 5} className="py-3 px-6 text-center text-[var(--color-ink-400)] italic">No readings yet.</td></tr>
@@ -876,7 +876,7 @@ function IOPCard({ visit, udid, editable, priorVisits }: { visit: any; udid: str
               {priorIOPRows.length > 0 && (
                 <>
                   <tr className="bg-[#E0F2F0]">
-                    <td colSpan={editable ? 6 : 5} className="px-3 py-1 text-[10px] font-bold text-[#0F766E] uppercase tracking-widest">Previous Readings</td>
+                    <td colSpan={editable ? 6 : 5} className="px-3 py-1 text-[9px] sm:text-[10px] font-bold text-[#0F766E] uppercase tracking-widest">Previous Readings</td>
                   </tr>
                   {priorIOPRows.slice(0, 5).map((r, i) => (
                     <tr key={i} className="hover:bg-[#DCF3F1]/60 transition-colors">
@@ -999,7 +999,7 @@ function GonioFindingsInput({
       />
       {/* Live keyword suggestions */}
       {suggestions.length > 0 && !disabled && (
-        <ul className="absolute top-full left-0 right-0 z-20 mt-0.5 max-h-44 overflow-y-auto bg-white border border-[var(--color-border)] rounded-xl shadow-lg text-sm">
+        <ul className="absolute top-full left-0 right-0 z-20 mt-0.5 max-h-44 overflow-y-auto bg-white border border-[var(--color-border)] rounded-xl shadow-lg text-[13px] sm:text-sm">
           {suggestions.map((s) => (
             <li key={s}>
               <button
@@ -1021,7 +1021,7 @@ function GonioFindingsInput({
               key={h}
               type="button"
               onClick={() => onChange(h)}
-              className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full border border-[var(--color-ink-200)] bg-[var(--color-surface-sunken)] text-[10px] text-[var(--color-ink-500)] hover:border-[var(--color-primary-300)] hover:text-[var(--color-primary-700)] hover:bg-[var(--color-primary-50)] transition-colors"
+              className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full border border-[var(--color-ink-200)] bg-[var(--color-surface-sunken)] text-[9px] sm:text-[10px] text-[var(--color-ink-500)] hover:border-[var(--color-primary-300)] hover:text-[var(--color-primary-700)] hover:bg-[var(--color-primary-50)] transition-colors"
               title="Load from history"
             >
               <History size={8} /> {h.length > 20 ? `${h.slice(0, 20)}…` : h}
@@ -1032,12 +1032,12 @@ function GonioFindingsInput({
               <button
                 type="button"
                 onClick={addKeyword}
-                className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-[10px] font-medium text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] transition-colors whitespace-nowrap"
+                className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-[9px] sm:text-[10px] font-medium text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] transition-colors whitespace-nowrap"
               >
                 <Plus size={11} strokeWidth={2.5} /> Keyword
               </button>
               {savedKws.map((kw) => (
-                <span key={kw} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-[11px] text-[var(--color-primary-700)]">
+                <span key={kw} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-[10px] sm:text-[11px] text-[var(--color-primary-700)]">
                   <button type="button" onClick={() => onChange(value ? `${value} ${kw}` : kw)} className="hover:underline">{kw}</button>
                   <button
                     type="button"
@@ -1057,7 +1057,7 @@ function GonioFindingsInput({
           <button
             type="button"
             onClick={addKeyword}
-            className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-[10px] font-medium text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] transition-colors whitespace-nowrap"
+            className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-[9px] sm:text-[10px] font-medium text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] transition-colors whitespace-nowrap"
           >
             <Plus size={11} strokeWidth={2.5} /> Keyword
           </button>
@@ -1082,11 +1082,11 @@ function GonioHistoryTable({
     <div className="mt-4 rounded-xl border border-[var(--color-border)] overflow-hidden">
       <div className="px-3 py-2 bg-[var(--color-surface-sunken)] border-b border-[var(--color-border)] flex items-center gap-2">
         <History size={13} className="text-[#0F766E]" />
-        <span className="text-xs font-semibold text-[var(--color-ink-600)] uppercase tracking-widest">Previous Gonioscopy</span>
-        <span className="text-[10px] text-[var(--color-ink-400)]">· double-click to load</span>
+        <span className="text-[11px] sm:text-xs font-semibold text-[var(--color-ink-600)] uppercase tracking-widest">Previous Gonioscopy</span>
+        <span className="text-[9px] sm:text-[10px] text-[var(--color-ink-400)]">· double-click to load</span>
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full text-xs">
+        <table className="w-full text-[11px] sm:text-xs">
           <thead className="bg-[var(--color-surface-sunken)]">
             <tr>
               <th className="text-left px-3 py-1.5 font-semibold text-[var(--color-ink-500)] whitespace-nowrap">Date</th>
@@ -1182,13 +1182,13 @@ function GonioscopyCard({
   return (
     <Card>
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold text-[var(--color-ink-700)]">Gonioscopy</h3>
+        <h3 className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-700)]">Gonioscopy</h3>
         <div className="flex items-center gap-2">
           {historyRows.length > 0 && (
             <button
               type="button"
               onClick={() => setShowHistory((v) => !v)}
-              className="flex items-center gap-1 text-xs text-[#0F766E] bg-[#EEF8F7] hover:bg-[#DCF3F1] font-medium px-2.5 py-0.5 rounded-full border border-[#B2DEDA] transition-colors"
+              className="flex items-center gap-1 text-[11px] sm:text-xs text-[#0F766E] bg-[#EEF8F7] hover:bg-[#DCF3F1] font-medium px-2.5 py-0.5 rounded-full border border-[#B2DEDA] transition-colors"
             >
               <History size={11} />
               History ({historyRows.length})
@@ -1201,7 +1201,7 @@ function GonioscopyCard({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {/* ── RE ── */}
         <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-semibold tracking-widest text-[var(--color-ink-500)] uppercase">RE Gonioscopy</label>
+          <label className="text-[11px] sm:text-xs font-semibold tracking-widest text-[var(--color-ink-500)] uppercase">RE Gonioscopy</label>
           {/* Inline: degrees dropdown + findings input */}
           <div className="flex items-start gap-2">
             <div className="flex flex-col gap-1 shrink-0">
@@ -1224,7 +1224,7 @@ function GonioscopyCard({
                       key={d}
                       type="button"
                       onClick={() => setReDeg(d)}
-                      className="px-1.5 py-0.5 rounded border border-[var(--color-ink-200)] bg-[var(--color-surface-sunken)] text-[10px] text-[var(--color-ink-500)] hover:border-[var(--color-primary-300)] hover:text-[var(--color-primary-700)] hover:bg-[var(--color-primary-50)] transition-colors"
+                      className="px-1.5 py-0.5 rounded border border-[var(--color-ink-200)] bg-[var(--color-surface-sunken)] text-[9px] sm:text-[10px] text-[var(--color-ink-500)] hover:border-[var(--color-primary-300)] hover:text-[var(--color-primary-700)] hover:bg-[var(--color-primary-50)] transition-colors"
                       title="Load from history"
                     >
                       {d}°
@@ -1246,7 +1246,7 @@ function GonioscopyCard({
 
         {/* ── LE ── */}
         <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-semibold tracking-widest text-[var(--color-ink-500)] uppercase">LE Gonioscopy</label>
+          <label className="text-[11px] sm:text-xs font-semibold tracking-widest text-[var(--color-ink-500)] uppercase">LE Gonioscopy</label>
           {/* Inline: degrees dropdown + findings input */}
           <div className="flex items-start gap-2">
             <div className="flex flex-col gap-1 shrink-0">
@@ -1269,7 +1269,7 @@ function GonioscopyCard({
                       key={d}
                       type="button"
                       onClick={() => setLeDeg(d)}
-                      className="px-1.5 py-0.5 rounded border border-[var(--color-ink-200)] bg-[var(--color-surface-sunken)] text-[10px] text-[var(--color-ink-500)] hover:border-[var(--color-primary-300)] hover:text-[var(--color-primary-700)] hover:bg-[var(--color-primary-50)] transition-colors"
+                      className="px-1.5 py-0.5 rounded border border-[var(--color-ink-200)] bg-[var(--color-surface-sunken)] text-[9px] sm:text-[10px] text-[var(--color-ink-500)] hover:border-[var(--color-primary-300)] hover:text-[var(--color-primary-700)] hover:bg-[var(--color-primary-50)] transition-colors"
                       title="Load from history"
                     >
                       {d}°
@@ -1365,7 +1365,7 @@ function SegmentEyeInput({
     <button
       type="button"
       onClick={() => setHistOpen((v) => !v)}
-      className="inline-flex items-center gap-1 text-xs text-[#0F766E] bg-[#EEF8F7] hover:bg-[#DCF3F1] font-medium px-2.5 py-0.5 rounded-full border border-[#B2DEDA] transition-colors whitespace-nowrap"
+      className="inline-flex items-center gap-1 text-[11px] sm:text-xs text-[#0F766E] bg-[#EEF8F7] hover:bg-[#DCF3F1] font-medium px-2.5 py-0.5 rounded-full border border-[#B2DEDA] transition-colors whitespace-nowrap"
     >
       <History size={11} />
       History ({history.length})
@@ -1375,13 +1375,13 @@ function SegmentEyeInput({
   const histPanel = histOpen && hasHistory ? (
     <div className="mt-1 rounded-xl border border-[#B2DEDA] bg-[#EEF8F7] p-3">
       <div className="flex items-center justify-between mb-1.5">
-        <p className="text-xs font-semibold text-[var(--color-primary-700)] uppercase tracking-wide">{toLabel(structureKey)} · {eye}</p>
+        <p className="text-[11px] sm:text-xs font-semibold text-[var(--color-primary-700)] uppercase tracking-wide">{toLabel(structureKey)} · {eye}</p>
         <button onClick={() => setHistOpen(false)} className="text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)]">
           <X size={14} />
         </button>
       </div>
       {!disabled && (
-        <p className="text-[10px] text-[var(--color-ink-400)] mb-2">Double-click any entry to load it into the form.</p>
+        <p className="text-[9px] sm:text-[10px] text-[var(--color-ink-400)] mb-2">Double-click any entry to load it into the form.</p>
       )}
       <ol className="space-y-1.5 max-h-56 overflow-y-auto scrollbar-thin">
         {history.map((h, i) => (
@@ -1389,9 +1389,9 @@ function SegmentEyeInput({
             key={i}
             onDoubleClick={() => { if (!disabled) { onChange(h.value); setHistOpen(false); } }}
             title={!disabled ? "Double-click to load" : undefined}
-            className={`text-sm flex gap-3 py-1 transition-colors ${!disabled ? "cursor-pointer hover:bg-[var(--color-primary-100)] select-none" : ""}`}
+            className={`text-[13px] sm:text-sm flex gap-3 py-1 transition-colors ${!disabled ? "cursor-pointer hover:bg-[var(--color-primary-100)] select-none" : ""}`}
           >
-            <span className="text-[var(--color-ink-400)] whitespace-nowrap text-xs mt-0.5">
+            <span className="text-[var(--color-ink-400)] whitespace-nowrap text-[11px] sm:text-xs mt-0.5">
               {format(new Date(h.date), "dd MMM yyyy")}
             </span>
             <span className="text-[var(--color-ink-700)]">
@@ -1418,13 +1418,13 @@ function SegmentEyeInput({
           <button
             type="button"
             onClick={addKeyword}
-            className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-[10px] font-medium text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] transition-colors whitespace-nowrap"
+            className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-[9px] sm:text-[10px] font-medium text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] transition-colors whitespace-nowrap"
           >
             <Plus size={11} strokeWidth={2.5} />
             Keyword
           </button>
           {customKws.map((kw) => (
-            <span key={kw} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-[11px] text-[var(--color-primary-700)]">
+            <span key={kw} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-[10px] sm:text-[11px] text-[var(--color-primary-700)]">
               <button type="button" onClick={() => append(kw)} className="hover:underline">{kw}</button>
               <button type="button" onClick={() => removeCustomKw(kw)} className="ml-0.5 text-[var(--color-ink-400)] hover:text-red-500 transition-colors">
                 <X size={9} strokeWidth={2.5} />
@@ -1443,7 +1443,7 @@ function SegmentEyeInput({
               key={opt}
               type="button"
               onClick={() => append(opt)}
-              className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full border border-[var(--color-border)] bg-white text-[11px] text-[var(--color-ink-500)] hover:bg-[var(--color-primary-50)] hover:border-[var(--color-primary-300)] hover:text-[var(--color-primary-700)] transition-colors"
+              className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full border border-[var(--color-border)] bg-white text-[10px] sm:text-[11px] text-[var(--color-ink-500)] hover:bg-[var(--color-primary-50)] hover:border-[var(--color-primary-300)] hover:text-[var(--color-primary-700)] transition-colors"
             >
               {opt}
             </button>
@@ -1503,9 +1503,9 @@ function AnteriorSegmentCard({ visit, udid, editable, priorVisits = [] }: { visi
     <Card>
       <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
         <div className="flex items-center gap-3 flex-wrap">
-          <p className="text-sm font-medium text-[var(--color-ink-700)]">Anterior Segment</p>
+          <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)]">Anterior Segment</p>
           <div className="flex items-center gap-2">
-            <span className="text-xs text-[var(--color-ink-400)]">Method:</span>
+            <span className="text-[11px] sm:text-xs text-[var(--color-ink-400)]">Method:</span>
             <select
               disabled={!editable}
               value={re._method ?? AS_METHODS[0]}
@@ -1523,7 +1523,7 @@ function AnteriorSegmentCard({ visit, udid, editable, priorVisits = [] }: { visi
                 onChange={(e) => applyNormal(e.target.checked)}
                 className="w-3.5 h-3.5 accent-[var(--color-primary-600)] cursor-pointer"
               />
-              <span className="text-xs font-medium text-[var(--color-ink-600)]">Normal</span>
+              <span className="text-[11px] sm:text-xs font-medium text-[var(--color-ink-600)]">Normal</span>
             </label>
           )}
         </div>
@@ -1532,15 +1532,15 @@ function AnteriorSegmentCard({ visit, udid, editable, priorVisits = [] }: { visi
 
       {/* Column headers */}
       <div className="grid grid-cols-[140px_1fr_1fr] gap-x-4 mb-3 px-1 border-b border-[var(--color-border)] pb-2">
-        <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-ink-400)]">Structure</p>
-        <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-primary-700)]">Right Eye</p>
-        <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-primary-700)]">Left Eye</p>
+        <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-[var(--color-ink-400)]">Structure</p>
+        <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-[var(--color-primary-700)]">Right Eye</p>
+        <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-[var(--color-primary-700)]">Left Eye</p>
       </div>
 
       <div className="flex flex-col gap-5">
         {AS_KEYS.map((key) => (
           <div key={key} className="grid grid-cols-[140px_1fr_1fr] gap-x-6 items-start">
-            <p className="text-sm font-medium text-[var(--color-ink-700)] pt-2">{toLabel(key)}</p>
+            <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)] pt-2">{toLabel(key)}</p>
             <SegmentEyeInput structureKey={key} options={ANTERIOR_SEGMENT_STRUCTURES[key] ?? []} eye="RE" value={re[key] ?? ""} onChange={(v) => setRe({ ...re, [key]: v })} disabled={!editable} history={getSegHistory("re", key)} />
             <SegmentEyeInput structureKey={key} options={ANTERIOR_SEGMENT_STRUCTURES[key] ?? []} eye="LE" value={le[key] ?? ""} onChange={(v) => setLe({ ...le, [key]: v })} disabled={!editable} history={getSegHistory("le", key)} />
           </div>
@@ -1550,7 +1550,7 @@ function AnteriorSegmentCard({ visit, udid, editable, priorVisits = [] }: { visi
       {/* Per-eye notes */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5 pt-4 border-t border-[var(--color-border)]">
         <div>
-          <label className="text-xs font-medium text-[var(--color-ink-500)] block mb-1">RE Notes</label>
+          <label className="text-[11px] sm:text-xs font-medium text-[var(--color-ink-500)] block mb-1">RE Notes</label>
           <textarea
             disabled={!editable}
             value={re._notes ?? ""}
@@ -1561,7 +1561,7 @@ function AnteriorSegmentCard({ visit, udid, editable, priorVisits = [] }: { visi
           />
         </div>
         <div>
-          <label className="text-xs font-medium text-[var(--color-ink-500)] block mb-1">LE Notes</label>
+          <label className="text-[11px] sm:text-xs font-medium text-[var(--color-ink-500)] block mb-1">LE Notes</label>
           <textarea
             disabled={!editable}
             value={le._notes ?? ""}
@@ -1656,9 +1656,9 @@ function PosteriorSegmentCard({ visit, udid, editable, priorVisits = [] }: { vis
     <Card>
       <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
         <div className="flex items-center gap-3 flex-wrap">
-          <p className="text-sm font-medium text-[var(--color-ink-700)]">Posterior Segment</p>
+          <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)]">Posterior Segment</p>
           <div className="flex items-center gap-2">
-            <span className="text-xs text-[var(--color-ink-400)]">Method:</span>
+            <span className="text-[11px] sm:text-xs text-[var(--color-ink-400)]">Method:</span>
             <select
               disabled={!editable}
               value={re._method ?? PS_METHODS[0]}
@@ -1676,7 +1676,7 @@ function PosteriorSegmentCard({ visit, udid, editable, priorVisits = [] }: { vis
                 onChange={(e) => applyNormal(e.target.checked)}
                 className="w-3.5 h-3.5 accent-[var(--color-primary-600)] cursor-pointer"
               />
-              <span className="text-xs font-medium text-[var(--color-ink-600)]">Normal</span>
+              <span className="text-[11px] sm:text-xs font-medium text-[var(--color-ink-600)]">Normal</span>
             </label>
           )}
         </div>
@@ -1685,15 +1685,15 @@ function PosteriorSegmentCard({ visit, udid, editable, priorVisits = [] }: { vis
 
       {/* Column headers */}
       <div className="grid grid-cols-[140px_1fr_1fr] gap-x-4 mb-3 px-1 border-b border-[var(--color-border)] pb-2">
-        <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-ink-400)]">Structure</p>
-        <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-primary-700)]">Right Eye</p>
-        <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-primary-700)]">Left Eye</p>
+        <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-[var(--color-ink-400)]">Structure</p>
+        <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-[var(--color-primary-700)]">Right Eye</p>
+        <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-[var(--color-primary-700)]">Left Eye</p>
       </div>
 
       <div className="flex flex-col gap-5">
         {PS_KEYS.map((key) => (
           <div key={key} className="grid grid-cols-[140px_1fr_1fr] gap-x-6 items-start">
-            <p className="text-sm font-medium text-[var(--color-ink-700)] pt-2 whitespace-pre-line">
+            <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)] pt-2 whitespace-pre-line">
               {PS_LABELS[key] ?? toLabel(key)}
             </p>
             <SegmentEyeInput
@@ -1723,7 +1723,7 @@ function PosteriorSegmentCard({ visit, udid, editable, priorVisits = [] }: { vis
       {/* Per-eye notes */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5 pt-4 border-t border-[var(--color-border)]">
         <div>
-          <label className="text-xs font-medium text-[var(--color-ink-500)] block mb-1">RE Notes</label>
+          <label className="text-[11px] sm:text-xs font-medium text-[var(--color-ink-500)] block mb-1">RE Notes</label>
           <textarea
             disabled={!editable}
             value={re._notes ?? ""}
@@ -1734,7 +1734,7 @@ function PosteriorSegmentCard({ visit, udid, editable, priorVisits = [] }: { vis
           />
         </div>
         <div>
-          <label className="text-xs font-medium text-[var(--color-ink-500)] block mb-1">LE Notes</label>
+          <label className="text-[11px] sm:text-xs font-medium text-[var(--color-ink-500)] block mb-1">LE Notes</label>
           <textarea
             disabled={!editable}
             value={le._notes ?? ""}
@@ -1764,10 +1764,10 @@ function DiplopiaCard({ visit, udid, editable }: { visit: any; udid: string; edi
   return (
     <Card>
       <div className="flex items-center justify-between mb-4">
-        <p className="text-sm font-medium text-[var(--color-ink-700)]">Diplopia Charting</p>
+        <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)]">Diplopia Charting</p>
         <SaveIndicator state={state} />
       </div>
-      <p className="text-xs text-[var(--color-ink-400)] mb-3">Click a position to cycle: Not tested → No diplopia → Diplopia present</p>
+      <p className="text-[11px] sm:text-xs text-[var(--color-ink-400)] mb-3">Click a position to cycle: Not tested → No diplopia → Diplopia present</p>
       <DiplopiaGrid
         grid={grid}
         onChange={(pos, status) => editable && setGrid({ ...grid, [pos]: { ...(grid[pos] ?? {}), status } })}
@@ -1789,10 +1789,10 @@ function HessCard({ visit, udid, editable }: { visit: any; udid: string; editabl
   return (
     <Card>
       <div className="flex items-center justify-between mb-4">
-        <p className="text-sm font-medium text-[var(--color-ink-700)]">Hess Charting</p>
+        <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)]">Hess Charting</p>
         <SaveIndicator state={state} />
       </div>
-      <p className="text-xs text-[var(--color-ink-400)] mb-3">
+      <p className="text-[11px] sm:text-xs text-[var(--color-ink-400)] mb-3">
         H: (+) Esotropia / (–) Exotropia · V: (+) Hypertropia / (–) Hypotropia, in Prism Diopters
       </p>
       <HessGrid
@@ -1802,7 +1802,7 @@ function HessCard({ visit, udid, editable }: { visit: any; udid: string; editabl
         }
       />
       <div className="mt-4 max-w-md">
-        <label className="text-xs font-medium text-[var(--color-ink-500)]">Interpretation</label>
+        <label className="text-[11px] sm:text-xs font-medium text-[var(--color-ink-500)]">Interpretation</label>
         <textarea disabled={!editable} value={interpretation} onChange={(e) => setInterpretation(e.target.value)} rows={2}
           className="mt-1 w-full rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm" />
       </div>
@@ -1855,13 +1855,13 @@ function RetinoscopyCard({ visit, udid, editable }: { visit: any; udid: string; 
     };
     return (
       <div className="flex flex-col gap-0.5">
-        <label className="text-[10px] text-[var(--color-ink-400)] font-medium">{label}</label>
+        <label className="text-[9px] sm:text-[10px] text-[var(--color-ink-400)] font-medium">{label}</label>
         <div className="flex items-center gap-1">
           <button
             type="button"
             disabled={!editable}
             onClick={toggle}
-            className="w-6 h-6 rounded flex items-center justify-center text-xs font-bold border transition-colors disabled:opacity-40"
+            className="w-6 h-6 rounded flex items-center justify-center text-[11px] sm:text-xs font-bold border transition-colors disabled:opacity-40"
             style={sign === "-"
               ? { background: "var(--color-primary-600)", color: "#fff", borderColor: "var(--color-primary-600)" }
               : { background: "#fff", color: "var(--color-ink-600)", borderColor: "var(--color-border)" }}
@@ -1883,7 +1883,7 @@ function RetinoscopyCard({ visit, udid, editable }: { visit: any; udid: string; 
 
   const axisSelect = (label: string, value: string, onChange: (v: string) => void) => (
     <div className="flex flex-col gap-0.5 min-w-0">
-      <label className="text-[10px] text-[var(--color-ink-400)] font-medium">{label}</label>
+      <label className="text-[9px] sm:text-[10px] text-[var(--color-ink-400)] font-medium">{label}</label>
       <select
         disabled={!editable}
         value={parseSignedVal(value).mag}
@@ -1897,14 +1897,14 @@ function RetinoscopyCard({ visit, udid, editable }: { visit: any; udid: string; 
 
   const vaSelect = (label: string, value: string, onChange: (v: string) => void, options: readonly string[] = VA_SNELLEN_VALUES, className = "") => (
     <div className={`flex flex-col gap-0.5 min-w-0 ${className}`}>
-      <label className="text-[10px] text-[var(--color-ink-400)] font-medium">{label}</label>
+      <label className="text-[9px] sm:text-[10px] text-[var(--color-ink-400)] font-medium">{label}</label>
       <select disabled={!editable} value={value || "-"} onChange={(e) => onChange(e.target.value)} className={`w-full min-w-0 ${SEL}`}>
         {options.map((v) => <option key={v} value={v}>{v}</option>)}
       </select>
     </div>
   );
 
-  const SECTION_LABEL = "col-span-2 sm:col-span-5 text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-widest";
+  const SECTION_LABEL = "col-span-2 sm:col-span-5 text-[9px] sm:text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-widest";
 
   const eyeFields = (val: RxFields, setVal: (v: RxFields) => void) => (
     <div className="grid grid-cols-2 sm:grid-cols-[88px_88px_64px_20px_80px] gap-x-2 gap-y-2 items-end">
@@ -1923,14 +1923,14 @@ function RetinoscopyCard({ visit, udid, editable }: { visit: any; udid: string; 
   return (
     <Card>
       <div className="flex items-center justify-between mb-3">
-        <p className="text-sm font-medium text-[var(--color-ink-700)]">Retinoscopy</p>
+        <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)]">Retinoscopy</p>
         <div className="flex items-center gap-2">
           {editable && (
             <button
               type="button"
               onClick={copyFromRefraction}
               disabled={copying}
-              className="flex items-center gap-1.5 text-xs font-medium px-3 py-1 rounded-lg border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] transition-colors disabled:opacity-50"
+              className="flex items-center gap-1.5 text-[11px] sm:text-xs font-medium px-3 py-1 rounded-lg border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] transition-colors disabled:opacity-50"
             >
               {copying
                 ? <Loader2 size={11} className="animate-spin" />
@@ -1988,7 +1988,7 @@ function TearFilmCard({ visit, udid, editable, priorVisits = [] }: { visit: any;
       <button
         type="button"
         onClick={() => setOpenHist(active ? null : key)}
-        className={`px-2.5 py-0.5 rounded-full text-xs font-medium shrink-0 transition-colors ${
+        className={`px-2.5 py-0.5 rounded-full text-[11px] sm:text-xs font-medium shrink-0 transition-colors ${
           active
             ? "bg-[var(--color-primary-600)] text-white"
             : "bg-[var(--color-primary-100)] text-[var(--color-primary-700)] hover:bg-[var(--color-primary-200)]"
@@ -2004,7 +2004,7 @@ function TearFilmCard({ visit, udid, editable, priorVisits = [] }: { visit: any;
     const entries = active ? getHist(key) : [];
     return (
       <div>
-        <label className="text-xs text-[var(--color-ink-400)] block mb-1">{label}</label>
+        <label className="text-[11px] sm:text-xs text-[var(--color-ink-400)] block mb-1">{label}</label>
         <div className="flex items-center gap-1.5">
           <input
             disabled={!editable}
@@ -2021,11 +2021,11 @@ function TearFilmCard({ visit, udid, editable, priorVisits = [] }: { visit: any;
         </div>
         {active && (
           <div className="mt-1 w-fit rounded-lg border border-[var(--color-primary-200)] bg-[var(--color-primary-50)] px-2 py-1.5">
-            <p className="text-[10px] font-semibold text-[var(--color-primary-600)] uppercase tracking-wide mb-1">
+            <p className="text-[9px] sm:text-[10px] font-semibold text-[var(--color-primary-600)] uppercase tracking-wide mb-1">
               {FIELD_LABELS[key as string] ?? label}
             </p>
             {entries.length === 0 ? (
-              <p className="text-[10px] text-[var(--color-ink-400)]">No prior values.</p>
+              <p className="text-[9px] sm:text-[10px] text-[var(--color-ink-400)]">No prior values.</p>
             ) : (
               <ol className="space-y-0.5">
                 {entries.map((e, i) => (
@@ -2036,7 +2036,7 @@ function TearFilmCard({ visit, udid, editable, priorVisits = [] }: { visit: any;
                       setData((prev) => ({ ...prev, [key]: e.value }));
                       setOpenHist(null);
                     }}
-                    className={`flex gap-2 text-[10px] px-1 py-0.5 rounded ${
+                    className={`flex gap-2 text-[9px] sm:text-[10px] px-1 py-0.5 rounded ${
                       editable ? "cursor-pointer hover:bg-[var(--color-primary-100)]" : ""
                     }`}
                   >
@@ -2055,7 +2055,7 @@ function TearFilmCard({ visit, udid, editable, priorVisits = [] }: { visit: any;
   return (
     <Card>
       <div className="flex items-center justify-between mb-3">
-        <p className="text-sm font-medium text-[var(--color-ink-700)]">Tear Film — TBUT &amp; Schirmer&apos;s</p>
+        <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)]">Tear Film — TBUT &amp; Schirmer&apos;s</p>
         <SaveIndicator state={state} />
       </div>
       <EyeColumns>
@@ -2111,12 +2111,12 @@ function LacrimalSacCard({ visit, udid, editable, priorVisits = [] }: { visit: a
     return (
       <div className="mt-2 rounded-lg border border-[#B2DEDA] bg-[#EEF8F7] p-2.5 space-y-2">
         {rows.map((r, i) => (
-          <div key={i} className="text-xs">
+          <div key={i} className="text-[11px] sm:text-xs">
             <p className="font-semibold text-[#0F766E] mb-0.5">{format(new Date(r.date), "dd MMM yyyy")}</p>
             {r.chips.length > 0 && (
               <div className="flex flex-wrap gap-1 mb-0.5">
                 {r.chips.map((c) => (
-                  <span key={c} className="px-1.5 py-0.5 rounded-full bg-[#DCF3F1] border border-[#B2DEDA] text-[#0F766E] text-[10px]">{c}</span>
+                  <span key={c} className="px-1.5 py-0.5 rounded-full bg-[#DCF3F1] border border-[#B2DEDA] text-[#0F766E] text-[9px] sm:text-[10px]">{c}</span>
                 ))}
               </div>
             )}
@@ -2135,7 +2135,7 @@ function LacrimalSacCard({ visit, udid, editable, priorVisits = [] }: { visit: a
       <button
         type="button"
         onClick={() => setOpenHistory(isOpen ? null : eye)}
-        className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border transition-colors ${
+        className={`text-[9px] sm:text-[10px] font-semibold px-2 py-0.5 rounded-full border transition-colors ${
           isOpen
             ? "bg-[#DCF3F1] text-[#0F766E] border-[#99CEC8]"
             : "bg-[#EEF8F7] text-[#0F766E] border-[#B2DEDA] hover:bg-[#DCF3F1]"
@@ -2149,13 +2149,13 @@ function LacrimalSacCard({ visit, udid, editable, priorVisits = [] }: { visit: a
   return (
     <Card>
       <div className="flex items-center justify-between mb-3">
-        <p className="text-sm font-medium text-[var(--color-ink-700)]">Lacrimal Sac Syringing</p>
+        <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)]">Lacrimal Sac Syringing</p>
         <SaveIndicator state={state} />
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         <div className="flex flex-col gap-3">
           <div className="flex items-center justify-between">
-            <p className="text-xs font-semibold text-[var(--color-primary-700)] uppercase tracking-wide">Right Eye</p>
+            <p className="text-[11px] sm:text-xs font-semibold text-[var(--color-primary-700)] uppercase tracking-wide">Right Eye</p>
             <HistoryBtn eye="re" />
           </div>
           <KeywordInput fieldKey="lacrimal_re_findings" value={reFindings} onChange={setReFindings} disabled={!editable} placeholder="Enter findings..." />
@@ -2164,7 +2164,7 @@ function LacrimalSacCard({ visit, udid, editable, priorVisits = [] }: { visit: a
         </div>
         <div className="flex flex-col gap-3">
           <div className="flex items-center justify-between">
-            <p className="text-xs font-semibold text-[var(--color-primary-700)] uppercase tracking-wide">Left Eye</p>
+            <p className="text-[11px] sm:text-xs font-semibold text-[var(--color-primary-700)] uppercase tracking-wide">Left Eye</p>
             <HistoryBtn eye="le" />
           </div>
           <KeywordInput fieldKey="lacrimal_le_findings" value={leFindings} onChange={setLeFindings} disabled={!editable} placeholder="Enter findings..." />
@@ -2191,7 +2191,7 @@ function LabeledInput({
 
   return (
     <div className={compact ? "flex items-center gap-2" : ""}>
-      <label className="text-xs text-[var(--color-ink-400)] block">{label}</label>
+      <label className="text-[11px] sm:text-xs text-[var(--color-ink-400)] block">{label}</label>
       <input
         disabled={disabled}
         value={value}
