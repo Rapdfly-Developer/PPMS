@@ -75,7 +75,7 @@ function StepTracker({ status }: { status: string }) {
                 {/* Label */}
                 <div className="mt-2 text-center px-1">
                   <p
-                    className={`text-[11px] font-bold leading-tight ${
+                    className={`text-[10px] sm:text-[11px] font-bold leading-tight ${
                       done
                         ? "text-teal-600"
                         : current
@@ -86,7 +86,7 @@ function StepTracker({ status }: { status: string }) {
                     {step.label}
                   </p>
                   <p
-                    className={`text-[10px] mt-0.5 font-medium ${
+                    className={`text-[9px] sm:text-[10px] mt-0.5 font-medium ${
                       done
                         ? "text-emerald-500"
                         : current
@@ -118,7 +118,7 @@ function StepTracker({ status }: { status: string }) {
       {isComplete && (
         <div className="mt-4 flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-50 border border-emerald-200">
           <CheckCircle2 size={14} className="text-emerald-600 shrink-0" />
-          <p className="text-xs font-semibold text-emerald-700">Counseling Process Completed — ready for OT Scheduling</p>
+          <p className="text-[11px] sm:text-xs font-semibold text-emerald-700">Counseling Process Completed — ready for OT Scheduling</p>
         </div>
       )}
     </div>
@@ -141,7 +141,7 @@ function StatusBadge({ status }: { status: string }) {
   const meta = STATUS_META[status] ?? STATUS_META.DRAFT;
   const { Icon } = meta;
   return (
-    <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full border ${meta.color}`}>
+    <span className={`inline-flex items-center gap-1.5 text-[11px] sm:text-xs font-semibold px-2.5 py-1 rounded-full border ${meta.color}`}>
       <Icon size={11} />
       {meta.label}
     </span>
@@ -158,7 +158,7 @@ function StepHeading({
   return (
     <div className="flex items-center gap-3 mb-4">
       <div
-        className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
+        className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] sm:text-xs font-bold shrink-0 ${
           done
             ? "bg-teal-500 text-white"
             : "bg-teal-100 text-teal-700"
@@ -167,8 +167,8 @@ function StepHeading({
         {done ? <CheckCircle2 size={14} /> : number}
       </div>
       <div>
-        <h2 className="text-base font-bold text-[var(--color-ink-800)]">{title}</h2>
-        {subtitle && <p className="text-xs text-[var(--color-ink-400)] mt-0.5">{subtitle}</p>}
+        <h2 className="text-[15px] sm:text-base font-bold text-[var(--color-ink-800)]">{title}</h2>
+        {subtitle && <p className="text-[11px] sm:text-xs text-[var(--color-ink-400)] mt-0.5">{subtitle}</p>}
       </div>
     </div>
   );
@@ -210,12 +210,12 @@ export default async function CounselingPatientPage({
     return (
       <div className="fade-in max-w-2xl mx-auto">
         <Link href="/counseling"
-          className="inline-flex items-center gap-1.5 text-sm text-[var(--color-ink-500)] hover:text-[var(--color-ink-800)] mb-5 transition-colors">
+          className="inline-flex items-center gap-1.5 text-[13px] sm:text-sm text-[var(--color-ink-500)] hover:text-[var(--color-ink-800)] mb-5 transition-colors">
           <ChevronLeft size={15} /> Back to Counseling
         </Link>
         <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] flex flex-col items-center py-16 gap-2">
           <Scissors size={24} className="text-[var(--color-ink-300)]" />
-          <p className="text-sm text-[var(--color-ink-400)]">No surgical counselling recorded for this patient.</p>
+          <p className="text-[13px] sm:text-sm text-[var(--color-ink-400)]">No surgical counselling recorded for this patient.</p>
         </div>
       </div>
     );
@@ -276,7 +276,7 @@ export default async function CounselingPatientPage({
     <div className="fade-in max-w-2xl mx-auto">
       {/* Back */}
       <Link href="/counseling"
-        className="inline-flex items-center gap-1.5 text-sm text-[var(--color-ink-500)] hover:text-[var(--color-ink-800)] mb-5 transition-colors">
+        className="inline-flex items-center gap-1.5 text-[13px] sm:text-sm text-[var(--color-ink-500)] hover:text-[var(--color-ink-800)] mb-5 transition-colors">
         <ChevronLeft size={15} /> Back to Counseling
       </Link>
 
@@ -287,15 +287,15 @@ export default async function CounselingPatientPage({
             <User size={20} className="text-teal-700" />
           </div>
           <div className="flex-1 min-w-0">
-            <h1 className="text-lg font-bold text-[var(--color-ink-900)]">{patient.name}</h1>
+            <h1 className="text-base sm:text-lg font-bold text-[var(--color-ink-900)]">{patient.name}</h1>
             <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-0.5 items-center">
-              {patient.age && <span className="text-sm text-[var(--color-ink-500)]">{patient.age} yrs</span>}
+              {patient.age && <span className="text-[13px] sm:text-sm text-[var(--color-ink-500)]">{patient.age} yrs</span>}
               {patient.sex && (
-                <span className="text-sm text-[var(--color-ink-500)]">
+                <span className="text-[13px] sm:text-sm text-[var(--color-ink-500)]">
                   · {patient.sex === "MALE" ? "Male" : patient.sex === "FEMALE" ? "Female" : patient.sex}
                 </span>
               )}
-              <span className="text-xs text-[var(--color-ink-400)] font-mono">{patient.udid}</span>
+              <span className="text-[11px] sm:text-xs text-[var(--color-ink-400)] font-mono">{patient.udid}</span>
             </div>
           </div>
           <StatusBadge status={status} />
@@ -306,16 +306,16 @@ export default async function CounselingPatientPage({
       <div className="rounded-xl border border-teal-200 bg-teal-50 px-4 py-3 mb-5 flex flex-wrap gap-x-5 gap-y-1 items-center">
         <div className="flex items-center gap-1.5">
           <Scissors size={13} className="text-teal-600 shrink-0" />
-          <span className="text-sm font-semibold text-teal-900">
+          <span className="text-[13px] sm:text-sm font-semibold text-teal-900">
             {visit.advisedSurgeryName ?? "Surgery advised"}
           </span>
         </div>
         {visit.advisedSurgeryEye && (
-          <span className="text-xs text-teal-700">
+          <span className="text-[11px] sm:text-xs text-teal-700">
             {EYE_LABEL[visit.advisedSurgeryEye] ?? visit.advisedSurgeryEye}
           </span>
         )}
-        <span className="text-xs text-teal-600 ml-auto">
+        <span className="text-[11px] sm:text-xs text-teal-600 ml-auto">
           {format(new Date(visit.date), "dd MMM yyyy")}
           {visit.doctor?.name && ` · Dr. ${visit.doctor.name}`}
         </span>
@@ -381,8 +381,8 @@ export default async function CounselingPatientPage({
             <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 p-4 flex items-center gap-3">
               <XCircle size={18} className="text-red-500 shrink-0" />
               <div>
-                <p className="text-sm font-bold text-red-800">Surgery Not Recommended</p>
-                <p className="text-xs text-red-600 mt-0.5">This case has been closed. Surgery workflow will not proceed.</p>
+                <p className="text-[13px] sm:text-sm font-bold text-red-800">Surgery Not Recommended</p>
+                <p className="text-[11px] sm:text-xs text-red-600 mt-0.5">This case has been closed. Surgery workflow will not proceed.</p>
               </div>
             </div>
           )}
@@ -390,8 +390,8 @@ export default async function CounselingPatientPage({
             <div className="mt-4 rounded-2xl border border-orange-200 bg-orange-50 p-4 flex items-center gap-3">
               <Clock size={18} className="text-orange-500 shrink-0" />
               <div>
-                <p className="text-sm font-bold text-orange-800">Surgery Deferred</p>
-                <p className="text-xs text-orange-600 mt-0.5">Case kept on hold for future review.</p>
+                <p className="text-[13px] sm:text-sm font-bold text-orange-800">Surgery Deferred</p>
+                <p className="text-[11px] sm:text-xs text-orange-600 mt-0.5">Case kept on hold for future review.</p>
               </div>
             </div>
           )}
@@ -399,8 +399,8 @@ export default async function CounselingPatientPage({
             <div className="mt-4 rounded-2xl border border-blue-200 bg-blue-50 p-4 flex items-center gap-3">
               <FlaskConical size={18} className="text-blue-500 shrink-0" />
               <div>
-                <p className="text-sm font-bold text-blue-800">Awaiting Investigations</p>
-                <p className="text-xs text-blue-600 mt-0.5">
+                <p className="text-[13px] sm:text-sm font-bold text-blue-800">Awaiting Investigations</p>
+                <p className="text-[11px] sm:text-xs text-blue-600 mt-0.5">
                   Patient sent for investigations. Once done, use &quot;Investigations done — re-review&quot; to return.
                 </p>
               </div>
@@ -425,7 +425,7 @@ export default async function CounselingPatientPage({
 
           {status === "FIT_FOR_SURGERY" && (
             <>
-              <p className="text-xs text-[var(--color-ink-500)] mb-4">
+              <p className="text-[11px] sm:text-xs text-[var(--color-ink-500)] mb-4">
                 Pre-filled from tentative. Review and edit if needed, then confirm to proceed to OT scheduling.
               </p>
               <CounsellingForm visitId={visit.id} udid={udid} existing={existing} mode="confirm" />
@@ -440,8 +440,8 @@ export default async function CounselingPatientPage({
                   <CheckCircle2 size={18} className="text-teal-600" />
                 </div>
                 <div>
-                  <p className="text-sm font-bold text-teal-900">Counseling Process Completed</p>
-                  <p className="text-xs text-teal-700 mt-0.5">
+                  <p className="text-[13px] sm:text-sm font-bold text-teal-900">Counseling Process Completed</p>
+                  <p className="text-[11px] sm:text-xs text-teal-700 mt-0.5">
                     {rec?.confirmedAt
                       ? `Confirmed on ${format(new Date(rec.confirmedAt), "dd MMM yyyy, HH:mm")}`
                       : "All three stages complete."}
@@ -451,14 +451,14 @@ export default async function CounselingPatientPage({
               <div className="flex flex-col sm:flex-row gap-2 shrink-0">
                 <Link
                   href={`/counseling/${udid}/consent`}
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-teal-300 bg-teal-50 text-teal-700 text-sm font-semibold hover:bg-teal-100 transition-colors"
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-teal-300 bg-teal-50 text-teal-700 text-[13px] sm:text-sm font-semibold hover:bg-teal-100 transition-colors"
                 >
                   <FileText size={15} />
                   Consent Form
                 </Link>
                 <Link
                   href={`/scheduled-ot/new?visitId=${visit.id}`}
-                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-teal-600 text-white text-sm font-semibold hover:bg-teal-700 transition-colors"
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-teal-600 text-white text-[13px] sm:text-sm font-semibold hover:bg-teal-700 transition-colors"
                 >
                   <CalendarCheck size={15} />
                   Proceed to OT Scheduling
@@ -472,12 +472,12 @@ export default async function CounselingPatientPage({
       {/* Locked Step 3 placeholder when not yet unlocked */}
       {status !== "FIT_FOR_SURGERY" && status !== "CONFIRMED" && step1Done && (
         <div className="mb-6 rounded-2xl border border-dashed border-[var(--color-border)] bg-[var(--color-surface-sunken)] p-5 flex items-center gap-3 opacity-50">
-          <div className="w-7 h-7 rounded-full bg-[var(--color-surface)] border border-[var(--color-border)] flex items-center justify-center text-xs font-bold text-[var(--color-ink-300)] shrink-0">
+          <div className="w-7 h-7 rounded-full bg-[var(--color-surface)] border border-[var(--color-border)] flex items-center justify-center text-[11px] sm:text-xs font-bold text-[var(--color-ink-300)] shrink-0">
             3
           </div>
           <div>
-            <p className="text-sm font-semibold text-[var(--color-ink-400)]">Confirmation Counseling</p>
-            <p className="text-xs text-[var(--color-ink-300)] mt-0.5">Unlocks after Doctor marks patient Fit for Surgery</p>
+            <p className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-400)]">Confirmation Counseling</p>
+            <p className="text-[11px] sm:text-xs text-[var(--color-ink-300)] mt-0.5">Unlocks after Doctor marks patient Fit for Surgery</p>
           </div>
         </div>
       )}

@@ -90,7 +90,7 @@ export function AppointmentRow({ appt, role, token }: { appt: any; role: string;
       className="flex items-start gap-3 px-4 sm:px-5 py-4 rounded-xl border border-[var(--color-border)] bg-white hover:bg-[var(--color-primary-50)] hover:border-[var(--color-primary-200)] transition-colors cursor-pointer"
     >
       {/* Token badge */}
-      <div className="flex items-center justify-center shrink-0 w-9 h-9 rounded-xl text-sm font-bold mt-0.5"
+      <div className="flex items-center justify-center shrink-0 w-9 h-9 rounded-xl text-[13px] sm:text-sm font-bold mt-0.5"
         style={{ background: "var(--color-primary-100)", color: "var(--color-primary-700)" }}>
         {token}
       </div>
@@ -104,21 +104,21 @@ export function AppointmentRow({ appt, role, token }: { appt: any; role: string;
         <div className="flex items-start justify-between gap-2">
           <button
             onClick={(e) => { e.stopPropagation(); router.push(patientUrl); }}
-            className="text-sm font-semibold text-[var(--color-ink-900)] hover:text-[var(--color-primary-600)] transition-colors text-left leading-snug"
+            className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-900)] hover:text-[var(--color-primary-600)] transition-colors text-left leading-snug"
           >
             {p.name}
           </button>
-          <span className={`shrink-0 text-[11px] font-medium px-2 py-0.5 rounded-full whitespace-nowrap ${STATUS_STYLES[appt.status] ?? ""}`}>
+          <span className={`shrink-0 text-[10px] sm:text-[11px] font-medium px-2 py-0.5 rounded-full whitespace-nowrap ${STATUS_STYLES[appt.status] ?? ""}`}>
             {STATUS_LABELS[appt.status] ?? appt.status.replace(/_/g, " ")}
           </span>
         </div>
 
         {/* Row 2: Age · Sex on left, Time on right */}
         <div className="flex items-center justify-between gap-2 mt-0.5">
-          <span className="text-xs text-[var(--color-ink-400)]">
+          <span className="text-[11px] sm:text-xs text-[var(--color-ink-400)]">
             {p.age}y · {p.sex.charAt(0).toUpperCase() + p.sex.slice(1).toLowerCase()}
           </span>
-          <span className="text-xs font-semibold text-[var(--color-ink-700)] whitespace-nowrap sm:hidden">
+          <span className="text-[11px] sm:text-xs font-semibold text-[var(--color-ink-700)] whitespace-nowrap sm:hidden">
             {format(new Date(appt.dateTime), "h:mm a")}
           </span>
         </div>
@@ -129,12 +129,12 @@ export function AppointmentRow({ appt, role, token }: { appt: any; role: string;
             {p.udid}
           </span>
           {p.mobile && (
-            <span className="flex items-center gap-1 text-xs text-[var(--color-ink-500)]">
+            <span className="flex items-center gap-1 text-[11px] sm:text-xs text-[var(--color-ink-500)]">
               <Phone size={11} className="shrink-0" /> {p.mobile}
             </span>
           )}
           {appt.visitType && (
-            <span className="flex items-center gap-1 text-xs text-[var(--color-ink-500)]">
+            <span className="flex items-center gap-1 text-[11px] sm:text-xs text-[var(--color-ink-500)]">
               <Tag size={11} className="shrink-0" /> {appt.visitType}
             </span>
           )}
@@ -142,7 +142,7 @@ export function AppointmentRow({ appt, role, token }: { appt: any; role: string;
 
         {/* Chief complaint */}
         {(appt.notes || p.complaint) && (
-          <div className="mt-1.5 inline-flex max-w-full items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-xs font-medium">
+          <div className="mt-1.5 inline-flex max-w-full items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-[11px] sm:text-xs font-medium">
             <FileText size={11} className="shrink-0 text-amber-500" />
             <span className="truncate">{formatComplaintDisplay(appt.notes || p.complaint)}</span>
           </div>
@@ -151,20 +151,20 @@ export function AppointmentRow({ appt, role, token }: { appt: any; role: string;
         {/* Provisional diagnosis */}
         {provisionalDx.length > 0 && (
           <div className="mt-1.5 flex items-center gap-1.5 flex-wrap max-w-full sm:max-w-md">
-            <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">
+            <span className="shrink-0 text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">
               Provisional
             </span>
             {provisionalDx.slice(0, 2).map((d, i) => (
               <span
                 key={i}
-                className="inline-flex min-w-0 max-w-full items-center gap-1 px-2.5 py-1 rounded-lg bg-teal-50 border border-teal-200 text-teal-800 text-xs font-medium"
+                className="inline-flex min-w-0 max-w-full items-center gap-1 px-2.5 py-1 rounded-lg bg-teal-50 border border-teal-200 text-teal-800 text-[11px] sm:text-xs font-medium"
               >
                 {d.laterality && <span className="font-bold shrink-0">{d.laterality}</span>}
                 <span className="truncate">{d.description}</span>
               </span>
             ))}
             {provisionalDx.length > 2 && (
-              <span className="shrink-0 text-[11px] text-[var(--color-ink-400)]">
+              <span className="shrink-0 text-[10px] sm:text-[11px] text-[var(--color-ink-400)]">
                 +{provisionalDx.length - 2} more
               </span>
             )}
@@ -205,14 +205,14 @@ export function AppointmentRow({ appt, role, token }: { appt: any; role: string;
             <button
               disabled={pending}
               onClick={() => hospitalSetStatus("CONFIRMED")}
-              className="flex-1 text-xs font-semibold py-1.5 rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-50 transition-colors"
+              className="flex-1 text-[11px] sm:text-xs font-semibold py-1.5 rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-50 transition-colors"
             >
               {pending ? "…" : "Add to Queue"}
             </button>
             <button
               disabled={pending}
               onClick={() => hospitalSetStatus("CANCELLED")}
-              className="flex-1 text-xs font-semibold py-1.5 rounded-lg bg-white border border-[var(--color-border)] text-[var(--color-danger-600)] hover:bg-[var(--color-danger-50)] disabled:opacity-50 transition-colors"
+              className="flex-1 text-[11px] sm:text-xs font-semibold py-1.5 rounded-lg bg-white border border-[var(--color-border)] text-[var(--color-danger-600)] hover:bg-[var(--color-danger-50)] disabled:opacity-50 transition-colors"
             >
               Reject
             </button>
@@ -227,7 +227,7 @@ export function AppointmentRow({ appt, role, token }: { appt: any; role: string;
                 href={`/api/prescription-pdf/${appt.visit.id}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors"
+                className="flex items-center gap-1 text-[11px] sm:text-xs font-medium px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors"
               >
                 <Printer size={11} /> Prescription
               </a>
@@ -236,7 +236,7 @@ export function AppointmentRow({ appt, role, token }: { appt: any; role: string;
               <>
                 <button
                   onClick={() => setShowSlotModal(true)}
-                  className="flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-lg bg-[var(--color-primary-50)] border border-[var(--color-primary-200)] text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] transition-colors"
+                  className="flex items-center gap-1.5 text-[11px] sm:text-xs font-medium px-2.5 py-1 rounded-lg bg-[var(--color-primary-50)] border border-[var(--color-primary-200)] text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] transition-colors"
                 >
                   <CalendarPlus size={12} /> Schedule Next Slot
                 </button>
@@ -256,7 +256,7 @@ export function AppointmentRow({ appt, role, token }: { appt: any; role: string;
               <button
                 disabled={pending}
                 onClick={() => hospitalSetStatus("CANCELLED")}
-                className="text-xs font-medium px-3 py-1 rounded-lg bg-white border border-[var(--color-border)] text-[var(--color-danger-600)] hover:bg-[var(--color-danger-50)] disabled:opacity-50"
+                className="text-[11px] sm:text-xs font-medium px-3 py-1 rounded-lg bg-white border border-[var(--color-border)] text-[var(--color-danger-600)] hover:bg-[var(--color-danger-50)] disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -265,7 +265,7 @@ export function AppointmentRow({ appt, role, token }: { appt: any; role: string;
               <button
                 disabled={pending}
                 onClick={() => doctorSetStatus("NO_SHOW")}
-                className="flex items-center gap-1 text-xs font-medium px-3 py-1 rounded-lg bg-white border border-[var(--color-border)] text-red-500 hover:bg-red-50 hover:border-red-200 disabled:opacity-50 transition-colors"
+                className="flex items-center gap-1 text-[11px] sm:text-xs font-medium px-3 py-1 rounded-lg bg-white border border-[var(--color-border)] text-red-500 hover:bg-red-50 hover:border-red-200 disabled:opacity-50 transition-colors"
               >
                 <UserX size={11} /> No Show
               </button>
@@ -276,10 +276,10 @@ export function AppointmentRow({ appt, role, token }: { appt: any; role: string;
 
       {/* Right column — desktop only (sm+) */}
       <div className="hidden sm:flex flex-col items-end gap-1.5 shrink-0 self-start" onClick={(e) => e.stopPropagation()}>
-        <p className="text-sm font-medium text-[var(--color-ink-700)] whitespace-nowrap">
+        <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)] whitespace-nowrap">
           {format(new Date(appt.dateTime), "h:mm a")}
         </p>
-        <span className="flex items-center gap-1 text-[11px] text-[var(--color-ink-400)]">
+        <span className="flex items-center gap-1 text-[10px] sm:text-[11px] text-[var(--color-ink-400)]">
           <Clock size={10} /> Booked: {format(new Date(appt.createdAt), "d MMM, h:mm a")}
         </span>
         {showConfirmReject && (
@@ -287,14 +287,14 @@ export function AppointmentRow({ appt, role, token }: { appt: any; role: string;
             <button
               disabled={pending}
               onClick={() => hospitalSetStatus("CONFIRMED")}
-              className="text-xs font-medium px-3 py-1 rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-50"
+              className="text-[11px] sm:text-xs font-medium px-3 py-1 rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-50"
             >
               {pending ? "…" : "Add to Queue"}
             </button>
             <button
               disabled={pending}
               onClick={() => hospitalSetStatus("CANCELLED")}
-              className="text-xs font-medium px-3 py-1 rounded-lg bg-white border border-[var(--color-border)] text-[var(--color-danger-600)] hover:bg-[var(--color-danger-50)] disabled:opacity-50"
+              className="text-[11px] sm:text-xs font-medium px-3 py-1 rounded-lg bg-white border border-[var(--color-border)] text-[var(--color-danger-600)] hover:bg-[var(--color-danger-50)] disabled:opacity-50"
             >
               Reject
             </button>
