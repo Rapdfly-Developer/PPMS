@@ -70,7 +70,7 @@ export function MobileBottomNav() {
                 )}
               </div>
               <span
-                className="text-[10px] font-medium leading-none tracking-wide"
+                className="text-[9px] font-medium leading-none tracking-wide"
                 style={{ color: active ? ACTIVE_COLOR : INACTIVE_COLOR }}
               >
                 {label}

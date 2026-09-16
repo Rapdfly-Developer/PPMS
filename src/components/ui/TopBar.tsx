@@ -9,7 +9,7 @@ import { signOut } from "next-auth/react";
 import { markOneRead } from "@/app/(app)/notifications/actions";
 
 const BACK_BTN_CLS =
-  "group inline-flex items-center gap-1.5 h-8 pl-2 pr-3 rounded-lg border border-[var(--color-border)] bg-white text-sm font-medium text-[var(--color-ink-600)] hover:text-[var(--color-primary-700)] hover:border-[var(--color-primary-300)] hover:bg-[var(--color-primary-50)] active:scale-[0.97] transition-all duration-150";
+  "group inline-flex items-center gap-1.5 h-8 pl-2 pr-3 rounded-lg border border-[var(--color-border)] bg-white text-[13px] sm:text-sm font-medium text-[var(--color-ink-600)] hover:text-[var(--color-primary-700)] hover:border-[var(--color-primary-300)] hover:bg-[var(--color-primary-50)] active:scale-[0.97] transition-all duration-150";
 
 const BackBtnContent = () => (
   <>
@@ -77,16 +77,16 @@ function BellDropdown({ items, onRead }: {
       style={{ boxShadow: "0 8px 30px -8px rgba(0,0,0,0.18), 0 2px 8px -2px rgba(0,0,0,0.08)" }}
     >
       <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--color-border)]">
-        <span className="text-sm font-semibold text-[var(--color-ink-800)]">Notifications</span>
+        <span className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-800)]">Notifications</span>
         {items.length > 0 && (
-          <span className="text-xs font-semibold text-red-500">{items.length} unread</span>
+          <span className="text-[11px] sm:text-xs font-semibold text-red-500">{items.length} unread</span>
         )}
       </div>
 
       {items.length === 0 ? (
         <div className="px-4 py-8 text-center">
           <Bell size={20} className="mx-auto mb-2 text-[var(--color-ink-300)]" />
-          <p className="text-sm text-[var(--color-ink-400)]">No new notifications</p>
+          <p className="text-[13px] sm:text-sm text-[var(--color-ink-400)]">No new notifications</p>
         </div>
       ) : (
         <ul className="max-h-72 overflow-y-auto divide-y divide-[var(--color-border)]">
@@ -104,8 +104,8 @@ function BellDropdown({ items, onRead }: {
                   <Scissors size={13} className="text-[var(--color-primary-600)]" />
                 </span>
                 <span className="flex-1 min-w-0">
-                  <span className="block text-sm text-[var(--color-ink-800)] leading-snug">{item.message}</span>
-                  <span className="block text-xs text-[var(--color-ink-400)] mt-0.5">{timeAgo(item.createdAt)}</span>
+                  <span className="block text-[13px] sm:text-sm text-[var(--color-ink-800)] leading-snug">{item.message}</span>
+                  <span className="block text-[11px] sm:text-xs text-[var(--color-ink-400)] mt-0.5">{timeAgo(item.createdAt)}</span>
                 </span>
               </button>
             </li>
@@ -116,7 +116,7 @@ function BellDropdown({ items, onRead }: {
       <div className="px-4 py-2.5 border-t border-[var(--color-border)]">
         <Link
           href="/notifications"
-          className="text-xs font-medium text-[var(--color-primary-600)] hover:underline"
+          className="text-[11px] sm:text-xs font-medium text-[var(--color-primary-600)] hover:underline"
         >
           View all notifications →
         </Link>
@@ -259,7 +259,7 @@ export function TopBar({ name, role }: { name: string; role: string }) {
           >
             <Bell size={17} />
             {unreadCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 h-4 min-w-4 flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold px-1 leading-none">
+              <span className="absolute -top-0.5 -right-0.5 h-4 min-w-4 flex items-center justify-center rounded-full bg-red-500 text-white text-[9px] sm:text-[10px] font-bold px-1 leading-none">
                 {unreadCount > 9 ? "9+" : unreadCount}
               </span>
             )}
@@ -278,13 +278,13 @@ export function TopBar({ name, role }: { name: string; role: string }) {
           <div className="size-8 rounded-full bg-[var(--color-primary-700)] flex items-center justify-center text-white text-xs font-bold select-none shrink-0">
             {initials}
           </div>
-          <span className="hidden sm:block text-sm font-medium text-[var(--color-ink-800)]">{name}</span>
+          <span className="hidden sm:block text-[13px] sm:text-sm font-medium text-[var(--color-ink-800)]">{name}</span>
         </div>
 
         {/* Sign out */}
         <button
           onClick={() => signOut({ callbackUrl: "/login" })}
-          className="flex items-center gap-1.5 text-sm text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)] transition-colors"
+          className="flex items-center gap-1.5 text-[13px] sm:text-sm text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)] transition-colors"
           title="Sign out"
         >
           <LogOut size={15} />

@@ -100,7 +100,7 @@ function LiveTimer({ since }: { since: string }) {
   const color     = totalMins > 30 ? "text-red-500" : totalMins > 15 ? "text-amber-500" : "text-emerald-600";
 
   return (
-    <span suppressHydrationWarning className={clsx("inline-flex items-center justify-center gap-0.5 text-[10px] font-semibold", color)}>
+    <span suppressHydrationWarning className={clsx("inline-flex items-center justify-center gap-0.5 text-[9px] sm:text-[10px] font-semibold", color)}>
       <Clock size={9} /> {label}
     </span>
   );
@@ -119,25 +119,25 @@ function SurgeryRow({ s, role }: { s: Surgery; role: "DOCTOR" | "HOSPITAL" }) {
       </div>
       <div className="w-px self-stretch bg-[var(--color-border)] hidden sm:block" />
       <div className="flex-1 min-w-0">
-        <p className="font-semibold text-sm text-[var(--color-ink-900)] truncate">{s.patient.name}</p>
+        <p className="font-semibold text-[13px] sm:text-sm text-[var(--color-ink-900)] truncate">{s.patient.name}</p>
         <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-          <span className="font-mono text-[10px] text-[#115E59] bg-[#F0F8F6] px-1.5 py-0.5 rounded">
+          <span className="font-mono text-[9px] sm:text-[10px] text-[#115E59] bg-[#F0F8F6] px-1.5 py-0.5 rounded">
             {s.patient.udid}
           </span>
           {subLabel && role === "DOCTOR" && (
-            <span className="inline-flex items-center gap-1 text-[11px] text-[var(--color-ink-400)]">
+            <span className="inline-flex items-center gap-1 text-[10px] sm:text-[11px] text-[var(--color-ink-400)]">
               <Building2 size={10} /> {subLabel}
             </span>
           )}
           {subLabel && role === "HOSPITAL" && (
-            <span className="text-[11px] text-[var(--color-ink-400)]">{subLabel}</span>
+            <span className="text-[10px] sm:text-[11px] text-[var(--color-ink-400)]">{subLabel}</span>
           )}
         </div>
       </div>
       <span className="hidden sm:inline shrink-0 text-xs font-medium text-purple-700 bg-purple-50 px-2.5 py-1 rounded-full truncate max-w-[160px]">
         {s.surgeryType}
       </span>
-      <span className="shrink-0 text-[10px] text-[var(--color-ink-400)]">
+      <span className="shrink-0 text-[9px] sm:text-[10px] text-[var(--color-ink-400)]">
         {s.rightEye && s.leftEye ? "OU" : s.rightEye ? "RE" : "LE"}
       </span>
     </div>
@@ -158,36 +158,36 @@ function PartialDispenseRow({ appt: a, role, serial, canDispense }: { appt: Appt
     <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-orange-200 bg-white hover:bg-orange-50/60 transition-colors">
       {/* Serial */}
       <div className="w-6 shrink-0 text-center">
-        <span className="text-xs font-bold text-orange-400">{serial}</span>
+        <span className="text-[11px] sm:text-xs font-bold text-orange-400">{serial}</span>
       </div>
       <div className="w-px self-stretch bg-orange-200 hidden sm:block" />
 
       {/* Patient info — grows to fill */}
       <Link href={`/patients/${a.patient.udid}?returnTo=/dashboard`} className="flex-1 min-w-0 hover:opacity-80 transition-opacity">
-        <p className="font-semibold text-sm text-[var(--color-ink-900)] truncate">{a.patient.name}</p>
+        <p className="font-semibold text-[13px] sm:text-sm text-[var(--color-ink-900)] truncate">{a.patient.name}</p>
         <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-          <span className="font-mono text-[10px] text-[#115E59] bg-[#F0F8F6] px-1.5 py-0.5 rounded">
+          <span className="font-mono text-[9px] sm:text-[10px] text-[#115E59] bg-[#F0F8F6] px-1.5 py-0.5 rounded">
             {a.patient.udid}
           </span>
-          <span className="text-[11px] text-[var(--color-ink-400)]">
+          <span className="text-[10px] sm:text-[11px] text-[var(--color-ink-400)]">
             {a.patient.age}y / {a.patient.sex === "MALE" ? "M" : a.patient.sex === "FEMALE" ? "F" : "O"}
           </span>
           {a.partialDispenseAt && (
-            <span className="inline-flex items-center gap-1 text-[10px] text-orange-500">
+            <span className="inline-flex items-center gap-1 text-[9px] sm:text-[10px] text-orange-500">
               <Clock size={10} /> Added at {format(new Date(a.partialDispenseAt), "h:mm a")}
             </span>
           )}
           {role === "HOSPITAL" && a.doctor && (
-            <span className="text-[11px] text-[var(--color-ink-400)]">Dr. {a.doctor.name}</span>
+            <span className="text-[10px] sm:text-[11px] text-[var(--color-ink-400)]">Dr. {a.doctor.name}</span>
           )}
         </div>
         {a.partialDispenseReason && (
-          <span className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-orange-100 border border-orange-300 text-orange-700 text-[11px] font-semibold leading-relaxed">
+          <span className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-orange-100 border border-orange-300 text-orange-700 text-[10px] sm:text-[11px] font-semibold leading-relaxed">
             {a.partialDispenseReason}
           </span>
         )}
         {a.complaint && (
-          <span className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-50 border border-amber-100 text-amber-800 text-[11px] font-medium leading-relaxed">
+          <span className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-50 border border-amber-100 text-amber-800 text-[10px] sm:text-[11px] font-medium leading-relaxed">
             {formatComplaintDisplay(a.complaint)}
           </span>
         )}
@@ -206,7 +206,7 @@ function PartialDispenseRow({ appt: a, role, serial, canDispense }: { appt: Appt
             disabled={undoing}
             title="Move back to Today's Queue"
             onClick={() => startUndo(async () => { await undoPartialDispense(a.id); })}
-            className="flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-lg bg-white border border-orange-300 text-orange-700 hover:bg-orange-100 disabled:opacity-50 transition-all"
+            className="flex items-center gap-1 text-[10px] sm:text-[11px] font-semibold px-2 py-1 rounded-lg bg-white border border-orange-300 text-orange-700 hover:bg-orange-100 disabled:opacity-50 transition-all"
           >
             {undoing ? <Loader2 size={11} className="animate-spin" /> : <LogIn size={11} />}
             {!undoing && "To Queue"}
@@ -238,7 +238,7 @@ function ApptRow({ appt, role, serial, canManageQueue }: { appt: Appt; role: "DO
     <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-[var(--color-border)] bg-white hover:bg-[var(--color-primary-50)] hover:border-[var(--color-primary-200)] transition-colors">
       {/* Serial number */}
       <div className="w-6 shrink-0 flex items-center justify-center">
-        <span className="text-xs font-bold text-[var(--color-ink-400)] tabular-nums">{serial}</span>
+        <span className="text-[11px] sm:text-xs font-bold text-[var(--color-ink-400)] tabular-nums">{serial}</span>
       </div>
       <div className="w-px self-stretch bg-[var(--color-border)] hidden sm:block" />
       {/* Time + visit-type column */}
@@ -259,26 +259,26 @@ function ApptRow({ appt, role, serial, canManageQueue }: { appt: Appt; role: "DO
       </div>
       <div className="w-px self-stretch bg-[var(--color-border)] hidden sm:block" />
       <Link href={`/patients/${appt.patient.udid}?returnTo=/dashboard`} className="flex-1 min-w-0 hover:opacity-80 transition-opacity">
-        <p className="font-semibold text-[var(--color-ink-900)] text-sm truncate">{appt.patient.name}</p>
+        <p className="font-semibold text-[var(--color-ink-900)] text-[13px] sm:text-sm truncate">{appt.patient.name}</p>
         <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-          <span title="UDID (Doctor ID)" className="font-mono text-[10px] text-[#115E59] bg-[#F0F8F6] px-1.5 py-0.5 rounded">
+          <span title="UDID (Doctor ID)" className="font-mono text-[9px] sm:text-[10px] text-[#115E59] bg-[#F0F8F6] px-1.5 py-0.5 rounded">
             {appt.patient.udid}
           </span>
-          <span className="text-[11px] text-[var(--color-ink-400)]">
+          <span className="text-[10px] sm:text-[11px] text-[var(--color-ink-400)]">
             {appt.patient.age}y / {appt.patient.sex === "MALE" ? "M" : appt.patient.sex === "FEMALE" ? "F" : "O"}
           </span>
           {role === "DOCTOR" && appt.patient.mobile && (
-            <span className="inline-flex items-center gap-0.5 text-[11px] text-[var(--color-ink-400)]">
+            <span className="inline-flex items-center gap-0.5 text-[10px] sm:text-[11px] text-[var(--color-ink-400)]">
               <Phone size={9} /> {appt.patient.mobile}
             </span>
           )}
           {role === "HOSPITAL" && appt.doctor && (
-            <span className="text-[11px] text-[var(--color-ink-400)]">
+            <span className="text-[10px] sm:text-[11px] text-[var(--color-ink-400)]">
               Dr. {appt.doctor.name}
             </span>
           )}
           {appt.complaint && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-50 border border-amber-100 text-amber-800 text-[11px] font-medium">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-50 border border-amber-100 text-amber-800 text-[10px] sm:text-[11px] font-medium">
               {formatComplaintDisplay(appt.complaint)}
             </span>
           )}
@@ -292,7 +292,7 @@ function ApptRow({ appt, role, serial, canManageQueue }: { appt: Appt; role: "DO
             </span>
           )}
           {appt.status !== "CONFIRMED" && (
-            <span className={clsx("inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold", cfg.color)}>
+            <span className={clsx("inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] sm:text-[11px] font-semibold", cfg.color)}>
               <span className={clsx("w-1.5 h-1.5 rounded-full shrink-0", cfg.dot)} />
               {cfg.label}
             </span>
@@ -428,16 +428,16 @@ export function DashboardClient({
           <div>
             <div className="flex items-center gap-2 mb-1">
               <GreetIcon size={17} className={iconColor} />
-              <span className="text-sm font-medium text-white/70 tracking-wide">{greeting}</span>
+              <span className="text-[13px] sm:text-sm font-medium text-white/70 tracking-wide">{greeting}</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">{bannerTitle}</h1>
-            <p className="mt-1 text-sm text-white/60">{todayLabel}</p>
+            <h1 className="text-xl sm:text-3xl font-bold tracking-tight text-white">{bannerTitle}</h1>
+            <p className="mt-1 text-[13px] sm:text-sm text-white/60">{todayLabel}</p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             {can("opd.walkin.create") && (
               <Link
                 href={newEncounterHref}
-                className="inline-flex items-center gap-2 bg-white text-[var(--color-primary-800)] text-sm font-semibold px-4 py-2 rounded-xl hover:bg-white/90 transition-colors shadow-sm"
+                className="inline-flex items-center gap-2 bg-white text-[var(--color-primary-800)] text-[13px] sm:text-sm font-semibold px-4 py-2 rounded-xl hover:bg-white/90 transition-colors shadow-sm"
               >
                 <Plus size={15} /> {newEncounterLabel}
               </Link>
@@ -469,9 +469,9 @@ export function DashboardClient({
       {can("opd.view") && (
       <div>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
-          <h2 className="text-base font-semibold text-[var(--color-ink-900)]">
+          <h2 className="text-[15px] sm:text-base font-semibold text-[var(--color-ink-900)]">
             Today's Queue
-            <span className="ml-2 text-sm font-normal text-[var(--color-ink-400)]">{totalQueue} total</span>
+            <span className="ml-2 text-[13px] sm:text-sm font-normal text-[var(--color-ink-400)]">{totalQueue} total</span>
           </h2>
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1 flex-wrap">
@@ -484,7 +484,7 @@ export function DashboardClient({
                     aria-pressed={active}
                     title={active ? `Show all ${totalQueue}` : `Show only ${label}`}
                     className={clsx(
-                      "px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors",
+                      "px-3 py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold transition-colors",
                       active
                         ? "bg-[var(--color-primary-600)] text-white"
                         : "bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)] hover:bg-[var(--color-primary-50)] hover:text-[var(--color-primary-700)]"
@@ -498,7 +498,7 @@ export function DashboardClient({
                 );
               })}
             </div>
-            <Link href="/appointments" className="text-xs font-semibold text-[var(--color-primary-600)] hover:underline whitespace-nowrap">
+            <Link href="/appointments" className="text-[11px] sm:text-xs font-semibold text-[var(--color-primary-600)] hover:underline whitespace-nowrap">
               View all →
             </Link>
           </div>
@@ -510,15 +510,15 @@ export function DashboardClient({
               <CalendarX2 size={28} className="text-[var(--color-ink-300)]" />
             </div>
             <div>
-              <p className="text-base font-semibold text-[var(--color-ink-700)]">No appointments today</p>
-              <p className="text-sm text-[var(--color-ink-400)] mt-1 max-w-xs mx-auto">
+              <p className="text-[15px] sm:text-base font-semibold text-[var(--color-ink-700)]">No appointments today</p>
+              <p className="text-[13px] sm:text-sm text-[var(--color-ink-400)] mt-1 max-w-xs mx-auto">
                 Confirmed appointments will appear here once patients are moved into the queue.
               </p>
             </div>
             {can("opd.walkin.create") && (
               <Link
                 href={newEncounterHref}
-                className="inline-flex items-center gap-2 text-sm font-semibold text-[var(--color-primary-600)] hover:underline"
+                className="inline-flex items-center gap-2 text-[13px] sm:text-sm font-semibold text-[var(--color-primary-600)] hover:underline"
               >
                 <Plus size={14} /> {newEncounterLabel}
               </Link>
@@ -542,13 +542,13 @@ export function DashboardClient({
                           : <Building2 size={15} className="text-[var(--color-primary-700)]" />}
                       </div>
                       <div className="min-w-0">
-                        <p className="text-sm font-bold text-[var(--color-ink-900)] truncate">{name}</p>
-                        <p className="text-[11px] text-[var(--color-ink-400)]">
+                        <p className="text-[13px] sm:text-sm font-bold text-[var(--color-ink-900)] truncate">{name}</p>
+                        <p className="text-[10px] sm:text-[11px] text-[var(--color-ink-400)]">
                           {gAppts.length} in queue{dispensed > 0 ? ` · ${dispensed} Dispensed` : ""}
                         </p>
                       </div>
                     </div>
-                    <span className="shrink-0 text-[11px] font-bold px-2.5 py-1 rounded-full bg-[var(--color-primary-50)] text-[var(--color-primary-700)]">
+                    <span className="shrink-0 text-[10px] sm:text-[11px] font-bold px-2.5 py-1 rounded-full bg-[var(--color-primary-50)] text-[var(--color-primary-700)]">
                       {gAppts.length}
                     </span>
                   </div>
@@ -568,14 +568,14 @@ export function DashboardClient({
       {/* ── Partial Dispense ─────────────────────────────────────────────── */}
       {can("opd.view") && (
       <div className="surface-card p-5">
-        <h2 className="text-base font-semibold text-[var(--color-ink-900)] mb-4">
+        <h2 className="text-[15px] sm:text-base font-semibold text-[var(--color-ink-900)] mb-4">
           Partial Dispense
           {partialDispenseAppts.length > 0 && (
-            <span className="ml-2 text-xs font-normal text-[var(--color-ink-400)]">{partialDispenseAppts.length} pending</span>
+            <span className="ml-2 text-[11px] sm:text-xs font-normal text-[var(--color-ink-400)]">{partialDispenseAppts.length} pending</span>
           )}
         </h2>
         {partialDispenseAppts.length === 0 ? (
-          <p className="text-center text-xs text-[var(--color-ink-400)] py-6">No partial dispense patients</p>
+          <p className="text-center text-[11px] sm:text-xs text-[var(--color-ink-400)] py-6">No partial dispense patients</p>
         ) : (
           <div className="space-y-2">
             {partialDispenseAppts.map((a, idx) => (

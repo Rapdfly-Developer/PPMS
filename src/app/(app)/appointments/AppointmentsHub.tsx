@@ -7,8 +7,8 @@ export function AppointmentsHub() {
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] gap-8 px-4">
       <div className="text-center">
-        <h1 className="text-2xl font-bold text-[var(--color-ink-900)]">Appointments</h1>
-        <p className="text-sm text-[var(--color-ink-400)] mt-1">What would you like to do?</p>
+        <h1 className="text-xl sm:text-2xl font-bold text-[var(--color-ink-900)]">Appointments</h1>
+        <p className="text-[13px] sm:text-sm text-[var(--color-ink-400)] mt-1">What would you like to do?</p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 w-full max-w-xl">
@@ -21,8 +21,8 @@ export function AppointmentsHub() {
             <Stethoscope size={28} className="text-[var(--color-primary-600)]" />
           </div>
           <div className="text-center">
-            <p className="text-base font-semibold text-[var(--color-ink-800)]">Doctor Appointment</p>
-            <p className="text-xs text-[var(--color-ink-400)] mt-1">Manage your hospital schedules & availability</p>
+            <p className="text-[15px] sm:text-base font-semibold text-[var(--color-ink-800)]">Doctor Appointment</p>
+            <p className="text-[11px] sm:text-xs text-[var(--color-ink-400)] mt-1">Manage your hospital schedules & availability</p>
           </div>
         </Link>
 
@@ -35,8 +35,8 @@ export function AppointmentsHub() {
             <UserRound size={28} className="text-[var(--color-primary-600)]" />
           </div>
           <div className="text-center">
-            <p className="text-base font-semibold text-[var(--color-ink-800)]">Patient Appointment</p>
-            <p className="text-xs text-[var(--color-ink-400)] mt-1">Book an appointment for a patient</p>
+            <p className="text-[15px] sm:text-base font-semibold text-[var(--color-ink-800)]">Patient Appointment</p>
+            <p className="text-[11px] sm:text-xs text-[var(--color-ink-400)] mt-1">Book an appointment for a patient</p>
           </div>
         </Link>
       </div>

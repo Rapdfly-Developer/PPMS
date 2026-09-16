@@ -81,7 +81,7 @@ function overdueText(fuDate: string): string {
 function StatusBadge({ status }: { status: FollowUpStatus }) {
   const m = STATUS_META[status];
   return (
-    <span className={`inline-flex items-center gap-1.5 text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap ${m.pill}`}>
+    <span className={`inline-flex items-center gap-1.5 text-[9px] sm:text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap ${m.pill}`}>
       <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${m.dot}`} />
       {m.label}
     </span>
@@ -105,10 +105,10 @@ function StatCard({
         {icon}
       </div>
       <div>
-        <p className={`text-xl sm:text-2xl font-bold leading-none tabular-nums ${count > 0 ? accent : "text-[var(--color-ink-300)]"}`}>
+        <p className={`text-lg sm:text-2xl font-bold leading-none tabular-nums ${count > 0 ? accent : "text-[var(--color-ink-300)]"}`}>
           {count}
         </p>
-        <p className="text-[10px] sm:text-xs text-[var(--color-ink-500)] mt-0.5 leading-tight">{label}</p>
+        <p className="text-[9px] sm:text-xs text-[var(--color-ink-500)] mt-0.5 leading-tight">{label}</p>
       </div>
     </button>
   );
@@ -414,7 +414,7 @@ function ActionButton({
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1.5 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${styles[variant]}`}
+      className={`inline-flex items-center gap-1 text-[10px] sm:text-[11px] font-semibold px-2.5 py-1.5 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${styles[variant]}`}
     >
       {icon}
       {label}
@@ -555,8 +555,8 @@ function FollowUpCard({
               : <User size={14} className="text-[var(--color-primary-700)]" />}
           </div>
           <div className="min-w-0">
-            <p className="text-sm font-bold text-[var(--color-ink-900)] truncate">{v.patient.name}</p>
-            <p className="text-[11px] text-[var(--color-ink-400)]">
+            <p className="text-[13px] sm:text-sm font-bold text-[var(--color-ink-900)] truncate">{v.patient.name}</p>
+            <p className="text-[10px] sm:text-[11px] text-[var(--color-ink-400)]">
               {v.patient.uhid ?? v.patient.udid} · {v.patient.age}y/{SEX_SHORT[v.patient.sex] ?? v.patient.sex}
             </p>
           </div>
@@ -565,7 +565,7 @@ function FollowUpCard({
       </div>
 
       {/* Details grid */}
-      <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
+      <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[11px] sm:text-xs">
         {role === "HOSPITAL" && (
           <>
             <span className="text-[var(--color-ink-400)]">Doctor</span>
@@ -577,7 +577,7 @@ function FollowUpCard({
         {v.diagnoses[0] && (
           <>
             <span className="text-[var(--color-ink-400)]">Diagnosis</span>
-            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-teal-50 border border-teal-200 text-teal-800 text-[11px] font-medium">
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-teal-50 border border-teal-200 text-teal-800 text-[10px] sm:text-[11px] font-medium">
               {v.diagnoses[0].description}
             </span>
           </>
@@ -588,7 +588,7 @@ function FollowUpCard({
         <span className={`font-semibold ${v.status === "OVERDUE" ? "text-red-600" : v.status === "DUE_TODAY" ? "text-amber-700" : "text-[var(--color-ink-700)]"}`}>
           {format(new Date(v.followUpDate), "d MMM yyyy")}
           {v.status === "OVERDUE" && (
-            <span className="ml-1 text-[10px] text-red-500 font-medium">{overdueText(v.followUpDate)}</span>
+            <span className="ml-1 text-[9px] sm:text-[10px] text-red-500 font-medium">{overdueText(v.followUpDate)}</span>
           )}
         </span>
       </div>
@@ -680,22 +680,22 @@ export function FollowUpsClient({
             <CalendarClock size={20} className="text-[var(--color-primary-700)]" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-[var(--color-ink-900)]">Follow-up Management</h1>
-            <p className="text-xs text-[var(--color-ink-400)] mt-0.5">
+            <h1 className="text-lg sm:text-xl font-bold text-[var(--color-ink-900)]">Follow-up Management</h1>
+            <p className="text-[11px] sm:text-xs text-[var(--color-ink-400)] mt-0.5">
               {visits.length} total · {format(new Date(), "EEEE, d MMMM yyyy")}
             </p>
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {(counts.OVERDUE > 0 || counts.DUE_TODAY > 0) && (
-            <div className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl border border-red-200 bg-red-50 text-xs font-semibold text-red-700">
+            <div className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl border border-red-200 bg-red-50 text-[11px] sm:text-xs font-semibold text-red-700">
               <Bell size={13} className="animate-pulse" />
               {counts.OVERDUE + counts.DUE_TODAY} need attention
             </div>
           )}
           <button
             onClick={() => setShowFilters((v) => !v)}
-            className={`relative inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border text-sm font-medium transition-colors
+            className={`relative inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border text-[13px] sm:text-sm font-medium transition-colors
               ${showFilters
                 ? "border-[var(--color-primary-400)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)]"
                 : "border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)]"}`}
@@ -816,7 +816,7 @@ export function FollowUpsClient({
       )}
 
       {/* Result count */}
-      <p className="text-xs text-[var(--color-ink-400)] mb-3 mt-2">
+      <p className="text-[11px] sm:text-xs text-[var(--color-ink-400)] mb-3 mt-2">
         Showing {filtered.length} of {visits.length} follow-ups
         {statusFilter !== "ALL" && ` · ${STATUS_META[statusFilter].label}`}
       </p>
@@ -825,14 +825,14 @@ export function FollowUpsClient({
       {filtered.length === 0 && (
         <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] flex flex-col items-center gap-3 py-16 text-center">
           <CalendarClock size={36} className="text-[var(--color-ink-200)]" />
-          <p className="text-sm font-semibold text-[var(--color-ink-500)]">
+          <p className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-500)]">
             {visits.length === 0
               ? "No follow-ups scheduled"
               : statusFilter === "DUE_TODAY"
               ? "No follow-ups due today"
               : "No results match your filters"}
           </p>
-          <p className="text-xs text-[var(--color-ink-400)]">
+          <p className="text-[11px] sm:text-xs text-[var(--color-ink-400)]">
             {visits.length === 0
               ? "Set a follow-up date in the EMR to see patients here."
               : statusFilter === "DUE_TODAY"
