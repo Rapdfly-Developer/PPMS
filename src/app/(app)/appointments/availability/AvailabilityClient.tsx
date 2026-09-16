@@ -534,7 +534,7 @@ function TemplateTab({ weekly, hospitals, onGenerate }: {
                         const c      = getColor(idx);
                         return (
                           <div key={slot.id}
-                            className={`rounded-xl border p-2.5 flex flex-col gap-1.5 transition-all ${active ? "" : "opacity-60"}`}
+                            className={`rounded-xl border p-2.5 flex flex-col gap-1.5 transition-all overflow-hidden ${active ? "" : "opacity-60"}`}
                             style={{
                               background:  active ? c.light : "var(--color-surface-sunken)",
                               borderColor: active ? c.border : "var(--color-border)",
@@ -571,19 +571,21 @@ function TemplateTab({ weekly, hospitals, onGenerate }: {
                             </div>
 
                             {/* Actions */}
-                            <div className="flex items-center gap-1 pt-1.5 mt-0.5 border-t" style={{ borderColor: active ? c.border : "var(--color-border)" }}>
-                              <button onClick={() => setEditTarget(slot as WeeklySlot)}
-                                title="Edit slot"
-                                className="p-1 rounded-md text-[var(--color-ink-400)] hover:text-[var(--color-primary-700)] hover:bg-white/70 transition-colors">
-                                <Pencil size={11} />
-                              </button>
-                              <button disabled={pending}
-                                onClick={() => start(async () => toggleWeeklyStatus(slot.id, active ? "INACTIVE" : "ACTIVE"))}
-                                className="inline-flex items-center gap-1 px-1.5 py-1 rounded-md text-[10px] font-semibold text-[var(--color-ink-500)] hover:text-amber-700 hover:bg-white/70 disabled:opacity-50 transition-colors">
-                                <Power size={11} className="shrink-0" />{active ? "Pause" : "Resume"}
-                              </button>
+                            <div className="flex items-center justify-between pt-1.5 mt-0.5 border-t" style={{ borderColor: active ? c.border : "var(--color-border)" }}>
+                              <div className="flex items-center gap-0.5">
+                                <button onClick={() => setEditTarget(slot as WeeklySlot)}
+                                  title="Edit slot"
+                                  className="p-1 rounded-md text-[var(--color-ink-400)] hover:text-[var(--color-primary-700)] hover:bg-white/70 transition-colors">
+                                  <Pencil size={11} />
+                                </button>
+                                <button disabled={pending}
+                                  onClick={() => start(async () => toggleWeeklyStatus(slot.id, active ? "INACTIVE" : "ACTIVE"))}
+                                  className="inline-flex items-center gap-1 px-1.5 py-1 rounded-md text-[10px] font-semibold text-[var(--color-ink-500)] hover:text-amber-700 hover:bg-white/70 disabled:opacity-50 transition-colors">
+                                  <Power size={11} className="shrink-0" />{active ? "Pause" : "Resume"}
+                                </button>
+                              </div>
                               <button onClick={() => setDelTarget(slot)}
-                                className="ml-auto inline-flex items-center gap-1 px-1.5 py-1 rounded-md text-[10px] font-semibold text-red-500 hover:text-red-700 hover:bg-white/70 transition-colors">
+                                className="inline-flex items-center gap-1 px-1.5 py-1 rounded-md text-[10px] font-semibold text-red-500 hover:text-red-700 hover:bg-white/70 transition-colors">
                                 <Trash2 size={11} className="shrink-0" />Delete
                               </button>
                             </div>
