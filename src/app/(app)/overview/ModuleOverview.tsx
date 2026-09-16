@@ -5,7 +5,7 @@ import Link from "next/link";
 import {
   LayoutDashboard, CalendarDays, Users, BedDouble, Settings,
   CalendarClock, BarChart2,
-  Clock, ClipboardList, UserCog, ShieldCheck, Bell, Package,
+  Clock, UserCog, Bell,
   Search, ArrowRight, LayoutGrid, X, Stethoscope, Building2,
   UserCheck, Sparkles,
 } from "lucide-react";
@@ -32,13 +32,10 @@ const ALL_MODULES: ModuleDef[] = [
   { section:"Clinical", accent:"teal",  href:"/ipd",                     label:"IPD",            icon:BedDouble,       permission:"ipd.view",          description:"In-patient admissions, bed management, and discharge summaries.", roles:["DOCTOR"] },
   { section:"Practice Management", accent:"blue",  href:"/appointments",           label:"Appointments",   icon:CalendarDays,    permission:"appointments.view", description:"Schedule, confirm, and manage patient appointments end-to-end.",   roles:["DOCTOR","HOSPITAL"] },
   { section:"Practice Management", accent:"blue",  href:"/appointments/availability",label:"Availability", icon:Clock,           permission:"appointments.view", description:"Configure doctor slot availability and session schedules." },
-  { section:"Practice Management", accent:"blue",  href:"/queue",                   label:"Queue",          icon:ClipboardList,   permission:"dashboard.view",    description:"Live patient queue with real-time status and wait times." },
   { section:"Operations", accent:"amber", href:"/analytics",               label:"Analytics",      icon:BarChart2,       permission:"reports.view",      description:"KPI reports, trends, and OPD / IPD / OT statistical insights." },
   { section:"Administration", accent:"slate", href:"/settings",            label:"Settings",       icon:Settings,        permission:"settings.view",     description:"App configuration, roles, integrations, and system preferences." },
   { section:"Administration", accent:"slate", href:"/users",               label:"Users",          icon:UserCog,         permission:"settings.view",     description:"Manage staff accounts, roles, and access permissions." },
-  { section:"Administration", accent:"slate", href:"/audit",               label:"Audit Log",      icon:ShieldCheck,     permission:"settings.view",     description:"Activity tracking, failed logins, sessions, and system events." },
   { section:"Administration", accent:"slate", href:"/notifications",       label:"Notifications",  icon:Bell,            permission:"dashboard.view",    description:"View and manage in-app notifications and system alerts." },
-  { section:"Administration", accent:"slate", href:"/subscription",        label:"Subscription",   icon:Package,         permission:"settings.view",     description:"Manage your PPMS license, plan details, and renewal." },
 ];
 
 const SECTIONS: Section[] = ["Clinical", "Practice Management", "Operations", "Administration"];
