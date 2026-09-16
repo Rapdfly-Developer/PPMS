@@ -227,11 +227,11 @@ export type LastVisitSummary = {
 /* ── Status badge ────────────────────────────────────────────────────────────── */
 function StatusBadge({ status }: { status: SerialVisit["status"] }) {
   return status === "CLOSED" ? (
-    <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
+    <span className="inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
       <CheckCircle2 size={10} /> Completed
     </span>
   ) : (
-    <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">
+    <span className="inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">
       <Clock size={10} /> In Progress
     </span>
   );
@@ -252,12 +252,12 @@ function VisitCard({ visit, udid }: { visit: SerialVisit; udid: string }) {
             </span>
             <StatusBadge status={visit.status} />
             {visit.visitType && (
-              <span className="text-[10px] text-[var(--color-ink-400)] font-medium">
+              <span className="text-[9px] sm:text-[10px] text-[var(--color-ink-400)] font-medium">
                 {visit.visitType}
               </span>
             )}
           </div>
-          <p className="text-sm font-semibold text-[var(--color-ink-800)] mt-1.5">
+          <p className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-800)] mt-1.5">
             {format(new Date(visit.date), "dd MMM yyyy")}
           </p>
         </div>
@@ -277,7 +277,7 @@ function VisitCard({ visit, udid }: { visit: SerialVisit; udid: string }) {
       </div>
 
       {/* Details */}
-      <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs text-[var(--color-ink-600)]">
+      <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[11px] sm:text-xs text-[var(--color-ink-600)]">
         {visit.hospital && (
           <span className="flex items-center gap-1.5 col-span-2 sm:col-span-1">
             <Hospital size={11} className="shrink-0 text-[var(--color-ink-400)]" />
@@ -295,7 +295,7 @@ function VisitCard({ visit, udid }: { visit: SerialVisit; udid: string }) {
       {visit.chiefComplaint && (
         <div className="border-t border-[var(--color-border)] pt-2.5 flex flex-wrap gap-1">
           {parseComplaints(visit.chiefComplaint).map((c, i) => (
-            <span key={i} className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-[11px] font-medium">
+            <span key={i} className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-[10px] sm:text-[11px] font-medium">
               {[c.lat, c.text, c.since ? `· ${c.since}` : null].filter(Boolean).join(" ")}
             </span>
           ))}
@@ -305,7 +305,7 @@ function VisitCard({ visit, udid }: { visit: SerialVisit; udid: string }) {
       {visit.diagnoses.length > 0 && (
         <div className="flex flex-wrap gap-1">
           {visit.diagnoses.map((d, i) => (
-            <span key={i} className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-teal-50 border border-teal-200 text-teal-800 text-[11px] font-medium">
+            <span key={i} className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-teal-50 border border-teal-200 text-teal-800 text-[10px] sm:text-[11px] font-medium">
               {d.description}
             </span>
           ))}
@@ -337,14 +337,14 @@ function PreviousVisitsPanel({ visits, udid }: { visits: SerialVisit[]; udid: st
     <div className="mt-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 bg-[var(--color-primary-800)] text-white">
-        <p className="font-semibold text-sm">Previous Visits</p>
+        <p className="font-semibold text-[13px] sm:text-sm">Previous Visits</p>
         <div className="flex items-center gap-3">
-          <span className="text-xs text-white/60">{visits.length} visit{visits.length !== 1 ? "s" : ""}</span>
+          <span className="text-[11px] sm:text-xs text-white/60">{visits.length} visit{visits.length !== 1 ? "s" : ""}</span>
           {visits.length > 0 && (
             <button
               onClick={handleDownloadAll}
               title="Print all visit summaries"
-              className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-lg bg-white/15 hover:bg-white/25 transition-colors"
+              className="inline-flex items-center gap-1.5 text-[11px] sm:text-xs font-medium px-2.5 py-1 rounded-lg bg-white/15 hover:bg-white/25 transition-colors"
             >
               <Download size={12} />
               Download All
@@ -658,7 +658,7 @@ export function PatientProfileClient({
         {visits.length === 0 ? (
           <button
             disabled
-            className="flex-1 flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-xl font-semibold text-sm bg-[var(--color-primary-600)] text-white opacity-40 cursor-not-allowed shadow-sm"
+            className="flex-1 flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-xl font-semibold text-[13px] sm:text-sm bg-[var(--color-primary-600)] text-white opacity-40 cursor-not-allowed shadow-sm"
           >
             <ChevronRight size={16} />
             Previous Visits
@@ -666,11 +666,11 @@ export function PatientProfileClient({
         ) : (
           <Link
             href={`/patients/${udid}/visits`}
-            className="flex-1 flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-xl font-semibold text-sm bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] transition-colors shadow-sm"
+            className="flex-1 flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-xl font-semibold text-[13px] sm:text-sm bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] transition-colors shadow-sm"
           >
             <ChevronRight size={16} />
             Previous Visits
-            <span className="ml-1 bg-white/20 text-white text-[11px] font-bold px-2 py-0.5 rounded-full">
+            <span className="ml-1 bg-white/20 text-white text-[10px] sm:text-[11px] font-bold px-2 py-0.5 rounded-full">
               {visits.length}
             </span>
           </Link>
@@ -682,7 +682,7 @@ export function PatientProfileClient({
             todayIsFinalized ? (
               <button
                 onClick={() => setShowFinalizedModal(true)}
-                className="flex-1 flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-xl font-semibold text-sm bg-emerald-600 text-white hover:bg-emerald-700 transition-colors shadow-sm"
+                className="flex-1 flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-xl font-semibold text-[13px] sm:text-sm bg-emerald-600 text-white hover:bg-emerald-700 transition-colors shadow-sm"
               >
                 <Stethoscope size={16} />
                 Today's Visit
@@ -690,7 +690,7 @@ export function PatientProfileClient({
             ) : (
               <Link
                 href={`/emr/${udid}?visit=${todayVisit!.id}`}
-                className="flex-1 flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-xl font-semibold text-sm bg-emerald-600 text-white hover:bg-emerald-700 transition-colors shadow-sm"
+                className="flex-1 flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-xl font-semibold text-[13px] sm:text-sm bg-emerald-600 text-white hover:bg-emerald-700 transition-colors shadow-sm"
               >
                 <Stethoscope size={16} />
                 Today's Visit
@@ -699,7 +699,7 @@ export function PatientProfileClient({
           ) : hasPendingAppointment ? (
             <Link
               href={`/emr/${udid}`}
-              className="flex-1 flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-xl font-semibold text-sm bg-emerald-600 text-white hover:bg-emerald-700 transition-colors shadow-sm"
+              className="flex-1 flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-xl font-semibold text-[13px] sm:text-sm bg-emerald-600 text-white hover:bg-emerald-700 transition-colors shadow-sm"
             >
               <Stethoscope size={16} />
               Today&apos;s Visit
@@ -707,7 +707,7 @@ export function PatientProfileClient({
           ) : hasRequestedAppt ? (
             <button
               disabled
-              className="flex-1 flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-xl font-semibold text-sm bg-[var(--color-surface-sunken)] text-[var(--color-ink-400)] border border-[var(--color-border)] cursor-not-allowed"
+              className="flex-1 flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-xl font-semibold text-[13px] sm:text-sm bg-[var(--color-surface-sunken)] text-[var(--color-ink-400)] border border-[var(--color-border)] cursor-not-allowed"
               title="Patient has an appointment today but has not been moved to the queue yet"
             >
               <Clock size={16} />
@@ -716,7 +716,7 @@ export function PatientProfileClient({
           ) : (
             <button
               disabled
-              className="flex-1 flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-xl font-semibold text-sm bg-[var(--color-surface-sunken)] text-[var(--color-ink-400)] border border-[var(--color-border)] cursor-not-allowed"
+              className="flex-1 flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-xl font-semibold text-[13px] sm:text-sm bg-[var(--color-surface-sunken)] text-[var(--color-ink-400)] border border-[var(--color-border)] cursor-not-allowed"
             >
               <AlertCircle size={16} />
               No Appointment Today
@@ -753,11 +753,11 @@ export function PatientProfileClient({
           <div className="flex items-center justify-between px-4 py-3 bg-teal-100 border-b border-teal-200">
             <div className="flex items-center gap-2">
               <Scissors size={15} className="text-teal-700" />
-              <p className="text-sm font-semibold text-teal-900">Surgical Counselling</p>
+              <p className="text-[13px] sm:text-sm font-semibold text-teal-900">Surgical Counselling</p>
             </div>
             <div className="flex items-center gap-2">
               {counsellingStatus && counsellingStatus !== "DRAFT" && (
-                <span className={`inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                <span className={`inline-flex items-center text-[9px] sm:text-[10px] font-bold px-2 py-0.5 rounded-full border ${
                   counsellingStatus === "CONFIRMED"             ? "bg-teal-100 text-teal-700 border-teal-200" :
                   counsellingStatus === "FIT_FOR_SURGERY"       ? "bg-emerald-100 text-emerald-700 border-emerald-200" :
                   counsellingStatus === "NOT_FIT"               ? "bg-red-100 text-red-700 border-red-200" :
@@ -789,13 +789,13 @@ export function PatientProfileClient({
               {surgeryAdvisedName && (
                 <div>
                   <p className="text-[10px] font-bold text-teal-700 uppercase tracking-wide mb-0.5">Procedure</p>
-                  <p className="text-sm font-medium text-teal-900">{surgeryAdvisedName}</p>
+                  <p className="text-[13px] sm:text-sm font-medium text-teal-900">{surgeryAdvisedName}</p>
                 </div>
               )}
               {surgeryAdvisedEye && (
                 <div>
                   <p className="text-[10px] font-bold text-teal-700 uppercase tracking-wide mb-0.5">Eye</p>
-                  <p className="text-sm font-semibold text-teal-900">{surgeryAdvisedEye}</p>
+                  <p className="text-[13px] sm:text-sm font-semibold text-teal-900">{surgeryAdvisedEye}</p>
                 </div>
               )}
             </div>
@@ -803,12 +803,12 @@ export function PatientProfileClient({
             {surgeryAdvisedNotes && (
               <div>
                 <p className="text-[10px] font-bold text-teal-700 uppercase tracking-wide mb-0.5">Counselling Notes</p>
-                <p className="text-sm text-teal-800 whitespace-pre-line">{surgeryAdvisedNotes}</p>
+                <p className="text-[13px] sm:text-sm text-teal-800 whitespace-pre-line">{surgeryAdvisedNotes}</p>
               </div>
             )}
 
             {!surgeryAdvisedName && !surgeryAdvisedEye && !surgeryAdvisedNotes && (
-              <p className="text-xs text-teal-700 italic">Surgery advised — no details recorded yet.</p>
+              <p className="text-[11px] sm:text-xs text-teal-700 italic">Surgery advised — no details recorded yet.</p>
             )}
           </div>
         </Link>
