@@ -150,9 +150,9 @@ function CategoryChart({ catDist, total }: { catDist: CatPoint[]; total: number 
           const share = total > 0 ? Math.round((count / total) * 100) : 0;
           return (
             <div key={category}>
-              <div className="flex justify-between items-center text-xs mb-1.5">
+              <div className="flex justify-between items-center text-[11px] sm:text-xs mb-1.5">
                 <span className="font-medium text-[var(--color-ink-700)]">{cat.label}</span>
-                <span className="text-[var(--color-ink-400)]">{count} <span className="text-[10px]">({share}%)</span></span>
+                <span className="text-[var(--color-ink-400)]">{count} <span className="text-[9px] sm:text-[10px]">({share}%)</span></span>
               </div>
               <div className="h-2 bg-[var(--color-surface-sunken)] rounded-full overflow-hidden">
                 <div
@@ -164,7 +164,7 @@ function CategoryChart({ catDist, total }: { catDist: CatPoint[]; total: number 
           );
         })}
         {sorted.length === 0 && (
-          <p className="text-xs text-[var(--color-ink-400)] text-center py-6">No data yet</p>
+          <p className="text-[11px] sm:text-xs text-[var(--color-ink-400)] text-center py-6">No data yet</p>
         )}
       </div>
     </div>
@@ -236,7 +236,7 @@ function RecentPanel({ recentReg }: { recentReg: RecentPat[] }) {
                   />
                 ) : (
                   <div
-                    className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
+                    className="w-9 h-9 rounded-full flex items-center justify-center text-[11px] sm:text-xs font-bold flex-shrink-0"
                     style={{ background: av.bg, color: av.text }}
                   >
                     {initials(p.name)}
@@ -559,19 +559,19 @@ export function PatientsClient({
               <div className="hidden xl:flex items-center gap-4 px-7 py-2.5 border-b border-[var(--color-border)] bg-[var(--color-surface-sunken)]">
                 <div className="size-8 shrink-0" />
                 <div className="w-40 shrink-0">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">Patient</span>
+                  <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">Patient</span>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">Chief Complaint</span>
+                  <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">Chief Complaint</span>
                 </div>
                 <div className="w-48 shrink-0">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">Diagnoses</span>
+                  <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">Diagnoses</span>
                 </div>
                 <div className="w-28 shrink-0">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">Last Visit</span>
+                  <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">Last Visit</span>
                 </div>
                 <div className="w-28 shrink-0">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">Q &amp; F Time</span>
+                  <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">Q &amp; F Time</span>
                 </div>
                 <div className="w-20 shrink-0" />
               </div>
@@ -609,7 +609,7 @@ export function PatientsClient({
                           />
                         ) : (
                           <div
-                            className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0 select-none"
+                            className="w-9 h-9 rounded-full flex items-center justify-center text-[11px] sm:text-xs font-bold shrink-0 select-none"
                             style={{ background: av.bg, color: av.text }}
                           >
                             {initials(p.name)}
