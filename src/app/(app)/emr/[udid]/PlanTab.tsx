@@ -2296,12 +2296,12 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
         // The columns are fixed-width and total ~470px, so on a phone the table
         // scrolls inside its own card rather than pushing the page sideways.
         <div className="mt-1 overflow-x-auto">
-          <table className="w-full min-w-[470px] text-sm">
+          <table className="w-full min-w-[640px] text-sm">
             <thead>
               <tr className="border-b border-[var(--color-border)]">
-                <th className="px-3 py-1.5 text-left text-[10px] font-bold text-[var(--color-ink-300)] uppercase tracking-widest w-12">#</th>
-                <th className="px-3 py-1.5 text-left text-[10px] font-bold text-[var(--color-ink-300)] uppercase tracking-widest">Drug Name</th>
-                <th className="px-3 py-1.5 text-left text-[10px] font-bold text-[var(--color-ink-300)] uppercase tracking-widest w-24">Dose</th>
+                <th className="px-3 py-1.5 text-left text-[10px] font-bold text-[var(--color-ink-300)] uppercase tracking-widest w-10">#</th>
+                <th className="px-3 py-1.5 text-left text-[10px] font-bold text-[var(--color-ink-300)] uppercase tracking-widest w-40">Drug Name</th>
+                <th className="px-3 py-1.5 text-left text-[10px] font-bold text-[var(--color-ink-300)] uppercase tracking-widest w-20">Dose</th>
                 <th className="px-3 py-1.5 text-left text-[10px] font-bold text-[var(--color-ink-300)] uppercase tracking-widest w-44">Frequency</th>
                 <th className="px-3 py-1.5 text-left text-[10px] font-bold text-[var(--color-ink-300)] uppercase tracking-widest w-28">Duration</th>
                 <th className="px-3 py-1.5 w-20" />
@@ -2350,7 +2350,7 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
                                 </div>
                               );
                             })()}
-                            <span className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-900)]">{m.drugName}</span>
+                            <span className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-900)] break-words">{m.drugName}</span>
                           </div>
                         )}
                       </td>
