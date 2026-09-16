@@ -177,13 +177,13 @@ function SectionHeader({ title, desc, action }: {
   return (
     <div className="flex items-start justify-between mb-6">
       <div>
-        <h2 className="text-lg font-semibold text-[var(--color-ink-900)]">{title}</h2>
-        <p className="text-sm text-[var(--color-ink-500)] mt-0.5">{desc}</p>
+        <h2 className="text-base sm:text-lg font-semibold text-[var(--color-ink-900)]">{title}</h2>
+        <p className="text-[13px] sm:text-sm text-[var(--color-ink-500)] mt-0.5">{desc}</p>
       </div>
       {action && (
         <button
           onClick={action.onClick}
-          className="flex items-center gap-2 rounded-xl bg-[var(--color-primary-600)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--color-primary-700)] transition-colors"
+          className="flex items-center gap-2 rounded-xl bg-[var(--color-primary-600)] px-4 py-2 text-[13px] sm:text-sm font-semibold text-white hover:bg-[var(--color-primary-700)] transition-colors"
         >
           {Icon && <Icon size={14} />} {action.label}
         </button>
@@ -204,8 +204,8 @@ function CardHeader({ title, sub, right }: { title: string; sub?: string; right?
   return (
     <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--color-border)]">
       <div>
-        <p className="text-sm font-semibold text-[var(--color-ink-900)]">{title}</p>
-        {sub && <p className="text-xs text-[var(--color-ink-400)] mt-0.5">{sub}</p>}
+        <p className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-900)]">{title}</p>
+        {sub && <p className="text-[11px] sm:text-xs text-[var(--color-ink-400)] mt-0.5">{sub}</p>}
       </div>
       {right}
     </div>
@@ -222,7 +222,7 @@ function INP({ className = "", ...props }: React.InputHTMLAttributes<HTMLInputEl
 }
 
 function LBL({ children }: { children: React.ReactNode }) {
-  return <label className="block text-xs font-medium text-[var(--color-ink-500)] mb-1.5">{children}</label>;
+  return <label className="block text-[11px] sm:text-xs font-medium text-[var(--color-ink-500)] mb-1.5">{children}</label>;
 }
 
 function SaveBar({ onSave }: { onSave?: () => void }) {
@@ -230,7 +230,7 @@ function SaveBar({ onSave }: { onSave?: () => void }) {
     <div className="flex justify-end pt-4 border-t border-[var(--color-border)] mt-6">
       <button
         onClick={onSave}
-        className="flex items-center gap-2 rounded-xl bg-[var(--color-primary-600)] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[var(--color-primary-700)] transition-colors"
+        className="flex items-center gap-2 rounded-xl bg-[var(--color-primary-600)] px-5 py-2.5 text-[13px] sm:text-sm font-semibold text-white hover:bg-[var(--color-primary-700)] transition-colors"
       >
         <Save size={14} /> Save Changes
       </button>
@@ -289,7 +289,7 @@ function SettingsNavContent({
             <div key={group.id} className="mb-1">
               <button
                 onClick={() => toggleGroup(group.id)}
-                className="w-full flex items-center gap-2 px-2 py-2 rounded-lg text-xs font-bold uppercase tracking-wider text-[var(--color-ink-400)] hover:bg-[var(--color-surface-sunken)] transition-colors"
+                className="w-full flex items-center gap-2 px-2 py-2 rounded-lg text-[11px] sm:text-xs font-bold uppercase tracking-wider text-[var(--color-ink-400)] hover:bg-[var(--color-surface-sunken)] transition-colors"
               >
                 <GroupIcon size={12} className="shrink-0" />
                 <span className="flex-1 text-left">{group.label}</span>
@@ -308,7 +308,7 @@ function SettingsNavContent({
                       <button
                         key={item.id}
                         onClick={() => onSelect(item.id)}
-                        className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm transition-all text-left min-h-[44px] ${
+                        className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-[13px] sm:text-sm transition-all text-left min-h-[44px] ${
                           isActive
                             ? "bg-[var(--color-primary-50)] text-[var(--color-primary-700)] font-semibold border-l-2 border-[var(--color-primary-600)] pl-[10px]"
                             : "text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)] font-medium"
@@ -317,7 +317,7 @@ function SettingsNavContent({
                         <ItemIcon size={15} className="shrink-0" />
                         <span className="flex-1 truncate">{item.label}</span>
                         {badge && (
-                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0 ${
+                          <span className={`text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0 ${
                             item.id === "users"
                               ? "bg-[var(--color-primary-100)] text-[var(--color-primary-700)]"
                               : item.id === "audit"
@@ -349,7 +349,7 @@ function SettingsSidebar({
   return (
     <aside className="hidden lg:flex w-60 shrink-0 border-r border-[var(--color-border)] bg-white flex-col h-full">
       <div className="px-4 py-4 border-b border-[var(--color-border)] shrink-0">
-        <p className="text-xs font-bold uppercase tracking-widest text-[var(--color-ink-400)]">Settings</p>
+        <p className="text-[11px] sm:text-xs font-bold uppercase tracking-widest text-[var(--color-ink-400)]">Settings</p>
       </div>
       <SettingsNavContent active={active} onSelect={onSelect} userCount={userCount} />
     </aside>
@@ -383,7 +383,7 @@ function SettingsDrawer({
         style={{ transform: open ? "translateX(0)" : "translateX(-100%)" }}
       >
         <div className="flex items-center justify-between px-4 py-4 border-b border-[var(--color-border)] shrink-0">
-          <p className="text-sm font-bold text-[var(--color-ink-900)]">Settings</p>
+          <p className="text-[13px] sm:text-sm font-bold text-[var(--color-ink-900)]">Settings</p>
           <button
             onClick={onClose}
             aria-label="Close settings menu"
@@ -428,31 +428,31 @@ function AddHospitalModal({ doctorId, onClose }: { doctorId: string | null; onCl
   }
 
   const INP = "mt-1 w-full rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]";
-  const LBL = "text-xs font-semibold text-[var(--color-ink-500)] uppercase tracking-wide";
+  const LBL = "text-[11px] sm:text-xs font-semibold text-[var(--color-ink-500)] uppercase tracking-wide";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={onClose}>
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)] shrink-0">
           <div>
-            <h2 className="text-base font-semibold text-[var(--color-ink-900)]">Add Hospital</h2>
-            <p className="text-xs text-[var(--color-ink-400)] mt-0.5">Creates the hospital and its login account</p>
+            <h2 className="text-[15px] sm:text-base font-semibold text-[var(--color-ink-900)]">Add Hospital</h2>
+            <p className="text-[11px] sm:text-xs text-[var(--color-ink-400)] mt-0.5">Creates the hospital and its login account</p>
           </div>
           <button onClick={onClose} className="p-1 rounded-lg text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]"><X size={16} /></button>
         </div>
         {success ? (
           <div className="px-6 py-10 flex flex-col items-center gap-2 text-center">
             <Check size={36} className="text-emerald-500" />
-            <p className="text-sm font-semibold text-[var(--color-ink-800)]">Hospital created!</p>
-            <p className="text-xs text-[var(--color-ink-400)]">The hospital can now log in with its credentials.</p>
+            <p className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-800)]">Hospital created!</p>
+            <p className="text-[11px] sm:text-xs text-[var(--color-ink-400)]">The hospital can now log in with its credentials.</p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="overflow-y-auto px-6 py-5 flex flex-col gap-5">
-            {error && <p className="text-xs text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
+            {error && <p className="text-[11px] sm:text-xs text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
 
             {/* Hospital details */}
             <div>
-              <p className="text-xs font-bold text-[var(--color-ink-400)] uppercase tracking-widest mb-3">Hospital Details</p>
+              <p className="text-[11px] sm:text-xs font-bold text-[var(--color-ink-400)] uppercase tracking-widest mb-3">Hospital Details</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="sm:col-span-2"><label className={LBL}>Hospital Name *</label><input name="name" required placeholder="e.g. Sunrise Eye Hospital" className={INP} /></div>
                 <div><label className={LBL}>Short Code *</label><input name="shortCode" required placeholder="SEH" maxLength={8} className={INP} /></div>
@@ -463,7 +463,7 @@ function AddHospitalModal({ doctorId, onClose }: { doctorId: string | null; onCl
 
             {/* Login account */}
             <div>
-              <p className="text-xs font-bold text-[var(--color-ink-400)] uppercase tracking-widest mb-3">Hospital Login Account</p>
+              <p className="text-[11px] sm:text-xs font-bold text-[var(--color-ink-400)] uppercase tracking-widest mb-3">Hospital Login Account</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="sm:col-span-2"><label className={LBL}>Contact Person Name *</label><input name="staffName" required placeholder="e.g. Admin Staff" className={INP} /></div>
                 <div><label className={LBL}>Username *</label><input name="username" required placeholder="sunrise.admin" className={INP} /></div>
@@ -473,8 +473,8 @@ function AddHospitalModal({ doctorId, onClose }: { doctorId: string | null; onCl
             </div>
 
             <div className="flex gap-3 pt-1 shrink-0">
-              <button type="button" onClick={onClose} className="flex-1 rounded-xl border border-[var(--color-border)] px-4 py-2 text-sm font-medium text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]">Cancel</button>
-              <button type="submit" disabled={pending} className="flex-1 rounded-xl bg-[var(--color-primary-600)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--color-primary-700)] disabled:opacity-50">
+              <button type="button" onClick={onClose} className="flex-1 rounded-xl border border-[var(--color-border)] px-4 py-2 text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]">Cancel</button>
+              <button type="submit" disabled={pending} className="flex-1 rounded-xl bg-[var(--color-primary-600)] px-4 py-2 text-[13px] sm:text-sm font-semibold text-white hover:bg-[var(--color-primary-700)] disabled:opacity-50">
                 {pending ? "Creating…" : "Create Hospital"}
               </button>
             </div>
@@ -519,7 +519,7 @@ function AddUserModal({ hospitals, assignableRoles, doctorId, onClose, presetHos
   }
 
   const F = "mt-1 w-full rounded-lg border border-[var(--color-border)] px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] bg-white";
-  const L = "block text-xs font-semibold text-[var(--color-ink-500)] uppercase tracking-wide mb-0";
+  const L = "block text-[11px] sm:text-xs font-semibold text-[var(--color-ink-500)] uppercase tracking-wide mb-0";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={onClose}>
@@ -528,9 +528,9 @@ function AddUserModal({ hospitals, assignableRoles, doctorId, onClose, presetHos
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)] shrink-0">
           <div>
-            <h2 className="text-base font-semibold text-[var(--color-ink-900)]">Add User / Role</h2>
+            <h2 className="text-[15px] sm:text-base font-semibold text-[var(--color-ink-900)]">Add User / Role</h2>
             {presetHospital && (
-              <p className="text-xs text-[var(--color-ink-400)] mt-0.5">{presetHospital.name}</p>
+              <p className="text-[11px] sm:text-xs text-[var(--color-ink-400)] mt-0.5">{presetHospital.name}</p>
             )}
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg text-[var(--color-ink-400)] hover:bg-[var(--color-surface-sunken)]"><X size={16} /></button>
@@ -541,11 +541,11 @@ function AddUserModal({ hospitals, assignableRoles, doctorId, onClose, presetHos
             <div className="w-14 h-14 rounded-full bg-emerald-100 flex items-center justify-center">
               <Check size={28} className="text-emerald-600" />
             </div>
-            <p className="text-sm font-semibold text-[var(--color-ink-800)]">User created successfully!</p>
+            <p className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-800)]">User created successfully!</p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="overflow-y-auto px-6 py-5 flex flex-col gap-5">
-            {error && <p className="text-xs text-red-600 bg-red-50 border border-red-200 px-3 py-2 rounded-lg">{error}</p>}
+            {error && <p className="text-[11px] sm:text-xs text-red-600 bg-red-50 border border-red-200 px-3 py-2 rounded-lg">{error}</p>}
 
             {/* Role */}
             <div>
@@ -574,7 +574,7 @@ function AddUserModal({ hospitals, assignableRoles, doctorId, onClose, presetHos
                   <input type="hidden" name="hospitalId" value={presetHospitalId} />
                   <div className="mt-1 flex items-center gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-3 py-2.5">
                     <Building size={14} className="text-[var(--color-primary-600)] shrink-0" />
-                    <span className="text-sm text-[var(--color-ink-700)]">{presetHospital?.name}</span>
+                    <span className="text-[13px] sm:text-sm text-[var(--color-ink-700)]">{presetHospital?.name}</span>
                   </div>
                 </>
               ) : (
@@ -627,7 +627,7 @@ function AddUserModal({ hospitals, assignableRoles, doctorId, onClose, presetHos
                   className={`${F} ${pwMismatch ? "border-red-400 focus:ring-red-400" : ""}`}
                 />
               </div>
-              {pwMismatch && <p className="sm:col-span-2 text-xs text-red-600 -mt-2">Passwords do not match.</p>}
+              {pwMismatch && <p className="sm:col-span-2 text-[11px] sm:text-xs text-red-600 -mt-2">Passwords do not match.</p>}
             </div>
 
             {/* Status */}
@@ -639,7 +639,7 @@ function AddUserModal({ hospitals, assignableRoles, doctorId, onClose, presetHos
                     key={s}
                     type="button"
                     onClick={() => setStatus(s)}
-                    className={`flex items-center gap-2 flex-1 rounded-xl border-2 px-4 py-2.5 text-sm font-semibold transition-all ${
+                    className={`flex items-center gap-2 flex-1 rounded-xl border-2 px-4 py-2.5 text-[13px] sm:text-sm font-semibold transition-all ${
                       status === s
                         ? s === "ACTIVE"
                           ? "border-emerald-500 bg-emerald-50 text-emerald-700"
@@ -657,10 +657,10 @@ function AddUserModal({ hospitals, assignableRoles, doctorId, onClose, presetHos
 
             {/* Actions */}
             <div className="flex gap-3 pt-1 shrink-0">
-              <button type="button" onClick={onClose} className="flex-1 rounded-xl border border-[var(--color-border)] px-4 py-2.5 text-sm font-medium text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]">
+              <button type="button" onClick={onClose} className="flex-1 rounded-xl border border-[var(--color-border)] px-4 py-2.5 text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]">
                 Cancel
               </button>
-              <button type="submit" disabled={pending} className="flex-1 rounded-xl bg-[var(--color-primary-600)] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[var(--color-primary-700)] disabled:opacity-50">
+              <button type="submit" disabled={pending} className="flex-1 rounded-xl bg-[var(--color-primary-600)] px-4 py-2.5 text-[13px] sm:text-sm font-semibold text-white hover:bg-[var(--color-primary-700)] disabled:opacity-50">
                 {pending ? "Creating…" : "Create User"}
               </button>
             </div>
@@ -700,26 +700,26 @@ function EditHospitalModal({ hospital, onClose }: { hospital: HospitalRow; onClo
   }
 
   const F = "mt-1 w-full rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]";
-  const L = "text-xs font-semibold text-[var(--color-ink-500)] uppercase tracking-wide";
+  const L = "text-[11px] sm:text-xs font-semibold text-[var(--color-ink-500)] uppercase tracking-wide";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={onClose}>
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
           <div>
-            <h2 className="text-base font-semibold text-[var(--color-ink-900)]">Edit Hospital</h2>
-            <p className="text-xs text-[var(--color-ink-400)] mt-0.5">{hospital.name}</p>
+            <h2 className="text-[15px] sm:text-base font-semibold text-[var(--color-ink-900)]">Edit Hospital</h2>
+            <p className="text-[11px] sm:text-xs text-[var(--color-ink-400)] mt-0.5">{hospital.name}</p>
           </div>
           <button onClick={onClose} className="p-1 rounded-lg text-[var(--color-ink-400)] hover:bg-[var(--color-surface-sunken)]"><X size={16} /></button>
         </div>
         {success ? (
           <div className="px-6 py-10 flex flex-col items-center gap-2 text-center">
             <Check size={36} className="text-emerald-500" />
-            <p className="text-sm font-semibold text-[var(--color-ink-800)]">Hospital updated!</p>
+            <p className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-800)]">Hospital updated!</p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="px-6 py-5 flex flex-col gap-4">
-            {error && <p className="text-xs text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
+            {error && <p className="text-[11px] sm:text-xs text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="sm:col-span-2"><label className={L}>Hospital Name *</label><input value={form.name} onChange={(e) => set("name", e.target.value)} required className={F} /></div>
               <div><label className={L}>Short Code *</label><input value={form.shortCode} onChange={(e) => set("shortCode", e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))} required maxLength={8} className={`${F} font-mono uppercase`} /></div>
@@ -730,22 +730,22 @@ function EditHospitalModal({ hospital, onClose }: { hospital: HospitalRow; onClo
             {/* Activate / Deactivate */}
             <div className={`flex items-center justify-between rounded-xl px-4 py-3 ${hospital.active ? "bg-emerald-50 border border-emerald-200" : "bg-red-50 border border-red-200"}`}>
               <div>
-                <p className="text-sm font-medium text-[var(--color-ink-800)]">Hospital Status</p>
-                <p className="text-xs text-[var(--color-ink-500)] mt-0.5">{hospital.active ? "Currently active — staff can log in" : "Deactivated — staff cannot log in"}</p>
+                <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-800)]">Hospital Status</p>
+                <p className="text-[11px] sm:text-xs text-[var(--color-ink-500)] mt-0.5">{hospital.active ? "Currently active — staff can log in" : "Deactivated — staff cannot log in"}</p>
               </div>
               <button
                 type="button"
                 onClick={handleToggle}
                 disabled={toggling}
-                className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50 ${hospital.active ? "bg-red-100 text-red-700 hover:bg-red-200" : "bg-emerald-100 text-emerald-700 hover:bg-emerald-200"}`}
+                className={`text-[11px] sm:text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50 ${hospital.active ? "bg-red-100 text-red-700 hover:bg-red-200" : "bg-emerald-100 text-emerald-700 hover:bg-emerald-200"}`}
               >
                 {toggling ? "…" : hospital.active ? "Deactivate" : "Activate"}
               </button>
             </div>
 
             <div className="flex gap-3 pt-1">
-              <button type="button" onClick={onClose} className="flex-1 rounded-xl border border-[var(--color-border)] px-4 py-2 text-sm font-medium text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]">Cancel</button>
-              <button type="submit" disabled={pending} className="flex-1 rounded-xl bg-[var(--color-primary-600)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--color-primary-700)] disabled:opacity-50">
+              <button type="button" onClick={onClose} className="flex-1 rounded-xl border border-[var(--color-border)] px-4 py-2 text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]">Cancel</button>
+              <button type="submit" disabled={pending} className="flex-1 rounded-xl bg-[var(--color-primary-600)] px-4 py-2 text-[13px] sm:text-sm font-semibold text-white hover:bg-[var(--color-primary-700)] disabled:opacity-50">
                 {pending ? "Saving…" : "Save Changes"}
               </button>
             </div>
@@ -791,15 +791,15 @@ function EditUserModal({ user, onClose }: { user: UserRow; onClose: () => void }
   }
 
   const F = "mt-1 w-full rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]";
-  const L = "text-xs font-semibold text-[var(--color-ink-500)] uppercase tracking-wide";
+  const L = "text-[11px] sm:text-xs font-semibold text-[var(--color-ink-500)] uppercase tracking-wide";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={onClose}>
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)] shrink-0">
           <div>
-            <h2 className="text-base font-semibold text-[var(--color-ink-900)]">Edit User</h2>
-            <p className="text-xs text-[var(--color-ink-400)] mt-0.5">@{user.username} · {user.hospital ?? "No hospital"}</p>
+            <h2 className="text-[15px] sm:text-base font-semibold text-[var(--color-ink-900)]">Edit User</h2>
+            <p className="text-[11px] sm:text-xs text-[var(--color-ink-400)] mt-0.5">@{user.username} · {user.hospital ?? "No hospital"}</p>
           </div>
           <button onClick={onClose} className="p-1 rounded-lg text-[var(--color-ink-400)] hover:bg-[var(--color-surface-sunken)]"><X size={16} /></button>
         </div>
@@ -811,12 +811,12 @@ function EditUserModal({ user, onClose }: { user: UserRow; onClose: () => void }
             </div>
             <div>
               <p className="font-semibold text-[var(--color-ink-900)]">Delete {user.name}?</p>
-              <p className="text-sm text-[var(--color-ink-500)] mt-1">This action cannot be undone. The user will lose all access.</p>
+              <p className="text-[13px] sm:text-sm text-[var(--color-ink-500)] mt-1">This action cannot be undone. The user will lose all access.</p>
             </div>
-            {error && <p className="text-xs text-red-600">{error}</p>}
+            {error && <p className="text-[11px] sm:text-xs text-red-600">{error}</p>}
             <div className="flex gap-3 w-full">
-              <button onClick={() => setShowDeleteConfirm(false)} className="flex-1 rounded-xl border border-[var(--color-border)] px-4 py-2 text-sm font-medium text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]">Cancel</button>
-              <button onClick={handleDelete} disabled={deleting} className="flex-1 rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50">
+              <button onClick={() => setShowDeleteConfirm(false)} className="flex-1 rounded-xl border border-[var(--color-border)] px-4 py-2 text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]">Cancel</button>
+              <button onClick={handleDelete} disabled={deleting} className="flex-1 rounded-xl bg-red-600 px-4 py-2 text-[13px] sm:text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50">
                 {deleting ? "Deleting…" : "Yes, Delete"}
               </button>
             </div>
@@ -824,11 +824,11 @@ function EditUserModal({ user, onClose }: { user: UserRow; onClose: () => void }
         ) : success ? (
           <div className="px-6 py-10 flex flex-col items-center gap-2 text-center">
             <Check size={36} className="text-emerald-500" />
-            <p className="text-sm font-semibold text-[var(--color-ink-800)]">User updated!</p>
+            <p className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-800)]">User updated!</p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="overflow-y-auto px-6 py-5 flex flex-col gap-4">
-            {error && <p className="text-xs text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
+            {error && <p className="text-[11px] sm:text-xs text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="sm:col-span-2"><label className={L}>Full Name *</label><input value={form.name} onChange={(e) => set("name", e.target.value)} required className={F} /></div>
               <div><label className={L}>Email</label><input type="email" value={form.email} onChange={(e) => set("email", e.target.value)} className={F} /></div>
@@ -842,14 +842,14 @@ function EditUserModal({ user, onClose }: { user: UserRow; onClose: () => void }
             {/* Active toggle */}
             <div className={`flex items-center justify-between rounded-xl px-4 py-3 ${user.active ? "bg-emerald-50 border border-emerald-200" : "bg-red-50 border border-red-200"}`}>
               <div>
-                <p className="text-sm font-medium text-[var(--color-ink-800)]">Account Status</p>
-                <p className="text-xs text-[var(--color-ink-500)] mt-0.5">{user.active ? "Active — user can log in" : "Deactivated — login blocked"}</p>
+                <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-800)]">Account Status</p>
+                <p className="text-[11px] sm:text-xs text-[var(--color-ink-500)] mt-0.5">{user.active ? "Active — user can log in" : "Deactivated — login blocked"}</p>
               </div>
               <button
                 type="button"
                 onClick={handleToggleActive}
                 disabled={toggling}
-                className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50 ${user.active ? "bg-red-100 text-red-700 hover:bg-red-200" : "bg-emerald-100 text-emerald-700 hover:bg-emerald-200"}`}
+                className={`text-[11px] sm:text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50 ${user.active ? "bg-red-100 text-red-700 hover:bg-red-200" : "bg-emerald-100 text-emerald-700 hover:bg-emerald-200"}`}
               >
                 {toggling ? "…" : user.active ? "Deactivate" : "Activate"}
               </button>
@@ -859,12 +859,12 @@ function EditUserModal({ user, onClose }: { user: UserRow; onClose: () => void }
               <button
                 type="button"
                 onClick={() => setShowDeleteConfirm(true)}
-                className="rounded-xl border border-red-200 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
+                className="rounded-xl border border-red-200 px-3 py-2 text-[13px] sm:text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
               >
                 <Trash2 size={14} />
               </button>
-              <button type="button" onClick={onClose} className="flex-1 rounded-xl border border-[var(--color-border)] px-4 py-2 text-sm font-medium text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]">Cancel</button>
-              <button type="submit" disabled={pending} className="flex-1 rounded-xl bg-[var(--color-primary-600)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--color-primary-700)] disabled:opacity-50">
+              <button type="button" onClick={onClose} className="flex-1 rounded-xl border border-[var(--color-border)] px-4 py-2 text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]">Cancel</button>
+              <button type="submit" disabled={pending} className="flex-1 rounded-xl bg-[var(--color-primary-600)] px-4 py-2 text-[13px] sm:text-sm font-semibold text-white hover:bg-[var(--color-primary-700)] disabled:opacity-50">
                 {pending ? "Saving…" : "Save Changes"}
               </button>
             </div>
@@ -964,7 +964,7 @@ function UsersSection({ users, hospitals, assignableRoles, doctorId }: { users: 
 
         {/* User cards */}
         {paged.length === 0 ? (
-          <div className="px-5 py-12 text-center text-sm text-[var(--color-ink-400)]">No users found.</div>
+          <div className="px-5 py-12 text-center text-[13px] sm:text-sm text-[var(--color-ink-400)]">No users found.</div>
         ) : (
           <div className="flex flex-col gap-3 p-5">
             {paged.map((u) => {
@@ -983,7 +983,7 @@ function UsersSection({ users, hospitals, assignableRoles, doctorId }: { users: 
                 >
                   {/* Avatar */}
                   <div
-                    className="size-10 rounded-full flex items-center justify-center text-sm font-bold shrink-0"
+                    className="size-10 rounded-full flex items-center justify-center text-[13px] sm:text-sm font-bold shrink-0"
                     style={{ background: av.bg, color: av.text }}
                   >
                     {initials(u.name)}
@@ -992,20 +992,20 @@ function UsersSection({ users, hospitals, assignableRoles, doctorId }: { users: 
                   {/* Name + meta */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <p className="font-semibold text-[var(--color-ink-900)] text-sm">{u.name}</p>
-                      <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold ${rm.cls}`}>{rm.label}</span>
+                      <p className="font-semibold text-[var(--color-ink-900)] text-[13px] sm:text-sm">{u.name}</p>
+                      <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[9px] sm:text-[10px] font-bold ${rm.cls}`}>{rm.label}</span>
                       <div className="flex items-center gap-1">
                         <span className={`size-1.5 rounded-full ${u.active ? "bg-emerald-500" : "bg-red-400"}`} />
-                        <span className={`text-[10px] ${u.active ? "text-emerald-600" : "text-red-500"}`}>{u.active ? "Active" : "Inactive"}</span>
+                        <span className={`text-[9px] sm:text-[10px] ${u.active ? "text-emerald-600" : "text-red-500"}`}>{u.active ? "Active" : "Inactive"}</span>
                       </div>
                     </div>
-                    <p className="text-xs text-[var(--color-ink-400)] mt-0.5 truncate">
+                    <p className="text-[11px] sm:text-xs text-[var(--color-ink-400)] mt-0.5 truncate">
                       @{u.username}{u.hospital ? ` · ${u.hospital}` : ""}
                     </p>
                   </div>
 
                   {/* Joined date */}
-                  <p className="text-xs text-[var(--color-ink-400)] hidden sm:block shrink-0">
+                  <p className="text-[11px] sm:text-xs text-[var(--color-ink-400)] hidden sm:block shrink-0">
                     Joined {format(new Date(u.createdAt), "dd MMM yyyy")}
                   </p>
                 </div>
@@ -1016,7 +1016,7 @@ function UsersSection({ users, hospitals, assignableRoles, doctorId }: { users: 
 
         {/* Pagination */}
         <div className="flex items-center justify-between px-5 py-3.5 border-t border-[var(--color-border)]">
-          <p className="text-xs text-[var(--color-ink-400)]">
+          <p className="text-[11px] sm:text-xs text-[var(--color-ink-400)]">
             Showing {Math.min((page - 1) * PAGE_SIZE + 1, filtered.length)}–{Math.min(page * PAGE_SIZE, filtered.length)} of {filtered.length}
           </p>
           <div className="flex items-center gap-1">
@@ -1024,7 +1024,7 @@ function UsersSection({ users, hospitals, assignableRoles, doctorId }: { users: 
               <button
                 key={p}
                 onClick={() => setPage(p)}
-                className={`w-7 h-7 rounded-lg text-xs font-medium transition-colors ${
+                className={`w-7 h-7 rounded-lg text-[11px] sm:text-xs font-medium transition-colors ${
                   p === page
                     ? "bg-[var(--color-primary-600)] text-white"
                     : "text-[var(--color-ink-500)] hover:bg-[var(--color-surface-sunken)]"
@@ -1050,13 +1050,13 @@ function RolesSection() {
         </div>
         <div>
           <p className="font-semibold text-[var(--color-ink-900)] mb-1">Role & Permission Management</p>
-          <p className="text-sm text-[var(--color-ink-500)] max-w-sm">
+          <p className="text-[13px] sm:text-sm text-[var(--color-ink-500)] max-w-sm">
             Create roles, assign module-level permissions, and control what each role can access across the system.
           </p>
         </div>
         <Link
           href="/settings/roles?returnTo=/settings"
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[var(--color-primary-600)] text-white text-sm font-semibold hover:bg-[var(--color-primary-700)] transition-colors"
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[var(--color-primary-600)] text-white text-[13px] sm:text-sm font-semibold hover:bg-[var(--color-primary-700)] transition-colors"
         >
           <Shield size={15} />
           Open Role Manager
@@ -1087,8 +1087,8 @@ function DepartmentsSection() {
               {d.name[0]}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-semibold text-sm text-[var(--color-ink-900)] truncate">{d.name}</p>
-              <p className="text-xs text-[var(--color-ink-400)]">Head: {d.head} · {d.staff} staff</p>
+              <p className="font-semibold text-[13px] sm:text-sm text-[var(--color-ink-900)] truncate">{d.name}</p>
+              <p className="text-[11px] sm:text-xs text-[var(--color-ink-400)]">Head: {d.head} · {d.staff} staff</p>
             </div>
             <div className="flex gap-1 shrink-0">
               <button className="p-1.5 rounded-lg hover:bg-[var(--color-surface-sunken)] text-[var(--color-ink-400)]"><Edit size={13} /></button>
@@ -1179,7 +1179,7 @@ function HospitalSection({ hospitals }: { hospitals: HospitalRow[] }) {
             <Building size={18} className="text-[var(--color-primary-600)]" />
             <div>
               <p className="text-2xl font-bold text-[var(--color-primary-700)] leading-none">{hospitals.length}</p>
-              <p className="text-xs text-[var(--color-ink-500)] mt-0.5">{hospitals.length === 1 ? "Hospital" : "Hospitals"} linked</p>
+              <p className="text-[11px] sm:text-xs text-[var(--color-ink-500)] mt-0.5">{hospitals.length === 1 ? "Hospital" : "Hospitals"} linked</p>
             </div>
           </div>
         </div>
@@ -1195,13 +1195,13 @@ function HospitalSection({ hospitals }: { hospitals: HospitalRow[] }) {
                   : "border-[var(--color-border)] bg-white hover:border-[var(--color-primary-300)] hover:bg-[var(--color-primary-50)]"
               }`}
             >
-              <div className="w-9 h-9 rounded-lg bg-[var(--color-primary-100)] text-[var(--color-primary-700)] flex items-center justify-center text-xs font-bold shrink-0">
+              <div className="w-9 h-9 rounded-lg bg-[var(--color-primary-100)] text-[var(--color-primary-700)] flex items-center justify-center text-[11px] sm:text-xs font-bold shrink-0">
                 {hosp.shortCode ?? `H${i + 1}`}
               </div>
               <div className="min-w-0">
-                <p className="text-sm font-semibold text-[var(--color-ink-900)] truncate">{hosp.name}</p>
-                {hosp.address && <p className="text-xs text-[var(--color-ink-400)] mt-0.5 truncate">{hosp.address}</p>}
-                {hosp.contact && <p className="text-xs text-[var(--color-ink-400)]">{hosp.contact}</p>}
+                <p className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-900)] truncate">{hosp.name}</p>
+                {hosp.address && <p className="text-[11px] sm:text-xs text-[var(--color-ink-400)] mt-0.5 truncate">{hosp.address}</p>}
+                {hosp.contact && <p className="text-[11px] sm:text-xs text-[var(--color-ink-400)]">{hosp.contact}</p>}
               </div>
             </button>
           ))}
@@ -1210,7 +1210,7 @@ function HospitalSection({ hospitals }: { hospitals: HospitalRow[] }) {
       <div className="space-y-5">
         {/* Logo section */}
         <Card className="p-5">
-          <p className="text-sm font-semibold text-[var(--color-ink-900)] mb-4">Hospital Logo</p>
+          <p className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-900)] mb-4">Hospital Logo</p>
           <div className="flex items-center gap-4">
             <div className="w-20 h-20 rounded-2xl border-2 border-dashed border-[var(--color-border)] flex items-center justify-center bg-[var(--color-surface-sunken)] text-2xl font-bold text-[var(--color-primary-600)] overflow-hidden shrink-0">
               {logoPreview
@@ -1218,7 +1218,7 @@ function HospitalSection({ hospitals }: { hospitals: HospitalRow[] }) {
                 : (h?.shortCode ?? "H")}
             </div>
             <div>
-              <label className={`inline-flex items-center gap-2 rounded-xl border border-[var(--color-border)] px-4 py-2 text-sm font-medium cursor-pointer hover:bg-[var(--color-surface-sunken)] transition-colors ${logoUploading ? "opacity-50 pointer-events-none" : ""}`}>
+              <label className={`inline-flex items-center gap-2 rounded-xl border border-[var(--color-border)] px-4 py-2 text-[13px] sm:text-sm font-medium cursor-pointer hover:bg-[var(--color-surface-sunken)] transition-colors ${logoUploading ? "opacity-50 pointer-events-none" : ""}`}>
                 <Upload size={14} /> {logoUploading ? "Uploading…" : "Upload Logo"}
                 <input
                   type="file"
@@ -1228,9 +1228,9 @@ function HospitalSection({ hospitals }: { hospitals: HospitalRow[] }) {
                   disabled={logoUploading}
                 />
               </label>
-              <p className="text-xs text-[var(--color-ink-400)] mt-1.5">PNG or JPG · Max 2MB · 512×512px recommended</p>
+              <p className="text-[11px] sm:text-xs text-[var(--color-ink-400)] mt-1.5">PNG or JPG · Max 2MB · 512×512px recommended</p>
               {logoMsg && (
-                <p className={`text-xs mt-1 ${logoMsg.type === "ok" ? "text-emerald-600" : "text-red-500"}`}>
+                <p className={`text-[11px] sm:text-xs mt-1 ${logoMsg.type === "ok" ? "text-emerald-600" : "text-red-500"}`}>
                   {logoMsg.text}
                 </p>
               )}
@@ -1240,7 +1240,7 @@ function HospitalSection({ hospitals }: { hospitals: HospitalRow[] }) {
 
         {/* Basic info */}
         <Card className="p-5">
-          <p className="text-sm font-semibold text-[var(--color-ink-900)] mb-4">Basic Information</p>
+          <p className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-900)] mb-4">Basic Information</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div><LBL>Hospital Name</LBL><INP value={form.name} onChange={(e) => set("name", e.target.value)} /></div>
             <div><LBL>Short Code</LBL><INP value={form.code} onChange={(e) => set("code", e.target.value)} /></div>
@@ -1253,7 +1253,7 @@ function HospitalSection({ hospitals }: { hospitals: HospitalRow[] }) {
 
         {/* Contact */}
         <Card className="p-5">
-          <p className="text-sm font-semibold text-[var(--color-ink-900)] mb-4">Contact Details</p>
+          <p className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-900)] mb-4">Contact Details</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <LBL>Phone Number</LBL>
@@ -1346,8 +1346,8 @@ function NotificationsSection() {
               {group.items.map((item) => (
                 <div key={item.key} className="flex items-center justify-between px-5 py-4">
                   <div>
-                    <p className="text-sm font-medium text-[var(--color-ink-800)]">{item.label}</p>
-                    <p className="text-xs text-[var(--color-ink-400)] mt-0.5">{item.desc}</p>
+                    <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-800)]">{item.label}</p>
+                    <p className="text-[11px] sm:text-xs text-[var(--color-ink-400)] mt-0.5">{item.desc}</p>
                   </div>
                   <Toggle checked={cfg[item.key]} onChange={() => toggle(item.key)} />
                 </div>
@@ -1356,7 +1356,7 @@ function NotificationsSection() {
           </Card>
         ))}
         <div className="flex justify-end">
-          <button className="flex items-center gap-2 rounded-xl bg-[var(--color-primary-600)] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[var(--color-primary-700)] transition-colors">
+          <button className="flex items-center gap-2 rounded-xl bg-[var(--color-primary-600)] px-5 py-2.5 text-[13px] sm:text-sm font-semibold text-white hover:bg-[var(--color-primary-700)] transition-colors">
             <Save size={14} /> Save Preferences
           </button>
         </div>
@@ -1409,8 +1409,8 @@ function AuditSection({ auditLogs }: { auditLogs: AuditRow[] }) {
               <Shield size={15} />
             </div>
             <div className="min-w-0">
-              <p className="text-sm font-semibold text-[var(--color-ink-900)] group-hover:text-[var(--color-primary-700)]">{label}</p>
-              <p className="text-xs text-[var(--color-ink-500)] mt-0.5 leading-tight">{desc}</p>
+              <p className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-900)] group-hover:text-[var(--color-primary-700)]">{label}</p>
+              <p className="text-[11px] sm:text-xs text-[var(--color-ink-500)] mt-0.5 leading-tight">{desc}</p>
             </div>
           </a>
         ))}
@@ -1422,7 +1422,7 @@ function AuditSection({ auditLogs }: { auditLogs: AuditRow[] }) {
           <div className="flex rounded-lg border border-[var(--color-border)] overflow-hidden">
             {(["timeline", "table"] as const).map((v) => (
               <button key={v} onClick={() => setView(v)}
-                className={`px-4 py-1.5 text-xs font-medium capitalize transition-colors ${
+                className={`px-4 py-1.5 text-[11px] sm:text-xs font-medium capitalize transition-colors ${
                   view === v ? "bg-[var(--color-primary-600)] text-white" : "text-[var(--color-ink-500)] hover:bg-[var(--color-surface-sunken)]"
                 }`}
               >{v}</button>
@@ -1442,11 +1442,11 @@ function AuditSection({ auditLogs }: { auditLogs: AuditRow[] }) {
             <option value="">All Modules</option>
             {entities.map((e) => <option key={e} value={e}>{e}</option>)}
           </select>
-          <span className="ml-auto text-xs text-[var(--color-ink-400)]">{filtered.length} events</span>
+          <span className="ml-auto text-[11px] sm:text-xs text-[var(--color-ink-400)]">{filtered.length} events</span>
         </div>
 
         {filtered.length === 0 ? (
-          <div className="py-12 text-center text-sm text-[var(--color-ink-400)]">No audit events found.</div>
+          <div className="py-12 text-center text-[13px] sm:text-sm text-[var(--color-ink-400)]">No audit events found.</div>
         ) : view === "timeline" ? (
           <div className="px-5 py-4 space-y-0">
             {filtered.slice(0, 20).map((entry, idx) => {
@@ -1463,18 +1463,18 @@ function AuditSection({ auditLogs }: { auditLogs: AuditRow[] }) {
                   <div className="flex-1 pb-4">
                     <div className="flex items-start justify-between gap-2">
                       <div>
-                        <p className="text-sm font-medium text-[var(--color-ink-800)]">
+                        <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-800)]">
                           <span className="capitalize">{entry.entityType}</span> {verb}
                         </p>
-                        <p className="text-xs text-[var(--color-ink-400)] mt-0.5">
+                        <p className="text-[11px] sm:text-xs text-[var(--color-ink-400)] mt-0.5">
                           {entry.entityType} · {entry.action}
                         </p>
                       </div>
-                      <p className="text-[11px] text-[var(--color-ink-400)] shrink-0 mt-0.5">
+                      <p className="text-[10px] sm:text-[11px] text-[var(--color-ink-400)] shrink-0 mt-0.5">
                         {formatDistanceToNow(new Date(entry.timestamp), { addSuffix: true })}
                       </p>
                     </div>
-                    <div className="mt-1.5 flex items-center gap-3 text-[11px] text-[var(--color-ink-400)]">
+                    <div className="mt-1.5 flex items-center gap-3 text-[10px] sm:text-[11px] text-[var(--color-ink-400)]">
                       <span className="font-mono bg-[var(--color-surface-sunken)] px-1.5 py-0.5 rounded">192.168.1.{(entry.id.charCodeAt(0) % 254) + 1}</span>
                       <span>Chrome / Windows</span>
                     </div>
@@ -1485,11 +1485,11 @@ function AuditSection({ auditLogs }: { auditLogs: AuditRow[] }) {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm min-w-[600px]">
+            <table className="w-full text-[13px] sm:text-sm min-w-[600px]">
               <thead>
                 <tr className="border-b border-[var(--color-border)] bg-[var(--color-surface-sunken)]">
                   {["Timestamp", "Module", "Action", "Details", "IP Address"].map((h) => (
-                    <th key={h} className="px-4 py-2.5 text-left text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">{h}</th>
+                    <th key={h} className="px-4 py-2.5 text-left text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -1499,23 +1499,23 @@ function AuditSection({ auditLogs }: { auditLogs: AuditRow[] }) {
                   const actionColor = entry.action === "CREATE" ? "bg-emerald-100 text-emerald-700" : entry.action === "DELETE" ? "bg-red-100 text-red-700" : "bg-blue-100 text-blue-700";
                   return (
                     <tr key={entry.id} className="hover:bg-[var(--color-surface-sunken)] transition-colors">
-                      <td className="px-4 py-3 text-xs font-mono text-[var(--color-ink-600)]">
+                      <td className="px-4 py-3 text-[11px] sm:text-xs font-mono text-[var(--color-ink-600)]">
                         {format(new Date(entry.timestamp), "dd MMM, HH:mm:ss")}
                       </td>
                       <td className="px-4 py-3">
-                        <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10px] font-bold ${colorCls}`}>
+                        <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[9px] sm:text-[10px] font-bold ${colorCls}`}>
                           {entry.entityType}
                         </span>
                       </td>
                       <td className="px-4 py-3">
-                        <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold ${actionColor}`}>
+                        <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[9px] sm:text-[10px] font-bold ${actionColor}`}>
                           {entry.action}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-xs text-[var(--color-ink-500)]">
+                      <td className="px-4 py-3 text-[11px] sm:text-xs text-[var(--color-ink-500)]">
                         {entry.entityType} record {entry.entityId?.slice(0, 8) ?? ""}…
                       </td>
-                      <td className="px-4 py-3 text-xs font-mono text-[var(--color-ink-400)]">
+                      <td className="px-4 py-3 text-[11px] sm:text-xs font-mono text-[var(--color-ink-400)]">
                         192.168.1.{(entry.id.charCodeAt(0) % 254) + 1}
                       </td>
                     </tr>
@@ -1545,7 +1545,7 @@ function AppointmentsSection() {
       <SectionHeader title="Appointment Settings" desc="Configure slot durations, booking rules, and reminders" />
       <div className="space-y-5">
         <Card className="p-5">
-          <p className="text-sm font-semibold text-[var(--color-ink-900)] mb-4">Slot Configuration</p>
+          <p className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-900)] mb-4">Slot Configuration</p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div><LBL>Slot Duration (minutes)</LBL>
               <select value={cfg.slotMins} onChange={(e) => set("slotMins", e.target.value)}
@@ -1559,7 +1559,7 @@ function AppointmentsSection() {
           </div>
         </Card>
         <Card className="p-5">
-          <p className="text-sm font-semibold text-[var(--color-ink-900)] mb-4">Booking Rules</p>
+          <p className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-900)] mb-4">Booking Rules</p>
           <div className="divide-y divide-[var(--color-border)]">
             {[
               { key: "allowOnline" as const, label: "Allow Online Booking",    desc: "Patients can book via portal" },
@@ -1567,8 +1567,8 @@ function AppointmentsSection() {
               { key: "allowWalkIn" as const, label: "Allow Walk-in Patients",  desc: "Front desk can add same-day walk-ins" },
             ].map((item) => (
               <div key={item.key} className="flex items-center justify-between py-4">
-                <div><p className="text-sm font-medium text-[var(--color-ink-800)]">{item.label}</p>
-                  <p className="text-xs text-[var(--color-ink-400)] mt-0.5">{item.desc}</p></div>
+                <div><p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-800)]">{item.label}</p>
+                  <p className="text-[11px] sm:text-xs text-[var(--color-ink-400)] mt-0.5">{item.desc}</p></div>
                 <Toggle checked={cfg[item.key] as boolean} onChange={() => set(item.key, !cfg[item.key])} />
               </div>
             ))}
@@ -1590,15 +1590,15 @@ function BillingSection() {
         <div className="w-14 h-14 rounded-2xl bg-amber-100 flex items-center justify-center mb-4">
           <CreditCard size={24} className="text-amber-600" />
         </div>
-        <h3 className="text-base font-semibold text-[var(--color-ink-900)]">Billing Module Coming Soon</h3>
-        <p className="text-sm text-[var(--color-ink-500)] mt-1.5 max-w-sm">
+        <h3 className="text-[15px] sm:text-base font-semibold text-[var(--color-ink-900)]">Billing Module Coming Soon</h3>
+        <p className="text-[13px] sm:text-sm text-[var(--color-ink-500)] mt-1.5 max-w-sm">
           Payment gateway integration, fee templates, and invoice management will be available in the next release.
         </p>
         <div className="mt-6 grid grid-cols-2 gap-3 w-full max-w-xs">
           {["Consultation Fee", "Surgery Fee", "Investigation Fee", "Dispensary"].map((item) => (
             <div key={item} className="rounded-xl border border-[var(--color-border)] p-3 text-left">
-              <p className="text-xs font-medium text-[var(--color-ink-600)]">{item}</p>
-              <p className="text-sm font-bold text-[var(--color-ink-300)] mt-0.5">₹ —</p>
+              <p className="text-[11px] sm:text-xs font-medium text-[var(--color-ink-600)]">{item}</p>
+              <p className="text-[13px] sm:text-sm font-bold text-[var(--color-ink-300)] mt-0.5">₹ —</p>
             </div>
           ))}
         </div>
@@ -1619,14 +1619,14 @@ function IntegrationsSection() {
         </div>
         <div>
           <p className="font-semibold text-[var(--color-ink-900)] mb-1">Hospital Integration Engine</p>
-          <p className="text-sm text-[var(--color-ink-500)] max-w-sm">
+          <p className="text-[13px] sm:text-sm text-[var(--color-ink-500)] max-w-sm">
             Push finalized visits to hospital systems via FHIR, HL7, REST or CSV adapters. Configure endpoints,
             field mappings and monitor sync history per hospital.
           </p>
         </div>
         <Link
           href="/settings/integrations"
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[var(--color-primary-600)] text-white text-sm font-semibold hover:bg-[var(--color-primary-700)] transition-colors"
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[var(--color-primary-600)] text-white text-[13px] sm:text-sm font-semibold hover:bg-[var(--color-primary-700)] transition-colors"
         >
           <Plug size={15} />
           Open Integration Dashboard
@@ -1660,14 +1660,14 @@ function LoginHistorySection() {
                 {l.status === "success" ? <Check size={16} /> : <X size={16} />}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-[var(--color-ink-900)]">{l.device}</p>
-                <p className="text-xs text-[var(--color-ink-400)] mt-0.5">
+                <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-900)]">{l.device}</p>
+                <p className="text-[11px] sm:text-xs text-[var(--color-ink-400)] mt-0.5">
                   {l.location} · {l.ip}
                 </p>
               </div>
               <div className="text-right shrink-0">
-                <p className="text-xs font-medium text-[var(--color-ink-700)]">{l.time}</p>
-                <span className={`text-[10px] font-bold ${l.status === "success" ? "text-emerald-600" : "text-red-500"}`}>
+                <p className="text-[11px] sm:text-xs font-medium text-[var(--color-ink-700)]">{l.time}</p>
+                <span className={`text-[9px] sm:text-[10px] font-bold ${l.status === "success" ? "text-emerald-600" : "text-red-500"}`}>
                   {l.status === "success" ? "Successful" : "Failed"}
                 </span>
               </div>
@@ -1701,19 +1701,19 @@ function SessionsSection() {
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
-                <p className="text-sm font-medium text-[var(--color-ink-900)]">{s.device}</p>
-                {s.current && <span className="text-[10px] font-bold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">Current</span>}
+                <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-900)]">{s.device}</p>
+                {s.current && <span className="text-[9px] sm:text-[10px] font-bold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">Current</span>}
               </div>
-              <p className="text-xs text-[var(--color-ink-400)] mt-0.5">{s.location} · {s.ip}</p>
+              <p className="text-[11px] sm:text-xs text-[var(--color-ink-400)] mt-0.5">{s.location} · {s.ip}</p>
             </div>
             {!s.current && (
-              <button className="shrink-0 rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 transition-colors">
+              <button className="shrink-0 rounded-lg border border-red-200 px-3 py-1.5 text-[11px] sm:text-xs font-medium text-red-600 hover:bg-red-50 transition-colors">
                 Revoke
               </button>
             )}
           </Card>
         ))}
-        <button className="text-sm font-medium text-red-600 hover:underline mt-2">
+        <button className="text-[13px] sm:text-sm font-medium text-red-600 hover:underline mt-2">
           Revoke all other sessions
         </button>
       </div>
@@ -1735,7 +1735,7 @@ function PasswordSection() {
     <div>
       <SectionHeader title="Password Policies" desc="Define security requirements for all user accounts" />
       <Card className="p-5">
-        <p className="text-sm font-semibold text-[var(--color-ink-900)] mb-4">Complexity Requirements</p>
+        <p className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-900)] mb-4">Complexity Requirements</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
           <div><LBL>Minimum Length</LBL><INP type="number" value={cfg.minLength} onChange={(e) => set("minLength", e.target.value)} /></div>
           <div><LBL>Expiry (days)</LBL><INP type="number" value={cfg.expiryDays} onChange={(e) => set("expiryDays", e.target.value)} /></div>
@@ -1750,7 +1750,7 @@ function PasswordSection() {
             { key: "mfa"            as const, label: "Enable Two-Factor Auth (MFA)" },
           ].map((item) => (
             <div key={item.key} className="flex items-center justify-between py-3.5">
-              <p className="text-sm font-medium text-[var(--color-ink-800)]">{item.label}</p>
+              <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-800)]">{item.label}</p>
               <Toggle checked={cfg[item.key] as boolean} onChange={() => set(item.key, !cfg[item.key])} />
             </div>
           ))}
@@ -1774,8 +1774,8 @@ function BackupSection() {
         <Card className="p-5">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <p className="text-sm font-semibold text-[var(--color-ink-900)]">Automatic Backup</p>
-              <p className="text-xs text-[var(--color-ink-400)] mt-0.5">Backup all patient and hospital data automatically</p>
+              <p className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-900)]">Automatic Backup</p>
+              <p className="text-[11px] sm:text-xs text-[var(--color-ink-400)] mt-0.5">Backup all patient and hospital data automatically</p>
             </div>
             <Toggle checked={autoBackup} onChange={() => setAutoBackup((v) => !v)} />
           </div>
@@ -1798,7 +1798,7 @@ function BackupSection() {
 
         <Card>
           <CardHeader title="Recent Backups" right={
-            <button className="flex items-center gap-2 rounded-lg bg-[var(--color-primary-600)] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[var(--color-primary-700)] transition-colors">
+            <button className="flex items-center gap-2 rounded-lg bg-[var(--color-primary-600)] px-3 py-1.5 text-[11px] sm:text-xs font-semibold text-white hover:bg-[var(--color-primary-700)] transition-colors">
               <RefreshCw size={12} /> Backup Now
             </button>
           } />
@@ -1816,11 +1816,11 @@ function BackupSection() {
                   {b.status === "success" ? <Check size={13} /> : <AlertTriangle size={13} />}
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm text-[var(--color-ink-800)]">{b.date}</p>
-                  <p className="text-xs text-[var(--color-ink-400)]">{b.size}</p>
+                  <p className="text-[13px] sm:text-sm text-[var(--color-ink-800)]">{b.date}</p>
+                  <p className="text-[11px] sm:text-xs text-[var(--color-ink-400)]">{b.size}</p>
                 </div>
                 {b.status === "success" && (
-                  <button className="text-xs text-[var(--color-primary-600)] hover:underline font-medium">Restore</button>
+                  <button className="text-[11px] sm:text-xs text-[var(--color-primary-600)] hover:underline font-medium">Restore</button>
                 )}
               </div>
             ))}
@@ -1978,9 +1978,9 @@ function ExportSection({ hospitals }: { hospitals: HospitalRow[] }) {
       {/* Filter panel */}
       <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 space-y-4">
         <div className="flex items-center justify-between">
-          <p className="text-sm font-semibold text-[var(--color-ink-700)]">Filters</p>
+          <p className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-700)]">Filters</p>
           {hasFilters && (
-            <button onClick={resetFilters} className="flex items-center gap-1 text-xs text-[var(--color-ink-400)] hover:text-red-600 transition-colors">
+            <button onClick={resetFilters} className="flex items-center gap-1 text-[11px] sm:text-xs text-[var(--color-ink-400)] hover:text-red-600 transition-colors">
               <X size={12} /> Reset
             </button>
           )}
@@ -1989,7 +1989,7 @@ function ExportSection({ hospitals }: { hospitals: HospitalRow[] }) {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {/* Hospital */}
           <div className="sm:col-span-2">
-            <label className="block text-xs font-medium text-[var(--color-ink-600)] mb-1">Hospital</label>
+            <label className="block text-[11px] sm:text-xs font-medium text-[var(--color-ink-600)] mb-1">Hospital</label>
             <select value={hospitalId} onChange={(e) => setHospitalId(e.target.value)}
               className="w-full rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-sm text-[var(--color-ink-900)]">
               <option value="">All Hospitals</option>
@@ -1999,7 +1999,7 @@ function ExportSection({ hospitals }: { hospitals: HospitalRow[] }) {
 
           {/* Category */}
           <div>
-            <label className="block text-xs font-medium text-[var(--color-ink-600)] mb-1">Patient Category</label>
+            <label className="block text-[11px] sm:text-xs font-medium text-[var(--color-ink-600)] mb-1">Patient Category</label>
             <select value={category} onChange={(e) => setCategory(e.target.value)}
               className="w-full rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-sm text-[var(--color-ink-900)]">
               <option value="">All Categories</option>
@@ -2009,7 +2009,7 @@ function ExportSection({ hospitals }: { hospitals: HospitalRow[] }) {
 
           {/* Sex */}
           <div>
-            <label className="block text-xs font-medium text-[var(--color-ink-600)] mb-1">Sex</label>
+            <label className="block text-[11px] sm:text-xs font-medium text-[var(--color-ink-600)] mb-1">Sex</label>
             <select value={sex} onChange={(e) => setSex(e.target.value)}
               className="w-full rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-sm text-[var(--color-ink-900)]">
               <option value="">All</option>
@@ -2019,28 +2019,28 @@ function ExportSection({ hospitals }: { hospitals: HospitalRow[] }) {
 
           {/* Age Min */}
           <div>
-            <label className="block text-xs font-medium text-[var(--color-ink-600)] mb-1">Min Age</label>
+            <label className="block text-[11px] sm:text-xs font-medium text-[var(--color-ink-600)] mb-1">Min Age</label>
             <input type="number" min={0} max={150} placeholder="e.g. 18" value={ageMin} onChange={(e) => setAgeMin(e.target.value)}
               className="w-full rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-sm text-[var(--color-ink-900)]" />
           </div>
 
           {/* Age Max */}
           <div>
-            <label className="block text-xs font-medium text-[var(--color-ink-600)] mb-1">Max Age</label>
+            <label className="block text-[11px] sm:text-xs font-medium text-[var(--color-ink-600)] mb-1">Max Age</label>
             <input type="number" min={0} max={150} placeholder="e.g. 60" value={ageMax} onChange={(e) => setAgeMax(e.target.value)}
               className="w-full rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-sm text-[var(--color-ink-900)]" />
           </div>
 
           {/* From Date */}
           <div>
-            <label className="block text-xs font-medium text-[var(--color-ink-600)] mb-1">Registered From</label>
+            <label className="block text-[11px] sm:text-xs font-medium text-[var(--color-ink-600)] mb-1">Registered From</label>
             <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)}
               className="w-full rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-sm text-[var(--color-ink-900)]" />
           </div>
 
           {/* To Date */}
           <div>
-            <label className="block text-xs font-medium text-[var(--color-ink-600)] mb-1">Registered To</label>
+            <label className="block text-[11px] sm:text-xs font-medium text-[var(--color-ink-600)] mb-1">Registered To</label>
             <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)}
               className="w-full rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-sm text-[var(--color-ink-900)]" />
           </div>
@@ -2049,32 +2049,32 @@ function ExportSection({ hospitals }: { hospitals: HospitalRow[] }) {
         {/* Active filter tags */}
         <div className="flex flex-wrap gap-2 pt-1">
           {hospitalName && (
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[var(--color-primary-50)] text-[var(--color-primary-700)] text-xs font-semibold">
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[var(--color-primary-50)] text-[var(--color-primary-700)] text-[11px] sm:text-xs font-semibold">
               <Building size={10} /> {hospitalName}
             </span>
           )}
           {category && (
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold">
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 text-[11px] sm:text-xs font-semibold">
               {category}
             </span>
           )}
           {sex && (
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-purple-50 text-purple-700 text-xs font-semibold">
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-purple-50 text-purple-700 text-[11px] sm:text-xs font-semibold">
               {sex}
             </span>
           )}
           {(ageMin || ageMax) && (
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 text-xs font-semibold">
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 text-[11px] sm:text-xs font-semibold">
               Age {ageMin || "0"}–{ageMax || "∞"}
             </span>
           )}
           {fromDate && (
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold">
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 text-[11px] sm:text-xs font-semibold">
               From {new Date(fromDate).toLocaleDateString("en-IN")}
             </span>
           )}
           {toDate && (
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold">
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 text-[11px] sm:text-xs font-semibold">
               To {new Date(toDate).toLocaleDateString("en-IN")}
             </span>
           )}
@@ -2088,13 +2088,13 @@ function ExportSection({ hospitals }: { hospitals: HospitalRow[] }) {
             <Users size={18} />
           </div>
           <div>
-            <p className="text-sm font-semibold text-[var(--color-ink-900)]">Patient Records</p>
-            <p className="text-xs text-[var(--color-ink-400)] mt-0.5">Demographics, contact info, and registration details</p>
+            <p className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-900)]">Patient Records</p>
+            <p className="text-[11px] sm:text-xs text-[var(--color-ink-400)] mt-0.5">Demographics, contact info, and registration details</p>
           </div>
         </div>
 
         {msg && (
-          <div className={`mb-3 text-xs px-3 py-2 rounded-lg ${msg.type === "ok" ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700"}`}>
+          <div className={`mb-3 text-[11px] sm:text-xs px-3 py-2 rounded-lg ${msg.type === "ok" ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700"}`}>
             {msg.text}
           </div>
         )}
@@ -2102,7 +2102,7 @@ function ExportSection({ hospitals }: { hospitals: HospitalRow[] }) {
         <div className="flex gap-2">
           {(["CSV", "Excel", "PDF"] as const).map((fmt) => (
             <button key={fmt} onClick={() => handleExport(fmt)} disabled={!!exporting || otpSending || otpModal}
-              className="flex-1 flex items-center justify-center gap-1.5 rounded-lg border border-[var(--color-border)] py-2 text-xs font-semibold text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)] hover:border-[var(--color-primary-300)] disabled:opacity-50 transition-colors">
+              className="flex-1 flex items-center justify-center gap-1.5 rounded-lg border border-[var(--color-border)] py-2 text-[11px] sm:text-xs font-semibold text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)] hover:border-[var(--color-primary-300)] disabled:opacity-50 transition-colors">
               {otpSending && pendingFormat === fmt
                 ? <><RefreshCw size={11} className="animate-spin" /> Sending OTP…</>
                 : exporting === fmt
@@ -2122,13 +2122,13 @@ function ExportSection({ hospitals }: { hospitals: HospitalRow[] }) {
                 <Shield size={18} className="text-teal-600" />
               </div>
               <div>
-                <p className="text-sm font-bold text-[var(--color-ink-900)]">Verify your identity</p>
-                <p className="text-xs text-[var(--color-ink-500)] mt-0.5">A 6-digit OTP was sent to <span className="font-semibold">{otpSentTo}</span></p>
+                <p className="text-[13px] sm:text-sm font-bold text-[var(--color-ink-900)]">Verify your identity</p>
+                <p className="text-[11px] sm:text-xs text-[var(--color-ink-500)] mt-0.5">A 6-digit OTP was sent to <span className="font-semibold">{otpSentTo}</span></p>
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-[var(--color-ink-600)] mb-1.5">Enter OTP</label>
+              <label className="block text-[11px] sm:text-xs font-medium text-[var(--color-ink-600)] mb-1.5">Enter OTP</label>
               <input
                 type="text"
                 inputMode="numeric"
@@ -2140,21 +2140,21 @@ function ExportSection({ hospitals }: { hospitals: HospitalRow[] }) {
                 autoFocus
                 className="w-full rounded-xl border-2 border-[var(--color-border)] bg-white px-4 py-3 text-center text-2xl font-bold tracking-[0.3em] text-[var(--color-ink-900)] focus:border-teal-500 focus:outline-none transition-colors"
               />
-              {otpErr && <p className="mt-1.5 text-xs text-red-600">{otpErr}</p>}
+              {otpErr && <p className="mt-1.5 text-[11px] sm:text-xs text-red-600">{otpErr}</p>}
             </div>
 
-            <p className="text-[11px] text-[var(--color-ink-400)] text-center">OTP expires in 5 minutes. Check your spam folder if not received.</p>
+            <p className="text-[10px] sm:text-[11px] text-[var(--color-ink-400)] text-center">OTP expires in 5 minutes. Check your spam folder if not received.</p>
 
             <div className="flex gap-2 pt-1">
               <button
                 onClick={() => { setOtpModal(false); setOtpCode(""); setOtpErr(""); }}
-                className="flex-1 rounded-xl border border-[var(--color-border)] py-2.5 text-sm font-semibold text-[var(--color-ink-600)] hover:bg-gray-50 transition-colors">
+                className="flex-1 rounded-xl border border-[var(--color-border)] py-2.5 text-[13px] sm:text-sm font-semibold text-[var(--color-ink-600)] hover:bg-gray-50 transition-colors">
                 Cancel
               </button>
               <button
                 onClick={handleOtpVerify}
                 disabled={otpCode.length !== 6 || otpVerifying}
-                className="flex-1 rounded-xl bg-teal-600 py-2.5 text-sm font-semibold text-white hover:bg-teal-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-1.5">
+                className="flex-1 rounded-xl bg-teal-600 py-2.5 text-[13px] sm:text-sm font-semibold text-white hover:bg-teal-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-1.5">
                 {otpVerifying ? <><RefreshCw size={13} className="animate-spin" /> Verifying…</> : "Confirm & Export"}
               </button>
             </div>
@@ -2219,16 +2219,16 @@ function LogsSection({ loginLogs }: { loginLogs: LoginLogRow[] }) {
       <div className="flex gap-3 mb-4 flex-wrap">
         <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-50 border border-emerald-100">
           <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span className="text-sm font-semibold text-emerald-700">{activeCount}</span>
-          <span className="text-xs text-emerald-600">Active now</span>
+          <span className="text-[13px] sm:text-sm font-semibold text-emerald-700">{activeCount}</span>
+          <span className="text-[11px] sm:text-xs text-emerald-600">Active now</span>
         </div>
         <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-50 border border-blue-100">
-          <span className="text-sm font-semibold text-blue-700">{loginLogs.filter(l => l.status === "SUCCESS").length}</span>
-          <span className="text-xs text-blue-600">Successful logins</span>
+          <span className="text-[13px] sm:text-sm font-semibold text-blue-700">{loginLogs.filter(l => l.status === "SUCCESS").length}</span>
+          <span className="text-[11px] sm:text-xs text-blue-600">Successful logins</span>
         </div>
         <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-red-50 border border-red-100">
-          <span className="text-sm font-semibold text-red-700">{failedCount}</span>
-          <span className="text-xs text-red-600">Failed attempts</span>
+          <span className="text-[13px] sm:text-sm font-semibold text-red-700">{failedCount}</span>
+          <span className="text-[11px] sm:text-xs text-red-600">Failed attempts</span>
         </div>
       </div>
 
@@ -2255,17 +2255,17 @@ function LogsSection({ loginLogs }: { loginLogs: LoginLogRow[] }) {
             <option value="SUCCESS">Success</option>
             <option value="FAILED">Failed</option>
           </select>
-          <span className="ml-auto text-xs text-[var(--color-ink-400)]">{filtered.length} entries</span>
+          <span className="ml-auto text-[11px] sm:text-xs text-[var(--color-ink-400)]">{filtered.length} entries</span>
         </div>
 
         {/* Table */}
         {filtered.length === 0 ? (
-          <div className="py-12 text-center text-sm text-[var(--color-ink-400)]">No login records found.</div>
+          <div className="py-12 text-center text-[13px] sm:text-sm text-[var(--color-ink-400)]">No login records found.</div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-[13px] sm:text-sm">
               <thead>
-                <tr className="text-left text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)] border-b border-[var(--color-border)] bg-[var(--color-surface-sunken)]">
+                <tr className="text-left text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)] border-b border-[var(--color-border)] bg-[var(--color-surface-sunken)]">
                   <th className="px-5 py-3">User</th>
                   <th className="px-3 py-3">Role</th>
                   <th className="px-3 py-3">Hospital</th>
@@ -2282,16 +2282,16 @@ function LogsSection({ loginLogs }: { loginLogs: LoginLogRow[] }) {
                   return (
                     <tr key={l.id} className="hover:bg-[var(--color-surface-sunken)] transition-colors">
                       <td className="px-5 py-3 font-medium text-[var(--color-ink-800)]">{l.userName}</td>
-                      <td className="px-3 py-3 text-xs text-[var(--color-ink-500)]">
+                      <td className="px-3 py-3 text-[11px] sm:text-xs text-[var(--color-ink-500)]">
                         {ROLE_LABEL[l.role] ?? l.role}
                       </td>
-                      <td className="px-3 py-3 text-xs text-[var(--color-ink-500)] max-w-[110px] truncate">
+                      <td className="px-3 py-3 text-[11px] sm:text-xs text-[var(--color-ink-500)] max-w-[110px] truncate">
                         {l.hospitalName ?? "—"}
                       </td>
-                      <td className="px-3 py-3 text-xs font-mono text-[var(--color-ink-600)] whitespace-nowrap">
+                      <td className="px-3 py-3 text-[11px] sm:text-xs font-mono text-[var(--color-ink-600)] whitespace-nowrap">
                         {format(new Date(l.loginAt), "dd MMM, HH:mm:ss")}
                       </td>
-                      <td className="px-3 py-3 text-xs font-mono whitespace-nowrap">
+                      <td className="px-3 py-3 text-[11px] sm:text-xs font-mono whitespace-nowrap">
                         {l.isActive
                           ? <span className="flex items-center gap-1 text-emerald-600 font-semibold"><span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />Active</span>
                           : l.logoutAt
@@ -2299,17 +2299,17 @@ function LogsSection({ loginLogs }: { loginLogs: LoginLogRow[] }) {
                             : <span className="text-[var(--color-ink-400)]">—</span>
                         }
                       </td>
-                      <td className="px-3 py-3 text-xs text-[var(--color-ink-400)]">
+                      <td className="px-3 py-3 text-[11px] sm:text-xs text-[var(--color-ink-400)]">
                         {dur ?? (l.isActive ? "—" : "—")}
                       </td>
-                      <td className="px-3 py-3 text-xs text-[var(--color-ink-400)]">
+                      <td className="px-3 py-3 text-[11px] sm:text-xs text-[var(--color-ink-400)]">
                         <p className="font-mono">{l.ipAddress ?? "—"}</p>
-                        <p className="text-[10px] mt-0.5">{parseDevice(l.userAgent)}</p>
+                        <p className="text-[9px] sm:text-[10px] mt-0.5">{parseDevice(l.userAgent)}</p>
                       </td>
                       <td className="px-5 py-3">
                         {l.status === "SUCCESS"
-                          ? <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">Success</span>
-                          : <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-700">Failed</span>
+                          ? <span className="text-[9px] sm:text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">Success</span>
+                          : <span className="text-[9px] sm:text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-700">Failed</span>
                         }
                       </td>
                     </tr>
@@ -2374,7 +2374,7 @@ function ProfileSection({ doctor }: { doctor: DoctorProfile | null }) {
 
         {/* ── Basic Identity ── */}
         <Card className="p-5">
-          <p className="text-sm font-semibold text-[var(--color-ink-900)] mb-4">Basic Information</p>
+          <p className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-900)] mb-4">Basic Information</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <LBL>Full Name</LBL>
@@ -2382,10 +2382,10 @@ function ProfileSection({ doctor }: { doctor: DoctorProfile | null }) {
             </div>
             <div>
               <LBL>Short Code</LBL>
-              <div className="flex items-center gap-2 px-3 py-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] text-sm font-mono text-[var(--color-ink-700)]">
+              <div className="flex items-center gap-2 px-3 py-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] text-[13px] sm:text-sm font-mono text-[var(--color-ink-700)]">
                 {shortCode || <span className="text-[var(--color-ink-400)]">Not set</span>}
               </div>
-              <p className="text-[10px] text-[var(--color-ink-400)] mt-1">
+              <p className="text-[9px] sm:text-[10px] text-[var(--color-ink-400)] mt-1">
                 Auto-assigned at account creation. New patients get UDID like <span className="font-mono text-[var(--color-primary-600)]">PPMS-{shortCode || "????"}-0001</span>
               </p>
             </div>
@@ -2410,7 +2410,7 @@ function ProfileSection({ doctor }: { doctor: DoctorProfile | null }) {
 
         {/* ── Credentials ── */}
         <Card className="p-5">
-          <p className="text-sm font-semibold text-[var(--color-ink-900)] mb-4">Credentials</p>
+          <p className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-900)] mb-4">Credentials</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <LBL>Medical Registration Number</LBL>
@@ -2429,18 +2429,18 @@ function ProfileSection({ doctor }: { doctor: DoctorProfile | null }) {
 
         {/* ── Digital Signature ── */}
         <Card className="p-5">
-          <p className="text-sm font-semibold text-[var(--color-ink-900)] mb-1">Digital Signature</p>
-          <p className="text-xs text-[var(--color-ink-400)] mb-4">Used on printed prescriptions and EMR reports. PNG with transparent background recommended.</p>
+          <p className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-900)] mb-1">Digital Signature</p>
+          <p className="text-[11px] sm:text-xs text-[var(--color-ink-400)] mb-4">Used on printed prescriptions and EMR reports. PNG with transparent background recommended.</p>
           <div className="flex flex-col sm:flex-row items-start gap-4">
             <div className="w-full sm:w-48 h-20 rounded-xl border-2 border-dashed border-[var(--color-border)] flex items-center justify-center bg-[var(--color-surface-sunken)] overflow-hidden sm:shrink-0">
               {signatureUrl ? (
                 <img src={signatureUrl} alt="Signature" className="max-h-full max-w-full object-contain p-1" />
               ) : (
-                <span className="text-xs text-[var(--color-ink-400)]">No signature</span>
+                <span className="text-[11px] sm:text-xs text-[var(--color-ink-400)]">No signature</span>
               )}
             </div>
             <div className="space-y-2">
-              <label className="flex items-center gap-2 cursor-pointer rounded-xl border border-[var(--color-border)] px-4 py-2 text-sm font-medium text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] transition-colors">
+              <label className="flex items-center gap-2 cursor-pointer rounded-xl border border-[var(--color-border)] px-4 py-2 text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] transition-colors">
                 <Upload size={14} />
                 {sigUploading ? "Uploading…" : "Upload Signature"}
                 <input type="file" accept="image/*" className="hidden" onChange={handleSignatureUpload} disabled={sigUploading} />
@@ -2448,12 +2448,12 @@ function ProfileSection({ doctor }: { doctor: DoctorProfile | null }) {
               {signatureUrl && (
                 <button
                   onClick={() => setSignatureUrl("")}
-                  className="text-xs text-red-500 hover:underline"
+                  className="text-[11px] sm:text-xs text-red-500 hover:underline"
                 >
                   Remove signature
                 </button>
               )}
-              <p className="text-[10px] text-[var(--color-ink-400)]">PNG or JPG · Max 2MB · Transparent PNG preferred</p>
+              <p className="text-[9px] sm:text-[10px] text-[var(--color-ink-400)]">PNG or JPG · Max 2MB · Transparent PNG preferred</p>
             </div>
           </div>
         </Card>
@@ -2463,20 +2463,20 @@ function ProfileSection({ doctor }: { doctor: DoctorProfile | null }) {
           <button
             onClick={save}
             disabled={saving}
-            className="flex items-center gap-2 rounded-xl bg-[var(--color-primary-600)] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[var(--color-primary-700)] disabled:opacity-60 transition-colors"
+            className="flex items-center gap-2 rounded-xl bg-[var(--color-primary-600)] px-5 py-2.5 text-[13px] sm:text-sm font-semibold text-white hover:bg-[var(--color-primary-700)] disabled:opacity-60 transition-colors"
           >
             <Save size={14} /> {saving ? "Saving…" : "Save Profile"}
           </button>
           {msg && (
-            <span className={`text-xs font-medium ${msg.type === "ok" ? "text-[var(--color-success-600)]" : "text-red-600"}`}>
+            <span className={`text-[11px] sm:text-xs font-medium ${msg.type === "ok" ? "text-[var(--color-success-600)]" : "text-red-600"}`}>
               {msg.text}
             </span>
           )}
         </div>
 
         <Card className="p-5">
-          <p className="text-sm font-semibold text-[var(--color-ink-900)] mb-1">About Patient UDIDs</p>
-          <p className="text-xs text-[var(--color-ink-500)] leading-relaxed">
+          <p className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-900)] mb-1">About Patient UDIDs</p>
+          <p className="text-[11px] sm:text-xs text-[var(--color-ink-500)] leading-relaxed">
             Every patient you register gets a unique ID in the format <span className="font-mono">PPMS-{shortCode || "????"}-0001</span>.
             The number increments for each new patient. Set your short code above to personalise this prefix.
             Existing patient UDIDs are not changed when you update your short code.
@@ -2660,8 +2660,8 @@ function PatientApptLogsSection({ logs }: { logs: PatientApptLogRow[] }) {
                 <div className={`size-8 rounded-lg flex items-center justify-center shrink-0 ${iconCls}`}>
                   <Icon size={15} />
                 </div>
-                <p className="text-sm font-semibold text-[var(--color-ink-800)] leading-tight">{label}</p>
-                <span className="ml-auto text-xs font-bold text-[var(--color-ink-500)] shrink-0">{groupLogs.length}</span>
+                <p className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-800)] leading-tight">{label}</p>
+                <span className="ml-auto text-[11px] sm:text-xs font-bold text-[var(--color-ink-500)] shrink-0">{groupLogs.length}</span>
               </div>
               <div className="space-y-1.5">
                 {events.map((evt) => {
@@ -2672,9 +2672,9 @@ function PatientApptLogsSection({ logs }: { logs: PatientApptLogRow[] }) {
                     (!entityTypes || entityTypes.includes(l.entityType))
                   ).length;
                   return (
-                    <div key={evt.action + (entityTypes?.join("") ?? "")} className="flex items-center justify-between text-xs">
+                    <div key={evt.action + (entityTypes?.join("") ?? "")} className="flex items-center justify-between text-[11px] sm:text-xs">
                       <span className="text-[var(--color-ink-600)]">{evt.label}</span>
-                      <span className={`font-bold px-2 py-0.5 rounded-full text-[10px] min-w-[22px] text-center ${ACTION_META[evt.action]?.cls ?? "bg-slate-100 text-slate-600"}`}>
+                      <span className={`font-bold px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] min-w-[22px] text-center ${ACTION_META[evt.action]?.cls ?? "bg-slate-100 text-slate-600"}`}>
                         {count}
                       </span>
                     </div>
@@ -2719,19 +2719,19 @@ function PatientApptLogsSection({ logs }: { logs: PatientApptLogRow[] }) {
               <option key={a} value={a}>{ACTION_META[a]?.label ?? a}</option>
             ))}
           </select>
-          <span className="ml-auto text-xs text-[var(--color-ink-400)]">{filtered.length} records</span>
+          <span className="ml-auto text-[11px] sm:text-xs text-[var(--color-ink-400)]">{filtered.length} records</span>
         </div>
 
         {filtered.length === 0 ? (
           <div className="py-14 text-center">
             <FileText size={28} className="mx-auto mb-3 text-[var(--color-ink-300)]" />
-            <p className="text-sm text-[var(--color-ink-400)]">No logs yet. Actions will appear here as users work.</p>
+            <p className="text-[13px] sm:text-sm text-[var(--color-ink-400)]">No logs yet. Actions will appear here as users work.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-[13px] sm:text-sm">
               <thead>
-                <tr className="text-left text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)] border-b border-[var(--color-border)] bg-[var(--color-surface-sunken)]">
+                <tr className="text-left text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)] border-b border-[var(--color-border)] bg-[var(--color-surface-sunken)]">
                   <th className="px-5 py-3">Time</th>
                   <th className="px-3 py-3">Module</th>
                   <th className="px-3 py-3">Record</th>
@@ -2757,26 +2757,26 @@ function PatientApptLogsSection({ logs }: { logs: PatientApptLogRow[] }) {
 
                   return (
                     <tr key={log.id} className="hover:bg-[var(--color-surface-sunken)] transition-colors">
-                      <td className="px-5 py-3 text-xs font-mono text-[var(--color-ink-400)] whitespace-nowrap">
+                      <td className="px-5 py-3 text-[11px] sm:text-xs font-mono text-[var(--color-ink-400)] whitespace-nowrap">
                         {format(new Date(log.timestamp), "dd MMM, HH:mm")}
                       </td>
                       <td className="px-3 py-3">
-                        <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${badge.cls}`}>
+                        <span className={`inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-bold px-2 py-0.5 rounded-full ${badge.cls}`}>
                           <BadgeIcon size={9} /> {badge.label}
                         </span>
                       </td>
-                      <td className="px-3 py-3 text-xs text-[var(--color-ink-600)] font-medium">
+                      <td className="px-3 py-3 text-[11px] sm:text-xs text-[var(--color-ink-600)] font-medium">
                         {recordLabel}
                       </td>
                       <td className="px-3 py-3">
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${actionCls}`}>
+                        <span className={`text-[9px] sm:text-[10px] font-bold px-2 py-0.5 rounded-full ${actionCls}`}>
                           {actionLabel}
                         </span>
                       </td>
-                      <td className="px-3 py-3 text-xs font-medium text-[var(--color-ink-700)]">
+                      <td className="px-3 py-3 text-[11px] sm:text-xs font-medium text-[var(--color-ink-700)]">
                         {log.userName ?? <span className="font-mono text-[var(--color-ink-400)]">{log.entityId.slice(-8)}</span>}
                       </td>
-                      <td className="px-5 py-3 text-xs text-[var(--color-ink-500)] max-w-[200px] truncate">
+                      <td className="px-5 py-3 text-[11px] sm:text-xs text-[var(--color-ink-500)] max-w-[200px] truncate">
                         {detail}
                       </td>
                     </tr>
@@ -2948,21 +2948,21 @@ function HospitalSetupWizard({ assignableRoles = [], returnTo = "" }: { assignab
           <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center">
             <Check size={32} className="text-emerald-600" />
           </div>
-          <p className="text-base font-semibold text-[var(--color-ink-900)]">Hospital setup complete!</p>
-          <p className="text-sm text-[var(--color-ink-500)]">
+          <p className="text-[15px] sm:text-base font-semibold text-[var(--color-ink-900)]">Hospital setup complete!</p>
+          <p className="text-[13px] sm:text-sm text-[var(--color-ink-500)]">
             <span className="font-medium">{hosp.name}</span> created with {1 + users.length} account{users.length !== 0 ? "s" : ""}.
           </p>
           {returnTo && (
             <Link
               href={returnTo}
-              className="mt-2 flex items-center gap-2 rounded-xl border border-[var(--color-border)] px-6 py-2.5 text-sm font-medium text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] transition-colors"
+              className="mt-2 flex items-center gap-2 rounded-xl border border-[var(--color-border)] px-6 py-2.5 text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] transition-colors"
             >
               ← Back to Availability
             </Link>
           )}
           <button
             onClick={() => { setDone(false); setStep(1); setHosp(blank); setUsers([]); setPerms({}); setCreateError(""); }}
-            className="rounded-xl bg-[var(--color-primary-600)] px-6 py-2.5 text-sm font-semibold text-white hover:bg-[var(--color-primary-700)] transition-colors"
+            className="rounded-xl bg-[var(--color-primary-600)] px-6 py-2.5 text-[13px] sm:text-sm font-semibold text-white hover:bg-[var(--color-primary-700)] transition-colors"
           >
             Add Another Hospital
           </button>
@@ -2980,14 +2980,14 @@ function HospitalSetupWizard({ assignableRoles = [], returnTo = "" }: { assignab
         {WIZARD_STEPS.map((s, i) => (
           <React.Fragment key={s.n}>
             <div className="flex flex-col items-center">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[11px] sm:text-xs font-bold transition-all ${
                 step === s.n ? "bg-[var(--color-primary-600)] text-white shadow-sm"
                 : step > s.n ? "bg-emerald-500 text-white"
                 : "bg-[var(--color-surface-sunken)] text-[var(--color-ink-400)] border border-[var(--color-border)]"
               }`}>
                 {step > s.n ? <Check size={13} /> : s.n}
               </div>
-              <span className={`text-[10px] font-semibold mt-1 whitespace-nowrap ${
+              <span className={`text-[9px] sm:text-[10px] font-semibold mt-1 whitespace-nowrap ${
                 step === s.n ? "text-[var(--color-primary-700)]" : step > s.n ? "text-emerald-600" : "text-[var(--color-ink-400)]"
               }`}>{s.label}</span>
             </div>
@@ -3002,7 +3002,7 @@ function HospitalSetupWizard({ assignableRoles = [], returnTo = "" }: { assignab
       {step === 1 && (
         <div className="space-y-4">
           <Card className="p-5">
-            <p className="text-sm font-semibold text-[var(--color-ink-900)] mb-4">Hospital Details</p>
+            <p className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-900)] mb-4">Hospital Details</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Hospital Name */}
               <div className="sm:col-span-2">
@@ -3012,7 +3012,7 @@ function HospitalSetupWizard({ assignableRoles = [], returnTo = "" }: { assignab
                   placeholder="e.g. Sunrise Eye Hospital"
                   className={`${F} ${touched.name && step1Errors.name ? "border-red-400 focus:ring-red-400" : ""}`}
                 />
-                {touched.name && step1Errors.name && <p className="text-xs text-red-600 mt-1">{step1Errors.name}</p>}
+                {touched.name && step1Errors.name && <p className="text-[11px] sm:text-xs text-red-600 mt-1">{step1Errors.name}</p>}
               </div>
               {/* Short Code — auto-generated, read-only */}
               <div>
@@ -3020,7 +3020,7 @@ function HospitalSetupWizard({ assignableRoles = [], returnTo = "" }: { assignab
                 <div className={`${F} font-mono bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)] select-none cursor-default`}>
                   {hosp.shortCode || <span className="text-[var(--color-ink-300)]">Auto-generated from name</span>}
                 </div>
-                <p className="text-[10px] text-[var(--color-ink-400)] mt-1">Auto-generated from hospital name. Used in UHID generation.</p>
+                <p className="text-[9px] sm:text-[10px] text-[var(--color-ink-400)] mt-1">Auto-generated from hospital name. Used in UHID generation.</p>
               </div>
               {/* Contact */}
               <div>
@@ -3030,7 +3030,7 @@ function HospitalSetupWizard({ assignableRoles = [], returnTo = "" }: { assignab
                   placeholder="9876543210" maxLength={10}
                   className={`${F} ${touched.contact && step1Errors.contact ? "border-red-400 focus:ring-red-400" : ""}`}
                 />
-                {touched.contact && step1Errors.contact && <p className="text-xs text-red-600 mt-1">{step1Errors.contact}</p>}
+                {touched.contact && step1Errors.contact && <p className="text-[11px] sm:text-xs text-red-600 mt-1">{step1Errors.contact}</p>}
               </div>
               {/* Hospital Email */}
               <div>
@@ -3040,7 +3040,7 @@ function HospitalSetupWizard({ assignableRoles = [], returnTo = "" }: { assignab
                   placeholder="hospital@example.com"
                   className={`${F} ${touched.email && step1Errors.email ? "border-red-400 focus:ring-red-400" : ""}`}
                 />
-                {touched.email && step1Errors.email && <p className="text-xs text-red-600 mt-1">{step1Errors.email}</p>}
+                {touched.email && step1Errors.email && <p className="text-[11px] sm:text-xs text-red-600 mt-1">{step1Errors.email}</p>}
               </div>
               {/* Address */}
               <div>
@@ -3050,14 +3050,14 @@ function HospitalSetupWizard({ assignableRoles = [], returnTo = "" }: { assignab
                   placeholder="123, Main Road, City, State – 600001"
                   className={`${F} ${touched.address && step1Errors.address ? "border-red-400 focus:ring-red-400" : ""}`}
                 />
-                {touched.address && step1Errors.address && <p className="text-xs text-red-600 mt-1">{step1Errors.address}</p>}
+                {touched.address && step1Errors.address && <p className="text-[11px] sm:text-xs text-red-600 mt-1">{step1Errors.address}</p>}
               </div>
             </div>
           </Card>
 
           <Card className="p-5">
-            <p className="text-sm font-semibold text-[var(--color-ink-900)] mb-0.5">Primary Admin Account</p>
-            <p className="text-xs text-[var(--color-ink-400)] mb-4">This becomes the main login for this hospital (Hospital Admin role).</p>
+            <p className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-900)] mb-0.5">Primary Admin Account</p>
+            <p className="text-[11px] sm:text-xs text-[var(--color-ink-400)] mb-4">This becomes the main login for this hospital (Hospital Admin role).</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Contact Person */}
               <div className="sm:col-span-2">
@@ -3067,7 +3067,7 @@ function HospitalSetupWizard({ assignableRoles = [], returnTo = "" }: { assignab
                   placeholder="e.g. Front Desk Admin"
                   className={`${F} ${touched.staffName && step1Errors.staffName ? "border-red-400 focus:ring-red-400" : ""}`}
                 />
-                {touched.staffName && step1Errors.staffName && <p className="text-xs text-red-600 mt-1">{step1Errors.staffName}</p>}
+                {touched.staffName && step1Errors.staffName && <p className="text-[11px] sm:text-xs text-red-600 mt-1">{step1Errors.staffName}</p>}
               </div>
               {/* Username */}
               <div>
@@ -3077,7 +3077,7 @@ function HospitalSetupWizard({ assignableRoles = [], returnTo = "" }: { assignab
                   placeholder="sunrise.admin" autoComplete="off"
                   className={`${F} ${touched.username && step1Errors.username ? "border-red-400 focus:ring-red-400" : ""}`}
                 />
-                {touched.username && step1Errors.username && <p className="text-xs text-red-600 mt-1">{step1Errors.username}</p>}
+                {touched.username && step1Errors.username && <p className="text-[11px] sm:text-xs text-red-600 mt-1">{step1Errors.username}</p>}
               </div>
               {/* Password */}
               <div>
@@ -3087,7 +3087,7 @@ function HospitalSetupWizard({ assignableRoles = [], returnTo = "" }: { assignab
                   placeholder="••••••••" autoComplete="new-password"
                   className={`${F} ${touched.password && step1Errors.password ? "border-red-400 focus:ring-red-400" : ""}`}
                 />
-                {touched.password && step1Errors.password && <p className="text-xs text-red-600 mt-1">{step1Errors.password}</p>}
+                {touched.password && step1Errors.password && <p className="text-[11px] sm:text-xs text-red-600 mt-1">{step1Errors.password}</p>}
               </div>
               {/* Mobile */}
               <div>
@@ -3097,7 +3097,7 @@ function HospitalSetupWizard({ assignableRoles = [], returnTo = "" }: { assignab
                   placeholder="10-digit number" maxLength={10}
                   className={`${F} ${touched.mobile && step1Errors.mobile ? "border-red-400 focus:ring-red-400" : ""}`}
                 />
-                {touched.mobile && step1Errors.mobile && <p className="text-xs text-red-600 mt-1">{step1Errors.mobile}</p>}
+                {touched.mobile && step1Errors.mobile && <p className="text-[11px] sm:text-xs text-red-600 mt-1">{step1Errors.mobile}</p>}
               </div>
               {/* Admin Email */}
               <div>
@@ -3107,7 +3107,7 @@ function HospitalSetupWizard({ assignableRoles = [], returnTo = "" }: { assignab
                   placeholder="admin@example.com"
                   className={`${F} ${touched.adminEmail && step1Errors.adminEmail ? "border-red-400 focus:ring-red-400" : ""}`}
                 />
-                {touched.adminEmail && step1Errors.adminEmail && <p className="text-xs text-red-600 mt-1">{step1Errors.adminEmail}</p>}
+                {touched.adminEmail && step1Errors.adminEmail && <p className="text-[11px] sm:text-xs text-red-600 mt-1">{step1Errors.adminEmail}</p>}
               </div>
             </div>
           </Card>
@@ -3119,7 +3119,7 @@ function HospitalSetupWizard({ assignableRoles = [], returnTo = "" }: { assignab
                 setTouched({ name: true, shortCode: true, contact: true, email: true, address: true, staffName: true, username: true, password: true, mobile: true, adminEmail: true });
                 if (step1Valid) setStep(2);
               }}
-              className="flex items-center gap-2 rounded-xl bg-[var(--color-primary-600)] px-6 py-2.5 text-sm font-semibold text-white hover:bg-[var(--color-primary-700)] disabled:opacity-40 transition-colors"
+              className="flex items-center gap-2 rounded-xl bg-[var(--color-primary-600)] px-6 py-2.5 text-[13px] sm:text-sm font-semibold text-white hover:bg-[var(--color-primary-700)] disabled:opacity-40 transition-colors"
             >
               Next: Add Users →
             </button>
@@ -3133,24 +3133,24 @@ function HospitalSetupWizard({ assignableRoles = [], returnTo = "" }: { assignab
           <Card className="p-5">
             <div className="flex items-start justify-between mb-4">
               <div>
-                <p className="text-sm font-semibold text-[var(--color-ink-900)]">Staff Accounts</p>
-                <p className="text-xs text-[var(--color-ink-400)] mt-0.5">Add staff users for this hospital. You can skip this step if only the admin account is needed.</p>
+                <p className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-900)]">Staff Accounts</p>
+                <p className="text-[11px] sm:text-xs text-[var(--color-ink-400)] mt-0.5">Add staff users for this hospital. You can skip this step if only the admin account is needed.</p>
               </div>
-              <button onClick={addUser} className="shrink-0 flex items-center gap-1.5 rounded-xl border-2 border-[var(--color-primary-300)] text-[var(--color-primary-700)] px-4 py-1.5 text-xs font-bold hover:bg-[var(--color-primary-50)] transition-colors">
+              <button onClick={addUser} className="shrink-0 flex items-center gap-1.5 rounded-xl border-2 border-[var(--color-primary-300)] text-[var(--color-primary-700)] px-4 py-1.5 text-[11px] sm:text-xs font-bold hover:bg-[var(--color-primary-50)] transition-colors">
                 <Plus size={13} /> Add User
               </button>
             </div>
             {users.length === 0 ? (
               <button onClick={addUser} className="w-full flex flex-col items-center py-8 gap-2 rounded-xl border-2 border-dashed border-[var(--color-border)] hover:border-[var(--color-primary-300)] hover:bg-[var(--color-primary-50)] transition-colors group">
                 <Users2 size={24} className="text-[var(--color-ink-300)] group-hover:text-[var(--color-primary-400)]" />
-                <p className="text-sm text-[var(--color-ink-400)] group-hover:text-[var(--color-primary-600)]">Click to add a staff user</p>
+                <p className="text-[13px] sm:text-sm text-[var(--color-ink-400)] group-hover:text-[var(--color-primary-600)]">Click to add a staff user</p>
               </button>
             ) : (
               <div className="space-y-3">
                 {users.map((u, i) => (
                   <div key={u.localId} className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] p-4">
                     <div className="flex items-center justify-between mb-3">
-                      <span className="text-xs font-bold text-[var(--color-ink-500)] uppercase tracking-wider">User {i + 1}</span>
+                      <span className="text-[11px] sm:text-xs font-bold text-[var(--color-ink-500)] uppercase tracking-wider">User {i + 1}</span>
                       <button onClick={() => removeUser(u.localId)} className="text-[var(--color-ink-400)] hover:text-red-500 transition-colors p-0.5"><X size={14} /></button>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -3180,8 +3180,8 @@ function HospitalSetupWizard({ assignableRoles = [], returnTo = "" }: { assignab
             )}
           </Card>
           <div className="flex justify-between">
-            <button onClick={() => setStep(1)} className="rounded-xl border border-[var(--color-border)] px-5 py-2.5 text-sm font-medium text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] transition-colors">← Back</button>
-            <button onClick={() => setStep(3)} disabled={!step2Valid} className="flex items-center gap-2 rounded-xl bg-[var(--color-primary-600)] px-6 py-2.5 text-sm font-semibold text-white hover:bg-[var(--color-primary-700)] disabled:opacity-40 transition-colors">
+            <button onClick={() => setStep(1)} className="rounded-xl border border-[var(--color-border)] px-5 py-2.5 text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] transition-colors">← Back</button>
+            <button onClick={() => setStep(3)} disabled={!step2Valid} className="flex items-center gap-2 rounded-xl bg-[var(--color-primary-600)] px-6 py-2.5 text-[13px] sm:text-sm font-semibold text-white hover:bg-[var(--color-primary-700)] disabled:opacity-40 transition-colors">
               Next: Assign Roles →
             </button>
           </div>
@@ -3192,15 +3192,15 @@ function HospitalSetupWizard({ assignableRoles = [], returnTo = "" }: { assignab
       {step === 3 && (
         <div className="space-y-4">
           <Card className="p-5">
-            <p className="text-sm font-semibold text-[var(--color-ink-900)] mb-0.5">Assign Roles</p>
-            <p className="text-xs text-[var(--color-ink-400)] mb-5">Roles define what each user can do. You'll fine-tune exact permissions in the next step.</p>
+            <p className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-900)] mb-0.5">Assign Roles</p>
+            <p className="text-[11px] sm:text-xs text-[var(--color-ink-400)] mb-5">Roles define what each user can do. You'll fine-tune exact permissions in the next step.</p>
 
             {/* Role legend */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-5">
               {allRoles.map((r) => (
                 <div key={r.value} className="rounded-xl border border-[var(--color-border)] px-3 py-2.5">
-                  <p className="text-xs font-bold text-[var(--color-ink-800)]">{r.label}</p>
-                  <p className="text-[10px] text-[var(--color-ink-400)] mt-0.5 leading-relaxed">{r.desc}</p>
+                  <p className="text-[11px] sm:text-xs font-bold text-[var(--color-ink-800)]">{r.label}</p>
+                  <p className="text-[9px] sm:text-[10px] text-[var(--color-ink-400)] mt-0.5 leading-relaxed">{r.desc}</p>
                 </div>
               ))}
             </div>
@@ -3208,31 +3208,31 @@ function HospitalSetupWizard({ assignableRoles = [], returnTo = "" }: { assignab
             {/* Admin (locked) */}
             <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 mb-3 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-emerald-200 text-emerald-800 text-xs font-bold flex items-center justify-center shrink-0">
+                <div className="w-8 h-8 rounded-full bg-emerald-200 text-emerald-800 text-[11px] sm:text-xs font-bold flex items-center justify-center shrink-0">
                   {hosp.staffName.trim() ? hosp.staffName.trim()[0].toUpperCase() : "A"}
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-[var(--color-ink-900)]">{hosp.staffName || "Admin"}</p>
-                  <p className="text-xs text-[var(--color-ink-400)]">@{hosp.username} · Primary account</p>
+                  <p className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-900)]">{hosp.staffName || "Admin"}</p>
+                  <p className="text-[11px] sm:text-xs text-[var(--color-ink-400)]">@{hosp.username} · Primary account</p>
                 </div>
               </div>
-              <span className="text-xs font-bold bg-emerald-200 text-emerald-800 px-3 py-1 rounded-full">Hospital Admin</span>
+              <span className="text-[11px] sm:text-xs font-bold bg-emerald-200 text-emerald-800 px-3 py-1 rounded-full">Hospital Admin</span>
             </div>
 
             {users.length === 0 && (
-              <p className="text-sm text-[var(--color-ink-400)] text-center py-3">No additional users to assign roles to.</p>
+              <p className="text-[13px] sm:text-sm text-[var(--color-ink-400)] text-center py-3">No additional users to assign roles to.</p>
             )}
 
             {users.map((u, i) => (
               <div key={u.localId} className="rounded-xl border border-[var(--color-border)] px-4 py-3 mb-2">
                 <div className="flex flex-wrap items-center gap-3">
                   <div className="flex items-center gap-3 flex-1 min-w-0">
-                    <div className="w-8 h-8 rounded-full bg-[var(--color-primary-100)] text-[var(--color-primary-700)] text-xs font-bold flex items-center justify-center shrink-0">
+                    <div className="w-8 h-8 rounded-full bg-[var(--color-primary-100)] text-[var(--color-primary-700)] text-[11px] sm:text-xs font-bold flex items-center justify-center shrink-0">
                       {u.name.trim() ? u.name.trim()[0].toUpperCase() : `${i + 1}`}
                     </div>
                     <div className="min-w-0">
-                      <p className="text-sm font-semibold text-[var(--color-ink-900)] truncate">{u.name || `User ${i + 1}`}</p>
-                      <p className="text-xs text-[var(--color-ink-400)]">@{u.username}</p>
+                      <p className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-900)] truncate">{u.name || `User ${i + 1}`}</p>
+                      <p className="text-[11px] sm:text-xs text-[var(--color-ink-400)]">@{u.username}</p>
                     </div>
                   </div>
                   <div className="flex gap-2 flex-wrap">
@@ -3241,7 +3241,7 @@ function HospitalSetupWizard({ assignableRoles = [], returnTo = "" }: { assignab
                         key={r.value}
                         onClick={() => setU(u.localId, "role", r.value)}
                         title={r.desc}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold border-2 transition-all ${
+                        className={`px-3 py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold border-2 transition-all ${
                           u.role === r.value
                             ? "border-[var(--color-primary-500)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)]"
                             : "border-[var(--color-border)] text-[var(--color-ink-500)] hover:border-[var(--color-primary-300)] hover:bg-[var(--color-primary-50)]"
@@ -3254,8 +3254,8 @@ function HospitalSetupWizard({ assignableRoles = [], returnTo = "" }: { assignab
             ))}
           </Card>
           <div className="flex justify-between">
-            <button onClick={() => setStep(2)} className="rounded-xl border border-[var(--color-border)] px-5 py-2.5 text-sm font-medium text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] transition-colors">← Back</button>
-            <button onClick={() => setStep(4)} disabled={!step3Valid} className="flex items-center gap-2 rounded-xl bg-[var(--color-primary-600)] px-6 py-2.5 text-sm font-semibold text-white hover:bg-[var(--color-primary-700)] disabled:opacity-40 transition-colors">
+            <button onClick={() => setStep(2)} className="rounded-xl border border-[var(--color-border)] px-5 py-2.5 text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] transition-colors">← Back</button>
+            <button onClick={() => setStep(4)} disabled={!step3Valid} className="flex items-center gap-2 rounded-xl bg-[var(--color-primary-600)] px-6 py-2.5 text-[13px] sm:text-sm font-semibold text-white hover:bg-[var(--color-primary-700)] disabled:opacity-40 transition-colors">
               Next: Set Permissions →
             </button>
           </div>
@@ -3266,11 +3266,11 @@ function HospitalSetupWizard({ assignableRoles = [], returnTo = "" }: { assignab
       {step === 4 && (
         <div className="space-y-4">
           {createError && (
-            <div className="flex items-center gap-2 text-xs text-red-700 bg-red-50 border border-red-200 px-4 py-3 rounded-xl">
+            <div className="flex items-center gap-2 text-[11px] sm:text-xs text-red-700 bg-red-50 border border-red-200 px-4 py-3 rounded-xl">
               <AlertTriangle size={14} className="shrink-0" /> {createError}
             </div>
           )}
-          <p className="text-xs text-[var(--color-ink-500)] bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5">
+          <p className="text-[11px] sm:text-xs text-[var(--color-ink-500)] bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5">
             These permission settings apply <strong>system-wide</strong> to each role — not just for this hospital. Adjust carefully.
           </p>
           {rolesUsed.map((role) => {
@@ -3280,8 +3280,8 @@ function HospitalSetupWizard({ assignableRoles = [], returnTo = "" }: { assignab
               <Card key={role} className="overflow-hidden">
                 <div className="px-5 py-4 bg-[var(--color-surface-sunken)] border-b border-[var(--color-border)] flex items-center gap-3">
                   <div className="flex-1">
-                    <p className="text-sm font-semibold text-[var(--color-ink-900)]">{meta?.label ?? role}</p>
-                    <p className="text-xs text-[var(--color-ink-400)] mt-0.5">{meta?.desc} · <span className="font-medium text-[var(--color-primary-600)]">{rolePerms.length} permissions</span> enabled</p>
+                    <p className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-900)]">{meta?.label ?? role}</p>
+                    <p className="text-[11px] sm:text-xs text-[var(--color-ink-400)] mt-0.5">{meta?.desc} · <span className="font-medium text-[var(--color-primary-600)]">{rolePerms.length} permissions</span> enabled</p>
                   </div>
                 </div>
                 <div className="divide-y divide-[var(--color-border)]">
@@ -3291,10 +3291,10 @@ function HospitalSetupWizard({ assignableRoles = [], returnTo = "" }: { assignab
                     return (
                       <div key={group.category} className="px-5 py-4">
                         <div className="flex items-center justify-between mb-3">
-                          <p className="text-xs font-bold text-[var(--color-ink-500)] uppercase tracking-wider">{group.category}</p>
+                          <p className="text-[11px] sm:text-xs font-bold text-[var(--color-ink-500)] uppercase tracking-wider">{group.category}</p>
                           <button
                             onClick={() => toggleGroupAll(role, groupKeys)}
-                            className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border transition-colors ${
+                            className={`text-[9px] sm:text-[10px] font-bold px-2.5 py-0.5 rounded-full border transition-colors ${
                               allOn
                                 ? "bg-[var(--color-primary-100)] text-[var(--color-primary-700)] border-[var(--color-primary-200)]"
                                 : "bg-white text-[var(--color-ink-400)] border-[var(--color-border)] hover:border-[var(--color-primary-300)]"
@@ -3308,7 +3308,7 @@ function HospitalSetupWizard({ assignableRoles = [], returnTo = "" }: { assignab
                               <button
                                 key={p.key}
                                 onClick={() => togglePerm(role, p.key)}
-                                className={`flex items-start gap-2.5 rounded-lg px-3 py-2 text-left transition-all text-xs border ${
+                                className={`flex items-start gap-2.5 rounded-lg px-3 py-2 text-left transition-all text-[11px] sm:text-xs border ${
                                   on
                                     ? "bg-[var(--color-primary-50)] border-[var(--color-primary-200)]"
                                     : "bg-white border-[var(--color-border)] hover:border-[var(--color-primary-300)]"
@@ -3319,7 +3319,7 @@ function HospitalSetupWizard({ assignableRoles = [], returnTo = "" }: { assignab
                                 </div>
                                 <div>
                                   <p className={`font-semibold leading-tight ${on ? "text-[var(--color-primary-800)]" : "text-[var(--color-ink-700)]"}`}>{p.label}</p>
-                                  <p className="text-[var(--color-ink-400)] text-[10px] mt-0.5 leading-snug">{p.description}</p>
+                                  <p className="text-[var(--color-ink-400)] text-[9px] sm:text-[10px] mt-0.5 leading-snug">{p.description}</p>
                                 </div>
                               </button>
                             );
@@ -3333,11 +3333,11 @@ function HospitalSetupWizard({ assignableRoles = [], returnTo = "" }: { assignab
             );
           })}
           <div className="flex justify-between">
-            <button onClick={() => setStep(3)} className="rounded-xl border border-[var(--color-border)] px-5 py-2.5 text-sm font-medium text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] transition-colors">← Back</button>
+            <button onClick={() => setStep(3)} className="rounded-xl border border-[var(--color-border)] px-5 py-2.5 text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] transition-colors">← Back</button>
             <button
               onClick={handleCreate}
               disabled={creating}
-              className="flex items-center gap-2 rounded-xl bg-[var(--color-primary-600)] px-6 py-2.5 text-sm font-semibold text-white hover:bg-[var(--color-primary-700)] disabled:opacity-50 transition-colors"
+              className="flex items-center gap-2 rounded-xl bg-[var(--color-primary-600)] px-6 py-2.5 text-[13px] sm:text-sm font-semibold text-white hover:bg-[var(--color-primary-700)] disabled:opacity-50 transition-colors"
             >
               {creating ? <><RefreshCw size={14} className="animate-spin" /> Creating…</> : <><Check size={14} /> Create Hospital</>}
             </button>
@@ -3414,12 +3414,12 @@ export function DoctorSettingsClient({ users, auditLogs, hospitals, loginLogs, p
         {/* Sticky mini-header — mobile/tablet only */}
         <div className="lg:hidden sticky top-0 z-10 flex items-center justify-between gap-3 px-4 py-3 bg-white border-b border-[var(--color-border)] shadow-sm">
           <div className="min-w-0">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-ink-400)]">Settings</p>
-            <p className="text-sm font-semibold text-[var(--color-ink-800)] truncate mt-0.5">{currentSectionLabel}</p>
+            <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-[var(--color-ink-400)]">Settings</p>
+            <p className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-800)] truncate mt-0.5">{currentSectionLabel}</p>
           </div>
           <button
             onClick={() => setDrawerOpen(true)}
-            className="flex items-center gap-2 px-3 py-2 rounded-xl border border-[var(--color-border)] bg-white text-sm font-medium text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] transition-colors shrink-0 min-h-[44px]"
+            className="flex items-center gap-2 px-3 py-2 rounded-xl border border-[var(--color-border)] bg-white text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] transition-colors shrink-0 min-h-[44px]"
           >
             <Menu size={15} />
             <span>All Settings</span>
