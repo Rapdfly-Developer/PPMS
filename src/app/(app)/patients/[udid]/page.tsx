@@ -37,7 +37,6 @@ export default async function PatientProfilePage({
           doctor:   { select: { name: true } },
           generalExam: { select: { chiefComplaint: true } },
           diagnoses:   { select: { description: true } },
-          counsellingRecord: { select: { status: true } },
         },
       },
     },
@@ -110,15 +109,6 @@ export default async function PatientProfilePage({
         finalizedAt: (todayVisitRecord as any).finalizedAt?.toISOString() ?? null,
       }
     : null;
-
-  // Most recent visit (any date) where surgery was counselled
-  const surgeryAdvisedVisit = patient.visits.find((v) => (v as any).surgeryAdvised === true) ?? null;
-  const surgeryAdvisedVisitId = surgeryAdvisedVisit?.id ?? null;
-  const surgeryAdvisedName    = (surgeryAdvisedVisit as any)?.advisedSurgeryName as string | null ?? null;
-  const surgeryAdvisedEye     = (surgeryAdvisedVisit as any)?.advisedSurgeryEye  as string | null ?? null;
-  const surgeryAdvisedNotes   = (surgeryAdvisedVisit as any)?.advisedSurgeryNotes as string | null ?? null;
-  const surgeryAdvisedDate    = surgeryAdvisedVisit ? (surgeryAdvisedVisit as any).date as Date : null;
-  const counsellingStatus     = (surgeryAdvisedVisit as any)?.counsellingRecord?.status as string | null ?? null;
 
   /* ── No Show count ───────────────────────────────────────────────────── */
   const noShowCount = await prisma.appointment.count({
@@ -351,12 +341,6 @@ export default async function PatientProfilePage({
         userRole={user.role}
         timelineEntries={timelineEntries}
         lastVisitSummary={lastVisitSummary}
-        surgeryAdvisedVisitId={surgeryAdvisedVisitId}
-        surgeryAdvisedName={surgeryAdvisedName}
-        surgeryAdvisedEye={surgeryAdvisedEye}
-        surgeryAdvisedNotes={surgeryAdvisedNotes}
-        surgeryAdvisedDate={surgeryAdvisedDate?.toISOString() ?? null}
-        counsellingStatus={counsellingStatus}
       />
     </div>
   );

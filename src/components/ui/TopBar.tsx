@@ -3,7 +3,7 @@
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useSidebar } from "./SidebarContext";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Bell, Search, LogOut, ArrowLeft, Menu, Scissors } from "lucide-react";
+import { Bell, Search, LogOut, ArrowLeft, Menu } from "lucide-react";
 import Link from "next/link";
 import { signOut } from "next-auth/react";
 import { markOneRead } from "@/app/(app)/notifications/actions";
@@ -97,11 +97,11 @@ function BellDropdown({ items, onRead }: {
                 onClick={async () => {
                   onRead(item.id);
                   await markOneRead(item.id);
-                  router.push("/scheduled-ot");
+                  router.push("/notifications");
                 }}
               >
                 <span className="mt-0.5 shrink-0 w-7 h-7 rounded-full bg-[var(--color-primary-50)] flex items-center justify-center">
-                  <Scissors size={13} className="text-[var(--color-primary-600)]" />
+                  <Bell size={13} className="text-[var(--color-primary-600)]" />
                 </span>
                 <span className="flex-1 min-w-0">
                   <span className="block text-[13px] sm:text-sm text-[var(--color-ink-800)] leading-snug">{item.message}</span>

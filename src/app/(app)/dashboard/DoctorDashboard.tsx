@@ -129,12 +129,12 @@ export async function DoctorDashboard({
 
   return (
     <DashboardClient
-      role="DOCTOR"
+      scope="DOCTOR"
       permissions={user.permissions ?? []}
       displayName={doctorProfile?.name ?? user.name}
+      bannerTitle={`Dr. ${doctorProfile?.name ?? user.name}`}
       todayLabel={format(toISTWall(now), "EEEE, d MMM yyyy")}
       appts={appts}
-      surgeries={[]}
       filterOptions={hospitals}
       newEncounterHref="/appointments/new"
       newEncounterLabel="New Encounter"

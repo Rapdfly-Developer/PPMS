@@ -71,15 +71,6 @@ export const PERMISSION_GROUPS: {
     ],
   },
   {
-    category: "Billing",
-    permissions: [
-      { key: "billing.view",   label: "View Billing", description: "See bills and payment history" },
-      { key: "billing.create", label: "Create Bills", description: "Generate new bills for visits" },
-      { key: "billing.edit",   label: "Edit Bills",   description: "Modify existing bills" },
-      { key: "billing.print",  label: "Print Bills",  description: "Print or export billing documents" },
-    ],
-  },
-  {
     category: "IPD (In-Patient)",
     permissions: [
       { key: "ipd.view",   label: "View IPD",   description: "See current and past in-patient admissions" },

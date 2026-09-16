@@ -1530,8 +1530,9 @@ function AnteriorSegmentCard({ visit, udid, editable, priorVisits = [] }: { visi
         <SaveIndicator state={state} />
       </div>
 
-      {/* Column headers */}
-      <div className="grid grid-cols-[140px_1fr_1fr] gap-x-4 mb-3 px-1 border-b border-[var(--color-border)] pb-2">
+      {/* Column headers — the three-column layout only exists from sm up, so
+          the headers that name those columns are hidden below it. */}
+      <div className="hidden sm:grid grid-cols-[140px_1fr_1fr] gap-x-4 mb-3 px-1 border-b border-[var(--color-border)] pb-2">
         <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-[var(--color-ink-400)]">Structure</p>
         <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-[var(--color-primary-700)]">Right Eye</p>
         <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-[var(--color-primary-700)]">Left Eye</p>
@@ -1539,10 +1540,20 @@ function AnteriorSegmentCard({ visit, udid, editable, priorVisits = [] }: { visi
 
       <div className="flex flex-col gap-5">
         {AS_KEYS.map((key) => (
-          <div key={key} className="grid grid-cols-[140px_1fr_1fr] gap-x-6 items-start">
-            <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)] pt-2">{toLabel(key)}</p>
-            <SegmentEyeInput structureKey={key} options={ANTERIOR_SEGMENT_STRUCTURES[key] ?? []} eye="RE" value={re[key] ?? ""} onChange={(v) => setRe({ ...re, [key]: v })} disabled={!editable} history={getSegHistory("re", key)} />
-            <SegmentEyeInput structureKey={key} options={ANTERIOR_SEGMENT_STRUCTURES[key] ?? []} eye="LE" value={le[key] ?? ""} onChange={(v) => setLe({ ...le, [key]: v })} disabled={!editable} history={getSegHistory("le", key)} />
+          // Below sm the fixed 140px label plus two gaps eats ~60% of the card,
+          // leaving each eye column too narrow for its input or keyword pills,
+          // so the row stacks instead: label, then RE, then LE. min-w-0 lets the
+          // 1fr tracks shrink at tablet widths rather than overflowing the card.
+          <div key={key} className="grid grid-cols-1 sm:grid-cols-[140px_1fr_1fr] gap-x-6 gap-y-2 items-start">
+            <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)] sm:pt-2">{toLabel(key)}</p>
+            <div className="min-w-0">
+              <p className="sm:hidden text-[9px] font-bold uppercase tracking-widest text-[var(--color-primary-700)] mb-1">Right Eye</p>
+              <SegmentEyeInput structureKey={key} options={ANTERIOR_SEGMENT_STRUCTURES[key] ?? []} eye="RE" value={re[key] ?? ""} onChange={(v) => setRe({ ...re, [key]: v })} disabled={!editable} history={getSegHistory("re", key)} />
+            </div>
+            <div className="min-w-0">
+              <p className="sm:hidden text-[9px] font-bold uppercase tracking-widest text-[var(--color-primary-700)] mb-1">Left Eye</p>
+              <SegmentEyeInput structureKey={key} options={ANTERIOR_SEGMENT_STRUCTURES[key] ?? []} eye="LE" value={le[key] ?? ""} onChange={(v) => setLe({ ...le, [key]: v })} disabled={!editable} history={getSegHistory("le", key)} />
+            </div>
           </div>
         ))}
       </div>
@@ -1683,8 +1694,9 @@ function PosteriorSegmentCard({ visit, udid, editable, priorVisits = [] }: { vis
         <SaveIndicator state={state} />
       </div>
 
-      {/* Column headers */}
-      <div className="grid grid-cols-[140px_1fr_1fr] gap-x-4 mb-3 px-1 border-b border-[var(--color-border)] pb-2">
+      {/* Column headers — the three-column layout only exists from sm up, so
+          the headers that name those columns are hidden below it. */}
+      <div className="hidden sm:grid grid-cols-[140px_1fr_1fr] gap-x-4 mb-3 px-1 border-b border-[var(--color-border)] pb-2">
         <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-[var(--color-ink-400)]">Structure</p>
         <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-[var(--color-primary-700)]">Right Eye</p>
         <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-[var(--color-primary-700)]">Left Eye</p>
@@ -1692,30 +1704,37 @@ function PosteriorSegmentCard({ visit, udid, editable, priorVisits = [] }: { vis
 
       <div className="flex flex-col gap-5">
         {PS_KEYS.map((key) => (
-          <div key={key} className="grid grid-cols-[140px_1fr_1fr] gap-x-6 items-start">
-            <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)] pt-2 whitespace-pre-line">
+          // Stacks below sm for the same reason as Anterior Segment — see there.
+          <div key={key} className="grid grid-cols-1 sm:grid-cols-[140px_1fr_1fr] gap-x-6 gap-y-2 items-start">
+            <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)] sm:pt-2 whitespace-pre-line">
               {PS_LABELS[key] ?? toLabel(key)}
             </p>
-            <SegmentEyeInput
-              structureKey={key}
-              options={POSTERIOR_SEGMENT_OPTIONS[key] ?? []}
-              eye="RE"
-              placeholder={`${PS_PLACEHOLDERS[key] ?? toLabel(key)} RE...`}
-              value={re[key] ?? ""}
-              onChange={(v) => setRe({ ...re, [key]: v })}
-              disabled={!editable}
-              history={histFor(key, "re")}
-            />
-            <SegmentEyeInput
-              structureKey={key}
-              options={POSTERIOR_SEGMENT_OPTIONS[key] ?? []}
-              eye="LE"
-              placeholder={`${PS_PLACEHOLDERS[key] ?? toLabel(key)} LE...`}
-              value={le[key] ?? ""}
-              onChange={(v) => setLe({ ...le, [key]: v })}
-              disabled={!editable}
-              history={histFor(key, "le")}
-            />
+            <div className="min-w-0">
+              <p className="sm:hidden text-[9px] font-bold uppercase tracking-widest text-[var(--color-primary-700)] mb-1">Right Eye</p>
+              <SegmentEyeInput
+                structureKey={key}
+                options={POSTERIOR_SEGMENT_OPTIONS[key] ?? []}
+                eye="RE"
+                placeholder={`${PS_PLACEHOLDERS[key] ?? toLabel(key)} RE...`}
+                value={re[key] ?? ""}
+                onChange={(v) => setRe({ ...re, [key]: v })}
+                disabled={!editable}
+                history={histFor(key, "re")}
+              />
+            </div>
+            <div className="min-w-0">
+              <p className="sm:hidden text-[9px] font-bold uppercase tracking-widest text-[var(--color-primary-700)] mb-1">Left Eye</p>
+              <SegmentEyeInput
+                structureKey={key}
+                options={POSTERIOR_SEGMENT_OPTIONS[key] ?? []}
+                eye="LE"
+                placeholder={`${PS_PLACEHOLDERS[key] ?? toLabel(key)} LE...`}
+                value={le[key] ?? ""}
+                onChange={(v) => setLe({ ...le, [key]: v })}
+                disabled={!editable}
+                history={histFor(key, "le")}
+              />
+            </div>
           </div>
         ))}
       </div>

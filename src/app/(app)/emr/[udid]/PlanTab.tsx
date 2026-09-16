@@ -6,8 +6,8 @@ import { History } from "lucide-react";
 import { parseJSON } from "@/lib/json";
 import { useAutoSave, SaveIndicator } from "@/lib/useAutoSave";
 import { addMedication, removeMedication, updateMedication, clearAllMedications, saveRefraction, saveFollowUp, saveAdviseNotes, saveAnesthesiaType, saveProcedureLaterality, saveProcedureName, saveProcedureNotes, addInvestigationOrder, deleteInvestigationOrder } from "./actions";
-import { DispositionToggle, AdmitPanel, FollowUpdatesPanel, SurgicalPanel } from "./DispositionPanel";
-import { Plus, X, BedDouble, Stethoscope, ChevronDown, Pencil, Trash2, RefreshCw, Search, Pill, Sparkles, CheckCircle2, Check, AlertTriangle, Scissors } from "lucide-react";
+import { DispositionToggle, AdmitPanel, FollowUpdatesPanel } from "./DispositionPanel";
+import { Plus, X, BedDouble, Stethoscope, ChevronDown, Pencil, Trash2, RefreshCw, Search, Pill, Sparkles, CheckCircle2, Check, AlertTriangle } from "lucide-react";
 import {
   type TreatmentPreset, type PresetMatch, type AppliedPreset,
   getTreatmentPresets, matchPresets, mergeMeds,
@@ -2293,8 +2293,10 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
           <p className="text-[13px] sm:text-sm text-[var(--color-ink-400)]">Search for a medication above to add it to the prescription.</p>
         </div>
       ) : (
-        <div className="mt-1">
-          <table className="w-full text-sm">
+        // The columns are fixed-width and total ~470px, so on a phone the table
+        // scrolls inside its own card rather than pushing the page sideways.
+        <div className="mt-1 overflow-x-auto">
+          <table className="w-full min-w-[470px] text-sm">
             <thead>
               <tr className="border-b border-[var(--color-border)]">
                 <th className="px-3 py-1.5 text-left text-[10px] font-bold text-[var(--color-ink-300)] uppercase tracking-widest w-12">#</th>
@@ -2686,7 +2688,6 @@ function DispositionCard({ visit, udid, patientSex, priorVisits = [] }: { visit:
   const [activePanels, setActivePanels] = useState<string[]>(
     [
       visit.admission && "admit",
-      visit.surgeryAdvised && "surgical",
     ].filter(Boolean) as string[]
   );
   const togglePanel = (id: string) =>
@@ -2697,12 +2698,10 @@ function DispositionCard({ visit, udid, patientSex, priorVisits = [] }: { visit:
       <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)] mb-3">Patient Disposition</p>
       <div className="flex gap-3 flex-wrap mb-2">
         <DispositionToggle icon={<BedDouble size={16} />}  label="Admit"                active={activePanels.includes("admit")}    onClick={() => togglePanel("admit")} />
-        <DispositionToggle icon={<Scissors size={16} />}   label="Surgical Counselling" active={activePanels.includes("surgical")} onClick={() => togglePanel("surgical")} />
         <DispositionToggle icon={<RefreshCw size={16} />}  label="Follow Up Dates"      active={activePanels.includes("follow")}   onClick={() => togglePanel("follow")} />
       </div>
       <div className="flex flex-col gap-4">
         {activePanels.includes("admit")    && <AdmitPanel          visit={visit} udid={udid} patientSex={patientSex} />}
-        {activePanels.includes("surgical") && <SurgicalPanel        visit={visit} udid={udid} />}
         {activePanels.includes("follow")   && <FollowUpdatesPanel   visit={visit} udid={udid} priorVisits={priorVisits} />}
       </div>
     </Card>

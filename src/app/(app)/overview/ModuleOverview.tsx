@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import Link from "next/link";
 import {
   LayoutDashboard, CalendarDays, Users, BedDouble, Settings,
-  CalendarClock, BarChart2, Scissors, HeartHandshake,
+  CalendarClock, BarChart2,
   Clock, ClipboardList, UserCog, ShieldCheck, Bell, Package,
   Search, ArrowRight, LayoutGrid, X, Stethoscope, Building2,
   UserCheck, Sparkles,
@@ -30,11 +30,9 @@ const ALL_MODULES: ModuleDef[] = [
   { section:"Clinical", accent:"teal",  href:"/patients",                label:"Patients",       icon:Users,           permission:"patients.view",     description:"Patient registry, profiles, visit history, and clinical records." },
   { section:"Clinical", accent:"teal",  href:"/follow-ups",              label:"Follow Ups",     icon:CalendarClock,   permission:"patients.view",     description:"Track and manage scheduled patient follow-up appointments.",       roles:["DOCTOR","HOSPITAL"] },
   { section:"Clinical", accent:"teal",  href:"/ipd",                     label:"IPD",            icon:BedDouble,       permission:"ipd.view",          description:"In-patient admissions, bed management, and discharge summaries.", roles:["DOCTOR"] },
-  { section:"Clinical", accent:"teal",  href:"/counseling",              label:"Counseling",     icon:HeartHandshake,  permission:"patients.view",     description:"Patient counseling sessions, consents, and care plans.",          roles:["DOCTOR","HOSPITAL"] },
   { section:"Practice Management", accent:"blue",  href:"/appointments",           label:"Appointments",   icon:CalendarDays,    permission:"appointments.view", description:"Schedule, confirm, and manage patient appointments end-to-end.",   roles:["DOCTOR","HOSPITAL"] },
   { section:"Practice Management", accent:"blue",  href:"/appointments/availability",label:"Availability", icon:Clock,           permission:"appointments.view", description:"Configure doctor slot availability and session schedules." },
   { section:"Practice Management", accent:"blue",  href:"/queue",                   label:"Queue",          icon:ClipboardList,   permission:"dashboard.view",    description:"Live patient queue with real-time status and wait times." },
-  { section:"Operations", accent:"amber", href:"/scheduled-ot",            label:"Scheduled OT",   icon:Scissors,        permission:"appointments.view", description:"Operation theatre scheduling, pre-op assessments, and post-op reviews.", roles:["DOCTOR","HOSPITAL"] },
   { section:"Operations", accent:"amber", href:"/analytics",               label:"Analytics",      icon:BarChart2,       permission:"reports.view",      description:"KPI reports, trends, and OPD / IPD / OT statistical insights." },
   { section:"Administration", accent:"slate", href:"/settings",            label:"Settings",       icon:Settings,        permission:"settings.view",     description:"App configuration, roles, integrations, and system preferences." },
   { section:"Administration", accent:"slate", href:"/users",               label:"Users",          icon:UserCog,         permission:"settings.view",     description:"Manage staff accounts, roles, and access permissions." },

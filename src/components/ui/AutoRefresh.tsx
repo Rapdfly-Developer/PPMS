@@ -10,7 +10,7 @@ import { useRouter, usePathname } from "next/navigation";
  *   /queue          — 30 s  (live board; was 5 s — 6× reduction)
  *   /dashboard      — 120 s (summary data; already covered by layout refresh)
  *   /appointments   — 120 s (booking changes are infrequent)
- *   static routes   — never auto-refresh (settings, patient profiles, EMR, counseling)
+ *   static routes   — never auto-refresh (settings, patient profiles, EMR)
  *   everything else — 120 s (was 30 s — 4× reduction)
  *
  * Two guards apply everywhere:
@@ -23,10 +23,8 @@ import { useRouter, usePathname } from "next/navigation";
 /** Routes that never need auto-refresh — data only changes on explicit user action. */
 const STATIC_PREFIXES = [
   "/settings",
-  "/counseling/",   // individual counselling detail page
   "/emr/",          // individual EMR — saved explicitly
   "/patients/",     // patient profile — rarely changes
-  "/scheduled-ot/", // OT detail pages
   "/ipd/",
   "/follow-ups/",
   "/analytics",     // heavy query page; manual refresh is sufficient

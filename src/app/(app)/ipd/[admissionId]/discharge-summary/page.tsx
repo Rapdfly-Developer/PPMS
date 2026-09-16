@@ -30,13 +30,6 @@ export default async function DischargeSummaryPage({
   if (!admission) notFound();
   if (admission.visit.doctorId !== user.profileId) redirect("/ipd");
 
-  // Try to pull surgery info from linked SurgerySchedule via OtRecord
-  const schedule = await prisma.surgerySchedule.findFirst({
-    where: { patientId: admission.visit.patientId, operatingSurgeonId: user.profileId },
-    include: { otRecord: true },
-    orderBy: { plannedDateTime: "desc" },
-  });
-
   return (
     <DischargeSummaryForm
       admission={{
@@ -59,18 +52,7 @@ export default async function DischargeSummaryPage({
         doctorName: admission.visit.doctor?.name ?? "",
         hospitalName: admission.visit.hospital.name,
       }}
-      otRecord={
-        schedule?.otRecord
-          ? {
-              procedurePerformed: (schedule.otRecord as any).procedurePerformed ?? null,
-              iolModel: (schedule.otRecord as any).iolModel ?? null,
-              iolPower: (schedule.otRecord as any).iolPower ?? null,
-              complications: (schedule.otRecord as any).complications ?? null,
-              anesthesiaTypeRecorded: (schedule.otRecord as any).anesthesiaTypeRecorded ?? null,
-              surgeryScheduleId: schedule.id,
-            }
-          : null
-      }
+      otRecord={null}
       medications={admission.visit.medications.map((m: any) => ({
         drugName: m.drugName,
         dosage: m.dosage ?? "",

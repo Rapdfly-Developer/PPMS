@@ -1,8 +1,8 @@
 /**
  * GET /api/v1/patients/:patientRef/timeline
  *
- * Returns the patient's chronological clinical timeline (visits, surgeries,
- * admissions) merged and sorted newest first. Query param ?limit=N (max 40).
+ * Returns the patient's chronological clinical timeline (visits, admissions)
+ * merged and sorted newest first. Query param ?limit=N (max 40).
  */
 
 import { NextResponse } from "next/server";

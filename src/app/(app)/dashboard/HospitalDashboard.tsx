@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { format } from "date-fns";
 import { istTodayRange, toISTWall } from "@/lib/ist";
-import type { SessionUser } from "@/lib/rbac";
+import { userCan, type SessionUser } from "@/lib/rbac";
 import { getLicenseForHospital } from "@/lib/license";
 import { DashboardClient } from "./DashboardClient";
 import { LicenseBanner } from "./LicenseBanner";
@@ -93,16 +93,26 @@ export async function HospitalDashboard({
     doctor:    a.visit.doctor,
   }));
 
+  const hospitalName = hospital?.name ?? "Hospital";
+
+  // The shared front-desk login (role HOSPITAL) is the hospital, so its banner
+  // stays the hospital's name — unchanged. A named staff member (receptionist,
+  // refractionist, any custom role) is a person, so they get their own name
+  // with the hospital moved to the subtitle.
+  const isSharedHospitalAccount = user.role === "HOSPITAL";
+  const roleLabel = user.role.charAt(0) + user.role.slice(1).toLowerCase().replace(/_/g, " ");
+
   return (
     <>
-      <LicenseBanner license={license} role="HOSPITAL" />
+      {userCan(user, "dashboard.view") && <LicenseBanner license={license} role="HOSPITAL" />}
       <DashboardClient
-        role="HOSPITAL"
+        scope="HOSPITAL"
         permissions={user.permissions ?? []}
-        displayName={hospital?.name ?? "Hospital"}
+        displayName={hospitalName}
+        bannerTitle={isSharedHospitalAccount ? hospitalName : `Welcome, ${user.name}`}
+        bannerSubtitle={isSharedHospitalAccount ? undefined : `${roleLabel} · ${hospitalName}`}
         todayLabel={format(toISTWall(now), "EEEE, d MMM yyyy")}
         appts={appts}
-        surgeries={[]}
         filterOptions={doctors}
         hospitalLogoUrl={hospital?.logoUrl ?? null}
         newEncounterHref="/appointments/book"

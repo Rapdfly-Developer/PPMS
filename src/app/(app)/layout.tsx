@@ -46,7 +46,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         {/* Main content — always flex-1, never pushed by the sidebar on mobile */}
         <div className="flex-1 min-w-0 flex flex-col min-h-screen">
           <TopBar name={user.name} role={user.role} />
-          <main className="flex-1 bg-[var(--color-bg)] overflow-auto" data-main-content>
+          {/* overflow-y-auto (not overflow-auto) so a child that overflows
+              horizontally is clipped here instead of scrolling the whole page
+              sideways — which shifts the nav and clips labels on the left.
+              Anything genuinely wider than the screen carries its own
+              overflow-x-auto wrapper. */}
+          <main className="flex-1 bg-[var(--color-bg)] overflow-y-auto overflow-x-hidden" data-main-content>
             <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-5 lg:py-7 pb-24 lg:pb-7">
               <LicenseGate
                 active={licenseActive}

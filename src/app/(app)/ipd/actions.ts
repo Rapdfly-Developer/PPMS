@@ -100,34 +100,3 @@ export async function saveDischargeSummary(
   revalidatePath(`/ipd/${input.admissionId}/discharge-summary`);
   return { id: summary.id };
 }
-
-export async function closeSurgeryCase(
-  scheduleId: string
-): Promise<{ error?: string }> {
-  const user = await requireRole("DOCTOR");
-
-  const schedule = await prisma.surgerySchedule.findUnique({
-    where: { id: scheduleId },
-    include: {
-      otRecord: { select: { status: true } },
-      patient: { select: { id: true } },
-    },
-  });
-  if (!schedule) return { error: "Surgery schedule not found." };
-  if (schedule.operatingSurgeonId !== user.profileId) return { error: "Forbidden." };
-  if (schedule.caseStatus === "CLOSED") return { error: "Case is already closed." };
-
-  if (schedule.otRecord?.status !== "RECOVERY" && schedule.status !== "OT_COMPLETED") {
-    return { error: "Surgery must be completed before closing the case." };
-  }
-
-  await prisma.surgerySchedule.update({
-    where: { id: scheduleId },
-    data: { caseStatus: "CLOSED", caseClosedAt: new Date() },
-  });
-
-  await writeAudit(user.id, "SurgerySchedule", scheduleId, "CASE_CLOSED");
-  revalidatePath("/scheduled-ot");
-  revalidatePath("/ipd");
-  return {};
-}
