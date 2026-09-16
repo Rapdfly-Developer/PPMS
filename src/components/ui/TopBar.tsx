@@ -9,12 +9,15 @@ import { signOut } from "next-auth/react";
 import { markOneRead } from "@/app/(app)/notifications/actions";
 
 const BACK_BTN_CLS =
-  "group inline-flex items-center gap-1.5 h-8 pl-2 pr-3 rounded-lg border border-[var(--color-border)] bg-white text-[13px] sm:text-sm font-medium text-[var(--color-ink-600)] hover:text-[var(--color-primary-700)] hover:border-[var(--color-primary-300)] hover:bg-[var(--color-primary-50)] active:scale-[0.97] transition-all duration-150";
+  "group inline-flex items-center gap-1.5 h-8 pl-3 pr-3 sm:pl-2 sm:pr-3 rounded-lg border border-[var(--color-border)] bg-white text-[13px] sm:text-sm font-medium text-[var(--color-ink-600)] hover:text-[var(--color-primary-700)] hover:border-[var(--color-primary-300)] hover:bg-[var(--color-primary-50)] active:scale-[0.97] transition-all duration-150";
 
 const BackBtnContent = () => (
   <>
     <ArrowLeft size={15} className="transition-transform duration-150 group-hover:-translate-x-0.5" />
-    Back
+    {/* Icon-only below sm so the search field gets the width back. The button
+        already carries title/aria-label="Go back", so nothing is lost for
+        screen readers or tooltips. */}
+    <span className="hidden sm:inline">Back</span>
   </>
 );
 
@@ -220,7 +223,7 @@ export function TopBar({ name, role }: { name: string; role: string }) {
         <Suspense
           fallback={
             <span className={`${BACK_BTN_CLS} opacity-60 pointer-events-none shrink-0`}>
-              <ArrowLeft size={15} /> Back
+              <ArrowLeft size={15} /> <span className="hidden sm:inline">Back</span>
             </span>
           }
         >
