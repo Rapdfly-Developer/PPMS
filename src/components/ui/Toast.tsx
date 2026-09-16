@@ -23,7 +23,9 @@ export function Toast({
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-      className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[300] flex items-center gap-2.5 px-4 py-2.5 rounded-2xl shadow-xl text-sm font-medium text-white whitespace-nowrap"
+      // bottom-20 clears MobileBottomNav (64px + border) on mobile; lg:bottom-6
+      // restores the original offset once the nav is gone.
+      className="fixed bottom-20 lg:bottom-6 left-1/2 -translate-x-1/2 z-[300] flex items-center gap-2.5 px-4 py-2.5 rounded-2xl shadow-xl text-sm font-medium text-white whitespace-nowrap"
       style={{ background: type === "success" ? "#1e293b" : "#dc2626" }}
     >
       {type === "success"

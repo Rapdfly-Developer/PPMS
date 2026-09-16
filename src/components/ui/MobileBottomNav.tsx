@@ -36,7 +36,12 @@ export function MobileBottomNav() {
 
   return (
     <nav
-      className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-100 rounded-t-2xl"
+      // z-30 sits above page content but below every overlay (modals, drawers,
+      // sheets and their backdrops all start at z-40). It used to be z-50,
+      // which tied with those overlays — and because this nav renders last in
+      // (app)/layout.tsx, the tie broke in its favour and it painted over
+      // bottom-aligned sheets and full-height drawers.
+      className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-slate-100 rounded-t-2xl"
       style={{
         boxShadow: "0 -4px 24px rgba(0,0,0,0.08)",
         paddingBottom: "env(safe-area-inset-bottom, 0px)",

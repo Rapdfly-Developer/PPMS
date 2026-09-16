@@ -154,7 +154,9 @@ export function Sidebar({
         onClick={close}
         className="min-[1025px]:hidden"
         style={{
-          position: "fixed", inset: 0, zIndex: 40,
+          // Between MobileBottomNav (z-30) and the drawer (z-60), so the nav is
+          // dimmed and non-interactive while the drawer is open.
+          position: "fixed", inset: 0, zIndex: 55,
           background: "rgba(0,0,0,0.5)", backdropFilter: "blur(2px)",
           transition: "opacity 300ms ease",
           opacity: open ? 1 : 0, pointerEvents: open ? "auto" : "none",
@@ -270,7 +272,9 @@ export function Sidebar({
             left: 0 !important;
             height: 100dvh !important;
             transform: ${open ? "translateX(0)" : "translateX(-100%)"};
-            z-index: 50 !important;
+            /* Above the backdrop (55) and MobileBottomNav (30) so the account
+               chip at the drawer's foot is never painted over. */
+            z-index: 60 !important;
           }
         }
         @media (min-width: 1025px) {
