@@ -87,7 +87,7 @@ function PartialDispenseModal({
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
           <div className="flex items-center gap-2">
             <PackageOpen size={18} className="text-amber-600" />
-            <h2 className="text-base font-bold text-[var(--color-ink-900)]">Reason for Partial Dispense</h2>
+            <h2 className="text-[15px] sm:text-base font-bold text-[var(--color-ink-900)]">Reason for Partial Dispense</h2>
           </div>
           <button onClick={onCancel} className="p-1.5 rounded-lg hover:bg-[var(--color-surface-sunken)] text-[var(--color-ink-400)]">
             <X size={16} />
@@ -317,7 +317,7 @@ export function EmrActionBar({
         {!closed && !isLastTab && (
           <button
             onClick={onNextSection}
-            className="flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-xl bg-white border border-[var(--color-border)] hover:border-[var(--color-primary-500)] text-[var(--color-ink-700)]"
+            className="flex items-center gap-2 text-[13px] sm:text-sm font-medium px-4 py-2 rounded-xl bg-white border border-[var(--color-border)] hover:border-[var(--color-primary-500)] text-[var(--color-ink-700)]"
           >
             Next Section <ChevronRight size={15} />
           </button>
@@ -327,7 +327,7 @@ export function EmrActionBar({
         <div className="relative" ref={printRef}>
           <button
             onClick={() => setPrintOpen((v) => !v)}
-            className="flex items-center gap-1.5 text-sm font-medium px-4 py-2 rounded-xl bg-white border border-[var(--color-border)] hover:border-[var(--color-primary-500)] text-[var(--color-ink-700)]"
+            className="flex items-center gap-1.5 text-[13px] sm:text-sm font-medium px-4 py-2 rounded-xl bg-white border border-[var(--color-border)] hover:border-[var(--color-primary-500)] text-[var(--color-ink-700)]"
           >
             <Printer size={15} /> Print Rx <ChevronDown size={13} className={`transition-transform ${printOpen ? "rotate-180" : ""}`} />
           </button>
@@ -340,7 +340,7 @@ export function EmrActionBar({
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => setPrintOpen(false)}
-                className="flex items-center gap-3 px-4 py-3 text-sm text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] transition-colors"
+                className="flex items-center gap-3 px-4 py-3 text-[13px] sm:text-sm text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] transition-colors"
               >
                 <Printer size={15} className="text-[var(--color-primary-600)] shrink-0" />
                 <div>
@@ -356,7 +356,7 @@ export function EmrActionBar({
                 href={`${pdfBase}?dl=1`}
                 download
                 onClick={() => setPrintOpen(false)}
-                className="flex items-center gap-3 px-4 py-3 text-sm text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] transition-colors"
+                className="flex items-center gap-3 px-4 py-3 text-[13px] sm:text-sm text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] transition-colors"
               >
                 <Download size={15} className="text-[var(--color-primary-600)] shrink-0" />
                 <div>
@@ -375,7 +375,7 @@ export function EmrActionBar({
                   const url = `/api/prescription-pdf/${visit.id}/summary${spv ? `?spv=${spv}` : ""}`;
                   window.open(url, "_blank");
                 }}
-                className="flex items-center gap-3 px-4 py-3 w-full text-left text-sm text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] transition-colors"
+                className="flex items-center gap-3 px-4 py-3 w-full text-left text-[13px] sm:text-sm text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] transition-colors"
               >
                 <FileText size={15} className="text-[var(--color-primary-600)] shrink-0" />
                 <div>
@@ -391,7 +391,7 @@ export function EmrActionBar({
           <button
             disabled={partialPending}
             onClick={() => setShowPartialModal(true)}
-            className="flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-xl bg-amber-50 border border-amber-300 text-amber-700 hover:bg-amber-100 disabled:opacity-60"
+            className="flex items-center gap-2 text-[13px] sm:text-sm font-medium px-4 py-2 rounded-xl bg-amber-50 border border-amber-300 text-amber-700 hover:bg-amber-100 disabled:opacity-60"
           >
             <PackageOpen size={15} /> {partialPending ? "Saving…" : "Partial Dispense"}
           </button>
@@ -399,7 +399,7 @@ export function EmrActionBar({
 
         {closed ? (
           autoClosed ? (
-            <span className="flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-xl bg-amber-50 border border-amber-200 text-amber-700">
+            <span className="flex items-center gap-2 text-[13px] sm:text-sm font-medium px-4 py-2 rounded-xl bg-amber-50 border border-amber-200 text-amber-700">
               <Lock size={15} /> Auto-closed at EOD
             </span>
           ) : finalizedToday ? (
@@ -407,7 +407,7 @@ export function EmrActionBar({
               {!editMode && (
                 <button
                   onClick={onEnterEditMode}
-                  className="flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-xl bg-blue-50 border border-blue-200 text-blue-600 hover:bg-blue-100 hover:border-blue-300 transition-colors"
+                  className="flex items-center gap-1.5 text-[11px] sm:text-xs font-medium px-3 py-2 rounded-xl bg-blue-50 border border-blue-200 text-blue-600 hover:bg-blue-100 hover:border-blue-300 transition-colors"
                 >
                   <PenLine size={13} /> Click to Edit
                 </button>
@@ -420,13 +420,13 @@ export function EmrActionBar({
                     setShowSuccess(true);
                   })
                 }
-                className="flex items-center gap-2 text-sm font-medium px-5 py-2 rounded-xl bg-[var(--color-primary-900)] text-white hover:bg-[var(--color-primary-700)] transition-colors disabled:opacity-60"
+                className="flex items-center gap-2 text-[13px] sm:text-sm font-medium px-5 py-2 rounded-xl bg-[var(--color-primary-900)] text-white hover:bg-[var(--color-primary-700)] transition-colors disabled:opacity-60"
               >
                 <FileSignature size={15} /> {pending ? "Finalizing…" : "Finalize & Sign"}
               </button>
             </>
           ) : (
-            <span className="flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-xl bg-[var(--color-success-100)] text-[var(--color-success-600)]">
+            <span className="flex items-center gap-2 text-[13px] sm:text-sm font-medium px-4 py-2 rounded-xl bg-[var(--color-success-100)] text-[var(--color-success-600)]">
               <CheckCircle2 size={15} /> Finalized &amp; Signed
             </span>
           )
@@ -439,7 +439,7 @@ export function EmrActionBar({
                 setShowSuccess(true);
               })
             }
-            className="flex items-center gap-2 text-sm font-medium px-5 py-2 rounded-xl bg-[var(--color-primary-900)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-60"
+            className="flex items-center gap-2 text-[13px] sm:text-sm font-medium px-5 py-2 rounded-xl bg-[var(--color-primary-900)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-60"
           >
             <FileSignature size={15} /> {pending ? "Finalizing…" : "Finalize & Sign"}
           </button>
