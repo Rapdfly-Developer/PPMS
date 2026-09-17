@@ -2,8 +2,8 @@ import { requirePermission } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import { startOfDay } from "date-fns";
-import { Download } from "lucide-react";
 import { VisitsListClient } from "./VisitsListClient";
+import { DownloadAllButton } from "./DownloadAllButton";
 
 export default async function PatientVisitsPage({
   params,
@@ -63,14 +63,7 @@ export default async function PatientVisitsPage({
           </p>
         </div>
         {totalVisits > 0 && (
-          <a
-            href={`/api/visit-summary-pdf/patient/${udid}`}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-xl border border-[var(--color-border)] text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)] transition-colors"
-          >
-            <Download size={14} /> Download All
-          </a>
+          <DownloadAllButton udid={udid} />
         )}
       </div>
 

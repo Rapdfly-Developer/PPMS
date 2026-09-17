@@ -4,6 +4,7 @@ import { useState, useMemo, useTransition } from "react";
 import { format } from "date-fns";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { openPdfNative } from "@/lib/open-pdf";
 import {
   ChevronRight, ChevronDown, Hospital, Stethoscope, FileText,
   CheckCircle2, Clock, AlertCircle, Filter, ClipboardCheck,
@@ -325,7 +326,7 @@ function PreviousVisitsPanel({ visits, udid }: { visits: SerialVisit[]; udid: st
   const [hospitalFilter, setHospitalFilter] = useState("ALL");
 
   const handleDownloadAll = () => {
-    window.open(`/api/visit-summary-pdf/patient/${udid}`, "_blank");
+    void openPdfNative(`/api/visit-summary-pdf/patient/${udid}`);
   };
 
   const filtered = useMemo(() => {

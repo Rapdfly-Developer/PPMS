@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo, useEffect } from "react";
+import { openPdfNative, isNativeShell } from "@/lib/open-pdf";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { format, formatDistanceToNow } from "date-fns";
@@ -1903,10 +1904,17 @@ function ExportSection({ hospitals }: { hospitals: HospitalRow[] }) {
       if (ageMax)     params.set("ageMax", ageMax);
       if (fromDate)   params.set("fromDate", fromDate);
       if (toDate)     params.set("toDate", toDate);
-      const a = document.createElement("a");
-      a.href = `/api/export/patients?${params}`;
-      a.download = `patients_${dateSuffix}.pdf`;
-      a.click();
+      const url = `/api/export/patients?${params}`;
+      if (isNativeShell()) {
+        // The WebView cannot action an <a download>; route it through the
+        // Filesystem/FileOpener path instead.
+        await openPdfNative(url, `patients_${dateSuffix}.pdf`);
+      } else {
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `patients_${dateSuffix}.pdf`;
+        a.click();
+      }
       setMsg({ type: "ok", text: "PDF download started." });
       setExporting(null);
       return;

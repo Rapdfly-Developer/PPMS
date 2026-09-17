@@ -1,6 +1,7 @@
 "use client";
 
 import { format } from "date-fns";
+import { openPdfNative } from "@/lib/open-pdf";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { Phone, Tag, FileText, CalendarPlus, Printer, UserRound, Clock, Timer, LogIn, CheckCircle2, Calendar, UserX } from "lucide-react";
@@ -223,14 +224,13 @@ export function AppointmentRow({ appt, role, token }: { appt: any; role: string;
         {hasActions && (
           <div className="flex flex-wrap items-center gap-2 mt-2" onClick={(e) => e.stopPropagation()}>
             {isCompleted && appt.visit && (
-              <a
-                href={`/api/prescription-pdf/${appt.visit.id}`}
-                target="_blank"
-                rel="noopener noreferrer"
+              <button
+                type="button"
+                onClick={() => { void openPdfNative(`/api/prescription-pdf/${appt.visit!.id}`); }}
                 className="flex items-center gap-1 text-[11px] sm:text-xs font-medium px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors"
               >
                 <Printer size={11} /> Prescription
-              </a>
+              </button>
             )}
             {showScheduleNext && (
               <>

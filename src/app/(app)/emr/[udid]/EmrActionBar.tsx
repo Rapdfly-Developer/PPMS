@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition, useRef, useEffect } from "react";
+import { openPdfNative, isNativeShell } from "@/lib/open-pdf";
 import { ChevronRight, Printer, FileSignature, CheckCircle2, Download, ChevronDown, FileText, PackageOpen, X, Lock, PenLine, Search, Clock, Plus } from "lucide-react";
 import { isSameDay } from "date-fns";
 import { useRouter } from "next/navigation";
@@ -347,27 +348,34 @@ export function EmrActionBar({
           {printOpen && (
             <div className="absolute bottom-full mb-2 right-0 w-56 rounded-xl border border-[var(--color-border)] bg-white shadow-lg overflow-hidden z-30">
               {/* 1. Print Long Summary */}
-              <a
-                href={pdfBase}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => setPrintOpen(false)}
-                className="flex items-center gap-3 px-4 py-3 text-[13px] sm:text-sm text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] transition-colors"
+              <button
+                type="button"
+                onClick={() => { setPrintOpen(false); void openPdfNative(pdfBase); }}
+                className="flex items-center gap-3 px-4 py-3 w-full text-left text-[13px] sm:text-sm text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] transition-colors"
               >
                 <Printer size={15} className="text-[var(--color-primary-600)] shrink-0" />
                 <div>
                   <p className="font-medium">Print Long Summary</p>
                   <p className="text-[10px] text-[var(--color-ink-400)]">Full Rx in browser</p>
                 </div>
-              </a>
+              </button>
 
               <div className="border-t border-[var(--color-border)]" />
 
               {/* 2. Download PDF */}
+              {/* Stays a real <a download> on the web so it saves straight to disk
+                  without opening a tab. On the native shell the anchor does nothing,
+                  so preventDefault and hand it to the Filesystem/FileOpener path. */}
               <a
                 href={`${pdfBase}?dl=1`}
                 download
-                onClick={() => setPrintOpen(false)}
+                onClick={(e) => {
+                  setPrintOpen(false);
+                  if (isNativeShell()) {
+                    e.preventDefault();
+                    void openPdfNative(`${pdfBase}?dl=1`);
+                  }
+                }}
                 className="flex items-center gap-3 px-4 py-3 text-[13px] sm:text-sm text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] transition-colors"
               >
                 <Download size={15} className="text-[var(--color-primary-600)] shrink-0" />
@@ -385,7 +393,7 @@ export function EmrActionBar({
                   setPrintOpen(false);
                   const spv = typeof window !== "undefined" ? localStorage.getItem(`spect_pin_${udid}`) : null;
                   const url = `/api/prescription-pdf/${visit.id}/summary${spv ? `?spv=${spv}` : ""}`;
-                  window.open(url, "_blank");
+                  void openPdfNative(url);
                 }}
                 className="flex items-center gap-3 px-4 py-3 w-full text-left text-[13px] sm:text-sm text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] transition-colors"
               >

@@ -2,6 +2,7 @@
 
 import { useState, useTransition, useRef } from "react";
 import { X, FileText, Building2, Stethoscope, Calendar, Loader2, Paperclip, Camera, Printer, Download, CheckCircle2 } from "lucide-react";
+import { openPdfNative } from "@/lib/open-pdf";
 import { attachResult } from "@/app/(app)/emr/[udid]/actions";
 import { format } from "date-fns";
 import { getVisitEmrData } from "./emr-viewer-action";
@@ -347,7 +348,7 @@ function EmrContent({ visit, udid, localResults, onAttach }: {
 export function VisitDownloadButton({ visitId }: { visitId: string }) {
   return (
     <button
-      onClick={() => window.open(`/api/visit-summary-pdf/${visitId}`, "_blank")}
+      onClick={() => { void openPdfNative(`/api/visit-summary-pdf/${visitId}`); }}
       title="Print Visit Summary"
       className="shrink-0 inline-flex items-center justify-center w-[30px] h-[30px] rounded-lg bg-orange-50 text-orange-600 hover:bg-orange-500 hover:text-white transition-colors"
     >

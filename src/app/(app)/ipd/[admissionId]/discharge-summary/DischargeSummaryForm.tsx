@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { openPdfNative } from "@/lib/open-pdf";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -153,14 +154,13 @@ export default function DischargeSummaryForm({
             </span>
           )}
           {existing && (
-            <a
-              href={`/api/discharge-summary-pdf/${admission.id}`}
-              target="_blank"
-              rel="noopener noreferrer"
+            <button
+              type="button"
+              onClick={() => { void openPdfNative(`/api/discharge-summary-pdf/${admission.id}`); }}
               className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border border-[var(--color-border)] hover:bg-[var(--color-ink-50)] text-[var(--color-ink-700)]"
             >
               <Printer size={14} /> Print PDF
-            </a>
+            </button>
           )}
           <button
             onClick={handleSave}
