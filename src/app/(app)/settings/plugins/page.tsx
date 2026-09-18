@@ -1,22 +1,21 @@
 import "@/plugins";
-import { requirePermission } from "@/lib/rbac";
+import { requireRole } from "@/lib/rbac";
+import { notFound } from "next/navigation";
 import { listPluginsForDoctor } from "@/plugin-framework";
 import { checkPluginLicense } from "@/plugin-framework/license";
 import { PluginManagerClient } from "./PluginManagerClient";
 
 export default async function PluginsPage() {
-  const user = await requirePermission("plugins.view");
+  // Plugins are licensed and configured per doctor, so this page is DOCTOR-only.
+  // The role gate turns what used to be a raw "No doctor scope" message for
+  // hospital staff into a clean redirect before the page renders at all.
+  const user = await requireRole("DOCTOR");
+  const doctorId = user.profileId;
 
-  const doctorId =
-    user.role === "DOCTOR" ? user.profileId : (user.doctorId ?? null);
-
-  if (!doctorId) {
-    return (
-      <div className="p-6 text-sm text-red-500">
-        No doctor scope available for this session.
-      </div>
-    );
-  }
+  // profileId is "" for a DOCTOR user with no linked Doctor record (auth.ts only
+  // assigns it when that relation exists). The role gate cannot catch that, and
+  // passing "" downstream would render an empty plugin list rather than fail.
+  if (!doctorId) notFound();
 
   const plugins = await listPluginsForDoctor(doctorId);
 
