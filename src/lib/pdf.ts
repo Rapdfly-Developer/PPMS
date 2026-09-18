@@ -2232,11 +2232,15 @@ export async function generateVisitSummaryPdf(visit: any): Promise<Buffer> {
       le: r.eye === "LE" || r.eye === "Both" ? `${r.value} mmHg` : null,
       takenAt: r.takenAt ?? visit.date,
     })),
-    colourVision: (visit as any).colourVisionCS ? {
-      re: (visit as any).colourVisionCS.re ?? null,
-      le: (visit as any).colourVisionCS.le ?? null,
-      notes: (visit as any).colourVisionCS.notes ?? null,
-    } : null,
+    colourVision: (visit as any).colourVisionCS ? (() => {
+      const reJ = parseJ2((visit as any).colourVisionCS.re) as any;
+      const leJ = parseJ2((visit as any).colourVisionCS.le) as any;
+      const fmt = (eye: any): string | null => {
+        if (!eye?.result) return null;
+        return eye.cvMethod ? `${eye.cvMethod}: ${eye.result}` : eye.result;
+      };
+      return { re: fmt(reJ), le: fmt(leJ), notes: (visit as any).colourVisionCS.notes ?? null };
+    })() : null,
     anteriorSegment: ant ? (parseJ2(ant.re) || parseJ2(ant.le) ? { re: parseJ2(ant.re), le: parseJ2(ant.le) } : null) : null,
     posteriorSegment: pos ? { data: { re: parseJ2(pos.re), le: parseJ2(pos.le) }, cdr: pos.cdr ?? null, notes: pos.notes ?? null } : null,
     diagnoses: (visit.diagnoses ?? []).map((d: any) => ({ description: d.description, icd10Code: d.icd10Code ?? "", status: d.status, laterality: d.laterality ?? null })),
