@@ -205,7 +205,7 @@ export default async function PatientDetailedEMR({
   ).length;
 
   return (
-    <div className="fade-in pb-24">
+    <div className="fade-in pb-6">
       <PrintHeader
         hospitalName={hospital?.name}
         hospitalAddress={hospital?.address ?? undefined}
