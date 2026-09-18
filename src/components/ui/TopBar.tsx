@@ -269,7 +269,7 @@ export function TopBar({ name, role }: { name: string; role: string }) {
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder="Search patients…"
-              className="w-full pl-8 pr-3 lg:pr-10 py-1.5 text-[10px] placeholder:text-[10px] sm:text-sm sm:placeholder:text-sm bg-[var(--color-surface-sunken)] border border-[var(--color-border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] focus:bg-white transition-colors"
+              className="w-full pl-8 pr-3 lg:pr-10 py-1 sm:py-1.5 text-[10px] placeholder:text-[10px] sm:text-sm sm:placeholder:text-sm bg-[var(--color-surface-sunken)] border border-[var(--color-border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] focus:bg-white transition-colors"
             />
             <kbd className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-medium text-[var(--color-ink-400)] bg-white border border-[var(--color-border)] rounded px-1 py-0.5 pointer-events-none hidden lg:block">
               ⌘K
