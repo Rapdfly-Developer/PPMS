@@ -146,7 +146,10 @@ function SectionBlock({ section, mods }: { section: Section; mods: ModuleDef[] }
         </span>
         <div className="flex-1 h-px bg-gray-100" />
       </div>
-      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      {/* Past xl the extra width buys more columns, not wider cards — a module
+          tile holds a label and two lines of description and gains nothing
+          from being stretched. */}
+      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 3xl:grid-cols-6">
         {mods.map(m => <ModuleCard key={m.href} mod={m} />)}
       </div>
     </div>
@@ -187,7 +190,7 @@ export function ModuleOverview({ role, permissions }: { role: Role; permissions:
   );
 
   return (
-    <div className="max-w-6xl mx-auto pb-10 space-y-5">
+    <div className="mx-auto pb-10 space-y-5">
 
       {/* ── Compact hero ──────────────────────────────────────────────────── */}
       <div
@@ -278,7 +281,7 @@ export function ModuleOverview({ role, permissions }: { role: Role; permissions:
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 3xl:grid-cols-6">
             {filtered.map(m => <ModuleCard key={m.href} mod={m} />)}
           </div>
         )

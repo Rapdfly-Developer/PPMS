@@ -157,8 +157,11 @@ export default async function AnalyticsPage() {
   const completionRate = pct(statusMap["DISPENSED"] ?? 0, statusTotal);
   const cancellationRate = pct((statusMap["CANCELLED"] ?? 0) + (statusMap["NO_SHOW"] ?? 0), statusTotal);
 
+  // No local width cap: charts read better the more width they get, and the
+  // app shell already caps the column per breakpoint. Capping again here just
+  // strands space inside an already-capped container.
   return (
-    <div className="fade-in space-y-6 max-w-6xl">
+    <div className="fade-in space-y-6">
 
       {/* ── Header ─────────────────────────────────────────────────────── */}
       <div className="flex flex-wrap items-start justify-between gap-3">

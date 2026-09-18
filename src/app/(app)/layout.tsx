@@ -52,7 +52,15 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               Anything genuinely wider than the screen carries its own
               overflow-x-auto wrapper. */}
           <main className="flex-1 bg-[var(--color-bg)] overflow-y-auto overflow-x-hidden" data-main-content>
-            <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-5 lg:py-7 pb-24 lg:pb-7">
+            {/* Content cap steps up only where dead space actually appears.
+                The sidebar is 240px, so a 1280px cap plus padding strands
+                pixels either side once the viewport passes ~1584px — below
+                that the column already fills the row and every existing
+                mobile/tablet/laptop layout is untouched. The 4xl ceiling is
+                deliberately generous enough to cover 2560px without leaving a
+                margin, and deliberately finite so 4K does not stretch a table
+                into a ribbon. */}
+            <div className="max-w-7xl 2xl:max-w-[1480px] 3xl:max-w-[1720px] 4xl:max-w-[2160px] mx-auto px-4 md:px-6 lg:px-8 2xl:px-10 py-5 lg:py-7 pb-24 lg:pb-7">
               <LicenseGate
                 active={licenseActive}
                 status={licenseResult?.status ?? "NONE"}

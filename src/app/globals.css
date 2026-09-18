@@ -82,11 +82,14 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
 
-  /* Two breakpoints beyond Tailwind's defaults:
+  /* Three breakpoints beyond Tailwind's defaults:
      xs  — the 320-480px band, where two-up grids need to drop to one.
-     3xl — ultrawide, where a 1152px column starts reading as a ribbon. */
+     3xl — ultrawide, where a 1152px column starts reading as a ribbon.
+     4xl — 1920px and up, the band where the app shell's content cap would
+           otherwise strand several hundred pixels either side of the page. */
   --breakpoint-xs: 30rem;
   --breakpoint-3xl: 110rem;
+  --breakpoint-4xl: 120rem;
 }
 
 * {
