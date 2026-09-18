@@ -709,7 +709,12 @@ async function launchBrowser(): Promise<Browser> {
   if (process.env.VERCEL) {
     const chromium = (await import("@sparticuz/chromium")).default;
     const puppeteer = (await import("puppeteer-core")).default;
-    const executablePath = await chromium.executablePath();
+    // executablePath() always checks /tmp/chromium first (warm → instant).
+    // On cold starts the binary may not be bundled via outputFileTracing, so
+    // we supply the GitHub release URL as a reliable download fallback.
+    const executablePath = await chromium.executablePath(
+      "https://github.com/Sparticuz/chromium/releases/download/v133.0.0/chromium-v133.0.0-pack.tar"
+    );
     return puppeteer.launch({
       args: [...chromium.args, "--disable-dev-shm-usage"],
       defaultViewport: chromium.defaultViewport,
