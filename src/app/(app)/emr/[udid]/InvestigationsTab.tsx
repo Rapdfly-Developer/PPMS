@@ -187,72 +187,72 @@ function InvestigationCard({
   };
 
   return (
-    <Card className="p-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        {/* Left: test name + meta */}
-        <div className="flex flex-col gap-1.5 min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <p className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-900)]">{order.testName}</p>
-            <PriorityPill priority={order.priority} />
-            {order.laterality && (
-              <span className="text-[11px] px-2 py-0.5 rounded-full border border-[var(--color-border)] text-[var(--color-ink-500)]">
-                {order.laterality}
-              </span>
-            )}
-            <StatusBadge status={order.status} resultRef={order.resultRef} />
-          </div>
-          <div className="flex flex-wrap items-center gap-3 text-xs text-[var(--color-ink-400)]">
-            <span className="flex items-center gap-1"><Clock size={11} />{format(new Date(order.createdAt), "h:mm a")}</span>
-            {order.category && <span>{order.category}</span>}
-            {order._hospital && <span>· {order._hospital}</span>}
-          </div>
-          {order.notes && (
-            <p className="text-xs text-[var(--color-ink-500)] italic mt-0.5">Note: {order.notes}</p>
+    <Card className="px-3 py-2.5">
+      {/* Row 1: test name */}
+      <p className="text-[13px] font-semibold text-[var(--color-ink-900)] leading-snug mb-1.5">{order.testName}</p>
+
+      {/* Row 2: meta + actions on same line */}
+      <div className="flex items-center justify-between gap-2">
+        {/* Left: badges + time */}
+        <div className="flex flex-wrap items-center gap-1 min-w-0">
+          <PriorityPill priority={order.priority} />
+          {order.laterality && (
+            <span className="text-[11px] px-1.5 py-0.5 rounded-full border border-[var(--color-border)] text-[var(--color-ink-500)]">
+              {order.laterality}
+            </span>
           )}
+          <StatusBadge status={order.status} resultRef={order.resultRef} />
+          <span className="text-[11px] text-[var(--color-ink-400)] flex items-center gap-0.5">
+            <Clock size={10} />{format(new Date(order.createdAt), "h:mm a")}
+          </span>
         </div>
 
         {/* Right: actions */}
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-1.5 shrink-0">
           {order.resultRef ? (
             <>
               <button
                 onClick={() => onView(order.resultRef)}
-                className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] transition-colors"
+                className="flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-lg border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] transition-colors"
               >
-                <Eye size={13} /> View Result
+                <Eye size={12} /> View
               </button>
               <a
                 href={order.resultRef}
                 download
                 target="_blank"
                 rel="noreferrer"
-                className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border border-[var(--color-border)] text-[var(--color-ink-600)] hover:border-[var(--color-primary-400)] transition-colors"
+                className="flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-lg border border-[var(--color-border)] text-[var(--color-ink-600)] hover:border-[var(--color-primary-400)] transition-colors"
               >
-                <Download size={13} /> Download
+                <Download size={12} />
               </a>
             </>
           ) : !readOnly ? (
             <UploadButton orderId={order.id} udid={udid} />
           ) : (
-            <span className="text-xs text-[var(--color-ink-400)]">Result pending</span>
+            <span className="text-[11px] text-[var(--color-ink-400)]">Pending</span>
           )}
           {!readOnly && (
             <button
               type="button"
               onClick={handleDelete}
               disabled={deleting}
-              className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border transition-colors disabled:opacity-50 ${
+              className={`flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-lg border transition-colors disabled:opacity-50 ${
                 confirmDelete
                   ? "border-red-300 bg-red-50 text-red-600 hover:bg-red-100"
                   : "border-[var(--color-border)] text-[var(--color-ink-400)] hover:border-red-300 hover:text-red-600 hover:bg-red-50"
               }`}
             >
-              <Trash2 size={13} />
-              {confirmDelete ? "Confirm?" : "Delete"}
+              <Trash2 size={12} />
+              {confirmDelete ? "Sure?" : ""}
             </button>
           )}
         </div>
       </div>
+
+      {order.notes && (
+        <p className="text-[11px] text-[var(--color-ink-500)] italic mt-1.5">Note: {order.notes}</p>
+      )}
 
       {/* Inline result preview */}
       {order.resultRef && (
@@ -313,30 +313,27 @@ function UploadButton({ orderId, udid }: { orderId: string; udid: string }) {
   };
 
   return (
-    <div className="flex flex-col items-end gap-1">
-      {/* Hidden inputs */}
-      <input ref={fileRef} type="file" accept=".pdf,.jpg,.jpeg,.png,.docx"
-        className="hidden" onChange={handleFile} />
-      <input ref={cameraRef} type="file" accept="image/*" capture="environment"
-        className="hidden" onChange={handleFile} />
+    <div className="flex flex-col items-end gap-0.5">
+      <input ref={fileRef} type="file" accept=".pdf,.jpg,.jpeg,.png,.docx" className="hidden" onChange={handleFile} />
+      <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFile} />
 
-      <div className="flex items-center gap-1.5">
+      <div className="flex items-center gap-1">
         <button
           type="button"
           disabled={uploading}
           onClick={() => fileRef.current?.click()}
-          className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border border-dashed border-[var(--color-primary-400)] text-[var(--color-primary-600)] hover:bg-[var(--color-primary-50)] disabled:opacity-50 transition-colors"
+          className="flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-lg border border-dashed border-[var(--color-primary-400)] text-[var(--color-primary-600)] hover:bg-[var(--color-primary-50)] disabled:opacity-50 transition-colors"
         >
-          {uploading ? <Upload size={13} className="animate-pulse" /> : <Upload size={13} />}
-          {uploading ? "Uploading…" : "Add File"}
+          {uploading ? <Upload size={12} className="animate-pulse" /> : <Upload size={12} />}
+          {uploading ? "…" : "File"}
         </button>
         <button
           type="button"
           disabled={uploading}
           onClick={() => cameraRef.current?.click()}
-          className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border border-dashed border-[var(--color-accent-400)] text-[var(--color-accent-600)] hover:bg-[var(--color-accent-50)] disabled:opacity-50 transition-colors"
+          className="flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-lg border border-dashed border-[var(--color-accent-400)] text-[var(--color-accent-600)] hover:bg-[var(--color-accent-50)] disabled:opacity-50 transition-colors"
         >
-          <Camera size={13} /> Camera
+          <Camera size={12} /> Cam
         </button>
       </div>
       {error && <p className="text-[10px] text-red-600">{error}</p>}
