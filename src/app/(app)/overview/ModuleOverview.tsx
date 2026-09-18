@@ -193,7 +193,7 @@ export function ModuleOverview({ role, permissions }: { role: Role; permissions:
       <div
         className="relative overflow-hidden rounded-xl"
         style={{
-          background: "linear-gradient(135deg, #071F1C 0%, #0A2B27 60%, #0C3030 100%)",
+          background: "linear-gradient(172deg, #0C403C 0%, #0A3532 42%, #06231F 100%)",
           boxShadow: "0 4px 20px rgba(0,0,0,0.18)",
         }}
       >
