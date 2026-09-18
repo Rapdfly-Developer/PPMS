@@ -115,11 +115,11 @@ function ModuleCard({ mod }: { mod: ModuleDef }) {
         </div>
 
         {/* Section tag */}
-        <div className="pt-2.5 border-t border-gray-100 flex items-center justify-between">
-          <span className="text-[9.5px] font-bold uppercase tracking-widest" style={{ color: tok.label }}>
-            {mod.section === "Practice Management" ? "Practice" : mod.section}
+        <div className="pt-2.5 border-t border-gray-100 flex items-center justify-between gap-2">
+          <span className="text-[9.5px] font-bold uppercase tracking-widest truncate min-w-0" style={{ color: tok.label }}>
+            {mod.section === "Practice Management" ? "Practice" : mod.section === "Administration" ? "Admin" : mod.section}
           </span>
-          <span className="text-[10px] font-semibold text-gray-400 group-hover:text-gray-600 transition-colors">
+          <span className="text-[10px] font-semibold text-gray-400 group-hover:text-gray-600 transition-colors shrink-0">
             Open →
           </span>
         </div>
