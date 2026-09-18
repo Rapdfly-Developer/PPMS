@@ -267,7 +267,7 @@ export function InvestigationsButton({ patientId, udid }: { patientId: string; u
     <>
       <button
         onClick={() => setOpen(true)}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-[var(--color-border)] text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)] transition-colors"
+        className="flex w-full items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-[var(--color-border)] text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)] transition-colors"
       >
         <FlaskConical size={13} />
         Investigation Orders
@@ -382,7 +382,7 @@ export function TreatmentHistoryButton({ patientId }: { patientId: string }) {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-[var(--color-border)] text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)] transition-colors"
+        className="flex w-full items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-[var(--color-border)] text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)] transition-colors"
       >
         <Pill size={13} />
         Treatment History
@@ -546,7 +546,7 @@ export function SpectacleHistoryButton({ patientId, udid }: { patientId: string;
     <>
       <button
         onClick={() => setOpen(true)}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-[var(--color-border)] text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)] transition-colors"
+        className="flex w-full items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-[var(--color-border)] text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)] transition-colors"
       >
         <Glasses size={13} />
         Spectacle History
@@ -628,7 +628,7 @@ export function PatientActionsPanel({
 
       {/* Action buttons — toggled by the hamburger icon above */}
       {showActions && (
-        <div className="flex flex-wrap items-center gap-2 mb-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
           <TimeStampButton patientId={patientId} patientName={patientName} />
           <InvestigationsButton patientId={patientId} udid={udid} />
           <TreatmentHistoryButton patientId={patientId} />

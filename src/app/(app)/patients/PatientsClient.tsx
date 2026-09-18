@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { undoDispense } from "./actions";
 import { formatComplaintDisplay } from "@/lib/appointment-cc";
+import { filterSelectClass } from "@/components/ui/controls";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 export interface PatientRow {
@@ -374,7 +375,7 @@ export function PatientsClient({
 
   const activeFilters = [q, categoryFilter, sexFilter, hospitalFilter, opStatusFilter !== "dispensed" ? opStatusFilter : ""].filter(Boolean).length;
 
-  const SEL = "border border-[var(--color-border)] bg-white rounded-lg pl-3 pr-8 py-2 text-sm text-[var(--color-ink-700)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] appearance-none cursor-pointer";
+  const SEL = filterSelectClass;
 
   return (
     <div>

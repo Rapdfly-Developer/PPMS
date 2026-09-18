@@ -11,6 +11,7 @@ import Link from "next/link";
 import clsx from "clsx";
 import { AppointmentTableRow } from "./AppointmentTableRow";
 import { AppointmentRow } from "./AppointmentRow";
+import { filterSelectClass } from "@/components/ui/controls";
 
 // ── helpers ────────────────────────────────────────────────────────────────
 const STATUSES = [
@@ -241,7 +242,7 @@ export function AppointmentsClient({
   // unique departments from doctors
   const departments = [...new Set(doctors.map((d) => d.specialty).filter(Boolean))].sort() as string[];
 
-  const SEL = "border border-[var(--color-border)] bg-white rounded-lg pl-3 pr-8 py-2 text-sm text-[var(--color-ink-700)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] appearance-none cursor-pointer";
+  const SEL = filterSelectClass;
 
   // Pagination block (reused top + bottom)
   function PaginationRow() {

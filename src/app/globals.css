@@ -1,12 +1,29 @@
 @import "tailwindcss";
 
-/* Section 12: prevent iOS Safari auto-zoom (triggered when input font-size < 16px).
-   Only applies below the lg breakpoint (1024px); desktop styling is untouched. */
+/* Section 12: prevent iOS Safari auto-zoom (triggered when a focused control's
+   font-size < 16px). Only applies below the lg breakpoint (1024px); desktop
+   styling is untouched.
+
+   <select> is handled separately below. Forcing 16px on it here overrode the
+   authored text-xs/text-sm on all 110 selects in the app, so on mobile every
+   dropdown rendered with glyphs ~45% larger than the button beside it (measured
+   at 375px wide: select 16px, button 11px). Only iOS needs the guard, so it is
+   scoped to iOS rather than applied to every small screen. */
 @media screen and (max-width: 1023px) {
   input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="submit"]):not([type="button"]),
-  select,
   textarea {
     font-size: 16px !important;
+  }
+}
+
+/* -webkit-touch-callout is implemented only by WebKit on iOS -- and every iOS
+   browser uses WebKit -- but never by Chromium, so the Capacitor Android shell
+   and desktop fall through to the authored sizes while iOS keeps the guard. */
+@supports (-webkit-touch-callout: none) {
+  @media screen and (max-width: 1023px) {
+    select {
+      font-size: 16px !important;
+    }
   }
 }
 

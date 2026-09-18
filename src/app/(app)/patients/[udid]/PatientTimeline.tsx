@@ -639,7 +639,7 @@ export function PatientTimelineModal({
               <select
                 value={hospitalFilter}
                 onChange={(e) => setHospitalFilter(e.target.value)}
-                className="text-xs border border-[var(--color-border)] rounded-lg px-2 py-1.5 bg-white outline-none focus:border-[var(--color-primary-400)]"
+                className="text-xs border border-[var(--color-border)] rounded-lg px-3 py-2 bg-white outline-none focus:border-[var(--color-primary-400)]"
               >
                 <option value="ALL">All Hospitals</option>
                 {hospitals.map((h) => <option key={h} value={h}>{h}</option>)}
@@ -647,7 +647,7 @@ export function PatientTimelineModal({
               <select
                 value={doctorFilter}
                 onChange={(e) => setDoctorFilter(e.target.value)}
-                className="text-xs border border-[var(--color-border)] rounded-lg px-2 py-1.5 bg-white outline-none focus:border-[var(--color-primary-400)]"
+                className="text-xs border border-[var(--color-border)] rounded-lg px-3 py-2 bg-white outline-none focus:border-[var(--color-primary-400)]"
               >
                 <option value="ALL">All Doctors</option>
                 {doctors.map((d) => <option key={d} value={d}>{d}</option>)}
@@ -709,7 +709,7 @@ export function TimeStampButton({ patientId, patientName }: { patientId: string;
     <>
       <button
         onClick={() => setOpen(true)}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold border border-[var(--color-primary-300)] text-[var(--color-primary-700)] hover:bg-[var(--color-primary-50)] transition-colors"
+        className="flex w-full items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-[var(--color-primary-400)] text-[var(--color-primary-700)] hover:bg-[var(--color-primary-50)] transition-colors"
       >
         <Timer size={13} />
         Time Stamp

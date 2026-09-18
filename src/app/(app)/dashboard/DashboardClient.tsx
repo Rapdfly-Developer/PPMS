@@ -395,21 +395,21 @@ export function DashboardClient({
             {bannerSubtitle && <p className="mt-0.5 text-[13px] sm:text-sm text-white/70">{bannerSubtitle}</p>}
             <p className="mt-1 text-[13px] sm:text-sm text-white/60">{todayLabel}</p>
           </div>
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-2 flex-nowrap">
             {can("opd.walkin.create") && (
               <Link
                 href={newEncounterHref}
-                className="inline-flex items-center gap-2 bg-white text-[var(--color-primary-800)] text-[13px] sm:text-sm font-semibold px-4 py-2 rounded-xl hover:bg-white/90 transition-colors shadow-sm"
+                className="inline-flex shrink-0 whitespace-nowrap items-center gap-2 bg-white text-[var(--color-primary-800)] text-[13px] sm:text-sm font-semibold px-4 py-2 rounded-xl hover:bg-white/90 transition-colors shadow-sm"
               >
                 <Plus size={15} /> {newEncounterLabel}
               </Link>
             )}
             {can("appointments.view") && filterOptions.length > 0 && (
-              <div className="relative">
+              <div className="relative min-w-0 max-w-[10rem] sm:max-w-[14rem]">
                 <select
                   value={selectedFilter}
                   onChange={(e) => setSelectedFilter(e.target.value)}
-                  className="appearance-none pl-3 pr-8 py-2 rounded-xl border border-white/20 bg-white/10 text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-white/40 cursor-pointer backdrop-blur-sm"
+                  className="w-full truncate appearance-none pl-3 pr-8 py-2 rounded-xl border border-white/20 bg-white/10 text-[13px] sm:text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-white/40 cursor-pointer backdrop-blur-sm"
                 >
                   <option value="all" className="text-[var(--color-ink-800)]">{filterLabel}</option>
                   {filterOptions.map((opt) => (
