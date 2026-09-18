@@ -296,8 +296,9 @@ export function AppointmentsClient({
       )}
 
       {/* ── Page header ───────────────────────────────────────────────────── */}
-      <div className="flex items-start justify-between gap-3 mb-5 flex-wrap">
-        <div>
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-5">
+        {/* Title + date + pending badge */}
+        <div className="min-w-0">
           <h1 className="text-xl sm:text-2xl font-bold text-[var(--color-ink-900)] tracking-tight">Appointments</h1>
           <div className="relative inline-flex items-center gap-1.5 mt-0.5 cursor-pointer group">
             <Calendar size={13} className="text-[var(--color-ink-400)] shrink-0 pointer-events-none" />
@@ -324,34 +325,36 @@ export function AppointmentsClient({
             </div>
           )}
         </div>
-        <div className="flex items-center gap-2 flex-nowrap">
+
+        {/* Action buttons + filter — full-width row on mobile */}
+        <div className="flex items-center gap-2">
           {role === "DOCTOR" && (
             <Link
               href="/appointments/availability"
-              className="inline-flex items-center gap-1.5 bg-[var(--color-primary-600)] text-white text-[12px] sm:text-sm font-semibold px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl hover:bg-[var(--color-primary-700)] transition-colors shadow-sm whitespace-nowrap"
+              className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 bg-[var(--color-primary-600)] text-white text-[12px] sm:text-sm font-semibold px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl hover:bg-[var(--color-primary-700)] transition-colors shadow-sm whitespace-nowrap"
             >
-              Hospital Appointment
+              Hospital Appt
             </Link>
           )}
           {(isHospital || role === "DOCTOR") && (
             <Link
               href="/appointments/book"
-              className="inline-flex items-center gap-1.5 bg-[var(--color-primary-600)] text-white text-[12px] sm:text-sm font-semibold px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl hover:bg-[var(--color-primary-700)] transition-colors shadow-sm whitespace-nowrap"
+              className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 bg-[var(--color-primary-600)] text-white text-[12px] sm:text-sm font-semibold px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl hover:bg-[var(--color-primary-700)] transition-colors shadow-sm whitespace-nowrap"
             >
-              <Plus size={14} /> {role === "DOCTOR" ? "Patient Appointment" : "Book Appointment"}
+              <Plus size={14} /> {role === "DOCTOR" ? "Patient Appt" : "Book Appointment"}
             </Link>
           )}
           {/* Filter toggle */}
           <button
             onClick={() => setShowFilters((v) => !v)}
             className={clsx(
-              "inline-flex items-center gap-2 text-[13px] sm:text-sm font-medium px-3.5 py-2.5 rounded-xl border transition-colors",
+              "shrink-0 inline-flex items-center gap-1.5 text-[12px] sm:text-sm font-medium px-3 py-2 sm:px-3.5 sm:py-2.5 rounded-xl border transition-colors",
               showFilters
                 ? "border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)]"
                 : "border-[var(--color-border)] bg-white text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]"
             )}
           >
-            <Filter size={14} /> Filter
+            <Filter size={13} /> Filter
           </button>
         </div>
       </div>
@@ -517,7 +520,7 @@ export function AppointmentsClient({
         return (
           <div className="flex flex-col gap-6">
             {/* Summary cards */}
-            <div className="grid grid-cols-3 gap-1.5 sm:gap-3">
+            <div className="grid grid-cols-3 gap-1.5 sm:gap-3 w-full">
               {[
                 {
                   label: "Today",
@@ -559,7 +562,7 @@ export function AppointmentsClient({
                   <button
                     key={cl}
                     onClick={() => { setActiveSection(sectionKey); if (sectionKey === "previous") setPrevPage(1); }}
-                    className={`rounded-xl border-2 px-2.5 sm:px-4 py-2.5 sm:py-3 flex flex-col gap-0.5 text-left cursor-pointer transition-all ${
+                    className={`rounded-xl border-2 px-2 sm:px-4 py-2.5 sm:py-3 flex flex-col gap-0.5 text-left cursor-pointer transition-all min-w-0 w-full ${
                       isActive
                         ? `${border} ${bg} shadow-sm ring-2 ring-offset-1 ${
                             sectionKey === "today"    ? "ring-[var(--color-primary-300)]" :
@@ -570,11 +573,11 @@ export function AppointmentsClient({
                     }`}
                   >
                     <div className="flex items-center gap-1">
-                      <span className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full shrink-0 ${isActive ? dot : "bg-[var(--color-ink-300)]"}`} />
-                      <span className={`text-[11px] sm:text-xs font-semibold ${isActive ? lbl : "text-[var(--color-ink-400)]"}`}>{cl}</span>
+                      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isActive ? dot : "bg-[var(--color-ink-300)]"}`} />
+                      <span className={`text-[10px] sm:text-xs font-semibold truncate ${isActive ? lbl : "text-[var(--color-ink-400)]"}`}>{cl}</span>
                     </div>
-                    <p className={`text-xl sm:text-2xl font-bold leading-none mt-0.5 sm:mt-1 ${isActive ? cnt : "text-[var(--color-ink-600)]"}`}>{count}</p>
-                    <p className={`text-[10px] sm:text-[11px] leading-tight ${isActive ? slbl : "text-[var(--color-ink-400)]"}`}>{csub}</p>
+                    <p className={`text-lg sm:text-2xl font-bold leading-none mt-0.5 sm:mt-1 ${isActive ? cnt : "text-[var(--color-ink-600)]"}`}>{count}</p>
+                    <p className={`text-[9px] sm:text-[11px] leading-tight truncate ${isActive ? slbl : "text-[var(--color-ink-400)]"}`}>{csub}</p>
                   </button>
                 );
               })}
