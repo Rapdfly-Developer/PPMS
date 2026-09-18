@@ -30,12 +30,15 @@ const nextConfig: NextConfig = {
     ],
   },
   outputFileTracingIncludes: {
-    // PDF generation routes — need Chromium + puppeteer-core
-    "/api/dispense-pdf/**":          ["./node_modules/@sparticuz/chromium/**", "./node_modules/puppeteer-core/**"],
-    "/api/prescription-pdf/**":      ["./node_modules/@sparticuz/chromium/**", "./node_modules/puppeteer-core/**"],
-    "/api/visit-summary-pdf/**":     ["./node_modules/@sparticuz/chromium/**", "./node_modules/puppeteer-core/**"],
-    "/api/discharge-summary-pdf/**": ["./node_modules/@sparticuz/chromium/**", "./node_modules/puppeteer-core/**"],
-    "/api/consent-pdf/**":           ["./node_modules/@sparticuz/chromium/**", "./node_modules/puppeteer-core/**"],
+    // PDF generation routes — need Chromium + puppeteer-core + follow-redirects
+    // (follow-redirects is a runtime dep of @sparticuz/chromium used to download
+    // the binary from GitHub on cold starts; it's not auto-traced because chromium
+    // is in serverExternalPackages and excluded globally above)
+    "/api/dispense-pdf/**":          ["./node_modules/@sparticuz/chromium/**", "./node_modules/puppeteer-core/**", "./node_modules/follow-redirects/**"],
+    "/api/prescription-pdf/**":      ["./node_modules/@sparticuz/chromium/**", "./node_modules/puppeteer-core/**", "./node_modules/follow-redirects/**"],
+    "/api/visit-summary-pdf/**":     ["./node_modules/@sparticuz/chromium/**", "./node_modules/puppeteer-core/**", "./node_modules/follow-redirects/**"],
+    "/api/discharge-summary-pdf/**": ["./node_modules/@sparticuz/chromium/**", "./node_modules/puppeteer-core/**", "./node_modules/follow-redirects/**"],
+    "/api/consent-pdf/**":           ["./node_modules/@sparticuz/chromium/**", "./node_modules/puppeteer-core/**", "./node_modules/follow-redirects/**"],
     // OCR route — needs Tesseract WASM
     "/api/ocr":                      ["./node_modules/tesseract.js/**", "./node_modules/tesseract.js-core/**"],
   },
