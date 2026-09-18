@@ -29,19 +29,42 @@ const nextConfig: NextConfig = {
       "./node_modules/tesseract.js-core/**",
     ],
   },
-  outputFileTracingIncludes: {
-    // PDF generation routes — need Chromium + puppeteer-core + follow-redirects
-    // (follow-redirects is a runtime dep of @sparticuz/chromium used to download
-    // the binary from GitHub on cold starts; it's not auto-traced because chromium
-    // is in serverExternalPackages and excluded globally above)
-    "/api/dispense-pdf/**":          ["./node_modules/@sparticuz/chromium/**", "./node_modules/puppeteer-core/**", "./node_modules/follow-redirects/**"],
-    "/api/prescription-pdf/**":      ["./node_modules/@sparticuz/chromium/**", "./node_modules/puppeteer-core/**", "./node_modules/follow-redirects/**"],
-    "/api/visit-summary-pdf/**":     ["./node_modules/@sparticuz/chromium/**", "./node_modules/puppeteer-core/**", "./node_modules/follow-redirects/**"],
-    "/api/discharge-summary-pdf/**": ["./node_modules/@sparticuz/chromium/**", "./node_modules/puppeteer-core/**", "./node_modules/follow-redirects/**"],
-    "/api/consent-pdf/**":           ["./node_modules/@sparticuz/chromium/**", "./node_modules/puppeteer-core/**", "./node_modules/follow-redirects/**"],
-    // OCR route — needs Tesseract WASM
-    "/api/ocr":                      ["./node_modules/tesseract.js/**", "./node_modules/tesseract.js-core/**"],
-  },
+  outputFileTracingIncludes: (() => {
+    // @sparticuz/chromium is excluded globally above and in serverExternalPackages,
+    // so Next.js never traces its require() calls. We must list every transitive
+    // dep explicitly. Generated with:
+    //   node -e "getDeps('@sparticuz/chromium'); console.log(Object.keys(deps).sort())"
+    const PDF_DEPS = [
+      "./node_modules/@sparticuz/chromium/**",
+      "./node_modules/puppeteer-core/**",
+      // @sparticuz/chromium direct deps
+      "./node_modules/follow-redirects/**",
+      "./node_modules/tar-fs/**",
+      // tar-fs transitive tree
+      "./node_modules/tar-stream/**",
+      "./node_modules/pump/**",
+      "./node_modules/b4a/**",
+      "./node_modules/fast-fifo/**",
+      "./node_modules/streamx/**",
+      "./node_modules/end-of-stream/**",
+      "./node_modules/once/**",
+      "./node_modules/wrappy/**",
+      "./node_modules/bare-events/**",
+      "./node_modules/events-universal/**",
+      "./node_modules/text-decoder/**",
+    ];
+    const pdfRoutes = [
+      "/api/dispense-pdf/**",
+      "/api/prescription-pdf/**",
+      "/api/visit-summary-pdf/**",
+      "/api/discharge-summary-pdf/**",
+      "/api/consent-pdf/**",
+    ];
+    return {
+      ...Object.fromEntries(pdfRoutes.map(r => [r, PDF_DEPS])),
+      "/api/ocr": ["./node_modules/tesseract.js/**", "./node_modules/tesseract.js-core/**"],
+    };
+  })(),
   images: {
     // Next 16 only generates the quality levels declared here. The marketing
     // page tunes quality per image (85 for the hero and the two text-bearing
