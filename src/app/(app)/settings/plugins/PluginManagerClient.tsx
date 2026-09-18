@@ -117,26 +117,55 @@ function PluginCard({
   const [showPerms, setShowPerms] = useState(false);
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-      <div className="flex items-start gap-4">
+    <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+      <div className="flex items-start gap-3">
         {/* Icon */}
-        <div className="w-10 h-10 rounded-xl bg-teal-50 border border-teal-200 grid place-items-center flex-shrink-0">
-          <Puzzle size={18} className="text-teal-600" />
+        <div className="w-9 h-9 rounded-xl bg-teal-50 border border-teal-200 grid place-items-center shrink-0">
+          <Puzzle size={16} className="text-teal-600" />
         </div>
 
         {/* Content */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-sm font-semibold text-gray-900 truncate">{plugin.name}</span>
-            <span className="text-[10px] text-gray-400 font-mono">v{plugin.version}</span>
-            <StatusBadge status={plugin.status} />
-            <LicenseBadge info={plugin.license} />
+          {/* Header row: meta + actions on same line */}
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+              <span className="text-sm font-semibold text-gray-900 truncate">{plugin.name}</span>
+              <span className="text-[10px] text-gray-400 font-mono shrink-0">v{plugin.version}</span>
+              <StatusBadge status={plugin.status} />
+              <LicenseBadge info={plugin.license} />
+            </div>
+            {canManage && (
+              <div className="flex items-center gap-1.5 shrink-0">
+                {plugin.status === "NOT_INSTALLED" && (
+                  <ActionBtn variant="primary" icon={<Download size={11} />} label="Install" pending={pending} onClick={() => onAction(plugin.pluginId, "install")} />
+                )}
+                {plugin.status === "INSTALLED" && (
+                  <>
+                    <ActionBtn variant="primary" icon={<Power size={11} />} label="Enable" pending={pending} onClick={() => onAction(plugin.pluginId, "enable")} />
+                    <ActionBtn variant="danger" icon={<Trash2 size={11} />} label="Remove" pending={pending} onClick={() => onAction(plugin.pluginId, "remove")} />
+                  </>
+                )}
+                {plugin.status === "ENABLED" && (
+                  <ActionBtn variant="danger" icon={<PowerOff size={11} />} label="Disable" pending={pending} onClick={() => onAction(plugin.pluginId, "disable")} />
+                )}
+                {plugin.status === "DISABLED" && (
+                  <>
+                    <ActionBtn variant="primary" icon={<Power size={11} />} label="Enable" pending={pending} onClick={() => onAction(plugin.pluginId, "enable")} />
+                    <ActionBtn variant="danger" icon={<Trash2 size={11} />} label="Remove" pending={pending} onClick={() => onAction(plugin.pluginId, "remove")} />
+                  </>
+                )}
+                <button onClick={() => setShowPerms((v) => !v)} className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors" title="Toggle permissions">
+                  <Info size={13} />
+                </button>
+              </div>
+            )}
           </div>
-          <p className="text-xs text-gray-500 mt-1 leading-relaxed">{plugin.description}</p>
+
+          <p className="text-xs text-gray-500 mt-1 leading-snug">{plugin.description}</p>
 
           {/* Permission chips */}
           {showPerms && (
-            <div className="flex flex-wrap gap-1.5 mt-3">
+            <div className="flex flex-wrap gap-1.5 mt-2">
               {plugin.permissions.map((p) => (
                 <span key={p} className="px-2 py-0.5 rounded text-[10px] font-mono bg-gray-100 text-gray-600 border border-gray-200">
                   {p}
@@ -145,73 +174,6 @@ function PluginCard({
             </div>
           )}
         </div>
-
-        {/* Actions */}
-        {canManage && (
-          <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
-            {plugin.status === "NOT_INSTALLED" && (
-              <ActionBtn
-                variant="primary"
-                icon={<Download size={11} />}
-                label="Install"
-                pending={pending}
-                onClick={() => onAction(plugin.pluginId, "install")}
-              />
-            )}
-            {plugin.status === "INSTALLED" && (
-              <>
-                <ActionBtn
-                  variant="primary"
-                  icon={<Power size={11} />}
-                  label="Enable"
-                  pending={pending}
-                  onClick={() => onAction(plugin.pluginId, "enable")}
-                />
-                <ActionBtn
-                  variant="danger"
-                  icon={<Trash2 size={11} />}
-                  label="Remove"
-                  pending={pending}
-                  onClick={() => onAction(plugin.pluginId, "remove")}
-                />
-              </>
-            )}
-            {plugin.status === "ENABLED" && (
-              <ActionBtn
-                variant="danger"
-                icon={<PowerOff size={11} />}
-                label="Disable"
-                pending={pending}
-                onClick={() => onAction(plugin.pluginId, "disable")}
-              />
-            )}
-            {plugin.status === "DISABLED" && (
-              <>
-                <ActionBtn
-                  variant="primary"
-                  icon={<Power size={11} />}
-                  label="Enable"
-                  pending={pending}
-                  onClick={() => onAction(plugin.pluginId, "enable")}
-                />
-                <ActionBtn
-                  variant="danger"
-                  icon={<Trash2 size={11} />}
-                  label="Remove"
-                  pending={pending}
-                  onClick={() => onAction(plugin.pluginId, "remove")}
-                />
-              </>
-            )}
-            <button
-              onClick={() => setShowPerms((v) => !v)}
-              className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
-              title="Toggle permissions"
-            >
-              <Info size={13} />
-            </button>
-          </div>
-        )}
       </div>
     </div>
   );
