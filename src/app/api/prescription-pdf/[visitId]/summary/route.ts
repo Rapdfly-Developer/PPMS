@@ -6,6 +6,7 @@ import { parseJSON } from "@/lib/json";
 import { format } from "date-fns";
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ visitId: string }> }) {
+  try {
   const { visitId } = await params;
   const user = await requireRole("DOCTOR");
 
@@ -117,4 +118,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
       "Content-Disposition": disposition,
     },
   });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    const stack = err instanceof Error ? (err.stack ?? "") : "";
+    console.error("[PDF ERROR]", msg, stack);
+    return NextResponse.json({ error: msg, stack }, { status: 500 });
+  }
 }
