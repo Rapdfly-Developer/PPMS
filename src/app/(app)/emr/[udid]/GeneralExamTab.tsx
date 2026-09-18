@@ -150,9 +150,9 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, customPmhCh
                 className={i > 0 ? "pt-3 border-t border-dashed border-[var(--color-border)]" : ""}
               >
                 {/* Row 1: Laterality + remove */}
-                <div className="flex items-center gap-2 mb-2">
+                <div className="flex items-center gap-1.5 mb-2">
                   {complaints.length > 1 && (
-                    <span className="text-[11px] font-bold tracking-wider text-[var(--color-ink-400)] uppercase">
+                    <span className="text-[10px] font-bold tracking-wider text-[var(--color-ink-400)] uppercase">
                       CC {i + 1}
                     </span>
                   )}
@@ -164,7 +164,7 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, customPmhCh
                         type="button"
                         disabled={readOnly}
                         onClick={() => patchComplaint(i, { lat: active ? null : opt })}
-                        className="px-3.5 py-1 rounded-full text-[12px] font-bold transition-all"
+                        className="px-2.5 py-0.5 rounded-full text-[11px] font-bold transition-all"
                         style={active ? {
                           background: "var(--color-primary-600)",
                           color: "#fff",
@@ -182,13 +182,13 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, customPmhCh
                 </div>
 
                 {/* Row 2: Since controls */}
-                <div className="flex items-center flex-wrap gap-2 mb-2">
-                  <span className="text-xs font-semibold text-[var(--color-ink-400)] w-10 shrink-0">Since</span>
+                <div className="flex items-center gap-1.5 mb-2">
+                  <span className="text-[11px] font-semibold text-[var(--color-ink-400)] w-8 shrink-0">Since</span>
                   <select
                     value={c.sinceNum}
                     onChange={(e) => patchComplaint(i, { sinceNum: e.target.value })}
                     disabled={readOnly}
-                    className="text-xs border border-[var(--color-border)] rounded-lg px-2 py-1 bg-white text-[var(--color-ink-700)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] disabled:opacity-50 w-16 shrink-0"
+                    className="text-[11px] border border-[var(--color-border)] rounded-md px-1.5 py-0.5 bg-white text-[var(--color-ink-700)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] disabled:opacity-50 w-12 shrink-0"
                   >
                     <option value="">—</option>
                     {Array.from({ length: 30 }, (_, n) => n + 1).map((n) => (
@@ -199,7 +199,7 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, customPmhCh
                     value={c.sinceUnit}
                     onChange={(e) => patchComplaint(i, { sinceUnit: e.target.value })}
                     disabled={readOnly || !c.sinceNum}
-                    className="text-xs border border-[var(--color-border)] rounded-lg px-2 py-1 bg-white text-[var(--color-ink-700)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] disabled:opacity-50 w-20 shrink-0"
+                    className="text-[11px] border border-[var(--color-border)] rounded-md px-1.5 py-0.5 bg-white text-[var(--color-ink-700)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] disabled:opacity-50 w-16 shrink-0"
                   >
                     {SINCE_UNITS.map((u) => (
                       <option key={u} value={u}>{u}</option>
