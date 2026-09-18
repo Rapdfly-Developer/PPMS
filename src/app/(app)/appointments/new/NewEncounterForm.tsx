@@ -501,11 +501,11 @@ export function NewEncounterForm({
                 </div>
                 {/* Since */}
                 <div className="flex items-center gap-1.5">
-                  <span className="text-sm text-[var(--color-ink-500)]">Since</span>
+                  <span className="text-xs text-[var(--color-ink-500)]">Since</span>
                   <select
                     value={sinceNum}
                     onChange={(e) => setSinceNum(e.target.value)}
-                    className="rounded-lg border border-[var(--color-border)] bg-white px-2 py-1.5 text-sm text-[var(--color-ink-700)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] transition-shadow"
+                    className="rounded-md border border-[var(--color-border)] bg-white px-1.5 py-1 text-xs text-[var(--color-ink-700)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] transition-shadow w-14"
                   >
                     <option value="">—</option>
                     {Array.from({ length: 30 }, (_, i) => i + 1).map((n) => (
@@ -515,7 +515,7 @@ export function NewEncounterForm({
                   <select
                     value={sinceUnit}
                     onChange={(e) => setSinceUnit(e.target.value)}
-                    className="rounded-lg border border-[var(--color-border)] bg-white px-2 py-1.5 text-sm text-[var(--color-ink-700)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] transition-shadow"
+                    className="rounded-md border border-[var(--color-border)] bg-white px-1.5 py-1 text-xs text-[var(--color-ink-700)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] transition-shadow w-20"
                   >
                     <option value="days">days</option>
                     <option value="weeks">weeks</option>
