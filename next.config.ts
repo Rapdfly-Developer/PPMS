@@ -14,33 +14,35 @@ const nextConfig: NextConfig = {
   // tesseract.js and puppeteer spawn worker threads / a browser process that
   // resolve files relative to their own location in node_modules - bundling
   // them breaks that resolution, so they must run as real, unbundled deps.
-  serverExternalPackages: ["tesseract.js", "puppeteer", "puppeteer-core", "@sparticuz/chromium"],
+  serverExternalPackages: ["tesseract.js", "puppeteer", "@sparticuz/chromium"],
 
   // Exclude the large Chromium binary (~135 MB) and Tesseract WASM from every
   // function's deployment bundle. Without this, Vercel output-file-tracing
   // copies them into ALL ~50 serverless functions, bloating Functions Storage
   // by 135 MB × N functions per deployment. Re-include them only in the
   // routes that actually launch a browser / run OCR.
+  // Only exclude @sparticuz/chromium (57 MB binary) and tesseract from all routes.
+  // puppeteer-core is intentionally NOT excluded here: Next.js output-file-tracing
+  // will auto-trace it (and all its transitive deps) for any route that imports it.
+  // Since only PDF routes import pdf.ts → puppeteer-core, it lands only in those
+  // functions automatically — no manual dep list needed.
   outputFileTracingExcludes: {
     "/**": [
       "./node_modules/@sparticuz/chromium/**",
-      "./node_modules/puppeteer-core/**",
       "./node_modules/tesseract.js/**",
       "./node_modules/tesseract.js-core/**",
     ],
   },
   outputFileTracingIncludes: (() => {
     // @sparticuz/chromium is excluded globally above and in serverExternalPackages,
-    // so Next.js never traces its require() calls. We must list every transitive
-    // dep explicitly. Generated with:
-    //   node -e "getDeps('@sparticuz/chromium'); console.log(Object.keys(deps).sort())"
-    const PDF_DEPS = [
+    // so Next.js never traces its require() calls. Its two direct deps and their
+    // transitive tree must be listed explicitly (puppeteer-core is auto-traced).
+    const CHROMIUM_DEPS = [
       "./node_modules/@sparticuz/chromium/**",
-      "./node_modules/puppeteer-core/**",
-      // @sparticuz/chromium direct deps
+      // follow-redirects: used to download the binary from GitHub on cold starts
       "./node_modules/follow-redirects/**",
+      // tar-fs + full transitive tree (tar-stream, pump, streamx, …)
       "./node_modules/tar-fs/**",
-      // tar-fs transitive tree
       "./node_modules/tar-stream/**",
       "./node_modules/pump/**",
       "./node_modules/b4a/**",
@@ -61,7 +63,7 @@ const nextConfig: NextConfig = {
       "/api/consent-pdf/**",
     ];
     return {
-      ...Object.fromEntries(pdfRoutes.map(r => [r, PDF_DEPS])),
+      ...Object.fromEntries(pdfRoutes.map(r => [r, CHROMIUM_DEPS])),
       "/api/ocr": ["./node_modules/tesseract.js/**", "./node_modules/tesseract.js-core/**"],
     };
   })(),
