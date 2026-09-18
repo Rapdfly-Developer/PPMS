@@ -193,8 +193,8 @@ export function ModuleOverview({ role, permissions }: { role: Role; permissions:
       <div
         className="relative overflow-hidden rounded-xl"
         style={{
-          background: "linear-gradient(172deg, #0C403C 0%, #0A3532 42%, #06231F 100%)",
-          boxShadow: "0 4px 20px rgba(0,0,0,0.18)",
+          background: "linear-gradient(172deg, #155C57 0%, #114D47 42%, #0B3C35 100%)",
+          boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
         }}
       >
         {/* Subtle orb */}
