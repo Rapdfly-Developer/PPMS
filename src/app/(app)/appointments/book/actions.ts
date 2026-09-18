@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/rbac";
+import { requireRole, userCan } from "@/lib/rbac";
 import { generateUDID, generateUHID } from "@/lib/udid";
 import { encryptAadhaar } from "@/lib/crypto";
 import { redirect } from "next/navigation";
@@ -51,6 +51,13 @@ export async function bookAppointment(formData: FormData) {
   const visitType = (formData.get("visitType") as string) || "General OPD";
   const notes = (formData.get("notes") as string) || null;
   const isWalkIn = formData.get("encounterType") === "walkin";
+
+  // Only the walk-in branch is permission-gated; scheduled booking keeps its
+  // existing role gate. Returns an error rather than redirecting so the form
+  // shows a message instead of silently navigating away.
+  if (isWalkIn && !userCan(user, "opd.walkin.create")) {
+    return { error: "You do not have permission to create walk-in encounters." };
+  }
 
   if (!doctorId || !dateStr || !timeStr) {
     return { error: "Doctor, date and time are required." };

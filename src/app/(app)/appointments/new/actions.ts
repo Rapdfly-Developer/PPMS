@@ -1,14 +1,14 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/rbac";
+import { requirePermission } from "@/lib/rbac";
 import { generateUDID, generateUHID } from "@/lib/udid";
 import { encryptAadhaar } from "@/lib/crypto";
 import { redirect } from "next/navigation";
 import { istDayRange } from "@/lib/ist";
 
 export async function createWalkInEncounter(formData: FormData) {
-  const user = await requireRole("DOCTOR");
+  const user = await requirePermission("opd.walkin.create");
 
   const mode      = (formData.get("mode") as string) || "existing";
   const visitType = formData.get("visitType") as string;
