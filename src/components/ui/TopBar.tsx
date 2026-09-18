@@ -262,7 +262,7 @@ export function TopBar({ name, role }: { name: string; role: string }) {
           <div className="relative flex-1 min-w-0">
             <Search
               size={14}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] pointer-events-none"
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] pointer-events-none sm:w-3.5 sm:h-3.5 w-3 h-3"
             />
             <input
               ref={inputRef}
