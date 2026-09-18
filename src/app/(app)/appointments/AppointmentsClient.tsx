@@ -324,11 +324,11 @@ export function AppointmentsClient({
             </div>
           )}
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-2 flex-nowrap">
           {role === "DOCTOR" && (
             <Link
               href="/appointments/availability"
-              className="inline-flex items-center gap-2 bg-[var(--color-primary-600)] text-white text-[13px] sm:text-sm font-semibold px-4 py-2.5 rounded-xl hover:bg-[var(--color-primary-700)] transition-colors shadow-sm"
+              className="inline-flex items-center gap-1.5 bg-[var(--color-primary-600)] text-white text-[12px] sm:text-sm font-semibold px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl hover:bg-[var(--color-primary-700)] transition-colors shadow-sm whitespace-nowrap"
             >
               Hospital Appointment
             </Link>
@@ -336,9 +336,9 @@ export function AppointmentsClient({
           {(isHospital || role === "DOCTOR") && (
             <Link
               href="/appointments/book"
-              className="inline-flex items-center gap-2 bg-[var(--color-primary-600)] text-white text-[13px] sm:text-sm font-semibold px-4 py-2.5 rounded-xl hover:bg-[var(--color-primary-700)] transition-colors shadow-sm"
+              className="inline-flex items-center gap-1.5 bg-[var(--color-primary-600)] text-white text-[12px] sm:text-sm font-semibold px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl hover:bg-[var(--color-primary-700)] transition-colors shadow-sm whitespace-nowrap"
             >
-              <Plus size={15} /> {role === "DOCTOR" ? "Patient Appointment" : "Book Appointment"}
+              <Plus size={14} /> {role === "DOCTOR" ? "Patient Appointment" : "Book Appointment"}
             </Link>
           )}
           {/* Filter toggle */}
