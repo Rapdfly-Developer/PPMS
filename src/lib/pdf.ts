@@ -1,6 +1,7 @@
 import { format as formatBase } from "date-fns";
 import { toISTWall } from "@/lib/ist";
 import QRCode from "qrcode";
+import type { Browser } from "puppeteer-core";
 
 // All timestamps in generated PDFs are Indian wall-clock times; production runs on UTC.
 const format = (d: Date | number, fmt: string) => formatBase(toISTWall(new Date(d)), fmt);
@@ -704,7 +705,7 @@ export async function generatePrescriptionPdf(data: PrescriptionData): Promise<B
 /*  PUPPETEER CORE                                                             */
 /* ─────────────────────────────────────────────────────────────────────────── */
 
-async function launchBrowser() {
+async function launchBrowser(): Promise<Browser> {
   if (process.env.VERCEL) {
     const chromium = (await import("@sparticuz/chromium")).default;
     const puppeteer = (await import("puppeteer-core")).default;
@@ -716,14 +717,32 @@ async function launchBrowser() {
     });
   }
   const puppeteer = (await import("puppeteer")).default;
-  return puppeteer.launch({ headless: true, args: ["--no-sandbox", "--disable-setuid-sandbox"] });
+  // puppeteer (local dev) and puppeteer-core (Vercel) are on different majors,
+  // so their Browser types differ nominally though not structurally. Casting the
+  // dev-only branch keeps launchBrowser to one return type, which is what lets
+  // page.evaluate below resolve its generic signature.
+  return puppeteer.launch({ headless: true, args: ["--no-sandbox", "--disable-setuid-sandbox"] }) as unknown as Browser;
 }
 
 export async function htmlToPdf(html: string): Promise<Buffer> {
   const browser = await launchBrowser();
   const page = await browser.newPage();
   try {
-    await page.setContent(html, { waitUntil: "load" });
+    // "load" blocks on every subresource, so one slow or unreachable hospital
+    // logo / doctor signature hangs generation until the function dies. Parse
+    // the DOM first, then wait on images with a per-image ceiling: a reachable
+    // logo still renders, an unreachable one is skipped instead of fatal.
+    await page.setContent(html, { waitUntil: "domcontentloaded" });
+    await page.evaluate(() => Promise.all(
+      Array.from(document.images)
+        .filter((img) => !img.complete)
+        .map((img) => new Promise<void>((resolve) => {
+          const done = () => resolve();
+          img.addEventListener("load", done, { once: true });
+          img.addEventListener("error", done, { once: true });
+          setTimeout(done, 3000);
+        })),
+    ));
     const pdf = await page.pdf({
       format: "A4",
       printBackground: true,
