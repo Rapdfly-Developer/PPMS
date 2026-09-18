@@ -297,7 +297,7 @@ export function TopBar({ name, role }: { name: string; role: string }) {
             aria-label="Notifications"
             className="relative p-1.5 text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)] rounded-lg hover:bg-[var(--color-surface-sunken)] transition-colors"
           >
-            <Bell size={17} />
+            <Bell size={17} className="w-[14px] h-[14px] sm:w-[17px] sm:h-[17px]" />
             {unreadCount > 0 && (
               <span className="absolute -top-0.5 -right-0.5 h-4 min-w-4 flex items-center justify-center rounded-full bg-red-500 text-white text-[9px] sm:text-[10px] font-bold px-1 leading-none">
                 {unreadCount > 9 ? "9+" : unreadCount}
