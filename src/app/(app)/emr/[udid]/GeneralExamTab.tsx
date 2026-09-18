@@ -182,13 +182,13 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, customPmhCh
                 </div>
 
                 {/* Row 2: Since controls */}
-                <div className="flex items-center gap-2 mb-2">
+                <div className="flex items-center flex-wrap gap-2 mb-2">
                   <span className="text-xs font-semibold text-[var(--color-ink-400)] w-10 shrink-0">Since</span>
                   <select
                     value={c.sinceNum}
                     onChange={(e) => patchComplaint(i, { sinceNum: e.target.value })}
                     disabled={readOnly}
-                    className="text-xs border border-[var(--color-border)] rounded-lg px-2 py-1 bg-white text-[var(--color-ink-700)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] disabled:opacity-50 w-16"
+                    className="text-xs border border-[var(--color-border)] rounded-lg px-2 py-1 bg-white text-[var(--color-ink-700)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] disabled:opacity-50 w-16 shrink-0"
                   >
                     <option value="">—</option>
                     {Array.from({ length: 30 }, (_, n) => n + 1).map((n) => (
@@ -199,7 +199,7 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, customPmhCh
                     value={c.sinceUnit}
                     onChange={(e) => patchComplaint(i, { sinceUnit: e.target.value })}
                     disabled={readOnly || !c.sinceNum}
-                    className="text-xs border border-[var(--color-border)] rounded-lg px-2 py-1 bg-white text-[var(--color-ink-700)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] disabled:opacity-50 w-20"
+                    className="text-xs border border-[var(--color-border)] rounded-lg px-2 py-1 bg-white text-[var(--color-ink-700)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] disabled:opacity-50 w-20 shrink-0"
                   >
                     {SINCE_UNITS.map((u) => (
                       <option key={u} value={u}>{u}</option>
