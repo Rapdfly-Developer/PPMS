@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useSidebar } from "./SidebarContext";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Bell, Search, LogOut, ArrowLeft, Menu } from "lucide-react";
@@ -68,16 +69,24 @@ function timeAgo(iso: string): string {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
-function BellDropdown({ items, onRead }: {
+function BellDropdown({ items, onRead, dropdownRef, style }: {
   items: NotifItem[];
   onRead: (id: string) => void;
+  dropdownRef: React.RefObject<HTMLDivElement | null>;
+  style: React.CSSProperties;
 }) {
   const router = useRouter();
 
   return (
     <div
-      className="absolute right-0 top-full mt-1 w-[min(320px,calc(100vw-1rem))] rounded-xl border border-[var(--color-border)] bg-white shadow-xl z-50 overflow-hidden"
-      style={{ boxShadow: "0 8px 30px -8px rgba(0,0,0,0.18), 0 2px 8px -2px rgba(0,0,0,0.08)" }}
+      ref={dropdownRef}
+      className="w-[min(320px,calc(100vw-1rem))] rounded-xl border border-[var(--color-border)] bg-white overflow-hidden"
+      style={{
+        position: "fixed",
+        zIndex: 400,
+        boxShadow: "0 8px 30px -8px rgba(0,0,0,0.18), 0 2px 8px -2px rgba(0,0,0,0.08)",
+        ...style,
+      }}
     >
       <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--color-border)]">
         <span className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-800)]">Notifications</span>
@@ -132,8 +141,10 @@ export function TopBar({ name, role }: { name: string; role: string }) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const bellRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const [q, setQ] = useState("");
   const [bellOpen, setBellOpen] = useState(false);
+  const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifItems, setNotifItems] = useState<NotifItem[]>([]);
   const { toggle } = useSidebar();
@@ -178,13 +189,14 @@ export function TopBar({ name, role }: { name: string; role: string }) {
     };
   }, [fetchUnread]);
 
-  // Click-outside to close dropdown
+  // Click-outside to close dropdown (check both the bell button and the portal)
   useEffect(() => {
     if (!bellOpen) return;
     const handler = (e: MouseEvent) => {
-      if (bellRef.current && !bellRef.current.contains(e.target as Node)) {
-        setBellOpen(false);
-      }
+      const target = e.target as Node;
+      const inBell = bellRef.current?.contains(target);
+      const inDropdown = dropdownRef.current?.contains(target);
+      if (!inBell && !inDropdown) setBellOpen(false);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -253,9 +265,18 @@ export function TopBar({ name, role }: { name: string; role: string }) {
       {/* Right actions */}
       <div className="flex items-center gap-2 shrink-0">
         {/* Bell with dropdown */}
-        <div ref={bellRef} className="relative">
+        <div ref={bellRef}>
           <button
-            onClick={() => setBellOpen((v) => !v)}
+            onClick={() => {
+              if (!bellOpen && bellRef.current) {
+                const rect = bellRef.current.getBoundingClientRect();
+                setDropdownStyle({
+                  top: rect.bottom + 4,
+                  right: window.innerWidth - rect.right,
+                });
+              }
+              setBellOpen((v) => !v);
+            }}
             title="Notifications"
             aria-label="Notifications"
             className="relative p-1.5 text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)] rounded-lg hover:bg-[var(--color-surface-sunken)] transition-colors"
@@ -268,8 +289,9 @@ export function TopBar({ name, role }: { name: string; role: string }) {
             )}
           </button>
 
-          {bellOpen && (
-            <BellDropdown items={notifItems} onRead={handleMarkRead} />
+          {bellOpen && createPortal(
+            <BellDropdown items={notifItems} onRead={handleMarkRead} dropdownRef={dropdownRef} style={dropdownStyle} />,
+            document.body
           )}
         </div>
 
