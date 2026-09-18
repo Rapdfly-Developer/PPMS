@@ -7,7 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Bell, Search, LogOut, ArrowLeft, Menu } from "lucide-react";
 import Link from "next/link";
 import { signOut } from "next-auth/react";
-import { markOneRead } from "@/app/(app)/notifications/actions";
+import { markAllRead, markOneRead } from "@/app/(app)/notifications/actions";
 
 const BACK_BTN_CLS =
   "group inline-flex items-center gap-1.5 h-8 pl-3 pr-3 sm:pl-2 sm:pr-3 rounded-lg border border-[var(--color-border)] bg-white text-[13px] sm:text-sm font-medium text-[var(--color-ink-600)] hover:text-[var(--color-primary-700)] hover:border-[var(--color-primary-300)] hover:bg-[var(--color-primary-50)] active:scale-[0.97] transition-all duration-150";
@@ -69,9 +69,10 @@ function timeAgo(iso: string): string {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
-function BellDropdown({ items, onRead, dropdownRef, style }: {
+function BellDropdown({ items, onRead, onMarkAll, dropdownRef, style }: {
   items: NotifItem[];
   onRead: (id: string) => void;
+  onMarkAll: () => void;
   dropdownRef: React.RefObject<HTMLDivElement | null>;
   style: React.CSSProperties;
 }) {
@@ -125,13 +126,21 @@ function BellDropdown({ items, onRead, dropdownRef, style }: {
         </ul>
       )}
 
-      <div className="px-4 py-2.5 border-t border-[var(--color-border)]">
+      <div className="px-4 py-2.5 border-t border-[var(--color-border)] flex items-center justify-between gap-2">
         <Link
           href="/notifications"
           className="text-[11px] sm:text-xs font-medium text-[var(--color-primary-600)] hover:underline"
         >
           View all notifications →
         </Link>
+        {items.length > 0 && (
+          <button
+            onClick={onMarkAll}
+            className="text-[11px] sm:text-xs font-medium text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)] transition-colors"
+          >
+            Mark all read
+          </button>
+        )}
       </div>
     </div>
   );
@@ -213,6 +222,13 @@ export function TopBar({ name, role }: { name: string; role: string }) {
     setBellOpen(false);
   };
 
+  const handleMarkAll = async () => {
+    setNotifItems([]);
+    setUnreadCount(0);
+    setBellOpen(false);
+    await markAllRead();
+  };
+
   const initials = getInitials(name);
 
   return (
@@ -272,7 +288,7 @@ export function TopBar({ name, role }: { name: string; role: string }) {
                 const rect = bellRef.current.getBoundingClientRect();
                 setDropdownStyle({
                   top: rect.bottom + 4,
-                  right: window.innerWidth - rect.right,
+                  right: 8,
                 });
               }
               setBellOpen((v) => !v);
@@ -290,7 +306,7 @@ export function TopBar({ name, role }: { name: string; role: string }) {
           </button>
 
           {bellOpen && createPortal(
-            <BellDropdown items={notifItems} onRead={handleMarkRead} dropdownRef={dropdownRef} style={dropdownStyle} />,
+            <BellDropdown items={notifItems} onRead={handleMarkRead} onMarkAll={handleMarkAll} dropdownRef={dropdownRef} style={dropdownStyle} />,
             document.body
           )}
         </div>
