@@ -133,17 +133,6 @@ function PluginCard({
             <LicenseBadge info={plugin.license} />
           </div>
           <p className="text-xs text-gray-500 mt-1 leading-relaxed">{plugin.description}</p>
-          <div className="flex items-center gap-3 mt-2 text-[10.5px] text-gray-400">
-            <span>By {plugin.author}</span>
-            {plugin.installedAt && (
-              <span>Installed {new Date(plugin.installedAt).toLocaleDateString()}</span>
-            )}
-            {plugin.license?.usageLimit !== null && plugin.license && (
-              <span className="text-teal-600 font-medium">
-                {plugin.license.usageCount}/{plugin.license.usageLimit} uses this month
-              </span>
-            )}
-          </div>
 
           {/* Permission chips */}
           {showPerms && (

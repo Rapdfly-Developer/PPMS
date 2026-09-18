@@ -12,6 +12,5 @@
  */
 
 import "./ai-clinical-copilot";
-import "./voice-to-emr";
 
 export {};
