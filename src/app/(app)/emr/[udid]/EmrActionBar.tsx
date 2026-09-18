@@ -326,21 +326,21 @@ export function EmrActionBar({
           menu (it renders above the bar via bottom-full). The row fits outright
           at >=360px now, so the scroll only ever engages on very narrow phones,
           and never while the menu is open. */}
-      <div className={`fixed bottom-20 lg:bottom-0 left-0 lg:left-60 right-0 z-20 border-t border-[var(--color-border)] bg-white/95 backdrop-blur-sm px-2 md:px-8 py-2 md:py-3 flex flex-nowrap items-center justify-end-safe gap-1 md:gap-3 shadow-[0_-4px_16px_rgba(20,36,43,0.06)] ${printOpen ? "" : "overflow-x-auto"}`}>
+      <div className={`fixed bottom-20 lg:bottom-0 left-0 lg:left-60 right-0 z-20 border-t border-[var(--color-border)] bg-white/95 backdrop-blur-sm px-2 md:px-8 py-2 md:py-3 flex flex-nowrap items-center gap-2 md:gap-3 md:justify-end shadow-[0_-4px_16px_rgba(20,36,43,0.06)] ${printOpen ? "" : "overflow-x-auto"}`}>
         {!closed && !isLastTab && (
           <button
             onClick={onNextSection}
-            className="flex items-center gap-1 text-[11px] sm:text-sm font-medium px-2.5 py-1.5 md:px-4 md:py-2 rounded-xl bg-white border border-[var(--color-border)] hover:border-[var(--color-primary-500)] text-[var(--color-ink-700)] whitespace-nowrap"
+            className="flex-1 md:flex-none flex items-center justify-center gap-1 text-[11px] sm:text-sm font-medium px-2.5 py-2.5 md:px-4 md:py-2 rounded-xl bg-white border border-[var(--color-border)] hover:border-[var(--color-primary-500)] text-[var(--color-ink-700)] whitespace-nowrap"
           >
             Next <ChevronRight size={13} />
           </button>
         )}
 
         {/* Print Rx dropdown */}
-        <div className="relative" ref={printRef}>
+        <div className="flex-1 md:flex-none relative" ref={printRef}>
           <button
             onClick={() => setPrintOpen((v) => !v)}
-            className="flex items-center gap-1 text-[11px] sm:text-sm font-medium px-2.5 py-1.5 md:px-4 md:py-2 rounded-xl bg-white border border-[var(--color-border)] hover:border-[var(--color-primary-500)] text-[var(--color-ink-700)] whitespace-nowrap"
+            className="w-full flex items-center justify-center gap-1 text-[11px] sm:text-sm font-medium px-2.5 py-2.5 md:px-4 md:py-2 rounded-xl bg-white border border-[var(--color-border)] hover:border-[var(--color-primary-500)] text-[var(--color-ink-700)] whitespace-nowrap"
           >
             <Printer size={13} /> Print Rx <ChevronDown size={11} className={`transition-transform ${printOpen ? "rotate-180" : ""}`} />
           </button>
@@ -411,7 +411,7 @@ export function EmrActionBar({
           <button
             disabled={partialPending}
             onClick={() => setShowPartialModal(true)}
-            className="flex items-center gap-1 text-[11px] sm:text-sm font-medium px-2.5 py-1.5 md:px-4 md:py-2 rounded-xl bg-amber-50 border border-amber-300 text-amber-700 hover:bg-amber-100 disabled:opacity-60 whitespace-nowrap"
+            className="flex-1 md:flex-none flex items-center justify-center gap-1 text-[11px] sm:text-sm font-medium px-2.5 py-2.5 md:px-4 md:py-2 rounded-xl bg-amber-50 border border-amber-300 text-amber-700 hover:bg-amber-100 disabled:opacity-60 whitespace-nowrap"
           >
             <PackageOpen size={13} /> {partialPending ? "Saving…" : <><span className="hidden sm:inline">Partial </span>Dispense</>}
           </button>
@@ -419,7 +419,7 @@ export function EmrActionBar({
 
         {closed ? (
           autoClosed ? (
-            <span className="flex items-center gap-1 text-[11px] sm:text-sm font-medium px-2.5 py-1.5 md:px-4 md:py-2 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 whitespace-nowrap">
+            <span className="flex-1 md:flex-none flex items-center justify-center gap-1 text-[11px] sm:text-sm font-medium px-2.5 py-2.5 md:px-4 md:py-2 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 whitespace-nowrap">
               <Lock size={13} /> <span className="hidden sm:inline">Auto-closed at </span>EOD
             </span>
           ) : finalizedToday ? (
@@ -427,7 +427,7 @@ export function EmrActionBar({
               {!editMode && (
                 <button
                   onClick={onEnterEditMode}
-                  className="flex items-center gap-1 text-[11px] sm:text-xs font-medium px-2.5 py-1.5 md:px-3 md:py-2 rounded-xl bg-blue-50 border border-blue-200 text-blue-600 hover:bg-blue-100 hover:border-blue-300 transition-colors whitespace-nowrap"
+                  className="flex-1 md:flex-none flex items-center justify-center gap-1 text-[11px] sm:text-xs font-medium px-2.5 py-2.5 md:px-3 md:py-2 rounded-xl bg-blue-50 border border-blue-200 text-blue-600 hover:bg-blue-100 hover:border-blue-300 transition-colors whitespace-nowrap"
                 >
                   <PenLine size={12} /> Edit
                 </button>
@@ -440,13 +440,13 @@ export function EmrActionBar({
                     setShowSuccess(true);
                   })
                 }
-                className="flex items-center gap-1 text-[11px] sm:text-sm font-medium px-2.5 py-1.5 md:px-5 md:py-2 rounded-xl bg-[var(--color-primary-900)] text-white hover:bg-[var(--color-primary-700)] transition-colors disabled:opacity-60 whitespace-nowrap"
+                className="flex-1 md:flex-none flex items-center justify-center gap-1 text-[11px] sm:text-sm font-medium px-2.5 py-2.5 md:px-5 md:py-2 rounded-xl bg-[var(--color-primary-900)] text-white hover:bg-[var(--color-primary-700)] transition-colors disabled:opacity-60 whitespace-nowrap"
               >
                 <FileSignature size={13} /> {pending ? "Saving…" : <><span className="hidden sm:inline">Finalize &amp; </span>Sign</>}
               </button>
             </>
           ) : (
-            <span className="flex items-center gap-1 text-[11px] sm:text-sm font-medium px-2.5 py-1.5 md:px-4 md:py-2 rounded-xl bg-[var(--color-success-100)] text-[var(--color-success-600)] whitespace-nowrap">
+            <span className="flex-1 md:flex-none flex items-center justify-center gap-1 text-[11px] sm:text-sm font-medium px-2.5 py-2.5 md:px-4 md:py-2 rounded-xl bg-[var(--color-success-100)] text-[var(--color-success-600)] whitespace-nowrap">
               <CheckCircle2 size={13} /> Finalized
             </span>
           )
@@ -459,7 +459,7 @@ export function EmrActionBar({
                 setShowSuccess(true);
               })
             }
-            className="flex items-center gap-1 text-[11px] sm:text-sm font-medium px-2.5 py-1.5 md:px-5 md:py-2 rounded-xl bg-[var(--color-primary-900)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-60 whitespace-nowrap"
+            className="flex-1 md:flex-none flex items-center justify-center gap-1 text-[11px] sm:text-sm font-medium px-2.5 py-2.5 md:px-5 md:py-2 rounded-xl bg-[var(--color-primary-900)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-60 whitespace-nowrap"
           >
             <FileSignature size={13} /> {pending ? "Saving…" : <><span className="hidden sm:inline">Finalize &amp; </span>Sign</>}
           </button>
