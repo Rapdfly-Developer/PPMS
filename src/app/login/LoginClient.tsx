@@ -761,9 +761,6 @@ export default function LoginPage() {
             <p className="mt-1" style={{ fontSize: "12px", fontWeight: 600, letterSpacing: "0.07em", color: T.primary, textTransform: "uppercase" }}>
               Personal Patient Management System
             </p>
-            <p className="mt-2" style={{ fontSize: "13.5px", color: T.muted, lineHeight: 1.5, maxWidth: "340px" }}>
-              Secure clinical records, appointments and patient care — for hospitals, clinics and healthcare networks.
-            </p>
           </header>
 
           {/* ── Login card ── */}
