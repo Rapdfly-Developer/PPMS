@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { signIn } from "next-auth/react";
 import {
   FileText, Calendar, Building2, UserCircle, Users,
@@ -237,7 +238,8 @@ function LeftPanel() {
   return (
     <div className="hidden lg:flex lg:w-[45%] flex-col justify-between px-9 xl:px-14 py-8 xl:py-10 shrink-0 relative overflow-hidden">
       <div className="lg-a0 shrink-0">
-        <div className="flex items-center gap-3.5">
+        <Link href="/" aria-label="RF Health home"
+          className="lg-brand flex items-center gap-3.5 rounded-xl w-fit">
           {/* cover, not contain: the mark carries its own marble ground, so
               letterboxing would frame the ground instead of the shield. The
               radius and hairline border make it read as a deliberate badge. */}
@@ -258,7 +260,7 @@ function LeftPanel() {
               PRIVATE PATIENT MANAGEMENT SYSTEM
             </p>
           </div>
-        </div>
+        </Link>
       </div>
 
       <div className="flex-1 flex flex-col justify-center py-7">
@@ -601,6 +603,12 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
           -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
           animation:lg-grad 5s ease infinite;
         }
+        /* The lockup is a link home, so it needs to look like one on hover
+           without the underline a text link would take. */
+        .lg-brand{transition:opacity .16s ease}
+        .lg-brand:hover{opacity:.78}
+        .lg-brand:focus-visible{outline:2px solid #0D7A63;outline-offset:3px}
+
         .lg-btn{transition:transform .18s cubic-bezier(.34,1.56,.64,1),box-shadow .18s}
         .lg-btn:hover:not(:disabled){transform:translateY(-3px);box-shadow:0 18px 44px rgba(15,118,110,.38)!important}
         .lg-btn:active:not(:disabled){transform:translateY(-1px)}
@@ -629,14 +637,15 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
             <div className="w-full" style={{ maxWidth: "480px" }}>
 
               {/* Mobile logo */}
-              <div className="flex lg:hidden items-center gap-2.5 justify-center mb-8 lg-a0">
-                <img src="/landing/logo-rf-health.webp" alt="RF Health"
+              <Link href="/" aria-label="RF Health home"
+                className="lg-brand flex lg:hidden items-center gap-2.5 justify-center mb-8 lg-a0 rounded-xl">
+                <img src="/landing/logo-rf-health.webp" alt=""
                   style={{
                     width: "36px", height: "36px", objectFit: "cover",
                     borderRadius: "9px", border: `1px solid ${T.border}`,
                   }} />
                 <p className="text-2xl font-black" style={{ color: T.text, letterSpacing: "-0.03em" }}>RF Health</p>
-              </div>
+              </Link>
 
               {/* ── NO_LICENSE: Registration ── */}
               {status === "NO_LICENSE" && !otpStep && (
