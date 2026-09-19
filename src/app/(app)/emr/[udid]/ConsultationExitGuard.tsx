@@ -42,10 +42,18 @@ export const consultClockKey = (visitId: string) => `emr_consult_start_${visitId
 
 export function ConsultationExitGuard({
   visitId,
+  exitHref,
   active,
   onPartialDispense,
 }: {
   visitId: string;
+  /**
+   * Where "OK" goes when the blocked navigation had no destination of its own
+   * (the browser/hardware Back, and the TopBar Back button, which renders as a
+   * plain <button> calling router.back() whenever no returnTo is present).
+   * Normally the returnTo param.
+   */
+  exitHref: string;
   /** False once the visit is closed/finalised — the guard then does nothing. */
   active: boolean;
   /** Opens the EMR action bar's existing PartialDispenseModal. */
@@ -147,13 +155,27 @@ export function ConsultationExitGuard({
 
   /* ── Dialog actions ───────────────────────────────────────────────────── */
 
+  /*
+   * Every exit resolves to a concrete URL.
+   *
+   * router.back() cannot be used for the no-destination case: the guard keeps a
+   * sentinel history entry on top of the EMR so the first Back press is
+   * catchable, and popstate re-pushes it. Going back one step therefore just
+   * consumes that sentinel and lands on the EMR again -- the user pressed OK
+   * and stayed exactly where they were. Pushing/replacing a real href is the
+   * only way to leave deterministically, whatever the history stack looks like.
+   *
+   * replace, not push, for that case: it overwrites the sentinel rather than
+   * stacking another entry on top of it, so the destination's own Back button
+   * does not lead straight back into the EMR.
+   */
   const proceed = useCallback(() => {
     allowNav.current = true;
     const href = pendingHref.current;
     setOpen(false);
     if (href) router.push(href);
-    else router.back();
-  }, [router]);
+    else router.replace(exitHref);
+  }, [router, exitHref]);
 
   // OK: discard the consultation timing, then leave. Clearing sessionStorage
   // is synchronous, so navigation happens in the same tick — there is no

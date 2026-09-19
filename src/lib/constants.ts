@@ -58,6 +58,51 @@ export const CONTRAST_SENSITIVITY_TESTS = ["Pelli-Robson", "Mars Letter CS", "Vi
 
 export const IOP_METHODS = ["NCT", "Goldmann", "Tono-Pen", "iCare", "Perkins"] as const;
 
+/* ── Refraction ────────────────────────────────────────────────────────────
+   Method drives two behaviours, so both live here rather than being re-derived
+   at each call site:
+     - which methods carry a NEAR correction, and
+     - which single method may be dispensed as the patient's prescription. */
+export const REFRACTION_METHODS = [
+  "Subjective",
+  "Cycloplegic",
+  "Auto-Refraction",
+  "Current Glass Rx",
+  "Retinoscopy",
+] as const;
+
+export type RefractionMethod = (typeof REFRACTION_METHODS)[number];
+
+/** The method a correction defaults to when none has been chosen yet. */
+export const DEFAULT_REFRACTION_METHOD: RefractionMethod = "Subjective";
+
+/**
+ * Only a manifest refraction is prescribed. Retinoscopy, auto-refraction and
+ * cycloplegic readings are measurements on the way to one, so they carry a
+ * distance component only.
+ */
+const NEAR_CAPABLE_METHODS: readonly string[] = ["Subjective", "Current Glass Rx"];
+
+export function methodHasNear(method: string | undefined | null): boolean {
+  return NEAR_CAPABLE_METHODS.includes(method || DEFAULT_REFRACTION_METHOD);
+}
+
+/** The one method whose values may be carried into the Plan tab. */
+export const PRESCRIBABLE_REFRACTION_METHOD: RefractionMethod = "Subjective";
+
+export function isPrescribableMethod(method: string | undefined | null): boolean {
+  return (method || DEFAULT_REFRACTION_METHOD) === PRESCRIBABLE_REFRACTION_METHOD;
+}
+
+/* ── Gonioscopy ──────────────────────────────────────────────────────────── */
+export const GONIO_METHODS = [
+  "Indentation (Zeiss 4-mirror)",
+  "Static / non-indentation (Goldmann)",
+  "Compression / dynamic",
+  "Van Herick (peripheral AC depth)",
+  "Direct",
+] as const;
+
 export const ANTERIOR_SEGMENT_STRUCTURES: Record<string, string[]> = {
   upperLid: ["Normal", "Ptosis", "Lid retraction", "Lagophthalmos", "Blepharitis", "Chalazion", "Stye"],
   lowerLid: ["Normal", "Ectropion", "Entropion", "Lagophthalmos", "Blepharitis"],

@@ -13,6 +13,10 @@ import {
   VA_TEST_METHODS,
   VA_SNELLEN_VALUES,
   IOP_METHODS,
+  REFRACTION_METHODS,
+  DEFAULT_REFRACTION_METHOD,
+  GONIO_METHODS,
+  methodHasNear,
   ANTERIOR_SEGMENT_STRUCTURES,
   POSTERIOR_SEGMENT_OPTIONS,
   LACRIMAL_SAC_CHIPS,
@@ -301,8 +305,6 @@ function parseSignedVal(v: string): { sign: "+" | "-"; mag: string } {
 
 /* ── Refraction ────────────────────────────────────────────────────────── */
 
-const REFRACTION_METHODS = ["Subjective", "Cycloplegic", "Auto-Refraction", "Current Glass Rx", "Retinoscopy"] as const;
-
 function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: any; udid: string; editable: boolean; priorVisits?: any[] }) {
   const rc = visit.refraction;
 
@@ -414,7 +416,23 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
   // Axis and VA get wider tracks than Sph/Cyl, which lose width to the +/- toggle.
   const SECTION_LABEL = "col-span-2 sm:col-span-5 text-[9px] sm:text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-widest";
 
-  const eyeFields = (val: typeof re, setVal: typeof setRe) => (
+  /* Method is a property of the CORRECTION, not of one eye, but the dropdown
+     historically wrote re.method only — leaving le.method unset and the two
+     eyes able to disagree. Both are written here.
+     Switching to a distance-only method also CLEARS that correction's near
+     values: hidden-but-stored values would reappear if the method were switched
+     back, and could still reach the prescription. */
+  const applyMethod = (rx: typeof re, method: string) => {
+    const next = { ...rx, method };
+    if (!methodHasNear(method)) { next.nearSph = ""; next.nearVa = ""; }
+    return next;
+  };
+
+  /* Retinoscopy, auto-refraction and cycloplegic readings are distance-only
+     measurements, so their near row is not rendered at all. showNear is passed
+     in rather than read from `val` so both eyes follow the correction's single
+     method even on legacy records that stored it on the RE object only. */
+  const eyeFields = (val: typeof re, setVal: typeof setRe, showNear: boolean) => (
     <div className="grid grid-cols-2 sm:grid-cols-[88px_88px_64px_20px_80px] gap-x-2 gap-y-2 items-end">
       <p className={SECTION_LABEL}>Distance</p>
       {signedSelect("Sph",   val.sph,  (v) => setVal({ ...val, sph: v }),  SPH_MAGS)}
@@ -423,9 +441,13 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
       <div aria-hidden="true" className="hidden sm:block" />
       {vaSelect("Resulting VA", val.va, (v) => setVal({ ...val, va: v }))}
 
-      <p className={`${SECTION_LABEL} mt-2`}>Near</p>
-      {signedSelect("Sph (Add)", val.nearSph, (v) => setVal({ ...val, nearSph: v }), ADD_MAGS)}
-      {vaSelect("Resulting NV", val.nearVa, (v) => setVal({ ...val, nearVa: v }), VA_NEAR_VALUES, "col-start-2 sm:col-start-5")}
+      {showNear && (
+        <>
+          <p className={`${SECTION_LABEL} mt-2`}>Near</p>
+          {signedSelect("Sph (Add)", val.nearSph, (v) => setVal({ ...val, nearSph: v }), ADD_MAGS)}
+          {vaSelect("Resulting NV", val.nearVa, (v) => setVal({ ...val, nearVa: v }), VA_NEAR_VALUES, "col-start-2 sm:col-start-5")}
+        </>
+      )}
     </div>
   );
 
@@ -477,8 +499,12 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
             <span className="text-[11px] sm:text-xs text-[var(--color-ink-400)]">Method:</span>
             <select
               disabled={!editable}
-              value={re.method || REFRACTION_METHODS[0]}
-              onChange={(e) => setRe({ ...re, method: e.target.value })}
+              value={re.method || le.method || DEFAULT_REFRACTION_METHOD}
+              onChange={(e) => {
+                const m = e.target.value;
+                setRe(applyMethod(re, m));
+                setLe(applyMethod(le, m));
+              }}
               className="rounded-lg border border-[var(--color-border)] bg-white px-2.5 py-1 text-xs disabled:bg-[var(--color-surface-sunken)]"
             >
               {REFRACTION_METHODS.map((m) => <option key={m}>{m}</option>)}
@@ -499,8 +525,8 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
         </div>
       </div>
       <EyeColumns>
-        {eyeFields(re, setRe)}
-        {eyeFields(le, setLe)}
+        {eyeFields(re, setRe, methodHasNear(re.method || le.method))}
+        {eyeFields(le, setLe, methodHasNear(re.method || le.method))}
       </EyeColumns>
 
       {/* ── Extra corrections ── */}
@@ -513,8 +539,12 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
                 <span className="text-[11px] sm:text-xs text-[var(--color-ink-400)]">Method:</span>
                 <select
                   disabled={!editable}
-                  value={ex.re.method || REFRACTION_METHODS[0]}
-                  onChange={(e) => updateExtra(idx, "re", { ...ex.re, method: e.target.value })}
+                  value={ex.re.method || ex.le.method || DEFAULT_REFRACTION_METHOD}
+                  onChange={(e) => {
+                    const m = e.target.value;
+                    updateExtra(idx, "re", applyMethod(ex.re, m));
+                    updateExtra(idx, "le", applyMethod(ex.le, m));
+                  }}
                   className="rounded-lg border border-[var(--color-border)] bg-white px-2.5 py-1 text-xs disabled:bg-[var(--color-surface-sunken)]"
                 >
                   {REFRACTION_METHODS.map((m) => <option key={m}>{m}</option>)}
@@ -532,8 +562,8 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
             )}
           </div>
           <EyeColumns>
-            {eyeFields(ex.re, (v) => updateExtra(idx, "re", typeof v === "function" ? v(ex.re) : v))}
-            {eyeFields(ex.le, (v) => updateExtra(idx, "le", typeof v === "function" ? v(ex.le) : v))}
+            {eyeFields(ex.re, (v) => updateExtra(idx, "re", typeof v === "function" ? v(ex.re) : v), methodHasNear(ex.re.method || ex.le.method))}
+            {eyeFields(ex.le, (v) => updateExtra(idx, "le", typeof v === "function" ? v(ex.le) : v), methodHasNear(ex.re.method || ex.le.method))}
           </EyeColumns>
         </div>
       ))}
@@ -1139,16 +1169,21 @@ function GonioscopyCard({
   editable: boolean;
   priorVisits: any[];
 }) {
-  const initial = parseJSON<{ re: string; le: string; reDeg?: string; leDeg?: string }>(visit.gonioNotes, { re: "", le: "", reDeg: "", leDeg: "" });
+  // method is a single shared key: one technique is used for the exam, not one
+  // per eye. gonioNotes is free-form JSON, so this needs no migration and older
+  // records simply parse with an empty method.
+  const initial = parseJSON<{ re: string; le: string; reDeg?: string; leDeg?: string; method?: string }>(
+    visit.gonioNotes, { re: "", le: "", reDeg: "", leDeg: "", method: "" });
   const [re, setRe] = useState(initial.re);
   const [le, setLe] = useState(initial.le);
   const [reDeg, setReDeg] = useState(initial.reDeg ?? "");
   const [leDeg, setLeDeg] = useState(initial.leDeg ?? "");
+  const [method, setMethod] = useState(initial.method ?? "");
   const [showHistory, setShowHistory] = useState(false);
   const [loadToast, setLoadToast] = useState(false);
 
   const state = useAutoSave(
-    { re, le, reDeg, leDeg },
+    { re, le, reDeg, leDeg, method },
     async (data) => { await saveGonioNotes(visit.id, udid, data); },
     1500,
   );
@@ -1181,8 +1216,22 @@ function GonioscopyCard({
 
   return (
     <Card>
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-700)]">Gonioscopy</h3>
+      <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
+        <div className="flex items-center gap-3 flex-wrap">
+          <h3 className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-700)]">Gonioscopy</h3>
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] sm:text-xs text-[var(--color-ink-400)]">Method:</span>
+            <select
+              disabled={!editable}
+              value={method}
+              onChange={(e) => setMethod(e.target.value)}
+              className="rounded-lg border border-[var(--color-border)] bg-white px-2.5 py-1 text-xs disabled:bg-[var(--color-surface-sunken)]"
+            >
+              <option value="">Not recorded</option>
+              {GONIO_METHODS.map((m) => <option key={m} value={m}>{m}</option>)}
+            </select>
+          </div>
+        </div>
         <div className="flex items-center gap-2">
           {historyRows.length > 0 && (
             <button

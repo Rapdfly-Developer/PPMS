@@ -17,7 +17,7 @@ import {
   saveTreatmentPresets,
 } from "./treatmentPresets";
 import { type MedEntry, searchMedications, categoryColor } from "@/lib/ophthalmic-medications";
-import { VA_SNELLEN_VALUES } from "@/lib/constants";
+import { VA_SNELLEN_VALUES, DEFAULT_REFRACTION_METHOD, isPrescribableMethod, methodHasNear } from "@/lib/constants";
 import { INV_CATALOG } from "@/lib/investigation-catalog";
 
 /* ── Preset types & storage ──────────────────────────────────────────────── */
@@ -2637,22 +2637,61 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
 
 function OpticalPrescriptionCard({ visit }: { visit: any }) {
   const rc = visit.refraction;
-  type RxFields = { sph: string; cyl: string; axis: string; nearSph: string; va: string; nearVa: string };
-  const emptyRx: RxFields = { sph: "", cyl: "", axis: "", nearSph: "", va: "", nearVa: "" };
-  const re: RxFields = parseJSON(rc?.re, emptyRx);
-  const le: RxFields = parseJSON(rc?.le, emptyRx);
+  type RxFields = { sph: string; cyl: string; axis: string; nearSph: string; va: string; nearVa: string; method?: string };
+  const emptyRx: RxFields = { sph: "", cyl: "", axis: "", nearSph: "", va: "", nearVa: "", method: "" };
 
-  const hasData = [re.sph, re.cyl, re.axis, re.va, re.nearSph, re.nearVa,
+  // Only a Subjective refraction is a prescription. This card used to render
+  // Correction 1 unconditionally, so an Auto-Refraction or retinoscopy reading
+  // left in slot 1 was presented to the patient as their glasses Rx.
+  //
+  // Method is read from either eye: older records wrote it to the RE object
+  // only, so LE alone is not a reliable source.
+  const corrections: { label: string; re: RxFields; le: RxFields }[] = [
+    { label: "Correction 1", re: parseJSON(rc?.re, emptyRx), le: parseJSON(rc?.le, emptyRx) },
+    ...parseJSON<{ label: string; re: RxFields; le: RxFields }[]>(rc?.extraCorrections, []),
+  ];
+  const subjective = corrections.find(
+    (c) => isPrescribableMethod(c.re?.method || c.le?.method || DEFAULT_REFRACTION_METHOD),
+  );
+
+  const re: RxFields = subjective?.re ?? emptyRx;
+  const le: RxFields = subjective?.le ?? emptyRx;
+
+  const hasData = !!subjective && [re.sph, re.cyl, re.axis, re.va, re.nearSph, re.nearVa,
                    le.sph, le.cyl, le.axis, le.va, le.nearSph, le.nearVa]
     .some((v) => v && v !== "-");
 
   const cell = (val: string) => (val && val !== "-" ? val : <span className="text-[var(--color-ink-300)]">—</span>);
 
+  const showNear = methodHasNear(subjective?.re?.method || subjective?.le?.method);
   const HEADERS = ["Sph", "Cyl", "Axis°", "VA", "Add", "NV"];
   const ROWS: { label: string; rx: RxFields }[] = [
     { label: "Right Eye", rx: re },
     { label: "Left Eye",  rx: le },
   ];
+
+  // No manifest refraction recorded: say so, rather than fall back to whatever
+  // measurement happens to sit in Correction 1.
+  if (!subjective) {
+    const methodsPresent = [...new Set(
+      corrections
+        .map((c) => c.re?.method || c.le?.method)
+        .filter((m): m is string => !!m),
+    )];
+    return (
+      <Card>
+        <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)] mb-2">Optical Prescription</p>
+        <p className="text-[13px] sm:text-sm text-[var(--color-ink-500)]">
+          No subjective refraction recorded.
+        </p>
+        <p className="mt-1 text-[11px] sm:text-xs text-[var(--color-ink-400)]">
+          {methodsPresent.length > 0
+            ? `Only ${methodsPresent.join(", ")} recorded. A prescription is issued from a subjective refraction, so nothing is carried over here.`
+            : "Record a subjective refraction in the Ophthalmic Exam tab to issue a prescription."}
+        </p>
+      </Card>
+    );
+  }
 
   return (
     <Card>
@@ -2688,9 +2727,9 @@ function OpticalPrescriptionCard({ visit }: { visit: any }) {
               <td className="text-center py-3 px-1 text-[13px] sm:text-sm">
                 <span className="inline-block px-1.5 py-0.5 rounded bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)]">{cell(rx.va)}</span>
               </td>
-              <td className="text-center py-3 px-1 text-[13px] sm:text-sm text-[var(--color-ink-800)]">{cell(rx.nearSph)}</td>
+              <td className="text-center py-3 px-1 text-[13px] sm:text-sm text-[var(--color-ink-800)]">{showNear ? cell(rx.nearSph) : cell("")}</td>
               <td className="text-center py-3 px-1 text-[13px] sm:text-sm">
-                <span className="inline-block px-1.5 py-0.5 rounded bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)]">{cell(rx.nearVa)}</span>
+                <span className="inline-block px-1.5 py-0.5 rounded bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)]">{showNear ? cell(rx.nearVa) : cell("")}</span>
               </td>
             </tr>
           ))}

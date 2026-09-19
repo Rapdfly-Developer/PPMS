@@ -63,6 +63,7 @@ export function EmrTabsShell({
               installs is scoped to an unfinalised EMR and torn down on exit. */}
           <ConsultationExitGuard
             visitId={visit.id}
+            exitHref={searchParams.get("returnTo") || "/patients"}
             active={visit.status !== "CLOSED"}
             onPartialDispense={() => setOpenPartialSignal((n) => n + 1)}
           />
