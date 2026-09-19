@@ -91,22 +91,18 @@ function Frame({
 }
 
 /**
- * One measure for the whole page. Capped at 6xl through desktop so line length
- * stays readable, then allowed to grow on very wide displays. The ladder used
- * to stop at 3xl, which pinned every screen above 1760px to 1520px: at 2560px
- * that stranded over 1000px of empty page either side.
- *
- * Each large step is min(94vw, cap) rather than a bare pixel value, so the
- * column tracks the viewport between breakpoints instead of stepping and then
- * sitting still until the next one.
+ * One measure for the whole page. The ladder itself now lives in globals.css
+ * as the container-fluid utility, so the app shell and this page cannot drift
+ * apart. Capped through desktop so line length stays readable, then growing
+ * on wide displays, with each large step a min(94vw, cap) so the column
+ * tracks the viewport between breakpoints rather than stepping and holding.
  */
-const SHELL =
-  "mx-auto w-full max-w-6xl xl:max-w-[1240px] 2xl:max-w-[min(94vw,1800px)] " +
-  "3xl:max-w-[min(94vw,2100px)] 4xl:max-w-[min(94vw,2200px)]";
+const SHELL = "container-fluid";
 
 /** Horizontal gutter, shared by Section, the hero and the footer so all three
- *  edges line up at every width. */
-const GUTTER = "px-4 sm:px-6 lg:px-8 2xl:px-10";
+ *  edges line up at every width. Also lives in globals.css, so the two stay
+ *  in step without either file having to know the other's numbers. */
+const GUTTER = "gutter-fluid";
 
 function Section({
   id,

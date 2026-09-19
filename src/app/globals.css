@@ -82,15 +82,66 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
 
-  /* Three breakpoints beyond Tailwind's defaults:
-     xs  — the 320-480px band, where two-up grids need to drop to one.
-     3xl — ultrawide, where a 1152px column starts reading as a ribbon.
-     4xl — 1920px and up, the band where the app shell's content cap would
-           otherwise strand several hundred pixels either side of the page. */
+  /* Breakpoints beyond Tailwind's defaults. 3xl and 4xl predate the rest and
+     are load-bearing in the app shell, the landing shell and the nav, so they
+     keep their values -- renaming them would silently move every one of those
+     to a different width. xl2, 5xl and 6xl fill the gaps around them.
+
+       xs   480px   two-up grids drop to one below this
+       xl2  1440px  the laptop/desktop hinge
+       3xl  1760px  where a 1152px column starts reading as a ribbon
+       4xl  1920px  where the shell would otherwise strand the page edges
+       5xl  2560px  QHD
+       6xl  3840px  4K                                                    */
   --breakpoint-xs: 30rem;
+  --breakpoint-xl2: 90rem;
   --breakpoint-3xl: 110rem;
   --breakpoint-4xl: 120rem;
+  --breakpoint-5xl: 160rem;
+  --breakpoint-6xl: 240rem;
+
+  /* Fluid type. Each is a single clamp rather than a breakpoint ladder, so it
+     tracks the viewport continuously instead of stepping and then sitting
+     still. Available as text-hero / text-section / text-body-fluid. */
+  --text-hero: clamp(3rem, 2rem + 3.5vw, 7.5rem);
+  --text-hero--line-height: 1.06;
+  --text-section: clamp(2rem, 1.5rem + 2vw, 4.5rem);
+  --text-section--line-height: 1.1;
+  --text-body-fluid: clamp(1rem, 0.9rem + 0.35vw, 1.375rem);
+  --text-body-fluid--line-height: 1.6;
+
+  /* Fluid spacing. Gives py-section, gap-section, p-card and friends. */
+  --spacing-section: clamp(4rem, 3rem + 4vw, 12rem);
+  --spacing-card: clamp(1.5rem, 1rem + 1vw, 2.75rem);
+  --spacing-gutter: clamp(1rem, 4vw, 6rem);
 }
+
+/* ── Layout utilities ──────────────────────────────────────────────────────
+   Deliberately two utilities rather than one combined container. The page
+   puts the gutter on the outer <section> and the cap on an inner div, which
+   is what lets a section paint a full-bleed background while its content
+   stays measured. Folding padding inside the cap would subtract it from the
+   content width and narrow every section by the gutter on both sides.
+
+   The max-width ladder is the one verified against 1440/1920/2560/3840; the
+   min(94vw, …) steps keep the column tracking the viewport between
+   breakpoints rather than stepping and holding. */
+@utility container-fluid {
+  width: 100%;
+  margin-inline: auto;
+  max-width: 72rem;
+}
+@media (min-width: 80rem)  { .container-fluid { max-width: 77.5rem; } }
+@media (min-width: 96rem)  { .container-fluid { max-width: min(94vw, 112.5rem); } }
+@media (min-width: 110rem) { .container-fluid { max-width: min(94vw, 131.25rem); } }
+@media (min-width: 120rem) { .container-fluid { max-width: min(94vw, 137.5rem); } }
+
+@utility gutter-fluid {
+  padding-inline: 1rem;
+}
+@media (min-width: 40rem)  { .gutter-fluid { padding-inline: 1.5rem; } }
+@media (min-width: 64rem)  { .gutter-fluid { padding-inline: 2rem; } }
+@media (min-width: 96rem)  { .gutter-fluid { padding-inline: 2.5rem; } }
 
 * {
   border-color: var(--color-border);
