@@ -99,7 +99,7 @@ function Field({
   return (
     <div style={{ marginBottom: "6px" }}>
       <label htmlFor={id} className="block mb-1.5" style={{
-        fontSize: "13px", fontWeight: 600, color: T.ink, letterSpacing: "-0.005em",
+        fontSize: "var(--fs-label)", fontWeight: 600, color: T.ink, letterSpacing: "-0.005em",
       }}>
         {label}
       </label>
@@ -139,8 +139,8 @@ function Field({
             paddingLeft: icon ? "38px" : "13px",
             // Clears the 36px toggle plus its 5px inset.
             paddingRight: rightSlot ? "45px" : "13px",
-            height: "46px",
-            fontSize: "14px",
+            height: "var(--ctl-h)",
+            fontSize: "var(--fs-input)",
             color: T.ink,
           }}
         />
@@ -153,14 +153,14 @@ function Field({
       {/* Reserved slot — tall enough for one line of message (12px at 1.2
           line-height, plus the 4px offset) so an error appearing or clearing
           never moves the fields below it. */}
-      <div style={{ minHeight: "20px", paddingTop: "4px" }}>
+      <div style={{ minHeight: "calc(var(--fs-sm) * 1.25 + 6px)", paddingTop: "4px" }}>
         {error ? (
           <p id={errId} role="alert" className="flex items-center gap-1"
-            style={{ fontSize: "12px", color: T.danger, lineHeight: 1.2 }}>
+            style={{ fontSize: "var(--fs-sm)", color: T.danger, lineHeight: 1.2 }}>
             <AlertCircle size={12} className="shrink-0" /> {error}
           </p>
         ) : hint ? (
-          <div style={{ fontSize: "12px", color: T.faint, lineHeight: 1.2 }}>{hint}</div>
+          <div style={{ fontSize: "var(--fs-sm)", color: T.faint, lineHeight: 1.2 }}>{hint}</div>
         ) : null}
       </div>
     </div>
@@ -184,9 +184,9 @@ function PrimaryButton({
       disabled={off}
       className="pp-btn w-full flex items-center justify-center gap-2"
       style={{
-        height: "46px",
+        height: "var(--ctl-h)",
         borderRadius: "10px",
-        fontSize: "14.5px",
+        fontSize: "var(--fs-btn)",
         fontWeight: 600,
         letterSpacing: "-0.005em",
         color: off ? T.faint : "#FFFFFF",
@@ -712,11 +712,20 @@ function LightBackground({ px, py }: { px: number; py: number }) {
    Every inner block shares one max-width that steps up past 2xl. Without it
    the 45% column keeps widening on a 4K monitor while the content stays at
    430px, which reads as the panel being empty rather than spacious. */
-const PANEL_W = "max-w-[430px] 2xl:max-w-[520px] 3xl:max-w-[600px]";
+const panelW: React.CSSProperties = { width: "100%", maxWidth: "var(--left-w)" };
 
 function LeftPanel() {
   return (
-    <div className="hidden lg:flex lg:w-[45%] flex-col justify-between px-9 xl:px-14 2xl:px-16 py-8 xl:py-10 shrink-0 relative overflow-hidden">
+    <div className="hidden lg:flex lg:w-[51%] flex-col justify-center shrink-0 relative overflow-hidden"
+      style={{ paddingLeft: "var(--pad-panel)", paddingRight: "var(--pad-panel)", paddingTop: "clamp(32px,3vw,72px)", paddingBottom: "clamp(32px,3vw,72px)" }}>
+
+      {/* Logo top / hero centre / trust bottom is the right arrangement at
+          laptop height, but on a 2160px-tall panel it drags the three blocks
+          to the extremes and opens gaps the content cannot fill. Capping the
+          group's height keeps it reading as one composition and lets the
+          spare vertical space fall outside it. */}
+      <div className="w-full flex flex-col justify-between"
+        style={{ height: "100%", maxHeight: "clamp(560px, 84vh, 1040px)" }}>
 
       {/* Logo lockup */}
       <div className="lp-a0 shrink-0">
@@ -726,20 +735,20 @@ function LeftPanel() {
               rectangle pasted onto the page. */}
           <img src="/landing/logo-rf-health.webp" alt="" className="shrink-0"
             style={{
-              width: "48px", height: "48px", objectFit: "cover",
-              borderRadius: "11px", border: `1px solid ${T.border}`,
+              width: "var(--logo)", height: "var(--logo)", objectFit: "cover",
+              borderRadius: "clamp(11px,.8vw,16px)", border: `1px solid ${T.border}`,
             }} />
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-[25px] 2xl:text-[28px] font-black" style={{ color: T.ink, letterSpacing: "-0.035em" }}>
+              <span className="font-black" style={{ fontSize: "var(--fs-brand)", color: T.ink, letterSpacing: "-0.035em" }}>
                 RF Health
               </span>
-              <span className="text-[9.5px] font-bold px-2 py-0.5 rounded-full"
-                style={{ background: "rgba(13,122,99,.11)", color: T.primary, border: "1px solid rgba(13,122,99,.24)", letterSpacing: "0.04em" }}>
+              <span className="font-bold px-2 py-0.5 rounded-full"
+                style={{ fontSize: "var(--fs-xs)", background: "rgba(13,122,99,.11)", color: T.primary, border: "1px solid rgba(13,122,99,.24)", letterSpacing: "0.04em" }}>
                 v2.0 Cloud
               </span>
             </div>
-            <p className="text-[9.5px] font-semibold" style={{ color: T.faint, letterSpacing: "0.06em" }}>
+            <p className="font-semibold" style={{ fontSize: "var(--fs-xs)", color: T.faint, letterSpacing: "0.06em" }}>
               PERSONAL PATIENT MANAGEMENT SYSTEM
             </p>
           </div>
@@ -755,48 +764,52 @@ function LeftPanel() {
             boxShadow: "0 2px 12px rgba(15,41,38,.05)",
           }}>
             <span className="lp-dot" style={{ width: 6, height: 6, borderRadius: "50%", background: T.primary }} />
-            <span style={{ fontSize: "10px", fontWeight: 800, letterSpacing: "0.14em", color: T.primary }}>
+            <span style={{ fontSize: "var(--fs-xs)", fontWeight: 800, letterSpacing: "0.14em", color: T.primary }}>
               ENTERPRISE HEALTHCARE PLATFORM
             </span>
           </span>
         </div>
 
         <h1 className="lp-a1 font-black leading-[1.06] mb-3.5"
-          style={{ fontSize: "clamp(29px,2.55vw,46px)", color: T.ink, letterSpacing: "-0.032em" }}>
+          style={{ fontSize: "var(--fs-h1)", color: T.ink, letterSpacing: "-0.032em" }}>
           Better <span className="lp-grad-text">Healthcare.</span>
           <br />Better Management.
         </h1>
 
-        <p className={`lp-a2 leading-relaxed mb-6 ${PANEL_W}`} style={{ fontSize: "14px", color: T.muted }}>
+        <p className="lp-a2 leading-relaxed mb-6" style={{ ...panelW, fontSize: "var(--fs-body)", color: T.muted }}>
           A comprehensive solution to manage patients, doctors, appointments, billing, and much more — all in one place.
         </p>
 
         {/* Feature tiles */}
-        <div className={`lp-a3 grid grid-cols-2 gap-2 mb-7 ${PANEL_W}`}>
+        <div className="lp-a3 grid grid-cols-2 mb-7" style={{ ...panelW, gap: "var(--gap)" }}>
           {FEATURES.map(({ icon: Icon, label }) => (
-            <div key={label} className="lp-feat flex items-center gap-2.5 rounded-xl px-3 py-2.5" style={{
+            <div key={label} className="lp-feat flex items-center rounded-xl" style={{
               background: "rgba(13,122,99,.06)",
               border: "1px solid rgba(13,122,99,.13)",
+              gap: "clamp(8px,.6vw,14px)",
+              padding: "clamp(10px,.8vw,18px) clamp(12px,.9vw,20px)",
             }}>
-              <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{
+              <div className="rounded-lg flex items-center justify-center shrink-0" style={{
+                width: "clamp(28px,1.7vw,42px)", height: "clamp(28px,1.7vw,42px)",
                 background: "linear-gradient(135deg,rgba(13,122,99,.2),rgba(5,150,105,.12))",
                 border: "1px solid rgba(13,122,99,.25)",
               }}>
-                <Icon size={13} style={{ color: T.primary }} />
+                <Icon size={13} style={{ color: T.primary, width: "55%", height: "55%" }} />
               </div>
-              <span style={{ fontSize: "11.5px", fontWeight: 600, color: T.muted, lineHeight: 1.3 }}>{label}</span>
+              <span style={{ fontSize: "var(--fs-tile)", fontWeight: 600, color: T.muted, lineHeight: 1.3 }}>{label}</span>
             </div>
           ))}
         </div>
 
         {/* Stats */}
-        <div className={`lp-a3 grid grid-cols-3 gap-2 ${PANEL_W}`}>
+        <div className="lp-a3 grid grid-cols-3" style={{ ...panelW, gap: "var(--gap)" }}>
           {STATS.map(({ val, label }) => (
-            <div key={label} className="text-center rounded-xl py-3 px-2" style={{
+            <div key={label} className="text-center rounded-xl" style={{
               background: "rgba(13,122,99,.07)", border: "1px solid rgba(13,122,99,.13)",
+              padding: "clamp(12px,1vw,22px) clamp(8px,.6vw,16px)",
             }}>
-              <div style={{ fontSize: "15px", fontWeight: 800, color: T.primary, letterSpacing: "-0.02em" }}>{val}</div>
-              <div style={{ fontSize: "10px", fontWeight: 500, color: T.faint, marginTop: "2px" }}>{label}</div>
+              <div style={{ fontSize: "var(--fs-stat)", fontWeight: 800, color: T.primary, letterSpacing: "-0.02em" }}>{val}</div>
+              <div style={{ fontSize: "var(--fs-xs)", fontWeight: 500, color: T.faint, marginTop: "2px" }}>{label}</div>
             </div>
           ))}
         </div>
@@ -807,11 +820,12 @@ function LeftPanel() {
         <div className="mb-3.5" style={{ height: "1px", background: "linear-gradient(90deg,rgba(13,122,99,.26),rgba(13,122,99,.07) 70%,transparent)" }} />
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
           {TRUST.map((t, i) => (
-            <span key={i} className="flex items-center gap-1.5" style={{ fontSize: "10.5px", fontWeight: 500, color: T.faint }}>
+            <span key={i} className="flex items-center gap-1.5" style={{ fontSize: "var(--fs-xs)", fontWeight: 500, color: T.faint }}>
               <span style={{ color: T.primary }}>{t.icon}</span> {t.label}
             </span>
           ))}
         </div>
+      </div>
       </div>
     </div>
   );
@@ -834,7 +848,7 @@ function GlassCard({ children }: { children: React.ReactNode }) {
       }} />
       <div className="absolute top-0 right-0 w-32 h-32 pointer-events-none"
         style={{ background: "radial-gradient(circle at top right, rgba(13,122,99,.07), transparent 70%)" }} />
-      <div className="px-5 py-6 sm:px-7 lg:px-8 relative">{children}</div>
+      <div className="relative" style={{ padding: "calc(var(--card-pad) + 4px) var(--card-pad)" }}>{children}</div>
     </div>
   );
 }
@@ -959,7 +973,7 @@ export default function LoginPage() {
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(otpEmail);
 
   return (
-    <div className="fixed inset-0 flex overflow-hidden" style={{
+    <div className="rf-login fixed inset-0 flex overflow-hidden" style={{
       background: T.bg,
       color: T.ink,
       colorScheme: "light",
@@ -968,6 +982,40 @@ export default function LoginPage() {
       {showForgotPw && <ForgotPasswordModal onClose={() => setShowForgotPw(false)} />}
 
       <style>{`
+        /* ── Fluid scale system ───────────────────────────────────────────
+           Every size on this page resolves from one of these tokens, so the
+           layout scales continuously with the viewport instead of stepping at
+           breakpoints and then stranding space. Each is clamped at both ends:
+           the floor keeps a 1280px laptop unchanged, the ceiling stops a 4K
+           monitor stretching a form into a billboard. The vw coefficients are
+           deliberately small — the targets compress as the screen grows (a
+           card is 34% of a 1280px screen but only 15% of a 3840px one), so a
+           linear vw alone would overshoot badly at the top end. */
+        .rf-login{
+          --pad-panel: clamp(36px, 4vw, 110px);
+          --left-w:    clamp(430px, 180px + 22vw, 760px);
+          --card-w:    clamp(420px, 320px + 9vw, 600px);
+          --card-pad:  clamp(20px, 1.8vw, 44px);
+          --logo:      clamp(44px, 2.7vw, 66px);
+
+          --fs-h1:     clamp(30px, 2.6vw, 62px);
+          --fs-body:   clamp(14px, .85vw, 19px);
+          --fs-card-h: clamp(21px, 1.15vw, 31px);
+          --fs-label:  clamp(13px, .62vw, 15.5px);
+          --fs-input:  clamp(14px, .66vw, 17px);
+          --fs-btn:    clamp(14.5px, .7vw, 18px);
+          --fs-sm:     clamp(12px, .58vw, 14.5px);
+          --fs-xs:     clamp(11px, .52vw, 13px);
+          --fs-tile:   clamp(11.5px, .6vw, 15px);
+          --fs-stat:   clamp(15px, .95vw, 24px);
+          --fs-brand:  clamp(25px, 1.5vw, 40px);
+
+          --ctl-h:     clamp(46px, 2.6vw, 58px);
+          --tab-h:     clamp(38px, 2.1vw, 48px);
+          --gap:       clamp(8px, .6vw, 16px);
+          --gap-lg:    clamp(20px, 1.6vw, 40px);
+        }
+
         @keyframes lp-particle{0%,100%{opacity:.35;transform:scale(1)}50%{opacity:1;transform:scale(2.2)}}
         @keyframes lp-fadein  {from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
         @keyframes lp-cardin  {from{opacity:0;transform:translateY(30px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
@@ -1050,16 +1098,17 @@ export default function LoginPage() {
 
       <LightBackground px={par.x} py={par.y} />
 
-      {/* The split itself is capped and centred. Without this the 45/55 ratio
-          keeps widening forever, and on a 4K monitor each panel becomes a
-          near-empty half rather than a composition. */}
+      {/* No width cap on the split. The panels stay at a near-even ratio and
+          the fluid tokens above do the scaling, so a 4K monitor gets larger
+          type, a larger card and wider padding rather than the same small
+          composition centred in a field of empty pixels. */}
       <div className="relative flex w-full h-full overflow-hidden">
-        <div className="flex w-full h-full mx-auto" style={{ maxWidth: "2200px" }}>
+        <div className="flex w-full h-full">
 
           <LeftPanel />
 
           {/* ── Right panel ── */}
-          <div className="w-full lg:w-[55%] shrink-0 flex flex-col overflow-y-auto relative"
+          <div className="w-full lg:w-[49%] shrink-0 flex flex-col overflow-y-auto relative"
             style={{
               background: "linear-gradient(200deg,rgba(255,255,255,.72) 0%,rgba(255,255,255,.46) 100%)",
               borderLeft: `1px solid ${T.border}`,
@@ -1069,10 +1118,17 @@ export default function LoginPage() {
                 resolved value in px on mount so a WebView that briefly reports
                 env(safe-area-inset-top) as 0 mid-keyboard cannot relayout it. */}
             <div ref={safeTopRef}
-              className="w-full flex-1 flex flex-col justify-center items-center py-6 px-4 lg:py-8 lg:px-6"
-              style={{ minHeight: "min-content", paddingTop: "max(1.5rem, calc(env(safe-area-inset-top, 0px) + 0.75rem))" }}>
+              className="w-full flex-1 flex flex-col justify-center items-center"
+              data-rf-right-pad
+              style={{
+                minHeight: "min-content",
+                paddingLeft: "clamp(16px,2vw,56px)",
+                paddingRight: "clamp(16px,2vw,56px)",
+                paddingBottom: "clamp(24px,2.4vw,64px)",
+                paddingTop: "max(1.5rem, calc(env(safe-area-inset-top, 0px) + 0.75rem))",
+              }}>
 
-              <div className="w-full max-w-[440px] 2xl:max-w-[500px] 3xl:max-w-[560px]">
+              <div className="w-full" style={{ maxWidth: "var(--card-w)" }}>
 
                 {/* Mobile brand lockup — the left panel is hidden below lg */}
                 <div className="flex lg:hidden flex-col items-center text-center mb-6 lp-a0">
@@ -1090,10 +1146,10 @@ export default function LoginPage() {
                 </div>
 
                 <GlassCard>
-                  <h2 className="font-bold" style={{ fontSize: "22px", color: T.ink, letterSpacing: "-0.02em" }}>
+                  <h2 className="font-bold" style={{ fontSize: "var(--fs-card-h)", color: T.ink, letterSpacing: "-0.02em" }}>
                     Welcome back
                   </h2>
-                  <p className="mt-1 mb-5" style={{ fontSize: "13.5px", color: T.muted }}>
+                  <p className="mt-1 mb-5" style={{ fontSize: "var(--fs-sm)", color: T.muted }}>
                     Access your secure healthcare workspace.
                   </p>
 
@@ -1111,9 +1167,9 @@ export default function LoginPage() {
                           onClick={() => switchTab(key)}
                           className="pp-tab flex items-center justify-center gap-1.5"
                           style={{
-                            height: "38px",
+                            height: "var(--tab-h)",
                             borderRadius: "8px",
-                            fontSize: "13.5px",
+                            fontSize: "var(--fs-label)",
                             fontWeight: 600,
                             color: active ? T.ink : T.muted,
                             background: active ? T.card : "transparent",
@@ -1194,18 +1250,18 @@ export default function LoginPage() {
                             }}>
                             {rememberMe && <Check size={11} color="#FFFFFF" strokeWidth={3} />}
                           </span>
-                          <span style={{ fontSize: "13px", color: T.muted }}>Remember me</span>
+                          <span style={{ fontSize: "var(--fs-label)", color: T.muted }}>Remember me</span>
                         </label>
 
                         <button type="button" onClick={() => setShowForgotPw(true)}
-                          className="pp-link" style={{ fontSize: "13px", fontWeight: 500, color: T.primary }}>
+                          className="pp-link" style={{ fontSize: "var(--fs-label)", fontWeight: 500, color: T.primary }}>
                           Forgot password?
                         </button>
                       </div>
 
                       {state?.error && (
                         <div role="alert" className="flex items-center gap-2 rounded-lg px-3 py-2.5 mb-4"
-                          style={{ background: T.dangerSoft, color: "#B91C1C", border: `1px solid ${T.danger}33`, fontSize: "13px" }}>
+                          style={{ background: T.dangerSoft, color: "#B91C1C", border: `1px solid ${T.danger}33`, fontSize: "var(--fs-label)" }}>
                           <AlertCircle size={14} className="shrink-0" /> {state.error}
                         </div>
                       )}
@@ -1296,7 +1352,7 @@ export default function LoginPage() {
                           color: T.primary, background: T.primarySoft,
                           padding: "2px 6px", borderRadius: "4px",
                         }}>TEST</span>
-                        <p style={{ fontSize: "12.5px", color: T.muted }}>Click an account to fill the form</p>
+                        <p style={{ fontSize: "var(--fs-sm)", color: T.muted }}>Click an account to fill the form</p>
                       </div>
                       <div className="grid grid-cols-2 gap-2">
                         {TEST_ACCOUNTS.map(a => {
@@ -1312,8 +1368,8 @@ export default function LoginPage() {
                               }}>
                               <User size={13} className="shrink-0" style={{ color: T.faint }} />
                               <span className="min-w-0">
-                                <span className="block truncate" style={{ fontSize: "12.5px", fontWeight: 600, color: T.ink }}>{a.label}</span>
-                                <span className="block truncate font-mono" style={{ fontSize: "10.5px", color: T.faint }}>{a.username}</span>
+                                <span className="block truncate" style={{ fontSize: "var(--fs-sm)", fontWeight: 600, color: T.ink }}>{a.label}</span>
+                                <span className="block truncate font-mono" style={{ fontSize: "var(--fs-xs)", color: T.faint }}>{a.username}</span>
                               </span>
                             </button>
                           );
@@ -1334,10 +1390,10 @@ export default function LoginPage() {
                     <Zap size={16} style={{ color: T.primary }} />
                   </span>
                   <span className="min-w-0">
-                    <span className="block" style={{ fontSize: "13.5px", fontWeight: 600, color: T.ink }}>
+                    <span className="block" style={{ fontSize: "var(--fs-label)", fontWeight: 600, color: T.ink }}>
                       Start your free trial
                     </span>
-                    <span className="block" style={{ fontSize: "12px", color: T.muted, marginTop: "1px" }}>
+                    <span className="block" style={{ fontSize: "var(--fs-sm)", color: T.muted, marginTop: "1px" }}>
                       30 days · Unlimited modules · No credit card
                     </span>
                   </span>
@@ -1348,13 +1404,13 @@ export default function LoginPage() {
                   <span className="inline-flex items-center gap-1.5 px-3 py-1.5"
                     style={{ background: "rgba(255,255,255,.75)", borderRadius: "999px", border: `1px solid ${T.border}` }}>
                     <ShieldCheck size={12} style={{ color: T.primary }} />
-                    <span style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.05em", color: T.muted }}>
+                    <span style={{ fontSize: "var(--fs-xs)", fontWeight: 600, letterSpacing: "0.05em", color: T.muted }}>
                       ENTERPRISE SECURE LOGIN
                     </span>
                   </span>
                   <div className="flex flex-wrap items-center justify-center gap-x-3.5 gap-y-1.5">
                     {SECURITY_FEATURES.map(f => (
-                      <span key={f} className="flex items-center gap-1" style={{ fontSize: "11.5px", color: T.muted }}>
+                      <span key={f} className="flex items-center gap-1" style={{ fontSize: "var(--fs-xs)", color: T.muted }}>
                         <Check size={11} strokeWidth={3} style={{ color: T.primary }} /> {f}
                       </span>
                     ))}
@@ -1363,7 +1419,7 @@ export default function LoginPage() {
 
                 {/* ── Footer ── */}
                 <footer className="mt-5 pt-4 flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1.5"
-                  style={{ borderTop: `1px solid ${T.border}`, fontSize: "11.5px", color: T.faint }}>
+                  style={{ borderTop: `1px solid ${T.border}`, fontSize: "var(--fs-xs)", color: T.faint }}>
                   <span>© 2026 RF Health</span>
                   <span aria-hidden="true">·</span>
                   <span>Version 2.0 Cloud</span>
