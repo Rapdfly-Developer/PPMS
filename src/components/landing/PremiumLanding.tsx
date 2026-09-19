@@ -1296,11 +1296,11 @@ export function PremiumLanding() {
           <div>
             <div className="flex items-center gap-2.5">
               <Image
-                src="/landing/logo-ppms-new.png"
+                src="/landing/logo-rf-health.webp"
                 alt=""
                 width={32}
                 height={32}
-                className="h-8 w-8 rounded-lg object-contain"
+                className="h-8 w-8 rounded-lg object-cover ring-1 ring-emerald-950/[0.08]"
               />
               <span className="font-display text-[16px] font-bold tracking-tight text-emerald-950">
                 RF Health

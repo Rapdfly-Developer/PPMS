@@ -67,13 +67,17 @@ export function Nav() {
           />
 
           <a href="#top" className="flex shrink-0 items-center gap-2 rounded-full pr-1 sm:gap-2.5 sm:pl-1 sm:pr-2">
+            {/* object-cover, not contain: the mark ships on its own marble
+                ground, so letterboxing it would frame the ground rather than
+                the shield. The hairline ring makes it read as a deliberate
+                badge against the white nav. */}
             <Image
-              src="/landing/logo-ppms-new.png"
+              src="/landing/logo-rf-health.webp"
               alt="RF Health"
               width={30}
               height={30}
               priority
-              className="h-[30px] w-[30px] rounded-lg object-contain"
+              className="h-[30px] w-[30px] rounded-lg object-cover ring-1 ring-emerald-950/[0.08]"
             />
             <span className="font-display text-[15px] font-bold tracking-tight text-emerald-950">
               RF Health
