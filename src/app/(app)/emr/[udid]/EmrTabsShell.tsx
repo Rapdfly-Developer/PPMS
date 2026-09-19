@@ -4,6 +4,7 @@ import { useState, ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
 import { Tabs } from "@/components/ui/Tabs";
 import { EmrActionBar } from "./EmrActionBar";
+import { ConsultationExitGuard } from "./ConsultationExitGuard";
 
 type TabDef = {
   id: string;
@@ -37,6 +38,8 @@ export function EmrTabsShell({
 }) {
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState(tabs[0]?.id);
+  // Bumped by the exit guard to open the action bar's Partial Dispense modal.
+  const [openPartialSignal, setOpenPartialSignal] = useState(0);
   const [editMode, setEditMode] = useState(searchParams.get("edit") === "1");
   const currentIndex = tabs.findIndex((t) => t.id === activeTab);
 
@@ -56,6 +59,13 @@ export function EmrTabsShell({
       {pluginSlot}
       {showActionBar && (
         <div className="no-print">
+          {/* Only mounted for a doctor on an OPEN visit, so every listener it
+              installs is scoped to an unfinalised EMR and torn down on exit. */}
+          <ConsultationExitGuard
+            visitId={visit.id}
+            active={visit.status !== "CLOSED"}
+            onPartialDispense={() => setOpenPartialSignal((n) => n + 1)}
+          />
           <EmrActionBar
             visit={visit}
             udid={udid}
@@ -65,6 +75,7 @@ export function EmrTabsShell({
             onNextSection={nextSection}
             editMode={editMode}
             onEnterEditMode={() => setEditMode(true)}
+            openPartialSignal={openPartialSignal}
           />
         </div>
       )}

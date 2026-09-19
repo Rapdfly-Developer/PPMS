@@ -259,11 +259,17 @@ function SuccessModal({ udid, onClose }: { udid: string; onClose: () => void }) 
 
 export function EmrActionBar({
   visit, udid, patientName, currentTabIndex = 0, totalTabs = 1, onNextSection,
-  editMode, onEnterEditMode,
+  editMode, onEnterEditMode, openPartialSignal = 0,
 }: {
   visit: any; udid: string; patientName?: string;
   currentTabIndex?: number; totalTabs?: number; onNextSection?: () => void;
   editMode?: boolean; onEnterEditMode?: () => void;
+  /**
+   * Incremented by the exit guard to open the Partial Dispense modal that
+   * already lives here. A counter rather than a boolean so a second request
+   * still fires after the modal has been dismissed once.
+   */
+  openPartialSignal?: number;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -271,6 +277,16 @@ export function EmrActionBar({
   const [printOpen, setPrintOpen] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [showPartialModal, setShowPartialModal] = useState(false);
+  // The exit guard asks for this modal by bumping openPartialSignal. Derived
+  // rather than mirrored into state via an effect: setState inside an effect
+  // cascades an extra render. The modal is open when the parent's signal is
+  // newer than the last one dismissed here, or when opened from the button.
+  const [dismissedSignal, setDismissedSignal] = useState(0);
+  const showPartial = showPartialModal || openPartialSignal > dismissedSignal;
+  const closePartial = () => {
+    setShowPartialModal(false);
+    setDismissedSignal(openPartialSignal);
+  };
   const [partialDone, setPartialDone] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
 
@@ -300,14 +316,14 @@ export function EmrActionBar({
   return (
     <>
       {showSuccess && <SuccessModal udid={udid} onClose={() => setShowSuccess(false)} />}
-      {showPartialModal && (
+      {showPartial && (
         <PartialDispenseModal
           loading={partialPending}
-          onCancel={() => setShowPartialModal(false)}
+          onCancel={closePartial}
           onConfirm={(reason) => {
             startPartialTransition(async () => {
               await markPartialDispense(visit.id, udid, reason);
-              setShowPartialModal(false);
+              closePartial();
               setPartialDone(true);
             });
           }}
