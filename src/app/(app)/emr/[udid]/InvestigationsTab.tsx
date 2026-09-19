@@ -5,7 +5,9 @@ import { Card } from "@/components/ui/Card";
 import { SingleChipSelect } from "@/components/ui/Chip";
 import { ORDER_PRIORITIES, LATERALITY } from "@/lib/constants";
 import { INV_CATALOG } from "@/lib/investigation-catalog";
-import { addInvestigationOrder, updateInvestigationStatus, attachResult, deleteInvestigationOrder } from "./actions";
+import { addInvestigationOrder, updateInvestigationStatus, attachResult, deleteInvestigationOrder, updateInvestigationNotes } from "./actions";
+import { KeywordInput } from "@/components/emr/KeywordField";
+import { useAutoSave } from "@/lib/useAutoSave";
 import { format } from "date-fns";
 import {
   Paperclip, ExternalLink, Upload, Download, Eye, Clock,
@@ -181,6 +183,15 @@ function InvestigationCard({
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, startDelete]           = useTransition();
 
+  // "In view of" — the indication for this test. Persisted to the order's
+  // existing `notes` column. Autosaved like every other clinical field so a
+  // doctor never has to hunt for a save button.
+  const [inViewOf, setInViewOf] = useState<string>(order.notes ?? "");
+  useAutoSave(inViewOf, async (v) => {
+    if (readOnly) return;
+    await updateInvestigationNotes(order.id, udid, v);
+  });
+
   const handleDelete = () => {
     if (!confirmDelete) { setConfirmDelete(true); setTimeout(() => setConfirmDelete(false), 3500); return; }
     startDelete(async () => { await deleteInvestigationOrder(order.id, udid); });
@@ -250,8 +261,25 @@ function InvestigationCard({
         </div>
       </div>
 
-      {order.notes && (
-        <p className="text-[11px] text-[var(--color-ink-500)] italic mt-1.5">Note: {order.notes}</p>
+      {/* In view of — read-only once the visit is closed, editable otherwise.
+          Its own keyword vocabulary (inv_in_view_of), so indications do not mix
+          with the complaint or exam keyword lists. */}
+      {readOnly ? (
+        order.notes ? (
+          <p className="text-[11px] text-[var(--color-ink-500)] italic mt-1.5">In view of: {order.notes}</p>
+        ) : null
+      ) : (
+        <div className="mt-2">
+          <label className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)] block mb-1">
+            In view of
+          </label>
+          <KeywordInput
+            fieldKey="inv_in_view_of"
+            value={inViewOf}
+            onChange={setInViewOf}
+            placeholder="Indication for this test…"
+          />
+        </div>
       )}
 
       {/* Inline result preview */}

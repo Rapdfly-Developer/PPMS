@@ -342,6 +342,24 @@ export async function deleteInvestigationOrder(id: string, udid: string) {
   revalidate(udid);
 }
 
+/**
+ * "In view of" — why this investigation was ordered.
+ *
+ * Stored in the existing InvestigationOrder.notes column, which was already in
+ * the schema and accepted by addInvestigationOrder but never written from the
+ * UI, so this needs no migration.
+ */
+export async function updateInvestigationNotes(id: string, udid: string, notes: string) {
+  const user = await requireRole("DOCTOR");
+  const order = await prisma.investigationOrder.findUnique({ where: { id }, select: { visitId: true } });
+  if (!order) throw new Error("Investigation order not found");
+  await assertVisitAccess(order.visitId);
+
+  await prisma.investigationOrder.update({ where: { id }, data: { notes: notes || null } });
+  await writeAudit(user.id, "InvestigationOrder", id, "UPDATE_NOTES", { notes });
+  revalidate(udid);
+}
+
 export async function updateInvestigationStatus(id: string, udid: string, status: string) {
   const user = await requireRole("DOCTOR");
   await prisma.investigationOrder.update({ where: { id }, data: { status } });

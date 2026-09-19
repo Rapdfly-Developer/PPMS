@@ -1507,10 +1507,46 @@ function SegmentEyeInput({
 
 const AS_METHODS = ["Slit Lamp", "Pen Torch", "Loupe", "Direct Ophthalmoscope"] as const;
 
+/**
+ * The most recent prior visit that actually holds segment data for this card.
+ *
+ * Not simply priorVisits[0]: a visit where this particular exam was not done
+ * still appears in the list (it qualified on a complaint or a prescription),
+ * and importing its empty record would silently blank the form. priorVisits is
+ * already ordered date-desc, so the first match is the latest.
+ *
+ * A row can also exist with every field blank, hence the value check rather
+ * than a bare presence check.
+ */
+type PriorSegmentVisit = {
+  date: string;
+  anteriorSegment?: { re?: string | null; le?: string | null } | null;
+  posteriorSegment?: { re?: string | null; le?: string | null } | null;
+};
+
+function findPriorSegment(
+  priorVisits: readonly PriorSegmentVisit[],
+  segmentKey: "anteriorSegment" | "posteriorSegment",
+  keys: readonly string[],
+): { re: Record<string, string>; le: Record<string, string>; date: string } | null {
+  for (const v of priorVisits) {
+    const seg = v?.[segmentKey];
+    if (!seg) continue;
+    const re = parseJSON<Record<string, string>>(seg.re, {});
+    const le = parseJSON<Record<string, string>>(seg.le, {});
+    if (keys.some((k) => (re[k] ?? "") !== "" || (le[k] ?? "") !== "")) {
+      return { re, le, date: v.date };
+    }
+  }
+  return null;
+}
+
 function AnteriorSegmentCard({ visit, udid, editable, priorVisits = [] }: { visit: any; udid: string; editable: boolean; priorVisits?: any[] }) {
   const as_ = visit.anteriorSegment;
   const [re, setRe] = useState<Record<string, string>>(parseJSON(as_?.re, {}));
   const [le, setLe] = useState<Record<string, string>>(parseJSON(as_?.le, {}));
+  const [confirmImport, setConfirmImport] = useState(false);
+  const [importToast, setImportToast] = useState(false);
 
   const state = useAutoSave({ re: JSON.stringify(re), le: JSON.stringify(le) }, async (d) => {
     if (!editable) return;
@@ -1548,6 +1584,53 @@ function AnteriorSegmentCard({ visit, udid, editable, priorVisits = [] }: { visi
     setLe((prev) => ({ ...prev, ...patch }));
   };
 
+  /* ── Import previous values ──────────────────────────────────────────────
+     Like "Normal", this checkbox is DERIVED rather than stored: it reads as
+     ticked whenever the form already equals the prior visit's values. That
+     makes the two mutually exclusive for free, because ticking one moves the
+     fields away from what the other matches.
+
+     The one case where both could read true is a previous visit that was
+     itself all-normal. Normal wins the display there, per spec. */
+  const priorSeg = findPriorSegment(priorVisits, "anteriorSegment", AS_KEYS);
+
+  const hasAnySeg = AS_KEYS.some((key) => (re[key] ?? "") !== "" || (le[key] ?? "") !== "");
+
+  const isImported =
+    !!priorSeg &&
+    AS_KEYS.every(
+      (key) =>
+        (re[key] ?? "") === (priorSeg.re[key] ?? "") &&
+        (le[key] ?? "") === (priorSeg.le[key] ?? ""),
+    );
+
+  const applyImport = () => {
+    if (!priorSeg) return;
+    const patch = (src: Record<string, string>) => {
+      const out: Record<string, string> = {};
+      AS_KEYS.forEach((key) => { out[key] = src[key] ?? ""; });
+      return out;
+    };
+    setRe((prev) => ({ ...prev, ...patch(priorSeg.re) }));
+    setLe((prev) => ({ ...prev, ...patch(priorSeg.le) }));
+    setImportToast(true);
+  };
+
+  const toggleImport = (checked: boolean) => {
+    if (!checked) {
+      // Unticking clears the fields, mirroring how Normal unticks.
+      const patch: Record<string, string> = {};
+      AS_KEYS.forEach((key) => { patch[key] = ""; });
+      setRe((prev) => ({ ...prev, ...patch }));
+      setLe((prev) => ({ ...prev, ...patch }));
+      return;
+    }
+    // Overwriting 2 x 9 fields is destructive, so confirm when the form
+    // already holds anything -- the same guard RefractionCard uses for history.
+    if (hasAnySeg) setConfirmImport(true);
+    else applyImport();
+  };
+
   return (
     <Card>
       <div className="flex items-center mb-4 gap-3">
@@ -1573,6 +1656,20 @@ function AnteriorSegmentCard({ visit, udid, editable, priorVisits = [] }: { visi
                 className="w-3.5 h-3.5 accent-[var(--color-primary-600)] cursor-pointer"
               />
               <span className="text-[11px] sm:text-xs font-medium text-[var(--color-ink-600)]">Normal</span>
+            </label>
+          )}
+          {/* Hidden when there is nothing to import, rather than shown disabled:
+              a dead checkbox invites a click that silently does nothing.
+              isNormal wins the checked state so both can never read ticked. */}
+          {editable && priorSeg && (
+            <label className="flex items-center gap-1.5 cursor-pointer select-none" title={`Copy the values recorded on ${format(new Date(priorSeg.date), "d MMM yyyy")}`}>
+              <input
+                type="checkbox"
+                checked={isImported && !isNormal}
+                onChange={(e) => toggleImport(e.target.checked)}
+                className="w-3.5 h-3.5 accent-[var(--color-primary-600)] cursor-pointer"
+              />
+              <span className="text-[11px] sm:text-xs font-medium text-[var(--color-ink-600)]">Import previous values</span>
             </label>
           )}
         </div>
@@ -1633,6 +1730,18 @@ function AnteriorSegmentCard({ visit, udid, editable, priorVisits = [] }: { visi
         </div>
       </div>
 
+      {confirmImport && (
+        <ConfirmDialog
+          title="Import Previous Values?"
+          message="This will replace the values currently entered for both eyes. Do you want to continue?"
+          onConfirm={() => { applyImport(); setConfirmImport(false); }}
+          onCancel={() => setConfirmImport(false)}
+        />
+      )}
+      {importToast && (
+        <Toast message="Previous values imported." onDone={() => setImportToast(false)} />
+      )}
+
     </Card>
   );
 }
@@ -1675,6 +1784,8 @@ function PosteriorSegmentCard({ visit, udid, editable, priorVisits = [] }: { vis
   const ps = visit.posteriorSegment;
   const [re, setRe] = useState<Record<string, string>>(parseJSON(ps?.re, {}));
   const [le, setLe] = useState<Record<string, string>>(parseJSON(ps?.le, {}));
+  const [confirmImport, setConfirmImport] = useState(false);
+  const [importToast, setImportToast] = useState(false);
 
   const state = useAutoSave({ re: JSON.stringify(re), le: JSON.stringify(le) }, async (d) => {
     if (!editable) return;
@@ -1712,6 +1823,53 @@ function PosteriorSegmentCard({ visit, udid, editable, priorVisits = [] }: { vis
     setLe((prev) => ({ ...prev, ...patch }));
   };
 
+  /* ── Import previous values ──────────────────────────────────────────────
+     Like "Normal", this checkbox is DERIVED rather than stored: it reads as
+     ticked whenever the form already equals the prior visit's values. That
+     makes the two mutually exclusive for free, because ticking one moves the
+     fields away from what the other matches.
+
+     The one case where both could read true is a previous visit that was
+     itself all-normal. Normal wins the display there, per spec. */
+  const priorSeg = findPriorSegment(priorVisits, "posteriorSegment", PS_KEYS);
+
+  const hasAnySeg = PS_KEYS.some((key) => (re[key] ?? "") !== "" || (le[key] ?? "") !== "");
+
+  const isImported =
+    !!priorSeg &&
+    PS_KEYS.every(
+      (key) =>
+        (re[key] ?? "") === (priorSeg.re[key] ?? "") &&
+        (le[key] ?? "") === (priorSeg.le[key] ?? ""),
+    );
+
+  const applyImport = () => {
+    if (!priorSeg) return;
+    const patch = (src: Record<string, string>) => {
+      const out: Record<string, string> = {};
+      PS_KEYS.forEach((key) => { out[key] = src[key] ?? ""; });
+      return out;
+    };
+    setRe((prev) => ({ ...prev, ...patch(priorSeg.re) }));
+    setLe((prev) => ({ ...prev, ...patch(priorSeg.le) }));
+    setImportToast(true);
+  };
+
+  const toggleImport = (checked: boolean) => {
+    if (!checked) {
+      // Unticking clears the fields, mirroring how Normal unticks.
+      const patch: Record<string, string> = {};
+      PS_KEYS.forEach((key) => { patch[key] = ""; });
+      setRe((prev) => ({ ...prev, ...patch }));
+      setLe((prev) => ({ ...prev, ...patch }));
+      return;
+    }
+    // Overwriting 2 x 10 fields is destructive, so confirm when the form
+    // already holds anything -- the same guard RefractionCard uses for history.
+    if (hasAnySeg) setConfirmImport(true);
+    else applyImport();
+  };
+
   return (
     <Card>
       <div className="flex items-center mb-4 gap-3">
@@ -1737,6 +1895,20 @@ function PosteriorSegmentCard({ visit, udid, editable, priorVisits = [] }: { vis
                 className="w-3.5 h-3.5 accent-[var(--color-primary-600)] cursor-pointer"
               />
               <span className="text-[11px] sm:text-xs font-medium text-[var(--color-ink-600)]">Normal</span>
+            </label>
+          )}
+          {/* Hidden when there is nothing to import, rather than shown disabled:
+              a dead checkbox invites a click that silently does nothing.
+              isNormal wins the checked state so both can never read ticked. */}
+          {editable && priorSeg && (
+            <label className="flex items-center gap-1.5 cursor-pointer select-none" title={`Copy the values recorded on ${format(new Date(priorSeg.date), "d MMM yyyy")}`}>
+              <input
+                type="checkbox"
+                checked={isImported && !isNormal}
+                onChange={(e) => toggleImport(e.target.checked)}
+                className="w-3.5 h-3.5 accent-[var(--color-primary-600)] cursor-pointer"
+              />
+              <span className="text-[11px] sm:text-xs font-medium text-[var(--color-ink-600)]">Import previous values</span>
             </label>
           )}
         </div>
@@ -1813,6 +1985,18 @@ function PosteriorSegmentCard({ visit, udid, editable, priorVisits = [] }: { vis
           />
         </div>
       </div>
+
+      {confirmImport && (
+        <ConfirmDialog
+          title="Import Previous Values?"
+          message="This will replace the values currently entered for both eyes. Do you want to continue?"
+          onConfirm={() => { applyImport(); setConfirmImport(false); }}
+          onCancel={() => setConfirmImport(false)}
+        />
+      )}
+      {importToast && (
+        <Toast message="Previous values imported." onDone={() => setImportToast(false)} />
+      )}
 
     </Card>
   );

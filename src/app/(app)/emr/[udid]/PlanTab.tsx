@@ -1904,15 +1904,22 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
   const [instructions, setInstructions]   = useState("");
 
   // Suggested investigations from all applied presets
+  /* Each suggested investigation carries the diagnosis (or diagnoses) whose
+     treatment preset suggested it. That becomes the "In view of" indication on
+     the order, which is otherwise left blank for chip-added tests. A test
+     suggested by two diagnoses lists both rather than arbitrarily picking one. */
   const allSuggestedInvs = useMemo(() => {
-    const invs: string[] = [];
-    for (const diagApplied of Object.values(appliedByDiag)) {
+    const byName = new Map<string, Set<string>>();
+    for (const [diagDesc, diagApplied] of Object.entries(appliedByDiag)) {
       for (const a of diagApplied) {
         const preset = presetMatches.find((m) => m.preset.id === a.presetId)?.preset;
-        if (preset?.investigations) invs.push(...preset.investigations);
+        for (const inv of preset?.investigations ?? []) {
+          if (!byName.has(inv)) byName.set(inv, new Set());
+          if (diagDesc) byName.get(inv)!.add(diagDesc);
+        }
       }
     }
-    return [...new Set(invs)];
+    return [...byName.entries()].map(([name, diags]) => ({ name, indication: [...diags].join(", ") }));
   }, [appliedByDiag, presetMatches]);
   // Normalize investigation names the same way as the server action
   const normInv = (s: string) => s.toLowerCase().replace(/&/g, "and").replace(/[^a-z0-9]+/g, " ").trim();
@@ -2593,7 +2600,7 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
         <div className="mt-4 pt-4 border-t border-[var(--color-border)]">
           <p className="text-[10px] font-bold uppercase tracking-widest text-[#0F766E]/70 mb-2">Suggested Investigations</p>
           <div className="flex flex-wrap gap-1.5">
-            {allSuggestedInvs.map((inv) => {
+            {allSuggestedInvs.map(({ name: inv, indication }) => {
               const key   = normInv(inv);
               const added = invOrderMap.has(key);
               return (
@@ -2611,6 +2618,8 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
                           category: "General",
                           testName: inv,
                           priority: "ROUTINE",
+                          // "In view of", editable afterwards on the order card
+                          notes: indication || undefined,
                         });
                       });
                       // optimistic: we don't have the id yet, mark with a sentinel
