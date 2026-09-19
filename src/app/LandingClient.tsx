@@ -1292,7 +1292,7 @@ export function LandingClient() {
           </div>
           <div className="flex items-center gap-2">
             <img src="/landing/logo-ppms-new.png" alt="PPMS" style={{ height: 22, width: "auto", mixBlendMode: "screen" as const }} />
-            <p className="text-xs" style={{ color: C.inkFaint }}>Personal Patient Management System</p>
+            <p className="text-xs" style={{ color: C.inkFaint }}>Private Patient Management System</p>
           </div>
         </div>
       </footer>

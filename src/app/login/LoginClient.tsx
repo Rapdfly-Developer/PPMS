@@ -727,35 +727,8 @@ function LeftPanel() {
       <div className="w-full flex flex-col justify-between"
         style={{ height: "100%", maxHeight: "clamp(560px, 84vh, 1040px)" }}>
 
-      {/* Logo lockup */}
-      <div className="lp-a0 shrink-0">
-        <div className="flex items-center gap-3.5">
-          {/* The mark ships on its own marble ground, so it gets a radius and a
-              hairline border to read as a deliberate badge rather than a
-              rectangle pasted onto the page. */}
-          <img src="/landing/logo-rf-health.webp" alt="" className="shrink-0"
-            style={{
-              width: "var(--logo)", height: "var(--logo)", objectFit: "cover",
-              borderRadius: "clamp(11px,.8vw,16px)", border: `1px solid ${T.border}`,
-            }} />
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="font-black" style={{ fontSize: "var(--fs-brand)", color: T.ink, letterSpacing: "-0.035em" }}>
-                RF Health
-              </span>
-              <span className="font-bold px-2 py-0.5 rounded-full"
-                style={{ fontSize: "var(--fs-xs)", background: "rgba(13,122,99,.11)", color: T.primary, border: "1px solid rgba(13,122,99,.24)", letterSpacing: "0.04em" }}>
-                v2.0 Cloud
-              </span>
-            </div>
-            <p className="font-semibold" style={{ fontSize: "var(--fs-xs)", color: T.faint, letterSpacing: "0.06em" }}>
-              PERSONAL PATIENT MANAGEMENT SYSTEM
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Hero */}
+      {/* Hero — the brand lockup now sits above the sign-in card in the right
+          panel, so this column opens straight on the headline. */}
       <div className="flex-1 flex flex-col justify-center py-7 min-w-0">
         <div className="lp-a1 mb-4">
           <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full" style={{
@@ -1138,19 +1111,32 @@ export default function LoginPage() {
 
               <div className="w-full" style={{ maxWidth: "var(--card-w)" }}>
 
-                {/* Mobile brand lockup — the left panel is hidden below lg */}
-                <div className="flex lg:hidden flex-col items-center text-center mb-6 lp-a0">
-                  <img src="/landing/logo-rf-health.webp" alt="" className="shrink-0 mb-2.5"
+                {/* Brand lockup — one element at every width. Centred below lg,
+                    where it is the only branding on screen; left-aligned to the
+                    card's edge from lg up, where the hero carries the page. */}
+                <div className="lp-a0 flex items-center gap-3.5 mb-5 justify-center lg:justify-start">
+                  {/* The mark ships on its own marble ground, so it gets a radius
+                      and a hairline border to read as a deliberate badge rather
+                      than a rectangle pasted onto the page. */}
+                  <img src="/landing/logo-rf-health.webp" alt="" className="shrink-0"
                     style={{
-                      width: "44px", height: "44px", objectFit: "cover",
-                      borderRadius: "10px", border: `1px solid ${T.border}`,
+                      width: "var(--logo)", height: "var(--logo)", objectFit: "cover",
+                      borderRadius: "clamp(11px,.8vw,16px)", border: `1px solid ${T.border}`,
                     }} />
-                  <span className="text-[24px] font-black" style={{ color: T.ink, letterSpacing: "-0.03em" }}>
-                    RF Health
-                  </span>
-                  <p className="mt-0.5" style={{ fontSize: "9.5px", fontWeight: 700, letterSpacing: "0.14em", color: T.faint }}>
-                    PERSONAL PATIENT MANAGEMENT SYSTEM
-                  </p>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-black" style={{ fontSize: "var(--fs-brand)", color: T.ink, letterSpacing: "-0.035em" }}>
+                        RF Health
+                      </span>
+                      <span className="font-bold px-2 py-0.5 rounded-full shrink-0"
+                        style={{ fontSize: "var(--fs-xs)", background: "rgba(13,122,99,.11)", color: T.primary, border: "1px solid rgba(13,122,99,.24)", letterSpacing: "0.04em" }}>
+                        v2.0 Cloud
+                      </span>
+                    </div>
+                    <p className="font-semibold" style={{ fontSize: "var(--fs-xs)", color: T.faint, letterSpacing: "0.06em" }}>
+                      PRIVATE PATIENT MANAGEMENT SYSTEM
+                    </p>
+                  </div>
                 </div>
 
                 <GlassCard>

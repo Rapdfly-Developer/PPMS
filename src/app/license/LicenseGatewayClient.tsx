@@ -249,7 +249,7 @@ function LeftPanel() {
               </span>
             </div>
             <p className="text-[9.5px] font-semibold" style={{ color: T.faint, letterSpacing: "0.06em" }}>
-              PERSONAL PATIENT MANAGEMENT SYSTEM
+              PRIVATE PATIENT MANAGEMENT SYSTEM
             </p>
           </div>
         </div>
