@@ -92,10 +92,17 @@ function Frame({
 
 /**
  * One measure for the whole page. Capped at 6xl through desktop so line length
- * stays readable, then allowed to grow on very wide displays — at 2560px a
- * 1152px column reads as a ribbon stranded in white space.
+ * stays readable, then allowed to grow on very wide displays. The ladder used
+ * to stop at 3xl, which pinned every screen above 1760px to 1520px: at 2560px
+ * that stranded over 1000px of empty page either side.
+ *
+ * Each large step is min(94vw, cap) rather than a bare pixel value, so the
+ * column tracks the viewport between breakpoints instead of stepping and then
+ * sitting still until the next one.
  */
-const SHELL = "mx-auto w-full max-w-6xl xl:max-w-[1240px] 2xl:max-w-[1360px] 3xl:max-w-[1520px]";
+const SHELL =
+  "mx-auto w-full max-w-6xl xl:max-w-[1240px] 2xl:max-w-[min(94vw,1800px)] " +
+  "3xl:max-w-[min(94vw,2100px)] 4xl:max-w-[min(94vw,2200px)]";
 
 /** Horizontal gutter, shared by Section, the hero and the footer so all three
  *  edges line up at every width. */
@@ -508,7 +515,7 @@ export function PremiumLanding() {
             <Reveal y={34} delay={0.06}>
               {/* "Every hospital." is the widest line and sets the floor: at
                   320px it has to fit 288px of usable width. */}
-              <h1 className="font-display mt-5 text-[clamp(2.1rem,8.6vw,4.25rem)] font-bold leading-[1.03] tracking-[-0.035em] text-emerald-950 sm:mt-6">
+              <h1 className="font-display mt-5 text-[clamp(2.1rem,8.6vw,4.25rem)] 2xl:text-[clamp(4.25rem,3.6vw,4.6rem)] font-bold leading-[1.03] tracking-[-0.035em] text-emerald-950 sm:mt-6">
                 One doctor.
                 <br />
                 Every hospital.
@@ -520,7 +527,7 @@ export function PremiumLanding() {
             </Reveal>
 
             <Reveal y={24} delay={0.14}>
-              <p className="mt-5 max-w-xl text-[clamp(0.98rem,1.7vw,1.06rem)] leading-relaxed text-slate-600 sm:mt-6">
+              <p className="mt-5 max-w-xl 2xl:max-w-[680px] 4xl:max-w-[760px] text-[clamp(0.98rem,1.7vw,1.06rem)] leading-relaxed text-slate-600 sm:mt-6">
                 Appointments, medical records, prescriptions, surgery and billing across every
                 hospital you practise at, managed from a single secure account, with the patient
                 history following the patient rather than the building.

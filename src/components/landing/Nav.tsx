@@ -46,7 +46,10 @@ export function Nav() {
       <header className="pointer-events-none fixed inset-x-0 top-0 z-40 flex justify-center px-3 pt-10 sm:px-4 sm:pt-6">
         <nav
           className={[
+            // Header tracks the page shell on wide displays. Capped below it so the
+            // nav items stay grouped rather than spreading across the screen.
             "pointer-events-auto flex w-full max-w-5xl items-center gap-1.5 rounded-full sm:gap-2 xl:max-w-6xl",
+            "2xl:max-w-[min(94vw,1500px)] 3xl:max-w-[min(94vw,1800px)] 4xl:max-w-[min(94vw,2200px)]",
             "border border-emerald-950/[0.06] bg-white/75 backdrop-blur-xl",
             "transition-[padding,box-shadow] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]",
             lifted
