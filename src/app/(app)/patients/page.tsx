@@ -87,8 +87,6 @@ export default async function PatientsPage({
   if (opStatusFilter === "dispensed") {
     listConds.push({ appointments: { some: { status: "DISPENSED", dateTime: { gte: listToday, lte: listTodayEnd } } } });
   }
-  if (opStatusFilter === "admitted")   listConds.push({ visits: { some: { admission: { discharged: false } } } });
-  if (opStatusFilter === "discharged") listConds.push({ visits: { some: { admission: { discharged: true  } } } });
 
   const listWhere: any = listConds.length > 0 ? { AND: listConds } : {};
 

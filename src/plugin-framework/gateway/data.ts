@@ -404,7 +404,7 @@ export async function getAppointments(
 // ── Timeline ──────────────────────────────────────────────────────────────
 
 /**
- * Chronological clinical timeline for a patient: visits and admissions merged
+ * Chronological clinical timeline for a patient
  * and sorted newest first. SURGERY events were dropped with Scheduled OT.
  */
 export async function getPatientTimeline(
@@ -431,7 +431,6 @@ export async function getPatientTimeline(
       visitType: true,
       status: true,
       diagnoses: { select: { description: true } },
-      admission: { select: { reason: true, ward: true, discharged: true } },
     },
   });
 
@@ -445,16 +444,6 @@ export async function getPatientTimeline(
       label: v.visitType,
       detail: dx.length ? dx.join("; ") : null,
     });
-    if (v.admission) {
-      events.push({
-        date: v.date.toISOString(),
-        kind: "ADMISSION",
-        label: `Admitted: ${v.admission.ward}`,
-        detail: v.admission.discharged
-          ? `${v.admission.reason} (discharged)`
-          : v.admission.reason,
-      });
-    }
   }
 
   return events

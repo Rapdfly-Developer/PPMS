@@ -546,8 +546,6 @@ export function PatientsClient({
                       <option value="all">All Patients</option>
                       <option value="dispensed">Dispensed Today</option>
                       <option value="surgery">Surgery Scheduled</option>
-                      <option value="admitted">Admitted</option>
-                      <option value="discharged">Discharged</option>
                     </select>
                     <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] pointer-events-none" />
                   </div>

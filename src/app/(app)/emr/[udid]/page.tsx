@@ -71,7 +71,6 @@ export default async function PatientDetailedEMR({
           diagnoses: { orderBy: { createdAt: "desc" } },
           medications: { orderBy: { createdAt: "desc" } },
           dispense: true,
-          admission: true,
           // createdAt = when the appointment was booked; arrivedAt = when the
           // patient reached the clinic. Both feed the header's visit timeline.
           appointment: { select: { dateTime: true, createdAt: true, arrivedAt: true } },
