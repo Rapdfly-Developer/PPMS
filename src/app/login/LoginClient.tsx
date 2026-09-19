@@ -987,31 +987,39 @@ export default function LoginPage() {
            layout scales continuously with the viewport instead of stepping at
            breakpoints and then stranding space. Each is clamped at both ends:
            the floor keeps a 1280px laptop unchanged, the ceiling stops a 4K
-           monitor stretching a form into a billboard. The vw coefficients are
-           deliberately small — the targets compress as the screen grows (a
-           card is 34% of a 1280px screen but only 15% of a 3840px one), so a
-           linear vw alone would overshoot badly at the top end. */
+           monitor stretching a form into a billboard.
+
+           Each vw coefficient is set so the value leaves its floor at roughly
+           1300px — coefficient = floor / 13. That matters more than it looks:
+           an earlier pass used much smaller coefficients, and the arithmetic
+           of clamp() meant the card labels did not leave their floor until
+           2097px and the inputs not until 2121px. Every screen between a
+           1280px laptop and a 2K monitor — which is most of them — therefore
+           rendered identical type. Ceilings land between ~1650px and ~2250px
+           so the growth is spent across the sizes people actually use. */
         .rf-login{
           --pad-panel: clamp(36px, 4vw, 110px);
           --left-w:    clamp(430px, 180px + 22vw, 760px);
           --card-w:    clamp(420px, 320px + 9vw, 600px);
           --card-pad:  clamp(20px, 1.8vw, 44px);
-          --logo:      clamp(44px, 2.7vw, 66px);
+          --logo:      clamp(44px, 3.4vw, 72px);
 
-          --fs-h1:     clamp(30px, 2.6vw, 62px);
-          --fs-body:   clamp(14px, .85vw, 19px);
-          --fs-card-h: clamp(21px, 1.15vw, 31px);
-          --fs-label:  clamp(13px, .62vw, 15.5px);
-          --fs-input:  clamp(14px, .66vw, 17px);
-          --fs-btn:    clamp(14.5px, .7vw, 18px);
-          --fs-sm:     clamp(12px, .58vw, 14.5px);
-          --fs-xs:     clamp(11px, .52vw, 13px);
-          --fs-tile:   clamp(11.5px, .6vw, 15px);
-          --fs-stat:   clamp(15px, .95vw, 24px);
-          --fs-brand:  clamp(25px, 1.5vw, 40px);
+          --fs-h1:     clamp(30px, 2.75vw, 64px);
+          --fs-body:   clamp(14px, 1.08vw, 20px);
+          --fs-card-h: clamp(21px, 1.62vw, 32px);
+          --fs-label:  clamp(13px, 1vw, 17px);
+          --fs-input:  clamp(14px, 1.08vw, 18px);
+          --fs-btn:    clamp(14.5px, 1.12vw, 19px);
+          --fs-sm:     clamp(12px, .92vw, 15.5px);
+          --fs-xs:     clamp(11px, .85vw, 14px);
+          --fs-tile:   clamp(11.5px, .88vw, 16px);
+          --fs-stat:   clamp(15px, 1.15vw, 26px);
+          --fs-brand:  clamp(25px, 1.92vw, 42px);
 
-          --ctl-h:     clamp(46px, 2.6vw, 58px);
-          --tab-h:     clamp(38px, 2.1vw, 48px);
+          /* Control heights top out well before the font sizes do. A 62px
+             input is not a more readable input, just a taller one. */
+          --ctl-h:     clamp(46px, 3.5vw, 56px);
+          --tab-h:     clamp(38px, 2.9vw, 46px);
           --gap:       clamp(8px, .6vw, 16px);
           --gap-lg:    clamp(20px, 1.6vw, 40px);
         }
