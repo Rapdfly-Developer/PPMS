@@ -144,7 +144,7 @@ function SectionHead({
       {eyebrow && <Eyebrow>{eyebrow}</Eyebrow>}
       {/* Fluid between 320px and ~1536px, then pinned — clamp keeps the headline
           inside a 320px viewport without a stack of breakpoint overrides. */}
-      <h2 className="font-display mt-4 text-[clamp(1.75rem,6.2vw,3.5rem)] font-bold leading-[1.06] tracking-[-0.03em] text-balance text-emerald-950 sm:mt-5">
+      <h2 className="font-display mt-4 text-[clamp(1.75rem,6.2vw,3.5rem)] 2xl:text-[clamp(3.5rem,3vw,4.5rem)] font-bold leading-[1.06] tracking-[-0.03em] text-balance text-emerald-950 sm:mt-5">
         {title}
       </h2>
       {lede && (
@@ -178,7 +178,7 @@ function Split({
       <div className={flip ? "lg:order-2" : ""}>
         <Reveal>
           {eyebrow && <Eyebrow>{eyebrow}</Eyebrow>}
-          <h2 className="font-display mt-4 text-[clamp(1.6rem,5.4vw,3rem)] font-bold leading-[1.07] tracking-[-0.03em] text-balance text-emerald-950 sm:mt-5">
+          <h2 className="font-display mt-4 text-[clamp(1.6rem,5.4vw,3rem)] 2xl:text-[clamp(3rem,2.6vw,3.9rem)] font-bold leading-[1.07] tracking-[-0.03em] text-balance text-emerald-950 sm:mt-5">
             {title}
           </h2>
           <p className="mt-4 text-[clamp(0.95rem,1.6vw,1.03rem)] leading-relaxed text-slate-600 sm:mt-5">
@@ -612,7 +612,7 @@ export function PremiumLanding() {
         <div className="grid items-center gap-8 sm:gap-10 lg:grid-cols-2 lg:gap-16">
           <Reveal>
             <Eyebrow>The shift</Eyebrow>
-            <h2 className="font-display mt-5 text-[clamp(1.6rem,5.4vw,3rem)] font-bold leading-[1.07] tracking-[-0.03em] text-balance text-emerald-950 sm:mt-6">
+            <h2 className="font-display mt-5 text-[clamp(1.6rem,5.4vw,3rem)] 2xl:text-[clamp(3rem,2.6vw,3.9rem)] font-bold leading-[1.07] tracking-[-0.03em] text-balance text-emerald-950 sm:mt-6">
               Most practices still run on paper, phone calls and three unconnected systems.
             </h2>
             <p className="mt-6 text-[16.5px] leading-relaxed text-slate-600">
@@ -914,7 +914,10 @@ export function PremiumLanding() {
           lede="Patient data carries obligations. RF Health is designed so that who saw what, and when, is always answerable, and so that access is granted by role rather than by trust."
         />
 
-        <RevealGroup className="mt-8 grid grid-cols-2 gap-3 sm:mt-10 sm:grid-cols-4" stagger={0.05}>
+        <RevealGroup
+          className="mt-8 grid grid-cols-2 gap-3 sm:mt-10 sm:grid-cols-4 2xl:grid-cols-[repeat(auto-fit,minmax(200px,1fr))]"
+          stagger={0.05}
+        >
           {[
             { icon: <Lock size={19} strokeWidth={1.25} />, label: "Encrypted in transit & at rest" },
             { icon: <ShieldCheck size={19} strokeWidth={1.25} />, label: "Role-based access control" },
@@ -1067,7 +1070,7 @@ export function PremiumLanding() {
         {/* Three-up from md — stacking full-width plan cards on a 768px tablet
             wastes the width and pushes the comparison off-screen. */}
         <RevealGroup
-          className="mt-8 grid items-stretch gap-4 sm:mt-10 md:grid-cols-3"
+          className="mt-8 grid items-stretch gap-4 sm:mt-10 md:grid-cols-3 2xl:mx-auto 2xl:max-w-[1500px]"
           stagger={0.08}
         >
           {PLANS.map((p) => (
@@ -1107,7 +1110,7 @@ export function PremiumLanding() {
 
                   <div className="mt-6 flex flex-wrap items-baseline gap-x-2 sm:mt-8">
                     <span
-                      className={`font-display text-[clamp(2rem,3.2vw,2.5rem)] font-bold tracking-[-0.03em] ${
+                      className={`font-display text-[clamp(2rem,3.2vw,2.5rem)] 2xl:text-[clamp(2.5rem,2.2vw,3.25rem)] font-bold tracking-[-0.03em] ${
                         p.featured ? "text-white" : "text-emerald-950"
                       }`}
                     >
@@ -1173,7 +1176,7 @@ export function PremiumLanding() {
         <div className="grid gap-8 lg:grid-cols-[0.85fr_1.15fr] lg:gap-16">
           <Reveal>
             <Eyebrow>FAQ</Eyebrow>
-            <h2 className="font-display mt-5 text-[clamp(1.6rem,5.4vw,2.625rem)] font-bold leading-[1.07] tracking-[-0.03em] text-balance text-emerald-950 sm:mt-6">
+            <h2 className="font-display mt-5 text-[clamp(1.6rem,5.4vw,2.625rem)] 2xl:text-[clamp(2.625rem,2.3vw,3.4rem)] font-bold leading-[1.07] tracking-[-0.03em] text-balance text-emerald-950 sm:mt-6">
               Questions we get asked before the first demo.
             </h2>
             <p className="mt-6 text-[16px] leading-relaxed text-slate-600">
@@ -1202,7 +1205,7 @@ export function PremiumLanding() {
           {/* Left — value prop */}
           <Reveal className="lg:sticky lg:top-28">
             <Eyebrow>Free Demo</Eyebrow>
-            <h2 className="font-display mt-5 text-[clamp(1.6rem,5.4vw,3rem)] font-bold leading-[1.07] tracking-[-0.03em] text-balance text-emerald-950 sm:mt-6">
+            <h2 className="font-display mt-5 text-[clamp(1.6rem,5.4vw,3rem)] 2xl:text-[clamp(3rem,2.6vw,3.9rem)] font-bold leading-[1.07] tracking-[-0.03em] text-balance text-emerald-950 sm:mt-6">
               See How RF Health Can Transform Your Practice
             </h2>
             <p className="mt-5 text-[16px] leading-relaxed text-slate-600">
@@ -1266,7 +1269,7 @@ export function PremiumLanding() {
               className="ppms-orb-a pointer-events-none absolute -right-24 -top-24 h-[420px] w-[420px] rounded-full bg-emerald-500/15 blur-[100px]"
             />
             <div className="relative rounded-[2rem] px-6 py-12 text-center shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)] sm:px-12 sm:py-16">
-              <h2 className="font-display mx-auto max-w-3xl text-[clamp(1.7rem,5.6vw,3.5rem)] font-bold leading-[1.06] tracking-[-0.03em] text-balance text-white">
+              <h2 className="font-display mx-auto max-w-3xl text-[clamp(1.7rem,5.6vw,3.5rem)] 2xl:text-[clamp(3.5rem,3vw,4.5rem)] font-bold leading-[1.06] tracking-[-0.03em] text-balance text-white">
                 Run every hospital you practise at from one account.
               </h2>
               <p className="mx-auto mt-5 max-w-xl text-[16.5px] leading-relaxed text-emerald-100/70">
