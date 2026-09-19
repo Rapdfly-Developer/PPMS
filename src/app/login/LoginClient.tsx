@@ -797,9 +797,13 @@ function LeftPanel() {
         </div>
       </div>
 
-      {/* Trust row */}
+      {/* Trust row, security assurances and legal — all left-aligned to the
+          column. These live here from lg up; the right column carries a
+          mobile-only copy, because this panel is hidden below lg and the
+          legal links have to stay reachable there. */}
       <div className="lp-a4 shrink-0">
         <div className="mb-3.5" style={{ height: "1px", background: "linear-gradient(90deg,rgba(13,122,99,.26),rgba(13,122,99,.07) 70%,transparent)" }} />
+
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
           {TRUST.map((t, i) => (
             <span key={i} className="flex items-center gap-1.5" style={{ fontSize: "var(--fs-xs)", fontWeight: 500, color: T.faint }}>
@@ -807,6 +811,32 @@ function LeftPanel() {
             </span>
           ))}
         </div>
+
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-4">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5"
+            style={{ background: "rgba(255,255,255,.75)", borderRadius: "999px", border: `1px solid ${T.border}` }}>
+            <ShieldCheck size={12} style={{ color: T.primary }} />
+            <span style={{ fontSize: "var(--fs-xs)", fontWeight: 600, letterSpacing: "0.05em", color: T.muted }}>
+              ENTERPRISE SECURE LOGIN
+            </span>
+          </span>
+          {SECURITY_FEATURES.map(f => (
+            <span key={f} className="flex items-center gap-1" style={{ fontSize: "var(--fs-xs)", color: T.muted }}>
+              <Check size={11} strokeWidth={3} style={{ color: T.primary }} /> {f}
+            </span>
+          ))}
+        </div>
+
+        <footer className="mt-4 pt-3.5 flex flex-wrap items-center gap-x-2.5 gap-y-1.5"
+          style={{ borderTop: `1px solid ${T.border}`, fontSize: "var(--fs-xs)", color: T.faint }}>
+          <span>© 2026 RF Health</span>
+          <span aria-hidden="true">·</span>
+          <span>Version 2.0 Cloud</span>
+          <span aria-hidden="true">·</span>
+          <a href="/privacy" className="pp-link" style={{ color: T.faint }}>Privacy Policy</a>
+          <span aria-hidden="true">·</span>
+          <a href="/terms" className="pp-link" style={{ color: T.faint }}>Terms of Service</a>
+        </footer>
       </div>
       </div>
     </div>
@@ -1408,8 +1438,9 @@ export default function LoginPage() {
                   </span>
                 </button>
 
-                {/* ── Security assurances ── */}
-                <div className="mt-6 flex flex-col items-center gap-2.5">
+                {/* ── Security assurances — mobile only; the left panel owns
+                    these from lg up, and it is hidden below lg ── */}
+                <div className="lg:hidden mt-6 flex flex-col items-center gap-2.5">
                   <span className="inline-flex items-center gap-1.5 px-3 py-1.5"
                     style={{ background: "rgba(255,255,255,.75)", borderRadius: "999px", border: `1px solid ${T.border}` }}>
                     <ShieldCheck size={12} style={{ color: T.primary }} />
@@ -1426,8 +1457,8 @@ export default function LoginPage() {
                   </div>
                 </div>
 
-                {/* ── Footer ── */}
-                <footer className="mt-5 pt-4 flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1.5"
+                {/* ── Footer — mobile only, as above ── */}
+                <footer className="lg:hidden mt-5 pt-4 flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1.5"
                   style={{ borderTop: `1px solid ${T.border}`, fontSize: "var(--fs-xs)", color: T.faint }}>
                   <span>© 2026 RF Health</span>
                   <span aria-hidden="true">·</span>
