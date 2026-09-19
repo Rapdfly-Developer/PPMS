@@ -569,7 +569,14 @@ export function PremiumLanding() {
             <Frame
               src={`${IMG}/hero-clinician-tablet-dashboard.jpg`}
               alt="A clinician in gloves reviewing a RF Health patient dashboard on a tablet in a hospital corridor"
-              aspect="aspect-[3/4]"
+              // Portrait through desktop, then relaxed. Held at 3/4 the plate
+              // reaches 1137px tall at 1920 and 1395px at 2560, taller than the
+              // screen in the first case: the text column beside it is ~524px,
+              // and items-center then centres the copy against that height,
+              // which is where the gap above the headline comes from. The frame
+              // crops with object-cover, so this trims the photo rather than
+              // distorting it.
+              aspect="aspect-[3/4] 4xl:aspect-[1/1] 5xl:aspect-[5/4]"
               sizes="(max-width: 1024px) 92vw, 46vw"
               priority
               quality={85}
