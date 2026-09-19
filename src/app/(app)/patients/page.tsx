@@ -1,6 +1,7 @@
 import { requirePermission, scopeDoctorId } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { startOfDay, subDays, format } from "date-fns";
+import { complaintText } from "@/lib/appointment-cc";
 import { PatientsClient } from "./PatientsClient";
 
 export default async function PatientsPage({
@@ -16,6 +17,8 @@ export default async function PatientsPage({
   const categoryFilter = sp.category  ?? "";
   const sexFilter      = sp.sex       ?? "";
   const hospitalFilter = sp.hospital  ?? "";
+  const diagnosisFilter  = sp.diagnosis ?? "";
+  const complaintFilter  = sp.complaint ?? "";
   const activeCard     = sp.card      ?? "";
   const rawOpStatus    = sp.opStatus  ?? "dispensed";
   const opStatusFilter = rawOpStatus === "all" ? "" : rawOpStatus;
@@ -68,6 +71,17 @@ export default async function PatientsPage({
   if (categoryFilter) listConds.push({ category: categoryFilter });
   if (sexFilter)      listConds.push({ sex: sexFilter });
   if (hospitalFilter) listConds.push({ registeredAtId: hospitalFilter });
+  // Diagnosis is a controlled description, so it matches exactly. A chief
+  // complaint is a composite string ("RE | Since: 3 days | Eye Pain"), so the
+  // option value is the complaint text and it matches on contains.
+  if (diagnosisFilter) {
+    listConds.push({ visits: { some: { diagnoses: { some: { description: diagnosisFilter } } } } });
+  }
+  if (complaintFilter) {
+    listConds.push({
+      visits: { some: { generalExam: { chiefComplaint: { contains: complaintFilter, mode: "insensitive" as const } } } },
+    });
+  }
   const listToday    = startOfDay(new Date());
   const listTodayEnd = new Date(listToday); listTodayEnd.setHours(23, 59, 59, 999);
   if (opStatusFilter === "dispensed") {
@@ -77,6 +91,36 @@ export default async function PatientsPage({
   if (opStatusFilter === "discharged") listConds.push({ visits: { some: { admission: { discharged: true  } } } });
 
   const listWhere: any = listConds.length > 0 ? { AND: listConds } : {};
+
+  // Filter options come from scopeWhere, not listWhere: they must stay stable
+  // as filters are applied, otherwise picking a diagnosis empties the complaint
+  // list and the user cannot get back. Capped so a large practice cannot build
+  // a thousand-row <select>.
+  const OPTION_CAP = 200;
+  const [diagnosisRows, complaintRows] = await Promise.all([
+    prisma.diagnosis.findMany({
+      where: { visit: { patient: scopeWhere } },
+      select: { description: true },
+      distinct: ["description"],
+      orderBy: { description: "asc" },
+      take: OPTION_CAP,
+    }),
+    prisma.generalExamination.findMany({
+      where: { chiefComplaint: { not: null }, visit: { patient: scopeWhere } },
+      select: { chiefComplaint: true },
+      distinct: ["chiefComplaint"],
+      take: OPTION_CAP * 3,
+    }),
+  ]);
+  const diagnosisOptions = diagnosisRows.map(d => d.description).filter(Boolean);
+  // Reduce "RE | Since: 3 days | Eye Pain Severe" to "Eye Pain Severe" so the
+  // dropdown lists complaints rather than one entry per laterality/duration
+  // permutation. The stored value still matches via `contains`.
+  const complaintOptions = [...new Set(
+    complaintRows
+      .map(r => complaintText(r.chiefComplaint))
+      .filter((t): t is string => !!t),
+  )].sort((a, b) => a.localeCompare(b)).slice(0, OPTION_CAP);
   const orderBy: any   =
     sortBy === "oldest" ? { createdAt: "asc"  } :
     sortBy === "name"   ? { name:      "asc"  } :
@@ -243,6 +287,10 @@ export default async function PatientsPage({
         categoryFilter={categoryFilter}
         sexFilter={sexFilter}
         hospitalFilter={hospitalFilter}
+        diagnosisFilter={diagnosisFilter}
+        complaintFilter={complaintFilter}
+        diagnosisOptions={diagnosisOptions}
+        complaintOptions={complaintOptions}
         opStatusFilter={rawOpStatus}
         doctorHospitals={doctorHospitals}
         sortBy={sortBy}

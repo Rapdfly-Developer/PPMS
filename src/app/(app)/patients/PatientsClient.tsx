@@ -279,6 +279,23 @@ function RecentPanel({ recentReg }: { recentReg: RecentPat[] }) {
   );
 }
 
+/**
+ * Time between arriving in the queue and the visit being finalised, as "1h 12m"
+ * or "34m". Returns null unless both stamps exist and finalise is after arrival
+ * — a visit finalised on a later day, or arrival recorded after finalisation by
+ * a correction, would otherwise render a nonsense span.
+ */
+function clinicDuration(queue: string | null, finalize: string | null): string | null {
+  if (!queue || !finalize) return null;
+  const ms = new Date(finalize).getTime() - new Date(queue).getTime();
+  if (!Number.isFinite(ms) || ms <= 0) return null;
+  const mins = Math.round(ms / 60000);
+  if (mins < 1) return "<1m";
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return h > 0 ? (m > 0 ? `${h}h ${m}m` : `${h}h`) : `${m}m`;
+}
+
 // ── Main Component ────────────────────────────────────────────────────────────
 interface Props {
   patients: PatientRow[];
@@ -290,6 +307,10 @@ interface Props {
   sexFilter: string;
   hospitalFilter: string;
   opStatusFilter: string;
+  diagnosisFilter: string;
+  complaintFilter: string;
+  diagnosisOptions: string[];
+  complaintOptions: string[];
   doctorHospitals: { id: string; name: string }[];
   sortBy: string;
   isHospital: boolean;
@@ -302,12 +323,13 @@ interface Props {
 
 export function PatientsClient({
   patients, total, page, pageSize, q, categoryFilter, sexFilter, hospitalFilter, opStatusFilter,
+  diagnosisFilter, complaintFilter, diagnosisOptions, complaintOptions,
   doctorHospitals, sortBy, activeCard, kpis, trendData, catDist, recentReg,
 }: Props) {
   const router = useRouter();
   const [searchVal, setSearchVal] = useState(q);
   const [showFilters, setShowFilters] = useState(
-    !!(categoryFilter || sexFilter || hospitalFilter || (opStatusFilter && opStatusFilter !== "dispensed"))
+    !!(categoryFilter || sexFilter || hospitalFilter || diagnosisFilter || complaintFilter || (opStatusFilter && opStatusFilter !== "dispensed" && opStatusFilter !== "all"))
   );
   const [, startTransition] = useTransition();
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -332,19 +354,30 @@ export function PatientsClient({
   const to   = Math.min(page * pageSize, total);
 
   function navigate(overrides: Record<string, string>) {
-    const base = { q, category: categoryFilter, sex: sexFilter, hospital: hospitalFilter, opStatus: opStatusFilter, sort: sortBy, size: String(pageSize), page: String(page), card: activeCard };
+    const base = { q, category: categoryFilter, sex: sexFilter, hospital: hospitalFilter, diagnosis: diagnosisFilter, complaint: complaintFilter, opStatus: opStatusFilter, sort: sortBy, size: String(pageSize), page: String(page), card: activeCard };
     const merged = { ...base, ...overrides };
     const params = new URLSearchParams();
     if (merged.q)                         params.set("q",        merged.q);
     if (merged.category)                  params.set("category", merged.category);
     if (merged.sex)                       params.set("sex",      merged.sex);
     if (merged.hospital)                  params.set("hospital",  merged.hospital);
+    if (merged.diagnosis)                 params.set("diagnosis", merged.diagnosis);
+    if (merged.complaint)                 params.set("complaint", merged.complaint);
     if (merged.opStatus)                  params.set("opStatus",  merged.opStatus);
     if (merged.card)                      params.set("card",      merged.card);
     if (merged.sort && merged.sort !== "lastvisit") params.set("sort", merged.sort);
     if (merged.size && merged.size !== "25")     params.set("size", merged.size);
     if (merged.page && merged.page !== "1")      params.set("page", merged.page);
     startTransition(() => router.push(`/patients${params.toString() ? `?${params}` : ""}`));
+  }
+
+  function clearAllFilters() {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    setSearchVal("");
+    navigate({
+      q: "", category: "", sex: "", hospital: "", diagnosis: "", complaint: "",
+      opStatus: "all", sort: "lastvisit", card: "", page: "1",
+    });
   }
 
   function handleSearch(val: string) {
@@ -359,6 +392,8 @@ export function PatientsClient({
     if (categoryFilter) params.set("category", categoryFilter);
     if (sexFilter)      params.set("sex",      sexFilter);
     if (hospitalFilter) params.set("hospital", hospitalFilter);
+    if (diagnosisFilter) params.set("diagnosis", diagnosisFilter);
+    if (complaintFilter) params.set("complaint", complaintFilter);
     if (sortBy !== "lastvisit")    params.set("sort", sortBy);
     if (pageSize !== 25)        params.set("size", String(pageSize));
     if (p !== 1)                params.set("page", String(p));
@@ -373,7 +408,8 @@ export function PatientsClient({
   }
 
 
-  const activeFilters = [q, categoryFilter, sexFilter, hospitalFilter, opStatusFilter !== "dispensed" ? opStatusFilter : ""].filter(Boolean).length;
+  const activeFilters = [q, categoryFilter, sexFilter, hospitalFilter, diagnosisFilter, complaintFilter,
+    (opStatusFilter !== "dispensed" && opStatusFilter !== "all") ? opStatusFilter : ""].filter(Boolean).length;
 
   const SEL = filterSelectClass;
 
@@ -517,10 +553,44 @@ export function PatientsClient({
                   </div>
                 </div>
 
+                {/* Diagnosis — options come from the doctor's own patients, so an
+                    empty list means nothing has been diagnosed yet rather than a
+                    fault. Hidden entirely in that case, like the Hospital filter. */}
+                {diagnosisOptions.length > 0 && (
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Diagnosis</label>
+                    <div className="relative">
+                      <select value={diagnosisFilter} onChange={e => navigate({ diagnosis: e.target.value, page: "1" })} className={SEL}>
+                        <option value="">All Diagnoses</option>
+                        {diagnosisOptions.map(d => (
+                          <option key={d} value={d}>{d}</option>
+                        ))}
+                      </select>
+                      <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] pointer-events-none" />
+                    </div>
+                  </div>
+                )}
+
+                {/* Chief Complaint */}
+                {complaintOptions.length > 0 && (
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Chief Complaint</label>
+                    <div className="relative">
+                      <select value={complaintFilter} onChange={e => navigate({ complaint: e.target.value, page: "1" })} className={SEL}>
+                        <option value="">All Complaints</option>
+                        {complaintOptions.map(c => (
+                          <option key={c} value={c}>{c}</option>
+                        ))}
+                      </select>
+                      <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] pointer-events-none" />
+                    </div>
+                  </div>
+                )}
+
                 {/* Clear all */}
                 {activeFilters > 0 && (
                   <button
-                    onClick={() => { handleSearch(""); navigate({ q: "", category: "", sex: "", hospital: "", opStatus: "dispensed", page: "1" }); }}
+                    onClick={clearAllFilters}
                     className="text-[13px] sm:text-sm font-medium text-[var(--color-primary-600)] hover:text-[var(--color-primary-800)] whitespace-nowrap pb-2"
                   >
                     Clear all
@@ -537,16 +607,16 @@ export function PatientsClient({
               <div className="py-16 text-center">
                 <Users size={36} className="mx-auto text-[var(--color-ink-300)] mb-3" />
                 <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-500)]">
-                  {q || categoryFilter || sexFilter || hospitalFilter || opStatusFilter
+                  {q || categoryFilter || sexFilter || hospitalFilter || diagnosisFilter || complaintFilter || opStatusFilter
                     ? "No patients match the current filters."
                     : "No patients registered yet."}
                 </p>
-                {!q && !categoryFilter && !sexFilter && !hospitalFilter && !opStatusFilter && (
+                {!q && !categoryFilter && !sexFilter && !hospitalFilter && !diagnosisFilter && !complaintFilter && !opStatusFilter && (
                   <p className="mt-3 text-[13px] sm:text-sm text-[var(--color-ink-400)]">No patients registered yet.</p>
                 )}
-                {(q || categoryFilter || sexFilter || hospitalFilter || opStatusFilter) && (
+                {(q || categoryFilter || sexFilter || hospitalFilter || diagnosisFilter || complaintFilter || opStatusFilter) && (
                   <button
-                    onClick={() => navigate({ q: "", category: "", sex: "", hospital: "", opStatus: "", page: "1" })}
+                    onClick={clearAllFilters}
                     className="mt-3 inline-flex items-center gap-1.5 text-[13px] sm:text-sm font-medium text-[var(--color-ink-500)] hover:text-[var(--color-ink-700)]"
                   >
                     <X size={13} /> Clear all filters
@@ -558,13 +628,13 @@ export function PatientsClient({
               {/* Column headers */}
               <div className="hidden xl:flex items-center gap-4 px-7 py-2.5 border-b border-[var(--color-border)] bg-[var(--color-surface-sunken)]">
                 <div className="size-8 shrink-0" />
-                <div className="w-40 shrink-0">
+                <div className="w-56 shrink-0">
                   <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">Patient</span>
                 </div>
                 <div className="flex-1 min-w-0">
                   <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">Chief Complaint</span>
                 </div>
-                <div className="w-48 shrink-0">
+                <div className="w-52 shrink-0">
                   <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">Diagnoses</span>
                 </div>
                 <div className="w-28 shrink-0">
@@ -584,6 +654,10 @@ export function PatientsClient({
                   const lastVisitStr   = p.lastVisit    ? format(new Date(p.lastVisit),    "dd MMM yyyy") : null;
                   const queueTimeStr  = p.queueTime    ? format(new Date(p.queueTime),    "h:mm a")      : null;
                   const finalTimeStr  = p.finalizeTime ? format(new Date(p.finalizeTime), "h:mm a")      : null;
+                  // Time inside the clinic: arrival (appointment.arrivedAt) to
+                  // finalisation (visit.finalizedAt). Only meaningful when both
+                  // exist and the visit was finalised after arrival.
+                  const inClinicStr = clinicDuration(p.queueTime, p.finalizeTime);
                   const sexLabel = p.sex.charAt(0).toUpperCase();
                   return (
                     <li
@@ -622,12 +696,20 @@ export function PatientsClient({
                               {p.udid}
                             </span>
                             <span className="text-[9px] sm:text-[10px] text-[var(--color-ink-400)]">{p.age}y · {sexLabel}</span>
+                            {p.mobile && (
+                              <span className="inline-flex items-center gap-1 text-[9px] sm:text-[10px] text-[var(--color-ink-500)]">
+                                <Phone size={9} className="shrink-0 text-[var(--color-ink-400)]" />
+                                <span className="font-mono">{p.mobile}</span>
+                              </span>
+                            )}
                           </div>
                           {/* Queue + finalize times — visible on mobile/tablet where Last Visit column is hidden */}
                           {(lastVisitStr || queueTimeStr || finalTimeStr) && (
                             <div className="xl:hidden flex items-center gap-2 mt-1 flex-wrap">
                               {lastVisitStr && (
-                                <span className="text-[9px] sm:text-[10px] font-medium text-[var(--color-ink-600)]">{lastVisitStr}</span>
+                                <span className="text-[9px] sm:text-[10px] font-medium text-[var(--color-ink-600)]">
+                                  {lastVisitStr}{inClinicStr ? ` · ${inClinicStr}` : ""}
+                                </span>
                               )}
                               {queueTimeStr && (
                                 <span className="text-[9px] sm:text-[10px] text-[var(--color-ink-400)]">
@@ -707,7 +789,12 @@ export function PatientsClient({
                       {/* Last Visit (date only) */}
                       <div className="hidden xl:block w-28 shrink-0">
                         {lastVisitStr ? (
-                          <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-800)]">{lastVisitStr}</p>
+                          <>
+                            <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-800)]">{lastVisitStr}</p>
+                            {inClinicStr && (
+                              <p className="text-[10px] sm:text-[11px] text-[var(--color-ink-400)]">{inClinicStr}</p>
+                            )}
+                          </>
                         ) : (
                           <span className="text-[10px] sm:text-[11px] text-[var(--color-ink-300)]">—</span>
                         )}
@@ -809,7 +896,7 @@ export function PatientsClient({
                 </div>{/* /overflow-x-auto pagination */}
                 <p className="text-[13px] sm:text-sm text-[var(--color-ink-500)]">
                   Showing <span className="font-semibold text-[var(--color-primary-700)]">{from}–{to}</span> of {total} patients
-                  {(q || categoryFilter || sexFilter || hospitalFilter || opStatusFilter) && (
+                  {(q || categoryFilter || sexFilter || hospitalFilter || diagnosisFilter || complaintFilter || opStatusFilter) && (
                     <span className="text-[var(--color-ink-400)] font-normal"> (filtered)</span>
                   )}
                 </p>

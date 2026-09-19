@@ -76,3 +76,28 @@ export function convertNotesToCC(raw: string): string {
   }
   return raw;
 }
+
+/**
+ * Reduces a stored chief complaint to just its text, dropping the laterality
+ * and duration segments: "RE | Since: 3 days | Eye Pain" -> "Eye Pain",
+ * "[RE] [5 days] Eye Pain" -> "Eye Pain".
+ *
+ * Used to build the Patients page's Chief Complaint filter, where one entry
+ * per laterality/duration permutation would make the list unusable. The
+ * result is matched back against the stored value with `contains`.
+ */
+export function complaintText(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const first = raw.split("|")[0].trim();
+  let out: string;
+  const pipeParts = raw.split(" | ");
+  if (pipeParts.length >= 3 && LATERALITY.has(first)) {
+    out = pipeParts.slice(2).join(" | ");
+  } else {
+    // "[RE] [5 days] text" -> "text"; a plain legacy string falls through.
+    out = raw.split("|")[0].replace(/^\s*\[(?:RE|LE|OU)\]\s*/i, "")
+             .replace(/^\s*\[\d+\s+(?:days?|weeks?|months?|years?)\]\s*/i, "");
+  }
+  out = out.trim();
+  return out.length > 0 ? out : null;
+}
