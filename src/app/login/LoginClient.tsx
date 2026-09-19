@@ -721,8 +721,14 @@ function LeftPanel() {
       {/* Logo lockup */}
       <div className="lp-a0 shrink-0">
         <div className="flex items-center gap-3.5">
-          <img src="/landing/logo-ppms-new.png" alt="" className="shrink-0"
-            style={{ width: "48px", height: "48px", objectFit: "contain" }} />
+          {/* The mark ships on its own marble ground, so it gets a radius and a
+              hairline border to read as a deliberate badge rather than a
+              rectangle pasted onto the page. */}
+          <img src="/landing/logo-rf-health.webp" alt="" className="shrink-0"
+            style={{
+              width: "48px", height: "48px", objectFit: "cover",
+              borderRadius: "11px", border: `1px solid ${T.border}`,
+            }} />
           <div>
             <div className="flex items-center gap-2">
               <span className="text-[25px] 2xl:text-[28px] font-black" style={{ color: T.ink, letterSpacing: "-0.035em" }}>
@@ -1070,8 +1076,11 @@ export default function LoginPage() {
 
                 {/* Mobile brand lockup — the left panel is hidden below lg */}
                 <div className="flex lg:hidden flex-col items-center text-center mb-6 lp-a0">
-                  <img src="/landing/logo-ppms-new.png" alt="" className="shrink-0 mb-2.5"
-                    style={{ width: "44px", height: "44px", objectFit: "contain" }} />
+                  <img src="/landing/logo-rf-health.webp" alt="" className="shrink-0 mb-2.5"
+                    style={{
+                      width: "44px", height: "44px", objectFit: "cover",
+                      borderRadius: "10px", border: `1px solid ${T.border}`,
+                    }} />
                   <span className="text-[24px] font-black" style={{ color: T.ink, letterSpacing: "-0.03em" }}>
                     RF Health
                   </span>
