@@ -861,7 +861,7 @@ function GlassCard({ children }: { children: React.ReactNode }) {
       }} />
       <div className="absolute top-0 right-0 w-32 h-32 pointer-events-none"
         style={{ background: "radial-gradient(circle at top right, rgba(13,122,99,.07), transparent 70%)" }} />
-      <div className="relative" style={{ padding: "calc(var(--card-pad) + 4px) var(--card-pad)" }}>{children}</div>
+      <div className="relative" style={{ padding: "var(--vpad) var(--card-pad)" }}>{children}</div>
     </div>
   );
 }
@@ -1037,6 +1037,21 @@ export default function LoginPage() {
 
           /* Control heights top out well before the font sizes do. A 62px
              input is not a more readable input, just a taller one. */
+          /* Vertical rhythm keys off viewport HEIGHT, not width. The column
+             holds a fixed amount of content in a fixed amount of room, so on
+             a short window the gaps are the only thing that can give.
+
+             A plain clamp(min, Nvh, max) is the wrong shape here: to
+             compress meaningfully at 900px it has to sit below its ceiling
+             at 1080px too, which would quietly retune the layout on tall
+             screens. These ramp down from a 950px hinge instead, so anything
+             at or above ~950px of height is pixel-identical to before and
+             only shorter windows tighten. */
+          --vgap:      clamp(10px, calc(20px - (950px - 100vh) * 0.12), 20px);
+          --vgap-sm:   clamp(8px,  calc(16px - (950px - 100vh) * 0.10), 16px);
+          --vpad:      clamp(14px, calc(30px - (950px - 100vh) * 0.18), 30px);
+          --vpanel:    clamp(14px, calc(34px - (950px - 100vh) * 0.25), 34px);
+
           --ctl-h:     clamp(46px, 3.5vw, 56px);
           --tab-h:     clamp(38px, 2.9vw, 46px);
           --gap:       clamp(8px, .6vw, 16px);
@@ -1156,7 +1171,7 @@ export default function LoginPage() {
                 minHeight: "min-content",
                 paddingLeft: "clamp(16px,2vw,56px)",
                 paddingRight: "clamp(16px,2vw,56px)",
-                paddingBottom: "clamp(24px,2.4vw,64px)",
+                paddingBottom: "var(--vpanel)",
                 paddingTop: "max(1.5rem, calc(env(safe-area-inset-top, 0px) + 0.75rem))",
               }}>
 
@@ -1168,7 +1183,8 @@ export default function LoginPage() {
                 <Link
                   href="/"
                   aria-label="RF Health home"
-                  className="lp-brand lp-a0 flex items-center gap-3.5 mb-5 justify-center lg:justify-start rounded-xl">
+                  className="lp-brand lp-a0 flex items-center gap-3.5 justify-center lg:justify-start rounded-xl"
+                  style={{ marginBottom: "var(--vgap)" }}>
                   {/* The mark ships on its own marble ground, so it gets a radius
                       and a hairline border to read as a deliberate badge rather
                       than a rectangle pasted onto the page. */}
@@ -1197,14 +1213,14 @@ export default function LoginPage() {
                   <h2 className="font-bold" style={{ fontSize: "var(--fs-card-h)", color: T.ink, letterSpacing: "-0.02em" }}>
                     Welcome back
                   </h2>
-                  <p className="mt-1 mb-5" style={{ fontSize: "var(--fs-sm)", color: T.muted }}>
+                  <p className="mt-1" style={{ fontSize: "var(--fs-sm)", color: T.muted, marginBottom: "var(--vgap)" }}>
                     Access your secure healthcare workspace.
                   </p>
 
                   {/* ── Tabs ── */}
                   <div role="tablist" aria-label="Sign-in method"
-                    className="grid grid-cols-2 gap-1 p-1 mb-5"
-                    style={{ background: T.track, borderRadius: "10px" }}>
+                    className="grid grid-cols-2 gap-1 p-1"
+                    style={{ background: T.track, borderRadius: "10px", marginBottom: "var(--vgap)" }}>
                     {([
                       { key: "password", label: "Password",  Icon: Lock },
                       { key: "otp",      label: "Email OTP", Icon: Mail },
@@ -1279,7 +1295,7 @@ export default function LoginPage() {
                       />
 
                       {/* Remember me + Forgot password */}
-                      <div className="flex items-center justify-between gap-3 mb-4">
+                      <div className="flex items-center justify-between gap-3" style={{ marginBottom: "var(--vgap-sm)" }}>
                         <label className="flex items-center gap-2 cursor-pointer select-none">
                           <input
                             type="checkbox"
@@ -1431,8 +1447,8 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => router.push("/license")}
-                  className="pp-ghost w-full flex items-center gap-3 px-4 py-3 mt-4 text-left"
-                  style={{ background: "rgba(255,255,255,.72)", borderRadius: "12px", border: `1px solid ${T.border}` }}>
+                  className="pp-ghost w-full flex items-center gap-3 px-4 py-3 text-left"
+                  style={{ marginTop: "var(--vgap-sm)", background: "rgba(255,255,255,.72)", borderRadius: "12px", border: `1px solid ${T.border}` }}>
                   <span className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
                     style={{ background: T.primarySoft }}>
                     <Zap size={16} style={{ color: T.primary }} />
