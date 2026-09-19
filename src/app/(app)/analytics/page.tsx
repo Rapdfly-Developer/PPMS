@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { requireRole, scopeDoctorId } from "@/lib/rbac";
 import { format, subDays, startOfMonth, endOfMonth, startOfDay, endOfDay } from "date-fns";
 import Link from "next/link";
-import { BarChart2, TrendingUp, TrendingDown, Users, CalendarCheck, FlaskConical, Scissors, BedDouble, Clock, CheckCircle2, XCircle, RefreshCw } from "lucide-react";
+import { BarChart2, TrendingUp, TrendingDown, Users, CalendarCheck, FlaskConical, Scissors, Clock, CheckCircle2, XCircle, RefreshCw } from "lucide-react";
 
 /* ── helpers ──────────────────────────────────────────────────────────────── */
 function pct(a: number, b: number) {
@@ -83,7 +83,6 @@ export default async function AnalyticsPage() {
     newPatientsThisMonth,
     pendingInvestigations,
     completedInvestigations,
-    activeAdmissions,
     week7Appts,
     statusCounts,
     visitTypeCounts,
@@ -95,7 +94,6 @@ export default async function AnalyticsPage() {
     prisma.patient.count({ where: { ...(user.role === "DOCTOR" ? { doctorId: scopeDoctorId(user) } : { registeredAtId: (user as any).hospitalId }), createdAt: { gte: monthStart } } }),
     prisma.investigationOrder.count({ where: { visit: { ...where }, status: { not: "REVIEWED" } } }),
     prisma.investigationOrder.count({ where: { visit: { ...where }, status: "REVIEWED" } }),
-    prisma.admission.count({ where: { visit: { ...where } } }),
     prisma.appointment.findMany({
       where: { ...where, dateTime: { gte: week7Start, lte: todayEnd } },
       select: { dateTime: true, status: true },
@@ -229,13 +227,6 @@ export default async function AnalyticsPage() {
           sub="cancelled or no-show"
           icon={<XCircle size={18} />}
           color="text-red-600"
-        />
-        <KPI
-          label="IPD Admissions"
-          value={activeAdmissions}
-          sub="total recorded"
-          icon={<BedDouble size={18} />}
-          color="text-[var(--color-primary-700)]"
         />
       </div>
 
@@ -391,15 +382,6 @@ export default async function AnalyticsPage() {
                 style={{ width: `${pct(completedInvestigations, pendingInvestigations + completedInvestigations)}%` }}
               />
             </div>
-          </div>
-        </div>
-
-        <div className="surface-card p-6">
-          <h2 className="text-[15px] sm:text-base font-semibold text-[var(--color-ink-900)] mb-1">IPD Activity</h2>
-          <p className="text-[11px] sm:text-xs text-[var(--color-ink-400)] mb-5">Current in-patient admissions</p>
-          <div className="mt-2 flex items-center gap-2 text-[11px] sm:text-xs text-[var(--color-ink-500)]">
-            <RefreshCw size={12} />
-            <span>Active admissions: <strong className="text-[var(--color-ink-800)]">{activeAdmissions}</strong></span>
           </div>
         </div>
       </div>

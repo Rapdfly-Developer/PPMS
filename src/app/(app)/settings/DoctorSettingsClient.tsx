@@ -1294,7 +1294,6 @@ function NotificationsSection() {
   const [cfg, setCfg] = useState({
     apptConfirmed:   true,  apptCancelled:  true,  apptReminder:   true,
     patientReg:      true,  testResults:    true,  surgeryReminder:true,
-    ipdAdmission:    false, ipdDischarge:   false,
     smsAlerts:       true,  emailAlerts:    true,  pushAlerts:     false,
     dailyDigest:     false, weeklyReport:   true,
   });
@@ -1315,8 +1314,6 @@ function NotificationsSection() {
         { key: "patientReg"      as const, label: "Patient Registered",    desc: "New patient registration in your hospitals" },
         { key: "testResults"     as const, label: "Test Results Ready",    desc: "Investigation results available for review" },
         { key: "surgeryReminder" as const, label: "Surgery Reminders",     desc: "Day-before reminder for scheduled surgeries" },
-        { key: "ipdAdmission"   as const,  label: "IPD Admission",         desc: "When a patient is admitted to IPD ward" },
-        { key: "ipdDischarge"   as const,  label: "IPD Discharge",         desc: "When a patient is discharged from IPD" },
       ],
     },
     {

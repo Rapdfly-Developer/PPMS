@@ -25,7 +25,6 @@ const STATIC_PREFIXES = [
   "/settings",
   "/emr/",          // individual EMR — saved explicitly
   "/patients/",     // patient profile — rarely changes
-  "/ipd/",
   "/follow-ups/",
   "/analytics",     // heavy query page; manual refresh is sufficient
   "/audit",         // audit logs don't need polling

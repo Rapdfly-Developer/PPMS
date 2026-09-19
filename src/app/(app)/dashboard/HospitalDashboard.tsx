@@ -40,21 +40,7 @@ export async function HospitalDashboard({
     select: { doctor: { select: { id: true, name: true } } },
   });
 
-  const activeAdmissions = await prisma.admission.findMany({
-    where: { discharged: false, visit: { hospitalId } },
-    select: {
-      id: true, ward: true, reason: true, createdAt: true,
-      visit: {
-        select: {
-          patient: { select: { name: true, udid: true } },
-          doctor:  { select: { name: true } },
-        },
-      },
-    },
-    orderBy: { createdAt: "asc" },
-    take: 10,
-  });
-
+  
   // Derive monthly count from already-fetched data to avoid an extra query
   const monthlyAppts = todayAppts.length;
 
@@ -84,15 +70,7 @@ export async function HospitalDashboard({
 
   const doctors = linkedDoctors.map((l) => ({ id: l.doctor.id, name: l.doctor.name }));
 
-  const admissions = activeAdmissions.map((a) => ({
-    id:        a.id,
-    ward:      a.ward,
-    reason:    a.reason,
-    createdAt: a.createdAt.toISOString(),
-    patient:   a.visit.patient,
-    doctor:    a.visit.doctor,
-  }));
-
+  
   const hospitalName = hospital?.name ?? "Hospital";
 
   // The shared front-desk login (role HOSPITAL) is the hospital, so its banner

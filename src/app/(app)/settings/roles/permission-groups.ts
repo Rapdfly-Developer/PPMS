@@ -71,13 +71,6 @@ export const PERMISSION_GROUPS: {
     ],
   },
   {
-    category: "IPD (In-Patient)",
-    permissions: [
-      { key: "ipd.view",   label: "View IPD",   description: "See current and past in-patient admissions" },
-      { key: "ipd.manage", label: "Manage IPD", description: "Admit patients, update status, and discharge" },
-    ],
-  },
-  {
     category: "Reports & Analytics",
     permissions: [
       { key: "reports.view",   label: "View Analytics", description: "Access reports and statistical dashboards" },

@@ -7,7 +7,7 @@ import {
   eachDayOfInterval, isSameMonth, addMonths, subMonths,
 } from "date-fns";
 import {
-  X, Search, Stethoscope, FlaskConical, Scissors, BedDouble,
+  X, Search, Stethoscope, FlaskConical, Scissors,
   Receipt, ArrowRightLeft, FileText, ChevronDown, ChevronUp,
   Timer, CalendarDays, SlidersHorizontal,
   Loader2, CheckCircle2, Clock, AlertCircle, LogIn, Calendar,
@@ -34,12 +34,6 @@ const EVENT_CFG = {
     dot: "bg-rose-500", dotHex: "#F43F5E",
     border: "border-l-rose-400",
     badge: "bg-rose-100 text-rose-700", card: "bg-rose-50/40",
-  },
-  ADMISSION: {
-    label: "IPD / Admission", Icon: BedDouble,
-    dot: "bg-orange-500", dotHex: "#F97316",
-    border: "border-l-orange-400",
-    badge: "bg-orange-100 text-orange-700", card: "bg-orange-50/40",
   },
   BILLING: {
     label: "Billing", Icon: Receipt,
@@ -206,14 +200,6 @@ function EventDetail({ ev }: { ev: TimelineEvent }) {
       {d.surgeryDate && <p><span className="font-semibold">Date: </span>{format(new Date(d.surgeryDate), "dd MMM yyyy")}</p>}
       <p><span className="font-semibold">Eye: </span>{[d.rightEye && "Right Eye", d.leftEye && "Left Eye"].filter(Boolean).join(", ") || "—"}</p>
       {d.anaesthesiaType && <p><span className="font-semibold">Anaesthesia: </span>{d.anaesthesiaType}</p>}
-    </div>
-  );
-
-  if (ev.type === "ADMISSION") return (
-    <div className="mt-3 text-[11px] sm:text-xs text-[var(--color-ink-700)] space-y-1">
-      {d.admissionReason && <p><span className="font-semibold">Reason: </span>{d.admissionReason}</p>}
-      <p><span className="font-semibold">Ward: </span>{d.ward} · <span className="font-semibold">Days: </span>{d.numberOfDays}</p>
-      <p><span className="font-semibold">Status: </span>{d.discharged ? `Discharged${d.dischargedAt ? " · " + format(new Date(d.dischargedAt), "dd MMM yyyy") : ""}` : "Admitted"}</p>
     </div>
   );
 

@@ -27,7 +27,6 @@ export type TimelineEventType =
   | "CONSULTATION"
   | "INVESTIGATION"
   | "SURGERY"
-  | "ADMISSION"
   | "BILLING"
   | "TRANSFER"
   | "EXTERNAL";
@@ -64,12 +63,6 @@ export type TimelineEvent = {
     rightEye?: boolean;
     leftEye?: boolean;
     anaesthesiaType?: string;
-    // ADMISSION
-    admissionReason?: string;
-    ward?: string;
-    numberOfDays?: number;
-    discharged?: boolean;
-    dischargedAt?: string | null;
     // BILLING
     billSummary?: string;
     // TRANSFER
@@ -99,7 +92,6 @@ export async function getPatientTimeline(patientId: string): Promise<TimelineEve
         diagnoses:          { select: { description: true, icd10Code: true, laterality: true, provisional: true, status: true } },
         medications:        { select: { drugName: true, dosage: true, frequency: true, duration: true } },
         investigationOrders:{ select: { id: true, testName: true, category: true, status: true, laterality: true, priority: true, resultRef: true, createdAt: true, updatedAt: true } },
-        admission:          { select: { reason: true, ward: true, numberOfDays: true, discharged: true, dischargedAt: true } },
         dispense:           { select: { shortSummary: true } },
         appointment:        { select: { createdAt: true, dateTime: true, arrivedAt: true, partialDispenseAt: true } },
       },
@@ -169,27 +161,6 @@ export async function getPatientTimeline(patientId: string): Promise<TimelineEve
             createdAt: undefined,
             updatedAt: undefined,
           })),
-        },
-      });
-    }
-
-    // IPD Admission
-    if (v.admission) {
-      const a = v.admission;
-      events.push({
-        id:          `adm-${v.id}`,
-        type:        "ADMISSION",
-        date:        v.date.toISOString(),
-        title:       `IPD Admission · ${a.ward}`,
-        hospitalName: hospital,
-        doctorName:   doctor,
-        searchText:  [a.reason, a.ward, hospital, doctor].filter(Boolean).join(" ").toLowerCase(),
-        detail: {
-          admissionReason: a.reason,
-          ward:            a.ward,
-          numberOfDays:    a.numberOfDays,
-          discharged:      a.discharged,
-          dischargedAt:    a.dischargedAt?.toISOString() ?? null,
         },
       });
     }

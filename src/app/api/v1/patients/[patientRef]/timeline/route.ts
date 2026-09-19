@@ -1,7 +1,7 @@
 /**
  * GET /api/v1/patients/:patientRef/timeline
  *
- * Returns the patient's chronological clinical timeline (visits, admissions)
+ * Returns the patient's chronological clinical timeline (visits)
  * merged and sorted newest first. Query param ?limit=N (max 40).
  */
 

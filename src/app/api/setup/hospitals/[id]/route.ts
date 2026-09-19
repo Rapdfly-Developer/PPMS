@@ -60,7 +60,6 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
     await prisma.investigationOrder.deleteMany({ where: { visitId: { in: visitIds } } });
     await prisma.diagnosis.deleteMany({ where: { visitId: { in: visitIds } } });
     await prisma.dispense.deleteMany({ where: { visitId: { in: visitIds } } });
-    await prisma.admission.deleteMany({ where: { visitId: { in: visitIds } } });
     await prisma.visit.deleteMany({ where: { id: { in: visitIds } } });
   }
 

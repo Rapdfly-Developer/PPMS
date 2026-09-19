@@ -41,21 +41,7 @@ export async function DoctorDashboard({
     redirect("/settings?section=add-hospital");
   }
 
-  const activeAdmissions = await prisma.admission.findMany({
-    where: { discharged: false, visit: { doctorId } },
-    select: {
-      id: true, ward: true, createdAt: true, reason: true,
-      visit: {
-        select: {
-          patient:  { select: { name: true, udid: true, uhid: true } },
-          hospital: { select: { name: true } },
-        },
-      },
-    },
-    orderBy: { createdAt: "asc" },
-    take: 5,
-  });
-
+  
   const todayAvailability = await prisma.doctorAvailability.findMany({
     where: { doctorId, weekday: todayWeekday, status: "ACTIVE" },
     include: { hospital: { select: { id: true, name: true } } },
@@ -92,15 +78,7 @@ export async function DoctorDashboard({
 
   const hospitals = linkedHospitals.map((l) => ({ id: l.hospital.id, name: l.hospital.name, logoUrl: l.hospital.logoUrl ?? null }));
 
-  const admissions = activeAdmissions.map((a) => ({
-    id:          a.id,
-    ward:        a.ward,
-    reason:      a.reason,
-    createdAt:   a.createdAt.toISOString(),
-    patient:     a.visit.patient,
-    hospital:    a.visit.hospital,
-  }));
-
+  
   // Today's schedule: each session with live appointment count
   const todaySchedule = todayAvailability.map((a) => {
     const apptCount = todayAppts.filter((ap) => ap.hospital.id === a.hospitalId).length;

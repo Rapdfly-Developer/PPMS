@@ -4,7 +4,6 @@ import { prisma } from "@/lib/prisma";
 import { requireRole, requireUser } from "@/lib/rbac";
 import { revalidatePath } from "next/cache";
 import { after } from "next/server";
-import { notifyAdmission } from "@/lib/mailer";
 import { createNotification } from "@/lib/notify";
 import { writeAudit } from "@/lib/audit";
 import { syncVisit } from "@/lib/integration/engine";
@@ -530,28 +529,6 @@ export async function saveDispense(visitId: string, udid: string, shortSummary: 
   await writeAudit(user.id, "Dispense", visitId, "SAVE", { shortSummary });
   revalidate(udid);
 }
-
-export async function saveAdmission(
-  visitId: string,
-  udid: string,
-  data: { reason: string; ward: string; numberOfDays: number }
-) {
-  const user = await requireRole("DOCTOR");
-  const visit = await assertVisitAccess(visitId);
-  await prisma.admission.upsert({ where: { visitId }, create: { visitId, ...data }, update: data });
-  await writeAudit(user.id, "Admission", visitId, "SAVE", data);
-
-  const [patient, hospitalStaff] = await Promise.all([
-    prisma.patient.findUnique({ where: { id: visit.patientId } }),
-    prisma.hospitalStaff.findMany({ where: { hospitalId: visit.hospitalId }, include: { user: true } }),
-  ]);
-  await Promise.all(hospitalStaff.map((staff) =>
-    notifyAdmission(staff.user.email, { patientName: patient?.name ?? "", ward: data.ward, numberOfDays: data.numberOfDays })
-  ));
-
-  revalidate(udid);
-}
-
 
 export async function saveFollowUp(visitId: string, udid: string, data: { followUpDate?: string | null; referralEnabled: boolean; referralNote?: string; inViewOf?: string }) {
   await requireRole("DOCTOR");

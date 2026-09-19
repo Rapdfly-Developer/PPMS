@@ -24,7 +24,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
       diagnoses: { orderBy: { createdAt: "asc" } },
       medications: { orderBy: { createdAt: "asc" } },
       investigationOrders: { orderBy: { createdAt: "asc" } },
-      admission: true,
     },
   });
 
@@ -109,11 +108,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
       testName: i.testName, priority: i.priority, status: i.status,
       result: i.result ?? null, notes: i.notes ?? null,
     })),
-    admission: visit.admission ? {
-      wardName: (visit.admission as any).wardName ?? null,
-      bedNumber: (visit.admission as any).bedNumber ?? null,
-      reason: (visit.admission as any).reason ?? null,
-    } : null,
   });
 
   const filename = `PPMS-EMR-${visit.patient.udid}-${visit.id.slice(0, 8)}.pdf`;

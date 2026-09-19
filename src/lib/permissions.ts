@@ -43,9 +43,6 @@ export const P = {
   REPORTS_VIEW:            "reports.view",
   REPORTS_EXPORT:          "reports.export",
 
-  // IPD
-  IPD_VIEW:                "ipd.view",
-  IPD_MANAGE:              "ipd.manage",
 
   // Availability
   AVAILABILITY_VIEW:       "availability.view",

@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect } from "react";
 import {
   LayoutDashboard, CalendarDays, Users, Eye,
-  BedDouble, Settings, X,
+  Settings, X,
   CalendarClock, BarChart2, Lock,
   LayoutGrid, Puzzle,
 } from "lucide-react";
@@ -35,7 +35,6 @@ const ALL_NAV: NavEntry[] = [
   { href: "/appointments", label: "Appointments", icon: CalendarDays,    permission: "appointments.view"                                     },
   { href: "/patients",     label: "Patients",     icon: Users,           permission: "patients.view"                                         },
   { href: "/follow-ups",   label: "Follow Ups",   icon: CalendarClock,   permission: "patients.view"                                         },
-  { href: "/ipd",          label: "IPD",          icon: BedDouble,       permission: "ipd.view",          roles: ["DOCTOR"]                  },
   { href: "/analytics",    label: "Analytics",     icon: BarChart2,      permission: "reports.view",      roles: ["DOCTOR", "HOSPITAL"]      },
   { href: "/settings/plugins", label: "Plugins", icon: Puzzle, permission: "plugins.view", roles: ["DOCTOR"] },
   { href: "/settings",     label: "Settings",     icon: Settings,        permission: "settings.view"                                         },

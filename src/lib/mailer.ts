@@ -147,15 +147,3 @@ export async function notifyAppointmentReminder(
     ])
   );
 }
-
-export async function notifyAdmission(to: string | undefined | null, opts: { patientName: string; ward: string; numberOfDays: number }) {
-  await sendMail(
-    to,
-    "Patient admission recorded",
-    card("Admission Notification", [
-      { label: "Patient", value: opts.patientName },
-      { label: "Ward", value: opts.ward.replace(/_/g, " ") },
-      { label: "Estimated days", value: String(opts.numberOfDays) },
-    ])
-  );
-}

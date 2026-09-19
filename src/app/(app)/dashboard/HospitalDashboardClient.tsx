@@ -31,22 +31,12 @@ interface Surgery {
   doctor: { name: string } | null;
 }
 
-interface Admission {
-  id: string;
-  ward: string;
-  reason: string;
-  createdAt: string;
-  patient: { name: string; udid: string };
-  doctor: { name: string } | null;
-}
-
 interface Props {
   hospitalName: string;
   hospitalLogoUrl?: string | null;
   kpis: { totalToday: number; pendingOPD: number; consultedToday: number; surgeryCount: number; monthlyAppts: number };
   appointments: Appt[];
   surgeries: Surgery[];
-  admissions: Admission[];
   doctors: { id: string; name: string }[];
   todayLabel: string;
 }
@@ -126,7 +116,7 @@ function wardLabel(w: string) {
 }
 
 /* ── Main component ─────────────────────────────────────────────────────── */
-export function HospitalDashboardClient({ hospitalName, hospitalLogoUrl, kpis, appointments, surgeries, admissions, doctors, todayLabel }: Props) {
+export function HospitalDashboardClient({ hospitalName, hospitalLogoUrl, kpis, appointments, surgeries, doctors, todayLabel }: Props) {
   const [selectedDoctor, setSelectedDoctor] = useState<string>("all");
   const [statusFilter, setStatusFilter]     = useState<string>("ALL");
 

@@ -709,7 +709,7 @@ export function PremiumLanding() {
                   One patient, one history, regardless of which hospital they walk into.
                 </h3>
                 <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-emerald-100/70">
-                  Consultations, prescriptions, lab results, admissions and invoices attach to the
+                  Consultations, prescriptions, lab results and invoices attach to the
                   patient, not to the site. Switching hospitals changes your schedule and your
                   billing context, never the clinical history.
                 </p>
@@ -762,7 +762,7 @@ export function PremiumLanding() {
                     Care management, end to end
                   </h3>
                   <p className="mt-2 text-[14px] leading-relaxed text-slate-600">
-                    From the first appointment to discharge and follow-up, one thread, no handoff
+                    From the first appointment to follow-up, one thread, no handoff
                     gaps.
                   </p>
                 </div>
@@ -809,7 +809,7 @@ export function PremiumLanding() {
             {
               icon: <History size={17} strokeWidth={1.25} />,
               label: "Full patient timeline",
-              desc: "Every visit, prescription, result and admission on one scrollable thread.",
+              desc: "Every visit, prescription and result on one scrollable thread.",
             },
             {
               icon: <ScanLine size={17} strokeWidth={1.25} />,
@@ -1146,7 +1146,7 @@ export function PremiumLanding() {
           // Twelve tiles, because twelve divides evenly by 2, 3, 4 and 6 --
           // every breakpoint below lands on a full last row. auto-fit was
           // giving a ragged 5+4 at 1920.
-          className="mt-8 grid gap-3 sm:mt-10 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 4xl:grid-cols-6"
+          className="mt-8 grid gap-3 sm:mt-10 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4"
           stagger={0.04}
         >
           {[
@@ -1156,9 +1156,8 @@ export function PremiumLanding() {
             { icon: <CalendarRange size={18} strokeWidth={1.25} />, title: "Appointments", body: "Booking, confirmation and rescheduling, against the doctor actually sitting that session." },
             { icon: <CalendarRange size={18} strokeWidth={1.25} />, title: "Availability", body: "Per-doctor slot availability and session schedules, set once per hospital and reused." },
             { icon: <History size={18} strokeWidth={1.25} />, title: "Follow-ups", body: "Scheduled follow-ups tracked against the visit that advised them, not a separate list to maintain." },
-            { icon: <Building2 size={18} strokeWidth={1.25} />, title: "IPD and discharge", body: "Admissions, bed state and a discharge summary built from the record already written." },
             { icon: <ScanLine size={18} strokeWidth={1.25} />, title: "Surgery scheduling", body: "Surgery advised at the consultation, scheduled and carried through to the operative record." },
-            { icon: <ChartNoAxesColumn size={18} strokeWidth={1.25} />, title: "Analytics", body: "OPD, IPD and theatre volumes, with the trends behind the numbers you run the practice on." },
+            { icon: <ChartNoAxesColumn size={18} strokeWidth={1.25} />, title: "Analytics", body: "OPD and theatre volumes, with the trends behind the numbers you run the practice on." },
             { icon: <ShieldCheck size={18} strokeWidth={1.25} />, title: "Users and roles", body: "Staff accounts with role-based permissions, set per hospital and editable in Role Manager." },
             { icon: <Mail size={18} strokeWidth={1.25} />, title: "Notifications", body: "In-app alerts for the things that need answering, kept in one place rather than in email." },
             { icon: <ScanLine size={18} strokeWidth={1.25} />, title: "Document capture", body: "Scanned reports attached to the patient, with the text extracted so the record stays searchable." },
@@ -1189,7 +1188,6 @@ export function PremiumLanding() {
               {[
                 "Prescription",
                 "Consultation summary",
-                "Discharge summary",
                 "Dispense summary",
                 "Complete EMR",
                 "All visit history",

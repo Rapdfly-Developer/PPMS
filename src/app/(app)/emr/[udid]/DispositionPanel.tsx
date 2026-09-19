@@ -3,7 +3,7 @@
 import { useState, useTransition, useRef, useEffect } from "react";
 import { SingleChipSelect } from "@/components/ui/Chip";
 import { WARDS } from "@/lib/constants";
-import { saveDispense, saveAdmission, saveFollowUp } from "./actions";
+import { saveDispense, saveFollowUp } from "./actions";
 import { AlertTriangle, History, Plus, X } from "lucide-react";
 
 
@@ -66,44 +66,6 @@ export function DispensePanel({ visit, udid }: { visit: any; udid: string }) {
         className="w-full rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm"
       />
       {saved && <span className="mt-2 text-xs text-[var(--color-success-600)] font-medium">Saved</span>}
-    </div>
-  );
-}
-
-export function AdmitPanel({ visit, udid, patientSex }: { visit: any; udid: string; patientSex: string }) {
-  const [reason, setReason] = useState(visit.admission?.reason ?? "");
-  const [ward, setWard] = useState(visit.admission?.ward ?? (patientSex === "FEMALE" ? "FEMALE_WARD" : "MALE_WARD"));
-  const [days, setDays] = useState(visit.admission?.numberOfDays?.toString() ?? "1");
-  const [pending, startTransition] = useTransition();
-  const [saved, setSaved] = useState(false);
-
-  return (
-    <div className="rounded-xl border border-[var(--color-border)] p-4">
-      <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)] mb-3">Admission</p>
-      <div className="flex flex-col gap-3">
-        <textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Reason for admission" rows={2} className="w-full rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm" />
-        <div>
-          <p className="text-xs font-medium text-[var(--color-ink-500)] mb-1.5">Ward (auto-suggested from registered sex, editable)</p>
-          <SingleChipSelect options={WARDS} value={ward} onChange={setWard} />
-        </div>
-        <div className="max-w-[160px]">
-          <label className="text-xs font-medium text-[var(--color-ink-500)]">Number of Days</label>
-          <input type="number" min={1} value={days} onChange={(e) => setDays(e.target.value)} className="mt-1 w-full rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm" />
-        </div>
-      </div>
-      <button
-        disabled={pending}
-        onClick={() =>
-          startTransition(async () => {
-            await saveAdmission(visit.id, udid, { reason, ward, numberOfDays: parseInt(days, 10) || 1 });
-            setSaved(true);
-          })
-        }
-        className="mt-3 text-[13px] sm:text-sm font-medium px-4 py-2 rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)]"
-      >
-        Save Admission
-      </button>
-      {saved && <span className="ml-3 text-xs text-[var(--color-success-600)] font-medium">Saved, hospital notified</span>}
     </div>
   );
 }
