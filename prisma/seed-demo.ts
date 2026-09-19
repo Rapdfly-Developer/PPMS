@@ -170,54 +170,9 @@ async function main() {
     }
   }
 
-  // ── IPD admissions ─────────────────────────────────────────────────────────
-  const ipdCandidates = [
-    { patient: patients[2], ward: "PRE_OP",   reason: "Pre-operative preparation",       daysAgo: 1 },
-    { patient: patients[8], ward: "POST_OP",  reason: "Post cataract surgery recovery",  daysAgo: 3 },
-    { patient: patients[3], ward: "GENERAL",  reason: "Diabetic retinopathy observation", daysAgo: 2 },
-  ];
-
-  for (const ipd of ipdCandidates) {
-    const existingAdm = await prisma.admission.findFirst({
-      where: { visit: { patientId: ipd.patient.id, doctorId: doctor.id } },
-    });
-    if (existingAdm) continue;
-
-    const admDate = past(ipd.daysAgo);
-    const admAppt = await prisma.appointment.create({
-      data: {
-        patientId:  ipd.patient.id,
-        doctorId:   doctor.id,
-        hospitalId: hospitalA.id,
-        dateTime:   admDate,
-        status:     "COMPLETED",
-        visitType:  "Admission",
-      },
-    });
-    const admVisit = await prisma.visit.create({
-      data: {
-        patientId:     ipd.patient.id,
-        doctorId:      doctor.id,
-        hospitalId:    hospitalA.id,
-        appointmentId: admAppt.id,
-        date:          admDate,
-      },
-    });
-    await prisma.admission.create({
-      data: {
-        visitId:      admVisit.id,
-        ward:         ipd.ward as any,
-        reason:       ipd.reason,
-        numberOfDays: ipd.daysAgo,
-        createdAt:    admDate,
-      },
-    });
-  }
-
   console.log("\n✅ Demo seed complete!");
   console.log("   Doctor login : doctor / password123");
   console.log("   Today's schedule : 10 appointments (5 completed, 5 waiting)");
-  console.log("   IPD admissions   : 3 patients");
   console.log("   Pending investigations: 2");
   console.log("   7-day history    : 27 past visits\n");
 }
