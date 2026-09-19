@@ -5,8 +5,8 @@ import { convertNotesToCC } from "@/lib/appointment-cc";
 import { ChevronDown, AlertTriangle, Plus, X } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { FieldWithHistory } from "@/components/ui/HistoryToggle";
-import { ChipGroup } from "@/components/ui/Chip";
-import { PAST_MEDICAL_HISTORY_CHIPS, VITAL_RANGES } from "@/lib/constants";
+import { PAST_MEDICAL_HISTORY_CHIPS, VITAL_RANGES, CHIEF_COMPLAINT_FIELD_KEY, CHIEF_COMPLAINT_LEGACY_KEYS } from "@/lib/constants";
+import { OPHTHALMIC_COMPLAINTS } from "@/components/ui/ComplaintCombobox";
 import { parseJSON } from "@/lib/json";
 import { useAutoSave, SaveIndicator } from "@/lib/useAutoSave";
 import { KeywordTextarea } from "@/components/emr/KeywordField";
@@ -57,6 +57,57 @@ function serializeComplaints(list: Complaint[]): string {
     .join(COMPLAINT_SEP);
 }
 
+/* Past medical history is stored in the same JSON column as before, but each
+   entry now carries an optional duration:
+     [{ name: "HTN", sinceNum: "2", sinceUnit: "years" }, ...]
+   Records written by the earlier chip UI are a plain string[] ("HTN"), so the
+   parser accepts both and upgrades the old shape in place. Nothing is migrated
+   in the database; an old record simply reads back with no since value. */
+export type PmhEntry = { name: string; sinceNum: string; sinceUnit: string };
+
+const emptyPmh = (name = ""): PmhEntry => ({ name, sinceNum: "", sinceUnit: "days" });
+
+function parsePmh(raw: string | null | undefined): PmhEntry[] {
+  const parsed = parseJSON<unknown>(raw, []);
+  if (!Array.isArray(parsed)) return [];
+  const out: PmhEntry[] = [];
+  for (const item of parsed) {
+    // Legacy: a bare condition name with no duration.
+    if (typeof item === "string") {
+      if (item.trim()) out.push(emptyPmh(item.trim()));
+      continue;
+    }
+    if (item && typeof item === "object") {
+      const o = item as Record<string, unknown>;
+      const name = typeof o.name === "string" ? o.name.trim() : "";
+      if (!name) continue;
+      out.push({
+        name,
+        sinceNum:  typeof o.sinceNum  === "string" ? o.sinceNum  : "",
+        sinceUnit: typeof o.sinceUnit === "string" && o.sinceUnit ? o.sinceUnit : "days",
+      });
+    }
+  }
+  return out;
+}
+
+/** Merge prior-visit history with this visit's, de-duplicated by condition name.
+    A later entry wins, so a duration added today replaces an older blank one. */
+function mergePmh(...lists: PmhEntry[][]): PmhEntry[] {
+  const byName = new Map<string, PmhEntry>();
+  for (const list of lists) {
+    for (const e of list) {
+      if (!e.name.trim()) continue;
+      const key = e.name.trim().toLowerCase();
+      const existing = byName.get(key);
+      // Don't let a blank duration overwrite one already recorded.
+      if (existing && !e.sinceNum && existing.sinceNum) continue;
+      byName.set(key, e);
+    }
+  }
+  return [...byName.values()];
+}
+
 function parseBP(value: string): { sys: number; dia: number } | null {
   const m = value.replace(/\s/g, "").match(/^(\d{2,3})\/(\d{2,3})$/);
   if (!m) return null;
@@ -100,22 +151,29 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, customPmhCh
   const [weight, setWeight] = useState(ge?.weight ?? "");
   const [complaints, setComplaints] = useState<Complaint[]>(() => parseComplaints(ge?.chiefComplaint ?? ""));
   const [hpi, setHpi] = useState(ge?.hpi ?? "");
-  const [pmh, setPmh] = useState<string[]>(parseJSON(ge?.pastMedicalHistory, [] as string[]));
-  const [pmhOther, setPmhOther] = useState(ge?.pmhOtherText ?? "");
+  /* One row per condition, each with an optional "since". pmhOtherText is
+     still written back untouched so free text saved by the old chip UI is not
+     dropped on the next save. */
+  const [pmh, setPmh] = useState<PmhEntry[]>(() => parsePmh(ge?.pastMedicalHistory));
+  const [pmhOther] = useState(ge?.pmhOtherText ?? "");
+
+  const patchPmh = (i: number, patch: Partial<PmhEntry>) =>
+    setPmh((prev) => prev.map((e, idx) => (idx === i ? { ...e, ...patch } : e)));
+  const addPmh = (name = "") => setPmh((prev) => [...prev, emptyPmh(name)]);
+  const removePmh = (i: number) => setPmh((prev) => prev.filter((_, idx) => idx !== i));
   const [medications, setMedications] = useState(ge?.medications ?? "");
   const [allergies, setAllergies] = useState(ge?.allergies ?? "");
   const [nkda, setNkda] = useState(ge?.nkda ?? false);
 
   // PMH persists cumulatively across visits per the PRD
-  const priorPmh = priorVisits.flatMap((v) => parseJSON<string[]>(v.generalExam?.pastMedicalHistory, []));
-  const cumulativePmh = Array.from(new Set([...priorPmh, ...pmh]));
+  const priorPmh = priorVisits.flatMap((v) => parsePmh(v.generalExam?.pastMedicalHistory));
+  const cumulativePmh = mergePmh(priorPmh, pmh);
 
   const chiefComplaintFull = serializeComplaints(complaints);
   const data = { bp, pulse, temperature, weight, chiefComplaint: chiefComplaintFull, hpi, pastMedicalHistory: JSON.stringify(cumulativePmh), pmhOtherText: pmhOther, medications, allergies, nkda };
 
   const patchComplaint = (i: number, patch: Partial<Complaint>) =>
     setComplaints((prev) => prev.map((c, idx) => (idx === i ? { ...c, ...patch } : c)));
-  const addComplaint    = () => setComplaints((prev) => [...prev, emptyComplaint()]);
   const removeComplaint = (i: number) =>
     setComplaints((prev) => (prev.length === 1 ? [emptyComplaint()] : prev.filter((_, idx) => idx !== i)));
 
@@ -217,25 +275,17 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, customPmhCh
                     )}
                 </div>
 
-                {/* Complaint textarea — full width; "+ Add Chief Complaint" sits next to "+ Keyword" on the last item */}
+                {/* Complaint textarea. Chief complaint is a single entry; the
+                    map above still renders every segment of an older record that
+                    was saved with more than one, so nothing is lost on read. */}
                 <KeywordTextarea
-                  fieldKey="ge_chiefComplaint"
+                  fieldKey={CHIEF_COMPLAINT_FIELD_KEY}
+                  builtIns={OPHTHALMIC_COMPLAINTS}
+                  legacyKeys={CHIEF_COMPLAINT_LEGACY_KEYS}
                   value={c.text}
                   onChange={(v) => patchComplaint(i, { text: v.replace(/\|/g, "/") })}
                   disabled={readOnly}
                   rows={2}
-                  afterButtons={
-                    !readOnly && i === complaints.length - 1 ? (
-                      <button
-                        type="button"
-                        onClick={addComplaint}
-                        className="self-start inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-[10px] font-medium text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] transition-colors whitespace-nowrap"
-                      >
-                        <Plus size={11} strokeWidth={2.5} />
-                        Add Chief Complaint
-                      </button>
-                    ) : undefined
-                  }
                 />
               </div>
             ))}
@@ -255,14 +305,79 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, customPmhCh
         <p className="text-xs font-semibold tracking-widest text-[var(--color-ink-500)] uppercase mb-3">
           Past Medical History <span className="text-[10px] font-normal normal-case tracking-normal text-[var(--color-ink-400)]">(cumulative across visits)</span>
         </p>
-        <ChipGroup
-          options={pmhChipOptions}
-          value={pmh}
-          onChange={readOnly ? () => {} : setPmh}
-          allowOther
-          otherValue={pmhOther}
-          onOtherChange={readOnly ? undefined : setPmhOther}
-        />
+        {/* One row per condition: the name (with the same keyword picker as
+            elsewhere) plus an optional duration. The eight standard conditions
+            and any custom keyword add a NEW row rather than appending text, so
+            each condition keeps its own "since". */}
+        <div className="flex flex-col gap-2">
+          {pmh.map((entry, i) => (
+            <div key={i} className="flex items-center gap-1.5 flex-wrap">
+              <input
+                value={entry.name}
+                onChange={(e) => patchPmh(i, { name: e.target.value })}
+                disabled={readOnly}
+                placeholder="Condition"
+                className="flex-1 min-w-[140px] rounded-lg border border-[var(--color-border)] bg-white px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] disabled:bg-[var(--color-surface-sunken)]"
+              />
+              <span className="text-[11px] font-semibold text-[var(--color-ink-400)] shrink-0">Since</span>
+              <select
+                value={entry.sinceNum}
+                onChange={(e) => patchPmh(i, { sinceNum: e.target.value })}
+                disabled={readOnly}
+                className="text-[11px] border border-[var(--color-border)] rounded-md px-1.5 py-1 bg-white text-[var(--color-ink-700)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] disabled:opacity-50 w-12 shrink-0"
+              >
+                <option value="">—</option>
+                {Array.from({ length: 30 }, (_, n) => n + 1).map((n) => (
+                  <option key={n} value={String(n)}>{n}</option>
+                ))}
+              </select>
+              <select
+                value={entry.sinceUnit}
+                onChange={(e) => patchPmh(i, { sinceUnit: e.target.value })}
+                disabled={readOnly || !entry.sinceNum}
+                className="text-[11px] border border-[var(--color-border)] rounded-md px-1.5 py-1 bg-white text-[var(--color-ink-700)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] disabled:opacity-50 w-16 shrink-0"
+              >
+                {SINCE_UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
+              </select>
+              {!readOnly && (
+                <button
+                  type="button"
+                  onClick={() => removePmh(i)}
+                  title={`Remove ${entry.name || "entry"}`}
+                  className="p-1 rounded-lg text-[var(--color-ink-400)] hover:text-red-600 hover:bg-red-50 transition-colors shrink-0"
+                >
+                  <X size={13} strokeWidth={2.5} />
+                </button>
+              )}
+            </div>
+          ))}
+
+          {!readOnly && (
+            <div className="flex flex-wrap items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => addPmh()}
+                className="self-start inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-[10px] font-medium text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] transition-colors whitespace-nowrap"
+              >
+                <Plus size={11} strokeWidth={2.5} /> Add
+              </button>
+              {/* Quick-add: each keyword starts its own row. Already-listed
+                  conditions are hidden so the same one is not added twice. */}
+              {pmhChipOptions
+                .filter((opt) => !pmh.some((e) => e.name.trim().toLowerCase() === opt.toLowerCase()))
+                .map((opt) => (
+                  <button
+                    key={opt}
+                    type="button"
+                    onClick={() => addPmh(opt)}
+                    className="inline-flex items-center px-2 py-0.5 rounded-full border border-[var(--color-border)] bg-white text-[11px] text-[var(--color-ink-600)] hover:border-[var(--color-primary-400)] hover:text-[var(--color-primary-700)] transition-colors"
+                  >
+                    {opt}
+                  </button>
+                ))}
+            </div>
+          )}
+        </div>
       </Card>
 
       {/* CURRENT MEDICATIONS */}

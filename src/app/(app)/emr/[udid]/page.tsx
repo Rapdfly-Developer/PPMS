@@ -5,10 +5,11 @@ import { Card } from "@/components/ui/Card";
 import { format, isSameDay } from "date-fns";
 import {
   User, Eye, Activity, Link2, FileText, FolderOpen, Lock,
-  Phone, Building2, Stethoscope, Calendar, AlertTriangle,
-  Pill, CalendarCheck, Hash, Clock, CheckCircle2, Sparkles,
+  Phone, Calendar, AlertTriangle,
+  Pill, CalendarCheck, Hash, CheckCircle2, Sparkles,
 } from "lucide-react";
-import { BackButton } from "@/components/ui/BackButton";
+import { VisitTimeline } from "./VisitTimeline";
+import { PatientPhoto } from "./PatientPhoto";
 import { convertNotesToCC, parseEMRComplaints } from "@/lib/appointment-cc";
 import { GeneralExamTab } from "./GeneralExamTab";
 import { PastExternalVisitsTab } from "./PastExternalVisitsTab";
@@ -25,6 +26,14 @@ import { ExternalPluginSlot } from "./ExternalPluginSlot";
 import { getAllRegisteredPlugins } from "@/plugin-framework/registry";
 import { RequestUnlockButton } from "./RequestUnlockButton";
 import { PrintHeader, PrintFooter } from "@/components/ui/PrintLayout";
+
+/** "h:mm a" in clinic time. Formatted on the server so the markup is stable. */
+function fmtStamp(d: Date | string | null | undefined): string | null {
+  if (!d) return null;
+  return new Date(d).toLocaleTimeString("en-IN", {
+    hour: "numeric", minute: "2-digit", hour12: true, timeZone: "Asia/Kolkata",
+  });
+}
 
 export default async function PatientDetailedEMR({
   params,
@@ -63,7 +72,9 @@ export default async function PatientDetailedEMR({
           medications: { orderBy: { createdAt: "desc" } },
           dispense: true,
           admission: true,
-          appointment: { select: { dateTime: true } },
+          // createdAt = when the appointment was booked; arrivedAt = when the
+          // patient reached the clinic. Both feed the header's visit timeline.
+          appointment: { select: { dateTime: true, createdAt: true, arrivedAt: true } },
         },
       },
       pastExternalVisits: { orderBy: { createdAt: "desc" } },
@@ -311,27 +322,17 @@ export default async function PatientDetailedEMR({
             {/* Left block: avatar + info */}
             <div className="flex gap-3 sm:gap-4 flex-1 min-w-0">
 
-              {/* Avatar */}
+              {/* Avatar — click to view full size */}
               <div className="shrink-0">
-                <div className="relative">
-                  <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full overflow-hidden ring-[3px] ring-sky-400/40 shadow-lg bg-sky-900/50 flex items-center justify-center">
-                    {patient.photoUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={patient.photoUrl.startsWith("http") ? `/api/secure-blob?url=${encodeURIComponent(patient.photoUrl)}` : `/api/upload?file=${encodeURIComponent(patient.photoUrl)}`}
-                        alt={patient.name}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <User size={26} className="text-sky-300/70" />
-                    )}
-                  </div>
-                  {activeVisit && (
-                    <span className={`absolute bottom-0.5 right-0.5 w-3.5 h-3.5 rounded-full border-2 shadow-sm ${
-                      activeVisit.status === "IN_PROGRESS" ? "bg-emerald-400 border-[#0D1F3C]" : "bg-slate-500 border-[#0D1F3C]"
-                    }`} />
-                  )}
-                </div>
+                <PatientPhoto
+                  src={patient.photoUrl
+                    ? (patient.photoUrl.startsWith("http")
+                        ? `/api/secure-blob?url=${encodeURIComponent(patient.photoUrl)}`
+                        : `/api/upload?file=${encodeURIComponent(patient.photoUrl)}`)
+                    : null}
+                  alt={patient.name}
+                  statusDot={activeVisit ? (activeVisit.status === "IN_PROGRESS" ? "active" : "closed") : null}
+                />
               </div>
 
               {/* Patient details */}
@@ -351,33 +352,25 @@ export default async function PatientDetailedEMR({
                   )}
                   {latestDiagnosis && (
                     <span className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-teal-400/20 text-teal-200 border border-teal-400/30">
-                      {latestDiagnosis.description}{latestDiagnosis.laterality ? ` · ${latestDiagnosis.laterality}` : ""}
+                      {latestDiagnosis.laterality ? `${latestDiagnosis.laterality} ` : ""}{latestDiagnosis.description}
                     </span>
                   )}
                 </div>
 
-                {/* Info chips — square ghost style (distinct from rounded diagnosis badge above) */}
-                <div className="flex flex-wrap gap-1.5">
-                  <span className="inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-md bg-transparent text-sky-200 border border-sky-300/40 font-mono font-semibold tracking-wide">
+                {/* Identity line — one row, no per-item borders. Doctor and hospital
+                    are deliberately absent: both are already implied by the context
+                    the EMR was opened from, and they crowded the line. */}
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-white/65">
+                  <span className="inline-flex items-center gap-1.5 text-sky-200 font-mono font-semibold tracking-wide">
                     <Hash size={10} />{patient.udid ?? "—"}
                   </span>
                   {patient.mobile && (
-                    <span className="inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-md bg-transparent text-white/65 border border-white/20">
+                    <span className="inline-flex items-center gap-1.5">
                       <Phone size={10} />{patient.mobile}
                     </span>
                   )}
-                  {patient.registeredAt && (
-                    <span className="inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-md bg-transparent text-white/65 border border-white/20">
-                      <Building2 size={10} />{patient.registeredAt.name}
-                    </span>
-                  )}
-                  {doctorName && (
-                    <span className="inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-md bg-transparent text-white/65 border border-white/20">
-                      <Stethoscope size={10} />Dr. {doctorName}
-                    </span>
-                  )}
                   {priorVisits[0] && (
-                    <span className="inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-md bg-transparent text-white/65 border border-white/20">
+                    <span className="inline-flex items-center gap-1.5">
                       <Calendar size={10} />Last: {format(new Date(priorVisits[0].date), "d MMM yyyy")}
                     </span>
                   )}
@@ -431,20 +424,21 @@ export default async function PatientDetailedEMR({
                     </span>
                   </div>
                   <div className="space-y-1">
-                    <div className="text-xs font-semibold text-white">{activeVisit.visitType}</div>
-                    <div className="text-[11px] text-white/50">
-                      {format(new Date(activeVisit.date), "EEE, d MMM yyyy")}
-                    </div>
-                    {activeVisit.appointment?.dateTime && (
-                      <div className="flex items-center gap-1 text-[11px] text-white/50">
-                        <Clock size={10} className="shrink-0" />
-                        {new Date(activeVisit.appointment.dateTime).toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit", hour12: true, timeZone: "Asia/Kolkata" })}
-                      </div>
-                    )}
+                    <div className="text-xs font-semibold text-white mb-1.5">{activeVisit.visitType}</div>
+                    {/* Static stamps are formatted here so the server and the first
+                        client paint agree; the two elapsed values tick in the client. */}
+                    <VisitTimeline
+                      visitId={activeVisit.id}
+                      bookingTime={fmtStamp(activeVisit.appointment?.createdAt)}
+                      appointmentTime={fmtStamp(activeVisit.appointment?.dateTime)}
+                      visitTime={fmtStamp(activeVisit.date)}
+                      arrivedAtIso={activeVisit.appointment?.arrivedAt?.toISOString() ?? null}
+                      visitClosed={activeVisit.status !== "IN_PROGRESS"}
+                    />
                     {activeVisit.finalizedAt && (
-                      <div className="flex items-center gap-1 text-[11px] text-emerald-300/80 pt-0.5 border-t border-white/10 mt-1">
+                      <div className="flex items-center gap-1 text-[11px] text-emerald-300/80 pt-1 border-t border-white/10 mt-1.5">
                         <CheckCircle2 size={10} className="shrink-0" />
-                        {new Date(activeVisit.finalizedAt).toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit", hour12: true, timeZone: "Asia/Kolkata" })}
+                        Signed {fmtStamp(activeVisit.finalizedAt)}
                       </div>
                     )}
                   </div>

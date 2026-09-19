@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, KeyboardEvent } from "react";
 import { Plus, X } from "lucide-react";
+import { CHIEF_COMPLAINT_FIELD_KEY, CHIEF_COMPLAINT_LEGACY_KEYS } from "@/lib/constants";
 
 export const OPHTHALMIC_COMPLAINTS = [
   "Blurred Vision",
@@ -27,6 +28,30 @@ export const OPHTHALMIC_COMPLAINTS = [
   "Headache",
 ] as const;
 
+/**
+ * The shared keyword list, with anything still sitting under the two
+ * pre-unification keys folded in.
+ *
+ * Read-only on purpose: this runs from a useState initializer, so it must not
+ * mutate storage. The merged list is written back by the persist effect below,
+ * which is what actually completes the migration.
+ */
+function readMergedKeywords(storageKey: string): string[] {
+  try {
+    const merged: string[] = JSON.parse(localStorage.getItem(storageKey) ?? "[]");
+    for (const legacy of CHIEF_COMPLAINT_LEGACY_KEYS) {
+      const parsed = JSON.parse(localStorage.getItem(legacy) ?? "null");
+      if (!Array.isArray(parsed)) continue;
+      for (const k of parsed) {
+        if (typeof k === "string" && k && !merged.includes(k)) merged.push(k);
+      }
+    }
+    return merged;
+  } catch {
+    return [];   // server render, or storage blocked
+  }
+}
+
 interface Props {
   value: string;
   onChange: (v: string) => void;
@@ -40,27 +65,24 @@ export function ComplaintCombobox({
   placeholder = "Or type a custom complaint…",
   inputCls = "",
 }: Props) {
-  const STORAGE_KEY = "ppms:complaint-keywords";
+  // Same key the EMR's chief-complaint field uses, so a keyword saved here
+  // shows up there and vice versa.
+  const STORAGE_KEY = `kw_${CHIEF_COMPLAINT_FIELD_KEY}`;
 
-  const [customKeywords, setCustomKeywords] = useState<string[]>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
+  const [customKeywords, setCustomKeywords] = useState<string[]>(() =>
+    readMergedKeywords(STORAGE_KEY));
 
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Persist to localStorage whenever the list changes
+  // Persist whenever the list changes. This also completes the merge above:
+  // the combined list is written back under the shared key on first mount.
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(customKeywords));
     } catch {
       // storage unavailable — silently skip
     }
-  }, [customKeywords]);
+  }, [customKeywords, STORAGE_KEY]);
 
   const allStandard = OPHTHALMIC_COMPLAINTS as readonly string[];
 

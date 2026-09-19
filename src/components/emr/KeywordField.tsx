@@ -8,20 +8,57 @@ function loadKws(fieldKey: string): string[] {
 }
 
 function saveKws(fieldKey: string, kws: string[]) {
-  localStorage.setItem(`kw_${fieldKey}`, JSON.stringify(kws));
+  try { localStorage.setItem(`kw_${fieldKey}`, JSON.stringify(kws)); } catch { /* storage unavailable */ }
+}
+
+/**
+ * Folds keywords saved under older storage keys into this field's key, once.
+ *
+ * Chief complaint was captured in two places that each kept their own list —
+ * the booking form under `ppms:complaint-keywords`, the EMR under
+ * `kw_ge_chiefComplaint` — so a term saved on one side never appeared on the
+ * other. Both now read one key; this carries the existing vocabulary across
+ * rather than silently dropping what doctors had already built up.
+ */
+function migrateLegacyKws(fieldKey: string, legacyKeys: readonly string[]) {
+  try {
+    const current = loadKws(fieldKey);
+    const merged = [...current];
+    let moved = false;
+    for (const legacy of legacyKeys) {
+      const raw = localStorage.getItem(legacy);
+      if (!raw) continue;
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        for (const k of parsed) {
+          if (typeof k === "string" && k && !merged.includes(k)) { merged.push(k); moved = true; }
+        }
+      }
+      localStorage.removeItem(legacy);
+    }
+    if (moved) saveKws(fieldKey, merged);
+  } catch { /* storage unavailable — nothing to migrate */ }
 }
 
 function KeywordChips({
   fieldKey,
   onAppend,
   disabled,
+  builtIns = [],
+  legacyKeys,
 }: {
   fieldKey: string;
   onAppend: (kw: string) => void;
   disabled: boolean;
+  /** Always-present suggestions. Not removable: they are not the user's to delete. */
+  builtIns?: readonly string[];
+  legacyKeys?: readonly string[];
 }) {
   const [kws, setKws] = useState<string[]>([]);
-  useEffect(() => { setKws(loadKws(fieldKey)); }, [fieldKey]);
+  useEffect(() => {
+    if (legacyKeys?.length) migrateLegacyKws(fieldKey, legacyKeys);
+    setKws(loadKws(fieldKey));
+  }, [fieldKey, legacyKeys]);
 
   const remove = (kw: string) => {
     const next = kws.filter((k) => k !== kw);
@@ -29,11 +66,24 @@ function KeywordChips({
     saveKws(fieldKey, next);
   };
 
-  if (disabled || kws.length === 0) return null;
+  // A built-in the user also saved would otherwise render twice.
+  const custom = kws.filter((k) => !builtIns.some((b) => b.toLowerCase() === k.toLowerCase()));
+
+  if (disabled || (custom.length === 0 && builtIns.length === 0)) return null;
 
   return (
     <>
-      {kws.map((kw) => (
+      {builtIns.map((kw) => (
+        <button
+          key={`builtin-${kw}`}
+          type="button"
+          onClick={() => onAppend(kw)}
+          className="inline-flex items-center px-2 py-0.5 rounded-full border border-[var(--color-border)] bg-white text-[11px] text-[var(--color-ink-600)] hover:border-[var(--color-primary-400)] hover:text-[var(--color-primary-700)] transition-colors"
+        >
+          {kw}
+        </button>
+      ))}
+      {custom.map((kw) => (
         <span
           key={kw}
           className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-[11px] text-[var(--color-primary-700)]"
@@ -89,12 +139,18 @@ export function KeywordInput({
   disabled,
   placeholder,
   className,
+  builtIns,
+  legacyKeys,
 }: {
   fieldKey: string;
   value: string;
   onChange: (v: string) => void;
   disabled?: boolean;
   placeholder?: string;
+  /** Always-offered suggestions, shown before the user's own saved keywords. */
+  builtIns?: readonly string[];
+  /** Older localStorage keys whose keywords should be folded into this field. */
+  legacyKeys?: readonly string[];
   className?: string;
 }) {
   const [tick, setTick] = useState(0);
@@ -114,7 +170,7 @@ export function KeywordInput({
       {!disabled && (
         <div className="flex flex-wrap items-center gap-1.5">
           <AddKeywordButton getValue={() => value} fieldKey={fieldKey} onRefresh={() => setTick((t) => t + 1)} />
-          <KeywordChips key={tick} fieldKey={fieldKey} onAppend={(kw) => onChange(value ? `${value}, ${kw}` : kw)} disabled={false} />
+          <KeywordChips key={tick} fieldKey={fieldKey} builtIns={builtIns} legacyKeys={legacyKeys} onAppend={(kw) => onChange(value ? `${value}, ${kw}` : kw)} disabled={false} />
         </div>
       )}
     </div>
@@ -132,12 +188,18 @@ export function KeywordTextarea({
   rows,
   className,
   afterButtons,
+  builtIns,
+  legacyKeys,
 }: {
   fieldKey: string;
   value: string;
   onChange: (v: string) => void;
   disabled?: boolean;
   placeholder?: string;
+  /** Always-offered suggestions, shown before the user's own saved keywords. */
+  builtIns?: readonly string[];
+  /** Older localStorage keys whose keywords should be folded into this field. */
+  legacyKeys?: readonly string[];
   rows?: number;
   className?: string;
   afterButtons?: React.ReactNode;
@@ -159,8 +221,12 @@ export function KeywordTextarea({
       />
       {!disabled && (
         <div className="flex flex-wrap items-center gap-1.5">
-          <AddKeywordButton getValue={() => value.trim().split(/\s+/).pop() ?? value.trim()} fieldKey={fieldKey} onRefresh={() => setTick((t) => t + 1)} />
-          <KeywordChips key={tick} fieldKey={fieldKey} onAppend={(kw) => onChange(value ? `${value} ${kw}` : kw)} disabled={false} />
+          {/* The whole trimmed value, not the last word: complaints are mostly
+              multi-word ("Blurred Vision", "Foreign Body Sensation"), and the
+              old last-word behaviour saved "Vision" for "Blurred Vision". That
+              matters more now the vocabulary is shared with the booking form. */}
+          <AddKeywordButton getValue={() => value.trim()} fieldKey={fieldKey} onRefresh={() => setTick((t) => t + 1)} />
+          <KeywordChips key={tick} fieldKey={fieldKey} builtIns={builtIns} legacyKeys={legacyKeys} onAppend={(kw) => onChange(value ? `${value} ${kw}` : kw)} disabled={false} />
           {afterButtons}
         </div>
       )}

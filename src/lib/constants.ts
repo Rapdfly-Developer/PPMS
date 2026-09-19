@@ -37,6 +37,19 @@ export const PAST_MEDICAL_HISTORY_CHIPS = [
   "Other",
 ] as const;
 
+/* ── Chief complaint ───────────────────────────────────────────────────────
+   One vocabulary and one storage key for both places a complaint is captured:
+   the booking / new-encounter form and the EMR's General tab. They previously
+   kept separate localStorage lists, so a keyword saved in one never appeared
+   in the other. */
+export const CHIEF_COMPLAINT_FIELD_KEY = "chiefComplaint";
+
+/** Keys these keywords used to live under, merged in on first load. */
+export const CHIEF_COMPLAINT_LEGACY_KEYS = [
+  "ppms:complaint-keywords",   // booking form
+  "kw_ge_chiefComplaint",      // EMR General tab
+] as const;
+
 export const VA_TEST_METHODS = ["Snellen", "E-chart", "LogMAR", "Symbols", "HOTV"] as const;
 
 export const VA_SNELLEN_VALUES = ["-", "6/6", "6/9", "6/12", "6/18", "6/24", "6/36", "6/60", "5/60", "CF 1m", "CF 3m", "HM", "PL+", "PL-"] as const;
