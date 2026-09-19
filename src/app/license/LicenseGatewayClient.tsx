@@ -238,8 +238,14 @@ function LeftPanel() {
     <div className="hidden lg:flex lg:w-[45%] flex-col justify-between px-9 xl:px-14 py-8 xl:py-10 shrink-0 relative overflow-hidden">
       <div className="lg-a0 shrink-0">
         <div className="flex items-center gap-3.5">
-          <img src="/landing/logo-ppms-new.png" alt="RF Health" className="shrink-0"
-            style={{ width: "48px", height: "48px", objectFit: "contain" }} />
+          {/* cover, not contain: the mark carries its own marble ground, so
+              letterboxing would frame the ground instead of the shield. The
+              radius and hairline border make it read as a deliberate badge. */}
+          <img src="/landing/logo-rf-health.webp" alt="RF Health" className="shrink-0"
+            style={{
+              width: "48px", height: "48px", objectFit: "cover",
+              borderRadius: "11px", border: `1px solid ${T.border}`,
+            }} />
           <div>
             <div className="flex items-center gap-2">
               <span className="text-[25px] font-black" style={{ color: T.text, letterSpacing: "-0.035em" }}>RF Health</span>
@@ -624,8 +630,11 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
 
               {/* Mobile logo */}
               <div className="flex lg:hidden items-center gap-2.5 justify-center mb-8 lg-a0">
-                <img src="/landing/logo-ppms-new.png" alt="RF Health"
-                  style={{ width: "36px", height: "36px", objectFit: "contain" }} />
+                <img src="/landing/logo-rf-health.webp" alt="RF Health"
+                  style={{
+                    width: "36px", height: "36px", objectFit: "cover",
+                    borderRadius: "9px", border: `1px solid ${T.border}`,
+                  }} />
                 <p className="text-2xl font-black" style={{ color: T.text, letterSpacing: "-0.03em" }}>RF Health</p>
               </div>
 
