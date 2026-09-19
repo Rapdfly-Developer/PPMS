@@ -972,8 +972,14 @@ export default function LoginPage() {
            so the growth is spent across the sizes people actually use. */
         .rf-login{
           --pad-panel: clamp(36px, 4vw, 110px);
-          --left-w:    clamp(430px, 180px + 22vw, 760px);
-          --card-w:    clamp(420px, 320px + 9vw, 600px);
+          /* Raised: at a 200%-scaled 4K panel the browser reports ~1972 CSS
+             px, and the previous caps resolved to 614px and 497px there,
+             leaving ~230px unused inside the left column and ~390px inside
+             the right. These are max-widths on full-width elements, so a
+             higher cap only takes effect where the column actually has the
+             room — narrow screens still fill and clip to their container. */
+          --left-w:    clamp(430px, 180px + 30vw, 900px);
+          --card-w:    clamp(420px, 320px + 11vw, 620px);
           --card-pad:  clamp(20px, 1.8vw, 44px);
           --logo:      clamp(44px, 3.4vw, 72px);
 
