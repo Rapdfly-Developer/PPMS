@@ -9,6 +9,8 @@ import {
   Check,
   CheckCircle2,
   ClipboardPlus,
+  MessageSquareText,
+  Sparkles,
   Cloud,
   Database,
   Fingerprint,
@@ -91,22 +93,18 @@ function Frame({
 }
 
 /**
- * One measure for the whole page. Capped at 6xl through desktop so line length
- * stays readable, then allowed to grow on very wide displays. The ladder used
- * to stop at 3xl, which pinned every screen above 1760px to 1520px: at 2560px
- * that stranded over 1000px of empty page either side.
- *
- * Each large step is min(94vw, cap) rather than a bare pixel value, so the
- * column tracks the viewport between breakpoints instead of stepping and then
- * sitting still until the next one.
+ * One measure for the whole page. The ladder itself now lives in globals.css
+ * as the container-fluid utility, so the app shell and this page cannot drift
+ * apart. Capped through desktop so line length stays readable, then growing
+ * on wide displays, with each large step a min(94vw, cap) so the column
+ * tracks the viewport between breakpoints rather than stepping and holding.
  */
-const SHELL =
-  "mx-auto w-full max-w-6xl xl:max-w-[1240px] 2xl:max-w-[min(94vw,1800px)] " +
-  "3xl:max-w-[min(94vw,2100px)] 4xl:max-w-[min(94vw,2200px)]";
+const SHELL = "container-fluid";
 
 /** Horizontal gutter, shared by Section, the hero and the footer so all three
- *  edges line up at every width. */
-const GUTTER = "px-4 sm:px-6 lg:px-8 2xl:px-10";
+ *  edges line up at every width. Also lives in globals.css, so the two stay
+ *  in step without either file having to know the other's numbers. */
+const GUTTER = "gutter-fluid";
 
 function Section({
   id,
@@ -257,7 +255,7 @@ function JourneyPanel() {
               { n: "04", t: "Follow-up", d: "Next appointment, repeat prescription and reminders scheduled before they leave." },
             ].map((s) => (
               <RevealItem key={s.n}>
-                <div className="flex items-start gap-5 rounded-2xl bg-white p-5 ring-1 ring-inset ring-emerald-950/[0.07] transition-[transform,box-shadow] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:-translate-y-1 hover:shadow-[0_20px_44px_-34px_rgba(6,60,45,0.5)]">
+                <div className="flex items-start gap-5 rounded-2xl bg-white p-5 3xl:p-7 4xl:p-8 ring-1 ring-inset ring-emerald-950/[0.07] transition-[transform,box-shadow] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:-translate-y-1 hover:shadow-[0_20px_44px_-34px_rgba(6,60,45,0.5)]">
                   <span className="font-display text-[13px] font-bold tracking-[0.1em] text-emerald-500">
                     {s.n}
                   </span>
@@ -573,7 +571,14 @@ export function PremiumLanding() {
             <Frame
               src={`${IMG}/hero-clinician-tablet-dashboard.jpg`}
               alt="A clinician in gloves reviewing a RF Health patient dashboard on a tablet in a hospital corridor"
-              aspect="aspect-[3/4]"
+              // Portrait through desktop, then relaxed. Held at 3/4 the plate
+              // reaches 1137px tall at 1920 and 1395px at 2560, taller than the
+              // screen in the first case: the text column beside it is ~524px,
+              // and items-center then centres the copy against that height,
+              // which is where the gap above the headline comes from. The frame
+              // crops with object-cover, so this trims the photo rather than
+              // distorting it.
+              aspect="aspect-[3/4] 4xl:aspect-[1/1] 5xl:aspect-[5/4]"
               sizes="(max-width: 1024px) 92vw, 46vw"
               priority
               quality={85}
@@ -741,7 +746,7 @@ export function PremiumLanding() {
                 </div>
               </div>
 
-              <div className="group/care flex flex-1 items-center gap-5 rounded-[2rem] bg-white p-5 ring-1 ring-inset ring-emerald-950/[0.07] shadow-[0_20px_50px_-40px_rgba(6,60,45,0.5)] transition-[transform,box-shadow] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:-translate-y-1">
+              <div className="group/care flex flex-1 items-center gap-5 rounded-[2rem] bg-white p-5 3xl:p-7 4xl:p-8 ring-1 ring-inset ring-emerald-950/[0.07] shadow-[0_20px_50px_-40px_rgba(6,60,45,0.5)] transition-[transform,box-shadow] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:-translate-y-1">
                 <div className="relative h-[92px] w-[92px] shrink-0 overflow-hidden rounded-2xl bg-slate-100">
                   <Image
                     src={`${IMG}/care-management-tile.jpg`}
@@ -774,7 +779,7 @@ export function PremiumLanding() {
           ].map((f) => (
             <RevealItem key={f.t} className="sm:col-span-1 md:col-span-6 lg:col-span-3">
               <div className="group h-full rounded-[1.75rem] bg-white p-2 ring-1 ring-inset ring-emerald-950/[0.07] transition-[transform,box-shadow] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:-translate-y-1 hover:shadow-[0_30px_60px_-40px_rgba(6,60,45,0.45)]">
-                <div className="h-full rounded-[1.25rem] bg-gradient-to-b from-slate-50/80 to-white p-6">
+                <div className="h-full rounded-[1.25rem] bg-gradient-to-b from-slate-50/80 to-white p-6 3xl:p-8 4xl:p-10">
                   <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-emerald-700 ring-1 ring-inset ring-emerald-950/[0.07]">
                     {f.icon}
                   </span>
@@ -839,6 +844,71 @@ export function PremiumLanding() {
           </div>
         </Split>
       </Section>
+
+      {/* ── Clinical AI ──────────────────────────────────────────────────────
+          Copy here is held to what the Clinical Copilot plugin actually does,
+          per its manifest: summarise, ask, draft, all gated by role. The
+          "never writes to the record" line is a real product constraint, not
+          a reassurance -- drafts return for review and are saved by the
+          doctor, and the plugin is off by default even for hospital admins.
+          If the plugin's capabilities change, this section changes with it. */}
+      <Section id="copilot">
+        <SectionHead
+          eyebrow="Clinical AI"
+          title={<>A second read of the chart, before you walk in.</>}
+          lede="The Clinical Copilot reads the record you already keep and gives it back to you as something shorter. It drafts, it does not decide, and everything it produces is yours to accept or discard."
+        />
+
+        <RevealGroup
+          className="mt-8 grid gap-3 sm:mt-10 sm:grid-cols-2 2xl:grid-cols-4"
+          stagger={0.06}
+        >
+          {[
+            {
+              icon: <ScanLine size={19} strokeWidth={1.25} />,
+              title: "Summarise the record",
+              body: "History, medications, investigations and the visit timeline condensed into a brief you can read before the patient sits down.",
+            },
+            {
+              icon: <MessageSquareText size={19} strokeWidth={1.25} />,
+              title: "Ask it questions",
+              body: "Ask what changed since the last visit, or when a drug was started, and get an answer drawn from that patient’s own chart.",
+            },
+            {
+              icon: <ClipboardPlus size={19} strokeWidth={1.25} />,
+              title: "Draft the consultation note",
+              body: "A first draft of the note, returned for review. Nothing reaches the record until you have read it and saved it yourself.",
+            },
+            {
+              icon: <ShieldCheck size={19} strokeWidth={1.25} />,
+              title: "Granted, never inherited",
+              body: "Off by default, including for hospital administrators. A doctor grants access deliberately, and it stays inside the same role and audit rules as the rest of the record.",
+            },
+          ].map((c) => (
+            <RevealItem key={c.title}>
+              <div className="group/ai h-full rounded-[1.5rem] bg-white p-2 ring-1 ring-inset ring-emerald-950/[0.07] transition-[transform,box-shadow] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:-translate-y-1 hover:shadow-[0_24px_50px_-38px_rgba(6,60,45,0.5)]">
+                <div className="flex h-full flex-col gap-4 rounded-[1rem] bg-gradient-to-b from-slate-50/80 to-white p-6 3xl:p-8 4xl:p-10">
+                  <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-600/10 transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover/ai:scale-110">
+                    {c.icon}
+                  </span>
+                  <h3 className="text-[16.5px] font-semibold leading-snug tracking-[-0.01em] text-emerald-950">
+                    {c.title}
+                  </h3>
+                  <p className="text-[14px] leading-relaxed text-slate-600">{c.body}</p>
+                </div>
+              </div>
+            </RevealItem>
+          ))}
+        </RevealGroup>
+
+        <Reveal delay={0.1}>
+          <p className="mx-auto mt-8 flex max-w-2xl items-center justify-center gap-2 text-center text-[13.5px] leading-relaxed text-slate-500">
+            <Sparkles size={15} strokeWidth={1.25} className="shrink-0 text-emerald-600" aria-hidden="true" />
+            Decision support, not diagnosis. The Copilot assists the doctor reading the chart; it never replaces that reading.
+          </p>
+        </Reveal>
+      </Section>
+
 
       {/* ── Multi-hospital ───────────────────────────────────────────────── */}
       <Section id="hospitals">
@@ -930,7 +1000,7 @@ export function PremiumLanding() {
           ].map((s) => (
             <RevealItem key={s.label}>
               <div className="group/sec h-full rounded-[1.5rem] bg-white p-2 ring-1 ring-inset ring-emerald-950/[0.07] transition-[transform,box-shadow] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:-translate-y-1 hover:shadow-[0_24px_50px_-38px_rgba(6,60,45,0.5)]">
-                <div className="flex h-full flex-col items-center gap-4 rounded-[1rem] bg-gradient-to-b from-slate-50/80 to-white px-4 py-8 text-center">
+                <div className="flex h-full flex-col items-center gap-4 rounded-[1rem] bg-gradient-to-b from-slate-50/80 to-white px-4 py-8 3xl:px-5 3xl:py-10 text-center">
                   <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-600/10 transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover/sec:scale-110">
                     {s.icon}
                   </span>
@@ -1000,7 +1070,7 @@ export function PremiumLanding() {
             {TESTIMONIALS.map((t) => (
               <RevealItem key={t.name}>
                 <figure className="rounded-[1.75rem] bg-white p-2 ring-1 ring-inset ring-emerald-950/[0.07] shadow-[0_30px_60px_-50px_rgba(6,60,45,0.6)] transition-[transform,box-shadow] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:-translate-y-1">
-                  <div className="rounded-[1.25rem] bg-gradient-to-b from-slate-50/70 to-white p-7">
+                  <div className="rounded-[1.25rem] bg-gradient-to-b from-slate-50/70 to-white p-7 3xl:p-9 4xl:p-11">
                     <blockquote className="font-display text-[17px] font-medium leading-relaxed tracking-[-0.01em] text-emerald-950">
                       &ldquo;{t.text}&rdquo;
                     </blockquote>
@@ -1045,7 +1115,7 @@ export function PremiumLanding() {
           {TESTIMONIALS.map((t) => (
             <RevealItem key={t.name}>
               <figure className="rounded-[1.75rem] bg-white p-2 ring-1 ring-inset ring-emerald-950/[0.07] transition-[transform,box-shadow] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:-translate-y-1">
-                <div className="rounded-[1.25rem] bg-gradient-to-b from-slate-50/70 to-white p-6">
+                <div className="rounded-[1.25rem] bg-gradient-to-b from-slate-50/70 to-white p-6 3xl:p-8 4xl:p-10">
                   <blockquote className="font-display text-[16px] font-medium leading-relaxed text-emerald-950">
                     &ldquo;{t.text}&rdquo;
                   </blockquote>
@@ -1250,7 +1320,7 @@ export function PremiumLanding() {
 
           {/* Right — form */}
           <Reveal delay={0.08}>
-            <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-[0_4px_24px_-4px_rgba(6,60,45,0.08)] sm:p-8">
+            <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-[0_4px_24px_-4px_rgba(6,60,45,0.08)] sm:p-8 3xl:p-10 4xl:p-12">
               <p className="mb-5 text-[13px] font-semibold uppercase tracking-[0.15em] text-emerald-700">
                 Book a Free Demo
               </p>

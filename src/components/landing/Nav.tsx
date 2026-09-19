@@ -9,6 +9,7 @@ import { DURATION, EASE } from "./motion";
 const LINKS = [
   { label: "Platform", href: "#platform" },
   { label: "Records", href: "#emr" },
+  { label: "Clinical AI", href: "#copilot" },
   { label: "Hospitals", href: "#hospitals" },
   { label: "Analytics", href: "#analytics" },
   { label: "Pricing", href: "#pricing" },
