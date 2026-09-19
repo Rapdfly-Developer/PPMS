@@ -253,7 +253,7 @@ function JourneyPanel() {
               { n: "04", t: "Follow-up", d: "Next appointment, repeat prescription and reminders scheduled before they leave." },
             ].map((s) => (
               <RevealItem key={s.n}>
-                <div className="flex items-start gap-5 rounded-2xl bg-white p-5 ring-1 ring-inset ring-emerald-950/[0.07] transition-[transform,box-shadow] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:-translate-y-1 hover:shadow-[0_20px_44px_-34px_rgba(6,60,45,0.5)]">
+                <div className="flex items-start gap-5 rounded-2xl bg-white p-5 3xl:p-7 4xl:p-8 ring-1 ring-inset ring-emerald-950/[0.07] transition-[transform,box-shadow] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:-translate-y-1 hover:shadow-[0_20px_44px_-34px_rgba(6,60,45,0.5)]">
                   <span className="font-display text-[13px] font-bold tracking-[0.1em] text-emerald-500">
                     {s.n}
                   </span>
@@ -737,7 +737,7 @@ export function PremiumLanding() {
                 </div>
               </div>
 
-              <div className="group/care flex flex-1 items-center gap-5 rounded-[2rem] bg-white p-5 ring-1 ring-inset ring-emerald-950/[0.07] shadow-[0_20px_50px_-40px_rgba(6,60,45,0.5)] transition-[transform,box-shadow] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:-translate-y-1">
+              <div className="group/care flex flex-1 items-center gap-5 rounded-[2rem] bg-white p-5 3xl:p-7 4xl:p-8 ring-1 ring-inset ring-emerald-950/[0.07] shadow-[0_20px_50px_-40px_rgba(6,60,45,0.5)] transition-[transform,box-shadow] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:-translate-y-1">
                 <div className="relative h-[92px] w-[92px] shrink-0 overflow-hidden rounded-2xl bg-slate-100">
                   <Image
                     src={`${IMG}/care-management-tile.jpg`}
@@ -770,7 +770,7 @@ export function PremiumLanding() {
           ].map((f) => (
             <RevealItem key={f.t} className="sm:col-span-1 md:col-span-6 lg:col-span-3">
               <div className="group h-full rounded-[1.75rem] bg-white p-2 ring-1 ring-inset ring-emerald-950/[0.07] transition-[transform,box-shadow] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:-translate-y-1 hover:shadow-[0_30px_60px_-40px_rgba(6,60,45,0.45)]">
-                <div className="h-full rounded-[1.25rem] bg-gradient-to-b from-slate-50/80 to-white p-6">
+                <div className="h-full rounded-[1.25rem] bg-gradient-to-b from-slate-50/80 to-white p-6 3xl:p-8 4xl:p-10">
                   <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-emerald-700 ring-1 ring-inset ring-emerald-950/[0.07]">
                     {f.icon}
                   </span>
@@ -926,7 +926,7 @@ export function PremiumLanding() {
           ].map((s) => (
             <RevealItem key={s.label}>
               <div className="group/sec h-full rounded-[1.5rem] bg-white p-2 ring-1 ring-inset ring-emerald-950/[0.07] transition-[transform,box-shadow] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:-translate-y-1 hover:shadow-[0_24px_50px_-38px_rgba(6,60,45,0.5)]">
-                <div className="flex h-full flex-col items-center gap-4 rounded-[1rem] bg-gradient-to-b from-slate-50/80 to-white px-4 py-8 text-center">
+                <div className="flex h-full flex-col items-center gap-4 rounded-[1rem] bg-gradient-to-b from-slate-50/80 to-white px-4 py-8 3xl:px-5 3xl:py-10 text-center">
                   <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-600/10 transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover/sec:scale-110">
                     {s.icon}
                   </span>
@@ -996,7 +996,7 @@ export function PremiumLanding() {
             {TESTIMONIALS.map((t) => (
               <RevealItem key={t.name}>
                 <figure className="rounded-[1.75rem] bg-white p-2 ring-1 ring-inset ring-emerald-950/[0.07] shadow-[0_30px_60px_-50px_rgba(6,60,45,0.6)] transition-[transform,box-shadow] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:-translate-y-1">
-                  <div className="rounded-[1.25rem] bg-gradient-to-b from-slate-50/70 to-white p-7">
+                  <div className="rounded-[1.25rem] bg-gradient-to-b from-slate-50/70 to-white p-7 3xl:p-9 4xl:p-11">
                     <blockquote className="font-display text-[17px] font-medium leading-relaxed tracking-[-0.01em] text-emerald-950">
                       &ldquo;{t.text}&rdquo;
                     </blockquote>
@@ -1041,7 +1041,7 @@ export function PremiumLanding() {
           {TESTIMONIALS.map((t) => (
             <RevealItem key={t.name}>
               <figure className="rounded-[1.75rem] bg-white p-2 ring-1 ring-inset ring-emerald-950/[0.07] transition-[transform,box-shadow] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:-translate-y-1">
-                <div className="rounded-[1.25rem] bg-gradient-to-b from-slate-50/70 to-white p-6">
+                <div className="rounded-[1.25rem] bg-gradient-to-b from-slate-50/70 to-white p-6 3xl:p-8 4xl:p-10">
                   <blockquote className="font-display text-[16px] font-medium leading-relaxed text-emerald-950">
                     &ldquo;{t.text}&rdquo;
                   </blockquote>
@@ -1246,7 +1246,7 @@ export function PremiumLanding() {
 
           {/* Right — form */}
           <Reveal delay={0.08}>
-            <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-[0_4px_24px_-4px_rgba(6,60,45,0.08)] sm:p-8">
+            <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-[0_4px_24px_-4px_rgba(6,60,45,0.08)] sm:p-8 3xl:p-10 4xl:p-12">
               <p className="mb-5 text-[13px] font-semibold uppercase tracking-[0.15em] text-emerald-700">
                 Book a Free Demo
               </p>
