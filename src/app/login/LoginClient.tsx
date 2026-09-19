@@ -6,6 +6,8 @@ import { loginAction, emailOtpLoginAction } from "./actions";
 import {
   Eye, EyeOff, User, Lock, AlertCircle, CheckCircle2,
   ShieldCheck, Loader2, Check, Mail, X, KeyRound, RotateCcw, Zap,
+  FileText, Calendar, Building2, UserCircle, Users, BarChart3,
+  Cloud, Shield, Stethoscope, HeartPulse, Pill,
 } from "lucide-react";
 
 /* ── Palette ────────────────────────────────────────────────────────────────
@@ -567,6 +569,270 @@ function usePinnedToStableViewport(apply: (el: HTMLElement) => void) {
   return ref;
 }
 
+/* ── Left-panel content ─────────────────────────────────────────────────── */
+const FEATURES = [
+  { icon: FileText,   label: "Electronic Medical Records" },
+  { icon: Calendar,   label: "Appointment Management" },
+  { icon: Building2,  label: "Multi-Hospital Support" },
+  { icon: UserCircle, label: "Doctor Dashboard" },
+  { icon: Users,      label: "Patient Management" },
+  { icon: BarChart3,  label: "Analytics & Reports" },
+  { icon: Cloud,      label: "Cloud Sync" },
+  { icon: Shield,     label: "Secure Data" },
+];
+
+const STATS = [
+  { val: "5,000+", label: "Doctors" },
+  { val: "99.98%", label: "Uptime" },
+  { val: "30-day", label: "Free Trial" },
+];
+
+const TRUST = [
+  { icon: <Shield size={12} />,    label: "HIPAA Ready" },
+  { icon: <Building2 size={12} />, label: "NABH Workflow" },
+  { icon: <FileText size={12} />,  label: "ABDM Compatible" },
+  { icon: <Cloud size={12} />,     label: "Cloud Hosted" },
+  { icon: <Zap size={12} />,       label: "99.98% Uptime" },
+];
+
+/* ── Mouse parallax (rAF-throttled, motion- and pointer-gated) ──────────── */
+function useParallax() {
+  const [p, setP] = useState({ x: 0, y: 0 });
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (!window.matchMedia("(pointer: fine)").matches) return;
+    let frame = 0;
+    const onMove = (e: MouseEvent) => {
+      if (frame) return;
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        setP({ x: (e.clientX / window.innerWidth - 0.5) * 2, y: (e.clientY / window.innerHeight - 0.5) * 2 });
+      });
+    };
+    window.addEventListener("mousemove", onMove, { passive: true });
+    return () => { window.removeEventListener("mousemove", onMove); if (frame) cancelAnimationFrame(frame); };
+  }, []);
+  return p;
+}
+
+/* ── Ambient light background ───────────────────────────────────────────── */
+function LightBackground({ px, py }: { px: number; py: number }) {
+  // inset-x-0 + top-0 + an explicit height, NOT inset-0 — inset-0 pins the
+  // bottom edge to the live viewport rect, which is the thing the soft
+  // keyboard moves. pinViewportHeight overwrites the 100svh below with a
+  // fixed px value on mount.
+  const bgRef = usePinnedToStableViewport(pinViewportHeight);
+
+  const particles = [
+    { x: "11%", y: "34%", d: 8  }, { x: "79%", y: "24%", d: 12 },
+    { x: "44%", y: "64%", d: 10 }, { x: "89%", y: "56%", d: 14 },
+    { x: "21%", y: "89%", d: 9  }, { x: "66%", y: "14%", d: 11 },
+  ];
+  const icons = [
+    { Icon: Stethoscope, x: "13%", y: "18%", s: 26 },
+    { Icon: HeartPulse,  x: "31%", y: "72%", s: 22 },
+    { Icon: Pill,        x: "8%",  y: "84%", s: 20 },
+    { Icon: Building2,   x: "70%", y: "12%", s: 24 },
+    { Icon: FileText,    x: "86%", y: "66%", s: 20 },
+    { Icon: Cloud,       x: "62%", y: "88%", s: 22 },
+  ];
+
+  return (
+    <div ref={bgRef} className="absolute inset-x-0 top-0 pointer-events-none overflow-hidden"
+      style={{ background: T.bg, height: "100svh" }}>
+      <div className="absolute inset-0" style={{
+        background: "radial-gradient(ellipse 80% 60% at 15% 5%,rgba(13,122,99,.14) 0%,transparent 60%)," +
+                    "radial-gradient(ellipse 60% 50% at 85% 85%,rgba(5,150,105,.1) 0%,transparent 55%)," +
+                    "linear-gradient(160deg,#FFFFFF 0%,#F7F9FA 50%,#EAF2EF 100%)",
+      }} />
+
+      <div className="lp-sheen absolute inset-0" style={{
+        backgroundImage: "linear-gradient(115deg,transparent 30%,rgba(13,122,99,.07) 48%,rgba(5,150,105,.05) 56%,transparent 74%)",
+        backgroundSize: "260% 260%",
+      }} />
+
+      <div className="lp-orb1 absolute rounded-full" style={{
+        top: "-260px", left: "-180px", width: "760px", height: "760px",
+        background: "radial-gradient(circle,rgba(13,122,99,.24) 0%,rgba(13,122,99,.07) 42%,transparent 68%)",
+        filter: "blur(70px)", transform: `translate3d(${px * 26}px,${py * 20}px,0)`,
+      }} />
+      <div className="lp-orb2 absolute rounded-full" style={{
+        bottom: "-280px", right: "-160px", width: "820px", height: "820px",
+        background: "radial-gradient(circle,rgba(5,150,105,.16) 0%,rgba(5,150,105,.05) 44%,transparent 68%)",
+        filter: "blur(80px)", transform: `translate3d(${px * -30}px,${py * -22}px,0)`,
+      }} />
+
+      <svg className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg"
+        style={{ transform: `translate3d(${px * 8}px,${py * 6}px,0)` }}>
+        <defs>
+          <pattern id="lp-g1" width="44" height="44" patternUnits="userSpaceOnUse">
+            <path d="M44 0L0 0 0 44" fill="none" stroke="#0A6552" strokeWidth=".5" strokeOpacity=".07" />
+          </pattern>
+          <pattern id="lp-g2" width="220" height="220" patternUnits="userSpaceOnUse">
+            <rect width="220" height="220" fill="url(#lp-g1)" />
+            <path d="M220 0L0 0 0 220" fill="none" stroke="#0A6552" strokeWidth="1" strokeOpacity=".08" />
+          </pattern>
+          <radialGradient id="lp-gfade" cx="50%" cy="45%" r="62%">
+            <stop offset="0%" stopColor="#fff" stopOpacity="1" />
+            <stop offset="100%" stopColor="#fff" stopOpacity="0" />
+          </radialGradient>
+          <mask id="lp-gmask"><rect width="100%" height="100%" fill="url(#lp-gfade)" /></mask>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#lp-g2)" mask="url(#lp-gmask)" />
+      </svg>
+
+      {icons.map(({ Icon, x, y, s }, i) => (
+        <div key={i} className="lp-floaty absolute" style={{
+          left: x, top: y, opacity: 0.12, color: T.primary,
+          animationDelay: `${i * 1.1}s`,
+          transform: `translate3d(${px * (10 + i * 2)}px,${py * (8 + i)}px,0)`,
+        }}>
+          <Icon size={s} strokeWidth={1.5} />
+        </div>
+      ))}
+
+      {particles.map((pt, i) => (
+        <div key={i} className="absolute rounded-full" style={{
+          left: pt.x, top: pt.y, width: "4px", height: "4px",
+          background: "radial-gradient(circle,rgba(13,122,99,.85),transparent 70%)",
+          boxShadow: "0 0 10px rgba(13,122,99,.45)",
+          animation: `lp-particle ${pt.d}s ease-in-out ${i * 0.9}s infinite`,
+        }} />
+      ))}
+
+      <div className="absolute inset-0" style={{
+        background: "radial-gradient(ellipse 90% 80% at 50% 45%,rgba(255,255,255,.5) 0%,transparent 55%)," +
+                    "radial-gradient(ellipse 96% 86% at 50% 45%,transparent 58%,rgba(13,122,99,.07) 100%)",
+      }} />
+    </div>
+  );
+}
+
+/* ── Left brand panel ───────────────────────────────────────────────────────
+   Every inner block shares one max-width that steps up past 2xl. Without it
+   the 45% column keeps widening on a 4K monitor while the content stays at
+   430px, which reads as the panel being empty rather than spacious. */
+const PANEL_W = "max-w-[430px] 2xl:max-w-[520px] 3xl:max-w-[600px]";
+
+function LeftPanel() {
+  return (
+    <div className="hidden lg:flex lg:w-[45%] flex-col justify-between px-9 xl:px-14 2xl:px-16 py-8 xl:py-10 shrink-0 relative overflow-hidden">
+
+      {/* Logo lockup */}
+      <div className="lp-a0 shrink-0">
+        <div className="flex items-center gap-3.5">
+          <img src="/landing/logo-ppms-new.png" alt="" className="shrink-0"
+            style={{ width: "48px", height: "48px", objectFit: "contain" }} />
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-[25px] 2xl:text-[28px] font-black" style={{ color: T.ink, letterSpacing: "-0.035em" }}>
+                RF Health
+              </span>
+              <span className="text-[9.5px] font-bold px-2 py-0.5 rounded-full"
+                style={{ background: "rgba(13,122,99,.11)", color: T.primary, border: "1px solid rgba(13,122,99,.24)", letterSpacing: "0.04em" }}>
+                v2.0 Cloud
+              </span>
+            </div>
+            <p className="text-[9.5px] font-semibold" style={{ color: T.faint, letterSpacing: "0.06em" }}>
+              PERSONAL PATIENT MANAGEMENT SYSTEM
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Hero */}
+      <div className="flex-1 flex flex-col justify-center py-7 min-w-0">
+        <div className="lp-a1 mb-4">
+          <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full" style={{
+            background: "rgba(13,122,99,.08)",
+            border: "1px solid rgba(13,122,99,.2)",
+            boxShadow: "0 2px 12px rgba(15,41,38,.05)",
+          }}>
+            <span className="lp-dot" style={{ width: 6, height: 6, borderRadius: "50%", background: T.primary }} />
+            <span style={{ fontSize: "10px", fontWeight: 800, letterSpacing: "0.14em", color: T.primary }}>
+              ENTERPRISE HEALTHCARE PLATFORM
+            </span>
+          </span>
+        </div>
+
+        <h1 className="lp-a1 font-black leading-[1.06] mb-3.5"
+          style={{ fontSize: "clamp(29px,2.55vw,46px)", color: T.ink, letterSpacing: "-0.032em" }}>
+          Better <span className="lp-grad-text">Healthcare.</span>
+          <br />Better Management.
+        </h1>
+
+        <p className={`lp-a2 leading-relaxed mb-6 ${PANEL_W}`} style={{ fontSize: "14px", color: T.muted }}>
+          A comprehensive solution to manage patients, doctors, appointments, billing, and much more — all in one place.
+        </p>
+
+        {/* Feature tiles */}
+        <div className={`lp-a3 grid grid-cols-2 gap-2 mb-7 ${PANEL_W}`}>
+          {FEATURES.map(({ icon: Icon, label }) => (
+            <div key={label} className="lp-feat flex items-center gap-2.5 rounded-xl px-3 py-2.5" style={{
+              background: "rgba(13,122,99,.06)",
+              border: "1px solid rgba(13,122,99,.13)",
+            }}>
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{
+                background: "linear-gradient(135deg,rgba(13,122,99,.2),rgba(5,150,105,.12))",
+                border: "1px solid rgba(13,122,99,.25)",
+              }}>
+                <Icon size={13} style={{ color: T.primary }} />
+              </div>
+              <span style={{ fontSize: "11.5px", fontWeight: 600, color: T.muted, lineHeight: 1.3 }}>{label}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Stats */}
+        <div className={`lp-a3 grid grid-cols-3 gap-2 ${PANEL_W}`}>
+          {STATS.map(({ val, label }) => (
+            <div key={label} className="text-center rounded-xl py-3 px-2" style={{
+              background: "rgba(13,122,99,.07)", border: "1px solid rgba(13,122,99,.13)",
+            }}>
+              <div style={{ fontSize: "15px", fontWeight: 800, color: T.primary, letterSpacing: "-0.02em" }}>{val}</div>
+              <div style={{ fontSize: "10px", fontWeight: 500, color: T.faint, marginTop: "2px" }}>{label}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Trust row */}
+      <div className="lp-a4 shrink-0">
+        <div className="mb-3.5" style={{ height: "1px", background: "linear-gradient(90deg,rgba(13,122,99,.26),rgba(13,122,99,.07) 70%,transparent)" }} />
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+          {TRUST.map((t, i) => (
+            <span key={i} className="flex items-center gap-1.5" style={{ fontSize: "10.5px", fontWeight: 500, color: T.faint }}>
+              <span style={{ color: T.primary }}>{t.icon}</span> {t.label}
+            </span>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Card shell ─────────────────────────────────────────────────────────── */
+function GlassCard({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="lp-card relative w-full rounded-3xl overflow-hidden" style={{
+      background: "rgba(255,255,255,.92)",
+      backdropFilter: "blur(28px)", WebkitBackdropFilter: "blur(28px)",
+      border: `1px solid ${T.border}`,
+      boxShadow: "0 40px 90px rgba(15,41,38,.14), 0 12px 32px rgba(15,41,38,.08), 0 0 70px rgba(13,122,99,.1)",
+    }}>
+      <div style={{
+        height: "2px",
+        background: "linear-gradient(90deg,transparent 0%,#0A6552 30%,#0D7A63 50%,#0A6552 70%,transparent 100%)",
+        backgroundSize: "200% 100%",
+        animation: "lp-sheen 4s ease-in-out infinite",
+      }} />
+      <div className="absolute top-0 right-0 w-32 h-32 pointer-events-none"
+        style={{ background: "radial-gradient(circle at top right, rgba(13,122,99,.07), transparent 70%)" }} />
+      <div className="px-5 py-6 sm:px-7 lg:px-8 relative">{children}</div>
+    </div>
+  );
+}
+
 /* ── Page ────────────────────────────────────────────────────────────────── */
 export default function LoginPage() {
   const router = useRouter();
@@ -576,10 +842,10 @@ export default function LoginPage() {
   const [rememberMe, setRememberMe]     = useState(false);
   const [tab, setTab]                   = useState<"password" | "otp">("password");
   const [showForgotPw, setShowForgotPw] = useState(false);
+  const par = useParallax();
 
-  // Pins the scroll viewport and the safe-area padding so the soft keyboard
-  // cannot relayout them mid-animation.
-  const shellRef   = usePinnedToStableViewport(pinViewportHeight);
+  // Freezes the resolved safe-area top padding so the keyboard cannot
+  // relayout it mid-animation.
   const safeTopRef = usePinnedToStableViewport(pinSafeAreaTop);
 
   // Password tab
@@ -687,20 +953,55 @@ export default function LoginPage() {
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(otpEmail);
 
   return (
-    <div
-      ref={shellRef}
-      className="fixed inset-x-0 top-0 overflow-y-auto overflow-x-hidden"
-      style={{
-        height: "100svh",
-        background: T.bg,
-        color: T.ink,
-        colorScheme: "light",
-        fontFamily: "var(--font-inter), 'Segoe UI', system-ui, -apple-system, sans-serif",
-      }}
-    >
+    <div className="fixed inset-0 flex overflow-hidden" style={{
+      background: T.bg,
+      color: T.ink,
+      colorScheme: "light",
+      fontFamily: "var(--font-inter), 'Segoe UI', system-ui, -apple-system, sans-serif",
+    }}>
       {showForgotPw && <ForgotPasswordModal onClose={() => setShowForgotPw(false)} />}
 
       <style>{`
+        @keyframes lp-particle{0%,100%{opacity:.35;transform:scale(1)}50%{opacity:1;transform:scale(2.2)}}
+        @keyframes lp-fadein  {from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+        @keyframes lp-cardin  {from{opacity:0;transform:translateY(30px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+        @keyframes lp-grad    {0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+        @keyframes lp-floaty  {0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+        @keyframes lp-dot     {0%,100%{box-shadow:0 0 0 0 rgba(13,122,99,.36)}60%{box-shadow:0 0 0 6px rgba(13,122,99,0)}}
+        @keyframes lp-sheen   {0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+
+        /* Opacity and the independent scale property only — animating
+           filter:blur() would re-rasterise ~1.5M px of large-radius blur every
+           frame. scale (not transform:scale) composes with the inline
+           translate3d parallax instead of overriding it. */
+        @keyframes lp-orbA{0%,100%{opacity:.9;scale:1}50%{opacity:1;scale:1.05}}
+        @keyframes lp-orbB{0%,100%{opacity:.9;scale:1}50%{opacity:1;scale:1.04}}
+
+        .lp-a0{animation:lp-fadein .65s cubic-bezier(.22,1,.36,1) 0ms   both}
+        .lp-a1{animation:lp-fadein .65s cubic-bezier(.22,1,.36,1) 90ms  both}
+        .lp-a2{animation:lp-fadein .65s cubic-bezier(.22,1,.36,1) 170ms both}
+        .lp-a3{animation:lp-fadein .65s cubic-bezier(.22,1,.36,1) 250ms both}
+        .lp-a4{animation:lp-fadein .65s cubic-bezier(.22,1,.36,1) 330ms both}
+        .lp-card{animation:lp-cardin .85s cubic-bezier(.22,1,.36,1) 80ms both}
+
+        .lp-floaty{animation:lp-floaty 7s ease-in-out infinite}
+        .lp-dot{animation:lp-dot 2.2s ease-out infinite}
+        .lp-sheen{animation:lp-sheen 22s ease-in-out infinite}
+        .lp-orb1{animation:lp-orbA 14s ease-in-out infinite;transition:transform .5s cubic-bezier(.22,1,.36,1)}
+        .lp-orb2{animation:lp-orbB 18s ease-in-out infinite;transition:transform .5s cubic-bezier(.22,1,.36,1)}
+
+        .lp-feat{transition:background .16s ease,border-color .16s ease}
+        .lp-feat:hover{background:rgba(13,122,99,.11)!important;border-color:rgba(13,122,99,.26)!important}
+
+        /* Deep emeralds only — a pale mint stop would land near 1.3:1 on this
+           ground, and the sweep would carry the headline through it. */
+        .lp-grad-text{
+          background:linear-gradient(90deg,#0F766E,#0D7A63,#0A6552,#0D7A63,#0F766E);
+          background-size:300% auto;
+          -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+          animation:lp-grad 5s ease infinite;
+        }
+
         .pp-btn{transition:background .16s ease,border-color .16s ease}
         .pp-btn:hover:not(:disabled){background:${T.primaryHover}!important;border-color:${T.primaryHover}!important}
         .pp-btn:active:not(:disabled){background:${T.primaryHover}!important}
@@ -733,329 +1034,339 @@ export default function LoginPage() {
         }
 
         @media (prefers-reduced-motion:reduce){
-          .pp-btn,.pp-tab,.pp-ghost,.pp-icon-btn,.pp-link{transition:none}
+          .lp-a0,.lp-a1,.lp-a2,.lp-a3,.lp-a4,.lp-card,.lp-floaty,.lp-dot,
+          .lp-sheen,.lp-orb1,.lp-orb2,.lp-feat,
+          .pp-btn,.pp-tab,.pp-ghost,.pp-icon-btn,.pp-link
+          {animation:none!important;transition:none!important}
+          .lp-grad-text{-webkit-text-fill-color:#0A6552;background:none}
         }
       `}</style>
 
-      {/* paddingTop below is the SSR default; pinSafeAreaTop freezes the
-          resolved value in px on mount so a WebView that briefly reports
-          env(safe-area-inset-top) as 0 mid-keyboard cannot relayout it. */}
-      <div
-        ref={safeTopRef}
-        className="min-h-full flex flex-col items-center justify-center px-4 sm:px-6 pb-8"
-        style={{ paddingTop: "max(1.5rem, calc(env(safe-area-inset-top, 0px) + 0.75rem))" }}
-      >
-        <main className="w-full" style={{ maxWidth: "408px" }}>
+      <LightBackground px={par.x} py={par.y} />
 
-          {/* ── Branding ── */}
-          <header className="flex flex-col items-center text-center mb-6">
-            <img
-              src="/landing/logo-ppms-new.png"
-              alt=""
-              className="shrink-0 mb-3"
-              style={{ width: "46px", height: "46px", objectFit: "contain" }}
-            />
-            <h1 className="font-bold" style={{ fontSize: "22px", color: T.ink, letterSpacing: "-0.025em", lineHeight: 1.2 }}>
-              RF Health
-            </h1>
-            <p className="mt-1" style={{ fontSize: "12px", fontWeight: 600, letterSpacing: "0.07em", color: T.primary, textTransform: "uppercase" }}>
-              Personal Patient Management System
-            </p>
-          </header>
+      {/* The split itself is capped and centred. Without this the 45/55 ratio
+          keeps widening forever, and on a 4K monitor each panel becomes a
+          near-empty half rather than a composition. */}
+      <div className="relative flex w-full h-full overflow-hidden">
+        <div className="flex w-full h-full mx-auto" style={{ maxWidth: "2200px" }}>
 
-          {/* ── Login card ── */}
-          <div style={{
-            background: T.card,
-            borderRadius: "14px",
-            border: `1px solid ${T.border}`,
-            boxShadow: "0 1px 2px rgba(15,41,38,.04), 0 8px 24px rgba(15,41,38,.06)",
-          }}>
-            <div className="px-5 py-6 sm:px-7">
+          <LeftPanel />
 
-              <h2 className="font-semibold" style={{ fontSize: "17px", color: T.ink, letterSpacing: "-0.015em" }}>
-                Sign in to your account
-              </h2>
-              <p className="mt-1 mb-5" style={{ fontSize: "13.5px", color: T.muted }}>
-                Access your secure healthcare workspace.
-              </p>
+          {/* ── Right panel ── */}
+          <div className="w-full lg:w-[55%] shrink-0 flex flex-col overflow-y-auto relative"
+            style={{
+              background: "linear-gradient(200deg,rgba(255,255,255,.72) 0%,rgba(255,255,255,.46) 100%)",
+              borderLeft: `1px solid ${T.border}`,
+            }}>
 
-              {/* ── Tabs ── */}
-              <div role="tablist" aria-label="Sign-in method"
-                className="grid grid-cols-2 gap-1 p-1 mb-5"
-                style={{ background: T.track, borderRadius: "10px" }}>
-                {([
-                  { key: "password", label: "Password", Icon: Lock },
-                  { key: "otp",      label: "Email OTP", Icon: Mail },
-                ] as const).map(({ key, label, Icon }) => {
-                  const active = tab === key;
-                  return (
-                    <button key={key} type="button" role="tab" aria-selected={active}
-                      onClick={() => switchTab(key)}
-                      className="pp-tab flex items-center justify-center gap-1.5"
-                      style={{
-                        height: "38px",
-                        borderRadius: "8px",
-                        fontSize: "13.5px",
-                        fontWeight: 600,
-                        color: active ? T.ink : T.muted,
-                        background: active ? T.card : "transparent",
-                        border: `1px solid ${active ? T.border : "transparent"}`,
-                        boxShadow: active ? "0 1px 2px rgba(15,41,38,.06)" : "none",
-                      }}>
-                      <Icon size={14} /> {label}
-                    </button>
-                  );
-                })}
-              </div>
+            {/* paddingTop below is the SSR default; pinSafeAreaTop freezes the
+                resolved value in px on mount so a WebView that briefly reports
+                env(safe-area-inset-top) as 0 mid-keyboard cannot relayout it. */}
+            <div ref={safeTopRef}
+              className="w-full flex-1 flex flex-col justify-center items-center py-6 px-4 lg:py-8 lg:px-6"
+              style={{ minHeight: "min-content", paddingTop: "max(1.5rem, calc(env(safe-area-inset-top, 0px) + 0.75rem))" }}>
 
-              {/* ── Password form ── */}
-              {tab === "password" && (
-                <form
-                  action={formAction}
-                  onSubmit={e => {
-                    const errs = validate({ username, password });
-                    setTouched({ username: true, password: true });
-                    setFieldErrors(errs);
-                    if (Object.keys(errs).length > 0) e.preventDefault();
-                  }}
-                >
-                  <Field
-                    id="username"
-                    name="username"
-                    label="Username or email"
-                    placeholder="Enter your username"
-                    value={username}
-                    autoComplete="username"
-                    autoFocus
-                    icon={<User size={15} />}
-                    error={touched.username ? fieldErrors.username : undefined}
-                    onChange={v => { setUsername(v); if (touched.username) setFieldErrors(p => ({ ...p, username: undefined })); }}
-                    onBlur={() => { setTouched(t => ({ ...t, username: true })); setFieldErrors(p => ({ ...p, username: validate({ username, password }).username })); }}
-                  />
+              <div className="w-full max-w-[440px] 2xl:max-w-[500px] 3xl:max-w-[560px]">
 
-                  <Field
-                    id="password"
-                    name="password"
-                    label="Password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Enter your password"
-                    value={password}
-                    autoComplete="current-password"
-                    icon={<Lock size={15} />}
-                    error={touched.password ? fieldErrors.password : undefined}
-                    hint={capsLock ? <span style={{ color: "#B45309" }}>Caps Lock is on</span> : undefined}
-                    onChange={v => { setPassword(v); if (touched.password) setFieldErrors(p => ({ ...p, password: undefined })); }}
-                    onBlur={() => { setTouched(t => ({ ...t, password: true })); setFieldErrors(p => ({ ...p, password: validate({ username, password }).password })); }}
-                    onKeyDown={e => setCapsLock(e.getModifierState("CapsLock"))}
-                    rightSlot={
-                      <button type="button" onClick={() => setShowPassword(!showPassword)}
-                        aria-label={showPassword ? "Hide password" : "Show password"}
-                        className="pp-icon-btn rounded-md" style={{ color: T.faint }}>
-                        {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
-                      </button>
-                    }
-                  />
-
-                  {/* Remember me + Forgot password */}
-                  <div className="flex items-center justify-between gap-3 mb-4">
-                    <label className="flex items-center gap-2 cursor-pointer select-none">
-                      <input
-                        type="checkbox"
-                        checked={rememberMe}
-                        onChange={e => setRememberMe(e.target.checked)}
-                        className="sr-only peer"
-                      />
-                      <span aria-hidden="true"
-                        className="flex items-center justify-center rounded shrink-0 peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2"
-                        style={{
-                          width: 17, height: 17,
-                          background: rememberMe ? T.primary : T.card,
-                          border: `1px solid ${rememberMe ? T.primary : T.borderInput}`,
-                          outlineColor: T.primary,
-                          transition: "background .16s ease, border-color .16s ease",
-                        }}>
-                        {rememberMe && <Check size={11} color="#FFFFFF" strokeWidth={3} />}
-                      </span>
-                      <span style={{ fontSize: "13px", color: T.muted }}>Remember me</span>
-                    </label>
-
-                    <button type="button" onClick={() => setShowForgotPw(true)}
-                      className="pp-link" style={{ fontSize: "13px", fontWeight: 500, color: T.primary }}>
-                      Forgot password?
-                    </button>
-                  </div>
-
-                  {state?.error && (
-                    <div role="alert" className="flex items-center gap-2 rounded-lg px-3 py-2.5 mb-4"
-                      style={{ background: T.dangerSoft, color: "#B91C1C", border: `1px solid ${T.danger}33`, fontSize: "13px" }}>
-                      <AlertCircle size={14} className="shrink-0" /> {state.error}
-                    </div>
-                  )}
-
-                  <PrimaryButton type="submit" loading={pending}>
-                    {pending ? "Signing in…" : "Sign in"}
-                  </PrimaryButton>
-                </form>
-              )}
-
-              {/* ── OTP form ── */}
-              {tab === "otp" && (
-                <div>
-                  <Field
-                    id="otp-email"
-                    label="Email address"
-                    type="email"
-                    inputMode="email"
-                    placeholder="you@hospital.com"
-                    value={otpEmail}
-                    autoFocus
-                    autoComplete="email"
-                    icon={<Mail size={15} />}
-                    onChange={v => { setOtpEmail(v); setOtpMsg(""); if (otpTouched.email) setOtpErrors(p => ({ ...p, email: undefined })); }}
-                    onBlur={() => { touchOtpField("email"); setOtpErrors(p => ({ ...p, email: validateOtp({ email: otpEmail, otpSent: false }).email })); }}
-                    onKeyDown={e => { if (e.key === "Enter" && emailValid && !otpSent) handleSendOtp(); }}
-                    error={otpTouched.email ? otpErrors.email : undefined}
-                    hint={otpMsg ? <span style={{ color: T.primary }}>{otpMsg}</span> : undefined}
-                  />
-
-                  {/* One primary action per step: sending the code is the whole
-                      job until a code exists, so the verify button is not
-                      rendered — and not sitting there dead — until it can act.
-                      Resending afterwards lives in the OTP field's hint row. */}
-                  {!otpSent && (
-                    <PrimaryButton onClick={() => handleSendOtp()}
-                      loading={otpLoading} disabled={!emailValid}>
-                      {otpLoading ? "Sending…" : "Send OTP"}
-                    </PrimaryButton>
-                  )}
-
-                  {otpSent && (
-                    <Field
-                      id="otp-code"
-                      label="6-digit OTP"
-                      type="text"
-                      inputMode="numeric"
-                      placeholder="000000"
-                      maxLength={6}
-                      autoFocus
-                      autoComplete="one-time-code"
-                      icon={<KeyRound size={15} />}
-                      value={otpValue}
-                      onChange={v => { const c = v.replace(/\D/g, "").slice(0, 6); setOtpValue(c); if (otpTouched.otp) setOtpErrors(p => ({ ...p, otp: undefined })); }}
-                      onBlur={() => { setOtpTouched(t => ({ ...t, otp: true })); setOtpErrors(p => ({ ...p, otp: validateOtp({ email: otpEmail, otp: otpValue, otpSent: true }).otp })); }}
-                      onKeyDown={e => { if (e.key === "Enter" && otpValue.length === 6) handleVerifyOtp(); }}
-                      error={otpTouched.otp ? otpErrors.otp : undefined}
-                      hint={
-                        <span className="flex items-center justify-between gap-2">
-                          <span>Valid for 5 minutes</span>
-                          <button type="button" onClick={() => handleSendOtp(true)}
-                            disabled={otpResendCooldown > 0 || otpLoading}
-                            className="pp-link flex items-center gap-1 font-medium"
-                            style={{ color: otpResendCooldown > 0 ? T.faint : T.primary, cursor: otpResendCooldown > 0 ? "default" : "pointer" }}>
-                            <RotateCcw size={11} />
-                            {otpResendCooldown > 0 ? `Resend in ${otpResendCooldown}s` : "Resend OTP"}
-                          </button>
-                        </span>
-                      }
-                    />
-                  )}
-
-                  {otpSent && (
-                    <PrimaryButton onClick={handleVerifyOtp} loading={otpLoading}
-                      disabled={otpValue.length < 6}>
-                      {otpLoading ? "Verifying…" : "Verify & sign in"}
-                    </PrimaryButton>
-                  )}
+                {/* Mobile brand lockup — the left panel is hidden below lg */}
+                <div className="flex lg:hidden flex-col items-center text-center mb-6 lp-a0">
+                  <img src="/landing/logo-ppms-new.png" alt="" className="shrink-0 mb-2.5"
+                    style={{ width: "44px", height: "44px", objectFit: "contain" }} />
+                  <span className="text-[24px] font-black" style={{ color: T.ink, letterSpacing: "-0.03em" }}>
+                    RF Health
+                  </span>
+                  <p className="mt-0.5" style={{ fontSize: "9.5px", fontWeight: 700, letterSpacing: "0.14em", color: T.faint }}>
+                    PERSONAL PATIENT MANAGEMENT SYSTEM
+                  </p>
                 </div>
-              )}
 
-              {/* ── Test accounts ── */}
-              {SHOW_TEST_ACCOUNTS && (
-                <div className="mt-5 pt-5" style={{ borderTop: `1px solid ${T.border}` }}>
-                  <div className="flex items-center gap-2 mb-2.5">
-                    <span style={{
-                      fontSize: "10px", fontWeight: 700, letterSpacing: "0.07em",
-                      color: T.primary, background: T.primarySoft,
-                      padding: "2px 6px", borderRadius: "4px",
-                    }}>TEST</span>
-                    <p style={{ fontSize: "12.5px", color: T.muted }}>Click an account to fill the form</p>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    {TEST_ACCOUNTS.map(a => {
-                      const active = username === a.username;
+                <GlassCard>
+                  <h2 className="font-bold" style={{ fontSize: "22px", color: T.ink, letterSpacing: "-0.02em" }}>
+                    Welcome back
+                  </h2>
+                  <p className="mt-1 mb-5" style={{ fontSize: "13.5px", color: T.muted }}>
+                    Access your secure healthcare workspace.
+                  </p>
+
+                  {/* ── Tabs ── */}
+                  <div role="tablist" aria-label="Sign-in method"
+                    className="grid grid-cols-2 gap-1 p-1 mb-5"
+                    style={{ background: T.track, borderRadius: "10px" }}>
+                    {([
+                      { key: "password", label: "Password",  Icon: Lock },
+                      { key: "otp",      label: "Email OTP", Icon: Mail },
+                    ] as const).map(({ key, label, Icon }) => {
+                      const active = tab === key;
                       return (
-                        <button key={a.username} type="button"
-                          onClick={() => fillTestAccount(a.username, a.password)}
-                          className="pp-ghost flex items-center gap-2 px-2.5 py-2 text-left"
+                        <button key={key} type="button" role="tab" aria-selected={active}
+                          onClick={() => switchTab(key)}
+                          className="pp-tab flex items-center justify-center gap-1.5"
                           style={{
+                            height: "38px",
                             borderRadius: "8px",
-                            background: active ? T.primarySoft : T.card,
-                            border: `1px solid ${active ? T.primary : T.border}`,
+                            fontSize: "13.5px",
+                            fontWeight: 600,
+                            color: active ? T.ink : T.muted,
+                            background: active ? T.card : "transparent",
+                            border: `1px solid ${active ? T.border : "transparent"}`,
+                            boxShadow: active ? "0 1px 2px rgba(15,41,38,.06)" : "none",
                           }}>
-                          <User size={13} className="shrink-0" style={{ color: T.faint }} />
-                          <span className="min-w-0">
-                            <span className="block truncate" style={{ fontSize: "12.5px", fontWeight: 600, color: T.ink }}>{a.label}</span>
-                            <span className="block truncate font-mono" style={{ fontSize: "10.5px", color: T.faint }}>{a.username}</span>
-                          </span>
+                          <Icon size={14} /> {label}
                         </button>
                       );
                     })}
                   </div>
+
+                  {/* ── Password form ── */}
+                  {tab === "password" && (
+                    <form
+                      action={formAction}
+                      onSubmit={e => {
+                        const errs = validate({ username, password });
+                        setTouched({ username: true, password: true });
+                        setFieldErrors(errs);
+                        if (Object.keys(errs).length > 0) e.preventDefault();
+                      }}
+                    >
+                      <Field
+                        id="username"
+                        name="username"
+                        label="Username or email"
+                        placeholder="Enter your username"
+                        value={username}
+                        autoComplete="username"
+                        autoFocus
+                        icon={<User size={15} />}
+                        error={touched.username ? fieldErrors.username : undefined}
+                        onChange={v => { setUsername(v); if (touched.username) setFieldErrors(p => ({ ...p, username: undefined })); }}
+                        onBlur={() => { setTouched(t => ({ ...t, username: true })); setFieldErrors(p => ({ ...p, username: validate({ username, password }).username })); }}
+                      />
+
+                      <Field
+                        id="password"
+                        name="password"
+                        label="Password"
+                        type={showPassword ? "text" : "password"}
+                        placeholder="Enter your password"
+                        value={password}
+                        autoComplete="current-password"
+                        icon={<Lock size={15} />}
+                        error={touched.password ? fieldErrors.password : undefined}
+                        hint={capsLock ? <span style={{ color: "#B45309" }}>Caps Lock is on</span> : undefined}
+                        onChange={v => { setPassword(v); if (touched.password) setFieldErrors(p => ({ ...p, password: undefined })); }}
+                        onBlur={() => { setTouched(t => ({ ...t, password: true })); setFieldErrors(p => ({ ...p, password: validate({ username, password }).password })); }}
+                        onKeyDown={e => setCapsLock(e.getModifierState("CapsLock"))}
+                        rightSlot={
+                          <button type="button" onClick={() => setShowPassword(!showPassword)}
+                            aria-label={showPassword ? "Hide password" : "Show password"}
+                            className="pp-icon-btn rounded-md" style={{ color: T.faint }}>
+                            {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                          </button>
+                        }
+                      />
+
+                      {/* Remember me + Forgot password */}
+                      <div className="flex items-center justify-between gap-3 mb-4">
+                        <label className="flex items-center gap-2 cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            checked={rememberMe}
+                            onChange={e => setRememberMe(e.target.checked)}
+                            className="sr-only peer"
+                          />
+                          <span aria-hidden="true"
+                            className="flex items-center justify-center rounded shrink-0 peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2"
+                            style={{
+                              width: 17, height: 17,
+                              background: rememberMe ? T.primary : T.card,
+                              border: `1px solid ${rememberMe ? T.primary : T.borderInput}`,
+                              outlineColor: T.primary,
+                              transition: "background .16s ease, border-color .16s ease",
+                            }}>
+                            {rememberMe && <Check size={11} color="#FFFFFF" strokeWidth={3} />}
+                          </span>
+                          <span style={{ fontSize: "13px", color: T.muted }}>Remember me</span>
+                        </label>
+
+                        <button type="button" onClick={() => setShowForgotPw(true)}
+                          className="pp-link" style={{ fontSize: "13px", fontWeight: 500, color: T.primary }}>
+                          Forgot password?
+                        </button>
+                      </div>
+
+                      {state?.error && (
+                        <div role="alert" className="flex items-center gap-2 rounded-lg px-3 py-2.5 mb-4"
+                          style={{ background: T.dangerSoft, color: "#B91C1C", border: `1px solid ${T.danger}33`, fontSize: "13px" }}>
+                          <AlertCircle size={14} className="shrink-0" /> {state.error}
+                        </div>
+                      )}
+
+                      <PrimaryButton type="submit" loading={pending}>
+                        {pending ? "Signing in…" : "Sign in"}
+                      </PrimaryButton>
+                    </form>
+                  )}
+
+                  {/* ── OTP form ── */}
+                  {tab === "otp" && (
+                    <div>
+                      <Field
+                        id="otp-email"
+                        label="Email address"
+                        type="email"
+                        inputMode="email"
+                        placeholder="you@hospital.com"
+                        value={otpEmail}
+                        autoFocus
+                        autoComplete="email"
+                        icon={<Mail size={15} />}
+                        onChange={v => { setOtpEmail(v); setOtpMsg(""); if (otpTouched.email) setOtpErrors(p => ({ ...p, email: undefined })); }}
+                        onBlur={() => { touchOtpField("email"); setOtpErrors(p => ({ ...p, email: validateOtp({ email: otpEmail, otpSent: false }).email })); }}
+                        onKeyDown={e => { if (e.key === "Enter" && emailValid && !otpSent) handleSendOtp(); }}
+                        error={otpTouched.email ? otpErrors.email : undefined}
+                        hint={otpMsg ? <span style={{ color: T.primary }}>{otpMsg}</span> : undefined}
+                      />
+
+                      {/* One primary action per step: sending the code is the
+                          whole job until a code exists, so the verify button is
+                          not rendered — and not sitting there dead — until it
+                          can act. Resending lives in the OTP field's hint row. */}
+                      {!otpSent && (
+                        <PrimaryButton onClick={() => handleSendOtp()}
+                          loading={otpLoading} disabled={!emailValid}>
+                          {otpLoading ? "Sending…" : "Send OTP"}
+                        </PrimaryButton>
+                      )}
+
+                      {otpSent && (
+                        <Field
+                          id="otp-code"
+                          label="6-digit OTP"
+                          type="text"
+                          inputMode="numeric"
+                          placeholder="000000"
+                          maxLength={6}
+                          autoFocus
+                          autoComplete="one-time-code"
+                          icon={<KeyRound size={15} />}
+                          value={otpValue}
+                          onChange={v => { const c = v.replace(/\D/g, "").slice(0, 6); setOtpValue(c); if (otpTouched.otp) setOtpErrors(p => ({ ...p, otp: undefined })); }}
+                          onBlur={() => { setOtpTouched(t => ({ ...t, otp: true })); setOtpErrors(p => ({ ...p, otp: validateOtp({ email: otpEmail, otp: otpValue, otpSent: true }).otp })); }}
+                          onKeyDown={e => { if (e.key === "Enter" && otpValue.length === 6) handleVerifyOtp(); }}
+                          error={otpTouched.otp ? otpErrors.otp : undefined}
+                          hint={
+                            <span className="flex items-center justify-between gap-2">
+                              <span>Valid for 5 minutes</span>
+                              <button type="button" onClick={() => handleSendOtp(true)}
+                                disabled={otpResendCooldown > 0 || otpLoading}
+                                className="pp-link flex items-center gap-1 font-medium"
+                                style={{ color: otpResendCooldown > 0 ? T.faint : T.primary, cursor: otpResendCooldown > 0 ? "default" : "pointer" }}>
+                                <RotateCcw size={11} />
+                                {otpResendCooldown > 0 ? `Resend in ${otpResendCooldown}s` : "Resend OTP"}
+                              </button>
+                            </span>
+                          }
+                        />
+                      )}
+
+                      {otpSent && (
+                        <PrimaryButton onClick={handleVerifyOtp} loading={otpLoading}
+                          disabled={otpValue.length < 6}>
+                          {otpLoading ? "Verifying…" : "Verify & sign in"}
+                        </PrimaryButton>
+                      )}
+                    </div>
+                  )}
+
+                  {/* ── Test accounts ── */}
+                  {SHOW_TEST_ACCOUNTS && (
+                    <div className="mt-5 pt-5" style={{ borderTop: `1px solid ${T.border}` }}>
+                      <div className="flex items-center gap-2 mb-2.5">
+                        <span style={{
+                          fontSize: "10px", fontWeight: 700, letterSpacing: "0.07em",
+                          color: T.primary, background: T.primarySoft,
+                          padding: "2px 6px", borderRadius: "4px",
+                        }}>TEST</span>
+                        <p style={{ fontSize: "12.5px", color: T.muted }}>Click an account to fill the form</p>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        {TEST_ACCOUNTS.map(a => {
+                          const active = username === a.username;
+                          return (
+                            <button key={a.username} type="button"
+                              onClick={() => fillTestAccount(a.username, a.password)}
+                              className="pp-ghost flex items-center gap-2 px-2.5 py-2 text-left"
+                              style={{
+                                borderRadius: "8px",
+                                background: active ? T.primarySoft : T.card,
+                                border: `1px solid ${active ? T.primary : T.border}`,
+                              }}>
+                              <User size={13} className="shrink-0" style={{ color: T.faint }} />
+                              <span className="min-w-0">
+                                <span className="block truncate" style={{ fontSize: "12.5px", fontWeight: 600, color: T.ink }}>{a.label}</span>
+                                <span className="block truncate font-mono" style={{ fontSize: "10.5px", color: T.faint }}>{a.username}</span>
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </GlassCard>
+
+                {/* ── Free trial ── */}
+                <button
+                  type="button"
+                  onClick={() => router.push("/license")}
+                  className="pp-ghost w-full flex items-center gap-3 px-4 py-3 mt-4 text-left"
+                  style={{ background: "rgba(255,255,255,.72)", borderRadius: "12px", border: `1px solid ${T.border}` }}>
+                  <span className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
+                    style={{ background: T.primarySoft }}>
+                    <Zap size={16} style={{ color: T.primary }} />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block" style={{ fontSize: "13.5px", fontWeight: 600, color: T.ink }}>
+                      Start your free trial
+                    </span>
+                    <span className="block" style={{ fontSize: "12px", color: T.muted, marginTop: "1px" }}>
+                      30 days · Unlimited modules · No credit card
+                    </span>
+                  </span>
+                </button>
+
+                {/* ── Security assurances ── */}
+                <div className="mt-6 flex flex-col items-center gap-2.5">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5"
+                    style={{ background: "rgba(255,255,255,.75)", borderRadius: "999px", border: `1px solid ${T.border}` }}>
+                    <ShieldCheck size={12} style={{ color: T.primary }} />
+                    <span style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.05em", color: T.muted }}>
+                      ENTERPRISE SECURE LOGIN
+                    </span>
+                  </span>
+                  <div className="flex flex-wrap items-center justify-center gap-x-3.5 gap-y-1.5">
+                    {SECURITY_FEATURES.map(f => (
+                      <span key={f} className="flex items-center gap-1" style={{ fontSize: "11.5px", color: T.muted }}>
+                        <Check size={11} strokeWidth={3} style={{ color: T.primary }} /> {f}
+                      </span>
+                    ))}
+                  </div>
                 </div>
-              )}
+
+                {/* ── Footer ── */}
+                <footer className="mt-5 pt-4 flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1.5"
+                  style={{ borderTop: `1px solid ${T.border}`, fontSize: "11.5px", color: T.faint }}>
+                  <span>© 2026 RF Health</span>
+                  <span aria-hidden="true">·</span>
+                  <span>Version 2.0 Cloud</span>
+                  <span aria-hidden="true">·</span>
+                  <a href="/privacy" className="pp-link" style={{ color: T.faint }}>Privacy Policy</a>
+                  <span aria-hidden="true">·</span>
+                  <a href="/terms" className="pp-link" style={{ color: T.faint }}>Terms of Service</a>
+                </footer>
+              </div>
             </div>
           </div>
-
-          {/* ── Free trial ── */}
-          <button
-            type="button"
-            onClick={() => router.push("/license")}
-            className="pp-ghost w-full flex items-center gap-3 px-4 py-3 mt-4 text-left"
-            style={{ background: T.card, borderRadius: "12px", border: `1px solid ${T.border}` }}>
-            <span className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
-              style={{ background: T.primarySoft }}>
-              <Zap size={16} style={{ color: T.primary }} />
-            </span>
-            <span className="min-w-0">
-              <span className="block" style={{ fontSize: "13.5px", fontWeight: 600, color: T.ink }}>
-                Start your free trial
-              </span>
-              <span className="block" style={{ fontSize: "12px", color: T.muted, marginTop: "1px" }}>
-                30 days · Unlimited modules · No credit card
-              </span>
-            </span>
-          </button>
-
-          {/* ── Security assurances ── */}
-          <div className="mt-6 flex flex-col items-center gap-2.5">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5"
-              style={{ background: T.card, borderRadius: "999px", border: `1px solid ${T.border}` }}>
-              <ShieldCheck size={12} style={{ color: T.primary }} />
-              <span style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.05em", color: T.muted }}>
-                ENTERPRISE SECURE LOGIN
-              </span>
-            </span>
-            <div className="flex flex-wrap items-center justify-center gap-x-3.5 gap-y-1.5">
-              {SECURITY_FEATURES.map(f => (
-                <span key={f} className="flex items-center gap-1" style={{ fontSize: "11.5px", color: T.muted }}>
-                  <Check size={11} strokeWidth={3} style={{ color: T.primary }} /> {f}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          {/* ── Footer ── */}
-          <footer className="mt-5 pt-4 flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1.5"
-            style={{ borderTop: `1px solid ${T.border}`, fontSize: "11.5px", color: T.faint }}>
-            <span>© 2026 RF Health</span>
-            <span aria-hidden="true">·</span>
-            <span>Version 2.0 Cloud</span>
-            <span aria-hidden="true">·</span>
-            <a href="/privacy" className="pp-link" style={{ color: T.faint }}>Privacy Policy</a>
-            <span aria-hidden="true">·</span>
-            <a href="/terms" className="pp-link" style={{ color: T.faint }}>Terms of Service</a>
-          </footer>
-        </main>
+        </div>
       </div>
     </div>
   );

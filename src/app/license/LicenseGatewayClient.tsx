@@ -13,19 +13,23 @@ import {
 import { startTrial, activateLicenseKey, sendVerificationCode } from "./actions";
 import type { LicensePageData } from "./getLicenseData";
 
-/* ── Dark theme palette ────────────────────────────────────────────────────── */
+/* ── Light theme palette ──────────────────────────────────────────────────────
+   Matches the login page's ramp so the two entry screens read as one product.
+   `accent` carries small text and so is the deep teal; `accent2` is a step
+   darker again, which keeps the gradients built from the pair reading as
+   gradients rather than collapsing to a single flat colour. */
 const T = {
-  bg:      "#041A18",
-  surface: "rgba(4,26,24,.80)",
-  accent:  "#22C55E",
-  accent2: "#0F8F6F",
-  text:    "#FFFFFF",
-  muted:   "#B5C2C7",
-  faint:   "#6B8F8A",
-  border:  "rgba(255,255,255,.08)",
-  border2: "rgba(255,255,255,.14)",
-  field:   "rgba(2,15,14,.65)",
-  glow:    "0 0 0 4px rgba(15,143,111,.12), 0 0 22px rgba(34,197,94,.18)",
+  bg:      "#F7F9FA",
+  surface: "rgba(255,255,255,.92)",
+  accent:  "#0D7A63",
+  accent2: "#0A6552",
+  text:    "#0F2926",
+  muted:   "#5A6E6A",
+  faint:   "#7A8D89",
+  border:  "rgba(15,41,38,.09)",
+  border2: "rgba(15,41,38,.13)",
+  field:   "#FFFFFF",
+  glow:    "0 0 0 4px rgba(13,122,99,.13), 0 0 22px rgba(13,122,99,.18)",
 };
 
 type LicenseData = LicensePageData;
@@ -71,8 +75,8 @@ function useParallax() {
   return p;
 }
 
-/* ── Dark animated background ──────────────────────────────────────────────── */
-function DarkBackground({ px, py }: { px: number; py: number }) {
+/* ── Light animated background ──────────────────────────────────────────────── */
+function LightBackground({ px, py }: { px: number; py: number }) {
   const particles = [
     { x: "11%", y: "34%", d: 8 }, { x: "79%", y: "24%", d: 12 },
     { x: "44%", y: "64%", d: 10 }, { x: "89%", y: "56%", d: 14 },
@@ -90,33 +94,33 @@ function DarkBackground({ px, py }: { px: number; py: number }) {
   return (
     <div className="absolute inset-0 pointer-events-none overflow-hidden" style={{ background: T.bg }}>
       <div className="absolute inset-0" style={{
-        background: "radial-gradient(ellipse 80% 60% at 15% 5%,rgba(15,143,111,.22) 0%,transparent 60%)," +
-                    "radial-gradient(ellipse 60% 50% at 85% 85%,rgba(22,163,74,.13) 0%,transparent 55%)," +
-                    "linear-gradient(160deg,#051F1C 0%,#041A18 50%,#030F0D 100%)",
+        background: "radial-gradient(ellipse 80% 60% at 15% 5%,rgba(13,122,99,.14) 0%,transparent 60%)," +
+                    "radial-gradient(ellipse 60% 50% at 85% 85%,rgba(5,150,105,.1) 0%,transparent 55%)," +
+                    "linear-gradient(160deg,#FFFFFF 0%,#F7F9FA 50%,#EAF2EF 100%)",
       }} />
       <div className="lg-sheen absolute inset-0" style={{
-        backgroundImage: "linear-gradient(115deg,transparent 30%,rgba(15,143,111,.07) 48%,rgba(34,197,94,.05) 56%,transparent 74%)",
+        backgroundImage: "linear-gradient(115deg,transparent 30%,rgba(13,122,99,.07) 48%,rgba(5,150,105,.05) 56%,transparent 74%)",
         backgroundSize: "260% 260%",
       }} />
       <div className="lg-orb1 absolute rounded-full" style={{
         top: "-260px", left: "-180px", width: "760px", height: "760px",
-        background: "radial-gradient(circle,rgba(15,143,111,.24) 0%,rgba(15,143,111,.06) 42%,transparent 68%)",
+        background: "radial-gradient(circle,rgba(13,122,99,.24) 0%,rgba(13,122,99,.07) 42%,transparent 68%)",
         filter: "blur(70px)", transform: `translate3d(${px * 26}px,${py * 20}px,0)`,
       }} />
       <div className="lg-orb2 absolute rounded-full" style={{
         bottom: "-280px", right: "-160px", width: "820px", height: "820px",
-        background: "radial-gradient(circle,rgba(22,163,74,.16) 0%,rgba(22,163,74,.04) 44%,transparent 68%)",
+        background: "radial-gradient(circle,rgba(5,150,105,.16) 0%,rgba(5,150,105,.05) 44%,transparent 68%)",
         filter: "blur(80px)", transform: `translate3d(${px * -30}px,${py * -22}px,0)`,
       }} />
       <svg className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg"
         style={{ transform: `translate3d(${px * 8}px,${py * 6}px,0)` }}>
         <defs>
           <pattern id="lg-dg1" width="44" height="44" patternUnits="userSpaceOnUse">
-            <path d="M44 0L0 0 0 44" fill="none" stroke="#0F8F6F" strokeWidth=".5" strokeOpacity=".05" />
+            <path d="M44 0L0 0 0 44" fill="none" stroke="#0A6552" strokeWidth=".5" strokeOpacity=".07" />
           </pattern>
           <pattern id="lg-dg2" width="220" height="220" patternUnits="userSpaceOnUse">
             <rect width="220" height="220" fill="url(#lg-dg1)" />
-            <path d="M220 0L0 0 0 220" fill="none" stroke="#0F8F6F" strokeWidth="1" strokeOpacity=".055" />
+            <path d="M220 0L0 0 0 220" fill="none" stroke="#0A6552" strokeWidth="1" strokeOpacity=".08" />
           </pattern>
           <radialGradient id="lg-dgfade" cx="50%" cy="45%" r="62%">
             <stop offset="0%" stopColor="#fff" stopOpacity="1" />
@@ -128,7 +132,7 @@ function DarkBackground({ px, py }: { px: number; py: number }) {
       </svg>
       {icons.map(({ Icon, x, y, s }, i) => (
         <div key={i} className="lg-floaty absolute" style={{
-          left: x, top: y, opacity: 0.07, color: T.accent2,
+          left: x, top: y, opacity: 0.12, color: T.accent,
           animationDelay: `${i * 1.1}s`,
           transform: `translate3d(${px * (10 + i * 2)}px,${py * (8 + i)}px,0)`,
         }}>
@@ -138,19 +142,19 @@ function DarkBackground({ px, py }: { px: number; py: number }) {
       {particles.map((pt, i) => (
         <div key={i} className="absolute rounded-full" style={{
           left: pt.x, top: pt.y, width: "4px", height: "4px",
-          background: "radial-gradient(circle,rgba(34,197,94,.9),transparent 70%)",
-          boxShadow: "0 0 10px rgba(15,143,111,.55)",
+          background: "radial-gradient(circle,rgba(13,122,99,.85),transparent 70%)",
+          boxShadow: "0 0 10px rgba(13,122,99,.45)",
           animation: `lg-particle ${pt.d}s ease-in-out ${i * 0.9}s infinite`,
         }} />
       ))}
       <div className="absolute inset-0" style={{
-        background: "radial-gradient(ellipse 90% 80% at 50% 45%,transparent 40%,rgba(3,6,12,.62) 100%)",
+        background: "radial-gradient(ellipse 90% 80% at 50% 45%,transparent 40%,rgba(15,41,38,.08) 100%)",
       }} />
     </div>
   );
 }
 
-/* ── Floating label dark input ─────────────────────────────────────────────── */
+/* ── Floating label input ─────────────────────────────────────────────── */
 function Field({
   label, type = "text", placeholder, value, onChange, icon: Icon, error, readOnly,
 }: {
@@ -167,16 +171,16 @@ function Field({
     <div>
       <div className="relative" style={{
         borderRadius: "14px",
-        border: `1px solid ${error ? "rgba(248,113,113,.55)" : focused ? T.accent : T.border}`,
-        background: readOnly ? "rgba(2,15,14,.35)" : error ? "rgba(69,10,10,.35)" : focused ? "rgba(12,20,32,.85)" : T.field,
-        boxShadow: error ? "0 0 0 4px rgba(239,68,68,.10)" : focused ? T.glow : "inset 0 1px 0 rgba(255,255,255,.03)",
+        border: `1px solid ${error ? "rgba(220,38,38,.5)" : focused ? T.accent : T.border}`,
+        background: readOnly ? "#F1F5F4" : error ? "#FEF2F2" : focused ? "#FFFFFF" : T.field,
+        boxShadow: error ? "0 0 0 4px rgba(220,38,38,.09)" : focused ? T.glow : "inset 0 1px 0 rgba(15,41,38,.03)",
         transition: "border-color .25s, box-shadow .25s, background .25s",
         overflow: "hidden",
       }}>
         {Icon && (
           <span className="absolute top-1/2 -translate-y-1/2 pointer-events-none z-10" style={{
             left: "17px",
-            color: error ? "#F87171" : focused ? T.accent : T.faint,
+            color: error ? "#DC2626" : focused ? T.accent : T.faint,
             transition: "color .25s",
           }}>
             <Icon size={15} />
@@ -187,7 +191,7 @@ function Field({
           top: floating ? "10px" : "50%",
           transform: floating ? "translateY(0) scale(0.74)" : "translateY(-50%) scale(1)",
           transition: "top .25s cubic-bezier(.4,0,.2,1), transform .25s cubic-bezier(.4,0,.2,1), color .25s",
-          color: error ? "#F87171" : focused ? T.accent : T.faint,
+          color: error ? "#DC2626" : focused ? T.accent : T.faint,
           fontSize: "14px", fontWeight: floating ? 700 : 400,
           letterSpacing: floating ? "0.05em" : "0", lineHeight: 1, whiteSpace: "nowrap",
         }}>
@@ -220,7 +224,7 @@ function Field({
         )}
       </div>
       {error && (
-        <p className="flex items-center gap-1 mt-1.5" style={{ fontSize: "11px", color: "#F87171" }}>
+        <p className="flex items-center gap-1 mt-1.5" style={{ fontSize: "11px", color: "#DC2626" }}>
           <AlertCircle size={11} /> {error}
         </p>
       )}
@@ -240,7 +244,7 @@ function LeftPanel() {
             <div className="flex items-center gap-2">
               <span className="text-[25px] font-black" style={{ color: T.text, letterSpacing: "-0.035em" }}>RF Health</span>
               <span className="text-[9.5px] font-bold px-2 py-0.5 rounded-full"
-                style={{ background: "rgba(15,143,111,.1)", color: T.accent, border: "1px solid rgba(15,143,111,.24)", letterSpacing: "0.04em" }}>
+                style={{ background: "rgba(13,122,99,.11)", color: T.accent, border: "1px solid rgba(13,122,99,.24)", letterSpacing: "0.04em" }}>
                 v2.0 Cloud
               </span>
             </div>
@@ -254,8 +258,8 @@ function LeftPanel() {
       <div className="flex-1 flex flex-col justify-center py-7">
         <div className="lg-a1 mb-4">
           <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full" style={{
-            background: "rgba(15,143,111,.07)", backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)",
-            border: "1px solid rgba(15,143,111,.2)", boxShadow: "0 0 22px rgba(15,143,111,.1)",
+            background: "rgba(13,122,99,.08)", backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)",
+            border: "1px solid rgba(13,122,99,.2)", boxShadow: "0 0 22px rgba(13,122,99,.11)",
           }}>
             <span className="lg-dot" style={{ width: 6, height: 6, borderRadius: "50%", background: T.accent }} />
             <span style={{ fontSize: "10px", fontWeight: 800, letterSpacing: "0.14em", color: T.accent }}>
@@ -277,19 +281,19 @@ function LeftPanel() {
         <div className="lg-a3 grid grid-cols-2 gap-2 mb-7" style={{ maxWidth: "430px" }}>
           {FEATURES.map(({ icon: Icon, label }) => (
             <div key={label} className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 transition-all" style={{
-              background: "rgba(15,143,111,.05)", border: "1px solid rgba(15,143,111,.12)",
-              boxShadow: "inset 0 1px 0 rgba(255,255,255,.03)",
+              background: "rgba(13,122,99,.06)", border: "1px solid rgba(13,122,99,.13)",
+              boxShadow: "inset 0 1px 0 rgba(15,41,38,.03)",
             }}
-            onMouseEnter={e => { e.currentTarget.style.background = "rgba(15,143,111,.1)"; e.currentTarget.style.borderColor = "rgba(15,143,111,.28)"; }}
-            onMouseLeave={e => { e.currentTarget.style.background = "rgba(15,143,111,.05)"; e.currentTarget.style.borderColor = "rgba(15,143,111,.12)"; }}>
+            onMouseEnter={e => { e.currentTarget.style.background = "rgba(13,122,99,.11)"; e.currentTarget.style.borderColor = "rgba(13,122,99,.26)"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "rgba(13,122,99,.06)"; e.currentTarget.style.borderColor = "rgba(13,122,99,.13)"; }}>
               <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{
-                background: "linear-gradient(135deg,rgba(15,143,111,.2),rgba(22,163,74,.12))",
-                border: "1px solid rgba(15,143,111,.25)",
-                boxShadow: "0 0 12px rgba(15,143,111,.12)",
+                background: "linear-gradient(135deg,rgba(13,122,99,.2),rgba(5,150,105,.12))",
+                border: "1px solid rgba(13,122,99,.25)",
+                boxShadow: "0 0 12px rgba(13,122,99,.13)",
               }}>
                 <Icon size={13} style={{ color: T.accent }} />
               </div>
-              <span style={{ fontSize: "11.5px", fontWeight: 600, color: "rgba(255,255,255,.72)", lineHeight: 1.3 }}>{label}</span>
+              <span style={{ fontSize: "11.5px", fontWeight: 600, color: T.muted, lineHeight: 1.3 }}>{label}</span>
             </div>
           ))}
         </div>
@@ -301,7 +305,7 @@ function LeftPanel() {
             { val: "30-day", label: "Free Trial" },
           ].map(({ val, label }) => (
             <div key={label} className="text-center rounded-xl py-3 px-2" style={{
-              background: "rgba(15,143,111,.06)", border: "1px solid rgba(15,143,111,.12)",
+              background: "rgba(13,122,99,.07)", border: "1px solid rgba(13,122,99,.13)",
             }}>
               <div style={{ fontSize: "15px", fontWeight: 800, color: T.accent, letterSpacing: "-0.02em" }}>{val}</div>
               <div style={{ fontSize: "10px", fontWeight: 500, color: T.faint, marginTop: "2px" }}>{label}</div>
@@ -311,7 +315,7 @@ function LeftPanel() {
       </div>
 
       <div className="lg-a4 shrink-0">
-        <div className="mb-3.5" style={{ height: "1px", background: "linear-gradient(90deg,rgba(15,143,111,.28),rgba(15,143,111,.06) 70%,transparent)" }} />
+        <div className="mb-3.5" style={{ height: "1px", background: "linear-gradient(90deg,rgba(13,122,99,.26),rgba(13,122,99,.07) 70%,transparent)" }} />
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
           {[
             { icon: <Shield size={12} />,   label: "HIPAA Ready" },
@@ -337,12 +341,12 @@ function GlassCard({ children }: { children: React.ReactNode }) {
       background: T.surface,
       backdropFilter: "blur(28px)", WebkitBackdropFilter: "blur(28px)",
       border: `1px solid ${T.border2}`,
-      boxShadow: "0 40px 100px rgba(0,0,0,.75), 0 12px 32px rgba(0,0,0,.5), 0 0 80px rgba(15,143,111,.12), inset 0 0 40px rgba(15,143,111,.025)",
+      boxShadow: "0 40px 100px rgba(15,41,38,.18), 0 12px 32px rgba(15,41,38,.12), 0 0 80px rgba(13,122,99,.13), inset 0 0 40px rgba(15,143,111,.025)",
     }}>
       {/* Animated top gradient line */}
-      <div style={{ height: "2px", background: "linear-gradient(90deg,transparent 0%,#0F8F6F 30%,#22C55E 50%,#0F8F6F 70%,transparent 100%)", backgroundSize: "200% 100%", animation: "lg-sheen 4s ease-in-out infinite" }} />
+      <div style={{ height: "2px", background: "linear-gradient(90deg,transparent 0%,#0A6552 30%,#0D7A63 50%,#0A6552 70%,transparent 100%)", backgroundSize: "200% 100%", animation: "lg-sheen 4s ease-in-out infinite" }} />
       {/* Inner corner glow */}
-      <div className="absolute top-0 right-0 w-32 h-32 pointer-events-none" style={{ background: "radial-gradient(circle at top right, rgba(15,143,111,.06), transparent 70%)" }} />
+      <div className="absolute top-0 right-0 w-32 h-32 pointer-events-none" style={{ background: "radial-gradient(circle at top right, rgba(13,122,99,.07), transparent 70%)" }} />
       <div className="px-7 py-7 lg:px-8 relative">{children}</div>
     </div>
   );
@@ -353,11 +357,11 @@ function CardIcon({ icon: Icon }: { icon: React.ElementType }) {
   return (
     <div className="flex items-center justify-center mx-auto mb-4" style={{ width: "fit-content", position: "relative" }}>
       {/* Outer glow ring */}
-      <div className="absolute inset-0 rounded-2xl" style={{ boxShadow: "0 0 0 6px rgba(15,143,111,.08), 0 0 40px rgba(15,143,111,.22)", borderRadius: "18px" }} />
+      <div className="absolute inset-0 rounded-2xl" style={{ boxShadow: "0 0 0 6px rgba(15,143,111,.08), 0 0 40px rgba(13,122,99,.22)", borderRadius: "18px" }} />
       <div className="w-[58px] h-[58px] rounded-2xl flex items-center justify-center relative" style={{
-        background: "linear-gradient(135deg,rgba(15,143,111,.22),rgba(22,163,74,.14))",
-        border: "1px solid rgba(15,143,111,.35)",
-        boxShadow: "0 0 30px rgba(15,143,111,.22), inset 0 1px 0 rgba(255,255,255,.1)",
+        background: "linear-gradient(135deg,rgba(13,122,99,.22),rgba(5,150,105,.14))",
+        border: "1px solid rgba(13,122,99,.3)",
+        boxShadow: "0 0 30px rgba(13,122,99,.22), inset 0 1px 0 rgba(15,41,38,.1)",
       }}>
         <Icon size={26} style={{ color: T.accent }} />
       </div>
@@ -369,7 +373,7 @@ function CardIcon({ icon: Icon }: { icon: React.ElementType }) {
 function ErrBanner({ msg }: { msg: string }) {
   return (
     <div className="flex items-start gap-2 rounded-xl px-4 py-3 text-sm" style={{
-      background: "rgba(69,10,10,.4)", color: "#FCA5A5", border: "1px solid rgba(248,113,113,.28)",
+      background: "#FEF2F2", color: "#B91C1C", border: "1px solid rgba(220,38,38,.22)",
     }}>
       <XCircle size={15} className="shrink-0 mt-0.5" /> {msg}
     </div>
@@ -378,7 +382,7 @@ function ErrBanner({ msg }: { msg: string }) {
 function OkBanner({ msg }: { msg: string }) {
   return (
     <div className="flex items-center gap-2 rounded-xl px-4 py-3 text-sm" style={{
-      background: "rgba(34,197,94,.08)", color: T.accent, border: "1px solid rgba(34,197,94,.22)",
+      background: "rgba(13,122,99,.09)", color: T.accent, border: "1px solid rgba(13,122,99,.22)",
     }}>
       <CheckCircle2 size={15} /> {msg}
     </div>
@@ -389,18 +393,18 @@ function OkBanner({ msg }: { msg: string }) {
 function InfoGrid({ rows }: {
   rows: { label: string; value: string; mono?: boolean; small?: boolean; highlight?: "green" | "amber" | "red" }[];
 }) {
-  const colors: Record<string, string> = { green: T.accent, amber: "#FBBF24", red: "#F87171" };
+  const colors: Record<string, string> = { green: T.accent, amber: "#FBBF24", red: "#DC2626" };
   return (
-    <div className="rounded-xl overflow-hidden" style={{ border: "1px solid rgba(255,255,255,.08)", background: "rgba(255,255,255,.025)" }}>
+    <div className="rounded-xl overflow-hidden" style={{ border: "1px solid rgba(15,41,38,.09)", background: "rgba(15,41,38,.02)" }}>
       {rows.map(({ label, value, mono, small, highlight }, i) => (
         <div key={label} className="flex items-center justify-between px-4 py-3 transition-colors hover:bg-white/[0.02]"
-          style={{ borderBottom: i < rows.length - 1 ? "1px solid rgba(255,255,255,.06)" : "none" }}>
-          <span className="text-xs tracking-wide" style={{ color: "rgba(255,255,255,.38)" }}>{label}</span>
+          style={{ borderBottom: i < rows.length - 1 ? "1px solid rgba(15,41,38,.06)" : "none" }}>
+          <span className="text-xs tracking-wide" style={{ color: "rgba(90,110,106,.95)" }}>{label}</span>
           <span className="text-xs max-w-[58%] truncate text-right" style={{
             fontFamily: mono ? "'Courier New', monospace" : undefined,
             fontSize: small ? "11px" : "12.5px",
             fontWeight: highlight ? 700 : 600,
-            color: highlight ? colors[highlight] : "rgba(255,255,255,.82)",
+            color: highlight ? colors[highlight] : T.text,
             letterSpacing: mono ? "0.04em" : undefined,
           }}>
             {value}
@@ -416,20 +420,20 @@ function DayProgressBar({ remaining, total }: { remaining: number; total: number
   const pct = Math.max(0, Math.min(100, (remaining / total) * 100));
   const urgent = remaining <= 5;
   const warning = remaining <= 10 && !urgent;
-  const color = urgent ? "#F59E0B" : warning ? "#0F8F6F" : "#22C55E";
-  const glowColor = urgent ? "rgba(245,158,11,.45)" : warning ? "rgba(15,143,111,.5)" : "rgba(34,197,94,.45)";
+  const color = urgent ? "#F59E0B" : warning ? "#0A6552" : "#0D7A63";
+  const glowColor = urgent ? "rgba(245,158,11,.45)" : warning ? "rgba(15,143,111,.5)" : "rgba(13,122,99,.36)";
   const used = total - remaining;
   return (
     <div className="mt-5">
       <div className="flex justify-between items-center mb-2">
-        <span style={{ fontSize: "11px", fontWeight: 700, letterSpacing: "0.06em", color: "rgba(255,255,255,.35)", textTransform: "uppercase" }}>
+        <span style={{ fontSize: "11px", fontWeight: 700, letterSpacing: "0.06em", color: T.faint, textTransform: "uppercase" }}>
           Trial Period
         </span>
         <span style={{ fontSize: "12px", fontWeight: 700, color }}>
-          {remaining} <span style={{ fontWeight: 400, color: "rgba(255,255,255,.38)" }}>/ {total} days left</span>
+          {remaining} <span style={{ fontWeight: 400, color: "rgba(90,110,106,.95)" }}>/ {total} days left</span>
         </span>
       </div>
-      <div className="relative rounded-full overflow-hidden" style={{ height: "6px", background: "rgba(255,255,255,.07)" }}>
+      <div className="relative rounded-full overflow-hidden" style={{ height: "6px", background: "rgba(15,41,38,.06)" }}>
         <div className="absolute inset-y-0 left-0 rounded-full"
           style={{
             width: `${(used / total) * 100}%`,
@@ -439,10 +443,10 @@ function DayProgressBar({ remaining, total }: { remaining: number; total: number
           }} />
         <div className="absolute inset-y-0 rounded-full" style={{
           left: `${(used / total) * 100}%`, right: 0,
-          background: "rgba(255,255,255,.05)",
+          background: "rgba(15,41,38,.04)",
         }} />
       </div>
-      <div className="flex justify-between mt-1.5" style={{ fontSize: "10px", color: "rgba(255,255,255,.25)" }}>
+      <div className="flex justify-between mt-1.5" style={{ fontSize: "10px", color: T.faint }}>
         <span>Day 1</span>
         <span>Day {total}</span>
       </div>
@@ -549,16 +553,16 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
 
   const status = data.status;
   const btnPrimary: React.CSSProperties = {
-    background: "linear-gradient(135deg,#0F8F6F,#16A34A)",
-    boxShadow: "0 8px 24px rgba(15,143,111,.34), 0 0 28px rgba(34,197,94,.2)",
+    background: "linear-gradient(135deg,#0A6552,#059669)",
+    boxShadow: "0 8px 24px rgba(13,122,99,.3), 0 0 28px rgba(13,122,99,.2)",
     color: "#fff",
   };
-  const btnDisabled: React.CSSProperties = { background: "rgba(255,255,255,.07)", color: "#64748B" };
-  const btnOutline: React.CSSProperties = { background: "rgba(255,255,255,.06)", border: `1px solid ${T.border2}`, color: T.muted };
+  const btnDisabled: React.CSSProperties = { background: "rgba(15,41,38,.06)", color: "#64748B" };
+  const btnOutline: React.CSSProperties = { background: "rgba(15,41,38,.06)", border: `1px solid ${T.border2}`, color: T.muted };
 
   return (
     <div className="fixed inset-0 flex overflow-hidden" style={{
-      background: T.bg, color: T.text, colorScheme: "dark",
+      background: T.bg, color: T.text, colorScheme: "light",
       fontFamily: "var(--font-inter), 'Segoe UI', system-ui, -apple-system, sans-serif",
     }}>
       <style>{`
@@ -567,7 +571,7 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
         @keyframes lg-cardin   { from{opacity:0;transform:translateY(30px) scale(.97)} to{opacity:1;transform:translateY(0) scale(1)} }
         @keyframes lg-grad     { 0%,100%{background-position:0% 50%} 50%{background-position:100% 50%} }
         @keyframes lg-floaty   { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-7px)} }
-        @keyframes lg-dot      { 0%,100%{box-shadow:0 0 0 0 rgba(34,197,94,.45)} 60%{box-shadow:0 0 0 6px rgba(34,197,94,0)} }
+        @keyframes lg-dot      { 0%,100%{box-shadow:0 0 0 0 rgba(13,122,99,.36)} 60%{box-shadow:0 0 0 6px rgba(34,197,94,0)} }
         @keyframes lg-sheen    { 0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%} }
         @keyframes lg-orbA     { 0%,100%{filter:blur(70px) brightness(1)} 50%{filter:blur(78px) brightness(1.16)} }
         @keyframes lg-orbB     { 0%,100%{filter:blur(80px) brightness(1)} 50%{filter:blur(88px) brightness(1.14)} }
@@ -586,7 +590,7 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
         .lg-orb2  {animation:lg-orbB   18s ease-in-out infinite; transition:transform .5s cubic-bezier(.22,1,.36,1)}
 
         .lg-grad-text{
-          background:linear-gradient(90deg,#5EEAD4,#22C55E,#0F8F6F,#22C55E,#5EEAD4);
+          background:linear-gradient(90deg,#0F766E,#0D7A63,#0A6552,#0D7A63,#0F766E);
           background-size:300% auto;
           -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
           animation:lg-grad 5s ease infinite;
@@ -598,11 +602,11 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
         @media (prefers-reduced-motion:reduce){
           .lg-a0,.lg-a1,.lg-a2,.lg-a3,.lg-a4,.lg-card,.lg-floaty,.lg-dot,.lg-sheen,.lg-orb1,.lg-orb2,.lg-btn
           {animation:none!important;transition:none!important;}
-          .lg-grad-text{-webkit-text-fill-color:#0F8F6F;background:none;}
+          .lg-grad-text{-webkit-text-fill-color:#0A6552;background:none;}
         }
       `}</style>
 
-      <DarkBackground px={par.x} py={par.y} />
+      <LightBackground px={par.x} py={par.y} />
 
       <div className="relative flex w-full h-full overflow-hidden">
         <LeftPanel />
@@ -610,7 +614,7 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
         {/* Right panel */}
         <div className="w-full lg:w-[55%] shrink-0 flex flex-col overflow-y-auto relative"
           style={{
-            background: "linear-gradient(200deg,rgba(13,22,36,.5) 0%,rgba(6,11,20,.28) 100%)",
+            background: "linear-gradient(200deg,rgba(255,255,255,.72) 0%,rgba(255,255,255,.46) 100%)",
             backdropFilter: "blur(18px)", WebkitBackdropFilter: "blur(18px)",
             borderLeft: `1px solid ${T.border}`,
           }}>
@@ -638,7 +642,7 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
                   </div>
 
                   <div className="flex items-center justify-center gap-2 mb-6 px-4 py-2.5 rounded-xl" style={{
-                    background: "rgba(34,197,94,.08)", border: "1px solid rgba(34,197,94,.22)",
+                    background: "rgba(13,122,99,.09)", border: "1px solid rgba(13,122,99,.22)",
                   }}>
                     <CheckCircle2 size={15} style={{ color: T.accent }} />
                     <span className="text-sm font-semibold" style={{ color: T.accent }}>Free 30-Day Trial — No Credit Card</span>
@@ -763,8 +767,8 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
                   <GlassCard>
                     <div className="text-center mb-5">
                       <div className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3" style={{
-                        background: "linear-gradient(135deg,rgba(15,143,111,.2),rgba(22,163,74,.14))",
-                        border: "1px solid rgba(15,143,111,.3)",
+                        background: "linear-gradient(135deg,rgba(13,122,99,.2),rgba(5,150,105,.14))",
+                        border: "1px solid rgba(13,122,99,.28)",
                       }}>
                         <svg width="22" height="22" viewBox="0 0 52 52" fill="none">
                           <rect x="20" y="4" width="12" height="44" rx="5" fill="white" fillOpacity=".9" />
@@ -778,7 +782,7 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
                     <div className="flex items-center justify-center gap-2 mb-5 px-4 py-2.5 rounded-xl text-sm font-semibold"
                       style={data.daysRemaining <= 5
                         ? { background: "rgba(251,191,36,.08)", color: "#FBBF24", border: "1px solid rgba(251,191,36,.22)" }
-                        : { background: "rgba(34,197,94,.08)", color: T.accent, border: "1px solid rgba(34,197,94,.22)" }}>
+                        : { background: "rgba(13,122,99,.09)", color: T.accent, border: "1px solid rgba(13,122,99,.22)" }}>
                       {data.daysRemaining <= 5
                         ? <><AlertTriangle size={15} /> Trial License Active — Expiring Soon!</>
                         : <><CheckCircle2 size={15} /> Trial License Active</>}
@@ -808,12 +812,12 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
               {status === "TRIAL_EXPIRED" && (
                 <GlassCard>
                   <div className="flex items-start gap-3 mb-6 px-4 py-3.5 rounded-xl" style={{
-                    background: "rgba(220,38,38,.1)", border: "1px solid rgba(248,113,113,.28)",
+                    background: "rgba(220,38,38,.1)", border: "1px solid rgba(220,38,38,.22)",
                   }}>
-                    <XCircle size={20} style={{ color: "#F87171" }} className="shrink-0 mt-0.5" />
+                    <XCircle size={20} style={{ color: "#DC2626" }} className="shrink-0 mt-0.5" />
                     <div>
-                      <p className="font-bold text-sm" style={{ color: "#FCA5A5" }}>Your Trial Has Expired</p>
-                      <p className="text-xs mt-0.5" style={{ color: "#F87171" }}>
+                      <p className="font-bold text-sm" style={{ color: "#B91C1C" }}>Your Trial Has Expired</p>
+                      <p className="text-xs mt-0.5" style={{ color: "#DC2626" }}>
                         Activate your purchased license to continue using RF Health.
                       </p>
                     </div>
@@ -866,8 +870,8 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
                   <GlassCard>
                     <div className="text-center mb-5">
                       <div className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3" style={{
-                        background: "linear-gradient(135deg,rgba(15,143,111,.2),rgba(22,163,74,.14))",
-                        border: "1px solid rgba(15,143,111,.3)",
+                        background: "linear-gradient(135deg,rgba(13,122,99,.2),rgba(5,150,105,.14))",
+                        border: "1px solid rgba(13,122,99,.28)",
                       }}>
                         <svg width="22" height="22" viewBox="0 0 52 52" fill="none">
                           <rect x="20" y="4" width="12" height="44" rx="5" fill="white" fillOpacity=".9" />
@@ -880,13 +884,13 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
 
                     {status === "SUBSCRIBED" ? (
                       <div className="flex items-center justify-center gap-2 mb-5 px-4 py-2.5 rounded-xl text-sm font-semibold" style={{
-                        background: "rgba(34,197,94,.08)", color: T.accent, border: "1px solid rgba(34,197,94,.22)",
+                        background: "rgba(13,122,99,.09)", color: T.accent, border: "1px solid rgba(13,122,99,.22)",
                       }}>
                         <CheckCircle2 size={15} /> Professional License — Active
                       </div>
                     ) : (
                       <div className="flex items-center justify-center gap-2 mb-5 px-4 py-2.5 rounded-xl text-sm font-semibold" style={{
-                        background: "rgba(220,38,38,.1)", color: "#F87171", border: "1px solid rgba(248,113,113,.28)",
+                        background: "rgba(220,38,38,.1)", color: "#DC2626", border: "1px solid rgba(220,38,38,.22)",
                       }}>
                         <XCircle size={15} /> License Expired — Renewal Required
                       </div>
@@ -980,11 +984,11 @@ function PlansModal({ onClose, onActivateKey }: { onClose: () => void; onActivat
       <div className="relative w-full max-w-3xl rounded-3xl overflow-hidden max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
         style={{
-          background: "rgba(4,26,24,.96)", backdropFilter: "blur(25px)",
-          border: "1px solid rgba(255,255,255,.14)",
-          boxShadow: "0 40px 100px rgba(0,0,0,.72), 0 0 60px rgba(15,143,111,.12)",
+          background: "rgba(255,255,255,.97)", backdropFilter: "blur(25px)",
+          border: "1px solid rgba(15,41,38,.13)",
+          boxShadow: "0 40px 100px rgba(15,41,38,.18), 0 0 60px rgba(13,122,99,.13)",
         }}>
-        <div style={{ height: "1px", background: "linear-gradient(90deg,transparent,#0F8F6F 40%,#22C55E 60%,transparent)" }} />
+        <div style={{ height: "1px", background: "linear-gradient(90deg,transparent,#0A6552 40%,#0D7A63 60%,transparent)" }} />
         <div className="p-6 sm:p-8">
           <div className="flex items-start justify-between mb-6">
             <div>
@@ -999,13 +1003,13 @@ function PlansModal({ onClose, onActivateKey }: { onClose: () => void; onActivat
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {PLANS.map((p) => (
               <div key={p.name} className="relative rounded-2xl p-5 flex flex-col" style={{
-                border: p.highlight ? "1px solid rgba(34,197,94,.4)" : "1px solid rgba(255,255,255,.08)",
-                background: p.highlight ? "rgba(15,143,111,.1)" : "rgba(255,255,255,.03)",
-                boxShadow: p.highlight ? "0 0 30px rgba(15,143,111,.15)" : "none",
+                border: p.highlight ? "1px solid rgba(13,122,99,.34)" : "1px solid rgba(15,41,38,.09)",
+                background: p.highlight ? "rgba(13,122,99,.11)" : "rgba(15,41,38,.03)",
+                boxShadow: p.highlight ? "0 0 30px rgba(13,122,99,.16)" : "none",
               }}>
                 {p.badge && (
                   <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full text-[11px] font-bold text-white whitespace-nowrap"
-                    style={{ background: p.highlight ? "linear-gradient(135deg,#0F8F6F,#16A34A)" : "#374151" }}>
+                    style={{ background: p.highlight ? "linear-gradient(135deg,#0A6552,#059669)" : "#94A3B8" }}>
                     {p.badge}
                   </span>
                 )}
@@ -1026,8 +1030,8 @@ function PlansModal({ onClose, onActivateKey }: { onClose: () => void; onActivat
                   href={`mailto:support@ppms.in?subject=${encodeURIComponent(`RF Health License Purchase — ${p.name} plan (${p.price}${p.per})`)}&body=${encodeURIComponent("Hi,\n\nI would like to buy the " + p.name + " plan for RF Health. Please share the payment details and license key.\n\nThank you.")}`}
                   className="lg-btn w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-bold"
                   style={p.highlight
-                    ? { background: "linear-gradient(135deg,#0F8F6F,#16A34A)", color: "white", boxShadow: "0 4px 14px rgba(21,122,115,.35)" }
-                    : { background: "rgba(255,255,255,.06)", border: "1px solid rgba(255,255,255,.14)", color: T.muted }}>
+                    ? { background: "linear-gradient(135deg,#0A6552,#059669)", color: "white", boxShadow: "0 4px 14px rgba(21,122,115,.35)" }
+                    : { background: "rgba(15,41,38,.06)", border: "1px solid rgba(15,41,38,.13)", color: T.muted }}>
                   Buy {p.name}
                 </a>
               </div>
