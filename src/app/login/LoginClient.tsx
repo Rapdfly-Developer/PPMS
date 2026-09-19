@@ -2,6 +2,7 @@
 
 import { useActionState, useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { loginAction, emailOtpLoginAction } from "./actions";
 import {
   Eye, EyeOff, User, Lock, AlertCircle, CheckCircle2,
@@ -1101,6 +1102,11 @@ export default function LoginPage() {
 
         /* Text links carry their hit area in padding, pulled back out with a
            negative margin so it never changes the surrounding layout. */
+        /* The lockup is a link home, so it needs to look like one on hover
+           without the underline a text link would take. */
+        .lp-brand{transition:opacity .16s ease}
+        .lp-brand:hover{opacity:.78}
+
         .pp-link{transition:color .16s ease;padding:8px 4px;margin:-8px -4px}
         .pp-link:hover:not(:disabled){color:${T.primaryHover};text-decoration:underline}
 
@@ -1159,7 +1165,10 @@ export default function LoginPage() {
                 {/* Brand lockup — one element at every width. Centred below lg,
                     where it is the only branding on screen; left-aligned to the
                     card's edge from lg up, where the hero carries the page. */}
-                <div className="lp-a0 flex items-center gap-3.5 mb-5 justify-center lg:justify-start">
+                <Link
+                  href="/"
+                  aria-label="RF Health home"
+                  className="lp-brand lp-a0 flex items-center gap-3.5 mb-5 justify-center lg:justify-start rounded-xl">
                   {/* The mark ships on its own marble ground, so it gets a radius
                       and a hairline border to read as a deliberate badge rather
                       than a rectangle pasted onto the page. */}
@@ -1182,7 +1191,7 @@ export default function LoginPage() {
                       PRIVATE PATIENT MANAGEMENT SYSTEM
                     </p>
                   </div>
-                </div>
+                </Link>
 
                 <GlassCard>
                   <h2 className="font-bold" style={{ fontSize: "var(--fs-card-h)", color: T.ink, letterSpacing: "-0.02em" }}>
