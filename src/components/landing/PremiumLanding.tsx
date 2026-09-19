@@ -1129,6 +1129,85 @@ export function PremiumLanding() {
         </RevealGroup>
       </Section>
 
+      {/* ── What is included ─────────────────────────────────────────────────
+          Every module below maps to a route that exists under src/app/(app),
+          and the document list maps to the templates in src/lib/pdf.ts. Two
+          items that appeared in stale build artefacts -- counseling and
+          scheduled-ot -- are deliberately absent, because those routes do not
+          exist. Check before adding to this list. */}
+      <Section id="included">
+        <SectionHead
+          eyebrow="What you get"
+          title={<>One licence. The whole practice.</>}
+          lede="Not a core product with the useful parts sold separately. Every module below is in the same account, on the same patient record, from the first day of the trial."
+        />
+
+        <RevealGroup
+          // Twelve tiles, because twelve divides evenly by 2, 3, 4 and 6 --
+          // every breakpoint below lands on a full last row. auto-fit was
+          // giving a ragged 5+4 at 1920.
+          className="mt-8 grid gap-3 sm:mt-10 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 4xl:grid-cols-6"
+          stagger={0.04}
+        >
+          {[
+            { icon: <Stethoscope size={18} strokeWidth={1.25} />, title: "OPD queue", body: "The day’s outpatient list, walk-ins included, and the consultation running live against it." },
+            { icon: <Users size={18} strokeWidth={1.25} />, title: "Patient registry", body: "Profiles, identifiers and the full visit history behind every patient in the practice." },
+            { icon: <ClipboardPlus size={18} strokeWidth={1.25} />, title: "Electronic records", body: "Structured complaints, examination, diagnosis, investigations and plan for each encounter." },
+            { icon: <CalendarRange size={18} strokeWidth={1.25} />, title: "Appointments", body: "Booking, confirmation and rescheduling, against the doctor actually sitting that session." },
+            { icon: <CalendarRange size={18} strokeWidth={1.25} />, title: "Availability", body: "Per-doctor slot availability and session schedules, set once per hospital and reused." },
+            { icon: <History size={18} strokeWidth={1.25} />, title: "Follow-ups", body: "Scheduled follow-ups tracked against the visit that advised them, not a separate list to maintain." },
+            { icon: <Building2 size={18} strokeWidth={1.25} />, title: "IPD and discharge", body: "Admissions, bed state and a discharge summary built from the record already written." },
+            { icon: <ScanLine size={18} strokeWidth={1.25} />, title: "Surgery scheduling", body: "Surgery advised at the consultation, scheduled and carried through to the operative record." },
+            { icon: <ChartNoAxesColumn size={18} strokeWidth={1.25} />, title: "Analytics", body: "OPD, IPD and theatre volumes, with the trends behind the numbers you run the practice on." },
+            { icon: <ShieldCheck size={18} strokeWidth={1.25} />, title: "Users and roles", body: "Staff accounts with role-based permissions, set per hospital and editable in Role Manager." },
+            { icon: <Mail size={18} strokeWidth={1.25} />, title: "Notifications", body: "In-app alerts for the things that need answering, kept in one place rather than in email." },
+            { icon: <ScanLine size={18} strokeWidth={1.25} />, title: "Document capture", body: "Scanned reports attached to the patient, with the text extracted so the record stays searchable." },
+          ].map((m) => (
+            <RevealItem key={m.title}>
+              <div className="group/inc h-full rounded-[1.5rem] bg-white p-2 ring-1 ring-inset ring-emerald-950/[0.07] transition-[transform,box-shadow] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:-translate-y-1 hover:shadow-[0_24px_50px_-38px_rgba(6,60,45,0.5)]">
+                <div className="flex h-full flex-col gap-3.5 rounded-[1rem] bg-gradient-to-b from-slate-50/80 to-white p-6 3xl:p-8 4xl:p-10">
+                  <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-600/10 transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover/inc:scale-110">
+                    {m.icon}
+                  </span>
+                  <h3 className="text-[15.5px] font-semibold leading-snug tracking-[-0.01em] text-emerald-950">
+                    {m.title}
+                  </h3>
+                  <p className="text-[13.5px] leading-relaxed text-slate-600">{m.body}</p>
+                </div>
+              </div>
+            </RevealItem>
+          ))}
+        </RevealGroup>
+
+        {/* Documents the system actually produces, straight from pdf.ts. */}
+        <Reveal delay={0.12}>
+          <div className="mt-8 rounded-[1.5rem] bg-white p-6 ring-1 ring-inset ring-emerald-950/[0.07] sm:mt-10 3xl:p-8 4xl:p-10">
+            <p className="text-[13px] font-medium uppercase tracking-[0.16em] text-slate-400">
+              Prints and exports as PDF
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {[
+                "Prescription",
+                "Consultation summary",
+                "Discharge summary",
+                "Dispense summary",
+                "Complete EMR",
+                "All visit history",
+              ].map((doc) => (
+                <span
+                  key={doc}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50/70 px-3.5 py-1.5 text-[13px] font-medium text-emerald-900 ring-1 ring-inset ring-emerald-600/10"
+                >
+                  <Check size={13} strokeWidth={2} className="text-emerald-600" aria-hidden="true" />
+                  {doc}
+                </span>
+              ))}
+            </div>
+          </div>
+        </Reveal>
+      </Section>
+
+
       {/* ── Pricing ──────────────────────────────────────────────────────── */}
       <Section id="pricing">
         <SectionHead
