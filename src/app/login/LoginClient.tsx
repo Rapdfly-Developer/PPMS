@@ -750,7 +750,7 @@ function LeftPanel() {
         </h1>
 
         <p className="lp-a2 leading-relaxed mb-6" style={{ ...panelW, fontSize: "var(--fs-body)", color: T.muted }}>
-          A comprehensive solution to manage patients, doctors, appointments, billing, and much more — all in one place.
+          A comprehensive solution to manage patients, doctors, appointments, billing, and much more, all in one place.
         </p>
 
         {/* Feature tiles */}

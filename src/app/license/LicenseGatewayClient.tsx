@@ -281,7 +281,7 @@ function LeftPanel() {
         </h1>
 
         <p className="lg-a2 leading-relaxed mb-6" style={{ fontSize: "14px", color: T.muted, maxWidth: "430px" }}>
-          A comprehensive solution to manage patients, doctors, appointments, billing, and much more — all in one place.
+          A comprehensive solution to manage patients, doctors, appointments, billing, and much more, all in one place.
         </p>
 
         <div className="lg-a3 grid grid-cols-2 gap-2 mb-7" style={{ maxWidth: "430px" }}>
@@ -654,7 +654,7 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
                     background: "rgba(13,122,99,.09)", border: "1px solid rgba(13,122,99,.22)",
                   }}>
                     <CheckCircle2 size={15} style={{ color: T.accent }} />
-                    <span className="text-sm font-semibold" style={{ color: T.accent }}>Free 30-Day Trial — No Credit Card</span>
+                    <span className="text-sm font-semibold" style={{ color: T.accent }}>Free 30-Day Trial · No Credit Card</span>
                   </div>
 
                   <div className="flex flex-col gap-3.5">
@@ -756,7 +756,7 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
                   <div className="rounded-xl px-4 py-3 text-sm mb-4" style={{
                     background: "rgba(251,191,36,.08)", color: "#FBBF24", border: "1px solid rgba(251,191,36,.22)",
                   }}>
-                    To activate a purchased license, first complete trial registration — then enter your key in the activation screen.
+                    To activate a purchased license, first complete trial registration, then enter your key in the activation screen.
                   </div>
                   <button onClick={() => setData((d) => ({ ...d, status: "NO_LICENSE" }))}
                     className="lg-btn w-full flex items-center justify-center gap-2 rounded-2xl font-semibold text-sm"
@@ -793,7 +793,7 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
                         ? { background: "rgba(251,191,36,.08)", color: "#FBBF24", border: "1px solid rgba(251,191,36,.22)" }
                         : { background: "rgba(13,122,99,.09)", color: T.accent, border: "1px solid rgba(13,122,99,.22)" }}>
                       {data.daysRemaining <= 5
-                        ? <><AlertTriangle size={15} /> Trial License Active — Expiring Soon!</>
+                        ? <><AlertTriangle size={15} /> Trial License Active · Expiring Soon!</>
                         : <><CheckCircle2 size={15} /> Trial License Active</>}
                     </div>
 
@@ -895,13 +895,13 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
                       <div className="flex items-center justify-center gap-2 mb-5 px-4 py-2.5 rounded-xl text-sm font-semibold" style={{
                         background: "rgba(13,122,99,.09)", color: T.accent, border: "1px solid rgba(13,122,99,.22)",
                       }}>
-                        <CheckCircle2 size={15} /> Professional License — Active
+                        <CheckCircle2 size={15} /> Professional License · Active
                       </div>
                     ) : (
                       <div className="flex items-center justify-center gap-2 mb-5 px-4 py-2.5 rounded-xl text-sm font-semibold" style={{
                         background: "rgba(220,38,38,.1)", color: "#DC2626", border: "1px solid rgba(220,38,38,.22)",
                       }}>
-                        <XCircle size={15} /> License Expired — Renewal Required
+                        <XCircle size={15} /> License Expired · Renewal Required
                       </div>
                     )}
 
@@ -1036,7 +1036,7 @@ function PlansModal({ onClose, onActivateKey }: { onClose: () => void; onActivat
                   ))}
                 </ul>
                 <a
-                  href={`mailto:support@ppms.in?subject=${encodeURIComponent(`RF Health License Purchase — ${p.name} plan (${p.price}${p.per})`)}&body=${encodeURIComponent("Hi,\n\nI would like to buy the " + p.name + " plan for RF Health. Please share the payment details and license key.\n\nThank you.")}`}
+                  href={`mailto:support@ppms.in?subject=${encodeURIComponent(`RF Health License Purchase: ${p.name} plan (${p.price}${p.per})`)}&body=${encodeURIComponent("Hi,\n\nI would like to buy the " + p.name + " plan for RF Health. Please share the payment details and license key.\n\nThank you.")}`}
                   className="lg-btn w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-bold"
                   style={p.highlight
                     ? { background: "linear-gradient(135deg,#0A6552,#059669)", color: "white", boxShadow: "0 4px 14px rgba(21,122,115,.35)" }

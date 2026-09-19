@@ -21,7 +21,7 @@ const body = Plus_Jakarta_Sans({
   display: "swap",
 });
 
-const TITLE = "RF Health — One Doctor. Every Hospital. One Record.";
+const TITLE = "RF Health · One Doctor. Every Hospital. One Record.";
 const DESCRIPTION =
   "Patient practice management for doctors working across multiple hospitals. Appointments, electronic medical records, prescriptions, surgery notes, billing and analytics in one secure account.";
 

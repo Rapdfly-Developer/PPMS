@@ -7,7 +7,7 @@ import { Providers } from "./providers";
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
 
 export const metadata: Metadata = {
-  title: "RF Health — Private Patient Management System",
+  title: "RF Health · Private Patient Management System",
   description: "Multi-hospital EMR & appointment platform for visiting ophthalmologists",
 };
 

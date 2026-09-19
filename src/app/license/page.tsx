@@ -5,7 +5,7 @@ import { licenseeDoctorIdForUser } from "@/lib/license-guard";
 import type { SessionUser } from "@/lib/rbac";
 import type { LicensePageData } from "./getLicenseData";
 
-export const metadata = { title: "License — RF Health" };
+export const metadata = { title: "License · RF Health" };
 export const dynamic = "force-dynamic";
 
 const EMPTY: LicensePageData = {
