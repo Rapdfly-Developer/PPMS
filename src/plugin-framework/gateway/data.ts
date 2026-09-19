@@ -449,7 +449,7 @@ export async function getPatientTimeline(
       events.push({
         date: v.date.toISOString(),
         kind: "ADMISSION",
-        label: `Admitted — ${v.admission.ward}`,
+        label: `Admitted: ${v.admission.ward}`,
         detail: v.admission.discharged
           ? `${v.admission.reason} (discharged)`
           : v.admission.reason,

@@ -374,7 +374,7 @@ export function UserProfileClient({
             <div className="bg-white rounded-2xl border border-red-200 overflow-hidden shadow-sm">
               <div className="px-5 py-3.5 border-b border-red-100 bg-red-50">
                 <p className="text-sm font-semibold text-red-800">Danger Zone</p>
-                <p className="text-xs text-red-400 mt-0.5">Irreversible actions — proceed with caution.</p>
+                <p className="text-xs text-red-400 mt-0.5">Irreversible actions, proceed with caution.</p>
               </div>
               <div className="px-5 py-4">
                 {!showDelete ? (

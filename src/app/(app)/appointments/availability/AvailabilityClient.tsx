@@ -187,7 +187,7 @@ function EditSlotModal({ hospitals, slot, weekly, onClose }: {
   }, [startTime, endTime, hospitalId, weekly, slot.id, slot.weekday]);
 
   return (
-    <Modal title="Edit Template Slot" sub={`${WEEKDAYS_FULL[slot.weekday]} — repeats every week`} onClose={onClose}>
+    <Modal title="Edit Template Slot" sub={`${WEEKDAYS_FULL[slot.weekday]}, repeats every week`} onClose={onClose}>
       {error && <Err msg={error} />}
 
       <div><label className={LBL}>Hospital</label>
@@ -309,7 +309,7 @@ function AddWeeklySlotModal({ hospitals, weekly, preWeekday, onClose }: {
   const hasConflicts = blockedDays.length > 0;
 
   return (
-    <Modal title="Add Weekly Slot" sub="Choose days, time and hospital — we'll check for clashes" onClose={onClose}>
+    <Modal title="Add Weekly Slot" sub="Choose days, time and hospital, we'll check for clashes" onClose={onClose}>
       {error && <Err msg={error} />}
 
       {/* Hospital */}
@@ -405,7 +405,7 @@ function AddWeeklySlotModal({ hospitals, weekly, preWeekday, onClose }: {
           onClick={() => {
             if (!hospitalId) { setError("Select a hospital"); return; }
             if (startTime >= endTime) { setError("End time must be after start time"); return; }
-            if (cleanDays.length === 0) { setError("All selected days have conflicts — adjust the time or choose different days"); return; }
+            if (cleanDays.length === 0) { setError("All selected days have conflicts, adjust the time or choose different days"); return; }
             setError("");
             start(async () => {
               try {
@@ -449,7 +449,7 @@ function TemplateTab({ weekly, hospitals, onGenerate }: {
           <Info size={16} className="text-[var(--color-primary-600)] shrink-0 mt-0.5" />
           <div>
             <p className="text-sm font-semibold text-[var(--color-primary-800)]">Set your weekly template once</p>
-            <p className="text-xs text-[var(--color-primary-600)] mt-0.5">Define which hospitals and times you work each day of the week. Then use <strong>Generate Month</strong> to auto-fill your calendar — no manual entry needed.</p>
+            <p className="text-xs text-[var(--color-primary-600)] mt-0.5">Define which hospitals and times you work each day of the week. Then use <strong>Generate Month</strong> to auto-fill your calendar, no manual entry needed.</p>
           </div>
         </div>
         {hospitals.length > 0 && (
@@ -610,7 +610,7 @@ function TemplateTab({ weekly, hospitals, onGenerate }: {
           {weekly.filter(s => s.status === "ACTIVE").length > 0 && (
             <div className="mt-2 rounded-2xl border border-[var(--color-primary-100)] bg-[var(--color-primary-50)] p-5 flex flex-col sm:flex-row items-center gap-4">
               <div className="flex-1">
-                <p className="font-bold text-[var(--color-primary-800)]">Template ready — generate your monthly calendar</p>
+                <p className="font-bold text-[var(--color-primary-800)]">Template ready, generate your monthly calendar</p>
                 <p className="text-xs text-[var(--color-primary-600)] mt-1">Switch to the Calendar tab to generate a month automatically from this template. You only need to handle exceptions (leave, extra sessions).</p>
               </div>
               <button onClick={onGenerate}
@@ -661,7 +661,7 @@ function DayEditModal({ slot, hospitals, onClose }: { slot: DaySlot; hospitals: 
   const [pending,    start]         = useTransition();
 
   return (
-    <Modal title="Edit This Day" sub="Only this date changes — template is untouched" onClose={onClose}>
+    <Modal title="Edit This Day" sub="Only this date changes, template is untouched" onClose={onClose}>
       {error && <Err msg={error} />}
       <div><label className={LBL}>Hospital</label>
         <select value={hospitalId} onChange={e => setHospitalId(e.target.value)} className={FLD}>
@@ -1010,7 +1010,7 @@ function DayPopup({ dateStr, dayData, hospitals, onClose, onRefresh }: {
               <div className="flex items-center justify-between p-3 rounded-xl bg-red-50 border border-red-200">
                 <div>
                   <p className="text-xs font-bold text-red-700">
-                    {leave.type === "HALF_DAY" ? `Half Day Leave — ${leave.halfPeriod === "MORNING" ? "Morning" : "Afternoon"}` : "Full Day Leave"}
+                    {leave.type === "HALF_DAY" ? `Half Day Leave: ${leave.halfPeriod === "MORNING" ? "Morning" : "Afternoon"}` : "Full Day Leave"}
                   </p>
                   {leave.reason && <p className="text-[11px] text-red-500 mt-0.5">{leave.reason}</p>}
                 </div>
@@ -1485,7 +1485,7 @@ export function AvailabilityClient({
             </div>
             <h1 className="text-2xl sm:text-[28px] font-bold tracking-tight leading-tight">My Availability</h1>
             <p className="text-sm text-white/60 mt-1 max-w-lg">
-              Set your weekly template once — generate entire months automatically. Edit only exceptions.
+              Set your weekly template once, generate entire months automatically. Edit only exceptions.
             </p>
           </div>
           <Link href="/settings?section=add-hospital&returnTo=/appointments/availability"

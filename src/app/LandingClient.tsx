@@ -527,7 +527,7 @@ function AngiographyDisplay() {
       <div className="relative aspect-[4/3]">
         <Image
           src="/landing/angiography.jpg"
-          alt="Fundus fluorescein angiography of the retina — vessels radiating from the optic disc"
+          alt="Fundus fluorescein angiography of the retina, vessels radiating from the optic disc"
           fill
           sizes="(max-width: 1024px) 100vw, 50vw"
           className="object-cover transition-transform duration-[1200ms] ease-out group-hover:scale-[1.05]"
@@ -616,7 +616,7 @@ const TIMELINE = [
     period: "Residency",
     title: "MS Ophthalmology",
     place: "Postgraduate residency",
-    desc: "Comprehensive ophthalmic surgery training — cataract, glaucoma, cornea and retina — with a focus on the posterior segment.",
+    desc: "Comprehensive ophthalmic surgery training, cataract, glaucoma, cornea and retina, with a focus on the posterior segment.",
   },
   {
     period: "Foundation",
@@ -724,7 +724,7 @@ export function LandingClient() {
               className="relative block w-9 h-9 rounded-full overflow-hidden shrink-0"
               style={{ border: `1.5px solid ${C.teal}66`, boxShadow: `0 0 14px ${C.teal}33` }}
             >
-              <Image src="/landing/logo-drsai.jpg" alt="Dr. Sai — watercolor retina logo" fill sizes="36px" className="object-cover scale-[1.35]" />
+              <Image src="/landing/logo-drsai.jpg" alt="Dr. Sai, watercolor retina logo" fill sizes="36px" className="object-cover scale-[1.35]" />
             </span>
             <span>
               <span className="block text-base font-semibold leading-none" style={{ fontFamily: FONT.display }}>Dr.&nbsp;Sai</span>
@@ -807,7 +807,7 @@ export function LandingClient() {
               <HeroTitle />
               <Reveal delay={200} variant="blur">
                 <p className="mt-6 text-base sm:text-lg leading-relaxed max-w-xl" style={{ color: C.inkDim }}>
-                  I&apos;m Dr.&nbsp;Sai — a vitreoretinal specialist combining micro-incision surgery,
+                  I&apos;m Dr.&nbsp;Sai, a vitreoretinal specialist combining micro-incision surgery,
                   micro-vascular diagnostics and AI-assisted care to protect the most delicate
                   tissue in the human body.
                 </p>
@@ -870,7 +870,7 @@ export function LandingClient() {
                   Where medicine meets art
                 </h2>
                 <p className="mt-4 text-base leading-relaxed" style={{ color: C.inkDim }}>
-                  Every fundus is a landscape — vessels branching like rivers, the optic disc a
+                  Every fundus is a landscape, vessels branching like rivers, the optic disc a
                   rising sun. These are the views I work inside every day.
                 </p>
               </div>
@@ -886,7 +886,7 @@ export function LandingClient() {
                   <div className="relative overflow-hidden rounded-2xl aspect-[4/3]">
                     <Image
                       src="/landing/retina-watercolor.jpg"
-                      alt="Watercolor painting of an ophthalmoscopy exam — a lens revealing the retina of an eye"
+                      alt="Watercolor painting of an ophthalmoscopy exam, a lens revealing the retina of an eye"
                       fill
                       sizes="(max-width: 768px) 100vw, 50vw"
                       className="object-cover transition-all duration-[1400ms] ease-out group-hover:scale-[1.06]"
@@ -915,7 +915,7 @@ export function LandingClient() {
                   <div className="relative overflow-hidden rounded-2xl aspect-[4/3]" style={{ background: "#000" }}>
                     <Image
                       src="/landing/iris-yinyang.jpg"
-                      alt="Two irises — one amber, one ice blue — arranged as a yin-yang symbol"
+                      alt="Two irises, one amber, one ice blue, arranged as a yin-yang symbol"
                       fill
                       sizes="(max-width: 768px) 100vw, 50vw"
                       className="object-cover transition-all duration-[1400ms] ease-out group-hover:scale-[1.06] group-hover:rotate-[2deg]"
@@ -972,7 +972,7 @@ export function LandingClient() {
               <Reveal delay={100}>
                 <p className="text-base sm:text-lg leading-relaxed" style={{ color: C.inkDim }}>
                   The retina is a fraction of a millimetre thick, yet it carries everything a
-                  person will ever see. My practice is built around that responsibility — combining
+                  person will ever see. My practice is built around that responsibility, combining
                   operating-microscope precision with modern imaging and a patient record that
                   follows every case across hospitals.
                 </p>
@@ -1047,11 +1047,11 @@ export function LandingClient() {
                 </h2>
                 <p className="mt-5 text-base sm:text-lg leading-relaxed" style={{ color: C.inkDim }}>
                   Fundus fluorescein angiography lights up the retinal circulation like a city at
-                  night — every capillary, every leak, every silent occlusion. It&apos;s how disease
+                  night, every capillary, every leak, every silent occlusion. It&apos;s how disease
                   is caught before a single letter of vision is lost.
                 </p>
                 <ul className="mt-7 flex flex-col gap-3 text-sm" style={{ color: C.inkDim }}>
-                  {["Ultra-widefield 200° vessel mapping", "OCT angiography — no dye required", "Longitudinal tracking across every visit"].map((t) => (
+                  {["Ultra-widefield 200° vessel mapping", "OCT angiography, no dye required", "Longitudinal tracking across every visit"].map((t) => (
                     <li key={t} className="flex items-center gap-3">
                       <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: C.teal, boxShadow: `0 0 8px ${C.teal}` }} />
                       {t}

@@ -94,7 +94,7 @@ function LicenseActionsPanel({ lic, doctor }: {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Action failed");
-      showToast("success", "Done — refreshing…");
+      showToast("success", "Done, refreshing…");
       setModal(null);
       setTimeout(() => window.location.reload(), 1200);
     } catch (err: unknown) {
@@ -549,7 +549,7 @@ export function DoctorLicenseDashboard({ data }: { data: DoctorLicensePageData }
         <Clock size={14} className="text-amber-500 shrink-0" />
         <p className="text-sm text-amber-700">
           {lic.status === "TRIAL_ACTIVE"
-            ? `Trial active — ${lic.daysRemaining} days left, ends ${fmt(lic.trialEndsAt)}.`
+            ? `Trial active: ${lic.daysRemaining} days left, ends ${fmt(lic.trialEndsAt)}.`
             : `License expires in ${lic.daysRemaining} days on ${fmt(lic.subscriptionEndsAt)}.`}
         </p>
       </div>
@@ -669,7 +669,7 @@ export function DoctorLicenseDashboard({ data }: { data: DoctorLicensePageData }
             <div className="flex items-center gap-2 mb-3">
               <Building2 size={13} className="text-slate-400" />
               <span className="text-xs font-semibold text-slate-700">
-                Linked Hospitals — {activeHospitals} active of {hospitals.length}
+                Linked Hospitals, {activeHospitals} active of {hospitals.length}
               </span>
             </div>
             {hospitals.length === 0 ? (

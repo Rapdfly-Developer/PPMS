@@ -82,7 +82,7 @@ function PresetFieldCombobox({
       {open && (
         <ul className="absolute z-40 left-0 right-0 mt-1 rounded-xl border border-[var(--color-border)] bg-white shadow-xl overflow-hidden max-h-44 overflow-y-auto">
           {filtered.length === 0 ? (
-            <li className="px-3 py-2 text-xs text-[var(--color-ink-400)]">No matches — press Enter to use &ldquo;{inputVal}&rdquo;</li>
+            <li className="px-3 py-2 text-xs text-[var(--color-ink-400)]">No matches, press Enter to use &ldquo;{inputVal}&rdquo;</li>
           ) : (
             filtered.map((opt) => (
               <li key={opt}>

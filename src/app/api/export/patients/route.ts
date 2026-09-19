@@ -88,7 +88,7 @@ export async function GET(req: NextRequest) {
   .mono { font-family: monospace; font-size: 9px; }
 </style>
 </head><body>
-<h1>Patient Records — ${esc(hospitalName)}</h1>
+<h1>Patient Records: ${esc(hospitalName)}</h1>
 <p class="meta">
   Generated: ${new Date().toLocaleDateString("en-IN", { day:"2-digit", month:"long", year:"numeric" })}
   &nbsp;·&nbsp; ${patients.length} patient${patients.length !== 1 ? "s" : ""}

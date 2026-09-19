@@ -87,7 +87,7 @@ export function InvestigationsTab({
         <NewInvestigations visit={visit} udid={udid} todayOrders={todayOrders} onOrdered={() => {}} />
       )}
       {activeTab === "new" && readOnly && (
-        <p className="text-[13px] sm:text-sm text-[var(--color-ink-400)] text-center py-8">This visit is closed — no new orders can be placed.</p>
+        <p className="text-[13px] sm:text-sm text-[var(--color-ink-400)] text-center py-8">This visit is closed, no new orders can be placed.</p>
       )}
     </div>
   );
@@ -258,7 +258,7 @@ function InvestigationCard({
       {order.resultRef && (
         <div className="mt-3 pt-3 border-t border-[var(--color-border)]">
           <p className="text-[11px] font-semibold text-[var(--color-ink-400)] uppercase tracking-wide mb-2">
-            {order.testName} — Result
+            {order.testName}, Result
           </p>
           {isImage ? (
             <img
@@ -272,7 +272,7 @@ function InvestigationCard({
               onClick={() => onView(order.resultRef)}
               className="flex items-center gap-2 text-xs text-[var(--color-primary-700)] bg-[var(--color-primary-50)] border border-[var(--color-primary-200)] px-3 py-2 rounded-lg hover:bg-[var(--color-primary-100)] transition-colors"
             >
-              <Paperclip size={13} /> {order.testName} result file — click to view
+              <Paperclip size={13} /> {order.testName} result file, click to view
             </button>
           )}
         </div>

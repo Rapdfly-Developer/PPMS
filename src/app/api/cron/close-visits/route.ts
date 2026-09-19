@@ -30,7 +30,7 @@ export async function GET(req: Request) {
       where: { id: { in: ids } },
       data: { status: "CLOSED" },
     });
-    const autoNote = "[Auto-closed at end of day — consultation was not finalized]";
+    const autoNote = "[Auto-closed at end of day, consultation was not finalized]";
     await prisma.generalExamination.createMany({
       data: ids.map((visitId) => ({ visitId, chiefComplaint: autoNote })),
       skipDuplicates: true,
@@ -64,7 +64,7 @@ export async function GET(req: Request) {
         action: "AUTO_CANCEL_NO_SHOW",
         entityType: "Appointment",
         entityId: id,
-        newValue: JSON.stringify({ reason: "Patient did not visit — auto-cancelled at end of day" }),
+        newValue: JSON.stringify({ reason: "Patient did not visit, auto-cancelled at end of day" }),
       })),
       skipDuplicates: true,
     });

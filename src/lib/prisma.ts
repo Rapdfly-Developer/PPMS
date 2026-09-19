@@ -43,7 +43,7 @@ function makePrisma() {
         msg.includes("Server has closed the connection");
 
       if (isConnectionErr) {
-        console.warn("[prisma] Connection dropped by Neon — reconnecting...");
+        console.warn("[prisma] Connection dropped by Neon, reconnecting...");
         await client.$disconnect().catch(() => {});
         await new Promise((r) => setTimeout(r, 500));
         await client.$connect().catch(() => {});

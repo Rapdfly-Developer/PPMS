@@ -2074,7 +2074,7 @@ function TearFilmCard({ visit, udid, editable, priorVisits = [] }: { visit: any;
   return (
     <Card>
       <div className="flex items-center justify-between mb-3">
-        <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)]">Tear Film — TBUT &amp; Schirmer&apos;s</p>
+        <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)]">Tear Film, TBUT &amp; Schirmer&apos;s</p>
         <SaveIndicator state={state} />
       </div>
       <EyeColumns>

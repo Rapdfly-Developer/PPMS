@@ -288,7 +288,7 @@ export function BookAppointmentForm({
       return;
     }
     const isGeneralOPD = visitType === "General OPD";
-    if (isGeneralOPD && !laterality) { setError("Please select laterality — RE, LE, or OU."); return; }
+    if (isGeneralOPD && !laterality) { setError("Please select laterality, RE, LE, or OU."); return; }
     if (isGeneralOPD && !sinceNum) { setError("Please select the 'Since' duration."); return; }
     if (!notes.trim()) { setError("Please describe the chief complaint."); return; }
 

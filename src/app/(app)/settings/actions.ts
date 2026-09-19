@@ -509,7 +509,7 @@ export async function getHospitalsWithLicense(): Promise<{
   if (!doctor) return [];
 
   const lic = doctor.license;
-  if (!lic) return [{ id: doctor.id, name: `Dr. ${doctor.name} — all hospitals`, license: null }];
+  if (!lic) return [{ id: doctor.id, name: `Dr. ${doctor.name}, all hospitals`, license: null }];
 
   const now = new Date();
   let status = "TRIAL_ACTIVE";
@@ -529,7 +529,7 @@ export async function getHospitalsWithLicense(): Promise<{
 
   return [{
     id: doctor.id,
-    name: `Dr. ${doctor.name} — all hospitals`,
+    name: `Dr. ${doctor.name}, all hospitals`,
     license: {
       status,
       plan: lic.plan,
@@ -776,7 +776,7 @@ export async function requestExportOtp(): Promise<{ error?: string; email?: stri
     user.email,
     "Your PPMS export verification code",
     `<div style="font-family:Arial,sans-serif;max-width:420px;margin:0 auto;">
-      <div style="background:#0f766e;color:#fff;padding:16px 20px;border-radius:12px 12px 0 0;font-size:16px;font-weight:700;">PPMS — Export OTP</div>
+      <div style="background:#0f766e;color:#fff;padding:16px 20px;border-radius:12px 12px 0 0;font-size:16px;font-weight:700;">PPMS, Export OTP</div>
       <div style="border:1px solid #e2e8f0;border-top:none;border-radius:0 0 12px 12px;padding:24px;">
         <p style="margin:0 0 12px;color:#334155;font-size:14px;">Use the code below to authorise your data export. It expires in <strong>5 minutes</strong>.</p>
         <div style="text-align:center;letter-spacing:10px;font-size:36px;font-weight:800;color:#0f766e;padding:16px 0;">${code}</div>

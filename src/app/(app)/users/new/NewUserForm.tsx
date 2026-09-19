@@ -493,7 +493,7 @@ export function NewUserForm({
           )}
 
           <p className="text-xs text-[var(--color-ink-500)] bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5">
-            These permissions apply <strong>system-wide</strong> to the <strong>{role}</strong> role — not just for this user. Adjust carefully.
+            These permissions apply <strong>system-wide</strong> to the <strong>{role}</strong> role, not just for this user. Adjust carefully.
           </p>
 
           {/* Permission toggles */}

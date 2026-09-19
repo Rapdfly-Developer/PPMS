@@ -157,7 +157,7 @@ export function NewEncounterForm({
     // date and time are intentionally omitted — the server action defaults to now()
 
     const isGeneralOPD = visitType === "General OPD";
-    if (isGeneralOPD && !laterality) { setError("Please select laterality — RE, LE, or OU."); return; }
+    if (isGeneralOPD && !laterality) { setError("Please select laterality, RE, LE, or OU."); return; }
     if (isGeneralOPD && !sinceNum) { setError("Please select the 'Since' duration."); return; }
     if (!complaint.trim()) { setError("Please describe the chief complaint."); return; }
 

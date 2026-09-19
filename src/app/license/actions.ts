@@ -298,11 +298,11 @@ export async function verifyLicense(orgId: string): Promise<{
 
     if (subActive) {
       await logEvent(orgId, "VERIFIED", "SUCCESS", { key: license.licenseKey ?? undefined });
-      return { success: true, message: "License verified — your license is active and valid." };
+      return { success: true, message: "License verified, your license is active and valid." };
     }
     if (trialActive) {
       await logEvent(orgId, "VERIFIED", "SUCCESS");
-      return { success: true, message: "Trial verified — your trial is active." };
+      return { success: true, message: "Trial verified, your trial is active." };
     }
 
     await logEvent(orgId, "VERIFIED", "FAILED", { detail: "License expired" });

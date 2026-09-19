@@ -131,9 +131,9 @@ function GeneralSection() {
           </FieldRow>
           <FieldRow label="Timezone" desc="All appointment times use this timezone">
             <select value={tz} onChange={e => setTz(e.target.value)} className={SEL}>
-              <option value="Asia/Kolkata">IST — UTC+5:30</option>
+              <option value="Asia/Kolkata">IST, UTC+5:30</option>
               <option value="UTC">UTC</option>
-              <option value="Asia/Dubai">GST — UTC+4</option>
+              <option value="Asia/Dubai">GST, UTC+4</option>
             </select>
           </FieldRow>
           <FieldRow label="Date Format" desc="How dates are shown across the system">
@@ -176,7 +176,7 @@ function HospitalInfoSection({ hospital, onSaved }: { hospital: Hospital; onSave
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 2 * 1024 * 1024) {
-      setLogoMsg({ type: "err", text: "File too large — max 2 MB." });
+      setLogoMsg({ type: "err", text: "File too large, max 2 MB." });
       return;
     }
     setLogoUploading(true);
@@ -761,7 +761,7 @@ function AuditLogsSection() {
     <>
       <SectionHeader title="Audit Logs" desc="A chronological record of all system actions performed by staff." />
       <div className="flex items-center justify-between mb-3">
-        <p className="text-[11px] sm:text-xs text-[var(--color-ink-400)]">27 Jun 2026 — 8 most recent events</p>
+        <p className="text-[11px] sm:text-xs text-[var(--color-ink-400)]">27 Jun 2026, 8 most recent events</p>
         <button className="inline-flex items-center gap-1.5 text-[11px] sm:text-xs font-medium px-3 py-1.5 rounded-lg border border-[var(--color-border)] bg-white text-[var(--color-ink-700)] hover:bg-[var(--color-ink-50)] transition-colors">
           <Download size={12} /> Export Log
         </button>

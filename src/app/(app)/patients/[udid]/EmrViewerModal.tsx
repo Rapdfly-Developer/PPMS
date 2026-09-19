@@ -326,7 +326,7 @@ function EmrContent({ visit, udid, localResults, onAttach }: {
                           rel="noreferrer"
                           className="inline-flex items-center gap-2 text-xs text-[var(--color-primary-700)] bg-[var(--color-primary-50)] border border-[var(--color-primary-200)] px-3 py-1.5 rounded-lg hover:bg-[var(--color-primary-100)] transition-colors"
                         >
-                          <Paperclip size={12} /> {o.testName} result — click to open
+                          <Paperclip size={12} /> {o.testName} result, click to open
                         </a>
                       )}
                     </div>

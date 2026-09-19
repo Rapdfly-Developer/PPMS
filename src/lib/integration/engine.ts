@@ -234,12 +234,12 @@ export async function testIntegration(hospitalId: string): Promise<{ ok: boolean
   const payload = getAdapter(config.integrationType).buildPayload(record, config);
 
   if (config.integrationType === "CSV" && !config.apiEndpoint) {
-    return { ok: true, detail: "CSV file-export mode — payload built successfully; nothing to transmit." };
+    return { ok: true, detail: "CSV file-export mode, payload built successfully; nothing to transmit." };
   }
 
   try {
     const result = await deliver(payload, { ...config, maxRetries: 1 });
-    return { ok: true, detail: `HTTP ${result.httpStatus} — ${result.responseBody.slice(0, 200) || "acknowledged"}` };
+    return { ok: true, detail: `HTTP ${result.httpStatus}: ${result.responseBody.slice(0, 200) || "acknowledged"}` };
   } catch (err: unknown) {
     return { ok: false, detail: err instanceof Error ? err.message : String(err) };
   }

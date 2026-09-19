@@ -732,7 +732,7 @@ function EditHospitalModal({ hospital, onClose }: { hospital: HospitalRow; onClo
             <div className={`flex items-center justify-between rounded-xl px-4 py-3 ${hospital.active ? "bg-emerald-50 border border-emerald-200" : "bg-red-50 border border-red-200"}`}>
               <div>
                 <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-800)]">Hospital Status</p>
-                <p className="text-[11px] sm:text-xs text-[var(--color-ink-500)] mt-0.5">{hospital.active ? "Currently active — staff can log in" : "Deactivated — staff cannot log in"}</p>
+                <p className="text-[11px] sm:text-xs text-[var(--color-ink-500)] mt-0.5">{hospital.active ? "Currently active, staff can log in" : "Deactivated, staff cannot log in"}</p>
               </div>
               <button
                 type="button"
@@ -844,7 +844,7 @@ function EditUserModal({ user, onClose }: { user: UserRow; onClose: () => void }
             <div className={`flex items-center justify-between rounded-xl px-4 py-3 ${user.active ? "bg-emerald-50 border border-emerald-200" : "bg-red-50 border border-red-200"}`}>
               <div>
                 <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-800)]">Account Status</p>
-                <p className="text-[11px] sm:text-xs text-[var(--color-ink-500)] mt-0.5">{user.active ? "Active — user can log in" : "Deactivated — login blocked"}</p>
+                <p className="text-[11px] sm:text-xs text-[var(--color-ink-500)] mt-0.5">{user.active ? "Active, user can log in" : "Deactivated, login blocked"}</p>
               </div>
               <button
                 type="button"
@@ -1144,7 +1144,7 @@ function HospitalSection({ hospitals }: { hospitals: HospitalRow[] }) {
     const file = e.target.files?.[0];
     if (!file || !h) return;
     if (file.size > 2 * 1024 * 1024) {
-      setLogoMsg({ type: "err", text: "File too large — max 2 MB." });
+      setLogoMsg({ type: "err", text: "File too large, max 2 MB." });
       return;
     }
     setLogoUploading(true);
@@ -1956,7 +1956,7 @@ function ExportSection({ hospitals }: { hospitals: HospitalRow[] }) {
       return;
     }
 
-    // Excel — force all cells as text with mso-number-format so mobile/dates render correctly
+    // Excel, force all cells as text with mso-number-format so mobile/dates render correctly
     const td = `style="mso-number-format:'\\@';"`;
     const tableRows = res.data.map((r, i) => `<tr>
       <td ${td}>${i+1}</td><td ${td}>${r.name}</td><td ${td}>${r.udid}</td><td ${td}>${r.uhid}</td>
@@ -2377,7 +2377,7 @@ function ProfileSection({ doctor }: { doctor: DoctorProfile | null }) {
 
   return (
     <div>
-      <SectionHeader title="Doctor Profile" desc="Your identity used across PPMS — short code determines new patient UDID prefix." />
+      <SectionHeader title="Doctor Profile" desc="Your identity used across PPMS, short code determines new patient UDID prefix." />
       <div className="space-y-4">
 
         {/* ── Basic Identity ── */}
@@ -3279,7 +3279,7 @@ function HospitalSetupWizard({ assignableRoles = [], returnTo = "" }: { assignab
             </div>
           )}
           <p className="text-[11px] sm:text-xs text-[var(--color-ink-500)] bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5">
-            These permission settings apply <strong>system-wide</strong> to each role — not just for this hospital. Adjust carefully.
+            These permission settings apply <strong>system-wide</strong> to each role, not just for this hospital. Adjust carefully.
           </p>
           {rolesUsed.map((role) => {
             const meta = allRoles.find((r) => r.value === role);
@@ -3356,7 +3356,7 @@ function HospitalSetupWizard({ assignableRoles = [], returnTo = "" }: { assignab
   );
 }
 
-// ── License Management — handled by LicenseSection component ─────────────────
+// ── License Management, handled by LicenseSection component ─────────────────
 
 const LICENSE_SUBTABS = ["overview", "activate", "plans", "renewal", "history"] as const;
 type LicSubTab = typeof LICENSE_SUBTABS[number];

@@ -180,7 +180,7 @@ function TrendChart({ trendData }: { trendData: TrendPoint[] }) {
   return (
     <div className="bg-white rounded-2xl border border-[var(--color-border)] p-4 shadow-sm">
       <h3 className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-900)]">Registration Trend</h3>
-      <p className="text-[11px] sm:text-xs text-[var(--color-ink-400)] mb-4 mt-0.5">New patients — last 7 days</p>
+      <p className="text-[11px] sm:text-xs text-[var(--color-ink-400)] mb-4 mt-0.5">New patients, last 7 days</p>
       <div className="flex items-end gap-1.5" style={{ height: 80 }}>
         {trendData.map((d, i) => {
           const pct = Math.max((d.count / max) * 100, d.count > 0 ? 8 : 0);
@@ -743,7 +743,7 @@ export function PatientsClient({
                               e.stopPropagation();
                               startTransition(() => undoDispense(p.dispensedApptId!));
                             }}
-                            title="Undo dispense — move back to queue"
+                            title="Undo dispense, move back to queue"
                             className="shrink-0 flex items-center gap-1 text-[9px] sm:text-[10px] font-medium px-2 py-1 rounded-lg border border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors"
                           >
                             <Undo2 size={11} />

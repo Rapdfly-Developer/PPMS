@@ -253,7 +253,7 @@ function PermissionPanel({ role, onSaved, onBack }: {
           <div className="min-w-0">
             <p className="font-semibold text-[var(--color-ink-900)] truncate">{role.label}</p>
             <p className="text-xs text-[var(--color-ink-400)]">
-              {isSuperAdmin ? "Super Admin — all permissions" : `${checked.size} / ${role.totalPerms} permissions`}
+              {isSuperAdmin ? "Super Admin, all permissions" : `${checked.size} / ${role.totalPerms} permissions`}
             </p>
           </div>
         </div>

@@ -299,7 +299,7 @@ function Checklist({ items }: { items: { label: string; done: boolean }[] }) {
         ))}
       </div>
       <p className="text-[11px] text-slate-400 mt-4 pt-3 border-t border-slate-100">
-        {allDone ? "All steps complete — PPMS is live." : "Complete all steps to activate the system."}
+        {allDone ? "All steps complete, PPMS is live." : "Complete all steps to activate the system."}
       </p>
     </motion.div>
   );

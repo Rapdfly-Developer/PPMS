@@ -320,15 +320,15 @@ test("Voice-to-EMR token + visit.context → allowed", () => {
 });
 
 test("Voice-to-EMR token + visit.history → REJECTED (not in manifest)", () => {
-  assert(!scopeCheck(voiceEmrToken(), "visit.history"), "Should be rejected — Voice-to-EMR does not declare visit.history");
+  assert(!scopeCheck(voiceEmrToken(), "visit.history"), "Should be rejected, Voice-to-EMR does not declare visit.history");
 });
 
 test("Voice-to-EMR token + patient.timeline → REJECTED (not in manifest)", () => {
-  assert(!scopeCheck(voiceEmrToken(), "patient.timeline"), "Should be rejected — Voice-to-EMR does not declare patient.timeline");
+  assert(!scopeCheck(voiceEmrToken(), "patient.timeline"), "Should be rejected, Voice-to-EMR does not declare patient.timeline");
 });
 
 test("Voice-to-EMR token + appointment.history → REJECTED (not in manifest)", () => {
-  assert(!scopeCheck(voiceEmrToken(), "appointment.history"), "Should be rejected — Voice-to-EMR does not declare appointment.history");
+  assert(!scopeCheck(voiceEmrToken(), "appointment.history"), "Should be rejected, Voice-to-EMR does not declare appointment.history");
 });
 
 test("Third-plugin token + patient.demographics → allowed", () => {

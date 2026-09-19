@@ -760,7 +760,7 @@ function PresetSelectDialog({
               {/* Name */}
               <div>
                 <label className="text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-wide block mb-1">Protocol Name *</label>
-                <input autoFocus value={formName} onChange={(e) => setFormName(e.target.value)} className={inp} placeholder="e.g. Corneal Ulcer — Protocol 2" />
+                <input autoFocus value={formName} onChange={(e) => setFormName(e.target.value)} className={inp} placeholder="e.g. Corneal Ulcer, Protocol 2" />
               </div>
 
               {/* Drug rows */}

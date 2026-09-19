@@ -164,7 +164,7 @@ test("lifetime is capped at 600 seconds", () => {
   assert(lifetime <= 600, `Lifetime ${lifetime}s exceeds 600s cap`);
 });
 
-test("token contains no patient medical data — only identifiers", () => {
+test("token contains no patient medical data, only identifiers", () => {
   const token = makeToken();
   const parts = token.split(".");
   const payload = JSON.parse(Buffer.from(parts[1], "base64url").toString());

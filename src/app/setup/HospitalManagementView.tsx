@@ -74,7 +74,7 @@ function StatusChip({ active, onToggle }: { active: boolean | null; onToggle: ()
     <button
       type="button"
       onClick={onToggle}
-      title={active ? "Click to deactivate — blocks login" : "Click to activate — allows login"}
+      title={active ? "Click to deactivate, blocks login" : "Click to activate, allows login"}
       className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-all hover:scale-[1.04] ${
         active
           ? "bg-emerald-50 text-emerald-700 border-emerald-200"

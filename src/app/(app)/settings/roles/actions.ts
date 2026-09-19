@@ -30,8 +30,8 @@ const ADDITIVE_ROLE_PERMISSIONS: Record<string, string[]> = {};
 
 // ── Default role definitions ───────────────────────────────────────────────
 const DEFAULT_ROLES = [
-  { name: "DOCTOR",   label: "Doctor",        description: "Super Admin — unrestricted access to all features",          isSystem: true, color: "#6366f1" },
-  { name: "HOSPITAL", label: "Hospital Admin", description: "Front-desk — appointments, patients and basic settings", isSystem: true, color: "#10b981" },
+  { name: "DOCTOR",   label: "Doctor",        description: "Super Admin, unrestricted access to all features",          isSystem: true, color: "#6366f1" },
+  { name: "HOSPITAL", label: "Hospital Admin", description: "Front-desk, appointments, patients and basic settings", isSystem: true, color: "#10b981" },
 ];
 
 // ── Seed helpers (idempotent) ─────────────────────────────────────────────

@@ -21,7 +21,7 @@ function isExempt(pathname: string) {
 const STATUS_LABEL: Record<string, string> = {
   NONE:      "Not Activated",
   EXPIRED:   "Expired",
-  INVALID:   "Invalid — License Tampered",
+  INVALID:   "Invalid, License Tampered",
   SUSPENDED: "Suspended",
 };
 

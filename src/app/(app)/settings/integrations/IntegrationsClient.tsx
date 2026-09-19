@@ -126,7 +126,7 @@ function ConfigModal({ hospital, onClose }: { hospital: HospitalRow; onClose: ()
     >
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 my-8 text-[var(--color-ink-900)]">
         <div className="flex items-center justify-between mb-1">
-          <h2 className="text-[15px] sm:text-base font-bold text-[var(--color-ink-800)]">Integration — {hospital.name}</h2>
+          <h2 className="text-[15px] sm:text-base font-bold text-[var(--color-ink-800)]">Integration, {hospital.name}</h2>
           <button onClick={onClose} className="text-[var(--color-ink-400)] hover:text-[var(--color-ink-800)]"><X size={18} /></button>
         </div>
         <p className="text-xs text-[var(--color-ink-400)] mb-3">
@@ -141,7 +141,7 @@ function ConfigModal({ hospital, onClose }: { hospital: HospitalRow; onClose: ()
           <option value="CSV">CSV (file export / legacy)</option>
         </select>
 
-        <label className={labelCls}>API Endpoint {form.integrationType === "CSV" && <span className="font-normal text-[var(--color-ink-400)]">(optional — blank = file export)</span>}</label>
+        <label className={labelCls}>API Endpoint {form.integrationType === "CSV" && <span className="font-normal text-[var(--color-ink-400)]">(optional, blank = file export)</span>}</label>
         <input value={form.apiEndpoint} onChange={(e) => set({ apiEndpoint: e.target.value })} placeholder="https://his.hospital.example/api/visits" className={inputCls} />
 
         <label className={labelCls}>Authentication</label>
@@ -157,7 +157,7 @@ function ConfigModal({ hospital, onClose }: { hospital: HospitalRow; onClose: ()
           <>
             <label className={labelCls}>
               Credentials{" "}
-              {existing?.hasCredentials && <span className="font-normal text-[var(--color-ink-400)]">(stored — leave blank to keep)</span>}
+              {existing?.hasCredentials && <span className="font-normal text-[var(--color-ink-400)]">(stored, leave blank to keep)</span>}
             </label>
             <input
               type="password"
@@ -178,7 +178,7 @@ function ConfigModal({ hospital, onClose }: { hospital: HospitalRow; onClose: ()
           </>
         )}
 
-        <label className={labelCls}>Field Mapping <span className="font-normal text-[var(--color-ink-400)]">(JSON, optional — REST/CSV)</span></label>
+        <label className={labelCls}>Field Mapping <span className="font-normal text-[var(--color-ink-400)]">(JSON, optional, REST/CSV)</span></label>
         <textarea
           value={form.fieldMappingJson}
           onChange={(e) => set({ fieldMappingJson: e.target.value })}
@@ -269,7 +269,7 @@ function PayloadModal({ log, onClose }: { log: LogRow; onClose: () => void }) {
     >
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl p-5 max-h-[85vh] flex flex-col">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-bold text-[var(--color-ink-800)]">Sync Payload — {log.hospitalName}</h2>
+          <h2 className="text-sm font-bold text-[var(--color-ink-800)]">Sync Payload, {log.hospitalName}</h2>
           <div className="flex items-center gap-2">
             {log.requestPayload && (
               <button onClick={download} className="text-xs font-medium px-3 py-1.5 rounded-lg border border-[var(--color-border)] text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)] transition-colors flex items-center gap-1.5">

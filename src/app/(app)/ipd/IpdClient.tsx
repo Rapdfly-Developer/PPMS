@@ -115,7 +115,7 @@ export function IpdClient({
             In-Patient Department
           </h1>
           <p className="text-[13px] sm:text-sm text-[var(--color-ink-400)] mt-0.5">
-            Ward management, nursing station &amp; discharge — ophthalmology IPD
+            Ward management, nursing station &amp; discharge, ophthalmology IPD
           </p>
         </div>
         <Link
@@ -219,14 +219,14 @@ export function IpdClient({
         {tab === "nursing" && (
           <div className="p-8 flex flex-col items-center justify-center gap-3 text-[var(--color-ink-400)] min-h-[300px]">
             <Stethoscope size={32} className="opacity-30" />
-            <p className="text-[13px] sm:text-sm">Nursing station module — coming soon</p>
+            <p className="text-[13px] sm:text-sm">Nursing station module, coming soon</p>
           </div>
         )}
 
         {tab === "discharge" && (
           <div className="p-8 flex flex-col items-center justify-center gap-3 text-[var(--color-ink-400)] min-h-[300px]">
             <LogOut size={32} className="opacity-30" />
-            <p className="text-[13px] sm:text-sm">Discharge planning module — coming soon</p>
+            <p className="text-[13px] sm:text-sm">Discharge planning module, coming soon</p>
           </div>
         )}
       </div>

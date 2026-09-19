@@ -144,7 +144,7 @@ export function ActivationClient({ initial }: { initial: ActivationPageData }) {
     const ua = navigator.userAgent;
     const os = ua.includes("Windows") ? "Windows PC" : ua.includes("Mac") ? "Mac" : ua.includes("Android") ? "Android Device" : ua.includes("iPhone") || ua.includes("iPad") ? "iOS Device" : "Device";
     const browser = ua.includes("Edg") ? "Edge" : ua.includes("Chrome") ? "Chrome" : ua.includes("Firefox") ? "Firefox" : ua.includes("Safari") ? "Safari" : "Browser";
-    setDeviceName(data.deviceName ?? `${os} — ${browser}`);
+    setDeviceName(data.deviceName ?? `${os}: ${browser}`);
   }, [data.deviceName]);
 
   function handleKeyInput(v: string) {

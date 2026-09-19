@@ -58,7 +58,7 @@ export function DispensePanel({ visit, udid }: { visit: any; udid: string }) {
 
   return (
     <div className="rounded-xl border border-[var(--color-border)] p-4">
-      <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)] mb-2">Patient Dispense — Short Summary</p>
+      <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)] mb-2">Patient Dispense, Short Summary</p>
       <textarea
         value={summary}
         onChange={(e) => setSummary(e.target.value)}
@@ -103,7 +103,7 @@ export function AdmitPanel({ visit, udid, patientSex }: { visit: any; udid: stri
       >
         Save Admission
       </button>
-      {saved && <span className="ml-3 text-xs text-[var(--color-success-600)] font-medium">Saved — hospital notified</span>}
+      {saved && <span className="ml-3 text-xs text-[var(--color-success-600)] font-medium">Saved, hospital notified</span>}
     </div>
   );
 }
@@ -226,7 +226,7 @@ export function FollowUpdatesPanel({ visit, udid, priorVisits = [] }: { visit: a
         {showHistory && (
           <div className="mt-2 rounded-xl border border-[var(--color-border)] bg-white shadow-sm overflow-hidden">
             <div className="px-3 py-2 bg-[var(--color-surface-sunken)] border-b border-[var(--color-border)] flex items-center justify-between">
-              <span className="text-[10px] font-bold text-[var(--color-ink-400)] uppercase tracking-widest">Previous — In View Of</span>
+              <span className="text-[10px] font-bold text-[var(--color-ink-400)] uppercase tracking-widest">Previous, In View Of</span>
               <button onClick={() => setShowHistory(false)} className="text-[var(--color-ink-300)] hover:text-[var(--color-ink-700)]"><X size={12} /></button>
             </div>
             <div className="max-h-48 overflow-y-auto divide-y divide-[var(--color-border)]">

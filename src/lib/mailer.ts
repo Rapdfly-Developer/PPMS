@@ -90,7 +90,7 @@ export async function sendPasswordResetOtp(to: string, code: string) {
     <div style="border:1px solid #E2E6E8;border-top:none;border-radius:0 0 12px 12px;padding:28px 24px;">
       <h2 style="margin:0 0 8px;font-size:17px;color:#14242B;">Reset your password</h2>
       <p style="margin:0 0 20px;font-size:13px;color:#5C6E76;">
-        You requested a password reset for your PPMS account. Use the code below — it expires in <strong>5 minutes</strong>.
+        You requested a password reset for your PPMS account. Use the code below, it expires in <strong>5 minutes</strong>.
       </p>
       <div style="text-align:center;background:#f0fcfa;border:2px solid #b8dcd6;border-radius:12px;padding:20px 0;margin-bottom:20px;">
         <span style="font-size:36px;font-weight:900;letter-spacing:12px;color:#115E59;">${code}</span>

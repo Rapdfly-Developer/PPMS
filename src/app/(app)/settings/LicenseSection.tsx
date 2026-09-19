@@ -133,7 +133,7 @@ function StatusBanner({ data }: { data: LicenseFullData }) {
     <div className="flex items-start gap-3 px-4 py-4 rounded-xl bg-red-50 border border-red-200">
       <AlertTriangle size={18} className="text-red-600 shrink-0 mt-0.5" />
       <div>
-        <p className="text-sm font-semibold text-red-800">Grace Period Warning — {remainingDays} day{remainingDays !== 1 ? "s" : ""} left</p>
+        <p className="text-sm font-semibold text-red-800">Grace Period Warning, {remainingDays} day{remainingDays !== 1 ? "s" : ""} left</p>
         <p className="text-xs text-red-700 mt-0.5">
           Your license expires on {fmt(data.subscriptionEndsAt)}. Renew immediately to avoid service interruption.
         </p>
@@ -145,7 +145,7 @@ function StatusBanner({ data }: { data: LicenseFullData }) {
     <div className="flex items-start gap-3 px-4 py-4 rounded-xl bg-amber-50 border border-amber-200">
       <Clock size={18} className="text-amber-600 shrink-0 mt-0.5" />
       <div>
-        <p className="text-sm font-semibold text-amber-800">Renewal Reminder — {remainingDays} days left</p>
+        <p className="text-sm font-semibold text-amber-800">Renewal Reminder, {remainingDays} days left</p>
         <p className="text-xs text-amber-700 mt-0.5">
           Your license expires on {fmt(data.subscriptionEndsAt)}. Consider renewing soon to avoid interruption.
         </p>
@@ -157,7 +157,7 @@ function StatusBanner({ data }: { data: LicenseFullData }) {
     <div className="flex items-start gap-3 px-4 py-4 rounded-xl bg-amber-50 border border-amber-200">
       <Clock size={18} className="text-amber-600 shrink-0 mt-0.5" />
       <div>
-        <p className="text-sm font-semibold text-amber-800">Trial Active — {remainingDays} day{remainingDays !== 1 ? "s" : ""} remaining</p>
+        <p className="text-sm font-semibold text-amber-800">Trial Active, {remainingDays} day{remainingDays !== 1 ? "s" : ""} remaining</p>
         <p className="text-xs text-amber-700 mt-0.5">
           Your free trial ends on {fmt(data.trialEndsAt)}. Activate a paid license before then to continue without interruption.
         </p>
@@ -171,7 +171,7 @@ function StatusBanner({ data }: { data: LicenseFullData }) {
       <div>
         <p className="text-sm font-semibold text-emerald-800">License Active</p>
         <p className="text-xs text-emerald-700 mt-0.5">
-          Your {data.plan === "YEARLY" ? "annual" : "monthly"} license is active — {remainingDays} day{remainingDays !== 1 ? "s" : ""} remaining until {fmt(data.subscriptionEndsAt)}.
+          Your {data.plan === "YEARLY" ? "annual" : "monthly"} license is active, {remainingDays} day{remainingDays !== 1 ? "s" : ""} remaining until {fmt(data.subscriptionEndsAt)}.
         </p>
       </div>
     </div>
@@ -336,7 +336,7 @@ function ActivateTab({ data, onRefresh }: { data: LicenseFullData; onRefresh: ()
       const ua = navigator.userAgent;
       const os = ua.includes("Windows") ? "Windows PC" : ua.includes("Mac") ? "Mac" : ua.includes("Android") ? "Android" : "Device";
       const br = ua.includes("Edg") ? "Edge" : ua.includes("Chrome") ? "Chrome" : ua.includes("Firefox") ? "Firefox" : "Browser";
-      setDeviceLabel(`${os} — ${br}`);
+      setDeviceLabel(`${os}: ${br}`);
     }
   }, [deviceLabel]);
 
@@ -715,9 +715,9 @@ function RenewalTab({ data }: { data: LicenseFullData }) {
           {[
             { color: "text-red-500",   icon: XCircle,      text: "Staff and hospital logins are blocked immediately" },
             { color: "text-red-500",   icon: XCircle,      text: "Patient records cannot be accessed" },
-            { color: "text-amber-500", icon: AlertTriangle, text: "All data is preserved — nothing is deleted" },
+            { color: "text-amber-500", icon: AlertTriangle, text: "All data is preserved, nothing is deleted" },
             { color: "text-emerald-500",icon: CheckCircle2, text: "Full access resumes immediately upon license activation" },
-            { color: "text-emerald-500",icon: CheckCircle2, text: "No data loss — pick up exactly where you left off" },
+            { color: "text-emerald-500",icon: CheckCircle2, text: "No data loss, pick up exactly where you left off" },
           ].map((item, i) => {
             const Icon = item.icon;
             return (

@@ -232,10 +232,10 @@ export default async function PatientDetailedEMR({
           >
             <Lock size={11} />
             {autoClosed
-              ? "Auto-closed at EOD — Read-only"
+              ? "Auto-closed at EOD, Read-only"
               : finalizedToday
-              ? "Finalized & Signed — Click to Edit"
-              : "Finalized & Signed — Read-only"}
+              ? "Finalized & Signed, Click to Edit"
+              : "Finalized & Signed, Read-only"}
           </span>
         </div>
       )}

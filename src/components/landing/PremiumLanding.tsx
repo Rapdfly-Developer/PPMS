@@ -279,7 +279,7 @@ function SurgeryPanel() {
           {
             icon: <Stethoscope size={17} strokeWidth={1.25} />,
             label: "Structured operative notes",
-            desc: "Pre-op and post-op diagnosis, procedure, surgeon, anaesthesia and complications — the same fields every time.",
+            desc: "Pre-op and post-op diagnosis, procedure, surgeon, anaesthesia and complications, the same fields every time.",
           },
           {
             icon: <CalendarRange size={17} strokeWidth={1.25} />,
@@ -326,7 +326,7 @@ function AnalyticsPanel() {
       <Split
         flip
         title={<>The numbers you actually run the practice on.</>}
-        lede="Today's queue, this month's revenue by hospital, no-show rate, repeat-visit rate — computed from the same records your staff are already entering, so there is no separate reporting exercise."
+        lede="Today's queue, this month's revenue by hospital, no-show rate, repeat-visit rate, computed from the same records your staff are already entering, so there is no separate reporting exercise."
         points={[
           {
             icon: <ChartNoAxesColumn size={17} strokeWidth={1.25} />,
@@ -385,7 +385,7 @@ const CAPABILITIES = [
 const FAQ_ITEMS: FaqItem[] = [
   {
     q: "Can one doctor really work across several hospitals in one account?",
-    a: "Yes — that is the core of RF Health. You sign in once and switch hospitals from a single control, and the patient record travels with you. Each hospital keeps its own schedule, billing and staff roles, while the clinical history stays unified under the patient.",
+    a: "Yes, that is the core of RF Health. You sign in once and switch hospitals from a single control, and the patient record travels with you. Each hospital keeps its own schedule, billing and staff roles, while the clinical history stays unified under the patient.",
   },
   {
     q: "What happens to our existing patient records?",
@@ -393,7 +393,7 @@ const FAQ_ITEMS: FaqItem[] = [
   },
   {
     q: "Is the 30-day trial limited in any way?",
-    a: "The trial gives one doctor account and up to two hospitals, with appointments, EMR and basic billing enabled. No card is required to start, and nothing is charged when the trial ends — you choose whether to continue.",
+    a: "The trial gives one doctor account and up to two hospitals, with appointments, EMR and basic billing enabled. No card is required to start, and nothing is charged when the trial ends, you choose whether to continue.",
   },
   {
     q: "Who can see a patient's record?",
@@ -405,7 +405,7 @@ const FAQ_ITEMS: FaqItem[] = [
   },
   {
     q: "What if we need an integration you do not have yet?",
-    a: "Enterprise plans include custom integrations, and we will scope the work with you before you commit. Talk to us about the systems you already run — labs, imaging, pharmacy or accounting — and we will tell you honestly what is and is not feasible.",
+    a: "Enterprise plans include custom integrations, and we will scope the work with you before you commit. Talk to us about the systems you already run, labs, imaging, pharmacy or accounting, and we will tell you honestly what is and is not feasible.",
   },
 ];
 
@@ -413,7 +413,7 @@ const TESTIMONIALS = [
   {
     name: "Dr. Aravind Patel",
     role: "Ophthalmologist · 3 hospitals",
-    text: "RF Health transformed how I manage my three eye care centres. One login, all patient records, seamless billing — I save two hours every single day.",
+    text: "RF Health transformed how I manage my three eye care centres. One login, all patient records, seamless billing, I save two hours every single day.",
   },
   {
     name: "Dr. Meera Krishnan",
@@ -522,7 +522,7 @@ export function PremiumLanding() {
             <Reveal y={24} delay={0.14}>
               <p className="mt-5 max-w-xl text-[clamp(0.98rem,1.7vw,1.06rem)] leading-relaxed text-slate-600 sm:mt-6">
                 Appointments, medical records, prescriptions, surgery and billing across every
-                hospital you practise at — managed from a single secure account, with the patient
+                hospital you practise at, managed from a single secure account, with the patient
                 history following the patient rather than the building.
               </p>
             </Reveal>
@@ -611,7 +611,7 @@ export function PremiumLanding() {
             <p className="mt-6 text-[16.5px] leading-relaxed text-slate-600">
               A doctor working across three hospitals typically holds three logins, three schedules
               and three fragments of the same patient&apos;s history. Nothing is wrong with any one
-              of them — the problem is that none of them can see the others.
+              of them, the problem is that none of them can see the others.
             </p>
 
             <div className="mt-10 grid gap-3 sm:grid-cols-2">
@@ -665,7 +665,7 @@ export function PremiumLanding() {
               <br className="hidden sm:block" /> in one place.
             </>
           }
-          lede="Twelve modules that share a single patient record, a single calendar and a single permission model — so nothing has to be entered twice or reconciled later."
+          lede="Twelve modules that share a single patient record, a single calendar and a single permission model, so nothing has to be entered twice or reconciled later."
         />
 
         {/* 12 columns at every size from md up. The previous 6-column md track
@@ -694,12 +694,12 @@ export function PremiumLanding() {
                   Unified record
                 </div>
                 <h3 className="font-display mt-4 text-[24px] font-bold leading-tight tracking-[-0.02em] text-white sm:text-[28px]">
-                  One patient, one history — regardless of which hospital they walk into.
+                  One patient, one history, regardless of which hospital they walk into.
                 </h3>
                 <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-emerald-100/70">
                   Consultations, prescriptions, lab results, admissions and invoices attach to the
                   patient, not to the site. Switching hospitals changes your schedule and your
-                  billing context — never the clinical history.
+                  billing context, never the clinical history.
                 </p>
               </div>
             </div>
@@ -750,7 +750,7 @@ export function PremiumLanding() {
                     Care management, end to end
                   </h3>
                   <p className="mt-2 text-[14px] leading-relaxed text-slate-600">
-                    From the first appointment to discharge and follow-up — one thread, no handoff
+                    From the first appointment to discharge and follow-up, one thread, no handoff
                     gaps.
                   </p>
                 </div>
@@ -787,7 +787,7 @@ export function PremiumLanding() {
         <Split
           eyebrow="Electronic medical records"
           title={<>Notes that stay legible five years later.</>}
-          lede="Structured consultation notes with vitals, diagnosis, investigations and plan — captured in the room, not written up afterwards from memory."
+          lede="Structured consultation notes with vitals, diagnosis, investigations and plan, captured in the room, not written up afterwards from memory."
           points={[
             {
               icon: <ClipboardPlus size={17} strokeWidth={1.25} />,
@@ -904,7 +904,7 @@ export function PremiumLanding() {
         <SectionHead
           eyebrow="Security"
           title={<>Built to be defensible, not just encrypted.</>}
-          lede="Patient data carries obligations. RF Health is designed so that who saw what, and when, is always answerable — and so that access is granted by role rather than by trust."
+          lede="Patient data carries obligations. RF Health is designed so that who saw what, and when, is always answerable, and so that access is granted by role rather than by trust."
         />
 
         <RevealGroup className="mt-8 grid grid-cols-2 gap-3 sm:mt-10 sm:grid-cols-4" stagger={0.05}>
@@ -935,7 +935,7 @@ export function PremiumLanding() {
 
         <Reveal delay={0.1}>
           <p className="mx-auto mt-8 max-w-2xl text-center text-[13.5px] leading-relaxed text-slate-500">
-            HIPAA-aligned design describes how the platform is built — access control, audit
+            HIPAA-aligned design describes how the platform is built, access control, audit
             logging and encryption. It is not a certification claim, and we will say so plainly in
             any procurement conversation.
           </p>
@@ -1170,7 +1170,7 @@ export function PremiumLanding() {
               Questions we get asked before the first demo.
             </h2>
             <p className="mt-6 text-[16px] leading-relaxed text-slate-600">
-              If yours is not here, ask it directly — we would rather answer honestly up front than
+              If yours is not here, ask it directly, we would rather answer honestly up front than
               discover a mismatch after onboarding.
             </p>
             <a
@@ -1201,13 +1201,13 @@ export function PremiumLanding() {
             <p className="mt-5 text-[16px] leading-relaxed text-slate-600">
               Book a free, personalised demo with our team. We will walk you through
               RF Health features, discuss your specific practice requirements and show you
-              how it fits into your day-to-day workflow — no commitment required.
+              how it fits into your day-to-day workflow, no commitment required.
             </p>
 
             <ul className="mt-8 flex flex-col gap-3.5">
               {[
                 { icon: <CheckCircle2 size={16} strokeWidth={1.5} />, label: "Free personalised demo", desc: "A live walkthrough tailored to your specialty and practice size." },
-                { icon: <Users size={16} strokeWidth={1.5} />, label: "Discuss your requirements", desc: "Tell us how you work — we will show you how RF Health adapts to it." },
+                { icon: <Users size={16} strokeWidth={1.5} />, label: "Discuss your requirements", desc: "Tell us how you work, we will show you how RF Health adapts to it." },
                 { icon: <Stethoscope size={16} strokeWidth={1.5} />, label: "Features & workflows", desc: "EMR, appointments, prescriptions, surgery notes, billing and more." },
                 { icon: <BadgeCheck size={16} strokeWidth={1.5} />, label: "Implementation guidance", desc: "Understand onboarding, data migration and go-live timelines." },
               ].map((p) => (

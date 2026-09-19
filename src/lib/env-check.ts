@@ -37,7 +37,7 @@ export function checkEnv(): void {
       warnings.push(`${key} is too short (${val.length} chars, need ${minLen})`);
     }
     if (looksLikePlaceholder(val)) {
-      warnings.push(`${key} looks like a dev placeholder — replace before going live`);
+      warnings.push(`${key} looks like a dev placeholder, replace before going live`);
     }
   }
 

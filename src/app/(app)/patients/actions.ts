@@ -558,7 +558,7 @@ export async function generateAiSummary(
 
   const g = visit.generalExam;
   const lines: string[] = [
-    "You are a clinical documentation assistant. Write a concise, professional clinical summary of this patient visit in 2–4 sentences. Use clear flowing prose — no bullet points, no markdown, no headings. Be medically precise and clinically relevant.",
+    "You are a clinical documentation assistant. Write a concise, professional clinical summary of this patient visit in 2–4 sentences. Use clear flowing prose, no bullet points, no markdown, no headings. Be medically precise and clinically relevant.",
     "",
     `Date: ${visit.date.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}`,
     visit.visitType    ? `Visit Type: ${visit.visitType}`          : "",
@@ -605,7 +605,7 @@ export async function generateAiSummary(
     return {
       text: localText,
       source: "local",
-      notice: `Claude unavailable (${err?.message ?? "unknown error"}) — showing an auto-generated summary.`,
+      notice: `Claude unavailable (${err?.message ?? "unknown error"}), showing an auto-generated summary.`,
     };
   }
 }

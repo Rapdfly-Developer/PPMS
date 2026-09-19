@@ -575,7 +575,7 @@ function Availability() {
 /* ── Testimonials ─────────────────────────────────────────────────────────── */
 function Testimonials() {
   const t = [
-    { name: "Dr. Aravind Patel", role: "Ophthalmologist · 3 Hospitals", text: "PPMS transformed how I manage my three eye care centers. One login, all patient records, seamless billing — I save 2 hours every single day." },
+    { name: "Dr. Aravind Patel", role: "Ophthalmologist · 3 Hospitals", text: "PPMS transformed how I manage my three eye care centers. One login, all patient records, seamless billing, I save 2 hours every single day." },
     { name: "Dr. Meera Krishnan", role: "General Physician · 2 Clinics", text: "The multi-hospital switching is flawless. My patients get consistent care records whether they visit me at Apollo or my private clinic." },
     { name: "Admin Sundar Rajan", role: "Hospital Administrator", text: "Staff onboarded in a day. Reports that used to take hours now generate in seconds. PPMS is enterprise-grade at an accessible price." },
   ];
