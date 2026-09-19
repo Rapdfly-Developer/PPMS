@@ -716,7 +716,7 @@ const panelW: React.CSSProperties = { width: "100%", maxWidth: "var(--left-w)" }
 
 function LeftPanel() {
   return (
-    <div className="hidden lg:flex lg:w-[51%] flex-col justify-center shrink-0 relative overflow-hidden"
+    <div className="hidden lg:flex lg:w-[56%] flex-col justify-center shrink-0 relative overflow-hidden"
       style={{ paddingLeft: "var(--pad-panel)", paddingRight: "var(--pad-panel)", paddingTop: "clamp(32px,3vw,72px)", paddingBottom: "clamp(32px,3vw,72px)" }}>
 
       {/* Logo top / hero centre / trust bottom is the right arrangement at
@@ -754,7 +754,16 @@ function LeftPanel() {
         </p>
 
         {/* Feature tiles */}
-        <div className="lp-a3 grid grid-cols-2 mb-7" style={{ ...panelW, gap: "var(--gap)" }}>
+        {/* auto-fit rather than a fixed two-up: widening the column stretched
+            each tile to 439px, which only moved the empty space inside the
+            tile. Letting the track count follow the available width keeps
+            tiles at a sane size and fills the row with content instead —
+            two columns on a laptop, three or four once there is room. */}
+        <div className="lp-a3 grid mb-7" style={{
+          ...panelW,
+          gap: "var(--gap)",
+          gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))",
+        }}>
           {FEATURES.map(({ icon: Icon, label }) => (
             <div key={label} className="lp-feat flex items-center rounded-xl" style={{
               background: "rgba(13,122,99,.06)",
@@ -978,7 +987,7 @@ export default function LoginPage() {
              the right. These are max-widths on full-width elements, so a
              higher cap only takes effect where the column actually has the
              room — narrow screens still fill and clip to their container. */
-          --left-w:    clamp(430px, 180px + 30vw, 900px);
+          --left-w:    clamp(430px, 180px + 36vw, 980px);
           --card-w:    clamp(420px, 320px + 11vw, 620px);
           --card-pad:  clamp(20px, 1.8vw, 44px);
           --logo:      clamp(44px, 3.4vw, 72px);
@@ -1095,7 +1104,7 @@ export default function LoginPage() {
           <LeftPanel />
 
           {/* ── Right panel ── */}
-          <div className="w-full lg:w-[49%] shrink-0 flex flex-col overflow-y-auto relative"
+          <div className="w-full lg:w-[44%] shrink-0 flex flex-col overflow-y-auto relative"
             style={{
               background: "linear-gradient(200deg,rgba(255,255,255,.72) 0%,rgba(255,255,255,.46) 100%)",
               borderLeft: `1px solid ${T.border}`,
