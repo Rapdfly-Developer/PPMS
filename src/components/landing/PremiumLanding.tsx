@@ -9,6 +9,8 @@ import {
   Check,
   CheckCircle2,
   ClipboardPlus,
+  MessageSquareText,
+  Sparkles,
   Cloud,
   Database,
   Fingerprint,
@@ -842,6 +844,71 @@ export function PremiumLanding() {
           </div>
         </Split>
       </Section>
+
+      {/* ── Clinical AI ──────────────────────────────────────────────────────
+          Copy here is held to what the Clinical Copilot plugin actually does,
+          per its manifest: summarise, ask, draft, all gated by role. The
+          "never writes to the record" line is a real product constraint, not
+          a reassurance -- drafts return for review and are saved by the
+          doctor, and the plugin is off by default even for hospital admins.
+          If the plugin's capabilities change, this section changes with it. */}
+      <Section id="copilot">
+        <SectionHead
+          eyebrow="Clinical AI"
+          title={<>A second read of the chart, before you walk in.</>}
+          lede="The Clinical Copilot reads the record you already keep and gives it back to you as something shorter. It drafts, it does not decide, and everything it produces is yours to accept or discard."
+        />
+
+        <RevealGroup
+          className="mt-8 grid gap-3 sm:mt-10 sm:grid-cols-2 2xl:grid-cols-4"
+          stagger={0.06}
+        >
+          {[
+            {
+              icon: <ScanLine size={19} strokeWidth={1.25} />,
+              title: "Summarise the record",
+              body: "History, medications, investigations and the visit timeline condensed into a brief you can read before the patient sits down.",
+            },
+            {
+              icon: <MessageSquareText size={19} strokeWidth={1.25} />,
+              title: "Ask it questions",
+              body: "Ask what changed since the last visit, or when a drug was started, and get an answer drawn from that patient’s own chart.",
+            },
+            {
+              icon: <ClipboardPlus size={19} strokeWidth={1.25} />,
+              title: "Draft the consultation note",
+              body: "A first draft of the note, returned for review. Nothing reaches the record until you have read it and saved it yourself.",
+            },
+            {
+              icon: <ShieldCheck size={19} strokeWidth={1.25} />,
+              title: "Granted, never inherited",
+              body: "Off by default, including for hospital administrators. A doctor grants access deliberately, and it stays inside the same role and audit rules as the rest of the record.",
+            },
+          ].map((c) => (
+            <RevealItem key={c.title}>
+              <div className="group/ai h-full rounded-[1.5rem] bg-white p-2 ring-1 ring-inset ring-emerald-950/[0.07] transition-[transform,box-shadow] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:-translate-y-1 hover:shadow-[0_24px_50px_-38px_rgba(6,60,45,0.5)]">
+                <div className="flex h-full flex-col gap-4 rounded-[1rem] bg-gradient-to-b from-slate-50/80 to-white p-6 3xl:p-8 4xl:p-10">
+                  <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-600/10 transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover/ai:scale-110">
+                    {c.icon}
+                  </span>
+                  <h3 className="text-[16.5px] font-semibold leading-snug tracking-[-0.01em] text-emerald-950">
+                    {c.title}
+                  </h3>
+                  <p className="text-[14px] leading-relaxed text-slate-600">{c.body}</p>
+                </div>
+              </div>
+            </RevealItem>
+          ))}
+        </RevealGroup>
+
+        <Reveal delay={0.1}>
+          <p className="mx-auto mt-8 flex max-w-2xl items-center justify-center gap-2 text-center text-[13.5px] leading-relaxed text-slate-500">
+            <Sparkles size={15} strokeWidth={1.25} className="shrink-0 text-emerald-600" aria-hidden="true" />
+            Decision support, not diagnosis. The Copilot assists the doctor reading the chart; it never replaces that reading.
+          </p>
+        </Reveal>
+      </Section>
+
 
       {/* ── Multi-hospital ───────────────────────────────────────────────── */}
       <Section id="hospitals">
