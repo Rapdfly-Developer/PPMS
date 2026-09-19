@@ -349,3 +349,174 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .ppms-marquee-track { animation: none !important; }
 }
+
+/* ── Large-screen typography scale ────────────────────────────────────────
+   Nothing here applies at or below 1440px, so every existing mobile, tablet
+   and laptop layout is untouched.
+
+   Two mechanisms, because the app expresses type two ways. Tailwind's named
+   utilities compile to font-size:var(--text-sm), so redefining those custom
+   properties rescales all ~2000 of them at once. Arbitrary values compile to
+   a literal rule (.text-\[13px\]{font-size:13px}), which a plain unlayered
+   rule of the same specificity overrides — that covers the other ~1800.
+   Between them this reaches the app's typography without touching a single
+   component.
+
+   Line-heights scale with their size to preserve the vertical rhythm; letting
+   them stay fixed is what makes enlarged text collide and wrap. */
+
+/* Slight — body +6%, display +4% */
+@media (min-width: 1441px) and (max-width: 1920px) {
+  :root {
+    --text-xs: 12.72px;
+    --text-xs--line-height: 16.96px;
+    --text-sm: 14.84px;
+    --text-sm--line-height: 20.9px;
+    --text-base: 16.96px;
+    --text-base--line-height: 25.08px;
+    --text-lg: 19.08px;
+    --text-lg--line-height: 29.26px;
+    --text-xl: 20.9px;
+    --text-xl--line-height: 29.26px;
+    --text-2xl: 25.08px;
+    --text-2xl--line-height: 33.44px;
+    --text-3xl: 31.35px;
+    --text-3xl--line-height: 37.62px;
+    --text-4xl: 37.62px;
+    --text-4xl--line-height: 41.8px;
+    --text-5xl: 50.16px;
+    --text-5xl--line-height: 50.16px;
+  }
+
+  .text-\[8px\] { font-size: 8.48px; }
+  .text-\[8\.5px\] { font-size: 9.01px; }
+  .text-\[9px\] { font-size: 9.54px; }
+  .text-\[9\.5px\] { font-size: 10.07px; }
+  .text-\[10px\] { font-size: 10.6px; }
+  .text-\[10\.5px\] { font-size: 11.13px; }
+  .text-\[11px\] { font-size: 11.66px; }
+  .text-\[11\.5px\] { font-size: 12.19px; }
+  .text-\[12px\] { font-size: 12.72px; }
+  .text-\[12\.5px\] { font-size: 13.25px; }
+  .text-\[13px\] { font-size: 13.78px; }
+  .text-\[13\.5px\] { font-size: 14.31px; }
+  .text-\[14px\] { font-size: 14.84px; }
+  .text-\[14\.5px\] { font-size: 15.37px; }
+  .text-\[15px\] { font-size: 15.9px; }
+  .text-\[16px\] { font-size: 16.96px; }
+  .text-\[16\.5px\] { font-size: 17.49px; }
+  .text-\[17px\] { font-size: 18.02px; }
+  .text-\[19px\] { font-size: 20.14px; }
+  .text-\[20px\] { font-size: 20.9px; }
+  .text-\[22px\] { font-size: 22.99px; }
+  .text-\[24px\] { font-size: 25.08px; }
+  .text-\[25px\] { font-size: 26.12px; }
+  .text-\[26px\] { font-size: 27.17px; }
+  .text-\[28px\] { font-size: 29.26px; }
+  .text-\[32px\] { font-size: 33.44px; }
+  .text-\[36px\] { font-size: 37.62px; }
+}
+
+/* Moderate — body +11%, display +8% */
+@media (min-width: 1921px) and (max-width: 2560px) {
+  :root {
+    --text-xs: 13.32px;
+    --text-xs--line-height: 17.76px;
+    --text-sm: 15.54px;
+    --text-sm--line-height: 21.6px;
+    --text-base: 17.76px;
+    --text-base--line-height: 25.92px;
+    --text-lg: 19.98px;
+    --text-lg--line-height: 30.24px;
+    --text-xl: 21.6px;
+    --text-xl--line-height: 30.24px;
+    --text-2xl: 25.92px;
+    --text-2xl--line-height: 34.56px;
+    --text-3xl: 32.4px;
+    --text-3xl--line-height: 38.88px;
+    --text-4xl: 38.88px;
+    --text-4xl--line-height: 43.2px;
+    --text-5xl: 51.84px;
+    --text-5xl--line-height: 51.84px;
+  }
+
+  .text-\[8px\] { font-size: 8.88px; }
+  .text-\[8\.5px\] { font-size: 9.44px; }
+  .text-\[9px\] { font-size: 9.99px; }
+  .text-\[9\.5px\] { font-size: 10.55px; }
+  .text-\[10px\] { font-size: 11.1px; }
+  .text-\[10\.5px\] { font-size: 11.66px; }
+  .text-\[11px\] { font-size: 12.21px; }
+  .text-\[11\.5px\] { font-size: 12.77px; }
+  .text-\[12px\] { font-size: 13.32px; }
+  .text-\[12\.5px\] { font-size: 13.88px; }
+  .text-\[13px\] { font-size: 14.43px; }
+  .text-\[13\.5px\] { font-size: 14.99px; }
+  .text-\[14px\] { font-size: 15.54px; }
+  .text-\[14\.5px\] { font-size: 16.1px; }
+  .text-\[15px\] { font-size: 16.65px; }
+  .text-\[16px\] { font-size: 17.76px; }
+  .text-\[16\.5px\] { font-size: 18.32px; }
+  .text-\[17px\] { font-size: 18.87px; }
+  .text-\[19px\] { font-size: 21.09px; }
+  .text-\[20px\] { font-size: 21.6px; }
+  .text-\[22px\] { font-size: 23.76px; }
+  .text-\[24px\] { font-size: 25.92px; }
+  .text-\[25px\] { font-size: 27px; }
+  .text-\[26px\] { font-size: 28.08px; }
+  .text-\[28px\] { font-size: 30.24px; }
+  .text-\[32px\] { font-size: 34.56px; }
+  .text-\[36px\] { font-size: 38.88px; }
+}
+
+/* 4K — body +14%, display +11% */
+@media (min-width: 2561px) {
+  :root {
+    --text-xs: 13.68px;
+    --text-xs--line-height: 18.24px;
+    --text-sm: 15.96px;
+    --text-sm--line-height: 22.2px;
+    --text-base: 18.24px;
+    --text-base--line-height: 26.64px;
+    --text-lg: 20.52px;
+    --text-lg--line-height: 31.08px;
+    --text-xl: 22.2px;
+    --text-xl--line-height: 31.08px;
+    --text-2xl: 26.64px;
+    --text-2xl--line-height: 35.52px;
+    --text-3xl: 33.3px;
+    --text-3xl--line-height: 39.96px;
+    --text-4xl: 39.96px;
+    --text-4xl--line-height: 44.4px;
+    --text-5xl: 53.28px;
+    --text-5xl--line-height: 53.28px;
+  }
+
+  .text-\[8px\] { font-size: 9.12px; }
+  .text-\[8\.5px\] { font-size: 9.69px; }
+  .text-\[9px\] { font-size: 10.26px; }
+  .text-\[9\.5px\] { font-size: 10.83px; }
+  .text-\[10px\] { font-size: 11.4px; }
+  .text-\[10\.5px\] { font-size: 11.97px; }
+  .text-\[11px\] { font-size: 12.54px; }
+  .text-\[11\.5px\] { font-size: 13.11px; }
+  .text-\[12px\] { font-size: 13.68px; }
+  .text-\[12\.5px\] { font-size: 14.25px; }
+  .text-\[13px\] { font-size: 14.82px; }
+  .text-\[13\.5px\] { font-size: 15.39px; }
+  .text-\[14px\] { font-size: 15.96px; }
+  .text-\[14\.5px\] { font-size: 16.53px; }
+  .text-\[15px\] { font-size: 17.1px; }
+  .text-\[16px\] { font-size: 18.24px; }
+  .text-\[16\.5px\] { font-size: 18.81px; }
+  .text-\[17px\] { font-size: 19.38px; }
+  .text-\[19px\] { font-size: 21.66px; }
+  .text-\[20px\] { font-size: 22.2px; }
+  .text-\[22px\] { font-size: 24.42px; }
+  .text-\[24px\] { font-size: 26.64px; }
+  .text-\[25px\] { font-size: 27.75px; }
+  .text-\[26px\] { font-size: 28.86px; }
+  .text-\[28px\] { font-size: 31.08px; }
+  .text-\[32px\] { font-size: 35.52px; }
+  .text-\[36px\] { font-size: 39.96px; }
+}
