@@ -33,10 +33,13 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import type { DdxState, DifferentialDx } from "./DifferentialDiagnosisCard";
 import type { GuidanceState, ExamGuidanceItem } from "./ExamGuidanceCard";
+import type { RefractiveState, RefractiveResult, RefractiveEye } from "./RefractiveGuidanceCard";
 import {
   setDdx, cacheDdx, readCachedDdx, getDdx,
   seedGuidance, settleGuidance, cacheGuidance, readCachedGuidance,
   subscribeGuidanceRequests, isGuidanceInFlight,
+  seedRefractive, settleRefractive, cacheRefractive, readCachedRefractive,
+  subscribeRefractiveRequests, isRefractiveInFlight,
 } from "./copilot-store";
 
 /* Defensive caps. The payload crosses an origin boundary, so it is treated as
@@ -92,6 +95,66 @@ function cachedToState(raw: string | null): DdxState {
 }
 
 /* Idle, not loading, when there is no cache: nothing has been asked for yet. */
+function cachedRefractiveToState(raw: string | null): RefractiveState {
+  if (!raw) return { status: "idle" };
+  try {
+    const parsed = parseRefractive(JSON.parse(raw));
+    return parsed ? { status: "ready", result: parsed } : { status: "idle" };
+  } catch {
+    return { status: "idle" };
+  }
+}
+
+/**
+ * Returns the parsed result, or null when the payload is not usable.
+ *
+ * Field names and the eye literals ("Right Eye" / "Left Eye") mirror
+ * ppms-copilot's RefractiveGuidanceResult verbatim. An unrecognised eye drops
+ * the block rather than defaulting it: attributing a left-eye interpretation
+ * to the right eye is worse than showing nothing.
+ */
+function parseRefractive(raw: unknown): RefractiveResult | null {
+  if (!raw || typeof raw !== "object") return null;
+  const o = raw as Record<string, unknown>;
+
+  const eyes: RefractiveEye[] = [];
+  if (Array.isArray(o.eyes)) {
+    for (const item of o.eyes.slice(0, 2)) {
+      if (!item || typeof item !== "object") continue;
+      const e = item as Record<string, unknown>;
+      const eye = e.eye === "Right Eye" || e.eye === "Left Eye" ? e.eye : null;
+      if (!eye) continue;
+      eyes.push({
+        eye,
+        documented: clean(e.documented) ?? "",
+        interpretation: clean(e.interpretation) ?? "",
+      });
+    }
+  }
+
+  const r = o.routing && typeof o.routing === "object"
+    ? (o.routing as Record<string, unknown>)
+    : null;
+
+  /* The four booleans are the server-verified DocumentedFlags echoed back.
+     Coerced strictly: anything that is not a real boolean becomes false, so a
+     malformed payload can never imply a section was documented. */
+  const bool = (v: unknown) => v === true;
+
+  const routing = {
+    visualAcuityDocumented: bool(r?.visualAcuityDocumented),
+    refractionDocumented: bool(r?.refractionDocumented),
+    anteriorSegmentDocumented: bool(r?.anteriorSegmentDocumented),
+    posteriorSegmentDocumented: bool(r?.posteriorSegmentDocumented),
+    guidance: clean(r?.guidance) ?? "",
+  };
+
+  // Nothing renderable at all -> treat as unusable rather than an empty card.
+  if (eyes.length === 0 && !routing.guidance) return null;
+
+  return { eyes, routing };
+}
+
 function cachedGuidanceToState(raw: string | null): GuidanceState {
   if (!raw) return { status: "idle" };
   try {
@@ -165,8 +228,9 @@ export function ExternalPluginSlotClient({
   pluginId,
 }: Props) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  /* Pending exam-guidance timeout, so settling can cancel it. */
+  /* Pending on-demand timeouts, so settling can cancel them. */
   const guidanceTimer = useRef<number | undefined>(undefined);
+  const refractiveTimer = useRef<number | undefined>(undefined);
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   /* Seed the shared store. Doing this on mount is also what tells the per-tab
@@ -188,6 +252,10 @@ export function ExternalPluginSlotClient({
     seedGuidance(visitId, cachedGuidanceToState(readCachedGuidance(visitId)));
   }, [visitId]);
 
+  useEffect(() => {
+    seedRefractive(visitId, cachedRefractiveToState(readCachedRefractive(visitId)));
+  }, [visitId]);
+
   /* Display fallback so the cards do not spin forever — see DDX_TIMEOUT_MS. */
   useEffect(() => {
     const id = window.setTimeout(() => {
@@ -195,6 +263,95 @@ export function ExternalPluginSlotClient({
     }, DDX_TIMEOUT_MS);
     return () => window.clearTimeout(id);
   }, [visitId]);
+
+  /**
+   * Mint a fresh plugin token for an on-demand trigger.
+   *
+   * The `token` prop was signed when the page rendered, against a 600s hard
+   * ceiling in signPluginToken. An on-demand click is routinely later than
+   * that, so every trigger mints rather than reusing a possibly-dead token.
+   * The endpoint re-runs every authorisation check server-side and derives
+   * dataScopes from the manifest, so this widens nothing.
+   *
+   * Returns the token, or null having already reported the reason — shared by
+   * every on-demand capability so they cannot drift apart on error handling.
+   */
+  const mintToken = useCallback(
+    async (fail: (message: string) => void): Promise<string | null> => {
+      try {
+        const res = await fetch("/api/v1/plugin-token", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify({ pluginId, patientRef, visitId }),
+        });
+        if (!res.ok) {
+          fail(
+            res.status === 401 || res.status === 403
+              ? "Your session no longer permits this. Refresh the page and try again."
+              : "Could not authorise the request. Please try again.",
+          );
+          return null;
+        }
+        const data = (await res.json()) as { token?: unknown };
+        if (typeof data.token !== "string" || !data.token) {
+          fail("Could not authorise the request. Please try again.");
+          return null;
+        }
+        return data.token;
+      } catch {
+        fail("Network error. Please try again.");
+        return null;
+      }
+    },
+    [pluginId, patientRef, visitId],
+  );
+
+  /* Refractive guidance trigger — same rails as exam guidance below. */
+  useEffect(() => {
+    const clearTimer = () => {
+      if (refractiveTimer.current !== undefined) {
+        window.clearTimeout(refractiveTimer.current);
+        refractiveTimer.current = undefined;
+      }
+    };
+
+    return subscribeRefractiveRequests((reqVisitId) => {
+      if (reqVisitId !== visitId) return;
+
+      const fail = (message: string) => {
+        clearTimer();
+        settleRefractive(visitId, { status: "error", message });
+      };
+
+      void (async () => {
+        const fresh = await mintToken(fail);
+        if (!fresh) return;
+
+        const iframe = iframeRef.current;
+        if (!iframe?.contentWindow) {
+          fail("The assistant is not ready yet. Please try again in a moment.");
+          return;
+        }
+
+        // Exact origin, never "*" — same invariant as PPMS_INIT.
+        iframe.contentWindow.postMessage(
+          {
+            type: "PPMS_REQUEST_REFRACTIVE_GUIDANCE",
+            version: "1",
+            pluginId,
+            visitId,
+            token: fresh,
+          },
+          pluginOrigin,
+        );
+
+        refractiveTimer.current = window.setTimeout(() => {
+          if (isRefractiveInFlight(visitId)) fail("The assistant did not respond in time.");
+        }, GUIDANCE_TIMEOUT_MS);
+      })();
+    });
+  }, [visitId, pluginId, pluginOrigin, mintToken]);
 
   /* Exam guidance trigger. Subscribed here because this component owns the
      iframe handle and the pluginId/patientRef the mint endpoint requires. */
@@ -214,38 +371,9 @@ export function ExternalPluginSlotClient({
         settleGuidance(visitId, { status: "error", message });
       };
 
-      /* The token prop was signed when the page rendered, against a 600s hard
-         ceiling in signPluginToken. An on-demand click is routinely later than
-         that, so mint a fresh one per trigger rather than send a dead token.
-         The endpoint re-runs every authorisation check server-side and derives
-         dataScopes from the manifest, so this widens nothing. */
       void (async () => {
-        let fresh: string;
-        try {
-          const res = await fetch("/api/v1/plugin-token", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            credentials: "same-origin",
-            body: JSON.stringify({ pluginId, patientRef, visitId }),
-          });
-          if (!res.ok) {
-            fail(
-              res.status === 401 || res.status === 403
-                ? "Your session no longer permits this. Refresh the page and try again."
-                : "Could not authorise the request. Please try again.",
-            );
-            return;
-          }
-          const data = (await res.json()) as { token?: unknown };
-          if (typeof data.token !== "string" || !data.token) {
-            fail("Could not authorise the request. Please try again.");
-            return;
-          }
-          fresh = data.token;
-        } catch {
-          fail("Network error. Please try again.");
-          return;
-        }
+        const fresh = await mintToken(fail);
+        if (!fresh) return;
 
         const iframe = iframeRef.current;
         if (!iframe?.contentWindow) {
@@ -274,7 +402,7 @@ export function ExternalPluginSlotClient({
         }, GUIDANCE_TIMEOUT_MS);
       })();
     });
-  }, [visitId, pluginId, patientRef, pluginOrigin]);
+  }, [visitId, pluginId, pluginOrigin, mintToken]);
 
   const sendInit = useCallback(() => {
     const iframe = iframeRef.current;
@@ -339,6 +467,38 @@ export function ExternalPluginSlotClient({
 
         setDdx(visitId, items.length > 0 ? { status: "ready", items } : { status: "none" });
         cacheDdx(visitId, items);
+        return;
+      }
+
+      if (type === "PLUGIN_REFRACTIVE_GUIDANCE_RESULT") {
+        // Origin was checked above. Same plugin, same visit — and
+        // settleRefractive ignores anything we did not ask for.
+        if (msg.pluginId !== pluginId) return;
+        if (msg.visitId !== visitId) return;
+
+        // Discriminated envelope: ok:true carries `result`, ok:false an error.
+        if (msg.ok === false) {
+          // Plugin-supplied text crossing an origin boundary — clamped like
+          // any other untrusted string before it reaches the doctor's screen.
+          const detail = clean(msg.errorMessage);
+          settleRefractive(visitId, {
+            status: "error",
+            message: detail ?? "The assistant could not generate guidance for this visit.",
+          });
+          return;
+        }
+
+        const result = msg.ok === true ? parseRefractive(msg.result) : null;
+        if (!result) {
+          settleRefractive(visitId, {
+            status: "error",
+            message: "The assistant returned an unreadable response.",
+          });
+          return;
+        }
+
+        settleRefractive(visitId, { status: "ready", result });
+        cacheRefractive(visitId, result);
         return;
       }
 

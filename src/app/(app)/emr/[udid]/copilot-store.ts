@@ -21,9 +21,11 @@
 import { useSyncExternalStore } from "react";
 import type { DdxState } from "./DifferentialDiagnosisCard";
 import type { GuidanceState } from "./ExamGuidanceCard";
+import type { RefractiveState } from "./RefractiveGuidanceCard";
 
 const ddxKey = (visitId: string) => `emr_ddx_${visitId}`;
 const guidanceKey = (visitId: string) => `emr_guidance_${visitId}`;
+const refractiveKey = (visitId: string) => `emr_refractive_${visitId}`;
 
 /* Snapshots must be reference-stable or useSyncExternalStore loops.
    One map per capability, one listener set shared between them: a capability
@@ -31,12 +33,14 @@ const guidanceKey = (visitId: string) => `emr_guidance_${visitId}`;
    object, so React bails out of re-rendering the ones that did not move. */
 const snapshots = new Map<string, DdxState | null>();
 const guidanceSnapshots = new Map<string, GuidanceState | null>();
+const refractiveSnapshots = new Map<string, RefractiveState | null>();
 const listeners = new Set<() => void>();
 
 /* Command channel. The Generate button lives in a card inside a tab; the iframe
    handle lives in ExternalPluginSlotClient outside <Tabs>. They are siblings,
    so the request travels the same way the results do. */
 const commandListeners = new Set<(visitId: string) => void>();
+const refractiveCommandListeners = new Set<(visitId: string) => void>();
 
 /* Visits with a call currently in flight. Kept at module scope, not in
    component state, because the card unmounts the moment the doctor switches
@@ -48,6 +52,7 @@ const commandListeners = new Set<(visitId: string) => void>();
    visit can be outstanding, because requestGuidance refuses while this holds
    the visit — which is what makes visitId alone sufficient to match on. */
 const inFlight = new Set<string>();
+const refractiveInFlight = new Set<string>();
 
 function emit() {
   for (const l of listeners) l();
@@ -179,5 +184,90 @@ export function settleGuidance(visitId: string, state: GuidanceState) {
   if (!inFlight.has(visitId)) return;
   inFlight.delete(visitId);
   guidanceSnapshots.set(visitId, state);
+  emit();
+}
+
+/* ── Refractive guidance ────────────────────────────────────────────────────
+   A third capability on the same rails: one shared listener set for snapshot
+   updates, its own snapshot map, its own in-flight set and its own command
+   channel. Kept parallel rather than generalised for the same reason the
+   guidance functions are -- erasing the state types to share one code path is
+   what lets a wire-contract change slip through the compiler.
+
+   Rendered on three Ophthalmic sub-tabs at once (Refraction, Anterior Segment,
+   Posterior Segment), which <Tabs variant="sub"> unmounts as the doctor moves
+   between them -- so the result has to live here, not in the card. */
+
+export function getRefractive(visitId: string): RefractiveState | null {
+  return refractiveSnapshots.get(visitId) ?? null;
+}
+
+/** Seed only — never overwrites a state the doctor has already triggered. */
+export function seedRefractive(visitId: string, state: RefractiveState) {
+  if (refractiveSnapshots.get(visitId)) return;
+  refractiveSnapshots.set(visitId, state);
+  emit();
+}
+
+export function cacheRefractive(visitId: string, result: unknown) {
+  try {
+    window.sessionStorage.setItem(refractiveKey(visitId), JSON.stringify(result));
+  } catch {
+    // Storage unavailable — the in-memory snapshot still serves this session.
+  }
+}
+
+export function readCachedRefractive(visitId: string): string | null {
+  try {
+    return window.sessionStorage.getItem(refractiveKey(visitId));
+  } catch {
+    return null;
+  }
+}
+
+export function useRefractive(visitId: string): RefractiveState | null {
+  return useSyncExternalStore(
+    subscribeCopilot,
+    () => getRefractive(visitId),
+    () => null,
+  );
+}
+
+/** Subscribed by ExternalPluginSlotClient, which owns the iframe handle. */
+export function subscribeRefractiveRequests(cb: (visitId: string) => void): () => void {
+  refractiveCommandListeners.add(cb);
+  return () => refractiveCommandListeners.delete(cb);
+}
+
+/**
+ * Ask for refractive guidance for this visit.
+ *
+ * Refuses while a call is already in flight: each trigger mints a token and
+ * writes an EXTERNAL_TOKEN_ISSUED audit row server-side, so a double-click
+ * costs a second token, a second audit entry and a second AI call.
+ */
+export function requestRefractiveGuidance(visitId: string) {
+  if (refractiveInFlight.has(visitId)) return;
+  refractiveInFlight.add(visitId);
+  refractiveSnapshots.set(visitId, { status: "loading" });
+  emit();
+  for (const l of refractiveCommandListeners) l(visitId);
+}
+
+/** True while we are waiting on a reply for this visit. */
+export function isRefractiveInFlight(visitId: string): boolean {
+  return refractiveInFlight.has(visitId);
+}
+
+/**
+ * Resolve the in-flight call.
+ *
+ * Ignored when nothing is outstanding, so an unsolicited message cannot write
+ * into the card, and a late timeout cannot overwrite a result that landed.
+ */
+export function settleRefractive(visitId: string, state: RefractiveState) {
+  if (!refractiveInFlight.has(visitId)) return;
+  refractiveInFlight.delete(visitId);
+  refractiveSnapshots.set(visitId, state);
   emit();
 }

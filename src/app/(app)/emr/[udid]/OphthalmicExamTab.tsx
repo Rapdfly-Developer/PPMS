@@ -5,6 +5,7 @@ import { Trash2, Plus, X, Copy, Loader2, History } from "lucide-react";
 import { KeywordInput, KeywordTextarea } from "@/components/emr/KeywordField";
 import { Card } from "@/components/ui/Card";
 import { Tabs } from "@/components/ui/Tabs";
+import { RefractiveGuidancePanel } from "./RefractiveGuidancePanel";
 import { SingleChipSelect } from "@/components/ui/Chip";
 import { useAutoSave, SaveIndicator } from "@/lib/useAutoSave";
 import { parseJSON } from "@/lib/json";
@@ -61,11 +62,17 @@ export function OphthalmicExamTab({ visit, priorVisits, udid, role }: { visit: a
       defaultTab="va"
       tabs={[
         { id: "va",        label: "Visual Acuity",    content: <VisualAcuityCard visit={visit} udid={udid} editable={refractionistCanEdit} priorVisits={priorVisits} /> },
-        { id: "refraction",label: "Refraction",        content: <RefractionCard visit={visit} udid={udid} editable={refractionistCanEdit} priorVisits={priorVisits} /> },
+        /* Refractive guidance appears on these three sub-tabs only: where the
+           numbers are entered (Refraction) and where its routing sentence
+           points next (Anterior / Posterior Segment). All three read one
+           shared store, so generating from any of them fills the other two --
+           <Tabs variant="sub"> unmounts the inactive ones, which is exactly
+           why the result cannot live in the card. */
+        { id: "refraction",label: "Refraction",        content: <div className="flex flex-col gap-4"><RefractionCard visit={visit} udid={udid} editable={refractionistCanEdit} priorVisits={priorVisits} /><RefractiveGuidancePanel visitId={visit.id} /></div> },
         { id: "cv",        label: "Colour / Contrast", content: <ColourContrastTab visit={visit} udid={udid} editable={refractionistCanEdit} priorVisits={priorVisits} /> },
         { id: "iop",       label: "IOP / Gonio",         content: <div className="flex flex-col gap-4"><IOPCard visit={visit} udid={udid} editable={refractionistCanEdit} priorVisits={priorVisits} /><GonioscopyCard visit={visit} udid={udid} editable={doctorOnly} priorVisits={priorVisits} /></div> },
-        { id: "anterior",  label: "Anterior Segment",  content: <AnteriorSegmentCard visit={visit} udid={udid} editable={doctorOnly} priorVisits={priorVisits} /> },
-        { id: "posterior", label: "Posterior Segment", content: <PosteriorSegmentCard visit={visit} udid={udid} editable={doctorOnly} priorVisits={priorVisits} /> },
+        { id: "anterior",  label: "Anterior Segment",  content: <div className="flex flex-col gap-4"><AnteriorSegmentCard visit={visit} udid={udid} editable={doctorOnly} priorVisits={priorVisits} /><RefractiveGuidancePanel visitId={visit.id} /></div> },
+        { id: "posterior", label: "Posterior Segment", content: <div className="flex flex-col gap-4"><PosteriorSegmentCard visit={visit} udid={udid} editable={doctorOnly} priorVisits={priorVisits} /><RefractiveGuidancePanel visitId={visit.id} /></div> },
         { id: "tear",      label: "Tear Film",          content: <TearFilmCard visit={visit} udid={udid} editable={doctorOnly} priorVisits={priorVisits} /> },
         { id: "lacrimal",  label: "Lacrimal Sac",       content: <LacrimalSacCard visit={visit} udid={udid} editable={doctorOnly} priorVisits={priorVisits} /> },
         { id: "diplopia",  label: "Diplopia Chart",    content: <DiplopiaCard visit={visit} udid={udid} editable={doctorOnly} /> },
