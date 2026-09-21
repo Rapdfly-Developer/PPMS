@@ -22,6 +22,8 @@ export function EmrTabsShell({
   showActionBar,
   finalizedToday,
   pluginSlot,
+  tabScopedSlot,
+  tabScopedSlotTabId,
 }: {
   tabs: TabDef[];
   visit: any;
@@ -35,6 +37,22 @@ export function EmrTabsShell({
    * whether any are enabled — when none are, this is null.
    */
   pluginSlot?: ReactNode;
+  /**
+   * A second plugin slot that is mounted once, permanently, but only made
+   * VISIBLE while `tabScopedSlotTabId` is the active tab.
+   *
+   * It exists because an iframe plugin has two conflicting requirements: it
+   * has to start work as soon as the visit opens (so its results are ready
+   * wherever the doctor is), yet it must not sit under every tab while it
+   * does. Putting it inside the tab would satisfy the second and break the
+   * first -- <Tabs> renders only the active tab and unmounts the rest, so the
+   * frame would be destroyed and restarted on every tab change.
+   *
+   * The shell still knows nothing about which plugins exist: it is handed a
+   * node and a tab id, and does not care that this happens to be a Copilot.
+   */
+  tabScopedSlot?: ReactNode;
+  tabScopedSlotTabId?: string;
 }) {
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState(tabs[0]?.id);
@@ -57,6 +75,36 @@ export function EmrTabsShell({
         <Tabs tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
       </div>
       {pluginSlot}
+
+      {/* Hidden by clipping, never by unmounting. The wrapper keeps the frame
+          at its full width and its own height while collapsing to zero height
+          in the layout, so the plugin's internal layout never sees a resize
+          and switching to its tab is instant rather than reflowing from zero.
+
+          display:none is deliberately NOT used: it takes the frame out of
+          layout, which makes the embedded app re-layout from zero width and
+          flash when shown again. Both approaches are throttled identically by
+          Chromium (an out-of-viewport or zero-area cross-origin frame is
+          "hidden" either way), and that throttling is safe here -- it delays
+          timers, while the plugin's work is a single fetch whose retries and
+          long waits all happen on its own server.
+
+          inert + aria-hidden keep the offscreen frame out of the tab order and
+          the accessibility tree; pointer-events-none is belt and braces. */}
+      {tabScopedSlot && (
+        <div className="relative">
+          <div
+            className={
+              activeTab === tabScopedSlotTabId
+                ? undefined
+                : "absolute inset-x-0 top-0 h-0 overflow-hidden opacity-0 pointer-events-none"
+            }
+            {...(activeTab === tabScopedSlotTabId ? {} : { inert: true, "aria-hidden": true })}
+          >
+            {tabScopedSlot}
+          </div>
+        </div>
+      )}
       {showActionBar && (
         <div className="no-print">
           {/* Only mounted for a doctor on an OPEN visit, so every listener it
