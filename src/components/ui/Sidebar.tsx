@@ -199,10 +199,10 @@ export function Sidebar({
             <span style={{ position: "absolute", bottom: -1, right: -1, width: 10, height: 10, borderRadius: "50%", background: "#34D399", outline: "2.5px solid #0B3A36" }} />
           </div>
           <div style={{ minWidth: 0, flex: 1 }}>
-            <p style={{ fontSize: 15, fontWeight: 700, lineHeight: 1, letterSpacing: "0.02em", color: "#F4FCFA", margin: 0 }}>
+            <p style={{ fontSize: "var(--sb-brand)", fontWeight: 700, lineHeight: 1, letterSpacing: "0.02em", color: "#F4FCFA", margin: 0 }}>
               RF Health<span style={{ color: "#5EEAD4" }}>.</span>
             </p>
-            <p style={{ marginTop: 6, fontSize: 9.5, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.22em", color: "#6FA39C", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            <p style={{ marginTop: 6, fontSize: "var(--sb-eyebrow)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.22em", color: "#6FA39C", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {ROLE_LABEL[role] ?? role}
             </p>
           </div>
@@ -220,7 +220,7 @@ export function Sidebar({
 
         {/* Nav */}
         <nav style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "20px 12px 0", display: "flex", flexDirection: "column", gap: 3 }}>
-          <p style={{ padding: "0 14px 10px", fontSize: 9.5, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.22em", color: "#5E8F88", userSelect: "none" }}>
+          <p style={{ padding: "0 14px 10px", fontSize: "var(--sb-eyebrow)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.22em", color: "#5E8F88", userSelect: "none" }}>
             Overview
           </p>
           {mainEntries.map((entry) => (
@@ -250,17 +250,17 @@ export function Sidebar({
           }}>
             <div style={{
               display: "grid", placeItems: "center", width: 36, height: 36,
-              flexShrink: 0, borderRadius: "50%", fontSize: 11, fontWeight: 700,
+              flexShrink: 0, borderRadius: "50%", fontSize: "var(--sb-avatar)", fontWeight: 700,
               color: "white", outline: "1px solid rgba(255,255,255,0.18)",
               background: "linear-gradient(140deg, #1C9388, #0D4A46)",
             }}>
               {initialsOf(name)}
             </div>
             <div style={{ minWidth: 0 }}>
-              <p style={{ fontSize: 12, fontWeight: 600, color: "#EDF9F6", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", lineHeight: 1.2 }}>{name}</p>
+              <p style={{ fontSize: "var(--sb-name)", fontWeight: 600, color: "#EDF9F6", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", lineHeight: 1.2 }}>{name}</p>
               <div style={{ marginTop: 2, display: "flex", alignItems: "center", gap: 6 }}>
                 <span style={{ width: 6, height: 6, flexShrink: 0, borderRadius: "50%", background: "#34D399", boxShadow: "0 0 6px rgba(52,211,153,0.8)" }} />
-                <span style={{ fontSize: 10, color: "#7FAAA3", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ROLE_LABEL[role] ?? role}</span>
+                <span style={{ fontSize: "var(--sb-role)", color: "#7FAAA3", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ROLE_LABEL[role] ?? role}</span>
               </div>
             </div>
           </div>
@@ -293,11 +293,40 @@ export function Sidebar({
            about 300px the extra width becomes padding rather than usefulness
            and the nav starts reading as detached from the content it labels.
            Everything below 1920px keeps the original 240px exactly. */
+        /* The rail's own type is set inline, so it cannot be reached by the
+           class-level scale in globals.css. These five variables carry the
+           same shipped values it always had, and step with the tiers there so
+           the nav does not stay small while the content beside it grows. */
+        [data-sidebar] {
+          --sb-brand: 15px;
+          --sb-eyebrow: 9.5px;
+          --sb-name: 12px;
+          --sb-role: 10px;
+          --sb-avatar: 11px;
+        }
+        @media (min-width: 1441px) and (max-width: 1920px) {
+          [data-sidebar] {
+            --sb-brand: 16.2px; --sb-eyebrow: 10.26px; --sb-name: 12.96px;
+            --sb-role: 10.8px;  --sb-avatar: 11.88px;
+          }
+        }
         @media (min-width: 1920px) {
           [data-sidebar] { width: 268px !important; }
         }
+        @media (min-width: 1921px) and (max-width: 2560px) {
+          [data-sidebar] {
+            --sb-brand: 18px;   --sb-eyebrow: 11.4px; --sb-name: 14.4px;
+            --sb-role: 12px;    --sb-avatar: 13.2px;
+          }
+        }
         @media (min-width: 2560px) {
           [data-sidebar] { width: 288px !important; }
+        }
+        @media (min-width: 2561px) {
+          [data-sidebar] {
+            --sb-brand: 19.8px; --sb-eyebrow: 12.54px; --sb-name: 15.84px;
+            --sb-role: 13.2px;  --sb-avatar: 14.52px;
+          }
         }
         @media (min-width: 3840px) {
           [data-sidebar] { width: 312px !important; }
