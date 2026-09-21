@@ -468,19 +468,24 @@ export default async function PatientDetailedEMR({
             showActionBar={user.role === "DOCTOR"}
             finalizedToday={finalizedToday}
             pluginSlot={
-              <>
-                <PluginEmrSlot
-                  patientUdid={udid}
-                  patientName={patient.name}
-                  visitId={activeVisit.id}
-                  visitClosed={activeVisit.status === "CLOSED"}
-                />
-                {/* Eager mount, outside <Tabs> so it survives tab switches.
-                    Gated on the visit being open: re-running the consolidated
-                    analysis against a signed visit costs a call and changes
-                    nothing, matching how ConsultationExitGuard stands down. */}
-                {activeVisit.status !== "CLOSED" &&
-                  getAllRegisteredPlugins()
+              <PluginEmrSlot
+                patientUdid={udid}
+                patientName={patient.name}
+                visitId={activeVisit.id}
+                visitClosed={activeVisit.status === "CLOSED"}
+              />
+            }
+            /* Mounted once for the life of the page so the consolidated
+               analysis starts when the visit opens and its differential is
+               ready on every tab -- but only shown on the Copilot's own tab,
+               so the assistant and its sub-tabs no longer sit under the
+               clinical sections. Gated on the visit being open: re-running the
+               analysis against a signed visit costs a call and changes
+               nothing, matching how ConsultationExitGuard stands down. */
+            tabScopedSlotTabId="ai-copilot"
+            tabScopedSlot={
+              activeVisit.status !== "CLOSED"
+                ? getAllRegisteredPlugins()
                     .filter((p) => p.manifest.externalOrigin)
                     .map((p) => (
                       <ExternalPluginSlot
@@ -490,8 +495,8 @@ export default async function PatientDetailedEMR({
                         patientUdid={udid}
                         visitId={activeVisit.id}
                       />
-                    ))}
-              </>
+                    ))
+                : null
             }
             tabs={[
               {
@@ -581,26 +586,11 @@ export default async function PatientDetailedEMR({
                 id: "ai-copilot",
                 label: "AI Clinical Copilot",
                 icon: <Sparkles size={14} />,
-                // The assistant itself is no longer hosted here: it is mounted
-                // once below the tab strip so it loads when the visit opens
-                // rather than only when this tab is opened. This panel is left
-                // as a pointer so the nav entry still leads somewhere sensible.
-                content: (
-                  <Card>
-                    <div className="flex items-start gap-2.5 py-1">
-                      <Sparkles size={15} className="shrink-0 mt-0.5 text-[var(--color-primary-600)]" />
-                      <div>
-                        <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)]">
-                          The AI Clinical Copilot is open below.
-                        </p>
-                        <p className="mt-1 text-[11px] sm:text-xs text-[var(--color-ink-400)]">
-                          It now loads automatically when the visit opens and stays available on
-                          every tab, along with its differential diagnosis suggestions.
-                        </p>
-                      </div>
-                    </div>
-                  </Card>
-                ),
+                // The panel itself is empty: the assistant is mounted below the
+                // tab strip (so it keeps running while other tabs are open) and
+                // is revealed there when this tab is active, immediately under
+                // this slot. A pointer card here would just duplicate it.
+                content: null,
               },
               {
                 id: "plan",
