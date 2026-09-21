@@ -712,3 +712,48 @@ body {
   .text-\[32px\] { font-size: 51.2px; }
   .text-\[36px\] { font-size: 57.6px; }
 }
+
+/* ── Landing page: continuous type ────────────────────────────────────────
+   The console's scale steps at 1441, 1921 and 2561. Stepping is fine there:
+   an operator sits at one resolution all day and never sees the seam. A
+   marketing page is dragged between window sizes and viewed on every device
+   there is, and at the 1441 boundary body copy jumped 13.5px -> 18.2px and a
+   lede 16.5px -> 24.4px, so the whole page snapped as the window crossed it.
+
+   These rules replace the steps with one straight ramp: the authored size at
+   1440 and below, exactly twice that at 3840, and every value in between
+   interpolated. Same endpoints as the console scale, no seam.
+
+   Derivation, for size N: the ramp is N at 1440px and 2N at 3840px, which is
+   N*(0.4 + vw/2400) — written below as calc(0.4N px + (N/24) vw). The clamp
+   floor keeps mobile and laptop exactly as authored; the ceiling stops 5K
+   going past 2x. Specificity (0,2,0) beats the console's (0,1,0) rules, so
+   this wins regardless of source order. */
+
+  .ppms-landing .text-\[10px\] { font-size: clamp(10px, calc(4px + 0.4167vw), 20px); }
+  .ppms-landing .text-\[11px\] { font-size: clamp(11px, calc(4.4px + 0.4583vw), 22px); }
+  .ppms-landing .text-\[11\.5px\] { font-size: clamp(11.5px, calc(4.6px + 0.4792vw), 23px); }
+  .ppms-landing .text-\[12\.5px\] { font-size: clamp(12.5px, calc(5px + 0.5208vw), 25px); }
+  .ppms-landing .text-\[13px\] { font-size: clamp(13px, calc(5.2px + 0.5417vw), 26px); }
+  .ppms-landing .text-\[13\.5px\] { font-size: clamp(13.5px, calc(5.4px + 0.5625vw), 27px); }
+  .ppms-landing .text-\[14px\] { font-size: clamp(14px, calc(5.6px + 0.5833vw), 28px); }
+  .ppms-landing .text-\[14\.5px\] { font-size: clamp(14.5px, calc(5.8px + 0.6042vw), 29px); }
+  .ppms-landing .text-\[15px\] { font-size: clamp(15px, calc(6px + 0.625vw), 30px); }
+  .ppms-landing .text-\[15\.5px\] { font-size: clamp(15.5px, calc(6.2px + 0.6458vw), 31px); }
+  .ppms-landing .text-\[16px\] { font-size: clamp(16px, calc(6.4px + 0.6667vw), 32px); }
+  .ppms-landing .text-\[16\.5px\] { font-size: clamp(16.5px, calc(6.6px + 0.6875vw), 33px); }
+  .ppms-landing .text-\[17px\] { font-size: clamp(17px, calc(6.8px + 0.7083vw), 34px); }
+  .ppms-landing .text-\[19px\] { font-size: clamp(19px, calc(7.6px + 0.7917vw), 38px); }
+  .ppms-landing .text-\[20px\] { font-size: clamp(20px, calc(8px + 0.8333vw), 40px); }
+  .ppms-landing .text-\[22px\] { font-size: clamp(22px, calc(8.8px + 0.9167vw), 44px); }
+  .ppms-landing .text-\[24px\] { font-size: clamp(24px, calc(9.6px + 1vw), 48px); }
+  .ppms-landing .text-\[28px\] { font-size: clamp(28px, calc(11.2px + 1.1667vw), 56px); }
+
+/* The two lede tokens are authored as their own clamps for mobile, so they
+   take a max() of that curve and the ramp: below 1440 the authored clamp is
+   larger and wins, above it the ramp does. The two meet exactly at 1440, so
+   the join is invisible. */
+.ppms-landing {
+  --lp-lede:      max(clamp(0.95rem, 1.6vw, 1.03rem), min(calc(6.6px + 0.6875vw), 33px));
+  --lp-lede-hero: max(clamp(0.98rem, 1.7vw, 1.06rem), min(calc(6.8px + 0.7083vw), 34px));
+}
