@@ -9,6 +9,7 @@ import {
   Pill, CalendarCheck, Hash, CheckCircle2, Sparkles,
 } from "lucide-react";
 import { VisitTimeline } from "./VisitTimeline";
+import { DifferentialDiagnosisPanel } from "./DifferentialDiagnosisPanel";
 import { PatientPhoto } from "./PatientPhoto";
 import { convertNotesToCC, parseEMRComplaints } from "@/lib/appointment-cc";
 import { GeneralExamTab } from "./GeneralExamTab";
@@ -467,12 +468,30 @@ export default async function PatientDetailedEMR({
             showActionBar={user.role === "DOCTOR"}
             finalizedToday={finalizedToday}
             pluginSlot={
-              <PluginEmrSlot
-                patientUdid={udid}
-                patientName={patient.name}
-                visitId={activeVisit.id}
-                visitClosed={activeVisit.status === "CLOSED"}
-              />
+              <>
+                <PluginEmrSlot
+                  patientUdid={udid}
+                  patientName={patient.name}
+                  visitId={activeVisit.id}
+                  visitClosed={activeVisit.status === "CLOSED"}
+                />
+                {/* Eager mount, outside <Tabs> so it survives tab switches.
+                    Gated on the visit being open: re-running the consolidated
+                    analysis against a signed visit costs a call and changes
+                    nothing, matching how ConsultationExitGuard stands down. */}
+                {activeVisit.status !== "CLOSED" &&
+                  getAllRegisteredPlugins()
+                    .filter((p) => p.manifest.externalOrigin)
+                    .map((p) => (
+                      <ExternalPluginSlot
+                        key={p.manifest.pluginId}
+                        pluginId={p.manifest.pluginId}
+                        triggerPermission={p.manifest.ui?.emrPanel?.triggerPermission ?? ""}
+                        patientUdid={udid}
+                        visitId={activeVisit.id}
+                      />
+                    ))}
+              </>
             }
             tabs={[
               {
@@ -480,13 +499,16 @@ export default async function PatientDetailedEMR({
                 label: "General",
                 icon: <User size={14} />,
                 content: (
-                  <GeneralExamTab
-                    visit={activeVisit}
-                    priorVisits={priorVisits}
-                    udid={udid}
-                    readOnly={readOnly}
-                    customPmhChips={customPmhChips.length > 0 ? customPmhChips : undefined}
-                  />
+                  <div className="flex flex-col gap-4">
+                    <GeneralExamTab
+                      visit={activeVisit}
+                      priorVisits={priorVisits}
+                      udid={udid}
+                      readOnly={readOnly}
+                      customPmhChips={customPmhChips.length > 0 ? customPmhChips : undefined}
+                    />
+                    <DifferentialDiagnosisPanel visitId={activeVisit.id} />
+                  </div>
                 ),
               },
               {
@@ -509,6 +531,7 @@ export default async function PatientDetailedEMR({
                       canEdit={user.role === "DOCTOR"}
                       canUpload={user.role === "DOCTOR"}
                     />
+                    <DifferentialDiagnosisPanel visitId={activeVisit.id} />
                   </div>
                 ),
               },
@@ -517,12 +540,15 @@ export default async function PatientDetailedEMR({
                 label: "Ophthalmic",
                 icon: <Eye size={14} />,
                 content: (
-                  <OphthalmicExamTab
-                    visit={activeVisit}
-                    priorVisits={priorVisits}
-                    udid={udid}
-                    role={user.role}
-                  />
+                  <div className="flex flex-col gap-4">
+                    <OphthalmicExamTab
+                      visit={activeVisit}
+                      priorVisits={priorVisits}
+                      udid={udid}
+                      role={user.role}
+                    />
+                    <DifferentialDiagnosisPanel visitId={activeVisit.id} />
+                  </div>
                 ),
               },
               {
@@ -531,7 +557,10 @@ export default async function PatientDetailedEMR({
                 icon: <Activity size={14} />,
                 content:
                   user.role === "DOCTOR" ? (
-                    <AssessmentTab visit={activeVisit} udid={udid} priorVisits={priorVisits} readOnly={readOnly} />
+                    <div className="flex flex-col gap-4">
+                      <AssessmentTab visit={activeVisit} udid={udid} priorVisits={priorVisits} readOnly={readOnly} />
+                      <DifferentialDiagnosisPanel visitId={activeVisit.id} />
+                    </div>
                   ) : (
                     <p className="text-sm text-[var(--color-ink-400)]">Not accessible for this role.</p>
                   ),
@@ -541,27 +570,36 @@ export default async function PatientDetailedEMR({
                 label: "Investigations",
                 icon: <FileText size={14} />,
                 badge: activeVisit.investigationOrders.filter((o) => !o.resultRef && o.status !== "REVIEWED" && o.status !== "CANCELLED").length,
-                content:
-                  <InvestigationsTab visit={activeVisit} priorVisits={priorVisits} udid={udid} readOnly={readOnly} />,
+                content: (
+                  <div className="flex flex-col gap-4">
+                    <InvestigationsTab visit={activeVisit} priorVisits={priorVisits} udid={udid} readOnly={readOnly} />
+                    <DifferentialDiagnosisPanel visitId={activeVisit.id} />
+                  </div>
+                ),
               },
               {
                 id: "ai-copilot",
                 label: "AI Clinical Copilot",
                 icon: <Sparkles size={14} />,
+                // The assistant itself is no longer hosted here: it is mounted
+                // once below the tab strip so it loads when the visit opens
+                // rather than only when this tab is opened. This panel is left
+                // as a pointer so the nav entry still leads somewhere sensible.
                 content: (
-                  <>
-                    {getAllRegisteredPlugins()
-                      .filter((p) => p.manifest.externalOrigin)
-                      .map((p) => (
-                        <ExternalPluginSlot
-                          key={p.manifest.pluginId}
-                          pluginId={p.manifest.pluginId}
-                          triggerPermission={p.manifest.ui?.emrPanel?.triggerPermission ?? ""}
-                          patientUdid={udid}
-                          visitId={activeVisit.id}
-                        />
-                      ))}
-                  </>
+                  <Card>
+                    <div className="flex items-start gap-2.5 py-1">
+                      <Sparkles size={15} className="shrink-0 mt-0.5 text-[var(--color-primary-600)]" />
+                      <div>
+                        <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)]">
+                          The AI Clinical Copilot is open below.
+                        </p>
+                        <p className="mt-1 text-[11px] sm:text-xs text-[var(--color-ink-400)]">
+                          It now loads automatically when the visit opens and stays available on
+                          every tab, along with its differential diagnosis suggestions.
+                        </p>
+                      </div>
+                    </div>
+                  </Card>
                 ),
               },
               {
@@ -570,7 +608,10 @@ export default async function PatientDetailedEMR({
                 icon: <Link2 size={14} />,
                 content:
                   user.role === "DOCTOR" ? (
-                    <PlanTab visit={activeVisit} udid={udid} patientSex={patient.sex} priorVisits={priorVisits} />
+                    <div className="flex flex-col gap-4">
+                      <PlanTab visit={activeVisit} udid={udid} patientSex={patient.sex} priorVisits={priorVisits} />
+                      <DifferentialDiagnosisPanel visitId={activeVisit.id} />
+                    </div>
                   ) : (
                     <p className="text-sm text-[var(--color-ink-400)]">Not accessible for this role.</p>
                   ),
