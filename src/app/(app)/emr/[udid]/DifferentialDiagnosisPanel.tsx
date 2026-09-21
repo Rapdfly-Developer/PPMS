@@ -15,7 +15,7 @@
  */
 
 import { DifferentialDiagnosisCard } from "./DifferentialDiagnosisCard";
-import { useDdx } from "./ddx-store";
+import { useDdx } from "./copilot-store";
 
 export function DifferentialDiagnosisPanel({ visitId }: { visitId: string }) {
   const state = useDdx(visitId);

@@ -32,13 +32,28 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import type { DdxState, DifferentialDx } from "./DifferentialDiagnosisCard";
-import { setDdx, cacheDdx, readCachedDdx, getDdx } from "./ddx-store";
+import type { GuidanceState, ExamGuidanceItem } from "./ExamGuidanceCard";
+import {
+  setDdx, cacheDdx, readCachedDdx, getDdx,
+  seedGuidance, settleGuidance, cacheGuidance, readCachedGuidance,
+  subscribeGuidanceRequests, isGuidanceInFlight,
+} from "./copilot-store";
 
 /* Defensive caps. The payload crosses an origin boundary, so it is treated as
    untrusted input and clamped before it reaches React — the same posture the
    ai-draft route takes with draftText. */
 const MAX_DX = 12;
 const MAX_LEN = 300;
+/* Guidance is grouped into two segments and read at a glance, so it is capped
+   tighter than the differential: more than a handful of rows per segment stops
+   being scannable and starts being a wall. */
+const MAX_GUIDANCE = 8;
+
+/* Exam guidance is user-initiated, so the ceiling is a stuck-request guard
+   rather than the differential's "is it still coming?" display fallback. It is
+   longer because the doctor asked and is waiting, and shorter than infinity
+   because a spinner that never resolves is worse than an error with a retry. */
+const GUIDANCE_TIMEOUT_MS = 120_000;
 
 /*
  * How long to spin before saying the differential could not be generated.
@@ -76,6 +91,48 @@ function cachedToState(raw: string | null): DdxState {
   }
 }
 
+/* Idle, not loading, when there is no cache: nothing has been asked for yet. */
+function cachedGuidanceToState(raw: string | null): GuidanceState {
+  if (!raw) return { status: "idle" };
+  try {
+    const parsed = parseGuidance(JSON.parse(raw));
+    if (!parsed) return { status: "idle" };
+    return parsed.length > 0 ? { status: "ready", items: parsed } : { status: "insufficient" };
+  } catch {
+    return { status: "idle" };
+  }
+}
+
+/**
+ * Returns the parsed list, or null when the payload is not a usable shape.
+ *
+ * Field names and segment literals mirror ppms-copilot's ExamGuidanceSection
+ * verbatim ("Anterior Segment" / "Posterior Segment", with that exact casing
+ * and spacing). An unrecognised segment still drops the row rather than
+ * defaulting it -- filing a posterior finding under the anterior heading is
+ * worse than omitting it -- so these strings have to stay in step with the
+ * plugin. Bending them to a local house style silently empties the card.
+ */
+function parseGuidance(raw: unknown): ExamGuidanceItem[] | null {
+  if (!Array.isArray(raw)) return null;
+  const out: ExamGuidanceItem[] = [];
+  for (const item of raw.slice(0, MAX_GUIDANCE)) {
+    if (!item || typeof item !== "object") continue;
+    const o = item as Record<string, unknown>;
+    const segment =
+      o.segment === "Anterior Segment" || o.segment === "Posterior Segment" ? o.segment : null;
+    const documented = clean(o.documented);
+    if (!segment || !documented) continue;
+    out.push({
+      segment,
+      documented,
+      // A single prose string on the wire, not a list.
+      associatedFindingsNotDocumented: clean(o.associatedFindingsNotDocumented) ?? "",
+    });
+  }
+  return out;
+}
+
 /** Returns the parsed list, or null when the payload is not a usable shape. */
 function parseDiagnoses(raw: unknown): DifferentialDx[] | null {
   if (!Array.isArray(raw)) return null;
@@ -108,6 +165,8 @@ export function ExternalPluginSlotClient({
   pluginId,
 }: Props) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  /* Pending exam-guidance timeout, so settling can cancel it. */
+  const guidanceTimer = useRef<number | undefined>(undefined);
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   /* Seed the shared store. Doing this on mount is also what tells the per-tab
@@ -122,6 +181,13 @@ export function ExternalPluginSlotClient({
     setDdx(visitId, cachedToState(readCachedDdx(visitId)));
   }, [visitId]);
 
+  /* Seeding is what tells the per-tab cards the Copilot is active at all — the
+     same gating inheritance the differential relies on. Restores a previously
+     generated result for this visit so switching tabs does not reset to idle. */
+  useEffect(() => {
+    seedGuidance(visitId, cachedGuidanceToState(readCachedGuidance(visitId)));
+  }, [visitId]);
+
   /* Display fallback so the cards do not spin forever — see DDX_TIMEOUT_MS. */
   useEffect(() => {
     const id = window.setTimeout(() => {
@@ -129,6 +195,86 @@ export function ExternalPluginSlotClient({
     }, DDX_TIMEOUT_MS);
     return () => window.clearTimeout(id);
   }, [visitId]);
+
+  /* Exam guidance trigger. Subscribed here because this component owns the
+     iframe handle and the pluginId/patientRef the mint endpoint requires. */
+  useEffect(() => {
+    const clearGuidanceTimer = () => {
+      if (guidanceTimer.current !== undefined) {
+        window.clearTimeout(guidanceTimer.current);
+        guidanceTimer.current = undefined;
+      }
+    };
+
+    return subscribeGuidanceRequests((reqVisitId) => {
+      if (reqVisitId !== visitId) return;
+
+      const fail = (message: string) => {
+        clearGuidanceTimer();
+        settleGuidance(visitId, { status: "error", message });
+      };
+
+      /* The token prop was signed when the page rendered, against a 600s hard
+         ceiling in signPluginToken. An on-demand click is routinely later than
+         that, so mint a fresh one per trigger rather than send a dead token.
+         The endpoint re-runs every authorisation check server-side and derives
+         dataScopes from the manifest, so this widens nothing. */
+      void (async () => {
+        let fresh: string;
+        try {
+          const res = await fetch("/api/v1/plugin-token", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "same-origin",
+            body: JSON.stringify({ pluginId, patientRef, visitId }),
+          });
+          if (!res.ok) {
+            fail(
+              res.status === 401 || res.status === 403
+                ? "Your session no longer permits this. Refresh the page and try again."
+                : "Could not authorise the request. Please try again.",
+            );
+            return;
+          }
+          const data = (await res.json()) as { token?: unknown };
+          if (typeof data.token !== "string" || !data.token) {
+            fail("Could not authorise the request. Please try again.");
+            return;
+          }
+          fresh = data.token;
+        } catch {
+          fail("Network error. Please try again.");
+          return;
+        }
+
+        const iframe = iframeRef.current;
+        if (!iframe?.contentWindow) {
+          fail("The assistant is not ready yet. Please try again in a moment.");
+          return;
+        }
+
+        // Exact origin, never "*" — same invariant as PPMS_INIT.
+        iframe.contentWindow.postMessage(
+          {
+            type: "PPMS_REQUEST_EXAM_GUIDANCE",
+            version: "1",
+            pluginId,
+            visitId,
+            token: fresh,
+          },
+          pluginOrigin,
+        );
+
+        /* Tracked so settling can clear it. Without that, this request's
+           timeout could still be pending when the doctor triggers a second one
+           and would fail the newer call -- the job a wire-level request id
+           would otherwise do, and this protocol has none. */
+        guidanceTimer.current = window.setTimeout(() => {
+          if (isGuidanceInFlight(visitId)) fail("The assistant did not respond in time.");
+        }, GUIDANCE_TIMEOUT_MS);
+      })();
+    });
+  }, [visitId, pluginId, patientRef, pluginOrigin]);
 
   const sendInit = useCallback(() => {
     const iframe = iframeRef.current;
@@ -193,6 +339,43 @@ export function ExternalPluginSlotClient({
 
         setDdx(visitId, items.length > 0 ? { status: "ready", items } : { status: "none" });
         cacheDdx(visitId, items);
+        return;
+      }
+
+      if (type === "PLUGIN_EXAM_GUIDANCE_RESULT") {
+        // Origin was checked above. Same plugin, same visit -- and settleGuidance
+        // ignores anything we did not ask for, so an unsolicited result cannot
+        // write into the card. There is no request id on this wire; only one
+        // call per visit can be outstanding, which is what makes visitId enough.
+        if (msg.pluginId !== pluginId) return;
+        if (msg.visitId !== visitId) return;
+
+        // Discriminated envelope: ok:true carries sections, ok:false an error.
+        if (msg.ok === false) {
+          // Plugin-supplied text crossing an origin boundary -- clamped like
+          // any other untrusted string before it reaches the doctor's screen.
+          const detail = clean(msg.errorMessage);
+          settleGuidance(visitId, {
+            status: "error",
+            message: detail ?? "The assistant could not generate guidance for this visit.",
+          });
+          return;
+        }
+
+        const items = msg.ok === true ? parseGuidance(msg.sections) : null;
+        if (!items) {
+          settleGuidance(visitId, {
+            status: "error",
+            message: "The assistant returned an unreadable response.",
+          });
+          return;
+        }
+
+        settleGuidance(
+          visitId,
+          items.length > 0 ? { status: "ready", items } : { status: "insufficient" },
+        );
+        cacheGuidance(visitId, items);
         return;
       }
     }
