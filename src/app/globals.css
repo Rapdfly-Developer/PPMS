@@ -369,6 +369,51 @@ body {
   overflow-x: clip;
 }
 
+/* ── Touch targets ─────────────────────────────────────────────────────────
+   Below the tablet breakpoint the page is driven by a thumb, not a cursor.
+   Measured at 320px, the footer link lists were 18px tall, the mail and phone
+   rows 20-22px, the workflow tabs 36px and the brand lockup 30px: all well
+   under the 44px iOS guideline, and the footer links sat close enough
+   together to be a coin-flip between neighbours.
+
+   The height comes from padding, not type, so nothing about the visual
+   weight of the page changes. The lists drop their gap at the same time,
+   because 44px rows already read as separated and keeping the gap on top
+   would have made the footer half as tall again for no legibility gain.
+
+   The range runs to 1023px rather than stopping at the phone breakpoint,
+   because that is exactly where the collapsed hamburger nav gives way to the
+   desktop bar: everything below it is being driven by touch, an iPad at 768
+   included. */
+@media (max-width: 1023px) {
+  .ppms-landing footer li > a,
+  .ppms-landing a[href^="mailto:"],
+  .ppms-landing a[href^="tel:"],
+  /* :not(.hidden) matters. The sign-in link carries Tailwind's `hidden` and
+     only appears from sm up; an unlayered display here would outrank that and
+     force it back into a 375px header, where it wrapped onto two lines. */
+  .ppms-landing nav a[href="#top"],
+  .ppms-landing nav a[href="/login"]:not(.hidden),
+  .ppms-landing button[class*="snap-start"] {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .ppms-landing footer ul {
+    gap: 0;
+  }
+
+  /* The sign-in link carries both `hidden` and `sm:block`, so it is invisible
+     on a phone and visible from 640px up while still matching .hidden. That
+     makes it unreachable by the :not(.hidden) rule above, and a display
+     change here would force it back on at 375px. Padding gets it to 44px
+     without touching display, so it stays hidden where it should be. */
+  .ppms-landing nav a[href="/login"].hidden {
+    padding-block: 0.75rem;
+  }
+}
+
 /* ── Landing type scale ────────────────────────────────────────────────────
    One custom property per role, holding the whole responsive curve, so a
    heading carries `text-[length:var(--lp-h1)]` instead of a base clamp plus a
