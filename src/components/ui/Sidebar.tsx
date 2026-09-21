@@ -286,6 +286,22 @@ export function Sidebar({
             transform: translateX(0) !important;
           }
         }
+
+        /* Large-screen rail. The width is an inline style on the <aside>, so
+           it can only be rescaled from here. The steps are deliberately small:
+           the rail holds fixed-length nav labels, not fluid content, so past
+           about 300px the extra width becomes padding rather than usefulness
+           and the nav starts reading as detached from the content it labels.
+           Everything below 1920px keeps the original 240px exactly. */
+        @media (min-width: 1920px) {
+          [data-sidebar] { width: 268px !important; }
+        }
+        @media (min-width: 2560px) {
+          [data-sidebar] { width: 288px !important; }
+        }
+        @media (min-width: 3840px) {
+          [data-sidebar] { width: 312px !important; }
+        }
       `}</style>
     </>
   );

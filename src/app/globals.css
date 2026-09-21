@@ -135,6 +135,12 @@
 @media (min-width: 96rem)  { .container-fluid { max-width: min(94vw, 112.5rem); } }
 @media (min-width: 110rem) { .container-fluid { max-width: min(94vw, 131.25rem); } }
 @media (min-width: 120rem) { .container-fluid { max-width: min(94vw, 137.5rem); } }
+/* Past QHD the flat 137.5rem (2200px) ceiling was stranding ~820px either side
+   at 3840, which is the "laptop site stretched onto a 4K monitor" look. The vw
+   term keeps the column tracking the viewport; the rem term still stops a line
+   of body copy running the full width of an ultrawide. */
+@media (min-width: 160rem) { .container-fluid { max-width: min(92vw, 175rem); } }
+@media (min-width: 240rem) { .container-fluid { max-width: min(88vw, 210rem); } }
 
 @utility gutter-fluid {
   padding-inline: 1rem;
@@ -142,6 +148,8 @@
 @media (min-width: 40rem)  { .gutter-fluid { padding-inline: 1.5rem; } }
 @media (min-width: 64rem)  { .gutter-fluid { padding-inline: 2rem; } }
 @media (min-width: 96rem)  { .gutter-fluid { padding-inline: 2.5rem; } }
+@media (min-width: 160rem) { .gutter-fluid { padding-inline: 3.5rem; } }
+@media (min-width: 240rem) { .gutter-fluid { padding-inline: 5rem; } }
 
 * {
   border-color: var(--color-border);

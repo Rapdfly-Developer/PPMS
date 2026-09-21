@@ -56,11 +56,17 @@ export default async function AppLayout({ children }: { children: React.ReactNod
                 The sidebar is 240px, so a 1280px cap plus padding strands
                 pixels either side once the viewport passes ~1584px — below
                 that the column already fills the row and every existing
-                mobile/tablet/laptop layout is untouched. The 4xl ceiling is
-                deliberately generous enough to cover 2560px without leaving a
-                margin, and deliberately finite so 4K does not stretch a table
-                into a ribbon. */}
-            <div className="max-w-7xl 2xl:max-w-[1480px] 3xl:max-w-[1720px] 4xl:max-w-[2160px] mx-auto px-4 md:px-6 lg:px-8 2xl:px-10 py-5 lg:py-7 pb-24 lg:pb-7">
+                mobile/tablet/laptop layout is untouched.
+
+                From 5xl up the cap switches from a flat pixel ceiling to
+                min(vw, ceiling). A flat 2160px ceiling stranded 520px either
+                side on a 3440 ultrawide and 720px either side at 3840, which
+                is the "small app floating in a huge screen" case. The vw term
+                lets the column keep tracking the viewport through the gap
+                between breakpoints instead of stepping once and then sitting
+                still, while the pixel term still stops a table becoming a
+                ribbon on a 5K display. */}
+            <div className="max-w-7xl 2xl:max-w-[1480px] 3xl:max-w-[1720px] 4xl:max-w-[2160px] 5xl:max-w-[min(93vw,2560px)] 6xl:max-w-[min(90vw,3200px)] mx-auto px-4 md:px-6 lg:px-8 2xl:px-10 5xl:px-12 6xl:px-16 py-5 lg:py-7 4xl:py-9 6xl:py-12 pb-24 lg:pb-7">
               <LicenseGate
                 active={licenseActive}
                 status={licenseResult?.status ?? "NONE"}
