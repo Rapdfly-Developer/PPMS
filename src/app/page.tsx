@@ -21,9 +21,9 @@ const body = Plus_Jakarta_Sans({
   display: "swap",
 });
 
-const TITLE = "RF Health · Intelligent Healthcare. Connected Care.";
+const TITLE = "RF Health · One Doctor. Every Hospital. One Record.";
 const DESCRIPTION =
-  "One intelligent platform to connect patients, clinical workflows, EMR, appointments and AI-assisted healthcare, across every hospital you practise at.";
+  "Patient practice management for doctors working across multiple hospitals. Appointments, electronic medical records, prescriptions, surgery notes, billing and analytics in one secure account.";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://ppmsai.com"),
