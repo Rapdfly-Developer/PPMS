@@ -365,6 +365,54 @@ body {
   overflow-x: clip;
 }
 
+/* ── Landing type scale ────────────────────────────────────────────────────
+   One custom property per role, holding the whole responsive curve, so a
+   heading carries `text-[length:var(--lp-h1)]` instead of a base clamp plus a
+   2xl override. The curves below reproduce the previous values exactly at
+   every width up to 1440px.
+
+   Above 1440px the old curves were all pinned by their max term: the hero
+   stopped growing at 73.6px and every lede on the page stopped at 16.5px,
+   whatever the viewport. 16.5px body copy in a 3360px-wide column is the
+   "tiny text on a 4K monitor" case. The large-screen curves are written as
+   `Avw + Brem` so they keep climbing across the whole range, each still
+   capped so a 5K display does not get poster type. Each one is >= the old
+   value at every width it replaces, so nothing shrinks. */
+.ppms-landing {
+  --lp-h1:        clamp(2.1rem, 8.6vw, 4.25rem);
+  --lp-h2:        clamp(1.75rem, 6.2vw, 3.5rem);
+  --lp-h2-split:  clamp(1.6rem, 5.4vw, 3rem);
+  --lp-lede:      clamp(0.95rem, 1.6vw, 1.03rem);
+  --lp-lede-hero: clamp(0.98rem, 1.7vw, 1.06rem);
+  /* Reading measure for centred section ledes. Grows with the type so the
+     line stays in the 60-75 character band rather than widening into a
+     ribbon: 1248px against 26px copy is about 62 characters. */
+  --lp-measure:   42rem;
+}
+
+@media (min-width: 1441px) {
+  .ppms-landing {
+    --lp-h1:        clamp(4.25rem, 2.2vw + 2.2rem, 7.5rem);
+    --lp-h2:        clamp(3.5rem, 1.5vw + 2.2rem, 5.5rem);
+    --lp-h2-split:  clamp(3rem, 1.3vw + 1.9rem, 4.75rem);
+    --lp-lede:      clamp(1.03rem, 0.45vw + 0.62rem, 1.65rem);
+    --lp-lede-hero: clamp(1.06rem, 0.47vw + 0.64rem, 1.7rem);
+    --lp-measure:   52rem;
+  }
+}
+/* Boundaries match the 4xl/5xl/6xl breakpoints exactly. They previously sat
+   one pixel above them, so a 3840px viewport fell short of a 3841px query and
+   the widest step never applied on the display it was written for. */
+@media (min-width: 1920px) { .ppms-landing { --lp-measure: 58rem; } }
+@media (min-width: 2560px) { .ppms-landing { --lp-measure: 68rem; } }
+@media (min-width: 3840px) { .ppms-landing { --lp-measure: 78rem; } }
+
+/* Section rhythm. Below 1440px this is inert: the authored Tailwind steps top
+   out at py-24 and the utility only takes over above them. */
+@media (min-width: 1441px) {
+  .lp-section { padding-block: clamp(6rem, 3.6vw + 2.4rem, 11rem); }
+}
+
 /* ── Ambient motion ────────────────────────────────────────────────────────
    Everything below animates `transform` and nothing else, so each element is
    promoted to its own compositor layer and the loops cost no layout or paint

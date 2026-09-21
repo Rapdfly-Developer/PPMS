@@ -118,7 +118,7 @@ function Section({
   return (
     <section
       id={id}
-      className={`scroll-mt-24 sm:scroll-mt-28 ${GUTTER} py-14 sm:py-16 md:py-20 lg:py-24 ${className}`}
+      className={`lp-section scroll-mt-24 sm:scroll-mt-28 ${GUTTER} py-14 sm:py-16 md:py-20 lg:py-24 ${className}`}
     >
       <div className={SHELL}>{children}</div>
     </section>
@@ -138,15 +138,15 @@ function SectionHead({
   align?: "center" | "left";
 }) {
   return (
-    <Reveal className={align === "center" ? "mx-auto max-w-2xl text-center" : "max-w-2xl"}>
+    <Reveal className={align === "center" ? "mx-auto max-w-[var(--lp-measure)] text-center" : "max-w-[var(--lp-measure)]"}>
       {eyebrow && <Eyebrow>{eyebrow}</Eyebrow>}
       {/* Fluid between 320px and ~1536px, then pinned — clamp keeps the headline
           inside a 320px viewport without a stack of breakpoint overrides. */}
-      <h2 className="font-display mt-4 text-[clamp(1.75rem,6.2vw,3.5rem)] 2xl:text-[clamp(3.5rem,3vw,4.5rem)] font-bold leading-[1.06] tracking-[-0.03em] text-balance text-emerald-950 sm:mt-5">
+      <h2 className="font-display mt-4 text-[length:var(--lp-h2)] font-bold leading-[1.06] tracking-[-0.03em] text-balance text-emerald-950 sm:mt-5">
         {title}
       </h2>
       {lede && (
-        <p className="mt-4 text-[clamp(0.95rem,1.6vw,1.03rem)] leading-relaxed text-slate-600 sm:mt-5">
+        <p className="mt-4 text-[length:var(--lp-lede)] leading-relaxed text-slate-600 sm:mt-5">
           {lede}
         </p>
       )}
@@ -176,10 +176,10 @@ function Split({
       <div className={flip ? "lg:order-2" : ""}>
         <Reveal>
           {eyebrow && <Eyebrow>{eyebrow}</Eyebrow>}
-          <h2 className="font-display mt-4 text-[clamp(1.6rem,5.4vw,3rem)] 2xl:text-[clamp(3rem,2.6vw,3.9rem)] font-bold leading-[1.07] tracking-[-0.03em] text-balance text-emerald-950 sm:mt-5">
+          <h2 className="font-display mt-4 text-[length:var(--lp-h2-split)] font-bold leading-[1.07] tracking-[-0.03em] text-balance text-emerald-950 sm:mt-5">
             {title}
           </h2>
-          <p className="mt-4 text-[clamp(0.95rem,1.6vw,1.03rem)] leading-relaxed text-slate-600 sm:mt-5">
+          <p className="mt-4 text-[length:var(--lp-lede)] leading-relaxed text-slate-600 sm:mt-5">
             {lede}
           </p>
         </Reveal>
@@ -487,7 +487,12 @@ export function PremiumLanding() {
       <Nav />
 
       {/* ── Hero ─────────────────────────────────────────────────────────── */}
-      <section className={`relative overflow-hidden ${GUTTER} pb-14 pt-36 sm:pb-16 sm:pt-36 lg:pb-20 lg:pt-40`}>
+      {/* From 1920px up the hero claims the first screen and centres its own
+          content in it. Below that it stays exactly as authored: the height is
+          content-driven, which is what keeps a 900px-tall laptop from having to
+          scroll past a deliberately empty band. svh rather than vh so a mobile
+          URL bar can never make it taller than the visible area. */}
+      <section className={`relative overflow-hidden ${GUTTER} pb-14 pt-36 sm:pb-16 sm:pt-36 lg:pb-20 lg:pt-40 4xl:flex 4xl:min-h-svh 4xl:items-center 4xl:py-28`}>
         {/* Two soft emerald orbs, well below the content — the only colour in the
             page background. Fixed-size, blurred once, never animated. */}
         <div
@@ -499,7 +504,7 @@ export function PremiumLanding() {
           className="ppms-orb-b pointer-events-none absolute -right-52 top-40 h-[620px] w-[620px] rounded-full bg-teal-100/50 blur-[130px]"
         />
 
-        <div className={`relative grid items-center gap-10 sm:gap-12 lg:grid-cols-[1.05fr_1fr] lg:gap-14 ${SHELL}`}>
+        <div className={`relative grid w-full items-center gap-10 sm:gap-12 lg:grid-cols-[1.05fr_1fr] lg:gap-14 4xl:gap-20 ${SHELL}`}>
           <div>
             <Reveal y={20}>
               <Eyebrow>
@@ -513,7 +518,7 @@ export function PremiumLanding() {
             <Reveal y={34} delay={0.06}>
               {/* "Every hospital." is the widest line and sets the floor: at
                   320px it has to fit 288px of usable width. */}
-              <h1 className="font-display mt-5 text-[clamp(2.1rem,8.6vw,4.25rem)] 2xl:text-[clamp(4.25rem,3.6vw,4.6rem)] font-bold leading-[1.03] tracking-[-0.035em] text-emerald-950 sm:mt-6">
+              <h1 className="font-display mt-5 text-[length:var(--lp-h1)] font-bold leading-[1.03] tracking-[-0.035em] text-emerald-950 sm:mt-6">
                 One doctor.
                 <br />
                 Every hospital.
@@ -525,7 +530,7 @@ export function PremiumLanding() {
             </Reveal>
 
             <Reveal y={24} delay={0.14}>
-              <p className="mt-5 max-w-xl 2xl:max-w-[680px] 4xl:max-w-[760px] text-[clamp(0.98rem,1.7vw,1.06rem)] leading-relaxed text-slate-600 sm:mt-6">
+              <p className="mt-5 max-w-xl 2xl:max-w-[680px] 4xl:max-w-[760px] 5xl:max-w-[880px] 6xl:max-w-[1040px] text-[length:var(--lp-lede-hero)] leading-relaxed text-slate-600 sm:mt-6">
                 Appointments, medical records, prescriptions, surgery and billing across every
                 hospital you practise at, managed from a single secure account, with the patient
                 history following the patient rather than the building.
@@ -617,10 +622,10 @@ export function PremiumLanding() {
         <div className="grid items-center gap-8 sm:gap-10 lg:grid-cols-2 lg:gap-16">
           <Reveal>
             <Eyebrow>The shift</Eyebrow>
-            <h2 className="font-display mt-5 text-[clamp(1.6rem,5.4vw,3rem)] 2xl:text-[clamp(3rem,2.6vw,3.9rem)] font-bold leading-[1.07] tracking-[-0.03em] text-balance text-emerald-950 sm:mt-6">
+            <h2 className="font-display mt-5 text-[length:var(--lp-h2-split)] font-bold leading-[1.07] tracking-[-0.03em] text-balance text-emerald-950 sm:mt-6">
               Most practices still run on paper, phone calls and three unconnected systems.
             </h2>
-            <p className="mt-6 text-[16.5px] leading-relaxed text-slate-600">
+            <p className="mt-6 text-[length:var(--lp-lede)] leading-relaxed text-slate-600">
               A doctor working across three hospitals typically holds three logins, three schedules
               and three fragments of the same patient&apos;s history. Nothing is wrong with any one
               of them, the problem is that none of them can see the others.
@@ -1143,9 +1148,10 @@ export function PremiumLanding() {
         />
 
         <RevealGroup
-          // Twelve tiles, because twelve divides evenly by 2, 3, 4 and 6 --
-          // every breakpoint below lands on a full last row. auto-fit was
-          // giving a ragged 5+4 at 1920.
+          // Eleven tiles since the IPD module was removed, so 4 columns
+          // (4+4+3) is the least ragged arrangement available. A fifth column
+          // at 2560 would strand a single tile on its own row, which is why
+          // this stops at 4 rather than widening with the container.
           className="mt-8 grid gap-3 sm:mt-10 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4"
           stagger={0.04}
         >
@@ -1217,7 +1223,7 @@ export function PremiumLanding() {
         {/* Three-up from md — stacking full-width plan cards on a 768px tablet
             wastes the width and pushes the comparison off-screen. */}
         <RevealGroup
-          className="mt-8 grid items-stretch gap-4 sm:mt-10 md:grid-cols-3 2xl:mx-auto 2xl:max-w-[1500px]"
+          className="mt-8 grid items-stretch gap-4 sm:mt-10 md:grid-cols-3 2xl:mx-auto 2xl:max-w-[1500px] 5xl:max-w-[1880px] 6xl:max-w-[2400px]"
           stagger={0.08}
         >
           {PLANS.map((p) => (
@@ -1352,7 +1358,7 @@ export function PremiumLanding() {
           {/* Left — value prop */}
           <Reveal className="lg:sticky lg:top-28">
             <Eyebrow>Free Demo</Eyebrow>
-            <h2 className="font-display mt-5 text-[clamp(1.6rem,5.4vw,3rem)] 2xl:text-[clamp(3rem,2.6vw,3.9rem)] font-bold leading-[1.07] tracking-[-0.03em] text-balance text-emerald-950 sm:mt-6">
+            <h2 className="font-display mt-5 text-[length:var(--lp-h2-split)] font-bold leading-[1.07] tracking-[-0.03em] text-balance text-emerald-950 sm:mt-6">
               See How RF Health Can Transform Your Practice
             </h2>
             <p className="mt-5 text-[16px] leading-relaxed text-slate-600">

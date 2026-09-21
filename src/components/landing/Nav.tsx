@@ -51,11 +51,12 @@ export function Nav() {
             // nav items stay grouped rather than spreading across the screen.
             "pointer-events-auto flex w-full max-w-5xl items-center gap-1.5 rounded-full sm:gap-2 xl:max-w-6xl",
             "2xl:max-w-[min(94vw,1500px)] 3xl:max-w-[min(94vw,1800px)] 4xl:max-w-[min(94vw,2200px)]",
+            "5xl:max-w-[min(92vw,2800px)] 6xl:max-w-[min(88vw,3360px)]",
             "border border-emerald-950/[0.06] bg-white/75 backdrop-blur-xl",
             "transition-[padding,box-shadow] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]",
             lifted
               ? "px-2.5 py-2 shadow-[0_10px_40px_-12px_rgba(6,60,45,0.22)] sm:px-3"
-              : "px-3 py-2 shadow-[0_2px_18px_-8px_rgba(6,60,45,0.12)] sm:px-4 sm:py-2.5",
+              : "px-3 py-2 shadow-[0_2px_18px_-8px_rgba(6,60,45,0.12)] sm:px-4 sm:py-2.5 5xl:px-6 5xl:py-3.5 6xl:px-8 6xl:py-4",
             "relative overflow-hidden",
           ].join(" ")}
         >
@@ -81,14 +82,14 @@ export function Nav() {
               width={30}
               height={30}
               priority
-              className="h-[30px] w-[30px] rounded-lg object-cover ring-1 ring-emerald-950/[0.08]"
+              className="h-[30px] w-[30px] 5xl:h-[38px] 5xl:w-[38px] 6xl:h-[44px] 6xl:w-[44px] rounded-lg 6xl:rounded-xl object-cover ring-1 ring-emerald-950/[0.08]"
             />
             <span className="font-display text-[15px] font-bold tracking-tight text-emerald-950">
               RF Health
             </span>
           </a>
 
-          <div className="mx-auto hidden items-center gap-1 lg:flex">
+          <div className="mx-auto hidden items-center gap-1 5xl:gap-2 6xl:gap-3 lg:flex">
             {LINKS.map((l) => (
               <a
                 key={l.href}
