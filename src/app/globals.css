@@ -420,7 +420,7 @@ body {
    what made the whole thing read as a column of half-empty stripes. The
    floor still never drops under the authored py-24. */
 @media (min-width: 1441px) {
-  .lp-section { padding-block: clamp(6rem, 1.6vw + 3.2rem, 8.5rem); }
+  .lp-section { padding-block: clamp(4.5rem, 1.1vw + 2.4rem, 6.75rem); }
 
   /* Two sections deliberately butt against their neighbour rather than
      sitting in the rhythm: the capability marquee reads as a continuation of

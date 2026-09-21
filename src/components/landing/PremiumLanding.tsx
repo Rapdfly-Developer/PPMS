@@ -119,7 +119,7 @@ function Section({
   return (
     <section
       id={id}
-      className={`lp-section scroll-mt-24 sm:scroll-mt-28 ${GUTTER} py-14 sm:py-16 md:py-20 lg:py-24 ${className}`}
+      className={`lp-section scroll-mt-24 sm:scroll-mt-28 ${GUTTER} py-12 sm:py-14 md:py-16 lg:py-[72px] ${className}`}
     >
       <div className={SHELL}>{children}</div>
     </section>
