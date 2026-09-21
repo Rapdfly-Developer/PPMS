@@ -21,6 +21,7 @@ import {
   Phone,
   Pill,
   ReceiptIndianRupee,
+  Puzzle,
   ScanLine,
   ShieldCheck,
   Stethoscope,
@@ -604,7 +605,7 @@ export function PremiumLanding() {
       </section>
 
       {/* ── Trusted by hospitals ─────────────────────────────────────────── */}
-      <Section className="pt-8 md:pt-10 lg:pt-12">
+      <Section className="lp-tight-top pt-8 md:pt-10 lg:pt-12">
         <Reveal>
           <p className="text-center text-[13px] font-medium uppercase tracking-[0.18em] text-slate-400">
             Trusted by hospitals, clinics and independent practitioners
@@ -1148,11 +1149,12 @@ export function PremiumLanding() {
         />
 
         <RevealGroup
-          // Eleven tiles since the IPD module was removed, so 4 columns
-          // (4+4+3) is the least ragged arrangement available. A fifth column
-          // at 2560 would strand a single tile on its own row, which is why
-          // this stops at 4 rather than widening with the container.
-          className="mt-8 grid gap-3 sm:mt-10 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4"
+          // Twelve tiles, which is the reason the count matters: 12 divides
+          // evenly by 2, 3, 4 and 6, so every breakpoint below lands on a full
+          // last row. The 6-column step exists because at 2560 and above the
+          // container is wide enough that four columns give 900px tiles
+          // holding fifteen words -- a stretched card, not a dense one.
+          className="mt-8 grid gap-3 sm:mt-10 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 5xl:grid-cols-6"
           stagger={0.04}
         >
           {[
@@ -1167,6 +1169,7 @@ export function PremiumLanding() {
             { icon: <ShieldCheck size={18} strokeWidth={1.25} />, title: "Users and roles", body: "Staff accounts with role-based permissions, set per hospital and editable in Role Manager." },
             { icon: <Mail size={18} strokeWidth={1.25} />, title: "Notifications", body: "In-app alerts for the things that need answering, kept in one place rather than in email." },
             { icon: <ScanLine size={18} strokeWidth={1.25} />, title: "Document capture", body: "Scanned reports attached to the patient, with the text extracted so the record stays searchable." },
+            { icon: <Puzzle size={18} strokeWidth={1.25} />, title: "Plugins", body: "Optional modules, the Clinical Copilot among them, installed per doctor and off until you turn them on." },
           ].map((m) => (
             <RevealItem key={m.title}>
               <div className="group/inc h-full rounded-[1.5rem] bg-white p-2 ring-1 ring-inset ring-emerald-950/[0.07] transition-[transform,box-shadow] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:-translate-y-1 hover:shadow-[0_24px_50px_-38px_rgba(6,60,45,0.5)]">
@@ -1414,7 +1417,7 @@ export function PremiumLanding() {
       </Section>
 
       {/* ── CTA ──────────────────────────────────────────────────────────── */}
-      <Section id="cta" className="pb-16 md:pb-20 lg:pb-24">
+      <Section id="cta" className="lp-tight-bottom pb-16 md:pb-20 lg:pb-24">
         <Reveal>
           <div className="relative overflow-hidden rounded-[2.5rem] bg-emerald-950 p-2 ring-1 ring-inset ring-emerald-950">
             <div

@@ -139,8 +139,8 @@
    at 3840, which is the "laptop site stretched onto a 4K monitor" look. The vw
    term keeps the column tracking the viewport; the rem term still stops a line
    of body copy running the full width of an ultrawide. */
-@media (min-width: 160rem) { .container-fluid { max-width: min(92vw, 175rem); } }
-@media (min-width: 240rem) { .container-fluid { max-width: min(88vw, 210rem); } }
+@media (min-width: 160rem) { .container-fluid { max-width: min(96vw, 210rem); } }
+@media (min-width: 240rem) { .container-fluid { max-width: min(96vw, 240rem); } }
 
 @utility gutter-fluid {
   padding-inline: 1rem;
@@ -148,8 +148,12 @@
 @media (min-width: 40rem)  { .gutter-fluid { padding-inline: 1.5rem; } }
 @media (min-width: 64rem)  { .gutter-fluid { padding-inline: 2rem; } }
 @media (min-width: 96rem)  { .gutter-fluid { padding-inline: 2.5rem; } }
-@media (min-width: 160rem) { .gutter-fluid { padding-inline: 3.5rem; } }
-@media (min-width: 240rem) { .gutter-fluid { padding-inline: 5rem; } }
+/* The gutter stops growing past QHD. Below that it is the only thing holding
+   content off a laptop edge; above it the container's own auto margins already
+   supply the breathing room, so a widening gutter just moved the same dead
+   band inboard. */
+@media (min-width: 160rem) { .gutter-fluid { padding-inline: 2.5rem; } }
+@media (min-width: 240rem) { .gutter-fluid { padding-inline: 3rem; } }
 
 * {
   border-color: var(--color-border);
@@ -408,9 +412,22 @@ body {
 @media (min-width: 3840px) { .ppms-landing { --lp-measure: 78rem; } }
 
 /* Section rhythm. Below 1440px this is inert: the authored Tailwind steps top
-   out at py-24 and the utility only takes over above them. */
+   out at py-24 and the utility only takes over above them.
+
+   The vw coefficient is deliberately shallow. Scaling the band with the
+   viewport as steeply as the type put 176px above and below all fifteen
+   sections at 3840 -- over 5000px of pure padding down the page, which is
+   what made the whole thing read as a column of half-empty stripes. The
+   floor still never drops under the authored py-24. */
 @media (min-width: 1441px) {
-  .lp-section { padding-block: clamp(6rem, 3.6vw + 2.4rem, 11rem); }
+  .lp-section { padding-block: clamp(6rem, 1.6vw + 3.2rem, 8.5rem); }
+
+  /* Two sections deliberately butt against their neighbour rather than
+     sitting in the rhythm: the capability marquee reads as a continuation of
+     the hero, and the closing CTA of the footer. They carry Tailwind pt-/pb-
+     overrides that the unlayered rule above would otherwise outrank. */
+  .lp-tight-top    { padding-top: clamp(2rem, 0.8vw + 1.2rem, 3.5rem); }
+  .lp-tight-bottom { padding-bottom: clamp(4rem, 1.2vw + 2.4rem, 6rem); }
 }
 
 /* ── Ambient motion ────────────────────────────────────────────────────────
