@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect } from "react";
 import {
-  LayoutDashboard, CalendarDays, Users, Eye,
+  LayoutDashboard, CalendarDays, Users,
   Settings, X,
   CalendarClock, BarChart2, Lock,
   LayoutGrid, Puzzle,
@@ -183,20 +183,24 @@ export function Sidebar({
         {/* Brand */}
         <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "20px 20px 24px", paddingTop: "calc(28px + env(safe-area-inset-top, 0px))" }}>
           <div style={{ position: "relative", flexShrink: 0 }}>
-            <div style={{
-              display: "grid", placeItems: "center",
-              width: 40, height: 40, borderRadius: 14,
-              background: "linear-gradient(140deg, #22A79A 0%, #157A73 55%, #0D4A46 100%)",
-              boxShadow: "0 1px 0 rgba(255,255,255,0.25) inset, 0 12px 24px -10px rgba(0,0,0,0.7)",
-              outline: "1px solid rgba(255,255,255,0.2)",
-            }}>
-              <Eye size={19} color="white" strokeWidth={2.1} />
-            </div>
+            {/* The mark ships on its own light ground, so objectFit:cover plus a
+                hairline outline keeps it reading as a badge against the dark rail
+                rather than a pale rectangle pasted on. */}
+            <img
+              src="/landing/logo-rf-health.webp"
+              alt=""
+              style={{
+                display: "block",
+                width: 40, height: 40, borderRadius: 14, objectFit: "cover",
+                boxShadow: "0 1px 0 rgba(255,255,255,0.25) inset, 0 12px 24px -10px rgba(0,0,0,0.7)",
+                outline: "1px solid rgba(255,255,255,0.2)",
+              }}
+            />
             <span style={{ position: "absolute", bottom: -1, right: -1, width: 10, height: 10, borderRadius: "50%", background: "#34D399", outline: "2.5px solid #0B3A36" }} />
           </div>
           <div style={{ minWidth: 0, flex: 1 }}>
             <p style={{ fontSize: 15, fontWeight: 700, lineHeight: 1, letterSpacing: "0.02em", color: "#F4FCFA", margin: 0 }}>
-              PPMS<span style={{ color: "#5EEAD4" }}>.</span>
+              RF Health<span style={{ color: "#5EEAD4" }}>.</span>
             </p>
             <p style={{ marginTop: 6, fontSize: 9.5, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.22em", color: "#6FA39C", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {ROLE_LABEL[role] ?? role}
