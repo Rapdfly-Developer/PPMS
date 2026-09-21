@@ -7,13 +7,12 @@ import { ArrowUpRight } from "lucide-react";
 import { DURATION, EASE } from "./motion";
 
 const LINKS = [
-  { label: "Platform", href: "#platform" },
-  { label: "Records", href: "#emr" },
-  { label: "Clinical AI", href: "#copilot" },
-  { label: "Hospitals", href: "#hospitals" },
-  { label: "Analytics", href: "#analytics" },
-  { label: "Pricing", href: "#pricing" },
-  { label: "FAQ", href: "#faq" },
+  { label: "Product", href: "#platform" },
+  { label: "Solutions", href: "#workflow" },
+  { label: "AI", href: "#ai" },
+  { label: "Features", href: "#modules" },
+  { label: "Security", href: "#security" },
+  { label: "About", href: "#contact" },
 ];
 
 /**
@@ -108,13 +107,13 @@ export function Nav() {
               href="/login"
               className="hidden rounded-full px-4 py-2 text-[13.5px] font-medium text-slate-600 transition-colors duration-300 hover:text-emerald-800 sm:block"
             >
-              Sign in
+              Login
             </a>
             <a
-              href="/login"
+              href="#contact"
               className="group flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-emerald-950 py-1.5 pl-3.5 pr-1.5 text-[13px] font-semibold text-white transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.97] sm:gap-2 sm:pl-4 sm:text-[13.5px]"
             >
-              Free trial
+              Book a Free Demo
               <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white/12 transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:translate-x-[2px] group-hover:-translate-y-[1px] group-hover:scale-105">
                 <ArrowUpRight size={14} strokeWidth={1.5} aria-hidden="true" />
               </span>
