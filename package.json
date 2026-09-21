@@ -7,6 +7,7 @@
     "build": "sh -c '[ -n \"$DATABASE_URL\" ] && prisma migrate deploy || true' && prisma generate && next build",
     "start": "next start",
     "lint": "eslint",
+    "test": "tsx src/lib/__tests__/plugin-token.test.ts && tsx src/app/api/v1/__tests__/external-gateway.test.ts && tsx src/plugin-framework/gateway/__tests__/clinical-dto.test.ts",
     "seed": "tsx prisma/seed.ts",
     "reminders": "tsx scripts/send-reminders.ts",
     "postinstall": "prisma generate"

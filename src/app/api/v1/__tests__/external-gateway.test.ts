@@ -161,13 +161,16 @@ test("Expired token: EXPIRED failure", () => {
   }
 });
 
-test("Replayed token: REPLAYED failure on second use", () => {
+test("Same token may be reused within its lifetime (concurrent gateway reads)", () => {
+  // ppms-copilot's fetchContext issues up to five concurrent /api/v1 calls
+  // under one token via Promise.all. Single-use semantics would reject four of
+  // them, so reuse inside the 10-minute window is REQUIRED, not a weakness.
+  // See the rationale block in lib/plugin-token.ts.
   const token = copilotToken();
-  const r1 = verifyPluginToken(`Bearer ${token}`);
-  assert(r1.ok === true, "First use should succeed");
-  const r2 = verifyPluginToken(`Bearer ${token}`);
-  assert(r2.ok === false, "Second use (replay) must fail");
-  if (!r2.ok) assert(r2.reason === "REPLAYED", `Expected REPLAYED, got ${r2.reason}`);
+  for (let i = 0; i < 5; i++) {
+    const r = verifyPluginToken(`Bearer ${token}`);
+    assert(r.ok === true, `Call ${i + 1} of 5 should succeed`);
+  }
 });
 
 test("Missing Authorization header: MISSING", () => {

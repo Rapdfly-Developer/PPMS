@@ -19,6 +19,155 @@
 import { prisma } from "@/lib/prisma";
 import type { GatewayContext } from "../types";
 import { PluginGatewayError } from "../types";
+import {
+  ANTERIOR_SEGMENT_STRUCTURES,
+  POSTERIOR_SEGMENT_OPTIONS,
+  DEFAULT_REFRACTION_METHOD,
+} from "@/lib/constants";
+
+/* Structure keys are derived from the same constants the EMR form renders
+   from, never hardcoded here: when a structure is added to a segment, the
+   "was this filled in" flag has to start counting it on the same deploy, or
+   the gateway quietly reports a half-examined segment as untouched. */
+const AS_KEYS = Object.keys(ANTERIOR_SEGMENT_STRUCTURES);
+const PS_KEYS = Object.keys(POSTERIOR_SEGMENT_OPTIONS);
+
+/* Refraction and visual acuity are stored as JSON in String? columns, so the
+   gateway is the first thing that has ever had to parse them. Malformed or
+   legacy content must degrade to null rather than throw: a single bad row
+   would otherwise take down every plugin read for that patient. */
+function parseJson<T>(raw: string | null | undefined): T | null {
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? (parsed as T) : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Empty string and absent are both "not filled in"; 0 and "0" are not. */
+function filled(v: unknown): boolean {
+  return v !== undefined && v !== null && String(v).trim() !== "";
+}
+
+/**
+ * True when any of `keys` is filled in on either eye.
+ *
+ * The same predicate the EMR form uses for its own hasAnySeg check, so the
+ * flag a plugin sees matches what the doctor sees on screen.
+ */
+function hasAnyFilled(
+  reRaw: string | null | undefined,
+  leRaw: string | null | undefined,
+  keys: string[],
+): boolean {
+  const re = parseJson<Record<string, unknown>>(reRaw) ?? {};
+  const le = parseJson<Record<string, unknown>>(leRaw) ?? {};
+  return keys.some((k) => filled(re[k]) || filled(le[k]));
+}
+
+const REFRACTION_VALUE_KEYS = ["sph", "cyl", "axis", "va", "nearSph", "nearVa"];
+const VA_VALUE_KEYS = [
+  "unaided", "pinhole", "bestCorrected",
+  "nearUnaided", "nearPinhole", "nearBestCorrected",
+];
+
+const str = (v: unknown): string | null =>
+  v === undefined || v === null || String(v).trim() === "" ? null : String(v);
+
+function toRefractionEye(raw: unknown): RefractionEyeDTO | null {
+  if (!raw || typeof raw !== "object") return null;
+  const o = raw as Record<string, unknown>;
+  return {
+    sph: str(o.sph), cyl: str(o.cyl), axis: str(o.axis),
+    va: str(o.va), nearSph: str(o.nearSph), nearVa: str(o.nearVa),
+  };
+}
+
+/** The four rows the flags are derived from. All fields optional/nullable. */
+export type DocumentedSourceRows = {
+  refraction?: { re: string | null; le: string | null; extraCorrections: string | null } | null;
+  visualAcuity?: { testMethod: string | null; re: string | null; le: string | null } | null;
+  anteriorSegment?: { re: string | null; le: string | null } | null;
+  posteriorSegment?: { re: string | null; le: string | null; notes: string | null } | null;
+};
+
+/**
+ * Derive the four "was this sub-tab filled in" booleans.
+ *
+ * Exported so it can be unit-tested without a database, the same posture as
+ * the rest of the gateway's security logic -- and so the tests exercise the
+ * function the gateway actually calls rather than a copy of its rules.
+ */
+export function computeDocumentedFlags(v: DocumentedSourceRows): DocumentedFlagsDTO {
+  return {
+    /* Refraction's own method is EXCLUDED from its emptiness check: it always
+       resolves to a default, so counting it would make every visit that has a
+       refraction row at all report as documented. */
+    refraction:
+      hasAnyFilled(v.refraction?.re, v.refraction?.le, REFRACTION_VALUE_KEYS) ||
+      (parseJson<unknown[]>(v.refraction?.extraCorrections)?.length ?? 0) > 0,
+    visualAcuity:
+      hasAnyFilled(v.visualAcuity?.re, v.visualAcuity?.le, VA_VALUE_KEYS) ||
+      filled(v.visualAcuity?.testMethod),
+    anteriorSegment: hasAnyFilled(v.anteriorSegment?.re, v.anteriorSegment?.le, AS_KEYS),
+    /* Posterior carries free-text notes outside the per-structure JSON; a
+       visit with only notes has still been examined. */
+    posteriorSegment:
+      hasAnyFilled(v.posteriorSegment?.re, v.posteriorSegment?.le, PS_KEYS) ||
+      filled(v.posteriorSegment?.notes),
+  };
+}
+
+export function toRefractionDTO(
+  row: { re: string | null; le: string | null; extraCorrections: string | null } | null | undefined,
+): RefractionDTO | null {
+  if (!row) return null;
+  const re = parseJson<Record<string, unknown>>(row.re);
+  const le = parseJson<Record<string, unknown>>(row.le);
+
+  /* Legacy records wrote the method onto the RE object only, leaving le.method
+     unset (see OphthalmicExamTab's applyMethod). Resolving RE-then-LE-then-
+     default is the same fallback the form displays, so the gateway and the
+     screen never disagree about which method produced these numbers. */
+  const method = str(re?.method) ?? str(le?.method) ?? DEFAULT_REFRACTION_METHOD;
+
+  const extrasRaw = parseJson<unknown>(row.extraCorrections);
+  const extras = Array.isArray(extrasRaw) ? extrasRaw : [];
+
+  return {
+    method,
+    re: toRefractionEye(re),
+    le: toRefractionEye(le),
+    extraCorrections: extras.flatMap((e) => {
+      if (!e || typeof e !== "object") return [];
+      const o = e as Record<string, unknown>;
+      return [{ label: str(o.label), re: toRefractionEye(o.re), le: toRefractionEye(o.le) }];
+    }),
+  };
+}
+
+export function toVisualAcuityDTO(
+  row: { testMethod: string | null; re: string | null; le: string | null } | null | undefined,
+): VisualAcuityDTO | null {
+  if (!row) return null;
+  return {
+    testMethod: str(row.testMethod),
+    re: toVaEye(parseJson<Record<string, unknown>>(row.re)),
+    le: toVaEye(parseJson<Record<string, unknown>>(row.le)),
+  };
+}
+
+function toVaEye(raw: unknown): VisualAcuityEyeDTO | null {
+  if (!raw || typeof raw !== "object") return null;
+  const o = raw as Record<string, unknown>;
+  return {
+    unaided: str(o.unaided), pinhole: str(o.pinhole), bestCorrected: str(o.bestCorrected),
+    nearUnaided: str(o.nearUnaided), nearPinhole: str(o.nearPinhole),
+    nearBestCorrected: str(o.nearBestCorrected),
+  };
+}
 
 // ── DTOs crossing the gateway boundary ────────────────────────────────────
 
@@ -64,6 +213,59 @@ export type InvestigationDTO = {
   notes: string | null;
 };
 
+/** One eye's refraction, flat — mirrors RxFields in OphthalmicExamTab.tsx. */
+export type RefractionEyeDTO = {
+  sph: string | null;
+  cyl: string | null;
+  axis: string | null;
+  va: string | null;
+  nearSph: string | null;
+  nearVa: string | null;
+};
+
+export type RefractionDTO = {
+  /** Resolved across both eyes, with the legacy RE-only fallback applied. */
+  method: string | null;
+  re: RefractionEyeDTO | null;
+  le: RefractionEyeDTO | null;
+  extraCorrections: Array<{
+    label: string | null;
+    re: RefractionEyeDTO | null;
+    le: RefractionEyeDTO | null;
+  }>;
+};
+
+/** One eye's acuity — mirrors the VA card's state shape, NOT the schema note. */
+export type VisualAcuityEyeDTO = {
+  unaided: string | null;
+  pinhole: string | null;
+  bestCorrected: string | null;
+  nearUnaided: string | null;
+  nearPinhole: string | null;
+  nearBestCorrected: string | null;
+};
+
+export type VisualAcuityDTO = {
+  testMethod: string | null;
+  re: VisualAcuityEyeDTO | null;
+  le: VisualAcuityEyeDTO | null;
+};
+
+/**
+ * Deterministic "was this sub-tab filled in at this visit" flags.
+ *
+ * Computed here, server-side, from the stored values — never inferred by a
+ * plugin or an AI from the presence of content. Anterior and posterior expose
+ * ONLY the flag: a plugin is told whether the doctor has examined the segment,
+ * never what they found.
+ */
+export type DocumentedFlagsDTO = {
+  visualAcuity: boolean;
+  refraction: boolean;
+  anteriorSegment: boolean;
+  posteriorSegment: boolean;
+};
+
 export type VisitDTO = {
   visitId: string;
   date: string;
@@ -91,6 +293,9 @@ export type VisitDTO = {
   procedureName: string | null;
   surgeryAdvised: boolean;
   advisedSurgeryName: string | null;
+  refraction: RefractionDTO | null;
+  visualAcuity: VisualAcuityDTO | null;
+  documented: DocumentedFlagsDTO;
 };
 
 export type AppointmentDTO = {
@@ -277,6 +482,23 @@ export async function getVisits(
           medications: true,
         },
       },
+      /* Refraction and visual acuity content, plus the raw JSON behind the
+         four "documented" flags.
+
+         POLICY NOTE, deliberately not buried: this data is gated by the
+         existing visit.history / visit.context scopes rather than a dedicated
+         one, so EVERY plugin already holding those scopes gains access to
+         clinical refraction and acuity values on the deploy that ships this.
+         That is a widening of what existing plugins can read, decided
+         deliberately -- if a narrower scope is ever wanted, it has to be
+         introduced before more plugins are registered, not after. */
+      refraction: { select: { re: true, le: true, extraCorrections: true } },
+      visualAcuity: { select: { testMethod: true, re: true, le: true } },
+      /* Anterior and posterior are selected ONLY to compute the booleans
+         below. Their contents are never placed on the DTO -- a plugin learns
+         that the segment was examined, never what was found. */
+      anteriorSegment: { select: { re: true, le: true } },
+      posteriorSegment: { select: { re: true, le: true, notes: true } },
       diagnoses: {
         select: {
           description: true,
@@ -357,6 +579,9 @@ export async function getVisits(
     })),
     adviseNotes: v.adviseNotes,
     followUpDate: v.followUpDate?.toISOString() ?? null,
+    refraction: toRefractionDTO(v.refraction),
+    visualAcuity: toVisualAcuityDTO(v.visualAcuity),
+    documented: computeDocumentedFlags(v),
     procedureName: v.procedureName,
     surgeryAdvised: v.surgeryAdvised,
     advisedSurgeryName: v.advisedSurgeryName,

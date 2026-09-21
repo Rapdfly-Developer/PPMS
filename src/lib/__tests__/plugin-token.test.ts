@@ -146,13 +146,15 @@ test("tampered payload: ok=false reason=SIGNATURE", () => {
   if (!result.ok) assert(result.reason === "SIGNATURE", `Expected SIGNATURE, got ${result.reason}`);
 });
 
-test("replayed jti: second use returns ok=false reason=REPLAYED", () => {
+test("same token verifies repeatedly within its lifetime", () => {
+  // Reuse is required, not tolerated: ppms-copilot fetches patient, visit,
+  // visits, appointments and timeline concurrently under one token. See the
+  // rationale block in plugin-token.ts for why there is no jti replay store.
   const token = makeToken();
-  const r1 = verifyPluginToken(`Bearer ${token}`);
-  assert(r1.ok === true, "First use should be ok=true");
-  const r2 = verifyPluginToken(`Bearer ${token}`);
-  assert(r2.ok === false, "Second use should be ok=false");
-  if (!r2.ok) assert(r2.reason === "REPLAYED", `Expected REPLAYED, got ${r2.reason}`);
+  for (let i = 0; i < 5; i++) {
+    const r = verifyPluginToken(`Bearer ${token}`);
+    assert(r.ok === true, `Call ${i + 1} of 5 should be ok=true`);
+  }
 });
 
 test("lifetime is capped at 600 seconds", () => {

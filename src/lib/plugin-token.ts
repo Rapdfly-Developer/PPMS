@@ -8,7 +8,7 @@
  * Security properties:
  *   - HMAC-SHA256 signature using PLUGIN_TOKEN_SECRET (server-side only)
  *   - 10-minute maximum lifetime (hard-coded ceiling)
- *   - jti (UUID) replay protection via in-memory store
+ *   - jti (UUID) per token, for correlation in audit logs
  *   - No patient medical data — only identifiers and permissions
  *   - Token never placed in URLs (caller's responsibility)
  */
@@ -65,29 +65,25 @@ export type PluginTokenPayload = {
   exp: number;
 };
 
-// ── jti replay protection ─────────────────────────────────────────────────
-
-// Map<jti, expireAtMs> — cleaned during each check to avoid unbounded growth.
-// In Vercel serverless each instance has its own store; the short (10 min)
-// token lifetime bounds the replay window per instance.
-const replayStore = new Map<string, number>();
-
-function purgeExpired(): void {
-  const now = Date.now();
-  for (const [jti, expireAt] of replayStore) {
-    if (expireAt <= now) replayStore.delete(jti);
-  }
-}
-
-function markSeen(jti: string, expireAtMs: number): void {
-  purgeExpired();
-  replayStore.set(jti, expireAtMs);
-}
-
-function isSeen(jti: string): boolean {
-  purgeExpired();
-  return replayStore.has(jti);
-}
+// ── Why there is no single-use replay protection ──────────────────────────
+//
+// An earlier version of this file carried a jti replay store (markSeen /
+// isSeen) that nothing ever called, and a test asserting a token fails on
+// second use. Both were removed rather than wired up, because single-use
+// tokens are incompatible with how the gateway is actually consumed:
+// ppms-copilot's fetchContext issues up to FIVE concurrent /api/v1 calls
+// (patient, visit, visits, appointments, timeline) under one token via
+// Promise.all. Enforcing single use would have rejected four of those five on
+// the very first generation.
+//
+// What does bound a stolen token: a 600-second hard expiry (MAX_LIFETIME_
+// SECONDS, enforced below), an HMAC signature over a payload that pins
+// doctorId, hospitalId, patientRef, visitId and dataScopes, and delivery only
+// via an origin-targeted postMessage — never a URL, log or referrer.
+//
+// If single-use is ever genuinely wanted, it needs a per-call nonce issued
+// alongside the token, not a jti store — and the Copilot's concurrent fetch
+// has to change at the same time, or it breaks on the first request.
 
 // ── Base64url helpers ─────────────────────────────────────────────────────
 
@@ -157,7 +153,7 @@ export function signPluginToken(opts: SignOptions): string {
 
 export type VerifyResult =
   | { ok: true; payload: PluginTokenPayload }
-  | { ok: false; reason: "MISSING" | "MALFORMED" | "SIGNATURE" | "EXPIRED" | "REPLAYED" };
+  | { ok: false; reason: "MISSING" | "MALFORMED" | "SIGNATURE" | "EXPIRED" };
 
 /**
  * Verify a plugin token from a Bearer Authorization header.
