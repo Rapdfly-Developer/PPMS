@@ -1,17 +1,17 @@
 "use client";
 
 /**
- * Per-tab renderer for the Copilot's exam guidance.
+ * Renderer for the Copilot's exam guidance.
  *
- * Rendered only on the two tabs it concerns — General, where the findings it
- * correlates are documented, and Ophthalmic, where they are acted on. Unlike
- * the differential it is not shown on every tab, because it is directional:
- * on Investigations or Plan it would be pointing backwards.
+ * Mounted on the General tab only. The card is read where the findings it
+ * correlates are documented, and points forward to what to look for once the
+ * doctor reaches Ophthalmic — it is not repeated there, which would restate
+ * on arrival what was already read on departure.
  *
- * Both instances read and write one shared store, so generating from General
- * and then switching to Ophthalmic shows the same result rather than an
- * untouched Generate button — and a reply that arrives while the card is
- * unmounted is not lost.
+ * State still lives in the shared store rather than here, because the card
+ * unmounts the moment the doctor leaves General: a reply arriving after that
+ * has to survive, and the generated result has to be waiting when they come
+ * back rather than resetting to an untouched Generate button.
  *
  * Renders nothing when the store has no entry for this visit, which is the
  * case whenever the Copilot is disabled, unlicensed, or not permitted.

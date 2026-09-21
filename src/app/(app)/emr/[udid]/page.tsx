@@ -554,7 +554,6 @@ export default async function PatientDetailedEMR({
                       udid={udid}
                       role={user.role}
                     />
-                    <ExamGuidancePanel visitId={activeVisit.id} />
                     <DifferentialDiagnosisPanel visitId={activeVisit.id} />
                   </div>
                 ),
