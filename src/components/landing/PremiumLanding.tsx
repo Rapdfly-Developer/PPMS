@@ -493,7 +493,12 @@ export function PremiumLanding() {
           content-driven, which is what keeps a 900px-tall laptop from having to
           scroll past a deliberately empty band. svh rather than vh so a mobile
           URL bar can never make it taller than the visible area. */}
-      <section className={`relative overflow-hidden ${GUTTER} pb-14 pt-36 sm:pb-16 sm:pt-36 lg:pb-20 lg:pt-40 4xl:flex 4xl:min-h-svh 4xl:items-center 4xl:py-28`}>
+      {/* The hero is content-driven at every width. It briefly carried
+          4xl:min-h-svh so it would claim the whole first screen, but on a
+          2160px-tall display that forced 837px of empty band around 1323px of
+          content, which is the opposite of filling the screen. Letting the
+          next section peek in also tells the reader there is more. */}
+      <section className={`relative overflow-hidden ${GUTTER} pb-12 pt-28 sm:pb-14 sm:pt-32 lg:pb-16 lg:pt-32 4xl:pb-20 4xl:pt-36`}>
         {/* Two soft emerald orbs, well below the content — the only colour in the
             page background. Fixed-size, blurred once, never animated. */}
         <div
@@ -577,14 +582,14 @@ export function PremiumLanding() {
             <Frame
               src={`${IMG}/hero-clinician-tablet-dashboard.jpg`}
               alt="A clinician in gloves reviewing a RF Health patient dashboard on a tablet in a hospital corridor"
-              // Portrait through desktop, then relaxed. Held at 3/4 the plate
-              // reaches 1137px tall at 1920 and 1395px at 2560, taller than the
-              // screen in the first case: the text column beside it is ~524px,
-              // and items-center then centres the copy against that height,
-              // which is where the gap above the headline comes from. The frame
-              // crops with object-cover, so this trims the photo rather than
-              // distorting it.
-              aspect="aspect-[3/4] 4xl:aspect-[1/1] 5xl:aspect-[5/4]"
+              // Portrait on mobile, where the plate is full width and tall is
+              // correct. From lg it relaxes, because that is where the copy
+              // sits beside it: held at 3/4 the plate ran 765px against a
+              // 528px text column, and items-center split the 236px difference
+              // above and below the headline. Squaring it at lg brings the two
+              // columns within ~50px of each other. The frame crops with
+              // object-cover, so this trims the photo rather than distorting it.
+              aspect="aspect-[3/4] lg:aspect-[1/1] 4xl:aspect-[5/4] 5xl:aspect-[4/3]"
               sizes="(max-width: 1024px) 92vw, 46vw"
               priority
               quality={85}
@@ -664,7 +669,7 @@ export function PremiumLanding() {
               <Frame
                 src={`${IMG}/ai-modernizing-healthcare-poster.jpg`}
                 alt="Illustration contrasting outdated manual healthcare paperwork with a modern intelligent patient-insights interface"
-                aspect="aspect-[3/4]"
+                aspect="aspect-[3/4] lg:aspect-[1/1] 4xl:aspect-[5/4]"
                 sizes="(max-width: 1024px) 92vw, 46vw"
                 quality={84}
               />
@@ -829,7 +834,7 @@ export function PremiumLanding() {
               <Frame
                 src={`${IMG}/emr-records-tablet.jpg`}
                 alt="A doctor reviewing a list of electronic medical records on a tablet"
-                aspect="aspect-[4/5]"
+                aspect="aspect-[4/5] lg:aspect-[1/1] 4xl:aspect-[5/4]"
                 sizes="(max-width: 1024px) 92vw, 46vw"
                 quality={82}
                 radius="2.25rem"
