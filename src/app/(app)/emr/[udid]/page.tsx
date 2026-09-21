@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { VisitTimeline } from "./VisitTimeline";
 import { DifferentialDiagnosisPanel } from "./DifferentialDiagnosisPanel";
+import { ExamGuidancePanel } from "./ExamGuidancePanel";
 import { PatientPhoto } from "./PatientPhoto";
 import { convertNotesToCC, parseEMRComplaints } from "@/lib/appointment-cc";
 import { GeneralExamTab } from "./GeneralExamTab";
@@ -512,6 +513,7 @@ export default async function PatientDetailedEMR({
                       readOnly={readOnly}
                       customPmhChips={customPmhChips.length > 0 ? customPmhChips : undefined}
                     />
+                    <ExamGuidancePanel visitId={activeVisit.id} />
                     <DifferentialDiagnosisPanel visitId={activeVisit.id} />
                   </div>
                 ),
@@ -552,6 +554,7 @@ export default async function PatientDetailedEMR({
                       udid={udid}
                       role={user.role}
                     />
+                    <ExamGuidancePanel visitId={activeVisit.id} />
                     <DifferentialDiagnosisPanel visitId={activeVisit.id} />
                   </div>
                 ),
