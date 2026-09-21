@@ -420,14 +420,22 @@ body {
    what made the whole thing read as a column of half-empty stripes. The
    floor still never drops under the authored py-24. */
 @media (min-width: 1441px) {
-  .lp-section { padding-block: clamp(4.5rem, 1.1vw + 2.4rem, 6.75rem); }
+  .lp-section { padding-block: clamp(3.25rem, 0.75vw + 2.1rem, 4.5rem); }
+
+  /* The hero is not an .lp-section, so it needs its own step or it keeps the
+     lg padding while everything below it tightens. Its top still clears the
+     fixed nav pill, which is about 64px tall plus its offset. */
+  .lp-hero {
+    padding-top: clamp(6.5rem, 1vw + 5.4rem, 8.5rem);
+    padding-bottom: clamp(2.5rem, 0.7vw + 1.6rem, 4rem);
+  }
 
   /* Two sections deliberately butt against their neighbour rather than
      sitting in the rhythm: the capability marquee reads as a continuation of
      the hero, and the closing CTA of the footer. They carry Tailwind pt-/pb-
      overrides that the unlayered rule above would otherwise outrank. */
-  .lp-tight-top    { padding-top: clamp(2rem, 0.8vw + 1.2rem, 3.5rem); }
-  .lp-tight-bottom { padding-bottom: clamp(4rem, 1.2vw + 2.4rem, 6rem); }
+  .lp-tight-top    { padding-top: clamp(1.5rem, 0.5vw + 1rem, 2.5rem); }
+  .lp-tight-bottom { padding-bottom: clamp(3rem, 0.8vw + 2rem, 4.5rem); }
 }
 
 /* ── Ambient motion ────────────────────────────────────────────────────────

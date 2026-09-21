@@ -498,7 +498,7 @@ export function PremiumLanding() {
           2160px-tall display that forced 837px of empty band around 1323px of
           content, which is the opposite of filling the screen. Letting the
           next section peek in also tells the reader there is more. */}
-      <section className={`relative overflow-hidden ${GUTTER} pb-12 pt-28 sm:pb-14 sm:pt-32 lg:pb-16 lg:pt-32 4xl:pb-20 4xl:pt-36`}>
+      <section className={`lp-hero relative overflow-hidden ${GUTTER} pb-12 pt-28 sm:pb-14 sm:pt-32 lg:pb-16 lg:pt-32`}>
         {/* Two soft emerald orbs, well below the content — the only colour in the
             page background. Fixed-size, blurred once, never animated. */}
         <div
