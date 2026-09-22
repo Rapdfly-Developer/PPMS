@@ -7,7 +7,8 @@ import { decryptAadhaar, maskAadhaar } from "@/lib/crypto";
 import { PatientProfileClient, type SerialVisit, type TodayVisit, type LastVisitSummary } from "./PatientProfileClient";
 import { PatientActionsPanel } from "./PatientHistoryButtons";
 import "@/plugins";
-import { PatientProfileCopilotPanel } from "../../emr/[udid]/CopilotClinicalPanels";
+import { ExternalPluginSlot } from "../../emr/[udid]/ExternalPluginSlot";
+import { getAllRegisteredPlugins } from "@/plugin-framework/registry";
 
 const CATEGORY_STYLES: Record<string, string> = {
   GENERAL:    "bg-white/20 text-white border border-white/30",
@@ -341,9 +342,40 @@ export default async function PatientProfilePage({
 
         {/* Right column — visit buttons, summary, history */}
         <div className="min-w-0">
+          {/* AI patient profile.
+
+              Rendered through ExternalPluginSlot rather than by mounting the
+              panel directly: the panel only READS the shared card store, and
+              the thing that FILLS it is the Copilot iframe that the slot
+              mounts. Rendering the panel on its own left it reading a store
+              nothing on this page ever wrote to, so it returned null and the
+              feature was invisible here.
+
+              profileMode makes the slot wrap its bridge in
+              PatientProfileCopilotHost, which shows the card plus an
+              Open/Hide AI Clinical Copilot toggle and keeps the iframe
+              mounted-but-clipped while closed.
+
+              Still gated on an open visit for this patient: the slot signs a
+              plugin token against a specific visitId and the server rejects
+              one that is not this patient's, so there is nothing to scope a
+              token to without a visit. The five authorisation checks inside
+              the slot are unchanged and still decide whether anything renders
+              at all. */}
           {todayVisitRecord && todayVisitRecord.status !== "CLOSED" && (
             <div className="mb-4">
-              <PatientProfileCopilotPanel visitId={todayVisitRecord.id} />
+              {getAllRegisteredPlugins()
+                .filter((p) => p.manifest.externalOrigin)
+                .map((p) => (
+                  <ExternalPluginSlot
+                    key={p.manifest.pluginId}
+                    pluginId={p.manifest.pluginId}
+                    triggerPermission={p.manifest.ui?.emrPanel?.triggerPermission ?? ""}
+                    patientUdid={udid}
+                    visitId={todayVisitRecord.id}
+                    profileMode
+                  />
+                ))}
             </div>
           )}
           <PatientProfileClient
