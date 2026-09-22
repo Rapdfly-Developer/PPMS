@@ -9,7 +9,7 @@ import {
   BarChart3, Cloud, Shield, CheckCircle2, AlertTriangle,
   XCircle, Key, ArrowLeft, Loader2, Eye, EyeOff,
   Phone, Mail, Lock, Star, Zap, Stethoscope, HeartPulse,
-  Pill, AlertCircle, RotateCcw,
+  Pill, AlertCircle, RotateCcw, ShieldCheck,
 } from "lucide-react";
 import { startTrial, activateLicenseKey, sendVerificationCode } from "./actions";
 import type { LicensePageData } from "./getLicenseData";
@@ -243,109 +243,135 @@ function Field({
   );
 }
 
-/* ── Left panel ────────────────────────────────────────────────────────────── */
+/* ── Left panel — mirrors login page exactly ───────────────────────────────── */
+const panelW: React.CSSProperties = { width: "100%", maxWidth: "var(--left-w)" };
+
+const STATS = [
+  { val: "5,000+", label: "Doctors" },
+  { val: "99.98%", label: "Uptime" },
+  { val: "30-day", label: "Free Trial" },
+];
+
+const TRUST = [
+  { icon: <Shield size={12} />,    label: "HIPAA Ready" },
+  { icon: <Building2 size={12} />, label: "NABH Workflow" },
+  { icon: <FileText size={12} />,  label: "ABDM Compatible" },
+  { icon: <Cloud size={12} />,     label: "Cloud Hosted" },
+  { icon: <Zap size={12} />,       label: "99.98% Uptime" },
+];
+
+const SECURITY_FEATURES = [
+  "DPDP & ABDM",
+  "Multi-Hospital Access",
+  "Cloud Hosted",
+  "256-bit Encryption",
+];
+
 function LeftPanel() {
   return (
-    <div className="hidden lg:flex lg:w-[45%] flex-col justify-between px-9 xl:px-14 py-8 xl:py-10 shrink-0 relative overflow-hidden">
-      <div className="lg-a0 shrink-0">
-        <Link href="/" aria-label="RF Health home"
-          className="lg-brand flex items-center gap-3.5 rounded-xl w-fit">
-          {/* cover, not contain: the mark carries its own marble ground, so
-              letterboxing would frame the ground instead of the shield. The
-              radius and hairline border make it read as a deliberate badge. */}
-          <img src="/landing/logo-rf-health.webp" alt="RF Health" className="shrink-0"
-            style={{
-              width: "48px", height: "48px", objectFit: "cover",
-              borderRadius: "11px", border: `1px solid ${T.border}`,
-            }} />
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-[25px] font-black" style={{ color: T.text, letterSpacing: "-0.035em" }}>RF Health</span>
-              <span className="text-[9.5px] font-bold px-2 py-0.5 rounded-full"
-                style={{ background: "rgba(13,122,99,.11)", color: T.accent, border: "1px solid rgba(13,122,99,.24)", letterSpacing: "0.04em" }}>
-                v2.0 Cloud
-              </span>
-            </div>
-            <p className="text-[9.5px] font-semibold" style={{ color: T.faint, letterSpacing: "0.06em" }}>
-              PRIVATE PATIENT MANAGEMENT SYSTEM
-            </p>
-          </div>
-        </Link>
-      </div>
+    <div className="hidden lg:flex lg:w-[56%] flex-col justify-center shrink-0 relative overflow-hidden"
+      style={{ paddingLeft: "var(--pad-panel)", paddingRight: "var(--pad-panel)", paddingTop: "clamp(32px,3vw,72px)", paddingBottom: "clamp(32px,3vw,72px)" }}>
 
-      <div className="flex-1 flex flex-col justify-center py-7">
-        <div className="lg-a1 mb-4">
-          <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full" style={{
-            background: "rgba(13,122,99,.08)", backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)",
-            border: "1px solid rgba(13,122,99,.2)", boxShadow: "0 0 22px rgba(13,122,99,.11)",
-          }}>
-            <span className="lg-dot" style={{ width: 6, height: 6, borderRadius: "50%", background: T.accent }} />
-            <span style={{ fontSize: "10px", fontWeight: 800, letterSpacing: "0.14em", color: T.accent }}>
-              ENTERPRISE HEALTHCARE PLATFORM
-            </span>
-          </span>
-        </div>
+      <div className="w-full flex flex-col justify-between"
+        style={{ height: "100%", maxHeight: "clamp(560px, 84vh, 1040px)" }}>
 
-        <h1 className="lg-a1 font-black leading-[1.06] mb-3.5"
-          style={{ fontSize: "clamp(29px,2.55vw,42px)", color: T.text, letterSpacing: "-0.032em" }}>
-          Better <span className="lg-grad-text">Healthcare.</span>
-          <br />Better Management.
-        </h1>
-
-        <p className="lg-a2 leading-relaxed mb-6" style={{ fontSize: "14px", color: T.muted, maxWidth: "430px" }}>
-          A comprehensive solution to manage patients, doctors, appointments, billing, and much more, all in one place.
-        </p>
-
-        <div className="lg-a3 grid grid-cols-2 gap-2 mb-7" style={{ maxWidth: "430px" }}>
-          {FEATURES.map(({ icon: Icon, label }) => (
-            <div key={label} className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 transition-all" style={{
-              background: "rgba(13,122,99,.06)", border: "1px solid rgba(13,122,99,.13)",
-              boxShadow: "inset 0 1px 0 rgba(15,41,38,.03)",
-            }}
-            onMouseEnter={e => { e.currentTarget.style.background = "rgba(13,122,99,.11)"; e.currentTarget.style.borderColor = "rgba(13,122,99,.26)"; }}
-            onMouseLeave={e => { e.currentTarget.style.background = "rgba(13,122,99,.06)"; e.currentTarget.style.borderColor = "rgba(13,122,99,.13)"; }}>
-              <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{
-                background: "linear-gradient(135deg,rgba(13,122,99,.2),rgba(5,150,105,.12))",
-                border: "1px solid rgba(13,122,99,.25)",
-                boxShadow: "0 0 12px rgba(13,122,99,.13)",
-              }}>
-                <Icon size={13} style={{ color: T.accent }} />
-              </div>
-              <span style={{ fontSize: "11.5px", fontWeight: 600, color: T.muted, lineHeight: 1.3 }}>{label}</span>
-            </div>
-          ))}
-        </div>
-
-        <div className="lg-a3 grid grid-cols-3 gap-2 mb-8" style={{ maxWidth: "430px" }}>
-          {[
-            { val: "5,000+", label: "Doctors" },
-            { val: "99.98%", label: "Uptime" },
-            { val: "30-day", label: "Free Trial" },
-          ].map(({ val, label }) => (
-            <div key={label} className="text-center rounded-xl py-3 px-2" style={{
-              background: "rgba(13,122,99,.07)", border: "1px solid rgba(13,122,99,.13)",
+        <div className="flex-1 flex flex-col justify-center py-7 min-w-0">
+          <div className="lg-a1 mb-4">
+            <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full" style={{
+              background: "rgba(13,122,99,.08)",
+              border: "1px solid rgba(13,122,99,.2)",
+              boxShadow: "0 2px 12px rgba(15,41,38,.05)",
             }}>
-              <div style={{ fontSize: "15px", fontWeight: 800, color: T.accent, letterSpacing: "-0.02em" }}>{val}</div>
-              <div style={{ fontSize: "10px", fontWeight: 500, color: T.faint, marginTop: "2px" }}>{label}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="lg-a4 shrink-0">
-        <div className="mb-3.5" style={{ height: "1px", background: "linear-gradient(90deg,rgba(13,122,99,.26),rgba(13,122,99,.07) 70%,transparent)" }} />
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
-          {[
-            { icon: <Shield size={12} />,   label: "HIPAA Ready" },
-            { icon: <Building2 size={12} />, label: "NABH Workflow" },
-            { icon: <FileText size={12} />,  label: "ABDM Compatible" },
-            { icon: <Cloud size={12} />,     label: "Cloud Hosted" },
-            { icon: <Zap size={12} />,       label: "99.98% Uptime" },
-          ].map((t, i) => (
-            <span key={i} className="flex items-center gap-1.5" style={{ fontSize: "10.5px", fontWeight: 500, color: T.faint }}>
-              <span style={{ color: T.accent }}>{t.icon}</span> {t.label}
+              <span className="lg-dot" style={{ width: 6, height: 6, borderRadius: "50%", background: T.accent }} />
+              <span style={{ fontSize: "var(--fs-xs)", fontWeight: 800, letterSpacing: "0.14em", color: T.accent }}>
+                ENTERPRISE HEALTHCARE PLATFORM
+              </span>
             </span>
-          ))}
+          </div>
+
+          <h1 className="lg-a1 font-black leading-[1.06] mb-3.5"
+            style={{ fontSize: "var(--fs-h1)", color: T.text, letterSpacing: "-0.032em" }}>
+            Better <span className="lg-grad-text">Healthcare.</span>
+            <br />Better Management.
+          </h1>
+
+          <p className="lg-a2 leading-relaxed mb-6" style={{ ...panelW, fontSize: "var(--fs-body)", color: T.muted }}>
+            A comprehensive solution to manage patients, doctors, appointments, billing, and much more, all in one place.
+          </p>
+
+          <div className="lg-a3 grid mb-7" style={{
+            ...panelW,
+            gap: "var(--gap)",
+            gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))",
+          }}>
+            {FEATURES.map(({ icon: Icon, label }) => (
+              <div key={label} className="lg-feat flex items-center rounded-xl" style={{
+                background: "rgba(13,122,99,.06)",
+                border: "1px solid rgba(13,122,99,.13)",
+                gap: "clamp(8px,.6vw,14px)",
+                padding: "clamp(10px,.8vw,18px) clamp(12px,.9vw,20px)",
+              }}>
+                <div className="rounded-lg flex items-center justify-center shrink-0" style={{
+                  width: "clamp(28px,1.7vw,42px)", height: "clamp(28px,1.7vw,42px)",
+                  background: "linear-gradient(135deg,rgba(13,122,99,.2),rgba(5,150,105,.12))",
+                  border: "1px solid rgba(13,122,99,.25)",
+                }}>
+                  <Icon size={13} style={{ color: T.accent, width: "55%", height: "55%" }} />
+                </div>
+                <span style={{ fontSize: "var(--fs-tile)", fontWeight: 600, color: T.muted, lineHeight: 1.3 }}>{label}</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="lg-a3 grid grid-cols-3" style={{ ...panelW, gap: "var(--gap)" }}>
+            {STATS.map(({ val, label }) => (
+              <div key={label} className="text-center rounded-xl" style={{
+                background: "rgba(13,122,99,.07)", border: "1px solid rgba(13,122,99,.13)",
+                padding: "clamp(12px,1vw,22px) clamp(8px,.6vw,16px)",
+              }}>
+                <div style={{ fontSize: "var(--fs-stat)", fontWeight: 800, color: T.accent, letterSpacing: "-0.02em" }}>{val}</div>
+                <div style={{ fontSize: "var(--fs-xs)", fontWeight: 500, color: T.faint, marginTop: "2px" }}>{label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="lg-a4 shrink-0">
+          <div className="mb-3.5" style={{ height: "1px", background: "linear-gradient(90deg,rgba(13,122,99,.26),rgba(13,122,99,.07) 70%,transparent)" }} />
+
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+            {TRUST.map((t, i) => (
+              <span key={i} className="flex items-center gap-1.5" style={{ fontSize: "var(--fs-xs)", fontWeight: 500, color: T.faint }}>
+                <span style={{ color: T.accent }}>{t.icon}</span> {t.label}
+              </span>
+            ))}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-4">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5"
+              style={{ background: "rgba(255,255,255,.75)", borderRadius: "999px", border: `1px solid ${T.border}` }}>
+              <ShieldCheck size={12} style={{ color: T.accent }} />
+              <span style={{ fontSize: "var(--fs-xs)", fontWeight: 600, letterSpacing: "0.05em", color: T.muted }}>
+                ENTERPRISE SECURE LOGIN
+              </span>
+            </span>
+            {SECURITY_FEATURES.map(f => (
+              <span key={f} className="flex items-center gap-1" style={{ fontSize: "var(--fs-xs)", color: T.muted }}>
+                <CheckCircle2 size={11} style={{ color: T.accent }} /> {f}
+              </span>
+            ))}
+          </div>
+
+          <footer className="mt-4 pt-3.5 flex flex-wrap items-center gap-x-2.5 gap-y-1.5"
+            style={{ borderTop: `1px solid ${T.border}`, fontSize: "var(--fs-xs)", color: T.faint }}>
+            <span>© 2026 RF Health</span>
+            <span aria-hidden="true">·</span>
+            <span>Version 2.0 Cloud</span>
+            <span aria-hidden="true">·</span>
+            <a href="/privacy" className="lg-brand" style={{ color: T.faint }}>Privacy Policy</a>
+            <span aria-hidden="true">·</span>
+            <a href="/terms" className="lg-brand" style={{ color: T.faint }}>Terms of Service</a>
+          </footer>
         </div>
       </div>
     </div>
@@ -591,22 +617,41 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
            previously fixed at 14px and 52px here, which meant the two pages
            agreed at roughly 1280px and diverged everywhere else. */
         .rf-license{
-          --fs-label: clamp(13px, 1vw, 17px);
-          --fs-input: clamp(14px, 1.08vw, 18px);
-          --fs-btn:   clamp(14.5px, 1.12vw, 19px);
-          --fs-xs:    clamp(11px, .85vw, 14px);
-          --fs-sm:    clamp(12px, .92vw, 15.5px);
-          --fs-card-h:clamp(21px, 1.62vw, 32px);
-          --fs-brand: clamp(25px, 1.92vw, 42px);
-          --logo:     clamp(44px, 3.4vw, 72px);
-          --vgap:     clamp(14px, 1.4vw, 24px);
-          --ctl-h:    clamp(46px, 3.5vw, 56px);
+          --pad-panel: clamp(36px, 4vw, 110px);
+          --left-w:    clamp(430px, 180px + 36vw, 980px);
+          --card-w:    clamp(420px, 320px + 11vw, 620px);
+          --card-pad:  clamp(20px, 1.8vw, 44px);
+          --logo:      clamp(44px, 3.4vw, 72px);
+
+          --fs-h1:     clamp(30px, 2.75vw, 64px);
+          --fs-body:   clamp(14px, 1.08vw, 20px);
+          --fs-card-h: clamp(21px, 1.62vw, 32px);
+          --fs-label:  clamp(13px, 1vw, 17px);
+          --fs-input:  clamp(14px, 1.08vw, 18px);
+          --fs-btn:    clamp(14.5px, 1.12vw, 19px);
+          --fs-sm:     clamp(12px, .92vw, 15.5px);
+          --fs-xs:     clamp(11px, .85vw, 14px);
+          --fs-tile:   clamp(11.5px, .88vw, 16px);
+          --fs-stat:   clamp(15px, 1.15vw, 26px);
+          --fs-brand:  clamp(25px, 1.92vw, 42px);
+
+          --vgap:      clamp(10px, calc(20px - (950px - 100vh) * 0.12), 20px);
+          --vgap-sm:   clamp(8px,  calc(16px - (950px - 100vh) * 0.10), 16px);
+          --vpad:      clamp(14px, calc(30px - (950px - 100vh) * 0.18), 30px);
+          --vpanel:    clamp(14px, calc(34px - (950px - 100vh) * 0.25), 34px);
+
+          --ctl-h:     clamp(46px, 3.5vw, 56px);
+          --tab-h:     clamp(38px, 2.9vw, 46px);
+          --gap:       clamp(8px, .6vw, 16px);
+          --gap-lg:    clamp(20px, 1.6vw, 40px);
         }
 
         .lg-icon-btn{transition:background .16s ease,color .16s ease}
         .lg-icon-btn:hover{background:${T.primarySoft};color:${T.accent}}
         .lg-btn{transition:background .16s ease,border-color .16s ease}
         .lg-btn:hover:not(:disabled){background:${T.accent2}!important;border-color:${T.accent2}!important}
+        .lg-feat{transition:background .16s ease,border-color .16s ease}
+        .lg-feat:hover{background:rgba(13,122,99,.11)!important;border-color:rgba(13,122,99,.26)!important}
 
         @keyframes lg-particle { 0%,100%{opacity:.35;transform:scale(1)} 50%{opacity:1;transform:scale(2.2)} }
         @keyframes lg-fadein   { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
@@ -660,15 +705,20 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
         <LeftPanel />
 
         {/* Right panel */}
-        <div className="w-full lg:w-[55%] shrink-0 flex flex-col overflow-y-auto relative"
+        <div className="w-full lg:w-[44%] shrink-0 flex flex-col overflow-y-auto relative"
           style={{
             background: "linear-gradient(200deg,rgba(255,255,255,.72) 0%,rgba(255,255,255,.46) 100%)",
-            backdropFilter: "blur(18px)", WebkitBackdropFilter: "blur(18px)",
             borderLeft: `1px solid ${T.border}`,
           }}>
-          <div className="w-full flex-1 flex flex-col justify-center items-center py-6 px-4 lg:py-8 lg:px-6"
-            style={{ minHeight: "min-content" }}>
-            <div className="w-full" style={{ maxWidth: "480px" }}>
+          <div className="w-full flex-1 flex flex-col justify-center items-center"
+            style={{
+              minHeight: "min-content",
+              paddingLeft: "clamp(16px,2vw,56px)",
+              paddingRight: "clamp(16px,2vw,56px)",
+              paddingBottom: "var(--vpanel)",
+              paddingTop: "max(1.5rem, calc(env(safe-area-inset-top, 0px) + 0.75rem))",
+            }}>
+            <div className="w-full" style={{ maxWidth: "var(--card-w)" }}>
 
               {/* Brand lockup. Was a bare logo and wordmark shown only below
                   lg, so from lg up the card opened with no branding at all and
