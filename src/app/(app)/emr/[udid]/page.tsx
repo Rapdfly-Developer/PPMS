@@ -12,7 +12,7 @@ import { VisitTimeline } from "./VisitTimeline";
 import { DifferentialDiagnosisPanel } from "./DifferentialDiagnosisPanel";
 import { ExamGuidancePanel } from "./ExamGuidancePanel";
 import { PlanGuidancePanel } from "./PlanGuidancePanel";
-import { AssessmentCopilotPanel, InvestigationCopilotPanel, PatientProfileCopilotPanel } from "./CopilotClinicalPanels";
+import { AssessmentCopilotPanel, InvestigationCopilotPanel } from "./CopilotClinicalPanels";
 import { PatientPhoto } from "./PatientPhoto";
 import { convertNotesToCC, parseEMRComplaints } from "@/lib/appointment-cc";
 import { GeneralExamTab } from "./GeneralExamTab";
@@ -464,7 +464,6 @@ export default async function PatientDetailedEMR({
         </Card>
       ) : (
         <div>
-          {activeVisit.status !== "CLOSED" && <div className="mb-4"><PatientProfileCopilotPanel visitId={activeVisit.id} /></div>}
           <EmrTabsShell
             visit={activeVisit}
             udid={udid}

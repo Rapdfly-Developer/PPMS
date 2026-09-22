@@ -7,7 +7,7 @@ import { decryptAadhaar, maskAadhaar } from "@/lib/crypto";
 import { PatientProfileClient, type SerialVisit, type TodayVisit, type LastVisitSummary } from "./PatientProfileClient";
 import { PatientActionsPanel } from "./PatientHistoryButtons";
 import "@/plugins";
-
+import { PatientProfileCopilotPanel } from "../../emr/[udid]/CopilotClinicalPanels";
 
 const CATEGORY_STYLES: Record<string, string> = {
   GENERAL:    "bg-white/20 text-white border border-white/30",
@@ -341,7 +341,11 @@ export default async function PatientProfilePage({
 
         {/* Right column — visit buttons, summary, history */}
         <div className="min-w-0">
-
+          {todayVisitRecord && todayVisitRecord.status !== "CLOSED" && (
+            <div className="mb-4">
+              <PatientProfileCopilotPanel visitId={todayVisitRecord.id} />
+            </div>
+          )}
           <PatientProfileClient
             udid={udid}
             visits={serialVisits}
