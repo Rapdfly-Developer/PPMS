@@ -564,6 +564,7 @@ export function PatientActionsPanel({
   firstVisitDate,
   lastVisitDate,
   noShowCount,
+  layout = "row",
 }: {
   patientId: string;
   patientName: string;
@@ -572,12 +573,13 @@ export function PatientActionsPanel({
   firstVisitDate?: string | null;
   lastVisitDate?: string | null;
   noShowCount: number;
+  layout?: "row" | "column";
 }) {
   const [showActions, setShowActions] = useState(true);
   return (
     <>
       {/* Total Visits card — hamburger icon is the toggle */}
-      <div className="rounded-xl border border-[var(--color-border)] bg-white p-5 mb-4">
+      <div className="rounded-xl border border-[var(--color-border)] bg-white p-5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button
@@ -628,7 +630,7 @@ export function PatientActionsPanel({
 
       {/* Action buttons — toggled by the hamburger icon above */}
       {showActions && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
+        <div className={`grid gap-2 ${layout === "column" ? "grid-cols-2" : "grid-cols-2 sm:grid-cols-4"}`}>
           <TimeStampButton patientId={patientId} patientName={patientName} />
           <InvestigationsButton patientId={patientId} udid={udid} />
           <TreatmentHistoryButton patientId={patientId} />

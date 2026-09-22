@@ -236,14 +236,14 @@ export default async function PatientProfilePage({
   ].filter(Boolean) as { icon: React.ReactNode; label: string }[];
 
   return (
-    <div className="fade-in pb-12 max-w-2xl mx-auto">
-      {/* ── Patient banner ────────────────────────────────────────────── */}
+    <div className="fade-in pb-12">
+      {/* ── Patient banner — full width ──────────────────────────────── */}
       <div
-        className="rounded-2xl px-6 py-6 mb-4 text-white"
+        className="rounded-2xl px-6 py-5 mb-5 text-white"
         style={{ background: "linear-gradient(135deg, var(--color-primary-800) 0%, var(--color-primary-600) 100%)" }}
       >
         <div className="flex items-start gap-4">
-          {/* Avatar — photo when uploaded, initials otherwise */}
+          {/* Avatar */}
           {patient.photoUrl ? (
             <img
               src={
@@ -320,28 +320,37 @@ export default async function PatientProfilePage({
         </div>
       </div>
 
-      {/* ── Total Visits card + toggleable action buttons ─────────────── */}
-      <PatientActionsPanel
-        patientId={patient.id}
-        patientName={patient.name}
-        udid={udid}
-        totalVisits={totalVisits}
-        firstVisitDate={firstVisit?.date.toISOString() ?? null}
-        lastVisitDate={lastVisit && totalVisits > 1 ? lastVisit.date.toISOString() : null}
-        noShowCount={noShowCount}
-      />
+      {/* ── Dashboard grid: sidebar left + main content right ─────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr] xl:grid-cols-[380px_1fr] 2xl:grid-cols-[420px_1fr] gap-5">
 
-      {/* ── Action buttons + drawer (client) ──────────────────────────── */}
-      <PatientProfileClient
-        udid={udid}
-        visits={serialVisits}
-        todayVisit={todayVisit}
-        todayAppointmentId={todayAppointmentId}
-        hasRequestedAppt={hasRequestedAppt}
-        userRole={user.role}
-        timelineEntries={timelineEntries}
-        lastVisitSummary={lastVisitSummary}
-      />
+        {/* Left column — stats + action shortcuts */}
+        <div className="flex flex-col gap-4">
+          <PatientActionsPanel
+            patientId={patient.id}
+            patientName={patient.name}
+            udid={udid}
+            totalVisits={totalVisits}
+            firstVisitDate={firstVisit?.date.toISOString() ?? null}
+            lastVisitDate={lastVisit && totalVisits > 1 ? lastVisit.date.toISOString() : null}
+            noShowCount={noShowCount}
+            layout="column"
+          />
+        </div>
+
+        {/* Right column — visit buttons, summary, history */}
+        <div className="min-w-0">
+          <PatientProfileClient
+            udid={udid}
+            visits={serialVisits}
+            todayVisit={todayVisit}
+            todayAppointmentId={todayAppointmentId}
+            hasRequestedAppt={hasRequestedAppt}
+            userRole={user.role}
+            timelineEntries={timelineEntries}
+            lastVisitSummary={lastVisitSummary}
+          />
+        </div>
+      </div>
     </div>
   );
 }
