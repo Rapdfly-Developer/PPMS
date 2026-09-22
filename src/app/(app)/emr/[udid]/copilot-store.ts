@@ -22,10 +22,12 @@ import { useSyncExternalStore } from "react";
 import type { DdxState } from "./DifferentialDiagnosisCard";
 import type { GuidanceState } from "./ExamGuidanceCard";
 import type { RefractiveState } from "./RefractiveGuidanceCard";
+import type { PlanState } from "./PlanGuidanceCard";
 
 const ddxKey = (visitId: string) => `emr_ddx_${visitId}`;
 const guidanceKey = (visitId: string) => `emr_guidance_${visitId}`;
 const refractiveKey = (visitId: string) => `emr_refractive_${visitId}`;
+const planKey = (visitId: string) => `emr_plan_${visitId}`;
 
 /* Snapshots must be reference-stable or useSyncExternalStore loops.
    One map per capability, one listener set shared between them: a capability
@@ -34,6 +36,7 @@ const refractiveKey = (visitId: string) => `emr_refractive_${visitId}`;
 const snapshots = new Map<string, DdxState | null>();
 const guidanceSnapshots = new Map<string, GuidanceState | null>();
 const refractiveSnapshots = new Map<string, RefractiveState | null>();
+const planSnapshots = new Map<string, PlanState | null>();
 const listeners = new Set<() => void>();
 
 /* Command channel. The Generate button lives in a card inside a tab; the iframe
@@ -270,4 +273,51 @@ export function settleRefractive(visitId: string, state: RefractiveState) {
   refractiveInFlight.delete(visitId);
   refractiveSnapshots.set(visitId, state);
   emit();
+}
+
+/* ── Plan guidance ──────────────────────────────────────────────────────────
+   Eager, so it follows the DIFFERENTIAL's shape rather than the two on-demand
+   capabilities': no command channel, no in-flight set, no request id. It
+   arrives with the consolidated call and the card simply reflects whatever
+   state the store holds.
+
+   setPlan mirrors setDdx's no-op guard: repeated identical non-ready states
+   (e.g. a second "loading") must not emit, or every card re-renders for
+   nothing; a "ready" always writes, because a regenerate legitimately
+   replaces one result with another. */
+
+export function getPlan(visitId: string): PlanState | null {
+  return planSnapshots.get(visitId) ?? null;
+}
+
+export function setPlan(visitId: string, state: PlanState) {
+  const prev = planSnapshots.get(visitId);
+  if (prev && prev.status === state.status && prev.status !== "ready") return; // no-op
+  planSnapshots.set(visitId, state);
+  emit();
+}
+
+/** Persist a resolved result so a remount or refresh does not re-show "loading". */
+export function cachePlan(visitId: string, result: unknown) {
+  try {
+    window.sessionStorage.setItem(planKey(visitId), JSON.stringify(result));
+  } catch {
+    // Storage unavailable — the in-memory snapshot still serves this session.
+  }
+}
+
+export function readCachedPlan(visitId: string): string | null {
+  try {
+    return window.sessionStorage.getItem(planKey(visitId));
+  } catch {
+    return null;
+  }
+}
+
+export function usePlan(visitId: string): PlanState | null {
+  return useSyncExternalStore(
+    subscribeCopilot,
+    () => getPlan(visitId),
+    () => null,
+  );
 }

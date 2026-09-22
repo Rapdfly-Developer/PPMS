@@ -34,12 +34,14 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import type { DdxState, DifferentialDx } from "./DifferentialDiagnosisCard";
 import type { GuidanceState, ExamGuidanceItem } from "./ExamGuidanceCard";
 import type { RefractiveState, RefractiveResult, RefractiveEye } from "./RefractiveGuidanceCard";
+import type { PlanState, PlanGuidanceResult, GovtSchemeCitation } from "./PlanGuidanceCard";
 import {
   setDdx, cacheDdx, readCachedDdx, getDdx,
   seedGuidance, settleGuidance, cacheGuidance, readCachedGuidance,
   subscribeGuidanceRequests, isGuidanceInFlight,
   seedRefractive, settleRefractive, cacheRefractive, readCachedRefractive,
   subscribeRefractiveRequests, isRefractiveInFlight,
+  setPlan, cachePlan, readCachedPlan, getPlan,
 } from "./copilot-store";
 
 /* Defensive caps. The payload crosses an origin boundary, so it is treated as
@@ -92,6 +94,51 @@ function cachedToState(raw: string | null): DdxState {
   } catch {
     return { status: "loading" };
   }
+}
+
+function cachedPlanToState(raw: string | null): PlanState {
+  if (!raw) return { status: "loading" };
+  try {
+    const parsed = parsePlanGuidance(JSON.parse(raw));
+    return parsed ? { status: "ready", result: parsed } : { status: "loading" };
+  } catch {
+    return { status: "loading" };
+  }
+}
+
+/**
+ * Returns the parsed result, or null when the payload is not usable.
+ *
+ * Field names mirror ppms-copilot's PlanGuidanceResult verbatim. The govt
+ * scheme block is all-or-nothing: the plugin only emits it when its citation
+ * matched the scheme table field-for-field, so a partial block here means the
+ * payload is malformed, and rendering half a scheme with a missing
+ * lastVerified date would strip exactly the provenance that makes it safe to
+ * show. Dropped rather than patched up.
+ */
+function parsePlanGuidance(raw: unknown): PlanGuidanceResult | null {
+  if (!raw || typeof raw !== "object") return null;
+  const o = raw as Record<string, unknown>;
+
+  const documentedProgression = clean(o.documentedProgression) ?? "";
+  const comfortingGuidance = clean(o.comfortingGuidance) ?? "";
+
+  let govtScheme: GovtSchemeCitation | undefined;
+  if (o.govtScheme && typeof o.govtScheme === "object") {
+    const g = o.govtScheme as Record<string, unknown>;
+    const schemeName = clean(g.schemeName);
+    const description = clean(g.description);
+    const eligibilitySummary = clean(g.eligibilitySummary);
+    const lastVerified = clean(g.lastVerified);
+    if (schemeName && description && eligibilitySummary && lastVerified) {
+      govtScheme = { schemeName, description, eligibilitySummary, lastVerified };
+    }
+  }
+
+  // Nothing renderable at all -> unusable, rather than an empty card.
+  if (!documentedProgression && !comfortingGuidance && !govtScheme) return null;
+
+  return { documentedProgression, comfortingGuidance, ...(govtScheme ? { govtScheme } : {}) };
 }
 
 /* Idle, not loading, when there is no cache: nothing has been asked for yet. */
@@ -256,10 +303,19 @@ export function ExternalPluginSlotClient({
     seedRefractive(visitId, cachedRefractiveToState(readCachedRefractive(visitId)));
   }, [visitId]);
 
+  /* Eager, so it seeds to "loading" like the differential — the consolidated
+     call is already running by the time the doctor reaches the Plan tab. */
+  useEffect(() => {
+    if (getPlan(visitId)) return;
+    setPlan(visitId, cachedPlanToState(readCachedPlan(visitId)));
+  }, [visitId]);
+
   /* Display fallback so the cards do not spin forever — see DDX_TIMEOUT_MS. */
   useEffect(() => {
     const id = window.setTimeout(() => {
       if (getDdx(visitId)?.status === "loading") setDdx(visitId, { status: "timeout" });
+      // Same consolidated call, so the same deadline applies.
+      if (getPlan(visitId)?.status === "loading") setPlan(visitId, { status: "timeout" });
     }, DDX_TIMEOUT_MS);
     return () => window.clearTimeout(id);
   }, [visitId]);
@@ -467,6 +523,26 @@ export function ExternalPluginSlotClient({
 
         setDdx(visitId, items.length > 0 ? { status: "ready", items } : { status: "none" });
         cacheDdx(visitId, items);
+        return;
+      }
+
+      if (type === "PLUGIN_PLAN_GUIDANCE_UPDATE") {
+        /* Eager, so this mirrors the differential's handler exactly: origin
+           (checked above), this plugin, this visit. No request id and no ok
+           envelope — the consolidated call pushes a result when it has one,
+           and pushes nothing when the section failed validation, which is why
+           "no message" resolves via the shared timeout rather than an error.
+
+           Contract verified against ppms-copilot's PluginPlanGuidanceUpdateMessage
+           (src/postmessage/types.ts) and its sendPlanGuidanceUpdate sender: the
+           type string, the `result` payload field, and every field of
+           PlanGuidanceResult / GovtSchemeCitation match field-for-field. */
+        if (msg.pluginId !== pluginId) return;
+        if (msg.visitId !== visitId) return;
+
+        const result = parsePlanGuidance(msg.result);
+        setPlan(visitId, result ? { status: "ready", result } : { status: "none" });
+        if (result) cachePlan(visitId, result);
         return;
       }
 

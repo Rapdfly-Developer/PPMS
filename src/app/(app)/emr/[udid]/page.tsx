@@ -11,6 +11,7 @@ import {
 import { VisitTimeline } from "./VisitTimeline";
 import { DifferentialDiagnosisPanel } from "./DifferentialDiagnosisPanel";
 import { ExamGuidancePanel } from "./ExamGuidancePanel";
+import { PlanGuidancePanel } from "./PlanGuidancePanel";
 import { PatientPhoto } from "./PatientPhoto";
 import { convertNotesToCC, parseEMRComplaints } from "@/lib/appointment-cc";
 import { GeneralExamTab } from "./GeneralExamTab";
@@ -602,6 +603,7 @@ export default async function PatientDetailedEMR({
                   user.role === "DOCTOR" ? (
                     <div className="flex flex-col gap-4">
                       <PlanTab visit={activeVisit} udid={udid} patientSex={patient.sex} priorVisits={priorVisits} />
+                      <PlanGuidancePanel visitId={activeVisit.id} />
                       <DifferentialDiagnosisPanel visitId={activeVisit.id} />
                     </div>
                   ) : (
