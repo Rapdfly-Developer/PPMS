@@ -342,28 +342,46 @@ export default async function PatientProfilePage({
 
         {/* Right column — visit buttons, summary, history */}
         <div className="min-w-0">
-          {/* AI patient profile.
+          <PatientProfileClient
+            udid={udid}
+            visits={serialVisits}
+            todayVisit={todayVisit}
+            todayAppointmentId={todayAppointmentId}
+            hasRequestedAppt={hasRequestedAppt}
+            userRole={user.role}
+            timelineEntries={timelineEntries}
+            lastVisitSummary={lastVisitSummary}
+          />
+          {/* AI patient profile — one card, three sub-tabs (Patient snapshot,
+              Previous visits, Last visit), all of it already-generated Copilot
+              content replayed from the shared card store. No AI call is made
+              from this page.
+
+              Placed after PatientProfileClient, whose last child is the Last
+              Visit Summary card: the doctor reads the recorded summary first
+              and the AI reading of it second, rather than meeting the AI
+              before the record it is summarising.
 
               Rendered through ExternalPluginSlot rather than by mounting the
-              panel directly: the panel only READS the shared card store, and
-              the thing that FILLS it is the Copilot iframe that the slot
-              mounts. Rendering the panel on its own left it reading a store
-              nothing on this page ever wrote to, so it returned null and the
-              feature was invisible here.
+              panel directly: the panel only READS the card store, and the
+              thing that FILLS it is the Copilot iframe that the slot mounts.
+              Rendering the panel on its own left it reading a store nothing on
+              this page ever wrote to, so it returned null and the feature was
+              invisible here.
 
               profileMode makes the slot wrap its bridge in
               PatientProfileCopilotHost, which renders the card directly and
-              always — expanded, with its three sub-tabs, no click required —
-              and keeps the iframe mounted but permanently clipped.
+              always — expanded, no click required — and keeps the iframe
+              mounted but permanently clipped.
 
-              Still gated on an open visit for this patient: the slot signs a
-              plugin token against a specific visitId and the server rejects
-              one that is not this patient's, so there is nothing to scope a
-              token to without a visit. The five authorisation checks inside
+              Gated on an open visit for this patient TODAY, because the slot
+              signs a plugin token against a specific visitId and the server
+              rejects one that is not this patient's; without a visit there is
+              nothing to scope a token to. The five authorisation checks inside
               the slot are unchanged and still decide whether anything renders
               at all. */}
           {todayVisitRecord && todayVisitRecord.status !== "CLOSED" && (
-            <div className="mb-4">
+            <div className="mt-4">
               {getAllRegisteredPlugins()
                 .filter((p) => p.manifest.externalOrigin)
                 .map((p) => (
@@ -378,16 +396,6 @@ export default async function PatientProfilePage({
                 ))}
             </div>
           )}
-          <PatientProfileClient
-            udid={udid}
-            visits={serialVisits}
-            todayVisit={todayVisit}
-            todayAppointmentId={todayAppointmentId}
-            hasRequestedAppt={hasRequestedAppt}
-            userRole={user.role}
-            timelineEntries={timelineEntries}
-            lastVisitSummary={lastVisitSummary}
-          />
         </div>
       </div>
     </div>
