@@ -1046,7 +1046,10 @@ export function PremiumLanding() {
               src={`${IMG}/doctor-tablet-portrait-warm.jpg`}
               alt="A doctor reviewing patient information on a tablet"
               aspect="aspect-square"
-              sizes="92vw"
+              // This plate is inside a lg:hidden grid. Describing it as 92vw
+              // made desktop fetch a 1920px variant for a box it never paints;
+              // the first clause says it is absent from lg up.
+              sizes="(min-width: 1024px) 1px, 92vw"
               quality={80}
               radius="1.75rem"
             />
@@ -1056,7 +1059,7 @@ export function PremiumLanding() {
               src={`${IMG}/doctor-tablet-portrait-cool.jpg`}
               alt="A doctor reading a patient chart on a tablet in a darkened ward"
               aspect="aspect-[3/4]"
-              sizes="92vw"
+              sizes="(min-width: 1024px) 1px, 92vw"
               quality={80}
               radius="1.75rem"
             />
