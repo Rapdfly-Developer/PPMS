@@ -10,10 +10,11 @@ import { Card } from "@/components/ui/Card";
  * opens, the same lifecycle as the differential diagnosis card — so there is
  * no idle state and no Generate button.
  *
- * Three sections in a fixed order, never reordered by payload:
+ * Four sections in a fixed order, never reordered by payload:
  *   1. Escalation ladder  — retrospective only, what the record already shows
- *   2. Comforting methods
- *   3. Government schemes — omitted entirely when absent
+ *   2. Follow-up          — omitted entirely when absent
+ *   3. Comforting methods
+ *   4. Government schemes — omitted entirely when absent
  *
  * Presentational only. Receiving, validating and caching is
  * ExternalPluginSlotClient's job.
@@ -38,6 +39,13 @@ export type GovtSchemeCitation = {
 export type PlanGuidanceResult = {
   /** The escalation ladder — documented progression, retrospective only. */
   documentedProgression: string;
+  /**
+   * The FOLLOW_UP_SUMMARY section's own already-validated text, referenced a
+   * second time rather than regenerated — no extra AI call. Absent, and not an
+   * error, when that section failed or was empty for this visit, which is why
+   * the section below is omitted rather than shown empty.
+   */
+  followUpSummary?: string;
   comfortingGuidance: string;
   govtScheme?: GovtSchemeCitation;
 };
@@ -129,7 +137,8 @@ export function PlanGuidanceCard({ state }: { state: PlanState }) {
     );
   }
 
-  const { documentedProgression, comfortingGuidance, govtScheme } = state.result;
+  const { documentedProgression, followUpSummary, comfortingGuidance, govtScheme } =
+    state.result;
 
   return (
     <Shell note="Based on information at visit start. Does not update as you add findings.">
@@ -137,6 +146,10 @@ export function PlanGuidanceCard({ state }: { state: PlanState }) {
         {documentedProgression && (
           <Section title="Escalation ladder" body={documentedProgression} />
         )}
+        {/* Omitted entirely when absent, same as the scheme block below — an
+            empty "Follow-up" heading would imply none was planned, which is a
+            different claim from "the summary was not generated". */}
+        {followUpSummary && <Section title="Follow-up" body={followUpSummary} />}
         {comfortingGuidance && <Section title="Comforting methods" body={comfortingGuidance} />}
 
         {/* Rendered only when a confident, field-for-field verified match

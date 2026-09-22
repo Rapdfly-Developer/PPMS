@@ -85,6 +85,24 @@ const clean = (v: unknown): string | undefined => {
   return t.length > 0 ? t : undefined;
 };
 
+/*
+ * Prose blocks need a far higher ceiling than MAX_LEN's 300.
+ *
+ * 300 is right for a label — a diagnosis name, a scheme name, a date. Plan
+ * guidance carries whole paragraphs, and followUpSummary is an entire
+ * FOLLOW_UP_SUMMARY section (budgeted 700 tokens by the plugin, comfortably
+ * past 300 characters). Clamping those at 300 truncates mid-sentence with no
+ * indication to the doctor that anything was cut, which is worse than showing
+ * nothing. Still bounded, because the payload crosses an origin boundary.
+ */
+const MAX_PROSE = 4000;
+
+const cleanProse = (v: unknown): string | undefined => {
+  if (typeof v !== "string") return undefined;
+  const t = v.trim().slice(0, MAX_PROSE);
+  return t.length > 0 ? t : undefined;
+};
+
 function cachedToState(raw: string | null): DdxState {
   if (!raw) return { status: "loading" };
   try {
@@ -120,15 +138,17 @@ function parsePlanGuidance(raw: unknown): PlanGuidanceResult | null {
   if (!raw || typeof raw !== "object") return null;
   const o = raw as Record<string, unknown>;
 
-  const documentedProgression = clean(o.documentedProgression) ?? "";
-  const comfortingGuidance = clean(o.comfortingGuidance) ?? "";
+  const documentedProgression = cleanProse(o.documentedProgression) ?? "";
+  const comfortingGuidance = cleanProse(o.comfortingGuidance) ?? "";
+  // Optional: absent means FOLLOW_UP_SUMMARY had nothing to reference.
+  const followUpSummary = cleanProse(o.followUpSummary);
 
   let govtScheme: GovtSchemeCitation | undefined;
   if (o.govtScheme && typeof o.govtScheme === "object") {
     const g = o.govtScheme as Record<string, unknown>;
     const schemeName = clean(g.schemeName);
-    const description = clean(g.description);
-    const eligibilitySummary = clean(g.eligibilitySummary);
+    const description = cleanProse(g.description);
+    const eligibilitySummary = cleanProse(g.eligibilitySummary);
     const lastVerified = clean(g.lastVerified);
     if (schemeName && description && eligibilitySummary && lastVerified) {
       govtScheme = { schemeName, description, eligibilitySummary, lastVerified };
@@ -136,9 +156,16 @@ function parsePlanGuidance(raw: unknown): PlanGuidanceResult | null {
   }
 
   // Nothing renderable at all -> unusable, rather than an empty card.
-  if (!documentedProgression && !comfortingGuidance && !govtScheme) return null;
+  if (!documentedProgression && !comfortingGuidance && !followUpSummary && !govtScheme) {
+    return null;
+  }
 
-  return { documentedProgression, comfortingGuidance, ...(govtScheme ? { govtScheme } : {}) };
+  return {
+    documentedProgression,
+    comfortingGuidance,
+    ...(followUpSummary ? { followUpSummary } : {}),
+    ...(govtScheme ? { govtScheme } : {}),
+  };
 }
 
 /* Idle, not loading, when there is no cache: nothing has been asked for yet. */
