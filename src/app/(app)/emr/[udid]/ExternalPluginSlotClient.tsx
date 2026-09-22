@@ -35,6 +35,8 @@ import type { DdxState, DifferentialDx } from "./DifferentialDiagnosisCard";
 import type { GuidanceState, ExamGuidanceItem } from "./ExamGuidanceCard";
 import type { RefractiveState, RefractiveResult, RefractiveEye } from "./RefractiveGuidanceCard";
 import type { PlanState, PlanGuidanceResult, GovtSchemeCitation } from "./PlanGuidanceCard";
+import { receiveCopilotCard } from "./copilot-card-contracts";
+import { activateCopilotCards, timeoutCopilotCards, writeCopilotCard } from "./copilot-cards-store";
 import {
   setDdx, cacheDdx, readCachedDdx, getDdx,
   seedGuidance, settleGuidance, cacheGuidance, readCachedGuidance,
@@ -307,6 +309,12 @@ export function ExternalPluginSlotClient({
   const refractiveTimer = useRef<number | undefined>(undefined);
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    if (pluginId !== "ppms.plugin.ai-clinical-copilot") return;
+    const deactivate = activateCopilotCards(visitId);
+    const timer = window.setTimeout(() => timeoutCopilotCards(visitId), DDX_TIMEOUT_MS);
+    return () => { window.clearTimeout(timer); deactivate(); };
+  }, [pluginId, visitId]);
   /* Seed the shared store. Doing this on mount is also what tells the per-tab
      cards that the Copilot is active at all: this component only renders once
      ExternalPluginSlot has passed all five gating checks, so a disabled or
@@ -528,6 +536,14 @@ export function ExternalPluginSlotClient({
 
       const msg = event.data as Record<string, unknown>;
       const { type } = msg;
+
+      const cardUpdate = receiveCopilotCard(event, {
+        origin: pluginOrigin, source: iframeRef.current?.contentWindow ?? null, pluginId, visitId,
+      });
+      if (cardUpdate) {
+        writeCopilotCard(visitId, cardUpdate);
+        return;
+      }
 
       if (type === "PLUGIN_READY") return;
 

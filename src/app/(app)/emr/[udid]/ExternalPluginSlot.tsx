@@ -21,12 +21,14 @@ import { checkPluginLicense } from "@/plugin-framework/license";
 import { signPluginToken } from "@/lib/plugin-token";
 import { isPluginRegistered, getPlugin } from "@/plugin-framework/registry";
 import { ExternalPluginSlotClient } from "./ExternalPluginSlotClient";
+import { PatientProfileCopilotHost } from "./CopilotClinicalPanels";
 
 type Props = {
   pluginId: string;
   triggerPermission: string;
   patientUdid: string;
   visitId: string;
+  profileMode?: boolean;
 };
 
 export async function ExternalPluginSlot({
@@ -34,6 +36,7 @@ export async function ExternalPluginSlot({
   triggerPermission,
   patientUdid,
   visitId,
+  profileMode = false,
 }: Props) {
   // Only render when PLUGIN_TOKEN_SECRET is configured
   if (!process.env.PLUGIN_TOKEN_SECRET || process.env.PLUGIN_TOKEN_SECRET.length < 32) {
@@ -103,7 +106,7 @@ export async function ExternalPluginSlot({
     return null;
   }
 
-  return (
+  const bridge = (
     <ExternalPluginSlotClient
       pluginOrigin={pluginOrigin}
       pluginName={pluginName}
@@ -113,4 +116,7 @@ export async function ExternalPluginSlot({
       pluginId={pluginId}
     />
   );
+  return profileMode
+    ? <PatientProfileCopilotHost visitId={visitId}>{bridge}</PatientProfileCopilotHost>
+    : bridge;
 }

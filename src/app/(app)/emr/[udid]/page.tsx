@@ -12,6 +12,7 @@ import { VisitTimeline } from "./VisitTimeline";
 import { DifferentialDiagnosisPanel } from "./DifferentialDiagnosisPanel";
 import { ExamGuidancePanel } from "./ExamGuidancePanel";
 import { PlanGuidancePanel } from "./PlanGuidancePanel";
+import { AssessmentCopilotPanel, InvestigationCopilotPanel, PatientProfileCopilotPanel } from "./CopilotClinicalPanels";
 import { PatientPhoto } from "./PatientPhoto";
 import { convertNotesToCC, parseEMRComplaints } from "@/lib/appointment-cc";
 import { GeneralExamTab } from "./GeneralExamTab";
@@ -463,6 +464,7 @@ export default async function PatientDetailedEMR({
         </Card>
       ) : (
         <div>
+          {activeVisit.status !== "CLOSED" && <div className="mb-4"><PatientProfileCopilotPanel visitId={activeVisit.id} /></div>}
           <EmrTabsShell
             visit={activeVisit}
             udid={udid}
@@ -567,6 +569,7 @@ export default async function PatientDetailedEMR({
                   user.role === "DOCTOR" ? (
                     <div className="flex flex-col gap-4">
                       <AssessmentTab visit={activeVisit} udid={udid} priorVisits={priorVisits} readOnly={readOnly} />
+                      {activeVisit.status !== "CLOSED" && <AssessmentCopilotPanel visitId={activeVisit.id} />}
                       <DifferentialDiagnosisPanel visitId={activeVisit.id} />
                     </div>
                   ) : (
@@ -581,6 +584,7 @@ export default async function PatientDetailedEMR({
                 content: (
                   <div className="flex flex-col gap-4">
                     <InvestigationsTab visit={activeVisit} priorVisits={priorVisits} udid={udid} readOnly={readOnly} />
+                    {activeVisit.status !== "CLOSED" && <InvestigationCopilotPanel visitId={activeVisit.id} />}
                     <DifferentialDiagnosisPanel visitId={activeVisit.id} />
                   </div>
                 ),

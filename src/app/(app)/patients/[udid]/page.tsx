@@ -6,6 +6,9 @@ import { Phone, MapPin, Calendar, Hash, IdCard, Briefcase, FileText } from "luci
 import { decryptAadhaar, maskAadhaar } from "@/lib/crypto";
 import { PatientProfileClient, type SerialVisit, type TodayVisit, type LastVisitSummary } from "./PatientProfileClient";
 import { PatientActionsPanel } from "./PatientHistoryButtons";
+import "@/plugins";
+import { ExternalPluginSlot } from "../../emr/[udid]/ExternalPluginSlot";
+import { getAllRegisteredPlugins } from "@/plugin-framework/registry";
 
 const CATEGORY_STYLES: Record<string, string> = {
   GENERAL:    "bg-white/20 text-white border border-white/30",
@@ -339,6 +342,17 @@ export default async function PatientProfilePage({
 
         {/* Right column — visit buttons, summary, history */}
         <div className="min-w-0">
+          {todayVisitRecord && todayVisitRecord.status !== "CLOSED" &&
+            getAllRegisteredPlugins()
+              .filter((p) => p.manifest.pluginId === "ppms.plugin.ai-clinical-copilot" && p.manifest.externalOrigin)
+              .map((p) => <ExternalPluginSlot
+                key={p.manifest.pluginId}
+                pluginId={p.manifest.pluginId}
+                triggerPermission={p.manifest.ui?.emrPanel?.triggerPermission ?? ""}
+                patientUdid={udid}
+                visitId={todayVisitRecord.id}
+                profileMode
+              />)}
           <PatientProfileClient
             udid={udid}
             visits={serialVisits}

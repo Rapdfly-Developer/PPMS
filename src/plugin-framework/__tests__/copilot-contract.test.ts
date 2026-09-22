@@ -60,6 +60,7 @@ if (!copilotRoot) {
 type Contract = {
   capability: string;
   theirType: string;
+  theirFile?: string;
   ourFile: string;
   ourType: string;
 };
@@ -74,6 +75,12 @@ const CONTRACTS: Contract[] = [
   { capability: "REFRACTIVE_GUIDANCE",    theirType: "RefractiveGuidanceResult",  ourFile: `${EMR}/RefractiveGuidanceCard.tsx`,    ourType: "RefractiveResult" },
   { capability: "PLAN_GUIDANCE",          theirType: "PlanGuidanceResult",        ourFile: `${EMR}/PlanGuidanceCard.tsx`,          ourType: "PlanGuidanceResult" },
   { capability: "PLAN_GUIDANCE",          theirType: "GovtSchemeCitation",        ourFile: `${EMR}/PlanGuidanceCard.tsx`,          ourType: "GovtSchemeCitation" },
+  ...["DifferentialReasonCitation", "DiagnosisComparisonResult", "SuggestedInvestigationItem", "InvestigationGuidanceResult"].map((type) => ({
+    capability: "CLINICAL_CARDS", theirType: type, ourType: type, ourFile: `${EMR}/copilot-card-contracts.ts`,
+  })),
+  ...["PluginAssessmentUpdateMessage", "PluginPatientProfileUpdateMessage", "PluginInvestigationGuidanceUpdateMessage"].map((type) => ({
+    capability: "CLINICAL_CARD_MESSAGES", theirType: type, ourType: type, ourFile: `${EMR}/copilot-card-contracts.ts`, theirFile: "src/postmessage/types.ts",
+  })),
 ];
 
 // ── Field extraction ──────────────────────────────────────────────────────
@@ -107,7 +114,7 @@ console.log(`  ppms-copilot: ${copilotRoot}\n`);
 let failed = 0;
 
 for (const c of CONTRACTS) {
-  const theirs = fieldsOf(theirSource, c.theirType);
+  const theirs = fieldsOf(c.theirFile ? read(join(copilotRoot, c.theirFile)) : theirSource, c.theirType);
   const ourPath = join(process.cwd(), c.ourFile);
   const ours = existsSync(ourPath) ? fieldsOf(read(ourPath), c.ourType) : null;
 
