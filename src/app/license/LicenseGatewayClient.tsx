@@ -595,6 +595,11 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
           --fs-input: clamp(14px, 1.08vw, 18px);
           --fs-btn:   clamp(14.5px, 1.12vw, 19px);
           --fs-xs:    clamp(11px, .85vw, 14px);
+          --fs-sm:    clamp(12px, .92vw, 15.5px);
+          --fs-card-h:clamp(21px, 1.62vw, 32px);
+          --fs-brand: clamp(25px, 1.92vw, 42px);
+          --logo:     clamp(44px, 3.4vw, 72px);
+          --vgap:     clamp(14px, 1.4vw, 24px);
           --ctl-h:    clamp(46px, 3.5vw, 56px);
         }
 
@@ -665,45 +670,56 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
             style={{ minHeight: "min-content" }}>
             <div className="w-full" style={{ maxWidth: "480px" }}>
 
-              {/* Mobile logo */}
+              {/* Brand lockup. Was a bare logo and wordmark shown only below
+                  lg, so from lg up the card opened with no branding at all and
+                  carried a badge inside instead. This is the login page's
+                  lockup: centred below lg where it is the only branding on
+                  screen, left-aligned to the card's edge from lg up. */}
               <Link href="/" aria-label="RF Health home"
-                className="lg-brand flex lg:hidden items-center gap-2.5 justify-center mb-8 lg-a0 rounded-xl">
-                <img src="/landing/logo-rf-health.webp" alt=""
+                className="lg-brand lg-a0 flex items-center gap-3.5 justify-center lg:justify-start rounded-xl"
+                style={{ marginBottom: "var(--vgap)" }}>
+                <img src="/landing/logo-rf-health.webp" alt="" className="shrink-0"
                   style={{
-                    width: "36px", height: "36px", objectFit: "cover",
-                    borderRadius: "9px", border: `1px solid ${T.border}`,
+                    width: "var(--logo)", height: "var(--logo)", objectFit: "cover",
+                    borderRadius: "clamp(11px,.8vw,16px)", border: `1px solid ${T.border}`,
                   }} />
-                <p className="text-2xl font-black" style={{ color: T.text, letterSpacing: "-0.03em" }}>RF Health</p>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="font-black" style={{ fontSize: "var(--fs-brand)", color: T.text, letterSpacing: "-0.035em" }}>
+                      RF Health
+                    </span>
+                    <span className="font-bold px-2 py-0.5 rounded-full shrink-0"
+                      style={{ fontSize: "var(--fs-xs)", background: "rgba(13,122,99,.11)", color: T.accent, border: "1px solid rgba(13,122,99,.24)", letterSpacing: "0.04em" }}>
+                      v2.0 Cloud
+                    </span>
+                  </div>
+                  <p className="font-semibold" style={{ fontSize: "var(--fs-xs)", color: T.faint, letterSpacing: "0.06em" }}>
+                    PRIVATE PATIENT MANAGEMENT SYSTEM
+                  </p>
+                </div>
               </Link>
 
               {/* ── NO_LICENSE: Registration ── */}
               {status === "NO_LICENSE" && !otpStep && (
                 <GlassCard>
-                  <div className="text-center mb-6">
-                    <CardIcon icon={Star} />
-                    <h2 className="text-2xl font-black mb-1" style={{ color: T.text, letterSpacing: "-0.025em" }}>Welcome to RF Health</h2>
-                    <p className="text-sm" style={{ color: T.muted }}>
-                      Start your <span style={{ color: T.accent, fontWeight: 700 }}>FREE 30-Day Trial</span>
-                    </p>
-                    <p className="text-xs mt-1" style={{ color: T.faint }}>Use all features free for 30 days. No license key required.</p>
-                  </div>
-
-                  <div className="flex items-center justify-center gap-2 mb-6 px-4 py-2.5 rounded-xl" style={{
-                    background: "rgba(13,122,99,.09)", border: "1px solid rgba(13,122,99,.22)",
-                  }}>
-                    <CheckCircle2 size={15} style={{ color: T.accent }} />
-                    <span className="text-sm font-semibold" style={{ color: T.accent }}>Free 30-Day Trial · No Credit Card</span>
-                  </div>
+                  {/* Header matches the login card: a left-aligned heading and
+                      one supporting line. The centred star badge that sat here
+                      had no counterpart on login, and the trial pill has moved
+                      below the card where login keeps the same offer. */}
+                  <h2 className="font-bold" style={{ fontSize: "var(--fs-card-h)", color: T.text, letterSpacing: "-0.02em" }}>
+                    Welcome to RF Health
+                  </h2>
+                  <p style={{ fontSize: "var(--fs-sm)", color: T.muted, marginTop: "4px", marginBottom: "var(--vgap)" }}>
+                    Start your free 30-day trial. No licence key required.
+                  </p>
 
                   <div className="flex flex-col gap-3.5">
                     <Field label="Doctor Name *" placeholder="Dr. Full Name" value={adminName}
                       onChange={setAdminName} icon={UserCircle} error={fieldErrors.adminName} />
-                    <div className="grid grid-cols-2 gap-3">
-                      <Field label="Mobile Number *" placeholder="10-digit number" value={mobile} type="tel"
-                        onChange={setMobile} icon={Phone} error={fieldErrors.mobile} />
-                      <Field label="Email Address *" placeholder="doctor@clinic.com" value={email} type="email"
-                        onChange={setEmail} icon={Mail} error={fieldErrors.email} />
-                    </div>
+                    <Field label="Mobile Number *" placeholder="10-digit number" value={mobile} type="tel"
+                      onChange={setMobile} icon={Phone} error={fieldErrors.mobile} />
+                    <Field label="Email Address *" placeholder="doctor@clinic.com" value={email} type="email"
+                      onChange={setEmail} icon={Mail} error={fieldErrors.email} />
                     <Field label="Create Password *" placeholder="Min. 6 characters" value={password} type="password"
                       onChange={setPassword} icon={Lock} error={fieldErrors.password} />
                   </div>
@@ -726,6 +742,27 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
                     </a>
                   </div>
                 </GlassCard>
+              )}
+
+              {/* Trial terms, outside the card. Login puts the same offer in a
+                  strip under its card rather than a pill inside it, so the
+                  card holds only what you have to fill in. */}
+              {status === "NO_LICENSE" && !otpStep && (
+                <div className="w-full flex items-center gap-3 px-4 py-3 text-left"
+                  style={{ marginTop: "var(--vgap)", background: "rgba(255,255,255,.72)", borderRadius: "12px", border: `1px solid ${T.border}` }}>
+                  <span className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
+                    style={{ background: T.primarySoft }}>
+                    <CheckCircle2 size={16} style={{ color: T.accent }} />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block" style={{ fontSize: "var(--fs-label)", fontWeight: 600, color: T.text }}>
+                      Free 30-day trial
+                    </span>
+                    <span className="block" style={{ fontSize: "var(--fs-sm)", color: T.muted, marginTop: "1px" }}>
+                      30 days · Unlimited modules · No credit card
+                    </span>
+                  </span>
+                </div>
               )}
 
               {/* ── NO_LICENSE: OTP step ── */}
