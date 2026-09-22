@@ -19,18 +19,28 @@ import type { LicensePageData } from "./getLicenseData";
    `accent` carries small text and so is the deep teal; `accent2` is a step
    darker again, which keeps the gradients built from the pair reading as
    gradients rather than collapsing to a single flat colour. */
+/* Values mirror the login page's token set exactly. The two screens sit back
+   to back in the same flow, so a doctor moves between them in one session and
+   any drift in border, ring or field colour reads as two different products. */
 const T = {
-  bg:      "#F7F9FA",
-  surface: "rgba(255,255,255,.92)",
-  accent:  "#0D7A63",
-  accent2: "#0A6552",
-  text:    "#0F2926",
-  muted:   "#5A6E6A",
-  faint:   "#7A8D89",
-  border:  "rgba(15,41,38,.09)",
-  border2: "rgba(15,41,38,.13)",
-  field:   "#FFFFFF",
-  glow:    "0 0 0 4px rgba(13,122,99,.13), 0 0 22px rgba(13,122,99,.18)",
+  bg:          "#F7F9FA",
+  surface:     "rgba(255,255,255,.92)",
+  accent:      "#0D7A63",
+  accent2:     "#0A6552",
+  text:        "#0F2926",
+  muted:       "#5A6E6A",
+  faint:       "#7A8D89",
+  border:      "rgba(15,41,38,.09)",
+  border2:     "rgba(15,41,38,.13)",
+  field:       "#FFFFFF",
+  glow:        "0 0 0 4px rgba(13,122,99,.13), 0 0 22px rgba(13,122,99,.18)",
+  /* Shared with login: card, input border, focus ring, error and disabled. */
+  card:        "#FFFFFF",
+  borderInput: "#D6DEDC",
+  primarySoft: "#EAF5F2",
+  danger:      "#DC2626",
+  dangerSoft:  "#FEF2F2",
+  track:       "#EFF3F2",
 };
 
 type LicenseData = LicensePageData;
@@ -166,41 +176,39 @@ function Field({
   const [show, setShow] = useState(false);
   const [focused, setFocused] = useState(false);
   const isPass = type === "password";
-  const floating = focused || value.length > 0;
 
   return (
-    <div>
+    <div style={{ marginBottom: "6px" }}>
+      {/* Static label above the control, as on the login page. The floating
+          label this replaces animated into the input's top edge, which meant
+          the field carried no visible name until it was focused, the caret
+          moved as you typed, and the placeholder could not be shown at the
+          same time as the label. */}
+      <label className="block mb-1.5" style={{
+        fontSize: "var(--fs-label)", fontWeight: 600, color: T.text, letterSpacing: "-0.005em",
+      }}>
+        {label}
+      </label>
+
       <div className="relative" style={{
-        borderRadius: "14px",
-        border: `1px solid ${error ? "rgba(220,38,38,.5)" : focused ? T.accent : T.border}`,
-        background: readOnly ? "#F1F5F4" : error ? "#FEF2F2" : focused ? "#FFFFFF" : T.field,
-        boxShadow: error ? "0 0 0 4px rgba(220,38,38,.09)" : focused ? T.glow : "inset 0 1px 0 rgba(15,41,38,.03)",
-        transition: "border-color .25s, box-shadow .25s, background .25s",
-        overflow: "hidden",
+        borderRadius: "10px",
+        border: `1px solid ${error ? T.danger : focused ? T.accent : T.borderInput}`,
+        background: readOnly ? T.track : error ? T.dangerSoft : T.card,
+        boxShadow: focused && !error ? `0 0 0 3px ${T.primarySoft}` : "none",
+        transition: "border-color .16s ease, box-shadow .16s ease, background .16s ease",
       }}>
         {Icon && (
-          <span className="absolute top-1/2 -translate-y-1/2 pointer-events-none z-10" style={{
-            left: "17px",
-            color: error ? "#DC2626" : focused ? T.accent : T.faint,
-            transition: "color .25s",
+          <span className="absolute top-1/2 -translate-y-1/2 pointer-events-none" style={{
+            left: "13px",
+            color: error ? T.danger : focused ? T.accent : T.faint,
+            transition: "color .16s ease",
           }}>
-            <Icon size={15} />
+            <Icon size={16} />
           </span>
         )}
-        <label className="absolute pointer-events-none z-10 origin-left" style={{
-          left: Icon ? "45px" : "17px",
-          top: floating ? "10px" : "50%",
-          transform: floating ? "translateY(0) scale(0.74)" : "translateY(-50%) scale(1)",
-          transition: "top .25s cubic-bezier(.4,0,.2,1), transform .25s cubic-bezier(.4,0,.2,1), color .25s",
-          color: error ? "#DC2626" : focused ? T.accent : T.faint,
-          fontSize: "14px", fontWeight: floating ? 700 : 400,
-          letterSpacing: floating ? "0.05em" : "0", lineHeight: 1, whiteSpace: "nowrap",
-        }}>
-          {label}
-        </label>
         <input
           type={isPass && show ? "text" : type}
-          placeholder={focused ? placeholder : ""}
+          placeholder={placeholder}
           value={value}
           onChange={(e) => onChange?.(e.target.value)}
           readOnly={readOnly}
@@ -208,25 +216,27 @@ function Field({
           onBlur={() => setFocused(false)}
           className="w-full bg-transparent outline-none"
           style={{
-            paddingLeft: Icon ? "45px" : "17px",
-            paddingRight: isPass ? "45px" : "17px",
-            paddingTop: floating ? "19px" : "14px",
-            paddingBottom: floating ? "4px" : "14px",
-            height: "58px", fontSize: "14px", fontWeight: 500,
-            color: readOnly ? T.faint : T.text, letterSpacing: "0.01em",
-            transition: "padding-top .25s cubic-bezier(.4,0,.2,1), padding-bottom .25s cubic-bezier(.4,0,.2,1)",
+            paddingLeft: Icon ? "38px" : "13px",
+            paddingRight: isPass ? "44px" : "13px",
+            height: "var(--ctl-h)",
+            fontSize: "var(--fs-input)",
+            fontWeight: 500,
+            color: readOnly ? T.faint : T.text,
+            letterSpacing: "-0.005em",
           }}
         />
         {isPass && (
           <button type="button" onClick={() => setShow(!show)}
-            className="absolute right-4 top-1/2 -translate-y-1/2 z-10" style={{ color: T.faint }}>
-            {show ? <EyeOff size={14} /> : <Eye size={14} />}
+            aria-label={show ? "Hide password" : "Show password"}
+            className="lg-icon-btn absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center justify-center rounded-lg"
+            style={{ width: 36, height: 36, color: T.faint }}>
+            {show ? <EyeOff size={16} /> : <Eye size={16} />}
           </button>
         )}
       </div>
       {error && (
-        <p className="flex items-center gap-1 mt-1.5" style={{ fontSize: "11px", color: "#DC2626" }}>
-          <AlertCircle size={11} /> {error}
+        <p className="flex items-center gap-1 mt-1.5" style={{ fontSize: "var(--fs-xs)", color: T.danger }}>
+          <AlertCircle size={12} /> {error}
         </p>
       )}
     </div>
@@ -561,19 +571,38 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
 
   const status = data.status;
   const btnPrimary: React.CSSProperties = {
-    background: "linear-gradient(135deg,#0A6552,#059669)",
-    boxShadow: "0 8px 24px rgba(13,122,99,.3), 0 0 28px rgba(13,122,99,.2)",
-    color: "#fff",
+    background: T.accent,
+    border: `1px solid ${T.accent}`,
+    color: "#FFFFFF",
   };
-  const btnDisabled: React.CSSProperties = { background: "rgba(15,41,38,.06)", color: "#64748B" };
+  const btnDisabled: React.CSSProperties = {
+    background: T.track, border: `1px solid ${T.border}`, color: T.faint, cursor: "not-allowed",
+  };
   const btnOutline: React.CSSProperties = { background: "rgba(15,41,38,.06)", border: `1px solid ${T.border2}`, color: T.muted };
 
   return (
-    <div className="fixed inset-0 flex overflow-hidden" style={{
+    <div className="rf-license fixed inset-0 flex overflow-hidden" style={{
       background: T.bg, color: T.text, colorScheme: "light",
       fontFamily: "var(--font-inter), 'Segoe UI', system-ui, -apple-system, sans-serif",
     }}>
       <style>{`
+        /* Same fluid ramps as the login page, so a label, an input and a
+           button are the same size on both screens at every width. They were
+           previously fixed at 14px and 52px here, which meant the two pages
+           agreed at roughly 1280px and diverged everywhere else. */
+        .rf-license{
+          --fs-label: clamp(13px, 1vw, 17px);
+          --fs-input: clamp(14px, 1.08vw, 18px);
+          --fs-btn:   clamp(14.5px, 1.12vw, 19px);
+          --fs-xs:    clamp(11px, .85vw, 14px);
+          --ctl-h:    clamp(46px, 3.5vw, 56px);
+        }
+
+        .lg-icon-btn{transition:background .16s ease,color .16s ease}
+        .lg-icon-btn:hover{background:${T.primarySoft};color:${T.accent}}
+        .lg-btn{transition:background .16s ease,border-color .16s ease}
+        .lg-btn:hover:not(:disabled){background:${T.accent2}!important;border-color:${T.accent2}!important}
+
         @keyframes lg-particle { 0%,100%{opacity:.35;transform:scale(1)} 50%{opacity:1;transform:scale(2.2)} }
         @keyframes lg-fadein   { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
         @keyframes lg-cardin   { from{opacity:0;transform:translateY(30px) scale(.97)} to{opacity:1;transform:translateY(0) scale(1)} }
@@ -682,8 +711,8 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
                   {error && <div className="mt-4"><ErrBanner msg={error} /></div>}
 
                   <button onClick={handleSendOtp} disabled={isPending}
-                    className="lg-btn mt-5 w-full flex items-center justify-center gap-2 rounded-2xl font-bold text-sm"
-                    style={{ height: "52px", ...(isPending ? btnDisabled : btnPrimary) }}>
+                    className="lg-btn mt-5 w-full flex items-center justify-center gap-2 font-semibold"
+                    style={{ height: "var(--ctl-h)", borderRadius: "10px", fontSize: "var(--fs-btn)", ...(isPending ? btnDisabled : btnPrimary) }}>
                     {isPending
                       ? <><Loader2 size={16} className="animate-spin" /> Sending Code…</>
                       : <><Mail size={16} /> Verify Email &amp; Continue</>}
@@ -732,8 +761,8 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
                   {success && <div className="mb-3"><OkBanner msg={success} /></div>}
 
                   <button onClick={handleVerifyAndStartTrial} disabled={isPending || otp.length !== 6}
-                    className="lg-btn w-full flex items-center justify-center gap-2 rounded-2xl font-bold text-sm"
-                    style={{ height: "52px", ...((isPending || otp.length !== 6) ? btnDisabled : btnPrimary) }}>
+                    className="lg-btn w-full flex items-center justify-center gap-2 font-semibold"
+                    style={{ height: "var(--ctl-h)", borderRadius: "10px", fontSize: "var(--fs-btn)", ...((isPending || otp.length !== 6) ? btnDisabled : btnPrimary) }}>
                     {isPending
                       ? <><Loader2 size={16} className="animate-spin" /> Starting Trial…</>
                       : <><Star size={16} /> Start Free Trial</>}
@@ -856,8 +885,8 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
 
                   <div className="flex flex-col gap-2.5 mt-5">
                     <button onClick={handleActivate} disabled={isPending || activating}
-                      className="lg-btn w-full flex items-center justify-center gap-2 rounded-2xl font-bold text-sm"
-                      style={{ height: "52px", ...(isPending ? btnDisabled : btnPrimary) }}>
+                      className="lg-btn w-full flex items-center justify-center gap-2 font-semibold"
+                      style={{ height: "var(--ctl-h)", borderRadius: "10px", fontSize: "var(--fs-btn)", ...(isPending ? btnDisabled : btnPrimary) }}>
                       {isPending ? <><Loader2 size={16} className="animate-spin" /> Activating…</> : <><Key size={16} /> Activate License</>}
                     </button>
                     <button onClick={() => router.push("/license/activate")}
@@ -941,8 +970,8 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
                           value={licKey} onChange={handleKeyInput} icon={Key} />
                         {error && <ErrBanner msg={error} />}
                         <button onClick={handleActivate} disabled={isPending}
-                          className="lg-btn w-full flex items-center justify-center gap-2 rounded-2xl font-bold text-sm"
-                          style={{ height: "52px", ...(isPending ? btnDisabled : btnPrimary) }}>
+                          className="lg-btn w-full flex items-center justify-center gap-2 font-semibold"
+                          style={{ height: "var(--ctl-h)", borderRadius: "10px", fontSize: "var(--fs-btn)", ...(isPending ? btnDisabled : btnPrimary) }}>
                           {isPending ? <><Loader2 size={16} className="animate-spin" /> Activating…</> : <><Key size={16} /> Activate New License</>}
                         </button>
                       </div>
