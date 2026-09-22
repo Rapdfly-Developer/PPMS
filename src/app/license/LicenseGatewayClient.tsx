@@ -744,26 +744,6 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
                 </GlassCard>
               )}
 
-              {/* Trial terms, outside the card. Login puts the same offer in a
-                  strip under its card rather than a pill inside it, so the
-                  card holds only what you have to fill in. */}
-              {status === "NO_LICENSE" && !otpStep && (
-                <div className="w-full flex items-center gap-3 px-4 py-3 text-left"
-                  style={{ marginTop: "var(--vgap)", background: "rgba(255,255,255,.72)", borderRadius: "12px", border: `1px solid ${T.border}` }}>
-                  <span className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
-                    style={{ background: T.primarySoft }}>
-                    <CheckCircle2 size={16} style={{ color: T.accent }} />
-                  </span>
-                  <span className="min-w-0">
-                    <span className="block" style={{ fontSize: "var(--fs-label)", fontWeight: 600, color: T.text }}>
-                      Free 30-day trial
-                    </span>
-                    <span className="block" style={{ fontSize: "var(--fs-sm)", color: T.muted, marginTop: "1px" }}>
-                      30 days · Unlimited modules · No credit card
-                    </span>
-                  </span>
-                </div>
-              )}
 
               {/* ── NO_LICENSE: OTP step ── */}
               {status === "NO_LICENSE" && otpStep && (
