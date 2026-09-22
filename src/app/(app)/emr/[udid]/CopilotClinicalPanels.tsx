@@ -111,13 +111,22 @@ export function PatientProfileCopilotCard({ state }: { state: CopilotCardState<"
   </Shell>;
 }
 
-/** Patient page hosts one authorised bridge and gives users access to Regenerate. */
+/**
+ * Patient page hosts one authorised bridge for the AI patient profile card.
+ *
+ * The card renders directly and always, the same way the EMR tab cards do:
+ * expanded, no toggle, no click. Its own loading and timeout states are what
+ * the doctor sees while the analysis is still running.
+ *
+ * The bridge below is mounted but permanently clipped. It is not UI on this
+ * page — it is the thing that FILLS the card store, so it cannot be unmounted
+ * without leaving the card reading a store nothing writes to. Clipped rather
+ * than removed from the tree, and marked inert so neither the keyboard nor a
+ * screen reader can reach a frame the doctor cannot see.
+ */
 export function PatientProfileCopilotHost({ visitId, children }: { visitId: string; children: ReactNode }) {
-  const [open, setOpen] = useState(false);
-  const id = useId();
   return <div className="space-y-3 mb-5">
     <PatientProfileCopilotPanel visitId={visitId} />
-    <button type="button" aria-expanded={open} aria-controls={id} onClick={() => setOpen(!open)} className="text-sm font-medium text-[var(--color-primary-700)] underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2">{open ? "Hide AI Clinical Copilot" : "Open AI Clinical Copilot"}</button>
-    <div className="relative"><div id={id} className={open ? undefined : "absolute inset-x-0 top-0 h-0 overflow-hidden opacity-0 pointer-events-none"} {...(open ? {} : { inert: true, "aria-hidden": true })}>{children}</div></div>
+    <div className="relative"><div className="absolute inset-x-0 top-0 h-0 overflow-hidden opacity-0 pointer-events-none" inert aria-hidden="true">{children}</div></div>
   </div>;
 }

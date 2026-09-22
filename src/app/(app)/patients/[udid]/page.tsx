@@ -352,9 +352,9 @@ export default async function PatientProfilePage({
               feature was invisible here.
 
               profileMode makes the slot wrap its bridge in
-              PatientProfileCopilotHost, which shows the card plus an
-              Open/Hide AI Clinical Copilot toggle and keeps the iframe
-              mounted-but-clipped while closed.
+              PatientProfileCopilotHost, which renders the card directly and
+              always — expanded, with its three sub-tabs, no click required —
+              and keeps the iframe mounted but permanently clipped.
 
               Still gated on an open visit for this patient: the slot signs a
               plugin token against a specific visitId and the server rejects
