@@ -4,13 +4,14 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   Puzzle, CheckCircle2, XCircle, Clock, AlertCircle,
-  Power, PowerOff, Trash2, Download, RefreshCw, Info,
+  Power, PowerOff, Trash2, Download, RefreshCw, Info, ShieldCheck,
 } from "lucide-react";
 import {
   installPluginAction,
   enablePluginAction,
   disablePluginAction,
   removePluginAction,
+  activatePluginLicenseAction,
 } from "./actions";
 
 // ── Types ─────────────────────────────────────────────────────────────────
@@ -141,7 +142,11 @@ function PluginCard({
                 )}
                 {plugin.status === "INSTALLED" && (
                   <>
-                    <ActionBtn variant="primary" icon={<Power size={11} />} label="Enable" pending={pending} onClick={() => onAction(plugin.pluginId, "enable")} />
+                    {plugin.license?.isBlocked ? (
+                      <ActionBtn variant="primary" icon={<ShieldCheck size={11} />} label="Activate" pending={pending} onClick={() => onAction(plugin.pluginId, "activate")} />
+                    ) : (
+                      <ActionBtn variant="primary" icon={<Power size={11} />} label="Enable" pending={pending} onClick={() => onAction(plugin.pluginId, "enable")} />
+                    )}
                     <ActionBtn variant="danger" icon={<Trash2 size={11} />} label="Remove" pending={pending} onClick={() => onAction(plugin.pluginId, "remove")} />
                   </>
                 )}
@@ -150,7 +155,11 @@ function PluginCard({
                 )}
                 {plugin.status === "DISABLED" && (
                   <>
-                    <ActionBtn variant="primary" icon={<Power size={11} />} label="Enable" pending={pending} onClick={() => onAction(plugin.pluginId, "enable")} />
+                    {plugin.license?.isBlocked ? (
+                      <ActionBtn variant="primary" icon={<ShieldCheck size={11} />} label="Activate" pending={pending} onClick={() => onAction(plugin.pluginId, "activate")} />
+                    ) : (
+                      <ActionBtn variant="primary" icon={<Power size={11} />} label="Enable" pending={pending} onClick={() => onAction(plugin.pluginId, "enable")} />
+                    )}
                     <ActionBtn variant="danger" icon={<Trash2 size={11} />} label="Remove" pending={pending} onClick={() => onAction(plugin.pluginId, "remove")} />
                   </>
                 )}
@@ -201,6 +210,7 @@ export function PluginManagerClient({ plugins, canManage }: Props) {
       else if (action === "enable") result = await enablePluginAction(pluginId);
       else if (action === "disable") result = await disablePluginAction(pluginId);
       else if (action === "remove") result = await removePluginAction(pluginId);
+      else if (action === "activate") result = await activatePluginLicenseAction(pluginId);
 
       if (result.success) {
         showToast(`Plugin ${action}d successfully.`, true);

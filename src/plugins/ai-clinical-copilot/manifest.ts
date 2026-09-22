@@ -130,8 +130,7 @@ export const manifest: PluginManifest = {
 
   licensing: {
     featureKey: "AI_COPILOT",
-    trialDays: 14,
-    monthlyUsageLimit: 500,
+    permanent: true,
   },
 
   externalOrigin: process.env.NEXT_PUBLIC_COPILOT_ORIGIN ?? null,

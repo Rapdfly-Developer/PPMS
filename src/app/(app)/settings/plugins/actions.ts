@@ -12,6 +12,7 @@ import {
   listPluginsForDoctor,
   getPluginStatus,
   checkPluginLicense,
+  activatePluginLicense,
 } from "@/plugin-framework";
 import {
   savePluginConfigBatch,
@@ -149,6 +150,21 @@ export async function getPluginConfigAction(
   } catch {
     return { config: {}, error: "Plugin not found." };
   }
+}
+
+// ── Activate plugin license (permanent, no expiry) ───────────────────────
+
+export async function activatePluginLicenseAction(
+  pluginId: string,
+): Promise<{ success: boolean; error?: string }> {
+  const user = await requireRole("DOCTOR");
+  const doctorId = user.profileId;
+
+  await activatePluginLicense(pluginId, doctorId);
+
+  writeAudit(user.id, "PLUGIN_LICENSE", pluginId, "LICENSE_ACTIVATED");
+  revalidatePath("/settings/plugins");
+  return { success: true };
 }
 
 // ── Get license info for a plugin ─────────────────────────────────────────

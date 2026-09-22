@@ -18,7 +18,7 @@ import {
 } from "./registry";
 import { registerPluginPermissions } from "./permissions";
 import { runLifecycleHook } from "./lifecycle";
-import { createPluginTrial } from "./license";
+import { createPluginTrial, activatePluginLicense } from "./license";
 import type { PluginRecord, PluginStatus } from "./types";
 import {
   PluginDisabledError,
@@ -76,8 +76,13 @@ export async function installPlugin(
   // Register permissions into the PPMS permission system
   await registerPluginPermissions(plugin.manifest);
 
-  // Create trial license (14 days by default, or manifest-specified)
-  await createPluginTrial(pluginId, doctorId, plugin.manifest.licensing);
+  // Permanent plugins get an ACTIVE license that never expires;
+  // all others start with a trial.
+  if (plugin.manifest.licensing.permanent) {
+    await activatePluginLicense(pluginId, doctorId);
+  } else {
+    await createPluginTrial(pluginId, doctorId, plugin.manifest.licensing);
+  }
 
   // Run plugin's own onInstall hook (best-effort — never block install)
   await runLifecycleHook(plugin, "onInstall", { doctorId, version: plugin.manifest.version });

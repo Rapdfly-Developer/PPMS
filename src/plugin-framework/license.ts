@@ -111,6 +111,35 @@ export async function checkPluginLicense(
 }
 
 /**
+ * Permanently activate a plugin license with no expiry date.
+ * Use for first-party plugins that should never expire.
+ * Safe to call multiple times — idempotent upsert.
+ */
+export async function activatePluginLicense(
+  pluginId: string,
+  doctorId: string,
+): Promise<void> {
+  await prisma.pluginLicense.upsert({
+    where: { pluginId_doctorId: { pluginId, doctorId } },
+    update: {
+      status: "ACTIVE",
+      expiresAt: null,
+      usageResetAt: new Date(),
+    },
+    create: {
+      pluginId,
+      doctorId,
+      status: "ACTIVE",
+      expiresAt: null,
+      usageLimit: null,
+      usageResetAt: new Date(),
+      usageCount: 0,
+    },
+  });
+  cache.delete(cacheKey(pluginId, doctorId));
+}
+
+/**
  * Create a trial license for a newly installed plugin.
  * Idempotent — safe to call even if one already exists.
  */

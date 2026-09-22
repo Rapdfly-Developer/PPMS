@@ -75,6 +75,11 @@ export type PluginLicensingSpec = {
   trialDays?: number;
   /** Monthly usage cap for metered plugins (null = unlimited). */
   monthlyUsageLimit?: number;
+  /**
+   * When true, installs receive a permanent ACTIVE license with no expiry date.
+   * Use for first-party / self-hosted plugins that should never expire.
+   */
+  permanent?: boolean;
 };
 
 // ── Dependency declaration ────────────────────────────────────────────────

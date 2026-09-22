@@ -90,6 +90,7 @@ export {
 export {
   checkPluginLicense,
   createPluginTrial,
+  activatePluginLicense,
   incrementPluginUsage,
   invalidatePluginLicenseCache,
 } from "./license";
