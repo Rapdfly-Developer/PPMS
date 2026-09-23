@@ -53,11 +53,11 @@ export default async function PatientVisitsPage({
   const totalVisits = pastVisits.length;
 
   return (
-    <div className="fade-in pb-12 max-w-2xl mx-auto">
+    <div className="fade-in pb-12">
       {/* Header */}
       <div className="flex items-center justify-between mb-5">
         <div>
-          <h1 className="text-lg sm:text-xl font-bold text-[var(--color-ink-900)]">Previous Visits</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-[var(--color-ink-900)]">Previous Visits</h1>
           <p className="text-sm text-[var(--color-ink-400)] mt-0.5">
             {totalVisits} visit{totalVisits !== 1 ? "s" : ""} on record
           </p>

@@ -1,15 +1,15 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { format } from "date-fns";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Building2, Stethoscope } from "lucide-react";
 import { EmrViewerButton, VisitDownloadButton } from "../EmrViewerModal";
 import { VisitSummaryTabs } from "../VisitSummaryTabs";
 
 export interface VisitRow {
   id:          string;
   visitNumber: number;
-  date:        string; // ISO
+  date:        string;
   status:      string;
   visitType:   string | null;
   hospital:    { name: string } | null;
@@ -19,26 +19,24 @@ export interface VisitRow {
 }
 
 export function VisitsListClient({ visits, udid }: { visits: VisitRow[]; udid: string }) {
-  // visits[0] = most recent (highest visit number)
   const [selectedIdx, setSelectedIdx] = useState(0);
   const tabsRef = useRef<HTMLDivElement>(null);
 
   if (visits.length === 0) {
     return (
       <div className="text-center py-16 text-[var(--color-ink-400)]">
-        <p className="text-[15px] sm:text-base">No visits recorded yet.</p>
+        <p className="text-sm sm:text-base">No visits recorded yet.</p>
       </div>
     );
   }
 
-  const v       = visits[selectedIdx];
+  const v        = visits[selectedIdx];
   const isClosed = v.status === "CLOSED";
-  const canPrev  = selectedIdx < visits.length - 1; // older visit
-  const canNext  = selectedIdx > 0;                  // newer visit
+  const canPrev  = selectedIdx < visits.length - 1;
+  const canNext  = selectedIdx > 0;
 
   function goTo(idx: number) {
     setSelectedIdx(idx);
-    // Scroll the selected tab into view
     const tabs = tabsRef.current;
     if (!tabs) return;
     const tab = tabs.children[idx] as HTMLElement | undefined;
@@ -50,20 +48,18 @@ export function VisitsListClient({ visits, udid }: { visits: VisitRow[]; udid: s
 
       {/* ── Tab bar ──────────────────────────────────────────────────── */}
       <div className="flex items-center gap-2">
-        {/* Prev arrow (← older) */}
         <button
           onClick={() => goTo(selectedIdx + 1)}
           disabled={!canPrev}
           aria-label="Older visit"
-          className="shrink-0 size-8 flex items-center justify-center rounded-lg border border-[var(--color-border)] bg-white text-[var(--color-ink-500)] hover:bg-[var(--color-surface-sunken)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          className="shrink-0 size-8 sm:size-9 flex items-center justify-center rounded-lg border border-[var(--color-border)] bg-white text-[var(--color-ink-500)] hover:bg-[var(--color-surface-sunken)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
         >
           <ChevronLeft size={15} />
         </button>
 
-        {/* Scrollable visit tabs */}
         <div
           ref={tabsRef}
-          className="flex-1 flex gap-2 overflow-x-auto scrollbar-hide py-1 scroll-smooth"
+          className="flex-1 flex gap-1.5 overflow-x-auto scrollbar-hide py-1 scroll-smooth"
           style={{ scrollbarWidth: "none" }}
         >
           {visits.map((visit, idx) => {
@@ -89,81 +85,89 @@ export function VisitsListClient({ visits, udid }: { visits: VisitRow[]; udid: s
           })}
         </div>
 
-        {/* Next arrow (→ newer) */}
         <button
           onClick={() => goTo(selectedIdx - 1)}
           disabled={!canNext}
           aria-label="Newer visit"
-          className="shrink-0 size-8 flex items-center justify-center rounded-lg border border-[var(--color-border)] bg-white text-[var(--color-ink-500)] hover:bg-[var(--color-surface-sunken)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          className="shrink-0 size-8 sm:size-9 flex items-center justify-center rounded-lg border border-[var(--color-border)] bg-white text-[var(--color-ink-500)] hover:bg-[var(--color-surface-sunken)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
         >
           <ChevronRight size={15} />
         </button>
       </div>
 
-      {/* ── Single visit card ────────────────────────────────────────── */}
-      <div className="rounded-xl border border-[var(--color-border)] bg-white p-4 flex flex-col gap-3">
-        {/* Header */}
-        <div className="flex items-start justify-between gap-2">
-          <div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-[11px] sm:text-xs font-bold text-[var(--color-primary-700)] bg-[var(--color-primary-50)] px-2 py-0.5 rounded-md">
-                Visit #{v.visitNumber}
-              </span>
-              {isClosed ? (
-                <span className="text-[9px] sm:text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">Completed</span>
-              ) : (
-                <span className="text-[9px] sm:text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">In Progress</span>
+      {/* ── Visit card — 2-col on lg+ ──────────────────────────────── */}
+      <div className="rounded-xl border border-[var(--color-border)] bg-white overflow-hidden">
+        <div className="flex flex-col lg:flex-row">
+
+          {/* Left panel: visit metadata */}
+          <div className="lg:w-64 xl:w-72 2xl:w-80 shrink-0 p-5 flex flex-col gap-4 border-b lg:border-b-0 lg:border-r border-[var(--color-border)] bg-[var(--color-surface-sunken)]">
+
+            {/* Visit number + status badges */}
+            <div>
+              <div className="flex items-center gap-2 flex-wrap mb-2">
+                <span className="text-xs font-bold text-[var(--color-primary-700)] bg-[var(--color-primary-50)] px-2 py-0.5 rounded-md">
+                  Visit #{v.visitNumber}
+                </span>
+                {isClosed ? (
+                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">Completed</span>
+                ) : (
+                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">In Progress</span>
+                )}
+                {v.visitType && (
+                  <span className="text-[10px] text-[var(--color-ink-400)] font-medium">{v.visitType}</span>
+                )}
+              </div>
+              <p className="text-base sm:text-lg font-bold text-[var(--color-ink-900)]">
+                {format(new Date(v.date), "dd MMM yyyy")}
+              </p>
+            </div>
+
+            {/* Hospital & Doctor */}
+            <div className="flex flex-col gap-2">
+              {v.hospital && (
+                <div className="flex items-center gap-2">
+                  <Building2 size={13} className="shrink-0 text-[var(--color-ink-400)]" />
+                  <span className="text-[12px] sm:text-[13px] text-[var(--color-ink-600)] leading-snug">{v.hospital.name}</span>
+                </div>
               )}
-              {v.visitType && (
-                <span className="text-[9px] sm:text-[10px] text-[var(--color-ink-400)] font-medium">{v.visitType}</span>
+              {v.doctor && (
+                <div className="flex items-center gap-2">
+                  <Stethoscope size={13} className="shrink-0 text-[var(--color-ink-400)]" />
+                  <span className="text-[12px] sm:text-[13px] text-[var(--color-ink-600)]">Dr. {v.doctor.name}</span>
+                </div>
               )}
             </div>
-            <p className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-800)] mt-1.5">
-              {format(new Date(v.date), "dd MMM yyyy")}
-            </p>
+
+            {/* Actions */}
+            <div className="mt-auto pt-2 flex items-center gap-2">
+              {v.generalExam ? (
+                <>
+                  <EmrViewerButton visitId={v.id} visitNumber={v.visitNumber} udid={udid} />
+                  <VisitDownloadButton visitId={v.id} />
+                </>
+              ) : (
+                <span className="inline-flex items-center text-[11px] font-semibold px-3 py-1.5 rounded-lg bg-white border border-[var(--color-border)] text-[var(--color-ink-400)] cursor-not-allowed">
+                  No EMR
+                </span>
+              )}
+            </div>
           </div>
 
-          {v.generalExam ? (
-            <div className="flex items-center gap-1.5 shrink-0">
-              <EmrViewerButton visitId={v.id} visitNumber={v.visitNumber} udid={udid} />
-              <VisitDownloadButton visitId={v.id} />
-            </div>
-          ) : (
-            <span className="shrink-0 inline-flex items-center text-[11px] sm:text-xs font-semibold px-3 py-1.5 rounded-lg bg-[var(--color-surface-sunken)] text-[var(--color-ink-400)] cursor-not-allowed">
-              No EMR
-            </span>
-          )}
-        </div>
+          {/* Right panel: summary */}
+          <div className="flex-1 min-w-0 p-5">
+            <VisitSummaryTabs
+              visitId={v.id}
+              complaint={v.generalExam?.chiefComplaint ?? null}
+              diagnoses={v.diagnoses.map((d) => d.description)}
+              bare
+            />
+          </div>
 
-        {/* Hospital / Doctor */}
-        <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[11px] sm:text-xs text-[var(--color-ink-600)]">
-          {v.hospital && (
-            <span className="flex items-center gap-1.5 col-span-2 sm:col-span-1">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0 text-[var(--color-ink-400)]">
-                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
-              </svg>
-              {v.hospital.name}
-            </span>
-          )}
-          {v.doctor && (
-            <span className="flex items-center gap-1.5 col-span-2 sm:col-span-1">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0 text-[var(--color-ink-400)]">
-                <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
-              </svg>
-              Dr. {v.doctor.name}
-            </span>
-          )}
         </div>
-
-        <VisitSummaryTabs
-          visitId={v.id}
-          complaint={v.generalExam?.chiefComplaint ?? null}
-          diagnoses={v.diagnoses.map((d) => d.description)}
-        />
       </div>
 
       {/* ── Visit counter ────────────────────────────────────────────── */}
-      <p className="text-center text-[11px] sm:text-xs text-[var(--color-ink-400)]">
+      <p className="text-center text-xs text-[var(--color-ink-400)]">
         Showing visit {visits.length - selectedIdx} of {visits.length}
       </p>
 
