@@ -1,3 +1,6 @@
+// PPMS - Personal Patient Management System
+// Multi-tenant EMR & appointment platform for visiting ophthalmologists
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -7,632 +10,210 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model AnteriorSegment {
-  id        String   @id
-  visitId   String   @unique
-  re        String?
-  le        String?
-  updatedAt DateTime
-  Visit     Visit    @relation(fields: [visitId], references: [id])
-}
+// ──────────────────────────────────────────────────────────────────────────
+// Identity & tenancy
+// ──────────────────────────────────────────────────────────────────────────
 
-model Appointment {
-  id                    String    @id
-  patientId             String
-  doctorId              String?
-  hospitalId            String
-  dateTime              DateTime
-  visitType             String    @default("General OPD")
-  status                String    @default("REQUESTED")
-  isWalkIn              Boolean   @default(false)
-  notes                 String?
-  createdAt             DateTime  @default(now())
-  completedAt           DateTime?
-  completedBy           String?
-  consultationStatus    String?
-  arrivedAt             DateTime?
-  partialDispenseReason String?
-  partialDispenseAt     DateTime?
-  Doctor                Doctor?   @relation(fields: [doctorId], references: [id])
-  Hospital              Hospital  @relation(fields: [hospitalId], references: [id])
-  Patient               Patient   @relation(fields: [patientId], references: [id])
-  Visit                 Visit?
+// Role: DOCTOR | HOSPITAL | REFRACTIONIST
+model User {
+  id            String   @id @default(cuid())
+  username      String   @unique
+  passwordHash  String
+  role          String
+  email         String?
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
 
-  @@index([doctorId, dateTime])
-  @@index([hospitalId, dateTime])
-  @@index([patientId])
-  @@index([status])
-}
-
-model AuditLog {
-  id         String   @id
-  userId     String
-  entityType String
-  entityId   String
-  action     String
-  oldValue   String?
-  newValue   String?
-  timestamp  DateTime @default(now())
-  actionType String?
-  hospitalId String?
-  ipAddress  String?
-  moduleName String?
-  userName   String?
-  User       User     @relation(fields: [userId], references: [id])
-
-  @@index([entityType, entityId])
-  @@index([hospitalId, timestamp])
-  @@index([userId, timestamp])
-}
-
-model ChipOption {
-  id         String    @id
-  category   String
-  value      String
-  label      String
-  hospitalId String?
-  sortOrder  Int       @default(0)
-  active     Boolean   @default(true)
-  createdAt  DateTime  @default(now())
-  Hospital   Hospital? @relation(fields: [hospitalId], references: [id])
-
-  @@unique([category, value, hospitalId])
-  @@index([category, hospitalId])
-}
-
-model ColourVisionContrastSensitivity {
-  id               String   @id
-  visitId          String   @unique
-  re               String?
-  le               String?
-  reviewedByDoctor Boolean  @default(false)
-  updatedAt        DateTime
-  Visit            Visit    @relation(fields: [visitId], references: [id])
-}
-
-model CounsellingRecord {
-  id                       String    @id
-  visitId                  String    @unique
-  createdAt                DateTime  @default(now())
-  updatedAt                DateTime
-  paymentType              String?
-  paymentMode              String?
-  schemeName               String?
-  schemeType               String?
-  outOfPocket              String?
-  iolType                  String?
-  iolLensName              String?
-  iolPower                 String?
-  iolBrand                 String?
-  iolToric                 Boolean   @default(false)
-  laterality               String?
-  procedure                String?
-  anaesthesia              String?
-  estimateAmount           Decimal?  @db.Decimal(10, 2)
-  estimateVague            Boolean   @default(false)
-  fitForSurgery            Boolean   @default(false)
-  advancePaid              Decimal?  @db.Decimal(10, 2)
-  dateOfSurgery            DateTime?
-  eligibleForSurgery       Boolean   @default(false)
-  additionalInvestigations Boolean   @default(false)
-  investigationDetails     String?
-  surgeryDeferred          Boolean   @default(false)
-  deferralReason           String?
-  deferralNotes            String?
-  status                   String    @default("DRAFT")
-  submittedAt              DateTime?
-  doctorDecision           String?
-  doctorDecisionNotes      String?
-  doctorReviewedAt         DateTime?
-  confirmedAt              DateTime?
-  policyNumber             String?
-  Visit                    Visit     @relation(fields: [visitId], references: [id])
-}
-
-model DataRightsRequest {
-  id          String    @id
-  patientId   String
-  type        String
-  description String?
-  status      String    @default("PENDING")
-  resolution  String?
-  resolvedBy  String?
-  resolvedAt  DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime
-  Patient     Patient   @relation(fields: [patientId], references: [id])
-
-  @@index([patientId, type])
-  @@index([status, createdAt])
-}
-
-model DemoRequest {
-  id             String   @id
-  fullName       String
-  email          String
-  phone          String
-  clinicName     String?
-  specialization String?
-  city           String?
-  preferredDate  String?
-  preferredTime  String?
-  message        String?
-  status         String   @default("NEW")
-  createdAt      DateTime @default(now())
-
-  @@index([createdAt])
-  @@index([status, createdAt])
-}
-
-model Diagnosis {
-  id           String    @id
-  visitId      String
-  icd10Code    String
-  description  String
-  status       String    @default("ACTIVE")
-  laterality   String?
-  provisional  Boolean   @default(false)
-  createdAt    DateTime  @default(now())
-  confirmedAt  DateTime?
-  protocolId   String?
-  protocolName String?
-  Visit        Visit     @relation(fields: [visitId], references: [id])
-
-  @@index([visitId])
-}
-
-model DiplopiaChart {
-  id        String   @id
-  visitId   String   @unique
-  grid      String
-  updatedAt DateTime
-  Visit     Visit    @relation(fields: [visitId], references: [id])
-}
-
-model Dispense {
-  id             String   @id
-  visitId        String   @unique
-  shortSummary   String
-  longSummaryUrl String?
-  createdAt      DateTime @default(now())
-  Visit          Visit    @relation(fields: [visitId], references: [id])
+  doctor        Doctor?
+  hospitalStaff HospitalStaff?
+  refractionist Refractionist?
+  auditLogs     AuditLog[]
+  notifications Notification[]
+  loginHistory  UserLoginHistory[]
+  exportOtps         ExportOtp[]
+  passwordResetTokens PasswordResetToken[]
 }
 
 model Doctor {
-  id                        String                      @id
-  userId                    String                      @unique
-  name                      String
-  specialty                 String                      @default("")
-  contact                   String?
-  credentials               String?
-  createdAt                 DateTime                    @default(now())
-  shortCode                 String?                     @unique
-  email                     String?
-  experience                String?
-  medicalRegNumber          String?
-  qualifications            String?
-  signatureUrl              String?
-  Appointment               Appointment[]
-  User                      User                        @relation(fields: [userId], references: [id])
-  DoctorAvailability        DoctorAvailability[]
-  DoctorHospitalLink        DoctorHospitalLink[]
-  DoctorLeave               DoctorLeave[]
-  GeneratedSchedule         GeneratedSchedule[]
-  IndividualDayAvailability IndividualDayAvailability[]
-  MonthlyAvailability       MonthlyAvailability[]
-  Patient                   Patient[]
-  PluginLicense             PluginLicense[]
-  PluginRegistration        PluginRegistration[]
-  PostOpReview              PostOpReview[]
-  Refractionist             Refractionist[]
-  ScheduleException         ScheduleException[]
-  SurgerySchedule           SurgerySchedule[]
-  TenantLicense             TenantLicense?
-  Visit                     Visit[]
-}
+  id                  String   @id @default(cuid())
+  userId              String   @unique
+  user                User     @relation(fields: [userId], references: [id])
+  name                String
+  shortCode           String?  @unique
+  specialty           String   @default("")
+  contact             String?
+  credentials         String?
+  email               String?
+  experience          String?
+  medicalRegNumber    String?
+  qualifications      String?
+  signatureUrl        String?
+  createdAt           DateTime @default(now())
 
-model DoctorAvailability {
-  id          String   @id
-  doctorId    String
-  hospitalId  String
-  weekday     Int
-  startTime   String
-  endTime     String
-  slotMins    Int      @default(15)
-  createdAt   DateTime @default(now())
-  maxPatients Int      @default(5)
-  status      String   @default("ACTIVE")
-  Doctor      Doctor   @relation(fields: [doctorId], references: [id])
-  Hospital    Hospital @relation(fields: [hospitalId], references: [id])
-}
+  hospitalLinks  DoctorHospitalLink[]
+  refractionists Refractionist[]
+  patients       Patient[]
+  appointments   Appointment[]
+  visits         Visit[]
+  availabilities              DoctorAvailability[]
+  monthlyAvailabilities       MonthlyAvailability[]
+  individualDayAvailabilities IndividualDayAvailability[]
+  leaves                      DoctorLeave[]
+  generatedSchedules          GeneratedSchedule[]
+  scheduleExceptions          ScheduleException[]
+  license                     TenantLicense?
+  surgerySchedules            SurgerySchedule[]
+  postOpReviews               PostOpReview[]
 
-model DoctorHospitalLink {
-  id         String   @id
-  doctorId   String
-  hospitalId String
-  active     Boolean  @default(true)
-  Doctor     Doctor   @relation(fields: [doctorId], references: [id])
-  Hospital   Hospital @relation(fields: [hospitalId], references: [id])
-
-  @@unique([doctorId, hospitalId])
-  @@index([hospitalId])
-}
-
-model DoctorLeave {
-  id         String    @id
-  doctorId   String
-  hospitalId String?
-  date       DateTime
-  leaveType  String    @default("FULL_DAY")
-  halfPeriod String?
-  reason     String?
-  status     String    @default("APPROVED")
-  createdAt  DateTime  @default(now())
-  Doctor     Doctor    @relation(fields: [doctorId], references: [id])
-  Hospital   Hospital? @relation(fields: [hospitalId], references: [id])
-
-  @@index([doctorId, date])
-}
-
-model EmailOtp {
-  id         String    @id
-  email      String
-  otpHash    String
-  loginToken String?   @unique
-  tokenExpAt DateTime?
-  expiresAt  DateTime
-  used       Boolean   @default(false)
-  createdAt  DateTime  @default(now())
-
-  @@index([email, createdAt])
-}
-
-model EmailVerification {
-  id        String   @id
-  email     String
-  code      String
-  expiresAt DateTime
-  used      Boolean  @default(false)
-  createdAt DateTime @default(now())
-
-  @@index([email])
-}
-
-model ExportOtp {
-  id        String   @id
-  userId    String
-  code      String
-  expiresAt DateTime
-  used      Boolean  @default(false)
-  createdAt DateTime @default(now())
-  User      User     @relation(fields: [userId], references: [id])
-
-  @@index([userId, expiresAt])
-}
-
-model GeneralExamination {
-  id                 String   @id
-  visitId            String   @unique
-  bp                 String?
-  pulse              String?
-  temperature        String?
-  weight             String?
-  chiefComplaint     String?
-  hpi                String?
-  provisionalDx      String?
-  pastMedicalHistory String?
-  pmhOtherText       String?
-  medications        String?
-  allergies          String?
-  nkda               Boolean  @default(false)
-  updatedAt          DateTime
-  Visit              Visit    @relation(fields: [visitId], references: [id])
-}
-
-model GeneratedSchedule {
-  id          String   @id
-  doctorId    String
-  date        DateTime
-  hospitalId  String
-  startTime   String
-  endTime     String
-  slotMins    Int      @default(15)
-  maxPatients Int      @default(5)
-  isModified  Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  Doctor      Doctor   @relation(fields: [doctorId], references: [id])
-  Hospital    Hospital @relation(fields: [hospitalId], references: [id])
-
-  @@index([doctorId, date])
-}
-
-model HessChart {
-  id             String   @id
-  visitId        String   @unique
-  grid           String
-  interpretation String?
-  updatedAt      DateTime
-  Visit          Visit    @relation(fields: [visitId], references: [id])
+  // Plugin Framework
+  pluginRegistrations PluginRegistration[]
+  pluginLicenses      PluginLicense[]
 }
 
 model Hospital {
-  id                        String                      @id
-  name                      String
-  shortCode                 String                      @unique
-  address                   String?
-  contact                   String?
-  retentionYears            Int                         @default(7)
-  createdAt                 DateTime                    @default(now())
-  email                     String?
-  logoUrl                   String?
-  Appointment               Appointment[]
-  ChipOption                ChipOption[]
-  DoctorAvailability        DoctorAvailability[]
-  DoctorHospitalLink        DoctorHospitalLink[]
-  DoctorLeave               DoctorLeave[]
-  GeneratedSchedule         GeneratedSchedule[]
-  HospitalIntegration       HospitalIntegration?
-  HospitalStaff             HospitalStaff[]
-  IndividualDayAvailability IndividualDayAvailability[]
-  InsuranceClaim            InsuranceClaim[]
-  InsuranceCompany          InsuranceCompany[]
-  InsurancePreAuthorization InsurancePreAuthorization[]
-  IntegrationLog            IntegrationLog[]
-  MonthlyAvailability       MonthlyAvailability[]
-  Patient                   Patient[]
-  PatientInsurance          PatientInsurance[]
-  PluginConfig              PluginConfig[]
-  Refractionist             Refractionist[]
-  ScheduleException         ScheduleException[]
-  SurgerySchedule           SurgerySchedule[]
-  Visit                     Visit[]
+  id             String   @id @default(cuid())
+  name           String
+  shortCode      String   @unique
+  email          String?
+  address        String?
+  contact        String?
+  logoUrl        String?
+  retentionYears Int      @default(7)
+  createdAt      DateTime @default(now())
+
+  doctorLinks    DoctorHospitalLink[]
+  staff          HospitalStaff[]
+  refractionists Refractionist[]
+  patients       Patient[]
+  appointments   Appointment[]
+  visits         Visit[]
+  availabilities              DoctorAvailability[]
+  monthlyAvailabilities       MonthlyAvailability[]
+  individualDayAvailabilities IndividualDayAvailability[]
+  leaves                      DoctorLeave[]
+  generatedSchedules          GeneratedSchedule[]
+  scheduleExceptions          ScheduleException[]
+  chipOptions                 ChipOption[]
+  integration    HospitalIntegration?
+  integrationLogs IntegrationLog[]
+
+  insuranceCompanies InsuranceCompany[]
+  patientInsurances  PatientInsurance[]
+  preAuths           InsurancePreAuthorization[]
+  surgerySchedules   SurgerySchedule[]
+  insuranceClaims    InsuranceClaim[]
+
+  // Plugin Framework
+  pluginConfigs PluginConfig[]
 }
 
+// ──────────────────────────────────────────────────────────────────────────
+// Hospital Integration Engine
+// PPMS keeps a standard internal clinical data model; each hospital gets an
+// adapter + mapping config so new hospitals are onboarded via configuration,
+// not core-code changes.
+// ──────────────────────────────────────────────────────────────────────────
+
+// integrationType: FHIR | HL7 | REST | CSV
+// authType: NONE | API_KEY | BEARER | BASIC | OAUTH2
 model HospitalIntegration {
-  id                   String           @id
-  hospitalId           String           @unique
-  integrationType      String           @default("REST")
-  apiEndpoint          String?
-  authType             String           @default("NONE")
-  credentialsEncrypted String?
-  oauthTokenUrl        String?
-  fieldMappingJson     String?
-  transformationRules  String?
-  syncEnabled          Boolean          @default(false)
-  maxRetries           Int              @default(3)
-  createdAt            DateTime         @default(now())
-  updatedAt            DateTime
-  Hospital             Hospital         @relation(fields: [hospitalId], references: [id])
-  IntegrationLog       IntegrationLog[]
+  id                  String   @id @default(cuid())
+  hospitalId          String   @unique
+  hospital            Hospital @relation(fields: [hospitalId], references: [id])
+  integrationType     String   @default("REST")
+  apiEndpoint         String?
+  authType            String   @default("NONE")
+  credentialsEncrypted String? // AES-256-GCM; API key / token / client secret
+  oauthTokenUrl       String?  // OAUTH2 only
+  fieldMappingJson    String?  // JSON: PPMS field -> hospital field overrides
+  transformationRules String?  // JSON: value-level transforms (e.g. sex M/F -> 1/2)
+  syncEnabled         Boolean  @default(false)
+  maxRetries          Int      @default(3)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  logs IntegrationLog[]
 }
 
-model HospitalStaff {
-  id         String   @id
-  userId     String   @unique
-  hospitalId String
-  name       String
-  mobile     String?
-  createdAt  DateTime @default(now())
-  Hospital   Hospital @relation(fields: [hospitalId], references: [id])
-  User       User     @relation(fields: [userId], references: [id])
-
-  @@index([hospitalId])
-}
-
-model IOPReading {
-  id               String   @id
-  visitId          String
-  re               Float?
-  le               Float?
-  method           String?
-  takenAt          DateTime @default(now())
-  source           String   @default("DOCTOR")
-  reviewedByDoctor Boolean  @default(false)
-  Visit            Visit    @relation(fields: [visitId], references: [id])
-
-  @@index([visitId])
-}
-
-model IndividualDayAvailability {
-  id          String   @id
-  doctorId    String
-  hospitalId  String
-  date        DateTime
-  startTime   String
-  endTime     String
-  slotMins    Int      @default(15)
-  maxPatients Int      @default(5)
-  reason      String?
-  status      String   @default("ACTIVE")
-  createdAt   DateTime @default(now())
-  Doctor      Doctor   @relation(fields: [doctorId], references: [id])
-  Hospital    Hospital @relation(fields: [hospitalId], references: [id])
-
-  @@index([doctorId, hospitalId, date])
-}
-
-model InsuranceClaim {
-  id                        String                     @id
-  claimNumber               String                     @unique
-  hospitalId                String
-  patientInsuranceId        String
-  insuranceCompanyId        String
-  preAuthId                 String?                    @unique
-  roomCharges               Float                      @default(0)
-  surgeryCharges            Float                      @default(0)
-  pharmacyCharges           Float                      @default(0)
-  labCharges                Float                      @default(0)
-  miscCharges               Float                      @default(0)
-  totalBillAmount           Float                      @default(0)
-  approvedAmount            Float?
-  patientResponsibility     Float?
-  status                    String                     @default("CREATED")
-  submittedAt               DateTime?
-  approvedAt                DateTime?
-  closedAt                  DateTime?
-  createdAt                 DateTime                   @default(now())
-  updatedAt                 DateTime
-  Hospital                  Hospital                   @relation(fields: [hospitalId], references: [id])
-  InsuranceCompany          InsuranceCompany           @relation(fields: [insuranceCompanyId], references: [id])
-  PatientInsurance          PatientInsurance           @relation(fields: [patientInsuranceId], references: [id])
-  InsurancePreAuthorization InsurancePreAuthorization? @relation(fields: [preAuthId], references: [id])
-  InsuranceClaimDocument    InsuranceClaimDocument[]
-  InsurancePayment          InsurancePayment[]
-  InsuranceQuery            InsuranceQuery[]
-  InsuranceSettlement       InsuranceSettlement[]
-
-  @@index([claimNumber])
-  @@index([hospitalId, status])
-}
-
-model InsuranceClaimDocument {
-  id             String         @id
-  claimId        String
-  docType        String
-  fileName       String
-  fileUrl        String
-  uploadedBy     String
-  uploadedAt     DateTime       @default(now())
-  InsuranceClaim InsuranceClaim @relation(fields: [claimId], references: [id], onDelete: Cascade)
-
-  @@index([claimId])
-}
-
-model InsuranceCompany {
-  id                        String                      @id
-  hospitalId                String
-  name                      String
-  contactPerson             String?
-  email                     String?
-  phone                     String?
-  address                   String?
-  tpaName                   String?
-  active                    Boolean                     @default(true)
-  createdAt                 DateTime                    @default(now())
-  updatedAt                 DateTime
-  InsuranceClaim            InsuranceClaim[]
-  Hospital                  Hospital                    @relation(fields: [hospitalId], references: [id])
-  InsurancePreAuthorization InsurancePreAuthorization[]
-  PatientInsurance          PatientInsurance[]
-
-  @@index([hospitalId, active])
-}
-
-model InsurancePayment {
-  id                  String               @id
-  claimId             String
-  settlementId        String?
-  amount              Float
-  paymentDate         DateTime
-  paymentMode         String               @default("BANK_TRANSFER")
-  referenceNumber     String?
-  notes               String?
-  postedBy            String
-  createdAt           DateTime             @default(now())
-  InsuranceClaim      InsuranceClaim       @relation(fields: [claimId], references: [id], onDelete: Cascade)
-  InsuranceSettlement InsuranceSettlement? @relation(fields: [settlementId], references: [id])
-
-  @@index([claimId])
-}
-
-model InsurancePreAuthorization {
-  id                 String           @id
-  hospitalId         String
-  patientInsuranceId String
-  insuranceCompanyId String
-  diagnosis          String
-  plannedSurgery     String?
-  estimatedCost      Float
-  requestedAmount    Float
-  approvedAmount     Float?
-  authCode           String?
-  status             String           @default("PENDING")
-  notes              String?
-  submittedAt        DateTime?
-  respondedAt        DateTime?
-  createdAt          DateTime         @default(now())
-  updatedAt          DateTime
-  InsuranceClaim     InsuranceClaim?
-  Hospital           Hospital         @relation(fields: [hospitalId], references: [id])
-  InsuranceCompany   InsuranceCompany @relation(fields: [insuranceCompanyId], references: [id])
-  PatientInsurance   PatientInsurance @relation(fields: [patientInsuranceId], references: [id])
-  SurgerySchedule    SurgerySchedule?
-
-  @@index([hospitalId, status])
-}
-
-model InsuranceQuery {
-  id             String         @id
-  claimId        String
-  queryBy        String         @default("INSURER")
-  queryText      String
-  responseText   String?
-  status         String         @default("OPEN")
-  raisedAt       DateTime       @default(now())
-  respondedAt    DateTime?
-  InsuranceClaim InsuranceClaim @relation(fields: [claimId], references: [id], onDelete: Cascade)
-
-  @@index([claimId, status])
-}
-
-model InsuranceSettlement {
-  id               String             @id
-  claimId          String
-  settledAmount    Float
-  settledDate      DateTime
-  referenceNumber  String?
-  notes            String?
-  createdAt        DateTime           @default(now())
-  InsurancePayment InsurancePayment[]
-  InsuranceClaim   InsuranceClaim     @relation(fields: [claimId], references: [id], onDelete: Cascade)
-
-  @@index([claimId])
-}
-
+// status: PENDING | SUCCESS | FAILED
+// recordType: VISIT | PATIENT
 model IntegrationLog {
-  id                  String              @id
-  integrationId       String
-  hospitalId          String
-  patientId           String?
-  visitId             String?
-  recordType          String              @default("VISIT")
-  status              String              @default("PENDING")
-  requestPayload      String?
-  responsePayload     String?
-  errorMessage        String?
-  retryCount          Int                 @default(0)
-  triggeredBy         String?
-  createdAt           DateTime            @default(now())
-  updatedAt           DateTime
-  Hospital            Hospital            @relation(fields: [hospitalId], references: [id])
-  HospitalIntegration HospitalIntegration @relation(fields: [integrationId], references: [id])
+  id              String   @id @default(cuid())
+  integrationId   String
+  integration     HospitalIntegration @relation(fields: [integrationId], references: [id])
+  hospitalId      String
+  hospital        Hospital @relation(fields: [hospitalId], references: [id])
+  patientId       String?
+  visitId         String?
+  recordType      String   @default("VISIT")
+  status          String   @default("PENDING")
+  requestPayload  String?  // what the adapter produced (truncated)
+  responsePayload String?  // hospital ack / error body (truncated)
+  errorMessage    String?
+  retryCount      Int      @default(0)
+  triggeredBy     String?  // AUTO | MANUAL | RETRY
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
-  @@index([createdAt])
   @@index([hospitalId, status])
   @@index([visitId])
+  @@index([createdAt])
 }
 
-model InvestigationOrder {
-  id         String   @id
-  visitId    String
-  category   String
-  testName   String
-  priority   String   @default("ROUTINE")
-  laterality String?
-  notes      String?
-  status     String   @default("ORDERED")
-  resultRef  String?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime
-  Visit      Visit    @relation(fields: [visitId], references: [id])
+// ──────────────────────────────────────────────────────────────────────────
+// Licensing & subscriptions
+// ──────────────────────────────────────────────────────────────────────────
 
-  @@index([visitId])
+// paymentStatus: NONE | PENDING | PAID | FAILED
+// plan: MONTHLY | YEARLY
+// The DOCTOR is the licensee — one license covers the doctor and every
+// hospital they operate. (Renamed conceptually from per-hospital tenancy.)
+model TenantLicense {
+  id                   String    @id @default(cuid())
+  doctorId             String    @unique
+  doctor               Doctor    @relation(fields: [doctorId], references: [id])
+
+  // 30-day free trial
+  trialStartsAt        DateTime  @default(now())
+  trialEndsAt          DateTime
+
+  // Paid subscription (null until first payment)
+  plan                 String?
+  subscriptionStartsAt DateTime?
+  subscriptionEndsAt   DateTime?
+
+  // Razorpay
+  paymentStatus        String    @default("NONE")
+  razorpayOrderId      String?
+  razorpayPaymentId    String?
+  razorpaySignature    String?
+
+  // License key activation (offline/manual key)
+  licenseKey           String?
+  machineId            String?   // browser-generated UUID stored in cookie
+  deviceName           String?
+  lastVerifiedAt       DateTime?
+
+  // Reminder tracking (bitfield: 1=7day, 2=3day, 4=1day)
+  remindersSent        Int       @default(0)
+
+  // HMAC of core license fields — detects out-of-band tampering
+  signature            String?
+
+  isActive             Boolean   @default(true)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  @@index([trialEndsAt])
+  @@index([subscriptionEndsAt])
 }
 
+// Keys minted by the product owner (CLI script or admin card). A key must
+// exist here, unused and unrevoked, before activateLicenseKey accepts it.
 model IssuedLicenseKey {
-  id             String    @id
+  id             String    @id @default(cuid())
   key            String    @unique
-  note           String?
+  note           String?   // customer name / order reference
   months         Int       @default(12)
   createdAt      DateTime  @default(now())
   usedAt         DateTime?
@@ -642,50 +223,686 @@ model IssuedLicenseKey {
   @@index([usedAt])
 }
 
-model LacrimalSacSyringing {
-  id        String   @id
-  visitId   String   @unique
-  re        String?
-  le        String?
-  updatedAt DateTime
-  Visit     Visit    @relation(fields: [visitId], references: [id])
-}
-
+// License activation audit trail shown on /license/activate
 model LicenseEvent {
-  id          String   @id
-  action      String
+  id          String   @id @default(cuid())
+  doctorId    String
+  action      String   // TRIAL_STARTED | ACTIVATED | REACTIVATED | VERIFIED
   keyMasked   String?
   performedBy String?
-  status      String
+  status      String   // SUCCESS | FAILED
   detail      String?
   createdAt   DateTime @default(now())
-  doctorId    String
 
   @@index([doctorId, createdAt])
 }
 
+// Scoped login for a Hospital, linked to exactly one Doctor-Hospital relationship
+model HospitalStaff {
+  id         String   @id @default(cuid())
+  userId     String   @unique
+  user       User     @relation(fields: [userId], references: [id])
+  hospitalId String
+  hospital   Hospital @relation(fields: [hospitalId], references: [id])
+  name       String
+  mobile     String?
+  createdAt  DateTime @default(now())
+
+  @@index([hospitalId])
+}
+
+model DoctorHospitalLink {
+  id         String   @id @default(cuid())
+  doctorId   String
+  doctor     Doctor   @relation(fields: [doctorId], references: [id])
+  hospitalId String
+  hospital   Hospital @relation(fields: [hospitalId], references: [id])
+  active     Boolean  @default(true)
+
+  @@unique([doctorId, hospitalId])
+  @@index([hospitalId])
+}
+
+model Refractionist {
+  id         String   @id @default(cuid())
+  userId     String   @unique
+  user       User     @relation(fields: [userId], references: [id])
+  name       String
+  mobile     String?
+  doctorId   String
+  doctor     Doctor   @relation(fields: [doctorId], references: [id])
+  hospitalId String
+  hospital   Hospital @relation(fields: [hospitalId], references: [id])
+  createdAt  DateTime @default(now())
+}
+
+// ── Availability types ──────────────────────────────────────────────────────
+
+// Weekly recurring slots — lowest priority base schedule
+model DoctorAvailability {
+  id          String   @id @default(cuid())
+  doctorId    String
+  doctor      Doctor   @relation(fields: [doctorId], references: [id])
+  hospitalId  String
+  hospital    Hospital @relation(fields: [hospitalId], references: [id])
+  weekday     Int      // 0=Sun … 6=Sat
+  startTime   String   // "HH:MM" 24h
+  endTime     String
+  slotMins    Int      @default(15)
+  maxPatients Int      @default(5)
+  status      String   @default("ACTIVE") // ACTIVE | INACTIVE
+  createdAt   DateTime @default(now())
+}
+
+// Monthly plan — overrides weekly; e.g. "Every Mon-Fri in Aug at Hospital A, 9-1 PM"
+model MonthlyAvailability {
+  id          String   @id @default(cuid())
+  doctorId    String
+  doctor      Doctor   @relation(fields: [doctorId], references: [id])
+  hospitalId  String
+  hospital    Hospital @relation(fields: [hospitalId], references: [id])
+  validFrom   DateTime // start of validity period
+  validTo     DateTime // end of validity period
+  weekdays    String   // comma-separated day indices: "1,2,3,4,5" = Mon–Fri
+  startTime   String   // "HH:MM" 24h
+  endTime     String
+  slotMins    Int      @default(15)
+  maxPatients Int      @default(5)
+  label       String?  // e.g. "Morning OPD August"
+  status      String   @default("ACTIVE")
+  createdAt   DateTime @default(now())
+
+  @@index([doctorId, hospitalId])
+}
+
+// Individual date override — overrides weekly + monthly
+model IndividualDayAvailability {
+  id          String   @id @default(cuid())
+  doctorId    String
+  doctor      Doctor   @relation(fields: [doctorId], references: [id])
+  hospitalId  String
+  hospital    Hospital @relation(fields: [hospitalId], references: [id])
+  date        DateTime // specific calendar date (time part ignored)
+  startTime   String
+  endTime     String
+  slotMins    Int      @default(15)
+  maxPatients Int      @default(5)
+  reason      String?  // e.g. "Special Camp", "Half Day"
+  status      String   @default("ACTIVE")
+  createdAt   DateTime @default(now())
+
+  @@index([doctorId, hospitalId, date])
+}
+
+// Generated monthly schedule — produced by "Generate Month" from the weekly template
+model GeneratedSchedule {
+  id          String   @id @default(cuid())
+  doctorId    String
+  doctor      Doctor   @relation(fields: [doctorId], references: [id])
+  date        DateTime
+  hospitalId  String
+  hospital    Hospital @relation(fields: [hospitalId], references: [id])
+  startTime   String
+  endTime     String
+  slotMins    Int      @default(15)
+  maxPatients Int      @default(5)
+  isModified  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  @@index([doctorId, date])
+}
+
+// Schedule exceptions — leave, extra OP, recurring half-day blocks, etc.
+model ScheduleException {
+  id               String    @id @default(cuid())
+  doctorId         String
+  doctor           Doctor    @relation(fields: [doctorId], references: [id])
+  date             DateTime
+  type             String    // LEAVE | EXTRA_OP | HOLIDAY
+  hospitalId       String?   // null = all hospitals
+  hospital         Hospital? @relation(fields: [hospitalId], references: [id])
+  startTime        String?
+  endTime          String?
+  slotMins         Int?
+  maxPatients      Int?
+  reason           String?
+  halfPeriod       String?   // MORNING | AFTERNOON
+  isRecurring      Boolean   @default(false)
+  recurringGroupId String?
+  status           String    @default("ACTIVE")
+  createdAt        DateTime  @default(now())
+
+  @@index([doctorId, date])
+}
+
+// Leave — highest priority; blocks all slots on the date
+model DoctorLeave {
+  id         String    @id @default(cuid())
+  doctorId   String
+  doctor     Doctor    @relation(fields: [doctorId], references: [id])
+  hospitalId String?   // null = all hospitals
+  hospital   Hospital? @relation(fields: [hospitalId], references: [id])
+  date       DateTime  // calendar date of leave
+  leaveType  String    @default("FULL_DAY") // FULL_DAY | HALF_DAY
+  halfPeriod String?   // MORNING | AFTERNOON (only for HALF_DAY)
+  reason     String?
+  status     String    @default("APPROVED") // APPROVED | CANCELLED
+  createdAt  DateTime  @default(now())
+
+  @@index([doctorId, date])
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// Patients & appointments
+// ──────────────────────────────────────────────────────────────────────────
+
+// Sex: MALE | FEMALE | OTHER
+model Patient {
+  id              String   @id @default(cuid())
+  uhid            String?  @unique // Hospital-based ID: PPMS-{HOSPITALCODE}-NNNN (nullable for legacy)
+  udid            String?  @unique // Doctor-based ID:   PPMS-{DOCTORCODE}-NNNN
+  doctorId        String?
+  doctor          Doctor?  @relation(fields: [doctorId], references: [id])
+  registeredAtId  String?
+  registeredAt    Hospital? @relation(fields: [registeredAtId], references: [id])
+  name            String
+  age             Int
+  sex             String
+  mobile          String
+  aadhaarEncrypted String  // encrypted at rest; masked in UI except for Doctor
+  category        String   @default("GENERAL") // GENERAL | BPL | SUBSIDISED | ECHS | INSURANCE
+  address         String?
+  city            String?
+  state           String?
+  pincode         String?
+  complaint       String?
+  occupation      String?
+  notes           String?
+  photoUrl        String?
+  aadhaarPhotoUrl String?  // uploaded Aadhaar card scan (blob storage file name)
+  createdAt       DateTime @default(now())
+
+  appointments    Appointment[]
+  visits          Visit[]
+  pastExternalVisits PastExternalVisit[]
+  insurancePolicies  PatientInsurance[]
+  surgerySchedules   SurgerySchedule[]
+  consents           PatientConsent[]
+  dataRightsRequests DataRightsRequest[]
+
+  @@index([doctorId])
+  @@index([registeredAtId])
+  @@index([createdAt])
+  @@index([mobile])
+  @@index([category])
+}
+
+// AppointmentStatus: REQUESTED | CONFIRMED | RESCHEDULED | COMPLETED | CANCELLED | NO_SHOW
+model Appointment {
+  id         String            @id @default(cuid())
+  patientId  String
+  patient    Patient           @relation(fields: [patientId], references: [id])
+  doctorId   String?
+  doctor     Doctor?           @relation(fields: [doctorId], references: [id])
+  hospitalId String
+  hospital   Hospital          @relation(fields: [hospitalId], references: [id])
+  dateTime   DateTime
+  visitType  String            @default("General OPD")
+  status             String   @default("REQUESTED")
+  consultationStatus String?  // FINALIZED | null
+  completedAt        DateTime?
+  completedBy        String?  // Doctor name
+  isWalkIn           Boolean  @default(false)
+  notes              String?
+  partialDispenseReason String?
+  partialDispenseAt     DateTime?  // set when status → PARTIAL_DISPENSE
+  createdAt          DateTime @default(now())
+  arrivedAt          DateTime?   // set when status → CONFIRMED (patient reached the clinic)
+
+  visit      Visit?
+
+  @@index([doctorId, dateTime])
+  @@index([hospitalId, dateTime])
+  @@index([patientId])
+  @@index([status])
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// Visit (parent record for one consultation encounter)
+// ──────────────────────────────────────────────────────────────────────────
+
+model Visit {
+  id            String   @id @default(cuid())
+  patientId     String
+  patient       Patient  @relation(fields: [patientId], references: [id])
+  doctorId      String
+  doctor        Doctor   @relation(fields: [doctorId], references: [id])
+  hospitalId    String
+  hospital      Hospital @relation(fields: [hospitalId], references: [id])
+  appointmentId String?  @unique
+  appointment   Appointment? @relation(fields: [appointmentId], references: [id])
+  date          DateTime @default(now())
+  status        String   @default("IN_PROGRESS") // IN_PROGRESS | CLOSED
+  visitType     String   @default("General OPD")
+  finalizedAt   DateTime?
+  finalizedBy   String?  // Doctor name at time of finalization
+  sentToPharmacy Boolean @default(false)
+  followUpDate   DateTime?
+  referralEnabled Boolean @default(false)
+  referralNote   String?
+  adviseNotes    String?
+  anesthesiaType      String?
+  procedureLaterality String?
+  procedureName       String?
+  procedureNotes      String?
+  inViewOf            String?
+  followUpCompleted   Boolean   @default(false)
+  followUpCancelledAt DateTime?
+  gonioNotes          String?  // JSON: { re: string, le: string }
+
+  // AI Clinical Copilot draft — written only after the doctor explicitly confirms
+  aiDraftText         String?
+  aiDraftType         String?  // "consultation_note" | "follow_up_summary"
+  aiDraftConfirmedAt  DateTime?
+
+  surgeryAdvised      Boolean  @default(false)
+  advisedSurgeryName  String?
+  advisedSurgeryEye   String?
+  advisedSurgeryNotes String?
+  advisedSurgeryDate  DateTime?
+
+  generalExam        GeneralExamination?
+  medications        Medication[]
+  visualAcuity       VisualAcuity?
+  refraction         RefractiveCorrection?
+  colourVisionCS     ColourVisionContrastSensitivity?
+  iopReadings        IOPReading[]
+  anteriorSegment    AnteriorSegment?
+  posteriorSegment   PosteriorSegment?
+  diplopiaChart      DiplopiaChart?
+  hessChart          HessChart?
+  retinoscopy        Retinoscopy?
+  tearFilm           TearFilm?
+  lacrimalSac        LacrimalSacSyringing?
+  investigationOrders InvestigationOrder[]
+  diagnoses          Diagnosis[]
+  dispense              Dispense?
+  counsellingRecord     CounsellingRecord?
+
+  @@index([patientId])
+  @@index([doctorId])
+  @@index([hospitalId])
+  @@index([followUpDate])
+  @@index([status, date])
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// General Examination
+// ──────────────────────────────────────────────────────────────────────────
+
+model GeneralExamination {
+  id                  String   @id @default(cuid())
+  visitId             String   @unique
+  visit               Visit    @relation(fields: [visitId], references: [id])
+  bp                  String?
+  pulse                String?
+  temperature         String?
+  weight              String?
+  chiefComplaint      String?
+  hpi                 String?
+  provisionalDx       String?
+  pastMedicalHistory  String? // JSON array of chip values, cumulative
+  pmhOtherText        String?
+  medications         String? // free text list
+  allergies           String?
+  nkda                Boolean  @default(false)
+  updatedAt           DateTime @updatedAt
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// Plan - Prescription (dispensed/prescribed drugs for this visit, distinct
+// from GeneralExamination.medications which records the patient's reported
+// ongoing medications at intake)
+// ──────────────────────────────────────────────────────────────────────────
+
 model Medication {
-  id           String   @id
+  id           String   @id @default(cuid())
   visitId      String
+  visit        Visit    @relation(fields: [visitId], references: [id])
   drugName     String
   dosage       String?
   frequency    String?
   duration     String?
   instructions String?
-  createdAt    DateTime @default(now())
-  laterality   String?
   route        String?
-  Visit        Visit    @relation(fields: [visitId], references: [id])
+  laterality   String?
+  createdAt    DateTime @default(now())
 
   @@index([visitId])
 }
 
+// ──────────────────────────────────────────────────────────────────────────
+// Past External Visits (OCR ingestion)
+// ──────────────────────────────────────────────────────────────────────────
+
+// VerificationStatus: PENDING_REVIEW | VERIFIED | REJECTED
+model PastExternalVisit {
+  id                 String              @id @default(cuid())
+  patientId          String
+  patient            Patient             @relation(fields: [patientId], references: [id])
+  sourceDate         DateTime?
+  sourceHospital     String?
+  extractedDiagnosis String?
+  extractedTreatment String?
+  scanFileRef        String?
+  label              String?
+  verificationStatus String              @default("PENDING_REVIEW")
+  createdAt          DateTime            @default(now())
+
+  @@index([patientId])
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// Ophthalmic Examination sub-modules (RE/LE captured as JSON per eye)
+// ──────────────────────────────────────────────────────────────────────────
+
+model VisualAcuity {
+  id               String   @id @default(cuid())
+  visitId          String   @unique
+  visit            Visit    @relation(fields: [visitId], references: [id])
+  testMethod       String?  // Snellen | E-chart | LogMAR | Symbols | HOTV
+  re               String?  // JSON: { distanceUnaided, distancePinhole, distanceBestCorrected, nearUnaided, nearPinhole, nearBestCorrected }
+  le               String?
+  reviewedByDoctor Boolean  @default(false)
+  updatedAt        DateTime @updatedAt
+}
+
+model RefractiveCorrection {
+  id               String   @id @default(cuid())
+  visitId          String   @unique
+  visit            Visit    @relation(fields: [visitId], references: [id])
+  re               String?  // JSON: { distance: {sph,cyl,axis,va}, near: {sph,cyl,axis,va} }
+  le               String?
+  extraCorrections String?  // JSON: [{label,re,le}] for additional corrections beyond the first
+  sentToOpticals   Boolean  @default(false)
+  reviewedByDoctor Boolean  @default(false)
+  updatedAt        DateTime @updatedAt
+}
+
+model ColourVisionContrastSensitivity {
+  id               String   @id @default(cuid())
+  visitId          String   @unique
+  visit            Visit    @relation(fields: [visitId], references: [id])
+  re               String?  // JSON: { ishihara, d15, lanthonyD15, hrr, cityUniv, pelliRobson, marsLetterCS, vistech, fact }
+  le               String?
+  reviewedByDoctor Boolean  @default(false)
+  updatedAt        DateTime @updatedAt
+}
+
+model IOPReading {
+  id               String   @id @default(cuid())
+  visitId          String
+  visit            Visit    @relation(fields: [visitId], references: [id])
+  re               Float?
+  le               Float?
+  method           String?  // NCT | Goldmann | ...
+  takenAt          DateTime @default(now())
+  source           String   @default("DOCTOR") // DOCTOR | REFRACTIONIST
+  reviewedByDoctor Boolean  @default(false)
+
+  @@index([visitId])
+}
+
+model AnteriorSegment {
+  id        String   @id @default(cuid())
+  visitId   String   @unique
+  visit     Visit    @relation(fields: [visitId], references: [id])
+  re        String?  // JSON: { upperLid, lowerLid, conjunctiva, sclera, cornea, anteriorChamber, iris, pupil, lens, freeText }
+  le        String?
+  updatedAt DateTime @updatedAt
+}
+
+model PosteriorSegment {
+  id        String   @id @default(cuid())
+  visitId   String   @unique
+  visit     Visit    @relation(fields: [visitId], references: [id])
+  re        String?  // JSON: { media, discSize, discShape, discColour, discVessels, cdr, nrr, macula, retinalVessels, periphery }
+  le        String?
+  notes     String?
+  updatedAt DateTime @updatedAt
+}
+
+model DiplopiaChart {
+  id        String   @id @default(cuid())
+  visitId   String   @unique
+  visit     Visit    @relation(fields: [visitId], references: [id])
+  grid      String   // JSON map of 9 positions -> { status: NOT_TESTED|NO_DIPLOPIA|DIPLOPIA_PRESENT, notes }
+  updatedAt DateTime @updatedAt
+}
+
+model HessChart {
+  id        String   @id @default(cuid())
+  visitId   String   @unique
+  visit     Visit    @relation(fields: [visitId], references: [id])
+  grid      String   // JSON map of 9 positions -> { reH, reV, leH, leV }
+  interpretation String?
+  updatedAt DateTime @updatedAt
+}
+
+model Retinoscopy {
+  id        String   @id @default(cuid())
+  visitId   String   @unique
+  visit     Visit    @relation(fields: [visitId], references: [id])
+  re        String?
+  le        String?
+  updatedAt DateTime @updatedAt
+}
+
+model TearFilm {
+  id        String   @id @default(cuid())
+  visitId   String   @unique
+  visit     Visit    @relation(fields: [visitId], references: [id])
+  tbutRe    Float?
+  tbutLe    Float?
+  schirmer1Re Float?
+  schirmer1Le Float?
+  schirmer2Re Float?
+  schirmer2Le Float?
+  updatedAt DateTime @updatedAt
+}
+
+model LacrimalSacSyringing {
+  id        String   @id @default(cuid())
+  visitId   String   @unique
+  visit     Visit    @relation(fields: [visitId], references: [id])
+  re        String?  // JSON chips + free text
+  le        String?
+  updatedAt DateTime @updatedAt
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// Investigations & Assessment
+// ──────────────────────────────────────────────────────────────────────────
+
+// OrderPriority: ROUTINE | URGENT | STAT
+// OrderStatus: ORDERED | IN_PROGRESS | RESULT_AVAILABLE | REVIEWED
+model InvestigationOrder {
+  id         String        @id @default(cuid())
+  visitId    String
+  visit      Visit         @relation(fields: [visitId], references: [id])
+  category   String        // Imaging & Functional Tests | Pre-op & Lab
+  testName   String
+  priority   String        @default("ROUTINE")
+  laterality String?       // RE | LE | OU
+  notes      String?
+  status     String        @default("ORDERED")
+  resultRef  String?
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  @@index([visitId])
+}
+
+// DiagnosisStatus: ACTIVE | RESOLVED | CHRONIC
+model Diagnosis {
+  id          String          @id @default(cuid())
+  visitId     String
+  visit       Visit           @relation(fields: [visitId], references: [id])
+  icd10Code   String
+  description String
+  status      String          @default("ACTIVE")
+  laterality  String?         // RE | LE | OU
+  provisional Boolean         @default(false)
+  // Null until the doctor confirms the diagnosis. Rejecting deletes the row,
+  // so there is no explicit REJECTED state to store.
+  confirmedAt DateTime?
+  // Treatment preset ("protocol") chosen at confirmation. protocolName is
+  // denormalised because presets live in localStorage, so another device
+  // cannot resolve protocolId back to a label.
+  protocolId   String?
+  protocolName String?
+  createdAt   DateTime        @default(now())
+
+  @@index([visitId])
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// Disposition
+// ──────────────────────────────────────────────────────────────────────────
+
+model Dispense {
+  id           String   @id @default(cuid())
+  visitId      String   @unique
+  visit        Visit    @relation(fields: [visitId], references: [id])
+  shortSummary String
+  longSummaryUrl String?
+  createdAt    DateTime @default(now())
+}
+
+
+// ──────────────────────────────────────────────────────────────────────────
+// Audit trail
+// ──────────────────────────────────────────────────────────────────────────
+
+// ──────────────────────────────────────────────────────────────────────────
+// In-app notifications
+// ──────────────────────────────────────────────────────────────────────────
+
+// NotificationType: APPOINTMENT_REQUESTED | APPOINTMENT_CONFIRMED | APPOINTMENT_RESCHEDULED
+//                   APPOINTMENT_CANCELLED | PATIENT_ADMITTED | GENERAL
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  type      String
+  message   String
+  entityId  String?  // optional reference (appointmentId, visitId, etc.)
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId, read])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  entityType String
+  entityId   String
+  action     String
+  oldValue   String?
+  newValue   String?
+  timestamp  DateTime @default(now())
+
+  // Extended fields for richer audit context
+  hospitalId String?
+  moduleName String?
+  actionType String?   // CREATE | UPDATE | DELETE | VIEW | PRINT | DOWNLOAD
+  ipAddress  String?
+  userName   String?
+
+  @@index([userId, timestamp])
+  @@index([hospitalId, timestamp])
+  @@index([entityType, entityId])
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// Login & session tracking
+// ──────────────────────────────────────────────────────────────────────────
+
+model UserLoginHistory {
+  id           String    @id @default(cuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id])
+  userName     String
+  role         String
+  hospitalId   String?
+  hospitalName String?
+  loginAt      DateTime  @default(now())
+  logoutAt     DateTime?
+  ipAddress    String?
+  userAgent    String?
+  status       String    @default("SUCCESS")  // SUCCESS | FAILED
+  isActive     Boolean   @default(true)
+  failReason   String?
+
+  @@index([userId, loginAt])
+  @@index([status, loginAt])
+  @@index([isActive])
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// Email Verification OTP — for trial registration email confirmation
+// ──────────────────────────────────────────────────────────────────────────
+
+model EmailVerification {
+  id        String   @id @default(cuid())
+  email     String
+  code      String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([email])
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// Export OTP — short-lived codes for authorising data downloads
+// ──────────────────────────────────────────────────────────────────────────
+
+model ExportOtp {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  code      String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId, expiresAt])
+}
+
+// Short-lived OTP record for email login
+model EmailOtp {
+  id         String    @id @default(cuid())
+  email      String
+  otpHash    String
+  loginToken String?   @unique  // set after OTP verified; used to complete sign-in
+  tokenExpAt DateTime?           // 5 min window to exchange token → session
+  expiresAt  DateTime
+  used       Boolean   @default(false)
+  createdAt  DateTime  @default(now())
+
+  @@index([email, createdAt])
+}
+
+// Short-lived OTP record for mobile-number login
 model MobileOtp {
-  id         String    @id
+  id         String    @id @default(cuid())
   mobile     String
   otpHash    String
-  loginToken String?   @unique
-  tokenExpAt DateTime?
+  loginToken String?   @unique  // set after OTP verified; used to complete sign-in
+  tokenExpAt DateTime?           // 5 min window to exchange token → session
   expiresAt  DateTime
   used       Boolean   @default(false)
   createdAt  DateTime  @default(now())
@@ -693,55 +910,294 @@ model MobileOtp {
   @@index([mobile, createdAt])
 }
 
-model MonthlyAvailability {
-  id          String   @id
-  doctorId    String
-  hospitalId  String
-  validFrom   DateTime
-  validTo     DateTime
-  weekdays    String
-  startTime   String
-  endTime     String
-  slotMins    Int      @default(15)
-  maxPatients Int      @default(5)
-  label       String?
-  status      String   @default("ACTIVE")
-  createdAt   DateTime @default(now())
-  Doctor      Doctor   @relation(fields: [doctorId], references: [id])
-  Hospital    Hospital @relation(fields: [hospitalId], references: [id])
+model PasswordResetToken {
+  id         String    @id @default(cuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id])
+  email      String
+  otpHash    String
+  resetToken String?   @unique  // populated after OTP verified; used in final step
+  expiresAt  DateTime            // OTP expires 5 min after creation
+  tokenExpAt DateTime?           // resetToken expires 10 min after OTP verify
+  usedAt     DateTime?
+  ipAddress  String?
+  createdAt  DateTime  @default(now())
 
-  @@index([doctorId, hospitalId])
+  @@index([email, createdAt])
+  @@index([resetToken])
 }
 
-model Notification {
-  id        String   @id
-  userId    String
-  type      String
-  message   String
-  entityId  String?
-  read      Boolean  @default(false)
-  createdAt DateTime @default(now())
-  User      User     @relation(fields: [userId], references: [id])
+// ──────────────────────────────────────────────────────────────────────────
+// RBAC — granular permissions per role
+// ──────────────────────────────────────────────────────────────────────────
 
-  @@index([userId, read])
+model Role {
+  id                 String   @id @default(cuid())
+  name               String   @unique   // matches User.role string e.g. "HOSPITAL"
+  label              String             // "Hospital Admin"
+  description        String?
+  isSystem           Boolean  @default(false)   // DOCTOR/HOSPITAL/REFRACTIONIST locked
+  isActive           Boolean  @default(true)
+  color              String   @default("#6366f1")
+  createdAt          DateTime @default(now())
+  createdByDoctorId  String?            // null = system role; set = doctor-scoped custom role
 }
 
+model Permission {
+  id    String @id @default(cuid())
+  key   String @unique  // e.g. "patients.view", "emr.edit"
+  label String?
+
+  rolePermissions RolePermission[]
+}
+
+model RolePermission {
+  id           String     @id @default(cuid())
+  role         String     // "DOCTOR" | "HOSPITAL" | "REFRACTIONIST"
+  permissionId String
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([role, permissionId])
+  @@index([role])
+}
+
+// Configurable chip/dropdown values per hospital (or global when hospitalId is null)
+// category examples: "PMH", "VISIT_TYPE", "INVESTIGATION_TYPE"
+model ChipOption {
+  id         String    @id @default(cuid())
+  category   String
+  value      String
+  label      String
+  hospitalId String?
+  hospital   Hospital? @relation(fields: [hospitalId], references: [id])
+  sortOrder  Int       @default(0)
+  active     Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+
+  @@unique([category, value, hospitalId])
+  @@index([category, hospitalId])
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// Billing & Insurance Module
+// ──────────────────────────────────────────────────────────────────────────
+
+model InsuranceCompany {
+  id            String   @id @default(cuid())
+  hospitalId    String
+  hospital      Hospital @relation(fields: [hospitalId], references: [id])
+  name          String
+  contactPerson String?
+  email         String?
+  phone         String?
+  address       String?
+  tpaName       String?  // Third-party administrator, if any
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  patientInsurances PatientInsurance[]
+  preAuths          InsurancePreAuthorization[]
+  claims            InsuranceClaim[]
+
+  @@index([hospitalId, active])
+}
+
+// PatientInsurance.status: ACTIVE | EXPIRED | SUSPENDED
+model PatientInsurance {
+  id                 String   @id @default(cuid())
+  hospitalId         String
+  hospital           Hospital @relation(fields: [hospitalId], references: [id])
+  patientId          String
+  patient            Patient  @relation(fields: [patientId], references: [id])
+  insuranceCompanyId String
+  insuranceCompany   InsuranceCompany @relation(fields: [insuranceCompanyId], references: [id])
+  policyNumber       String
+  cardNumber         String?
+  coveragePercent    Float    @default(80)
+  validFrom          DateTime
+  validTo            DateTime
+  status             String   @default("ACTIVE")
+  cardImageUrl       String?
+  notes              String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  preAuths InsurancePreAuthorization[]
+  claims   InsuranceClaim[]
+
+  @@index([hospitalId, patientId])
+  @@index([status])
+}
+
+// InsurancePreAuthorization.status: PENDING | APPROVED | REJECTED | QUERY_RAISED
+model InsurancePreAuthorization {
+  id                 String   @id @default(cuid())
+  hospitalId         String
+  hospital           Hospital @relation(fields: [hospitalId], references: [id])
+  patientInsuranceId String
+  patientInsurance   PatientInsurance @relation(fields: [patientInsuranceId], references: [id])
+  insuranceCompanyId String
+  insuranceCompany   InsuranceCompany @relation(fields: [insuranceCompanyId], references: [id])
+  diagnosis          String
+  plannedSurgery     String?
+  estimatedCost      Float
+  requestedAmount    Float
+  approvedAmount     Float?
+  authCode           String?
+  status             String   @default("PENDING")
+  notes              String?
+  submittedAt        DateTime?
+  respondedAt        DateTime?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  claim                InsuranceClaim?
+  surgerySchedule      SurgerySchedule?
+
+  @@index([hospitalId, status])
+}
+
+// InsuranceClaim.status:
+//   CREATED | DOCUMENTS_UPLOADED | PRE_AUTH_SENT | PRE_AUTH_APPROVED |
+//   TREATMENT_COMPLETED | BILL_PREPARED | CLAIM_SUBMITTED |
+//   UNDER_REVIEW | QUERY_RAISED | APPROVED | REJECTED |
+//   PAYMENT_RECEIVED | CLOSED
+model InsuranceClaim {
+  id                    String   @id @default(cuid())
+  claimNumber           String   @unique
+  hospitalId            String
+  hospital              Hospital @relation(fields: [hospitalId], references: [id])
+  patientInsuranceId    String
+  patientInsurance      PatientInsurance @relation(fields: [patientInsuranceId], references: [id])
+  insuranceCompanyId    String
+  insuranceCompany      InsuranceCompany @relation(fields: [insuranceCompanyId], references: [id])
+  preAuthId             String?  @unique
+  preAuth               InsurancePreAuthorization? @relation(fields: [preAuthId], references: [id])
+
+  // Bill breakdown (all amounts in hospital's currency)
+  roomCharges           Float    @default(0)
+  surgeryCharges        Float    @default(0)
+  pharmacyCharges       Float    @default(0)
+  labCharges            Float    @default(0)
+  miscCharges           Float    @default(0)
+  totalBillAmount       Float    @default(0)
+
+  // Settlement
+  approvedAmount        Float?
+  patientResponsibility Float?
+
+  status                String   @default("CREATED")
+  submittedAt           DateTime?
+  approvedAt            DateTime?
+  closedAt              DateTime?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  documents   InsuranceClaimDocument[]
+  settlements InsuranceSettlement[]
+  queries     InsuranceQuery[]
+  payments    InsurancePayment[]
+
+  @@index([hospitalId, status])
+  @@index([claimNumber])
+}
+
+// InsuranceClaimDocument.docType:
+//   INSURANCE_CARD | PATIENT_ID | ADMISSION_FORM | DOCTORS_NOTES |
+//   INVESTIGATION_REPORTS | CONSENT_FORM | OPERATION_NOTES |
+//   DISCHARGE_SUMMARY | FINAL_BILL | PHARMACY_BILL | IMPLANT_INVOICE | OTHER
+model InsuranceClaimDocument {
+  id         String   @id @default(cuid())
+  claimId    String
+  claim      InsuranceClaim @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  docType    String
+  fileName   String
+  fileUrl    String
+  uploadedBy String   // userId
+  uploadedAt DateTime @default(now())
+
+  @@index([claimId])
+}
+
+model InsuranceSettlement {
+  id              String   @id @default(cuid())
+  claimId         String
+  claim           InsuranceClaim @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  settledAmount   Float
+  settledDate     DateTime
+  referenceNumber String?
+  notes           String?
+  createdAt       DateTime @default(now())
+
+  payments InsurancePayment[]
+
+  @@index([claimId])
+}
+
+// InsurancePayment.paymentMode: BANK_TRANSFER | CHEQUE | NEFT | RTGS | CASH
+model InsurancePayment {
+  id              String   @id @default(cuid())
+  claimId         String
+  claim           InsuranceClaim @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  settlementId    String?
+  settlement      InsuranceSettlement? @relation(fields: [settlementId], references: [id])
+  amount          Float
+  paymentDate     DateTime
+  paymentMode     String   @default("BANK_TRANSFER")
+  referenceNumber String?
+  notes           String?
+  postedBy        String   // userId
+  createdAt       DateTime @default(now())
+
+  @@index([claimId])
+}
+
+// InsuranceQuery.queryBy: INSURER | HOSPITAL
+// InsuranceQuery.status: OPEN | RESPONDED | CLOSED
+model InsuranceQuery {
+  id           String    @id @default(cuid())
+  claimId      String
+  claim        InsuranceClaim @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  queryBy      String    @default("INSURER")
+  queryText    String
+  responseText String?
+  status       String    @default("OPEN")
+  raisedAt     DateTime  @default(now())
+  respondedAt  DateTime?
+
+  @@index([claimId, status])
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// OT Room Workflow  (created by doctor on entering the OT)
+// status: CHECKIN | PREP | IN_PROGRESS | COMPLETED | RECOVERY
+// ──────────────────────────────────────────────────────────────────────────
 model OtRecord {
-  id                          String          @id
-  surgeryScheduleId           String          @unique
+  id                String   @id @default(cuid())
+  surgeryScheduleId String   @unique
+  surgerySchedule   SurgerySchedule @relation(fields: [surgeryScheduleId], references: [id])
+
+  // Step 1 — Patient Check-in
   checkInTime                 DateTime?
-  identityVerified            Boolean         @default(false)
-  correctEyeVerified          Boolean         @default(false)
-  surgeryTypeVerified         Boolean         @default(false)
-  consentFormsVerified        Boolean         @default(false)
-  implantAvailabilityVerified Boolean         @default(false)
+  identityVerified            Boolean  @default(false)
+  correctEyeVerified          Boolean  @default(false)
+  surgeryTypeVerified         Boolean  @default(false)
+  consentFormsVerified        Boolean  @default(false)
+  implantAvailabilityVerified Boolean  @default(false)
+
+  // Step 2 — OT Preparation
   assistantSurgeon            String?
   anesthetist                 String?
   scrubNurse                  String?
   circulatingNurse            String?
   anesthesiaTypeRecorded      String?
-  whoSignIn                   String?
+  whoSignIn                   String?  // JSON: boolean map of checklist items
+
+  // Step 3 — Surgery Start
   surgeryStartTime            DateTime?
+
+  // Step 4 — Intra-Operative
   procedurePerformed          String?
   iolModel                    String?
   iolPower                    String?
@@ -751,350 +1207,106 @@ model OtRecord {
   intraopFindings             String?
   complications               String?
   intraopRemarks              String?
+
+  // Step 5 — Surgery Completion
   surgeryEndTime              DateTime?
   operativeNotes              String?
+
+  // Step 6 — Recovery Transfer
   patientConditionOnTransfer  String?
   transferTime                DateTime?
-  status                      String          @default("CHECKIN")
-  createdAt                   DateTime        @default(now())
-  updatedAt                   DateTime
-  SurgerySchedule             SurgerySchedule @relation(fields: [surgeryScheduleId], references: [id])
-  OtTimeline                  OtTimeline[]
+
+  status                      String   @default("CHECKIN")
+  createdAt                   DateTime @default(now())
+  updatedAt                   DateTime @updatedAt
+
+  timeline  OtTimeline[]
 }
 
+// Immutable timestamped audit trail for the OT workflow
 model OtTimeline {
-  id          String   @id
+  id          String   @id @default(cuid())
   otRecordId  String
-  step        String
+  otRecord    OtRecord @relation(fields: [otRecordId], references: [id])
+  step        String   // CHECKIN | PREP | SURGERY_START | INTRAOP | COMPLETED | RECOVERY
   action      String
   performedBy String
   performedAt DateTime @default(now())
-  OtRecord    OtRecord @relation(fields: [otRecordId], references: [id])
 
   @@index([otRecordId, performedAt])
 }
 
-model PasswordResetToken {
-  id         String    @id
-  userId     String
-  email      String
-  otpHash    String
-  resetToken String?   @unique
-  expiresAt  DateTime
-  tokenExpAt DateTime?
-  usedAt     DateTime?
-  ipAddress  String?
-  createdAt  DateTime  @default(now())
-  User       User      @relation(fields: [userId], references: [id])
+// ──────────────────────────────────────────────────────────────────────────
+// Surgery Scheduling (created by hospital admin from Scheduled OT)
+// status: PLANNED | SCHEDULED | RESCHEDULED | CANCELLED
+// ──────────────────────────────────────────────────────────────────────────
+model SurgerySchedule {
+  id                    String    @id @default(cuid())
+  patientId             String
+  patient               Patient   @relation(fields: [patientId], references: [id])
+  hospitalId            String
+  hospital              Hospital  @relation(fields: [hospitalId], references: [id])
+  operatingSurgeonId    String
+  surgeon               Doctor    @relation(fields: [operatingSurgeonId], references: [id])
 
-  @@index([email, createdAt])
-  @@index([resetToken])
-}
+  department            String?
+  surgeryName           String
+  diagnosis             String?
+  procedure             String?
+  surgeryCategory       String              // MAJOR | MINOR
+  urgencyType           String              // ELECTIVE | EMERGENCY
+  priority              String              // ROUTINE | URGENT | EMERGENCY
 
-model PastExternalVisit {
-  id                 String    @id
-  patientId          String
-  sourceDate         DateTime?
-  sourceHospital     String?
-  extractedDiagnosis String?
-  extractedTreatment String?
-  scanFileRef        String?
-  verificationStatus String    @default("PENDING_REVIEW")
-  createdAt          DateTime  @default(now())
-  label              String?
-  Patient            Patient   @relation(fields: [patientId], references: [id])
+  plannedDateTime       DateTime
+  otRoom                String?
+  estimatedDuration     Int?                // minutes
 
+  anesthetistName       String?
+  nursingStaff          String?
+
+  admissionDate         DateTime?
+  paymentStatus         String?
+
+  consentReceived       Boolean   @default(false)
+  reportsUploaded       Boolean   @default(false)
+  otAvailable           Boolean   @default(false)
+  bloodArranged         Boolean   @default(false)
+  patientInformed       Boolean   @default(false)
+
+  status                String    @default("PLANNED")
+  caseStatus            String?   // OPEN | CLOSED
+  caseClosedAt          DateTime?
+  remarks               String?
+
+  preAuthId             String?   @unique
+  preAuth               InsurancePreAuthorization? @relation(fields: [preAuthId], references: [id])
+
+  createdBy             String
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  otRecord              OtRecord?
+  surgeryConsent        SurgeryConsent?
+  preOpAssessment       PreOpAssessment?
+  postOpReview          PostOpReview?
+
+  @@index([hospitalId, plannedDateTime])
   @@index([patientId])
 }
 
-model Patient {
-  id                String              @id
-  udid              String?             @unique
-  doctorId          String?
-  registeredAtId    String?
-  name              String
-  age               Int
-  sex               String
-  mobile            String
-  aadhaarEncrypted  String
-  category          String              @default("GENERAL")
-  address           String?
-  city              String?
-  state             String?
-  pincode           String?
-  complaint         String?
-  createdAt         DateTime            @default(now())
-  uhid              String?             @unique
-  photoUrl          String?
-  aadhaarPhotoUrl   String?
-  notes             String?
-  occupation        String?
-  Appointment       Appointment[]
-  DataRightsRequest DataRightsRequest[]
-  PastExternalVisit PastExternalVisit[]
-  Doctor            Doctor?             @relation(fields: [doctorId], references: [id])
-  Hospital          Hospital?           @relation(fields: [registeredAtId], references: [id])
-  PatientConsent    PatientConsent[]
-  PatientInsurance  PatientInsurance[]
-  SurgerySchedule   SurgerySchedule[]
-  Visit             Visit[]
-
-  @@index([category])
-  @@index([createdAt])
-  @@index([doctorId])
-  @@index([mobile])
-  @@index([registeredAtId])
-}
-
-model PatientConsent {
-  id          String    @id
-  patientId   String
-  purpose     String    @default("TREATMENT")
-  method      String    @default("ELECTRONIC")
-  status      String    @default("GRANTED")
-  noticeText  String?
-  capturedBy  String?
-  consentedAt DateTime  @default(now())
-  withdrawnAt DateTime?
-  createdAt   DateTime  @default(now())
-  Patient     Patient   @relation(fields: [patientId], references: [id])
-
-  @@index([patientId, consentedAt])
-  @@index([patientId, status])
-}
-
-model PatientInsurance {
-  id                        String                      @id
-  hospitalId                String
-  patientId                 String
-  insuranceCompanyId        String
-  policyNumber              String
-  cardNumber                String?
-  coveragePercent           Float                       @default(80)
-  validFrom                 DateTime
-  validTo                   DateTime
-  status                    String                      @default("ACTIVE")
-  cardImageUrl              String?
-  notes                     String?
-  createdAt                 DateTime                    @default(now())
-  updatedAt                 DateTime
-  InsuranceClaim            InsuranceClaim[]
-  InsurancePreAuthorization InsurancePreAuthorization[]
-  Hospital                  Hospital                    @relation(fields: [hospitalId], references: [id])
-  InsuranceCompany          InsuranceCompany            @relation(fields: [insuranceCompanyId], references: [id])
-  Patient                   Patient                     @relation(fields: [patientId], references: [id])
-
-  @@index([hospitalId, patientId])
-  @@index([status])
-}
-
-model Permission {
-  id             String           @id
-  key            String           @unique
-  label          String?
-  RolePermission RolePermission[]
-}
-
-model PluginConfig {
-  id         String   @id
-  pluginId   String
-  hospitalId String
-  key        String
-  value      Json
-  updatedAt  DateTime
-  Hospital   Hospital @relation(fields: [hospitalId], references: [id])
-
-  @@unique([pluginId, hospitalId, key])
-  @@index([pluginId, hospitalId])
-}
-
-model PluginLicense {
-  id           String    @id
-  pluginId     String
-  doctorId     String
-  status       String    @default("TRIAL")
-  trialEndsAt  DateTime?
-  expiresAt    DateTime?
-  usageLimit   Int?
-  usageCount   Int       @default(0)
-  usageResetAt DateTime?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime
-  Doctor       Doctor    @relation(fields: [doctorId], references: [id])
-
-  @@unique([pluginId, doctorId])
-  @@index([doctorId, status])
-}
-
-model PluginRegistration {
-  id          String       @id
-  pluginId    String
-  doctorId    String
-  status      PluginStatus @default(INSTALLED)
-  version     String
-  installedAt DateTime     @default(now())
-  updatedAt   DateTime
-  Doctor      Doctor       @relation(fields: [doctorId], references: [id])
-
-  @@unique([pluginId, doctorId])
-  @@index([doctorId, status])
-}
-
-model PostOpReview {
-  id                String          @id
-  surgeryScheduleId String          @unique
-  doctorId          String
-  reVaUnaided       String?
-  leVaUnaided       String?
-  reBcva            String?
-  leBcva            String?
-  iopRe             String?
-  iopLe             String?
-  woundStatus       String?
-  iolPosition       String?
-  anteriorChamber   String?
-  fundusNotes       String?
-  complications     String?
-  postOpMedications String?
-  instructions      String?
-  followUpDate      DateTime?
-  reviewNotes       String?
-  reviewedAt        DateTime        @default(now())
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime
-  Doctor            Doctor          @relation(fields: [doctorId], references: [id])
-  SurgerySchedule   SurgerySchedule @relation(fields: [surgeryScheduleId], references: [id])
-}
-
-model PosteriorSegment {
-  id        String   @id
-  visitId   String   @unique
-  re        String?
-  le        String?
-  notes     String?
-  updatedAt DateTime
-  Visit     Visit    @relation(fields: [visitId], references: [id])
-}
-
-model PreOpAssessment {
-  id                 String          @id
-  surgeryScheduleId  String          @unique
-  hasDiabetes        Boolean         @default(false)
-  hasHypertension    Boolean         @default(false)
-  hasCardiacDisease  Boolean         @default(false)
-  hasAsthma          Boolean         @default(false)
-  hasKidneyDisease   Boolean         @default(false)
-  otherConditions    String?
-  currentMedications String?
-  allergies          String?
-  nkda               Boolean         @default(false)
-  bloodSugarLevel    String?
-  bpReading          String?
-  ecgNormal          Boolean?
-  investigationNotes String?
-  asaGrade           String?
-  anesthesiaFitness  String          @default("FIT")
-  fitnessNotes       String?
-  assessedBy         String?
-  assessedAt         DateTime?
-  createdAt          DateTime        @default(now())
-  updatedAt          DateTime
-  SurgerySchedule    SurgerySchedule @relation(fields: [surgeryScheduleId], references: [id])
-}
-
-model Refractionist {
-  id         String   @id
-  userId     String   @unique
-  name       String
-  mobile     String?
-  doctorId   String
-  hospitalId String
-  createdAt  DateTime @default(now())
-  Doctor     Doctor   @relation(fields: [doctorId], references: [id])
-  Hospital   Hospital @relation(fields: [hospitalId], references: [id])
-  User       User     @relation(fields: [userId], references: [id])
-}
-
-model RefractiveCorrection {
-  id               String   @id
-  visitId          String   @unique
-  re               String?
-  le               String?
-  sentToOpticals   Boolean  @default(false)
-  reviewedByDoctor Boolean  @default(false)
-  updatedAt        DateTime
-  extraCorrections String?
-  Visit            Visit    @relation(fields: [visitId], references: [id])
-}
-
-model Retinoscopy {
-  id        String   @id
-  visitId   String   @unique
-  re        String?
-  le        String?
-  updatedAt DateTime
-  Visit     Visit    @relation(fields: [visitId], references: [id])
-}
-
-model Role {
-  id                String   @id
-  name              String   @unique
-  label             String
-  description       String?
-  isSystem          Boolean  @default(false)
-  isActive          Boolean  @default(true)
-  color             String   @default("#6366f1")
-  createdAt         DateTime @default(now())
-  createdByDoctorId String?
-}
-
-model RolePermission {
-  id           String     @id
-  role         String
-  permissionId String
-  Permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
-
-  @@unique([role, permissionId])
-  @@index([role])
-}
-
-model RolePermissionSeed {
-  id            String   @id
-  role          String
-  permissionKey String
-  seededAt      DateTime @default(now())
-
-  @@unique([role, permissionKey])
-}
-
-model ScheduleException {
-  id               String    @id
-  doctorId         String
-  date             DateTime
-  type             String
-  hospitalId       String?
-  startTime        String?
-  endTime          String?
-  slotMins         Int?
-  maxPatients      Int?
-  reason           String?
-  halfPeriod       String?
-  isRecurring      Boolean   @default(false)
-  recurringGroupId String?
-  status           String    @default("ACTIVE")
-  createdAt        DateTime  @default(now())
-  Doctor           Doctor    @relation(fields: [doctorId], references: [id])
-  Hospital         Hospital? @relation(fields: [hospitalId], references: [id])
-
-  @@index([doctorId, date])
-}
+// ──────────────────────────────────────────────────────────────────────────
+// Surgery consent, pre-op assessment, post-op review
+// ──────────────────────────────────────────────────────────────────────────
 
 model SurgeryConsent {
-  id                    String          @id
+  id                    String          @id @default(cuid())
   surgeryScheduleId     String          @unique
+  surgerySchedule       SurgerySchedule @relation(fields: [surgeryScheduleId], references: [id])
+
   patientName           String
   attendantName         String?
-  relationship          String?
+  relationship          String?         // Self | Spouse | Parent | Child | Sibling | Guardian | Other
+
   surgeryExplained      Boolean         @default(false)
   risksExplained        Boolean         @default(false)
   alternativesExplained Boolean         @default(false)
@@ -1102,209 +1314,278 @@ model SurgeryConsent {
   consentGiven          Boolean         @default(false)
   consentDate           DateTime        @default(now())
   notes                 String?
+
   createdAt             DateTime        @default(now())
-  updatedAt             DateTime
-  SurgerySchedule       SurgerySchedule @relation(fields: [surgeryScheduleId], references: [id])
+  updatedAt             DateTime        @updatedAt
 }
 
-model SurgerySchedule {
-  id                        String                     @id
-  patientId                 String
-  hospitalId                String
-  operatingSurgeonId        String
-  department                String?
-  surgeryName               String
-  diagnosis                 String?
-  procedure                 String?
-  surgeryCategory           String
-  urgencyType               String
-  priority                  String
-  plannedDateTime           DateTime
-  otRoom                    String?
-  estimatedDuration         Int?
-  anesthetistName           String?
-  nursingStaff              String?
-  admissionDate             DateTime?
-  paymentStatus             String?
-  consentReceived           Boolean                    @default(false)
-  reportsUploaded           Boolean                    @default(false)
-  otAvailable               Boolean                    @default(false)
-  bloodArranged             Boolean                    @default(false)
-  patientInformed           Boolean                    @default(false)
-  status                    String                     @default("PLANNED")
-  remarks                   String?
-  createdBy                 String
-  createdAt                 DateTime                   @default(now())
-  updatedAt                 DateTime
-  caseStatus                String?
-  caseClosedAt              DateTime?
-  preAuthId                 String?                    @unique
-  OtRecord                  OtRecord?
-  PostOpReview              PostOpReview?
-  PreOpAssessment           PreOpAssessment?
-  SurgeryConsent            SurgeryConsent?
-  Hospital                  Hospital                   @relation(fields: [hospitalId], references: [id])
-  Doctor                    Doctor                     @relation(fields: [operatingSurgeonId], references: [id])
-  Patient                   Patient                    @relation(fields: [patientId], references: [id])
-  InsurancePreAuthorization InsurancePreAuthorization? @relation(fields: [preAuthId], references: [id])
+// asaGrade: I | II | III | IV | V
+// anesthesiaFitness: FIT | CONDITIONAL | NOT_FIT
+model PreOpAssessment {
+  id                    String          @id @default(cuid())
+  surgeryScheduleId     String          @unique
+  surgerySchedule       SurgerySchedule @relation(fields: [surgeryScheduleId], references: [id])
 
-  @@index([hospitalId, plannedDateTime])
-  @@index([patientId])
+  hasDiabetes           Boolean         @default(false)
+  hasHypertension       Boolean         @default(false)
+  hasCardiacDisease     Boolean         @default(false)
+  hasAsthma             Boolean         @default(false)
+  hasKidneyDisease      Boolean         @default(false)
+  otherConditions       String?
+
+  currentMedications    String?
+  allergies             String?
+  nkda                  Boolean         @default(false)
+
+  bloodSugarLevel       String?
+  bpReading             String?
+  ecgNormal             Boolean?
+  investigationNotes    String?
+
+  asaGrade              String?
+  anesthesiaFitness     String          @default("FIT")
+  fitnessNotes          String?
+
+  assessedBy            String?
+  assessedAt            DateTime?
+
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
 }
 
-model TearFilm {
-  id          String   @id
-  visitId     String   @unique
-  tbutRe      Float?
-  tbutLe      Float?
-  schirmer1Re Float?
-  schirmer1Le Float?
-  schirmer2Re Float?
-  schirmer2Le Float?
-  updatedAt   DateTime
-  Visit       Visit    @relation(fields: [visitId], references: [id])
+// woundStatus: INTACT | WOUND_LEAK | SUTURE_ISSUES
+// iolPosition: CENTERED | SLIGHTLY_DECENTERED | DECENTERED
+model PostOpReview {
+  id                    String          @id @default(cuid())
+  surgeryScheduleId     String          @unique
+  surgerySchedule       SurgerySchedule @relation(fields: [surgeryScheduleId], references: [id])
+  doctorId              String
+  doctor                Doctor          @relation(fields: [doctorId], references: [id])
+
+  reVaUnaided           String?
+  leVaUnaided           String?
+  reBcva                String?
+  leBcva                String?
+
+  iopRe                 String?
+  iopLe                 String?
+  woundStatus           String?
+  iolPosition           String?
+  anteriorChamber       String?
+  fundusNotes           String?
+  complications         String?
+
+  postOpMedications     String?         // JSON [{drugName,dosage,frequency,duration}]
+  instructions          String?
+  followUpDate          DateTime?
+
+  reviewNotes           String?
+  reviewedAt            DateTime        @default(now())
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
 }
 
-model TenantLicense {
-  id                   String    @id
-  trialStartsAt        DateTime  @default(now())
-  trialEndsAt          DateTime
-  plan                 String?
-  subscriptionStartsAt DateTime?
-  subscriptionEndsAt   DateTime?
-  paymentStatus        String    @default("NONE")
-  razorpayOrderId      String?
-  razorpayPaymentId    String?
-  razorpaySignature    String?
-  remindersSent        Int       @default(0)
-  isActive             Boolean   @default(true)
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime
-  licenseKey           String?
-  machineId            String?
-  deviceName           String?
-  lastVerifiedAt       DateTime?
-  doctorId             String    @unique
-  signature            String?
-  Doctor               Doctor    @relation(fields: [doctorId], references: [id])
+// Records that a later-added permission has already been auto-granted to a role
+// once, so the backfill never re-grants something an admin deliberately revoked.
+model RolePermissionSeed {
+  id            String   @id @default(cuid())
+  role          String
+  permissionKey String
+  seededAt      DateTime @default(now())
 
-  @@index([subscriptionEndsAt])
-  @@index([trialEndsAt])
+  @@unique([role, permissionKey])
 }
 
-model User {
-  id                 String               @id
-  username           String               @unique
-  passwordHash       String
-  role               String
-  email              String?
-  active             Boolean              @default(true)
-  createdAt          DateTime             @default(now())
-  AuditLog           AuditLog[]
-  Doctor             Doctor?
-  ExportOtp          ExportOtp[]
-  HospitalStaff      HospitalStaff?
-  Notification       Notification[]
-  PasswordResetToken PasswordResetToken[]
-  Refractionist      Refractionist?
-  UserLoginHistory   UserLoginHistory[]
+
+
+// ── Surgical Counselling Record ────────────────────────────────────────────
+model CounsellingRecord {
+  id        String   @id @default(cuid())
+  visitId   String   @unique
+  visit     Visit    @relation(fields: [visitId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // 1. Payment / Finance
+  paymentType   String?  // INSURANCE | NON_INSURANCE | GOVERNMENT_SCHEME | CAMP
+  paymentMode   String?  // OUT_OF_POCKET | FREE_CASH (when paymentType=NON_INSURANCE)
+  schemeName    String?  // Insurance company name / scheme name
+  schemeType    String?  // PRIVATE | CORPORATE | OTHERS
+  policyNumber  String?  // Policy name / number
+  outOfPocket   String?  // legacy — unused
+
+  // 2. IOL
+  iolType       String?
+  iolLensName   String?
+  iolPower      String?
+  iolBrand      String?
+  iolToric      Boolean  @default(false)
+
+  // 3. Surgery
+  laterality    String?
+  procedure     String?
+  anaesthesia   String?
+
+  // 4. Estimate
+  estimateAmount Decimal? @db.Decimal(10, 2)
+  estimateVague  Boolean  @default(false)
+  fitForSurgery  Boolean  @default(false)
+
+  // 5. Advance
+  advancePaid    Decimal? @db.Decimal(10, 2)
+
+  // 6. Date of Surgery
+  dateOfSurgery  DateTime?
+
+  // 7. Eligible
+  eligibleForSurgery        Boolean  @default(false)
+
+  // 8. Additional Investigations
+  additionalInvestigations  Boolean  @default(false)
+  investigationDetails      String?
+
+  // 9. Surgery Deferred
+  surgeryDeferred           Boolean  @default(false)
+  deferralReason            String?  // PATIENT_UNFIT | FINANCIAL | NOT_WILLING | INVESTIGATION_PENDING | MEDICAL_CLEARANCE | OTHERS
+  deferralNotes             String?
+
+  // Workflow status
+  // DRAFT → TENTATIVE_COMPLETED → (doctor decision) → FIT_FOR_SURGERY | NOT_FIT | DEFERRED | INVESTIGATIONS_REQUIRED → CONFIRMED
+  status              String   @default("DRAFT")
+  submittedAt         DateTime?
+  doctorDecision      String?  // FIT_FOR_SURGERY | NOT_FIT | DEFERRED | INVESTIGATIONS_REQUIRED
+  doctorDecisionNotes String?
+  doctorReviewedAt    DateTime?
+  confirmedAt         DateTime?
 }
 
-model UserLoginHistory {
-  id           String    @id
-  userId       String
-  userName     String
-  role         String
-  hospitalId   String?
-  hospitalName String?
-  loginAt      DateTime  @default(now())
-  logoutAt     DateTime?
-  ipAddress    String?
-  userAgent    String?
-  status       String    @default("SUCCESS")
-  isActive     Boolean   @default(true)
-  failReason   String?
-  User         User      @relation(fields: [userId], references: [id])
-
-  @@index([isActive])
-  @@index([status, loginAt])
-  @@index([userId, loginAt])
-}
-
-model Visit {
-  id                              String                           @id
-  patientId                       String
-  doctorId                        String
-  hospitalId                      String
-  appointmentId                   String?                          @unique
-  date                            DateTime                         @default(now())
-  status                          String                           @default("IN_PROGRESS")
-  visitType                       String                           @default("General OPD")
-  sentToPharmacy                  Boolean                          @default(false)
-  followUpDate                    DateTime?
-  referralEnabled                 Boolean                          @default(false)
-  referralNote                    String?
-  finalizedAt                     DateTime?
-  finalizedBy                     String?
-  adviseNotes                     String?
-  inViewOf                        String?
-  gonioNotes                      String?
-  anesthesiaType                  String?
-  procedureLaterality             String?
-  procedureName                   String?
-  followUpCompleted               Boolean                          @default(false)
-  followUpCancelledAt             DateTime?
-  surgeryAdvised                  Boolean                          @default(false)
-  advisedSurgeryName              String?
-  advisedSurgeryEye               String?
-  advisedSurgeryNotes             String?
-  advisedSurgeryDate              DateTime?
-  procedureNotes                  String?
-  aiDraftConfirmedAt              DateTime?
-  aiDraftText                     String?
-  aiDraftType                     String?
-  AnteriorSegment                 AnteriorSegment?
-  ColourVisionContrastSensitivity ColourVisionContrastSensitivity?
-  CounsellingRecord               CounsellingRecord?
-  Diagnosis                       Diagnosis[]
-  DiplopiaChart                   DiplopiaChart?
-  Dispense                        Dispense?
-  GeneralExamination              GeneralExamination?
-  HessChart                       HessChart?
-  IOPReading                      IOPReading[]
-  InvestigationOrder              InvestigationOrder[]
-  LacrimalSacSyringing            LacrimalSacSyringing?
-  Medication                      Medication[]
-  PosteriorSegment                PosteriorSegment?
-  RefractiveCorrection            RefractiveCorrection?
-  Retinoscopy                     Retinoscopy?
-  TearFilm                        TearFilm?
-  Appointment                     Appointment?                     @relation(fields: [appointmentId], references: [id])
-  Doctor                          Doctor                           @relation(fields: [doctorId], references: [id])
-  Hospital                        Hospital                         @relation(fields: [hospitalId], references: [id])
-  Patient                         Patient                          @relation(fields: [patientId], references: [id])
-  VisualAcuity                    VisualAcuity?
-
-  @@index([doctorId])
-  @@index([followUpDate])
-  @@index([hospitalId])
-  @@index([patientId])
-  @@index([status, date])
-}
-
-model VisualAcuity {
-  id               String   @id
-  visitId          String   @unique
-  testMethod       String?
-  re               String?
-  le               String?
-  reviewedByDoctor Boolean  @default(false)
-  updatedAt        DateTime
-  Visit            Visit    @relation(fields: [visitId], references: [id])
-}
+// ──────────────────────────────────────────────────────────────────────────
+// Plugin Framework
+// Generic infrastructure for installable plugins (AI Copilot, Voice-to-EMR,
+// etc.). Plugins register here; the framework enforces permissions, licensing,
+// and tenant isolation without touching PPMS Core models.
+// ──────────────────────────────────────────────────────────────────────────
 
 enum PluginStatus {
   INSTALLED
   ENABLED
   DISABLED
+}
+
+// One row per (plugin, doctor). Tracks install state and version.
+model PluginRegistration {
+  id          String       @id @default(cuid())
+  pluginId    String
+  doctorId    String
+  doctor      Doctor       @relation(fields: [doctorId], references: [id])
+  status      PluginStatus @default(INSTALLED)
+  version     String       // semver from manifest at install time
+  installedAt DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@unique([pluginId, doctorId])
+  @@index([doctorId, status])
+}
+
+// Per-hospital key-value configuration bag for any plugin.
+// Plugins declare their config schema in their manifest; the framework
+// stores the actual values here without knowing their semantics.
+model PluginConfig {
+  id         String   @id @default(cuid())
+  pluginId   String
+  hospitalId String
+  hospital   Hospital @relation(fields: [hospitalId], references: [id])
+  key        String
+  value      Json
+  updatedAt  DateTime @updatedAt
+
+  @@unique([pluginId, hospitalId, key])
+  @@index([pluginId, hospitalId])
+}
+
+// Per-plugin, per-doctor licensing record (separate from the core
+// TenantLicense which covers base PPMS features).
+model PluginLicense {
+  id           String    @id @default(cuid())
+  pluginId     String
+  doctorId     String
+  doctor       Doctor    @relation(fields: [doctorId], references: [id])
+  // TRIAL | ACTIVE | EXPIRED | SUSPENDED
+  status       String    @default("TRIAL")
+  trialEndsAt  DateTime?
+  expiresAt    DateTime?
+  usageLimit   Int?      // monthly inference cap (null = unlimited)
+  usageCount   Int       @default(0)
+  usageResetAt DateTime? // when the monthly counter last reset
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@unique([pluginId, doctorId])
+  @@index([doctorId, status])
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// DPDP Act 2023 — Consent & Data Principal Rights
+// ──────────────────────────────────────────────────────────────────────────
+
+// Records the patient's explicit, informed consent for data processing
+// (DPDP Act 2023, Sections 5-6). One row per consent event; a new row is
+// inserted on withdrawal and re-grant so the full audit trail is preserved.
+// purpose: TREATMENT | RESEARCH | INSURANCE | REFERRAL | MARKETING
+// method:  VERBAL | WRITTEN | ELECTRONIC
+// status:  GRANTED | WITHDRAWN
+model PatientConsent {
+  id          String   @id @default(cuid())
+  patientId   String
+  patient     Patient  @relation(fields: [patientId], references: [id])
+  purpose     String   @default("TREATMENT")
+  method      String   @default("ELECTRONIC")
+  status      String   @default("GRANTED")
+  noticeText  String?
+  capturedBy  String?
+  consentedAt DateTime @default(now())
+  withdrawnAt DateTime?
+  createdAt   DateTime @default(now())
+
+  @@index([patientId, status])
+  @@index([patientId, consentedAt])
+}
+
+// Tracks data principal rights requests under DPDP Act 2023, Sections 11-15.
+// type: ACCESS | CORRECTION | ERASURE | NOMINATION | GRIEVANCE
+// status: PENDING | IN_PROGRESS | RESOLVED | REJECTED
+model DataRightsRequest {
+  id          String   @id @default(cuid())
+  patientId   String
+  patient     Patient  @relation(fields: [patientId], references: [id])
+  type        String
+  description String?
+  status      String   @default("PENDING")
+  resolution  String?
+  resolvedBy  String?
+  resolvedAt  DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([patientId, type])
+  @@index([status, createdAt])
+}
+
+// Landing-page demo request submissions
+model DemoRequest {
+  id             String   @id @default(cuid())
+  fullName       String
+  email          String
+  phone          String
+  clinicName     String?
+  specialization String?
+  city           String?
+  preferredDate  String?
+  preferredTime  String?
+  message        String?
+  status         String   @default("NEW")  // NEW | CONTACTED | DEMO_DONE
+  createdAt      DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([status, createdAt])
 }
