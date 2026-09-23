@@ -119,7 +119,7 @@ function Section({
   return (
     <section
       id={id}
-      className={`lp-section scroll-mt-24 sm:scroll-mt-28 ${GUTTER} py-12 sm:py-14 md:py-16 lg:py-[72px] ${className}`}
+      className={`lp-section scroll-mt-24 sm:scroll-mt-28 ${GUTTER} py-9 sm:py-11 md:py-12 lg:py-16 ${className}`}
     >
       <div className={SHELL}>{children}</div>
     </section>
@@ -498,7 +498,7 @@ export function PremiumLanding() {
           2160px-tall display that forced 837px of empty band around 1323px of
           content, which is the opposite of filling the screen. Letting the
           next section peek in also tells the reader there is more. */}
-      <section className={`lp-hero relative overflow-hidden ${GUTTER} pb-12 pt-28 sm:pb-14 sm:pt-32 lg:pb-16 lg:pt-32`}>
+      <section className={`lp-hero relative overflow-hidden ${GUTTER} pb-10 pt-24 sm:pb-12 sm:pt-28 lg:pb-14 lg:pt-28`}>
         {/* Two soft emerald orbs, well below the content — the only colour in the
             page background. Fixed-size, blurred once, never animated. */}
         <div
@@ -1425,7 +1425,7 @@ export function PremiumLanding() {
       </Section>
 
       {/* ── CTA ──────────────────────────────────────────────────────────── */}
-      <Section id="cta" className="lp-tight-bottom pb-16 md:pb-20 lg:pb-24">
+      <Section id="cta" className="lp-tight-bottom pb-12 md:pb-16 lg:pb-20">
         <Reveal>
           <div className="relative overflow-hidden rounded-[2.5rem] bg-emerald-950 p-2 ring-1 ring-inset ring-emerald-950">
             <div
@@ -1465,7 +1465,7 @@ export function PremiumLanding() {
       </Section>
 
       {/* ── Footer ───────────────────────────────────────────────────────── */}
-      <footer className={`border-t border-emerald-950/[0.07] ${GUTTER} py-12 sm:py-14`}>
+      <footer className={`border-t border-emerald-950/[0.07] ${GUTTER} py-10 sm:py-12`}>
         <div className={`grid gap-10 sm:grid-cols-2 sm:gap-12 lg:grid-cols-[1.3fr_1fr_1fr_1fr] ${SHELL}`}>
           <div>
             <div className="flex items-center gap-2.5">
