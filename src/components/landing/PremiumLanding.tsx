@@ -162,6 +162,7 @@ function Split({
   lede,
   points,
   flip = false,
+  extras,
   children,
 }: {
   /** Omitted inside WorkflowTabs, where the tab label already names the panel. */
@@ -170,6 +171,8 @@ function Split({
   lede: string;
   points: { icon: React.ReactNode; label: string; desc: string }[];
   flip?: boolean;
+  /** Optional content rendered below the bullet points to fill vertical space. */
+  extras?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
@@ -204,6 +207,12 @@ function Split({
             </RevealItem>
           ))}
         </RevealGroup>
+
+        {extras && (
+          <Reveal delay={0.28}>
+            <div className="mt-6 sm:mt-8">{extras}</div>
+          </Reveal>
+        )}
       </div>
 
       <div className={flip ? "lg:order-1" : ""}>{children}</div>
@@ -298,6 +307,33 @@ function SurgeryPanel() {
             desc: "Scans and reports sit with the operative record instead of in a separate folder.",
           },
         ]}
+        extras={
+          <div className="rounded-2xl bg-emerald-950 px-5 py-5 ring-1 ring-inset ring-emerald-950">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-400 mb-4">
+              What gets documented per surgery
+            </p>
+            <div className="grid grid-cols-2 gap-2.5">
+              {[
+                "Pre-op diagnosis",
+                "Procedure & surgeon",
+                "Anaesthesia type",
+                "Post-op findings",
+                "Complications noted",
+                "Operative images",
+                "Discharge instructions",
+                "Follow-up date",
+              ].map((item) => (
+                <div key={item} className="flex items-center gap-2">
+                  <span className="flex h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-400" />
+                  <span className="text-[13px] text-emerald-100/80">{item}</span>
+                </div>
+              ))}
+            </div>
+            <p className="mt-4 text-[12px] text-emerald-300/60 border-t border-emerald-800 pt-3">
+              Generates a printable operative report — same structure every time.
+            </p>
+          </div>
+        }
       >
         <div className="relative">
           <Reveal>
@@ -350,6 +386,39 @@ function AnalyticsPanel() {
             desc: "Any view can be exported for your accountant or your own spreadsheet.",
           },
         ]}
+        extras={
+          <div className="rounded-2xl bg-white ring-1 ring-inset ring-emerald-950/[0.07] shadow-[0_20px_50px_-40px_rgba(6,60,45,0.25)] overflow-hidden">
+            <div className="border-b border-emerald-950/[0.06] px-5 py-4">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-700">
+                Metrics tracked automatically
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-px bg-emerald-950/[0.05]">
+              {[
+                { icon: <Users size={14} strokeWidth={1.25} />, label: "Daily OPD volume", sub: "Per hospital, per day" },
+                { icon: <ChartNoAxesColumn size={14} strokeWidth={1.25} />, label: "Revenue & collections", sub: "By site or combined" },
+                { icon: <Activity size={14} strokeWidth={1.25} />, label: "No-show & cancel rate", sub: "Trended over 90 days" },
+                { icon: <CalendarRange size={14} strokeWidth={1.25} />, label: "Repeat visit rate", sub: "Patient return frequency" },
+              ].map((m) => (
+                <div key={m.label} className="flex items-start gap-3 bg-white px-4 py-4">
+                  <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-600/[0.12]">
+                    {m.icon}
+                  </span>
+                  <div>
+                    <p className="text-[13px] font-semibold leading-snug text-emerald-950">{m.label}</p>
+                    <p className="mt-0.5 text-[12px] leading-snug text-slate-500">{m.sub}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="flex items-center gap-2 border-t border-emerald-950/[0.06] bg-emerald-50/50 px-5 py-3">
+              <Check size={13} strokeWidth={2} className="text-emerald-600" aria-hidden="true" />
+              <p className="text-[12.5px] text-slate-600">
+                Exports to <span className="font-medium text-emerald-900">CSV or PDF</span> — no separate reporting setup required.
+              </p>
+            </div>
+          </div>
+        }
       >
         <div className="relative">
           <Reveal>
