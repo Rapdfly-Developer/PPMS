@@ -6,9 +6,6 @@ import { Phone, MapPin, Calendar, Hash, IdCard, Briefcase, FileText } from "luci
 import { decryptAadhaar, maskAadhaar } from "@/lib/crypto";
 import { PatientProfileClient, type SerialVisit, type TodayVisit, type LastVisitSummary } from "./PatientProfileClient";
 import { PatientActionsPanel } from "./PatientHistoryButtons";
-import "@/plugins";
-import { ExternalPluginSlot } from "../../emr/[udid]/ExternalPluginSlot";
-import { getAllRegisteredPlugins } from "@/plugin-framework/registry";
 
 const CATEGORY_STYLES: Record<string, string> = {
   GENERAL:    "bg-white/20 text-white border border-white/30",
@@ -352,50 +349,19 @@ export default async function PatientProfilePage({
             timelineEntries={timelineEntries}
             lastVisitSummary={lastVisitSummary}
           />
-          {/* AI patient profile — one card, three sub-tabs (Patient snapshot,
-              Previous visits, Last visit), all of it already-generated Copilot
-              content replayed from the shared card store. No AI call is made
-              from this page.
+          {/* No Copilot slot here, deliberately.
 
-              Placed after PatientProfileClient, whose last child is the Last
-              Visit Summary card: the doctor reads the recorded summary first
-              and the AI reading of it second, rather than meeting the AI
-              before the record it is summarising.
+              Mounting one on this page put a SECOND Copilot iframe on the same
+              visit: each iframe sends its own PPMS_INIT, and PPMS_INIT is what
+              auto-starts the analysis, so opening the profile re-ran the whole
+              AI bundle a visit had already paid for on the EMR page. Exactly
+              one iframe per visit, on the EMR page, is the rule.
 
-              Rendered through ExternalPluginSlot rather than by mounting the
-              panel directly: the panel only READS the card store, and the
-              thing that FILLS it is the Copilot iframe that the slot mounts.
-              Rendering the panel on its own left it reading a store nothing on
-              this page ever wrote to, so it returned null and the feature was
-              invisible here.
-
-              profileMode makes the slot wrap its bridge in
-              PatientProfileCopilotHost, which renders the card directly and
-              always — expanded, no click required — and keeps the iframe
-              mounted but permanently clipped.
-
-              Gated on an open visit for this patient TODAY, because the slot
-              signs a plugin token against a specific visitId and the server
-              rejects one that is not this patient's; without a visit there is
-              nothing to scope a token to. The five authorisation checks inside
-              the slot are unchanged and still decide whether anything renders
-              at all. */}
-          {todayVisitRecord && todayVisitRecord.status !== "CLOSED" && (
-            <div className="mt-4">
-              {getAllRegisteredPlugins()
-                .filter((p) => p.manifest.externalOrigin)
-                .map((p) => (
-                  <ExternalPluginSlot
-                    key={p.manifest.pluginId}
-                    pluginId={p.manifest.pluginId}
-                    triggerPermission={p.manifest.ui?.emrPanel?.triggerPermission ?? ""}
-                    patientUdid={udid}
-                    visitId={todayVisitRecord.id}
-                    profileMode
-                  />
-                ))}
-            </div>
-          )}
+              The AI patient profile card went with it. It only READS the
+              shared card store; the thing that FILLS the store is that same
+              iframe, so keeping the card without the iframe would render an
+              empty card, and keeping the iframe to fill it is the cost we are
+              removing. */}
         </div>
       </div>
     </div>

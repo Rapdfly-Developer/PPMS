@@ -81,6 +81,16 @@ export function InvestigationCopilotCard({ state }: { state: CopilotCardState<"i
   </Shell>;
 }
 
+/**
+ * Renderer for the Copilot's patient profile sections.
+ *
+ * Currently mounted nowhere. It hosted a second Copilot iframe on the patient
+ * profile page, which re-ran the visit's whole AI bundle; the iframe and this
+ * card were removed together, because the card is only a reader of the store
+ * that iframe fills. Kept, with its tests, so that whichever page eventually
+ * shows this content can mount it inside the EMR page's existing bridge rather
+ * than standing up a second one.
+ */
 export function PatientProfileCopilotPanel({ visitId }: { visitId: string }) {
   const state = useCopilotCard("patientProfile", visitId);
   return state ? <PatientProfileCopilotCard state={state} /> : null;
@@ -111,22 +121,3 @@ export function PatientProfileCopilotCard({ state }: { state: CopilotCardState<"
   </Shell>;
 }
 
-/**
- * Patient page hosts one authorised bridge for the AI patient profile card.
- *
- * The card renders directly and always, the same way the EMR tab cards do:
- * expanded, no toggle, no click. Its own loading and timeout states are what
- * the doctor sees while the analysis is still running.
- *
- * The bridge below is mounted but permanently clipped. It is not UI on this
- * page — it is the thing that FILLS the card store, so it cannot be unmounted
- * without leaving the card reading a store nothing writes to. Clipped rather
- * than removed from the tree, and marked inert so neither the keyboard nor a
- * screen reader can reach a frame the doctor cannot see.
- */
-export function PatientProfileCopilotHost({ visitId, children }: { visitId: string; children: ReactNode }) {
-  return <div className="space-y-3 mb-5">
-    <PatientProfileCopilotPanel visitId={visitId} />
-    <div className="relative"><div className="absolute inset-x-0 top-0 h-0 overflow-hidden opacity-0 pointer-events-none" inert aria-hidden="true">{children}</div></div>
-  </div>;
-}

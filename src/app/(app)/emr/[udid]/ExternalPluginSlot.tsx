@@ -21,14 +21,12 @@ import { checkPluginLicense } from "@/plugin-framework/license";
 import { signPluginToken } from "@/lib/plugin-token";
 import { isPluginRegistered, getPlugin } from "@/plugin-framework/registry";
 import { ExternalPluginSlotClient } from "./ExternalPluginSlotClient";
-import { PatientProfileCopilotHost } from "./CopilotClinicalPanels";
 
 type Props = {
   pluginId: string;
   triggerPermission: string;
   patientUdid: string;
   visitId: string;
-  profileMode?: boolean;
 };
 
 export async function ExternalPluginSlot({
@@ -36,7 +34,6 @@ export async function ExternalPluginSlot({
   triggerPermission,
   patientUdid,
   visitId,
-  profileMode = false,
 }: Props) {
   // Only render when PLUGIN_TOKEN_SECRET is configured
   if (!process.env.PLUGIN_TOKEN_SECRET || process.env.PLUGIN_TOKEN_SECRET.length < 32) {
@@ -106,7 +103,11 @@ export async function ExternalPluginSlot({
     return null;
   }
 
-  const bridge = (
+  /* One slot per visit, and it belongs on the EMR page. Each mounted slot
+     renders its own iframe and sends its own PPMS_INIT, which auto-starts the
+     analysis — so a second mount anywhere means the visit's AI bundle runs
+     twice. Before adding a caller, check no other page already has one. */
+  return (
     <ExternalPluginSlotClient
       pluginOrigin={pluginOrigin}
       pluginName={pluginName}
@@ -116,7 +117,4 @@ export async function ExternalPluginSlot({
       pluginId={pluginId}
     />
   );
-  return profileMode
-    ? <PatientProfileCopilotHost visitId={visitId}>{bridge}</PatientProfileCopilotHost>
-    : bridge;
 }
