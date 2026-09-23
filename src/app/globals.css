@@ -555,8 +555,22 @@ body {
 
 
 /* ── Large-screen typography scale ────────────────────────
-   Nothing here applies at or below 1440px, so every existing mobile, tablet
-   and laptop layout is untouched.
+   Nothing here applies below 1920px, so every mobile, tablet and laptop
+   layout is untouched.
+
+   That bound used to be 1440px, on the assumption that a wider viewport meant
+   a bigger monitor. It does not. Windows at 125% display scaling — the
+   shipped default on most 1080p laptops — reports a 1920x1080 panel as a
+   1536px viewport, and macOS reports a 16-inch MacBook Pro as 1728px. Both
+   landed in the first step and had their body text scaled to 1.35x, so the
+   machines this app is actually used on got the LARGEST type in the product:
+   text-xs rendered at 16.2px, well above Tailwind's own 12px default.
+
+   The boundaries are now the 4xl/5xl/6xl breakpoints declared at the top of
+   this file — 1920 / 2560 / 3840, one real display class each — the same
+   correction already made to --lp-measure above. Every common laptop width
+   (1280, 1366, 1440, 1512, 1536, 1600, 1680, 1728, 1792) now sits below the
+   ramp and uses the base scale.
 
    Two mechanisms, because the app expresses type two ways. Tailwind's named
    utilities compile to font-size:var(--text-sm), so redefining those custom
@@ -571,8 +585,8 @@ body {
 
    Multipliers are against Tailwind's shipped value, not compounding.      */
 
-/* Step 1 — body 1.35x, display 1.22x */
-@media (min-width: 1441px) and (max-width: 1920px) {
+/* Step 1 — body 1.35x, display 1.22x. 1080p desktop monitors at 100%. */
+@media (min-width: 1920px) and (max-width: 2559px) {
   :root {
     --text-xs: 16.2px;
     --text-xs--line-height: 21.6px;
@@ -626,8 +640,8 @@ body {
   .text-\[36px\] { font-size: 43.92px; }
 }
 
-/* Step 2 — body 1.65x, display 1.40x */
-@media (min-width: 1921px) and (max-width: 2560px) {
+/* Step 2 — body 1.65x, display 1.40x. QHD. */
+@media (min-width: 2560px) and (max-width: 3839px) {
   :root {
     --text-xs: 19.8px;
     --text-xs--line-height: 26.4px;
@@ -682,7 +696,7 @@ body {
 }
 
 /* Step 3 — body 2x, display 1.6x */
-@media (min-width: 2561px) {
+@media (min-width: 3840px) {
   :root {
     --text-xs: 24px;
     --text-xs--line-height: 32px;
