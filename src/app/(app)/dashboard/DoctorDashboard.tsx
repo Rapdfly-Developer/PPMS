@@ -60,13 +60,8 @@ export async function DoctorDashboard({
   const monthStart = startOfMonth(now);
   const monthEnd   = endOfMonth(now);
 
-  // Yesterday range
-  const yesterdayStart = new Date(dayStart.getTime() - 24 * 60 * 60 * 1000);
-  const yesterdayEnd   = new Date(dayEnd.getTime()   - 24 * 60 * 60 * 1000);
-
   const [weekApptCount, monthApptCount, weekCompletedCount, monthCompletedCount,
-         weekNoShowCount, monthNoShowCount, upcomingFollowUps,
-         yTotal, yWaiting, yCompleted, yNoShow, yNewPats] = await Promise.all([
+         weekNoShowCount, monthNoShowCount, upcomingFollowUps] = await Promise.all([
     prisma.appointment.count({ where: { doctorId, dateTime: { gte: weekStart, lte: weekEnd }, status: { notIn: ["CANCELLED", "RESCHEDULED"] } } }),
     prisma.appointment.count({ where: { doctorId, dateTime: { gte: monthStart, lte: monthEnd }, status: { notIn: ["CANCELLED", "RESCHEDULED"] } } }),
     prisma.appointment.count({ where: { doctorId, dateTime: { gte: weekStart, lte: weekEnd }, status: "DISPENSED" } }),
@@ -91,11 +86,6 @@ export async function DoctorDashboard({
       orderBy: { dateTime: "asc" },
       take: 8,
     }),
-    prisma.appointment.count({ where: { doctorId, dateTime: { gte: yesterdayStart, lte: yesterdayEnd }, status: { notIn: ["CANCELLED","RESCHEDULED"] } } }),
-    prisma.appointment.count({ where: { doctorId, dateTime: { gte: yesterdayStart, lte: yesterdayEnd }, status: "CONFIRMED" } }),
-    prisma.appointment.count({ where: { doctorId, dateTime: { gte: yesterdayStart, lte: yesterdayEnd }, status: "DISPENSED" } }),
-    prisma.appointment.count({ where: { doctorId, dateTime: { gte: yesterdayStart, lte: yesterdayEnd }, status: "NO_SHOW" } }),
-    prisma.appointment.count({ where: { doctorId, dateTime: { gte: yesterdayStart, lte: yesterdayEnd }, isWalkIn: true } }),
   ]);
 
   // Serialise
@@ -171,7 +161,6 @@ export async function DoctorDashboard({
         week:   { scheduled: weekApptCount,  completed: weekCompletedCount,  noShow: weekNoShowCount  },
         month:  { scheduled: monthApptCount, completed: monthCompletedCount, noShow: monthNoShowCount },
       }}
-      yesterdayCounts={{ total: yTotal, waiting: yWaiting, completed: yCompleted, noShow: yNoShow, newPats: yNewPats }}
     />
   );
 }
