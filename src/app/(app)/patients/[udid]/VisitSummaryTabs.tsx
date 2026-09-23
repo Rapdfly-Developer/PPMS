@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Sparkles, Loader2, Activity, AlertCircle, FileText } from "lucide-react";
+import { Sparkles, Loader2, Activity, AlertCircle, FileText, Pill, FlaskConical, ClipboardList, CalendarClock, Microscope, Stethoscope } from "lucide-react";
 import { formatComplaintDisplay, convertNotesToCC } from "@/lib/appointment-cc";
 import { getVisitEmrData } from "./emr-viewer-action";
 import { generateAiSummary } from "@/app/(app)/patients/actions";
@@ -231,7 +231,7 @@ export function VisitSummaryTabBody({
   }
   return (
     <div className="animate-fade-in">
-      {tab === "short" && (shortContent ?? <ShortContent complaint={complaint} diagText={diagText} />)}
+      {tab === "short" && (shortContent ?? <ShortContent complaint={complaint} diagText={diagText} emrData={emrData} />)}
       {tab === "long" && <LongContent data={emrData} complaint={complaint} diagText={diagText} />}
       {tab === "ai" && <AIContent text={aiText} error={aiError} source={aiSource} notice={aiNotice} />}
     </div>
@@ -259,33 +259,106 @@ export function VisitSummaryTabs({ visitId, complaint, diagnoses, shortContent, 
   );
 }
 
+/* ─── Section header ─── */
+function SumHead({ icon, label, color = "text-[var(--color-ink-400)]" }: { icon: React.ReactNode; label: string; color?: string }) {
+  return (
+    <div className="flex items-center gap-1.5 mb-2">
+      <span className={color}>{icon}</span>
+      <span className="text-[9px] font-black uppercase tracking-[0.16em] text-[var(--color-ink-400)]">{label}</span>
+    </div>
+  );
+}
+
 /* ─── Short ─── */
-function ShortContent({ complaint, diagText }: { complaint: string | null; diagText: string }) {
-  if (!complaint && !diagText) {
+function ShortContent({ complaint, diagText, emrData }: {
+  complaint: string | null; diagText: string; emrData?: any;
+}) {
+  const hasMeds = emrData?.medications?.length > 0;
+  const followUpInv = emrData?.investigationOrders?.filter((o: any) => o.status !== "COMPLETED") ?? [];
+  const hasFollowUp = followUpInv.length > 0;
+
+  if (!complaint && !diagText && !hasMeds) {
     return <EmptyNote>No clinical data recorded for this visit.</EmptyNote>;
   }
+
+  const complaints = complaint ? parseComplaints(complaint) : [];
+
   return (
-    <div className="space-y-2.5">
+    <div className="space-y-4">
+
+      {/* Reason for visit */}
       {complaint && (
         <div>
-          <p className="text-[9px] font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-1.5">Chief Complaint</p>
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-[10px] sm:text-[11px] font-medium">
-            <FileText size={11} className="shrink-0 text-amber-500" />
-            {formatComplaintDisplay(complaint)}
-          </span>
-        </div>
-      )}
-      {diagText && (
-        <div>
-          <p className="text-[9px] font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-1">Diagnosis</p>
-          <div className="flex flex-wrap gap-1">
-            {diagText.split(", ").filter(Boolean).map((d, i) => (
-              <span key={i} className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-teal-50 border border-teal-200 text-teal-800 text-[10px] sm:text-[11px] font-medium">
-                {d}
+          <SumHead icon={<FileText size={11} />} label="Reason for Visit" />
+          <div className="flex flex-wrap gap-1.5">
+            {complaints.map((c, i) => (
+              <span key={i} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-[10px] sm:text-[11px] font-medium">
+                <FileText size={10} className="shrink-0 text-amber-500" />
+                {[c.lat, c.text, c.since ? `· ${c.since}` : null].filter(Boolean).join(" ")}
               </span>
             ))}
           </div>
         </div>
+      )}
+
+      {/* Diagnosis */}
+      {diagText && (
+        <div>
+          <SumHead icon={<Stethoscope size={11} />} label="Diagnosis" color="text-teal-500" />
+          <div className="flex flex-wrap gap-1.5">
+            {diagText.split(", ").filter(Boolean).map((d, i) => (
+              <span key={i} className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-teal-50 border border-teal-200 text-teal-800 text-[10px] sm:text-[11px] font-medium">
+                <span className="w-1.5 h-1.5 rounded-full bg-teal-400 shrink-0" />{d}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Medications (if EMR data already loaded from switching tabs) */}
+      {hasMeds && (
+        <div>
+          <SumHead icon={<Pill size={11} />} label="Treatment / Medications" color="text-violet-500" />
+          <div className="space-y-1">
+            {emrData.medications.map((m: any, i: number) => (
+              <div key={i} className="flex items-start gap-2 py-1.5 border-b border-[var(--color-border)] last:border-0">
+                <span className="text-[10px] text-[var(--color-ink-400)] tabular-nums w-4 shrink-0 mt-0.5">{i + 1}.</span>
+                <div className="min-w-0">
+                  <span className="text-[11px] sm:text-[12px] font-semibold text-[var(--color-ink-800)]">
+                    {m.laterality && <span className="text-[var(--color-primary-700)] mr-1">{m.laterality}</span>}
+                    {m.drugName}
+                  </span>
+                  {(m.dosage || m.frequency || m.duration) && (
+                    <span className="text-[10px] sm:text-[11px] text-[var(--color-ink-500)] ml-2">
+                      {[m.dosage, m.frequency, m.duration].filter(Boolean).join(" · ")}
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Pending follow-up investigations */}
+      {hasFollowUp && (
+        <div>
+          <SumHead icon={<CalendarClock size={11} />} label="Pending Follow-Up" color="text-blue-500" />
+          <div className="flex flex-wrap gap-1.5">
+            {followUpInv.map((o: any, i: number) => (
+              <span key={i} className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-blue-50 border border-blue-200 text-blue-800 text-[10px] sm:text-[11px] font-medium">
+                {o.testName}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Prompt to load full details */}
+      {!hasMeds && (
+        <p className="text-[10px] text-[var(--color-ink-400)]">
+          Switch to <span className="font-semibold">Long Summary</span> for full clinical details including medications and investigations.
+        </p>
       )}
     </div>
   );
@@ -333,6 +406,20 @@ function parseComplaints(raw: string) {
   });
 }
 
+/* ─── Section group wrapper for Long Summary ─── */
+function LongSection({ head, color, children }: { head: React.ReactNode; color?: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-lg border border-[var(--color-border)] overflow-hidden">
+      <div className={`px-3 py-2 border-b border-[var(--color-border)] ${color ?? "bg-[var(--color-surface-sunken)]"}`}>
+        {head}
+      </div>
+      <div className="px-3 py-3 space-y-3 bg-white">
+        {children}
+      </div>
+    </div>
+  );
+}
+
 function LongContent({
   data,
   complaint,
@@ -361,6 +448,7 @@ function LongContent({
     Object.values(parseJSON<Record<string, unknown>>(ant.le, {})).some(Boolean)
   ));
   const hasPost     = !!(pos?.re || pos?.le);
+  const hasExam     = hasVitals || hasVA || hasIOP || hasAnt || hasPost;
 
   const isEmpty = !g?.chiefComplaint && !hasVitals && !hasDiag && !hasMeds && !hasInv && !hasVA && !hasIOP && !hasAnt && !hasPost && !g?.hpi;
   if (isEmpty) return <EmptyNote>No detailed clinical notes recorded for this visit.</EmptyNote>;
@@ -373,154 +461,162 @@ function LongContent({
   ].filter(([, v]) => !!v) as [string, string][];
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
 
-      {/* Visit type chip */}
-      {data.visitType && (
-        <span className="inline-block px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-medium bg-[var(--color-primary-50)] text-[var(--color-primary-600)]">{data.visitType}</span>
-      )}
-
-      {/* Chief Complaint — inline single line */}
-      {g?.chiefComplaint && (
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-[9px] sm:text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-[var(--color-ink-400)] shrink-0">Chief Complaint</span>
-          {parseComplaints(g.chiefComplaint).map((c, i) => (
-            <span key={i} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-[10px] sm:text-[11px] font-medium">
-              <FileText size={11} className="shrink-0 text-amber-500" />
-              {[c.lat, c.text, c.since ? `· ${c.since}` : null].filter(Boolean).join(" ")}
+      {/* ── 1. Visit Details ──────────────────────────────────────────── */}
+      {(data.visitType || g?.chiefComplaint || g?.hpi) && (
+        <LongSection head={<SumHead icon={<ClipboardList size={11} />} label="Visit Details" />}>
+          {data.visitType && (
+            <span className="inline-block px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-medium bg-[var(--color-primary-50)] text-[var(--color-primary-600)]">
+              {data.visitType}
             </span>
-          ))}
-        </div>
+          )}
+
+          {g?.chiefComplaint && (
+            <div>
+              <p className="text-[9px] font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-1.5">Chief Complaint</p>
+              <div className="flex flex-wrap gap-1.5">
+                {parseComplaints(g.chiefComplaint).map((c, i) => (
+                  <span key={i} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-[10px] sm:text-[11px] font-medium">
+                    <FileText size={10} className="shrink-0 text-amber-500" />
+                    {[c.lat, c.text, c.since ? `· ${c.since}` : null].filter(Boolean).join(" ")}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {g?.hpi && (
+            <div>
+              <p className="text-[9px] font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-1">History of Present Illness</p>
+              <p className="text-[10px] sm:text-[11px] leading-relaxed text-[var(--color-ink-700)]">{g.hpi}</p>
+            </div>
+          )}
+        </LongSection>
       )}
 
-      {/* HPI — inline single line */}
-      {g?.hpi && (
-        <div className="flex items-baseline gap-2">
-          <span className="text-[9px] sm:text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-[var(--color-ink-400)] shrink-0 whitespace-nowrap">History</span>
-          <p className="text-[10px] sm:text-[11px] leading-relaxed text-[var(--color-ink-700)]">{g.hpi}</p>
-        </div>
+      {/* ── 2. Examination Findings ───────────────────────────────────── */}
+      {hasExam && (
+        <LongSection head={<SumHead icon={<Microscope size={11} />} label="Examination Findings" color="text-blue-500" />}>
+
+          {hasVitals && (
+            <Block label="Vitals" icon={<Activity size={10} className="text-[var(--color-ink-400)]" />}>
+              <DataTable minWidth={260}>
+                <Cols widths={COLS_PAIR} />
+                <tbody>
+                  {vitals.map(([k, v]) => (
+                    <tr key={k}>
+                      <td className={TD_MUTED}>{k}</td>
+                      <td className={`${TD} font-medium`}>{v}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </DataTable>
+            </Block>
+          )}
+
+          {hasVA && (() => {
+            const re = parseJSON<any>(va.re, {});
+            const le = parseJSON<any>(va.le, {});
+            return (
+              <Block label={`Visual Acuity${va.testMethod ? ` · ${va.testMethod}` : ""}`}>
+                <DataTable>
+                  <Cols widths={COLS_EYE} />
+                  <EyeHead />
+                  <tbody>
+                    <EyeRow label="Distance Unaided"        re={re.distanceUnaided}       le={le.distanceUnaided} />
+                    <EyeRow label="Distance Pinhole"        re={re.distancePinhole}       le={le.distancePinhole} />
+                    <EyeRow label="Distance Best Corrected" re={re.distanceBestCorrected} le={le.distanceBestCorrected} />
+                    <EyeRow label="Near Unaided"            re={re.nearUnaided}           le={le.nearUnaided} />
+                    <EyeRow label="Near Best Corrected"     re={re.nearBestCorrected}     le={le.nearBestCorrected} />
+                  </tbody>
+                </DataTable>
+              </Block>
+            );
+          })()}
+
+          {hasIOP && (
+            <Block label="Intraocular Pressure">
+              <DataTable>
+                <Cols widths={COLS_EYE} />
+                <thead>
+                  <tr>
+                    <th className={TH}>Method</th>
+                    <th className={TH}>RE (mmHg)</th>
+                    <th className={TH}>LE (mmHg)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {iop!.map((r: any, i: number) => (
+                    <tr key={i}>
+                      <td className={TD_MUTED}>{r.method ?? "NCT"}</td>
+                      <td className={`${TD} font-medium`}>{r.re || DASH}</td>
+                      <td className={`${TD} font-medium`}>{r.le || DASH}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </DataTable>
+            </Block>
+          )}
+
+          {hasAnt && (() => {
+            const re = parseJSON<any>(ant.re, {});
+            const le = parseJSON<any>(ant.le, {});
+            const fields = ["upperLid","lowerLid","conjunctiva","sclera","cornea","anteriorChamber","iris","pupil","lens"] as const;
+            const labels: Record<string, string> = {
+              upperLid: "Upper Lid", lowerLid: "Lower Lid", conjunctiva: "Conjunctiva",
+              sclera: "Sclera", cornea: "Cornea", anteriorChamber: "Ant. Chamber",
+              iris: "Iris", pupil: "Pupil", lens: "Lens",
+            };
+            const rows = fields.filter((f) => re[f] || le[f]);
+            if (!rows.length && !re.freeText && !le.freeText) return null;
+            return (
+              <Block label="Anterior Segment">
+                <DataTable>
+                  <Cols widths={COLS_EYE} />
+                  <EyeHead />
+                  <tbody>
+                    {rows.map((f) => <EyeRow key={f} label={labels[f]} re={re[f]} le={le[f]} />)}
+                    {(re.freeText || le.freeText) && <EyeRow label="Notes" re={re.freeText} le={le.freeText} />}
+                  </tbody>
+                </DataTable>
+              </Block>
+            );
+          })()}
+
+          {hasPost && (() => {
+            const re = parseJSON<any>(pos.re, {});
+            const le = parseJSON<any>(pos.le, {});
+            const fields = ["media","discSize","discShape","discColour","discVessels","cdr","nrr","macula","retinalVessels","periphery"] as const;
+            const labels: Record<string, string> = {
+              media: "Media", discSize: "Disc Size", discShape: "Disc Shape",
+              discColour: "Disc Colour", discVessels: "Disc Vessels", cdr: "CDR",
+              nrr: "NRR", macula: "Macula", retinalVessels: "Retinal Vessels", periphery: "Periphery",
+            };
+            const rows = fields.filter((f) => re[f] || le[f]);
+            if (!rows.length && !pos.notes) return null;
+            return (
+              <Block label="Posterior Segment">
+                <DataTable>
+                  <Cols widths={COLS_EYE} />
+                  <EyeHead />
+                  <tbody>
+                    {rows.map((f) => <EyeRow key={f} label={labels[f]} re={re[f]} le={le[f]} />)}
+                  </tbody>
+                </DataTable>
+                {pos.notes && (
+                  <p className="mt-1.5 text-[10px] sm:text-[11px] italic leading-snug text-[var(--color-ink-500)]">{pos.notes}</p>
+                )}
+              </Block>
+            );
+          })()}
+
+        </LongSection>
       )}
 
-      {/* Vitals */}
-      {hasVitals && (
-        <Block label="Vitals" icon={<Activity size={10} className="text-[var(--color-ink-400)]" />}>
-          <DataTable minWidth={260}>
-            <Cols widths={COLS_PAIR} />
-            <tbody>
-              {vitals.map(([k, v]) => (
-                <tr key={k}>
-                  <td className={TD_MUTED}>{k}</td>
-                  <td className={`${TD} font-medium`}>{v}</td>
-                </tr>
-              ))}
-            </tbody>
-          </DataTable>
-        </Block>
-      )}
-
-      {/* Visual Acuity */}
-      {hasVA && (() => {
-        const re = parseJSON<any>(va.re, {});
-        const le = parseJSON<any>(va.le, {});
-        return (
-          <Block label={`Visual Acuity${va.testMethod ? ` · ${va.testMethod}` : ""}`}>
-            <DataTable>
-              <Cols widths={COLS_EYE} />
-              <EyeHead />
-              <tbody>
-                <EyeRow label="Distance Unaided"        re={re.distanceUnaided}       le={le.distanceUnaided} />
-                <EyeRow label="Distance Pinhole"        re={re.distancePinhole}       le={le.distancePinhole} />
-                <EyeRow label="Distance Best Corrected" re={re.distanceBestCorrected} le={le.distanceBestCorrected} />
-                <EyeRow label="Near Unaided"            re={re.nearUnaided}           le={le.nearUnaided} />
-                <EyeRow label="Near Best Corrected"     re={re.nearBestCorrected}     le={le.nearBestCorrected} />
-              </tbody>
-            </DataTable>
-          </Block>
-        );
-      })()}
-
-      {/* IOP */}
-      {hasIOP && (
-        <Block label="Intraocular Pressure">
-          <DataTable>
-            <Cols widths={COLS_EYE} />
-            <thead>
-              <tr>
-                <th className={TH}>Method</th>
-                <th className={TH}>RE (mmHg)</th>
-                <th className={TH}>LE (mmHg)</th>
-              </tr>
-            </thead>
-            <tbody>
-              {iop!.map((r: any, i: number) => (
-                <tr key={i}>
-                  <td className={TD_MUTED}>{r.method ?? "NCT"}</td>
-                  <td className={`${TD} font-medium`}>{r.re || DASH}</td>
-                  <td className={`${TD} font-medium`}>{r.le || DASH}</td>
-                </tr>
-              ))}
-            </tbody>
-          </DataTable>
-        </Block>
-      )}
-
-      {/* Anterior Segment */}
-      {hasAnt && (() => {
-        const re = parseJSON<any>(ant.re, {});
-        const le = parseJSON<any>(ant.le, {});
-        const fields = ["upperLid","lowerLid","conjunctiva","sclera","cornea","anteriorChamber","iris","pupil","lens"] as const;
-        const labels: Record<string, string> = {
-          upperLid: "Upper Lid", lowerLid: "Lower Lid", conjunctiva: "Conjunctiva",
-          sclera: "Sclera", cornea: "Cornea", anteriorChamber: "Ant. Chamber",
-          iris: "Iris", pupil: "Pupil", lens: "Lens",
-        };
-        const rows = fields.filter((f) => re[f] || le[f]);
-        if (!rows.length && !re.freeText && !le.freeText) return null;
-        return (
-          <Block label="Anterior Segment">
-            <DataTable>
-              <Cols widths={COLS_EYE} />
-              <EyeHead />
-              <tbody>
-                {rows.map((f) => <EyeRow key={f} label={labels[f]} re={re[f]} le={le[f]} />)}
-                {(re.freeText || le.freeText) && <EyeRow label="Notes" re={re.freeText} le={le.freeText} />}
-              </tbody>
-            </DataTable>
-          </Block>
-        );
-      })()}
-
-      {/* Posterior Segment */}
-      {hasPost && (() => {
-        const re = parseJSON<any>(pos.re, {});
-        const le = parseJSON<any>(pos.le, {});
-        const fields = ["media","discSize","discShape","discColour","discVessels","cdr","nrr","macula","retinalVessels","periphery"] as const;
-        const labels: Record<string, string> = {
-          media: "Media", discSize: "Disc Size", discShape: "Disc Shape",
-          discColour: "Disc Colour", discVessels: "Disc Vessels", cdr: "CDR",
-          nrr: "NRR", macula: "Macula", retinalVessels: "Retinal Vessels", periphery: "Periphery",
-        };
-        const rows = fields.filter((f) => re[f] || le[f]);
-        if (!rows.length && !pos.notes) return null;
-        return (
-          <Block label="Posterior Segment">
-            <DataTable>
-              <Cols widths={COLS_EYE} />
-              <EyeHead />
-              <tbody>
-                {rows.map((f) => <EyeRow key={f} label={labels[f]} re={re[f]} le={le[f]} />)}
-              </tbody>
-            </DataTable>
-            {pos.notes && (
-              <p className="mt-1.5 text-[10px] sm:text-[11px] italic leading-snug text-[var(--color-ink-500)]">{pos.notes}</p>
-            )}
-          </Block>
-        );
-      })()}
-
-      {/* Diagnoses */}
+      {/* ── 3. Diagnosis ──────────────────────────────────────────────── */}
       {hasDiag && (
-        <Block label="Diagnoses">
+        <LongSection head={<SumHead icon={<Stethoscope size={11} />} label="Diagnosis" color="text-teal-500" />}>
           <div className="flex flex-col gap-1.5">
             {[...data.diagnoses]
               .sort((a: any, b: any) => {
@@ -528,8 +624,8 @@ function LongContent({
                 return (ord[a.status] ?? 3) - (ord[b.status] ?? 3);
               })
               .map((d: any, i: number) => (
-                <div key={i} className="flex items-baseline gap-2">
-                  <span className={`text-[9px] font-bold uppercase shrink-0 ${
+                <div key={i} className="flex items-baseline gap-2 py-1 border-b border-[var(--color-border)] last:border-0">
+                  <span className={`text-[9px] font-bold uppercase shrink-0 min-w-[52px] ${
                     d.status === "RESOLVED" ? "text-emerald-600"
                     : d.status === "CHRONIC" ? "text-amber-600"
                     : "text-red-500"
@@ -537,18 +633,18 @@ function LongContent({
                   <span className="text-[10px] sm:text-[11px] text-[var(--color-ink-700)] min-w-0">
                     {d.laterality && <span className="font-bold text-[var(--color-primary-700)] mr-1">{d.laterality}</span>}
                     {d.description}
-                    {d.provisional && <span className="text-amber-500 italic ml-1">(P)</span>}
+                    {d.provisional && <span className="text-amber-500 italic ml-1">(Provisional)</span>}
                     {d.icd10Code && <span className="font-mono text-[9px] text-[var(--color-ink-400)] ml-1.5">{d.icd10Code}</span>}
                   </span>
                 </div>
               ))}
           </div>
-        </Block>
+        </LongSection>
       )}
 
-      {/* Medications */}
+      {/* ── 4. Treatment Plan / Medications ───────────────────────────── */}
       {hasMeds && (
-        <Block label="Medications">
+        <LongSection head={<SumHead icon={<Pill size={11} />} label="Treatment Plan — Medications" color="text-violet-500" />}>
           <div className="flex flex-col divide-y divide-[var(--color-border)]">
             {data.medications.map((m: any, i: number) => (
               <div key={i} className="flex items-start gap-2.5 py-2 first:pt-0 last:pb-0">
@@ -569,12 +665,12 @@ function LongContent({
               </div>
             ))}
           </div>
-        </Block>
+        </LongSection>
       )}
 
-      {/* Investigations */}
+      {/* ── 5. Investigations / Follow-Up ─────────────────────────────── */}
       {hasInv && (
-        <Block label="Investigations">
+        <LongSection head={<SumHead icon={<FlaskConical size={11} />} label="Investigations &amp; Follow-Up" color="text-blue-500" />}>
           <div className="flex flex-col divide-y divide-[var(--color-border)]">
             {data.investigationOrders.map((o: any, i: number) => (
               <div key={i} className="flex items-start justify-between gap-3 py-2 first:pt-0 last:pb-0">
@@ -588,19 +684,19 @@ function LongContent({
                   </div>
                 </div>
                 <div className="flex flex-col items-end gap-1 shrink-0">
-                  <span className={`text-[9px] sm:text-[10px] font-bold uppercase ${
-                    o.status === "COMPLETED" ? "text-emerald-600"
-                    : o.status === "ORDERED" ? "text-blue-600"
-                    : "text-amber-600"
+                  <span className={`text-[9px] sm:text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
+                    o.status === "COMPLETED" ? "bg-emerald-50 text-emerald-700"
+                    : o.status === "ORDERED" ? "bg-blue-50 text-blue-700"
+                    : "bg-amber-50 text-amber-700"
                   }`}>{o.status}</span>
                   {o.resultRef
-                    ? <a href={o.resultRef} target="_blank" rel="noreferrer" className="text-[9px] sm:text-[10px] text-[var(--color-primary-600)] underline">View</a>
+                    ? <a href={o.resultRef} target="_blank" rel="noreferrer" className="text-[9px] sm:text-[10px] text-[var(--color-primary-600)] underline">View Result</a>
                     : null}
                 </div>
               </div>
             ))}
           </div>
-        </Block>
+        </LongSection>
       )}
 
     </div>
