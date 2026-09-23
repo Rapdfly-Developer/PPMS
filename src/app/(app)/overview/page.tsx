@@ -11,5 +11,5 @@ export default async function OverviewPage() {
       ? user.permissions
       : (ROLE_DEFAULT_PERMISSIONS[user.role] ?? []);
 
-  return <ModuleOverview role={user.role as "DOCTOR" | "HOSPITAL" | "STAFF"} permissions={permissions} />;
+  return <ModuleOverview role={user.role as "DOCTOR" | "HOSPITAL" | "STAFF"} permissions={permissions} userName={user.name} />;
 }
