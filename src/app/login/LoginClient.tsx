@@ -717,20 +717,14 @@ const panelW: React.CSSProperties = { width: "100%", maxWidth: "var(--left-w)" }
 
 function LeftPanel() {
   return (
-    <div className="hidden lg:flex lg:w-[56%] flex-col justify-center shrink-0 relative overflow-hidden"
+    <div className="hidden lg:flex lg:w-[56%] flex-col shrink-0 relative overflow-hidden"
       style={{ paddingLeft: "var(--pad-panel)", paddingRight: "var(--pad-panel)", paddingTop: "clamp(32px,3vw,72px)", paddingBottom: "clamp(32px,3vw,72px)" }}>
 
-      {/* Logo top / hero centre / trust bottom is the right arrangement at
-          laptop height, but on a 2160px-tall panel it drags the three blocks
-          to the extremes and opens gaps the content cannot fill. Capping the
-          group's height keeps it reading as one composition and lets the
-          spare vertical space fall outside it. */}
-      <div className="w-full flex flex-col justify-between"
-        style={{ height: "100%", maxHeight: "clamp(560px, 84vh, 1040px)" }}>
+      <div className="w-full flex-1 flex flex-col justify-between min-h-0">
 
       {/* Hero — the brand lockup now sits above the sign-in card in the right
           panel, so this column opens straight on the headline. */}
-      <div className="flex-1 flex flex-col justify-center py-7 min-w-0">
+      <div className="flex-1 flex flex-col justify-center py-7 min-w-0 min-h-0">
         <div className="lp-a1 mb-4">
           <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full" style={{
             background: "rgba(13,122,99,.08)",
