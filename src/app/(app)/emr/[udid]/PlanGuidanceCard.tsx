@@ -85,13 +85,98 @@ function Shell({ children, note }: { children: React.ReactNode; note?: string })
   );
 }
 
+/*
+ * Section bodies arrive as light markdown.
+ *
+ * followUpSummary is the FOLLOW_UP_SUMMARY section's own text reused verbatim
+ * rather than regenerated, so it carries that section's "## Heading" and "- "
+ * markers. Rendered as one pre-line block those markers showed literally on
+ * screen.
+ *
+ * Only two constructs are interpreted, and both lose their marker: "##"
+ * headings and "- " bullets. Everything else is passed through byte-for-byte
+ * inside a pre-line block, exactly as before — this is clinical text, so an
+ * unrecognised marker has to reach the screen rather than be silently
+ * swallowed. A body with no markers therefore renders identically to the way
+ * it did before this existed, which is why every section uses this and not
+ * only Follow-up.
+ */
+
+const HEADING = /^\s{0,3}#{1,6}\s+(.+?)\s*#*\s*$/;
+const BULLET = /^\s*[-*]\s+(.+?)\s*$/;
+
+type Block =
+  | { kind: "heading"; text: string }
+  | { kind: "bullets"; items: string[] }
+  | { kind: "text"; lines: string[] };
+
+function parseBody(body: string): Block[] {
+  const blocks: Block[] = [];
+  for (const line of body.split("\n")) {
+    const heading = HEADING.exec(line);
+    const bullet = heading ? null : BULLET.exec(line);
+    const last = blocks[blocks.length - 1];
+
+    if (heading) {
+      blocks.push({ kind: "heading", text: heading[1] });
+    } else if (bullet) {
+      /* Consecutive "- " lines become one list, so the gap between items is
+         the list's own spacing rather than a paragraph break. */
+      if (last?.kind === "bullets") last.items.push(bullet[1]);
+      else blocks.push({ kind: "bullets", items: [bullet[1]] });
+    } else if (last?.kind === "text") {
+      // Blank lines are kept here: inside a run of prose they are the author's
+      // paragraph breaks, and whitespace-pre-line still renders them.
+      last.lines.push(line);
+    } else {
+      blocks.push({ kind: "text", lines: [line] });
+    }
+  }
+
+  // A blank line before a heading or list is that construct's spacing, not a
+  // trailing empty paragraph — drop it rather than render an empty line.
+  for (const block of blocks) {
+    if (block.kind !== "text") continue;
+    while (block.lines.length && !block.lines[block.lines.length - 1].trim()) block.lines.pop();
+    while (block.lines.length && !block.lines[0].trim()) block.lines.shift();
+  }
+  return blocks.filter((b) => b.kind !== "text" || b.lines.length > 0);
+}
+
+/* Same type as the section label above, so a "##" heading reads as a
+   sub-heading of this card rather than as something the plugin styled. */
+const HEADING_CLASS = "text-[11px] sm:text-xs font-semibold text-[var(--color-ink-700)]";
+const BODY_CLASS = "text-[13px] sm:text-sm text-[var(--color-ink-900)]";
+
+function Body({ body }: { body: string }) {
+  return (
+    <div className="mt-1 flex flex-col gap-1">
+      {parseBody(body).map((block, i) =>
+        block.kind === "heading" ? (
+          <p key={i} className={`${HEADING_CLASS} ${i > 0 ? "mt-1" : ""}`}>
+            {block.text}
+          </p>
+        ) : block.kind === "bullets" ? (
+          <ul key={i} className={`${BODY_CLASS} list-disc pl-4 flex flex-col gap-0.5`}>
+            {block.items.map((item, j) => (
+              <li key={j}>{item}</li>
+            ))}
+          </ul>
+        ) : (
+          <p key={i} className={`${BODY_CLASS} whitespace-pre-line`}>
+            {block.lines.join("\n")}
+          </p>
+        ),
+      )}
+    </div>
+  );
+}
+
 function Section({ title, body }: { title: string; body: string }) {
   return (
     <div>
       <p className="text-[11px] sm:text-xs font-semibold text-[var(--color-ink-700)]">{title}</p>
-      <p className="mt-1 text-[13px] sm:text-sm text-[var(--color-ink-900)] whitespace-pre-line">
-        {body}
-      </p>
+      <Body body={body} />
     </div>
   );
 }

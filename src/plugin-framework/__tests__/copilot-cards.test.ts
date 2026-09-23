@@ -8,6 +8,7 @@ import {
   activateCopilotCards, getCopilotCard, writeCopilotCard, timeoutCopilotCards,
 } from "../../app/(app)/emr/[udid]/copilot-cards-store";
 import { AssessmentCopilotCard, InvestigationCopilotCard, PatientProfileCopilotCard } from "../../app/(app)/emr/[udid]/CopilotClinicalPanels";
+import { PlanGuidanceCard } from "../../app/(app)/emr/[udid]/PlanGuidanceCard";
 
 let passed = 0;
 function test(name: string, fn: () => void) {
@@ -106,5 +107,31 @@ test("loading and timeout are distinct, with an actionable retry path", () => {
   const timeout = renderToStaticMarkup(createElement(AssessmentCopilotCard, { state: { status: "timeout" } }));
   assert.ok(loading.includes("Reviewing") && !loading.includes("Regenerate"));
   assert.ok(timeout.includes("Regenerate"));
+});
+test("plan guidance renders markdown markers as structure, never as characters", () => {
+  // followUpSummary is FOLLOW_UP_SUMMARY's own text reused verbatim, so it
+  // arrives carrying that section's "##" and "- " markers.
+  const html = renderToStaticMarkup(createElement(PlanGuidanceCard, { state: { status: "ready", result: {
+    documentedProgression: "Progression documented.",
+    followUpSummary: "## Review schedule\n- Repeat IOP in 4 weeks\n- Reassess fields\n\nAdvise on drop technique.",
+    comfortingGuidance: "Reassure the patient.",
+  } } }));
+  // The markers are gone as characters ...
+  assert.ok(!html.includes("## ") && !html.includes("- Repeat") && !html.includes("- Reassess"));
+  // ... and present as structure, with the heading styled as a section label.
+  assert.ok(html.includes(">Review schedule</p>") && html.includes("<li>Repeat IOP in 4 weeks</li>"));
+  assert.ok(html.includes("<ul") && html.includes("<li>Reassess fields</li>"));
+  // Unmarked prose in the same body survives, as does every other section.
+  assert.ok(html.includes("Advise on drop technique.") && html.includes("Progression documented."));
+  assert.ok(html.includes("Reassure the patient."));
+});
+test("plan guidance leaves marker-free prose exactly as written", () => {
+  const body = "Line one.\n\nLine two — no markers, an em dash and a 5-week interval.";
+  const html = renderToStaticMarkup(createElement(PlanGuidanceCard, { state: { status: "ready", result: {
+    documentedProgression: body, comfortingGuidance: "",
+  } } }));
+  assert.ok(html.includes("Line one.") && html.includes("5-week interval."));
+  // One pre-line block, not a list: a mid-line hyphen is not a bullet.
+  assert.ok(!html.includes("<ul"));
 });
 console.log(`Results: ${passed} passed, 0 failed`);
