@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { format } from "date-fns";
+import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek } from "date-fns";
 import { redirect } from "next/navigation";
 import type { SessionUser } from "@/lib/rbac";
 import { istTodayRange, istParts, toISTWall } from "@/lib/ist";
@@ -54,8 +54,39 @@ export async function DoctorDashboard({
     orderBy: [{ weekday: "asc" }, { startTime: "asc" }],
   });
 
-  // Derive monthly count from already-fetched data to avoid an extra query
-  const monthlyCount = todayAppts.length;
+  // Analytics: this week + this month appointment counts
+  const weekStart  = startOfWeek(now, { weekStartsOn: 1 });
+  const weekEnd    = endOfWeek(now,   { weekStartsOn: 1 });
+  const monthStart = startOfMonth(now);
+  const monthEnd   = endOfMonth(now);
+
+  const [weekApptCount, monthApptCount, weekCompletedCount, monthCompletedCount,
+         weekNoShowCount, monthNoShowCount, upcomingFollowUps] = await Promise.all([
+    prisma.appointment.count({ where: { doctorId, dateTime: { gte: weekStart, lte: weekEnd }, status: { notIn: ["CANCELLED", "RESCHEDULED"] } } }),
+    prisma.appointment.count({ where: { doctorId, dateTime: { gte: monthStart, lte: monthEnd }, status: { notIn: ["CANCELLED", "RESCHEDULED"] } } }),
+    prisma.appointment.count({ where: { doctorId, dateTime: { gte: weekStart, lte: weekEnd }, status: "DISPENSED" } }),
+    prisma.appointment.count({ where: { doctorId, dateTime: { gte: monthStart, lte: monthEnd }, status: "DISPENSED" } }),
+    prisma.appointment.count({ where: { doctorId, dateTime: { gte: weekStart, lte: weekEnd }, status: "NO_SHOW" } }),
+    prisma.appointment.count({ where: { doctorId, dateTime: { gte: monthStart, lte: monthEnd }, status: "NO_SHOW" } }),
+    // Follow-ups: appointments with visitType "Follow-up" within next 7 days
+    prisma.appointment.findMany({
+      where: {
+        doctorId,
+        visitType: "Follow-up",
+        dateTime: { gte: dayStart, lte: new Date(dayEnd.getTime() + 7 * 24 * 60 * 60 * 1000) },
+        status: { notIn: ["CANCELLED", "NO_SHOW", "RESCHEDULED"] },
+      },
+      select: {
+        id: true,
+        dateTime: true,
+        visitType: true,
+        patient: { select: { name: true, udid: true, age: true, sex: true } },
+        hospital: { select: { id: true, name: true } },
+      },
+      orderBy: { dateTime: "asc" },
+      take: 8,
+    }),
+  ]);
 
   // Serialise
   const appts = todayAppts.map((a) => ({
@@ -105,6 +136,14 @@ export async function DoctorDashboard({
     if (upcoming.length >= 6) break;
   }
 
+  const followUps = upcomingFollowUps.map((f) => ({
+    id:           f.id,
+    dateTime:     f.dateTime.toISOString(),
+    visitType:    f.visitType ?? "Follow-up",
+    patient:      { name: f.patient.name, udid: f.patient.udid ?? "", age: f.patient.age, sex: f.patient.sex },
+    hospital:     { id: f.hospital.id, name: f.hospital.name },
+  }));
+
   return (
     <DashboardClient
       scope="DOCTOR"
@@ -116,6 +155,12 @@ export async function DoctorDashboard({
       filterOptions={hospitals}
       newEncounterHref="/appointments/new"
       newEncounterLabel="New Encounter"
+      followUps={followUps}
+      analytics={{
+        today:  { scheduled: todayAppts.filter(a => !["CANCELLED","NO_SHOW","RESCHEDULED"].includes(a.status)).length, completed: todayAppts.filter(a => a.status === "DISPENSED").length, noShow: todayAppts.filter(a => a.status === "NO_SHOW").length },
+        week:   { scheduled: weekApptCount,  completed: weekCompletedCount,  noShow: weekNoShowCount  },
+        month:  { scheduled: monthApptCount, completed: monthCompletedCount, noShow: monthNoShowCount },
+      }}
     />
   );
 }
