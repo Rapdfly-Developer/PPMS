@@ -116,6 +116,29 @@
   --spacing-gutter: clamp(1rem, 4vw, 6rem);
 }
 
+/* ── Base type scale ──────────────────────────────────────────────────────
+   One notch below Tailwind's shipped sizes, for density: this is a clinical
+   app where a visit page is read at a glance, not an article.
+
+   Only the sizes are overridden. Tailwind ships line-heights for these as
+   unitless ratios (--text-xs--line-height: calc(1 / 0.75)), so leading
+   follows the size down on its own and there is nothing here to keep in sync.
+
+   ORDER IS LOAD-BEARING. The large-screen scale further down this file
+   redefines these same properties on :root inside media queries. Custom
+   properties at equal specificity are resolved by source order, so this block
+   must stay ABOVE them — moved below, it would win at every width and flatten
+   the entire 1441px-and-up ramp. It therefore governs <=1440px only.        */
+@theme {
+  --text-xs:   0.6875rem;
+  --text-sm:   0.8125rem;
+  --text-base: 0.9375rem;
+  --text-lg:   1.0625rem;
+  --text-xl:   1.1875rem;
+  --text-2xl:  1.375rem;
+  --text-3xl:  1.625rem;
+}
+
 /* ── Layout utilities ──────────────────────────────────────────────────────
    Deliberately two utilities rather than one combined container. The page
    puts the gutter on the outer <section> and the cap on an inner div, which
@@ -182,7 +205,7 @@ body {
   border: 1px solid var(--color-border);
   background: var(--color-surface-sunken);
   padding: 8px 12px;
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   color: var(--color-ink-900);
   outline: none;
   transition: border-color 150ms, box-shadow 150ms;
@@ -212,7 +235,7 @@ body {
   gap: 6px;
   padding: 6px 14px;
   border-radius: 999px;
-  font-size: 0.8125rem;
+  font-size: 0.75rem;
   font-weight: 500;
   border: 1px solid var(--color-border);
   background: var(--color-surface-sunken);
@@ -235,7 +258,7 @@ body {
 
 .chip-sm {
   padding: 2px 8px;
-  font-size: 0.75rem;
+  font-size: 0.6875rem;
   border-radius: 999px;
   font-weight: 500;
   border: 1px solid var(--color-border);
