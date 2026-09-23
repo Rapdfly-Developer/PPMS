@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek } from "date-fns";
+import { format } from "date-fns";
 import { redirect } from "next/navigation";
 import type { SessionUser } from "@/lib/rbac";
 import { istTodayRange, istParts, toISTWall } from "@/lib/ist";
@@ -36,54 +36,26 @@ export async function DoctorDashboard({
   });
 
   // Guard: doctor with no linked hospitals must complete setup first.
+  // Runs on every dashboard load (including post-login) so it cannot be bypassed.
   if (linkedHospitals.length === 0) {
     redirect("/settings?section=add-hospital");
   }
 
-  // Week / month ranges for analytics
-  const weekStart  = startOfWeek(now, { weekStartsOn: 1 });
-  const weekEnd    = endOfWeek(now,   { weekStartsOn: 1 });
-  const monthStart = startOfMonth(now);
-  const monthEnd   = endOfMonth(now);
+  
+  const todayAvailability = await prisma.doctorAvailability.findMany({
+    where: { doctorId, weekday: todayWeekday, status: "ACTIVE" },
+    include: { hospital: { select: { id: true, name: true } } },
+    orderBy: { startTime: "asc" },
+  });
 
-  // Yesterday range for KPI trend %
-  const yesterdayStart = new Date(dayStart.getTime() - 24 * 60 * 60 * 1000);
-  const yesterdayEnd   = new Date(dayEnd.getTime()   - 24 * 60 * 60 * 1000);
+  const weeklyAvailability = await prisma.doctorAvailability.findMany({
+    where: { doctorId, status: "ACTIVE" },
+    include: { hospital: { select: { id: true, name: true } } },
+    orderBy: [{ weekday: "asc" }, { startTime: "asc" }],
+  });
 
-  const [
-    weekApptCount, monthApptCount,
-    weekCompletedCount, monthCompletedCount,
-    weekNoShowCount, monthNoShowCount,
-    upcomingFollowUps,
-    yTotal, yWaiting, yCompleted, yNoShow, yNewPats,
-  ] = await Promise.all([
-    prisma.appointment.count({ where: { doctorId, dateTime: { gte: weekStart,  lte: weekEnd  }, status: { notIn: ["CANCELLED","RESCHEDULED"] } } }),
-    prisma.appointment.count({ where: { doctorId, dateTime: { gte: monthStart, lte: monthEnd }, status: { notIn: ["CANCELLED","RESCHEDULED"] } } }),
-    prisma.appointment.count({ where: { doctorId, dateTime: { gte: weekStart,  lte: weekEnd  }, status: "DISPENSED" } }),
-    prisma.appointment.count({ where: { doctorId, dateTime: { gte: monthStart, lte: monthEnd }, status: "DISPENSED" } }),
-    prisma.appointment.count({ where: { doctorId, dateTime: { gte: weekStart,  lte: weekEnd  }, status: "NO_SHOW" } }),
-    prisma.appointment.count({ where: { doctorId, dateTime: { gte: monthStart, lte: monthEnd }, status: "NO_SHOW" } }),
-    prisma.appointment.findMany({
-      where: {
-        doctorId,
-        visitType: "Follow-up",
-        dateTime: { gte: dayStart, lte: new Date(dayEnd.getTime() + 7 * 24 * 60 * 60 * 1000) },
-        status: { notIn: ["CANCELLED","NO_SHOW","RESCHEDULED"] },
-      },
-      select: {
-        id: true, dateTime: true, visitType: true,
-        patient:  { select: { name: true, udid: true, age: true, sex: true } },
-        hospital: { select: { id: true, name: true } },
-      },
-      orderBy: { dateTime: "asc" },
-      take: 8,
-    }),
-    prisma.appointment.count({ where: { doctorId, dateTime: { gte: yesterdayStart, lte: yesterdayEnd }, status: { notIn: ["CANCELLED","RESCHEDULED"] } } }),
-    prisma.appointment.count({ where: { doctorId, dateTime: { gte: yesterdayStart, lte: yesterdayEnd }, status: "CONFIRMED" } }),
-    prisma.appointment.count({ where: { doctorId, dateTime: { gte: yesterdayStart, lte: yesterdayEnd }, status: "DISPENSED" } }),
-    prisma.appointment.count({ where: { doctorId, dateTime: { gte: yesterdayStart, lte: yesterdayEnd }, status: "NO_SHOW" } }),
-    prisma.appointment.count({ where: { doctorId, dateTime: { gte: yesterdayStart, lte: yesterdayEnd }, isWalkIn: true } }),
-  ]);
+  // Derive monthly count from already-fetched data to avoid an extra query
+  const monthlyCount = todayAppts.length;
 
   // Serialise
   const appts = todayAppts.map((a) => ({
@@ -106,13 +78,32 @@ export async function DoctorDashboard({
 
   const hospitals = linkedHospitals.map((l) => ({ id: l.hospital.id, name: l.hospital.name, logoUrl: l.hospital.logoUrl ?? null }));
 
-  const followUps = upcomingFollowUps.map((f) => ({
-    id:        f.id,
-    dateTime:  f.dateTime.toISOString(),
-    visitType: f.visitType ?? "Follow-up",
-    patient:   { name: f.patient.name, udid: f.patient.udid ?? "", age: f.patient.age, sex: f.patient.sex },
-    hospital:  { id: f.hospital.id, name: f.hospital.name },
-  }));
+  
+  // Today's schedule: each session with live appointment count
+  const todaySchedule = todayAvailability.map((a) => {
+    const apptCount = todayAppts.filter((ap) => ap.hospital.id === a.hospitalId).length;
+    return {
+      id:          a.id,
+      hospitalId:  a.hospitalId,
+      hospitalName: a.hospital.name,
+      startTime:   a.startTime,
+      endTime:     a.endTime,
+      slotMins:    a.slotMins,
+      maxPatients: a.maxPatients,
+      apptCount,
+    };
+  });
+
+  // Upcoming schedules: next 7 days (skip today, sort by next occurrence)
+  const upcoming: { weekday: number; hospitalName: string; startTime: string; endTime: string; daysAway: number }[] = [];
+  for (let d = 1; d <= 7; d++) {
+    const wd = (todayWeekday + d) % 7;
+    const sessions = weeklyAvailability.filter((a) => a.weekday === wd);
+    for (const s of sessions) {
+      upcoming.push({ weekday: wd, hospitalName: s.hospital.name, startTime: s.startTime, endTime: s.endTime, daysAway: d });
+    }
+    if (upcoming.length >= 6) break;
+  }
 
   return (
     <DashboardClient
@@ -120,22 +111,11 @@ export async function DoctorDashboard({
       permissions={user.permissions ?? []}
       displayName={doctorProfile?.name ?? user.name}
       bannerTitle={`Dr. ${doctorProfile?.name ?? user.name}`}
-      todayLabel={format(toISTWall(now), "EEE, d MMM yyyy")}
+      todayLabel={format(toISTWall(now), "EEEE, d MMM yyyy")}
       appts={appts}
       filterOptions={hospitals}
       newEncounterHref="/appointments/new"
       newEncounterLabel="New Encounter"
-      followUps={followUps}
-      analytics={{
-        today: {
-          scheduled: todayAppts.filter(a => !["CANCELLED","NO_SHOW","RESCHEDULED"].includes(a.status)).length,
-          completed: todayAppts.filter(a => a.status === "DISPENSED").length,
-          noShow:    todayAppts.filter(a => a.status === "NO_SHOW").length,
-        },
-        week:  { scheduled: weekApptCount,  completed: weekCompletedCount,  noShow: weekNoShowCount  },
-        month: { scheduled: monthApptCount, completed: monthCompletedCount, noShow: monthNoShowCount },
-      }}
-      yesterdayCounts={{ total: yTotal, waiting: yWaiting, completed: yCompleted, noShow: yNoShow, newPats: yNewPats }}
     />
   );
 }
