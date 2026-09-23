@@ -43,7 +43,7 @@ const TOC = [
   { id: "cookies",        label: "Cookies & sessions" },
   { id: "data-breach",    label: "Data breaches" },
   { id: "dpdp",           label: "DPDP Act, 2023" },
-  { id: "children",       label: "Children's data" },
+  { id: "children",       label: "Children’s data" },
   { id: "changes",        label: "Changes to this policy" },
   { id: "contact",        label: "Grievance & contact" },
 ];
@@ -62,13 +62,13 @@ function SectionCard({
   return (
     <section
       id={id}
-      className="scroll-mt-28 rounded-2xl bg-white p-7 ring-1 ring-inset ring-emerald-950/[0.07] shadow-[0_4px_24px_-8px_rgba(6,60,45,0.07)] sm:p-8"
+      className="scroll-mt-28 rounded-xl bg-white p-6 ring-1 ring-inset ring-emerald-950/[0.07] shadow-[0_2px_16px_-6px_rgba(6,60,45,0.06)] sm:p-7 lg:rounded-2xl lg:p-8 2xl:p-10"
     >
       <div className="flex items-start gap-3 mb-5">
         <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-600/[0.12]">
           {icon}
         </span>
-        <h2 className="font-display text-[20px] font-bold tracking-tight text-emerald-950 sm:text-[22px]">
+        <h2 className="font-display text-[18px] font-bold tracking-tight text-emerald-950 sm:text-[20px] lg:text-[22px] 2xl:text-[24px]">
           {title}
         </h2>
       </div>
@@ -78,7 +78,11 @@ function SectionCard({
 }
 
 function P({ children }: { children: React.ReactNode }) {
-  return <p className="text-[15px] leading-relaxed text-slate-600 mb-4 last:mb-0">{children}</p>;
+  return (
+    <p className="text-[14px] leading-relaxed text-slate-600 mb-4 last:mb-0 sm:text-[15px] 2xl:text-[15.5px]">
+      {children}
+    </p>
+  );
 }
 
 function Ul({ children }: { children: React.ReactNode }) {
@@ -91,7 +95,7 @@ function Ul({ children }: { children: React.ReactNode }) {
 
 function Li({ children }: { children: React.ReactNode }) {
   return (
-    <li className="flex items-start gap-2.5 text-[15px] leading-relaxed text-slate-600">
+    <li className="flex items-start gap-2.5 text-[14px] leading-relaxed text-slate-600 sm:text-[15px] 2xl:text-[15.5px]">
       <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" />
       <span>{children}</span>
     </li>
@@ -100,7 +104,7 @@ function Li({ children }: { children: React.ReactNode }) {
 
 function SubHead({ children }: { children: React.ReactNode }) {
   return (
-    <h3 className="mt-6 mb-2 text-[15px] font-semibold tracking-tight text-emerald-950 first:mt-0">
+    <h3 className="mt-5 mb-2 text-[14px] font-semibold tracking-tight text-emerald-950 first:mt-0 sm:text-[15px] 2xl:text-[15.5px]">
       {children}
     </h3>
   );
@@ -108,7 +112,7 @@ function SubHead({ children }: { children: React.ReactNode }) {
 
 function Note({ children }: { children: React.ReactNode }) {
   return (
-    <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50/60 px-4 py-3 text-[13.5px] leading-relaxed text-emerald-800">
+    <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50/60 px-4 py-3 text-[13px] leading-relaxed text-emerald-800 sm:text-[13.5px]">
       {children}
     </div>
   );
@@ -116,19 +120,24 @@ function Note({ children }: { children: React.ReactNode }) {
 
 export default function PrivacyPage() {
   return (
-    <div className={`${display.variable} ${body.variable} font-body min-h-screen bg-slate-50/40 text-emerald-950 antialiased`}>
+    <div
+      className={`${display.variable} ${body.variable} font-body min-h-screen bg-slate-50/50 text-emerald-950 antialiased`}
+    >
       <Nav />
 
-      {/* ── Hero ─────────────────────────────────────────────────────────── */}
-      <div className="border-b border-emerald-950/[0.07] bg-white px-4 pb-10 pt-28 sm:px-6 sm:pt-32 lg:px-8">
-        <div className="mx-auto max-w-5xl">
+      {/* ── Hero ──────────────────────────────────────────────────────────── */}
+      <div className="border-b border-emerald-950/[0.07] bg-white">
+        {/* fluid px: 16px → 40px → 64px as viewport grows */}
+        <div
+          className="mx-auto w-[min(92%,1760px)] pt-24 pb-8 sm:pt-28 sm:pb-10 lg:pt-32 lg:pb-12 2xl:pt-36 2xl:pb-14"
+        >
           <span className="inline-flex items-center gap-2 rounded-full border border-emerald-900/[0.08] bg-emerald-50/60 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-emerald-800">
             Legal
           </span>
-          <h1 className="font-display mt-4 text-[clamp(2rem,5vw,3rem)] font-bold leading-[1.05] tracking-[-0.03em] text-emerald-950">
+          <h1 className="font-display mt-4 text-[clamp(1.75rem,4vw,3rem)] font-bold leading-[1.05] tracking-[-0.03em] text-emerald-950">
             Privacy Policy
           </h1>
-          <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-slate-500">
+          <p className="mt-3 max-w-[min(100%,72ch)] text-[clamp(13.5px,1.5vw,15.5px)] leading-relaxed text-slate-500">
             RF Health is operated by{" "}
             <strong className="font-semibold text-emerald-950">RAPDFLY PRIVATE LIMITED</strong>.
             This policy explains what personal and health data we collect, why we collect it,
@@ -138,23 +147,24 @@ export default function PrivacyPage() {
         </div>
       </div>
 
-      {/* ── Layout ───────────────────────────────────────────────────────── */}
-      <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8 lg:py-12">
-        <div className="flex gap-10 lg:items-start">
+      {/* ── Body: TOC + content ───────────────────────────────────────────── */}
+      <div className="mx-auto w-[min(92%,1760px)] py-8 sm:py-10 lg:py-12 2xl:py-14">
+        <div className="flex gap-0 lg:gap-8 xl:gap-10 2xl:gap-12 lg:items-start">
 
-          {/* Sidebar TOC — sticky on desktop, hidden on mobile */}
-          <aside className="hidden w-56 shrink-0 lg:block">
-            <div className="sticky top-28 rounded-2xl bg-white px-4 py-5 ring-1 ring-inset ring-emerald-950/[0.07]">
-              <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">
+          {/* ── Sidebar TOC ─────────────────────────────────────────────── */}
+          {/* hidden on mobile/tablet, visible from lg up */}
+          <aside className="hidden lg:block lg:w-[clamp(180px,15%,240px)] shrink-0">
+            <div className="sticky top-28 rounded-xl bg-white px-4 py-5 ring-1 ring-inset ring-emerald-950/[0.07] 2xl:rounded-2xl 2xl:px-5 2xl:py-6">
+              <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400 2xl:text-[11px]">
                 Contents
               </p>
-              <nav>
+              <nav aria-label="Privacy policy sections">
                 <ul className="flex flex-col gap-0.5">
                   {TOC.map((item) => (
                     <li key={item.id}>
                       <a
                         href={`#${item.id}`}
-                        className="block rounded-lg px-2.5 py-1.5 text-[13px] text-slate-500 transition-colors duration-200 hover:bg-emerald-50 hover:text-emerald-800"
+                        className="block rounded-lg px-2.5 py-1.5 text-[12.5px] text-slate-500 transition-colors duration-150 hover:bg-emerald-50 hover:text-emerald-800 2xl:text-[13px] 2xl:py-2"
                       >
                         {item.label}
                       </a>
@@ -165,8 +175,28 @@ export default function PrivacyPage() {
             </div>
           </aside>
 
-          {/* Policy content */}
-          <div className="min-w-0 flex-1 flex flex-col gap-5">
+          {/* ── Mobile TOC: horizontal scrollable chips ──────────────────── */}
+          <div className="mb-6 lg:hidden">
+            <div className="rounded-xl bg-white p-4 ring-1 ring-inset ring-emerald-950/[0.07]">
+              <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">
+                Jump to section
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {TOC.map((item) => (
+                  <a
+                    key={item.id}
+                    href={`#${item.id}`}
+                    className="inline-flex items-center rounded-full border border-emerald-950/[0.08] bg-emerald-50/60 px-3 py-1 text-[12px] font-medium text-emerald-800 transition-colors hover:bg-emerald-100"
+                  >
+                    {item.label}
+                  </a>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* ── Policy content ──────────────────────────────────────────── */}
+          <div className="min-w-0 flex-1 flex flex-col gap-4 sm:gap-5 lg:gap-6">
 
             {/* 1. Overview */}
             <SectionCard id="overview" icon={<FileText size={16} strokeWidth={1.5} />} title="Overview">
@@ -598,14 +628,14 @@ export default function PrivacyPage() {
                 data, or if you wish to exercise any of your rights under the DPDP Act, contact us:
               </P>
 
-              <div className="mt-4 rounded-2xl bg-emerald-50/70 ring-1 ring-inset ring-emerald-950/[0.07] overflow-hidden">
+              <div className="mt-4 rounded-xl bg-emerald-50/70 ring-1 ring-inset ring-emerald-950/[0.07] overflow-hidden lg:rounded-2xl">
                 <div className="px-5 py-4 border-b border-emerald-950/[0.06]">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-700">
                     Grievance Officer / Data Fiduciary Contact
                   </p>
                 </div>
-                <div className="px-5 py-5 flex flex-col gap-3">
-                  <div className="flex items-start gap-3 text-[14.5px] text-slate-700">
+                <div className="px-5 py-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:gap-x-8 sm:gap-y-3">
+                  <div className="flex items-start gap-3 text-[14px] text-slate-700 sm:text-[14.5px]">
                     <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white text-emerald-700 ring-1 ring-inset ring-emerald-950/[0.07]">
                       <FileText size={13} strokeWidth={1.5} />
                     </span>
@@ -613,7 +643,7 @@ export default function PrivacyPage() {
                   </div>
                   <a
                     href="mailto:support@ppmsai.com"
-                    className="flex items-center gap-3 text-[14.5px] text-emerald-700 hover:underline underline-offset-3"
+                    className="flex items-center gap-3 text-[14px] text-emerald-700 hover:underline underline-offset-3 sm:text-[14.5px]"
                   >
                     <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white text-emerald-700 ring-1 ring-inset ring-emerald-950/[0.07]">
                       <Mail size={13} strokeWidth={1.5} />
@@ -622,14 +652,14 @@ export default function PrivacyPage() {
                   </a>
                   <a
                     href="tel:+917373351087"
-                    className="flex items-center gap-3 text-[14.5px] text-slate-700 hover:text-emerald-800"
+                    className="flex items-center gap-3 text-[14px] text-slate-700 hover:text-emerald-800 sm:text-[14.5px]"
                   >
                     <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white text-emerald-700 ring-1 ring-inset ring-emerald-950/[0.07]">
                       <Phone size={13} strokeWidth={1.5} />
                     </span>
                     +91 73733 51087
                   </a>
-                  <div className="flex items-start gap-3 text-[14.5px] text-slate-600">
+                  <div className="flex items-start gap-3 text-[14px] text-slate-600 sm:text-[14.5px]">
                     <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white text-emerald-700 ring-1 ring-inset ring-emerald-950/[0.07]">
                       <MapPin size={13} strokeWidth={1.5} />
                     </span>
@@ -646,13 +676,13 @@ export default function PrivacyPage() {
               </P>
             </SectionCard>
 
-          </div>
-        </div>
-      </div>
+          </div>{/* end policy content */}
+        </div>{/* end flex row */}
+      </div>{/* end body container */}
 
-      {/* ── Simple footer ────────────────────────────────────────────────── */}
-      <footer className="border-t border-emerald-950/[0.07] bg-white px-4 py-8 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-5xl flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between text-[13px] text-slate-400">
+      {/* ── Footer ────────────────────────────────────────────────────────── */}
+      <footer className="border-t border-emerald-950/[0.07] bg-white">
+        <div className="mx-auto w-[min(92%,1760px)] py-7 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between text-[13px] text-slate-400">
           <p>© {new Date().getFullYear()} RAPDFLY PRIVATE LIMITED. All rights reserved.</p>
           <div className="flex items-center gap-4">
             <a href="/" className="hover:text-emerald-800 transition-colors">Home</a>
