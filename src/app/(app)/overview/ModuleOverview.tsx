@@ -5,7 +5,7 @@ import Link from "next/link";
 import {
   LayoutDashboard, CalendarDays, Users, Settings,
   CalendarClock, BarChart2, Clock, UserCog, Bell,
-  Search, ArrowUpRight, X, Stethoscope, Building2, UserCheck,
+  Search, ArrowRight, X, Stethoscope, Building2, UserCheck,
 } from "lucide-react";
 
 type Role    = "DOCTOR" | "HOSPITAL" | "STAFF";
@@ -24,15 +24,15 @@ interface ModuleDef {
 }
 
 const ALL_MODULES: ModuleDef[] = [
-  { section:"Clinical",           accent:"teal",  href:"/dashboard",                   label:"OPD",          icon:LayoutDashboard, permission:"dashboard.view",    description:"Daily outpatient queue, walk-ins, and live consultation workflow." },
-  { section:"Clinical",           accent:"teal",  href:"/patients",                    label:"Patients",     icon:Users,           permission:"patients.view",     description:"Patient registry, profiles, visit history, and clinical records." },
-  { section:"Clinical",           accent:"teal",  href:"/follow-ups",                  label:"Follow Ups",   icon:CalendarClock,   permission:"patients.view",     description:"Track and manage scheduled patient follow-up appointments.", roles:["DOCTOR","HOSPITAL"] },
-  { section:"Practice Management",accent:"blue",  href:"/appointments",                label:"Appointments", icon:CalendarDays,    permission:"appointments.view", description:"Schedule, confirm, and manage patient appointments end-to-end.", roles:["DOCTOR","HOSPITAL"] },
-  { section:"Practice Management",accent:"blue",  href:"/appointments/availability",   label:"Availability", icon:Clock,           permission:"appointments.view", description:"Configure doctor slot availability and session schedules." },
-  { section:"Operations",         accent:"amber", href:"/analytics",                   label:"Analytics",    icon:BarChart2,       permission:"reports.view",      description:"KPI reports, trends, and OPD and theatre statistical insights." },
-  { section:"Administration",     accent:"slate", href:"/settings",                    label:"Settings",     icon:Settings,        permission:"settings.view",     description:"App configuration, roles, integrations, and system preferences." },
-  { section:"Administration",     accent:"slate", href:"/users",                       label:"Users",        icon:UserCog,         permission:"settings.view",     description:"Manage staff accounts, roles, and access permissions." },
-  { section:"Administration",     accent:"slate", href:"/notifications",               label:"Notifications",icon:Bell,            permission:"dashboard.view",    description:"View and manage in-app notifications and system alerts." },
+  { section:"Clinical",            accent:"teal",  href:"/dashboard",                  label:"OPD",           icon:LayoutDashboard, permission:"dashboard.view",    description:"Daily outpatient queue, walk-ins, and live consultation workflow." },
+  { section:"Clinical",            accent:"teal",  href:"/patients",                   label:"Patients",      icon:Users,           permission:"patients.view",     description:"Patient registry, profiles, visit history, and clinical records." },
+  { section:"Clinical",            accent:"teal",  href:"/follow-ups",                 label:"Follow Ups",    icon:CalendarClock,   permission:"patients.view",     description:"Track and manage scheduled patient follow-up appointments.", roles:["DOCTOR","HOSPITAL"] },
+  { section:"Practice Management", accent:"blue",  href:"/appointments",               label:"Appointments",  icon:CalendarDays,    permission:"appointments.view", description:"Schedule, confirm, and manage patient appointments end-to-end.", roles:["DOCTOR","HOSPITAL"] },
+  { section:"Practice Management", accent:"blue",  href:"/appointments/availability",  label:"Availability",  icon:Clock,           permission:"appointments.view", description:"Configure doctor slot availability and session schedules." },
+  { section:"Operations",          accent:"amber", href:"/analytics",                  label:"Analytics",     icon:BarChart2,       permission:"reports.view",      description:"KPI reports, trends, and OPD and theatre statistical insights." },
+  { section:"Administration",      accent:"slate", href:"/settings",                   label:"Settings",      icon:Settings,        permission:"settings.view",     description:"App configuration, roles, integrations, and system preferences." },
+  { section:"Administration",      accent:"slate", href:"/users",                      label:"Users",         icon:UserCog,         permission:"settings.view",     description:"Manage staff accounts, roles, and access permissions." },
+  { section:"Administration",      accent:"slate", href:"/notifications",              label:"Notifications", icon:Bell,            permission:"dashboard.view",    description:"View and manage in-app notifications and system alerts." },
 ];
 
 const SECTIONS: Section[] = ["Clinical", "Practice Management", "Operations", "Administration"];
@@ -44,13 +44,14 @@ const SECTION_ACCENT: Record<Section, Accent> = {
 const A: Record<Accent, {
   iconBg: string; iconText: string;
   label: string; labelBg: string;
-  bar: string; barDark: string;
-  hover: string; hoverShadow: string;
+  bar: string; barEnd: string;
+  chipBg: string; chipText: string;
+  hoverBorder: string;
 }> = {
-  teal:  { iconBg:"#E6FAF8", iconText:"#0D9488", label:"#0F766E", labelBg:"#F0FDFA", bar:"#14B8A6", barDark:"#0F766E", hover:"#99F6E4", hoverShadow:"0 4px 18px rgba(20,184,166,.13)" },
-  blue:  { iconBg:"#EFF6FF", iconText:"#2563EB", label:"#1D4ED8", labelBg:"#EFF6FF", bar:"#3B82F6", barDark:"#1D4ED8", hover:"#BFDBFE", hoverShadow:"0 4px 18px rgba(37,99,235,.11)" },
-  amber: { iconBg:"#FFFBEB", iconText:"#D97706", label:"#B45309", labelBg:"#FFFBEB", bar:"#F59E0B", barDark:"#B45309", hover:"#FDE68A", hoverShadow:"0 4px 18px rgba(217,119,6,.11)" },
-  slate: { iconBg:"#F8FAFC", iconText:"#475569", label:"#334155", labelBg:"#F8FAFC", bar:"#94A3B8", barDark:"#64748B", hover:"#CBD5E1", hoverShadow:"0 4px 18px rgba(71,85,105,.09)" },
+  teal:  { iconBg:"#E6FAF8", iconText:"#0D9488", label:"#0F766E", labelBg:"#F0FDFA", bar:"#14B8A6", barEnd:"#0F766E", chipBg:"#F0FDFA", chipText:"#0F766E", hoverBorder:"#99F6E4" },
+  blue:  { iconBg:"#EFF6FF", iconText:"#2563EB", label:"#1D4ED8", labelBg:"#EFF6FF", bar:"#3B82F6", barEnd:"#1D4ED8", chipBg:"#EFF6FF", chipText:"#1D4ED8", hoverBorder:"#BFDBFE" },
+  amber: { iconBg:"#FFFBEB", iconText:"#D97706", label:"#B45309", labelBg:"#FFFBEB", bar:"#F59E0B", barEnd:"#B45309", chipBg:"#FFFBEB", chipText:"#B45309", hoverBorder:"#FDE68A" },
+  slate: { iconBg:"#F8FAFC", iconText:"#475569", label:"#334155", labelBg:"#F8FAFC", bar:"#94A3B8", barEnd:"#64748B", chipBg:"#F8FAFC", chipText:"#334155", hoverBorder:"#CBD5E1" },
 };
 
 const ROLE_META: Record<Role, { label: string; Icon: React.ElementType; iconColor: string }> = {
@@ -59,67 +60,78 @@ const ROLE_META: Record<Role, { label: string; Icon: React.ElementType; iconColo
   STAFF:    { label:"Staff",    Icon:UserCheck,   iconColor:"#7C3AED" },
 };
 
-/* ── Card ────────────────────────────────────────────────────────────────── */
+/* ── Decorative medical background SVG (same as dashboard banner) ─────────── */
+function MedicalBg() {
+  return (
+    <svg viewBox="0 0 400 160" className="absolute inset-0 w-full h-full" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="ovbg" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#c8ddf5" /><stop offset="100%" stopColor="#a8c4e8" />
+        </linearGradient>
+      </defs>
+      <rect width="400" height="160" fill="url(#ovbg)" />
+      <circle cx="360" cy="20"  r="70" fill="white" fillOpacity="0.10" />
+      <circle cx="380" cy="130" r="80" fill="white" fillOpacity="0.07" />
+      <circle cx="220" cy="150" r="50" fill="white" fillOpacity="0.09" />
+      <g transform="translate(195,20)" fill="none" stroke="#2a5298" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.18">
+        <path d="M50,0 C50,0 50,35 50,48 C50,68 34,82 14,82 C-6,82 -22,68 -22,48 C-22,36 -14,26 0,21" />
+        <circle cx="50" cy="-5" r="9" />
+        <path d="M0,21 L0,8" />
+        <path d="M-22,60 C-22,76 -12,88 4,90 L4,102" />
+        <circle cx="4" cy="107" r="7" />
+      </g>
+      <g stroke="#1e3a8a" strokeWidth="2.5" strokeLinecap="round" opacity="0.16">
+        <line x1="300" y1="55" x2="300" y2="73" /><line x1="291" y1="64" x2="309" y2="64" />
+        <line x1="335" y1="100" x2="335" y2="114" /><line x1="328" y1="107" x2="342" y2="107" />
+        <line x1="255" y1="22" x2="255" y2="32" /><line x1="250" y1="27" x2="260" y2="27" />
+      </g>
+      {([[280,78],[315,55],[248,108],[355,78],[330,140],[230,70]] as [number,number][]).map(([cx,cy],i) => (
+        <circle key={i} cx={cx} cy={cy} r="3" fill="#1d4ed8" fillOpacity="0.18" />
+      ))}
+    </svg>
+  );
+}
+
+/* ── Module card ──────────────────────────────────────────────────────────── */
 function ModuleCard({ mod }: { mod: ModuleDef }) {
   const tok = A[mod.accent];
   const Icon = mod.icon;
   return (
-    <Link
-      href={mod.href}
-      className="group flex flex-col overflow-hidden rounded-xl transition-all duration-200"
-      style={{
-        background: "#fff",
-        border: "1px solid #E5E9EF",
-        boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
-      }}
+    <Link href={mod.href}
+      className="group flex flex-col overflow-hidden rounded-xl bg-white transition-all duration-200 hover:-translate-y-0.5"
+      style={{ border: "1px solid var(--color-border)", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}
       onMouseEnter={e => {
-        e.currentTarget.style.borderColor = tok.hover;
-        e.currentTarget.style.boxShadow = tok.hoverShadow;
-        e.currentTarget.style.transform = "translateY(-1px)";
+        (e.currentTarget as HTMLElement).style.borderColor = tok.hoverBorder;
+        (e.currentTarget as HTMLElement).style.boxShadow = `0 4px 18px ${tok.hoverBorder}88`;
       }}
       onMouseLeave={e => {
-        e.currentTarget.style.borderColor = "#E5E9EF";
-        e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.05)";
-        e.currentTarget.style.transform = "";
+        (e.currentTarget as HTMLElement).style.borderColor = "var(--color-border)";
+        (e.currentTarget as HTMLElement).style.boxShadow = "0 1px 3px rgba(0,0,0,0.05)";
       }}
     >
-      {/* Top strip */}
-      <div className="h-[2.5px] shrink-0"
-        style={{ background: `linear-gradient(90deg, ${tok.bar}, ${tok.barDark})` }} />
+      {/* Colour strip */}
+      <div className="h-[3px] shrink-0" style={{ background: `linear-gradient(90deg,${tok.bar},${tok.barEnd})` }} />
 
       <div className="flex flex-col flex-1 p-4 gap-3">
-        {/* Icon + arrow */}
-        <div className="flex items-start justify-between">
-          <div
-            className="h-9 w-9 rounded-lg flex items-center justify-center shrink-0"
-            style={{ background: tok.iconBg, color: tok.iconText }}
-          >
-            <Icon size={17} strokeWidth={1.75} />
-          </div>
-          <ArrowUpRight
-            size={13}
-            className="opacity-0 group-hover:opacity-100 transition-opacity duration-150 mt-0.5"
-            style={{ color: tok.bar }}
-          />
+        {/* Icon */}
+        <div className="h-10 w-10 rounded-xl flex items-center justify-center shrink-0"
+          style={{ background: tok.iconBg, color: tok.iconText }}>
+          <Icon size={18} strokeWidth={1.75} />
         </div>
 
-        {/* Content */}
+        {/* Label + desc */}
         <div className="flex-1 min-w-0">
-          <p className="text-[13px] font-bold text-gray-900 leading-tight mb-1">
-            {mod.label}
-          </p>
-          <p className="text-[11px] leading-[1.6] text-gray-400 line-clamp-2">
-            {mod.description}
-          </p>
+          <p className="text-[13px] font-bold text-[var(--color-ink-900)] leading-tight mb-1">{mod.label}</p>
+          <p className="text-[11px] leading-relaxed text-[var(--color-ink-400)] line-clamp-2">{mod.description}</p>
         </div>
 
-        {/* Section tag */}
-        <div className="pt-2.5 border-t border-gray-100 flex items-center justify-between gap-2">
-          <span className="text-[9.5px] font-bold uppercase tracking-widest truncate min-w-0" style={{ color: tok.label }}>
+        {/* Footer */}
+        <div className="pt-2.5 border-t border-[var(--color-border)] flex items-center justify-between gap-2">
+          <span className="text-[9.5px] font-bold uppercase tracking-widest" style={{ color: tok.label }}>
             {mod.section === "Practice Management" ? "Practice" : mod.section === "Administration" ? "Admin" : mod.section}
           </span>
-          <span className="text-[10px] font-semibold text-gray-400 group-hover:text-gray-600 transition-colors shrink-0">
-            Open →
+          <span className="text-[10px] font-semibold text-[var(--color-ink-400)] group-hover:text-[var(--color-ink-700)] transition-colors flex items-center gap-0.5">
+            Open <ArrowRight size={10} />
           </span>
         </div>
       </div>
@@ -130,25 +142,20 @@ function ModuleCard({ mod }: { mod: ModuleDef }) {
 /* ── Section block ───────────────────────────────────────────────────────── */
 function SectionBlock({ section, mods }: { section: Section; mods: ModuleDef[] }) {
   const tok = A[SECTION_ACCENT[section]];
+  const shortLabel = section === "Practice Management" ? "Practice" : section === "Administration" ? "Admin" : section;
   return (
     <div>
       <div className="flex items-center gap-2.5 mb-3">
-        <div className="h-4 w-[3px] rounded-full" style={{ background: tok.bar }} />
+        <div className="h-4 w-[3px] rounded-full shrink-0" style={{ background: tok.bar }} />
         <span className="text-[10.5px] font-black uppercase tracking-[0.15em]" style={{ color: tok.label }}>
           {section}
         </span>
-        <span
-          className="text-[9.5px] font-bold px-1.5 py-0.5 rounded-full"
-          style={{ background: tok.labelBg, color: tok.label }}
-        >
+        <span className="text-[9.5px] font-bold px-1.5 py-0.5 rounded-full shrink-0" style={{ background: tok.chipBg, color: tok.chipText }}>
           {mods.length}
         </span>
-        <div className="flex-1 h-px bg-gray-100" />
+        <div className="flex-1 h-px bg-[var(--color-border)]" />
       </div>
-      {/* Past xl the extra width buys more columns, not wider cards — a module
-          tile holds a label and two lines of description and gains nothing
-          from being stretched. */}
-      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 3xl:grid-cols-6">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 3xl:grid-cols-6 4xl:grid-cols-7">
         {mods.map(m => <ModuleCard key={m.href} mod={m} />)}
       </div>
     </div>
@@ -181,7 +188,7 @@ export function ModuleOverview({ role, permissions }: { role: Role; permissions:
 
   const sectionCounts = useMemo(() =>
     SECTIONS.map(s => ({
-      label: s === "Practice Management" ? "Practice" : s,
+      label: s === "Practice Management" ? "Practice" : s === "Administration" ? "Admin" : s,
       count: visible.filter(m => m.section === s).length,
       tok: A[SECTION_ACCENT[s]],
     })).filter(s => s.count > 0),
@@ -189,98 +196,93 @@ export function ModuleOverview({ role, permissions }: { role: Role; permissions:
   );
 
   return (
-    <div className="mx-auto pb-10 space-y-5">
+    <div className="pb-10 space-y-4">
 
-      {/* ── Compact hero ──────────────────────────────────────────────────── */}
-      <div
-        className="relative overflow-hidden rounded-xl"
-        style={{
-          background: "linear-gradient(172deg, #155C57 0%, #114D47 42%, #0B3C35 100%)",
-          boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
-        }}
-      >
-        {/* Subtle orb */}
-        <div className="pointer-events-none absolute -right-10 -top-10 h-48 w-48 rounded-full opacity-[0.12]"
-          style={{ background: "radial-gradient(circle, #14B8A6, transparent 65%)" }} />
-        {/* Bottom teal line */}
-        <div className="absolute bottom-0 left-0 right-0 h-px"
-          style={{ background: "linear-gradient(90deg, transparent, #14B8A6 40%, #0F766E 60%, transparent)" }} />
-
-        <div className="relative flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-          {/* Left: brand + title */}
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="h-8 w-8 rounded-lg flex items-center justify-center shrink-0"
-              style={{ background: "rgba(20,184,166,.15)", border: "1px solid rgba(94,234,212,.2)" }}>
-              <LayoutDashboard size={15} strokeWidth={2} color="#5EEAD4" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-[8.5px] font-bold uppercase tracking-[0.2em] leading-none mb-0.5"
-                style={{ color: "rgba(94,234,212,0.55)" }}>
-                PPMS Platform
-              </p>
-              <h1 className="text-[16px] font-extrabold text-white tracking-tight leading-none">
-                Module Overview
-              </h1>
-            </div>
-          </div>
-
-          {/* Centre: section pills */}
-          <div className="flex flex-wrap gap-1.5 sm:flex-nowrap">
+      {/* ── Banner ─────────────────────────────────────────────────────────── */}
+      <div className="rounded-2xl overflow-hidden border border-[var(--color-border)] shadow-sm flex" style={{ minHeight: 152 }}>
+        {/* Left: text */}
+        <div className="flex-1 bg-white px-7 py-6 flex flex-col justify-center min-w-0">
+          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--color-primary-500)] mb-1">PPMS Platform</p>
+          <h1 className="text-[22px] font-bold text-[var(--color-ink-900)] leading-tight">Module Overview</h1>
+          <p className="text-[12px] text-[var(--color-ink-400)] mt-1">
+            Browse and access all available modules for your role.
+          </p>
+          {/* Section count chips */}
+          <div className="flex flex-wrap items-center gap-1.5 mt-3">
             {sectionCounts.map(s => (
-              <div key={s.label}
-                className="flex items-center gap-1.5 rounded-md px-2 py-1"
-                style={{ background: "rgba(255,255,255,.06)", border: "1px solid rgba(255,255,255,.08)" }}>
-                <span className="h-1.5 w-1.5 rounded-full shrink-0" style={{ background: s.tok.bar }} />
-                <span className="text-[11px] font-bold tabular-nums text-white/80">{s.count}</span>
-                <span className="text-[10px] text-white/35">{s.label}</span>
-              </div>
+              <span key={s.label}
+                className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border"
+                style={{ background: s.tok.chipBg, color: s.tok.chipText, borderColor: s.tok.hoverBorder }}>
+                <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: s.tok.bar }} />
+                {s.count} {s.label}
+              </span>
             ))}
           </div>
+        </div>
 
-          {/* Right: role badge */}
-          <div className="flex items-center gap-2 rounded-lg px-3 py-2 shrink-0"
-            style={{ background: "rgba(255,255,255,.07)", border: "1px solid rgba(255,255,255,.1)" }}>
-            <RoleIcon size={14} strokeWidth={1.75} color={rm.iconColor} />
-            <div>
-              <p className="text-[8px] font-bold uppercase tracking-[0.18em] leading-none text-white/35">Access</p>
-              <p className="text-[12px] font-bold text-white leading-none mt-0.5">{rm.label}</p>
+        {/* Right: decorative + role card + total card */}
+        <div className="relative hidden sm:flex items-start justify-end gap-3 px-5 py-5 shrink-0" style={{ width: 380 }}>
+          <MedicalBg />
+
+          {/* Role card */}
+          <div className="relative z-10 bg-white/90 backdrop-blur-sm rounded-xl border border-white/60 shadow-md px-4 py-3 min-w-[150px]">
+            <p className="text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-wide mb-2">Access Level</p>
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
+                style={{ background: `${rm.iconColor}18` }}>
+                <RoleIcon size={15} style={{ color: rm.iconColor }} />
+              </div>
+              <div>
+                <p className="text-[13px] font-bold text-[var(--color-ink-900)]">{rm.label}</p>
+                <p className="text-[10px] text-[var(--color-ink-400)]">Current role</p>
+              </div>
             </div>
+          </div>
+
+          {/* Total modules card */}
+          <div className="relative z-10 bg-white/90 backdrop-blur-sm rounded-xl border border-white/60 shadow-md px-4 py-3 shrink-0 text-center">
+            <div className="w-8 h-8 rounded-full bg-teal-100 flex items-center justify-center mx-auto mb-1">
+              <LayoutDashboard size={14} className="text-teal-600" />
+            </div>
+            <p className="text-[18px] font-bold text-[var(--color-ink-900)] tabular-nums">{visible.length}</p>
+            <p className="text-[10px] text-[var(--color-ink-400)]">Modules</p>
+            <p className="text-[9px] text-[var(--color-ink-400)]">Available to you</p>
           </div>
         </div>
       </div>
 
-      {/* ── Search ────────────────────────────────────────────────────────── */}
+      {/* ── Search ─────────────────────────────────────────────────────────── */}
       <div className="relative max-w-sm">
-        <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-300" />
+        <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-[var(--color-ink-300)]" />
         <input
           value={q}
           onChange={e => setQ(e.target.value)}
           placeholder="Search modules…"
-          className="w-full pl-9 pr-8 py-2 text-[12.5px] rounded-lg border border-gray-200 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all placeholder:text-gray-300 text-gray-800"
+          className="w-full pl-9 pr-8 py-2 text-[12.5px] rounded-lg border border-[var(--color-border)] bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent transition-all placeholder:text-[var(--color-ink-300)] text-[var(--color-ink-800)]"
         />
         {q && (
           <button onClick={() => setQ("")}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500 transition-colors">
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-300)] hover:text-[var(--color-ink-600)] transition-colors">
             <X size={12} />
           </button>
         )}
       </div>
 
-      {/* ── Grid ──────────────────────────────────────────────────────────── */}
+      {/* ── Content ────────────────────────────────────────────────────────── */}
       {q.trim() ? (
         filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-gray-100 bg-white py-16 text-center shadow-sm">
-            <Search size={22} className="text-gray-200" />
-            <p className="text-sm text-gray-400">
-              No modules match <span className="font-semibold text-gray-600">"{q}"</span>
+          <div className="surface-card flex flex-col items-center justify-center gap-2 py-16 text-center">
+            <Search size={24} className="text-[var(--color-ink-200)]" />
+            <p className="text-[13px] font-semibold text-[var(--color-ink-500)]">
+              No modules match <span className="text-[var(--color-ink-800)]">"{q}"</span>
             </p>
             <button onClick={() => setQ("")}
-              className="text-xs font-semibold text-teal-600 underline underline-offset-2 hover:text-teal-700">
-              Clear
+              className="text-[11px] font-semibold text-[var(--color-primary-600)] underline underline-offset-2 hover:text-[var(--color-primary-700)]">
+              Clear search
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 3xl:grid-cols-6">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 3xl:grid-cols-6">
             {filtered.map(m => <ModuleCard key={m.href} mod={m} />)}
           </div>
         )
@@ -294,7 +296,7 @@ export function ModuleOverview({ role, permissions }: { role: Role; permissions:
         </div>
       )}
 
-      <p className="text-center text-[10px] text-gray-300">
+      <p className="text-center text-[10px] text-[var(--color-ink-300)]">
         {visible.length} module{visible.length !== 1 ? "s" : ""} · PPMS v2.0
       </p>
     </div>
