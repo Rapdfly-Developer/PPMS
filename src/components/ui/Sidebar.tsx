@@ -306,8 +306,8 @@ export function Sidebar({
         }
         @media (min-width: 1441px) and (max-width: 1920px) {
           [data-sidebar] {
-            --sb-brand: 16.2px; --sb-eyebrow: 10.26px; --sb-name: 12.96px;
-            --sb-role: 10.8px;  --sb-avatar: 11.88px;
+            --sb-brand: 16px;  --sb-eyebrow: 10px;  --sb-name: 13px;
+            --sb-role: 11px;   --sb-avatar: 12px;
           }
         }
         @media (min-width: 1920px) {
@@ -315,8 +315,8 @@ export function Sidebar({
         }
         @media (min-width: 1921px) and (max-width: 2560px) {
           [data-sidebar] {
-            --sb-brand: 18px;   --sb-eyebrow: 11.4px; --sb-name: 14.4px;
-            --sb-role: 12px;    --sb-avatar: 13.2px;
+            --sb-brand: 17px;  --sb-eyebrow: 10.5px; --sb-name: 14px;
+            --sb-role: 11px;   --sb-avatar: 13px;
           }
         }
         @media (min-width: 2560px) {
@@ -324,8 +324,8 @@ export function Sidebar({
         }
         @media (min-width: 2561px) {
           [data-sidebar] {
-            --sb-brand: 19.8px; --sb-eyebrow: 12.54px; --sb-name: 15.84px;
-            --sb-role: 13.2px;  --sb-avatar: 14.52px;
+            --sb-brand: 18px;  --sb-eyebrow: 11px;  --sb-name: 14px;
+            --sb-role: 12px;   --sb-avatar: 13px;
           }
         }
         @media (min-width: 3840px) {

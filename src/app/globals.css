@@ -277,6 +277,109 @@ body {
 .scrollbar-thin::-webkit-scrollbar { height: 6px; width: 6px; }
 .scrollbar-thin::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 999px; }
 
+/* ── RF Health responsive typography tokens ──────────────────────────────
+   Semantic scale with exact pixel targets at each breakpoint. The --rf-fs-*
+   prefix avoids collision with --fs-* tokens used by login/landing pages.
+   Values below 1440px match the existing laptop/tablet/mobile appearance.   */
+
+:root {
+  --rf-fs-display:   28px; --rf-lh-display:   1.20;
+  --rf-fs-h1:        22px; --rf-lh-h1:        1.25;
+  --rf-fs-h2:        18px; --rf-lh-h2:        1.30;
+  --rf-fs-h3:        16px; --rf-lh-h3:        1.35;
+  --rf-fs-h4:        15px; --rf-lh-h4:        1.35;
+  --rf-fs-body:      14px; --rf-lh-body:      1.50;
+  --rf-fs-secondary: 13px; --rf-lh-secondary: 1.45;
+  --rf-fs-label:     12px; --rf-lh-label:     1.40;
+  --rf-fs-caption:   11px; --rf-lh-caption:   1.40;
+  --rf-fs-btn:       13px; --rf-lh-btn:       1.25;
+  --rf-fs-input:     14px; --rf-lh-input:     1.50;
+}
+@media (min-width: 768px) {
+  :root {
+    --rf-fs-display: 32px;
+    --rf-fs-h1:      24px;
+    --rf-fs-h2:      20px;
+    --rf-fs-h3:      17px;
+    --rf-fs-h4:      16px;
+    --rf-fs-btn:     14px;
+  }
+}
+@media (min-width: 1024px) {
+  :root {
+    --rf-fs-display: 36px;
+    --rf-fs-h1:      26px;
+    --rf-fs-h2:      22px;
+    --rf-fs-h3:      18px;
+    --rf-fs-label:   13px;
+    --rf-fs-caption: 12px;
+  }
+}
+@media (min-width: 1440px) {
+  :root {
+    --rf-fs-display:   40px;
+    --rf-fs-h1:        28px;
+    --rf-fs-h2:        24px;
+    --rf-fs-h3:        20px;
+    --rf-fs-h4:        17px;
+    --rf-fs-body:      15px;
+    --rf-fs-secondary: 14px;
+    --rf-fs-btn:       14px;
+    --rf-fs-input:     15px;
+  }
+}
+@media (min-width: 1920px) {
+  :root {
+    --rf-fs-display:   44px;
+    --rf-fs-h1:        30px;
+    --rf-fs-h2:        26px;
+    --rf-fs-h3:        21px;
+    --rf-fs-h4:        18px;
+    --rf-fs-body:      16px;
+    --rf-fs-label:     14px;
+    --rf-fs-caption:   13px;
+    --rf-fs-btn:       15px;
+    --rf-fs-input:     16px;
+  }
+}
+@media (min-width: 2560px) {
+  :root {
+    --rf-fs-display:   48px;
+    --rf-fs-h1:        32px;
+    --rf-fs-h2:        28px;
+    --rf-fs-h3:        22px;
+    --rf-fs-h4:        19px;
+    --rf-fs-secondary: 15px;
+  }
+}
+
+/* ── RF typography utility classes ───────────────────────────────────────
+   Apply any of these to an element for the full responsive semantic scale.   */
+.rf-display   { font-size: var(--rf-fs-display);   line-height: var(--rf-lh-display);   }
+.rf-h1        { font-size: var(--rf-fs-h1);        line-height: var(--rf-lh-h1);        }
+.rf-h2        { font-size: var(--rf-fs-h2);        line-height: var(--rf-lh-h2);        }
+.rf-h3        { font-size: var(--rf-fs-h3);        line-height: var(--rf-lh-h3);        }
+.rf-h4        { font-size: var(--rf-fs-h4);        line-height: var(--rf-lh-h4);        }
+.rf-body      { font-size: var(--rf-fs-body);      line-height: var(--rf-lh-body);      }
+.rf-secondary { font-size: var(--rf-fs-secondary); line-height: var(--rf-lh-secondary); }
+.rf-label     { font-size: var(--rf-fs-label);     line-height: var(--rf-lh-label);     }
+.rf-caption   { font-size: var(--rf-fs-caption);   line-height: var(--rf-lh-caption);   }
+.rf-btn       { font-size: var(--rf-fs-btn);       line-height: var(--rf-lh-btn);       }
+
+/* ── App content: semantic element scaling at 1440px+ ────────────────────
+   Selector [data-main-content] h2 has specificity (0,1,1), beating Tailwind
+   utilities (0,1,0), so these apply even when a Tailwind text-* class is on
+   the element. h1 is intentionally excluded — the OPD banner uses text-3xl
+   (30px at sm+) which already exceeds the h1 spec target of 28px at 1440px,
+   and a global h1 override would shrink it.                                  */
+@media (min-width: 1440px) {
+  [data-main-content] h2 { font-size: var(--rf-fs-h2); line-height: var(--rf-lh-h2); }
+  [data-main-content] h3 { font-size: var(--rf-fs-h3); line-height: var(--rf-lh-h3); }
+  [data-main-content] h4 { font-size: var(--rf-fs-h4); line-height: var(--rf-lh-h4); }
+  [data-main-content] th,
+  [data-main-content] td { font-size: var(--rf-fs-body); }
+}
+
 /* ── Print styles ─────────────────────────────────────────────────────── */
 @media print {
   /* Hide all app chrome */
@@ -555,199 +658,194 @@ body {
 
 
 /* ── Large-screen typography scale ────────────────────────
-   Nothing here applies below 1920px, so every mobile, tablet and laptop
-   layout is untouched.
+   Nothing here applies below 1920px, so every mobile, tablet, laptop, and
+   DPI-scaled viewport is untouched. Windows 125% display scaling makes a
+   1080p panel report 1536px and a 16-inch MacBook Pro report 1728px — both
+   common for this app. Starting at 1920px means every laptop size
+   (1280–1792px) uses the base scale unchanged.
 
-   That bound used to be 1440px, on the assumption that a wider viewport meant
-   a bigger monitor. It does not. Windows at 125% display scaling — the
-   shipped default on most 1080p laptops — reports a 1920x1080 panel as a
-   1536px viewport, and macOS reports a 16-inch MacBook Pro as 1728px. Both
-   landed in the first step and had their body text scaled to 1.35x, so the
-   machines this app is actually used on got the LARGEST type in the product:
-   text-xs rendered at 16.2px, well above Tailwind's own 12px default.
+   Two mechanisms cover the app's two type-sizing patterns:
+   - Tailwind named utilities (text-sm, text-base …) compile to
+     font-size:var(--text-sm), so redefining the custom property rescales all
+     of them at once.
+   - Arbitrary values (.text-[13px]) compile to literal font-size rules; a
+     same-specificity unlayered rule overrides them.
 
-   The boundaries are now the 4xl/5xl/6xl breakpoints declared at the top of
-   this file — 1920 / 2560 / 3840, one real display class each — the same
-   correction already made to --lp-measure above. Every common laptop width
-   (1280, 1366, 1440, 1512, 1536, 1600, 1680, 1728, 1792) now sits below the
-   ramp and uses the base scale.
+   Scale targets (per design spec):
+   ─────────────────────────────────────────────────────────
+            1441–1920px    1921–2560px    2561px+
+   Caption  12px           13px           13px
+   Label    13px           14px           14px
+   Body     15px           16px           16px
+   H3       20px           21px           22px
+   H2       24px           26px           28px
+   H1       28px           30px           32px
+   Display  40px           44px           48px
+   ────────────────────────────────────────────────────────  */
 
-   Two mechanisms, because the app expresses type two ways. Tailwind's named
-   utilities compile to font-size:var(--text-sm), so redefining those custom
-   properties rescales all ~2000 of them at once. Arbitrary values compile to
-   a literal rule (.text-\[13px\]{font-size:13px}), which a plain unlayered
-   rule of the same specificity overrides, covering the other ~1800.
-
-   Body sizes reach 2x at 4K; display sizes stop at 1.6x. Doubling a 48px
-   heading to 96px would dominate a page whose body copy is 32px, so the two
-   ramps are deliberately different. Line-heights scale with their size, or
-   enlarged text collides.
-
-   Multipliers are against Tailwind's shipped value, not compounding.      */
-
-/* Step 1 — body 1.35x, display 1.22x. 1080p desktop monitors at 100%. */
+/* Step 1 — 1920px–2559px (true 1080p/1440p monitors at 100% DPI) */
 @media (min-width: 1920px) and (max-width: 2559px) {
   :root {
-    --text-xs: 16.2px;
-    --text-xs--line-height: 21.6px;
-    --text-sm: 18.9px;
-    --text-sm--line-height: 27px;
-    --text-base: 21.6px;
-    --text-base--line-height: 32.4px;
-    --text-lg: 24.3px;
-    --text-lg--line-height: 37.8px;
-    --text-xl: 24.4px;
-    --text-xl--line-height: 34.16px;
-    --text-2xl: 29.28px;
-    --text-2xl--line-height: 39.04px;
-    --text-3xl: 36.6px;
-    --text-3xl--line-height: 43.92px;
-    --text-4xl: 43.92px;
-    --text-4xl--line-height: 48.8px;
-    --text-5xl: 58.56px;
-    --text-5xl--line-height: 58.56px;
-    --text-6xl: 73.2px;
-    --text-6xl--line-height: 73.2px;
+    --text-xs:                13px;
+    --text-xs--line-height:   18px;
+    --text-sm:                15px;
+    --text-sm--line-height:   21px;
+    --text-base:              17px;
+    --text-base--line-height: 24px;
+    --text-lg:                20px;
+    --text-lg--line-height:   28px;
+    --text-xl:                22px;
+    --text-xl--line-height:   30px;
+    --text-2xl:               26px;
+    --text-2xl--line-height:  34px;
+    --text-3xl:               32px;
+    --text-3xl--line-height:  40px;
+    --text-4xl:               40px;
+    --text-4xl--line-height:  48px;
+    --text-5xl:               52px;
+    --text-5xl--line-height:  56px;
+    --text-6xl:               66px;
+    --text-6xl--line-height:  72px;
   }
 
-  .text-\[8px\] { font-size: 10.8px; }
-  .text-\[8\.5px\] { font-size: 11.48px; }
-  .text-\[9px\] { font-size: 12.15px; }
-  .text-\[9\.5px\] { font-size: 12.83px; }
-  .text-\[10px\] { font-size: 13.5px; }
-  .text-\[10\.5px\] { font-size: 14.18px; }
-  .text-\[11px\] { font-size: 14.85px; }
-  .text-\[11\.5px\] { font-size: 15.53px; }
-  .text-\[12px\] { font-size: 16.2px; }
-  .text-\[12\.5px\] { font-size: 16.88px; }
-  .text-\[13px\] { font-size: 17.55px; }
-  .text-\[13\.5px\] { font-size: 18.23px; }
-  .text-\[14px\] { font-size: 18.9px; }
-  .text-\[14\.5px\] { font-size: 19.58px; }
-  .text-\[15px\] { font-size: 20.25px; }
-  .text-\[15\.5px\] { font-size: 20.93px; }
-  .text-\[16px\] { font-size: 21.6px; }
-  .text-\[16\.5px\] { font-size: 22.28px; }
-  .text-\[17px\] { font-size: 22.95px; }
-  .text-\[19px\] { font-size: 23.18px; }
-  .text-\[20px\] { font-size: 24.4px; }
-  .text-\[22px\] { font-size: 26.84px; }
-  .text-\[24px\] { font-size: 29.28px; }
-  .text-\[25px\] { font-size: 30.5px; }
-  .text-\[26px\] { font-size: 31.72px; }
-  .text-\[28px\] { font-size: 34.16px; }
-  .text-\[32px\] { font-size: 39.04px; }
-  .text-\[36px\] { font-size: 43.92px; }
+  .text-\[8px\]    { font-size:  9px; }
+  .text-\[8\.5px\] { font-size:  9px; }
+  .text-\[9px\]    { font-size: 10px; }
+  .text-\[9\.5px\] { font-size: 10px; }
+  .text-\[10px\]   { font-size: 11px; }
+  .text-\[10\.5px\]{ font-size: 11px; }
+  .text-\[11px\]   { font-size: 12px; }
+  .text-\[11\.5px\]{ font-size: 12px; }
+  .text-\[12px\]   { font-size: 13px; }
+  .text-\[12\.5px\]{ font-size: 13px; }
+  .text-\[13px\]   { font-size: 14px; }
+  .text-\[13\.5px\]{ font-size: 14px; }
+  .text-\[14px\]   { font-size: 15px; }
+  .text-\[14\.5px\]{ font-size: 15px; }
+  .text-\[15px\]   { font-size: 16px; }
+  .text-\[15\.5px\]{ font-size: 16px; }
+  .text-\[16px\]   { font-size: 17px; }
+  .text-\[16\.5px\]{ font-size: 17px; }
+  .text-\[17px\]   { font-size: 18px; }
+  .text-\[19px\]   { font-size: 20px; }
+  .text-\[20px\]   { font-size: 22px; }
+  .text-\[22px\]   { font-size: 24px; }
+  .text-\[24px\]   { font-size: 26px; }
+  .text-\[25px\]   { font-size: 27px; }
+  .text-\[26px\]   { font-size: 28px; }
+  .text-\[28px\]   { font-size: 30px; }
+  .text-\[32px\]   { font-size: 34px; }
+  .text-\[36px\]   { font-size: 40px; }
 }
 
-/* Step 2 — body 1.65x, display 1.40x. QHD. */
+/* Step 2 — 2560px–3839px (QHD) */
 @media (min-width: 2560px) and (max-width: 3839px) {
   :root {
-    --text-xs: 19.8px;
-    --text-xs--line-height: 26.4px;
-    --text-sm: 23.1px;
-    --text-sm--line-height: 33px;
-    --text-base: 26.4px;
-    --text-base--line-height: 39.6px;
-    --text-lg: 29.7px;
-    --text-lg--line-height: 46.2px;
-    --text-xl: 28px;
-    --text-xl--line-height: 39.2px;
-    --text-2xl: 33.6px;
-    --text-2xl--line-height: 44.8px;
-    --text-3xl: 42px;
-    --text-3xl--line-height: 50.4px;
-    --text-4xl: 50.4px;
-    --text-4xl--line-height: 56px;
-    --text-5xl: 67.2px;
-    --text-5xl--line-height: 67.2px;
-    --text-6xl: 84px;
-    --text-6xl--line-height: 84px;
+    --text-xs:                14px;
+    --text-xs--line-height:   20px;
+    --text-sm:                16px;
+    --text-sm--line-height:   23px;
+    --text-base:              18px;
+    --text-base--line-height: 26px;
+    --text-lg:                21px;
+    --text-lg--line-height:   30px;
+    --text-xl:                24px;
+    --text-xl--line-height:   33px;
+    --text-2xl:               28px;
+    --text-2xl--line-height:  37px;
+    --text-3xl:               34px;
+    --text-3xl--line-height:  44px;
+    --text-4xl:               44px;
+    --text-4xl--line-height:  52px;
+    --text-5xl:               56px;
+    --text-5xl--line-height:  62px;
+    --text-6xl:               68px;
+    --text-6xl--line-height:  76px;
   }
 
-  .text-\[8px\] { font-size: 13.2px; }
-  .text-\[8\.5px\] { font-size: 14.02px; }
-  .text-\[9px\] { font-size: 14.85px; }
-  .text-\[9\.5px\] { font-size: 15.67px; }
-  .text-\[10px\] { font-size: 16.5px; }
-  .text-\[10\.5px\] { font-size: 17.32px; }
-  .text-\[11px\] { font-size: 18.15px; }
-  .text-\[11\.5px\] { font-size: 18.97px; }
-  .text-\[12px\] { font-size: 19.8px; }
-  .text-\[12\.5px\] { font-size: 20.62px; }
-  .text-\[13px\] { font-size: 21.45px; }
-  .text-\[13\.5px\] { font-size: 22.27px; }
-  .text-\[14px\] { font-size: 23.1px; }
-  .text-\[14\.5px\] { font-size: 23.92px; }
-  .text-\[15px\] { font-size: 24.75px; }
-  .text-\[15\.5px\] { font-size: 25.57px; }
-  .text-\[16px\] { font-size: 26.4px; }
-  .text-\[16\.5px\] { font-size: 27.22px; }
-  .text-\[17px\] { font-size: 28.05px; }
-  .text-\[19px\] { font-size: 26.6px; }
-  .text-\[20px\] { font-size: 28px; }
-  .text-\[22px\] { font-size: 30.8px; }
-  .text-\[24px\] { font-size: 33.6px; }
-  .text-\[25px\] { font-size: 35px; }
-  .text-\[26px\] { font-size: 36.4px; }
-  .text-\[28px\] { font-size: 39.2px; }
-  .text-\[32px\] { font-size: 44.8px; }
-  .text-\[36px\] { font-size: 50.4px; }
+  .text-\[8px\]    { font-size:  9px; }
+  .text-\[8\.5px\] { font-size: 10px; }
+  .text-\[9px\]    { font-size: 10px; }
+  .text-\[9\.5px\] { font-size: 11px; }
+  .text-\[10px\]   { font-size: 11px; }
+  .text-\[10\.5px\]{ font-size: 12px; }
+  .text-\[11px\]   { font-size: 13px; }
+  .text-\[11\.5px\]{ font-size: 13px; }
+  .text-\[12px\]   { font-size: 14px; }
+  .text-\[12\.5px\]{ font-size: 14px; }
+  .text-\[13px\]   { font-size: 15px; }
+  .text-\[13\.5px\]{ font-size: 15px; }
+  .text-\[14px\]   { font-size: 16px; }
+  .text-\[14\.5px\]{ font-size: 16px; }
+  .text-\[15px\]   { font-size: 17px; }
+  .text-\[15\.5px\]{ font-size: 17px; }
+  .text-\[16px\]   { font-size: 18px; }
+  .text-\[16\.5px\]{ font-size: 18px; }
+  .text-\[17px\]   { font-size: 19px; }
+  .text-\[19px\]   { font-size: 22px; }
+  .text-\[20px\]   { font-size: 23px; }
+  .text-\[22px\]   { font-size: 26px; }
+  .text-\[24px\]   { font-size: 28px; }
+  .text-\[25px\]   { font-size: 29px; }
+  .text-\[26px\]   { font-size: 30px; }
+  .text-\[28px\]   { font-size: 32px; }
+  .text-\[32px\]   { font-size: 37px; }
+  .text-\[36px\]   { font-size: 44px; }
 }
 
-/* Step 3 — body 2x, display 1.6x */
+/* Step 3 — 3840px+ (4K) */
 @media (min-width: 3840px) {
   :root {
-    --text-xs: 24px;
-    --text-xs--line-height: 32px;
-    --text-sm: 28px;
-    --text-sm--line-height: 40px;
-    --text-base: 32px;
-    --text-base--line-height: 48px;
-    --text-lg: 36px;
-    --text-lg--line-height: 56px;
-    --text-xl: 32px;
-    --text-xl--line-height: 44.8px;
-    --text-2xl: 38.4px;
-    --text-2xl--line-height: 51.2px;
-    --text-3xl: 48px;
-    --text-3xl--line-height: 57.6px;
-    --text-4xl: 57.6px;
-    --text-4xl--line-height: 64px;
-    --text-5xl: 76.8px;
-    --text-5xl--line-height: 76.8px;
-    --text-6xl: 96px;
-    --text-6xl--line-height: 96px;
+    --text-xs:                15px;
+    --text-xs--line-height:   22px;
+    --text-sm:                16px;
+    --text-sm--line-height:   24px;
+    --text-base:              19px;
+    --text-base--line-height: 27px;
+    --text-lg:                22px;
+    --text-lg--line-height:   31px;
+    --text-xl:                26px;
+    --text-xl--line-height:   36px;
+    --text-2xl:               28px;
+    --text-2xl--line-height:  38px;
+    --text-3xl:               36px;
+    --text-3xl--line-height:  46px;
+    --text-4xl:               48px;
+    --text-4xl--line-height:  56px;
+    --text-5xl:               62px;
+    --text-5xl--line-height:  68px;
+    --text-6xl:               76px;
+    --text-6xl--line-height:  84px;
   }
 
-  .text-\[8px\] { font-size: 16px; }
-  .text-\[8\.5px\] { font-size: 17px; }
-  .text-\[9px\] { font-size: 18px; }
-  .text-\[9\.5px\] { font-size: 19px; }
-  .text-\[10px\] { font-size: 20px; }
-  .text-\[10\.5px\] { font-size: 21px; }
-  .text-\[11px\] { font-size: 22px; }
-  .text-\[11\.5px\] { font-size: 23px; }
-  .text-\[12px\] { font-size: 24px; }
-  .text-\[12\.5px\] { font-size: 25px; }
-  .text-\[13px\] { font-size: 26px; }
-  .text-\[13\.5px\] { font-size: 27px; }
-  .text-\[14px\] { font-size: 28px; }
-  .text-\[14\.5px\] { font-size: 29px; }
-  .text-\[15px\] { font-size: 30px; }
-  .text-\[15\.5px\] { font-size: 31px; }
-  .text-\[16px\] { font-size: 32px; }
-  .text-\[16\.5px\] { font-size: 33px; }
-  .text-\[17px\] { font-size: 34px; }
-  .text-\[19px\] { font-size: 30.4px; }
-  .text-\[20px\] { font-size: 32px; }
-  .text-\[22px\] { font-size: 35.2px; }
-  .text-\[24px\] { font-size: 38.4px; }
-  .text-\[25px\] { font-size: 40px; }
-  .text-\[26px\] { font-size: 41.6px; }
-  .text-\[28px\] { font-size: 44.8px; }
-  .text-\[32px\] { font-size: 51.2px; }
-  .text-\[36px\] { font-size: 57.6px; }
+  .text-\[8px\]    { font-size: 10px; }
+  .text-\[8\.5px\] { font-size: 10px; }
+  .text-\[9px\]    { font-size: 11px; }
+  .text-\[9\.5px\] { font-size: 11px; }
+  .text-\[10px\]   { font-size: 12px; }
+  .text-\[10\.5px\]{ font-size: 12px; }
+  .text-\[11px\]   { font-size: 13px; }
+  .text-\[11\.5px\]{ font-size: 13px; }
+  .text-\[12px\]   { font-size: 15px; }
+  .text-\[12\.5px\]{ font-size: 15px; }
+  .text-\[13px\]   { font-size: 15px; }
+  .text-\[13\.5px\]{ font-size: 16px; }
+  .text-\[14px\]   { font-size: 16px; }
+  .text-\[14\.5px\]{ font-size: 17px; }
+  .text-\[15px\]   { font-size: 17px; }
+  .text-\[15\.5px\]{ font-size: 18px; }
+  .text-\[16px\]   { font-size: 19px; }
+  .text-\[16\.5px\]{ font-size: 19px; }
+  .text-\[17px\]   { font-size: 20px; }
+  .text-\[19px\]   { font-size: 23px; }
+  .text-\[20px\]   { font-size: 24px; }
+  .text-\[22px\]   { font-size: 28px; }
+  .text-\[24px\]   { font-size: 30px; }
+  .text-\[25px\]   { font-size: 31px; }
+  .text-\[26px\]   { font-size: 32px; }
+  .text-\[28px\]   { font-size: 34px; }
+  .text-\[32px\]   { font-size: 40px; }
+  .text-\[36px\]   { font-size: 48px; }
 }
 
 /* ── Landing page: continuous type ────────────────────────────────────────
