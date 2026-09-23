@@ -787,7 +787,7 @@ function Contact() {
           </Reveal>
           <Reveal delay={120}>
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              {[{ icon: <Mail size={19} />, label: "Email Us", val: "support@ppmsai.com", href: "mailto:support@ppmsai.com" }, { icon: <Phone size={19} />, label: "Call Us", val: "+91 96290 51083", href: "tel:+919629051083" }, { icon: <Globe size={19} />, label: "Website", val: "www.ppmsai.com", href: "https://ppmsai.com" }].map((c, i) => (
+              {[{ icon: <Mail size={19} />, label: "Email Us", val: "support@ppmsai.com", href: "mailto:support@ppmsai.com" }, { icon: <Phone size={19} />, label: "Call Us", val: "+91 73733 51087", href: "tel:+917373351087" }, { icon: <Globe size={19} />, label: "Website", val: "www.ppmsai.com", href: "https://ppmsai.com" }].map((c, i) => (
                 <a key={i} href={c.href} style={{ display: "flex", alignItems: "center", gap: 14, padding: "18px 22px", borderRadius: 15, textDecoration: "none", background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.08)", transition: "border-color .2s", color: "#fff" }}
                   onMouseEnter={e => (e.currentTarget.style.borderColor = "rgba(15,143,111,.4)")}
                   onMouseLeave={e => (e.currentTarget.style.borderColor = "rgba(255,255,255,.08)")}>
@@ -836,7 +836,7 @@ function Footer() {
             <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: "#22C55E", marginBottom: 18 }}>Contact</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               <a href="mailto:support@ppmsai.com" style={{ fontSize: 13, color: C.muted, textDecoration: "none", display: "flex", alignItems: "center", gap: 7 }}><Mail size={12} />support@ppmsai.com</a>
-              <a href="tel:+919629051083" style={{ fontSize: 13, color: C.muted, textDecoration: "none", display: "flex", alignItems: "center", gap: 7 }}><Phone size={12} />+91 96290 51083</a>
+              <a href="tel:+917373351087" style={{ fontSize: 13, color: C.muted, textDecoration: "none", display: "flex", alignItems: "center", gap: 7 }}><Phone size={12} />+91 73733 51087</a>
               <a href="https://ppmsai.com" style={{ fontSize: 13, color: C.muted, textDecoration: "none", display: "flex", alignItems: "center", gap: 7 }}><Globe size={12} />www.ppmsai.com</a>
             </div>
           </div>

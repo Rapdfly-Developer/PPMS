@@ -1456,7 +1456,7 @@ export function PremiumLanding() {
                   className="inline-flex items-center gap-2 rounded-full border border-white/15 px-7 py-4 text-[15px] font-medium text-white transition-colors duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-white/[0.07]"
                 >
                   <Phone size={15} strokeWidth={1.25} aria-hidden="true" />
-                  +91 96290 51083
+                  +91 73733 51087
                 </a>
               </div>
             </div>
@@ -1491,11 +1491,11 @@ export function PremiumLanding() {
               </a>
               <a href="tel:+919629051083" className="flex items-center gap-2 hover:text-emerald-800">
                 <Phone size={14} strokeWidth={1.25} aria-hidden="true" />
-                +91 96290 51083
+                +91 73733 51087
               </a>
               <span className="flex items-center gap-2">
                 <MapPin size={14} strokeWidth={1.25} aria-hidden="true" />
-                Tamil Nadu, India
+                Bangalore, Karnataka
               </span>
             </div>
           </div>

@@ -274,11 +274,11 @@ export function DemoForm() {
       <div className="flex flex-col items-center gap-2 border-t border-slate-100 pt-4 text-center">
         <p className="text-[12.5px] text-slate-500">Prefer to talk to us directly?</p>
         <a
-          href="tel:+919629051083"
+          href="tel:+917373351087"
           className="inline-flex items-center gap-2 text-[13.5px] font-semibold text-emerald-700 underline-offset-3 hover:underline"
         >
           <Phone size={13} strokeWidth={1.5} />
-          Talk to Our Team · +91 96290 51083
+          Talk to Our Team · +91 73733 51087
         </a>
       </div>
     </form>
