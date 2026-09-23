@@ -1596,7 +1596,12 @@ export function PremiumLanding() {
 
         <div className={`mt-10 flex flex-col gap-3 border-t border-emerald-950/[0.07] pt-6 text-[13px] text-slate-400 sm:flex-row sm:items-center sm:justify-between ${SHELL}`}>
           <p>© {new Date().getFullYear()} RAPDFLY PRIVATE LIMITED. All rights reserved.</p>
-          <p>ppmsai.com</p>
+          <div className="flex items-center gap-4">
+            <a href="/privacy" className="transition-colors duration-300 hover:text-emerald-800">
+              Privacy Policy
+            </a>
+            <span>ppmsai.com</span>
+          </div>
         </div>
       </footer>
     </div>
