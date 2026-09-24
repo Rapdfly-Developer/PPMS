@@ -7,8 +7,6 @@ import { loginAction, emailOtpLoginAction } from "./actions";
 import {
   Eye, EyeOff, User, Lock, AlertCircle, CheckCircle2,
   ShieldCheck, Loader2, Check, Mail, X, KeyRound, RotateCcw, Zap,
-  FileText, Calendar, Building2, UserCircle, Users, BarChart3,
-  Cloud, Shield, Stethoscope, HeartPulse, Pill,
 } from "lucide-react";
 
 /* ── Palette ────────────────────────────────────────────────────────────────
@@ -570,269 +568,113 @@ function usePinnedToStableViewport(apply: (el: HTMLElement) => void) {
   return ref;
 }
 
-/* ── Left-panel content ─────────────────────────────────────────────────── */
-const FEATURES = [
-  { icon: FileText,   label: "Electronic Medical Records" },
-  { icon: Calendar,   label: "Appointment Management" },
-  { icon: Building2,  label: "Multi-Hospital Support" },
-  { icon: UserCircle, label: "Doctor Dashboard" },
-  { icon: Users,      label: "Patient Management" },
-  { icon: BarChart3,  label: "Analytics & Reports" },
-  { icon: Cloud,      label: "Cloud Sync" },
-  { icon: Shield,     label: "Secure Data" },
-];
 
-const STATS = [
-  { val: "5,000+", label: "Doctors" },
-  { val: "99.98%", label: "Uptime" },
-  { val: "30-day", label: "Free Trial" },
-];
 
-const TRUST = [
-  { icon: <Shield size={12} />,    label: "HIPAA Ready" },
-  { icon: <Building2 size={12} />, label: "NABH Workflow" },
-  { icon: <FileText size={12} />,  label: "ABDM Compatible" },
-  { icon: <Cloud size={12} />,     label: "Cloud Hosted" },
-  { icon: <Zap size={12} />,       label: "99.98% Uptime" },
-];
-
-/* ── Mouse parallax (rAF-throttled, motion- and pointer-gated) ──────────── */
-function useParallax() {
-  const [p, setP] = useState({ x: 0, y: 0 });
-  useEffect(() => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    if (!window.matchMedia("(pointer: fine)").matches) return;
-    let frame = 0;
-    const onMove = (e: MouseEvent) => {
-      if (frame) return;
-      frame = requestAnimationFrame(() => {
-        frame = 0;
-        setP({ x: (e.clientX / window.innerWidth - 0.5) * 2, y: (e.clientY / window.innerHeight - 0.5) * 2 });
-      });
-    };
-    window.addEventListener("mousemove", onMove, { passive: true });
-    return () => { window.removeEventListener("mousemove", onMove); if (frame) cancelAnimationFrame(frame); };
-  }, []);
-  return p;
-}
-
-/* ── Ambient light background ───────────────────────────────────────────── */
-function LightBackground({ px, py }: { px: number; py: number }) {
-  // inset-x-0 + top-0 + an explicit height, NOT inset-0 — inset-0 pins the
-  // bottom edge to the live viewport rect, which is the thing the soft
-  // keyboard moves. pinViewportHeight overwrites the 100svh below with a
-  // fixed px value on mount.
-  const bgRef = usePinnedToStableViewport(pinViewportHeight);
-
-  const particles = [
-    { x: "11%", y: "34%", d: 8  }, { x: "79%", y: "24%", d: 12 },
-    { x: "44%", y: "64%", d: 10 }, { x: "89%", y: "56%", d: 14 },
-    { x: "21%", y: "89%", d: 9  }, { x: "66%", y: "14%", d: 11 },
-  ];
-  const icons = [
-    { Icon: Stethoscope, x: "13%", y: "18%", s: 26 },
-    { Icon: HeartPulse,  x: "31%", y: "72%", s: 22 },
-    { Icon: Pill,        x: "8%",  y: "84%", s: 20 },
-    { Icon: Building2,   x: "70%", y: "12%", s: 24 },
-    { Icon: FileText,    x: "86%", y: "66%", s: 20 },
-    { Icon: Cloud,       x: "62%", y: "88%", s: 22 },
-  ];
-
-  return (
-    <div ref={bgRef} className="absolute inset-x-0 top-0 pointer-events-none overflow-hidden"
-      style={{ background: T.bg, height: "100svh" }}>
-      <div className="absolute inset-0" style={{
-        background: "radial-gradient(ellipse 80% 60% at 15% 5%,rgba(13,122,99,.14) 0%,transparent 60%)," +
-                    "radial-gradient(ellipse 60% 50% at 85% 85%,rgba(5,150,105,.1) 0%,transparent 55%)," +
-                    "linear-gradient(160deg,#FFFFFF 0%,#F7F9FA 50%,#EAF2EF 100%)",
-      }} />
-
-      <div className="lp-sheen absolute inset-0" style={{
-        backgroundImage: "linear-gradient(115deg,transparent 30%,rgba(13,122,99,.07) 48%,rgba(5,150,105,.05) 56%,transparent 74%)",
-        backgroundSize: "260% 260%",
-      }} />
-
-      <div className="lp-orb1 absolute rounded-full" style={{
-        top: "-260px", left: "-180px", width: "760px", height: "760px",
-        background: "radial-gradient(circle,rgba(13,122,99,.24) 0%,rgba(13,122,99,.07) 42%,transparent 68%)",
-        filter: "blur(70px)", transform: `translate3d(${px * 26}px,${py * 20}px,0)`,
-      }} />
-      <div className="lp-orb2 absolute rounded-full" style={{
-        bottom: "-280px", right: "-160px", width: "820px", height: "820px",
-        background: "radial-gradient(circle,rgba(5,150,105,.16) 0%,rgba(5,150,105,.05) 44%,transparent 68%)",
-        filter: "blur(80px)", transform: `translate3d(${px * -30}px,${py * -22}px,0)`,
-      }} />
-
-      <svg className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg"
-        style={{ transform: `translate3d(${px * 8}px,${py * 6}px,0)` }}>
-        <defs>
-          <pattern id="lp-g1" width="44" height="44" patternUnits="userSpaceOnUse">
-            <path d="M44 0L0 0 0 44" fill="none" stroke="#0A6552" strokeWidth=".5" strokeOpacity=".07" />
-          </pattern>
-          <pattern id="lp-g2" width="220" height="220" patternUnits="userSpaceOnUse">
-            <rect width="220" height="220" fill="url(#lp-g1)" />
-            <path d="M220 0L0 0 0 220" fill="none" stroke="#0A6552" strokeWidth="1" strokeOpacity=".08" />
-          </pattern>
-          <radialGradient id="lp-gfade" cx="50%" cy="45%" r="62%">
-            <stop offset="0%" stopColor="#fff" stopOpacity="1" />
-            <stop offset="100%" stopColor="#fff" stopOpacity="0" />
-          </radialGradient>
-          <mask id="lp-gmask"><rect width="100%" height="100%" fill="url(#lp-gfade)" /></mask>
-        </defs>
-        <rect width="100%" height="100%" fill="url(#lp-g2)" mask="url(#lp-gmask)" />
-      </svg>
-
-      {icons.map(({ Icon, x, y, s }, i) => (
-        <div key={i} className="lp-floaty absolute" style={{
-          left: x, top: y, opacity: 0.12, color: T.primary,
-          animationDelay: `${i * 1.1}s`,
-          transform: `translate3d(${px * (10 + i * 2)}px,${py * (8 + i)}px,0)`,
-        }}>
-          <Icon size={s} strokeWidth={1.5} />
-        </div>
-      ))}
-
-      {particles.map((pt, i) => (
-        <div key={i} className="absolute rounded-full" style={{
-          left: pt.x, top: pt.y, width: "4px", height: "4px",
-          background: "radial-gradient(circle,rgba(13,122,99,.85),transparent 70%)",
-          boxShadow: "0 0 10px rgba(13,122,99,.45)",
-          animation: `lp-particle ${pt.d}s ease-in-out ${i * 0.9}s infinite`,
-        }} />
-      ))}
-
-      <div className="absolute inset-0" style={{
-        background: "radial-gradient(ellipse 90% 80% at 50% 45%,rgba(255,255,255,.5) 0%,transparent 55%)," +
-                    "radial-gradient(ellipse 96% 86% at 50% 45%,transparent 58%,rgba(13,122,99,.07) 100%)",
-      }} />
-    </div>
-  );
-}
-
-/* ── Left brand panel ───────────────────────────────────────────────────────
-   Every inner block shares one max-width that steps up past 2xl. Without it
-   the 45% column keeps widening on a 4K monitor while the content stays at
-   430px, which reads as the panel being empty rather than spacious. */
-const panelW: React.CSSProperties = { width: "100%", maxWidth: "var(--left-w)" };
-
+/* ── Left brand panel ─────────────────────────────────────────────────────── */
 function LeftPanel() {
   return (
-    <div className="hidden lg:flex lg:w-[56%] flex-col shrink-0 relative overflow-hidden"
-      style={{ paddingLeft: "var(--pad-panel)", paddingRight: "var(--pad-panel)", paddingTop: "clamp(32px,3vw,72px)", paddingBottom: "clamp(32px,3vw,72px)" }}>
+    <div className="hidden lg:flex lg:w-[56%] flex-col shrink-0 relative"
+      style={{ background: "linear-gradient(150deg, #F5FBF8 0%, #EDF7F1 55%, #F1F9F5 100%)" }}>
 
-      <div className="w-full flex-1 flex flex-col justify-between min-h-0">
+      {/* very faint central radial tint */}
+      <div aria-hidden="true" style={{
+        position: "absolute", inset: 0, zIndex: 0,
+        background: "radial-gradient(ellipse at 50% 48%, rgba(110,231,183,0.10) 0%, transparent 62%)",
+      }} />
 
-      {/* Hero — the brand lockup now sits above the sign-in card in the right
-          panel, so this column opens straight on the headline. */}
-      <div className="flex-1 flex flex-col justify-center py-7 min-w-0 min-h-0">
-        <div className="lp-a1 mb-4">
-          <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full" style={{
-            background: "rgba(13,122,99,.08)",
-            border: "1px solid rgba(13,122,99,.2)",
-            boxShadow: "0 2px 12px rgba(15,41,38,.05)",
-          }}>
-            <span className="lp-dot" style={{ width: 6, height: 6, borderRadius: "50%", background: T.primary }} />
-            <span style={{ fontSize: "var(--fs-xs)", fontWeight: 800, letterSpacing: "0.14em", color: T.primary }}>
-              ENTERPRISE HEALTHCARE PLATFORM
-            </span>
-          </span>
-        </div>
+      {/* Hospital building — fills the middle zone, cropped to the facade */}
+      <div aria-hidden="true" style={{
+        position: "absolute",
+        top: "clamp(96px, 17%, 160px)",
+        bottom: "clamp(120px, 22%, 190px)",
+        left: "clamp(20px, 5%, 48px)",
+        right: "clamp(20px, 5%, 48px)",
+        zIndex: 1,
+        overflow: "hidden",
+        borderRadius: "clamp(14px, 1.5vw, 24px)",
+        pointerEvents: "none",
+        maskImage: "radial-gradient(ellipse 95% 95% at 50% 50%, black 52%, transparent 88%)",
+        WebkitMaskImage: "radial-gradient(ellipse 95% 95% at 50% 50%, black 52%, transparent 88%)",
+      }}>
+        {/* Soft ambient glow breathing behind the photo */}
+        <div className="lp-hglow" style={{
+          position: "absolute", inset: 0, zIndex: 1,
+          background: "radial-gradient(ellipse at 50% 50%, rgba(110,231,183,0.08) 0%, transparent 70%)",
+          animation: "hospital-glow 9s ease-in-out infinite",
+        }} />
 
-        <h1 className="lp-a1 font-black leading-[1.06] mb-3.5"
-          style={{ fontSize: "var(--fs-h1)", color: T.ink, letterSpacing: "-0.032em" }}>
-          Better <span className="lp-grad-text">Healthcare.</span>
-          <br />Better Management.
-        </h1>
+        {/* Hospital building photo — cropped to show building facade and entrance */}
+        <img
+          src="/landing/hospital-building.webp"
+          alt=""
+          style={{
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            objectPosition: "50% 35%",
+            display: "block",
+          }}
+        />
+      </div>
 
-        <p className="lp-a2 leading-relaxed mb-6" style={{ ...panelW, fontSize: "var(--fs-body)", color: T.muted }}>
-          A comprehensive solution to manage patients, doctors, appointments, billing, and much more, all in one place.
-        </p>
-
-        {/* Feature tiles */}
-        {/* auto-fit rather than a fixed two-up: widening the column stretched
-            each tile to 439px, which only moved the empty space inside the
-            tile. Letting the track count follow the available width keeps
-            tiles at a sane size and fills the row with content instead —
-            two columns on a laptop, three or four once there is room. */}
-        <div className="lp-a3 grid mb-7" style={{
-          ...panelW,
-          gap: "var(--gap)",
-          gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))",
+      {/* content overlay — left-aligned */}
+      <div className="flex-1 flex flex-col items-start justify-between relative"
+        style={{
+          zIndex: 2,
+          paddingLeft: "clamp(32px,3.5vw,56px)", paddingRight: "var(--pad-panel)",
+          paddingTop: "clamp(28px,3vw,56px)", paddingBottom: "clamp(28px,3vw,56px)",
         }}>
-          {FEATURES.map(({ icon: Icon, label }) => (
-            <div key={label} className="lp-feat flex items-center rounded-xl" style={{
-              background: "rgba(13,122,99,.06)",
-              border: "1px solid rgba(13,122,99,.13)",
-              gap: "clamp(8px,.6vw,14px)",
-              padding: "clamp(10px,.8vw,18px) clamp(12px,.9vw,20px)",
-            }}>
-              <div className="rounded-lg flex items-center justify-center shrink-0" style={{
-                width: "clamp(28px,1.7vw,42px)", height: "clamp(28px,1.7vw,42px)",
-                background: "linear-gradient(135deg,rgba(13,122,99,.2),rgba(5,150,105,.12))",
-                border: "1px solid rgba(13,122,99,.25)",
-              }}>
-                <Icon size={13} style={{ color: T.primary, width: "55%", height: "55%" }} />
-              </div>
-              <span style={{ fontSize: "var(--fs-tile)", fontWeight: 600, color: T.muted, lineHeight: 1.3 }}>{label}</span>
+
+        {/* Top: RF Health — horizontal layout, left-aligned */}
+        <div className="lp-a0">
+          <Link href="/" aria-label="RF Health home"
+            className="lp-brand inline-flex items-center gap-3.5 rounded-xl">
+            <img src="/landing/logo-rf-health.webp" alt="" className="shrink-0"
+              style={{ width: "var(--logo)", height: "var(--logo)", objectFit: "cover",
+                borderRadius: "clamp(11px,.8vw,16px)", border: `1px solid ${T.border}` }} />
+            <div>
+              <div className="font-black" style={{
+                fontSize: "var(--fs-brand)", color: "#065F46", letterSpacing: "-0.035em",
+                textShadow: "0 1px 2px rgba(6,95,70,0.12)",
+              }}>RF Health</div>
+              <div className="font-semibold" style={{
+                fontSize: "var(--fs-xs)", color: "#5F9EA0", letterSpacing: "0.1em", marginTop: "2px",
+              }}>PRIVATE PATIENT MANAGEMENT SYSTEM</div>
             </div>
-          ))}
+          </Link>
         </div>
 
-        {/* Stats */}
-        <div className="lp-a3 grid grid-cols-3" style={{ ...panelW, gap: "var(--gap)" }}>
-          {STATS.map(({ val, label }) => (
-            <div key={label} className="text-center rounded-xl" style={{
-              background: "rgba(13,122,99,.07)", border: "1px solid rgba(13,122,99,.13)",
-              padding: "clamp(12px,1vw,22px) clamp(8px,.6vw,16px)",
-            }}>
-              <div style={{ fontSize: "var(--fs-stat)", fontWeight: 800, color: T.primary, letterSpacing: "-0.02em" }}>{val}</div>
-              <div style={{ fontSize: "var(--fs-xs)", fontWeight: 500, color: T.faint, marginTop: "2px" }}>{label}</div>
+        {/* Bottom: tagline + Rapdfly — left-aligned, with soft green glow behind */}
+        <div className="flex flex-col items-start gap-3 relative">
+          <div aria-hidden="true" style={{
+            position: "absolute", inset: "-32px -48px",
+            background: "radial-gradient(ellipse at 30% 60%, rgba(52,211,153,0.22) 0%, rgba(110,231,183,0.10) 45%, transparent 70%)",
+            pointerEvents: "none",
+          }} />
+
+          <p style={{
+            fontSize: "var(--fs-body)", fontWeight: 500, letterSpacing: "0.02em", position: "relative",
+            background: "linear-gradient(90deg, #047857 0%, #10B981 100%)",
+            WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+            backgroundClip: "text",
+          }}>Precision Care. Powered by Technology.</p>
+
+          <div className="flex flex-col items-start gap-1" style={{ position: "relative" }}>
+            <div style={{ height: "1px", width: "36px", marginBottom: "4px",
+              background: "linear-gradient(90deg, rgba(15,118,110,0.3), transparent)" }} />
+            <div className="flex items-center gap-2">
+              <svg width="26" height="26" viewBox="0 0 26 26" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style={{ flexShrink: 0, borderRadius: "4px" }}>
+                <rect width="26" height="26" rx="4" fill="#E53E3E"/>
+                <rect x="2.5" y="3.5" width="21" height="4.5" rx="1" fill="#9CA3AF" opacity="0.75"/>
+                <text x="13" y="21" textAnchor="middle" fill="white" fontSize="11" fontWeight="900" fontFamily="system-ui,-apple-system,sans-serif" letterSpacing="-0.5">RF</text>
+              </svg>
+              <p style={{ fontSize: "var(--fs-xs)", color: "#6B7280", letterSpacing: "0.04em" }}>A product of Rapdfly</p>
             </div>
-          ))}
+            <p className="font-bold" style={{ fontSize: "var(--fs-xs)", color: "#6B7280", letterSpacing: "0.08em" }}>
+              RAPDFLY PRIVATE LIMITED
+            </p>
+          </div>
         </div>
-      </div>
-
-      {/* Trust row, security assurances and legal — all left-aligned to the
-          column. These live here from lg up; the right column carries a
-          mobile-only copy, because this panel is hidden below lg and the
-          legal links have to stay reachable there. */}
-      <div className="lp-a4 shrink-0">
-        <div className="mb-3.5" style={{ height: "1px", background: "linear-gradient(90deg,rgba(13,122,99,.26),rgba(13,122,99,.07) 70%,transparent)" }} />
-
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
-          {TRUST.map((t, i) => (
-            <span key={i} className="flex items-center gap-1.5" style={{ fontSize: "var(--fs-xs)", fontWeight: 500, color: T.faint }}>
-              <span style={{ color: T.primary }}>{t.icon}</span> {t.label}
-            </span>
-          ))}
-        </div>
-
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-4">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1.5"
-            style={{ background: "rgba(255,255,255,.75)", borderRadius: "999px", border: `1px solid ${T.border}` }}>
-            <ShieldCheck size={12} style={{ color: T.primary }} />
-            <span style={{ fontSize: "var(--fs-xs)", fontWeight: 600, letterSpacing: "0.05em", color: T.muted }}>
-              ENTERPRISE SECURE LOGIN
-            </span>
-          </span>
-          {SECURITY_FEATURES.map(f => (
-            <span key={f} className="flex items-center gap-1" style={{ fontSize: "var(--fs-xs)", color: T.muted }}>
-              <Check size={11} strokeWidth={3} style={{ color: T.primary }} /> {f}
-            </span>
-          ))}
-        </div>
-
-        <footer className="mt-4 pt-3.5 flex flex-wrap items-center gap-x-2.5 gap-y-1.5"
-          style={{ borderTop: `1px solid ${T.border}`, fontSize: "var(--fs-xs)", color: T.faint }}>
-          <span>© 2026 RF Health</span>
-          <span aria-hidden="true">·</span>
-          <span>Version 2.0 Cloud</span>
-          <span aria-hidden="true">·</span>
-          <a href="/privacy" className="pp-link" style={{ color: T.faint }}>Privacy Policy</a>
-          <span aria-hidden="true">·</span>
-          <a href="/terms" className="pp-link" style={{ color: T.faint }}>Terms of Service</a>
-        </footer>
-      </div>
       </div>
     </div>
   );
@@ -841,21 +683,12 @@ function LeftPanel() {
 /* ── Card shell ─────────────────────────────────────────────────────────── */
 function GlassCard({ children }: { children: React.ReactNode }) {
   return (
-    <div className="lp-card relative w-full rounded-3xl overflow-hidden" style={{
-      background: "rgba(255,255,255,.92)",
-      backdropFilter: "blur(28px)", WebkitBackdropFilter: "blur(28px)",
+    <div className="lp-card w-full rounded-2xl" style={{
+      background: T.card,
       border: `1px solid ${T.border}`,
-      boxShadow: "0 40px 90px rgba(15,41,38,.14), 0 12px 32px rgba(15,41,38,.08), 0 0 70px rgba(13,122,99,.1)",
+      boxShadow: "0 2px 24px rgba(15,41,38,.07), 0 1px 4px rgba(15,41,38,.04)",
     }}>
-      <div style={{
-        height: "2px",
-        background: "linear-gradient(90deg,transparent 0%,#0A6552 30%,#0D7A63 50%,#0A6552 70%,transparent 100%)",
-        backgroundSize: "200% 100%",
-        animation: "lp-sheen 4s ease-in-out infinite",
-      }} />
-      <div className="absolute top-0 right-0 w-32 h-32 pointer-events-none"
-        style={{ background: "radial-gradient(circle at top right, rgba(13,122,99,.07), transparent 70%)" }} />
-      <div className="relative" style={{ padding: "var(--vpad) var(--card-pad)" }}>{children}</div>
+      <div style={{ padding: "var(--vpad) var(--card-pad)" }}>{children}</div>
     </div>
   );
 }
@@ -869,7 +702,6 @@ export default function LoginPage() {
   const [rememberMe, setRememberMe]     = useState(false);
   const [tab, setTab]                   = useState<"password" | "otp">("password");
   const [showForgotPw, setShowForgotPw] = useState(false);
-  const par = useParallax();
 
   // Freezes the resolved safe-area top padding so the keyboard cannot
   // relayout it mid-animation.
@@ -981,7 +813,7 @@ export default function LoginPage() {
 
   return (
     <div className="rf-login fixed inset-0 flex overflow-hidden" style={{
-      background: T.bg,
+      background: "#FFFFFF",
       color: T.ink,
       colorScheme: "light",
       fontFamily: "var(--font-inter), 'Segoe UI', system-ui, -apple-system, sans-serif",
@@ -1052,56 +884,26 @@ export default function LoginPage() {
           --gap-lg:    clamp(20px, 1.6vw, 40px);
         }
 
-        @keyframes lp-particle{0%,100%{opacity:.35;transform:scale(1)}50%{opacity:1;transform:scale(2.2)}}
-        @keyframes lp-fadein  {from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
-        @keyframes lp-cardin  {from{opacity:0;transform:translateY(30px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
-        @keyframes lp-grad    {0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
-        @keyframes lp-floaty  {0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
-        @keyframes lp-dot     {0%,100%{box-shadow:0 0 0 0 rgba(13,122,99,.36)}60%{box-shadow:0 0 0 6px rgba(13,122,99,0)}}
-        @keyframes lp-sheen   {0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+        @keyframes lp-fadein    {from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+        @keyframes lp-cardin    {from{opacity:0;transform:translateY(24px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+        /* dna-spin removed — canvas animation handles the helix */
 
-        /* Opacity and the independent scale property only — animating
-           filter:blur() would re-rasterise ~1.5M px of large-radius blur every
-           frame. scale (not transform:scale) composes with the inline
-           translate3d parallax instead of overriding it. */
-        @keyframes lp-orbA{0%,100%{opacity:.9;scale:1}50%{opacity:1;scale:1.05}}
-        @keyframes lp-orbB{0%,100%{opacity:.9;scale:1}50%{opacity:1;scale:1.04}}
-
-        .lp-a0{animation:lp-fadein .65s cubic-bezier(.22,1,.36,1) 0ms   both}
-        .lp-a1{animation:lp-fadein .65s cubic-bezier(.22,1,.36,1) 90ms  both}
-        .lp-a2{animation:lp-fadein .65s cubic-bezier(.22,1,.36,1) 170ms both}
-        .lp-a3{animation:lp-fadein .65s cubic-bezier(.22,1,.36,1) 250ms both}
-        .lp-a4{animation:lp-fadein .65s cubic-bezier(.22,1,.36,1) 330ms both}
-        .lp-card{animation:lp-cardin .85s cubic-bezier(.22,1,.36,1) 80ms both}
-
-        .lp-floaty{animation:lp-floaty 7s ease-in-out infinite}
-        .lp-dot{animation:lp-dot 2.2s ease-out infinite}
-        .lp-sheen{animation:lp-sheen 22s ease-in-out infinite}
-        .lp-orb1{animation:lp-orbA 14s ease-in-out infinite;transition:transform .5s cubic-bezier(.22,1,.36,1)}
-        .lp-orb2{animation:lp-orbB 18s ease-in-out infinite;transition:transform .5s cubic-bezier(.22,1,.36,1)}
-
-        .lp-feat{transition:background .16s ease,border-color .16s ease}
-        .lp-feat:hover{background:rgba(13,122,99,.11)!important;border-color:rgba(13,122,99,.26)!important}
-
-        /* Deep emeralds only — a pale mint stop would land near 1.3:1 on this
-           ground, and the sweep would carry the headline through it. */
-        .lp-grad-text{
-          background:linear-gradient(90deg,#0F766E,#0D7A63,#0A6552,#0D7A63,#0F766E);
-          background-size:300% auto;
-          -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
-          animation:lp-grad 5s ease infinite;
-        }
+        .lp-a0{animation:lp-fadein .6s cubic-bezier(.22,1,.36,1) 0ms   both}
+        .lp-a1{animation:lp-fadein .6s cubic-bezier(.22,1,.36,1) 80ms  both}
+        .lp-a2{animation:lp-fadein .6s cubic-bezier(.22,1,.36,1) 150ms both}
+        .lp-a3{animation:lp-fadein .6s cubic-bezier(.22,1,.36,1) 220ms both}
+        .lp-a4{animation:lp-fadein .6s cubic-bezier(.22,1,.36,1) 300ms both}
+        .lp-card{animation:lp-cardin .75s cubic-bezier(.22,1,.36,1) 60ms both}
+        /* .dna-rotate removed — canvas animation */
 
         .pp-btn{transition:background .16s ease,border-color .16s ease}
         .pp-btn:hover:not(:disabled){background:${T.primaryHover}!important;border-color:${T.primaryHover}!important}
         .pp-btn:active:not(:disabled){background:${T.primaryHover}!important}
 
-        .pp-tab{transition:color .16s ease}
+        .pp-tab{transition:color .16s ease,background .16s ease,border-color .16s ease}
         .pp-ghost{transition:background .16s ease,border-color .16s ease}
         .pp-ghost:hover:not(:disabled){background:${T.primarySoft};border-color:${T.primary}}
 
-        /* 36px square keeps the toggle a comfortable touch target inside the
-           46px field without crowding the text it sits beside. */
         .pp-icon-btn{
           transition:background .16s ease,color .16s ease;
           display:inline-flex;align-items:center;justify-content:center;
@@ -1109,35 +911,29 @@ export default function LoginPage() {
         }
         .pp-icon-btn:hover{background:${T.track};color:${T.ink}}
 
-        /* Text links carry their hit area in padding, pulled back out with a
-           negative margin so it never changes the surrounding layout. */
-        /* The lockup is a link home, so it needs to look like one on hover
-           without the underline a text link would take. */
         .lp-brand{transition:opacity .16s ease}
         .lp-brand:hover{opacity:.78}
 
         .pp-link{transition:color .16s ease;padding:8px 4px;margin:-8px -4px}
         .pp-link:hover:not(:disabled){color:${T.primaryHover};text-decoration:underline}
 
-        /* Buttons and links get a ring, since they have no other focus
-           treatment. Text inputs are deliberately excluded: their wrapper
-           already swaps to a primary border plus a soft halo on focus, and
-           adding this outline on top stacked three concentric rings. */
         .pp-btn:focus-visible,.pp-tab:focus-visible,.pp-ghost:focus-visible,
         .pp-icon-btn:focus-visible,.pp-link:focus-visible,a:focus-visible{
           outline:2px solid ${T.primary};outline-offset:2px;border-radius:6px;
         }
 
+        @keyframes hospital-glow{
+          0%,100%{opacity:.76;transform:scale(1)}
+          50%{opacity:1;transform:scale(1.04)}
+        }
+
         @media (prefers-reduced-motion:reduce){
-          .lp-a0,.lp-a1,.lp-a2,.lp-a3,.lp-a4,.lp-card,.lp-floaty,.lp-dot,
-          .lp-sheen,.lp-orb1,.lp-orb2,.lp-feat,
+          .lp-a0,.lp-a1,.lp-a2,.lp-a3,.lp-a4,.lp-card,
+          .lp-hglow,
           .pp-btn,.pp-tab,.pp-ghost,.pp-icon-btn,.pp-link
           {animation:none!important;transition:none!important}
-          .lp-grad-text{-webkit-text-fill-color:#0A6552;background:none}
         }
       `}</style>
-
-      <LightBackground px={par.x} py={par.y} />
 
       {/* No width cap on the split. The panels stay at a near-even ratio and
           the fluid tokens above do the scaling, so a 4K monitor gets larger
@@ -1150,10 +946,7 @@ export default function LoginPage() {
 
           {/* ── Right panel ── */}
           <div className="w-full lg:w-[44%] shrink-0 flex flex-col overflow-y-auto relative"
-            style={{
-              background: "linear-gradient(200deg,rgba(255,255,255,.72) 0%,rgba(255,255,255,.46) 100%)",
-              borderLeft: `1px solid ${T.border}`,
-            }}>
+            style={{ background: "#FFFFFF", borderLeft: `1px solid ${T.border}` }}>
 
             {/* paddingTop below is the SSR default; pinSafeAreaTop freezes the
                 resolved value in px on mount so a WebView that briefly reports
@@ -1171,39 +964,30 @@ export default function LoginPage() {
 
               <div className="w-full" style={{ maxWidth: "var(--card-w)" }}>
 
-                {/* Brand lockup — one element at every width. Centred below lg,
-                    where it is the only branding on screen; left-aligned to the
-                    card's edge from lg up, where the hero carries the page. */}
+                {/* Mobile-only brand lockup (desktop: left panel carries the brand) */}
                 <Link
                   href="/"
                   aria-label="RF Health home"
-                  className="lp-brand lp-a0 flex items-center gap-3.5 justify-center lg:justify-start rounded-xl"
+                  className="lp-brand lp-a0 lg:hidden flex items-center gap-3 justify-center rounded-xl"
                   style={{ marginBottom: "var(--vgap)" }}>
-                  {/* The mark ships on its own marble ground, so it gets a radius
-                      and a hairline border to read as a deliberate badge rather
-                      than a rectangle pasted onto the page. */}
                   <img src="/landing/logo-rf-health.webp" alt="" className="shrink-0"
                     style={{
-                      width: "var(--logo)", height: "var(--logo)", objectFit: "cover",
-                      borderRadius: "clamp(11px,.8vw,16px)", border: `1px solid ${T.border}`,
+                      width: "clamp(36px,3vw,48px)", height: "clamp(36px,3vw,48px)", objectFit: "cover",
+                      borderRadius: "clamp(9px,.7vw,13px)", border: `1px solid ${T.border}`,
                     }} />
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="font-black" style={{ fontSize: "var(--fs-brand)", color: T.ink, letterSpacing: "-0.035em" }}>
-                        RF Health
-                      </span>
-                      <span className="font-bold px-2 py-0.5 rounded-full shrink-0"
-                        style={{ fontSize: "var(--fs-xs)", background: "rgba(13,122,99,.11)", color: T.primary, border: "1px solid rgba(13,122,99,.24)", letterSpacing: "0.04em" }}>
-                        v2.0 Cloud
-                      </span>
-                    </div>
-                    <p className="font-semibold" style={{ fontSize: "var(--fs-xs)", color: T.faint, letterSpacing: "0.06em" }}>
-                      PRIVATE PATIENT MANAGEMENT SYSTEM
-                    </p>
-                  </div>
+                  <span className="font-black" style={{ fontSize: "var(--fs-brand)", color: T.ink, letterSpacing: "-0.035em" }}>
+                    RF Health
+                  </span>
                 </Link>
 
                 <GlassCard>
+                  {/* RF Health mark at top of form — visible on all screen sizes */}
+                  <div className="flex items-center gap-2.5 mb-4">
+                    <img src="/landing/logo-rf-health.webp" alt="" className="shrink-0"
+                      style={{ width: 34, height: 34, objectFit: "cover",
+                        borderRadius: 9, border: `1px solid ${T.border}` }} />
+                    <span className="font-black" style={{ fontSize: "15px", color: T.ink, letterSpacing: "-0.03em" }}>RF Health</span>
+                  </div>
                   <h2 className="font-bold" style={{ fontSize: "var(--fs-card-h)", color: T.ink, letterSpacing: "-0.02em" }}>
                     Welcome back
                   </h2>
