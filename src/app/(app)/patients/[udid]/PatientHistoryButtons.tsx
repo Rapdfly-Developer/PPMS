@@ -327,8 +327,8 @@ function TreatmentDrawer({
                   <div key={i} className="flex items-center justify-between gap-2">
                     <p className="text-xs text-[var(--color-ink-800)] flex-1 min-w-0">
                       <span className="font-mono text-[10px] text-[var(--color-ink-400)] mr-1">{d.icd10Code}</span>
+                      {d.laterality && <span className="font-semibold text-[var(--color-primary-700)] mr-1">{d.laterality}</span>}
                       {d.description}
-                      {d.laterality && <span className="text-[var(--color-ink-400)]"> · {d.laterality}</span>}
                     </p>
                     <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 ${DIAG_STATUS[d.status] ?? "bg-gray-100 text-gray-600"}`}>
                       {d.status}

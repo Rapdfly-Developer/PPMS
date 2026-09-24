@@ -553,12 +553,11 @@ async function renderDispenseHtml(data: DispenseSummaryData): Promise<string> {
     ? data.diagnoses.map((d, i) => `
       <tr>
         <td class="td-num">${i + 1}</td>
-        <td class="td-head">${escapeHtml(d.description)}</td>
+        <td class="td-head">${d.laterality ? `<span style="font-weight:700;color:#1a6e6a;margin-right:5px;">${escapeHtml(d.laterality)}</span>` : ""}${escapeHtml(d.description)}</td>
         <td><span class="td-mono">${escapeHtml(d.icd10Code)}</span></td>
-        <td>${val(d.laterality)}</td>
         <td>${badgeStatus(d.status)}</td>
       </tr>`).join("")
-    : `<tr class="empty-row"><td colspan="5">No diagnoses recorded</td></tr>`;
+    : `<tr class="empty-row"><td colspan="4">No diagnoses recorded</td></tr>`;
 
   const invRows = data.investigations.length
     ? data.investigations.map((i, idx) => `
@@ -591,7 +590,7 @@ async function renderDispenseHtml(data: DispenseSummaryData): Promise<string> {
 
   ${secHdr("Diagnosis")}
   <table>
-    <thead><tr><th style="width:24px">#</th><th>Diagnosis</th><th>ICD-10</th><th>Laterality</th><th>Status</th></tr></thead>
+    <thead><tr><th style="width:24px">#</th><th>Diagnosis</th><th>ICD-10</th><th>Status</th></tr></thead>
     <tbody>${diagRows}</tbody>
   </table>
 
@@ -1353,12 +1352,11 @@ async function renderFullEmrHtml(d: FullEmrData): Promise<string> {
     ? d.diagnoses.map((dx, i) =>
         `<tr style="background:${i % 2 === 0 ? "#fff" : TINT};">` +
         `<td style="${TD}text-align:center;color:#888;">${i + 1}</td>` +
-        `<td style="${TD}font-weight:600;">${escapeHtml(dx.description)}</td>` +
-        `<td style="${TD}color:#555;">${dx.laterality ? escapeHtml(dx.laterality) : ""}</td>` +
+        `<td style="${TD}font-weight:600;">${dx.laterality ? `<span style="color:#1a6e6a;font-weight:700;margin-right:5px;">${escapeHtml(dx.laterality)}</span>` : ""}${escapeHtml(dx.description)}</td>` +
         `<td style="${TD}font-family:'Courier New',monospace;font-size:8.5px;color:#555;">${dx.icd10Code ? escapeHtml(dx.icd10Code) : ""}</td>` +
         `<td style="${TD}">${dx.status ? diagBadge(dx.status) : ""}</td>` +
         `</tr>`).join("")
-    : `<tr><td colspan="5" style="padding:6px 8px;font-size:9.5px;color:#aaa;font-style:italic;">No diagnoses recorded</td></tr>`;
+    : `<tr><td colspan="4" style="padding:6px 8px;font-size:9.5px;color:#aaa;font-style:italic;">No diagnoses recorded</td></tr>`;
 
   const medRows = d.medications.length
     ? d.medications.map((m, i) =>
@@ -1628,7 +1626,6 @@ ${card("Assessment / Diagnosis",
         <thead><tr>
           <th style="${TH}width:28px;text-align:center;">#</th>
           <th style="${TH}">Diagnosis</th>
-          <th style="${TH}width:90px;">Laterality</th>
           <th style="${TH}width:75px;">ICD-10</th>
           <th style="${TH}width:78px;">Status</th>
         </tr></thead>
@@ -1802,8 +1799,8 @@ export async function generateAllVisitsSummaryPdf(visits: any[]): Promise<Buffer
     const va = d.visualAcuity;
 
     const diagRows = d.diagnoses.length
-      ? d.diagnoses.map((dx, i) => `<tr><td class="td-num">${i + 1}</td><td class="td-head">${escapeHtml(dx.description)}</td><td><span class="td-mono">${val(dx.icd10Code)}</span></td><td>${val(dx.laterality)}</td><td>${badgeStatus(dx.status)}</td></tr>`).join("")
-      : `<tr class="empty-row"><td colspan="5">No diagnoses recorded</td></tr>`;
+      ? d.diagnoses.map((dx, i) => `<tr><td class="td-num">${i + 1}</td><td class="td-head">${dx.laterality ? `<span style="font-weight:700;color:#1a6e6a;margin-right:5px;">${escapeHtml(dx.laterality)}</span>` : ""}${escapeHtml(dx.description)}</td><td><span class="td-mono">${val(dx.icd10Code)}</span></td><td>${badgeStatus(dx.status)}</td></tr>`).join("")
+      : `<tr class="empty-row"><td colspan="4">No diagnoses recorded</td></tr>`;
 
     const pdfMedBadge4 = (route: string | null | undefined, lat: string | null | undefined, name: string) => {
       const r = route ?? "";
@@ -1866,7 +1863,7 @@ export async function generateAllVisitsSummaryPdf(visits: any[]): Promise<Buffer
 
       ${secHdr("Assessment / Diagnosis")}
       <table>
-        <thead><tr><th style="width:24px">#</th><th>Diagnosis</th><th style="width:80px">ICD-10</th><th style="width:90px">Laterality</th><th style="width:90px">Status</th></tr></thead>
+        <thead><tr><th style="width:24px">#</th><th>Diagnosis</th><th style="width:80px">ICD-10</th><th style="width:90px">Status</th></tr></thead>
         <tbody>${diagRows}</tbody>
       </table>
 

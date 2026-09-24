@@ -289,8 +289,8 @@ function EmrContent({ visit, udid, localResults, onAttach }: {
               return (
                 <li key={o.id} className="flex flex-col gap-1.5">
                   <div className="flex items-center gap-2 text-sm">
+                    {o.laterality && <span className="text-xs font-semibold text-[var(--color-primary-700)] shrink-0">{o.laterality}</span>}
                     <span className="text-[var(--color-ink-800)] font-medium">{o.testName}</span>
-                    {o.laterality && <span className="text-xs font-semibold text-[var(--color-primary-700)]">{o.laterality}</span>}
                     {o.category && <span className="text-xs text-[var(--color-ink-400)]">{o.category}</span>}
                     <span className="ml-auto flex items-center gap-1.5">
                       {resultUrl ? (
@@ -352,9 +352,9 @@ function EmrContent({ visit, udid, localResults, onAttach }: {
                   : d.status === "CHRONIC" ? "text-amber-600"
                   : "text-red-500"
                 }`}>{d.status}</span>
+                {d.laterality && <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)] shrink-0">{d.laterality}</span>}
                 <span className="font-medium text-[var(--color-ink-800)] flex-1">{d.description}</span>
                 {d.icd10Code && <span className="font-mono text-[10px] text-[var(--color-ink-400)]">{d.icd10Code}</span>}
-                {d.laterality && <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)]">{d.laterality}</span>}
                 {d.provisional && <span className="text-[10px] text-amber-600 italic">Provisional</span>}
               </li>
             ))}

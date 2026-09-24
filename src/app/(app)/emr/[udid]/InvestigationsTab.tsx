@@ -200,18 +200,16 @@ function InvestigationCard({
   return (
     <Card className="px-3 py-2.5">
       {/* Row 1: test name */}
-      <p className="text-[13px] font-semibold text-[var(--color-ink-900)] leading-snug mb-1.5">{order.testName}</p>
+      <p className="text-[13px] font-semibold text-[var(--color-ink-900)] leading-snug mb-1.5">
+        {order.laterality && <span className="text-[var(--color-primary-700)] mr-1.5">{order.laterality}</span>}
+        {order.testName}
+      </p>
 
       {/* Row 2: meta + actions on same line */}
       <div className="flex items-center justify-between gap-2">
         {/* Left: badges + time */}
         <div className="flex flex-wrap items-center gap-1 min-w-0">
           <PriorityPill priority={order.priority} />
-          {order.laterality && (
-            <span className="text-[11px] px-1.5 py-0.5 rounded-full border border-[var(--color-border)] text-[var(--color-ink-500)]">
-              {order.laterality}
-            </span>
-          )}
           <StatusBadge status={order.status} resultRef={order.resultRef} />
           <span className="text-[11px] text-[var(--color-ink-400)] flex items-center gap-0.5">
             <Clock size={10} />{format(new Date(order.createdAt), "h:mm a")}
