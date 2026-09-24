@@ -22,7 +22,6 @@ import {
   Phone,
   Pill,
   ReceiptIndianRupee,
-  Puzzle,
   ScanLine,
   ShieldCheck,
   Stethoscope,
@@ -716,59 +715,37 @@ export function PremiumLanding() {
         </Reveal>
       </Section>
 
-      {/* ── The shift ────────────────────────────────────────────────────── */}
+      {/* ── The shift (condensed) ────────────────────────────────────────── */}
       <Section className="bg-gradient-to-b from-white via-emerald-50/40 to-white">
-        <div className="grid items-center gap-8 sm:gap-10 lg:grid-cols-2 lg:gap-16">
-          <Reveal>
-            <Eyebrow>The shift</Eyebrow>
-            <h2 className="font-display mt-5 text-[length:var(--lp-h2-split)] font-bold leading-[1.07] tracking-[-0.03em] text-balance text-emerald-950 sm:mt-6">
-              Most practices still run on paper, phone calls and three unconnected systems.
-            </h2>
-            <p className="mt-6 text-[length:var(--lp-lede)] leading-relaxed text-slate-600">
-              A doctor working across three hospitals typically holds three logins, three schedules
-              and three fragments of the same patient&apos;s history. Nothing is wrong with any one
-              of them, the problem is that none of them can see the others.
-            </p>
-
-            <div className="mt-10 grid gap-3 sm:grid-cols-2">
-              {[
-                { k: "Before", v: "Three logins, three calendars, one patient split across all of them." },
-                { k: "With RF Health", v: "One login, one calendar, one continuous record per patient." },
-              ].map((row, i) => (
-                <div
-                  key={row.k}
-                  className={[
-                    "rounded-2xl p-5 ring-1 ring-inset",
-                    i === 0
-                      ? "bg-slate-50 text-slate-500 ring-slate-950/[0.05]"
-                      : "bg-emerald-950 text-emerald-50 ring-emerald-950",
-                  ].join(" ")}
-                >
-                  <div
-                    className={`text-[10px] font-semibold uppercase tracking-[0.2em] ${
-                      i === 0 ? "text-slate-400" : "text-emerald-400"
-                    }`}
-                  >
-                    {row.k}
-                  </div>
-                  <p className="mt-3 text-[14.5px] leading-relaxed">{row.v}</p>
+        <Reveal className="mx-auto max-w-[var(--lp-measure)] text-center">
+          <Eyebrow>The shift</Eyebrow>
+          <h2 className="font-display mt-4 text-[length:var(--lp-h2)] font-bold leading-[1.06] tracking-[-0.03em] text-balance text-emerald-950 sm:mt-5">
+            Most practices still run on three unconnected systems.
+          </h2>
+        </Reveal>
+        <Reveal delay={0.08}>
+          <div className="mx-auto mt-8 grid max-w-2xl gap-3 sm:grid-cols-2 sm:mt-10">
+            {[
+              { k: "Before", v: "Three logins, three calendars, one patient split across all of them." },
+              { k: "With RF Health", v: "One login, one calendar, one continuous record per patient." },
+            ].map((row, i) => (
+              <div
+                key={row.k}
+                className={[
+                  "rounded-2xl p-6 ring-1 ring-inset",
+                  i === 0
+                    ? "bg-slate-50 text-slate-500 ring-slate-950/[0.05]"
+                    : "bg-emerald-950 text-emerald-50 ring-emerald-950",
+                ].join(" ")}
+              >
+                <div className={`text-[10px] font-semibold uppercase tracking-[0.2em] ${i === 0 ? "text-slate-400" : "text-emerald-400"}`}>
+                  {row.k}
                 </div>
-              ))}
-            </div>
-          </Reveal>
-
-          <Parallax distance={26}>
-            <Reveal delay={0.06}>
-              <Frame
-                src={`${IMG}/ai-modernizing-healthcare-poster.jpg`}
-                alt="Illustration contrasting outdated manual healthcare paperwork with a modern intelligent patient-insights interface"
-                aspect="aspect-[3/4] lg:aspect-[1/1] 4xl:aspect-[5/4]"
-                sizes="(max-width: 1024px) 92vw, 46vw"
-                quality={84}
-              />
-            </Reveal>
-          </Parallax>
-        </div>
+                <p className="mt-3 text-[15px] leading-relaxed">{row.v}</p>
+              </div>
+            ))}
+          </div>
+        </Reveal>
       </Section>
 
       {/* ── Platform / features bento ────────────────────────────────────── */}
@@ -1080,7 +1057,7 @@ export function PremiumLanding() {
       </Section>
 
 
-      {/* ── Security ─────────────────────────────────────────────────────── */}
+      {/* ── Security (condensed) ─────────────────────────────────────────── */}
       <Section id="security">
         <SectionHead
           eyebrow="Security"
@@ -1088,40 +1065,32 @@ export function PremiumLanding() {
           lede="Patient data carries obligations. RF Health is designed so that who saw what, and when, is always answerable, and so that access is granted by role rather than by trust."
         />
 
-        <RevealGroup
-          className="mt-8 grid grid-cols-2 gap-3 sm:mt-10 sm:grid-cols-4 2xl:grid-cols-[repeat(auto-fit,minmax(200px,1fr))]"
-          stagger={0.05}
-        >
-          {[
-            { icon: <Lock size={19} strokeWidth={1.25} />, label: "Encrypted in transit & at rest" },
-            { icon: <ShieldCheck size={19} strokeWidth={1.25} />, label: "Role-based access control" },
-            { icon: <History size={19} strokeWidth={1.25} />, label: "Immutable audit log" },
-            { icon: <Fingerprint size={19} strokeWidth={1.25} />, label: "Two-factor authentication" },
-            { icon: <Cloud size={19} strokeWidth={1.25} />, label: "Redundant cloud hosting" },
-            { icon: <Database size={19} strokeWidth={1.25} />, label: "Automated daily backups" },
-            { icon: <BadgeCheck size={19} strokeWidth={1.25} />, label: "HIPAA-aligned design" },
-            { icon: <Activity size={19} strokeWidth={1.25} />, label: "Session & device visibility" },
-          ].map((s) => (
-            <RevealItem key={s.label}>
-              <div className="group/sec h-full rounded-[1.5rem] bg-white p-2 ring-1 ring-inset ring-emerald-950/[0.07] transition-[transform,box-shadow] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:-translate-y-1 hover:shadow-[0_24px_50px_-38px_rgba(6,60,45,0.5)]">
-                <div className="flex h-full flex-col items-center gap-4 rounded-[1rem] bg-gradient-to-b from-slate-50/80 to-white px-4 py-8 3xl:px-5 3xl:py-10 text-center">
-                  <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-600/10 transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover/sec:scale-110">
-                    {s.icon}
-                  </span>
-                  <span className="text-[13.5px] font-medium leading-snug text-emerald-950">
-                    {s.label}
-                  </span>
-                </div>
-              </div>
-            </RevealItem>
-          ))}
-        </RevealGroup>
+        <Reveal delay={0.08}>
+          <div className="mt-8 sm:mt-10 flex flex-wrap justify-center gap-3">
+            {[
+              { icon: <Lock size={15} strokeWidth={1.25} />, label: "Encrypted in transit & at rest" },
+              { icon: <ShieldCheck size={15} strokeWidth={1.25} />, label: "Role-based access control" },
+              { icon: <History size={15} strokeWidth={1.25} />, label: "Immutable audit log" },
+              { icon: <Fingerprint size={15} strokeWidth={1.25} />, label: "Two-factor authentication" },
+              { icon: <Cloud size={15} strokeWidth={1.25} />, label: "Redundant cloud hosting" },
+              { icon: <Database size={15} strokeWidth={1.25} />, label: "Automated daily backups" },
+              { icon: <BadgeCheck size={15} strokeWidth={1.25} />, label: "HIPAA-aligned design" },
+              { icon: <Activity size={15} strokeWidth={1.25} />, label: "Session & device visibility" },
+            ].map((s) => (
+              <span
+                key={s.label}
+                className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2.5 text-[13.5px] font-medium text-emerald-900 ring-1 ring-inset ring-emerald-950/[0.07]"
+              >
+                <span className="text-emerald-600">{s.icon}</span>
+                {s.label}
+              </span>
+            ))}
+          </div>
+        </Reveal>
 
-        <Reveal delay={0.1}>
-          <p className="mx-auto mt-8 max-w-2xl text-center text-[13.5px] leading-relaxed text-slate-500">
-            HIPAA-aligned design describes how the platform is built, access control, audit
-            logging and encryption. It is not a certification claim, and we will say so plainly in
-            any procurement conversation.
+        <Reveal delay={0.14}>
+          <p className="mx-auto mt-6 max-w-2xl text-center text-[13px] leading-relaxed text-slate-400">
+            HIPAA-aligned design describes how the platform is built — access control, audit logging and encryption. It is not a certification claim.
           </p>
         </Reveal>
       </Section>
@@ -1250,84 +1219,6 @@ export function PremiumLanding() {
         </RevealGroup>
       </Section>
 
-      {/* ── What is included ─────────────────────────────────────────────────
-          Every module below maps to a route that exists under src/app/(app),
-          and the document list maps to the templates in src/lib/pdf.ts. Two
-          items that appeared in stale build artefacts -- counseling and
-          scheduled-ot -- are deliberately absent, because those routes do not
-          exist. Check before adding to this list. */}
-      <Section id="included">
-        <SectionHead
-          eyebrow="What you get"
-          title={<>One licence. The whole practice.</>}
-          lede="Not a core product with the useful parts sold separately. Every module below is in the same account, on the same patient record, from the first day of the trial."
-        />
-
-        <RevealGroup
-          // Twelve tiles, which is the reason the count matters: 12 divides
-          // evenly by 2, 3, 4 and 6, so every breakpoint below lands on a full
-          // last row. The 6-column step exists because at 2560 and above the
-          // container is wide enough that four columns give 900px tiles
-          // holding fifteen words -- a stretched card, not a dense one.
-          className="mt-8 grid gap-3 sm:mt-10 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 5xl:grid-cols-6"
-          stagger={0.04}
-        >
-          {[
-            { icon: <Stethoscope size={18} strokeWidth={1.25} />, title: "OPD queue", body: "The day’s outpatient list, walk-ins included, and the consultation running live against it." },
-            { icon: <Users size={18} strokeWidth={1.25} />, title: "Patient registry", body: "Profiles, identifiers and the full visit history behind every patient in the practice." },
-            { icon: <ClipboardPlus size={18} strokeWidth={1.25} />, title: "Electronic records", body: "Structured complaints, examination, diagnosis, investigations and plan for each encounter." },
-            { icon: <CalendarRange size={18} strokeWidth={1.25} />, title: "Appointments", body: "Booking, confirmation and rescheduling, against the doctor actually sitting that session." },
-            { icon: <CalendarRange size={18} strokeWidth={1.25} />, title: "Availability", body: "Per-doctor slot availability and session schedules, set once per hospital and reused." },
-            { icon: <History size={18} strokeWidth={1.25} />, title: "Follow-ups", body: "Scheduled follow-ups tracked against the visit that advised them, not a separate list to maintain." },
-            { icon: <ScanLine size={18} strokeWidth={1.25} />, title: "Surgery scheduling", body: "Surgery advised at the consultation, scheduled and carried through to the operative record." },
-            { icon: <ChartNoAxesColumn size={18} strokeWidth={1.25} />, title: "Analytics", body: "OPD and theatre volumes, with the trends behind the numbers you run the practice on." },
-            { icon: <ShieldCheck size={18} strokeWidth={1.25} />, title: "Users and roles", body: "Staff accounts with role-based permissions, set per hospital and editable in Role Manager." },
-            { icon: <Mail size={18} strokeWidth={1.25} />, title: "Notifications", body: "In-app alerts for the things that need answering, kept in one place rather than in email." },
-            { icon: <ScanLine size={18} strokeWidth={1.25} />, title: "Document capture", body: "Scanned reports attached to the patient, with the text extracted so the record stays searchable." },
-            { icon: <Puzzle size={18} strokeWidth={1.25} />, title: "Plugins", body: "Optional modules, the Clinical Copilot among them, installed per doctor and off until you turn them on." },
-          ].map((m) => (
-            <RevealItem key={m.title}>
-              <div className="group/inc h-full rounded-[1.5rem] bg-white p-2 ring-1 ring-inset ring-emerald-950/[0.07] transition-[transform,box-shadow] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:-translate-y-1 hover:shadow-[0_24px_50px_-38px_rgba(6,60,45,0.5)]">
-                <div className="flex h-full flex-col gap-3.5 rounded-[1rem] bg-gradient-to-b from-slate-50/80 to-white p-6 3xl:p-8 4xl:p-10">
-                  <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-600/10 transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover/inc:scale-110">
-                    {m.icon}
-                  </span>
-                  <h3 className="text-[15.5px] font-semibold leading-snug tracking-[-0.01em] text-emerald-950">
-                    {m.title}
-                  </h3>
-                  <p className="text-[13.5px] leading-relaxed text-slate-600">{m.body}</p>
-                </div>
-              </div>
-            </RevealItem>
-          ))}
-        </RevealGroup>
-
-        {/* Documents the system actually produces, straight from pdf.ts. */}
-        <Reveal delay={0.12}>
-          <div className="mt-8 rounded-[1.5rem] bg-white p-6 ring-1 ring-inset ring-emerald-950/[0.07] sm:mt-10 3xl:p-8 4xl:p-10">
-            <p className="text-[13px] font-medium uppercase tracking-[0.16em] text-slate-400">
-              Prints and exports as PDF
-            </p>
-            <div className="mt-4 flex flex-wrap gap-2">
-              {[
-                "Prescription",
-                "Consultation summary",
-                "Dispense summary",
-                "Complete EMR",
-                "All visit history",
-              ].map((doc) => (
-                <span
-                  key={doc}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50/70 px-3.5 py-1.5 text-[13px] font-medium text-emerald-900 ring-1 ring-inset ring-emerald-600/10"
-                >
-                  <Check size={13} strokeWidth={2} className="text-emerald-600" aria-hidden="true" />
-                  {doc}
-                </span>
-              ))}
-            </div>
-          </div>
-        </Reveal>
-      </Section>
 
 
       {/* ── Pricing ──────────────────────────────────────────────────────── */}
@@ -1531,45 +1422,6 @@ export function PremiumLanding() {
         </div>
       </Section>
 
-      {/* ── CTA ──────────────────────────────────────────────────────────── */}
-      <Section id="cta" className="lp-tight-bottom pb-12 md:pb-16 lg:pb-20">
-        <Reveal>
-          <div className="relative overflow-hidden rounded-[2.5rem] bg-emerald-950 p-2 ring-1 ring-inset ring-emerald-950">
-            <div
-              aria-hidden="true"
-              className="ppms-orb-a pointer-events-none absolute -right-24 -top-24 h-[420px] w-[420px] rounded-full bg-emerald-500/15 blur-[100px]"
-            />
-            <div className="relative rounded-[2rem] px-6 py-12 text-center shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)] sm:px-12 sm:py-16">
-              <h2 className="font-display mx-auto max-w-3xl text-[clamp(1.7rem,5.6vw,3.5rem)] 2xl:text-[clamp(3.5rem,3vw,4.5rem)] font-bold leading-[1.06] tracking-[-0.03em] text-balance text-white">
-                Run every hospital you practise at from one account.
-              </h2>
-              <p className="mx-auto mt-5 max-w-xl text-[16.5px] leading-relaxed text-emerald-100/70">
-                Thirty days, no card, no commitment. If it does not fit how your practice actually
-                works, we would rather you found that out for free.
-              </p>
-
-              <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-                <Magnetic
-                  href="/login"
-                  className="group inline-flex items-center justify-between gap-3 rounded-full bg-white py-2 pl-7 pr-2 text-[15px] font-semibold text-emerald-950"
-                >
-                  Start 30-day free trial
-                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-950/8 transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:translate-x-[3px] group-hover:-translate-y-[2px] group-hover:scale-105">
-                    <ArrowUpRight size={17} strokeWidth={1.25} aria-hidden="true" />
-                  </span>
-                </Magnetic>
-                <a
-                  href="tel:+919629051083"
-                  className="inline-flex items-center gap-2 rounded-full border border-white/15 px-7 py-4 text-[15px] font-medium text-white transition-colors duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-white/[0.07]"
-                >
-                  <Phone size={15} strokeWidth={1.25} aria-hidden="true" />
-                  +91 73733 51087
-                </a>
-              </div>
-            </div>
-          </div>
-        </Reveal>
-      </Section>
 
       {/* ── Footer ───────────────────────────────────────────────────────── */}
       <footer className={`border-t border-emerald-950/[0.07] ${GUTTER} py-10 sm:py-12`}>
