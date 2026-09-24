@@ -7,12 +7,12 @@ import {
   CalendarClock, Search, AlertCircle, CheckCircle2, Clock, CalendarDays,
   XCircle, User, ChevronRight, Filter, RotateCcw, Stethoscope,
   FileText, FlaskConical, Scissors, RefreshCw, Ban, Eye,
-  Bell, ArrowRight, X, Building2,
+  Bell, ArrowRight, X, Building2, UserX, Phone,
 } from "lucide-react";
 import { rescheduleFollowUp, cancelFollowUp, completeFollowUp } from "./actions";
 
 /* ── Types ─────────────────────────────────────────────────────────────── */
-export type FollowUpStatus = "DUE_TODAY" | "UPCOMING" | "OVERDUE" | "COMPLETED" | "CANCELLED" | "SCHEDULED";
+export type FollowUpStatus = "DUE_TODAY" | "UPCOMING" | "OVERDUE" | "NO_SHOW" | "COMPLETED" | "CANCELLED" | "SCHEDULED";
 
 export interface FuVisit {
   id: string;
@@ -22,7 +22,8 @@ export interface FuVisit {
   followUpCompleted: boolean;
   followUpCancelledAt: string | null;
   inViewOf: string | null;
-  patient: { id: string; name: string; udid: string; uhid: string | null; age: number; sex: string; photoUrl: string | null };
+  chiefComplaint: string | null;
+  patient: { id: string; name: string; udid: string; uhid: string | null; age: number; sex: string; photoUrl: string | null; mobile: string };
   doctor: { id: string; name: string };
   hospital: { id: string; name: string };
   diagnoses: { description: string; icd10Code: string }[];
@@ -31,12 +32,13 @@ export interface FuVisit {
 
 /* ── Constants ─────────────────────────────────────────────────────────── */
 const STATUS_META: Record<FollowUpStatus, { label: string; pill: string; dot: string }> = {
-  DUE_TODAY: { label: "Due Today",  pill: "bg-amber-100 text-amber-700 border border-amber-200",  dot: "bg-amber-500" },
-  UPCOMING:  { label: "Upcoming",   pill: "bg-blue-100 text-blue-700 border border-blue-200",     dot: "bg-blue-500" },
-  OVERDUE:   { label: "Overdue",    pill: "bg-red-100 text-red-700 border border-red-200",         dot: "bg-red-500" },
+  DUE_TODAY: { label: "Due Today",  pill: "bg-amber-100 text-amber-700 border border-amber-200",      dot: "bg-amber-500" },
+  UPCOMING:  { label: "Upcoming",   pill: "bg-blue-100 text-blue-700 border border-blue-200",         dot: "bg-blue-500" },
+  OVERDUE:   { label: "Overdue",    pill: "bg-red-100 text-red-700 border border-red-200",             dot: "bg-red-500" },
+  NO_SHOW:   { label: "No Show",    pill: "bg-orange-100 text-orange-800 border border-orange-200",   dot: "bg-orange-600" },
   COMPLETED: { label: "Completed",  pill: "bg-emerald-100 text-emerald-700 border border-emerald-200", dot: "bg-emerald-500" },
-  CANCELLED: { label: "Cancelled",  pill: "bg-slate-100 text-slate-500 border border-slate-200",  dot: "bg-slate-400" },
-  SCHEDULED: { label: "Scheduled",  pill: "bg-teal-100 text-teal-700 border border-teal-200",     dot: "bg-teal-500" },
+  CANCELLED: { label: "Cancelled",  pill: "bg-slate-100 text-slate-500 border border-slate-200",      dot: "bg-slate-400" },
+  SCHEDULED: { label: "Scheduled",  pill: "bg-teal-100 text-teal-700 border border-teal-200",         dot: "bg-teal-500" },
 };
 
 const OUTCOMES = [
@@ -455,9 +457,17 @@ function FollowUpRow({
               >
                 {v.patient.name}
               </Link>
-              <p className="text-[10px] sm:text-[11px] text-[var(--color-ink-400)]">
-                {v.patient.uhid ?? v.patient.udid} · {v.patient.age}y/{SEX_SHORT[v.patient.sex] ?? v.patient.sex}
-              </p>
+              <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                <span className="text-[10px] sm:text-[11px] text-[var(--color-ink-400)]">
+                  {v.patient.uhid ?? v.patient.udid} · {v.patient.age}y/{SEX_SHORT[v.patient.sex] ?? v.patient.sex}
+                </span>
+                {v.patient.mobile && (
+                  <span className="inline-flex items-center gap-1 text-[9px] sm:text-[10px] text-[var(--color-ink-500)]">
+                    <Phone size={9} className="shrink-0 text-[var(--color-ink-400)]" />
+                    <span className="font-mono">{v.patient.mobile}</span>
+                  </span>
+                )}
+              </div>
             </div>
           </div>
         </td>
@@ -465,11 +475,18 @@ function FollowUpRow({
         {role === "HOSPITAL" && (
           <td className="px-4 py-3 text-[11px] sm:text-xs text-[var(--color-ink-600)]">Dr. {v.doctor.name}</td>
         )}
-        {/* Type */}
+        {/* Complaint / Diagnosis */}
         <td className="px-4 py-3">
-          <span className="text-[11px] sm:text-xs text-[var(--color-ink-700)] max-w-[160px] block truncate">{followUpLabel(v)}</span>
+          {v.chiefComplaint ? (
+            <p className="text-[11px] sm:text-xs text-[var(--color-ink-700)] max-w-[180px] truncate">
+              <span className="text-[9px] sm:text-[10px] text-[var(--color-ink-400)] mr-1 uppercase tracking-wide font-semibold">CC</span>
+              {v.chiefComplaint}
+            </p>
+          ) : (
+            <p className="text-[10px] sm:text-[11px] text-[var(--color-ink-300)] italic">No complaint recorded</p>
+          )}
           {v.diagnoses[0] && (
-            <span className="inline-flex items-center gap-1 mt-0.5 px-2.5 py-0.5 rounded-full bg-teal-50 border border-teal-200 text-teal-800 text-[10px] sm:text-[11px] font-medium">
+            <span className="inline-flex items-center gap-1 mt-1 px-2.5 py-0.5 rounded-full bg-teal-50 border border-teal-200 text-teal-800 text-[10px] sm:text-[11px] font-medium">
               {v.diagnoses[0].description}
             </span>
           )}
@@ -483,14 +500,19 @@ function FollowUpRow({
           <p className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-800)]">
             {format(new Date(v.followUpDate), "d MMM yyyy")}
           </p>
-          {(v.status === "OVERDUE" || v.status === "DUE_TODAY") && (
-            <p className="text-[10px] sm:text-[11px] text-red-600 font-medium flex items-center gap-0.5 mt-0.5">
+          {(v.status === "OVERDUE" || v.status === "DUE_TODAY" || v.status === "NO_SHOW") && (
+            <p className={`text-[10px] sm:text-[11px] font-medium flex items-center gap-0.5 mt-0.5 ${v.status === "NO_SHOW" ? "text-orange-700" : "text-red-600"}`}>
               <Bell size={9} /> {overdueText(v.followUpDate)}
             </p>
           )}
         </td>
         {/* Status */}
-        <td className="px-4 py-3"><StatusBadge status={v.status} /></td>
+        <td className="px-4 py-3">
+          {v.inViewOf && (
+            <p className="text-[10px] sm:text-[11px] text-[var(--color-ink-500)] mb-1 max-w-[140px] truncate">{v.inViewOf}</p>
+          )}
+          <StatusBadge status={v.status} />
+        </td>
         {/* Actions */}
         <td className="px-4 py-3">
           <div className="flex items-center gap-1.5 flex-wrap">
@@ -556,9 +578,17 @@ function FollowUpCard({
           </div>
           <div className="min-w-0">
             <p className="text-[13px] sm:text-sm font-bold text-[var(--color-ink-900)] truncate">{v.patient.name}</p>
-            <p className="text-[10px] sm:text-[11px] text-[var(--color-ink-400)]">
-              {v.patient.uhid ?? v.patient.udid} · {v.patient.age}y/{SEX_SHORT[v.patient.sex] ?? v.patient.sex}
-            </p>
+            <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+              <span className="text-[10px] sm:text-[11px] text-[var(--color-ink-400)]">
+                {v.patient.uhid ?? v.patient.udid} · {v.patient.age}y/{SEX_SHORT[v.patient.sex] ?? v.patient.sex}
+              </span>
+              {v.patient.mobile && (
+                <span className="inline-flex items-center gap-1 text-[9px] sm:text-[10px] text-[var(--color-ink-500)]">
+                  <Phone size={9} className="shrink-0 text-[var(--color-ink-400)]" />
+                  <span className="font-mono">{v.patient.mobile}</span>
+                </span>
+              )}
+            </div>
           </div>
         </div>
         <StatusBadge status={v.status} />
@@ -572,8 +602,10 @@ function FollowUpCard({
             <span className="font-medium text-[var(--color-ink-700)]">Dr. {v.doctor.name}</span>
           </>
         )}
-        <span className="text-[var(--color-ink-400)]">Reason</span>
-        <span className="font-medium text-[var(--color-ink-700)] truncate">{followUpLabel(v)}</span>
+        <span className="text-[var(--color-ink-400)]">Complaint</span>
+        <span className="font-medium text-[var(--color-ink-700)] truncate">
+          {v.chiefComplaint || <span className="italic text-[var(--color-ink-300)]">—</span>}
+        </span>
         {v.diagnoses[0] && (
           <>
             <span className="text-[var(--color-ink-400)]">Diagnosis</span>
@@ -582,13 +614,19 @@ function FollowUpCard({
             </span>
           </>
         )}
+        {v.inViewOf && (
+          <>
+            <span className="text-[var(--color-ink-400)]">Follow-up For</span>
+            <span className="font-medium text-[var(--color-ink-700)] truncate">{v.inViewOf}</span>
+          </>
+        )}
         <span className="text-[var(--color-ink-400)]">Prev Visit</span>
         <span className="font-medium text-[var(--color-ink-700)]">{format(new Date(v.date), "d MMM yyyy")}</span>
         <span className="text-[var(--color-ink-400)]">Follow-up</span>
-        <span className={`font-semibold ${v.status === "OVERDUE" ? "text-red-600" : v.status === "DUE_TODAY" ? "text-amber-700" : "text-[var(--color-ink-700)]"}`}>
+        <span className={`font-semibold ${v.status === "OVERDUE" ? "text-red-600" : v.status === "NO_SHOW" ? "text-orange-700" : v.status === "DUE_TODAY" ? "text-amber-700" : "text-[var(--color-ink-700)]"}`}>
           {format(new Date(v.followUpDate), "d MMM yyyy")}
-          {v.status === "OVERDUE" && (
-            <span className="ml-1 text-[9px] sm:text-[10px] text-red-500 font-medium">{overdueText(v.followUpDate)}</span>
+          {(v.status === "OVERDUE" || v.status === "NO_SHOW") && (
+            <span className={`ml-1 text-[9px] sm:text-[10px] font-medium ${v.status === "NO_SHOW" ? "text-orange-600" : "text-red-500"}`}>{overdueText(v.followUpDate)}</span>
           )}
         </span>
       </div>
@@ -644,6 +682,7 @@ export function FollowUpsClient({
     DUE_TODAY: visits.filter((v) => v.status === "DUE_TODAY").length,
     UPCOMING:  visits.filter((v) => v.status === "UPCOMING").length,
     OVERDUE:   visits.filter((v) => v.status === "OVERDUE").length,
+    NO_SHOW:   visits.filter((v) => v.status === "NO_SHOW").length,
     SCHEDULED: visits.filter((v) => v.status === "SCHEDULED").length,
     COMPLETED: visits.filter((v) => v.status === "COMPLETED").length,
     CANCELLED: visits.filter((v) => v.status === "CANCELLED").length,
@@ -736,12 +775,12 @@ export function FollowUpsClient({
           active={statusFilter === "OVERDUE"}
         />
         <StatCard
-          label="Scheduled"
-          count={counts.SCHEDULED}
-          icon={<CalendarClock size={17} className="text-teal-600" />}
-          accent="text-teal-700" iconBg="bg-teal-50"
-          onClick={() => setStatusFilter(statusFilter === "SCHEDULED" ? "ALL" : "SCHEDULED")}
-          active={statusFilter === "SCHEDULED"}
+          label="No Show"
+          count={counts.NO_SHOW}
+          icon={<UserX size={17} className="text-orange-700" />}
+          accent="text-orange-700" iconBg="bg-orange-50"
+          onClick={() => setStatusFilter(statusFilter === "NO_SHOW" ? "ALL" : "NO_SHOW")}
+          active={statusFilter === "NO_SHOW"}
         />
         <StatCard
           label="Completed"
@@ -785,6 +824,7 @@ export function FollowUpsClient({
             <option value="DUE_TODAY">Due Today</option>
             <option value="UPCOMING">Upcoming</option>
             <option value="OVERDUE">Overdue</option>
+            <option value="NO_SHOW">No Show</option>
             <option value="SCHEDULED">Scheduled</option>
             <option value="COMPLETED">Completed</option>
             <option value="CANCELLED">Cancelled</option>
@@ -854,7 +894,7 @@ export function FollowUpsClient({
                     {role === "HOSPITAL" && (
                       <th className="px-4 py-3 text-left text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-[var(--color-ink-400)]">Doctor</th>
                     )}
-                    <th className="px-4 py-3 text-left text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-[var(--color-ink-400)]">Reason / Diagnosis</th>
+                    <th className="px-4 py-3 text-left text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-[var(--color-ink-400)]">Complaint / Diagnosis</th>
                     <th className="px-4 py-3 text-left text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-[var(--color-ink-400)]">Prev Visit</th>
                     <th className="px-4 py-3 text-left text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-[var(--color-ink-400)]">Follow-up Date</th>
                     <th className="px-4 py-3 text-left text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-[var(--color-ink-400)]">Status</th>

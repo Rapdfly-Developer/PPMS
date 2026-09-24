@@ -1,6 +1,6 @@
 import { requirePermission } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
-import { startOfDay, isBefore, format } from "date-fns";
+import { startOfDay, isBefore, format, differenceInDays } from "date-fns";
 import { FollowUpsClient, type FuVisit, type FollowUpStatus } from "./FollowUpsClient";
 
 function computeStatus(
@@ -19,7 +19,10 @@ function computeStatus(
   const fuDay = startOfDay(followUpDate);
   const todayDay = startOfDay(today);
   if (fuDay.getTime() === todayDay.getTime()) return "DUE_TODAY";
-  if (isBefore(fuDay, todayDay)) return "OVERDUE";
+  if (isBefore(fuDay, todayDay)) {
+    // Overdue window = up to 14 days; beyond that = no show
+    return differenceInDays(todayDay, fuDay) > 14 ? "NO_SHOW" : "OVERDUE";
+  }
   return "UPCOMING";
 }
 
@@ -46,7 +49,7 @@ export default async function FollowUpsPage() {
       followUpCancelledAt: true,
       inViewOf: true,
       patient: {
-        select: { id: true, name: true, udid: true, uhid: true, age: true, sex: true, photoUrl: true },
+        select: { id: true, name: true, udid: true, uhid: true, age: true, sex: true, photoUrl: true, mobile: true },
       },
       doctor: { select: { id: true, name: true } },
       hospital: { select: { id: true, name: true } },
@@ -56,6 +59,7 @@ export default async function FollowUpsPage() {
         orderBy: { confirmedAt: "desc" },
         take: 3,
       },
+      generalExam: { select: { chiefComplaint: true } },
     },
   });
 
@@ -120,6 +124,7 @@ export default async function FollowUpsPage() {
       doctor: v.doctor,
       hospital: v.hospital,
       diagnoses: v.diagnoses,
+      chiefComplaint: v.generalExam?.chiefComplaint ?? null,
       status: computeStatus(v.followUpDate!, v.followUpCompleted, v.followUpCancelledAt, hasAppointment, hasConsulted, today),
     };
   });
