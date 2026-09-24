@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Sora, Plus_Jakarta_Sans } from "next/font/google";
 import { Nav } from "@/components/landing/Nav";
+import { TocNav } from "./TocNav";
 import {
   Mail, Phone, MapPin, ShieldCheck, Lock, Database, Users,
   History, FileText, AlertCircle, Eye, Trash2, RefreshCw,
@@ -29,24 +30,6 @@ export const metadata: Metadata = {
 };
 
 const LAST_UPDATED = "24 September 2026";
-
-const TOC = [
-  { id: "overview",       label: "Overview" },
-  { id: "data-collected", label: "Data we collect" },
-  { id: "how-we-use",     label: "How we use your data" },
-  { id: "role-access",    label: "Role-based access" },
-  { id: "ai-processing",  label: "Clinical AI processing" },
-  { id: "third-parties",  label: "Third-party services" },
-  { id: "security",       label: "Security" },
-  { id: "retention",      label: "Data retention & deletion" },
-  { id: "your-rights",    label: "Your rights" },
-  { id: "cookies",        label: "Cookies & sessions" },
-  { id: "data-breach",    label: "Data breaches" },
-  { id: "dpdp",           label: "DPDP Act, 2023" },
-  { id: "children",       label: "Children’s data" },
-  { id: "changes",        label: "Changes to this policy" },
-  { id: "contact",        label: "Grievance & contact" },
-];
 
 function SectionCard({
   id,
@@ -151,49 +134,7 @@ export default function PrivacyPage() {
       <div className="mx-auto w-[min(92%,1760px)] py-8 sm:py-10 lg:py-12 2xl:py-14">
         <div className="flex gap-0 lg:gap-8 xl:gap-10 2xl:gap-12 lg:items-start">
 
-          {/* ── Sidebar TOC ─────────────────────────────────────────────── */}
-          {/* hidden on mobile/tablet, visible from lg up */}
-          <aside className="hidden lg:block lg:w-[clamp(180px,15%,240px)] shrink-0">
-            <div className="sticky top-28 rounded-xl bg-white px-4 py-5 ring-1 ring-inset ring-emerald-950/[0.07] 2xl:rounded-2xl 2xl:px-5 2xl:py-6">
-              <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400 2xl:text-[11px]">
-                Contents
-              </p>
-              <nav aria-label="Privacy policy sections">
-                <ul className="flex flex-col gap-0.5">
-                  {TOC.map((item) => (
-                    <li key={item.id}>
-                      <a
-                        href={`#${item.id}`}
-                        className="block rounded-lg px-2.5 py-1.5 text-[12.5px] text-slate-500 transition-colors duration-150 hover:bg-emerald-50 hover:text-emerald-800 2xl:text-[13px] 2xl:py-2"
-                      >
-                        {item.label}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </nav>
-            </div>
-          </aside>
-
-          {/* ── Mobile TOC: horizontal scrollable chips ──────────────────── */}
-          <div className="mb-6 lg:hidden">
-            <div className="rounded-xl bg-white p-4 ring-1 ring-inset ring-emerald-950/[0.07]">
-              <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">
-                Jump to section
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {TOC.map((item) => (
-                  <a
-                    key={item.id}
-                    href={`#${item.id}`}
-                    className="inline-flex items-center rounded-full border border-emerald-950/[0.08] bg-emerald-50/60 px-3 py-1 text-[12px] font-medium text-emerald-800 transition-colors hover:bg-emerald-100"
-                  >
-                    {item.label}
-                  </a>
-                ))}
-              </div>
-            </div>
-          </div>
+          <TocNav />
 
           {/* ── Policy content ──────────────────────────────────────────── */}
           <div className="min-w-0 flex-1 flex flex-col gap-4 sm:gap-5 lg:gap-6">
