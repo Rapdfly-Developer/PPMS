@@ -46,69 +46,75 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
     leNearN: (va as any).leNearN ?? null,
   } : null;
 
-  const pdf = await generateFullEmrPdf({
-    patient: {
-      udid: visit.patient.udid ?? "",
-      name: visit.patient.name,
-      age: visit.patient.age,
-      sex: visit.patient.sex,
-      mobile: (visit.patient as any).mobile ?? null,
-      address: (visit.patient as any).address ?? null,
-    },
-    visit: {
-      date: visit.date,
-      visitType: visit.visitType ?? null,
-      hospitalName: visit.hospital.name,
-      hospitalLogo: (visit.hospital as any).logoUrl ?? null,
-      hospitalAddress: (visit.hospital as any).address ?? null,
-      hospitalContact: (visit.hospital as any).contact ?? null,
-      hospitalEmail: (visit.hospital as any).email ?? null,
-      doctorName: visit.doctor.name,
-    },
-    generalExam: ge ? {
-      bp: ge.bp, pulse: ge.pulse, temperature: ge.temperature, weight: ge.weight,
-      chiefComplaint: ge.chiefComplaint, hpi: (ge as any).hpi ?? null,
-      pastMedicalHistory: parseJSON((ge as any).pastMedicalHistory, [] as string[]),
-      pmhOtherText: (ge as any).pmhOtherText ?? null,
-      medications: (ge as any).medications ?? null,
-      allergies: (ge as any).allergies ?? null,
-      nkda: (ge as any).nkda ?? null,
-      familyHistory: (ge as any).familyHistory ?? null,
-      socialHistory: (ge as any).socialHistory ?? null,
-    } : null,
-    visualAcuity: vaData,
-    iopReadings: visit.iopReadings.map((r: any) => ({
-      method: r.method, re: r.re, le: r.le, takenAt: r.takenAt,
-    })),
-    colourVision: cv ? {
-      re: (cv as any).re ?? null,
-      le: (cv as any).le ?? null,
-      notes: (cv as any).notes ?? null,
-    } : null,
-    anteriorSegment: as_ ? parseJSON((as_ as any).data, undefined) : null,
-    posteriorSegment: ps ? {
-      data: parseJSON((ps as any).data, undefined),
-      cdr: (ps as any).cdr ?? null,
-      notes: (ps as any).notes ?? null,
-    } : null,
-    diagnoses: visit.diagnoses.map((d: any) => ({
-      description: d.description, icd10Code: d.icd10Code,
-      status: d.status, laterality: d.laterality ?? null,
-    })),
-    medications: visit.medications.map((m: any) => ({
-      drugName: m.drugName, dosage: m.dosage, frequency: m.frequency,
-      duration: m.duration, instructions: m.instructions ?? null,
-      route: m.route ?? null, laterality: m.laterality ?? null,
-    })),
-    opticalRx: {
-      re: parseJSON(rc?.re, { sph: "", cyl: "", axis: "", nearSph: "", nearCyl: "", nearAxis: "" }),
-      le: parseJSON(rc?.le, { sph: "", cyl: "", axis: "", nearSph: "", nearCyl: "", nearAxis: "" }),
-    },
-    investigations: visit.investigationOrders.map((i: any) => ({
-      testName: i.testName, priority: i.priority, status: i.status,
-      result: i.result ?? null, notes: i.notes ?? null,
-    })),
-  });
+  let pdf: Buffer;
+  try {
+    pdf = await generateFullEmrPdf({
+      patient: {
+        udid: visit.patient.udid ?? "",
+        name: visit.patient.name,
+        age: visit.patient.age,
+        sex: visit.patient.sex,
+        mobile: (visit.patient as any).mobile ?? null,
+        address: (visit.patient as any).address ?? null,
+      },
+      visit: {
+        date: visit.date,
+        visitType: visit.visitType ?? null,
+        hospitalName: visit.hospital.name,
+        hospitalLogo: (visit.hospital as any).logoUrl ?? null,
+        hospitalAddress: (visit.hospital as any).address ?? null,
+        hospitalContact: (visit.hospital as any).contact ?? null,
+        hospitalEmail: (visit.hospital as any).email ?? null,
+        doctorName: visit.doctor.name,
+      },
+      generalExam: ge ? {
+        bp: ge.bp, pulse: ge.pulse, temperature: ge.temperature, weight: ge.weight,
+        chiefComplaint: ge.chiefComplaint, hpi: (ge as any).hpi ?? null,
+        pastMedicalHistory: parseJSON((ge as any).pastMedicalHistory, [] as string[]),
+        pmhOtherText: (ge as any).pmhOtherText ?? null,
+        medications: (ge as any).medications ?? null,
+        allergies: (ge as any).allergies ?? null,
+        nkda: (ge as any).nkda ?? null,
+        familyHistory: (ge as any).familyHistory ?? null,
+        socialHistory: (ge as any).socialHistory ?? null,
+      } : null,
+      visualAcuity: vaData,
+      iopReadings: visit.iopReadings.map((r: any) => ({
+        method: r.method, re: r.re, le: r.le, takenAt: r.takenAt,
+      })),
+      colourVision: cv ? {
+        re: (cv as any).re ?? null,
+        le: (cv as any).le ?? null,
+        notes: (cv as any).notes ?? null,
+      } : null,
+      anteriorSegment: as_ ? parseJSON((as_ as any).data, undefined) : null,
+      posteriorSegment: ps ? {
+        data: parseJSON((ps as any).data, undefined),
+        cdr: (ps as any).cdr ?? null,
+        notes: (ps as any).notes ?? null,
+      } : null,
+      diagnoses: visit.diagnoses.map((d: any) => ({
+        description: d.description, icd10Code: d.icd10Code,
+        status: d.status, laterality: d.laterality ?? null,
+      })),
+      medications: visit.medications.map((m: any) => ({
+        drugName: m.drugName, dosage: m.dosage, frequency: m.frequency,
+        duration: m.duration, instructions: m.instructions ?? null,
+        route: m.route ?? null, laterality: m.laterality ?? null,
+      })),
+      opticalRx: {
+        re: parseJSON(rc?.re, { sph: "", cyl: "", axis: "", nearSph: "", nearCyl: "", nearAxis: "" }),
+        le: parseJSON(rc?.le, { sph: "", cyl: "", axis: "", nearSph: "", nearCyl: "", nearAxis: "" }),
+      },
+      investigations: visit.investigationOrders.map((i: any) => ({
+        testName: i.testName, priority: i.priority, status: i.status,
+        result: i.result ?? null, notes: i.notes ?? null,
+      })),
+    });
+  } catch (err: any) {
+    console.error("[prescription-pdf] generation error:", err);
+    return NextResponse.json({ error: err?.message ?? "PDF generation failed", stack: err?.stack }, { status: 500 });
+  }
 
   const filename = `PPMS-EMR-${visit.patient.udid}-${visit.id.slice(0, 8)}.pdf`;
   const disposition = req.nextUrl.searchParams.get("dl") === "1"

@@ -1288,14 +1288,16 @@ async function renderFullEmrHtml(d: FullEmrData): Promise<string> {
   };
 
   /* ── Priority badge ── */
-  const prioBadge = (p: string) => {
+  const prioBadge = (p: string | null | undefined) => {
+    if (!p) return "";
     const u = p.toUpperCase();
     const [fg, bg] = u === "STAT" ? ["#92400E", "#FEF3C7"] : u === "URGENT" ? ["#B91C1C", "#FEE2E2"] : [LABEL_C, "#DCF5EF"];
     return `<span style="font-size:8px;font-weight:700;color:${fg};background:${bg};padding:1px 6px;border-radius:3px;">${escapeHtml(p)}</span>`;
   };
 
   /* ── Status badge ── */
-  const statusBadge = (s: string) => {
+  const statusBadge = (s: string | null | undefined) => {
+    if (!s) return "";
     const l = s.toLowerCase().replace(/_/g, " ");
     const [fg, bg] = l.includes("resolv") || l.includes("complet") ? ["#15803D", "#F0FDF4"]
       : l.includes("active") ? ["#15803D", "#DCFCE7"]
