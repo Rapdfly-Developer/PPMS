@@ -208,6 +208,16 @@ export default function PrivacyPage() {
                 <Li>System-level event logs for security and operational monitoring</Li>
               </Ul>
 
+              <SubHead>ABHA (Ayushman Bharat Health Account)</SubHead>
+              <P>
+                RF Health does not currently collect or store ABHA numbers as part of the
+                patient registration process. Patient records are identified by an internal
+                platform identifier. If ABHA linkage is introduced in a future version of
+                the platform, this policy will be updated before that feature is made
+                available, and patients or their healthcare providers will be notified of
+                the change and its data implications.
+              </P>
+
               <SubHead>Data we do not collect</SubHead>
               <P>
                 We do not collect payment card numbers directly. Any payment processing is
@@ -233,6 +243,23 @@ export default function PrivacyPage() {
                 We do not sell patient data or staff data to any third party. We do not use
                 patient health records for advertising, profiling outside the platform, or any
                 purpose beyond the delivery of the RF Health service.
+              </P>
+              <SubHead>Data minimization</SubHead>
+              <P>
+                We collect only the personal and health data necessary to provide the RF Health
+                service. We do not require doctors, administrators, or patients to provide
+                information beyond what is needed for the specific function being used. Optional
+                fields within the platform are not required to use core features.
+              </P>
+              <SubHead>Purpose limitation</SubHead>
+              <P>
+                Health data entered into RF Health is used only for the purposes described in
+                this policy at the time of collection. We will not use patient health records
+                for a new or materially different purpose without providing prior notice and,
+                where required, obtaining fresh consent. Analytics and operational reporting
+                produced within the platform are derived from data already entered by healthcare
+                providers and are used only within the platform to support the delivery of care —
+                not for profiling, research, or commercial purposes beyond the RF Health service.
               </P>
             </SectionCard>
 
@@ -304,6 +331,15 @@ export default function PrivacyPage() {
                 to generate the response for that request. It is not used to train models or
                 retained beyond the scope of completing the request.
               </P>
+              <SubHead>No automated clinical decisions</SubHead>
+              <P>
+                The Clinical Copilot produces outputs — summaries, drafts, answers — that are
+                always presented to the treating doctor for review before any action is taken.
+                No clinical decision affecting a patient is made automatically by the platform.
+                The doctor retains full clinical responsibility and must explicitly save or act
+                on any AI-generated content. The platform does not issue prescriptions,
+                diagnoses, referrals, or instructions to patients through automated means.
+              </P>
             </SectionCard>
 
             {/* 6. Third parties */}
@@ -319,7 +355,7 @@ export default function PrivacyPage() {
                 <Li><strong className="font-medium text-emerald-950">Cloud database hosting:</strong> patient records, appointment data, and all structured data are stored in a managed PostgreSQL database hosted on a cloud provider with encryption at rest and automated daily backups.</Li>
                 <Li><strong className="font-medium text-emerald-950">Application hosting:</strong> the RF Health web application is deployed on a cloud application platform. Servers are located in a region selected for latency and compliance relevance.</Li>
                 <Li><strong className="font-medium text-emerald-950">Email delivery:</strong> transactional emails (account setup, password reset, notifications) are delivered through a third-party email service. No patient health data is included in these emails.</Li>
-                <Li><strong className="font-medium text-emerald-950">AI inference:</strong> when the Clinical Copilot is active for a request, relevant portions of the open patient record are sent to an AI inference API to generate the requested output. This is described further in the AI Processing section.</Li>
+                <Li><strong className="font-medium text-emerald-950">AI inference:</strong> when the Clinical Copilot is active for a request, relevant portions of the open patient record are sent to a third-party AI inference API to generate the requested output. This processing is governed by a data processing agreement that prohibits the provider from using the data for model training or any purpose other than generating the requested response. The identity of the AI inference provider is available on request by contacting <a href="mailto:support@ppmsai.com" className="font-medium text-emerald-700 underline-offset-3 hover:underline">support@ppmsai.com</a>. This is described further in the Clinical AI Processing section.</Li>
               </Ul>
               <P>
                 We do not share patient data with health insurance aggregators, pharmaceutical
@@ -402,6 +438,18 @@ export default function PrivacyPage() {
                 purposes for which it is processed, and the categories of third parties with
                 whom it has been shared.
               </P>
+              <P>
+                Because patient records in RF Health are managed by your treating doctor or
+                hospital (not by you directly), the most effective way to access your health
+                record is to request it from the doctor or hospital that entered and manages
+                it. They can view and export your record within the platform. If you are
+                unable to obtain access through your healthcare provider, or if your request
+                concerns data that RAPDFLY PRIVATE LIMITED holds directly, contact us at{" "}
+                <a href="mailto:support@ppmsai.com" className="font-medium text-emerald-700 underline-offset-3 hover:underline">
+                  support@ppmsai.com
+                </a>{" "}
+                and we will facilitate access or provide a response within 30 days.
+              </P>
               <SubHead>Right to correction</SubHead>
               <P>
                 You may request correction of personal data that is inaccurate or incomplete.
@@ -417,8 +465,19 @@ export default function PrivacyPage() {
               <SubHead>Right to withdraw consent</SubHead>
               <P>
                 Where processing is based on consent — for example, use of the Clinical Copilot
-                feature — you may withdraw consent at any time. Withdrawal does not affect the
-                lawfulness of processing carried out before withdrawal.
+                feature — you may withdraw consent at any time. To withdraw consent for an
+                optional feature, disable it in your account settings. To withdraw consent for
+                the processing of your patient record by the underlying healthcare provider,
+                contact that provider directly; they are responsible for acting on your
+                withdrawal within their practice.
+              </P>
+              <P>
+                Where a withdrawal request is directed to RAPDFLY PRIVATE LIMITED and relates
+                to data we process directly, we will cease the relevant processing within{" "}
+                <strong className="font-semibold text-emerald-950">7 business days</strong>{" "}
+                of receiving a verified withdrawal request. Withdrawal does not affect the
+                lawfulness of processing carried out before withdrawal, and does not override
+                legal obligations to retain medical records under Indian law.
               </P>
               <SubHead>Right to grievance redressal</SubHead>
               <P>
@@ -475,9 +534,10 @@ export default function PrivacyPage() {
               </P>
               <Ul>
                 <Li>We will assess the breach promptly to determine its scope and risk.</Li>
-                <Li>Where the breach is likely to result in a risk to the rights of affected data principals, we will notify the relevant regulatory authority as required by the DPDP Act, 2023 and any other applicable law.</Li>
-                <Li>Where the breach is likely to result in a high risk to affected individuals, we will notify those individuals directly, including a description of what data was affected and what steps they can take.</Li>
-                <Li>We will take steps to contain the breach, assess the cause, and implement measures to prevent recurrence.</Li>
+                <Li>Where the breach is likely to result in harm to affected data principals, we will notify the Data Protection Board of India (or the relevant regulatory authority under applicable law) <strong className="font-medium text-emerald-950">within 72 hours</strong> of becoming aware of the breach, or as soon as practicable if a complete assessment is not yet possible within that period.</Li>
+                <Li>We will notify affected individuals <strong className="font-medium text-emerald-950">without undue delay</strong> where the breach is likely to result in a high risk to their rights or interests. The notification will describe: what data was affected, the likely consequences of the breach, and the steps individuals can take to protect themselves.</Li>
+                <Li>We will document every breach, regardless of whether notification is required, including the facts, effects, and remedial action taken.</Li>
+                <Li>We will take steps to contain the breach, assess the root cause, and implement measures to prevent recurrence.</Li>
               </Ul>
               <P>
                 If you believe your account has been compromised, contact us immediately at{" "}
@@ -506,11 +566,36 @@ export default function PrivacyPage() {
                 <Li><strong className="font-medium text-emerald-950">Consent:</strong> for the processing of patient data entered by the treating doctor or healthcare facility, and for optional features such as the Clinical Copilot.</Li>
                 <Li><strong className="font-medium text-emerald-950">Legitimate uses:</strong> for security and fraud prevention, compliance with legal obligations, and operation of the platform that the user has contracted for.</Li>
               </Ul>
+              <SubHead>How patient consent is obtained</SubHead>
+              <P>
+                RF Health operates as a platform used by licensed healthcare providers.
+                Patients do not register on RF Health directly. When a doctor or hospital
+                administrator enters a patient&apos;s data into the platform, the healthcare
+                provider is responsible for obtaining the patient&apos;s prior consent for the
+                collection and use of their health data as part of the treatment
+                relationship, in accordance with applicable professional and legal obligations.
+              </P>
+              <P>
+                RAPDFLY PRIVATE LIMITED, as Data Fiduciary, relies on the healthcare
+                provider&apos;s confirmation that such consent has been obtained. Healthcare
+                providers using RF Health agree, as part of their subscription terms, that
+                they have obtained and will maintain all necessary patient consents for the
+                health data they enter into the platform.
+              </P>
+              <P>
+                For optional features that RF Health controls directly — such as the Clinical
+                Copilot — consent is obtained at the account level from the treating doctor,
+                who enables the feature for their account. Patient health data is used within
+                that feature only to respond to the specific query the doctor raises; it is
+                not used beyond that purpose.
+              </P>
               <SubHead>Data localisation</SubHead>
               <P>
-                We store patient data on infrastructure hosted within a region consistent with
-                our operational and compliance requirements. We will update this policy if our
-                storage location changes in a way that affects your rights.
+                All patient health data processed through RF Health is stored on infrastructure
+                located within India. We do not transfer patient health records to servers
+                outside India. If this changes, we will update this policy with at least 30
+                days&apos; prior notice to active account holders and will ensure any cross-border
+                transfer complies with applicable law.
               </P>
               <SubHead>Consent notices</SubHead>
               <P>
