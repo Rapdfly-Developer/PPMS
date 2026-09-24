@@ -162,8 +162,8 @@ export default function PrivacyPage() {
                 for informing those staff members of this policy.
               </P>
               <Note>
-                <strong>Sensitive personal data.</strong> Patient medical records — diagnoses,
-                prescriptions, clinical notes, surgery records, lab and imaging results — constitute
+                <strong>Sensitive personal data.</strong> Patient medical records (diagnoses,
+                prescriptions, clinical notes, surgery records, lab and imaging results) constitute
                 sensitive personal data under Indian law. We apply heightened protection to this
                 category of data throughout the platform.
               </Note>
@@ -204,7 +204,7 @@ export default function PrivacyPage() {
 
               <SubHead>Audit and operational data</SubHead>
               <Ul>
-                <Li>An immutable audit log recording every view of, and edit to, a patient record — including the user, timestamp, and action type</Li>
+                <Li>An immutable audit log recording every view of, and edit to, a patient record, including the user, timestamp, and action type</Li>
                 <Li>System-level event logs for security and operational monitoring</Li>
               </Ul>
 
@@ -233,7 +233,7 @@ export default function PrivacyPage() {
                 <Li>Creating and maintaining patient records accessible across a doctor&apos;s registered hospitals</Li>
                 <Li>Scheduling and managing appointments and operating-theatre slots</Li>
                 <Li>Generating prescriptions, consultation summaries, dispense summaries, and operative reports in PDF format</Li>
-                <Li>Producing analytics and operational reports — appointment volumes, completion rates, revenue summaries — from the records already entered by staff</Li>
+                <Li>Producing analytics and operational reports (appointment volumes, completion rates, revenue summaries) from the records already entered by staff</Li>
                 <Li>Sending in-platform notifications about appointments and outstanding investigations</Li>
                 <Li>Enforcing role-based access to ensure each staff member sees only the data their role requires</Li>
                 <Li>Maintaining the audit log so access to records is always attributable and reviewable</Li>
@@ -258,7 +258,7 @@ export default function PrivacyPage() {
                 for a new or materially different purpose without providing prior notice and,
                 where required, obtaining fresh consent. Analytics and operational reporting
                 produced within the platform are derived from data already entered by healthcare
-                providers and are used only within the platform to support the delivery of care —
+                providers and are used only within the platform to support the delivery of care,
                 not for profiling, research, or commercial purposes beyond the RF Health service.
               </P>
             </SectionCard>
@@ -272,8 +272,8 @@ export default function PrivacyPage() {
               </P>
               <SubHead>Doctor</SubHead>
               <P>
-                Can view and edit the full clinical record — EMR, prescriptions, investigation
-                orders, surgery notes, and the patient timeline — for patients under their care.
+                Can view and edit the full clinical record (EMR, prescriptions, investigation
+                orders, surgery notes, and the patient timeline) for patients under their care.
                 Can view their own appointment schedule and analytics across their hospitals.
               </P>
               <SubHead>Hospital Administrator</SubHead>
@@ -310,7 +310,7 @@ export default function PrivacyPage() {
               <SubHead>What the Clinical Copilot does</SubHead>
               <Ul>
                 <Li>Reads the patient record you are currently viewing and produces a concise summary of the clinical history, medications, investigations, and visit timeline</Li>
-                <Li>Answers questions you ask about that patient&apos;s record — for example, when a medication was started, or what changed since the last visit</Li>
+                <Li>Answers questions you ask about that patient&apos;s record, for example, when a medication was started, or what changed since the last visit</Li>
                 <Li>Drafts a consultation note based on the current visit data, returned as a draft for your review</Li>
               </Ul>
               <SubHead>What the Clinical Copilot does not do</SubHead>
@@ -323,7 +323,7 @@ export default function PrivacyPage() {
               <P>
                 The Clinical Copilot is off by default for every account, including hospital
                 administrators. A doctor enables it deliberately for their own account. Even
-                after enabling, the Copilot reads only the record currently open — it does not
+                after enabling, the Copilot reads only the record currently open; it does not
                 run across the full patient database in the background.
               </P>
               <P>
@@ -333,7 +333,7 @@ export default function PrivacyPage() {
               </P>
               <SubHead>No automated clinical decisions</SubHead>
               <P>
-                The Clinical Copilot produces outputs — summaries, drafts, answers — that are
+                The Clinical Copilot produces outputs (summaries, drafts, answers) that are
                 always presented to the treating doctor for review before any action is taken.
                 No clinical decision affecting a patient is made automatically by the platform.
                 The doctor retains full clinical responsibility and must explicitly save or act
@@ -421,7 +421,7 @@ export default function PrivacyPage() {
                 Individual data principals may request erasure of their personal data by
                 contacting us at the address in the Grievance &amp; Contact section. We will
                 process the request subject to any legal retention obligation that prevents
-                deletion — for example, retention requirements that apply to medical records
+                deletion, for example, retention requirements that apply to medical records
                 under Indian law.
               </P>
             </SectionCard>
@@ -464,8 +464,8 @@ export default function PrivacyPage() {
               </P>
               <SubHead>Right to withdraw consent</SubHead>
               <P>
-                Where processing is based on consent — for example, use of the Clinical Copilot
-                feature — you may withdraw consent at any time. To withdraw consent for an
+                Where processing is based on consent, for example, use of the Clinical Copilot
+                feature, you may withdraw consent at any time. To withdraw consent for an
                 optional feature, disable it in your account settings. To withdraw consent for
                 the processing of your patient record by the underlying healthcare provider,
                 contact that provider directly; they are responsible for acting on your
@@ -583,8 +583,8 @@ export default function PrivacyPage() {
                 health data they enter into the platform.
               </P>
               <P>
-                For optional features that RF Health controls directly — such as the Clinical
-                Copilot — consent is obtained at the account level from the treating doctor,
+                For optional features that RF Health controls directly, such as the Clinical
+                Copilot, consent is obtained at the account level from the treating doctor,
                 who enables the feature for their account. Patient health data is used within
                 that feature only to respond to the specific query the doctor raises; it is
                 not used beyond that purpose.
