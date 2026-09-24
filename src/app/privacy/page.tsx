@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Sora, Plus_Jakarta_Sans } from "next/font/google";
 import { Nav } from "@/components/landing/Nav";
-import { TocNav } from "./TocNav";
 import {
   Mail, Phone, MapPin, ShieldCheck, Lock, Database, Users,
   History, FileText, AlertCircle, Eye, Trash2, RefreshCw,
@@ -132,12 +131,9 @@ export default function PrivacyPage() {
 
       {/* ── Body: TOC + content ───────────────────────────────────────────── */}
       <div className="mx-auto w-[min(92%,1760px)] py-8 sm:py-10 lg:py-12 2xl:py-14">
-        <div className="flex gap-0 lg:gap-8 xl:gap-10 2xl:gap-12 lg:items-start">
-
-          <TocNav />
-
+        <div>
           {/* ── Policy content ──────────────────────────────────────────── */}
-          <div className="min-w-0 flex-1 flex flex-col gap-4 sm:gap-5 lg:gap-6">
+          <div className="flex flex-col gap-4 sm:gap-5 lg:gap-6">
 
             {/* 1. Overview */}
             <SectionCard id="overview" icon={<FileText size={16} strokeWidth={1.5} />} title="Overview">
