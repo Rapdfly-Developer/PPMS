@@ -429,12 +429,6 @@ function secHdr(title: string) {
   return `<div class="sec-hdr" style="page-break-after:avoid;"><span class="sec-hdr-label">${title}</span><span class="sec-hdr-line"></span></div>`;
 }
 
-function badgePriority(p: string) {
-  const cls = p.toUpperCase() === "URGENT" || p.toUpperCase() === "STAT"
-    ? p.toUpperCase() === "STAT" ? "badge-stat" : "badge-urgent"
-    : "badge-routine";
-  return `<span class="badge ${cls}">${escapeHtml(p)}</span>`;
-}
 
 function badgeStatus(s: string) {
   const lower = s.toLowerCase().replace(/_/g, " ");
@@ -542,7 +536,7 @@ export type DispenseSummaryData = {
   vitals: { bp?: string | null; pulse?: string | null; temperature?: string | null; weight?: string | null };
   chiefComplaint?: string | null;
   diagnoses: { description: string; icd10Code: string; status: string; laterality?: string | null }[];
-  investigations: { testName: string; priority: string; status: string }[];
+  investigations: { testName: string; priority: string; status: string; notes?: string | null }[];
   dispenseSummary?: string | null;
 };
 
@@ -564,10 +558,9 @@ async function renderDispenseHtml(data: DispenseSummaryData): Promise<string> {
       <tr>
         <td class="td-num">${idx + 1}</td>
         <td class="td-head">${escapeHtml(i.testName)}</td>
-        <td>${badgePriority(i.priority)}</td>
-        <td>${badgeStatus(i.status)}</td>
+        <td>${i.notes ? escapeHtml(i.notes) : "<span style='color:#aaa;font-style:italic;'>—</span>"}</td>
       </tr>`).join("")
-    : `<tr class="empty-row"><td colspan="4">No investigations ordered</td></tr>`;
+    : `<tr class="empty-row"><td colspan="3">No investigations ordered</td></tr>`;
 
   return `<!DOCTYPE html>
 <html>
@@ -596,7 +589,7 @@ async function renderDispenseHtml(data: DispenseSummaryData): Promise<string> {
 
   ${secHdr("Investigations")}
   <table>
-    <thead><tr><th style="width:24px">#</th><th>Test Name</th><th>Priority</th><th>Status</th></tr></thead>
+    <thead><tr><th style="width:24px">#</th><th>Test Name</th><th>In View Of</th></tr></thead>
     <tbody>${invRows}</tbody>
   </table>
 
@@ -1821,8 +1814,8 @@ export async function generateAllVisitsSummaryPdf(visits: any[]): Promise<Buffer
       : `<tr class="empty-row"><td colspan="5">No medications prescribed</td></tr>`;
 
     const invRows = d.investigations.length
-      ? d.investigations.map((o, i) => `<tr><td class="td-num">${i + 1}</td><td class="td-head">${val(o.testName)}</td><td>${badgePriority(o.priority)}</td><td>${badgeStatus(o.status)}</td></tr>`).join("")
-      : `<tr class="empty-row"><td colspan="4">No investigations ordered</td></tr>`;
+      ? d.investigations.map((o, i) => `<tr><td class="td-num">${i + 1}</td><td class="td-head">${val(o.testName)}</td><td>${o.notes ? escapeHtml(o.notes) : "<span style='color:#aaa;font-style:italic;'>—</span>"}</td></tr>`).join("")
+      : `<tr class="empty-row"><td colspan="3">No investigations ordered</td></tr>`;
 
     const pageBreak = idx > 0 ? `style="page-break-before:always;padding-top:8px;"` : "";
 
@@ -1875,7 +1868,7 @@ export async function generateAllVisitsSummaryPdf(visits: any[]): Promise<Buffer
 
       ${secHdr("Investigations")}
       <table>
-        <thead><tr><th style="width:24px">#</th><th>Test</th><th style="width:80px">Priority</th><th style="width:90px">Status</th></tr></thead>
+        <thead><tr><th style="width:24px">#</th><th>Test</th><th>In View Of</th></tr></thead>
         <tbody>${invRows}</tbody>
       </table>
     </div>`;

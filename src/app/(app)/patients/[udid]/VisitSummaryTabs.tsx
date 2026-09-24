@@ -95,7 +95,7 @@ export const COLS_PAIR = ["30%", "70%"];
 export const COLS_COMPLAINT = ["14%", "60%", "26%"];
 export const COLS_DIAGNOSIS = ["56%", "20%", "24%"];
 export const COLS_MEDICATION = ["28%", "15%", "20%", "15%", "22%"];
-export const COLS_INVESTIGATION = ["32%", "12%", "16%", "20%", "20%"];
+export const COLS_INVESTIGATION = ["35%", "12%", "53%"];
 
 export function Cols({ widths }: { widths: string[] }) {
   return (
@@ -346,8 +346,10 @@ function ShortContent({ complaint, diagText, emrData }: {
           <SumHead icon={<CalendarClock size={11} />} label="Pending Follow-Up" color="text-blue-500" />
           <div className="flex flex-wrap gap-1.5">
             {followUpInv.map((o: any, i: number) => (
-              <span key={i} className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-blue-50 border border-blue-200 text-blue-800 text-[10px] sm:text-[11px] font-medium">
+              <span key={i} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-50 border border-blue-200 text-blue-800 text-[10px] sm:text-[11px] font-medium">
+                {o.laterality && <span className="font-bold text-[var(--color-primary-700)]">{o.laterality}</span>}
                 {o.testName}
+                {o.notes && <span className="italic font-normal text-blue-600/70"> · {o.notes}</span>}
               </span>
             ))}
           </div>
@@ -679,22 +681,15 @@ function LongContent({
                     {o.laterality && <span className="text-[var(--color-primary-700)] mr-1">{o.laterality}</span>}
                     {o.testName}
                   </p>
-                  <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
-                    <span className={`text-[9px] sm:text-[10px] font-semibold uppercase ${
-                      o.priority === "URGENT" ? "text-amber-600" : "text-[var(--color-ink-400)]"
-                    }`}>{o.priority}</span>
-                  </div>
+                  {o.notes && (
+                    <p className="text-[10px] sm:text-[11px] text-[var(--color-ink-500)] mt-0.5 leading-snug italic">
+                      In view of: {o.notes}
+                    </p>
+                  )}
                 </div>
-                <div className="flex flex-col items-end gap-1 shrink-0">
-                  <span className={`text-[9px] sm:text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
-                    o.status === "COMPLETED" ? "bg-emerald-50 text-emerald-700"
-                    : o.status === "ORDERED" ? "bg-blue-50 text-blue-700"
-                    : "bg-amber-50 text-amber-700"
-                  }`}>{o.status}</span>
-                  {o.resultRef
-                    ? <a href={o.resultRef} target="_blank" rel="noreferrer" className="text-[9px] sm:text-[10px] text-[var(--color-primary-600)] underline">View Result</a>
-                    : null}
-                </div>
+                {o.resultRef && (
+                  <a href={o.resultRef} target="_blank" rel="noreferrer" className="text-[9px] sm:text-[10px] text-[var(--color-primary-600)] underline shrink-0">View Result</a>
+                )}
               </div>
             ))}
           </div>

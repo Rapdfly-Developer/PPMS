@@ -57,7 +57,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
       status: d.status,
       laterality: d.laterality,
     })),
-    investigations: visit.investigationOrders.map((i) => ({ testName: i.testName, priority: i.priority, status: i.status })),
+    investigations: visit.investigationOrders.map((i) => ({ testName: i.testName, priority: i.priority, status: i.status, notes: i.notes ?? null })),
     dispenseSummary: visit.dispense?.shortSummary,
   });
 

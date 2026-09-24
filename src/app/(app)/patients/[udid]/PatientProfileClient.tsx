@@ -510,9 +510,7 @@ function LastVisitSummarySection({ summary }: { summary: LastVisitSummary }) {
                         <tr>
                           <th className={TH}>Test</th>
                           <th className={TH}>Eye</th>
-                          <th className={TH}>Category</th>
-                          <th className={TH}>Priority</th>
-                          <th className={TH}>Status</th>
+                          <th className={TH}>In View Of</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -520,19 +518,7 @@ function LastVisitSummarySection({ summary }: { summary: LastVisitSummary }) {
                           <tr key={inv.id}>
                             <td className={`${TD} font-semibold`}>{inv.testName}</td>
                             <td className={TD_MUTED}>{inv.laterality || DASH}</td>
-                            <td className={TD_MUTED}>{inv.category}</td>
-                            <td className={TD}>
-                              <span className={`text-[9px] font-bold uppercase ${inv.priority === "URGENT" ? "text-red-600" : "text-amber-600"}`}>
-                                {inv.priority}
-                              </span>
-                            </td>
-                            <td className={TD}>
-                              <span className={`text-[9px] font-bold uppercase ${
-                                inv.status === "COMPLETED" ? "text-emerald-600"
-                                : inv.status === "ORDERED" ? "text-blue-600"
-                                : "text-amber-600"
-                              }`}>{inv.status}</span>
-                            </td>
+                            <td className={`${TD_MUTED} italic`}>{inv.notes || DASH}</td>
                           </tr>
                         ))}
                       </tbody>
