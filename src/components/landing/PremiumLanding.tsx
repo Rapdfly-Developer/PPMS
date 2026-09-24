@@ -627,9 +627,12 @@ export function PremiumLanding() {
 
                 <a
                   href="#contact"
-                  className="inline-flex items-center justify-center gap-2 rounded-full border border-emerald-950/[0.1] px-7 py-4 text-[15px] font-medium text-emerald-950 transition-colors duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-emerald-50"
+                  className="group inline-flex items-center justify-between gap-3 rounded-full border border-emerald-950/[0.1] py-2 pl-7 pr-2 text-[15px] font-medium text-emerald-950 transition-colors duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-emerald-50"
                 >
                   Book a demo
+                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-950/[0.05] transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:translate-x-[3px] group-hover:-translate-y-[2px] group-hover:scale-105">
+                    <ArrowUpRight size={17} strokeWidth={1.25} aria-hidden="true" />
+                  </span>
                 </a>
               </div>
             </Reveal>
@@ -679,18 +682,38 @@ export function PremiumLanding() {
         </div>
       </section>
 
-      {/* ── Trusted by hospitals ─────────────────────────────────────────── */}
+      {/* ── Social proof numbers ─────────────────────────────────────────── */}
       <Section className="lp-tight-top pt-8 md:pt-10 lg:pt-12">
         <Reveal>
+          <div className="flex flex-wrap items-center justify-center gap-x-10 gap-y-5 sm:gap-x-14">
+            {[
+              { num: "500+", label: "Doctors on the platform" },
+              { num: "100+", label: "Hospitals & clinics" },
+              { num: "99.9%", label: "Uptime target" },
+              { num: "30-day", label: "Free trial, no card" },
+            ].map((s, i) => (
+              <div key={s.label} className={`text-center ${i < 3 ? "sm:border-r sm:border-emerald-950/[0.07] sm:pr-10 sm:last:border-0" : ""}`}>
+                <p className="font-display text-[clamp(1.6rem,3vw,2.25rem)] font-bold leading-none tracking-[-0.03em] text-emerald-950">
+                  {s.num}
+                </p>
+                <p className="mt-1.5 text-[13px] text-slate-500">{s.label}</p>
+              </div>
+            ))}
+          </div>
+        </Reveal>
+      </Section>
+
+      {/* ── What's included (capability marquee) ─────────────────────────── */}
+      <Section className="lp-tight-top pt-0 md:pt-0 lg:pt-0">
+        <Reveal>
           <p className="text-center text-[13px] font-medium uppercase tracking-[0.18em] text-slate-400">
-            Trusted by hospitals, clinics and independent practitioners
+            From first appointment to invoice — every module included
           </p>
         </Reveal>
 
         <Reveal delay={0.08}>
           <Marquee items={CAPABILITIES} className="mt-7" />
         </Reveal>
-
       </Section>
 
       {/* ── The shift ────────────────────────────────────────────────────── */}
@@ -1155,6 +1178,13 @@ export function PremiumLanding() {
               <RevealItem key={t.name}>
                 <figure className="rounded-[1.75rem] bg-white p-2 ring-1 ring-inset ring-emerald-950/[0.07] shadow-[0_30px_60px_-50px_rgba(6,60,45,0.6)] transition-[transform,box-shadow] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:-translate-y-1">
                   <div className="rounded-[1.25rem] bg-gradient-to-b from-slate-50/70 to-white p-7 3xl:p-9 4xl:p-11">
+                    <div className="mb-4 flex gap-0.5" aria-label="5 out of 5 stars">
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <svg key={i} className="h-4 w-4 fill-amber-400" viewBox="0 0 20 20" aria-hidden="true">
+                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                        </svg>
+                      ))}
+                    </div>
                     <blockquote className="font-display text-[17px] font-medium leading-relaxed tracking-[-0.01em] text-emerald-950">
                       &ldquo;{t.text}&rdquo;
                     </blockquote>
@@ -1200,6 +1230,13 @@ export function PremiumLanding() {
             <RevealItem key={t.name}>
               <figure className="rounded-[1.75rem] bg-white p-2 ring-1 ring-inset ring-emerald-950/[0.07] transition-[transform,box-shadow] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:-translate-y-1">
                 <div className="rounded-[1.25rem] bg-gradient-to-b from-slate-50/70 to-white p-6 3xl:p-8 4xl:p-10">
+                  <div className="mb-3 flex gap-0.5" aria-label="5 out of 5 stars">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <svg key={i} className="h-3.5 w-3.5 fill-amber-400" viewBox="0 0 20 20" aria-hidden="true">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                      </svg>
+                    ))}
+                  </div>
                   <blockquote className="font-display text-[16px] font-medium leading-relaxed text-emerald-950">
                     &ldquo;{t.text}&rdquo;
                   </blockquote>
