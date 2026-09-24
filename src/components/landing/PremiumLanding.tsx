@@ -17,6 +17,7 @@ import {
   Fingerprint,
   History,
   Lock,
+  Linkedin,
   Mail,
   MapPin,
   Phone,
@@ -1395,19 +1396,6 @@ export function PremiumLanding() {
               ))}
             </ul>
 
-            {/* Social proof strip */}
-            <div className="mt-10 flex flex-wrap gap-5 border-t border-slate-100 pt-8">
-              {[
-                { num: "500+", sub: "Doctors on the platform" },
-                { num: "100+", sub: "Hospitals & clinics" },
-                { num: "99.9%", sub: "Uptime target" },
-              ].map((s) => (
-                <div key={s.sub}>
-                  <p className="font-display text-[1.6rem] font-bold leading-none tracking-tight text-emerald-950">{s.num}</p>
-                  <p className="mt-1 text-[12.5px] text-slate-500">{s.sub}</p>
-                </div>
-              ))}
-            </div>
           </Reveal>
 
           {/* Right — form */}
@@ -1448,7 +1436,7 @@ export function PremiumLanding() {
                 <Mail size={14} strokeWidth={1.25} aria-hidden="true" />
                 support@ppmsai.com
               </a>
-              <a href="tel:+919629051083" className="flex items-center gap-2 hover:text-emerald-800">
+              <a href="tel:+917373351087" className="flex items-center gap-2 hover:text-emerald-800">
                 <Phone size={14} strokeWidth={1.25} aria-hidden="true" />
                 +91 73733 51087
               </a>
@@ -1456,12 +1444,21 @@ export function PremiumLanding() {
                 <MapPin size={14} strokeWidth={1.25} aria-hidden="true" />
                 Bangalore, Karnataka
               </span>
+              <a
+                href="https://www.linkedin.com/company/rapdfly"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 hover:text-emerald-800"
+              >
+                <Linkedin size={14} strokeWidth={1.25} aria-hidden="true" />
+                LinkedIn
+              </a>
             </div>
           </div>
 
           {[
             { h: "Platform", links: [["Overview", "#platform"], ["Medical records", "#emr"], ["Multi-hospital", "#hospitals"], ["Surgery", "#surgery"]] },
-            { h: "Company", links: [["Analytics", "#analytics"], ["Security", "#security"], ["Pricing", "#pricing"], ["FAQ", "#faq"]] },
+            { h: "Resources", links: [["Analytics", "#analytics"], ["Security", "#security"], ["Pricing", "#pricing"], ["FAQ", "#faq"]] },
             { h: "Get started", links: [["Sign in", "/login"], ["Free trial", "/login"], ["Book a demo", "#contact"], ["Contact", "mailto:support@ppmsai.com"]] },
           ].map((col) => (
             <div key={col.h}>
