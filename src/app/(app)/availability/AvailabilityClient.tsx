@@ -306,14 +306,15 @@ function ScheduleCard({
               : "text-emerald-700 hover:bg-emerald-100"
           }`}
         >
-          <Power size={10} /> {active ? "Pause" : "Activate"}
+          <Power size={10} />
         </button>
         <button
           onClick={handleDelete}
           disabled={pending}
-          className="ml-auto flex items-center gap-1 text-[9px] sm:text-[10px] font-medium px-2 py-1 rounded-lg text-red-600 hover:bg-red-50 transition-colors disabled:opacity-40"
+          title="Delete"
+          className="ml-auto p-1.5 rounded-lg text-red-600 hover:bg-red-50 transition-colors disabled:opacity-40"
         >
-          <Trash2 size={10} /> Delete
+          <Trash2 size={10} />
         </button>
       </div>
     </div>

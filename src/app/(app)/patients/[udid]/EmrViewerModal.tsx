@@ -347,15 +347,9 @@ function EmrContent({ visit, udid, localResults, onAttach }: {
           <ul className="flex flex-col gap-1.5">
             {diag.map((d: any) => (
               <li key={d.id} className="flex flex-wrap items-center gap-2 py-1.5 border-b border-[var(--color-border)] last:border-0">
-                <span className={`text-[9px] font-bold uppercase shrink-0 w-16 ${
-                  d.status === "RESOLVED" ? "text-emerald-600"
-                  : d.status === "CHRONIC" ? "text-amber-600"
-                  : "text-red-500"
-                }`}>{d.status}</span>
-                {d.laterality && <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)] shrink-0">{d.laterality}</span>}
+                {d.laterality && <span className="text-xs font-semibold text-[var(--color-primary-700)] shrink-0">{d.laterality}</span>}
                 <span className="font-medium text-[var(--color-ink-800)] flex-1">{d.description}</span>
                 {d.icd10Code && <span className="font-mono text-[10px] text-[var(--color-ink-400)]">{d.icd10Code}</span>}
-                {d.provisional && <span className="text-[10px] text-amber-600 italic">Provisional</span>}
               </li>
             ))}
           </ul>

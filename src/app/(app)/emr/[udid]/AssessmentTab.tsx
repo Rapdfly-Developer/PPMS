@@ -158,7 +158,7 @@ function DiagnosisRow({
             )}
           </div>
           <p className="text-xs text-[var(--color-ink-400)] font-mono">
-            {d.icd10Code || "—"}{provisional ? " · Provisional" : ""}
+            {d.icd10Code || "—"}
           </p>
         </div>
 

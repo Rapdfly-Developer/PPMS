@@ -303,12 +303,6 @@ function TreatmentDrawer({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, data]);
 
-  const DIAG_STATUS: Record<string, string> = {
-    ACTIVE: "bg-red-100 text-red-700",
-    CHRONIC: "bg-amber-100 text-amber-700",
-    RESOLVED: "bg-emerald-100 text-emerald-700",
-  };
-
   return (
     <Drawer open={open} onClose={onClose} title="Treatment History" icon={<Pill size={16} />} wide>
       {isPending && (
@@ -324,15 +318,12 @@ function TreatmentDrawer({
               <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)] mb-1.5">Diagnoses</p>
               <div className="flex flex-col gap-1">
                 {v.diagnoses.map((d, i) => (
-                  <div key={i} className="flex items-center justify-between gap-2">
+                  <div key={i} className="flex items-center gap-2">
                     <p className="text-xs text-[var(--color-ink-800)] flex-1 min-w-0">
                       <span className="font-mono text-[10px] text-[var(--color-ink-400)] mr-1">{d.icd10Code}</span>
                       {d.laterality && <span className="font-semibold text-[var(--color-primary-700)] mr-1">{d.laterality}</span>}
                       {d.description}
                     </p>
-                    <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 ${DIAG_STATUS[d.status] ?? "bg-gray-100 text-gray-600"}`}>
-                      {d.status}
-                    </span>
                   </div>
                 ))}
               </div>

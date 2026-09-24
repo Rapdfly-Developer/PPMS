@@ -460,10 +460,8 @@ function LastVisitSummarySection({ summary }: { summary: LastVisitSummary }) {
                           : d.status === "CHRONIC" ? "bg-amber-50 border-amber-200 text-amber-800"
                           : "bg-red-50 border-red-200 text-red-800"
                         }`}>
-                          <span className="font-bold text-[9px] uppercase opacity-70">{d.status}</span>
-                          {d.laterality && <span className="font-bold">· {d.laterality}</span>}
-                          · {d.description}
-                          {d.provisional && <span className="italic opacity-70">(P)</span>}
+                          {d.laterality && <span className="font-bold mr-1">{d.laterality}</span>}
+                          {d.description}
                         </span>
                       ))}
                   </div>

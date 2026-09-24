@@ -580,13 +580,15 @@ function TemplateTab({ weekly, hospitals, onGenerate }: {
                                 </button>
                                 <button disabled={pending}
                                   onClick={() => start(async () => toggleWeeklyStatus(slot.id, active ? "INACTIVE" : "ACTIVE"))}
-                                  className="inline-flex items-center gap-1 px-1.5 py-1 rounded-md text-[10px] font-semibold text-[var(--color-ink-500)] hover:text-amber-700 hover:bg-white/70 disabled:opacity-50 transition-colors">
-                                  <Power size={11} className="shrink-0" />{active ? "Pause" : "Resume"}
+                                  title={active ? "Pause" : "Resume"}
+                                  className="p-1 rounded-md text-[var(--color-ink-500)] hover:text-amber-700 hover:bg-white/70 disabled:opacity-50 transition-colors">
+                                  <Power size={11} />
                                 </button>
                               </div>
                               <button onClick={() => setDelTarget(slot)}
-                                className="inline-flex items-center gap-1 px-1.5 py-1 rounded-md text-[10px] font-semibold text-red-500 hover:text-red-700 hover:bg-white/70 transition-colors">
-                                <Trash2 size={11} className="shrink-0" />Delete
+                                title="Delete"
+                                className="p-1 rounded-md text-red-500 hover:text-red-700 hover:bg-white/70 transition-colors">
+                                <Trash2 size={11} />
                               </button>
                             </div>
                           </div>
