@@ -3,9 +3,12 @@ import { requireUser } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import Razorpay from "razorpay";
 
-const PLANS = {
-  MONTHLY: { amount: 99900, label: "Monthly Plan" },   // ₹999 in paise
-  YEARLY:  { amount: 999900, label: "Yearly Plan"  },  // ₹9,999 in paise
+type PlanKey = "MONTHLY" | "5_DOCTORS" | "YEARLY";
+
+const PLANS: Record<PlanKey, { amount: number; discountedAmount: number | null; label: string }> = {
+  MONTHLY:     { amount: 129900, discountedAmount: 32500, label: "Monthly Plan (1 Doctor)" },
+  "5_DOCTORS": { amount: 299900, discountedAmount: 75000, label: "5 Doctors Plan" },
+  YEARLY:      { amount: 999900, discountedAmount: null,  label: "Yearly Plan" },
 };
 
 export async function POST(req: Request) {
@@ -16,7 +19,7 @@ export async function POST(req: Request) {
   }
 
   // The license belongs to the DOCTOR (licensee), not a hospital.
-  const { plan, doctorId } = await req.json() as { plan: "MONTHLY" | "YEARLY"; doctorId: string };
+  const { plan, doctorId } = await req.json() as { plan: PlanKey; doctorId: string };
 
   if (!PLANS[plan]) return NextResponse.json({ error: "Invalid plan" }, { status: 400 });
 
@@ -31,19 +34,32 @@ export async function POST(req: Request) {
     if (!link) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
+  // First-payment discount: applies when the doctor has never had a confirmed paid subscription
+  const existing = await prisma.tenantLicense.findUnique({
+    where: { doctorId },
+    select: { subscriptionStartsAt: true, paymentStatus: true },
+  });
+  const isFirstPayment = !existing?.subscriptionStartsAt || existing.paymentStatus !== "PAID";
+
+  const planConfig = PLANS[plan];
+  const chargeAmount =
+    isFirstPayment && planConfig.discountedAmount !== null
+      ? planConfig.discountedAmount
+      : planConfig.amount;
+
   const razorpay = new Razorpay({
     key_id:     process.env.RAZORPAY_KEY_ID!,
     key_secret: process.env.RAZORPAY_KEY_SECRET!,
   });
 
   const order = await razorpay.orders.create({
-    amount:   PLANS[plan].amount,
+    amount:   chargeAmount,
     currency: "INR",
     receipt:  `ppms_${doctorId.slice(-8)}_${Date.now()}`,
-    notes: { doctorId, plan },
+    notes:    { doctorId, plan },
   });
 
-  // Store orderId on the license
+  // Store orderId on the license row so verify can cross-check
   await prisma.tenantLicense.upsert({
     where: { doctorId },
     update: { razorpayOrderId: order.id, paymentStatus: "PENDING" },
@@ -56,9 +72,10 @@ export async function POST(req: Request) {
   });
 
   return NextResponse.json({
-    orderId:  order.id,
-    amount:   PLANS[plan].amount,
-    currency: "INR",
-    key:      process.env.RAZORPAY_KEY_ID,
+    orderId:        order.id,
+    amount:         chargeAmount,
+    currency:       "INR",
+    key:            process.env.RAZORPAY_KEY_ID,
+    isFirstPayment,
   });
 }

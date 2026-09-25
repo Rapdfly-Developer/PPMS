@@ -128,7 +128,7 @@ export async function getLicenseForHospital(hospitalId: string): Promise<License
 
 export async function createTrialLicense(doctorId: string) {
   const trialEndsAt = new Date();
-  trialEndsAt.setDate(trialEndsAt.getDate() + 30);
+  trialEndsAt.setDate(trialEndsAt.getDate() + 7);
 
   const license = await prisma.tenantLicense.create({
     data: { doctorId, trialEndsAt },
@@ -139,17 +139,18 @@ export async function createTrialLicense(doctorId: string) {
 
 export async function activateLicense(
   doctorId: string,
-  plan: "MONTHLY" | "YEARLY",
+  plan: "MONTHLY" | "5_DOCTORS" | "YEARLY",
   razorpayOrderId: string,
   razorpayPaymentId: string,
   razorpaySignature: string,
 ) {
   const now = new Date();
   const subscriptionEndsAt = new Date(now);
-  if (plan === "MONTHLY") {
-    subscriptionEndsAt.setMonth(subscriptionEndsAt.getMonth() + 1);
-  } else {
+  if (plan === "YEARLY") {
     subscriptionEndsAt.setFullYear(subscriptionEndsAt.getFullYear() + 1);
+  } else {
+    // MONTHLY and 5_DOCTORS both bill month-to-month
+    subscriptionEndsAt.setMonth(subscriptionEndsAt.getMonth() + 1);
   }
 
   const license = await prisma.tenantLicense.upsert({

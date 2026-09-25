@@ -1012,7 +1012,7 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
 
                     <InfoGrid rows={[
                       { label: "Licensed To", value: data.orgName ?? "—" },
-                      { label: "License Type", value: data.plan === "YEARLY" ? "Annual License" : data.plan === "MONTHLY" ? "Monthly License" : data.plan ?? "Professional" },
+                      { label: "License Type", value: data.plan === "YEARLY" ? "Annual License" : data.plan === "5_DOCTORS" ? "5 Doctors Plan" : data.plan === "MONTHLY" ? "Monthly License" : data.plan ?? "Professional" },
                       { label: "Activation Date", value: fmt(data.activationDate) },
                       { label: "Expiry Date", value: fmt(data.expiryDate), highlight: status === "SUBSCRIPTION_EXPIRED" ? "red" : "green" },
                       { label: "License Key", value: mask(data.licenseKey), mono: true, small: true },
@@ -1063,8 +1063,10 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
 
       {showPlans && (
         <PlansModal
+          doctorId={data.orgId ?? ""}
           onClose={() => setShowPlans(false)}
           onActivateKey={() => { setShowPlans(false); router.push("/license/activate"); }}
+          onSuccess={() => { setShowPlans(false); router.refresh(); }}
         />
       )}
     </div>
@@ -1072,25 +1074,136 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
 }
 
 /* ── Plans modal ────────────────────────────────────────────────────────────── */
-const PLANS = [
+type PlanKey = "MONTHLY" | "5_DOCTORS" | "YEARLY";
+
+const PLANS_LIST: Array<{
+  key: PlanKey;
+  name: string;
+  price: string;
+  discountedPrice: string | null;
+  per: string;
+  tagline: string;
+  badge: string | null;
+  highlight: boolean;
+  features: string[];
+}> = [
   {
-    name: "Monthly", price: "₹999", per: "/ month", tagline: "For getting started",
-    badge: null as string | null, highlight: false,
-    features: ["Unlimited patients & EMR", "Appointments & queue", "Prescriptions & PDF reports", "Email support"],
+    key: "MONTHLY",
+    name: "Monthly",
+    price: "₹1,299",
+    discountedPrice: "₹325",
+    per: "/ month",
+    tagline: "For individual doctors",
+    badge: "75% OFF first month",
+    highlight: false,
+    features: ["1 doctor account", "Unlimited hospitals", "Appointments & EMR", "Prescriptions & billing", "Email support"],
   },
   {
-    name: "Annual", price: "₹9,999", per: "/ year", tagline: "Save 17% vs monthly",
-    badge: "Most Popular", highlight: true,
-    features: ["Everything in Monthly", "Multi-hospital support", "Data export (CSV / Excel / PDF)", "Priority support"],
+    key: "5_DOCTORS",
+    name: "5 Doctors",
+    price: "₹2,999",
+    discountedPrice: "₹750",
+    per: "/ month",
+    tagline: "Clinics & groups",
+    badge: "Most Popular",
+    highlight: true,
+    features: ["Up to 5 doctor logins", "Unlimited hospitals", "Full EMR & prescriptions", "Advanced billing", "Priority support"],
   },
   {
-    name: "5-Year", price: "₹39,999", per: "/ 5 years", tagline: "Save 20% vs annual",
-    badge: "Best Value", highlight: false,
-    features: ["Everything in Annual", "All future updates included", "Free re-activation on new device", "Dedicated onboarding"],
+    key: "YEARLY",
+    name: "Yearly",
+    price: "₹9,999",
+    discountedPrice: null,
+    per: "/ year",
+    tagline: "Best value — save 2 months",
+    badge: "Best Value",
+    highlight: false,
+    features: ["Everything in 5 Doctors", "Unlimited hospitals", "Annual billing", "Dedicated onboarding"],
   },
 ];
 
-function PlansModal({ onClose, onActivateKey }: { onClose: () => void; onActivateKey: () => void }) {
+function PlansModal({
+  doctorId,
+  onClose,
+  onActivateKey,
+  onSuccess,
+}: {
+  doctorId: string;
+  onClose: () => void;
+  onActivateKey: () => void;
+  onSuccess: () => void;
+}) {
+  const [buying, setBuying] = useState<PlanKey | "">("");
+  const [payError, setPayError] = useState("");
+
+  useEffect(() => {
+    if (document.querySelector('script[src*="checkout.razorpay.com"]')) return;
+    const s = document.createElement("script");
+    s.src = "https://checkout.razorpay.com/v1/checkout.js";
+    s.async = true;
+    document.head.appendChild(s);
+  }, []);
+
+  async function handleBuy(planKey: PlanKey) {
+    if (!doctorId) { setPayError("Doctor ID not found. Please refresh and try again."); return; }
+    setPayError("");
+    setBuying(planKey);
+    try {
+      const res = await fetch("/api/razorpay/create-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan: planKey, doctorId }),
+      });
+      const orderData = await res.json() as {
+        orderId?: string; amount?: number; currency?: string; key?: string; error?: string;
+      };
+      if (!res.ok) throw new Error(orderData.error || "Failed to initiate payment.");
+
+      const planInfo = PLANS_LIST.find((p) => p.key === planKey);
+      const rzp = new (window as unknown as { Razorpay: new (opts: Record<string, unknown>) => { open(): void } }).Razorpay({
+        key:         orderData.key,
+        amount:      orderData.amount,
+        currency:    orderData.currency ?? "INR",
+        order_id:    orderData.orderId,
+        name:        "RF Health",
+        description: planInfo ? `${planInfo.name} Plan` : planKey,
+        image:       "/landing/logo-rf-health.webp",
+        handler: async (response: { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }) => {
+          try {
+            const vRes = await fetch("/api/razorpay/verify", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                razorpay_order_id:   response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature:  response.razorpay_signature,
+                doctorId,
+                plan: planKey,
+              }),
+            });
+            const vData = await vRes.json() as { success?: boolean };
+            if (vData.success) {
+              onSuccess();
+            } else {
+              setPayError("Payment verified but activation failed. Contact support@ppms.in.");
+            }
+          } catch {
+            setPayError("Network error during verification. Your payment may have been processed — contact support@ppms.in.");
+          } finally {
+            setBuying("");
+          }
+        },
+        prefill: {},
+        theme: { color: "#0D7A63" },
+        modal: { ondismiss: () => setBuying("") },
+      });
+      rzp.open();
+    } catch (e) {
+      setPayError(e instanceof Error ? e.message : "Payment initiation failed. Please try again.");
+      setBuying("");
+    }
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
       style={{ background: "rgba(2,5,10,.82)", backdropFilter: "blur(12px)" }}
@@ -1107,31 +1220,59 @@ function PlansModal({ onClose, onActivateKey }: { onClose: () => void; onActivat
           <div className="flex items-start justify-between mb-6">
             <div>
               <h2 className="text-xl font-black" style={{ color: T.text }}>Choose your RF Health plan</h2>
-              <p className="text-sm mt-1" style={{ color: T.muted }}>Pick a plan and we&apos;ll send your license key by email.</p>
+              <p className="text-sm mt-1" style={{ color: T.muted }}>Secure checkout via Razorpay · Cancel anytime.</p>
             </div>
-            <button onClick={onClose} className="p-1.5 rounded-xl hover:bg-white/10 transition-colors" style={{ color: T.faint }}>
+            <button onClick={onClose} className="p-1.5 rounded-xl hover:bg-gray-100 transition-colors" style={{ color: T.faint }}>
               <XCircle size={20} />
             </button>
           </div>
 
+          {payError && (
+            <div className="flex items-start gap-2 rounded-xl px-4 py-3 mb-4 text-sm"
+              style={{ background: "#FEF2F2", border: "1px solid #FECACA", color: "#B91C1C" }}>
+              <AlertCircle size={15} className="shrink-0 mt-0.5" /> {payError}
+            </div>
+          )}
+
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {PLANS.map((p) => (
-              <div key={p.name} className="relative rounded-2xl p-5 flex flex-col" style={{
+            {PLANS_LIST.map((p) => (
+              <div key={p.key} className="relative rounded-2xl p-5 flex flex-col" style={{
                 border: p.highlight ? "1px solid rgba(13,122,99,.34)" : "1px solid rgba(15,41,38,.09)",
-                background: p.highlight ? "rgba(13,122,99,.11)" : "rgba(15,41,38,.03)",
-                boxShadow: p.highlight ? "0 0 30px rgba(13,122,99,.16)" : "none",
+                background: p.highlight ? "rgba(13,122,99,.08)" : "rgba(15,41,38,.03)",
+                boxShadow: p.highlight ? "0 0 30px rgba(13,122,99,.12)" : "none",
               }}>
                 {p.badge && (
                   <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full text-[11px] font-bold text-white whitespace-nowrap"
-                    style={{ background: p.highlight ? "linear-gradient(135deg,#0A6552,#059669)" : "#94A3B8" }}>
+                    style={{
+                      background: p.highlight
+                        ? "linear-gradient(135deg,#0A6552,#059669)"
+                        : p.badge.startsWith("75%")
+                          ? "linear-gradient(135deg,#D97706,#F59E0B)"
+                          : "#94A3B8",
+                    }}>
                     {p.badge}
                   </span>
                 )}
-                <p className="text-sm font-bold" style={{ color: T.text }}>{p.name}</p>
-                <p className="mt-2">
-                  <span className="text-2xl font-black" style={{ color: T.text }}>{p.price}</span>
-                  <span className="text-xs" style={{ color: T.faint }}> {p.per}</span>
-                </p>
+                <p className="text-sm font-bold mt-2" style={{ color: T.text }}>{p.name}</p>
+                <div className="mt-2">
+                  {p.discountedPrice ? (
+                    <>
+                      <span className="text-2xl font-black" style={{ color: T.accent }}>{p.discountedPrice}</span>
+                      <span className="text-xs ml-1.5 line-through" style={{ color: T.faint }}>{p.price}</span>
+                      <span className="text-xs" style={{ color: T.faint }}> {p.per}</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-2xl font-black" style={{ color: T.text }}>{p.price}</span>
+                      <span className="text-xs" style={{ color: T.faint }}> {p.per}</span>
+                    </>
+                  )}
+                </div>
+                {p.discountedPrice && (
+                  <p className="text-[11px] mt-0.5" style={{ color: "#D97706" }}>
+                    First month only · then {p.price}{p.per}
+                  </p>
+                )}
                 <p className="text-xs mt-0.5 mb-4" style={{ color: T.faint }}>{p.tagline}</p>
                 <ul className="space-y-2 mb-5 flex-1">
                   {p.features.map((f) => (
@@ -1140,22 +1281,29 @@ function PlansModal({ onClose, onActivateKey }: { onClose: () => void; onActivat
                     </li>
                   ))}
                 </ul>
-                <a
-                  href={`mailto:support@ppms.in?subject=${encodeURIComponent(`RF Health License Purchase: ${p.name} plan (${p.price}${p.per})`)}&body=${encodeURIComponent("Hi,\n\nI would like to buy the " + p.name + " plan for RF Health. Please share the payment details and license key.\n\nThank you.")}`}
-                  className="lg-btn w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-bold"
+                <button
+                  onClick={() => handleBuy(p.key)}
+                  disabled={buying !== ""}
+                  className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-bold transition-all disabled:opacity-60"
                   style={p.highlight
                     ? { background: "linear-gradient(135deg,#0A6552,#059669)", color: "white", boxShadow: "0 4px 14px rgba(21,122,115,.35)" }
                     : { background: "rgba(15,41,38,.06)", border: "1px solid rgba(15,41,38,.13)", color: T.muted }}>
-                  Buy {p.name}
-                </a>
+                  {buying === p.key && <Loader2 size={14} className="animate-spin" />}
+                  {buying === p.key
+                    ? "Processing..."
+                    : `Subscribe — ${p.discountedPrice ?? p.price}`}
+                </button>
               </div>
             ))}
           </div>
 
-          <div className="mt-6 text-center text-xs" style={{ color: T.faint }}>
-            Already have a license key?{" "}
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs" style={{ color: T.faint }}>
+            <span className="flex items-center gap-1.5">
+              <ShieldCheck size={13} style={{ color: T.accent }} />
+              Payments secured by Razorpay · 256-bit SSL
+            </span>
             <button onClick={onActivateKey} className="font-semibold hover:underline" style={{ color: T.accent }}>
-              Activate it here →
+              Already have a license key? Activate here →
             </button>
           </div>
         </div>
