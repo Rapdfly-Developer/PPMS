@@ -1,13 +1,14 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, useTransition } from "react";
+import React, { useState, useEffect, useMemo, useTransition, useCallback } from "react";
 import {
   Key, ShieldCheck, AlertTriangle, Clock, CreditCard,
   History, CheckCircle2, XCircle, RefreshCw, Crown,
   BarChart2, FileText, Lock,
   Loader2, Search, ChevronLeft, ChevronRight, Mail, Phone,
   BadgeCheck, Package, Eye, EyeOff,
-  Shield, Info,
+  Shield, Info, ArrowRight, CalendarCheck, Download, X as XIcon,
+  Calendar, Receipt, Sparkles, RotateCcw,
 } from "lucide-react";
 import { getLicenseFullDetails, type LicenseFullData } from "./actions";
 import { activateLicenseKey, reactivateLicense, verifyLicense } from "@/app/license/actions";
@@ -31,6 +32,33 @@ function maskId(mid: string | null) {
   const c = mid.replace(/-/g, "").toUpperCase();
   return `${c.slice(0, 4)}-${c.slice(4, 8)}-${c.slice(8, 12)}-${c.slice(12, 16)}`;
 }
+
+// ── plan config ──────────────────────────────────────────────────────────────
+
+const PLAN_CONFIG: Record<string, { name: string; tag: string; price: string; billingCycle: string }> = {
+  MONTHLY:    { name: "Professional", tag: "Clinics & Groups",   price: "₹2,999", billingCycle: "Monthly" },
+  ENTERPRISE: { name: "Enterprise",   tag: "Hospitals & Chains", price: "₹1",     billingCycle: "Monthly" },
+  YEARLY:     { name: "Professional", tag: "Annual Plan",        price: "₹24,999", billingCycle: "Annual"  },
+};
+
+const PLAN_FEATURE_MAP: Record<string, string[]> = {
+  MONTHLY: [
+    "Patient Records (EMR)", "Appointments", "Doctor Dashboard",
+    "Follow-up Management", "Analytics & Reports", "PDF Export",
+    "Multi-Hospital Management", "Custom Role Permissions", "HMS / RIS Integration",
+  ],
+  ENTERPRISE: [
+    "Patient Records (EMR)", "Appointments", "Doctor Dashboard",
+    "Follow-up Management", "Analytics & Reports", "PDF Export",
+    "Multi-Hospital Management", "Custom Role Permissions", "HMS / RIS Integration",
+    "Priority Support", "Offline Backup",
+  ],
+  YEARLY: [
+    "Patient Records (EMR)", "Appointments", "Doctor Dashboard",
+    "Follow-up Management", "Analytics & Reports", "PDF Export",
+    "Multi-Hospital Management", "Custom Role Permissions", "HMS / RIS Integration",
+  ],
+};
 
 // ── sub-components ────────────────────────────────────────────────────────────
 
@@ -196,33 +224,229 @@ const FEATURES = [
   { label: "Custom Role Permissions",    trial: false },
 ];
 
-function OverviewTab({ data }: { data: LicenseFullData }) {
+function OverviewTab({ data, onTabChange }: { data: LicenseFullData; onTabChange: (t: LicTab) => void }) {
+  const [showManage, setShowManage] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const [cancelStep, setCancelStep] = useState<"idle" | "confirm">("idle");
+  const [cancelDone, setCancelDone] = useState(false);
+
   const licensed = data.status === "SUBSCRIBED";
   const trial    = data.status === "TRIAL_ACTIVE";
-  const active   = licensed || trial;
   const expired  = data.status === "SUBSCRIPTION_EXPIRED" || data.status === "TRIAL_EXPIRED";
-  const urgent   = active && data.remainingDays <= 7;
+  const planCfg  = data.plan ? PLAN_CONFIG[data.plan] : null;
+  const planFeatures = data.plan ? (PLAN_FEATURE_MAP[data.plan] ?? []) : [];
+
+  async function handleCancel() {
+    setCancelling(true);
+    try {
+      const res = await fetch("/api/license/cancel", { method: "POST" });
+      if (res.ok) { setCancelDone(true); setShowManage(false); }
+    } finally { setCancelling(false); setCancelStep("idle"); }
+  }
+
+  // ── ACTIVE SUBSCRIPTION STATE ──────────────────────────────────────────────
+  if (licensed && planCfg) {
+    return (
+      <div className="space-y-5">
+        {/* Active subscription card */}
+        <div className="rounded-xl border border-emerald-200 bg-white overflow-hidden">
+          <div className="px-6 py-5 bg-emerald-50 border-b border-emerald-100">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-xs font-bold uppercase tracking-wider text-[var(--color-ink-400)]">{planCfg.name} Plan</span>
+                  <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-600 text-white">
+                    <span className="w-1.5 h-1.5 rounded-full bg-white" /> ACTIVE
+                  </span>
+                </div>
+                <p className="text-[11px] text-[var(--color-ink-400)]">{planCfg.tag}</p>
+                <div className="flex items-end gap-1 mt-2">
+                  <span className="text-3xl font-black text-[var(--color-ink-900)]">{planCfg.price}</span>
+                  <span className="text-sm text-[var(--color-ink-400)] mb-1">/ month</span>
+                </div>
+              </div>
+              <ShieldCheck size={36} className="text-emerald-500 shrink-0 mt-1 opacity-60" />
+            </div>
+          </div>
+          <div className="px-6 py-4 flex flex-col sm:flex-row sm:items-center gap-4">
+            <div className="flex flex-col sm:flex-row gap-4 flex-1 text-sm">
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Started</p>
+                <p className="text-sm font-semibold text-[var(--color-ink-800)] mt-0.5">{fmt(data.subscriptionStartsAt)}</p>
+              </div>
+              <div className="hidden sm:block w-px bg-[var(--color-border)]" />
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Next Renewal</p>
+                <p className="text-sm font-semibold text-[var(--color-ink-800)] mt-0.5">{fmt(data.subscriptionEndsAt)}</p>
+              </div>
+              <div className="hidden sm:block w-px bg-[var(--color-border)]" />
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Days Remaining</p>
+                <p className="text-sm font-semibold text-emerald-700 mt-0.5">{data.remainingDays} days</p>
+              </div>
+            </div>
+            <div className="flex gap-2 shrink-0">
+              <button
+                onClick={() => setShowManage(true)}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-[var(--color-border)] text-xs font-semibold text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] transition-colors"
+              >
+                <RefreshCw size={12} /> Manage
+              </button>
+              <button
+                onClick={() => onTabChange("history")}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[var(--color-primary-600)] text-white text-xs font-semibold hover:bg-[var(--color-primary-700)] transition-colors"
+              >
+                <Receipt size={12} /> Billing
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {cancelDone && (
+          <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-sm">
+            <AlertTriangle size={14} /> Cancellation requested. Access continues until {fmt(data.subscriptionEndsAt)}.
+          </div>
+        )}
+
+        {data.remainingDays <= 7 && (
+          <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-amber-50 border border-amber-200">
+            <Clock size={15} className="text-amber-600 shrink-0" />
+            <p className="text-sm text-amber-800"><strong>{data.remainingDays} days</strong> until renewal — your subscription will auto-renew on {fmt(data.subscriptionEndsAt)}.</p>
+          </div>
+        )}
+
+        {/* Your Plan Includes */}
+        <div className="rounded-xl border border-[var(--color-border)] bg-white overflow-hidden">
+          <div className="flex items-center gap-2 px-5 py-3.5 border-b border-[var(--color-border)]">
+            <Sparkles size={14} className="text-[var(--color-primary-600)]" />
+            <p className="text-sm font-semibold text-[var(--color-ink-800)]">Your Plan Includes</p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-0 divide-y sm:divide-y-0 sm:divide-x divide-[var(--color-border)]">
+            {planFeatures.map((feat) => (
+              <div key={feat} className="flex items-center gap-2.5 px-5 py-3">
+                <CheckCircle2 size={14} className="text-emerald-500 shrink-0" />
+                <span className="text-sm text-[var(--color-ink-700)]">{feat}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Latest payment */}
+        {data.razorpayPaymentId && (
+          <div className="rounded-xl border border-[var(--color-border)] bg-white overflow-hidden">
+            <div className="flex items-center gap-2 px-5 py-3.5 border-b border-[var(--color-border)]">
+              <CreditCard size={14} className="text-[var(--color-primary-600)]" />
+              <p className="text-sm font-semibold text-[var(--color-ink-800)]">Latest Payment</p>
+            </div>
+            <div className="px-5 py-4 grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Amount</p>
+                <p className="text-sm font-bold text-[var(--color-ink-900)] mt-1">{planCfg.price}</p>
+              </div>
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Date</p>
+                <p className="text-sm font-semibold text-[var(--color-ink-800)] mt-1">{fmt(data.subscriptionStartsAt)}</p>
+              </div>
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Status</p>
+                <span className="inline-flex items-center gap-1 mt-1 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                  <CheckCircle2 size={10} /> Paid
+                </span>
+              </div>
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Payment ID</p>
+                <p className="text-xs font-mono text-[var(--color-ink-500)] mt-1 truncate">{data.razorpayPaymentId}</p>
+              </div>
+            </div>
+            <div className="px-5 pb-4 flex items-center gap-3 text-[11px] text-[var(--color-ink-400)]">
+              <span>Method: Razorpay</span>
+              <span>·</span>
+              <span>Cycle: {planCfg.billingCycle}</span>
+            </div>
+          </div>
+        )}
+
+        {/* Manage subscription modal */}
+        {showManage && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30">
+            <div className="bg-white rounded-2xl border border-[var(--color-border)] shadow-xl w-full max-w-sm overflow-hidden">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
+                <p className="text-sm font-bold text-[var(--color-ink-900)]">Manage Subscription</p>
+                <button onClick={() => { setShowManage(false); setCancelStep("idle"); }} className="p-1 rounded-lg hover:bg-[var(--color-surface-sunken)] text-[var(--color-ink-400)]">
+                  <XIcon size={16} />
+                </button>
+              </div>
+              <div className="px-6 py-5 space-y-4">
+                <div className="flex items-center justify-between p-4 rounded-xl bg-[var(--color-primary-50)] border border-[var(--color-primary-100)]">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-wider text-[var(--color-ink-400)]">{planCfg.name}</p>
+                    <p className="text-lg font-black text-[var(--color-ink-900)]">{planCfg.price}<span className="text-sm font-normal text-[var(--color-ink-400)]"> / month</span></p>
+                  </div>
+                  <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-600 text-white">
+                    <span className="w-1.5 h-1.5 rounded-full bg-white" /> ACTIVE
+                  </span>
+                </div>
+
+                {cancelStep === "idle" ? (
+                  <button
+                    onClick={() => setCancelStep("confirm")}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-red-200 text-red-600 text-sm font-semibold hover:bg-red-50 transition-colors"
+                  >
+                    <XIcon size={14} /> Cancel Subscription
+                  </button>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="p-4 rounded-xl bg-red-50 border border-red-200">
+                      <p className="text-sm font-semibold text-red-800">Cancel subscription?</p>
+                      <p className="text-xs text-red-700 mt-1">
+                        Your {planCfg.name} plan will remain active until <strong>{fmt(data.subscriptionEndsAt)}</strong>. Access will not be removed immediately.
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setCancelStep("idle")}
+                        className="flex-1 py-2.5 rounded-xl border border-[var(--color-border)] text-xs font-semibold text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] transition-colors"
+                      >
+                        Keep Subscription
+                      </button>
+                      <button
+                        onClick={handleCancel}
+                        disabled={cancelling}
+                        className="flex-1 py-2.5 rounded-xl bg-red-600 text-white text-xs font-semibold hover:bg-red-700 disabled:opacity-60 transition-colors flex items-center justify-center gap-1"
+                      >
+                        {cancelling ? <Loader2 size={12} className="animate-spin" /> : null}
+                        Cancel Subscription
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ── NON-SUBSCRIBED STATE (trial / expired / no license) ────────────────────
+  const urgent = !expired && data.remainingDays <= 7;
 
   const metrics = [
     {
       label: "Status",
       value: <Pill status={data.status} />,
       icon: ShieldCheck,
-      color: licensed ? "bg-emerald-50 border-emerald-200" : trial ? "bg-amber-50 border-amber-200" : "bg-red-50 border-red-200",
+      color: trial ? "bg-amber-50 border-amber-200" : "bg-red-50 border-red-200",
     },
     {
       label: "Days Remaining",
-      value: <span className={`text-xl font-black ${urgent ? "text-red-600" : data.remainingDays <= 30 ? "text-amber-600" : "text-emerald-600"}`}>
-        {data.remainingDays}
-      </span>,
+      value: <span className={`text-xl font-black ${urgent ? "text-red-600" : data.remainingDays <= 30 ? "text-amber-600" : "text-emerald-600"}`}>{data.remainingDays}</span>,
       icon: Clock,
       color: "bg-slate-50 border-slate-200",
     },
     {
       label: "Plan",
-      value: <span className="text-sm font-bold text-[var(--color-ink-800)]">
-        {trial ? "Free Trial" : data.plan === "YEARLY" ? "Annual" : data.plan === "MONTHLY" ? "Monthly" : "—"}
-      </span>,
+      value: <span className="text-sm font-bold text-[var(--color-ink-800)]">{trial ? "Free Trial" : "—"}</span>,
       icon: CreditCard,
       color: "bg-[var(--color-primary-50)] border-[var(--color-primary-200)]",
     },
@@ -232,7 +456,6 @@ function OverviewTab({ data }: { data: LicenseFullData }) {
     <div className="space-y-5">
       <StatusBanner data={data} />
 
-      {/* Metric tiles */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {metrics.map((m) => {
           const Icon = m.icon;
@@ -249,16 +472,13 @@ function OverviewTab({ data }: { data: LicenseFullData }) {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        {/* License Details */}
         <SCard title="License Details" icon={Key}>
           <InfoRow label="Licensed To"     value={`Dr. ${data.doctorName}`} />
           <InfoRow label="License Key"     value={data.licenseKeyMasked} mono />
-          <InfoRow label="Plan"            value={trial ? "Free Trial" : data.plan === "YEARLY" ? "Annual" : data.plan === "MONTHLY" ? "Monthly" : "—"} />
-          <InfoRow label="Activation Date" value={fmt(data.subscriptionStartsAt ?? data.trialStartsAt)} />
-          <InfoRow label="Expiry Date"     value={fmt(data.subscriptionEndsAt ?? data.trialEndsAt)} />
+          <InfoRow label="Plan"            value={trial ? "Free Trial" : "—"} />
+          <InfoRow label="Trial Start"     value={fmt(data.trialStartsAt)} />
+          <InfoRow label="Trial End"       value={fmt(data.trialEndsAt)} />
         </SCard>
-
-        {/* Doctor Info */}
         <SCard title="Doctor Info" icon={BarChart2}>
           <InfoRow label="Primary Hospital" value={data.primaryHospital} />
           <InfoRow label="Contact"          value={data.doctorContact} />
@@ -266,40 +486,24 @@ function OverviewTab({ data }: { data: LicenseFullData }) {
         </SCard>
       </div>
 
-      {/* Feature Access */}
-      <SCard title="Feature Access" icon={Shield}>
-        {expired && (
-          <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-red-50 border border-red-200 mb-4">
-            <XCircle size={15} className="text-red-600 shrink-0 mt-0.5" />
-            <div>
-              <p className="text-sm font-semibold text-red-800">Feature Access Denied</p>
-              <p className="text-xs text-red-700 mt-0.5">Your license has expired. All features are locked until you renew.</p>
-            </div>
-          </div>
-        )}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          {FEATURES.map((f) => {
-            const unlocked = licensed || (trial && f.trial);
-            return (
-              <div key={f.label} className={`flex items-center gap-3 px-3 py-2.5 rounded-lg border ${
-                unlocked ? "bg-emerald-50 border-emerald-200" : "bg-slate-50 border-slate-200 opacity-60"
-              }`}>
-                {unlocked
-                  ? <CheckCircle2 size={14} className="text-emerald-600 shrink-0" />
-                  : <Lock size={14} className="text-slate-400 shrink-0" />}
-                <span className={`text-xs font-medium ${unlocked ? "text-emerald-800" : "text-slate-500"}`}>
-                  {f.label}
-                </span>
-                {!f.trial && !licensed && (
-                  <span className="ml-auto text-[10px] font-bold text-[var(--color-primary-700)] bg-[var(--color-primary-100)] px-1.5 py-0.5 rounded-full shrink-0">
-                    Paid
-                  </span>
-                )}
-              </div>
-            );
-          })}
+      {/* CTA to upgrade */}
+      <div className="flex items-center gap-4 px-5 py-4 rounded-xl bg-[var(--color-primary-50)] border border-[var(--color-primary-200)]">
+        <Crown size={22} className="text-[var(--color-primary-600)] shrink-0" />
+        <div className="flex-1">
+          <p className="text-sm font-semibold text-[var(--color-primary-800)]">
+            {expired ? "Restore access now" : "Upgrade to Professional"}
+          </p>
+          <p className="text-xs text-[var(--color-primary-600)] mt-0.5">
+            Starting at ₹1 / month — pay securely via Razorpay.
+          </p>
         </div>
-      </SCard>
+        <button
+          onClick={() => onTabChange("plans")}
+          className="shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[var(--color-primary-600)] text-white text-xs font-semibold hover:bg-[var(--color-primary-700)] transition-colors"
+        >
+          View Plans <ArrowRight size={12} />
+        </button>
+      </div>
     </div>
   );
 }
@@ -564,10 +768,14 @@ const PLAN_TIERS: PlanTier[] = [
   },
 ];
 
-function PlansTab({ data, onRefresh }: { data: LicenseFullData; onRefresh: () => void }) {
+function PlansTab({ data, onRefresh, onTabChange }: { data: LicenseFullData; onRefresh: () => void; onTabChange: (t: LicTab) => void }) {
   const [paying, setPaying]     = useState(false);
   const [payError, setPayError] = useState<string | null>(null);
   const [payOk, setPayOk]       = useState(false);
+  const [paidPlanKey, setPaidPlanKey] = useState<string | null>(null);
+  const [paidPaymentId, setPaidPaymentId] = useState<string | null>(null);
+  const [paidOrderId, setPaidOrderId]     = useState<string | null>(null);
+  const [paidStartDate, setPaidStartDate] = useState<string | null>(null);
 
   const currentId =
     data.status === "TRIAL_ACTIVE" ? "starter"
@@ -625,7 +833,14 @@ function PlansTab({ data, onRefresh }: { data: LicenseFullData; onRefresh: () =>
               }),
             });
             if (!vRes.ok) { const e = await vRes.json(); setPayError(e.error ?? "Payment verification failed."); }
-            else { setPayOk(true); onRefresh(); }
+            else {
+              setPayOk(true);
+              setPaidPlanKey(planKey);
+              setPaidPaymentId(response.razorpay_payment_id);
+              setPaidOrderId(response.razorpay_order_id);
+              setPaidStartDate(new Date().toISOString());
+              onRefresh();
+            }
           } catch { setPayError("Verification error. Contact support."); }
           finally { setPaying(false); }
         },
@@ -644,14 +859,101 @@ function PlansTab({ data, onRefresh }: { data: LicenseFullData; onRefresh: () =>
         <p className="text-xs text-[var(--color-ink-500)] mt-0.5">Choose the plan that fits your practice. Pay securely via Razorpay.</p>
       </div>
 
-      {payOk && (
-        <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm font-medium">
-          <CheckCircle2 size={16} /> Payment successful! Your Professional plan is now active.
-        </div>
-      )}
+      {payOk && paidPlanKey && (() => {
+        const cfg = PLAN_CONFIG[paidPlanKey];
+        const startDate = paidStartDate ? new Date(paidStartDate) : new Date();
+        const renewDate = new Date(startDate);
+        renewDate.setMonth(renewDate.getMonth() + 1);
+        return (
+          <div className="rounded-xl border border-emerald-300 bg-white overflow-hidden">
+            {/* Header */}
+            <div className="px-6 py-5 bg-emerald-50 border-b border-emerald-100">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-full bg-emerald-600 flex items-center justify-center">
+                  <CheckCircle2 size={20} className="text-white" />
+                </div>
+                <div>
+                  <p className="text-base font-bold text-emerald-900">Payment successful</p>
+                  <p className="text-xs text-emerald-700">Your {cfg?.name ?? ""} plan is now active.</p>
+                </div>
+              </div>
+              <div className="text-2xl font-black text-[var(--color-ink-900)]">
+                {cfg?.price ?? ""} <span className="text-sm font-normal text-[var(--color-ink-400)]">/ month</span>
+              </div>
+              <p className="text-xs text-emerald-700 mt-1">Subscription activated successfully. You now have access to all {cfg?.name ?? ""} features.</p>
+            </div>
+            {/* Checklist */}
+            <div className="px-6 py-4 border-b border-[var(--color-border)] flex flex-col gap-2.5">
+              {[
+                "Payment verified",
+                `${cfg?.name ?? "Plan"} activated`,
+                "Access enabled",
+              ].map((item) => (
+                <div key={item} className="flex items-center gap-2.5">
+                  <CheckCircle2 size={15} className="text-emerald-500 shrink-0" />
+                  <span className="text-sm font-medium text-[var(--color-ink-700)]">{item}</span>
+                </div>
+              ))}
+            </div>
+            {/* Details */}
+            <div className="px-6 py-4 grid grid-cols-2 sm:grid-cols-3 gap-4 border-b border-[var(--color-border)]">
+              {paidPaymentId && (
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Transaction ID</p>
+                  <p className="text-xs font-mono text-[var(--color-ink-700)] mt-1 break-all">{paidPaymentId}</p>
+                </div>
+              )}
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Subscription Start</p>
+                <p className="text-sm font-semibold text-[var(--color-ink-800)] mt-1">{fmt(startDate.toISOString())}</p>
+              </div>
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Next Renewal</p>
+                <p className="text-sm font-semibold text-[var(--color-ink-800)] mt-1">{fmt(renewDate.toISOString())}</p>
+              </div>
+            </div>
+            {/* Buttons */}
+            <div className="px-6 py-4 flex flex-col sm:flex-row gap-3">
+              <a
+                href="/dashboard"
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[var(--color-primary-600)] text-white text-sm font-semibold hover:bg-[var(--color-primary-700)] transition-colors"
+              >
+                Go to Dashboard <ArrowRight size={14} />
+              </a>
+              <button
+                onClick={() => onTabChange("overview")}
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border border-[var(--color-border)] text-sm font-semibold text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] transition-colors"
+              >
+                View Subscription
+              </button>
+            </div>
+          </div>
+        );
+      })()}
+
       {payError && (
-        <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">
-          <AlertTriangle size={14} /> {payError}
+        <div className="rounded-xl border border-red-200 bg-red-50 overflow-hidden">
+          <div className="px-5 py-4">
+            <div className="flex items-center gap-2 mb-1">
+              <XCircle size={16} className="text-red-600" />
+              <p className="text-sm font-semibold text-red-800">Payment unsuccessful</p>
+            </div>
+            <p className="text-xs text-red-700 mt-1">{payError}</p>
+          </div>
+          <div className="px-5 pb-4 flex gap-2">
+            <button
+              onClick={() => setPayError(null)}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-red-600 text-white text-xs font-semibold hover:bg-red-700 transition-colors"
+            >
+              <RotateCcw size={12} /> Try Again
+            </button>
+            <button
+              onClick={() => setPayError(null)}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-[var(--color-border)] text-xs font-semibold text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] transition-colors"
+            >
+              Back to Plans
+            </button>
+          </div>
         </div>
       )}
 
@@ -1064,9 +1366,9 @@ export function LicenseSection({ initialTab = "overview" }: { initialTab?: LicTa
         </div>
       ) : (
         <>
-          {tab === "overview"  && <OverviewTab  data={data} />}
+          {tab === "overview"  && <OverviewTab  data={data} onTabChange={setTab} />}
           {tab === "activate"  && <ActivateTab  data={data} onRefresh={load} />}
-          {tab === "plans"     && <PlansTab     data={data} onRefresh={load} />}
+          {tab === "plans"     && <PlansTab     data={data} onRefresh={load} onTabChange={setTab} />}
           {tab === "renewal"   && <RenewalTab   data={data} />}
           {tab === "history"   && <HistoryTab   data={data} />}
         </>
