@@ -692,19 +692,6 @@ export function PremiumLanding() {
         </Reveal>
       </Section>
 
-      {/* ── What's included (capability marquee) ─────────────────────────── */}
-      <Section className="lp-tight-top pt-0 md:pt-0 lg:pt-0">
-        <Reveal>
-          <p className="text-center text-[13px] font-medium uppercase tracking-[0.18em] text-slate-400">
-            From first appointment to invoice — every module included
-          </p>
-        </Reveal>
-
-        <Reveal delay={0.08}>
-          <Marquee items={CAPABILITIES} className="mt-7" />
-        </Reveal>
-      </Section>
-
       {/* ── EMR ──────────────────────────────────────────────────────────── */}
       <Section id="emr" className="bg-gradient-to-b from-white via-slate-50/60 to-white">
         <Split
