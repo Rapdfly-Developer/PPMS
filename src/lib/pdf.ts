@@ -430,7 +430,8 @@ function secHdr(title: string) {
 }
 
 
-function badgeStatus(s: string) {
+function badgeStatus(s: string | null | undefined) {
+  if (!s) return "";
   const lower = s.toLowerCase().replace(/_/g, " ");
   const cls = lower.includes("resolv") ? "badge-resolved"
     : lower.includes("active") ? "badge-active"
@@ -1326,8 +1327,8 @@ async function renderFullEmrHtml(d: FullEmrData): Promise<string> {
     if (!segData || Object.keys(segData).length === 0) return emptyNote;
     const rows = Object.entries(segData).map(([k, v]: [string, any]) => {
       const label = k.replace(/([A-Z])/g, " $1").trim();
-      const re = Array.isArray(v?.re) ? v.re.join(", ") : (v?.re ?? "—");
-      const le = Array.isArray(v?.le) ? v.le.join(", ") : (v?.le ?? "—");
+      const re = Array.isArray(v?.re) ? v.re.join(", ") : String(v?.re ?? "—");
+      const le = Array.isArray(v?.le) ? v.le.join(", ") : String(v?.le ?? "—");
       return `<tr>` +
         `<td style="${TD}font-weight:600;color:${LABEL_C};width:130px;">${escapeHtml(label)}</td>` +
         `<td style="${TD}">${escapeHtml(re || "—")}</td>` +
@@ -1775,13 +1776,13 @@ export async function generateAllVisitsSummaryPdf(visits: any[]): Promise<Buffer
       colourVision: null,
       anteriorSegment: null,
       posteriorSegment: null,
-      diagnoses: (visit.diagnoses ?? []).map((d: any) => ({ description: d.description, icd10Code: d.icd10Code ?? "", status: d.status, laterality: d.laterality ?? null })),
+      diagnoses: (visit.diagnoses ?? []).map((d: any) => ({ description: d.description, icd10Code: d.icd10Code ?? "", status: d.status ?? null, laterality: d.laterality ?? null })),
       medications: (visit.medications ?? []).map((m: any) => ({ drugName: m.drugName, dosage: m.dosage ?? null, frequency: m.frequency ?? null, duration: m.duration ?? null, instructions: m.instructions ?? null, route: m.route ?? null, laterality: m.laterality ?? null })),
       opticalRx: {
         re: { sph: reRef?.sph, cyl: reRef?.cyl, axis: reRef?.axis, nearSph: reRef?.nearSph },
         le: { sph: leRef?.sph, cyl: leRef?.cyl, axis: leRef?.axis, nearSph: leRef?.nearSph },
       },
-      investigations: (visit.investigationOrders ?? []).map((o: any) => ({ testName: o.testName, priority: o.priority ?? "Routine", status: o.status, result: o.resultRef ?? null, notes: o.notes ?? null })),
+      investigations: (visit.investigationOrders ?? []).map((o: any) => ({ testName: o.testName, priority: o.priority ?? null, status: o.status ?? null, result: o.resultRef ?? null, notes: o.notes ?? null })),
     };
   }
 
@@ -1979,13 +1980,13 @@ export async function generateVisitSummaryPdf(visit: any): Promise<Buffer> {
     })() : null,
     anteriorSegment: ant ? (parseJ2(ant.re) || parseJ2(ant.le) ? { re: parseJ2(ant.re), le: parseJ2(ant.le) } : null) : null,
     posteriorSegment: pos ? { data: { re: parseJ2(pos.re), le: parseJ2(pos.le) }, cdr: pos.cdr ?? null, notes: pos.notes ?? null } : null,
-    diagnoses: (visit.diagnoses ?? []).map((d: any) => ({ description: d.description, icd10Code: d.icd10Code ?? "", status: d.status, laterality: d.laterality ?? null })),
+    diagnoses: (visit.diagnoses ?? []).map((d: any) => ({ description: d.description, icd10Code: d.icd10Code ?? "", status: d.status ?? null, laterality: d.laterality ?? null })),
     medications: (visit.medications ?? []).map((m: any) => ({ drugName: m.drugName, dosage: m.dosage ?? null, frequency: m.frequency ?? null, duration: m.duration ?? null, instructions: m.instructions ?? null, route: m.route ?? null, laterality: m.laterality ?? null })),
     opticalRx: {
       re: { sph: reRef?.sph, cyl: reRef?.cyl, axis: reRef?.axis, nearSph: reRef?.nearSph, nearCyl: reRef?.nearCyl, nearAxis: reRef?.nearAxis },
       le: { sph: leRef?.sph, cyl: leRef?.cyl, axis: leRef?.axis, nearSph: leRef?.nearSph, nearCyl: leRef?.nearCyl, nearAxis: leRef?.nearAxis },
     },
-    investigations: (visit.investigationOrders ?? []).map((o: any) => ({ testName: o.testName, priority: o.priority ?? "Routine", status: o.status, result: o.resultRef ?? null, notes: o.notes ?? null })),
+    investigations: (visit.investigationOrders ?? []).map((o: any) => ({ testName: o.testName, priority: o.priority ?? null, status: o.status ?? null, result: o.resultRef ?? null, notes: o.notes ?? null })),
   };
 
   return htmlToPdf(await renderFullEmrHtml(data));
