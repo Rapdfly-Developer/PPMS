@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo, useTransition } from "react";
 import {
   Key, ShieldCheck, AlertTriangle, Clock, CreditCard,
   History, CheckCircle2, XCircle, RefreshCw, Crown,
-  BarChart2, FileText, Lock, Zap,
+  BarChart2, FileText, Lock,
   Loader2, Search, ChevronLeft, ChevronRight, Mail, Phone,
   BadgeCheck, Package, Eye, EyeOff,
   Shield, Info,
@@ -486,80 +486,189 @@ function ActivateTab({ data, onRefresh }: { data: LicenseFullData; onRefresh: ()
 
 // ── TAB: PLANS ────────────────────────────────────────────────────────────────
 
-const PLAN_FEATURES = [
-  "Patient Records (EMR)",
-  "Appointments",
-  "Doctor Dashboard",
-  "Follow-up Management",
-  "Analytics & Reports",
-  "PDF Export",
-  "Multi-Hospital Management",
-  "Custom Role Permissions",
-  "HMS / RIS Integration",
-  "Priority Support",
-  "Offline Backup",
-];
-
-const PLANS = [
+const PLAN_TIERS = [
   {
-    id: "biannual",
-    name: "Professional",
-    sub: "6 Months",
-    price: "₹14,999",
-    duration: "6 months",
-    savings: "Save ₹2,995",
-    features: [true, true, true, true, true, true, true, true, true, false, false, false],
+    id: "starter",
+    name: "Starter",
+    tag: "Individual Doctors",
+    price: "Free",
+    priceSub: "7-Day Trial",
+    features: [
+      { label: "Patient Records (EMR)",     included: true  },
+      { label: "Appointments",              included: true  },
+      { label: "Doctor Dashboard",          included: true  },
+      { label: "Follow-up Management",      included: true  },
+      { label: "Analytics & Reports",       included: false },
+      { label: "PDF Export",                included: false },
+      { label: "Multi-Hospital Management", included: false },
+      { label: "Custom Role Permissions",   included: false },
+      { label: "HMS / RIS Integration",     included: false },
+      { label: "Priority Support",          included: false },
+      { label: "Offline Backup",            included: false },
+    ],
     badge: null,
     highlight: false,
+    cta: "trial" as const,
+    ctaLabel: "Trial Active",
+    razorpayPlan: null as string | null,
   },
   {
     id: "monthly",
     name: "Professional",
-    sub: "Monthly",
+    tag: "Clinics & Groups",
     price: "₹2,999",
-    duration: "per month",
-    features: [true, true, true, true, true, true, true, true, true, false, false, false],
-    badge: null,
-    highlight: false,
+    priceSub: "/month",
+    features: [
+      { label: "Patient Records (EMR)",     included: true },
+      { label: "Appointments",              included: true },
+      { label: "Doctor Dashboard",          included: true },
+      { label: "Follow-up Management",      included: true },
+      { label: "Analytics & Reports",       included: true },
+      { label: "PDF Export",                included: true },
+      { label: "Multi-Hospital Management", included: true },
+      { label: "Custom Role Permissions",   included: true },
+      { label: "HMS / RIS Integration",     included: true },
+      { label: "Priority Support",          included: false },
+      { label: "Offline Backup",            included: false },
+    ],
+    badge: "Popular",
+    highlight: true,
+    cta: "pay" as const,
+    ctaLabel: "Upgrade Now",
+    razorpayPlan: "MONTHLY" as string | null,
   },
   {
-    id: "annual",
-    name: "Professional",
-    sub: "Annual",
-    price: "₹24,999",
-    duration: "per year",
-    savings: "Save ₹10,989",
-    features: [true, true, true, true, true, true, true, true, true, true, true, true],
-    badge: "Best Value",
-    highlight: true,
+    id: "enterprise",
+    name: "Enterprise",
+    tag: "Hospitals & Chains",
+    price: "Custom",
+    priceSub: "Pricing",
+    features: [
+      { label: "Patient Records (EMR)",     included: true },
+      { label: "Appointments",              included: true },
+      { label: "Doctor Dashboard",          included: true },
+      { label: "Follow-up Management",      included: true },
+      { label: "Analytics & Reports",       included: true },
+      { label: "PDF Export",                included: true },
+      { label: "Multi-Hospital Management", included: true },
+      { label: "Custom Role Permissions",   included: true },
+      { label: "HMS / RIS Integration",     included: true },
+      { label: "Priority Support",          included: true },
+      { label: "Offline Backup",            included: true },
+    ],
+    badge: null,
+    highlight: false,
+    cta: "contact" as const,
+    ctaLabel: "Contact Sales",
+    razorpayPlan: null as string | null,
   },
 ];
 
-function PlansTab({ data }: { data: LicenseFullData }) {
-  const currentPlanId = data.plan === "BIANNUAL" ? "biannual"
-    : data.plan === "MONTHLY" ? "monthly"
-    : data.plan === "YEARLY" ? "annual"
+function PlansTab({ data, onRefresh }: { data: LicenseFullData; onRefresh: () => void }) {
+  const [paying, setPaying]     = useState(false);
+  const [payError, setPayError] = useState<string | null>(null);
+  const [payOk, setPayOk]       = useState(false);
+
+  const currentId =
+    data.status === "TRIAL_ACTIVE" ? "starter"
+    : data.plan === "MONTHLY"      ? "monthly"
+    : data.plan === "YEARLY"       ? "annual"
     : null;
+
+  async function handleRazorpay() {
+    setPayError(null);
+    setPaying(true);
+    try {
+      if (!document.querySelector('script[src*="checkout.razorpay.com"]')) {
+        await new Promise<void>((resolve, reject) => {
+          const s = document.createElement("script");
+          s.src = "https://checkout.razorpay.com/v1/checkout.js";
+          s.onload = () => resolve();
+          s.onerror = () => reject(new Error("Failed to load Razorpay"));
+          document.body.appendChild(s);
+        });
+      }
+
+      const doctorId = data.doctorId;
+      if (!doctorId) { setPayError("Doctor ID not found. Please refresh."); setPaying(false); return; }
+
+      const res = await fetch("/api/razorpay/create-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan: "MONTHLY", doctorId }),
+      });
+      if (!res.ok) { const e = await res.json(); setPayError(e.error ?? "Order creation failed."); setPaying(false); return; }
+
+      const { orderId, amount, currency, key, prefill } = await res.json();
+
+      const rzp = new (window as unknown as { Razorpay: new (o: Record<string, unknown>) => { open(): void } }).Razorpay({
+        key,
+        amount,
+        currency,
+        order_id: orderId,
+        name: "PPMS — Professional Plan",
+        description: "Monthly subscription · ₹2,999/month",
+        prefill: { name: prefill?.name ?? "", contact: prefill?.contact ?? "" },
+        theme: { color: "#0D7A63" },
+        modal: { ondismiss: () => setPaying(false) },
+        handler: async (response: { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }) => {
+          try {
+            const vRes = await fetch("/api/razorpay/verify", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                razorpay_order_id:   response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature:  response.razorpay_signature,
+                doctorId,
+                plan: "MONTHLY",
+              }),
+            });
+            if (!vRes.ok) { const e = await vRes.json(); setPayError(e.error ?? "Payment verification failed."); }
+            else { setPayOk(true); onRefresh(); }
+          } catch { setPayError("Verification error. Contact support."); }
+          finally { setPaying(false); }
+        },
+      });
+      rzp.open();
+    } catch (e) {
+      setPayError(e instanceof Error ? e.message : "Something went wrong.");
+      setPaying(false);
+    }
+  }
 
   return (
     <div className="space-y-5">
       <div>
         <p className="text-sm font-semibold text-[var(--color-ink-800)]">Subscription Plans</p>
-        <p className="text-xs text-[var(--color-ink-500)] mt-0.5">Choose the plan that fits your practice. Contact us to activate after selecting a plan.</p>
+        <p className="text-xs text-[var(--color-ink-500)] mt-0.5">Choose the plan that fits your practice. Pay securely via Razorpay.</p>
       </div>
 
-      {/* Plan cards */}
+      {payOk && (
+        <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm font-medium">
+          <CheckCircle2 size={16} /> Payment successful! Your Professional plan is now active.
+        </div>
+      )}
+      {payError && (
+        <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">
+          <AlertTriangle size={14} /> {payError}
+        </div>
+      )}
+
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {PLANS.map((plan) => {
-          const isCurrent = plan.id === currentPlanId;
+        {PLAN_TIERS.map((plan) => {
+          const isCurrent = plan.id === currentId;
           return (
-            <div key={plan.id} className={`rounded-xl border-2 overflow-hidden relative flex flex-col ${
-              plan.highlight
-                ? "border-[var(--color-primary-500)] shadow-lg shadow-[var(--color-primary-200)]"
-                : isCurrent
-                  ? "border-emerald-400 shadow-md"
-                  : "border-[var(--color-border)]"
-            }`}>
+            <div
+              key={plan.id}
+              className={`rounded-xl border-2 overflow-hidden relative flex flex-col ${
+                plan.highlight
+                  ? "border-[var(--color-primary-500)] shadow-lg shadow-[var(--color-primary-200)]"
+                  : isCurrent
+                    ? "border-emerald-400 shadow-md"
+                    : "border-[var(--color-border)]"
+              }`}
+            >
               {plan.badge && (
                 <div className="absolute top-3 right-3 text-[10px] font-bold px-2 py-0.5 rounded-full bg-[var(--color-primary-600)] text-white">
                   {plan.badge}
@@ -573,26 +682,21 @@ function PlansTab({ data }: { data: LicenseFullData }) {
 
               <div className={`px-5 py-5 ${plan.highlight ? "bg-[var(--color-primary-50)]" : "bg-white"}`}>
                 <p className="text-xs font-bold uppercase tracking-wider text-[var(--color-ink-400)]">{plan.name}</p>
-                {plan.sub && <p className="text-[10px] text-[var(--color-ink-400)]">{plan.sub}</p>}
+                <p className="text-[10px] text-[var(--color-ink-400)]">{plan.tag}</p>
                 <div className="mt-2 flex items-end gap-1">
                   <span className="text-2xl font-black text-[var(--color-ink-900)]">{plan.price}</span>
-                  <span className="text-xs text-[var(--color-ink-400)] mb-0.5">/{plan.duration}</span>
+                  <span className="text-xs text-[var(--color-ink-400)] mb-0.5">{plan.priceSub}</span>
                 </div>
-                {plan.savings && (
-                  <span className="inline-flex items-center gap-1 mt-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
-                    <Zap size={10} /> {plan.savings}
-                  </span>
-                )}
               </div>
 
               <div className="px-5 py-4 bg-white flex-1 flex flex-col gap-2">
-                {PLAN_FEATURES.map((feat, fi) => (
-                  <div key={feat} className="flex items-center gap-2">
-                    {plan.features[fi]
+                {plan.features.map((feat) => (
+                  <div key={feat.label} className="flex items-center gap-2">
+                    {feat.included
                       ? <CheckCircle2 size={13} className="text-emerald-500 shrink-0" />
-                      : <XCircle size={13} className="text-slate-300 shrink-0" />}
-                    <span className={`text-xs ${plan.features[fi] ? "text-[var(--color-ink-700)]" : "text-[var(--color-ink-300)] line-through"}`}>
-                      {feat}
+                      : <XCircle     size={13} className="text-slate-300 shrink-0" />}
+                    <span className={`text-xs ${feat.included ? "text-[var(--color-ink-700)]" : "text-[var(--color-ink-300)] line-through"}`}>
+                      {feat.label}
                     </span>
                   </div>
                 ))}
@@ -603,15 +707,28 @@ function PlansTab({ data }: { data: LicenseFullData }) {
                   <div className="w-full py-2.5 rounded-xl text-center text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
                     Current Plan
                   </div>
-                ) : (
-                  <a
-                    href="mailto:support@ppmsai.com?subject=PPMS License Upgrade"
+                ) : plan.cta === "pay" ? (
+                  <button
+                    onClick={handleRazorpay}
+                    disabled={paying}
                     className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold transition-colors
-                      bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)]"
+                      bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-60 disabled:cursor-not-allowed"
                   >
-                    <Crown size={12} />
-                    Upgrade
+                    {paying ? <Loader2 size={12} className="animate-spin" /> : <CreditCard size={12} />}
+                    {paying ? "Processing…" : plan.ctaLabel}
+                  </button>
+                ) : plan.cta === "contact" ? (
+                  <a
+                    href="mailto:support@ppmsai.com?subject=PPMS Enterprise Plan Enquiry"
+                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold transition-colors
+                      border border-[var(--color-border)] text-[var(--color-ink-600)] hover:bg-[var(--color-ink-50)]"
+                  >
+                    <Mail size={12} /> {plan.ctaLabel}
                   </a>
+                ) : (
+                  <div className="w-full py-2.5 rounded-xl text-center text-xs font-medium bg-slate-50 text-slate-500 border border-slate-200">
+                    Trial Active
+                  </div>
                 )}
               </div>
             </div>
@@ -619,26 +736,10 @@ function PlansTab({ data }: { data: LicenseFullData }) {
         })}
       </div>
 
-      {/* Upgrade CTA */}
-      <SCard>
-        <div className="flex flex-col sm:flex-row items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-[var(--color-primary-100)] flex items-center justify-center shrink-0">
-            <Crown size={24} className="text-[var(--color-primary-600)]" />
-          </div>
-          <div className="flex-1 text-center sm:text-left">
-            <p className="text-sm font-bold text-[var(--color-ink-900)]">Ready to upgrade?</p>
-            <p className="text-xs text-[var(--color-ink-500)] mt-0.5">
-              Contact our team to get a license key and unlock all Professional features instantly.
-            </p>
-          </div>
-          <a
-            href="mailto:support@ppmsai.com?subject=PPMS License Upgrade Request"
-            className="shrink-0 flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[var(--color-primary-600)] text-white text-sm font-semibold hover:bg-[var(--color-primary-700)] transition-colors"
-          >
-            <Mail size={14} /> Contact Sales
-          </a>
-        </div>
-      </SCard>
+      <div className="flex items-center justify-center gap-2 text-[11px] text-[var(--color-ink-400)]">
+        <ShieldCheck size={12} className="text-emerald-500" />
+        Payments secured by Razorpay · 256-bit SSL encryption
+      </div>
     </div>
   );
 }
@@ -965,7 +1066,7 @@ export function LicenseSection({ initialTab = "overview" }: { initialTab?: LicTa
         <>
           {tab === "overview"  && <OverviewTab  data={data} />}
           {tab === "activate"  && <ActivateTab  data={data} onRefresh={load} />}
-          {tab === "plans"     && <PlansTab     data={data} />}
+          {tab === "plans"     && <PlansTab     data={data} onRefresh={load} />}
           {tab === "renewal"   && <RenewalTab   data={data} />}
           {tab === "history"   && <HistoryTab   data={data} />}
         </>

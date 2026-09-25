@@ -6,9 +6,9 @@ import Razorpay from "razorpay";
 type PlanKey = "MONTHLY" | "5_DOCTORS" | "YEARLY";
 
 const PLANS: Record<PlanKey, { amount: number; discountedAmount: number | null; label: string }> = {
-  MONTHLY:     { amount: 129900, discountedAmount: 32500, label: "Monthly Plan (1 Doctor)" },
-  "5_DOCTORS": { amount: 299900, discountedAmount: 75000, label: "5 Doctors Plan" },
-  YEARLY:      { amount: 999900, discountedAmount: null,  label: "Yearly Plan" },
+  MONTHLY:     { amount: 299900, discountedAmount: null, label: "Professional Monthly (₹2,999/month)" },
+  "5_DOCTORS": { amount: 299900, discountedAmount: null, label: "5 Doctors Plan" },
+  YEARLY:      { amount: 2499900, discountedAmount: null, label: "Professional Annual (₹24,999/year)" },
 };
 
 export async function POST(req: Request) {
