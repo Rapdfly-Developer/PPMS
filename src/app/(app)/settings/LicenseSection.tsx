@@ -472,7 +472,21 @@ function ActivateTab({ data, onRefresh }: { data: LicenseFullData; onRefresh: ()
 
 // ── TAB: PLANS ────────────────────────────────────────────────────────────────
 
-const PLAN_TIERS = [
+interface PlanTier {
+  id: string;
+  name: string;
+  tag: string;
+  price: string;
+  priceSub: string;
+  features: { label: string; included: boolean }[];
+  badge: string | null;
+  highlight: boolean;
+  cta: "trial" | "pay" | "contact";
+  ctaLabel: string;
+  razorpayPlan: string | null;
+}
+
+const PLAN_TIERS: PlanTier[] = [
   {
     id: "starter",
     name: "Starter",
@@ -494,9 +508,9 @@ const PLAN_TIERS = [
     ],
     badge: null,
     highlight: false,
-    cta: "trial" as const,
+    cta: "trial",
     ctaLabel: "Trial Active",
-    razorpayPlan: null as string | null,
+    razorpayPlan: null,
   },
   {
     id: "monthly",
@@ -519,16 +533,16 @@ const PLAN_TIERS = [
     ],
     badge: "Popular",
     highlight: true,
-    cta: "pay" as const,
+    cta: "pay",
     ctaLabel: "Upgrade Now",
-    razorpayPlan: "MONTHLY" as string | null,
+    razorpayPlan: "MONTHLY",
   },
   {
     id: "enterprise",
     name: "Enterprise",
     tag: "Hospitals & Chains",
-    price: "Custom",
-    priceSub: "Pricing",
+    price: "₹1,299",
+    priceSub: "/month",
     features: [
       { label: "Patient Records (EMR)",     included: true },
       { label: "Appointments",              included: true },
@@ -542,11 +556,11 @@ const PLAN_TIERS = [
       { label: "Priority Support",          included: true },
       { label: "Offline Backup",            included: true },
     ],
-    badge: null,
+    badge: "Best Value",
     highlight: false,
-    cta: "contact" as const,
-    ctaLabel: "Contact Sales",
-    razorpayPlan: null as string | null,
+    cta: "pay",
+    ctaLabel: "Upgrade Now",
+    razorpayPlan: "ENTERPRISE",
   },
 ];
 
@@ -561,7 +575,7 @@ function PlansTab({ data, onRefresh }: { data: LicenseFullData; onRefresh: () =>
     : data.plan === "YEARLY"       ? "annual"
     : null;
 
-  async function handleRazorpay() {
+  async function handleRazorpay(planKey: string, description: string) {
     setPayError(null);
     setPaying(true);
     try {
@@ -581,7 +595,7 @@ function PlansTab({ data, onRefresh }: { data: LicenseFullData; onRefresh: () =>
       const res = await fetch("/api/razorpay/create-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan: "MONTHLY", doctorId }),
+        body: JSON.stringify({ plan: planKey, doctorId }),
       });
       if (!res.ok) { const e = await res.json(); setPayError(e.error ?? "Order creation failed."); setPaying(false); return; }
 
@@ -592,8 +606,8 @@ function PlansTab({ data, onRefresh }: { data: LicenseFullData; onRefresh: () =>
         amount,
         currency,
         order_id: orderId,
-        name: "PPMS — Professional Plan",
-        description: "Monthly subscription · ₹2,999/month",
+        name: "PPMS Subscription",
+        description,
         prefill: { name: prefill?.name ?? "", contact: prefill?.contact ?? "" },
         theme: { color: "#0D7A63" },
         modal: { ondismiss: () => setPaying(false) },
@@ -607,7 +621,7 @@ function PlansTab({ data, onRefresh }: { data: LicenseFullData; onRefresh: () =>
                 razorpay_payment_id: response.razorpay_payment_id,
                 razorpay_signature:  response.razorpay_signature,
                 doctorId,
-                plan: "MONTHLY",
+                plan: planKey,
               }),
             });
             if (!vRes.ok) { const e = await vRes.json(); setPayError(e.error ?? "Payment verification failed."); }
@@ -695,7 +709,7 @@ function PlansTab({ data, onRefresh }: { data: LicenseFullData; onRefresh: () =>
                   </div>
                 ) : plan.cta === "pay" ? (
                   <button
-                    onClick={handleRazorpay}
+                    onClick={() => handleRazorpay(plan.razorpayPlan!, `${plan.name} · ${plan.price}${plan.priceSub}`)}
                     disabled={paying}
                     className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold transition-colors
                       bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-60 disabled:cursor-not-allowed"

@@ -14,7 +14,7 @@ export async function POST(req: Request) {
       razorpay_payment_id: string;
       razorpay_signature: string;
       doctorId: string;
-      plan: "MONTHLY" | "5_DOCTORS" | "YEARLY";
+      plan: "MONTHLY" | "ENTERPRISE" | "YEARLY";  // matches activateLicense union
     };
 
   // Verify signature

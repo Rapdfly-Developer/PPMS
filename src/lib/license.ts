@@ -139,7 +139,7 @@ export async function createTrialLicense(doctorId: string) {
 
 export async function activateLicense(
   doctorId: string,
-  plan: "MONTHLY" | "5_DOCTORS" | "YEARLY",
+  plan: "MONTHLY" | "ENTERPRISE" | "YEARLY",
   razorpayOrderId: string,
   razorpayPaymentId: string,
   razorpaySignature: string,
@@ -149,7 +149,7 @@ export async function activateLicense(
   if (plan === "YEARLY") {
     subscriptionEndsAt.setFullYear(subscriptionEndsAt.getFullYear() + 1);
   } else {
-    // MONTHLY and 5_DOCTORS both bill month-to-month
+    // MONTHLY and ENTERPRISE both bill month-to-month
     subscriptionEndsAt.setMonth(subscriptionEndsAt.getMonth() + 1);
   }
 
