@@ -79,17 +79,24 @@ const JSON_LD = {
       offers: [
         {
           "@type": "Offer",
-          name: "Starter",
-          price: "0",
+          name: "Monthly",
+          price: "1299",
           priceCurrency: "INR",
-          description: "30-day free trial",
+          description: "Per month — first month 75% off",
         },
         {
           "@type": "Offer",
-          name: "Professional",
+          name: "5 Doctors",
           price: "2999",
           priceCurrency: "INR",
-          description: "Per month",
+          description: "Per month, up to 5 doctors — first month 75% off",
+        },
+        {
+          "@type": "Offer",
+          name: "Yearly",
+          price: "9999",
+          priceCurrency: "INR",
+          description: "Per year",
         },
       ],
     },
@@ -105,8 +112,8 @@ const JSON_LD = {
           a: "Records can be imported from spreadsheets or an existing system during onboarding. Paper records can be attached to a patient as a scanned document, and the text is extracted so it becomes searchable.",
         },
         {
-          q: "Is the 30-day trial limited in any way?",
-          a: "The trial gives one doctor account and up to two hospitals, with appointments, EMR and basic billing enabled. No card is required and nothing is charged when the trial ends.",
+          q: "Is the 7-day free trial limited in any way?",
+          a: "The trial gives full access to the platform for 7 days. No card is required and nothing is charged when the trial ends — you choose whether to continue.",
         },
         {
           q: "Who can see a patient's record?",

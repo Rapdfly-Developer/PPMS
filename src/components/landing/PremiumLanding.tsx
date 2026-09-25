@@ -467,8 +467,8 @@ const FAQ_ITEMS: FaqItem[] = [
     a: "Records can be imported from spreadsheets or an existing system during onboarding. Anything already captured on paper can be attached to a patient as a scanned document, and text is extracted so it becomes searchable alongside typed notes.",
   },
   {
-    q: "Is the 30-day trial limited in any way?",
-    a: "The trial gives one doctor account and up to two hospitals, with appointments, EMR and basic billing enabled. No card is required to start, and nothing is charged when the trial ends, you choose whether to continue.",
+    q: "Is the 7-day free trial limited in any way?",
+    a: "The trial gives full access to the platform for 7 days. No card is required to start, and nothing is charged when the trial ends — you choose whether to continue.",
   },
   {
     q: "Who can see a patient's record?",
@@ -486,44 +486,52 @@ const FAQ_ITEMS: FaqItem[] = [
 
 const PLANS = [
   {
-    name: "Starter",
+    name: "Monthly",
     tag: "Individual doctors",
-    price: "Free",
-    period: "30-day trial",
-    features: ["1 doctor account", "Up to 2 hospitals", "Appointments & EMR", "Basic billing", "Email support"],
-    cta: "Start free trial",
+    price: "₹1,299",
+    period: "/month",
+    discount: "First month: 75% OFF",
+    features: [
+      "1 doctor account",
+      "Unlimited hospitals",
+      "Appointments & EMR",
+      "Prescriptions & billing",
+      "Email support",
+    ],
+    cta: "Start 7-day free trial",
     featured: false,
   },
   {
-    name: "Professional",
+    name: "5 Doctors",
     tag: "Clinics & groups",
     price: "₹2,999",
     period: "/month",
+    discount: "First month: 75% OFF",
     features: [
-      "Up to 5 doctors",
+      "Up to 5 doctor logins",
       "Unlimited hospitals",
       "Full EMR & prescriptions",
       "Advanced billing & insurance",
       "Analytics dashboard",
       "Priority support",
     ],
-    cta: "Start free trial",
+    cta: "Start 7-day free trial",
     featured: true,
   },
   {
-    name: "Enterprise",
-    tag: "Hospitals & chains",
-    price: "Custom",
-    period: "pricing",
+    name: "Yearly",
+    tag: "Best value",
+    price: "₹9,999",
+    period: "/year",
+    discount: null,
     features: [
-      "Unlimited doctors",
+      "Everything in 5 Doctors",
       "Unlimited hospitals",
-      "Custom integrations",
-      "Dedicated account manager",
-      "SLA guarantee",
-      "On-premise option",
+      "Annual billing — save 2 months",
+      "Priority support",
+      "Dedicated onboarding",
     ],
-    cta: "Talk to sales",
+    cta: "Start 7-day free trial",
     featured: false,
   },
 ];
@@ -600,7 +608,7 @@ export function PremiumLanding() {
                   href="/login"
                   className="group inline-flex items-center justify-between gap-3 rounded-full bg-emerald-950 py-2 pl-7 pr-2 text-[15px] font-semibold text-white shadow-[0_20px_40px_-20px_rgba(6,60,45,0.6)]"
                 >
-                  Start 30-day free trial
+                  Start 7-day free trial
                   <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white/12 transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:translate-x-[3px] group-hover:-translate-y-[2px] group-hover:scale-105">
                     <ArrowUpRight size={17} strokeWidth={1.25} aria-hidden="true" />
                   </span>
@@ -671,7 +679,7 @@ export function PremiumLanding() {
               { num: "500+", label: "Doctors on the platform" },
               { num: "100+", label: "Hospitals & clinics" },
               { num: "99.9%", label: "Uptime target" },
-              { num: "30-day", label: "Free trial, no card" },
+              { num: "7-day", label: "Free trial, no card" },
             ].map((s, i) => (
               <div key={s.label} className={`text-center ${i < 3 ? "sm:border-r sm:border-emerald-950/[0.07] sm:pr-10 sm:last:border-0" : ""}`}>
                 <p className="font-display text-[clamp(1.6rem,3vw,2.25rem)] font-bold leading-none tracking-[-0.03em] text-emerald-950">
@@ -998,8 +1006,14 @@ export function PremiumLanding() {
         <SectionHead
           eyebrow="Pricing"
           title={<>Priced per practice, not per patient.</>}
-          lede="Start on the 30-day trial without a card. Move to a paid plan only when the practice is actually running on it."
+          lede="Start with a 7-day free trial — no card required. First month 75% off on Monthly and 5 Doctors plans."
         />
+        <Reveal>
+          <div className="mx-auto mt-4 flex w-max items-center gap-2 rounded-full bg-emerald-50 px-4 py-2 ring-1 ring-inset ring-emerald-600/[0.15]">
+            <span className="h-2 w-2 rounded-full bg-emerald-500" />
+            <span className="text-[13px] font-semibold text-emerald-800">7-Day Free Trial — no credit card required</span>
+          </div>
+        </Reveal>
 
         {/* Three-up from md — stacking full-width plan cards on a 768px tablet
             wastes the width and pushes the comparison off-screen. */}
@@ -1042,17 +1056,28 @@ export function PremiumLanding() {
                     {p.tag}
                   </p>
 
-                  <div className="mt-6 flex flex-wrap items-baseline gap-x-2 sm:mt-8">
-                    <span
-                      className={`font-display text-[clamp(2rem,3.2vw,2.5rem)] 2xl:text-[clamp(2.5rem,2.2vw,3.25rem)] font-bold tracking-[-0.03em] ${
-                        p.featured ? "text-white" : "text-emerald-950"
-                      }`}
-                    >
-                      {p.price}
-                    </span>
-                    <span className={`text-[13.5px] ${p.featured ? "text-emerald-200/60" : "text-slate-500"}`}>
-                      {p.period}
-                    </span>
+                  <div className="mt-6 sm:mt-8">
+                    <div className="flex flex-wrap items-baseline gap-x-2">
+                      <span
+                        className={`font-display text-[clamp(2rem,3.2vw,2.5rem)] 2xl:text-[clamp(2.5rem,2.2vw,3.25rem)] font-bold tracking-[-0.03em] ${
+                          p.featured ? "text-white" : "text-emerald-950"
+                        }`}
+                      >
+                        {p.price}
+                      </span>
+                      <span className={`text-[13.5px] ${p.featured ? "text-emerald-200/60" : "text-slate-500"}`}>
+                        {p.period}
+                      </span>
+                    </div>
+                    {p.discount && (
+                      <span className={`mt-2 inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${
+                        p.featured
+                          ? "bg-emerald-400/20 text-emerald-300"
+                          : "bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-600/[0.15]"
+                      }`}>
+                        {p.discount}
+                      </span>
+                    )}
                   </div>
 
                   <ul className="mt-8 flex flex-1 flex-col gap-3.5">
@@ -1075,7 +1100,7 @@ export function PremiumLanding() {
                   </ul>
 
                   <a
-                    href={p.name === "Enterprise" ? "#contact" : "/login"}
+                    href="/login"
                     className={[
                       /* Tight at md, where three cards share a 768px row, then
                          back to full size once there is room again. */

@@ -695,7 +695,7 @@ function CTA() {
             <h2 className="font-sora" style={{ fontSize: "clamp(28px,4vw,52px)", fontWeight: 800, letterSpacing: "-.02em", marginBottom: 18 }}>
               Ready to Transform Your<br /><span className="gradient-text">Medical Practice?</span>
             </h2>
-            <p style={{ fontSize: 17, color: C.muted, maxWidth: 520, margin: "0 auto 36px" }}>Join 500+ doctors who manage their multi-hospital practice with PPMS. Start your 30-day free trial, no credit card required.</p>
+            <p style={{ fontSize: 17, color: C.muted, maxWidth: 520, margin: "0 auto 36px" }}>Join 500+ doctors who manage their multi-hospital practice with PPMS. Start your 7-day free trial, no credit card required.</p>
             <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" }}>
               <a href="/license" className="btn-p" style={{ fontSize: 16, padding: "15px 34px" }}>Start 30-Day Free Trial <ArrowRight size={17} /></a>
               <a href="#contact" className="btn-g" style={{ fontSize: 16, padding: "15px 34px" }}>Schedule Free Demo</a>
