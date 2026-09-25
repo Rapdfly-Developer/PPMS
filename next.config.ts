@@ -93,9 +93,15 @@ const nextConfig: NextConfig = {
     // CORS for /api/v1/* is handled dynamically in src/middleware.ts, which
     // reflects the matching origin rather than emitting a static single-origin
     // header — the only correct approach when multiple plugins are allowed.
-    const frameSrc = EXTERNAL_PLUGIN_ORIGINS.length > 0
+    // Razorpay Standard Checkout renders its payment form inside an iframe
+    // hosted on api.razorpay.com / checkout.razorpay.com — both must be allowed.
+    const RAZORPAY_ORIGINS = "https://api.razorpay.com https://checkout.razorpay.com";
+
+    const pluginSrc = EXTERNAL_PLUGIN_ORIGINS.length > 0
       ? EXTERNAL_PLUGIN_ORIGINS.join(" ")
-      : "'none'";
+      : "";
+
+    const frameSrc = [RAZORPAY_ORIGINS, pluginSrc].filter(Boolean).join(" ");
 
     const csp = [
       `frame-src ${frameSrc}`,
