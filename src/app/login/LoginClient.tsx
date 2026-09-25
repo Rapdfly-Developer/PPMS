@@ -975,13 +975,6 @@ export default function LoginPage() {
                 </Link>
 
                 <GlassCard>
-                  {/* RF Health mark at top of form — visible on all screen sizes */}
-                  <div className="flex items-center gap-2.5 mb-4">
-                    <img src="/landing/logo-rf-health.webp" alt="" className="shrink-0"
-                      style={{ width: 34, height: 34, objectFit: "cover",
-                        borderRadius: 9, border: `1px solid ${T.border}` }} />
-                    <span className="font-black" style={{ fontSize: "15px", color: T.ink, letterSpacing: "-0.03em" }}>RF Health</span>
-                  </div>
                   <h2 className="font-bold" style={{ fontSize: "var(--fs-card-h)", color: T.ink, letterSpacing: "-0.02em" }}>
                     Welcome back
                   </h2>
