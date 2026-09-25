@@ -32,7 +32,7 @@ import { Faq, type FaqItem } from "./Faq";
 import { WorkflowTabs } from "./WorkflowTabs";
 import { Nav } from "./Nav";
 import { DemoForm } from "./DemoForm";
-import { Magnetic, Marquee, Parallax, Reveal, RevealGroup, RevealItem } from "./ui";
+import { Magnetic, Marquee, Reveal, RevealGroup, RevealItem } from "./ui";
 
 const IMG = "/landing/v3";
 
@@ -484,24 +484,6 @@ const FAQ_ITEMS: FaqItem[] = [
   },
 ];
 
-const TESTIMONIALS = [
-  {
-    name: "Dr. Aravind Patel",
-    role: "Ophthalmologist · 3 hospitals",
-    text: "RF Health transformed how I manage my three eye care centres. One login, all patient records, seamless billing, I save two hours every single day.",
-  },
-  {
-    name: "Dr. Meera Krishnan",
-    role: "General physician · 2 clinics",
-    text: "The multi-hospital switching is flawless. My patients get consistent care records whether they visit me at the hospital or my private clinic.",
-  },
-  {
-    name: "Sundar Rajan",
-    role: "Hospital administrator",
-    text: "Staff onboarded in a day. Reports that used to take hours now generate in seconds. RF Health is enterprise-grade at an accessible price.",
-  },
-];
-
 const PLANS = [
   {
     name: "Starter",
@@ -712,39 +694,6 @@ export function PremiumLanding() {
 
         <Reveal delay={0.08}>
           <Marquee items={CAPABILITIES} className="mt-7" />
-        </Reveal>
-      </Section>
-
-      {/* ── The shift (condensed) ────────────────────────────────────────── */}
-      <Section className="bg-gradient-to-b from-white via-emerald-50/40 to-white">
-        <Reveal className="mx-auto max-w-[var(--lp-measure)] text-center">
-          <Eyebrow>The shift</Eyebrow>
-          <h2 className="font-display mt-4 text-[length:var(--lp-h2)] font-bold leading-[1.06] tracking-[-0.03em] text-balance text-emerald-950 sm:mt-5">
-            Most practices still run on three unconnected systems.
-          </h2>
-        </Reveal>
-        <Reveal delay={0.08}>
-          <div className="mx-auto mt-8 grid max-w-2xl gap-3 sm:grid-cols-2 sm:mt-10">
-            {[
-              { k: "Before", v: "Three logins, three calendars, one patient split across all of them." },
-              { k: "With RF Health", v: "One login, one calendar, one continuous record per patient." },
-            ].map((row, i) => (
-              <div
-                key={row.k}
-                className={[
-                  "rounded-2xl p-6 ring-1 ring-inset",
-                  i === 0
-                    ? "bg-slate-50 text-slate-500 ring-slate-950/[0.05]"
-                    : "bg-emerald-950 text-emerald-50 ring-emerald-950",
-                ].join(" ")}
-              >
-                <div className={`text-[10px] font-semibold uppercase tracking-[0.2em] ${i === 0 ? "text-slate-400" : "text-emerald-400"}`}>
-                  {row.k}
-                </div>
-                <p className="mt-3 text-[15px] leading-relaxed">{row.v}</p>
-              </div>
-            ))}
-          </div>
         </Reveal>
       </Section>
 
@@ -991,58 +940,6 @@ export function PremiumLanding() {
       </Section>
 
 
-      {/* ── Multi-hospital ───────────────────────────────────────────────── */}
-      <Section id="hospitals">
-        <Split
-          flip
-          eyebrow="Multi-hospital management"
-          title={<>Switch hospitals the way you switch rooms.</>}
-          lede="Add a hospital, set your consulting hours there, and it appears in the same account. Nothing is duplicated, and nothing has to be reconciled at the end of the month."
-          points={[
-            {
-              icon: <Building2 size={17} strokeWidth={1.25} />,
-              label: "Unlimited sites per doctor",
-              desc: "Each with its own schedule, staff, rates and invoice series.",
-            },
-            {
-              icon: <CalendarRange size={17} strokeWidth={1.25} />,
-              label: "One calendar, colour-coded",
-              desc: "See Monday at one hospital and Tuesday at another without opening two systems.",
-            },
-            {
-              icon: <Activity size={17} strokeWidth={1.25} />,
-              label: "Per-site and combined reporting",
-              desc: "Revenue and volume by hospital, or rolled up across your whole practice.",
-            },
-          ]}
-        >
-          <div className="relative">
-            <Reveal>
-              <Frame
-                src={`${IMG}/hospital-operations-hologram-team.jpg`}
-                alt="A clinical team reviewing a hospital operations overview on a large interactive display"
-                aspect="aspect-[11/10]"
-                sizes="(max-width: 1024px) 92vw, 46vw"
-                quality={82}
-                radius="2.25rem"
-              />
-            </Reveal>
-            <div className="ppms-float-slow pointer-events-none absolute -bottom-10 -left-3 hidden w-[40%] lg:block">
-              <Reveal delay={0.14}>
-                <Frame
-                  src={`${IMG}/front-desk-practice-workstation.jpg`}
-                  alt="Front-desk staff managing appointments on a practice management workstation"
-                  aspect="aspect-square"
-                  sizes="20vw"
-                  radius="1.5rem"
-                  className="shadow-[0_40px_70px_-35px_rgba(6,60,45,0.5)]"
-                />
-              </Reveal>
-            </div>
-          </div>
-        </Split>
-      </Section>
-
       {/* ── Patient journey · Surgery · Analytics (tabbed) ───────────────────
           Three former sections in one. Only the active panel mounts, so this
           costs the height of one section instead of three. */}
@@ -1094,131 +991,6 @@ export function PremiumLanding() {
           </p>
         </Reveal>
       </Section>
-
-      {/* ── Testimonials ─────────────────────────────────────────────────── */}
-      <Section className="bg-gradient-to-b from-white via-emerald-50/40 to-white">
-        <SectionHead
-          eyebrow="Practitioners"
-          title={<>Built around how doctors already work.</>}
-        />
-
-        <div className="mt-8 grid gap-4 sm:mt-10 sm:grid-cols-2 lg:hidden">
-          <Reveal>
-            <Frame
-              src={`${IMG}/doctor-tablet-portrait-warm.jpg`}
-              alt="A doctor reviewing patient information on a tablet"
-              aspect="aspect-square"
-              // This plate is inside a lg:hidden grid. Describing it as 92vw
-              // made desktop fetch a 1920px variant for a box it never paints;
-              // the first clause says it is absent from lg up.
-              sizes="(min-width: 1024px) 1px, 92vw"
-              quality={80}
-              radius="1.75rem"
-            />
-          </Reveal>
-          <Reveal delay={0.08}>
-            <Frame
-              src={`${IMG}/doctor-tablet-portrait-cool.jpg`}
-              alt="A doctor reading a patient chart on a tablet in a darkened ward"
-              aspect="aspect-[3/4]"
-              sizes="(min-width: 1024px) 1px, 92vw"
-              quality={80}
-              radius="1.75rem"
-            />
-          </Reveal>
-        </div>
-
-        <div className="mt-10 hidden items-start gap-5 lg:grid lg:grid-cols-[0.8fr_1.4fr_0.8fr]">
-          <Parallax distance={22}>
-            <Reveal>
-              <Frame
-                src={`${IMG}/doctor-tablet-portrait-warm.jpg`}
-                alt="A doctor reviewing patient information on a tablet"
-                aspect="aspect-square"
-                sizes="24vw"
-                quality={80}
-                radius="1.75rem"
-              />
-            </Reveal>
-          </Parallax>
-
-          <RevealGroup className="flex flex-col gap-4" stagger={0.08}>
-            {TESTIMONIALS.map((t) => (
-              <RevealItem key={t.name}>
-                <figure className="rounded-[1.75rem] bg-white p-2 ring-1 ring-inset ring-emerald-950/[0.07] shadow-[0_30px_60px_-50px_rgba(6,60,45,0.6)] transition-[transform,box-shadow] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:-translate-y-1">
-                  <div className="rounded-[1.25rem] bg-gradient-to-b from-slate-50/70 to-white p-7 3xl:p-9 4xl:p-11">
-                    <div className="mb-4 flex gap-0.5" aria-label="5 out of 5 stars">
-                      {Array.from({ length: 5 }).map((_, i) => (
-                        <svg key={i} className="h-4 w-4 fill-amber-400" viewBox="0 0 20 20" aria-hidden="true">
-                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                        </svg>
-                      ))}
-                    </div>
-                    <blockquote className="font-display text-[17px] font-medium leading-relaxed tracking-[-0.01em] text-emerald-950">
-                      &ldquo;{t.text}&rdquo;
-                    </blockquote>
-                    <figcaption className="mt-6 flex items-center gap-3">
-                      <span className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-950 text-[13px] font-semibold text-white">
-                        {t.name
-                          .replace("Dr. ", "")
-                          .split(" ")
-                          .map((w) => w[0])
-                          .join("")
-                          .slice(0, 2)}
-                      </span>
-                      <span>
-                        <span className="block text-[14px] font-semibold text-emerald-950">
-                          {t.name}
-                        </span>
-                        <span className="block text-[13px] text-slate-500">{t.role}</span>
-                      </span>
-                    </figcaption>
-                  </div>
-                </figure>
-              </RevealItem>
-            ))}
-          </RevealGroup>
-
-          <Parallax distance={-22}>
-            <Reveal delay={0.08}>
-              <Frame
-                src={`${IMG}/doctor-tablet-portrait-cool.jpg`}
-                alt="A doctor reading a patient chart on a tablet in a darkened ward"
-                aspect="aspect-[3/4]"
-                sizes="24vw"
-                quality={80}
-                radius="1.75rem"
-              />
-            </Reveal>
-          </Parallax>
-        </div>
-
-        {/* Quotes again for narrow screens, where the three-column frame collapses. */}
-        <RevealGroup className="mt-4 flex flex-col gap-4 lg:hidden" stagger={0.08}>
-          {TESTIMONIALS.map((t) => (
-            <RevealItem key={t.name}>
-              <figure className="rounded-[1.75rem] bg-white p-2 ring-1 ring-inset ring-emerald-950/[0.07] transition-[transform,box-shadow] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:-translate-y-1">
-                <div className="rounded-[1.25rem] bg-gradient-to-b from-slate-50/70 to-white p-6 3xl:p-8 4xl:p-10">
-                  <div className="mb-3 flex gap-0.5" aria-label="5 out of 5 stars">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <svg key={i} className="h-3.5 w-3.5 fill-amber-400" viewBox="0 0 20 20" aria-hidden="true">
-                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                      </svg>
-                    ))}
-                  </div>
-                  <blockquote className="font-display text-[16px] font-medium leading-relaxed text-emerald-950">
-                    &ldquo;{t.text}&rdquo;
-                  </blockquote>
-                  <figcaption className="mt-5 text-[13px] text-slate-500">
-                    <span className="font-semibold text-emerald-950">{t.name}</span> · {t.role}
-                  </figcaption>
-                </div>
-              </figure>
-            </RevealItem>
-          ))}
-        </RevealGroup>
-      </Section>
-
 
 
       {/* ── Pricing ──────────────────────────────────────────────────────── */}
