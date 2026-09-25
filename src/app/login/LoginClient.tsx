@@ -969,9 +969,14 @@ export default function LoginPage() {
                       width: "clamp(38px,5vw,52px)", height: "clamp(38px,5vw,52px)", objectFit: "cover",
                       borderRadius: "clamp(9px,.7vw,14px)", border: `1px solid ${T.border}`,
                     }} />
-                  <span className="font-black" style={{ fontSize: "var(--fs-brand)", color: T.ink, letterSpacing: "-0.035em" }}>
-                    RF Health
-                  </span>
+                  <div>
+                    <div className="font-black" style={{ fontSize: "var(--fs-brand)", color: T.ink, letterSpacing: "-0.035em" }}>
+                      RF Health
+                    </div>
+                    <div className="font-semibold" style={{ fontSize: "var(--fs-xs)", color: T.primary, letterSpacing: "0.1em", marginTop: "2px" }}>
+                      PRIVATE PATIENT MANAGEMENT SYSTEM
+                    </div>
+                  </div>
                 </Link>
 
                 <GlassCard>
