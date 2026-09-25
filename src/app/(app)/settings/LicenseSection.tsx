@@ -226,12 +226,6 @@ function OverviewTab({ data }: { data: LicenseFullData }) {
       icon: CreditCard,
       color: "bg-[var(--color-primary-50)] border-[var(--color-primary-200)]",
     },
-    {
-      label: "Payment",
-      value: <span className="text-sm font-bold text-[var(--color-ink-800)]">{data.paymentStatus || "—"}</span>,
-      icon: CreditCard,
-      color: "bg-slate-50 border-slate-200",
-    },
   ];
 
   return (
@@ -239,7 +233,7 @@ function OverviewTab({ data }: { data: LicenseFullData }) {
       <StatusBanner data={data} />
 
       {/* Metric tiles */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {metrics.map((m) => {
           const Icon = m.icon;
           return (
@@ -257,26 +251,18 @@ function OverviewTab({ data }: { data: LicenseFullData }) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {/* License Details */}
         <SCard title="License Details" icon={Key}>
-          <InfoRow label="Licensed To"       value={`Dr. ${data.doctorName}`} />
-          <InfoRow label="License Key"       value={data.licenseKeyMasked}    mono />
-          <InfoRow label="Plan"              value={trial ? "Free Trial" : data.plan === "YEARLY" ? "Annual" : data.plan ?? "—"} />
-          <InfoRow label="Activation Date"   value={fmt(data.subscriptionStartsAt ?? data.trialStartsAt)} />
-          <InfoRow label="Expiry Date"       value={fmt(data.subscriptionEndsAt ?? data.trialEndsAt)} />
-          <InfoRow label="Days Remaining"    value={`${data.remainingDays} days`} />
-          <InfoRow label="Payment Status"    value={data.paymentStatus} />
-          <InfoRow label="License Active"    value={data.isActive ? "Yes" : "No"} />
+          <InfoRow label="Licensed To"     value={`Dr. ${data.doctorName}`} />
+          <InfoRow label="License Key"     value={data.licenseKeyMasked} mono />
+          <InfoRow label="Plan"            value={trial ? "Free Trial" : data.plan === "YEARLY" ? "Annual" : data.plan === "MONTHLY" ? "Monthly" : "—"} />
+          <InfoRow label="Activation Date" value={fmt(data.subscriptionStartsAt ?? data.trialStartsAt)} />
+          <InfoRow label="Expiry Date"     value={fmt(data.subscriptionEndsAt ?? data.trialEndsAt)} />
         </SCard>
 
-        {/* Subscription Status */}
-        <SCard title="Subscription Status" icon={BarChart2}>
-          <InfoRow label="License Holder"    value={`Dr. ${data.doctorName}`} />
-          <InfoRow label="Doctor ID"         value={data.shortId} mono />
-          <InfoRow label="Primary Hospital"  value={data.primaryHospital} />
-          <InfoRow label="Contact"           value={data.doctorContact} />
-          <InfoRow label="Email"             value={data.doctorEmail} />
-          <InfoRow label="Trial Start"       value={fmt(data.trialStartsAt)} />
-          <InfoRow label="Trial End"         value={fmt(data.trialEndsAt)} />
-          <InfoRow label="Last Verified"     value={fmtDt(data.lastVerifiedAt)} />
+        {/* Doctor Info */}
+        <SCard title="Doctor Info" icon={BarChart2}>
+          <InfoRow label="Primary Hospital" value={data.primaryHospital} />
+          <InfoRow label="Contact"          value={data.doctorContact} />
+          <InfoRow label="Email"            value={data.doctorEmail} />
         </SCard>
       </div>
 
