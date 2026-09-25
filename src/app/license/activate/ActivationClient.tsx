@@ -100,12 +100,12 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 /* ── Card shell ──────────────────────────────────────────────────────────────── */
-function Card({ title, icon: Icon, children, className = "" }: {
-  title?: string; icon?: React.ElementType; children: React.ReactNode; className?: string;
+function Card({ title, icon: Icon, children, className = "", style }: {
+  title?: string; icon?: React.ElementType; children: React.ReactNode; className?: string; style?: React.CSSProperties;
 }) {
   return (
     <div className={`rounded-2xl overflow-hidden act-card ${className}`}
-      style={{ background: T.card, border: `1px solid ${T.border2}`, boxShadow: "0 2px 16px rgba(15,41,38,.07), 0 1px 4px rgba(15,41,38,.04)" }}>
+      style={{ background: T.card, border: `1px solid ${T.border2}`, boxShadow: "0 2px 16px rgba(15,41,38,.07), 0 1px 4px rgba(15,41,38,.04)", ...style }}>
       <div style={{ height: "2px", background: `linear-gradient(90deg,transparent,${T.accent2} 30%,${T.accent} 55%,transparent)` }} />
       <div className="p-6">
         {title && (
