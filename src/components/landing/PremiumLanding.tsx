@@ -743,71 +743,6 @@ export function PremiumLanding() {
         </Split>
       </Section>
 
-      {/* ── Clinical AI ──────────────────────────────────────────────────────
-          Copy here is held to what the Clinical Copilot plugin actually does,
-          per its manifest: summarise, ask, draft, all gated by role. The
-          "never writes to the record" line is a real product constraint, not
-          a reassurance -- drafts return for review and are saved by the
-          doctor, and the plugin is off by default even for hospital admins.
-          If the plugin's capabilities change, this section changes with it. */}
-      <Section id="copilot">
-        <SectionHead
-          eyebrow="Clinical AI"
-          title={<>A second read of the chart, before you walk in.</>}
-          lede="The Clinical Copilot reads the record you already keep and gives it back to you as something shorter. It drafts, it does not decide, and everything it produces is yours to accept or discard."
-        />
-
-        <RevealGroup
-          className="mt-8 grid gap-3 sm:mt-10 sm:grid-cols-2 2xl:grid-cols-4"
-          stagger={0.06}
-        >
-          {[
-            {
-              icon: <ScanLine size={19} strokeWidth={1.25} />,
-              title: "Summarise the record",
-              body: "History, medications, investigations and the visit timeline condensed into a brief you can read before the patient sits down.",
-            },
-            {
-              icon: <MessageSquareText size={19} strokeWidth={1.25} />,
-              title: "Ask it questions",
-              body: "Ask what changed since the last visit, or when a drug was started, and get an answer drawn from that patient’s own chart.",
-            },
-            {
-              icon: <ClipboardPlus size={19} strokeWidth={1.25} />,
-              title: "Draft the consultation note",
-              body: "A first draft of the note, returned for review. Nothing reaches the record until you have read it and saved it yourself.",
-            },
-            {
-              icon: <ShieldCheck size={19} strokeWidth={1.25} />,
-              title: "Granted, never inherited",
-              body: "Off by default, including for hospital administrators. A doctor grants access deliberately, and it stays inside the same role and audit rules as the rest of the record.",
-            },
-          ].map((c) => (
-            <RevealItem key={c.title}>
-              <div className="group/ai h-full rounded-[1.5rem] bg-white p-2 ring-1 ring-inset ring-emerald-950/[0.07] transition-[transform,box-shadow] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:-translate-y-1 hover:shadow-[0_24px_50px_-38px_rgba(6,60,45,0.5)]">
-                <div className="flex h-full flex-col gap-4 rounded-[1rem] bg-gradient-to-b from-slate-50/80 to-white p-6 3xl:p-8 4xl:p-10">
-                  <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-600/10 transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover/ai:scale-110">
-                    {c.icon}
-                  </span>
-                  <h3 className="text-[16.5px] font-semibold leading-snug tracking-[-0.01em] text-emerald-950">
-                    {c.title}
-                  </h3>
-                  <p className="text-[14px] leading-relaxed text-slate-600">{c.body}</p>
-                </div>
-              </div>
-            </RevealItem>
-          ))}
-        </RevealGroup>
-
-        <Reveal delay={0.1}>
-          <p className="mx-auto mt-8 flex max-w-2xl items-center justify-center gap-2 text-center text-[13.5px] leading-relaxed text-slate-500">
-            <Sparkles size={15} strokeWidth={1.25} className="shrink-0 text-emerald-600" aria-hidden="true" />
-            Decision support, not diagnosis. The Copilot assists the doctor reading the chart; it never replaces that reading.
-          </p>
-        </Reveal>
-      </Section>
-
-
       {/* ── Patient journey · Surgery · Analytics (tabbed) ───────────────────
           Three former sections in one. Only the active panel mounts, so this
           costs the height of one section instead of three. */}
@@ -819,45 +754,6 @@ export function PremiumLanding() {
             { id: "analytics", label: "Analytics",        content: <AnalyticsPanel /> },
           ]}
         />
-      </Section>
-
-
-      {/* ── Security (condensed) ─────────────────────────────────────────── */}
-      <Section id="security">
-        <SectionHead
-          eyebrow="Security"
-          title={<>Built to be defensible, not just encrypted.</>}
-          lede="Patient data carries obligations. RF Health is designed so that who saw what, and when, is always answerable, and so that access is granted by role rather than by trust."
-        />
-
-        <Reveal delay={0.08}>
-          <div className="mt-8 sm:mt-10 flex flex-wrap justify-center gap-3">
-            {[
-              { icon: <Lock size={15} strokeWidth={1.25} />, label: "Encrypted in transit & at rest" },
-              { icon: <ShieldCheck size={15} strokeWidth={1.25} />, label: "Role-based access control" },
-              { icon: <History size={15} strokeWidth={1.25} />, label: "Immutable audit log" },
-              { icon: <Fingerprint size={15} strokeWidth={1.25} />, label: "Two-factor authentication" },
-              { icon: <Cloud size={15} strokeWidth={1.25} />, label: "Redundant cloud hosting" },
-              { icon: <Database size={15} strokeWidth={1.25} />, label: "Automated daily backups" },
-              { icon: <BadgeCheck size={15} strokeWidth={1.25} />, label: "HIPAA-aligned design" },
-              { icon: <Activity size={15} strokeWidth={1.25} />, label: "Session & device visibility" },
-            ].map((s) => (
-              <span
-                key={s.label}
-                className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2.5 text-[13.5px] font-medium text-emerald-900 ring-1 ring-inset ring-emerald-950/[0.07]"
-              >
-                <span className="text-emerald-600">{s.icon}</span>
-                {s.label}
-              </span>
-            ))}
-          </div>
-        </Reveal>
-
-        <Reveal delay={0.14}>
-          <p className="mx-auto mt-6 max-w-2xl text-center text-[13px] leading-relaxed text-slate-400">
-            HIPAA-aligned design describes how the platform is built — access control, audit logging and encryption. It is not a certification claim.
-          </p>
-        </Reveal>
       </Section>
 
 
