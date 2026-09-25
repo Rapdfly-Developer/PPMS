@@ -23,6 +23,10 @@ import { writePluginAudit } from "@/plugin-framework/gateway/audit";
 import { signPluginToken } from "@/lib/plugin-token";
 import { isPluginRegistered, getPlugin } from "@/plugin-framework/registry";
 import type { GatewayContext } from "@/plugin-framework/types";
+// Composition root — ensures all plugins are registered when this endpoint's
+// server runtime starts. API routes run in their own bundle and cannot rely on
+// the EMR page or token-auth helper having registered plugins in another runtime.
+import "@/plugins";
 
 export async function POST(req: Request) {
   // 1. Session — must be an authenticated PPMS user
