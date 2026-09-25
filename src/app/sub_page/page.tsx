@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import { Sora, Inter, Manrope } from "next/font/google";
 import { SubPageClient } from "./SubPageClient";
 
-const sora = Sora({ subsets: ["latin"], weight: ["400","500","600","700","800"], variable: "--font-sora" });
+const sora = Sora({ subsets: ["latin"], variable: "--font-sora" });
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
-const manrope = Manrope({ subsets: ["latin"], weight: ["400","500","600","700","800"], variable: "--font-manrope" });
+const manrope = Manrope({ subsets: ["latin"], variable: "--font-manrope" });
 
 export const metadata: Metadata = {
   title: "RF Health, One Doctor. Multiple Hospitals. One Intelligent Platform.",
