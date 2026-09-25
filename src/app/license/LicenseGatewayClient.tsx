@@ -151,7 +151,7 @@ const panelW: React.CSSProperties = { width: "100%", maxWidth: "var(--left-w)" }
 const STATS = [
   { val: "5,000+", label: "Doctors" },
   { val: "99.98%", label: "Uptime" },
-  { val: "30-day", label: "Free Trial" },
+  { val: "7-day", label: "Free Trial" },
 ];
 
 const TRUST = [
@@ -646,7 +646,7 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
                     Welcome to RF Health
                   </h2>
                   <p style={{ fontSize: "var(--fs-sm)", color: T.muted, marginTop: "4px", marginBottom: "var(--vgap)" }}>
-                    Start your free 30-day trial. No licence key required.
+                    Start your free 7-day trial. No licence key required.
                   </p>
 
                   <div className="flex flex-col gap-3.5">

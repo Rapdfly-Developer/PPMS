@@ -111,7 +111,7 @@ function StatusBanner({ data }: { data: LicenseFullData }) {
         </p>
         <p className="text-xs text-red-700 mt-0.5">
           {status === "TRIAL_EXPIRED"
-            ? `Your 30-day trial ended on ${fmt(data.trialEndsAt)}. Activate a paid license to restore full access.`
+            ? `Your 7-day trial ended on ${fmt(data.trialEndsAt)}. Activate a paid license to restore full access.`
             : `Your subscription expired on ${fmt(data.subscriptionEndsAt)}. Renew now to restore access.`}
         </p>
         <div className="mt-3 flex flex-wrap gap-2">
@@ -659,7 +659,7 @@ function RenewalTab({ data }: { data: LicenseFullData }) {
           {
             label: "Plan",
             value: data.status === "TRIAL_ACTIVE" ? "Free Trial" : data.plan === "YEARLY" ? "Annual" : data.plan === "MONTHLY" ? "Monthly" : "—",
-            sub: data.status === "TRIAL_ACTIVE" ? "30-day evaluation" : data.plan === "YEARLY" ? "Billed annually" : "Billed monthly",
+            sub: data.status === "TRIAL_ACTIVE" ? "7-day evaluation" : data.plan === "YEARLY" ? "Billed annually" : "Billed monthly",
           },
           {
             label: expired ? "Expired On" : "Expires On",

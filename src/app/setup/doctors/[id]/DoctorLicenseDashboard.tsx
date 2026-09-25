@@ -152,7 +152,7 @@ function LicenseActionsPanel({ lic, doctor }: {
             <div className="text-left flex-1">
               <p className="text-sm font-bold text-white leading-tight">Generate License</p>
               <p className="text-[10px] text-violet-300 mt-0.5">
-                {hasLicense ? "Regenerate key" : "Issue 30-day trial"}
+                {hasLicense ? "Regenerate key" : "Issue 7-day trial"}
               </p>
             </div>
             <ArrowUpRight size={13} className="text-violet-300 shrink-0" />
@@ -240,7 +240,7 @@ function LicenseActionsPanel({ lic, doctor }: {
             <p className="text-sm text-slate-600 text-center leading-relaxed">
               {hasLicense
                 ? "A new license key will be generated. The previous key will be invalidated immediately."
-                : "A 30-day trial license will be issued. The doctor can log in right away."}
+                : "A 7-day trial license will be issued. The doctor can log in right away."}
             </p>
             <ModalFooter onCancel={closeModal} loading={loading}
               onConfirm={() => callAction(hasLicense ? "regenerate" : "generate-trial")}

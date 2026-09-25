@@ -68,7 +68,7 @@ export async function sendVerificationCode(email: string, mobile?: string): Prom
   return { success: true };
 }
 
-// ── Start 30-day free trial ───────────────────────────────────────────────────
+// ── Start 7-day free trial ────────────────────────────────────────────────────
 export async function startTrial(data: {
   adminName: string;
   email: string;
@@ -123,9 +123,9 @@ export async function startTrial(data: {
       data: { userId: user.id, name: data.adminName.trim(), email: data.email.trim(), contact: data.mobile.replace(/\D/g, ""), shortCode },
     });
 
-    // Create 30-day trial license — owned by the DOCTOR
+    // Create 7-day trial license — owned by the DOCTOR
     const trialEndsAt = new Date();
-    trialEndsAt.setDate(trialEndsAt.getDate() + 30);
+    trialEndsAt.setDate(trialEndsAt.getDate() + 7);
     await prisma.tenantLicense.create({
       data: { doctorId: doctor.id, trialEndsAt },
     });

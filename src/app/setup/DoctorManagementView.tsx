@@ -507,7 +507,7 @@ export function DoctorManagementView({ onAddDoctor }: { onAddDoctor: () => void 
                     <div className="mt-1 h-1.5 rounded-full bg-amber-100 overflow-hidden">
                       <div
                         className={`h-full rounded-full transition-all ${d.license.trialDaysRemaining <= 7 ? "bg-orange-400" : "bg-amber-400"}`}
-                        style={{ width: `${Math.min(100, (d.license.trialDaysRemaining / 30) * 100)}%` }}
+                        style={{ width: `${Math.min(100, (d.license.trialDaysRemaining / 7) * 100)}%` }}
                       />
                     </div>
                   </div>

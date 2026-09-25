@@ -54,7 +54,7 @@ export async function POST(
       }
 
       const now = new Date();
-      const trialEndsAt = new Date(now.getTime() + 30 * 86_400_000);
+      const trialEndsAt = new Date(now.getTime() + 7 * 86_400_000);
 
       const created = await prisma.tenantLicense.create({
         data: {

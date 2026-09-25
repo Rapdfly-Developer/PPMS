@@ -228,7 +228,7 @@ function Hero() {
             Manage appointments, EMR, prescriptions, billing, and multiple hospitals from one secure cloud platform. Built for doctors who work across multiple hospitals.
           </p>
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 36, animation: "fade-up .8s .3s ease both" }}>
-            <a href="/license" className="btn-p">Start 30-Day Free Trial <ArrowRight size={16} /></a>
+            <a href="/license" className="btn-p">Start 7-Day Free Trial <ArrowRight size={16} /></a>
             <a href="#contact" className="btn-g">Book Free Demo</a>
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "8px 20px", animation: "fade-up .8s .4s ease both" }}>
@@ -645,7 +645,7 @@ function Security() {
 /* ── Pricing ──────────────────────────────────────────────────────────────── */
 function Pricing() {
   const plans = [
-    { name: "Starter", tag: "Individual Doctors", price: "Free", period: "30-Day Trial", features: ["1 Doctor Account", "Up to 2 Hospitals", "Appointments & EMR", "Basic Billing", "Email Support"], cta: "Start Free Trial", featured: false },
+    { name: "Starter", tag: "Individual Doctors", price: "Free", period: "7-Day Trial", features: ["1 Doctor Account", "Up to 2 Hospitals", "Appointments & EMR", "Basic Billing", "Email Support"], cta: "Start Free Trial", featured: false },
     { name: "Professional", tag: "Clinics & Groups", price: "₹2,999", period: "/month", features: ["Up to 5 Doctors", "Unlimited Hospitals", "Full EMR & Prescriptions", "Advanced Billing & Insurance", "Priority Support", "Analytics Dashboard"], cta: "Start Free Trial", featured: true },
     { name: "Enterprise", tag: "Hospitals & Chains", price: "Custom", period: "Pricing", features: ["Unlimited Doctors", "Unlimited Hospitals", "Custom Integrations", "Dedicated Account Manager", "SLA Guarantee", "On-premise Option"], cta: "Contact Sales", featured: false },
   ];
@@ -697,7 +697,7 @@ function CTA() {
             </h2>
             <p style={{ fontSize: 17, color: C.muted, maxWidth: 520, margin: "0 auto 36px" }}>Join 500+ doctors who manage their multi-hospital practice with PPMS. Start your 7-day free trial, no credit card required.</p>
             <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" }}>
-              <a href="/license" className="btn-p" style={{ fontSize: 16, padding: "15px 34px" }}>Start 30-Day Free Trial <ArrowRight size={17} /></a>
+              <a href="/license" className="btn-p" style={{ fontSize: 16, padding: "15px 34px" }}>Start 7-Day Free Trial <ArrowRight size={17} /></a>
               <a href="#contact" className="btn-g" style={{ fontSize: 16, padding: "15px 34px" }}>Schedule Free Demo</a>
             </div>
           </div>
