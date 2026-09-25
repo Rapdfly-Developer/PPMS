@@ -34,11 +34,17 @@ export async function POST(req: Request) {
     if (!link) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  // First-payment discount: applies when the doctor has never had a confirmed paid subscription
-  const existing = await prisma.tenantLicense.findUnique({
-    where: { doctorId },
-    select: { subscriptionStartsAt: true, paymentStatus: true },
-  });
+  // Fetch doctor profile for Razorpay prefill and first-payment check
+  const [existing, doctor] = await Promise.all([
+    prisma.tenantLicense.findUnique({
+      where: { doctorId },
+      select: { subscriptionStartsAt: true, paymentStatus: true },
+    }),
+    prisma.doctor.findUnique({
+      where: { id: doctorId },
+      select: { name: true, contact: true },
+    }),
+  ]);
   const isFirstPayment = !existing?.subscriptionStartsAt || existing.paymentStatus !== "PAID";
 
   const planConfig = PLANS[plan];
@@ -77,5 +83,9 @@ export async function POST(req: Request) {
     currency:       "INR",
     key:            process.env.RAZORPAY_KEY_ID,
     isFirstPayment,
+    prefill: {
+      name:    doctor?.name ?? undefined,
+      contact: doctor?.contact ?? undefined,
+    },
   });
 }

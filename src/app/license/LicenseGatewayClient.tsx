@@ -1156,6 +1156,7 @@ function PlansModal({
       });
       const orderData = await res.json() as {
         orderId?: string; amount?: number; currency?: string; key?: string; error?: string;
+        prefill?: { name?: string; contact?: string };
       };
       if (!res.ok) throw new Error(orderData.error || "Failed to initiate payment.");
 
@@ -1193,7 +1194,7 @@ function PlansModal({
             setBuying("");
           }
         },
-        prefill: {},
+        prefill: orderData.prefill ?? {},
         theme: { color: "#0D7A63" },
         modal: { ondismiss: () => setBuying("") },
       });
