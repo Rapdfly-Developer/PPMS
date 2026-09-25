@@ -154,7 +154,48 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
   await prisma.pluginRegistration.deleteMany({ where: { doctorId: id } });
   await prisma.pluginLicense.deleteMany({ where: { doctorId: id } });
   await prisma.tenantLicense.deleteMany({ where: { doctorId: id } });
-  await prisma.doctorHospitalLink.deleteMany({ where: { doctorId: id } });
+
+  // ── 7. Delete hospitals linked to this doctor and their staff users ───────
+  const hospitalLinks = await prisma.doctorHospitalLink.findMany({
+    where: { doctorId: id },
+    select: { hospitalId: true },
+  });
+  const hospitalIds = hospitalLinks.map((l) => l.hospitalId);
+
+  if (hospitalIds.length > 0) {
+    // HospitalStaff users — delete their activity records then the user
+    const staffList = await prisma.hospitalStaff.findMany({
+      where: { hospitalId: { in: hospitalIds } },
+      select: { id: true, userId: true },
+    });
+    for (const s of staffList) {
+      await prisma.auditLog.deleteMany({ where: { userId: s.userId } });
+      await prisma.notification.deleteMany({ where: { userId: s.userId } });
+      await prisma.userLoginHistory.deleteMany({ where: { userId: s.userId } });
+      await prisma.exportOtp.deleteMany({ where: { userId: s.userId } });
+      await prisma.passwordResetToken.deleteMany({ where: { userId: s.userId } });
+      await prisma.hospitalStaff.delete({ where: { id: s.id } });
+      await prisma.user.delete({ where: { id: s.userId } });
+    }
+
+    // Hospital-level insurance records (any not already cleared via patient cleanup)
+    await prisma.insuranceClaim.deleteMany({ where: { hospitalId: { in: hospitalIds } } });
+    await prisma.insurancePreAuthorization.deleteMany({ where: { hospitalId: { in: hospitalIds } } });
+    await prisma.patientInsurance.deleteMany({ where: { hospitalId: { in: hospitalIds } } });
+    await prisma.insuranceCompany.deleteMany({ where: { hospitalId: { in: hospitalIds } } });
+
+    // Integration logs and integration config
+    await prisma.integrationLog.deleteMany({ where: { hospitalId: { in: hospitalIds } } });
+    await prisma.hospitalIntegration.deleteMany({ where: { hospitalId: { in: hospitalIds } } });
+
+    // Hospital-scoped chip options and plugin configs
+    await prisma.chipOption.deleteMany({ where: { hospitalId: { in: hospitalIds } } });
+    await prisma.pluginConfig.deleteMany({ where: { hospitalId: { in: hospitalIds } } });
+
+    // Doctor–hospital links then the hospitals themselves
+    await prisma.doctorHospitalLink.deleteMany({ where: { hospitalId: { in: hospitalIds } } });
+    await prisma.hospital.deleteMany({ where: { id: { in: hospitalIds } } });
+  }
 
   await prisma.doctor.delete({ where: { id } });
   await prisma.user.delete({ where: { id: doctor.userId } });
