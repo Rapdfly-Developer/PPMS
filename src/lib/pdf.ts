@@ -6,8 +6,10 @@ import type { Browser } from "puppeteer-core";
 // All timestamps in generated PDFs are Indian wall-clock times; production runs on UTC.
 const format = (d: Date | number, fmt: string) => formatBase(toISTWall(new Date(d)), fmt);
 
-function escapeHtml(value: string): string {
-  return value
+function escapeHtml(value: unknown): string {
+  if (value === null || value === undefined) return "";
+  const s = typeof value === "string" ? value : String(value);
+  return s
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
