@@ -570,54 +570,58 @@ function usePinnedToStableViewport(apply: (el: HTMLElement) => void) {
 
 
 
+/* ── Healthcare data visual ─────────────────────────────────────────────────── */
+function HealthcareVisual() {
+  return (
+    <svg viewBox="0 0 440 300" xmlns="http://www.w3.org/2000/svg"
+      style={{ width: "100%", maxWidth: "min(380px, 38vw)" }} aria-hidden="true">
+      {/* Dot grid */}
+      {Array.from({ length: 9 }, (_, row) =>
+        Array.from({ length: 15 }, (_, col) => (
+          <circle key={`${row}-${col}`}
+            cx={col * 30 + 15} cy={row * 30 + 15} r={1.2}
+            fill="rgba(110,231,183,0.12)"
+          />
+        ))
+      )}
+      {/* Horizontal reference line */}
+      <line x1="0" y1="145" x2="440" y2="145" stroke="rgba(110,231,183,0.07)" strokeWidth="1"/>
+      {/* ECG waveform */}
+      <path
+        d="M 0 145 L 70 145 L 90 145 L 105 72 L 120 212 L 133 108 L 145 145 L 290 145 L 308 145 L 322 85 L 336 196 L 349 116 L 361 145 L 440 145"
+        stroke="rgba(52,211,153,0.70)" strokeWidth="2" fill="none"
+        strokeLinecap="round" strokeLinejoin="round"
+      />
+      {/* Pulse accent dot */}
+      <circle cx="105" cy="72" r="3.5" fill="#34D399" opacity="0.75"/>
+      <circle cx="105" cy="72" r="8" fill="rgba(52,211,153,0.12)"/>
+      {/* Stat tiles */}
+      <rect x="12" y="222" width="118" height="58" rx="8" fill="rgba(16,185,129,0.07)" stroke="rgba(52,211,153,0.18)" strokeWidth="1"/>
+      <text x="24" y="244" fill="#6EE7B7" fontSize="9" fontWeight="600" fontFamily="system-ui,-apple-system,sans-serif" letterSpacing="0.09em">PATIENTS</text>
+      <text x="24" y="265" fill="#ECFDF5" fontSize="18" fontWeight="700" fontFamily="system-ui,-apple-system,sans-serif">2,847</text>
+      <rect x="148" y="222" width="118" height="58" rx="8" fill="rgba(16,185,129,0.07)" stroke="rgba(52,211,153,0.18)" strokeWidth="1"/>
+      <text x="160" y="244" fill="#6EE7B7" fontSize="9" fontWeight="600" fontFamily="system-ui,-apple-system,sans-serif" letterSpacing="0.09em">HOSPITALS</text>
+      <text x="160" y="265" fill="#ECFDF5" fontSize="18" fontWeight="700" fontFamily="system-ui,-apple-system,sans-serif">12</text>
+      <rect x="284" y="222" width="144" height="58" rx="8" fill="rgba(16,185,129,0.07)" stroke="rgba(52,211,153,0.18)" strokeWidth="1"/>
+      <text x="296" y="244" fill="#6EE7B7" fontSize="9" fontWeight="600" fontFamily="system-ui,-apple-system,sans-serif" letterSpacing="0.09em">RECORDS</text>
+      <text x="296" y="265" fill="#ECFDF5" fontSize="18" fontWeight="700" fontFamily="system-ui,-apple-system,sans-serif">18K+</text>
+    </svg>
+  );
+}
+
 /* ── Left brand panel ─────────────────────────────────────────────────────── */
 function LeftPanel() {
   return (
     <div className="hidden lg:flex lg:w-[56%] flex-col shrink-0 relative"
-      style={{ background: "linear-gradient(150deg, #F5FBF8 0%, #EDF7F1 55%, #F1F9F5 100%)" }}>
+      style={{ background: "#0B2418" }}>
 
-      {/* very faint central radial tint */}
+      {/* Subtle corner radial accent */}
       <div aria-hidden="true" style={{
-        position: "absolute", inset: 0, zIndex: 0,
-        background: "radial-gradient(ellipse at 50% 48%, rgba(110,231,183,0.10) 0%, transparent 62%)",
+        position: "absolute", inset: 0, zIndex: 0, pointerEvents: "none",
+        background: "radial-gradient(ellipse 55% 40% at 85% 8%, rgba(16,185,129,0.09) 0%, transparent 65%)",
       }} />
 
-      {/* Hospital building — fills the middle zone, cropped to the facade */}
-      <div aria-hidden="true" style={{
-        position: "absolute",
-        top: "clamp(96px, 17%, 160px)",
-        bottom: "clamp(120px, 22%, 190px)",
-        left: "clamp(20px, 5%, 48px)",
-        right: "clamp(20px, 5%, 48px)",
-        zIndex: 1,
-        overflow: "hidden",
-        borderRadius: "clamp(14px, 1.5vw, 24px)",
-        pointerEvents: "none",
-        maskImage: "radial-gradient(ellipse 95% 95% at 50% 50%, black 52%, transparent 88%)",
-        WebkitMaskImage: "radial-gradient(ellipse 95% 95% at 50% 50%, black 52%, transparent 88%)",
-      }}>
-        {/* Soft ambient glow breathing behind the photo */}
-        <div className="lp-hglow" style={{
-          position: "absolute", inset: 0, zIndex: 1,
-          background: "radial-gradient(ellipse at 50% 50%, rgba(110,231,183,0.08) 0%, transparent 70%)",
-          animation: "hospital-glow 9s ease-in-out infinite",
-        }} />
-
-        {/* Hospital building photo — cropped to show building facade and entrance */}
-        <img
-          src="/landing/hospital-building.webp"
-          alt=""
-          style={{
-            width: "100%",
-            height: "100%",
-            objectFit: "cover",
-            objectPosition: "50% 35%",
-            display: "block",
-          }}
-        />
-      </div>
-
-      {/* content overlay — left-aligned */}
+      {/* content overlay */}
       <div className="flex-1 flex flex-col items-start justify-between relative"
         style={{
           zIndex: 2,
@@ -625,52 +629,48 @@ function LeftPanel() {
           paddingTop: "clamp(28px,3vw,56px)", paddingBottom: "clamp(28px,3vw,56px)",
         }}>
 
-        {/* Top: RF Health — horizontal layout, left-aligned */}
+        {/* Top: RF Health brand */}
         <div className="lp-a0">
           <Link href="/" aria-label="RF Health home"
             className="lp-brand inline-flex items-center gap-3.5 rounded-xl">
             <img src="/landing/logo-rf-health.webp" alt="" className="shrink-0"
               style={{ width: "var(--logo)", height: "var(--logo)", objectFit: "cover",
-                borderRadius: "clamp(11px,.8vw,16px)", border: `1px solid ${T.border}` }} />
+                borderRadius: "clamp(11px,.8vw,16px)", border: "1px solid rgba(255,255,255,0.12)" }} />
             <div>
               <div className="font-black" style={{
-                fontSize: "var(--fs-brand)", color: "#065F46", letterSpacing: "-0.035em",
-                textShadow: "0 1px 2px rgba(6,95,70,0.12)",
+                fontSize: "var(--fs-brand)", color: "#FFFFFF", letterSpacing: "-0.035em",
               }}>RF Health</div>
               <div className="font-semibold" style={{
-                fontSize: "var(--fs-xs)", color: "#5F9EA0", letterSpacing: "0.1em", marginTop: "2px",
+                fontSize: "var(--fs-xs)", color: "#6EE7B7", letterSpacing: "0.1em", marginTop: "2px",
               }}>PRIVATE PATIENT MANAGEMENT SYSTEM</div>
             </div>
           </Link>
         </div>
 
-        {/* Bottom: tagline + Rapdfly — left-aligned, with soft green glow behind */}
-        <div className="flex flex-col items-start gap-3 relative">
-          <div aria-hidden="true" style={{
-            position: "absolute", inset: "-32px -48px",
-            background: "radial-gradient(ellipse at 30% 60%, rgba(52,211,153,0.22) 0%, rgba(110,231,183,0.10) 45%, transparent 70%)",
-            pointerEvents: "none",
-          }} />
+        {/* Center: Healthcare data visual */}
+        <div className="lp-a2 flex-1 flex items-center justify-center w-full py-10">
+          <HealthcareVisual />
+        </div>
 
+        {/* Bottom: tagline + Rapdfly */}
+        <div className="lp-a3 flex flex-col items-start gap-3">
           <p style={{
-            fontSize: "var(--fs-body)", fontWeight: 500, letterSpacing: "0.02em", position: "relative",
-            background: "linear-gradient(90deg, #047857 0%, #10B981 100%)",
-            WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
-            backgroundClip: "text",
+            fontSize: "var(--fs-body)", fontWeight: 600, letterSpacing: "0.01em",
+            color: "#D1FAE5",
           }}>Precision Care. Powered by Technology.</p>
 
-          <div className="flex flex-col items-start gap-1" style={{ position: "relative" }}>
+          <div className="flex flex-col items-start gap-1">
             <div style={{ height: "1px", width: "36px", marginBottom: "4px",
-              background: "linear-gradient(90deg, rgba(15,118,110,0.3), transparent)" }} />
+              background: "rgba(110,231,183,0.30)" }} />
             <div className="flex items-center gap-2">
               <svg width="26" height="26" viewBox="0 0 26 26" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style={{ flexShrink: 0, borderRadius: "4px" }}>
                 <rect width="26" height="26" rx="4" fill="#E53E3E"/>
                 <rect x="2.5" y="3.5" width="21" height="4.5" rx="1" fill="#9CA3AF" opacity="0.75"/>
                 <text x="13" y="21" textAnchor="middle" fill="white" fontSize="11" fontWeight="900" fontFamily="system-ui,-apple-system,sans-serif" letterSpacing="-0.5">RF</text>
               </svg>
-              <p style={{ fontSize: "var(--fs-xs)", color: "#6B7280", letterSpacing: "0.04em" }}>A product of Rapdfly</p>
+              <p style={{ fontSize: "var(--fs-xs)", color: "#6EE7B7", letterSpacing: "0.04em" }}>A product of Rapdfly</p>
             </div>
-            <p className="font-bold" style={{ fontSize: "var(--fs-xs)", color: "#6B7280", letterSpacing: "0.08em" }}>
+            <p className="font-bold" style={{ fontSize: "var(--fs-xs)", color: "#9CA3AF", letterSpacing: "0.08em" }}>
               RAPDFLY PRIVATE LIMITED
             </p>
           </div>
@@ -922,14 +922,8 @@ export default function LoginPage() {
           outline:2px solid ${T.primary};outline-offset:2px;border-radius:6px;
         }
 
-        @keyframes hospital-glow{
-          0%,100%{opacity:.76;transform:scale(1)}
-          50%{opacity:1;transform:scale(1.04)}
-        }
-
         @media (prefers-reduced-motion:reduce){
           .lp-a0,.lp-a1,.lp-a2,.lp-a3,.lp-a4,.lp-card,
-          .lp-hglow,
           .pp-btn,.pp-tab,.pp-ghost,.pp-icon-btn,.pp-link
           {animation:none!important;transition:none!important}
         }
@@ -1236,7 +1230,7 @@ export default function LoginPage() {
                       Start your free trial
                     </span>
                     <span className="block" style={{ fontSize: "var(--fs-sm)", color: T.muted, marginTop: "1px" }}>
-                      30 days · Unlimited modules · No credit card
+                      7 days · Unlimited modules · No credit card
                     </span>
                   </span>
                 </button>
