@@ -629,7 +629,7 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
                       v2.0 Cloud
                     </span>
                   </div>
-                  <p className="font-semibold" style={{ fontSize: "var(--fs-xs)", color: T.faint, letterSpacing: "0.06em" }}>
+                  <p className="font-semibold" style={{ fontSize: "var(--fs-xs)", color: T.accent, letterSpacing: "0.1em", marginTop: "2px" }}>
                     PRIVATE PATIENT MANAGEMENT SYSTEM
                   </p>
                 </div>
