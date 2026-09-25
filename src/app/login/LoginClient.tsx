@@ -580,31 +580,31 @@ function HealthcareVisual() {
         Array.from({ length: 15 }, (_, col) => (
           <circle key={`${row}-${col}`}
             cx={col * 30 + 15} cy={row * 30 + 15} r={1.2}
-            fill="rgba(110,231,183,0.12)"
+            fill="rgba(13,122,99,.10)"
           />
         ))
       )}
       {/* Horizontal reference line */}
-      <line x1="0" y1="145" x2="440" y2="145" stroke="rgba(110,231,183,0.07)" strokeWidth="1"/>
+      <line x1="0" y1="145" x2="440" y2="145" stroke="rgba(13,122,99,.06)" strokeWidth="1"/>
       {/* ECG waveform */}
       <path
         d="M 0 145 L 70 145 L 90 145 L 105 72 L 120 212 L 133 108 L 145 145 L 290 145 L 308 145 L 322 85 L 336 196 L 349 116 L 361 145 L 440 145"
-        stroke="rgba(52,211,153,0.70)" strokeWidth="2" fill="none"
+        stroke="rgba(13,122,99,.60)" strokeWidth="2" fill="none"
         strokeLinecap="round" strokeLinejoin="round"
       />
       {/* Pulse accent dot */}
-      <circle cx="105" cy="72" r="3.5" fill="#34D399" opacity="0.75"/>
-      <circle cx="105" cy="72" r="8" fill="rgba(52,211,153,0.12)"/>
+      <circle cx="105" cy="72" r="3.5" fill="#0D7A63" opacity="0.75"/>
+      <circle cx="105" cy="72" r="8" fill="rgba(13,122,99,.08)"/>
       {/* Stat tiles */}
-      <rect x="12" y="222" width="118" height="58" rx="8" fill="rgba(16,185,129,0.07)" stroke="rgba(52,211,153,0.18)" strokeWidth="1"/>
-      <text x="24" y="244" fill="#6EE7B7" fontSize="9" fontWeight="600" fontFamily="system-ui,-apple-system,sans-serif" letterSpacing="0.09em">PATIENTS</text>
-      <text x="24" y="265" fill="#ECFDF5" fontSize="18" fontWeight="700" fontFamily="system-ui,-apple-system,sans-serif">2,847</text>
-      <rect x="148" y="222" width="118" height="58" rx="8" fill="rgba(16,185,129,0.07)" stroke="rgba(52,211,153,0.18)" strokeWidth="1"/>
-      <text x="160" y="244" fill="#6EE7B7" fontSize="9" fontWeight="600" fontFamily="system-ui,-apple-system,sans-serif" letterSpacing="0.09em">HOSPITALS</text>
-      <text x="160" y="265" fill="#ECFDF5" fontSize="18" fontWeight="700" fontFamily="system-ui,-apple-system,sans-serif">12</text>
-      <rect x="284" y="222" width="144" height="58" rx="8" fill="rgba(16,185,129,0.07)" stroke="rgba(52,211,153,0.18)" strokeWidth="1"/>
-      <text x="296" y="244" fill="#6EE7B7" fontSize="9" fontWeight="600" fontFamily="system-ui,-apple-system,sans-serif" letterSpacing="0.09em">RECORDS</text>
-      <text x="296" y="265" fill="#ECFDF5" fontSize="18" fontWeight="700" fontFamily="system-ui,-apple-system,sans-serif">18K+</text>
+      <rect x="12" y="222" width="118" height="58" rx="8" fill="rgba(13,122,99,.06)" stroke="rgba(13,122,99,.15)" strokeWidth="1"/>
+      <text x="24" y="244" fill="#0D7A63" fontSize="9" fontWeight="600" fontFamily="system-ui,-apple-system,sans-serif" letterSpacing="0.09em">PATIENTS</text>
+      <text x="24" y="265" fill="#0F2926" fontSize="18" fontWeight="700" fontFamily="system-ui,-apple-system,sans-serif">2,847</text>
+      <rect x="148" y="222" width="118" height="58" rx="8" fill="rgba(13,122,99,.06)" stroke="rgba(13,122,99,.15)" strokeWidth="1"/>
+      <text x="160" y="244" fill="#0D7A63" fontSize="9" fontWeight="600" fontFamily="system-ui,-apple-system,sans-serif" letterSpacing="0.09em">HOSPITALS</text>
+      <text x="160" y="265" fill="#0F2926" fontSize="18" fontWeight="700" fontFamily="system-ui,-apple-system,sans-serif">12</text>
+      <rect x="284" y="222" width="144" height="58" rx="8" fill="rgba(13,122,99,.06)" stroke="rgba(13,122,99,.15)" strokeWidth="1"/>
+      <text x="296" y="244" fill="#0D7A63" fontSize="9" fontWeight="600" fontFamily="system-ui,-apple-system,sans-serif" letterSpacing="0.09em">RECORDS</text>
+      <text x="296" y="265" fill="#0F2926" fontSize="18" fontWeight="700" fontFamily="system-ui,-apple-system,sans-serif">18K+</text>
     </svg>
   );
 }
@@ -613,12 +613,12 @@ function HealthcareVisual() {
 function LeftPanel() {
   return (
     <div className="hidden lg:flex lg:w-[56%] flex-col shrink-0 relative"
-      style={{ background: "#0B2418" }}>
+      style={{ background: T.bg, borderRight: `1px solid ${T.border}` }}>
 
       {/* Subtle corner radial accent */}
       <div aria-hidden="true" style={{
         position: "absolute", inset: 0, zIndex: 0, pointerEvents: "none",
-        background: "radial-gradient(ellipse 55% 40% at 85% 8%, rgba(16,185,129,0.09) 0%, transparent 65%)",
+        background: "radial-gradient(ellipse 55% 40% at 85% 8%, rgba(13,122,99,.07) 0%, transparent 65%)",
       }} />
 
       {/* content overlay */}
@@ -635,13 +635,13 @@ function LeftPanel() {
             className="lp-brand inline-flex items-center gap-3.5 rounded-xl">
             <img src="/landing/logo-rf-health.webp" alt="" className="shrink-0"
               style={{ width: "var(--logo)", height: "var(--logo)", objectFit: "cover",
-                borderRadius: "clamp(11px,.8vw,16px)", border: "1px solid rgba(255,255,255,0.12)" }} />
+                borderRadius: "clamp(11px,.8vw,16px)", border: `1px solid ${T.border}` }} />
             <div>
               <div className="font-black" style={{
-                fontSize: "var(--fs-brand)", color: "#FFFFFF", letterSpacing: "-0.035em",
+                fontSize: "var(--fs-brand)", color: T.ink, letterSpacing: "-0.035em",
               }}>RF Health</div>
               <div className="font-semibold" style={{
-                fontSize: "var(--fs-xs)", color: "#6EE7B7", letterSpacing: "0.1em", marginTop: "2px",
+                fontSize: "var(--fs-xs)", color: T.primary, letterSpacing: "0.1em", marginTop: "2px",
               }}>PRIVATE PATIENT MANAGEMENT SYSTEM</div>
             </div>
           </Link>
@@ -656,21 +656,21 @@ function LeftPanel() {
         <div className="lp-a3 flex flex-col items-start gap-3">
           <p style={{
             fontSize: "var(--fs-body)", fontWeight: 600, letterSpacing: "0.01em",
-            color: "#D1FAE5",
+            color: T.muted,
           }}>Precision Care. Powered by Technology.</p>
 
           <div className="flex flex-col items-start gap-1">
             <div style={{ height: "1px", width: "36px", marginBottom: "4px",
-              background: "rgba(110,231,183,0.30)" }} />
+              background: "rgba(13,122,99,.20)" }} />
             <div className="flex items-center gap-2">
               <svg width="26" height="26" viewBox="0 0 26 26" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style={{ flexShrink: 0, borderRadius: "4px" }}>
                 <rect width="26" height="26" rx="4" fill="#E53E3E"/>
                 <rect x="2.5" y="3.5" width="21" height="4.5" rx="1" fill="#9CA3AF" opacity="0.75"/>
                 <text x="13" y="21" textAnchor="middle" fill="white" fontSize="11" fontWeight="900" fontFamily="system-ui,-apple-system,sans-serif" letterSpacing="-0.5">RF</text>
               </svg>
-              <p style={{ fontSize: "var(--fs-xs)", color: "#6EE7B7", letterSpacing: "0.04em" }}>A product of Rapdfly</p>
+              <p style={{ fontSize: "var(--fs-xs)", color: T.primary, letterSpacing: "0.04em" }}>A product of Rapdfly</p>
             </div>
-            <p className="font-bold" style={{ fontSize: "var(--fs-xs)", color: "#9CA3AF", letterSpacing: "0.08em" }}>
+            <p className="font-bold" style={{ fontSize: "var(--fs-xs)", color: T.muted, letterSpacing: "0.08em" }}>
               RAPDFLY PRIVATE LIMITED
             </p>
           </div>

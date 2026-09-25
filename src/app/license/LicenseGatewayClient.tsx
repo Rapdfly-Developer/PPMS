@@ -8,8 +8,8 @@ import {
   FileText, Calendar, Building2, UserCircle, Users,
   BarChart3, Cloud, Shield, CheckCircle2, AlertTriangle,
   XCircle, Key, ArrowLeft, Loader2, Eye, EyeOff,
-  Phone, Mail, Lock, Star, Zap, Stethoscope, HeartPulse,
-  Pill, AlertCircle, RotateCcw, ShieldCheck,
+  Phone, Mail, Lock, Star, Zap,
+  AlertCircle, RotateCcw, ShieldCheck,
 } from "lucide-react";
 import { startTrial, activateLicenseKey, sendVerificationCode } from "./actions";
 import type { LicensePageData } from "./getLicenseData";
@@ -66,104 +66,6 @@ const FEATURES = [
   { icon: Shield,     label: "Secure Data" },
 ];
 
-/* ── Mouse parallax ────────────────────────────────────────────────────────── */
-function useParallax() {
-  const [p, setP] = useState({ x: 0, y: 0 });
-  useEffect(() => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    if (!window.matchMedia("(pointer: fine)").matches) return;
-    let frame = 0;
-    const onMove = (e: MouseEvent) => {
-      if (frame) return;
-      frame = requestAnimationFrame(() => {
-        frame = 0;
-        setP({ x: (e.clientX / window.innerWidth - 0.5) * 2, y: (e.clientY / window.innerHeight - 0.5) * 2 });
-      });
-    };
-    window.addEventListener("mousemove", onMove, { passive: true });
-    return () => { window.removeEventListener("mousemove", onMove); if (frame) cancelAnimationFrame(frame); };
-  }, []);
-  return p;
-}
-
-/* ── Light animated background ──────────────────────────────────────────────── */
-function LightBackground({ px, py }: { px: number; py: number }) {
-  const particles = [
-    { x: "11%", y: "34%", d: 8 }, { x: "79%", y: "24%", d: 12 },
-    { x: "44%", y: "64%", d: 10 }, { x: "89%", y: "56%", d: 14 },
-    { x: "21%", y: "89%", d: 9 }, { x: "66%", y: "14%", d: 11 },
-    { x: "36%", y: "43%", d: 13 }, { x: "58%", y: "78%", d: 15 },
-  ];
-  const icons = [
-    { Icon: Stethoscope, x: "13%", y: "18%", s: 26 },
-    { Icon: HeartPulse,  x: "31%", y: "72%", s: 22 },
-    { Icon: Pill,        x: "8%",  y: "84%", s: 20 },
-    { Icon: Building2,   x: "70%", y: "12%", s: 24 },
-    { Icon: FileText,    x: "86%", y: "66%", s: 20 },
-    { Icon: Cloud,       x: "62%", y: "88%", s: 22 },
-  ];
-  return (
-    <div className="absolute inset-0 pointer-events-none overflow-hidden" style={{ background: T.bg }}>
-      <div className="absolute inset-0" style={{
-        background: "radial-gradient(ellipse 80% 60% at 15% 5%,rgba(13,122,99,.14) 0%,transparent 60%)," +
-                    "radial-gradient(ellipse 60% 50% at 85% 85%,rgba(5,150,105,.1) 0%,transparent 55%)," +
-                    "linear-gradient(160deg,#FFFFFF 0%,#F7F9FA 50%,#EAF2EF 100%)",
-      }} />
-      <div className="lg-sheen absolute inset-0" style={{
-        backgroundImage: "linear-gradient(115deg,transparent 30%,rgba(13,122,99,.07) 48%,rgba(5,150,105,.05) 56%,transparent 74%)",
-        backgroundSize: "260% 260%",
-      }} />
-      <div className="lg-orb1 absolute rounded-full" style={{
-        top: "-260px", left: "-180px", width: "760px", height: "760px",
-        background: "radial-gradient(circle,rgba(13,122,99,.24) 0%,rgba(13,122,99,.07) 42%,transparent 68%)",
-        filter: "blur(70px)", transform: `translate3d(${px * 26}px,${py * 20}px,0)`,
-      }} />
-      <div className="lg-orb2 absolute rounded-full" style={{
-        bottom: "-280px", right: "-160px", width: "820px", height: "820px",
-        background: "radial-gradient(circle,rgba(5,150,105,.16) 0%,rgba(5,150,105,.05) 44%,transparent 68%)",
-        filter: "blur(80px)", transform: `translate3d(${px * -30}px,${py * -22}px,0)`,
-      }} />
-      <svg className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg"
-        style={{ transform: `translate3d(${px * 8}px,${py * 6}px,0)` }}>
-        <defs>
-          <pattern id="lg-dg1" width="44" height="44" patternUnits="userSpaceOnUse">
-            <path d="M44 0L0 0 0 44" fill="none" stroke="#0A6552" strokeWidth=".5" strokeOpacity=".07" />
-          </pattern>
-          <pattern id="lg-dg2" width="220" height="220" patternUnits="userSpaceOnUse">
-            <rect width="220" height="220" fill="url(#lg-dg1)" />
-            <path d="M220 0L0 0 0 220" fill="none" stroke="#0A6552" strokeWidth="1" strokeOpacity=".08" />
-          </pattern>
-          <radialGradient id="lg-dgfade" cx="50%" cy="45%" r="62%">
-            <stop offset="0%" stopColor="#fff" stopOpacity="1" />
-            <stop offset="100%" stopColor="#fff" stopOpacity="0" />
-          </radialGradient>
-          <mask id="lg-dgmask"><rect width="100%" height="100%" fill="url(#lg-dgfade)" /></mask>
-        </defs>
-        <rect width="100%" height="100%" fill="url(#lg-dg2)" mask="url(#lg-dgmask)" />
-      </svg>
-      {icons.map(({ Icon, x, y, s }, i) => (
-        <div key={i} className="lg-floaty absolute" style={{
-          left: x, top: y, opacity: 0.12, color: T.accent,
-          animationDelay: `${i * 1.1}s`,
-          transform: `translate3d(${px * (10 + i * 2)}px,${py * (8 + i)}px,0)`,
-        }}>
-          <Icon size={s} strokeWidth={1.5} />
-        </div>
-      ))}
-      {particles.map((pt, i) => (
-        <div key={i} className="absolute rounded-full" style={{
-          left: pt.x, top: pt.y, width: "4px", height: "4px",
-          background: "radial-gradient(circle,rgba(13,122,99,.85),transparent 70%)",
-          boxShadow: "0 0 10px rgba(13,122,99,.45)",
-          animation: `lg-particle ${pt.d}s ease-in-out ${i * 0.9}s infinite`,
-        }} />
-      ))}
-      <div className="absolute inset-0" style={{
-        background: "radial-gradient(ellipse 90% 80% at 50% 45%,transparent 40%,rgba(15,41,38,.08) 100%)",
-      }} />
-    </div>
-  );
-}
 
 /* ── Floating label input ─────────────────────────────────────────────── */
 function Field({
@@ -381,16 +283,12 @@ function LeftPanel() {
 /* ── Glass card wrapper ────────────────────────────────────────────────────── */
 function GlassCard({ children }: { children: React.ReactNode }) {
   return (
-    <div className="relative w-full rounded-3xl overflow-hidden lg-card" style={{
-      background: T.surface,
-      backdropFilter: "blur(28px)", WebkitBackdropFilter: "blur(28px)",
+    <div className="relative w-full rounded-2xl overflow-hidden lg-card" style={{
+      background: T.card,
       border: `1px solid ${T.border2}`,
-      boxShadow: "0 40px 100px rgba(15,41,38,.18), 0 12px 32px rgba(15,41,38,.12), 0 0 80px rgba(13,122,99,.13), inset 0 0 40px rgba(15,143,111,.025)",
+      boxShadow: "0 2px 24px rgba(15,41,38,.07), 0 1px 4px rgba(15,41,38,.04)",
     }}>
-      {/* Animated top gradient line */}
-      <div style={{ height: "2px", background: "linear-gradient(90deg,transparent 0%,#0A6552 30%,#0D7A63 50%,#0A6552 70%,transparent 100%)", backgroundSize: "200% 100%", animation: "lg-sheen 4s ease-in-out infinite" }} />
-      {/* Inner corner glow */}
-      <div className="absolute top-0 right-0 w-32 h-32 pointer-events-none" style={{ background: "radial-gradient(circle at top right, rgba(13,122,99,.07), transparent 70%)" }} />
+      <div style={{ height: "2px", background: `linear-gradient(90deg,transparent,${T.accent2} 30%,${T.accent} 55%,transparent)` }} />
       <div className="px-7 py-7 lg:px-8 relative">{children}</div>
     </div>
   );
@@ -505,7 +403,6 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
   const [data, setData] = useState<LicenseData>(initial);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const par = useParallax();
 
   const [adminName, setAdminName] = useState("");
   const [email, setEmail]         = useState("");
@@ -653,15 +550,10 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
         .lg-feat{transition:background .16s ease,border-color .16s ease}
         .lg-feat:hover{background:rgba(13,122,99,.11)!important;border-color:rgba(13,122,99,.26)!important}
 
-        @keyframes lg-particle { 0%,100%{opacity:.35;transform:scale(1)} 50%{opacity:1;transform:scale(2.2)} }
         @keyframes lg-fadein   { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
         @keyframes lg-cardin   { from{opacity:0;transform:translateY(30px) scale(.97)} to{opacity:1;transform:translateY(0) scale(1)} }
         @keyframes lg-grad     { 0%,100%{background-position:0% 50%} 50%{background-position:100% 50%} }
-        @keyframes lg-floaty   { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-7px)} }
         @keyframes lg-dot      { 0%,100%{box-shadow:0 0 0 0 rgba(13,122,99,.36)} 60%{box-shadow:0 0 0 6px rgba(34,197,94,0)} }
-        @keyframes lg-sheen    { 0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%} }
-        @keyframes lg-orbA     { 0%,100%{filter:blur(70px) brightness(1)} 50%{filter:blur(78px) brightness(1.16)} }
-        @keyframes lg-orbB     { 0%,100%{filter:blur(80px) brightness(1)} 50%{filter:blur(88px) brightness(1.14)} }
 
         .lg-a0{animation:lg-fadein .65s cubic-bezier(.22,1,.36,1) 0ms   both}
         .lg-a1{animation:lg-fadein .65s cubic-bezier(.22,1,.36,1) 90ms  both}
@@ -670,11 +562,7 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
         .lg-a4{animation:lg-fadein .65s cubic-bezier(.22,1,.36,1) 330ms both}
         .lg-card{animation:lg-cardin .85s cubic-bezier(.22,1,.36,1) 80ms both}
 
-        .lg-floaty{animation:lg-floaty 7s ease-in-out infinite}
-        .lg-dot   {animation:lg-dot    2.2s ease-out infinite}
-        .lg-sheen {animation:lg-sheen  22s ease-in-out infinite}
-        .lg-orb1  {animation:lg-orbA   14s ease-in-out infinite; transition:transform .5s cubic-bezier(.22,1,.36,1)}
-        .lg-orb2  {animation:lg-orbB   18s ease-in-out infinite; transition:transform .5s cubic-bezier(.22,1,.36,1)}
+        .lg-dot{animation:lg-dot 2.2s ease-out infinite}
 
         .lg-grad-text{
           background:linear-gradient(90deg,#0F766E,#0D7A63,#0A6552,#0D7A63,#0F766E);
@@ -693,13 +581,11 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
         .lg-btn:active:not(:disabled){transform:translateY(-1px)}
 
         @media (prefers-reduced-motion:reduce){
-          .lg-a0,.lg-a1,.lg-a2,.lg-a3,.lg-a4,.lg-card,.lg-floaty,.lg-dot,.lg-sheen,.lg-orb1,.lg-orb2,.lg-btn
+          .lg-a0,.lg-a1,.lg-a2,.lg-a3,.lg-a4,.lg-card,.lg-dot,.lg-btn
           {animation:none!important;transition:none!important;}
           .lg-grad-text{-webkit-text-fill-color:#0A6552;background:none;}
         }
       `}</style>
-
-      <LightBackground px={par.x} py={par.y} />
 
       <div className="relative flex w-full h-full overflow-hidden">
         <LeftPanel />
@@ -707,7 +593,7 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
         {/* Right panel */}
         <div className="w-full lg:w-[44%] shrink-0 flex flex-col overflow-y-auto relative"
           style={{
-            background: "linear-gradient(200deg,rgba(255,255,255,.72) 0%,rgba(255,255,255,.46) 100%)",
+            background: "#FFFFFF",
             borderLeft: `1px solid ${T.border}`,
           }}>
           <div className="w-full flex-1 flex flex-col justify-center items-center"
