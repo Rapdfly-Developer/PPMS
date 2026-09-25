@@ -845,21 +845,21 @@ export default function LoginPage() {
              higher cap only takes effect where the column actually has the
              room — narrow screens still fill and clip to their container. */
           --left-w:    clamp(430px, 180px + 36vw, 980px);
-          --card-w:    clamp(420px, 320px + 11vw, 620px);
-          --card-pad:  clamp(20px, 1.8vw, 44px);
-          --logo:      clamp(44px, 3.4vw, 72px);
+          --card-w:    clamp(340px, 280px + 11vw, 700px);
+          --card-pad:  clamp(18px, 1.8vw, 48px);
+          --logo:      clamp(44px, 3.4vw, 80px);
 
-          --fs-h1:     clamp(30px, 2.75vw, 64px);
-          --fs-body:   clamp(14px, 1.08vw, 20px);
-          --fs-card-h: clamp(21px, 1.62vw, 32px);
-          --fs-label:  clamp(13px, 1vw, 17px);
-          --fs-input:  clamp(14px, 1.08vw, 18px);
-          --fs-btn:    clamp(14.5px, 1.12vw, 19px);
-          --fs-sm:     clamp(12px, .92vw, 15.5px);
-          --fs-xs:     clamp(11px, .85vw, 14px);
-          --fs-tile:   clamp(11.5px, .88vw, 16px);
-          --fs-stat:   clamp(15px, 1.15vw, 26px);
-          --fs-brand:  clamp(25px, 1.92vw, 42px);
+          --fs-h1:     clamp(28px, 2.75vw, 68px);
+          --fs-body:   clamp(14px, 1.08vw, 22px);
+          --fs-card-h: clamp(20px, 1.62vw, 36px);
+          --fs-label:  clamp(13px, 1vw, 18px);
+          --fs-input:  clamp(14px, 1.08vw, 19px);
+          --fs-btn:    clamp(14.5px, 1.12vw, 20px);
+          --fs-sm:     clamp(12px, .92vw, 16.5px);
+          --fs-xs:     clamp(11px, .85vw, 15px);
+          --fs-tile:   clamp(11.5px, .88vw, 17px);
+          --fs-stat:   clamp(15px, 1.15vw, 28px);
+          --fs-brand:  clamp(22px, 1.92vw, 46px);
 
           /* Control heights top out well before the font sizes do. A 62px
              input is not a more readable input, just a taller one. */
@@ -878,15 +878,15 @@ export default function LoginPage() {
           --vpad:      clamp(14px, calc(30px - (950px - 100vh) * 0.18), 30px);
           --vpanel:    clamp(14px, calc(34px - (950px - 100vh) * 0.25), 34px);
 
-          --ctl-h:     clamp(46px, 3.5vw, 56px);
-          --tab-h:     clamp(38px, 2.9vw, 46px);
-          --gap:       clamp(8px, .6vw, 16px);
-          --gap-lg:    clamp(20px, 1.6vw, 40px);
+          --ctl-h:     clamp(46px, 3.5vw, 62px);
+          --tab-h:     clamp(38px, 2.9vw, 50px);
+          --gap:       clamp(8px, .6vw, 18px);
+          --gap-lg:    clamp(20px, 1.6vw, 44px);
         }
 
         @keyframes lp-fadein    {from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
         @keyframes lp-cardin    {from{opacity:0;transform:translateY(24px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
-        /* dna-spin removed — canvas animation handles the helix */
+        /* dna-spin removed (canvas animation handles the helix) */
 
         .lp-a0{animation:lp-fadein .6s cubic-bezier(.22,1,.36,1) 0ms   both}
         .lp-a1{animation:lp-fadein .6s cubic-bezier(.22,1,.36,1) 80ms  both}
@@ -894,7 +894,7 @@ export default function LoginPage() {
         .lp-a3{animation:lp-fadein .6s cubic-bezier(.22,1,.36,1) 220ms both}
         .lp-a4{animation:lp-fadein .6s cubic-bezier(.22,1,.36,1) 300ms both}
         .lp-card{animation:lp-cardin .75s cubic-bezier(.22,1,.36,1) 60ms both}
-        /* .dna-rotate removed — canvas animation */
+        /* .dna-rotate removed (canvas animation) */
 
         .pp-btn{transition:background .16s ease,border-color .16s ease}
         .pp-btn:hover:not(:disabled){background:${T.primaryHover}!important;border-color:${T.primaryHover}!important}
@@ -950,8 +950,8 @@ export default function LoginPage() {
               data-rf-right-pad
               style={{
                 minHeight: "min-content",
-                paddingLeft: "clamp(16px,2vw,56px)",
-                paddingRight: "clamp(16px,2vw,56px)",
+                paddingLeft: "clamp(20px,5vw,72px)",
+                paddingRight: "clamp(20px,5vw,72px)",
                 paddingBottom: "var(--vpanel)",
                 paddingTop: "max(1.5rem, calc(env(safe-area-inset-top, 0px) + 0.75rem))",
               }}>
@@ -966,8 +966,8 @@ export default function LoginPage() {
                   style={{ marginBottom: "var(--vgap)" }}>
                   <img src="/landing/logo-rf-health.webp" alt="" className="shrink-0"
                     style={{
-                      width: "clamp(36px,3vw,48px)", height: "clamp(36px,3vw,48px)", objectFit: "cover",
-                      borderRadius: "clamp(9px,.7vw,13px)", border: `1px solid ${T.border}`,
+                      width: "clamp(38px,5vw,52px)", height: "clamp(38px,5vw,52px)", objectFit: "cover",
+                      borderRadius: "clamp(9px,.7vw,14px)", border: `1px solid ${T.border}`,
                     }} />
                   <span className="font-black" style={{ fontSize: "var(--fs-brand)", color: T.ink, letterSpacing: "-0.035em" }}>
                     RF Health
