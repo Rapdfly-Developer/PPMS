@@ -886,33 +886,6 @@ export function PremiumLanding() {
         </RevealGroup>
       </Section>
 
-      {/* ── FAQ ──────────────────────────────────────────────────────────── */}
-      <Section id="faq" className="bg-gradient-to-b from-white via-slate-50/60 to-white">
-        <div className="grid gap-8 lg:grid-cols-[0.85fr_1.15fr] lg:gap-16">
-          <Reveal>
-            <Eyebrow>FAQ</Eyebrow>
-            <h2 className="font-display mt-5 text-[clamp(1.6rem,5.4vw,2.625rem)] 2xl:text-[clamp(2.625rem,2.3vw,3.4rem)] font-bold leading-[1.07] tracking-[-0.03em] text-balance text-emerald-950 sm:mt-6">
-              Questions we get asked before the first demo.
-            </h2>
-            <p className="mt-6 text-[16px] leading-relaxed text-slate-600">
-              If yours is not here, ask it directly, we would rather answer honestly up front than
-              discover a mismatch after onboarding.
-            </p>
-            <a
-              href="mailto:support@ppmsai.com"
-              className="mt-8 inline-flex items-center gap-2 text-[14.5px] font-semibold text-emerald-700 underline-offset-4 hover:underline"
-            >
-              <Mail size={15} strokeWidth={1.25} aria-hidden="true" />
-              support@ppmsai.com
-            </a>
-          </Reveal>
-
-          <Reveal delay={0.08}>
-            <Faq items={FAQ_ITEMS} />
-          </Reveal>
-        </div>
-      </Section>
-
       {/* ── Book a Free Demo ─────────────────────────────────────────────── */}
       <Section id="contact" className="bg-gradient-to-b from-slate-50/60 via-white to-white">
         <div className="grid items-start gap-10 lg:grid-cols-[1fr_1.1fr] lg:gap-16 xl:gap-20">
