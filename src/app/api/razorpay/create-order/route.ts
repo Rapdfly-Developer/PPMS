@@ -7,7 +7,7 @@ type PlanKey = "MONTHLY" | "ENTERPRISE" | "YEARLY";
 
 const PLANS: Record<PlanKey, { amount: number; discountedAmount: number | null; label: string }> = {
   MONTHLY:    { amount: 299900,  discountedAmount: null, label: "Professional Monthly (₹2,999/month)" },
-  ENTERPRISE: { amount: 129900,  discountedAmount: null, label: "Enterprise Monthly (₹1,299/month)" },
+  ENTERPRISE: { amount: 100,     discountedAmount: null, label: "Enterprise Monthly (₹1/month)" },
   YEARLY:     { amount: 2499900, discountedAmount: null, label: "Professional Annual (₹24,999/year)" },
 };
 

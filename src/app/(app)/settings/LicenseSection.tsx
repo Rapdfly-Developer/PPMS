@@ -541,7 +541,7 @@ const PLAN_TIERS: PlanTier[] = [
     id: "enterprise",
     name: "Enterprise",
     tag: "Hospitals & Chains",
-    price: "₹1,299",
+    price: "₹1",
     priceSub: "/month",
     features: [
       { label: "Patient Records (EMR)",     included: true },
