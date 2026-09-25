@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Sparkles, Loader2, Activity, AlertCircle, FileText, Pill, FlaskConical, ClipboardList, CalendarClock, Microscope, Stethoscope } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Sparkles, Loader2, Activity, AlertCircle, FileText, Pill, FlaskConical, ClipboardList, CalendarClock, Microscope, Stethoscope, BookOpen, CalendarCheck, RefreshCw } from "lucide-react";
 import { formatComplaintDisplay, convertNotesToCC } from "@/lib/appointment-cc";
 import { getVisitEmrData } from "./emr-viewer-action";
 import { generateAiSummary } from "@/app/(app)/patients/actions";
@@ -107,15 +107,51 @@ export function Cols({ widths }: { widths: string[] }) {
   );
 }
 
+/* ─── Short-data type (pre-fetched for the Short tab) ───────────────────── */
+export type ShortData = {
+  medications: { drugName: string; dosage?: string | null; frequency?: string | null; duration?: string | null; laterality?: string | null; instructions?: string | null; route?: string | null }[];
+  investigationOrders: { testName: string; status: string; laterality?: string | null; notes?: string | null }[];
+  followUpDate?: string | null;
+};
+
 /* ─── Shared state hook (used by both the combined and split renderings) ─── */
 export function useVisitSummaryState(visitId: string) {
   const [tab, setTab] = useState<Tab>("short");
+  const [shortData, setShortData] = useState<ShortData | null>(null);
   const [emrData, setEmrData] = useState<any>(null);
   const [aiText, setAiText] = useState<string | null>(null);
   const [aiSource, setAiSource] = useState<"claude" | "local">("local");
   const [aiNotice, setAiNotice] = useState<string | null>(null);
   const [aiError, setAiError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  // Tracks in-flight requests; stale responses (visitId changed) are discarded.
+  const currentVisit = useRef(visitId);
+  currentVisit.current = visitId;
+
+  // Auto-load short data so Short tab is populated without visiting Long first.
+  useEffect(() => {
+    let active = true;
+    getVisitEmrData(visitId).then((data) => {
+      if (!active || currentVisit.current !== visitId) return;
+      if (data) {
+        setShortData({
+          medications: (data.medications ?? []).map((m: any) => ({
+            drugName: m.drugName, dosage: m.dosage ?? null, frequency: m.frequency ?? null,
+            duration: m.duration ?? null, laterality: m.laterality ?? null,
+            instructions: m.instructions ?? null, route: m.route ?? null,
+          })),
+          investigationOrders: (data.investigationOrders ?? []).map((o: any) => ({
+            testName: o.testName, status: o.status, laterality: o.laterality ?? null, notes: o.notes ?? null,
+          })),
+          followUpDate: data.followUpDate ?? null,
+        });
+        // Cache the full data for Long tab if it switches later.
+        setEmrData(data);
+      }
+    }).catch(() => {});
+    return () => { active = false; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visitId]);
 
   async function switchTab(newTab: Tab) {
     if (newTab === tab || loading) return;
@@ -124,9 +160,11 @@ export function useVisitSummaryState(visitId: string) {
       if ((newTab === "long" || newTab === "ai") && !emrData) {
         setLoading(true);
         const data = await getVisitEmrData(visitId);
+        if (currentVisit.current !== visitId) return;
         setEmrData(data);
         if (newTab === "ai" && !aiText && !aiError) {
           const res = await generateAiSummary(visitId);
+          if (currentVisit.current !== visitId) return;
           if (res.error) setAiError(res.error);
           else {
             setAiText(res.text ?? null);
@@ -137,6 +175,7 @@ export function useVisitSummaryState(visitId: string) {
       } else if (newTab === "ai" && !aiText && !aiError) {
         setLoading(true);
         const res = await generateAiSummary(visitId);
+        if (currentVisit.current !== visitId) return;
         if (res.error) setAiError(res.error);
         else setAiText(res.text ?? null);
       }
@@ -147,7 +186,7 @@ export function useVisitSummaryState(visitId: string) {
     }
   }
 
-  return { tab, switchTab, loading, emrData, aiText, aiSource, aiNotice, aiError };
+  return { tab, switchTab, loading, shortData, emrData, aiText, aiSource, aiNotice, aiError };
 }
 
 /* ─── Standalone tab bar (compact variant for embedding in card headers) ─── */
@@ -200,6 +239,7 @@ export function VisitSummaryTabBar({
 export function VisitSummaryTabBody({
   tab,
   loading,
+  shortData,
   emrData,
   aiText,
   aiSource,
@@ -211,6 +251,7 @@ export function VisitSummaryTabBody({
 }: {
   tab: Tab;
   loading: boolean;
+  shortData?: ShortData | null;
   emrData: any;
   aiText: string | null;
   aiSource: "claude" | "local";
@@ -220,7 +261,9 @@ export function VisitSummaryTabBody({
   diagnoses: string[];
   shortContent?: React.ReactNode;
 }) {
-  const diagText = diagnoses.filter(Boolean).join(", ");
+  const diagList = diagnoses.filter(Boolean);
+  // Merge shortData into emrData shape for ShortContent when emrData isn't loaded yet.
+  const shortEmrData = emrData ?? shortData ?? null;
   if (loading) {
     return (
       <div className="flex items-center gap-2 py-2 text-[10px] sm:text-[11px] text-[var(--color-ink-400)]">
@@ -231,8 +274,8 @@ export function VisitSummaryTabBody({
   }
   return (
     <div className="animate-fade-in">
-      {tab === "short" && (shortContent ?? <ShortContent complaint={complaint} diagText={diagText} emrData={emrData} />)}
-      {tab === "long" && <LongContent data={emrData} complaint={complaint} diagText={diagText} />}
+      {tab === "short" && (shortContent ?? <ShortContent complaint={complaint} diagnoses={diagList} emrData={shortEmrData} />)}
+      {tab === "long" && <LongContent data={emrData} complaint={complaint} diagnoses={diagList} />}
       {tab === "ai" && <AIContent text={aiText} error={aiError} source={aiSource} notice={aiNotice} />}
     </div>
   );
@@ -240,7 +283,7 @@ export function VisitSummaryTabBody({
 
 export function VisitSummaryTabs({ visitId, complaint, diagnoses, shortContent, bare }: Props) {
   const state = useVisitSummaryState(visitId);
-  const { tab, switchTab, loading, emrData, aiText, aiSource, aiNotice, aiError } = state;
+  const { tab, switchTab, loading, shortData, emrData, aiText, aiSource, aiNotice, aiError } = state;
 
   return (
     <div className={bare ? "" : "border-t border-[var(--color-border)] pt-3"}>
@@ -251,7 +294,7 @@ export function VisitSummaryTabs({ visitId, complaint, diagnoses, shortContent, 
 
       {/* Body */}
       <VisitSummaryTabBody
-        tab={tab} loading={loading} emrData={emrData}
+        tab={tab} loading={loading} shortData={shortData} emrData={emrData}
         aiText={aiText} aiSource={aiSource} aiNotice={aiNotice} aiError={aiError}
         complaint={complaint} diagnoses={diagnoses} shortContent={shortContent}
       />
@@ -270,14 +313,14 @@ function SumHead({ icon, label, color = "text-[var(--color-ink-400)]" }: { icon:
 }
 
 /* ─── Short ─── */
-function ShortContent({ complaint, diagText, emrData }: {
-  complaint: string | null; diagText: string; emrData?: any;
+function ShortContent({ complaint, diagnoses, emrData }: {
+  complaint: string | null; diagnoses: string[]; emrData?: any;
 }) {
   const hasMeds = emrData?.medications?.length > 0;
   const followUpInv = emrData?.investigationOrders?.filter((o: any) => o.status !== "COMPLETED") ?? [];
   const hasFollowUp = followUpInv.length > 0;
 
-  if (!complaint && !diagText && !hasMeds) {
+  if (!complaint && diagnoses.length === 0 && !hasMeds) {
     return <EmptyNote>No clinical data recorded for this visit.</EmptyNote>;
   }
 
@@ -302,11 +345,11 @@ function ShortContent({ complaint, diagText, emrData }: {
       )}
 
       {/* Diagnosis */}
-      {diagText && (
+      {diagnoses.length > 0 && (
         <div>
           <SumHead icon={<Stethoscope size={11} />} label="Diagnosis" color="text-teal-500" />
           <div className="flex flex-wrap gap-1.5">
-            {diagText.split(", ").filter(Boolean).map((d, i) => (
+            {diagnoses.map((d, i) => (
               <span key={i} className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-teal-50 border border-teal-200 text-teal-800 text-[10px] sm:text-[11px] font-medium">
                 <span className="w-1.5 h-1.5 rounded-full bg-teal-400 shrink-0" />{d}
               </span>
@@ -356,12 +399,6 @@ function ShortContent({ complaint, diagText, emrData }: {
         </div>
       )}
 
-      {/* Prompt to load full details */}
-      {!hasMeds && (
-        <p className="text-[10px] text-[var(--color-ink-400)]">
-          Switch to <span className="font-semibold">Long Summary</span> for full clinical details including medications and investigations.
-        </p>
-      )}
     </div>
   );
 }
@@ -425,34 +462,59 @@ function LongSection({ head, color, children }: { head: React.ReactNode; color?:
 function LongContent({
   data,
   complaint,
-  diagText,
+  diagnoses,
 }: {
   data: any;
   complaint: string | null;
-  diagText: string;
+  diagnoses: string[];
 }) {
-  if (!data) return <ShortContent complaint={complaint} diagText={diagText} />;
+  if (!data) return <ShortContent complaint={complaint} diagnoses={diagnoses} />;
 
   const g   = data.generalExam;
   const va  = data.visualAcuity;
+  const rc  = data.refraction;
+  const cv  = data.colourVisionCS;
   const iop = data.iopReadings as any[] | undefined;
   const ant = data.anteriorSegment;
   const pos = data.posteriorSegment;
 
+  const pmhList = parseJSON<string[]>(g?.pastMedicalHistory, []);
+
+  // Parse RE/LE JSON once so guards can check actual field values, not raw strings.
+  const reVAp   = va  ? parseJSON<Record<string, string>>(va.re,  {}) : {};
+  const leVAp   = va  ? parseJSON<Record<string, string>>(va.le,  {}) : {};
+  const reRCp   = rc  ? parseJSON<Record<string, string>>(rc.re,  {}) : {};
+  const leRCp   = rc  ? parseJSON<Record<string, string>>(rc.le,  {}) : {};
+  const reCVraw = cv  ? parseJSON<Record<string, string>>(cv.re,  {}) : {};
+  const leCVraw = cv  ? parseJSON<Record<string, string>>(cv.le,  {}) : {};
+
+  // Format colour vision: "Ishihara: 16/17" or just the result string.
+  const fmtCV = (eye: Record<string, string>) =>
+    eye.result ? (eye.cvMethod ? `${eye.cvMethod}: ${eye.result}` : eye.result) : null;
+  const reCVResult = fmtCV(reCVraw);
+  const leCVResult = fmtCV(leCVraw);
+
   const hasVitals   = !!(g?.bp || g?.pulse || g?.weight || g?.temperature);
+  const hasPMH      = pmhList.length > 0 || g?.pmhOtherText || g?.allergies || g?.familyHistory;
   const hasDiag     = data.diagnoses?.length > 0;
   const hasMeds     = data.medications?.length > 0;
   const hasInv      = data.investigationOrders?.length > 0;
-  const hasVA       = !!(va?.re || va?.le);
+  // VA: check parsed values, not raw JSON strings (empty object = truthy string but no data).
+  const hasVA = Object.values({ ...reVAp, ...leVAp }).some((v) => v && v !== "");
+  // Refraction: same guard.
+  const hasRC = Object.values({ ...reRCp, ...leRCp }).some((v) => v && v !== "");
+  // Colour vision: only show if at least one side has a non-empty result.
+  const hasCV = !!(reCVResult || leCVResult);
   const hasIOP      = iop && iop.length > 0;
   const hasAnt      = !!(ant && (
     Object.values(parseJSON<Record<string, unknown>>(ant.re, {})).some(Boolean) ||
     Object.values(parseJSON<Record<string, unknown>>(ant.le, {})).some(Boolean)
   ));
   const hasPost     = !!(pos?.re || pos?.le);
-  const hasExam     = hasVitals || hasVA || hasIOP || hasAnt || hasPost;
+  const hasExam     = hasVitals || hasVA || hasRC || hasCV || hasIOP || hasAnt || hasPost;
+  const hasFollowUp = !!(data.followUpDate || data.advice || data.referral);
 
-  const isEmpty = !g?.chiefComplaint && !hasVitals && !hasDiag && !hasMeds && !hasInv && !hasVA && !hasIOP && !hasAnt && !hasPost && !g?.hpi;
+  const isEmpty = !g?.chiefComplaint && !hasVitals && !hasDiag && !hasMeds && !hasInv && !hasVA && !hasRC && !hasCV && !hasIOP && !hasAnt && !hasPost && !g?.hpi && !hasPMH && !hasFollowUp;
   if (isEmpty) return <EmptyNote>No detailed clinical notes recorded for this visit.</EmptyNote>;
 
   const vitals = [
@@ -497,6 +559,36 @@ function LongContent({
         </LongSection>
       )}
 
+      {/* ── 1b. Past Medical History / Allergies ─────────────────────── */}
+      {hasPMH && (
+        <LongSection head={<SumHead icon={<BookOpen size={11} />} label="Past Medical History" />}>
+          {pmhList.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {pmhList.map((item, i) => (
+                <span key={i} className="px-2.5 py-0.5 rounded-full bg-orange-50 border border-orange-200 text-orange-800 text-[10px] sm:text-[11px] font-medium">{item}</span>
+              ))}
+              {g.pmhOtherText && (
+                <span className="px-2.5 py-0.5 rounded-full bg-orange-50 border border-orange-200 text-orange-800 text-[10px] sm:text-[11px] font-medium">{g.pmhOtherText}</span>
+              )}
+            </div>
+          )}
+          {g?.allergies && (
+            <div>
+              <p className="text-[9px] font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-1">Allergies</p>
+              <p className="text-[10px] sm:text-[11px] text-[var(--color-ink-700)]">
+                {g.nkda ? <span className="text-green-700 font-medium">NKDA</span> : g.allergies}
+              </p>
+            </div>
+          )}
+          {g?.familyHistory && (
+            <div>
+              <p className="text-[9px] font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-1">Family History</p>
+              <p className="text-[10px] sm:text-[11px] text-[var(--color-ink-700)]">{g.familyHistory}</p>
+            </div>
+          )}
+        </LongSection>
+      )}
+
       {/* ── 2. Examination Findings ───────────────────────────────────── */}
       {hasExam && (
         <LongSection head={<SumHead icon={<Microscope size={11} />} label="Examination Findings" color="text-blue-500" />}>
@@ -517,25 +609,21 @@ function LongContent({
             </Block>
           )}
 
-          {hasVA && (() => {
-            const re = parseJSON<any>(va.re, {});
-            const le = parseJSON<any>(va.le, {});
-            return (
-              <Block label={`Visual Acuity${va.testMethod ? ` · ${va.testMethod}` : ""}`}>
-                <DataTable>
-                  <Cols widths={COLS_EYE} />
-                  <EyeHead />
-                  <tbody>
-                    <EyeRow label="Distance Unaided"        re={re.distanceUnaided}       le={le.distanceUnaided} />
-                    <EyeRow label="Distance Pinhole"        re={re.distancePinhole}       le={le.distancePinhole} />
-                    <EyeRow label="Distance Best Corrected" re={re.distanceBestCorrected} le={le.distanceBestCorrected} />
-                    <EyeRow label="Near Unaided"            re={re.nearUnaided}           le={le.nearUnaided} />
-                    <EyeRow label="Near Best Corrected"     re={re.nearBestCorrected}     le={le.nearBestCorrected} />
-                  </tbody>
-                </DataTable>
-              </Block>
-            );
-          })()}
+          {hasVA && (
+            <Block label={`Visual Acuity${va.testMethod ? ` · ${va.testMethod}` : ""}`}>
+              <DataTable>
+                <Cols widths={COLS_EYE} />
+                <EyeHead />
+                <tbody>
+                  <EyeRow label="Distance Unaided"   re={reVAp.unaided}       le={leVAp.unaided} />
+                  <EyeRow label="Distance Pinhole"   re={reVAp.pinhole}       le={leVAp.pinhole} />
+                  <EyeRow label="Best Corrected"     re={reVAp.bestCorrected} le={leVAp.bestCorrected} />
+                  <EyeRow label="Near Unaided"       re={reVAp.nearUnaided}   le={leVAp.nearUnaided} />
+                  <EyeRow label="Near Best Corrected" re={reVAp.nearBestCorrected} le={leVAp.nearBestCorrected} />
+                </tbody>
+              </DataTable>
+            </Block>
+          )}
 
           {hasIOP && (
             <Block label="Intraocular Pressure">
@@ -551,11 +639,45 @@ function LongContent({
                 <tbody>
                   {iop!.map((r: any, i: number) => (
                     <tr key={i}>
-                      <td className={TD_MUTED}>{r.method ?? "NCT"}</td>
+                      <td className={TD_MUTED}>{r.method || "—"}</td>
                       <td className={`${TD} font-medium`}>{r.re || DASH}</td>
                       <td className={`${TD} font-medium`}>{r.le || DASH}</td>
                     </tr>
                   ))}
+                </tbody>
+              </DataTable>
+            </Block>
+          )}
+
+          {hasRC && (
+            <Block label="Refraction / Spectacle Rx">
+              <DataTable>
+                <Cols widths={COLS_EYE} />
+                <EyeHead />
+                <tbody>
+                  <EyeRow label="SPH"      re={reRCp.sph}     le={leRCp.sph} />
+                  <EyeRow label="CYL"      re={reRCp.cyl}     le={leRCp.cyl} />
+                  <EyeRow label="AXIS"     re={reRCp.axis}    le={leRCp.axis} />
+                  <EyeRow label="Near SPH" re={reRCp.nearSph} le={leRCp.nearSph} />
+                  <EyeRow label="Near CYL" re={reRCp.nearCyl} le={leRCp.nearCyl} />
+                </tbody>
+              </DataTable>
+            </Block>
+          )}
+
+          {hasCV && (
+            <Block label="Colour Vision">
+              <DataTable minWidth={260}>
+                <Cols widths={COLS_EYE} />
+                <EyeHead />
+                <tbody>
+                  <EyeRow label="Result" re={reCVResult} le={leCVResult} />
+                  {cv.notes && (
+                    <tr>
+                      <td className={TD_MUTED}>Notes</td>
+                      <td colSpan={2} className={TD}>{cv.notes}</td>
+                    </tr>
+                  )}
                 </tbody>
               </DataTable>
             </Block>
@@ -654,9 +776,13 @@ function LongContent({
                   </p>
                   <div className="flex flex-wrap items-center gap-x-1 gap-y-0.5 mt-0.5">
                     {m.dosage && <span className="text-[10px] sm:text-[11px] text-[var(--color-ink-500)]">{m.dosage}</span>}
+                    {m.route && <><span className="text-[var(--color-ink-300)] text-[10px]">·</span><span className="text-[10px] sm:text-[11px] text-[var(--color-ink-500)]">{m.route}</span></>}
                     {m.frequency && <><span className="text-[var(--color-ink-300)] text-[10px]">·</span><span className="text-[10px] sm:text-[11px] text-[var(--color-ink-500)]">{m.frequency}</span></>}
                     {m.duration && <><span className="text-[var(--color-ink-300)] text-[10px]">·</span><span className="text-[10px] sm:text-[11px] text-[var(--color-ink-500)]">{m.duration}</span></>}
                   </div>
+                  {m.instructions && (
+                    <p className="text-[10px] sm:text-[11px] text-[var(--color-ink-500)] italic mt-0.5">{m.instructions}</p>
+                  )}
                 </div>
               </div>
             ))}
@@ -687,6 +813,32 @@ function LongContent({
               </div>
             ))}
           </div>
+        </LongSection>
+      )}
+
+      {/* ── 6. Follow-Up & Advice ──────────────────────────────────────── */}
+      {hasFollowUp && (
+        <LongSection head={<SumHead icon={<CalendarCheck size={11} />} label="Follow-Up &amp; Advice" color="text-emerald-600" />}>
+          {data.followUpDate && (
+            <div>
+              <p className="text-[9px] font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-1">Follow-Up Date</p>
+              <p className="text-[10px] sm:text-[11px] font-medium text-[var(--color-ink-800)]">
+                {new Date(data.followUpDate).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })}
+              </p>
+            </div>
+          )}
+          {data.advice && (
+            <div>
+              <p className="text-[9px] font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-1">Advice</p>
+              <p className="text-[10px] sm:text-[11px] leading-relaxed text-[var(--color-ink-700)]">{data.advice}</p>
+            </div>
+          )}
+          {data.referral && (
+            <div>
+              <p className="text-[9px] font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-1">Referral</p>
+              <p className="text-[10px] sm:text-[11px] text-[var(--color-ink-700)]">{data.referral}</p>
+            </div>
+          )}
         </LongSection>
       )}
 

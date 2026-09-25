@@ -153,9 +153,10 @@ export function VisitsListClient({ visits, udid }: { visits: VisitRow[]; udid: s
             </div>
           </div>
 
-          {/* Right panel: summary */}
+          {/* Right panel: summary — key forces remount on visit change so stale state never bleeds across visits */}
           <div className="flex-1 min-w-0 p-5">
             <VisitSummaryTabs
+              key={v.id}
               visitId={v.id}
               complaint={v.generalExam?.chiefComplaint ?? null}
               diagnoses={v.diagnoses.map((d) => d.description)}

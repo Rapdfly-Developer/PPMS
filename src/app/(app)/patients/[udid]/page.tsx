@@ -169,26 +169,14 @@ export default async function PatientProfilePage({
   const lastPastVisit = patient.visits.find((v) => v.date < todayStart) ?? null;
   let lastVisitSummary: LastVisitSummary | null = null;
   if (lastPastVisit) {
-    // Find the most recent PAST visit (not today) that has investigation orders
-    const lastPastVisitWithOrders = await prisma.visit.findFirst({
-      where: { patientId: patient.id, date: { lt: todayStart }, investigationOrders: { some: {} } },
-      orderBy: { date: "desc" },
-      select: { id: true },
-    });
-    const invVisitId = lastPastVisitWithOrders?.id ?? null;
-
     const [hosp, doc, genExam, diags, meds, invOrders] = await Promise.all([
       prisma.hospital.findUnique({ where: { id: lastPastVisit.hospitalId }, select: { name: true } }),
       prisma.doctor.findUnique({ where: { id: lastPastVisit.doctorId }, select: { name: true } }),
       prisma.generalExamination.findUnique({ where: { visitId: lastPastVisit.id }, select: { chiefComplaint: true } }),
       prisma.diagnosis.findMany({ where: { visitId: lastPastVisit.id }, select: { id: true, description: true, icd10Code: true, laterality: true, status: true, provisional: true } }),
       prisma.medication.findMany({ where: { visitId: lastPastVisit.id }, select: { id: true, drugName: true, dosage: true, frequency: true, duration: true, laterality: true } }),
-      invVisitId
-        ? prisma.investigationOrder.findMany({ where: { visitId: invVisitId, createdAt: { lt: todayStart } }, select: { id: true, category: true, testName: true, priority: true, laterality: true, status: true, notes: true, resultRef: true, createdAt: true }, orderBy: { createdAt: "asc" } })
-        : Promise.resolve([]),
+      prisma.investigationOrder.findMany({ where: { visitId: lastPastVisit.id }, select: { id: true, category: true, testName: true, priority: true, laterality: true, status: true, notes: true, resultRef: true, createdAt: true }, orderBy: { createdAt: "asc" } }),
     ]);
-
-    const filteredOrders = invOrders;
 
     lastVisitSummary = {
       id:             lastPastVisit.id,
@@ -199,7 +187,7 @@ export default async function PatientProfilePage({
       chiefComplaint: genExam?.chiefComplaint ?? null,
       diagnoses:      diags,
       medications:    meds,
-      investigations: filteredOrders.map((o) => ({ ...o, createdAt: o.createdAt.toISOString() })),
+      investigations: invOrders.map((o) => ({ ...o, createdAt: o.createdAt.toISOString() })),
       followUpDate:   lastPastVisit.followUpDate ? lastPastVisit.followUpDate.toISOString() : null,
     };
   }

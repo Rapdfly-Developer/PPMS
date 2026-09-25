@@ -216,11 +216,11 @@ function EmrContent({ visit, udid, localResults, onAttach }: {
               <div className="grid grid-cols-[140px_1fr_1fr] gap-2 text-xs text-[var(--color-ink-400)] mb-1">
                 <span /><span className="font-semibold">Right Eye</span><span className="font-semibold">Left Eye</span>
               </div>
-              <EyeRow label="Distance Unaided"        re={reVA?.distanceUnaided}       le={leVA?.distanceUnaided} />
-              <EyeRow label="Distance Pinhole"        re={reVA?.distancePinhole}       le={leVA?.distancePinhole} />
-              <EyeRow label="Distance Best Corrected" re={reVA?.distanceBestCorrected} le={leVA?.distanceBestCorrected} />
-              <EyeRow label="Near Unaided"            re={reVA?.nearUnaided}           le={leVA?.nearUnaided} />
-              <EyeRow label="Near Best Corrected"     re={reVA?.nearBestCorrected}     le={leVA?.nearBestCorrected} />
+              <EyeRow label="Distance Unaided"   re={reVA?.unaided}       le={leVA?.unaided} />
+              <EyeRow label="Distance Pinhole"   re={reVA?.pinhole}       le={leVA?.pinhole} />
+              <EyeRow label="Best Corrected"     re={reVA?.bestCorrected} le={leVA?.bestCorrected} />
+              <EyeRow label="Near Unaided"       re={reVA?.nearUnaided}   le={leVA?.nearUnaided} />
+              <EyeRow label="Near Best Corrected" re={reVA?.nearBestCorrected} le={leVA?.nearBestCorrected} />
             </div>
           )}
 
@@ -243,14 +243,16 @@ function EmrContent({ visit, udid, localResults, onAttach }: {
           {iop.length > 0 && (
             <div className="mb-3">
               <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-1.5">Intraocular Pressure (mmHg)</p>
-              <div className="flex flex-wrap gap-2">
-                {iop.map((r: any) => (
-                  <div key={r.id} className="bg-[var(--color-surface-sunken)] rounded-lg px-3 py-2 text-center min-w-[80px]">
-                    <p className="text-[10px] text-[var(--color-ink-400)]">{r.eye} · {r.method}</p>
-                    <p className="font-semibold text-[var(--color-ink-800)]">{r.value}</p>
-                  </div>
-                ))}
+              <div className="grid grid-cols-[120px_1fr_1fr] gap-2 text-xs text-[var(--color-ink-400)] mb-1">
+                <span className="font-semibold">Method</span><span className="font-semibold">Right Eye</span><span className="font-semibold">Left Eye</span>
               </div>
+              {iop.map((r: any, i: number) => (
+                <div key={i} className="grid grid-cols-[120px_1fr_1fr] gap-2 py-1 border-b border-[var(--color-border)] last:border-0">
+                  <span className="text-[11px] text-[var(--color-ink-500)]">{r.method || "—"}</span>
+                  <span className="text-[11px] font-medium text-[var(--color-ink-800)]">{r.re != null ? `${r.re} mmHg` : "—"}</span>
+                  <span className="text-[11px] font-medium text-[var(--color-ink-800)]">{r.le != null ? `${r.le} mmHg` : "—"}</span>
+                </div>
+              ))}
             </div>
           )}
 
