@@ -212,8 +212,8 @@ function PatientDonut({ segments, total }: {
 }
 
 /* ── Table appointment row ──────────────────────────────────────────────── */
-function TableApptRow({ appt, scope, canManageQueue, canViewPatient }: {
-  appt: Appt; scope: "DOCTOR" | "HOSPITAL"; canManageQueue: boolean; canViewPatient: boolean;
+function TableApptRow({ appt, scope, canManageQueue, canViewPatient, consultantName }: {
+  appt: Appt; scope: "DOCTOR" | "HOSPITAL"; canManageQueue: boolean; canViewPatient: boolean; consultantName?: string;
 }) {
   const [undoing, startUndo] = useTransition();
   const isInConsultation = !!(appt.visitId && !appt.visitFinalizedAt);
@@ -234,12 +234,14 @@ function TableApptRow({ appt, scope, canManageQueue, canViewPatient }: {
             {scope === "HOSPITAL" && appt.doctor && (
               <p className="text-[10px] text-[var(--color-ink-500)] font-medium truncate">Dr. {appt.doctor.name}</p>
             )}
-            {scope === "DOCTOR" && appt.hospital?.name && (
-              <p className="text-[10px] text-[var(--color-ink-400)] truncate">{appt.hospital.name}</p>
+            {scope === "DOCTOR" && consultantName && (
+              <p className="text-[10px] text-[var(--color-ink-500)] font-medium truncate">{consultantName}</p>
             )}
-            <p className="text-[10px] font-mono text-[#115E59] mt-0.5">
-              MRN: {appt.patient.uhid || appt.patient.udid}
-            </p>
+            {appt.patient.uhid && (
+              <span className="inline-block mt-0.5 font-mono text-[10px] text-[#115E59] bg-[#F0F8F6] px-1.5 py-0.5 rounded">
+                {appt.patient.uhid}
+              </span>
+            )}
           </div>
         </PatientBlock>
       </td>
@@ -420,12 +422,6 @@ export function HomeDashboardClient({
             <p className="text-[12px] text-[var(--color-ink-400)] mt-1">
               Here&apos;s your overview across all assigned hospitals today.
             </p>
-            {activeHospitalCount > 0 && (
-              <p className="mt-0.5 inline-flex items-center gap-1 text-[11px] text-[var(--color-ink-400)]">
-                <Building2 size={10} className="shrink-0" />
-                {activeHospitalCount === 1 ? "1 hospital active today" : `Across ${activeHospitalCount} hospitals today`}
-              </p>
-            )}
             <p className="mt-1.5 inline-flex items-center gap-1.5 text-[12px] font-medium text-[var(--color-ink-500)]">
               <Calendar size={12} /> {todayLabel}
             </p>
@@ -454,6 +450,15 @@ export function HomeDashboardClient({
               </p>
               <p className="text-[12px] text-[var(--color-ink-500)] mt-0.5">You have access to</p>
             </div>
+            {scope === "DOCTOR" && activeHospitalCount > 0 && (
+              <div className="bg-white rounded-xl border border-[var(--color-border)] p-3 shadow-sm text-center min-w-[120px]">
+                <p className="text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-wide flex items-center justify-center gap-1">
+                  <Building2 size={10} className="shrink-0" />Active Today
+                </p>
+                <p className="text-[22px] font-bold text-[var(--color-ink-900)] leading-tight mt-0.5">{activeHospitalCount}</p>
+                <p className="text-[12px] text-[var(--color-ink-500)]">hospital{activeHospitalCount !== 1 ? "s" : ""}</p>
+              </div>
+            )}
             {can("opd.walkin.create") && (
               <Link href={newEncounterHref}
                 className="inline-flex items-center gap-2 bg-[var(--color-primary-700)] text-white text-[13px] font-semibold px-4 py-2.5 rounded-xl hover:opacity-90 transition-opacity shadow-sm whitespace-nowrap">
@@ -542,7 +547,8 @@ export function HomeDashboardClient({
                     ))}
                     {tableRows.active.map((a) => (
                       <TableApptRow key={a.id} appt={a} scope={scope}
-                        canManageQueue={can("opd.queue.manage")} canViewPatient={can("patients.view")} />
+                        canManageQueue={can("opd.queue.manage")} canViewPatient={can("patients.view")}
+                        consultantName={scope === "DOCTOR" ? bannerTitle : undefined} />
                     ))}
                   </tbody>
                 </table>
