@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Component, type ReactNode } from "react";
 import { Sparkles, Loader2, Activity, AlertCircle, FileText, Pill, FlaskConical, ClipboardList, CalendarClock, Microscope, Stethoscope, BookOpen, CalendarCheck, RefreshCw } from "lucide-react";
 import { formatComplaintDisplay, convertNotesToCC } from "@/lib/appointment-cc";
 import { getVisitEmrData } from "./emr-viewer-action";
@@ -275,7 +275,7 @@ export function VisitSummaryTabBody({
   return (
     <div className="animate-fade-in">
       {tab === "short" && (shortContent ?? <ShortContent complaint={complaint} diagnoses={diagList} emrData={shortEmrData} />)}
-      {tab === "long" && <LongContent data={emrData} complaint={complaint} diagnoses={diagList} />}
+      {tab === "long" && <LongContentBoundary><LongContent data={emrData} complaint={complaint} diagnoses={diagList} /></LongContentBoundary>}
       {tab === "ai" && <AIContent text={aiText} error={aiError} source={aiSource} notice={aiNotice} />}
     </div>
   );
@@ -432,6 +432,35 @@ function parseJSON<T>(val: string | null | undefined, fallback: T): T {
   try { const p = val ? JSON.parse(val) : fallback; return p ?? fallback; } catch { return fallback; }
 }
 
+/** Returns the parsed object if it has at least one truthy value; otherwise returns null. */
+function parsedEyeSegment(raw: string | null | undefined): Record<string, unknown> | null {
+  const p = parseJSON<Record<string, unknown>>(raw, {});
+  return Object.values(p).some(Boolean) ? p : null;
+}
+
+class LongContentBoundary extends Component<{ children: ReactNode }, { error: string | null }> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = { error: null };
+  }
+  static getDerivedStateFromError(err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("[LongContent render error]", err);
+    return { error: msg };
+  }
+  render() {
+    if (this.state.error) {
+      return (
+        <div className="flex items-start gap-2 p-3 rounded-xl bg-red-50 text-[10px] sm:text-[11px] text-red-700">
+          <AlertCircle size={12} className="shrink-0 mt-0.5" />
+          <span>Could not render detailed summary. Open browser console for details.</span>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 function parseComplaints(raw: string) {
   return convertNotesToCC(raw).split("|").map((s) => s.trim()).filter(Boolean).map((seg) => {
     let rest = seg;
@@ -506,11 +535,12 @@ function LongContent({
   // Colour vision: only show if at least one side has a non-empty result.
   const hasCV = !!(reCVResult || leCVResult);
   const hasIOP      = iop && iop.length > 0;
-  const hasAnt      = !!(ant && (
-    Object.values(parseJSON<Record<string, unknown>>(ant.re, {})).some(Boolean) ||
-    Object.values(parseJSON<Record<string, unknown>>(ant.le, {})).some(Boolean)
-  ));
-  const hasPost     = !!(pos?.re || pos?.le);
+  const antReParsed = ant ? parsedEyeSegment(ant.re) : null;
+  const antLeParsed = ant ? parsedEyeSegment(ant.le) : null;
+  const hasAnt      = !!(antReParsed || antLeParsed);
+  const posReParsed = pos ? parsedEyeSegment(pos.re) : null;
+  const posLeParsed = pos ? parsedEyeSegment(pos.le) : null;
+  const hasPost     = !!(pos && (posReParsed || posLeParsed || pos.notes));
   const hasExam     = hasVitals || hasVA || hasRC || hasCV || hasIOP || hasAnt || hasPost;
   const hasFollowUp = !!(data.followUpDate || data.advice || data.referral);
 
@@ -684,8 +714,8 @@ function LongContent({
           )}
 
           {hasAnt && (() => {
-            const re = parseJSON<any>(ant.re, {});
-            const le = parseJSON<any>(ant.le, {});
+            const re = antReParsed ?? {};
+            const le = antLeParsed ?? {};
             const fields = ["upperLid","lowerLid","conjunctiva","sclera","cornea","anteriorChamber","iris","pupil","lens"] as const;
             const labels: Record<string, string> = {
               upperLid: "Upper Lid", lowerLid: "Lower Lid", conjunctiva: "Conjunctiva",
@@ -700,8 +730,8 @@ function LongContent({
                   <Cols widths={COLS_EYE} />
                   <EyeHead />
                   <tbody>
-                    {rows.map((f) => <EyeRow key={f} label={labels[f]} re={re[f]} le={le[f]} />)}
-                    {(re.freeText || le.freeText) && <EyeRow label="Notes" re={re.freeText} le={le.freeText} />}
+                    {rows.map((f) => <EyeRow key={f} label={labels[f]} re={re[f] as string} le={le[f] as string} />)}
+                    {!!(re.freeText || le.freeText) && <EyeRow label="Notes" re={re.freeText as string} le={le.freeText as string} />}
                   </tbody>
                 </DataTable>
               </Block>
@@ -709,8 +739,8 @@ function LongContent({
           })()}
 
           {hasPost && (() => {
-            const re = parseJSON<any>(pos.re, {});
-            const le = parseJSON<any>(pos.le, {});
+            const re = posReParsed ?? {};
+            const le = posLeParsed ?? {};
             const fields = ["media","discSize","discShape","discColour","discVessels","cdr","nrr","macula","retinalVessels","periphery"] as const;
             const labels: Record<string, string> = {
               media: "Media", discSize: "Disc Size", discShape: "Disc Shape",
@@ -725,7 +755,7 @@ function LongContent({
                   <Cols widths={COLS_EYE} />
                   <EyeHead />
                   <tbody>
-                    {rows.map((f) => <EyeRow key={f} label={labels[f]} re={re[f]} le={le[f]} />)}
+                    {rows.map((f) => <EyeRow key={f} label={labels[f]} re={re[f] as string} le={le[f] as string} />)}
                   </tbody>
                 </DataTable>
                 {pos.notes && (
