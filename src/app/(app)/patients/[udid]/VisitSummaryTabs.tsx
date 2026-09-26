@@ -507,7 +507,13 @@ function LongContent({
   const ant = data.anteriorSegment;
   const pos = data.posteriorSegment;
 
-  const pmhList = parseJSON<string[]>(g?.pastMedicalHistory, []);
+  // pastMedicalHistory is stored as PmhEntry[] ({name,sinceNum,sinceUnit}) by the
+  // EMR tab. Older records may be bare string[]. Normalise both to {name, since?}.
+  type PmhItem = { name: string; sinceNum?: string; sinceUnit?: string };
+  const pmhRaw = parseJSON<unknown[]>(g?.pastMedicalHistory, []);
+  const pmhList: PmhItem[] = Array.isArray(pmhRaw) ? pmhRaw.map((item) =>
+    typeof item === "string" ? { name: item } : { name: (item as any).name ?? "", sinceNum: (item as any).sinceNum, sinceUnit: (item as any).sinceUnit }
+  ).filter((e) => e.name) : [];
 
   // Parse RE/LE JSON once so guards can check actual field values, not raw strings.
   const reVAp   = va  ? parseJSON<Record<string, string>>(va.re,  {}) : {};
@@ -594,9 +600,14 @@ function LongContent({
         <LongSection head={<SumHead icon={<BookOpen size={11} />} label="Past Medical History" />}>
           {pmhList.length > 0 && (
             <div className="flex flex-wrap gap-1.5">
-              {pmhList.map((item, i) => (
-                <span key={i} className="px-2.5 py-0.5 rounded-full bg-orange-50 border border-orange-200 text-orange-800 text-[10px] sm:text-[11px] font-medium">{item}</span>
-              ))}
+              {pmhList.map((item, i) => {
+                const since = item.sinceNum ? `${item.sinceNum} ${item.sinceUnit ?? ""}`.trim() : null;
+                return (
+                  <span key={i} className="px-2.5 py-0.5 rounded-full bg-orange-50 border border-orange-200 text-orange-800 text-[10px] sm:text-[11px] font-medium">
+                    {item.name}{since ? <span className="opacity-70 ml-1 font-normal">· {since}</span> : null}
+                  </span>
+                );
+              })}
               {g.pmhOtherText && (
                 <span className="px-2.5 py-0.5 rounded-full bg-orange-50 border border-orange-200 text-orange-800 text-[10px] sm:text-[11px] font-medium">{g.pmhOtherText}</span>
               )}
