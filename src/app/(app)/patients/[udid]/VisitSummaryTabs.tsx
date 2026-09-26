@@ -429,7 +429,7 @@ function EyeHead({ first = "" }: { first?: string }) {
 }
 
 function parseJSON<T>(val: string | null | undefined, fallback: T): T {
-  try { return val ? JSON.parse(val) : fallback; } catch { return fallback; }
+  try { const p = val ? JSON.parse(val) : fallback; return p ?? fallback; } catch { return fallback; }
 }
 
 function parseComplaints(raw: string) {
