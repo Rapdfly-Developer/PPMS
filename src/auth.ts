@@ -55,6 +55,10 @@ async function buildPayload(user: NonNullable<Awaited<ReturnType<typeof fetchUse
     profileName = user.hospitalStaff.name;
     hospitalId = user.hospitalStaff.hospitalId;
   }
+  // Refractionist accounts may live in the Refractionist table instead of HospitalStaff
+  if (!hospitalId && user.refractionist) {
+    hospitalId = user.refractionist.hospitalId;
+  }
 
   let permissions: string[];
   if (user.role === "DOCTOR") {

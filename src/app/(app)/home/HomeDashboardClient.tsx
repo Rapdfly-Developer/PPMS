@@ -276,7 +276,7 @@ function TableApptRow({ appt, scope, canManageQueue, canViewPatient, consultantN
       </td>
       <td className="px-4 py-3">
         <div className="flex items-center gap-1.5">
-          {isActive ? (
+          {canViewPatient && (isActive ? (
             <Link href={`/patients/${appt.patient.udid}?returnTo=/dashboard`}
               className="px-3 py-1.5 rounded-lg bg-[var(--color-primary-700)] text-white text-[11px] font-semibold hover:opacity-90 transition-opacity whitespace-nowrap">
               Open
@@ -286,7 +286,7 @@ function TableApptRow({ appt, scope, canManageQueue, canViewPatient, consultantN
               className="px-3 py-1.5 rounded-lg border border-[var(--color-border)] bg-white text-[var(--color-ink-700)] text-[11px] font-semibold hover:bg-[var(--color-surface-sunken)] transition-colors whitespace-nowrap">
               View
             </Link>
-          )}
+          ))}
           {appt.status === "CONFIRMED" && canManageQueue && (
             <button disabled={undoing} title="Move back to appointment time"
               onClick={() => startUndo(async () => { await undoQueueEntry(appt.id); })}
@@ -711,6 +711,7 @@ export function HomeDashboardClient({
         </div>
 
         {/* AI Clinical Copilot */}
+        {can("ai.copilot.view") && (
         <div className="bg-[var(--color-primary-50)] border border-[var(--color-primary-100)] rounded-2xl p-3 flex flex-col">
           <div className="flex items-start gap-2.5 flex-1">
             <div className="w-10 h-10 rounded-xl bg-white border border-[var(--color-primary-100)] flex items-center justify-center shrink-0 shadow-sm">
@@ -722,15 +723,16 @@ export function HomeDashboardClient({
                 <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[var(--color-primary-700)] text-white">New</span>
               </div>
               <p className="text-[11px] text-[var(--color-ink-500)] leading-relaxed">
-                AI powered insights and clinical support.
+                AI powered insights and clinical support. Open a patient record to launch.
               </p>
             </div>
           </div>
-          <Link href="/ai-copilot"
-            className="mt-3 flex items-center justify-center gap-2 w-full py-1.5 rounded-xl bg-[var(--color-primary-700)] text-white text-[12px] font-bold hover:opacity-90 transition-opacity">
-            Open Copilot <ArrowRight size={13} />
-          </Link>
+          <button disabled title="Open any patient record to launch the AI Copilot panel"
+            className="mt-3 flex items-center justify-center gap-2 w-full py-1.5 rounded-xl bg-[var(--color-primary-200)] text-[var(--color-primary-500)] text-[12px] font-bold cursor-not-allowed">
+            Open via Patient EMR <ArrowRight size={13} />
+          </button>
         </div>
+        )}
 
       </div>
 
