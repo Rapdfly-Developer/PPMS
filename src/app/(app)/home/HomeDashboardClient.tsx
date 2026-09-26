@@ -654,7 +654,7 @@ export function HomeDashboardClient({
                 <div className={clsx("w-7 h-7 rounded-lg flex items-center justify-center mx-auto mb-1.5", bg)}>
                   <Icon size={14} className={color} />
                 </div>
-                <p className="text-base font-bold text-[var(--color-ink-300)] tabular-nums">?</p>
+                <p className="text-base font-bold text-[var(--color-ink-300)] tabular-nums">0</p>
                 <p className="text-[9px] text-[var(--color-ink-300)] mt-0.5 leading-tight">{label}</p>
               </div>
             ))}
