@@ -108,7 +108,7 @@ function PatientBlock({ udid, canView, className, children }: {
   udid: string; canView: boolean; className: string; children: ReactNode;
 }) {
   if (!canView) return <div className={className}>{children}</div>;
-  return <Link href={`/patients/${udid}?returnTo=/home`} className={className}>{children}</Link>;
+  return <Link href={`/patients/${udid}?returnTo=/dashboard`} className={className}>{children}</Link>;
 }
 
 /* ── KPI card ───────────────────────────────────────────────────────────── */
@@ -273,12 +273,12 @@ function TableApptRow({ appt, scope, canManageQueue, canViewPatient }: {
       <td className="px-4 py-3">
         <div className="flex items-center gap-1.5">
           {isActive ? (
-            <Link href={`/patients/${appt.patient.udid}?returnTo=/home`}
+            <Link href={`/patients/${appt.patient.udid}?returnTo=/dashboard`}
               className="px-3 py-1.5 rounded-lg bg-[var(--color-primary-700)] text-white text-[11px] font-semibold hover:opacity-90 transition-opacity whitespace-nowrap">
               Open
             </Link>
           ) : (
-            <Link href={`/patients/${appt.patient.udid}?returnTo=/home`}
+            <Link href={`/patients/${appt.patient.udid}?returnTo=/dashboard`}
               className="px-3 py-1.5 rounded-lg border border-[var(--color-border)] bg-white text-[var(--color-ink-700)] text-[11px] font-semibold hover:bg-[var(--color-surface-sunken)] transition-colors whitespace-nowrap">
               View
             </Link>
