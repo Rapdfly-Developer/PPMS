@@ -116,7 +116,7 @@ function KpiCard({ icon, iconBg, label, value, sub, pct, pctUp }: {
   icon: ReactNode; iconBg: string; label: string; value: number; sub: string; pct?: number; pctUp?: boolean;
 }) {
   return (
-    <div className="bg-white rounded-2xl border border-[var(--color-border)] p-4 flex flex-col gap-3 min-w-0">
+    <div className="bg-white rounded-2xl border border-[var(--color-border)] p-3 flex flex-col gap-2 min-w-0">
       <div className="flex items-center justify-between">
         <div className={clsx("w-10 h-10 rounded-xl flex items-center justify-center", iconBg)}>
           {icon}
@@ -148,7 +148,7 @@ function AppointmentsBarChart({ appts }: { appts: Appt[] }) {
     completed: appts.filter((a) => new Date(a.dateTime).getHours() === h && a.status === "DISPENSED").length,
   }));
   const maxVal = Math.max(...data.map((d) => d.scheduled + d.completed), 5);
-  const chartH = 80;
+  const chartH = 56;
   const barW = 14;
   const gap = 16;
   const totalW = hours.length * (barW + gap);
@@ -234,17 +234,15 @@ function TableApptRow({ appt, scope, canManageQueue, canViewPatient }: {
             <p className="text-[10px] text-[var(--color-ink-400)]">
               {appt.patient.age}y / {appt.patient.sex === "MALE" ? "M" : appt.patient.sex === "FEMALE" ? "F" : "O"}
             </p>
+            <p className="text-[10px] font-mono text-[#115E59] mt-0.5">
+              MRN: {appt.patient.uhid || appt.patient.udid}
+            </p>
           </div>
         </PatientBlock>
       </td>
-      <td className="px-4 py-3 hidden md:table-cell">
-        <span className="font-mono text-[11px] text-[#115E59] bg-[#F0F8F6] px-2 py-0.5 rounded">
-          {appt.patient.uhid || appt.patient.udid}
-        </span>
-      </td>
       <td className="px-4 py-3 hidden lg:table-cell">
         <span className={clsx(
-          "inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold",
+          "inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold whitespace-nowrap",
           visitTypeLabel === "Follow-up" ? "bg-purple-100 text-purple-700" : "bg-blue-100 text-blue-700"
         )}>
           {visitTypeLabel}
@@ -254,10 +252,10 @@ function TableApptRow({ appt, scope, canManageQueue, canViewPatient }: {
         <div className="flex items-center gap-1.5">
           {scope === "DOCTOR" ? (
             <><Building2 size={12} className="shrink-0 text-[var(--color-ink-400)]" />
-            <span className="text-[12px] text-[var(--color-ink-600)] truncate max-w-[120px]">{appt.hospital?.name ?? "—"}</span></>
+            <span className="text-[12px] text-[var(--color-ink-600)] truncate max-w-[140px]">{appt.hospital?.name ?? "—"}</span></>
           ) : (
             <><Stethoscope size={12} className="shrink-0 text-[var(--color-ink-400)]" />
-            <span className="text-[12px] text-[var(--color-ink-600)] truncate max-w-[120px]">{appt.doctor ? `Dr. ${appt.doctor.name}` : "—"}</span></>
+            <span className="text-[12px] text-[var(--color-ink-600)] truncate max-w-[140px]">{appt.doctor ? `Dr. ${appt.doctor.name}` : "—"}</span></>
           )}
         </div>
       </td>
@@ -309,19 +307,15 @@ function PartialDispenseRow({ appt: a, scope, canDispense, canViewPatient }: {
       <td className="px-4 py-3">
         <PatientBlock udid={a.patient.udid} canView={canViewPatient} className="flex items-center gap-2.5 hover:opacity-80 transition-opacity">
           <PatientAvatar name={a.patient.name} />
-          <div>
-            <p className="text-[13px] font-semibold text-[var(--color-ink-900)]">{a.patient.name}</p>
+          <div className="min-w-0">
+            <p className="text-[13px] font-semibold text-[var(--color-ink-900)] truncate">{a.patient.name}</p>
             <p className="text-[10px] text-[var(--color-ink-400)]">{a.patient.age}y / {a.patient.sex === "MALE" ? "M" : "F"}</p>
+            <p className="text-[10px] font-mono text-[#115E59] mt-0.5">MRN: {a.patient.uhid || a.patient.udid}</p>
           </div>
         </PatientBlock>
       </td>
-      <td className="px-4 py-3 hidden md:table-cell">
-        <span className="font-mono text-[11px] text-[#115E59] bg-[#F0F8F6] px-2 py-0.5 rounded">
-          {a.patient.uhid || a.patient.udid}
-        </span>
-      </td>
       <td className="px-4 py-3 hidden lg:table-cell">
-        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-orange-100 text-orange-700">Partial</span>
+        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold bg-orange-100 text-orange-700 whitespace-nowrap">Partial</span>
       </td>
       <td className="px-4 py-3 hidden xl:table-cell">
         {scope === "DOCTOR" && a.hospital && <span className="text-[12px] text-[var(--color-ink-600)]">{a.hospital.name}</span>}
@@ -398,7 +392,7 @@ export function HomeDashboardClient({
   const greeting = h >= 18 ? "Good Evening" : h >= 12 ? "Good Afternoon" : "Good Morning";
 
   return (
-    <div className="fade-in flex flex-col gap-5">
+    <div className="fade-in flex flex-col gap-4">
 
       {/* ── Greeting banner ──────────────────────────────────────────── */}
       <div className="relative overflow-hidden rounded-2xl bg-white border border-[var(--color-border)] shadow-sm">
@@ -409,7 +403,7 @@ export function HomeDashboardClient({
           <img src="/landing/v3/hero-clinician-tablet-dashboard.jpg" alt="" className="w-full h-full object-cover object-left" aria-hidden="true" />
           <div className="absolute inset-0 bg-gradient-to-r from-white via-white/60 to-transparent" />
         </div>
-        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-5 sm:p-6">
+        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-4 sm:p-5">
           <div>
             <p className="text-[13px] text-[var(--color-ink-400)] font-medium mb-0.5">{greeting}</p>
             <h1 className="text-xl sm:text-2xl font-bold text-[var(--color-ink-900)]">{bannerTitle}</h1>
@@ -475,12 +469,12 @@ export function HomeDashboardClient({
       </div>
 
       {/* ── Two-column ────────────────────────────────────────────────── */}
-      <div className="flex flex-col xl:flex-row gap-5">
+      <div className="flex flex-col xl:flex-row gap-4">
 
         {/* LEFT: Appointment queue table */}
         {can("opd.view") && (
-          <div className="flex-1 min-w-0 bg-white rounded-2xl border border-[var(--color-border)] overflow-hidden">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--color-border)]">
+          <div className="flex-1 min-w-0 bg-white rounded-2xl border border-[var(--color-border)] overflow-hidden flex flex-col">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--color-border)] shrink-0">
               <div className="flex items-center gap-2">
                 <Calendar size={16} className="text-[var(--color-primary-600)]" />
                 <h2 className="text-[15px] font-bold text-[var(--color-ink-900)]">Today&apos;s Appointment Queue</h2>
@@ -496,7 +490,7 @@ export function HomeDashboardClient({
             </div>
 
             {tableRows.active.length + tableRows.partial.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 gap-4 text-center px-6">
+              <div className="flex flex-col items-center justify-center py-8 gap-3 text-center px-6">
                 <div className="w-16 h-16 rounded-2xl flex items-center justify-center bg-[var(--color-surface-sunken)]">
                   <CalendarX2 size={28} className="text-[var(--color-ink-300)]" />
                 </div>
@@ -513,16 +507,15 @@ export function HomeDashboardClient({
                 )}
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left">
-                  <thead>
+              <div className="overflow-auto max-h-[280px]">
+                <table className="w-full text-left min-w-[480px]">
+                  <thead className="sticky top-0 z-10">
                     <tr className="border-b border-[var(--color-border)] bg-[var(--color-surface-sunken)]">
-                      {["Time", "Patient", "MRN", "Type", scope === "DOCTOR" ? "Hospital" : "Doctor", "Status", "Action"].map((h, i) => (
+                      {["Time", "Patient", "Type", scope === "DOCTOR" ? "Hospital" : "Doctor", "Status", "Action"].map((h, i) => (
                         <th key={h} className={clsx(
                           "px-4 py-3 text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]",
-                          i === 2 && "hidden md:table-cell",
-                          i === 3 && "hidden lg:table-cell",
-                          i === 4 && "hidden xl:table-cell",
+                          i === 2 && "hidden lg:table-cell",
+                          i === 3 && "hidden xl:table-cell",
                         )}>{h}</th>
                       ))}
                     </tr>
@@ -545,46 +538,46 @@ export function HomeDashboardClient({
         )}
 
         {/* RIGHT: Stats panels */}
-        <div className="xl:w-80 2xl:w-96 shrink-0 flex flex-col gap-4">
+        <div className="xl:w-72 2xl:w-80 shrink-0 flex flex-col gap-3">
 
           {/* Patient Flow */}
-          <div className="bg-white rounded-2xl border border-[var(--color-border)] p-4">
-            <div className="flex items-center gap-2 mb-4">
-              <Activity size={15} className="text-[var(--color-primary-600)]" />
-              <h3 className="text-[14px] font-bold text-[var(--color-ink-900)]">Patient Flow</h3>
-              <span className="ml-auto text-[11px] text-[var(--color-ink-400)]">Today</span>
+          <div className="bg-white rounded-2xl border border-[var(--color-border)] p-3">
+            <div className="flex items-center gap-2 mb-3">
+              <Activity size={14} className="text-[var(--color-primary-600)]" />
+              <h3 className="text-[13px] font-bold text-[var(--color-ink-900)]">Patient Flow</h3>
+              <span className="ml-auto text-[10px] text-[var(--color-ink-400)]">Today</span>
             </div>
             <div className="flex items-center gap-1">
               {[
-                { label: "Registered",   value: patientFlow.registered,   color: "bg-blue-500",                           Icon: Users },
-                { label: "Waiting",      value: patientFlow.waiting,      color: "bg-amber-500",                          Icon: Clock },
-                { label: "Consultation", value: patientFlow.consultation, color: "bg-[var(--color-primary-600)]",         Icon: Stethoscope },
-                { label: "Completed",    value: patientFlow.completed,    color: "bg-emerald-500",                        Icon: UserCheck },
+                { label: "Registered",   value: patientFlow.registered,   color: "bg-blue-500",                    Icon: Users },
+                { label: "Waiting",      value: patientFlow.waiting,      color: "bg-amber-500",                   Icon: Clock },
+                { label: "Consult",      value: patientFlow.consultation, color: "bg-[var(--color-primary-600)]",  Icon: Stethoscope },
+                { label: "Completed",    value: patientFlow.completed,    color: "bg-emerald-500",                 Icon: UserCheck },
               ].map((step, i, arr) => (
                 <div key={step.label} className="flex items-center gap-1 flex-1 min-w-0">
                   <div className="flex-1 min-w-0 text-center">
-                    <div className={clsx("w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-1.5", step.color)}>
-                      <step.Icon size={16} className="text-white" />
+                    <div className={clsx("w-8 h-8 rounded-full flex items-center justify-center mx-auto mb-1", step.color)}>
+                      <step.Icon size={14} className="text-white" />
                     </div>
-                    <p className="text-[10px] font-semibold text-[var(--color-ink-500)] leading-tight">{step.label}</p>
-                    <p className="text-lg font-bold text-[var(--color-ink-900)] tabular-nums">{step.value}</p>
+                    <p className="text-[9px] font-semibold text-[var(--color-ink-500)] leading-tight">{step.label}</p>
+                    <p className="text-base font-bold text-[var(--color-ink-900)] tabular-nums">{step.value}</p>
                   </div>
-                  {i < arr.length - 1 && <ArrowRight size={12} className="text-[var(--color-ink-300)] shrink-0" />}
+                  {i < arr.length - 1 && <ArrowRight size={10} className="text-[var(--color-ink-300)] shrink-0" />}
                 </div>
               ))}
             </div>
           </div>
 
           {/* Appointments Overview */}
-          <div className="bg-white rounded-2xl border border-[var(--color-border)] p-4">
+          <div className="bg-white rounded-2xl border border-[var(--color-border)] p-3">
             <div className="flex items-center justify-between mb-1">
               <div className="flex items-center gap-2">
-                <BarChart2 size={15} className="text-[var(--color-primary-600)]" />
-                <h3 className="text-[14px] font-bold text-[var(--color-ink-900)]">Appointments Overview</h3>
+                <BarChart2 size={14} className="text-[var(--color-primary-600)]" />
+                <h3 className="text-[13px] font-bold text-[var(--color-ink-900)]">Appointments Overview</h3>
               </div>
-              <span className="text-[11px] font-semibold px-2 py-0.5 rounded-lg bg-[var(--color-primary-700)] text-white">Today</span>
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-lg bg-[var(--color-primary-700)] text-white">Today</span>
             </div>
-            <div className="flex items-center gap-3 mb-2 mt-1">
+            <div className="flex items-center gap-3 mb-1 mt-1">
               <span className="inline-flex items-center gap-1 text-[10px] text-[var(--color-ink-400)]">
                 <span className="w-2 h-2 rounded-sm bg-blue-300 inline-block" /> Scheduled
               </span>
@@ -596,10 +589,10 @@ export function HomeDashboardClient({
           </div>
 
           {/* Patient Overview */}
-          <div className="bg-white rounded-2xl border border-[var(--color-border)] p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <Users size={15} className="text-[var(--color-primary-600)]" />
-              <h3 className="text-[14px] font-bold text-[var(--color-ink-900)]">Patient Overview</h3>
+          <div className="bg-white rounded-2xl border border-[var(--color-border)] p-3">
+            <div className="flex items-center gap-2 mb-2">
+              <Users size={14} className="text-[var(--color-primary-600)]" />
+              <h3 className="text-[13px] font-bold text-[var(--color-ink-900)]">Patient Overview</h3>
             </div>
             <div className="flex items-center gap-4">
               <PatientDonut
@@ -638,11 +631,11 @@ export function HomeDashboardClient({
       </div>
 
       {/* ── Bottom row: Quick Actions + Upcoming Follow Ups + AI Copilot ── */}
-      <div className="grid grid-cols-1 md:grid-cols-[minmax(0,2fr)_minmax(0,2fr)_minmax(0,1fr)] gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-[minmax(0,2fr)_minmax(0,2fr)_minmax(0,1fr)] gap-4">
 
         {/* Quick Actions */}
-        <div className="bg-white rounded-2xl border border-[var(--color-border)] p-5">
-          <div className="flex items-center gap-2 mb-4">
+        <div className="bg-white rounded-2xl border border-[var(--color-border)] p-4">
+          <div className="flex items-center gap-2 mb-3">
             <ChevronRight size={15} className="text-[var(--color-primary-600)]" />
             <p className="text-[14px] font-bold text-[var(--color-ink-900)]">Quick Actions</p>
           </div>
@@ -691,8 +684,8 @@ export function HomeDashboardClient({
         </div>
 
         {/* Upcoming Follow Ups */}
-        <div className="bg-white rounded-2xl border border-[var(--color-border)] p-4">
-          <div className="flex items-center justify-between mb-3">
+        <div className="bg-white rounded-2xl border border-[var(--color-border)] p-3">
+          <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <Calendar size={15} className="text-[var(--color-primary-600)]" />
               <h3 className="text-[14px] font-bold text-[var(--color-ink-900)]">Upcoming Follow Ups</h3>
@@ -721,23 +714,23 @@ export function HomeDashboardClient({
         </div>
 
         {/* AI Clinical Copilot */}
-        <div className="bg-[var(--color-primary-50)] border border-[var(--color-primary-100)] rounded-2xl p-4 flex flex-col">
-          <div className="flex items-start gap-3 flex-1">
-            <div className="w-12 h-12 rounded-xl bg-white border border-[var(--color-primary-100)] flex items-center justify-center shrink-0 shadow-sm">
-              <Bot size={22} className="text-[var(--color-primary-600)]" />
+        <div className="bg-[var(--color-primary-50)] border border-[var(--color-primary-100)] rounded-2xl p-3 flex flex-col">
+          <div className="flex items-start gap-2.5 flex-1">
+            <div className="w-10 h-10 rounded-xl bg-white border border-[var(--color-primary-100)] flex items-center justify-center shrink-0 shadow-sm">
+              <Bot size={20} className="text-[var(--color-primary-600)]" />
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
-                <p className="text-[14px] font-bold text-[var(--color-ink-900)]">AI Clinical Copilot</p>
+                <p className="text-[13px] font-bold text-[var(--color-ink-900)]">AI Clinical Copilot</p>
                 <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[var(--color-primary-700)] text-white">New</span>
               </div>
               <p className="text-[11px] text-[var(--color-ink-500)] leading-relaxed">
-                Get AI powered insights, patient summaries and clinical support.
+                AI powered insights and clinical support.
               </p>
             </div>
           </div>
           <Link href="/ai-copilot"
-            className="mt-4 flex items-center justify-center gap-2 w-full py-2 rounded-xl bg-[var(--color-primary-700)] text-white text-[12px] font-bold hover:opacity-90 transition-opacity">
+            className="mt-3 flex items-center justify-center gap-2 w-full py-1.5 rounded-xl bg-[var(--color-primary-700)] text-white text-[12px] font-bold hover:opacity-90 transition-opacity">
             Open Copilot <ArrowRight size={13} />
           </Link>
         </div>
