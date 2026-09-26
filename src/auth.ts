@@ -57,7 +57,9 @@ async function buildPayload(user: NonNullable<Awaited<ReturnType<typeof fetchUse
   }
   // Refractionist accounts may live in the Refractionist table instead of HospitalStaff
   if (!hospitalId && user.refractionist) {
-    hospitalId = user.refractionist.hospitalId;
+    profileId   = user.refractionist.id;
+    profileName = user.refractionist.name;
+    hospitalId  = user.refractionist.hospitalId;
   }
 
   let permissions: string[];

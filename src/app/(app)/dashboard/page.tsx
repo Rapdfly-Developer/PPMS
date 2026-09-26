@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { format } from "date-fns";
 import { istTodayRange, istParts, toISTWall } from "@/lib/ist";
 import { HomeDashboardClient } from "@/app/(app)/home/HomeDashboardClient";
+import { HospitalDashboard } from "./HospitalDashboard";
 
 export default async function DashboardPage() {
   const user = await requireUser();
@@ -119,6 +120,7 @@ export default async function DashboardPage() {
     );
   }
 
-  // Hospital / other roles → OPD queue
-  redirect("/opd");
+  // Hospital / staff roles → show hospital dashboard at /dashboard
+  if (!user.hospitalId) redirect("/settings?section=add-hospital");
+  return <HospitalDashboard user={user} hospitalId={user.hospitalId} />;
 }
