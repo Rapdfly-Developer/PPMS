@@ -1,16 +1,16 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import {
   LayoutDashboard, CalendarDays, Users, Settings,
   CalendarClock, BarChart2, Clock, UserCog, Bell,
-  Search, ArrowUpRight, X, Stethoscope, Building2, UserCheck,
+  Search, ArrowRight, X, Stethoscope, Building2, UserCheck,
+  CalendarRange, LayoutGrid, Briefcase, Activity, ShieldCheck,
 } from "lucide-react";
 
 type Role    = "DOCTOR" | "HOSPITAL" | "STAFF";
 type Section = "Clinical" | "Practice Management" | "Operations" | "Administration";
-type Accent  = "teal" | "blue" | "amber" | "slate";
 
 interface ModuleDef {
   section: Section;
@@ -20,144 +20,93 @@ interface ModuleDef {
   icon: React.ElementType;
   permission: string;
   roles?: Role[];
-  accent: Accent;
 }
 
 const ALL_MODULES: ModuleDef[] = [
-  { section:"Clinical",           accent:"teal",  href:"/dashboard",                   label:"OPD",          icon:LayoutDashboard, permission:"dashboard.view",    description:"Daily outpatient queue, walk-ins, and live consultation workflow." },
-  { section:"Clinical",           accent:"teal",  href:"/patients",                    label:"Patients",     icon:Users,           permission:"patients.view",     description:"Patient registry, profiles, visit history, and clinical records." },
-  { section:"Clinical",           accent:"teal",  href:"/follow-ups",                  label:"Follow Ups",   icon:CalendarClock,   permission:"patients.view",     description:"Track and manage scheduled patient follow-up appointments.", roles:["DOCTOR","HOSPITAL"] },
-  { section:"Practice Management",accent:"blue",  href:"/appointments",                label:"Appointments", icon:CalendarDays,    permission:"appointments.view", description:"Schedule, confirm, and manage patient appointments end-to-end.", roles:["DOCTOR","HOSPITAL"] },
-  { section:"Practice Management",accent:"blue",  href:"/appointments/availability",   label:"Availability", icon:Clock,           permission:"appointments.view", description:"Configure doctor slot availability and session schedules." },
-  { section:"Operations",         accent:"amber", href:"/analytics",                   label:"Analytics",    icon:BarChart2,       permission:"reports.view",      description:"KPI reports, trends, and OPD and theatre statistical insights." },
-  { section:"Administration",     accent:"slate", href:"/settings",                    label:"Settings",     icon:Settings,        permission:"settings.view",     description:"App configuration, roles, integrations, and system preferences." },
-  { section:"Administration",     accent:"slate", href:"/users",                       label:"Users",        icon:UserCog,         permission:"settings.view",     description:"Manage staff accounts, roles, and access permissions." },
-  { section:"Administration",     accent:"slate", href:"/notifications",               label:"Notifications",icon:Bell,            permission:"dashboard.view",    description:"View and manage in-app notifications and system alerts." },
+  { section:"Clinical",           href:"/dashboard",                 label:"OPD",           icon:LayoutDashboard, permission:"dashboard.view",    description:"Daily outpatient queue, walk-ins, and live consultation workflow." },
+  { section:"Clinical",           href:"/patients",                  label:"Patients",      icon:Users,           permission:"patients.view",     description:"Patient registry, profiles, visit history, and clinical records." },
+  { section:"Clinical",           href:"/follow-ups",                label:"Follow Ups",    icon:CalendarClock,   permission:"patients.view",     description:"Track and manage scheduled patient follow-up appointments.", roles:["DOCTOR","HOSPITAL"] },
+  { section:"Practice Management",href:"/appointments",              label:"Appointments",  icon:CalendarDays,    permission:"appointments.view", description:"Schedule, confirm, and manage patient appointments end-to-end.", roles:["DOCTOR","HOSPITAL"] },
+  { section:"Practice Management",href:"/appointments/availability", label:"Availability",  icon:Clock,           permission:"appointments.view", description:"Configure doctor slot availability and session schedules." },
+  { section:"Operations",         href:"/analytics",                 label:"Analytics",     icon:BarChart2,       permission:"reports.view",      description:"KPI reports, trends, and OPD and theatre statistical insights." },
+  { section:"Administration",     href:"/settings",                  label:"Settings",      icon:Settings,        permission:"settings.view",     description:"App configuration, roles, integrations, and system preferences." },
+  { section:"Administration",     href:"/users",                     label:"Users",         icon:UserCog,         permission:"settings.view",     description:"Manage staff accounts, roles, and access permissions." },
+  { section:"Administration",     href:"/notifications",             label:"Notifications", icon:Bell,            permission:"dashboard.view",    description:"View and manage in-app notifications and system alerts." },
 ];
 
 const SECTIONS: Section[] = ["Clinical", "Practice Management", "Operations", "Administration"];
-const SECTION_ACCENT: Record<Section, Accent> = {
-  "Clinical": "teal", "Practice Management": "blue",
-  "Operations": "amber", "Administration": "slate",
+
+// Muted per-section tints: the icon tile carries the colour, the card stays white.
+const TINT: Record<Section, { bg: string; fg: string; Icon: React.ElementType; blurb: string }> = {
+  "Clinical":            { bg: "#E7F5F2", fg: "#0F766E", Icon: Activity,      blurb: "Patient care & consultations" },
+  "Practice Management": { bg: "#EAF1FB", fg: "#2F5FA8", Icon: CalendarRange, blurb: "Scheduling & availability" },
+  "Operations":          { bg: "#FBF3E6", fg: "#A5620E", Icon: Briefcase,     blurb: "Reports & insights" },
+  "Administration":      { bg: "#EEF1F3", fg: "#4B5C66", Icon: ShieldCheck,   blurb: "Configuration & access" },
 };
 
-const A: Record<Accent, {
-  iconBg: string; iconText: string;
-  label: string; labelBg: string;
-  bar: string; barDark: string;
-  hover: string; hoverShadow: string;
-}> = {
-  teal:  { iconBg:"#E6FAF8", iconText:"#0D9488", label:"#0F766E", labelBg:"#F0FDFA", bar:"#14B8A6", barDark:"#0F766E", hover:"#99F6E4", hoverShadow:"0 4px 18px rgba(20,184,166,.13)" },
-  blue:  { iconBg:"#EFF6FF", iconText:"#2563EB", label:"#1D4ED8", labelBg:"#EFF6FF", bar:"#3B82F6", barDark:"#1D4ED8", hover:"#BFDBFE", hoverShadow:"0 4px 18px rgba(37,99,235,.11)" },
-  amber: { iconBg:"#FFFBEB", iconText:"#D97706", label:"#B45309", labelBg:"#FFFBEB", bar:"#F59E0B", barDark:"#B45309", hover:"#FDE68A", hoverShadow:"0 4px 18px rgba(217,119,6,.11)" },
-  slate: { iconBg:"#F8FAFC", iconText:"#475569", label:"#334155", labelBg:"#F8FAFC", bar:"#94A3B8", barDark:"#64748B", hover:"#CBD5E1", hoverShadow:"0 4px 18px rgba(71,85,105,.09)" },
+const ROLE_META: Record<Role, { label: string; Icon: React.ElementType }> = {
+  DOCTOR:   { label: "Doctor",   Icon: Stethoscope },
+  HOSPITAL: { label: "Hospital", Icon: Building2   },
+  STAFF:    { label: "Staff",    Icon: UserCheck   },
 };
 
-const ROLE_META: Record<Role, { label: string; Icon: React.ElementType; iconColor: string }> = {
-  DOCTOR:   { label:"Doctor",   Icon:Stethoscope, iconColor:"#0D9488" },
-  HOSPITAL: { label:"Hospital", Icon:Building2,   iconColor:"#2563EB" },
-  STAFF:    { label:"Staff",    Icon:UserCheck,   iconColor:"#7C3AED" },
-};
-
-/* ── Card ────────────────────────────────────────────────────────────────── */
+/* ── Module card ─────────────────────────────────────────────────────────── */
 function ModuleCard({ mod }: { mod: ModuleDef }) {
-  const tok = A[mod.accent];
+  const tint = TINT[mod.section];
   const Icon = mod.icon;
   return (
     <Link
       href={mod.href}
-      className="group flex flex-col overflow-hidden rounded-xl transition-all duration-200"
-      style={{
-        background: "#fff",
-        border: "1px solid #E5E9EF",
-        boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
-      }}
-      onMouseEnter={e => {
-        e.currentTarget.style.borderColor = tok.hover;
-        e.currentTarget.style.boxShadow = tok.hoverShadow;
-        e.currentTarget.style.transform = "translateY(-1px)";
-      }}
-      onMouseLeave={e => {
-        e.currentTarget.style.borderColor = "#E5E9EF";
-        e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.05)";
-        e.currentTarget.style.transform = "";
-      }}
+      className="group flex h-full flex-col rounded-xl border border-[var(--color-border)] bg-white p-5
+        shadow-[0_1px_2px_rgba(20,36,43,0.04)] transition-[border-color,box-shadow,transform] duration-200 ease-out
+        hover:-translate-y-0.5 hover:border-[#BFDDD8] hover:shadow-[0_8px_24px_-8px_rgba(20,36,43,0.14)]
+        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary-500)] focus-visible:ring-offset-2
+        motion-reduce:transition-none motion-reduce:hover:translate-y-0"
     >
-      {/* Top strip */}
-      <div className="h-[2.5px] shrink-0"
-        style={{ background: `linear-gradient(90deg, ${tok.bar}, ${tok.barDark})` }} />
-
-      <div className="flex flex-col flex-1 p-4 gap-3">
-        {/* Icon + arrow */}
-        <div className="flex items-start justify-between">
-          <div
-            className="h-9 w-9 rounded-lg flex items-center justify-center shrink-0"
-            style={{ background: tok.iconBg, color: tok.iconText }}
-          >
-            <Icon size={17} strokeWidth={1.75} />
-          </div>
-          <ArrowUpRight
-            size={13}
-            className="opacity-0 group-hover:opacity-100 transition-opacity duration-150 mt-0.5"
-            style={{ color: tok.bar }}
-          />
+      <div className="flex items-start gap-3.5">
+        <div
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
+          style={{ background: tint.bg, color: tint.fg }}
+        >
+          <Icon size={20} strokeWidth={1.8} />
         </div>
-
-        {/* Content */}
-        <div className="flex-1 min-w-0">
-          <p className="text-[13px] font-bold text-gray-900 leading-tight mb-1">
-            {mod.label}
-          </p>
-          <p className="text-[11px] leading-[1.6] text-gray-400 line-clamp-2">
-            {mod.description}
-          </p>
+        <div className="min-w-0 flex-1">
+          <p className="text-[15px] font-semibold leading-snug text-[var(--color-ink-900)]">{mod.label}</p>
+          <p className="mt-0.5 text-[11.5px] font-medium text-[var(--color-ink-400)]">{mod.section}</p>
         </div>
+      </div>
 
-        {/* Section tag */}
-        <div className="pt-2.5 border-t border-gray-100 flex items-center justify-between gap-2">
-          <span className="text-[9.5px] font-bold uppercase tracking-widest truncate min-w-0" style={{ color: tok.label }}>
-            {mod.section === "Practice Management" ? "Practice" : mod.section === "Administration" ? "Admin" : mod.section}
-          </span>
-          <span className="text-[10px] font-semibold text-gray-400 group-hover:text-gray-600 transition-colors shrink-0">
-            Open →
-          </span>
-        </div>
+      <p className="mt-3.5 flex-1 text-[13px] leading-relaxed text-[var(--color-ink-500)] line-clamp-2">
+        {mod.description}
+      </p>
+
+      <div className="mt-4 flex items-center justify-between gap-3 border-t border-[#EEF1F2] pt-3.5">
+        <span className="inline-flex items-center gap-1.5 text-[12px] font-medium text-[#0F766E]">
+          <span className="h-1.5 w-1.5 rounded-full bg-[#14A38B]" aria-hidden />
+          Active
+        </span>
+        <span
+          className="inline-flex min-h-8 items-center gap-1.5 rounded-lg border border-[var(--color-border)] px-3 text-[12.5px] font-semibold
+            text-[var(--color-ink-900)] transition-colors duration-200
+            group-hover:border-[var(--color-primary-600)] group-hover:bg-[var(--color-primary-600)] group-hover:text-white"
+        >
+          Open
+          <ArrowRight size={13} className="transition-transform duration-200 group-hover:translate-x-0.5 motion-reduce:transition-none" />
+        </span>
       </div>
     </Link>
   );
 }
 
-/* ── Section block ───────────────────────────────────────────────────────── */
-function SectionBlock({ section, mods }: { section: Section; mods: ModuleDef[] }) {
-  const tok = A[SECTION_ACCENT[section]];
-  return (
-    <div>
-      <div className="flex items-center gap-2.5 mb-3">
-        <div className="h-4 w-[3px] rounded-full" style={{ background: tok.bar }} />
-        <span className="text-[10.5px] font-black uppercase tracking-[0.15em]" style={{ color: tok.label }}>
-          {section}
-        </span>
-        <span
-          className="text-[9.5px] font-bold px-1.5 py-0.5 rounded-full"
-          style={{ background: tok.labelBg, color: tok.label }}
-        >
-          {mods.length}
-        </span>
-        <div className="flex-1 h-px bg-gray-100" />
-      </div>
-      {/* Past xl the extra width buys more columns, not wider cards — a module
-          tile holds a label and two lines of description and gains nothing
-          from being stretched. */}
-      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 3xl:grid-cols-6">
-        {mods.map(m => <ModuleCard key={m.href} mod={m} />)}
-      </div>
-    </div>
-  );
-}
+const GRID = "grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 5xl:grid-cols-5 6xl:grid-cols-6";
 
 /* ── Main ────────────────────────────────────────────────────────────────── */
-export function ModuleOverview({ role, permissions }: { role: Role; permissions: string[] }) {
+export function ModuleOverview({ role, permissions, name }: { role: Role; permissions: string[]; name: string }) {
   const [q, setQ] = useState("");
+  // Resolved on the client so the greeting and date follow the viewer's clock, not the server's.
+  const [now, setNow] = useState<Date | null>(null);
+  useEffect(() => { setNow(new Date()); }, []);
+
   const can = (p: string) => permissions.includes("*") || permissions.includes(p);
 
   const visible = useMemo(() =>
@@ -176,125 +125,159 @@ export function ModuleOverview({ role, permissions }: { role: Role; permissions:
     );
   }, [q, visible]);
 
-  const rm = ROLE_META[role];
-  const RoleIcon = rm.Icon;
-
   const sectionCounts = useMemo(() =>
-    SECTIONS.map(s => ({
-      label: s === "Practice Management" ? "Practice" : s,
-      count: visible.filter(m => m.section === s).length,
-      tok: A[SECTION_ACCENT[s]],
-    })).filter(s => s.count > 0),
+    SECTIONS.map(s => ({ section: s, count: visible.filter(m => m.section === s).length })).filter(s => s.count > 0),
     [visible],
   );
 
+  const rm = ROLE_META[role];
+  const RoleIcon = rm.Icon;
+
+  const hour = now?.getHours() ?? 8;
+  const greeting = hour >= 18 ? "Good evening" : hour >= 12 ? "Good afternoon" : "Good morning";
+  const displayName = role === "DOCTOR" && !/^dr\.?\s/i.test(name) ? `Dr. ${name}` : name;
+  const dateLabel = now?.toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
+
   return (
-    <div className="mx-auto pb-10 space-y-5">
+    <div className="space-y-6 pb-10">
 
-      {/* ── Compact hero ──────────────────────────────────────────────────── */}
-      <div
-        className="relative overflow-hidden rounded-xl"
-        style={{
-          background: "linear-gradient(172deg, #155C57 0%, #114D47 42%, #0B3C35 100%)",
-          boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
-        }}
-      >
-        {/* Subtle orb */}
-        <div className="pointer-events-none absolute -right-10 -top-10 h-48 w-48 rounded-full opacity-[0.12]"
-          style={{ background: "radial-gradient(circle, #14B8A6, transparent 65%)" }} />
-        {/* Bottom teal line */}
-        <div className="absolute bottom-0 left-0 right-0 h-px"
-          style={{ background: "linear-gradient(90deg, transparent, #14B8A6 40%, #0F766E 60%, transparent)" }} />
-
-        <div className="relative flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-          {/* Left: brand + title */}
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="h-8 w-8 rounded-lg flex items-center justify-center shrink-0"
-              style={{ background: "rgba(20,184,166,.15)", border: "1px solid rgba(94,234,212,.2)" }}>
-              <LayoutDashboard size={15} strokeWidth={2} color="#5EEAD4" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-[8.5px] font-bold uppercase tracking-[0.2em] leading-none mb-0.5"
-                style={{ color: "rgba(94,234,212,0.55)" }}>
-                PPMS Platform
-              </p>
-              <h1 className="text-[16px] font-extrabold text-white tracking-tight leading-none">
-                Module Overview
-              </h1>
+      {/* ── Header ──────────────────────────────────────────────────────── */}
+      <header className="rounded-2xl border border-[var(--color-border)] bg-gradient-to-r from-[#F2F8F7] via-white to-white px-5 py-5 sm:px-6 lg:px-7">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+          <div className="min-w-0">
+            <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-[var(--color-primary-600)]">Module Overview</p>
+            <h1 className="mt-1 text-[22px] font-semibold leading-tight tracking-tight text-[var(--color-ink-900)] sm:text-[26px] text-balance">
+              {greeting}, {displayName}
+            </h1>
+            <p className="mt-1.5 text-[14px] text-[var(--color-ink-500)]">
+              Every module available to your account, organised by area of work.
+            </p>
+            <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-[12.5px] text-[var(--color-ink-500)]">
+              {dateLabel && (
+                <span className="inline-flex items-center gap-1.5">
+                  <CalendarDays size={14} className="text-[var(--color-ink-400)]" /> {dateLabel}
+                </span>
+              )}
+              <span className="inline-flex items-center gap-1.5">
+                <RoleIcon size={14} className="text-[var(--color-ink-400)]" /> {rm.label} access
+              </span>
             </div>
           </div>
 
-          {/* Centre: section pills */}
-          <div className="flex flex-wrap gap-1.5 sm:flex-nowrap">
-            {sectionCounts.map(s => (
-              <div key={s.label}
-                className="flex items-center gap-1.5 rounded-md px-2 py-1"
-                style={{ background: "rgba(255,255,255,.06)", border: "1px solid rgba(255,255,255,.08)" }}>
-                <span className="h-1.5 w-1.5 rounded-full shrink-0" style={{ background: s.tok.bar }} />
-                <span className="text-[11px] font-bold tabular-nums text-white/80">{s.count}</span>
-                <span className="text-[10px] text-white/35">{s.label}</span>
-              </div>
-            ))}
-          </div>
-
-          {/* Right: role badge */}
-          <div className="flex items-center gap-2 rounded-lg px-3 py-2 shrink-0"
-            style={{ background: "rgba(255,255,255,.07)", border: "1px solid rgba(255,255,255,.1)" }}>
-            <RoleIcon size={14} strokeWidth={1.75} color={rm.iconColor} />
-            <div>
-              <p className="text-[8px] font-bold uppercase tracking-[0.18em] leading-none text-white/35">Access</p>
-              <p className="text-[12px] font-bold text-white leading-none mt-0.5">{rm.label}</p>
-            </div>
+          <div className="relative w-full lg:w-80 xl:w-96">
+            <label htmlFor="module-search" className="sr-only">Search modules</label>
+            <Search size={15} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)]" />
+            <input
+              id="module-search"
+              value={q}
+              onChange={e => setQ(e.target.value)}
+              placeholder="Search modules…"
+              className="h-11 w-full rounded-xl border border-[var(--color-border)] bg-white pl-10 pr-10 text-[14px] text-[var(--color-ink-900)]
+                shadow-[0_1px_2px_rgba(20,36,43,0.04)] placeholder:text-[var(--color-ink-400)] transition-shadow
+                focus:border-[var(--color-primary-500)] focus:outline-none focus:ring-4 focus:ring-[var(--color-primary-500)]/15"
+            />
+            {q && (
+              <button
+                onClick={() => setQ("")}
+                aria-label="Clear search"
+                className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-[var(--color-ink-400)]
+                  hover:bg-[var(--color-surface-sunken)] hover:text-[var(--color-ink-900)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary-500)]"
+              >
+                <X size={14} />
+              </button>
+            )}
           </div>
         </div>
-      </div>
+      </header>
 
-      {/* ── Search ────────────────────────────────────────────────────────── */}
-      <div className="relative max-w-sm">
-        <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-300" />
-        <input
-          value={q}
-          onChange={e => setQ(e.target.value)}
-          placeholder="Search modules…"
-          className="w-full pl-9 pr-8 py-2 text-[12.5px] rounded-lg border border-gray-200 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all placeholder:text-gray-300 text-gray-800"
-        />
-        {q && (
-          <button onClick={() => setQ("")}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500 transition-colors">
-            <X size={12} />
-          </button>
-        )}
-      </div>
+      {/* ── Summary ─────────────────────────────────────────────────────── */}
+      <section aria-label="Module summary" className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-[repeat(auto-fit,minmax(190px,1fr))]">
+        <div className="col-span-2 rounded-xl border border-[var(--color-border)] bg-white p-4 sm:p-5 md:col-span-1">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--color-primary-600)] text-white">
+              <LayoutGrid size={18} strokeWidth={1.9} />
+            </div>
+            <p className="text-[13px] font-semibold text-[var(--color-ink-900)]">Available Modules</p>
+          </div>
+          <p className="mt-3 text-[28px] font-semibold leading-none tracking-tight tabular-nums text-[var(--color-ink-900)]">
+            {String(visible.length).padStart(2, "0")}
+          </p>
+          <p className="mt-2 text-[12px] text-[var(--color-ink-500)]">
+            {visible.length} of {ALL_MODULES.length} enabled for your role
+          </p>
+        </div>
 
-      {/* ── Grid ──────────────────────────────────────────────────────────── */}
+        {sectionCounts.map(({ section, count }) => {
+          const t = TINT[section];
+          const SIcon = t.Icon;
+          return (
+            <div key={section} className="rounded-xl border border-[var(--color-border)] bg-white p-4 sm:p-5">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl" style={{ background: t.bg, color: t.fg }}>
+                  <SIcon size={18} strokeWidth={1.9} />
+                </div>
+                <p className="min-w-0 text-[13px] font-semibold leading-tight text-[var(--color-ink-900)]">{section}</p>
+              </div>
+              <p className="mt-3 text-[28px] font-semibold leading-none tracking-tight tabular-nums text-[var(--color-ink-900)]">
+                {String(count).padStart(2, "0")}
+              </p>
+              <p className="mt-2 text-[12px] text-[var(--color-ink-500)]">{t.blurb}</p>
+            </div>
+          );
+        })}
+      </section>
+
+      {/* ── Modules ─────────────────────────────────────────────────────── */}
       {q.trim() ? (
         filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-gray-100 bg-white py-16 text-center shadow-sm">
-            <Search size={22} className="text-gray-200" />
-            <p className="text-sm text-gray-400">
-              No modules match <span className="font-semibold text-gray-600">"{q}"</span>
+          <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-[var(--color-border)] bg-white px-6 py-16 text-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--color-surface-sunken)]">
+              <Search size={20} className="text-[var(--color-ink-400)]" />
+            </div>
+            <p className="text-[14px] text-[var(--color-ink-500)]">
+              No modules match <span className="font-semibold text-[var(--color-ink-900)]">&ldquo;{q}&rdquo;</span>
             </p>
-            <button onClick={() => setQ("")}
-              className="text-xs font-semibold text-teal-600 underline underline-offset-2 hover:text-teal-700">
-              Clear
+            <button
+              onClick={() => setQ("")}
+              className="min-h-9 rounded-lg border border-[var(--color-border)] px-4 text-[13px] font-semibold text-[var(--color-ink-900)]
+                hover:bg-[var(--color-surface-sunken)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary-500)]"
+            >
+              Clear search
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 3xl:grid-cols-6">
-            {filtered.map(m => <ModuleCard key={m.href} mod={m} />)}
-          </div>
+          <section aria-label="Search results">
+            <p className="mb-3 text-[13px] text-[var(--color-ink-500)]">
+              {filtered.length} result{filtered.length !== 1 ? "s" : ""} for <span className="font-semibold text-[var(--color-ink-900)]">&ldquo;{q}&rdquo;</span>
+            </p>
+            <div className={GRID}>
+              {filtered.map(m => <ModuleCard key={m.href} mod={m} />)}
+            </div>
+          </section>
         )
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-8">
           {SECTIONS.map(section => {
             const mods = visible.filter(m => m.section === section);
             if (!mods.length) return null;
-            return <SectionBlock key={section} section={section} mods={mods} />;
+            return (
+              <section key={section} aria-labelledby={`sec-${section}`}>
+                <div className="mb-3.5 flex items-baseline gap-2.5">
+                  <h2 id={`sec-${section}`} className="text-[15px] font-semibold text-[var(--color-ink-900)]">{section}</h2>
+                  <span className="text-[12.5px] tabular-nums text-[var(--color-ink-400)]">
+                    {mods.length} module{mods.length !== 1 ? "s" : ""}
+                  </span>
+                </div>
+                <div className={GRID}>
+                  {mods.map(m => <ModuleCard key={m.href} mod={m} />)}
+                </div>
+              </section>
+            );
           })}
         </div>
       )}
 
-      <p className="text-center text-[10px] text-gray-300">
+      <p className="text-center text-[11.5px] text-[var(--color-ink-400)]">
         {visible.length} module{visible.length !== 1 ? "s" : ""} · PPMS v2.0
       </p>
     </div>
