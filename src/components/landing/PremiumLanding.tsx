@@ -942,7 +942,7 @@ export function PremiumLanding() {
           <div>
             <div className="flex items-center gap-2.5">
               <Image
-                src="/landing/logo-rf-health.webp"
+                src="/landing/logo-rf-health.png"
                 alt=""
                 width={32}
                 height={32}

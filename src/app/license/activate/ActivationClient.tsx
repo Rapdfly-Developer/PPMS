@@ -285,7 +285,7 @@ export function ActivationClient({ initial }: { initial: ActivationPageData }) {
             <ArrowLeft size={13} /> Back to License Overview
           </Link>
           <div className="flex items-center gap-2.5">
-            <img src="/landing/logo-rf-health.webp" alt="RF Health"
+            <img src="/landing/logo-rf-health.png" alt="RF Health"
               style={{ width: 32, height: 32, borderRadius: 8, border: `1px solid ${T.border}`, objectFit: "cover" }} />
             <div className="hidden sm:block">
               <span className="font-black text-sm" style={{ color: T.text, letterSpacing: "-0.025em" }}>RF Health</span>

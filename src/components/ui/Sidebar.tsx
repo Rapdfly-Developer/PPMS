@@ -187,7 +187,7 @@ export function Sidebar({
                 hairline outline keeps it reading as a badge against the dark rail
                 rather than a pale rectangle pasted on. */}
             <img
-              src="/landing/logo-rf-health.webp"
+              src="/landing/logo-rf-health.png"
               alt=""
               style={{
                 display: "block",

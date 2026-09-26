@@ -614,7 +614,7 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
               <Link href="/" aria-label="RF Health home"
                 className="lg-brand lg-a0 flex items-center gap-3.5 justify-center lg:justify-start rounded-xl"
                 style={{ marginBottom: "var(--vgap)" }}>
-                <img src="/landing/logo-rf-health.webp" alt="" className="shrink-0"
+                <img src="/landing/logo-rf-health.png" alt="" className="shrink-0"
                   style={{
                     width: "var(--logo)", height: "var(--logo)", objectFit: "cover",
                     borderRadius: "clamp(11px,.8vw,16px)", border: `1px solid ${T.border}`,
@@ -1054,7 +1054,7 @@ function PlansModal({
         order_id:    orderData.orderId,
         name:        "RF Health",
         description: planInfo ? `${planInfo.name} Plan` : planKey,
-        image:       "/landing/logo-rf-health.webp",
+        image:       "/landing/logo-rf-health.png",
         handler: async (response: { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }) => {
           try {
             const vRes = await fetch("/api/razorpay/verify", {
