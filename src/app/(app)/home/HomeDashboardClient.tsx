@@ -4,11 +4,11 @@ import { useState, useMemo, useEffect, useTransition, type ReactNode } from "rea
 import { format } from "date-fns";
 import Link from "next/link";
 import {
-  ChevronDown, Plus, Building2, LogIn, Loader2,
+  ChevronDown, Plus, Building2, Loader2,
   Calendar, Clock, Undo2, CalendarX2,
   Users, UserCheck, UserMinus, Activity, TrendingUp, TrendingDown,
   ChevronRight, Stethoscope, ArrowRight, Bot,
-  Search, CalendarPlus, PersonStanding, BarChart2,
+  BarChart2, BedDouble, Scissors, Lock,
 } from "lucide-react";
 import clsx from "clsx";
 import { undoQueueEntry, undoPartialDispense } from "@/app/(app)/appointments/actions";
@@ -148,7 +148,7 @@ function AppointmentsBarChart({ appts }: { appts: Appt[] }) {
     completed: appts.filter((a) => new Date(a.dateTime).getHours() === h && a.status === "DISPENSED").length,
   }));
   const maxVal = Math.max(...data.map((d) => d.scheduled + d.completed), 5);
-  const chartH = 56;
+  const chartH = 72;
   const barW = 14;
   const gap = 16;
   const totalW = hours.length * (barW + gap);
@@ -538,46 +538,18 @@ export function HomeDashboardClient({
         )}
 
         {/* RIGHT: Stats panels */}
-        <div className="xl:w-72 2xl:w-80 shrink-0 flex flex-col gap-3">
-
-          {/* Patient Flow */}
-          <div className="bg-white rounded-2xl border border-[var(--color-border)] p-3">
-            <div className="flex items-center gap-2 mb-3">
-              <Activity size={14} className="text-[var(--color-primary-600)]" />
-              <h3 className="text-[13px] font-bold text-[var(--color-ink-900)]">Patient Flow</h3>
-              <span className="ml-auto text-[10px] text-[var(--color-ink-400)]">Today</span>
-            </div>
-            <div className="flex items-center gap-1">
-              {[
-                { label: "Registered",   value: patientFlow.registered,   color: "bg-blue-500",                    Icon: Users },
-                { label: "Waiting",      value: patientFlow.waiting,      color: "bg-amber-500",                   Icon: Clock },
-                { label: "Consult",      value: patientFlow.consultation, color: "bg-[var(--color-primary-600)]",  Icon: Stethoscope },
-                { label: "Completed",    value: patientFlow.completed,    color: "bg-emerald-500",                 Icon: UserCheck },
-              ].map((step, i, arr) => (
-                <div key={step.label} className="flex items-center gap-1 flex-1 min-w-0">
-                  <div className="flex-1 min-w-0 text-center">
-                    <div className={clsx("w-8 h-8 rounded-full flex items-center justify-center mx-auto mb-1", step.color)}>
-                      <step.Icon size={14} className="text-white" />
-                    </div>
-                    <p className="text-[9px] font-semibold text-[var(--color-ink-500)] leading-tight">{step.label}</p>
-                    <p className="text-base font-bold text-[var(--color-ink-900)] tabular-nums">{step.value}</p>
-                  </div>
-                  {i < arr.length - 1 && <ArrowRight size={10} className="text-[var(--color-ink-300)] shrink-0" />}
-                </div>
-              ))}
-            </div>
-          </div>
+        <div className="xl:w-80 2xl:w-88 shrink-0 flex flex-col gap-3">
 
           {/* Appointments Overview */}
-          <div className="bg-white rounded-2xl border border-[var(--color-border)] p-3">
-            <div className="flex items-center justify-between mb-1">
+          <div className="bg-white rounded-2xl border border-[var(--color-border)] p-4">
+            <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
-                <BarChart2 size={14} className="text-[var(--color-primary-600)]" />
-                <h3 className="text-[13px] font-bold text-[var(--color-ink-900)]">Appointments Overview</h3>
+                <BarChart2 size={15} className="text-[var(--color-primary-600)]" />
+                <h3 className="text-[14px] font-bold text-[var(--color-ink-900)]">Appointments Overview</h3>
               </div>
               <span className="text-[10px] font-semibold px-2 py-0.5 rounded-lg bg-[var(--color-primary-700)] text-white">Today</span>
             </div>
-            <div className="flex items-center gap-3 mb-1 mt-1">
+            <div className="flex items-center gap-3 mb-2">
               <span className="inline-flex items-center gap-1 text-[10px] text-[var(--color-ink-400)]">
                 <span className="w-2 h-2 rounded-sm bg-blue-300 inline-block" /> Scheduled
               </span>
@@ -589,10 +561,10 @@ export function HomeDashboardClient({
           </div>
 
           {/* Patient Overview */}
-          <div className="bg-white rounded-2xl border border-[var(--color-border)] p-3">
-            <div className="flex items-center gap-2 mb-2">
-              <Users size={14} className="text-[var(--color-primary-600)]" />
-              <h3 className="text-[13px] font-bold text-[var(--color-ink-900)]">Patient Overview</h3>
+          <div className="bg-white rounded-2xl border border-[var(--color-border)] p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Users size={15} className="text-[var(--color-primary-600)]" />
+              <h3 className="text-[14px] font-bold text-[var(--color-ink-900)]">Patient Overview</h3>
             </div>
             <div className="flex items-center gap-4">
               <PatientDonut
@@ -630,56 +602,49 @@ export function HomeDashboardClient({
         </div>
       </div>
 
-      {/* ── Bottom row: Quick Actions + Upcoming Follow Ups + AI Copilot ── */}
+      {/* ── Bottom row: IPD & Surgery + Upcoming Follow Ups + AI Copilot ── */}
       <div className="grid grid-cols-1 md:grid-cols-[minmax(0,2fr)_minmax(0,2fr)_minmax(0,1fr)] gap-4">
 
-        {/* Quick Actions */}
-        <div className="bg-white rounded-2xl border border-[var(--color-border)] p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <ChevronRight size={15} className="text-[var(--color-primary-600)]" />
-            <p className="text-[14px] font-bold text-[var(--color-ink-900)]">Quick Actions</p>
+        {/* IPD & Surgery — Phase 2 teaser */}
+        <div className="relative overflow-hidden rounded-2xl border border-indigo-100 bg-gradient-to-br from-slate-50 via-indigo-50/40 to-purple-50/60 p-4">
+          {/* Decorative blobs */}
+          <div className="absolute -right-6 -top-6 w-24 h-24 rounded-full bg-indigo-100/50 pointer-events-none" />
+          <div className="absolute -right-2 bottom-4 w-16 h-16 rounded-full bg-purple-100/40 pointer-events-none" />
+
+          {/* Header */}
+          <div className="flex items-center gap-2.5 mb-3 relative">
+            <div className="w-9 h-9 rounded-xl bg-white border border-indigo-100 shadow-sm flex items-center justify-center shrink-0">
+              <BedDouble size={17} className="text-indigo-600" />
+            </div>
+            <div>
+              <h3 className="text-[14px] font-bold text-[var(--color-ink-900)]">IPD &amp; Surgery</h3>
+              <p className="text-[10px] text-[var(--color-ink-400)]">Inpatient &amp; Surgical Management</p>
+            </div>
           </div>
-          <div className="flex gap-2">
-            {can("patients.create") && (
-              <Link href="/patients/new" className="flex-1 flex flex-col items-center gap-1.5 py-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] hover:bg-[var(--color-primary-50)] hover:border-[var(--color-primary-200)] transition-colors text-center min-w-0">
-                <div className="w-9 h-9 rounded-xl bg-[var(--color-primary-50)] flex items-center justify-center">
-                  <PersonStanding size={17} className="text-[var(--color-primary-600)]" />
+
+          {/* Placeholder stat tiles */}
+          <div className="grid grid-cols-3 gap-2 mb-3 relative select-none pointer-events-none">
+            {[
+              { label: "IPD Beds",       icon: BedDouble,  color: "text-indigo-500",  bg: "bg-indigo-50"  },
+              { label: "Surgeries Today", icon: Scissors,   color: "text-purple-500",  bg: "bg-purple-50"  },
+              { label: "In Theatre",      icon: Stethoscope, color: "text-slate-500",  bg: "bg-slate-50"   },
+            ].map(({ label, icon: Icon, color, bg }) => (
+              <div key={label} className="bg-white/70 rounded-xl p-2.5 text-center border border-white/80 backdrop-blur-sm">
+                <div className={clsx("w-7 h-7 rounded-lg flex items-center justify-center mx-auto mb-1.5", bg)}>
+                  <Icon size={14} className={color} />
                 </div>
-                <span className="text-[10px] font-semibold text-[var(--color-ink-600)] leading-tight w-full px-1 truncate">Register Patient</span>
-              </Link>
-            )}
-            {can("appointments.create") && (
-              <Link href="/appointments/new" className="flex-1 flex flex-col items-center gap-1.5 py-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] hover:bg-[var(--color-primary-50)] hover:border-[var(--color-primary-200)] transition-colors text-center min-w-0">
-                <div className="w-9 h-9 rounded-xl bg-[var(--color-primary-50)] flex items-center justify-center">
-                  <CalendarPlus size={17} className="text-[var(--color-primary-600)]" />
-                </div>
-                <span className="text-[10px] font-semibold text-[var(--color-ink-600)] leading-tight w-full px-1 truncate">Book Appointment</span>
-              </Link>
-            )}
-            {can("opd.walkin.create") && (
-              <Link href="/appointments/new?type=walkin" className="flex-1 flex flex-col items-center gap-1.5 py-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] hover:bg-[var(--color-primary-50)] hover:border-[var(--color-primary-200)] transition-colors text-center min-w-0">
-                <div className="w-9 h-9 rounded-xl bg-[var(--color-primary-50)] flex items-center justify-center">
-                  <LogIn size={17} className="text-[var(--color-primary-600)]" />
-                </div>
-                <span className="text-[10px] font-semibold text-[var(--color-ink-600)] leading-tight w-full px-1 truncate">Walk-in</span>
-              </Link>
-            )}
-            {can("patients.view") && (
-              <Link href="/patients" className="flex-1 flex flex-col items-center gap-1.5 py-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] hover:bg-[var(--color-primary-50)] hover:border-[var(--color-primary-200)] transition-colors text-center min-w-0">
-                <div className="w-9 h-9 rounded-xl bg-[var(--color-primary-50)] flex items-center justify-center">
-                  <Search size={17} className="text-[var(--color-primary-600)]" />
-                </div>
-                <span className="text-[10px] font-semibold text-[var(--color-ink-600)] leading-tight w-full px-1 truncate">Patient Search</span>
-              </Link>
-            )}
-            {can("reports.view") && (
-              <Link href="/analytics" className="flex-1 flex flex-col items-center gap-1.5 py-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] hover:bg-[var(--color-primary-50)] hover:border-[var(--color-primary-200)] transition-colors text-center min-w-0">
-                <div className="w-9 h-9 rounded-xl bg-[var(--color-primary-50)] flex items-center justify-center">
-                  <BarChart2 size={17} className="text-[var(--color-primary-600)]" />
-                </div>
-                <span className="text-[10px] font-semibold text-[var(--color-ink-600)] leading-tight w-full px-1 truncate">Reports</span>
-              </Link>
-            )}
+                <p className="text-base font-bold text-[var(--color-ink-300)] tabular-nums">—</p>
+                <p className="text-[9px] text-[var(--color-ink-300)] mt-0.5 leading-tight">{label}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Coming soon notice */}
+          <div className="relative flex items-start gap-2 bg-white/60 rounded-xl p-2.5 border border-indigo-100/80 backdrop-blur-sm">
+            <Lock size={12} className="text-indigo-400 shrink-0 mt-0.5" />
+            <p className="text-[11px] text-indigo-700 leading-snug">
+              Full IPD admissions, bed management &amp; surgical scheduling — <span className="font-bold">coming soon</span>.
+            </p>
           </div>
         </div>
 
