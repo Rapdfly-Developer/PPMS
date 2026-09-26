@@ -231,9 +231,12 @@ function TableApptRow({ appt, scope, canManageQueue, canViewPatient }: {
           <PatientAvatar name={appt.patient.name} />
           <div className="min-w-0">
             <p className="text-[13px] font-semibold text-[var(--color-ink-900)] truncate">{appt.patient.name}</p>
-            <p className="text-[10px] text-[var(--color-ink-400)]">
-              {appt.patient.age}y / {appt.patient.sex === "MALE" ? "M" : appt.patient.sex === "FEMALE" ? "F" : "O"}
-            </p>
+            {scope === "HOSPITAL" && appt.doctor && (
+              <p className="text-[10px] text-[var(--color-ink-500)] font-medium truncate">Dr. {appt.doctor.name}</p>
+            )}
+            {scope === "DOCTOR" && appt.hospital?.name && (
+              <p className="text-[10px] text-[var(--color-ink-400)] truncate">{appt.hospital.name}</p>
+            )}
             <p className="text-[10px] font-mono text-[#115E59] mt-0.5">
               MRN: {appt.patient.uhid || appt.patient.udid}
             </p>
@@ -388,6 +391,12 @@ export function HomeDashboardClient({
     partial: filteredAppts.filter((a) => a.status === "PARTIAL_DISPENSE"),
   }), [filteredAppts]);
 
+  // Count distinct hospitals that have at least one appointment today
+  const activeHospitalCount = useMemo(() => {
+    if (scope !== "DOCTOR") return 0;
+    return new Set(appts.map((a) => a.hospital?.id).filter(Boolean)).size;
+  }, [appts, scope]);
+
   const h = greetHour ?? 8;
   const greeting = h >= 18 ? "Good Evening" : h >= 12 ? "Good Afternoon" : "Good Morning";
 
@@ -411,6 +420,12 @@ export function HomeDashboardClient({
             <p className="text-[12px] text-[var(--color-ink-400)] mt-1">
               Here&apos;s your overview across all assigned hospitals today.
             </p>
+            {activeHospitalCount > 0 && (
+              <p className="mt-0.5 inline-flex items-center gap-1 text-[11px] text-[var(--color-ink-400)]">
+                <Building2 size={10} className="shrink-0" />
+                {activeHospitalCount === 1 ? "1 hospital active today" : `Across ${activeHospitalCount} hospitals today`}
+              </p>
+            )}
             <p className="mt-1.5 inline-flex items-center gap-1.5 text-[12px] font-medium text-[var(--color-ink-500)]">
               <Calendar size={12} /> {todayLabel}
             </p>
