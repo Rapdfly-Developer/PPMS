@@ -257,10 +257,10 @@ function TableApptRow({ appt, scope, canManageQueue, canViewPatient, consultantN
         <div className="flex items-center gap-1.5">
           {scope === "DOCTOR" ? (
             <><Building2 size={12} className="shrink-0 text-[var(--color-ink-400)]" />
-            <span className="text-[12px] text-[var(--color-ink-600)] truncate max-w-[140px]">{appt.hospital?.name ?? "—"}</span></>
+            <span className="text-[12px] text-[var(--color-ink-600)] truncate max-w-[140px]">{appt.hospital?.name ?? ""}</span></>
           ) : (
             <><Stethoscope size={12} className="shrink-0 text-[var(--color-ink-400)]" />
-            <span className="text-[12px] text-[var(--color-ink-600)] truncate max-w-[140px]">{appt.doctor ? `Dr. ${appt.doctor.name}` : "—"}</span></>
+            <span className="text-[12px] text-[var(--color-ink-600)] truncate max-w-[140px]">{appt.doctor ? `Dr. ${appt.doctor.name}` : ""}</span></>
           )}
         </div>
       </td>
@@ -654,7 +654,7 @@ export function HomeDashboardClient({
                 <div className={clsx("w-7 h-7 rounded-lg flex items-center justify-center mx-auto mb-1.5", bg)}>
                   <Icon size={14} className={color} />
                 </div>
-                <p className="text-base font-bold text-[var(--color-ink-300)] tabular-nums">—</p>
+                <p className="text-base font-bold text-[var(--color-ink-300)] tabular-nums">?</p>
                 <p className="text-[9px] text-[var(--color-ink-300)] mt-0.5 leading-tight">{label}</p>
               </div>
             ))}
@@ -664,7 +664,7 @@ export function HomeDashboardClient({
           <div className="relative flex items-start gap-2 bg-white/60 rounded-xl p-2.5 border border-indigo-100/80 backdrop-blur-sm">
             <Lock size={12} className="text-indigo-400 shrink-0 mt-0.5" />
             <p className="text-[11px] text-indigo-700 leading-snug">
-              Full IPD admissions, bed management &amp; surgical scheduling — <span className="font-bold">coming soon</span>.
+              Full IPD admissions, bed management &amp; surgical scheduling. <span className="font-bold">Coming soon.</span>
             </p>
           </div>
         </div>
