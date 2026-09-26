@@ -633,7 +633,7 @@ function LeftPanel() {
         <div className="lp-a0">
           <Link href="/" aria-label="RF Health home"
             className="lp-brand inline-flex items-center gap-3.5 rounded-xl">
-            <img src="/landing/logo-rf-health.png" alt="" className="shrink-0"
+            <img src="/landing/logo-rf-health.webp" alt="" className="shrink-0"
               style={{ width: "var(--logo)", height: "var(--logo)", objectFit: "cover",
                 borderRadius: "clamp(11px,.8vw,16px)", border: `1px solid ${T.border}` }} />
             <div>
@@ -964,7 +964,7 @@ export default function LoginPage() {
                   aria-label="RF Health home"
                   className="lp-brand lp-a0 lg:hidden flex items-center gap-3 justify-center rounded-xl"
                   style={{ marginBottom: "var(--vgap)" }}>
-                  <img src="/landing/logo-rf-health.png" alt="" className="shrink-0"
+                  <img src="/landing/logo-rf-health.webp" alt="" className="shrink-0"
                     style={{
                       width: "clamp(38px,5vw,52px)", height: "clamp(38px,5vw,52px)", objectFit: "cover",
                       borderRadius: "clamp(9px,.7vw,14px)", border: `1px solid ${T.border}`,

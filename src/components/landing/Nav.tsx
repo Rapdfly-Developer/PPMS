@@ -77,7 +77,7 @@ export function Nav() {
                 the shield. The hairline ring makes it read as a deliberate
                 badge against the white nav. */}
             <Image
-              src="/landing/logo-rf-health.png"
+              src="/landing/logo-rf-health.webp"
               alt="RF Health"
               width={30}
               height={30}
