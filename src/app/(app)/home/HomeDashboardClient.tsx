@@ -403,7 +403,12 @@ export function HomeDashboardClient({
       {/* ── Greeting banner ──────────────────────────────────────────── */}
       <div className="relative overflow-hidden rounded-2xl bg-white border border-[var(--color-border)] shadow-sm">
         <div className="absolute inset-0 bg-gradient-to-br from-[var(--color-primary-50)] via-white to-white pointer-events-none" />
-        <div className="absolute right-0 top-0 h-full w-48 bg-gradient-to-l from-[var(--color-primary-100)]/40 to-transparent pointer-events-none" />
+        {/* Healthcare background image — right side, fades into the white left area */}
+        <div className="absolute right-0 top-0 h-full w-64 sm:w-80 pointer-events-none overflow-hidden hidden sm:block">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/landing/v3/hero-clinician-tablet-dashboard.jpg" alt="" className="w-full h-full object-cover object-left" aria-hidden="true" />
+          <div className="absolute inset-0 bg-gradient-to-r from-white via-white/60 to-transparent" />
+        </div>
         <div className="relative z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-5 sm:p-6">
           <div>
             <p className="text-[13px] text-[var(--color-ink-400)] font-medium mb-0.5">{greeting}</p>
@@ -536,42 +541,6 @@ export function HomeDashboardClient({
               </div>
             )}
 
-            {/* Quick Actions */}
-            <div className="border-t border-[var(--color-border)] px-5 py-4">
-              <p className="text-[11px] font-semibold text-[var(--color-ink-400)] uppercase tracking-wider mb-3">Quick Actions</p>
-              <div className="flex flex-wrap gap-3">
-                {can("patients.create") && (
-                  <Link href="/patients/new" className="flex flex-col items-center gap-1.5 px-4 py-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] hover:bg-[var(--color-primary-50)] hover:border-[var(--color-primary-200)] transition-colors text-center min-w-[72px]">
-                    <PersonStanding size={18} className="text-[var(--color-primary-600)]" />
-                    <span className="text-[10px] font-semibold text-[var(--color-ink-600)]">Register Patient</span>
-                  </Link>
-                )}
-                {can("appointments.create") && (
-                  <Link href="/appointments/new" className="flex flex-col items-center gap-1.5 px-4 py-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] hover:bg-[var(--color-primary-50)] hover:border-[var(--color-primary-200)] transition-colors text-center min-w-[72px]">
-                    <CalendarPlus size={18} className="text-[var(--color-primary-600)]" />
-                    <span className="text-[10px] font-semibold text-[var(--color-ink-600)]">Book Appointment</span>
-                  </Link>
-                )}
-                {can("opd.walkin.create") && (
-                  <Link href="/appointments/new?type=walkin" className="flex flex-col items-center gap-1.5 px-4 py-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] hover:bg-[var(--color-primary-50)] hover:border-[var(--color-primary-200)] transition-colors text-center min-w-[72px]">
-                    <LogIn size={18} className="text-[var(--color-primary-600)]" />
-                    <span className="text-[10px] font-semibold text-[var(--color-ink-600)]">Walk-in</span>
-                  </Link>
-                )}
-                {can("patients.view") && (
-                  <Link href="/patients" className="flex flex-col items-center gap-1.5 px-4 py-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] hover:bg-[var(--color-primary-50)] hover:border-[var(--color-primary-200)] transition-colors text-center min-w-[72px]">
-                    <Search size={18} className="text-[var(--color-primary-600)]" />
-                    <span className="text-[10px] font-semibold text-[var(--color-ink-600)]">Patient Search</span>
-                  </Link>
-                )}
-                {can("reports.view") && (
-                  <Link href="/reports" className="flex flex-col items-center gap-1.5 px-4 py-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] hover:bg-[var(--color-primary-50)] hover:border-[var(--color-primary-200)] transition-colors text-center min-w-[72px]">
-                    <BarChart2 size={18} className="text-[var(--color-primary-600)]" />
-                    <span className="text-[10px] font-semibold text-[var(--color-ink-600)]">Reports</span>
-                  </Link>
-                )}
-              </div>
-            </div>
           </div>
         )}
 
@@ -665,59 +634,114 @@ export function HomeDashboardClient({
             </div>
           </div>
 
-          {/* Upcoming Follow Ups */}
-          <div className="bg-white rounded-2xl border border-[var(--color-border)] p-4">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <Calendar size={15} className="text-[var(--color-primary-600)]" />
-                <h3 className="text-[14px] font-bold text-[var(--color-ink-900)]">Upcoming Follow Ups</h3>
-              </div>
-              {can("appointments.view") && (
-                <Link href="/appointments" className="text-[11px] font-semibold text-[var(--color-primary-600)] hover:underline">View all</Link>
-              )}
-            </div>
-            {upcomingFollowUps.length === 0 ? (
-              <p className="text-[12px] text-[var(--color-ink-400)] text-center py-4">No upcoming follow-ups</p>
-            ) : (
-              <div className="flex flex-col divide-y divide-[var(--color-border)]">
-                {upcomingFollowUps.map((f) => (
-                  <div key={f.id} className="flex items-center justify-between py-2.5 gap-2">
-                    <div className="min-w-0">
-                      <p className="text-[13px] font-semibold text-[var(--color-ink-900)] truncate">{f.patient.name}</p>
-                      <p className="text-[10px] text-[var(--color-ink-400)] mt-0.5">
-                        {format(new Date(f.dateTime), "dd MMM · hh:mm a")} · {f.hospitalName}
-                      </p>
-                    </div>
-                    <ChevronRight size={14} className="text-[var(--color-ink-300)] shrink-0" />
-                  </div>
-                ))}
-              </div>
+        </div>
+      </div>
+
+      {/* ── Bottom row: Quick Actions + Upcoming Follow Ups + AI Copilot ── */}
+      <div className="grid grid-cols-1 md:grid-cols-[minmax(0,2fr)_minmax(0,2fr)_minmax(0,1fr)] gap-5">
+
+        {/* Quick Actions */}
+        <div className="bg-white rounded-2xl border border-[var(--color-border)] p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <ChevronRight size={15} className="text-[var(--color-primary-600)]" />
+            <p className="text-[14px] font-bold text-[var(--color-ink-900)]">Quick Actions</p>
+          </div>
+          <div className="flex gap-2">
+            {can("patients.create") && (
+              <Link href="/patients/new" className="flex-1 flex flex-col items-center gap-1.5 py-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] hover:bg-[var(--color-primary-50)] hover:border-[var(--color-primary-200)] transition-colors text-center min-w-0">
+                <div className="w-9 h-9 rounded-xl bg-[var(--color-primary-50)] flex items-center justify-center">
+                  <PersonStanding size={17} className="text-[var(--color-primary-600)]" />
+                </div>
+                <span className="text-[10px] font-semibold text-[var(--color-ink-600)] leading-tight w-full px-1 truncate">Register Patient</span>
+              </Link>
+            )}
+            {can("appointments.create") && (
+              <Link href="/appointments/new" className="flex-1 flex flex-col items-center gap-1.5 py-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] hover:bg-[var(--color-primary-50)] hover:border-[var(--color-primary-200)] transition-colors text-center min-w-0">
+                <div className="w-9 h-9 rounded-xl bg-[var(--color-primary-50)] flex items-center justify-center">
+                  <CalendarPlus size={17} className="text-[var(--color-primary-600)]" />
+                </div>
+                <span className="text-[10px] font-semibold text-[var(--color-ink-600)] leading-tight w-full px-1 truncate">Book Appointment</span>
+              </Link>
+            )}
+            {can("opd.walkin.create") && (
+              <Link href="/appointments/new?type=walkin" className="flex-1 flex flex-col items-center gap-1.5 py-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] hover:bg-[var(--color-primary-50)] hover:border-[var(--color-primary-200)] transition-colors text-center min-w-0">
+                <div className="w-9 h-9 rounded-xl bg-[var(--color-primary-50)] flex items-center justify-center">
+                  <LogIn size={17} className="text-[var(--color-primary-600)]" />
+                </div>
+                <span className="text-[10px] font-semibold text-[var(--color-ink-600)] leading-tight w-full px-1 truncate">Walk-in</span>
+              </Link>
+            )}
+            {can("patients.view") && (
+              <Link href="/patients" className="flex-1 flex flex-col items-center gap-1.5 py-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] hover:bg-[var(--color-primary-50)] hover:border-[var(--color-primary-200)] transition-colors text-center min-w-0">
+                <div className="w-9 h-9 rounded-xl bg-[var(--color-primary-50)] flex items-center justify-center">
+                  <Search size={17} className="text-[var(--color-primary-600)]" />
+                </div>
+                <span className="text-[10px] font-semibold text-[var(--color-ink-600)] leading-tight w-full px-1 truncate">Patient Search</span>
+              </Link>
+            )}
+            {can("reports.view") && (
+              <Link href="/analytics" className="flex-1 flex flex-col items-center gap-1.5 py-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] hover:bg-[var(--color-primary-50)] hover:border-[var(--color-primary-200)] transition-colors text-center min-w-0">
+                <div className="w-9 h-9 rounded-xl bg-[var(--color-primary-50)] flex items-center justify-center">
+                  <BarChart2 size={17} className="text-[var(--color-primary-600)]" />
+                </div>
+                <span className="text-[10px] font-semibold text-[var(--color-ink-600)] leading-tight w-full px-1 truncate">Reports</span>
+              </Link>
             )}
           </div>
-
-          {/* AI Clinical Copilot */}
-          <div className="bg-gradient-to-br from-[var(--color-primary-700)] to-[var(--color-primary-900)] rounded-2xl p-4 text-white">
-            <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
-                <Bot size={20} className="text-white" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <p className="text-[14px] font-bold">AI Clinical Copilot</p>
-                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-white/20">New</span>
-                </div>
-                <p className="text-[11px] text-white/70 leading-relaxed">
-                  Get AI powered insights, patient summaries and clinical support.
-                </p>
-              </div>
-            </div>
-            <Link href="/ai-copilot"
-              className="mt-3 flex items-center justify-center gap-2 w-full py-2 rounded-xl bg-white text-[var(--color-primary-800)] text-[12px] font-bold hover:opacity-90 transition-opacity">
-              Open Copilot <ArrowRight size={13} />
-            </Link>
-          </div>
-
         </div>
+
+        {/* Upcoming Follow Ups */}
+        <div className="bg-white rounded-2xl border border-[var(--color-border)] p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Calendar size={15} className="text-[var(--color-primary-600)]" />
+              <h3 className="text-[14px] font-bold text-[var(--color-ink-900)]">Upcoming Follow Ups</h3>
+            </div>
+            {can("appointments.view") && (
+              <Link href="/appointments" className="text-[11px] font-semibold text-[var(--color-primary-600)] hover:underline">View all</Link>
+            )}
+          </div>
+          {upcomingFollowUps.length === 0 ? (
+            <p className="text-[12px] text-[var(--color-ink-400)] text-center py-6">No upcoming follow-ups this week</p>
+          ) : (
+            <div className="flex flex-col divide-y divide-[var(--color-border)]">
+              {upcomingFollowUps.map((f) => (
+                <div key={f.id} className="flex items-center justify-between py-2.5 gap-2">
+                  <div className="min-w-0">
+                    <p className="text-[13px] font-semibold text-[var(--color-ink-900)] truncate">{f.patient.name}</p>
+                    <p className="text-[10px] text-[var(--color-ink-400)] mt-0.5">
+                      {format(new Date(f.dateTime), "dd MMM · hh:mm a")} · {f.hospitalName}
+                    </p>
+                  </div>
+                  <ChevronRight size={14} className="text-[var(--color-ink-300)] shrink-0" />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* AI Clinical Copilot */}
+        <div className="bg-[var(--color-primary-50)] border border-[var(--color-primary-100)] rounded-2xl p-4 flex flex-col">
+          <div className="flex items-start gap-3 flex-1">
+            <div className="w-12 h-12 rounded-xl bg-white border border-[var(--color-primary-100)] flex items-center justify-center shrink-0 shadow-sm">
+              <Bot size={22} className="text-[var(--color-primary-600)]" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <p className="text-[14px] font-bold text-[var(--color-ink-900)]">AI Clinical Copilot</p>
+                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[var(--color-primary-700)] text-white">New</span>
+              </div>
+              <p className="text-[11px] text-[var(--color-ink-500)] leading-relaxed">
+                Get AI powered insights, patient summaries and clinical support.
+              </p>
+            </div>
+          </div>
+          <Link href="/ai-copilot"
+            className="mt-4 flex items-center justify-center gap-2 w-full py-2 rounded-xl bg-[var(--color-primary-700)] text-white text-[12px] font-bold hover:opacity-90 transition-opacity">
+            Open Copilot <ArrowRight size={13} />
+          </Link>
+        </div>
+
       </div>
 
     </div>
