@@ -31,6 +31,7 @@ interface Appt {
   visitId: string | null;
   visitStartedAt: string | null;
   visitFinalizedAt: string | null;
+  isNewPatient?: boolean;
 }
 
 interface UpcomingFollowUp {
@@ -368,7 +369,7 @@ export function HomeDashboardClient({
     const inConsult = filteredAppts.filter((a) => a.visitId && !a.visitFinalizedAt).length;
     const completed = filteredAppts.filter((a) => a.status === "DISPENSED").length;
     const noShow    = filteredAppts.filter((a) => a.status === "NO_SHOW").length;
-    const newPts    = filteredAppts.filter((a) => !a.visitType || a.visitType === "General OPD" || a.isWalkIn).length;
+    const newPts    = filteredAppts.filter((a) => a.isNewPatient).length;
     const total     = filteredAppts.length;
     const totalPct  = yesterdayCount > 0 ? Math.round(((total - yesterdayCount) / yesterdayCount) * 100) : null;
     return { total, waiting, inConsult, completed, noShow, newPts, totalPct };
@@ -383,7 +384,7 @@ export function HomeDashboardClient({
 
   const patientOverview = useMemo(() => {
     const followUp  = filteredAppts.filter((a) => a.visitType === "Follow-up").length;
-    const newPts    = filteredAppts.filter((a) => a.isWalkIn || !a.visitType || a.visitType === "General OPD").length;
+    const newPts    = filteredAppts.filter((a) => a.isNewPatient).length;
     const returning = Math.max(0, filteredAppts.length - followUp - newPts);
     return { followUp, newPts, returning };
   }, [filteredAppts]);
@@ -393,10 +394,20 @@ export function HomeDashboardClient({
     partial: filteredAppts.filter((a) => a.status === "PARTIAL_DISPENSE"),
   }), [filteredAppts]);
 
-  // Count distinct hospitals that have at least one appointment today
+  // Count distinct hospitals with at least one arrived/seen appointment today
   const activeHospitalCount = useMemo(() => {
     if (scope !== "DOCTOR") return 0;
-    return new Set(appts.map((a) => a.hospital?.id).filter(Boolean)).size;
+    return new Set(
+      appts
+        .filter((a) =>
+          a.status === "CONFIRMED" ||
+          a.status === "DISPENSED" ||
+          a.status === "PARTIAL_DISPENSE" ||
+          (a.visitId && !a.visitFinalizedAt),
+        )
+        .map((a) => a.hospital?.id)
+        .filter(Boolean),
+    ).size;
   }, [appts, scope]);
 
   const h = greetHour ?? 8;

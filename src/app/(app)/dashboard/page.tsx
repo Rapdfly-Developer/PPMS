@@ -41,6 +41,22 @@ export default async function DashboardPage() {
       where: { doctorId, dateTime: { gte: yesterdayStart, lte: yesterdayEnd } },
     });
 
+    // Determine which of today's patients are truly new to this doctor
+    const todayPatientIds = [...new Set(todayAppts.map((a) => a.patientId).filter(Boolean))];
+    const priorPatients = todayPatientIds.length > 0
+      ? await prisma.appointment.findMany({
+          where: {
+            doctorId,
+            patientId: { in: todayPatientIds },
+            dateTime:  { lt: dayStart },
+            status:    { in: ["DISPENSED", "PARTIAL_DISPENSE"] },
+          },
+          select: { patientId: true },
+          distinct: ["patientId"],
+        })
+      : [];
+    const returningPatientIds = new Set(priorPatients.map((a) => a.patientId));
+
     const weekEnd = new Date(dayEnd.getTime() + 7 * 86_400_000);
     const rawFollowUps = await prisma.appointment.findMany({
       where: {
@@ -68,6 +84,7 @@ export default async function DashboardPage() {
       complaint:              a.patient.complaint ?? null,
       partialDispenseReason:  a.partialDispenseReason ?? null,
       partialDispenseAt:      (a as any).partialDispenseAt ? (a as any).partialDispenseAt.toISOString() : null,
+      isNewPatient: !returningPatientIds.has(a.patientId),
       patient:     { name: a.patient.name, udid: a.patient.udid ?? "", uhid: a.patient.uhid ?? "", age: a.patient.age, sex: a.patient.sex, mobile: a.patient.mobile },
       hospital:    { id: a.hospital.id, name: a.hospital.name, logoUrl: (a.hospital as any).logoUrl ?? null },
       visitId:          a.visit?.id ?? null,
