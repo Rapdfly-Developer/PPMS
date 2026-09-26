@@ -35,34 +35,13 @@ export async function DoctorDashboard({
     select: { hospital: { select: { id: true, name: true, logoUrl: true } } },
   });
 
+  // Guard: doctor with no linked hospitals must complete setup first.
+  // Runs on every dashboard load (including post-login) so it cannot be bypassed.
   if (linkedHospitals.length === 0) {
     redirect("/settings?section=add-hospital");
   }
 
-  // Yesterday count for % change in KPI cards
-  const yesterdayStart = new Date(dayStart.getTime() - 86_400_000);
-  const yesterdayEnd   = new Date(dayEnd.getTime()   - 86_400_000);
-  const yesterdayCount = await prisma.appointment.count({
-    where: { doctorId, dateTime: { gte: yesterdayStart, lte: yesterdayEnd } },
-  });
-
-  // Upcoming follow-ups (next 7 days)
-  const weekEnd = new Date(dayEnd.getTime() + 7 * 86_400_000);
-  const rawFollowUps = await prisma.appointment.findMany({
-    where: {
-      doctorId,
-      dateTime:  { gt: dayEnd, lte: weekEnd },
-      visitType: "Follow-up",
-      status:    { notIn: ["CANCELLED", "NO_SHOW"] },
-    },
-    include: {
-      patient:  { select: { name: true, udid: true } },
-      hospital: { select: { name: true } },
-    },
-    orderBy: { dateTime: "asc" },
-    take: 5,
-  });
-
+  
   const todayAvailability = await prisma.doctorAvailability.findMany({
     where: { doctorId, weekday: todayWeekday, status: "ACTIVE" },
     include: { hospital: { select: { id: true, name: true } } },
@@ -75,7 +54,10 @@ export async function DoctorDashboard({
     orderBy: [{ weekday: "asc" }, { startTime: "asc" }],
   });
 
-  // Serialise appointments
+  // Derive monthly count from already-fetched data to avoid an extra query
+  const monthlyCount = todayAppts.length;
+
+  // Serialise
   const appts = todayAppts.map((a) => ({
     id:          a.id,
     dateTime:    a.dateTime.toISOString(),
@@ -96,13 +78,7 @@ export async function DoctorDashboard({
 
   const hospitals = linkedHospitals.map((l) => ({ id: l.hospital.id, name: l.hospital.name, logoUrl: l.hospital.logoUrl ?? null }));
 
-  const upcomingFollowUps = rawFollowUps.map((f) => ({
-    id:          f.id,
-    dateTime:    f.dateTime.toISOString(),
-    patient:     { name: f.patient.name, udid: f.patient.udid ?? "" },
-    hospitalName: f.hospital.name,
-  }));
-
+  
   // Today's schedule: each session with live appointment count
   const todaySchedule = todayAvailability.map((a) => {
     const apptCount = todayAppts.filter((ap) => ap.hospital.id === a.hospitalId).length;
@@ -140,8 +116,6 @@ export async function DoctorDashboard({
       filterOptions={hospitals}
       newEncounterHref="/appointments/new"
       newEncounterLabel="New Encounter"
-      yesterdayCount={yesterdayCount}
-      upcomingFollowUps={upcomingFollowUps}
     />
   );
 }

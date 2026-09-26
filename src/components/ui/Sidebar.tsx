@@ -7,7 +7,7 @@ import {
   LayoutDashboard, CalendarDays, Users,
   Settings, X,
   CalendarClock, BarChart2, Lock,
-  Puzzle,
+  Puzzle, Home,
 } from "lucide-react";
 import clsx from "clsx";
 import type { Role } from "@/lib/constants";
@@ -26,6 +26,7 @@ type TopNavItem = NavItem & { icon: any };
 type NavEntry = TopNavItem;
 
 const ALL_NAV: NavEntry[] = [
+  { href: "/home",         label: "Dashboard",    icon: Home,            permission: "dashboard.view"                                        },
   { href: "/dashboard",    label: "OPD",          icon: LayoutDashboard, permission: "dashboard.view"                                        },
   // `roles` mirrors a page that enforces requireRole; where the page enforces a
   // permission instead, the permission alone gates the link. Keeping a roles
