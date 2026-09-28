@@ -709,6 +709,8 @@ export default function PrivacyPage() {
           <div className="flex items-center gap-4">
             <a href="/" className="hover:text-emerald-800 transition-colors">Home</a>
             <a href="/privacy" className="font-medium text-emerald-700">Privacy Policy</a>
+            <a href="/terms" className="hover:text-emerald-800 transition-colors">Terms of Service</a>
+            <a href="/refund" className="hover:text-emerald-800 transition-colors">Refund Policy</a>
           </div>
         </div>
       </footer>

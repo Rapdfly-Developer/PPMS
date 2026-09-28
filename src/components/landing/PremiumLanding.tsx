@@ -1012,6 +1012,12 @@ export function PremiumLanding() {
             <Link href="/privacy" className="transition-colors duration-300 hover:text-emerald-800">
               Privacy Policy
             </Link>
+            <Link href="/terms" className="transition-colors duration-300 hover:text-emerald-800">
+              Terms of Service
+            </Link>
+            <Link href="/refund" className="transition-colors duration-300 hover:text-emerald-800">
+              Refund Policy
+            </Link>
             <span>ppmsai.com</span>
           </div>
         </div>
