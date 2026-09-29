@@ -6,7 +6,7 @@ import Link from "next/link";
 import { loginAction, emailOtpLoginAction } from "./actions";
 import {
   Eye, EyeOff, User, Lock, AlertCircle, CheckCircle2,
-  ShieldCheck, Loader2, Check, Mail, X, KeyRound, RotateCcw, Zap,
+  ShieldCheck, Loader2, Check, Mail, X, KeyRound, RotateCcw, Zap, ArrowLeft,
 } from "lucide-react";
 
 /* ── Palette ────────────────────────────────────────────────────────────────
@@ -941,6 +941,20 @@ export default function LoginPage() {
           {/* ── Right panel ── */}
           <div className="w-full lg:w-[44%] shrink-0 flex flex-col overflow-y-auto relative"
             style={{ background: "#FFFFFF", borderLeft: `1px solid ${T.border}` }}>
+
+            {/* Back to Home */}
+            <div className="absolute top-4 left-4 z-10 sm:top-5 sm:left-5">
+              <Link
+                href="/"
+                className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] font-medium transition-colors duration-150"
+                style={{ color: T.muted, background: T.primarySoft, border: `1px solid ${T.border}` }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = T.primary; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = T.muted; }}
+              >
+                <ArrowLeft size={13} strokeWidth={2} />
+                Back to Home
+              </Link>
+            </div>
 
             {/* paddingTop below is the SSR default; pinSafeAreaTop freezes the
                 resolved value in px on mount so a WebView that briefly reports
