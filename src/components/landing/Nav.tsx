@@ -3,6 +3,7 @@
 import { AnimatePresence, motion, useReducedMotion, useScroll, useMotionValueEvent, useSpring } from "framer-motion";
 import Image from "next/image";
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { ArrowUpRight } from "lucide-react";
 import { DURATION, EASE } from "./motion";
 
@@ -25,6 +26,10 @@ export function Nav() {
   const [open, setOpen] = useState(false);
   const [lifted, setLifted] = useState(false);
   const reduce = useReducedMotion();
+  const pathname = usePathname();
+  const isLanding = pathname === "/";
+  // On non-landing pages prefix anchor links so they navigate to /#section
+  const href = (anchor: string) => isLanding ? anchor : `/${anchor}`;
   const { scrollY, scrollYProgress } = useScroll();
 
   // Read position across the page. Spring-smoothed so the bar glides instead of
@@ -71,7 +76,7 @@ export function Nav() {
             transition={{ duration: 0.4, ease: EASE.enter }}
           />
 
-          <a href="#top" className="flex shrink-0 items-center gap-2 rounded-full pr-1 sm:gap-2.5 sm:pl-1 sm:pr-2">
+          <a href={isLanding ? "#top" : "/"} className="flex shrink-0 items-center gap-2 rounded-full pr-1 sm:gap-2.5 sm:pl-1 sm:pr-2">
             {/* object-cover, not contain: the mark ships on its own marble
                 ground, so letterboxing it would frame the ground rather than
                 the shield. The hairline ring makes it read as a deliberate
@@ -93,7 +98,7 @@ export function Nav() {
             {LINKS.map((l) => (
               <a
                 key={l.href}
-                href={l.href}
+                href={href(l.href)}
                 /* Underline wipes in from the left on hover — a transform on a
                    pseudo-element, so it never triggers layout. */
                 className="group/nav relative rounded-full px-3.5 py-2 text-[13.5px] font-medium text-slate-600 transition-colors duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-emerald-50 hover:text-emerald-800 after:absolute after:inset-x-3.5 after:bottom-1 after:h-px after:origin-left after:scale-x-0 after:bg-emerald-700/60 after:transition-transform after:duration-500 after:ease-[cubic-bezier(0.32,0.72,0,1)] hover:after:scale-x-100"
@@ -182,7 +187,7 @@ export function Nav() {
                   }}
                 >
                   <a
-                    href={l.href}
+                    href={href(l.href)}
                     onClick={() => setOpen(false)}
                     className="font-display block py-2.5 text-[clamp(1.6rem,7vw,2rem)] font-bold tracking-tight text-emerald-950 sm:py-3"
                   >
@@ -205,7 +210,7 @@ export function Nav() {
                 Start 7-day free trial
               </a>
               <a
-                href="#contact"
+                href={href("#contact")}
                 onClick={() => setOpen(false)}
                 className="rounded-full border border-emerald-950/10 px-6 py-4 text-center text-[15px] font-medium text-emerald-950"
               >
