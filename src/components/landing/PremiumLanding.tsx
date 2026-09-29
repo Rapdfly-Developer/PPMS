@@ -33,6 +33,7 @@ import { WorkflowTabs } from "./WorkflowTabs";
 import { Nav } from "./Nav";
 import { DemoForm } from "./DemoForm";
 import { Magnetic, Marquee, Reveal, RevealGroup, RevealItem } from "./ui";
+import { MobileFooter } from "./MobileFooter";
 
 const IMG = "/landing/v3";
 
@@ -936,8 +937,11 @@ export function PremiumLanding() {
       </Section>
 
 
-      {/* ── Footer ───────────────────────────────────────────────────────── */}
-      <footer className={`bg-white border-t border-slate-200/60 ${GUTTER}`}>
+      {/* ── Mobile Footer ────────────────────────────────────────────────── */}
+      <MobileFooter />
+
+      {/* ── Desktop Footer ───────────────────────────────────────────────── */}
+      <footer className={`hidden lg:block bg-white border-t border-slate-200/60 ${GUTTER}`}>
         {/* Main columns */}
         <div className={`${SHELL} grid grid-cols-1 gap-10 pt-14 pb-12 sm:grid-cols-2 sm:gap-x-10 sm:gap-y-12 lg:grid-cols-[1.9fr_1fr_1fr_1fr_1.25fr] lg:gap-8`}>
 
