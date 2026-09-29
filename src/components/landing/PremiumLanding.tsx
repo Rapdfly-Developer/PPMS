@@ -606,7 +606,7 @@ export function PremiumLanding() {
             <Reveal y={20} delay={0.22}>
               <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center">
                 <Magnetic
-                  href="/login"
+                  href="/license"
                   className="group inline-flex items-center justify-between gap-3 rounded-full bg-emerald-950 py-2 pl-7 pr-2 text-[15px] font-semibold text-white shadow-[0_20px_40px_-20px_rgba(6,60,45,0.6)]"
                 >
                   Start 7-day free trial
@@ -857,7 +857,7 @@ export function PremiumLanding() {
                   </ul>
 
                   <a
-                    href="/login"
+                    href="/license"
                     className={[
                       /* Tight at md, where three cards share a 768px row, then
                          back to full size once there is room again. */
@@ -1007,7 +1007,7 @@ export function PremiumLanding() {
               Get Started
             </h3>
             <ul className="flex flex-col gap-2.5">
-              {([ ["Sign In", "/login"], ["Free Trial", "/login"], ["Book a Demo", "#contact"], ["Contact", "mailto:support@ppmsai.com"] ] as [string, string][]).map(([label, href]) => (
+              {([ ["Sign In", "/login"], ["Free Trial", "/license"], ["Book a Demo", "#contact"], ["Contact", "mailto:support@ppmsai.com"] ] as [string, string][]).map(([label, href]) => (
                 <li key={label}>
                   <a href={href} className="text-[13.5px] text-slate-500 hover:text-emerald-700 transition-colors duration-200">
                     {label}

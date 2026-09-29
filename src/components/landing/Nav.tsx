@@ -112,7 +112,7 @@ export function Nav() {
               Sign in
             </a>
             <a
-              href="/login"
+              href="/license"
               className="group flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-emerald-950 py-1.5 pl-3.5 pr-1.5 text-[13px] font-semibold text-white transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.97] sm:gap-2 sm:pl-4 sm:text-[13.5px]"
             >
               Free trial
