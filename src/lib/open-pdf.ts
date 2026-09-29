@@ -88,9 +88,7 @@ export async function openPdfNative(url: string, filename?: string): Promise<voi
     // to reclaim, and Cache needs no storage permission on any Android version.
     const written = await Filesystem.writeFile({ path, data, directory: Directory.Cache });
 
-    // openWithDefault: false forces the chooser, so a device with no default PDF
-    // app shows a picker instead of failing silently.
-    await FileOpener.open({ filePath: written.uri, contentType: PDF_MIME, openWithDefault: false });
+    await FileOpener.open({ filePath: written.uri, contentType: PDF_MIME, openWithDefault: true });
   } catch (err) {
     console.error("[open-pdf] native open failed, falling back to navigation", err);
     window.location.href = url;
