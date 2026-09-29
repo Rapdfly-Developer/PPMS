@@ -3,7 +3,7 @@ import { Sora, Plus_Jakarta_Sans } from "next/font/google";
 import { Nav } from "@/components/landing/Nav";
 import {
   Mail, Phone, MapPin, ShieldCheck, Lock, Database, Users,
-  History, FileText, AlertCircle, Eye, Trash2, RefreshCw,
+  History, FileText, AlertCircle, Eye, Trash2, RefreshCw, ArrowLeft,
 } from "lucide-react";
 
 const display = Sora({
@@ -113,6 +113,13 @@ export default function PrivacyPage() {
         <div
           className="mx-auto w-[min(92%,1760px)] pt-24 pb-8 sm:pt-28 sm:pb-10 lg:pt-32 lg:pb-12 2xl:pt-36 2xl:pb-14"
         >
+          <a
+            href="/"
+            className="mb-6 inline-flex items-center gap-1.5 text-[13px] font-medium text-slate-500 transition-colors duration-150 hover:text-emerald-700"
+          >
+            <ArrowLeft size={13} strokeWidth={2} />
+            Back to Home
+          </a>
           <span className="inline-flex items-center gap-2 rounded-full border border-emerald-900/[0.08] bg-emerald-50/60 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-emerald-800">
             Legal
           </span>
