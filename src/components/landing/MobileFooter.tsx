@@ -121,7 +121,9 @@ export function MobileFooter() {
           <div className="flex items-center gap-3">
             {/* Instagram */}
             <a
-              href="#"
+              href="https://www.instagram.com/rapdfly_private_limited/"
+              target="_blank"
+              rel="noopener noreferrer"
               aria-label="Instagram"
               className="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 text-slate-400 active:bg-slate-50 active:text-emerald-700 transition-colors"
             >
@@ -133,7 +135,7 @@ export function MobileFooter() {
             </a>
             {/* LinkedIn */}
             <a
-              href="https://www.linkedin.com/company/rapdfly"
+              href="https://www.linkedin.com/in/rapdfly-private-limited-60b169230/"
               target="_blank"
               rel="noopener noreferrer"
               aria-label="LinkedIn"
@@ -145,7 +147,9 @@ export function MobileFooter() {
             </a>
             {/* X / Twitter */}
             <a
-              href="#"
+              href="https://x.com/rapdfly"
+              target="_blank"
+              rel="noopener noreferrer"
               aria-label="X"
               className="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 text-slate-400 active:bg-slate-50 active:text-emerald-700 transition-colors"
             >
@@ -155,7 +159,9 @@ export function MobileFooter() {
             </a>
             {/* Facebook */}
             <a
-              href="#"
+              href="https://www.facebook.com/profile.php?id=100076345167851"
+              target="_blank"
+              rel="noopener noreferrer"
               aria-label="Facebook"
               className="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 text-slate-400 active:bg-slate-50 active:text-emerald-700 transition-colors"
             >
