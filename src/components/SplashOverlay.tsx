@@ -9,9 +9,6 @@ declare global {
 }
 
 export function SplashOverlay() {
-  // Start as visible so the overlay is in the initial server-rendered HTML —
-  // it appears the instant the page paints, with zero JS delay.
-  // useEffect then removes it immediately if we're not in a Capacitor native shell.
   const [show, setShow] = useState(true);
   const [fading, setFading] = useState(false);
 
@@ -23,6 +20,12 @@ export function SplashOverlay() {
       return;
     }
 
+    // Dismiss the native Capacitor splash immediately now that the web page
+    // has painted — our overlay takes over from here with zero gap.
+    import("@capacitor/splash-screen")
+      .then(({ SplashScreen }) => SplashScreen.hide({ fadeOutDuration: 0 }))
+      .catch(() => {});
+
     try {
       if (sessionStorage.getItem("rf_splash_shown")) {
         setShow(false);
@@ -31,7 +34,7 @@ export function SplashOverlay() {
       sessionStorage.setItem("rf_splash_shown", "1");
     } catch { /* ok */ }
 
-    // Show for 3 seconds: fade starts at 2.5s, completes at 3s
+    // Show web overlay for 3 seconds then fade out
     const t1 = setTimeout(() => setFading(true), 2500);
     const t2 = setTimeout(() => setShow(false), 3100);
     return () => { clearTimeout(t1); clearTimeout(t2); };
