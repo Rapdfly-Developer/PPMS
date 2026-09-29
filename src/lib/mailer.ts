@@ -128,7 +128,7 @@ export async function sendDemoRequestNotification(opts: {
   ];
   await sendMail(
     "sreenivasan@rapdfly.com",
-    `New Demo Request — ${opts.fullName}`,
+    `New Demo Request - ${opts.fullName}`,
     card("New Demo Request from RF Health Website", rows),
   );
 }
