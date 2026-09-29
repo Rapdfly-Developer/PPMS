@@ -558,7 +558,7 @@ export function PremiumLanding() {
           2160px-tall display that forced 837px of empty band around 1323px of
           content, which is the opposite of filling the screen. Letting the
           next section peek in also tells the reader there is more. */}
-      <section className={`lp-hero relative overflow-hidden ${GUTTER} pb-10 pt-32 sm:pb-12 sm:pt-32 lg:pb-14 lg:pt-28`}>
+      <section id="platform" className={`lp-hero relative overflow-hidden ${GUTTER} pb-10 pt-32 sm:pb-12 sm:pt-32 lg:pb-14 lg:pt-28`}>
         {/* Two soft emerald orbs, well below the content — the only colour in the
             page background. Fixed-size, blurred once, never animated. */}
         <div
@@ -747,7 +747,7 @@ export function PremiumLanding() {
       {/* ── Patient journey · Surgery · Analytics (tabbed) ───────────────────
           Three former sections in one. Only the active panel mounts, so this
           costs the height of one section instead of three. */}
-      <Section className="bg-gradient-to-b from-white via-emerald-50/40 to-white">
+      <Section id="hospitals" className="bg-gradient-to-b from-white via-emerald-50/40 to-white">
         <WorkflowTabs
           tabs={[
             { id: "journey",   label: "Patient Journey",  content: <JourneyPanel /> },
@@ -887,6 +887,19 @@ export function PremiumLanding() {
         </RevealGroup>
       </Section>
 
+      {/* ── FAQ ──────────────────────────────────────────────────────────── */}
+      <Section id="faq">
+        <SectionHead
+          eyebrow="FAQ"
+          title={<>Questions we hear most.</>}
+        />
+        <Reveal>
+          <div className="mx-auto mt-10 max-w-3xl">
+            <Faq items={FAQ_ITEMS} />
+          </div>
+        </Reveal>
+      </Section>
+
       {/* ── Book a Free Demo ─────────────────────────────────────────────── */}
       <Section id="contact" className="bg-gradient-to-b from-slate-50/60 via-white to-white">
         <div className="grid items-start gap-10 lg:grid-cols-[1fr_1.1fr] lg:gap-16 xl:gap-20">
@@ -991,7 +1004,7 @@ export function PremiumLanding() {
               Resources
             </h3>
             <ul className="flex flex-col gap-2.5">
-              {([ ["Analytics", "#analytics"], ["Security", "#security"], ["Pricing", "#pricing"], ["FAQ", "#faq"] ] as [string, string][]).map(([label, href]) => (
+              {([ ["Analytics", "#analytics"], ["Security", "/privacy"], ["Pricing", "#pricing"], ["FAQ", "#faq"] ] as [string, string][]).map(([label, href]) => (
                 <li key={label}>
                   <a href={href} className="text-[13.5px] text-slate-500 hover:text-emerald-700 transition-colors duration-200">
                     {label}
