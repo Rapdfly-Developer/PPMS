@@ -704,7 +704,7 @@ export function DoctorManagementView({ onAddDoctor }: { onAddDoctor: () => void 
               </div>
               <p className="text-base font-bold text-slate-900">Delete {deleting.name}?</p>
               <p className="text-sm text-slate-400 mt-1.5 max-w-xs">
-                This will permanently remove the doctor account and login. This cannot be undone.
+                This will permanently remove the doctor account, login, and all associated hospitals. This cannot be undone.
               </p>
               {deleteError && (
                 <div className="mt-4 w-full flex items-start gap-2 rounded-xl bg-red-50 border border-red-200 px-3.5 py-3 text-left">

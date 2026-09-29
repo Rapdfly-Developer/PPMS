@@ -178,6 +178,23 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
       await prisma.user.delete({ where: { id: s.userId } });
     }
 
+    // Remaining visits at these hospitals (from other doctors/patients not yet cleared)
+    const remainingVisits = await prisma.visit.findMany({
+      where: { hospitalId: { in: hospitalIds } },
+      select: { id: true },
+    });
+    await deleteVisits(remainingVisits.map((v) => v.id));
+
+    // Remaining appointments at these hospitals (visits above already cleared)
+    await prisma.appointment.deleteMany({ where: { hospitalId: { in: hospitalIds } } });
+
+    // Remaining surgery schedules at these hospitals (by other surgeons)
+    const remainingSurgeries = await prisma.surgerySchedule.findMany({
+      where: { hospitalId: { in: hospitalIds } },
+      select: { id: true },
+    });
+    await deleteSurgerySchedules(remainingSurgeries.map((s) => s.id));
+
     // Hospital-level insurance records (any not already cleared via patient cleanup)
     await prisma.insuranceClaim.deleteMany({ where: { hospitalId: { in: hospitalIds } } });
     await prisma.insurancePreAuthorization.deleteMany({ where: { hospitalId: { in: hospitalIds } } });
