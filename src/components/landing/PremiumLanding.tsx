@@ -576,7 +576,7 @@ export function PremiumLanding() {
                 <span className="relative flex h-1.5 w-1.5">
                   <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-500" />
                 </span>
-                Practice management platform
+                Private practice management system
               </Eyebrow>
             </Reveal>
 

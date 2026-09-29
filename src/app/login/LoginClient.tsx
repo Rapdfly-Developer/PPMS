@@ -967,7 +967,7 @@ export default function LoginPage() {
                 paddingLeft: "clamp(20px,5vw,72px)",
                 paddingRight: "clamp(20px,5vw,72px)",
                 paddingBottom: "var(--vpanel)",
-                paddingTop: "max(1.5rem, calc(env(safe-area-inset-top, 0px) + 0.75rem))",
+                paddingTop: "max(5rem, calc(env(safe-area-inset-top, 0px) + 4rem))",
               }}>
 
               <div className="w-full" style={{ maxWidth: "var(--card-w)" }}>
