@@ -383,7 +383,10 @@ function SettingsDrawer({
         className="lg:hidden fixed inset-y-0 left-0 z-50 w-72 bg-white shadow-2xl flex flex-col transition-transform duration-300 ease-in-out"
         style={{ transform: open ? "translateX(0)" : "translateX(-100%)" }}
       >
-        <div className="flex items-center justify-between px-4 py-4 border-b border-[var(--color-border)] shrink-0">
+        <div
+          className="flex items-center justify-between px-4 py-4 border-b border-[var(--color-border)] shrink-0"
+          style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 1rem)" }}
+        >
           <p className="text-[13px] sm:text-sm font-bold text-[var(--color-ink-900)]">Settings</p>
           <button
             onClick={onClose}
