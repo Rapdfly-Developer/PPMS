@@ -104,6 +104,35 @@ export async function sendPasswordResetOtp(to: string, code: string) {
   await sendMail(to, "Your PPMS password reset code", html);
 }
 
+export async function sendDemoRequestNotification(opts: {
+  fullName: string;
+  email: string;
+  phone: string;
+  clinicName?: string | null;
+  specialization?: string | null;
+  city?: string | null;
+  preferredDate?: string | null;
+  preferredTime?: string | null;
+  message?: string | null;
+}) {
+  const rows = [
+    { label: "Name",           value: opts.fullName },
+    { label: "Email",          value: opts.email },
+    { label: "Phone",          value: opts.phone },
+    ...(opts.clinicName     ? [{ label: "Clinic / Hospital", value: opts.clinicName }]     : []),
+    ...(opts.specialization ? [{ label: "Specialization",    value: opts.specialization }] : []),
+    ...(opts.city           ? [{ label: "City",              value: opts.city }]           : []),
+    ...(opts.preferredDate  ? [{ label: "Preferred Date",    value: opts.preferredDate }]  : []),
+    ...(opts.preferredTime  ? [{ label: "Preferred Time",    value: opts.preferredTime }]  : []),
+    ...(opts.message        ? [{ label: "Message",           value: opts.message }]        : []),
+  ];
+  await sendMail(
+    "sreenivasan@rapdfly.com",
+    `New Demo Request — ${opts.fullName}`,
+    card("New Demo Request from RF Health Website", rows),
+  );
+}
+
 export async function notifyAppointmentRequested(to: string | undefined | null, opts: { patientName: string; hospitalName: string; dateTime: Date }) {
   await sendMail(
     to,

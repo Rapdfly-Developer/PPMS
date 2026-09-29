@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { sendDemoRequestNotification } from "@/lib/mailer";
 
 export async function POST(req: Request) {
   try {
@@ -19,19 +20,21 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: "Enter a valid phone number." }, { status: 400 });
     }
 
+    const clinicName     = (body.clinicName ?? "").trim() || null;
+    const specialization = (body.specialization ?? "").trim() || null;
+    const city           = (body.city ?? "").trim() || null;
+    const preferredDate  = (body.preferredDate ?? "").trim() || null;
+    const preferredTime  = (body.preferredTime ?? "").trim() || null;
+    const message        = (body.message ?? "").trim() || null;
+
     await prisma.demoRequest.create({
-      data: {
-        fullName,
-        email,
-        phone,
-        clinicName:     (body.clinicName ?? "").trim() || null,
-        specialization: (body.specialization ?? "").trim() || null,
-        city:           (body.city ?? "").trim() || null,
-        preferredDate:  (body.preferredDate ?? "").trim() || null,
-        preferredTime:  (body.preferredTime ?? "").trim() || null,
-        message:        (body.message ?? "").trim() || null,
-      },
+      data: { fullName, email, phone, clinicName, specialization, city, preferredDate, preferredTime, message },
     });
+
+    // Fire-and-forget — don't block the response on email delivery
+    sendDemoRequestNotification({ fullName, email, phone, clinicName, specialization, city, preferredDate, preferredTime, message }).catch(
+      (err) => console.error("[demo-request] email notification failed:", err),
+    );
 
     return NextResponse.json({ success: true });
   } catch (err) {
