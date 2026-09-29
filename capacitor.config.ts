@@ -13,7 +13,7 @@ const config: CapacitorConfig = {
     buildOptions: {
       releaseType: "APK",
     },
-    backgroundColor: "#041A18",
+    backgroundColor: "#FFFFFF",
     allowMixedContent: false,
   },
   plugins: {
