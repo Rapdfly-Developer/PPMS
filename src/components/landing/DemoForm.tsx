@@ -162,7 +162,7 @@ export function DemoForm() {
           <input
             className={INPUT_CLS}
             type="email"
-            placeholder="dr.arjun@hospital.com"
+            placeholder="dr.vikram@manipalhospital.com"
             value={fields.email}
             onChange={e => set("email", e.target.value)}
             onBlur={() => blur("email")}
@@ -185,7 +185,7 @@ export function DemoForm() {
         <Field label="Hospital / Clinic Name">
           <input
             className={INPUT_CLS}
-            placeholder="Apollo Hospital, Chennai"
+            placeholder="Manipal Hospital, Bangalore"
             value={fields.clinicName}
             onChange={e => set("clinicName", e.target.value)}
           />
@@ -207,7 +207,7 @@ export function DemoForm() {
         <Field label="City / Location">
           <input
             className={INPUT_CLS}
-            placeholder="Chennai"
+            placeholder="Bangalore"
             value={fields.city}
             onChange={e => set("city", e.target.value)}
           />
