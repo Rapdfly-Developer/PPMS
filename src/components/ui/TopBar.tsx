@@ -190,11 +190,15 @@ export function TopBar({ name, role }: { name: string; role: string }) {
     function handleVisibility() {
       if (document.visibilityState === "visible") fetchUnread();
     }
+    function handleRefresh() { fetchUnread(); }
+
     document.addEventListener("visibilitychange", handleVisibility);
+    window.addEventListener("notifications:refresh", handleRefresh);
 
     return () => {
       clearInterval(id);
       document.removeEventListener("visibilitychange", handleVisibility);
+      window.removeEventListener("notifications:refresh", handleRefresh);
     };
   }, [fetchUnread]);
 

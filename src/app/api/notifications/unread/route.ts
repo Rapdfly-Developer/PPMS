@@ -9,16 +9,19 @@ export async function GET() {
   }
   const userId = (session.user as any).id as string;
 
-  const items = await prisma.notification.findMany({
-    where: { userId, read: false },
-    orderBy: { createdAt: "desc" },
-    take: 20,
-    select: { id: true, message: true, type: true, entityId: true, createdAt: true },
-  });
+  const [count, items] = await Promise.all([
+    prisma.notification.count({ where: { userId, read: false } }),
+    prisma.notification.findMany({
+      where: { userId, read: false },
+      orderBy: { createdAt: "desc" },
+      take: 20,
+      select: { id: true, message: true, type: true, entityId: true, createdAt: true },
+    }),
+  ]);
 
   return NextResponse.json(
     {
-      count: items.length,
+      count,
       items: items.map((n) => ({ ...n, createdAt: n.createdAt.toISOString() })),
     },
     {

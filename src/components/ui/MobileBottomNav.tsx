@@ -29,7 +29,20 @@ export function MobileBottomNav() {
 
     fetchCount();
     const interval = setInterval(fetchCount, 10 * 60 * 1000);
-    return () => clearInterval(interval);
+
+    function handleVisibility() {
+      if (document.visibilityState === "visible") fetchCount();
+    }
+    function handleRefresh() { fetchCount(); }
+
+    document.addEventListener("visibilitychange", handleVisibility);
+    window.addEventListener("notifications:refresh", handleRefresh);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", handleVisibility);
+      window.removeEventListener("notifications:refresh", handleRefresh);
+    };
   }, []);
 
   const isActive = (href: string) => pathname.startsWith(href);

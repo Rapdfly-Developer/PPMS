@@ -120,7 +120,7 @@ const SIDEBAR_GROUPS: {
     items: [
       { id: "hospital",      label: "Hospital Information", icon: Building                    },
       { id: "add-hospital",  label: "Add Hospital",         icon: Plus                        },
-      { id: "notifications", label: "Notifications",        icon: Bell, badge: "5 New" },
+      { id: "notifications", label: "Notifications",        icon: Bell },
     ],
   },
   {

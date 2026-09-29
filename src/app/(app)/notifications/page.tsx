@@ -1,8 +1,8 @@
 import { requireUser } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
-import { markAllRead } from "./actions";
 import { formatDistanceToNow } from "date-fns";
-import { Bell, CheckCheck } from "lucide-react";
+import { Bell } from "lucide-react";
+import { MarkAllReadButton } from "./MarkAllReadButton";
 
 function NotificationIcon({ type }: { type: string }) {
   return (
@@ -36,17 +36,7 @@ export default async function NotificationsPage() {
           )}
         </div>
 
-        {unreadCount > 0 && (
-          <form action={markAllRead}>
-            <button
-              type="submit"
-              className="flex items-center gap-2 px-4 py-2 rounded-xl border border-[var(--color-border)] text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)] hover:bg-[var(--color-ink-50)] transition-colors"
-            >
-              <CheckCheck size={15} />
-              Mark all as read
-            </button>
-          </form>
-        )}
+        {unreadCount > 0 && <MarkAllReadButton />}
       </div>
 
       <div className="surface-card divide-y divide-[var(--color-border)] overflow-hidden">
