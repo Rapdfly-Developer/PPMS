@@ -311,7 +311,7 @@ function OverviewTab({ data, onTabChange }: { data: LicenseFullData; onTabChange
         {data.remainingDays <= 7 && (
           <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-amber-50 border border-amber-200">
             <Clock size={15} className="text-amber-600 shrink-0" />
-            <p className="text-sm text-amber-800"><strong>{data.remainingDays} days</strong> until renewal — your subscription will auto-renew on {fmt(data.subscriptionEndsAt)}.</p>
+            <p className="text-sm text-amber-800"><strong>{data.remainingDays} days</strong> until renewal; your subscription will auto-renew on {fmt(data.subscriptionEndsAt)}.</p>
           </div>
         )}
 
@@ -494,7 +494,7 @@ function OverviewTab({ data, onTabChange }: { data: LicenseFullData; onTabChange
             {expired ? "Restore access now" : "Upgrade to Professional"}
           </p>
           <p className="text-xs text-[var(--color-primary-600)] mt-0.5">
-            Starting at ₹1,299 / month — pay securely via Razorpay.
+            Starting at ₹1,299 / month, pay securely via Razorpay.
           </p>
         </div>
         <button

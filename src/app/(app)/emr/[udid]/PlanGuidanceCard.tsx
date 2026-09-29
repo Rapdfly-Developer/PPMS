@@ -73,7 +73,7 @@ function Shell({ children, note }: { children: React.ReactNode; note?: string })
           {/* Load-bearing caveat, not a footnote: this sits on the tab where
               treatment is actually prescribed. */}
           <span className="ml-auto shrink-0 text-[9px] sm:text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
-            AI-generated — guidance only, not a diagnosis or treatment plan
+            AI-generated, guidance only, not a diagnosis or treatment plan
           </span>
         </div>
 
@@ -216,7 +216,7 @@ export function PlanGuidanceCard({ state }: { state: PlanState }) {
         {/* Explicit, never blank — a silent empty card would read as "there is
             nothing to consider", which is a clinical claim. */}
         <p className="text-[13px] sm:text-sm text-[var(--color-ink-500)]">
-          No plan guidance returned — insufficient information in the record.
+          No plan guidance returned: insufficient information in the record.
         </p>
       </Shell>
     );
@@ -267,7 +267,7 @@ export function PlanGuidanceCard({ state }: { state: PlanState }) {
               <ShieldAlert size={12} className="shrink-0 mt-0.5 text-amber-700" />
               <p className="text-[10px] sm:text-[11px] text-amber-800">
                 Scheme details last verified {govtScheme.lastVerified}. Eligibility and
-                coverage change — confirm against the official source before advising the
+                coverage change; confirm against the official source before advising the
                 patient.
               </p>
             </div>

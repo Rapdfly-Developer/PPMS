@@ -374,7 +374,7 @@ function AddWeeklySlotModal({ hospitals, weekly, preWeekday, onClose }: {
           <p className="text-xs font-bold text-red-700 flex items-center gap-1.5"><AlertTriangle size={13} /> Time conflicts detected</p>
           {blockedDays.map(d => (
             <p key={d} className="text-[11px] text-red-600">
-              <span className="font-semibold">{WEEKDAYS_FULL[d]}</span> — already has {collisions[d]} at this hospital
+              <span className="font-semibold">{WEEKDAYS_FULL[d]}</span> - already has {collisions[d]} at this hospital
             </p>
           ))}
           {cleanDays.length > 0 && (
@@ -1331,7 +1331,7 @@ function CalendarTab({ hospitals, initialCalData, initialYear, initialMonth, wee
         <div className={`flex items-center gap-3 px-4 py-2.5 rounded-xl mb-3 border text-sm font-semibold ${selectMode === "bulk" ? "bg-[var(--color-primary-50)] border-[var(--color-primary-200)] text-[var(--color-primary-800)]" : "bg-red-50 border-red-200 text-red-800"}`}>
           <span className="flex-1">
             {selectMode === "bulk" ? "Click dates to select for bulk assignment" : "Click dates to select for leave"}
-            {selCount > 0 && <span className="ml-2 font-bold">— {selCount} selected</span>}
+            {selCount > 0 && <span className="ml-2 font-bold">- {selCount} selected</span>}
           </span>
           {selCount > 0 && selectMode === "bulk" && (
             <button onClick={() => setShowBulkAssign(true)}

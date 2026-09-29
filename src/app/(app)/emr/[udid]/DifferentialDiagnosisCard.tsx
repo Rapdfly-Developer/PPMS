@@ -50,7 +50,7 @@ function Shell({ children, note }: { children: React.ReactNode; note?: string })
           {/* Not tucked in a corner: this is the load-bearing caveat, sitting
               beside fields the doctor is actively editing. */}
           <span className="ml-auto shrink-0 text-[9px] sm:text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
-            AI-generated — not a diagnosis
+            AI-generated, not a diagnosis
           </span>
         </div>
 
@@ -99,7 +99,7 @@ export function DifferentialDiagnosisCard({ state }: { state: DdxState }) {
         {/* Explicitly "nothing to suggest", never blank — a silent empty card
             would read as "no differentials exist", which is a clinical claim. */}
         <p className="text-[13px] sm:text-sm text-[var(--color-ink-500)]">
-          No suggestions returned — insufficient information in the record.
+          No suggestions returned: insufficient information in the record.
         </p>
       </Shell>
     );

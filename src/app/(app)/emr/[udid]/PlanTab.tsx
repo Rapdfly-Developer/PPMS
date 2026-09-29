@@ -2255,7 +2255,7 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
                     onChange={(e) => { const n = [...taperLevels]; n[i] = { ...n[i], frequency: e.target.value }; setTaperLevels(n); }}
                     className={inputCls}
                   >
-                    <option value="">— Select —</option>
+                    <option value="">Select</option>
                     {FREQUENCY_OPTIONS.map((f) => <option key={f}>{f}</option>)}
                   </select>
                 </div>

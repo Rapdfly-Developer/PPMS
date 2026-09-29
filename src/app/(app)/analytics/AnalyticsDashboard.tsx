@@ -389,9 +389,9 @@ export function AnalyticsDashboard(props: AnalyticsProps) {
 
   /* Practice insights */
   const insights: { text: string; type: "good" | "warn" | "info" }[] = [];
-  if (completionRate >= 90) insights.push({ text: `Strong completion rate at ${completionRate}% — appointments are being seen and closed efficiently.`, type: "good" });
+  if (completionRate >= 90) insights.push({ text: `Strong completion rate at ${completionRate}% - appointments are being seen and closed efficiently.`, type: "good" });
   if (cancellationRate > 15) insights.push({ text: `Cancellation + no-show rate is ${cancellationRate}%. Consider reminder workflows or shorter lead times.`, type: "warn" });
-  if (monthTrend > 20) insights.push({ text: `Appointment volume is up ${monthTrend}% vs last month — capacity planning may be needed.`, type: "info" });
+  if (monthTrend > 20) insights.push({ text: `Appointment volume is up ${monthTrend}% vs last month - capacity planning may be needed.`, type: "info" });
   if (monthTrend < -20 && lastMonthAppts > 0) insights.push({ text: `Appointment volume dropped ${Math.abs(monthTrend)}% vs last month. Review scheduling or availability.`, type: "warn" });
   if (newPatientsThisMonth > 0) insights.push({ text: `${newPatientsThisMonth} new patient${newPatientsThisMonth > 1 ? "s" : ""} registered this month out of ${totalPatients} total.`, type: "info" });
   if (pendingInvestigations > 20) insights.push({ text: `${pendingInvestigations} investigation orders are awaiting review. Consider assigning follow-up responsibility.`, type: "warn" });
@@ -419,7 +419,7 @@ export function AnalyticsDashboard(props: AnalyticsProps) {
           type="button"
           onClick={() => {
             const rows: string[][] = [
-              ["RF Health — Analytics Report", nowStr, scope],
+              ["RF Health - Analytics Report", nowStr, scope],
               [],
               ["KPI Summary"],
               ["Metric", "Value"],

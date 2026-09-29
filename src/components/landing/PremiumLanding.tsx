@@ -331,7 +331,7 @@ function SurgeryPanel() {
               ))}
             </div>
             <p className="mt-4 text-[12px] text-emerald-300/60 border-t border-emerald-800 pt-3">
-              Generates a printable operative report — same structure every time.
+              Generates a printable operative report, same structure every time.
             </p>
           </div>
         }
@@ -415,7 +415,7 @@ function AnalyticsPanel() {
             <div className="flex items-center gap-2 border-t border-emerald-950/[0.06] bg-emerald-50/50 px-5 py-3">
               <Check size={13} strokeWidth={2} className="text-emerald-600" aria-hidden="true" />
               <p className="text-[12.5px] text-slate-600">
-                Exports to <span className="font-medium text-emerald-900">CSV or PDF</span> — no separate reporting setup required.
+                Exports to <span className="font-medium text-emerald-900">CSV or PDF</span>, no separate reporting setup required.
               </p>
             </div>
           </div>
@@ -469,7 +469,7 @@ const FAQ_ITEMS: FaqItem[] = [
   },
   {
     q: "Is the 7-day free trial limited in any way?",
-    a: "The trial gives full access to the platform for 7 days. No card is required to start, and nothing is charged when the trial ends — you choose whether to continue.",
+    a: "The trial gives full access to the platform for 7 days. No card is required to start, and nothing is charged when the trial ends; you choose whether to continue.",
   },
   {
     q: "Who can see a patient's record?",
@@ -528,7 +528,7 @@ const PLANS = [
     features: [
       "Everything in 5 Doctors",
       "Unlimited hospitals",
-      "Annual billing — save 2 months",
+      "Annual billing - save 2 months",
       "Priority support",
       "Dedicated onboarding",
     ],
@@ -763,12 +763,12 @@ export function PremiumLanding() {
         <SectionHead
           eyebrow="Pricing"
           title={<>Priced per practice, not per patient.</>}
-          lede="Start with a 7-day free trial — no card required. First month 75% off on Monthly and 5 Doctors plans."
+          lede="Start with a 7-day free trial, no card required. First month 75% off on Monthly and 5 Doctors plans."
         />
         <Reveal>
           <div className="mx-auto mt-4 flex w-max items-center gap-2 rounded-full bg-emerald-50 px-4 py-2 ring-1 ring-inset ring-emerald-600/[0.15]">
             <span className="h-2 w-2 rounded-full bg-emerald-500" />
-            <span className="text-[13px] font-semibold text-emerald-800">7-Day Free Trial — no credit card required</span>
+            <span className="text-[13px] font-semibold text-emerald-800">7-Day Free Trial, no credit card required</span>
           </div>
         </Reveal>
 

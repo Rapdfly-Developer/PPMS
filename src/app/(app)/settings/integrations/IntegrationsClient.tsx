@@ -283,13 +283,13 @@ function PayloadModal({ log, onClose }: { log: LogRow; onClose: () => void }) {
           <div>
             <p className="font-semibold text-[var(--color-ink-500)] mb-1">Request payload</p>
             <pre className="bg-[var(--color-surface-sunken)] rounded-lg p-3 whitespace-pre-wrap break-all font-mono text-[11px] text-[var(--color-ink-700)]">
-              {log.requestPayload ?? "— not recorded —"}
+              {log.requestPayload ?? "- not recorded -"}
             </pre>
           </div>
           <div>
             <p className="font-semibold text-[var(--color-ink-500)] mb-1">Response / acknowledgment</p>
             <pre className="bg-[var(--color-surface-sunken)] rounded-lg p-3 whitespace-pre-wrap break-all font-mono text-[11px] text-[var(--color-ink-700)]">
-              {log.responsePayload ?? log.errorMessage ?? "— not recorded —"}
+              {log.responsePayload ?? log.errorMessage ?? "- not recorded -"}
             </pre>
           </div>
         </div>

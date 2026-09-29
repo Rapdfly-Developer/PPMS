@@ -1001,7 +1001,7 @@ const PLANS_LIST: Array<{
     price: "₹9,999",
     discountedPrice: null,
     per: "/ year",
-    tagline: "Best value — save 2 months",
+    tagline: "Best value - save 2 months",
     badge: "Best Value",
     highlight: false,
     features: ["Everything in 5 Doctors", "Unlimited hospitals", "Annual billing", "Dedicated onboarding"],
@@ -1075,7 +1075,7 @@ function PlansModal({
               setPayError("Payment verified but activation failed. Contact support@ppms.in.");
             }
           } catch {
-            setPayError("Network error during verification. Your payment may have been processed — contact support@ppms.in.");
+            setPayError("Network error during verification. Your payment may have been processed - contact support@ppms.in.");
           } finally {
             setBuying("");
           }
@@ -1178,7 +1178,7 @@ function PlansModal({
                   {buying === p.key && <Loader2 size={14} className="animate-spin" />}
                   {buying === p.key
                     ? "Processing..."
-                    : `Subscribe — ${p.discountedPrice ?? p.price}`}
+                    : `Subscribe: ${p.discountedPrice ?? p.price}`}
                 </button>
               </div>
             ))}

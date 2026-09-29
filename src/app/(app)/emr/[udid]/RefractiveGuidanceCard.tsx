@@ -72,7 +72,7 @@ function Shell({ children, note }: { children: React.ReactNode; note?: string })
           {/* Load-bearing caveat, not a footnote: this sits beside fields the
               doctor is actively editing and interprets clinical numbers. */}
           <span className="ml-auto shrink-0 text-[9px] sm:text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
-            AI-generated — guidance only, not a diagnosis
+            AI-generated, guidance only, not a diagnosis
           </span>
         </div>
 

@@ -166,7 +166,7 @@ export default function RefundPage() {
             </P>
             <P>
               Because no charge is made during the trial period, there is nothing to refund.
-              If you wish to stop using RF Health during the trial, simply do not subscribe —
+              If you wish to stop using RF Health during the trial, simply do not subscribe;
               no action is required and no charge will be made.
             </P>
           </SectionCard>
@@ -207,8 +207,8 @@ export default function RefundPage() {
             </P>
             <SubHead>Charge after cancellation</SubHead>
             <P>
-              If you were charged after successfully cancelling your subscription — and we can
-              confirm that the cancellation was processed before the charge — we will refund
+              If you were charged after successfully cancelling your subscription, and we can
+              confirm that the cancellation was processed before the charge, we will refund
               that charge in full.
             </P>
             <SubHead>Significant service failure</SubHead>
@@ -220,7 +220,7 @@ export default function RefundPage() {
               infrastructure, network, or browser), you may request a pro-rata credit or partial
               refund for the affected period. Such requests are reviewed on a case-by-case basis.
             </P>
-            <SubHead>Annual plan — first 7 days</SubHead>
+            <SubHead>Annual plan: first 7 days</SubHead>
             <P>
               If you subscribed to an annual plan and wish to cancel within{" "}
               <strong className="font-semibold text-emerald-950">7 days</strong> of your first
@@ -236,7 +236,7 @@ export default function RefundPage() {
             <Ul>
               <Li>Monthly subscription fees once the billing period has started, except in the circumstances listed above.</Li>
               <Li>Annual subscription fees after 7 days from the first payment, or if substantial use has been made of the platform during that period.</Li>
-              <Li>Renewal charges for annual plans — these are treated as monthly subscriptions for refund purposes once renewed.</Li>
+              <Li>Renewal charges for annual plans, which are treated as monthly subscriptions for refund purposes once renewed.</Li>
               <Li>Fees for periods during which you had full access to the platform but chose not to use it.</Li>
               <Li>Fees for accounts that were suspended due to a breach of our <a href="/terms" className="font-medium text-emerald-700 underline-offset-3 hover:underline">Terms of Service</a>.</Li>
               <Li>Transaction fees or payment processing charges imposed by Razorpay, which are outside our control.</Li>
@@ -252,7 +252,7 @@ export default function RefundPage() {
             <P>
               You can cancel your subscription at any time from the Settings page in your RF
               Health account. Cancellation stops future charges. Your access to paid features
-              continues until the end of the current billing period — you do not lose access
+              continues until the end of the current billing period; you do not lose access
               immediately on cancellation. No refund is issued automatically on cancellation
               (see eligibility above).
             </P>

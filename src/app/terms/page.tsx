@@ -402,8 +402,8 @@ export default function TermsPage() {
             <SubHead>Effect of termination</SubHead>
             <P>
               On termination, your licence to use the platform ends immediately. Provisions of
-              these terms that by their nature should survive termination — including disclaimers,
-              limitation of liability, and governing law — will continue to apply.
+              these terms that by their nature should survive termination, including disclaimers,
+              limitation of liability, and governing law, will continue to apply.
             </P>
           </SectionCard>
 

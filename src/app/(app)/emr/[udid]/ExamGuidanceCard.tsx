@@ -61,7 +61,7 @@ function Shell({ children, note }: { children: React.ReactNode; note?: string })
           {/* Load-bearing caveat, not a footnote: this sits beside fields the
               doctor is actively editing and points at a clinical examination. */}
           <span className="ml-auto shrink-0 text-[9px] sm:text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
-            AI-generated — guidance only, not a diagnosis
+            AI-generated, guidance only, not a diagnosis
           </span>
         </div>
 
@@ -144,7 +144,7 @@ export function ExamGuidanceCard({
           {/* Explicit, never blank — a silent empty card would read as "there is
               nothing worth examining for", which is a clinical claim. */}
           <p className="text-[13px] sm:text-sm text-[var(--color-ink-500)]">
-            Not enough documented yet to correlate — add to the General tab and regenerate.
+            Not enough documented yet to correlate; add to the General tab and regenerate.
           </p>
           <button
             type="button"

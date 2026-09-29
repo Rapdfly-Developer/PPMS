@@ -803,7 +803,7 @@ function LongContent({
 
       {/* ── 4. Treatment Plan / Medications ───────────────────────────── */}
       {hasMeds && (
-        <LongSection head={<SumHead icon={<Pill size={11} />} label="Treatment Plan — Medications" color="text-violet-500" />}>
+        <LongSection head={<SumHead icon={<Pill size={11} />} label="Treatment Plan: Medications" color="text-violet-500" />}>
           <div className="flex flex-col divide-y divide-[var(--color-border)]">
             {data.medications.map((m: any, i: number) => (
               <div key={i} className="flex items-start gap-2.5 py-2 first:pt-0 last:pb-0">

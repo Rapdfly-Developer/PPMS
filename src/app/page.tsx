@@ -82,14 +82,14 @@ const JSON_LD = {
           name: "Monthly",
           price: "1299",
           priceCurrency: "INR",
-          description: "Per month — first month 75% off",
+          description: "Per month - first month 75% off",
         },
         {
           "@type": "Offer",
           name: "5 Doctors",
           price: "2999",
           priceCurrency: "INR",
-          description: "Per month, up to 5 doctors — first month 75% off",
+          description: "Per month, up to 5 doctors - first month 75% off",
         },
         {
           "@type": "Offer",
@@ -113,7 +113,7 @@ const JSON_LD = {
         },
         {
           q: "Is the 7-day free trial limited in any way?",
-          a: "The trial gives full access to the platform for 7 days. No card is required and nothing is charged when the trial ends — you choose whether to continue.",
+          a: "The trial gives full access to the platform for 7 days. No card is required and nothing is charged when the trial ends; you choose whether to continue.",
         },
         {
           q: "Who can see a patient's record?",
