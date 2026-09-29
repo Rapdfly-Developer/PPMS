@@ -37,7 +37,7 @@ function maskId(mid: string | null) {
 
 const PLAN_CONFIG: Record<string, { name: string; tag: string; price: string; billingCycle: string }> = {
   MONTHLY:    { name: "Professional", tag: "Clinics & Groups",   price: "₹2,999", billingCycle: "Monthly" },
-  ENTERPRISE: { name: "Enterprise",   tag: "Hospitals & Chains", price: "₹1",     billingCycle: "Monthly" },
+  ENTERPRISE: { name: "Enterprise",   tag: "Hospitals & Chains", price: "₹1,299", billingCycle: "Monthly" },
   YEARLY:     { name: "Professional", tag: "Annual Plan",        price: "₹24,999", billingCycle: "Annual"  },
 };
 
@@ -494,7 +494,7 @@ function OverviewTab({ data, onTabChange }: { data: LicenseFullData; onTabChange
             {expired ? "Restore access now" : "Upgrade to Professional"}
           </p>
           <p className="text-xs text-[var(--color-primary-600)] mt-0.5">
-            Starting at ₹1 / month — pay securely via Razorpay.
+            Starting at ₹1,299 / month — pay securely via Razorpay.
           </p>
         </div>
         <button
@@ -745,7 +745,7 @@ const PLAN_TIERS: PlanTier[] = [
     id: "enterprise",
     name: "Enterprise",
     tag: "Hospitals & Chains",
-    price: "₹1",
+    price: "₹1,299",
     priceSub: "/month",
     features: [
       { label: "Patient Records (EMR)",     included: true },
