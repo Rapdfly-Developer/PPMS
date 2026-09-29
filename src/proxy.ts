@@ -69,6 +69,8 @@ export default auth((req) => {
   const isLoginPage        = pathname.startsWith("/login");
   const isLandingPage      = pathname === "/";
   const isPrivacyPage      = pathname.startsWith("/privacy");
+  const isTermsPage        = pathname.startsWith("/terms");
+  const isRefundPage       = pathname.startsWith("/refund");
   const isSubPage          = pathname.startsWith("/sub_page") || pathname.startsWith("/sub/");
   const isLicensePage      = pathname.startsWith("/license");
   const isLicenseApi       = pathname.startsWith("/api/license");
@@ -78,7 +80,7 @@ export default auth((req) => {
   const isRazorpayApi      = pathname.startsWith("/api/razorpay");
   const isCronApi          = pathname.startsWith("/api/cron");
 
-  if (!isLoggedIn && !isLoginPage && !isLandingPage && !isPrivacyPage && !isSubPage && !isLicensePage && !isLicenseApi && !isSetupPage && !isSetupApi) {
+  if (!isLoggedIn && !isLoginPage && !isLandingPage && !isPrivacyPage && !isTermsPage && !isRefundPage && !isSubPage && !isLicensePage && !isLicenseApi && !isSetupPage && !isSetupApi) {
     return NextResponse.redirect(new URL("/login", req.nextUrl.origin));
   }
   // Redirect logged-in users off the login page — but only for page
