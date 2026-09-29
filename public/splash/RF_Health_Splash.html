@@ -1,0 +1,294 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#CBD8C5">
+<title>RF Health Â· Design 2 Â· The care journal</title>
+<style>
+:root{color-scheme:dark;--bg:#081F1B;--accent:#D6C29A;--sage:#7FA98B;--out:cubic-bezier(.23,1,.32,1)}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden}body{background:var(--bg);font-family:Arial,Helvetica,sans-serif;color:var(--accent)}
+button,input{font:inherit}button{color:inherit}button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:5px}
+.stage{height:100%;min-height:280px;position:relative;isolation:isolate;overflow:hidden;background:radial-gradient(ellipse at 78% 14%,#7fa98b30,transparent 55%),radial-gradient(ellipse at 18% 85%,#7fa98b22,transparent 55%),linear-gradient(135deg,#081F1B,#12372C 52%,#081F1B)}
+.stage:after{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,transparent 20%,#081F1B60 100%);z-index:-1}
+.ambient{position:absolute;width:min(900px,150vw);height:min(780px,86vh);left:50%;top:48%;transform:translate(-50%,-50%);color:var(--sage);z-index:-1}
+.network{position:absolute;inset:0;width:100%;height:100%;opacity:.10;transition:opacity 200ms}.network.off{opacity:0}
+.glyph{position:absolute;width:32px;height:32px;opacity:.25;stroke:currentColor;stroke-width:1.05;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.g1{left:23%;top:12%;--dx:9px;--dy:-13px;animation:drift 11s -3s infinite alternate ease-in-out}.g2{left:69%;top:20%;--dx:-11px;--dy:9px;animation:drift 14s -8s infinite alternate ease-in-out}.g3{left:83%;top:52%;--dx:-8px;--dy:-10px;animation:drift 13s -5s infinite alternate ease-in-out}.g4{left:70%;top:83%;--dx:12px;--dy:-8px;animation:drift 17s -9s infinite alternate ease-in-out}.g5{left:23%;top:79%;--dx:-9px;--dy:12px;animation:drift 15s -4s infinite alternate ease-in-out}.g6{left:12%;top:43%;--dx:8px;--dy:11px;animation:drift 19s -11s infinite alternate ease-in-out}
+@keyframes drift{to{transform:translate(var(--dx),var(--dy)) rotate(5deg)}}
+.center{position:absolute;left:50%;top:48%;width:min(530px,88vw);transform:translate(-50%,-50%)}
+.breath,.settle{transform-origin:center}.mark{display:block;width:100%;overflow:visible}.fill{fill:#EFF0E5}.outline{fill:none;stroke:url(#ink);stroke-width:1.8;stroke-linejoin:round;stroke-linecap:round}.flare{fill:var(--accent);opacity:0;transform-box:fill-box;transform-origin:center}.subtitle{text-align:center;margin:24px 0 0;font-size:10px;font-weight:500;letter-spacing:.32em;text-transform:uppercase;color:#d6c29a75;opacity:0}.halo{position:absolute;inset:-140% -25%;background:radial-gradient(ellipse,#d6c29a13,transparent 63%);opacity:0;pointer-events:none}.pulse{fill:none;stroke:url(#ink);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}.pulse-soft{stroke-width:9;opacity:.07}.spark{opacity:0;fill:var(--accent)}
+.footer{position:absolute;bottom:max(34px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);text-align:center;white-space:nowrap;font-size:9px;letter-spacing:.24em;color:#7fa98baa;text-transform:uppercase}.footer i{display:inline-block;width:3px;height:3px;border-radius:50%;background:var(--accent);margin-right:9px;vertical-align:2px;opacity:.7}
+.review{position:absolute;right:20px;top:max(20px,env(safe-area-inset-top));z-index:3}.review summary{list-style:none;cursor:pointer;display:grid;place-items:center;width:34px;height:34px;border:1px solid #7fa98b35;border-radius:50%;color:#7fa98b;font-size:18px}.review summary::-webkit-details-marker{display:none}.panel{position:absolute;right:0;top:44px;width:210px;padding:18px;background:#102B24;border:1px solid #7fa98b50;border-radius:12px;box-shadow:0 12px 36px #081F1B80;font-size:12px}.panel p{margin:0 0 15px;font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:#d6c29a80}.panel label{display:flex;align-items:center;gap:8px;margin:16px 0;color:#d6c29ab0}.panel input{accent-color:var(--accent)}.panel button{width:100%;border:1px solid #7fa98b80;background:#7fa98b20;border-radius:6px;padding:9px;cursor:pointer}.hint{display:block;font-size:10px;line-height:1.6;margin-top:12px;color:#d6c29a70}
+@media(max-width:500px){.center{width:87vw}.subtitle{font-size:8px;letter-spacing:.25em;margin-top:20px}.ambient{width:125vw;height:77vh}.glyph{width:26px;height:26px}.g3{left:79%}.g6{left:17%}.footer{font-size:8px}.review{right:14px;top:14px}}
+@media(prefers-reduced-motion:reduce){.glyph{animation:none}.network{transition:none}.subtitle{opacity:1}}
+.paused .glyph{animation-play-state:paused}
+@media(max-height:420px){.ambient{height:95vh}.subtitle{margin-top:10px}.footer{bottom:16px}.center{width:min(400px,72vw)}}
+
+/* Unconnected, freely drifting medical field. Every icon owns its trajectory. */
+.ambient{inset:0;width:100%;height:100%;transform:none;z-index:-1}
+.glyph{animation:none!important;left:0;top:0;width:29px;height:29px;opacity:.24;color:#7FA98B}
+.space-wash{position:absolute;inset:-20%;pointer-events:none;z-index:-2;background:radial-gradient(ellipse at 25% 30%,#7fa98b18,transparent 40%),radial-gradient(ellipse at 75% 70%,#d6c29a10,transparent 45%)}
+.surprise-ring{fill:none;stroke:#D6C29A;stroke-width:.8;opacity:0;transform-box:fill-box;transform-origin:center}
+.surprise-star{fill:#EFF0E5;opacity:0;transform-box:fill-box;transform-origin:center}
+@media(prefers-reduced-motion:reduce){.space-wash{animation:none}}
+
+/* One-time transition: a diagonal light curtain followed by a spring return. */
+.arrival{transform-origin:50% 50%}
+.passage{position:absolute;inset:-35% -5%;pointer-events:none;opacity:0;z-index:2;background:linear-gradient(108deg,transparent 32%,#7fa98b0a 40%,#d6c29a40 48%,#eff0e560 50%,#d6c29a28 53%,transparent 64%);transform:translateX(-120%)}
+.arrival-glow{position:absolute;inset:0;pointer-events:none;opacity:0;background:radial-gradient(ellipse at 50% 48%,#d6c29a26,transparent 63%);z-index:-1}
+.ambient{transform-origin:50% 48%}
+@media(prefers-reduced-motion:reduce){.passage,.arrival-glow{display:none}}
+
+/* Original RF monogram as a fixed-blur watermark. Only its wrapper opacity animates.
+   The constant SVG color matrix maps the white paper to transparency and warms the ink. */
+.brand-watermark{position:absolute;left:50%;top:43%;width:min(590px,108vw);transform:translate(-50%,-50%);opacity:0;pointer-events:none;z-index:-1}
+.brand-watermark svg{display:block;width:100%;height:auto}
+@media(max-width:500px){.brand-watermark{top:42%;width:112vw}}
+@media(prefers-reduced-motion:reduce){.brand-watermark{opacity:.13}}
+
+.intro-world{position:absolute;inset:0;pointer-events:none;z-index:1;overflow:hidden}
+.intro-camera{position:absolute;left:50%;top:47%;width:min(650px,110vw);aspect-ratio:3/4;translate:-50% -50%;transform-origin:50% 49.2%}
+.intro-camera>svg{display:block;width:100%;height:100%;overflow:visible}
+.intro-object,.intro-monitor{transform-box:fill-box;transform-origin:center}
+@media(max-height:500px) and (min-width:600px){.intro-camera{width:440px}}
+@media(prefers-reduced-motion:reduce){.intro-world{display:none}}
+
+/* Forest / ivory / champagne. Original optical wordmark settings,
+   converted to SVG so the lettering is identical on every device, offline. */
+:root{--bg:#081F1B;--accent:#D6C29A;--sage:#7FA98B;--ivory:#EFF0E5}
+.stage{background:radial-gradient(ellipse at 72% 12%,#426C4633,transparent 58%),radial-gradient(ellipse at 15% 85%,#7fa98b15,transparent 58%),linear-gradient(135deg,#081F1B,#10372C 53%,#081F1B)}
+.letter .fill{fill:var(--ivory)}
+.letter:nth-child(-n+2) .fill{fill:var(--accent)}
+.subtitle{font-size:11px;letter-spacing:.19em;text-transform:none;color:#C1CDBB;font-weight:400;margin-top:22px}
+.footer{color:#ABBCA8;font-size:10px;letter-spacing:.14em;text-transform:none}
+.glyph{color:var(--sage)}
+.review summary{color:#BECAB1;border-color:#7fa98b55}
+.panel{color:var(--ivory)}.panel label{color:#CFD7C7}.panel p,.hint{color:#ABBCA8}
+.brand-watermark{width:min(620px,108vw)}
+@media(max-width:500px){.subtitle{font-size:10px;letter-spacing:.17em;margin-top:18px}.footer{font-size:9px}}
+
+/* Review-only login destination. It has no authentication, routes or API calls. */
+.login-preview{position:fixed;inset:0;overflow:auto;background:radial-gradient(ellipse at 10% 20%,#0f8f6f20,transparent 60%),#041A18;color:#fff;opacity:0;pointer-events:none;z-index:0;font-family:Arial,Helvetica,sans-serif}
+.stage{z-index:1}.stage.exited{pointer-events:none}
+.login-preview.ready{pointer-events:auto;z-index:2}
+.login-layout{min-height:100%;max-width:1240px;margin:auto;display:grid;grid-template-columns:1.1fr 1fr;gap:9%;align-items:center;padding:64px 6%}
+.login-brand{font-size:30px;font-weight:800;letter-spacing:-.04em;margin-bottom:46px}.login-brand span{font-weight:500}
+.login-story h1{font-size:clamp(30px,3.2vw,47px);line-height:1.12;letter-spacing:-.035em;margin:0 0 18px}.login-story em{font-style:normal;color:#22C55E}.login-story>p{color:#B5C2C7;font-size:15px}
+.login-illustration{margin-top:38px;padding:22px;border:1px solid #ffffff16;border-radius:18px;background:#08231f;transform:perspective(900px) rotateY(8deg);box-shadow:0 25px 60px #0004}
+.mock-bar{font-size:13px}.mock-bar>span{float:right;font-size:9px;letter-spacing:.15em;color:#6B8F8A}.mock-tiles{display:flex;gap:12px;margin:24px 0}.mock-tiles>span{flex:1;padding:12px 8px;border:1px solid #ffffff0c;border-radius:8px;font-size:9px;color:#B5C2C7}.mock-tiles i{display:block;margin-top:14px;width:60%;height:5px;border-radius:4px;background:#0f8f6f80}.login-illustration svg{width:100%}
+.login-column{width:100%;max-width:420px;justify-self:center}.login-card{padding:32px;border-radius:24px;border:1px solid #ffffff14;background:#051c19e8;box-shadow:0 24px 64px #0003}.login-card h2{font-size:27px;letter-spacing:-.025em;margin:0 0 9px}.login-card>p{color:#B5C2C7;font-size:13px;margin:0 0 25px}.login-tabs{display:flex;border-bottom:1px solid #ffffff12;gap:30px;font-size:13px;margin-bottom:24px}.login-tabs>span{padding-bottom:12px;color:#B5C2C7}.login-tabs .selected{color:#22C55E;border-bottom:2px solid #22C55E}.preview-field{height:58px;display:flex;align-items:center;justify-content:space-between;border:1px solid #ffffff14;background:#020f0ea6;border-radius:14px;padding:0 17px;font-size:14px;color:#8CA9A4;margin-bottom:16px}.login-options{display:flex;justify-content:space-between;font-size:12px;color:#B5C2C7;margin:20px 0}.preview-signin{height:58px;display:flex;justify-content:center;align-items:center;gap:12px;background:linear-gradient(135deg,#0F8F6F,#16A34A);border-radius:14px;color:#03181C;font-size:15px;font-weight:700}.preview-label{font-size:11px;color:#8CA9A4;text-align:center;margin-top:23px;line-height:1.6}.watch-again{display:block;margin:20px auto 0;border:1px solid #0F8F6F60;border-radius:8px;padding:11px 16px;background:#0F8F6F14;color:#B5C2C7;font-size:12px;cursor:pointer}.mobile-brand{display:none}
+@media(max-width:760px){.login-layout{display:flex;min-height:100%;padding:40px 22px}.login-story{display:none}.login-column{margin:auto}.mobile-brand{display:block;text-align:center;font-size:27px;font-weight:750;margin-bottom:30px}.login-card{padding:26px 23px}.login-options{font-size:11px}}
+
+/* Shared-wordmark handoff: one brand travels from splash into login. */
+.login-preview.revealing{z-index:2}
+.transfer-wordmark{position:fixed;z-index:6;pointer-events:none;transform-origin:0 0}
+.transfer-wordmark svg{display:block;width:100%;height:100%;overflow:visible}
+.login-brand svg,.mobile-brand svg{display:block;width:180px;height:auto;overflow:visible}
+.mobile-brand svg{margin:auto}
+.handoff-light{position:fixed;z-index:3;pointer-events:none;width:70vmax;height:70vmax;border-radius:50%;background:radial-gradient(circle,#d6c29a12 0%,#7fa98b09 32%,transparent 65%);opacity:0;transform-origin:center}
+
+.care-overview,.care-avatar,.care-row,.care-packet{transform-box:fill-box;transform-origin:center}
+.care-packet{opacity:0}
+@media(prefers-reduced-motion:reduce){.care-packet{display:none}}
+
+/* Current approved direction: warm daylight, cream paper, sage, forest ink. */
+:root{color-scheme:light;--bg:#F7F3E9;--accent:#8A673E;--sage:#688773;--ivory:#254D40}
+body{background:#F7F3E9}
+.stage{background:radial-gradient(ellipse at 80% 12%,#EBD6B66B,transparent 57%),radial-gradient(ellipse at 8% 82%,#D5E2CF80,transparent 59%),linear-gradient(135deg,#FCF8F0,#F5F1E5 52%,#EEF1E6)}
+.stage:after{background:radial-gradient(ellipse at center,transparent 32%,#C5BBAF0C 100%)}
+.space-wash{background:radial-gradient(ellipse at 25% 30%,#b8c9ac25,transparent 42%),radial-gradient(ellipse at 75% 70%,#e5c49925,transparent 45%)}
+.letter .fill{fill:#254D40}.letter:nth-child(-n+2) .fill{fill:#8A673E}
+.subtitle{color:#596B5C}.footer{color:#667262}
+.glyph{color:#688773}.surprise-ring{stroke:#9B7C50}.surprise-star{fill:#8A673E}
+.halo{background:radial-gradient(ellipse,#C1AC7728,transparent 63%)}
+.passage{background:linear-gradient(108deg,transparent 32%,#c9af7d0c 40%,#FFFFFF80 48%,#FFFFFFAB 50%,#e4cda32b 53%,transparent 64%)}
+.arrival-glow{background:radial-gradient(ellipse at 50% 48%,#E2CCA840,transparent 63%)}
+.review summary{color:#526F5B;border-color:#6887734D;background:#fff8}
+.panel{background:#FBF8F0;color:#254D40;border-color:#B7C4AC;box-shadow:0 12px 36px #41492D15}
+.panel label{color:#425B49}.panel p,.hint{color:#657360}.panel button{border-color:#68877360;background:#6887730c;color:#254D40}
+.panel input{accent-color:#52765C}
+.login-preview{color-scheme:dark}
+.transfer-wordmark .destination-ink{position:absolute;inset:0}
+
+/* More visible daylight gradients. Static color fields; transform-only drift. */
+.stage{background:radial-gradient(ellipse at 52% 43%,#FFFCF4 0%,#FFFCF4B3 24%,transparent 60%),radial-gradient(ellipse at 100% 0%,#F2C3A4 0%,transparent 58%),radial-gradient(ellipse at 0% 95%,#BED3B4 0%,transparent 59%),linear-gradient(135deg,#FAE4C5 0%,#F8F1E2 48%,#E3EACD 100%)}
+.daylight-bloom{position:absolute;pointer-events:none;z-index:-2;opacity:.8}
+.bloom-peach{inset:-32% -42% 0 28%;background:radial-gradient(ellipse,#EFAF8C85 0%,#F1C3A64D 30%,transparent 66%)}
+.bloom-sage{inset:25% 30% -45% -40%;background:radial-gradient(ellipse,#A7C49B85 0%,#C3D6AA45 35%,transparent 66%)}
+.bloom-honey{inset:-35% 25% 25% -35%;background:radial-gradient(ellipse,#EAC27D66 0%,#F1D69C24 40%,transparent 68%)}
+.stage:after{background:radial-gradient(ellipse at 50% 46%,#FFFCF32B 0%,transparent 65%)}
+
+/* Current direction: warm, yellow-leaning greens only. */
+:root{--bg:#F0F5E4;--accent:#648344;--sage:#7C9865;--ivory:#254D40}
+body{background:#F0F5E4}
+.stage{background:radial-gradient(ellipse at 52% 43%,#F8FBEF 0%,#F8FBEFB3 24%,transparent 60%),radial-gradient(ellipse at 100% 0%,#D3E3AE 0%,transparent 58%),radial-gradient(ellipse at 0% 95%,#B8D0A7 0%,transparent 59%),linear-gradient(135deg,#E5ECC6 0%,#F0F5E4 48%,#CCDDB4 100%)}
+.bloom-peach{background:radial-gradient(ellipse,#B8D18E85 0%,#D0E1AA4D 30%,transparent 66%)}
+.bloom-sage{background:radial-gradient(ellipse,#9FBE9485 0%,#BDD3A945 35%,transparent 66%)}
+.bloom-honey{background:radial-gradient(ellipse,#CCDB9766 0%,#DDE8B924 40%,transparent 68%)}
+.stage:after{background:radial-gradient(ellipse at 50% 46%,#F8FBEF2B 0%,transparent 65%)}
+.space-wash{background:radial-gradient(ellipse at 25% 30%,#AFC99925,transparent 42%),radial-gradient(ellipse at 75% 70%,#CCDCA125,transparent 45%)}
+.letter:nth-child(-n+2) .fill{fill:#648344}
+.halo{background:radial-gradient(ellipse,#AFC48A28,transparent 63%)}
+.arrival-glow{background:radial-gradient(ellipse at 50% 48%,#C9DDA240,transparent 63%)}
+.passage{background:linear-gradient(108deg,transparent 32%,#BAD18A0C 40%,#F8FBEF80 48%,#F8FBEFAB 50%,#C8DCA32B 53%,transparent 64%)}
+.surprise-ring{stroke:#7B9754}.surprise-star{fill:#648344}
+.panel{background:#F4F8E9}.panel button{color:#254D40}
+.handoff-light{background:radial-gradient(circle,#CADDA712 0%,#7FA98B09 32%,transparent 65%)}
+
+/* Prominent green: saturated leaf edges, luminous pistachio center. */
+:root{--bg:#C1DD9C;--accent:#426B2D;--sage:#507F47;--ivory:#183F2B}
+body{background:#C1DD9C}
+.stage{background:radial-gradient(ellipse at 51% 43%,#E5F2CF 0%,#D8EBBBAD 25%,transparent 57%),radial-gradient(ellipse at 100% 0%,#91C66B 0%,transparent 60%),radial-gradient(ellipse at 0% 100%,#69A879 0%,transparent 61%),linear-gradient(135deg,#B1D57D 0%,#C1DD9C 48%,#8FBE7D 100%)}
+.bloom-peach{background:radial-gradient(ellipse,#7DBB518C 0%,#9CCD6C55 32%,transparent 68%)}
+.bloom-sage{background:radial-gradient(ellipse,#55976385 0%,#88B97555 35%,transparent 68%)}
+.bloom-honey{background:radial-gradient(ellipse,#A3CB5D73 0%,#BEDC872B 40%,transparent 68%)}
+.stage:after{background:radial-gradient(ellipse at 50% 46%,#E5F2CF24 0%,transparent 65%)}
+.space-wash{background:radial-gradient(ellipse at 25% 30%,#75AB5925,transparent 42%),radial-gradient(ellipse at 75% 70%,#A8CB682B,transparent 45%)}
+.letter .fill{fill:#183F2B}.letter:nth-child(-n+2) .fill{fill:#426B2D}
+.subtitle,.footer{color:#355337}.glyph{color:#507F47}
+.panel{background:#E9F2DA}.review summary{background:#E5F2CF99;color:#355337;border-color:#507F4770}
+
+/* Design 1 / stronger green direction. */
+:root{--bg:#91C76B}
+body{background:#91C76B}
+.stage{background:radial-gradient(ellipse at 51% 43%,#D1EBA9 0%,#BFE18B99 24%,transparent 57%),radial-gradient(ellipse at 100% 0%,#65AD49 0%,transparent 60%),radial-gradient(ellipse at 0% 100%,#398B59 0%,transparent 61%),linear-gradient(135deg,#8AC24F 0%,#A5D57A 48%,#5EA65F 100%)}
+.bloom-peach{background:radial-gradient(ellipse,#4E9F3F99 0%,#79BD5155 32%,transparent 68%)}
+.bloom-sage{background:radial-gradient(ellipse,#2F804F85 0%,#65AA6155 35%,transparent 68%)}
+.bloom-honey{background:radial-gradient(ellipse,#8ABD4273 0%,#A4D5632B 40%,transparent 68%)}
+.design-switcher{position:absolute;left:22px;top:25px;z-index:3;display:flex;gap:12px;align-items:center;font-size:10px;letter-spacing:.06em;color:#214D32}
+.design-switcher span{font-weight:700}.design-switcher a{color:inherit;text-decoration:none;border-bottom:1px solid currentColor;padding-bottom:2px}
+@media(max-width:500px){.design-switcher{left:17px;top:25px;font-size:9px}}
+
+/* Design 2: a brand-led iris reveal, with a saturated botanical green field. */
+:root{--bg:#176448;--accent:#E1F5BD;--sage:#AFD18E;--ivory:#F0F8DF}
+body{background:#176448}
+.stage{background:radial-gradient(ellipse at 50% 32%,#5CA260 0%,#3C875153 34%,transparent 66%),radial-gradient(ellipse at 4% 95%,#A0C96355,transparent 65%),linear-gradient(145deg,#285F40,#176448 58%,#123F32)}
+.daylight-bloom,.intro-world,.brand-watermark,.passage,.arrival-glow,.halo,#pulse,#particles,.surprise-ring,.surprise-star{display:none!important}
+.stage:after{background:radial-gradient(ellipse at center,transparent 30%,#163E3430)}
+.space-wash{background:radial-gradient(ellipse at 75% 25%,#B0D97F18,transparent 52%)}
+.center{top:64%;width:min(370px,77vw)}
+.letter .fill{fill:#F0F8DF}.letter:nth-child(-n+2) .fill{fill:#D6EEAB}
+.outline,.flare{display:none}.subtitle{font-size:11px;line-height:1.6;letter-spacing:.03em;color:#D4E7BC;margin-top:19px}
+.footer{color:#CEE3B4}.footer i{background:#D6EEAB}
+.design-switcher{color:#D6EABC}.review summary{background:#1D593B50;color:#D6EABC;border-color:#A3C88855}
+.panel{background:#EAF3DB;color:#254D40}.panel input{accent-color:#467947}
+.glyph{color:#C0DBA2}
+.emblem-scene{position:absolute;left:50%;top:37%;width:min(360px,86vw);aspect-ratio:1;transform:translate(-50%,-50%)}
+.emblem-disc{position:absolute;inset:27%;border-radius:50%;background:linear-gradient(145deg,#A3CB7423,#123E2C12);border:1px solid #D3E7AC38;box-shadow:0 16px 38px #0B3B2920;display:grid;place-items:center}
+.emblem-art{width:91%;height:91%;position:relative;z-index:1}.emblem-art svg{width:100%;height:100%;display:block}
+.emblem-halo{position:absolute;inset:-45%;border-radius:50%;background:radial-gradient(circle,#CEE89B30,transparent 64%);opacity:0}
+.care-orbit{position:absolute;inset:0}.orbit-symbol{position:absolute;left:calc(50% - 15px);top:calc(50% - 15px);width:30px;height:30px;stroke:#D3E8B8;stroke-width:1.3;stroke-linejoin:round;stroke-linecap:round;fill:none}
+.orbit-rings{position:absolute;inset:0;width:100%;height:100%;fill:none;stroke:#C5E3A34D;stroke-width:.6;pointer-events:none}
+@media(max-width:500px){.center{top:63%;width:78vw}.emblem-scene{top:36%;width:85vw}.subtitle{font-size:10px;max-width:270px;margin:18px auto 0}.glyph{opacity:.1}}
+@media(max-height:500px){.emblem-scene{top:33%;width:210px}.center{top:71%;width:280px}.subtitle{margin-top:8px}.footer{bottom:12px}}
+
+/* Design 2 / The Care Journal: editorial paper, a hinged folder, page turns. */
+:root{--bg:#81B94F;--accent:#254B2D;--sage:#416F36;--ivory:#203F28}
+body{background:#81B94F}.stage{background:radial-gradient(ellipse at 90% 15%,#D7EFA177,transparent 55%),linear-gradient(125deg,#A3CB65,#80B94E 50%,#599E4C)}
+.ambient,.space-wash,.emblem-scene{display:none!important}
+.stage:after{background:linear-gradient(115deg,#D9EDAF18,transparent 55%)}
+.design-switcher{color:#244B2E}.review summary{color:#244B2E;border-color:#315D3C50;background:#D5E9B244}
+.center{top:48%;width:min(530px,84vw)}.letter .fill{fill:#203F28}.letter:nth-child(-n+2) .fill{fill:#315F34}.subtitle{color:#315436;font-size:12px;letter-spacing:.025em;margin-top:24px}.footer{color:#294F31}.footer i{background:#315F34}
+.journal-scene{position:absolute;left:50%;top:47%;width:min(330px,70vw);aspect-ratio:.78;transform:translate(-50%,-50%);perspective:1300px}
+.journal-book{position:absolute;inset:0;transform:rotate(-7deg);transform-style:preserve-3d}
+.journal-shadow{position:absolute;inset:10% 0 -1% 10%;border-radius:10px;box-shadow:18px 28px 50px #31522D28}
+.journal-tab{position:absolute;top:-22px;left:0;padding:9px 17px 10px;background:#E5EDCB;border-radius:9px 9px 0 0;font-size:8px;font-weight:700;letter-spacing:.1em;color:#426343}
+.journal-page,.journal-leaf,.journal-cover{position:absolute;inset:0;border-radius:3px 12px 12px 3px;transform-origin:left center;backface-visibility:hidden}
+.journal-page{padding:26px;background:#F1F5DC;color:#305337;border:1px solid #D7E3B8;box-shadow:8px 8px 0 #B5CD8990}
+.journal-page header{display:flex;justify-content:space-between;align-items:center;font-size:9px;font-weight:700}.journal-page header span:last-child{font-size:7px;letter-spacing:.08em;color:#6D8256}
+.journal-person{display:flex;gap:12px;align-items:center;margin:29px 0 22px}.journal-person svg{width:38px;height:38px;color:#6F9252;background:#DCE7BF;padding:4px;border-radius:50%}.journal-person b{display:block;font-size:14px;letter-spacing:-.02em}.journal-person small{display:block;font-size:8px;margin-top:6px;color:#6D8256}
+.journal-row{display:flex;align-items:center;gap:13px;padding:14px 0;border-top:1px solid #527C3824;font-size:11px}.journal-row>span{color:#8A9F6C;font-size:8px}.journal-row b{font-weight:500}.journal-row i{margin-left:auto;font-size:11px;font-style:normal;color:#557E35}
+.journal-rule{height:3px;width:65%;background:#ABC777;margin-top:17px;transform-origin:left}
+.journal-page footer{position:absolute;bottom:25px;left:26px;right:26px;font-size:8px;color:#6D8256}.journal-page footer span{float:right;font-size:17px}
+.journal-leaf{background:#E7EFCE;border:1px solid #BBCF96;padding:35px 25px;color:#496839}.journal-leaf>span{font-size:24px;line-height:1.15;font-weight:600;letter-spacing:-.035em}.leaf-one{background:#D3E3AF}.page-lines{margin-top:40px;height:130px;background:repeating-linear-gradient(transparent 0 24px,#5D7C3326 24px 25px)}
+.journal-cover{background:#254F35;color:#E3EFBD;padding:26px;box-shadow:inset 7px 0 10px #15382440}.cover-top,.cover-bottom{display:flex;justify-content:space-between;font-size:8px;letter-spacing:.1em}.cover-top span{font-size:6px;opacity:.5}.journal-cover h2{font-size:clamp(32px,6vw,49px);font-weight:500;line-height:1.04;letter-spacing:-.055em;margin:30px 0 0}.cover-bottom{position:absolute;bottom:25px;left:26px;right:26px;align-items:center}.cover-bottom span{font-size:22px}
+.cover-cross{position:relative;width:34px;height:34px;margin-top:24px}.cover-cross i{position:absolute;background:#B8D887;border-radius:2px}.cover-cross i:first-child{left:12px;top:0;width:10px;height:34px}.cover-cross i:last-child{left:0;top:12px;width:34px;height:10px}
+.journal-caption{position:absolute;top:80%;width:100%;text-align:center;font-size:11px;letter-spacing:.04em;color:#315436}
+@media(max-width:500px){.center{top:48%;width:84vw}.subtitle{font-size:11px}.journal-page{padding:21px}.journal-person{margin:21px 0 16px}.journal-row{padding:11px 0}.journal-cover{padding:22px}.journal-caption{top:79%;font-size:10px}}
+@media(max-height:500px){.journal-scene{width:205px}.journal-page{padding:15px}.journal-row{padding:7px 0;font-size:9px}.journal-person{margin:14px 0 10px}.journal-person b{font-size:11px}.journal-cover h2{font-size:28px;margin-top:15px}.cover-cross{margin-top:10px}.journal-caption{top:86%}}
+@media(prefers-reduced-motion:reduce){.journal-scene,.journal-caption{display:none}}
+/* Reference-inspired diagonal blend: pistachio into leaf green and teal. */
+:root{--bg:#97CD7F}
+body{background:#97CD7F}
+.stage{background:radial-gradient(ellipse 90% 90% at 1% 4%,#DAECAB 0%,#C7E59180 43%,transparent 78%),radial-gradient(ellipse 90% 100% at 100% 100%,#17896F 0%,#39A377B3 36%,transparent 78%),linear-gradient(145deg,#C7E591 0%,#9AD17A 38%,#6BC186 65%,#319E7D 100%)}
+.stage:after{background:radial-gradient(ellipse at 24% 15%,#ECF5CC26,transparent 65%)}
+
+
+/* Design 2: quieter eucalyptus paper backdrop, supporting the dark journal. */
+:root{--bg:#CBD8C5}
+body{background:#CBD8C5}
+.stage{background:radial-gradient(ellipse 68% 72% at 49% 42%,#EEF1DA 0%,#E4EBD48C 42%,transparent 78%),linear-gradient(145deg,#DCE3CC 0%,#CBD8C5 48%,#A6BEAA 100%)}
+.stage:after{background:radial-gradient(ellipse at 50% 44%,transparent 30%,#6989750D 100%)}
+.design-switcher{color:#37583B}.review summary{color:#37583B;background:#EDF1DF66;border-color:#718F6E55}
+.subtitle,.footer,.journal-caption{color:#405D42}
+
+/* Crop the supplied raster to its symbol. Its printed RF Health text is below
+   the SVG viewBox and must never overflow into our separate live wordmark. */
+.brand-watermark svg,.rf-monogram{overflow:hidden!important}
+/* Approved RF logo: crop presentation margins in the viewport; retain source artwork. */
+.approved-logo{width:clamp(106px,27vw,168px);margin:0 auto 30px;opacity:0;transform-origin:center}
+.approved-logo svg{display:block;width:100%;height:auto;overflow:hidden}
+@media(max-height:500px){.approved-logo{width:76px;margin-bottom:16px}}
+@media(prefers-reduced-motion:reduce){.approved-logo{opacity:1}}
+</style>
+<!-- Design 2 wordmark: Georgia Regular, converted to SVG outlines for offline display and the existing letter animation. -->
+</head>
+<body>
+<main class="stage" aria-label="RF Health is loading">
+<div class="journal-scene" aria-hidden="true"><div class="journal-shadow"></div><div class="journal-book"><div class="journal-tab">RF / CARE RECORD</div><div class="journal-page"><header><span>RF Health</span><span>CARE / 01</span></header><div class="journal-person"><svg viewBox="0 0 48 48" fill="none"><circle cx="24" cy="16" r="8" fill="currentColor"/><path d="M9 43v-5a15 15 0 0 1 30 0v5" fill="currentColor"/></svg><div><b>Patient record</b><small>Every detail. Connected.</small></div></div><div class="journal-row"><span>01</span><b>Appointments</b><i>âœ“</i></div><div class="journal-row"><span>02</span><b>Clinical notes</b><i>âœ“</i></div><div class="journal-row"><span>03</span><b>Care plan</b><i>âœ“</i></div><div class="journal-rule"></div><footer>One place for better care.<span>â†—</span></footer></div><div class="journal-leaf leaf-two"><span>Care that<br>comes together.</span><div class="page-lines"></div></div><div class="journal-leaf leaf-one"><span>Every patient.<br>Every detail.</span><div class="page-lines"></div></div><div class="journal-cover"><div class="cover-top">RF HEALTH<span>EST. FOR CARE</span></div><div class="cover-cross"><i></i><i></i></div><h2>Care,<br>in good<br>hands.</h2><div class="cover-bottom">THE CARE JOURNAL<span>â†—</span></div></div></div></div><div class="journal-caption" aria-hidden="true">A new chapter in connected care.</div><div class="center"><div class="approved-logo" aria-hidden="true"><svg viewBox="146 253 983 773" xmlns="http://www.w3.org/2000/svg"><image width="1254" height="1254" href="/splash/splash-logo.png"/></svg></div>
+<div class="arrival"><div class="breath"><div class="settle"><div class="halo"></div>
+<svg class="mark" viewBox="0 0 600 104" role="img" aria-label="RF Health">
+<defs><linearGradient id="ink" x1="0" y1="0" x2="600" y2="0" gradientUnits="userSpaceOnUse"><stop stop-color="#4C7A63"/><stop offset=".28" stop-color="#648344"/><stop offset=".52" stop-color="#4C7A63"/><stop offset=".8" stop-color="#648344"/><stop offset="1" stop-color="#4C7A63"/></linearGradient><linearGradient id="glint"><stop stop-color="#D6C29A" stop-opacity="0"/><stop offset=".5" stop-color="#D6C29A"/><stop offset="1" stop-color="#D6C29A" stop-opacity="0"/></linearGradient></defs>
+<g id="letters">
+<g class="letter"><path class="fill" d="M111.38613224734755 95.71407137498662H89.44293216161184Q82.14767977708713 84.28292787482586 76.25977923052193 75.95370271139214Q70.37187868395671 67.62447754795843 63.47872682456328 58.77826599507021H55.14950166112957V84.62758546779554Q55.14950166112957 86.63808809345196 55.7813739149073 88.16032579573466Q56.41324616868503 89.68256349801737 58.481191726503056 90.48676454827994Q59.51516450541207 90.88886507341122 62.1000964526846 91.23352266638089Q64.68502839995713 91.57818025935056 66.4657592969671 91.63562319151218V95.71407137498662H32.0V91.63562319151218Q33.378630371878685 91.52073732718895 35.992283785232026 91.23352266638089Q38.605937198585366 90.94630800557283 39.639909977494376 90.48676454827994Q41.36319794234273 89.74000643017898 42.13867752652449 88.30393312613869Q42.91415711070625 86.8678598220984 42.91415711070625 84.62758546779554V25.691137069981792Q42.91415711070625 23.680634444325378 42.339727789090134 22.12967527596186Q41.76529846747401 20.57871610759834 39.639909977494376 19.774515057335776Q38.20383667345408 19.257528667881274 35.9061193869896 18.826706676669183Q33.60840210052513 18.39588468545709 32.0 18.280998821133863V14.202550637659428H69.62512056585575Q74.79498446040081 14.202550637659428 79.33297610116816 15.265244882649249Q83.87096774193549 16.32793912763907 87.54731540027863 18.683099346265152Q91.10877719429858 20.980816632729628 93.23416568427822 24.685885757153592Q95.35955417425785 28.390954881577557 95.35955417425785 33.61826170828423Q95.35955417425785 38.3285821455364 93.92348087021756 41.94748687171794Q92.48740756617727 45.56639159789949 89.67270389025828 48.20876647733363Q87.08777194298574 50.67881256028294 83.4688672168042 52.48826492337372Q79.84996249062266 54.29771728646449 75.48429964634016 55.56146179401995Q81.5158075233094 63.54602936448399 85.50809130854142 69.00310791983712Q89.50037509377344 74.46018647519024 95.30211124209625 82.27242524916944Q97.82960025720716 85.71900117886616 99.86882434894437 87.3561247454721Q101.9080484406816 88.99324831207804 103.91855106633801 90.02722109098704Q105.41206730253992 90.773979209088 107.6523416568428 91.17607973421929Q109.89261601114565 91.57818025935056 111.38613224734755 91.63562319151218ZM81.17114993033972 34.9394491480013Q81.17114993033972 27.529310899153373 76.92037295038045 23.19236952095168Q72.66959597042117 18.855428142749986 64.91480012860357 18.855428142749986H55.14950166112957V53.838173829171595H62.67452577430072Q70.60165041260315 53.838173829171595 75.88640017147144 48.754474332868945Q81.17114993033972 43.670774836566295 81.17114993033972 34.9394491480013Z"/></g>
+<g class="letter"><path class="fill" d="M178.82413460507985 34.59479155503163H174.51591469295897Q173.3096131175651 30.05679991426429 169.48965812881792 24.88693601971923Q165.66970314007074 19.71707212517417 162.1656842782124 19.200085735719654Q160.38495338120245 18.970314007073213 157.94362876433394 18.855428142749986Q155.50230414746545 18.74054227842676 152.40038581073838 18.74054227842676H138.72896795627477V51.483013610545505H148.0921658986175Q152.3429428785768 51.483013610545505 154.69810309720287 50.59264816204052Q157.05326331582896 49.70228271353554 158.7191083485157 47.864108884363965Q159.86796699174795 46.6003643768085 160.81577537241452 43.929268031293546Q161.76358375308112 41.2581716857786 162.0507984138892 38.213696281213174H166.4164612581717V70.20940949523097H162.0507984138892Q161.87846961740433 67.68192048012004 160.87321830457614 64.46511627906978Q159.86796699174795 61.24831207801952 158.7191083485157 59.812238773979225Q156.99582038366734 57.68685028399958 154.38216697031402 56.91137069981782Q151.76851355696067 56.13589111563606 148.0921658986175 56.13589111563606H138.72896795627477V84.22548494266425Q138.72896795627477 86.12110170399744 139.47572607437573 87.61461794019934Q140.22248419247668 89.10813417640125 142.1181009538099 90.02722109098704Q142.97974493623406 90.42932161611833 145.85189154431464 91.00375093773445Q148.72403815239522 91.57818025935056 150.21755438859714 91.63562319151218V95.71407137498662H114.89015110920587V91.63562319151218Q116.61343907405423 91.52073732718895 119.48558568213483 91.2622441324617Q122.35773229021541 91.00375093773445 123.2193762726396 90.60165041260316Q124.94266423748795 89.8548922945022 125.71814382166971 88.3900975243811Q126.49362340585147 86.92530275426 126.49362340585147 84.85735719644198V26.03579466295146Q126.49362340585147 24.140177901618273 125.86175115207374 22.67538313149717Q125.22987889829601 21.210588361376068 123.2193762726396 20.291501446790278Q121.66841710427607 19.544743328689336 119.05476369092273 18.970314007073213Q116.4411102775694 18.39588468545709 114.89015110920587 18.280998821133863V14.202550637659428H178.82413460507985Z"/></g>
+<g class="letter"><path class="fill" d="M300.890365448505 95.71407137498662H267.0564784053156V91.63562319151218Q268.4351087771943 91.52073732718895 271.0487621905476 91.2909655985425Q273.66241560390097 91.06119386989606 274.63894545064835 90.60165041260316Q276.3622334154967 89.91233522666383 277.16643446575927 88.50498338870433Q277.97063551602184 87.09763155074484 277.97063551602184 84.85735719644198V55.84867645482801H239.65619976422676V84.22548494266425Q239.65619976422676 86.23598756832067 240.31679348408528 87.61461794019935Q240.97738720394383 88.99324831207804 242.93044689743863 90.02722109098704Q243.90697674418604 90.54420748044156 246.40574429321617 91.06119386989606Q248.90451184224628 91.57818025935056 250.34058514628657 91.63562319151218V95.71407137498662H216.5066981030972V91.63562319151218Q217.8853284749759 91.52073732718895 220.49898188832924 91.2909655985425Q223.11263530168256 91.06119386989606 224.08916514842997 90.60165041260316Q225.8124531132783 89.91233522666383 226.6166541635409 88.50498338870433Q227.42085521380343 87.09763155074484 227.42085521380343 84.85735719644198V26.03579466295146Q227.42085521380343 24.197620833779894 226.6740970957025 22.675383131497178Q225.92733897760155 21.15314542921446 224.08916514842997 20.291501446790278Q222.53820598006644 19.544743328689336 220.32665309184438 18.970314007073213Q218.11510020362232 18.39588468545709 216.5066981030972 18.280998821133863V14.202550637659428H250.34058514628657V18.280998821133863Q248.73218304576142 18.338441753295484 246.40574429321615 18.79798521058838Q244.07930554067087 19.257528667881274 242.93044689743863 19.65962919301255Q240.97738720394383 20.3489443789519 240.31679348408528 21.95734647947703Q239.65619976422676 23.565748580002165 239.65619976422676 25.461365341335352V50.736255492444556H277.97063551602184V26.03579466295146Q277.97063551602184 24.197620833779894 277.2238773979209 22.675383131497178Q276.47711927981993 21.15314542921446 274.63894545064835 20.291501446790278Q273.0879862822849 19.544743328689336 270.8764333940628 18.970314007073213Q268.66488050584076 18.39588468545709 267.0564784053156 18.280998821133863V14.202550637659428H300.890365448505V18.280998821133863Q299.28196334797985 18.338441753295484 296.95552459543455 18.79798521058838Q294.62908584288925 19.257528667881274 293.48022719965707 19.65962919301255Q291.52716750616224 20.3489443789519 290.8665737863037 21.95734647947703Q290.2059800664452 23.565748580002165 290.2059800664452 25.461365341335352V84.22548494266425Q290.2059800664452 86.23598756832067 290.8665737863037 87.61461794019935Q291.52716750616224 88.99324831207804 293.48022719965707 90.02722109098704Q294.45675704640445 90.54420748044156 296.95552459543455 91.06119386989606Q299.45429214446466 91.57818025935056 300.890365448505 91.63562319151218Z"/></g>
+<g class="letter"><path class="fill" d="M362.2394169971064 82.38731111349267Q358.67795520308647 89.16557710856287 352.7038902582788 93.1865823598757Q346.72982531347117 97.20758761118853 338.9750294716536 97.20758761118853Q332.13932054442176 97.20758761118853 326.9981781159575 94.79498446040083Q321.85703568749324 92.38238130961312 318.5253456221198 88.24649019397708Q315.1936555567463 84.11059907834102 313.55653199014034 78.5960775908263Q311.91940842353443 73.08155610331156 311.91940842353443 66.93516236201908Q311.91940842353443 61.42064087450435 313.6714178544636 56.10716964955526Q315.42342728539273 50.79369842460616 318.81256028292785 46.54292144464689Q322.0868074161397 42.46447326117245 326.94073518379594 39.96570571214234Q331.7946629514521 37.46693816311222 337.82617082842137 37.46693816311222Q344.03000750187545 37.46693816311222 348.4531132783195 39.419997856607026Q352.8762190547636 41.37305755010183 355.633479798521 44.762190547636926Q358.2758546779552 47.978994748687185 359.5683206515914 52.34465759296968Q360.8607866252277 56.710320437252186 360.8607866252277 61.82274139963564V65.61397492230202H323.35055192369515Q323.35055192369515 71.18593934197837 324.41324616868496 75.7239309827457Q325.47594041367483 80.26192262351303 327.77365770013927 83.70849855320975Q330.01393205444214 87.04018861858323 333.6328367806237 88.96452684599723Q337.2517415068052 90.88886507341122 342.2492766048655 90.88886507341122Q347.36169756724894 90.88886507341122 351.0667666916729 88.50498338870433Q354.7718358160968 86.12110170399744 358.21841174579356 79.91726503054336ZM349.5445289893902 60.78876862072662Q349.5445289893902 57.57196441967636 348.9988211338549 53.8956167613332Q348.45311327831956 50.21926910299005 347.2468117029257 47.74922302004074Q345.92562426320865 45.106848140606594 343.62790697674416 43.441003107919855Q341.33018969027967 41.77515807523311 337.7112849640981 41.77515807523311Q331.6797770871289 41.77515807523311 327.6874933018969 46.801414639374144Q323.6952095166648 51.82767120351518 323.35055192369515 60.78876862072662Z"/></g>
+<g class="letter"><path class="fill" d="M423.47358268138464 94.6800985960776Q420.77376486978886 95.65662844282501 418.7345407780516 96.25977923052193Q416.6953166863144 96.86293001821885 414.1103847390419 96.86293001821885Q409.6298360304362 96.86293001821885 406.9587396849212 94.76626299432002Q404.28764333940626 92.66959597042118 403.5408852213053 88.64859071910836H403.19622762833563Q399.4624370378309 92.78448183474441 395.18293859179084 94.96731325688566Q390.9034401457507 97.15014467902691 384.87193226878145 97.15014467902691Q378.49576679884257 97.15014467902691 374.3885971492873 93.2440252920373Q370.28142749973205 89.3379059050477 370.28142749973205 83.0191833672704Q370.28142749973205 79.74493623405853 371.2005144143178 77.160004286786Q372.1196013289036 74.57507233951347 373.9577751580752 72.50712678169543Q375.3938484621155 70.78383881684708 377.74900868074155 69.4339299110492Q380.10416889936766 68.08402100525133 382.1721144571857 67.27981995498877Q384.75704640445826 66.30329010824136 392.65544957667987 63.66091522880721Q400.5538527489015 61.01854034937307 403.3111134926589 59.52502411317116V53.838173829171595Q403.3111134926589 53.09141571107064 402.99517736577 50.966027221091Q402.67924123888116 48.84063873111136 401.64526845997216 46.945021969778175Q400.4964098167399 44.81963347979853 398.39974279284104 43.23995284535421Q396.3030757689422 41.66027221090989 392.45439931411426 41.66027221090989Q389.8120244346801 41.66027221090989 387.5430286142964 42.55063765941487Q385.27403279391274 43.44100310791985 384.354945879327 44.41753295466725Q384.354945879327 45.56639159789949 384.9006537348623 47.80666595220235Q385.4463615903976 50.04694030650521 385.4463615903976 51.9425570678384Q385.4463615903976 53.953059693494815 383.63690922730683 55.618904726181555Q381.82745686421606 57.2847497588683 378.6106526631658 57.2847497588683Q375.73850605508517 57.2847497588683 374.3885971492873 55.24552566713108Q373.03868824348945 53.206301575393866 373.03868824348945 50.67881256028294Q373.03868824348945 48.0364376808488 374.90558353874184 45.6238345300611Q376.7724788339942 43.21123137927341 379.759511306398 41.31561461794021Q382.34444325367053 39.70721251741508 386.0207909120137 38.58707534026365Q389.69713857035686 37.46693816311222 393.2011574322152 37.46693816311222Q398.02636373379056 37.46693816311222 401.61654699389135 38.12753188297076Q405.2067302539921 38.78812560282929 408.1363197942343 40.970957024970545Q411.0659093344765 43.09634551495018 412.5881470367592 46.74397170721253Q414.1103847390419 50.39159789947488 414.1103847390419 56.13589111563606Q414.1103847390419 64.35023041474656 413.93805594255707 70.69767441860466Q413.7657271460722 77.04511842246276 413.7657271460722 84.57014253563392Q413.7657271460722 86.81041688993679 414.541206730254 88.13160432965387Q415.31668631443574 89.45279176937093 416.9250884149609 90.37187868395672Q417.78673239738504 90.88886507341122 419.65362769263743 90.94630800557283Q421.5205229878898 91.00375093773445 423.47358268138464 91.00375093773445ZM403.4259993569821 64.35023041474656Q398.5433501232451 65.78630371878685 394.86700246490193 67.16493409066554Q391.19065480655877 68.54356446254423 388.03129353767014 70.61151002036225Q385.15914692958955 72.56456971385705 383.49330189690284 75.235666059372Q381.82745686421606 77.90676240488695 381.82745686421606 81.58311006323011Q381.82745686421606 86.3508734326439 384.32622441324617 88.59114778694675Q386.8249919622763 90.83142214124962 390.6736684171043 90.83142214124962Q394.7521166005787 90.83142214124962 397.85403493730576 88.84964098167401Q400.95595327403277 86.8678598220984 403.08134176401245 84.16804201050263Z"/></g>
+<g class="letter"><path class="fill" d="M456.6755974707962 95.71407137498662H429.04554710106095V91.92283785232024Q430.366734540778 91.80795198799701 431.8602507769799 91.66434465759298Q433.3537670131818 91.52073732718895 434.3302968599292 91.23352266638089Q435.93869896045436 90.71653627692639 436.7429000107169 89.42407030329012Q437.54710106097946 88.13160432965385 437.54710106097946 86.06365877183583V20.463830243275126Q437.54710106097946 18.39588468545709 436.65673561247445 16.58643232236632Q435.7663701639695 14.77697995927555 434.3302968599292 13.743007180366533Q433.2963240810202 13.053691994427197 430.53906333726286 12.479262672811075Q427.78180259350546 11.904833351194952 426.11595756081874 11.789947486871739V8.113599828528578L447.4272853927767 6.792412388811499L448.2314864430393 7.654056371235683V85.37434358589648Q448.2314864430393 87.3848462115529 448.97824456114023 88.67731218518917Q449.7250026792412 89.96977815882543 451.3908477119279 90.65909334476477Q452.6545922194834 91.23352266638089 453.88961526095807 91.52073732718895Q455.1246383024327 91.80795198799701 456.6755974707962 91.92283785232024Z"/></g>
+<g class="letter"><path class="fill" d="M499.8152395241667 93.2440252920373Q496.08144893366193 94.79498446040083 492.74975886828844 95.85767870539064Q489.41806880291495 96.92037295038047 484.5928625013396 96.92037295038047Q477.4699389132997 96.92037295038047 474.5690708391383 93.33018969027972Q471.6682027649769 89.74000643017898 471.6682027649769 83.19151216375523V44.81963347979853H461.44336084021V39.3051119922838H471.89797449362334V21.670131818668963H482.3525881470367V39.3051119922838H498.60893794877285V44.81963347979853H482.4674740113599V76.47068910084666Q482.4674740113599 80.03215089486659 482.72596720608715 82.41603257957348Q482.98446040081444 84.79991426428037 483.9609902475618 86.58064516129033Q484.88007716214764 88.24649019397708 486.7182509913192 89.10813417640125Q488.5564248204908 89.96977815882543 491.6583431572178 89.96977815882543Q493.0944164612581 89.96977815882543 495.88039867109626 89.71128496409818Q498.66638088093447 89.45279176937093 499.8152395241667 89.05069124423964Z"/></g>
+<g class="letter"><path class="fill" d="M568.0 95.71407137498662H540.1976208337799V91.92283785232024Q541.5188082734969 91.80795198799701 543.1272103740221 91.69306612367379Q544.7356124745471 91.57818025935056 545.7695852534562 91.23352266638089Q547.3779873539813 90.71653627692639 548.1534669381631 89.42407030329012Q548.9289465223449 88.13160432965385 548.9289465223449 86.06365877183583V56.94009216589863Q548.9289465223449 50.90858428892939 546.0855213803451 47.63433715571752Q543.2420962383453 44.36009002250564 539.1636480548708 44.36009002250564Q536.176615582467 44.36009002250564 533.6204051012753 45.30789840317223Q531.0641946200835 46.25570678383883 529.0536919944271 47.63433715571752Q527.1006323009324 49.07041045975781 526.0666595220233 50.5064837637981Q525.0326867431143 51.9425570678384 524.4582574214982 52.919086914585804V85.48922945021971Q524.4582574214982 87.44228914371452 525.2337370056799 88.70603365126998Q526.0092165898617 89.96977815882543 527.6176186903868 90.65909334476477Q528.8813631979423 91.23352266638089 530.2312721037401 91.52073732718895Q531.581181009538 91.80795198799701 533.1895831100632 91.92283785232024V95.71407137498662H505.3872039438431V91.92283785232024Q506.7083913835601 91.80795198799701 508.1444646876004 91.66434465759298Q509.5805379916407 91.52073732718895 510.5570678383881 91.23352266638089Q512.1654699389132 90.71653627692639 512.9696709891758 89.42407030329012Q513.7738720394384 88.13160432965385 513.7738720394384 86.06365877183583V20.119172650305444Q513.7738720394384 18.16611295681065 512.8835065909334 16.213053263315842Q511.99314114242844 14.259993569821034 510.5570678383881 13.283463723073638Q509.5230950594791 12.536705604972681 506.90944164612574 12.220769478083817Q504.29578823277245 11.904833351194952 502.6873861322473 11.789947486871739V8.113599828528578L523.6540563712356 6.792412388811499L524.4582574214982 7.654056371235683V47.17479369842462H524.6880291501446Q526.5836459114778 45.27917693709143 528.1346050798413 43.814382166970326Q529.6855642482049 42.34958739684922 532.2130532633158 40.7411852963241Q534.3958846854571 39.36255492444541 537.3541956917801 38.44346800985962Q540.3125066981031 37.52438109527383 543.9888543564462 37.52438109527383Q551.571321401779 37.52438109527383 555.6497695852534 42.32086593076842Q559.7282177687279 47.11735076626301 559.7282177687279 56.13589111563606V85.60411531454294Q559.7282177687279 87.61461794019935 560.446254420748 88.84964098167401Q561.1642910727682 90.08466402314866 562.8301361054549 90.773979209088Q564.151323545172 91.2909655985425 565.2140177901617 91.54945879326976Q566.2767120351516 91.80795198799701 568.0 91.92283785232024Z"/></g></g>
+
+
+</svg></div></div></div>
+<p class="subtitle">Every patient. Every detail. Together.</p>
+</div>
+<div class="footer"><i></i>Preparing your workspace</div>
+</main>
+<script>
+// Standalone Design 2. No login, navigation, network requests, or prototype controls.
+// Integration: listen for 'rf-splash-ready', or inspect window.rfSplashReady.
+// The animation stays on its settled wordmark until the host removes the splash.
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const motion=matchMedia('(prefers-reduced-motion: reduce)');
+let active=[],readyTimer;
+function ready(){window.rfSplashReady=true;window.dispatchEvent(new Event('rf-splash-ready'));}
+function run(el,frames,duration,delay=0,options={}){const a=el.animate(frames,{duration,delay,fill:'both',easing:'linear',...options});active.push(a);return a;}
+function springFrames(make){const w=Math.sqrt(75),f=t=>1-Math.exp(-5*t)*(Math.cos(w*t)+5/w*Math.sin(w*t)),end=f(1.2);return Array.from({length:91},(_,i)=>({...make(f(i/90*1.2)/end),offset:i/90}))}
+function play(){
+ clearTimeout(readyTimer);active.forEach(a=>a.cancel());active=[];window.rfSplashReady=false;
+ $$('.fill').forEach(el=>el.style.opacity=1);
+ if(motion.matches){$('.subtitle').style.opacity=1;run($('.center'),[{opacity:0},{opacity:1}],200);readyTimer=setTimeout(ready,200);return;}
+ $('.subtitle').style.removeProperty('opacity');
+ run($('.approved-logo'),springFrames(v=>({opacity:Math.max(0,Math.min(1,v)),transform:`translateY(${12*(1-v)}px) scale(${.94+.06*v})`})),850,2760);
+ run($('.journal-book'),springFrames(v=>({transform:`rotate(${-7+2*v}deg) translateY(${18*(1-v)}px) scale(${.96+.04*v})`,opacity:Math.min(1,v)})),750);
+ run($('.journal-cover'),[{transform:'rotateY(0deg)'},{transform:'rotateY(-145deg)'}],950,650,{easing:'cubic-bezier(.77,0,.175,1)'});
+ run($('.leaf-one'),[{transform:'rotateY(0deg)'},{transform:'rotateY(-140deg)'}],800,1060,{easing:'cubic-bezier(.77,0,.175,1)'});
+ run($('.leaf-two'),[{transform:'rotateY(0deg)'},{transform:'rotateY(-135deg)'}],750,1400,{easing:'cubic-bezier(.77,0,.175,1)'});
+ $$('.journal-row').forEach((el,i)=>run(el,[{opacity:0,transform:'translateY(8px)'},{opacity:1,transform:'translateY(0)'}],330,1750+i*120,{easing:'cubic-bezier(.23,1,.32,1)'}));
+ run($('.journal-rule'),[{transform:'scaleX(.05)'},{transform:'scaleX(1)'}],600,1950,{easing:'cubic-bezier(.23,1,.32,1)'});
+ run($('.journal-caption'),[{opacity:0},{opacity:1}],500,250);run($('.journal-caption'),[{opacity:1},{opacity:0}],320,2450,{fill:'forwards'});
+ run($('.journal-scene'),[{transform:'translate(-50%,-50%) scale(1)',opacity:1},{transform:'translate(-50%,-65%) scale(1.13)',opacity:0}],700,2550,{easing:'cubic-bezier(.77,0,.175,1)'});
+ $$('.letter').forEach((el,i)=>run(el,[{opacity:0,transform:'translateY(18px)',clipPath:'inset(100% 0 0 0)'},{opacity:1,transform:'translateY(0)',clipPath:'inset(0% 0 0 0)'}],600,2860+i*55,{easing:'cubic-bezier(.23,1,.32,1)'}));
+ run($('.subtitle'),[{opacity:0,transform:'translateY(5px)'},{opacity:1,transform:'translateY(0)'}],600,3400,{easing:'cubic-bezier(.23,1,.32,1)'});
+ run($('.breath'),[{transform:'scale(1)'},{transform:'scale(1.012)'},{transform:'scale(1)'}],6200,4000,{iterations:Infinity,easing:'ease-in-out',fill:'forwards'});
+
+ readyTimer=setTimeout(ready,4000);
+}
+motion.addEventListener('change',play);
+window.addEventListener('pagehide',()=>{clearTimeout(readyTimer);active.forEach(a=>a.cancel());});
+play();
+</script>
+</body>
+</html>

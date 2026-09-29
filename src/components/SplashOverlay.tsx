@@ -49,49 +49,23 @@ export function SplashOverlay() {
         position: "fixed",
         inset: 0,
         zIndex: 99999,
-        backgroundColor: "#ffffff",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: "24px",
         opacity: fading ? 0 : 1,
         transition: fading ? "opacity 0.6s ease" : "none",
         pointerEvents: "none",
       }}
     >
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src="/landing/logo-rf-health.webp"
-        alt=""
-        width={110}
-        height={110}
-        style={{ display: "block" }}
+      <iframe
+        src="/splash/RF_Health_Splash.html"
+        title="RF Health"
+        style={{
+          position: "fixed",
+          inset: 0,
+          width: "100%",
+          height: "100%",
+          border: "none",
+          pointerEvents: "none",
+        }}
       />
-      <div style={{ textAlign: "center" }}>
-        <p style={{
-          margin: 0,
-          fontSize: 26,
-          fontWeight: 700,
-          color: "#041A18",
-          letterSpacing: "-0.3px",
-          fontFamily: "var(--font-inter, system-ui, -apple-system, sans-serif)",
-          lineHeight: 1.2,
-        }}>
-          RF Health
-        </p>
-        <p style={{
-          margin: "8px 0 0",
-          fontSize: 11,
-          fontWeight: 500,
-          color: "#9CA3AF",
-          letterSpacing: "1px",
-          textTransform: "uppercase",
-          fontFamily: "var(--font-inter, system-ui, -apple-system, sans-serif)",
-        }}>
-          A Product of RAPDFLY
-        </p>
-      </div>
     </div>
   );
 }
