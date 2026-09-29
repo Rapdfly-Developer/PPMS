@@ -943,7 +943,7 @@ export default function LoginPage() {
             style={{ background: "#FFFFFF", borderLeft: `1px solid ${T.border}` }}>
 
             {/* Back to Home */}
-            <div className="absolute top-4 left-4 z-10 sm:top-5 sm:left-5">
+            <div className="absolute top-6 left-4 z-10 sm:top-8 sm:left-6">
               <Link
                 href="/"
                 className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] font-medium transition-colors duration-150"
@@ -967,7 +967,7 @@ export default function LoginPage() {
                 paddingLeft: "clamp(20px,5vw,72px)",
                 paddingRight: "clamp(20px,5vw,72px)",
                 paddingBottom: "var(--vpanel)",
-                paddingTop: "max(5rem, calc(env(safe-area-inset-top, 0px) + 4rem))",
+                paddingTop: "max(8rem, calc(env(safe-area-inset-top, 0px) + 6rem))",
               }}>
 
               <div className="w-full" style={{ maxWidth: "var(--card-w)" }}>
