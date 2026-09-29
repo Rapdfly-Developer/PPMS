@@ -564,6 +564,7 @@ export type LicenseFullData = {
   razorpayOrderId: string | null;
   razorpayPaymentId: string | null;
   isActive: boolean;
+  isFirstPayment: boolean;
   events: {
     id: string;
     date: string;
@@ -638,6 +639,7 @@ export async function getLicenseFullDetails(): Promise<LicenseFullData | null> {
     razorpayOrderId: lic?.razorpayOrderId ?? null,
     razorpayPaymentId: lic?.razorpayPaymentId ?? null,
     isActive: lic?.isActive ?? false,
+    isFirstPayment: !lic?.subscriptionStartsAt || lic?.paymentStatus !== "PAID",
     events: events.map((e) => ({
       id: e.id,
       date: e.createdAt.toISOString(),

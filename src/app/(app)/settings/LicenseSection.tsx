@@ -690,6 +690,11 @@ interface PlanTier {
   razorpayPlan: string | null;
 }
 
+const FIRST_MONTH_DISCOUNTS: Record<string, { firstPrice: string; regularPrice: string; firstLabel: string }> = {
+  MONTHLY: { firstPrice: "₹750", regularPrice: "₹2,999/month", firstLabel: "first month" },
+  YEARLY:  { firstPrice: "₹6,250", regularPrice: "₹24,999/year", firstLabel: "first year" },
+};
+
 const PLAN_TIERS: PlanTier[] = [
   {
     id: "starter",
@@ -982,14 +987,35 @@ function PlansTab({ data, onRefresh, onTabChange }: { data: LicenseFullData; onR
                 </div>
               )}
 
-              <div className={`px-5 py-5 ${plan.highlight ? "bg-[var(--color-primary-50)]" : "bg-white"}`}>
-                <p className="text-xs font-bold uppercase tracking-wider text-[var(--color-ink-400)]">{plan.name}</p>
-                <p className="text-[10px] text-[var(--color-ink-400)]">{plan.tag}</p>
-                <div className="mt-2 flex items-end gap-1">
-                  <span className="text-2xl font-black text-[var(--color-ink-900)]">{plan.price}</span>
-                  <span className="text-xs text-[var(--color-ink-400)] mb-0.5">{plan.priceSub}</span>
-                </div>
-              </div>
+              {(() => {
+                const discount = plan.razorpayPlan ? FIRST_MONTH_DISCOUNTS[plan.razorpayPlan] : null;
+                const showDiscount = !!discount && data.isFirstPayment;
+                return (
+                  <div className={`px-5 py-5 ${plan.highlight ? "bg-[var(--color-primary-50)]" : "bg-white"}`}>
+                    {showDiscount && (
+                      <div className="mb-2 inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500 text-white">
+                        <Sparkles size={9} /> 75% off first month
+                      </div>
+                    )}
+                    <p className="text-xs font-bold uppercase tracking-wider text-[var(--color-ink-400)]">{plan.name}</p>
+                    <p className="text-[10px] text-[var(--color-ink-400)]">{plan.tag}</p>
+                    {showDiscount ? (
+                      <div className="mt-2">
+                        <div className="flex items-end gap-1">
+                          <span className="text-2xl font-black text-amber-600">{discount!.firstPrice}</span>
+                          <span className="text-xs text-[var(--color-ink-400)] mb-0.5">{discount!.firstLabel}</span>
+                        </div>
+                        <p className="text-[11px] text-[var(--color-ink-400)] mt-0.5">then {discount!.regularPrice}</p>
+                      </div>
+                    ) : (
+                      <div className="mt-2 flex items-end gap-1">
+                        <span className="text-2xl font-black text-[var(--color-ink-900)]">{plan.price}</span>
+                        <span className="text-xs text-[var(--color-ink-400)] mb-0.5">{plan.priceSub}</span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
 
               <div className="px-5 py-4 bg-white flex-1 flex flex-col gap-2">
                 {plan.features.map((feat) => (
@@ -1011,7 +1037,13 @@ function PlansTab({ data, onRefresh, onTabChange }: { data: LicenseFullData; onR
                   </div>
                 ) : plan.cta === "pay" ? (
                   <button
-                    onClick={() => handleRazorpay(plan.razorpayPlan!, `${plan.name} · ${plan.price}${plan.priceSub}`)}
+                    onClick={() => {
+                      const disc = plan.razorpayPlan ? FIRST_MONTH_DISCOUNTS[plan.razorpayPlan] : null;
+                      const desc = disc && data.isFirstPayment
+                        ? `${plan.name} · ${disc.firstPrice} first month (then ${disc.regularPrice})`
+                        : `${plan.name} · ${plan.price}${plan.priceSub}`;
+                      handleRazorpay(plan.razorpayPlan!, desc);
+                    }}
                     disabled={paying}
                     className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold transition-colors
                       bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-60 disabled:cursor-not-allowed"
