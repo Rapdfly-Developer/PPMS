@@ -543,7 +543,7 @@ function pinSafeAreaTop(el: HTMLElement) {
   const probe = document.createElement("div");
   probe.style.cssText =
     "position:fixed;top:0;left:0;width:0;visibility:hidden;pointer-events:none";
-  probe.style.height = "max(1.5rem, calc(env(safe-area-inset-top, 0px) + 0.75rem))";
+  probe.style.height = "max(9rem, calc(env(safe-area-inset-top, 24px) + 7rem))";
   document.body.appendChild(probe);
   const resolved = probe.getBoundingClientRect().height;
   probe.remove();
