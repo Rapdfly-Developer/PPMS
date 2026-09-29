@@ -476,7 +476,7 @@ export function NewEncounterForm({
                   </button>
                 )}
               </div>
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-2 mt-1.5 mb-2">
+              <div className="flex flex-col gap-2 mt-1.5 mb-2">
                 {/* Laterality pills */}
                 <div className="flex gap-1.5">
                   {(["RE", "LE", "OU"] as const).map((lat) => (
