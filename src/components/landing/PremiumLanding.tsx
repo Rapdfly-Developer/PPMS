@@ -937,88 +937,150 @@ export function PremiumLanding() {
 
 
       {/* ── Footer ───────────────────────────────────────────────────────── */}
-      <footer className={`border-t border-emerald-950/[0.07] ${GUTTER} py-10 sm:py-12`}>
-        <div className={`grid gap-10 sm:grid-cols-2 sm:gap-12 lg:grid-cols-[1.3fr_1fr_1fr_1fr] ${SHELL}`}>
+      <footer className={`bg-white border-t border-slate-200/60 ${GUTTER}`}>
+        {/* Main columns */}
+        <div className={`${SHELL} grid grid-cols-1 gap-10 pt-14 pb-12 sm:grid-cols-2 sm:gap-x-10 sm:gap-y-12 lg:grid-cols-[1.9fr_1fr_1fr_1fr_1.25fr] lg:gap-8`}>
+
+          {/* Brand */}
           <div>
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2.5 mb-5">
               <Image
                 src="/landing/logo-rf-health.webp"
-                alt=""
+                alt="RF Health"
                 width={32}
                 height={32}
-                className="h-8 w-8 rounded-lg object-cover ring-1 ring-emerald-950/[0.08]"
+                className="h-8 w-8 rounded-lg object-cover ring-1 ring-slate-200"
               />
-              <span className="font-display text-[16px] font-bold tracking-tight text-emerald-950">
+              <span className="font-display text-[16px] font-bold tracking-tight text-[#0d1f2d]">
                 RF Health
               </span>
             </div>
-            <p className="mt-4 max-w-xs text-[14px] leading-relaxed text-slate-500">
-              Patient practice management for doctors working across multiple hospitals. A product
-              of RAPDFLY PRIVATE LIMITED.
+            <p className="text-[13.5px] leading-relaxed text-slate-500 max-w-[230px] mb-5">
+              Smart healthcare technology for modern hospitals and medical practices.
             </p>
-            <div className="mt-5 flex flex-col gap-2.5 text-[13.5px] text-slate-500">
-              <a href="mailto:support@ppmsai.com" className="flex items-center gap-2 hover:text-emerald-800">
-                <Mail size={14} strokeWidth={1.25} aria-hidden="true" />
+            <p className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-slate-400 mb-1.5">
+              A Product of RAPDFLY
+            </p>
+            <p className="text-[13px] text-slate-600 font-medium">RAPDFLY Private Limited</p>
+            <p className="text-[12.5px] text-slate-400 mt-0.5">Bangalore, Karnataka, India</p>
+          </div>
+
+          {/* Platform */}
+          <div>
+            <h3 className="text-[10.5px] font-semibold uppercase tracking-[0.18em] text-[#0d1f2d] mb-4">
+              Platform
+            </h3>
+            <ul className="flex flex-col gap-2.5">
+              {([ ["Overview", "#platform"], ["Medical Records", "#emr"], ["Multi-Hospital", "#hospitals"], ["Surgery", "#surgery"] ] as [string, string][]).map(([label, href]) => (
+                <li key={label}>
+                  <a href={href} className="text-[13.5px] text-slate-500 hover:text-emerald-700 transition-colors duration-200">
+                    {label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Resources */}
+          <div>
+            <h3 className="text-[10.5px] font-semibold uppercase tracking-[0.18em] text-[#0d1f2d] mb-4">
+              Resources
+            </h3>
+            <ul className="flex flex-col gap-2.5">
+              {([ ["Analytics", "#analytics"], ["Security", "#security"], ["Pricing", "#pricing"], ["FAQ", "#faq"] ] as [string, string][]).map(([label, href]) => (
+                <li key={label}>
+                  <a href={href} className="text-[13.5px] text-slate-500 hover:text-emerald-700 transition-colors duration-200">
+                    {label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Get Started */}
+          <div>
+            <h3 className="text-[10.5px] font-semibold uppercase tracking-[0.18em] text-[#0d1f2d] mb-4">
+              Get Started
+            </h3>
+            <ul className="flex flex-col gap-2.5">
+              {([ ["Sign In", "/login"], ["Free Trial", "/login"], ["Book a Demo", "#contact"], ["Contact", "mailto:support@ppmsai.com"] ] as [string, string][]).map(([label, href]) => (
+                <li key={label}>
+                  <a href={href} className="text-[13.5px] text-slate-500 hover:text-emerald-700 transition-colors duration-200">
+                    {label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Follow Us + Contact */}
+          <div>
+            <h3 className="text-[10.5px] font-semibold uppercase tracking-[0.18em] text-[#0d1f2d] mb-4">
+              Follow Us
+            </h3>
+            <div className="flex items-center gap-2.5 mb-8">
+              {/* Instagram */}
+              <a href="#" aria-label="Instagram" className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-400 hover:text-emerald-700 hover:border-emerald-200 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
+                  <circle cx="12" cy="12" r="4.5"/>
+                  <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/>
+                </svg>
+              </a>
+              {/* LinkedIn */}
+              <a href="https://www.linkedin.com/company/rapdfly" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn" className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-400 hover:text-emerald-700 hover:border-emerald-200 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.32 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.79M6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 0 0-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z"/>
+                </svg>
+              </a>
+              {/* X / Twitter */}
+              <a href="#" aria-label="X / Twitter" className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-400 hover:text-emerald-700 hover:border-emerald-200 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.737-8.835L2.25 2.25h6.836l4.265 5.638L18.244 2.25Zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77Z"/>
+                </svg>
+              </a>
+              {/* Facebook */}
+              <a href="#" aria-label="Facebook" className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-400 hover:text-emerald-700 hover:border-emerald-200 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                </svg>
+              </a>
+            </div>
+
+            <h3 className="text-[10.5px] font-semibold uppercase tracking-[0.18em] text-[#0d1f2d] mb-3">
+              Contact
+            </h3>
+            <div className="flex flex-col gap-2.5">
+              <a href="mailto:support@ppmsai.com" className="flex items-center gap-2 text-[13px] text-slate-500 hover:text-emerald-700 transition-colors duration-200">
+                <Mail size={13} strokeWidth={1.5} className="shrink-0" aria-hidden="true" />
                 support@ppmsai.com
               </a>
-              <a href="tel:+917373351087" className="flex items-center gap-2 hover:text-emerald-800">
-                <Phone size={14} strokeWidth={1.25} aria-hidden="true" />
+              <a href="tel:+917373351087" className="flex items-center gap-2 text-[13px] text-slate-500 hover:text-emerald-700 transition-colors duration-200">
+                <Phone size={13} strokeWidth={1.5} className="shrink-0" aria-hidden="true" />
                 +91 73733 51087
               </a>
-              <span className="flex items-center gap-2">
-                <MapPin size={14} strokeWidth={1.25} aria-hidden="true" />
-                Bangalore, Karnataka
+              <span className="flex items-center gap-2 text-[13px] text-slate-400">
+                <MapPin size={13} strokeWidth={1.5} className="shrink-0" aria-hidden="true" />
+                Bangalore, Karnataka, India
               </span>
-              <a
-                href="https://www.linkedin.com/company/rapdfly"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 hover:text-emerald-800"
-              >
-                <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" className="shrink-0"><path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.32 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.79M6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 0 0-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z"/></svg>
-                LinkedIn
-              </a>
             </div>
           </div>
 
-          {[
-            { h: "Platform", links: [["Overview", "#platform"], ["Medical records", "#emr"], ["Multi-hospital", "#hospitals"], ["Surgery", "#surgery"]] },
-            { h: "Resources", links: [["Analytics", "#analytics"], ["Security", "#security"], ["Pricing", "#pricing"], ["FAQ", "#faq"]] },
-            { h: "Get started", links: [["Sign in", "/login"], ["Free trial", "/login"], ["Book a demo", "#contact"], ["Contact", "mailto:support@ppmsai.com"]] },
-          ].map((col) => (
-            <div key={col.h}>
-              <h3 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-950">
-                {col.h}
-              </h3>
-              <ul className="mt-4 flex flex-col gap-2.5">
-                {col.links.map(([label, href]) => (
-                  <li key={label}>
-                    <a
-                      href={href}
-                      className="text-[14px] text-slate-500 transition-colors duration-300 hover:text-emerald-800"
-                    >
-                      {label}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
         </div>
 
-        <div className={`mt-10 flex flex-col gap-3 border-t border-emerald-950/[0.07] pt-6 text-[13px] text-slate-400 sm:flex-row sm:items-center sm:justify-between ${SHELL}`}>
-          <p>© {new Date().getFullYear()} RAPDFLY PRIVATE LIMITED. All rights reserved.</p>
-          <div className="flex items-center gap-4">
-            <Link href="/privacy" className="transition-colors duration-300 hover:text-emerald-800">
+        {/* Bottom bar */}
+        <div className={`${SHELL} flex flex-col gap-3 border-t border-slate-200/60 py-5 text-[12.5px] text-slate-400 sm:flex-row sm:items-center sm:justify-between`}>
+          <p>© {new Date().getFullYear()} RAPDFLY Private Limited. All rights reserved.</p>
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+            <Link href="/privacy" className="hover:text-emerald-700 transition-colors duration-200">
               Privacy Policy
             </Link>
-            <Link href="/terms" className="transition-colors duration-300 hover:text-emerald-800">
+            <Link href="/terms" className="hover:text-emerald-700 transition-colors duration-200">
               Terms of Service
             </Link>
-            <Link href="/refund" className="transition-colors duration-300 hover:text-emerald-800">
+            <Link href="/refund" className="hover:text-emerald-700 transition-colors duration-200">
               Refund Policy
             </Link>
-            <span>ppmsai.com</span>
           </div>
         </div>
       </footer>
