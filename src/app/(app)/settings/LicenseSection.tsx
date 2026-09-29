@@ -691,8 +691,9 @@ interface PlanTier {
 }
 
 const FIRST_MONTH_DISCOUNTS: Record<string, { firstPrice: string; regularPrice: string; firstLabel: string }> = {
-  MONTHLY: { firstPrice: "₹750", regularPrice: "₹2,999/month", firstLabel: "first month" },
-  YEARLY:  { firstPrice: "₹6,250", regularPrice: "₹24,999/year", firstLabel: "first year" },
+  MONTHLY:    { firstPrice: "₹750",  regularPrice: "₹2,999/month",  firstLabel: "first month" },
+  ENTERPRISE: { firstPrice: "₹325",  regularPrice: "₹1,299/month",  firstLabel: "first month" },
+  YEARLY:     { firstPrice: "₹6,250", regularPrice: "₹24,999/year", firstLabel: "first year"  },
 };
 
 const PLAN_TIERS: PlanTier[] = [
@@ -785,6 +786,7 @@ function PlansTab({ data, onRefresh, onTabChange }: { data: LicenseFullData; onR
   const currentId =
     data.status === "TRIAL_ACTIVE" ? "starter"
     : data.plan === "MONTHLY"      ? "monthly"
+    : data.plan === "ENTERPRISE"   ? "enterprise"
     : data.plan === "YEARLY"       ? "annual"
     : null;
 
@@ -1032,7 +1034,7 @@ function PlansTab({ data, onRefresh, onTabChange }: { data: LicenseFullData; onR
 
               <div className="px-5 pb-5 bg-white">
                 {isCurrent ? (
-                  <div className="w-full py-2.5 rounded-xl text-center text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  <div className="w-full py-2.5 rounded-xl text-center text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 opacity-50 cursor-not-allowed">
                     Current Plan
                   </div>
                 ) : plan.cta === "pay" ? (
@@ -1060,8 +1062,8 @@ function PlansTab({ data, onRefresh, onTabChange }: { data: LicenseFullData; onR
                     <Mail size={12} /> {plan.ctaLabel}
                   </a>
                 ) : (
-                  <div className="w-full py-2.5 rounded-xl text-center text-xs font-medium bg-slate-50 text-slate-500 border border-slate-200">
-                    Trial Active
+                  <div className="w-full py-2.5 rounded-xl text-center text-xs font-medium bg-slate-50 text-slate-500 border border-slate-200 opacity-50 cursor-not-allowed pointer-events-none">
+                    {data.status === "SUBSCRIBED" ? "Not Available" : "Trial Active"}
                   </div>
                 )}
               </div>
