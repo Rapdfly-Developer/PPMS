@@ -33,7 +33,13 @@ export function MobileBottomNav() {
     function handleVisibility() {
       if (document.visibilityState === "visible") fetchCount();
     }
-    function handleRefresh() { fetchCount(); }
+    function handleRefresh() {
+      // Bypass cache so badge clears immediately after mark-read
+      fetch("/api/notifications/unread", { cache: "reload" })
+        .then((r) => r.json())
+        .then((d) => setUnread(d.count ?? 0))
+        .catch(() => {});
+    }
 
     document.addEventListener("visibilitychange", handleVisibility);
     window.addEventListener("notifications:refresh", handleRefresh);

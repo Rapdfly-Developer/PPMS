@@ -190,7 +190,16 @@ export function TopBar({ name, role }: { name: string; role: string }) {
     function handleVisibility() {
       if (document.visibilityState === "visible") fetchUnread();
     }
-    function handleRefresh() { fetchUnread(); }
+    async function handleRefresh() {
+      // Bypass 60s browser cache so badge clears immediately after mark-read
+      try {
+        const res = await fetch("/api/notifications/unread", { cache: "reload" });
+        if (!res.ok) return;
+        const data = await res.json();
+        setUnreadCount(data.count ?? 0);
+        setNotifItems(data.items ?? []);
+      } catch {}
+    }
 
     document.addEventListener("visibilitychange", handleVisibility);
     window.addEventListener("notifications:refresh", handleRefresh);
