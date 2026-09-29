@@ -415,13 +415,51 @@ export function AnalyticsDashboard(props: AnalyticsProps) {
             {nowStr} · {scope}
           </p>
         </div>
-        <a
-          href="#"
-          className="inline-flex items-center gap-2 text-[12px] font-semibold px-4 py-2 rounded-lg border border-[var(--color-border)] bg-white text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)] transition-colors"
+        <button
+          type="button"
+          onClick={() => {
+            const rows: string[][] = [
+              ["RF Health — Analytics Report", nowStr, scope],
+              [],
+              ["KPI Summary"],
+              ["Metric", "Value"],
+              ["This Month Appointments", String(thisMonthAppts)],
+              ["Last Month Appointments", String(lastMonthAppts)],
+              ["Today Appointments", String(todayAppts)],
+              ["Completion Rate (%)", String(completionRate)],
+              ["Cancellation Rate (%)", String(cancellationRate)],
+              ["Month-over-Month Trend (%)", String(monthTrend)],
+              ["Total Patients", String(totalPatients)],
+              ["New Patients This Month", String(newPatientsThisMonth)],
+              ["Pending Investigations", String(pendingInvestigations)],
+              ["Completed Investigations", String(completedInvestigations)],
+              [],
+              ["Appointment Status Breakdown"],
+              ["Status", "Count"],
+              ...statusRows.map(r => [r.label, String(r.count)]),
+              [],
+              ["Appointment Type Breakdown"],
+              ["Type", "Count"],
+              ...typeRows.map(r => [r.label, String(r.count)]),
+              [],
+              ["Appointment Activity (90 Days)"],
+              ["Date", "Total", "Completed"],
+              ...trendPoints.map(p => [p.dateLabel, String(p.total), String(p.completed)]),
+            ];
+            const csv = rows.map(r => r.map(c => `"${c.replace(/"/g, '""')}"`).join(",")).join("\n");
+            const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `rf-health-analytics-${new Date().toISOString().slice(0, 10)}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+          }}
+          className="inline-flex items-center gap-2 text-[12px] font-semibold px-4 py-2 rounded-lg border border-[var(--color-border)] bg-white text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)] transition-colors cursor-pointer"
         >
           <Download size={13} />
           Export Report
-        </a>
+        </button>
       </div>
 
       {/* ── KPI Strip ───────────────────────────────────────────────────── */}
