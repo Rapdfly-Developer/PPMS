@@ -1,7 +1,6 @@
 "use client";
 
 import { ScanEye } from "lucide-react";
-import { Card } from "@/components/ui/Card";
 
 /**
  * Exam guidance from the AI Clinical Copilot.
@@ -52,23 +51,28 @@ export type GuidanceState =
 function Shell({ children, note }: { children: React.ReactNode; note?: string }) {
   return (
     <div className="no-print" aria-label="AI exam guidance">
-      <Card>
+      <div
+        className="rounded-2xl px-4 py-4 sm:px-5 backdrop-blur-md"
+        style={{
+          background: "linear-gradient(135deg, rgba(168,85,247,0.07) 0%, rgba(59,130,246,0.06) 30%, rgba(20,184,166,0.05) 60%, rgba(245,158,11,0.06) 85%, rgba(239,68,68,0.05) 100%)",
+          border: "1px solid rgba(200,190,255,0.35)",
+          boxShadow: "0 4px 24px rgba(99,102,241,0.09), inset 0 1px 0 rgba(255,255,255,0.55)",
+        }}
+      >
         <div className="flex items-center gap-2 mb-3 flex-wrap">
-          <ScanEye size={13} className="shrink-0 text-[var(--color-primary-600)]" />
-          <p className="text-xs font-semibold tracking-widest text-[var(--color-ink-500)] uppercase">
+          <ScanEye size={13} className="shrink-0 text-violet-500" />
+          <p className="text-[11px] font-semibold tracking-widest text-violet-600/80 uppercase italic">
             Exam Guidance
           </p>
-          {/* Load-bearing caveat, not a footnote: this sits beside fields the
-              doctor is actively editing and points at a clinical examination. */}
-          <span className="ml-auto shrink-0 text-[9px] sm:text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
-            AI-generated, guidance only, not a diagnosis
+          <span className="ml-auto shrink-0 text-[9px] sm:text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-violet-50 text-violet-600 border border-violet-200/70">
+            AI · guidance only
           </span>
         </div>
 
         {children}
 
-        {note && <p className="mt-2 text-[10px] text-[var(--color-ink-400)]">{note}</p>}
-      </Card>
+        {note && <p className="mt-2 text-[10px] text-violet-400/70 italic">{note}</p>}
+      </div>
     </div>
   );
 }

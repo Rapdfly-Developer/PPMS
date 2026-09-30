@@ -408,18 +408,15 @@ function AddCustomTestModal({
         style={{ background: "var(--color-surface)" }}
       >
         {/* Header */}
-        <div
-          className="px-5 py-4 flex items-center justify-between"
-          style={{ background: "linear-gradient(135deg, #0F766E 0%, #0D9488 100%)" }}
-        >
+        <div className="px-5 py-4 flex items-center justify-between border-b border-[var(--color-border)]">
           <div className="flex items-center gap-2.5">
-            <FlaskConical size={17} className="text-white/80" />
-            <p className="text-[13px] sm:text-sm font-semibold text-white tracking-tight">Add Test</p>
+            <FlaskConical size={17} className="text-[var(--color-primary-600)]" />
+            <p className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-800)] tracking-tight">Add Test</p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="text-white/60 hover:text-white transition-colors p-1"
+            className="text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)] transition-colors p-1"
           >
             <X size={16} />
           </button>
@@ -532,7 +529,7 @@ function NewInvestigations({
   const [selected, setSelected] = useState<string[]>([]);
   const [priority, setPriority] = useState("ROUTINE");
   const [laterality, setLaterality] = useState("OU");
-  const [notes, setNotes] = useState("");
+  const [testNotes, setTestNotes] = useState<Record<string, string>>({});
   const [pending, startTransition] = useTransition();
   const [showAddModal, setShowAddModal] = useState(false);
 
@@ -592,10 +589,10 @@ function NewInvestigations({
         const catFromCatalog = Object.entries(INV_CATALOG).find(([, items]) => items.some((i) => i.name === testName))?.[0];
         const catFromCustom = customTests.find((t) => t.name === testName)?.category;
         const cat = catFromCatalog ?? catFromCustom ?? "Other";
-        await addInvestigationOrder(visit.id, udid, { category: cat, testName, priority, laterality, notes });
+        await addInvestigationOrder(visit.id, udid, { category: cat, testName, priority, laterality, notes: testNotes[testName] ?? "" });
       }
       setSelected([]);
-      setNotes("");
+      setTestNotes({});
     });
   };
 
@@ -666,43 +663,50 @@ function NewInvestigations({
           {currentItems.map((item) => {
             const checked = selected.includes(item.name);
             return (
-              <label
-                key={item.name}
-                className={clsx(
-                  "flex items-center justify-between px-3 py-2.5 rounded-xl border cursor-pointer transition-colors",
-                  checked
-                    ? "border-[var(--color-primary-400)] bg-[var(--color-primary-50)]"
-                    : "border-[var(--color-border)] hover:border-[var(--color-primary-300)] hover:bg-[var(--color-surface-sunken)]"
-                )}
-              >
-                <span className="flex items-center gap-2.5 text-[13px] sm:text-sm text-[var(--color-ink-700)]">
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    onChange={() => toggleTest(item.name)}
-                    className="accent-[var(--color-primary-600)]"
-                  />
-                  {item.name}
-                </span>
-                {item.isCustom && (
-                  <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-[#EEF8F7] text-[#0F766E] border border-[#B2DEDA] ml-2 shrink-0">
-                    Custom
+              <div key={item.name} className="flex flex-col">
+                <label
+                  className={clsx(
+                    "flex items-center justify-between px-3 py-2.5 rounded-xl border cursor-pointer transition-colors",
+                    checked
+                      ? "border-[var(--color-primary-400)] bg-[var(--color-primary-50)] rounded-b-none border-b-0"
+                      : "border-[var(--color-border)] hover:border-[var(--color-primary-300)] hover:bg-[var(--color-surface-sunken)]"
+                  )}
+                >
+                  <span className="flex items-center gap-2.5 text-[13px] sm:text-sm text-[var(--color-ink-700)]">
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => toggleTest(item.name)}
+                      className="accent-[var(--color-primary-600)]"
+                    />
+                    {item.name}
                   </span>
+                  {item.isCustom && (
+                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-[#EEF8F7] text-[#0F766E] border border-[#B2DEDA] ml-2 shrink-0">
+                      Custom
+                    </span>
+                  )}
+                </label>
+                {checked && (
+                  <div className="px-3 py-2 rounded-b-xl border border-t-0 border-[var(--color-primary-400)] bg-[var(--color-primary-50)]">
+                    <p className="text-[9px] font-semibold uppercase tracking-wider text-[var(--color-primary-600)] mb-1">In view of</p>
+                    <input
+                      type="text"
+                      value={testNotes[item.name] ?? ""}
+                      onChange={(e) => setTestNotes((prev) => ({ ...prev, [item.name]: e.target.value }))}
+                      placeholder="Indication for this test…"
+                      className="w-full text-xs bg-white/70 rounded-lg border border-[var(--color-primary-200)] px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-400)] placeholder:text-[var(--color-ink-300)]"
+                      onClick={(e) => e.preventDefault()}
+                    />
+                  </div>
                 )}
-              </label>
+              </div>
             );
           })}
         </div>
 
-        {/* Notes + place order */}
+        {/* Place order */}
         <div className="px-4 pb-4 flex flex-col gap-3 border-t border-[var(--color-border)] pt-3">
-          <textarea
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder="Clinical notes / special instructions..."
-            rows={2}
-            className="w-full rounded-xl border border-[var(--color-border)] px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
-          />
           <div className="flex items-center justify-between">
             <span className="text-xs text-[var(--color-ink-400)]">
               {selected.length} test{selected.length !== 1 ? "s" : ""} selected

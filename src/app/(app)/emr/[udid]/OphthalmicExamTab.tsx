@@ -1188,6 +1188,26 @@ function GonioscopyCard({
   const [method, setMethod] = useState(initial.method ?? "");
   const [showHistory, setShowHistory] = useState(false);
   const [loadToast, setLoadToast] = useState(false);
+  const [customMethods, setCustomMethods] = useState<string[]>(() => {
+    if (typeof window === "undefined") return [];
+    try { return JSON.parse(localStorage.getItem("ppms_custom_gonio_methods") ?? "[]"); }
+    catch { return []; }
+  });
+  const [addingMethod, setAddingMethod] = useState(false);
+  const [newMethodText, setNewMethodText] = useState("");
+
+  const handleAddMethod = () => {
+    const trimmed = newMethodText.trim();
+    if (!trimmed || (GONIO_METHODS as readonly string[]).includes(trimmed) || customMethods.includes(trimmed)) {
+      setAddingMethod(false); setNewMethodText(""); return;
+    }
+    const next = [...customMethods, trimmed];
+    setCustomMethods(next);
+    setMethod(trimmed);
+    try { localStorage.setItem("ppms_custom_gonio_methods", JSON.stringify(next)); } catch {}
+    setNewMethodText("");
+    setAddingMethod(false);
+  };
 
   const state = useAutoSave(
     { re, le, reDeg, leDeg, method },
@@ -1236,8 +1256,34 @@ function GonioscopyCard({
             >
               <option value="">Not recorded</option>
               {GONIO_METHODS.map((m) => <option key={m} value={m}>{m}</option>)}
+              {customMethods.map((m) => <option key={`custom-${m}`} value={m}>{m}</option>)}
             </select>
           </div>
+          {editable && (
+            addingMethod ? (
+              <div className="flex items-center gap-1">
+                <input
+                  autoFocus
+                  type="text"
+                  value={newMethodText}
+                  onChange={(e) => setNewMethodText(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleAddMethod(); } if (e.key === "Escape") { setAddingMethod(false); setNewMethodText(""); } }}
+                  placeholder="Method name…"
+                  className="rounded-md border border-[var(--color-border)] px-2 py-0.5 text-xs focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] w-36"
+                />
+                <button type="button" onClick={handleAddMethod} className="text-xs text-[var(--color-primary-600)] font-semibold px-2 py-0.5 rounded hover:bg-[var(--color-primary-50)] transition-colors">Add</button>
+                <button type="button" onClick={() => { setAddingMethod(false); setNewMethodText(""); }} className="text-xs text-[var(--color-ink-400)] px-1.5 py-0.5 rounded hover:bg-[var(--color-surface-sunken)] transition-colors"><X size={11} /></button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setAddingMethod(true)}
+                className="flex items-center gap-1 text-[10px] font-semibold text-[var(--color-primary-600)] px-2 py-1 rounded-lg border border-dashed border-[var(--color-primary-300)] hover:bg-[var(--color-primary-50)] transition-colors whitespace-nowrap"
+              >
+                <Plus size={10} /> Add Method
+              </button>
+            )
+          )}
         </div>
         <div className="flex items-center gap-2">
           {historyRows.length > 0 && (
