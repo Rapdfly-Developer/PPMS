@@ -109,7 +109,7 @@ const nextConfig: NextConfig = {
       ? EXTERNAL_PLUGIN_ORIGINS.join(" ")
       : "";
 
-    const frameSrc = [RAZORPAY_ORIGINS, pluginSrc].filter(Boolean).join(" ");
+    const frameSrc = ["'self'", RAZORPAY_ORIGINS, pluginSrc].filter(Boolean).join(" ");
 
     const csp = [
       `frame-src ${frameSrc}`,
