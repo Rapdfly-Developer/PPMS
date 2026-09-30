@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import {
   Search, Stethoscope, UserPlus, Users,
   User, Phone, FileText, CalendarDays,
-  Building2, AlertCircle, Download, Loader2,
+  Building2, AlertCircle, Download, Loader2, ListOrdered,
 } from "lucide-react";
 import { BackButton } from "@/components/ui/BackButton";
 import { SmartUploadBox, type UploadedFile } from "@/components/ui/SmartUploadBox";
@@ -67,10 +67,12 @@ export function NewEncounterForm({
   patients,
   autoHospital,
   currentTimeIST,
+  role,
 }: {
   patients: Patient[];
   autoHospital: { id: string; name: string } | null;
   currentTimeIST: string;
+  role: string;
 }) {
   const searchParams = useSearchParams();
   const returnTo = searchParams.get("returnTo") ?? "/dashboard";
@@ -144,9 +146,11 @@ export function NewEncounterForm({
       )
     : patients.slice(0, 8);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError("");
+    const submitter = (e.nativeEvent as SubmitEvent).submitter as HTMLButtonElement | null;
+    const intent = submitter?.dataset.intent ?? "startEncounter";
 
     if (!hospitalId) { setError("No hospital detected for the current time. Please check your schedule."); return; }
 
@@ -154,6 +158,7 @@ export function NewEncounterForm({
     fd.set("mode", patientMode);
     fd.set("visitType", visitType);
     fd.set("hospitalId", hospitalId);
+    fd.set("intent", intent);
     // date and time are intentionally omitted — the server action defaults to now()
 
     const isGeneralOPD = visitType === "General OPD";
@@ -201,7 +206,9 @@ export function NewEncounterForm({
     <div className="max-w-2xl mx-auto fade-in">
       <h1 className="text-lg sm:text-xl font-semibold text-[var(--color-ink-900)] mb-1">New Encounter</h1>
       <p className="text-sm text-[var(--color-ink-500)] mb-6">
-        Start a walk-in visit and open the patient&apos;s EMR immediately.
+        {role === "DOCTOR"
+          ? "Start a walk-in visit and open the patient’s EMR, or add them to the queue."
+          : "Add a walk-in patient to the queue."}
       </p>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-5">
@@ -476,15 +483,15 @@ export function NewEncounterForm({
                   </button>
                 )}
               </div>
-              <div className="flex flex-col gap-2 mt-1.5 mb-2">
-                {/* Laterality pills */}
-                <div className="flex gap-1.5">
+              {/* Single row: laterality | CC text | Since */}
+              <div className="flex items-center gap-2 mt-1.5">
+                <div className="flex gap-1 shrink-0">
                   {(["RE", "LE", "OU"] as const).map((lat) => (
                     <button
                       key={lat}
                       type="button"
                       onClick={() => setLaterality(laterality === lat ? "" : lat)}
-                      className="px-3.5 py-1 rounded-full text-xs font-semibold border transition-colors"
+                      className="px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors"
                       style={laterality === lat ? {
                         background: "var(--color-primary-700)",
                         color: "#fff",
@@ -499,8 +506,14 @@ export function NewEncounterForm({
                     </button>
                   ))}
                 </div>
-                {/* Since */}
-                <div className="flex items-center gap-1.5">
+                <input
+                  type="text"
+                  value={complaint}
+                  onChange={(e) => setComplaint(e.target.value)}
+                  placeholder="Chief complaint…"
+                  className="flex-1 min-w-0 rounded-xl border border-[var(--color-border)] bg-white px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] transition-shadow"
+                />
+                <div className="flex items-center gap-1 shrink-0">
                   <span className="text-xs text-[var(--color-ink-500)]">Since</span>
                   <select
                     value={sinceNum}
@@ -524,11 +537,14 @@ export function NewEncounterForm({
                   </select>
                 </div>
               </div>
-              <ComplaintCombobox
-                value={complaint}
-                onChange={setComplaint}
-                inputCls={inputCls}
-              />
+              {/* Keywords row */}
+              <div className="mt-2">
+                <ComplaintCombobox
+                  value={complaint}
+                  onChange={setComplaint}
+                  hideInput
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -539,14 +555,28 @@ export function NewEncounterForm({
           </p>
         )}
 
-        <button
-          type="submit"
-          disabled={pending || !autoHospital || (patientMode === "existing" && !selectedPatient)}
-          className="flex items-center justify-center gap-2 bg-[var(--color-primary-900)] text-white text-sm font-semibold px-6 py-3 rounded-xl hover:bg-[var(--color-primary-700)] disabled:opacity-50 transition-colors"
-        >
-          <Stethoscope size={16} />
-          {pending ? "Opening EMR..." : "Start Encounter"}
-        </button>
+        <div className="flex gap-3">
+          {role === "DOCTOR" && (
+            <button
+              type="submit"
+              data-intent="startEncounter"
+              disabled={pending || !autoHospital || (patientMode === "existing" && !selectedPatient)}
+              className="flex-1 flex items-center justify-center gap-2 bg-[var(--color-primary-900)] text-white text-sm font-semibold px-6 py-3 rounded-xl hover:bg-[var(--color-primary-700)] disabled:opacity-50 transition-colors"
+            >
+              <Stethoscope size={16} />
+              {pending ? "Opening EMR..." : "Start Encounter"}
+            </button>
+          )}
+          <button
+            type="submit"
+            data-intent="addToQ"
+            disabled={pending || !autoHospital || (patientMode === "existing" && !selectedPatient)}
+            className="flex-1 flex items-center justify-center gap-2 bg-white border border-[var(--color-primary-700)] text-[var(--color-primary-700)] text-sm font-semibold px-6 py-3 rounded-xl hover:bg-[var(--color-primary-50)] disabled:opacity-50 transition-colors"
+          >
+            <ListOrdered size={16} />
+            {pending ? "Adding…" : "Add to Q"}
+          </button>
+        </div>
       </form>
     </div>
   );

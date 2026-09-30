@@ -1,4 +1,4 @@
-import { requireRole } from "@/lib/rbac";
+import { requireRole, scopeDoctorId, isCustomRole } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { NewEncounterForm } from "./NewEncounterForm";
 
@@ -143,28 +143,40 @@ async function detectCurrentHospital(
 // ── Page ─────────────────────────────────────────────────────────────────────
 
 export default async function NewEncounterPage() {
-  const user = await requireRole("DOCTOR");
+  const user = await requireRole("DOCTOR", "HOSPITAL");
+  const doctorId = scopeDoctorId(user);
 
   const patients = await prisma.patient.findMany({
-    where: { doctorId: user.profileId },
+    where: { doctorId },
     orderBy: { name: "asc" },
     select: { id: true, name: true, udid: true, age: true, sex: true },
   });
 
-  const links = await prisma.doctorHospitalLink.findMany({
-    where: { doctorId: user.profileId!, active: true },
-    include: { hospital: { select: { id: true, name: true } } },
-  });
-  const hospitals = links.map((l) => l.hospital);
-
   const { displayTime } = getISTNow();
-  const autoHospital = await detectCurrentHospital(user.profileId!, hospitals);
+
+  let autoHospital: { id: string; name: string } | null = null;
+
+  if (user.role === "DOCTOR") {
+    const links = await prisma.doctorHospitalLink.findMany({
+      where: { doctorId, active: true },
+      include: { hospital: { select: { id: true, name: true } } },
+    });
+    const hospitals = links.map((l) => l.hospital);
+    autoHospital = await detectCurrentHospital(doctorId, hospitals);
+  } else if (user.hospitalId) {
+    // Hospital staff are assigned to a fixed hospital — no schedule detection needed.
+    autoHospital = await prisma.hospital.findUnique({
+      where: { id: user.hospitalId },
+      select: { id: true, name: true },
+    }) ?? null;
+  }
 
   return (
     <NewEncounterForm
       patients={patients.map((p) => ({ ...p, udid: p.udid ?? "" }))}
       autoHospital={autoHospital}
       currentTimeIST={displayTime}
+      role={user.role}
     />
   );
 }

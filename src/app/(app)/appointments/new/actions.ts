@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { requirePermission } from "@/lib/rbac";
+import { requirePermission, scopeDoctorId } from "@/lib/rbac";
 import { generateUDID, generateUHID } from "@/lib/udid";
 import { encryptAadhaar } from "@/lib/crypto";
 import { redirect } from "next/navigation";
@@ -9,10 +9,12 @@ import { istDayRange } from "@/lib/ist";
 
 export async function createWalkInEncounter(formData: FormData) {
   const user = await requirePermission("opd.walkin.create");
+  const doctorId = scopeDoctorId(user);
 
   const mode      = (formData.get("mode") as string) || "existing";
   const visitType = formData.get("visitType") as string;
   const hospitalId = formData.get("hospitalId") as string;
+  const intent    = (formData.get("intent") as string) || "startEncounter";
 
   if (!visitType || !hospitalId) {
     return { error: "Visit type and hospital are required." };
@@ -20,7 +22,7 @@ export async function createWalkInEncounter(formData: FormData) {
 
   // Verify doctor is linked to this hospital
   const link = await prisma.doctorHospitalLink.findFirst({
-    where: { doctorId: user.profileId!, hospitalId, active: true },
+    where: { doctorId, hospitalId, active: true },
   });
   if (!link) return { error: "You are not linked to the selected hospital." };
 
@@ -68,7 +70,7 @@ export async function createWalkInEncounter(formData: FormData) {
     const hospitalShortCode = hospital?.shortCode ?? "GEN";
 
     const doctor = await prisma.doctor.findUnique({
-      where: { id: user.profileId! },
+      where: { id: doctorId },
       select: { shortCode: true },
     });
     const udidCode = doctor?.shortCode ?? hospitalShortCode;
@@ -82,7 +84,7 @@ export async function createWalkInEncounter(formData: FormData) {
       data: {
         udid,
         uhid,
-        doctorId:       user.profileId!,
+        doctorId,
         registeredAtId: hospitalId,
         name,
         age,
@@ -120,7 +122,7 @@ export async function createWalkInEncounter(formData: FormData) {
   const sameDayAppt = await prisma.appointment.findFirst({
     where: {
       patientId,
-      doctorId: user.profileId!,
+      doctorId,
       dateTime: { gte: dayStart, lte: dayEnd },
       status: { notIn: ["CANCELLED", "NO_SHOW"] },
     },
@@ -132,7 +134,7 @@ export async function createWalkInEncounter(formData: FormData) {
   const appointment = await prisma.appointment.create({
     data: {
       patientId,
-      doctorId:  user.profileId!,
+      doctorId,
       hospitalId,
       dateTime:  now,
       visitType,
@@ -141,10 +143,14 @@ export async function createWalkInEncounter(formData: FormData) {
     },
   });
 
+  if (intent === "addToQ") {
+    redirect("/appointments");
+  }
+
   const visit = await prisma.visit.create({
     data: {
       patientId,
-      doctorId:      user.profileId!,
+      doctorId,
       hospitalId,
       appointmentId: appointment.id,
       visitType,

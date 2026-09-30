@@ -57,6 +57,8 @@ interface Props {
   onChange: (v: string) => void;
   placeholder?: string;
   inputCls?: string;
+  /** When true, hides the text input row — only keyword chips are rendered. */
+  hideInput?: boolean;
 }
 
 export function ComplaintCombobox({
@@ -64,6 +66,7 @@ export function ComplaintCombobox({
   onChange,
   placeholder = "Or type a custom complaint…",
   inputCls = "",
+  hideInput = false,
 }: Props) {
   // Same key the EMR's chief-complaint field uses, so a keyword saved here
   // shows up there and vice versa.
@@ -130,26 +133,28 @@ export function ComplaintCombobox({
     <div className="flex flex-col gap-3">
 
       {/* ── Input — shows selected value; typing sets a custom complaint ── */}
-      <div className="flex gap-2">
-        <input
-          ref={inputRef}
-          type="text"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder={placeholder}
-          className={`${inputCls} flex-1`}
-        />
-        <button
-          type="button"
-          onClick={addCustom}
-          disabled={!isCustomValue}
-          title="Save as keyword"
-          className="shrink-0 flex items-center gap-1 px-3 py-2 rounded-xl border border-[var(--color-border)] text-xs font-semibold text-[var(--color-ink-600)] bg-white hover:bg-[var(--color-surface-sunken)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-        >
-          <Plus size={12} /> Add
-        </button>
-      </div>
+      {!hideInput && (
+        <div className="flex gap-2">
+          <input
+            ref={inputRef}
+            type="text"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder={placeholder}
+            className={`${inputCls} flex-1`}
+          />
+          <button
+            type="button"
+            onClick={addCustom}
+            disabled={!isCustomValue}
+            title="Save as keyword"
+            className="shrink-0 flex items-center gap-1 px-3 py-2 rounded-xl border border-[var(--color-border)] text-xs font-semibold text-[var(--color-ink-600)] bg-white hover:bg-[var(--color-surface-sunken)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          >
+            <Plus size={12} /> Add
+          </button>
+        </div>
+      )}
 
       {/* ── Standard keyword chips ───────────────────────────────────── */}
       <div className="flex flex-wrap gap-1.5">
