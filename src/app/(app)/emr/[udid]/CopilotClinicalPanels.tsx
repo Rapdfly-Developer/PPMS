@@ -1,20 +1,28 @@
 "use client";
 
 import { useId, useState, type ReactNode } from "react";
-import { Card } from "@/components/ui/Card";
 import { useCopilotCard, type CopilotCardState } from "./copilot-cards-store";
 
 function Shell({ title, children, ready }: { title: string; children: ReactNode; ready?: boolean }) {
   return (
     <section aria-label={title} className="no-print min-w-0">
-      <Card>
+      <div
+        className="rounded-2xl px-4 py-4 sm:px-5 backdrop-blur-md"
+        style={{
+          background: "linear-gradient(135deg, rgba(168,85,247,0.07) 0%, rgba(59,130,246,0.06) 30%, rgba(20,184,166,0.05) 60%, rgba(245,158,11,0.06) 85%, rgba(239,68,68,0.05) 100%)",
+          border: "1px solid rgba(200,190,255,0.35)",
+          boxShadow: "0 4px 24px rgba(99,102,241,0.09), inset 0 1px 0 rgba(255,255,255,0.55)",
+        }}
+      >
         <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-          <h3 className="text-xs font-semibold tracking-widest text-[var(--color-ink-500)] uppercase">{title}</h3>
-          <span className="text-xs text-amber-800">AI-generated · For clinician review</span>
+          <h3 className="text-[11px] font-semibold tracking-widest text-violet-600/80 uppercase italic">{title}</h3>
+          <span className="shrink-0 text-[9px] sm:text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-violet-50 text-violet-600 border border-violet-200/70">
+            AI · guidance only
+          </span>
         </div>
         {children}
-        {ready && <p className="mt-3 text-xs text-[var(--color-ink-500)]">Based on the record when the analysis ran. Regenerate in AI Clinical Copilot after adding findings.</p>}
-      </Card>
+        {ready && <p className="mt-3 text-[10px] text-violet-400/70 italic">Based on the record when the analysis ran. Regenerate in AI Clinical Copilot after adding findings.</p>}
+      </div>
     </section>
   );
 }

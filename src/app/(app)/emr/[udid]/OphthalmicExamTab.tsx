@@ -652,6 +652,24 @@ function ColourContrastTab({ visit, udid, editable, priorVisits = [] }: { visit:
   const [csReNotes, setCsReNotes]   = useState<string>(storedRe.csNotes ?? "");
   const [csLeNotes, setCsLeNotes]   = useState<string>(storedLe.csNotes ?? "");
 
+  const [cvLoadToast, setCvLoadToast] = useState(false);
+
+  const handleCVLoad = (p: { re: any; le: any }) => {
+    if (!editable) return;
+    if (p.re.cvMethod) setCvMethod(p.re.cvMethod);
+    if (p.re.result)   setReResult(p.re.result);
+    if (p.le.result)   setLeResult(p.le.result);
+    setCvLoadToast(true);
+  };
+
+  const handleCSLoad = (p: { re: any; le: any }) => {
+    if (!editable) return;
+    if (p.re.csMethod)  setCsMethod(p.re.csMethod);
+    if (p.re.csResult)  setCsReResult(p.re.csResult);
+    if (p.le.csResult)  setCsLeResult(p.le.csResult);
+    setCvLoadToast(true);
+  };
+
   const state = useAutoSave(
     {
       re: JSON.stringify({ cvMethod, result: reResult, notes: reNotes, csMethod, csResult: csReResult, csNotes: csReNotes }),
@@ -735,7 +753,12 @@ function ColourContrastTab({ visit, udid, editable, priorVisits = [] }: { visit:
               </thead>
               <tbody className="divide-y divide-[#D5EFED]">
                 {priorCv.slice(0, 5).map((p, i) => (
-                  <tr key={i} className="hover:bg-[#DCF3F1]/60 transition-colors">
+                  <tr
+                    key={i}
+                    onDoubleClick={() => handleCVLoad(p)}
+                    title={editable ? "Double-click to load into form" : undefined}
+                    className={`hover:bg-[#DCF3F1]/60 transition-colors ${editable ? "cursor-pointer select-none" : ""}`}
+                  >
                     <td className="py-2 px-3 text-[var(--color-ink-500)] whitespace-nowrap">{p.re.cvMethod || cvMethod}</td>
                     <td className="py-2 px-3 text-[var(--color-ink-600)] whitespace-nowrap">{format(new Date(p.date), "d MMM yyyy")}</td>
                     <td className="py-2 px-3 text-[var(--color-ink-400)] whitespace-nowrap">{p.updatedAt ? format(new Date(p.updatedAt), "h:mm a") : "—"}</td>
@@ -749,6 +772,7 @@ function ColourContrastTab({ visit, udid, editable, priorVisits = [] }: { visit:
                 ))}
               </tbody>
             </table>
+            {editable && <p className="px-3 pb-2 text-[9px] text-[var(--color-ink-400)]">· double-click a row to load</p>}
           </div>
         )}
       </Card>
@@ -798,7 +822,12 @@ function ColourContrastTab({ visit, udid, editable, priorVisits = [] }: { visit:
               </thead>
               <tbody className="divide-y divide-[#D5EFED]">
                 {priorCv.slice(0, 5).map((p, i) => (
-                  <tr key={i} className="hover:bg-[#DCF3F1]/60 transition-colors">
+                  <tr
+                    key={i}
+                    onDoubleClick={() => handleCSLoad(p)}
+                    title={editable ? "Double-click to load into form" : undefined}
+                    className={`hover:bg-[#DCF3F1]/60 transition-colors ${editable ? "cursor-pointer select-none" : ""}`}
+                  >
                     <td className="py-2 px-3 text-[var(--color-ink-500)] whitespace-nowrap">{p.re.csMethod || csMethod}</td>
                     <td className="py-2 px-3 text-[var(--color-ink-600)] whitespace-nowrap">{format(new Date(p.date), "d MMM yyyy")}</td>
                     <td className="py-2 px-3 text-[var(--color-ink-400)] whitespace-nowrap">{p.updatedAt ? format(new Date(p.updatedAt), "h:mm a") : "—"}</td>
@@ -812,9 +841,11 @@ function ColourContrastTab({ visit, udid, editable, priorVisits = [] }: { visit:
                 ))}
               </tbody>
             </table>
+            {editable && <p className="px-3 pb-2 text-[9px] text-[var(--color-ink-400)]">· double-click a row to load</p>}
           </div>
         )}
       </Card>
+      {cvLoadToast && <Toast message="Previous record loaded." onDone={() => setCvLoadToast(false)} />}
     </div>
   );
 }
@@ -826,6 +857,7 @@ function IOPCard({ visit, udid, editable, priorVisits }: { visit: any; udid: str
   const [le, setLe] = useState("");
   const [method, setMethod] = useState<string>(IOP_METHODS[0]);
   const [deletePending, startDelete] = useTransition();
+  const [iopLoadToast, setIopLoadToast] = useState(false);
   const readings: any[] = visit.iopReadings ?? [];
 
   const priorIOPRows = priorVisits
@@ -913,10 +945,23 @@ function IOPCard({ visit, udid, editable, priorVisits }: { visit: any; udid: str
               {priorIOPRows.length > 0 && (
                 <>
                   <tr className="bg-[#E0F2F0]">
-                    <td colSpan={editable ? 6 : 5} className="px-3 py-1 text-[9px] sm:text-[10px] font-bold text-[#0F766E] uppercase tracking-widest">Previous Readings</td>
+                    <td colSpan={editable ? 6 : 5} className="px-3 py-1 text-[9px] sm:text-[10px] font-bold text-[#0F766E] uppercase tracking-widest">
+                      Previous Readings{editable && <span className="ml-2 font-normal normal-case tracking-normal text-[#0F766E]/70">· double-click to load</span>}
+                    </td>
                   </tr>
                   {priorIOPRows.slice(0, 5).map((r, i) => (
-                    <tr key={i} className="hover:bg-[#DCF3F1]/60 transition-colors">
+                    <tr
+                      key={i}
+                      onDoubleClick={() => {
+                        if (!editable) return;
+                        if (r.re != null) setRe(String(r.re));
+                        if (r.le != null) setLe(String(r.le));
+                        if (r.method) setMethod(r.method);
+                        setIopLoadToast(true);
+                      }}
+                      title={editable ? "Double-click to load into form" : undefined}
+                      className={`hover:bg-[#DCF3F1]/60 transition-colors ${editable ? "cursor-pointer select-none" : ""}`}
+                    >
                       <td className="py-2 px-3 text-[var(--color-ink-500)] whitespace-nowrap">{r.method}</td>
                       <td className="py-2 px-3 text-[var(--color-ink-600)] whitespace-nowrap">{format(new Date(r.takenAt), "d MMM yyyy")}</td>
                       <td className="py-2 px-3 text-[var(--color-ink-400)] whitespace-nowrap">{format(new Date(r.takenAt), "h:mm a")}</td>
@@ -931,6 +976,7 @@ function IOPCard({ visit, udid, editable, priorVisits }: { visit: any; udid: str
           </table>
         </div>
       </div>
+      {iopLoadToast && <Toast message="IOP values loaded into form." onDone={() => setIopLoadToast(false)} />}
     </Card>
   );
 }
@@ -1443,7 +1489,7 @@ function SegmentEyeInput({
   };
 
   const append = (kw: string) => {
-    onChange(value ? `${value}, ${kw}` : kw);
+    onChange(value ? `${value} • ${kw}` : `• ${kw}`);
   };
 
   const addKeyword = () => {
