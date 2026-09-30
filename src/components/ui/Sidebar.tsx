@@ -33,7 +33,7 @@ const ALL_NAV: NavEntry[] = [
   // list on a permission-gated page hid Appointments and Follow Ups from staff
   // who held the permission and could open the page by URL.
   { href: "/appointments", label: "Appointments", icon: CalendarDays,    permission: "appointments.view"                                     },
-  { href: "/patients",     label: "Patients",     icon: Users,           permission: "patients.view"                                         },
+  { href: "/patients",     label: "Patient Library", icon: Users,        permission: "patients.view"                                         },
   { href: "/follow-ups",   label: "Follow Ups",   icon: CalendarClock,   permission: "patients.view"                                         },
   { href: "/analytics",    label: "Analytics",     icon: BarChart2,      permission: "reports.view",      roles: ["DOCTOR", "HOSPITAL"]      },
   { href: "/settings/plugins", label: "Plugins", icon: Puzzle, permission: "plugins.view", roles: ["DOCTOR"] },

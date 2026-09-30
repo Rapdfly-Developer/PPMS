@@ -418,7 +418,7 @@ export function PatientsClient({
       {/* ── Header ─────────────────────────────────────────────────────── */}
       <div className="flex items-start justify-between gap-3 mb-5 flex-wrap">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-[var(--color-ink-900)] tracking-tight">Patients</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-[var(--color-ink-900)] tracking-tight">Patient Library</h1>
           <p className="text-[13px] sm:text-sm text-[var(--color-ink-500)] mt-0.5">HMIS patient directory · UHID auto-assigned on registration</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
@@ -443,7 +443,7 @@ export function PatientsClient({
 
       {/* ── KPI Cards ──────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-5">
-        <KpiCard icon={<PackageCheck size={17} />}  label="Today Dispensed" value={kpis.todayDispensed} color="green" isActive={activeCard === "dispensed" || activeCard === ""} onSelect={() => navigate({ opStatus: activeCard === "dispensed" || activeCard === "" ? "all" : "dispensed", card: activeCard === "dispensed" || activeCard === "" ? "total" : "dispensed", page: "1" })} />
+        <KpiCard icon={<PackageCheck size={17} />}  label="Dispensed Today" value={kpis.todayDispensed} color="green" isActive={activeCard === "dispensed" || activeCard === ""} onSelect={() => navigate({ opStatus: activeCard === "dispensed" || activeCard === "" ? "all" : "dispensed", card: activeCard === "dispensed" || activeCard === "" ? "total" : "dispensed", page: "1" })} />
         <KpiCard icon={<Users size={17} />}         label="Total Patients"  value={kpis.totalPatients}  color="teal"  isActive={activeCard === "total"}    onSelect={() => navigate({ opStatus: "all", card: activeCard === "total" ? "dispensed" : "total", page: "1" })} />
       </div>
 
