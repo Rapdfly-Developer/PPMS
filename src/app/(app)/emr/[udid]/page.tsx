@@ -30,6 +30,8 @@ import { ExternalPluginSlot } from "./ExternalPluginSlot";
 import { getAllRegisteredPlugins } from "@/plugin-framework/registry";
 import { RequestUnlockButton } from "./RequestUnlockButton";
 import { PrintHeader, PrintFooter } from "@/components/ui/PrintLayout";
+import { EmrTabsProvider } from "./EmrTabsContext";
+import { EmrBannerNavButtons } from "./EmrBannerNavButtons";
 
 /** "h:mm a" in clinic time. Formatted on the server so the markup is stable. */
 function fmtStamp(d: Date | string | null | undefined): string | null {
@@ -276,6 +278,7 @@ export default async function PatientDetailedEMR({
         </div>
       )}
 
+      <EmrTabsProvider defaultTab="general">
       {/* ── Premium Patient Banner ── */}
       <div
         className="relative rounded-2xl mb-5 overflow-hidden"
@@ -354,8 +357,8 @@ export default async function PatientDetailedEMR({
                     }`}>{patient.category}</span>
                   )}
                   {latestDiagnosis && (
-                    <span className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-teal-400/20 text-teal-200 border border-teal-400/30">
-                      {latestDiagnosis.laterality ? `${latestDiagnosis.laterality} ` : ""}{latestDiagnosis.description}
+                    <span className="text-[9px] font-normal px-2 py-0.5 rounded-full text-white/40 border border-white/15">
+                      Dx: {latestDiagnosis.laterality ? `${latestDiagnosis.laterality} ` : ""}{latestDiagnosis.description}
                     </span>
                   )}
                 </div>
@@ -451,6 +454,10 @@ export default async function PatientDetailedEMR({
           </div>
         </div>
 
+        {/* Quick-nav buttons into hidden tabs — sit at the foot of the banner */}
+        {activeVisit && (
+          <EmrBannerNavButtons priorRecordsCount={patient.pastExternalVisits.length} />
+        )}
       </div>
 
       {!activeVisit ? (
@@ -525,6 +532,7 @@ export default async function PatientDetailedEMR({
                 label: "Prior Records",
                 icon: <FolderOpen size={14} />,
                 badge: patient.pastExternalVisits.length || undefined,
+                hidden: true,
                 content: (
                   <div className="flex flex-col gap-4">
                     <div>
@@ -592,6 +600,7 @@ export default async function PatientDetailedEMR({
                 id: "ai-copilot",
                 label: "AI Clinical Copilot",
                 icon: <Sparkles size={14} />,
+                hidden: true,
                 // The panel itself is empty: the assistant is mounted below the
                 // tab strip (so it keeps running while other tabs are open) and
                 // is revealed there when this tab is active, immediately under
@@ -617,6 +626,7 @@ export default async function PatientDetailedEMR({
           />
         </div>
       )}
+      </EmrTabsProvider>
       <PrintFooter
         hospitalName={hospital?.name}
         doctorName={doctorName}

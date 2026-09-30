@@ -3,6 +3,7 @@
 import { useState, ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import clsx from "clsx";
+import { LayoutList } from "lucide-react";
 
 export function Tabs({
   tabs,
@@ -10,12 +11,16 @@ export function Tabs({
   activeTab: controlledActive,
   onTabChange,
   variant = "primary",
+  overviewMode = false,
+  onOverviewToggle,
 }: {
-  tabs: { id: string; label: string; icon?: ReactNode; badge?: number; content: ReactNode }[];
+  tabs: { id: string; label: string; icon?: ReactNode; badge?: number; content: ReactNode; hidden?: boolean }[];
   defaultTab?: string;
   activeTab?: string;
   onTabChange?: (id: string) => void;
   variant?: "primary" | "sub";
+  overviewMode?: boolean;
+  onOverviewToggle?: () => void;
 }) {
   const [internalActive, setInternalActive] = useState(defaultTab ?? tabs[0]?.id);
   const active = controlledActive ?? internalActive;
@@ -26,7 +31,8 @@ export function Tabs({
   }
 
   const activeTab = tabs.find((t) => t.id === active);
-  const totalRows = Math.ceil(tabs.length / 2);
+  const visibleTabs = tabs.filter((t) => !t.hidden);
+  const totalRows = Math.ceil(visibleTabs.length / 2);
 
   // ── Sub variant — pill style, unchanged ──────────────────────────────────────
   if (variant === "sub") {
@@ -83,7 +89,7 @@ export function Tabs({
           aria-label="Clinical sections"
         >
           <div className="grid grid-cols-2">
-            {tabs.map((tab, i) => {
+            {visibleTabs.map((tab, i) => {
               const isActive   = active === tab.id;
               const isRightCol = i % 2 === 1;
               const rowIdx     = Math.floor(i / 2);
@@ -161,10 +167,10 @@ export function Tabs({
 
       {/* ══ Desktop nav — horizontal underline tabs (≥ 768px) ════════════════ */}
       <div
-        className="hidden md:flex flex-wrap gap-1 border-b border-[var(--color-border)] mb-5"
+        className="hidden md:flex flex-wrap items-center gap-1 border-b border-[var(--color-border)] mb-5"
         role="tablist"
       >
-        {tabs.map((tab) => (
+        {visibleTabs.map((tab) => (
           <button
             key={tab.id}
             role="tab"
@@ -199,7 +205,42 @@ export function Tabs({
             )}
           </button>
         ))}
+
+        {/* Overview toggle — sits at the far end of the tab bar */}
+        {onOverviewToggle && (
+          <button
+            onClick={onOverviewToggle}
+            title={overviewMode ? "Show all fields" : "Overview: show only filled fields"}
+            className={clsx(
+              "ml-auto flex items-center gap-1.5 px-3 py-1.5 mb-1 rounded-lg text-xs font-semibold transition-colors",
+              overviewMode
+                ? "bg-[var(--color-primary-50)] text-[var(--color-primary-700)] border border-[var(--color-primary-200)]"
+                : "text-[var(--color-ink-400)] hover:text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)] border border-transparent"
+            )}
+          >
+            <LayoutList size={13} />
+            Overview
+          </button>
+        )}
       </div>
+
+      {/* Mobile Overview toggle — sits below the grid */}
+      {onOverviewToggle && (
+        <div className="md:hidden flex justify-end mb-3">
+          <button
+            onClick={onOverviewToggle}
+            className={clsx(
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors border",
+              overviewMode
+                ? "bg-[var(--color-primary-50)] text-[var(--color-primary-700)] border-[var(--color-primary-200)]"
+                : "text-[var(--color-ink-400)] border-[var(--color-border)] hover:text-[var(--color-ink-600)]"
+            )}
+          >
+            <LayoutList size={13} />
+            Overview
+          </button>
+        </div>
+      )}
 
       {/* ══ Shared content panel ═════════════════════════════════════════════ */}
       <AnimatePresence mode="wait">
@@ -209,6 +250,7 @@ export function Tabs({
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -8 }}
           transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+          className={overviewMode ? "emr-overview-active" : undefined}
         >
           {activeTab?.content}
         </motion.div>

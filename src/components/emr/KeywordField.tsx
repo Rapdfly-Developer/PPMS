@@ -168,7 +168,7 @@ export function KeywordInput({
         }
       />
       {!disabled && (
-        <div className="flex flex-wrap items-center gap-1.5">
+        <div data-overview-hide className="flex flex-wrap items-center gap-1.5">
           <AddKeywordButton getValue={() => value} fieldKey={fieldKey} onRefresh={() => setTick((t) => t + 1)} />
           <KeywordChips key={tick} fieldKey={fieldKey} builtIns={builtIns} legacyKeys={legacyKeys} onAppend={(kw) => onChange(value ? `${value}, ${kw}` : kw)} disabled={false} />
         </div>
@@ -220,7 +220,7 @@ export function KeywordTextarea({
         }
       />
       {!disabled && (
-        <div className="flex flex-wrap items-center gap-1.5">
+        <div data-overview-hide className="flex flex-wrap items-center gap-1.5">
           {/* The whole trimmed value, not the last word: complaints are mostly
               multi-word ("Blurred Vision", "Foreign Body Sensation"), and the
               old last-word behaviour saved "Vision" for "Blurred Vision". That

@@ -11,6 +11,7 @@ import { parseJSON } from "@/lib/json";
 import { useAutoSave, SaveIndicator } from "@/lib/useAutoSave";
 import { KeywordTextarea } from "@/components/emr/KeywordField";
 import { saveGeneralExam } from "./actions";
+import { useEmrOverview } from "./EmrOverviewContext";
 
 const LATERALITY_OPTIONS = ["RE", "LE", "OU"] as const;
 type Laterality = typeof LATERALITY_OPTIONS[number];
@@ -182,10 +183,20 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, customPmhCh
     await saveGeneralExam(visit.id, udid, d);
   });
 
+  const overview = useEmrOverview();
+
   const histFor = (field: (g: any) => string | undefined) =>
     priorVisits
       .filter((v) => v.generalExam && field(v.generalExam))
       .map((v) => ({ date: v.date, value: field(v.generalExam)!, hospitalName: v.hospital?.name }));
+
+  // Section-level "has data" checks — used in overview mode to hide empty cards.
+  const hasCC         = complaints.some((c) => c.text.trim());
+  const hasHpi        = !!hpi.trim();
+  const hasPmh        = cumulativePmh.length > 0;
+  const hasMeds       = !!medications.trim();
+  const hasAllergies  = nkda || !!allergies.trim();
+  const hasVitals     = !!(bp || pulse || temperature || weight);
 
   return (
     <div className="flex flex-col gap-4">
@@ -194,6 +205,7 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, customPmhCh
       </div>
 
       {/* CHIEF COMPLAINT */}
+      <div {...(overview && !hasCC ? { "data-overview-empty-section": "" } : {})}>
       <Card>
         <FieldWithHistory
           label="CHIEF COMPLAINT"
@@ -208,7 +220,7 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, customPmhCh
                 className={i > 0 ? "pt-3 border-t border-dashed border-[var(--color-border)]" : ""}
               >
                 {/* Row 1: Laterality + remove */}
-                <div className="flex items-center gap-1.5 mb-2">
+                <div data-lat-row data-lat={c.lat ?? ""} className="flex items-center gap-1.5 mb-2">
                   {complaints.length > 1 && (
                     <span className="text-[10px] font-bold tracking-wider text-[var(--color-ink-400)] uppercase">
                       CC {i + 1}
@@ -240,7 +252,7 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, customPmhCh
                 </div>
 
                 {/* Row 2: Since controls */}
-                <div className="flex items-center gap-1.5 mb-2">
+                <div data-since-row data-since={c.sinceNum} className="flex items-center gap-1.5 mb-2">
                   <span className="text-[11px] font-semibold text-[var(--color-ink-400)] w-8 shrink-0">Since</span>
                   <select
                     value={c.sinceNum}
@@ -265,6 +277,7 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, customPmhCh
                   </select>
                     {!readOnly && complaints.length > 1 && (
                       <button
+                        data-overview-hide
                         type="button"
                         onClick={() => removeComplaint(i)}
                         title={`Remove Chief Complaint ${i + 1}`}
@@ -292,15 +305,19 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, customPmhCh
           </div>
         </FieldWithHistory>
       </Card>
+      </div>
 
       {/* HISTORY OF PRESENT ILLNESS */}
+      <div {...(overview && !hasHpi ? { "data-overview-empty-section": "" } : {})}>
       <Card>
         <FieldWithHistory label="HISTORY OF PRESENT ILLNESS" history={histFor((g) => g.hpi)} currentValue={hpi} onLoad={readOnly ? undefined : setHpi}>
           <KeywordTextarea fieldKey="ge_hpi" value={hpi} onChange={setHpi} disabled={readOnly} rows={3} placeholder="Onset, character, duration, aggravating/relieving factors..." />
         </FieldWithHistory>
       </Card>
+      </div>
 
       {/* PAST MEDICAL HISTORY */}
+      <div {...(overview && !hasPmh ? { "data-overview-empty-section": "" } : {})}>
       <Card>
         <p className="text-xs font-semibold tracking-widest text-[var(--color-ink-500)] uppercase mb-3">
           Past Medical History <span className="text-[10px] font-normal normal-case tracking-normal text-[var(--color-ink-400)]">(cumulative across visits)</span>
@@ -341,6 +358,7 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, customPmhCh
               </select>
               {!readOnly && (
                 <button
+                  data-overview-hide
                   type="button"
                   onClick={() => removePmh(i)}
                   title={`Remove ${entry.name || "entry"}`}
@@ -353,7 +371,7 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, customPmhCh
           ))}
 
           {!readOnly && (
-            <div className="flex flex-wrap items-center gap-1.5">
+            <div data-overview-hide className="flex flex-wrap items-center gap-1.5">
               <button
                 type="button"
                 onClick={() => addPmh()}
@@ -379,15 +397,19 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, customPmhCh
           )}
         </div>
       </Card>
+      </div>
 
       {/* CURRENT MEDICATIONS */}
+      <div {...(overview && !hasMeds ? { "data-overview-empty-section": "" } : {})}>
       <Card>
         <FieldWithHistory label="CURRENT MEDICATIONS" history={histFor((g) => g.medications)} currentValue={medications} onLoad={readOnly ? undefined : setMedications}>
           <KeywordTextarea fieldKey="ge_medications" value={medications} onChange={setMedications} disabled={readOnly} rows={2} placeholder="Drug, dosage, frequency" />
         </FieldWithHistory>
       </Card>
+      </div>
 
       {/* ALLERGIES */}
+      <div {...(overview && !hasAllergies ? { "data-overview-empty-section": "" } : {})}>
       <Card>
         <div className="flex items-center justify-between mb-2">
           <p className="text-xs font-semibold tracking-widest text-[var(--color-ink-500)] uppercase">Allergies</p>
@@ -400,8 +422,10 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, customPmhCh
           <KeywordTextarea fieldKey="ge_allergies" value={allergies} onChange={setAllergies} disabled={readOnly} rows={2} />
         )}
       </Card>
+      </div>
 
       {/* VITALS — collapsible, moved to bottom */}
+      <div {...(overview && !hasVitals ? { "data-overview-empty-section": "" } : {})}>
       <Card className="p-0 overflow-hidden">
         <button
           type="button"
@@ -439,6 +463,7 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, customPmhCh
           </div>
         )}
       </Card>
+      </div>
     </div>
   );
 }

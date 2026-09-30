@@ -892,3 +892,43 @@ body {
   --lp-lede:      max(clamp(0.95rem, 1.6vw, 1.03rem), min(calc(6.6px + 0.6875vw), 33px));
   --lp-lede-hero: max(clamp(0.98rem, 1.7vw, 1.06rem), min(calc(6.8px + 0.7083vw), 34px));
 }
+
+/* ── EMR Overview mode ─────────────────────────────────────────────────────
+   When the "Overview" toggle is active the UI strips everything that has no
+   documented value: empty fields, keyword chips, action buttons, history
+   toggles, laterality selectors, and entire cards that hold nothing.
+   Only documented data remains visible.                                    */
+
+/* 1. Any element explicitly tagged as edit-only chrome */
+.emr-overview-active [data-overview-hide] {
+  display: none !important;
+}
+
+/* 2. Hide empty text inputs and textareas (showing placeholder = no value).
+      Skip focused elements so the doctor can still type in normal operation. */
+.emr-overview-active input:placeholder-shown:not(:focus),
+.emr-overview-active textarea:placeholder-shown:not(:focus) {
+  display: none !important;
+}
+
+/* 3. Hide sections explicitly flagged as having no data by their component */
+.emr-overview-active [data-overview-empty-section] {
+  display: none !important;
+}
+
+/* 4. Lighten visible card backgrounds for a clean read-only look */
+.emr-overview-active .surface-card {
+  background: rgba(248, 250, 252, 0.6) !important;
+  box-shadow: none !important;
+  border-color: rgba(226, 232, 240, 0.6) !important;
+}
+
+/* 5. Hide laterality row when no laterality has been selected */
+.emr-overview-active [data-lat-row][data-lat=""] {
+  display: none !important;
+}
+
+/* 6. Hide "Since" duration row when no duration has been entered */
+.emr-overview-active [data-since-row][data-since=""] {
+  display: none !important;
+}

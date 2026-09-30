@@ -5,6 +5,9 @@ import { useSearchParams } from "next/navigation";
 import { Tabs } from "@/components/ui/Tabs";
 import { EmrActionBar } from "./EmrActionBar";
 import { ConsultationExitGuard } from "./ConsultationExitGuard";
+import { useEmrTabs } from "./EmrTabsContext";
+import { EmrOverviewProvider } from "./EmrOverviewContext";
+import { LayoutList } from "lucide-react";
 
 type TabDef = {
   id: string;
@@ -12,6 +15,7 @@ type TabDef = {
   icon?: ReactNode;
   badge?: number;
   content: ReactNode;
+  hidden?: boolean;
 };
 
 export function EmrTabsShell({
@@ -55,10 +59,11 @@ export function EmrTabsShell({
   tabScopedSlotTabId?: string;
 }) {
   const searchParams = useSearchParams();
-  const [activeTab, setActiveTab] = useState(tabs[0]?.id);
+  const { activeTab, setActiveTab } = useEmrTabs();
   // Bumped by the exit guard to open the action bar's Partial Dispense modal.
   const [openPartialSignal, setOpenPartialSignal] = useState(0);
   const [editMode, setEditMode] = useState(searchParams.get("edit") === "1");
+  const [overviewMode, setOverviewMode] = useState(false);
   const currentIndex = tabs.findIndex((t) => t.id === activeTab);
 
   const closed = visit.status === "CLOSED";
@@ -70,64 +75,72 @@ export function EmrTabsShell({
   }
 
   return (
-    <div>
-      <div className={showEditGate ? "pointer-events-none select-none opacity-70" : ""}>
-        <Tabs tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
-      </div>
-      {pluginSlot}
+    <EmrOverviewProvider value={overviewMode}>
+      <div>
+        <div className={showEditGate ? "pointer-events-none select-none opacity-70" : ""}>
+          <Tabs
+            tabs={tabs}
+            activeTab={activeTab}
+            onTabChange={(id) => { setActiveTab(id); setOverviewMode(false); }}
+            overviewMode={overviewMode}
+            onOverviewToggle={() => setOverviewMode((v) => !v)}
+          />
+        </div>
+        {pluginSlot}
 
-      {/* Hidden by clipping, never by unmounting. The wrapper keeps the frame
-          at its full width and its own height while collapsing to zero height
-          in the layout, so the plugin's internal layout never sees a resize
-          and switching to its tab is instant rather than reflowing from zero.
+        {/* Hidden by clipping, never by unmounting. The wrapper keeps the frame
+            at its full width and its own height while collapsing to zero height
+            in the layout, so the plugin's internal layout never sees a resize
+            and switching to its tab is instant rather than reflowing from zero.
 
-          display:none is deliberately NOT used: it takes the frame out of
-          layout, which makes the embedded app re-layout from zero width and
-          flash when shown again. Both approaches are throttled identically by
-          Chromium (an out-of-viewport or zero-area cross-origin frame is
-          "hidden" either way), and that throttling is safe here -- it delays
-          timers, while the plugin's work is a single fetch whose retries and
-          long waits all happen on its own server.
+            display:none is deliberately NOT used: it takes the frame out of
+            layout, which makes the embedded app re-layout from zero width and
+            flash when shown again. Both approaches are throttled identically by
+            Chromium (an out-of-viewport or zero-area cross-origin frame is
+            "hidden" either way), and that throttling is safe here -- it delays
+            timers, while the plugin's work is a single fetch whose retries and
+            long waits all happen on its own server.
 
-          inert + aria-hidden keep the offscreen frame out of the tab order and
-          the accessibility tree; pointer-events-none is belt and braces. */}
-      {tabScopedSlot && (
-        <div className="relative">
-          <div
-            className={
-              activeTab === tabScopedSlotTabId
-                ? undefined
-                : "absolute inset-x-0 top-0 h-0 overflow-hidden opacity-0 pointer-events-none"
-            }
-            {...(activeTab === tabScopedSlotTabId ? {} : { inert: true, "aria-hidden": true })}
-          >
-            {tabScopedSlot}
+            inert + aria-hidden keep the offscreen frame out of the tab order and
+            the accessibility tree; pointer-events-none is belt and braces. */}
+        {tabScopedSlot && (
+          <div className="relative">
+            <div
+              className={
+                activeTab === tabScopedSlotTabId
+                  ? undefined
+                  : "absolute inset-x-0 top-0 h-0 overflow-hidden opacity-0 pointer-events-none"
+              }
+              {...(activeTab === tabScopedSlotTabId ? {} : { inert: true, "aria-hidden": true })}
+            >
+              {tabScopedSlot}
+            </div>
           </div>
-        </div>
-      )}
-      {showActionBar && (
-        <div className="no-print">
-          {/* Only mounted for a doctor on an OPEN visit, so every listener it
-              installs is scoped to an unfinalised EMR and torn down on exit. */}
-          <ConsultationExitGuard
-            visitId={visit.id}
-            exitHref={searchParams.get("returnTo") || "/patients"}
-            active={visit.status !== "CLOSED"}
-            onPartialDispense={() => setOpenPartialSignal((n) => n + 1)}
-          />
-          <EmrActionBar
-            visit={visit}
-            udid={udid}
-            patientName={patientName}
-            currentTabIndex={currentIndex}
-            totalTabs={tabs.length}
-            onNextSection={nextSection}
-            editMode={editMode}
-            onEnterEditMode={() => setEditMode(true)}
-            openPartialSignal={openPartialSignal}
-          />
-        </div>
-      )}
-    </div>
+        )}
+        {showActionBar && (
+          <div className="no-print">
+            {/* Only mounted for a doctor on an OPEN visit, so every listener it
+                installs is scoped to an unfinalised EMR and torn down on exit. */}
+            <ConsultationExitGuard
+              visitId={visit.id}
+              exitHref={searchParams.get("returnTo") || "/patients"}
+              active={visit.status !== "CLOSED"}
+              onPartialDispense={() => setOpenPartialSignal((n) => n + 1)}
+            />
+            <EmrActionBar
+              visit={visit}
+              udid={udid}
+              patientName={patientName}
+              currentTabIndex={currentIndex}
+              totalTabs={tabs.length}
+              onNextSection={nextSection}
+              editMode={editMode}
+              onEnterEditMode={() => setEditMode(true)}
+              openPartialSignal={openPartialSignal}
+            />
+          </div>
+        )}
+      </div>
+    </EmrOverviewProvider>
   );
 }

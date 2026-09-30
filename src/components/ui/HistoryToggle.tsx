@@ -41,6 +41,7 @@ export function FieldWithHistory({
 
   const historyBtn = (
     <button
+      data-overview-hide
       type="button"
       onClick={() => setOpen((v) => !v)}
       className="flex items-center gap-1 text-xs text-[#0F766E] bg-[#EEF8F7] hover:bg-[#DCF3F1] font-medium px-2.5 py-0.5 rounded-full border border-[#B2DEDA] transition-colors"
