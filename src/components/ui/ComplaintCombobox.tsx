@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, KeyboardEvent } from "react";
+import { useState, useEffect, useRef, useCallback, KeyboardEvent } from "react";
 import { Plus, X } from "lucide-react";
 import { CHIEF_COMPLAINT_FIELD_KEY, CHIEF_COMPLAINT_LEGACY_KEYS } from "@/lib/constants";
 
@@ -52,6 +52,29 @@ function readMergedKeywords(storageKey: string): string[] {
   }
 }
 
+function useDoubleActivation(onSingle: () => void, onDouble: () => void, delay = 250) {
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const singleRef = useRef(onSingle);
+  const doubleRef = useRef(onDouble);
+  singleRef.current = onSingle;
+  doubleRef.current = onDouble;
+
+  useEffect(() => () => { if (timerRef.current !== null) clearTimeout(timerRef.current); }, []);
+
+  return useCallback(() => {
+    if (timerRef.current !== null) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+      doubleRef.current();
+    } else {
+      timerRef.current = setTimeout(() => {
+        timerRef.current = null;
+        singleRef.current();
+      }, delay);
+    }
+  }, [delay]);
+}
+
 interface Props {
   value: string;
   onChange: (v: string) => void;
@@ -59,6 +82,66 @@ interface Props {
   inputCls?: string;
   /** When true, hides the text input row — only keyword chips are rendered. */
   hideInput?: boolean;
+}
+
+function StandardChip({ keyword, active, onSelect, onRemove }: {
+  keyword: string;
+  active: boolean;
+  onSelect: () => void;
+  onRemove: () => void;
+}) {
+  const activate = useDoubleActivation(onSelect, onRemove);
+  return (
+    <button
+      type="button"
+      onClick={activate}
+      title={`${keyword} — double-tap to remove from text`}
+      className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-all ${
+        active
+          ? "bg-[var(--color-primary-700)] border-[var(--color-primary-700)] text-white"
+          : "bg-white border-[var(--color-border)] text-[var(--color-ink-600)] hover:border-[var(--color-primary-400)] hover:text-[var(--color-primary-700)]"
+      }`}
+    >
+      {keyword}
+    </button>
+  );
+}
+
+function CustomChip({ keyword, active, onSelect, onRemoveFromText, onDelete }: {
+  keyword: string;
+  active: boolean;
+  onSelect: () => void;
+  onRemoveFromText: () => void;
+  onDelete: () => void;
+}) {
+  const activate = useDoubleActivation(onSelect, onRemoveFromText);
+  return (
+    <span
+      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border transition-all ${
+        active
+          ? "bg-[var(--color-primary-700)] border-[var(--color-primary-700)] text-white"
+          : "bg-[var(--color-surface-sunken)] border-[var(--color-border)] text-[var(--color-ink-700)]"
+      }`}
+    >
+      <button
+        type="button"
+        onClick={activate}
+        title={`${keyword} — double-tap to remove from text`}
+        className="focus:outline-none"
+      >
+        {keyword}
+      </button>
+      <button
+        type="button"
+        onClick={onDelete}
+        className={`rounded-full p-0.5 transition-colors ${active ? "hover:bg-white/20" : "hover:bg-[var(--color-border)]"}`}
+        aria-label={`Delete saved keyword "${keyword}"`}
+        title={`Delete saved keyword "${keyword}"`}
+      >
+        <X size={9} />
+      </button>
+    </span>
+  );
 }
 
 export function ComplaintCombobox({
@@ -158,59 +241,30 @@ export function ComplaintCombobox({
 
       {/* ── Standard keyword chips ───────────────────────────────────── */}
       <div className="flex flex-wrap gap-1.5">
-        {OPHTHALMIC_COMPLAINTS.map((keyword) => {
-          const active = selectedChip === keyword;
-          return (
-            <button
-              key={keyword}
-              type="button"
-              onClick={() => selectChip(keyword)}
-              className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-all ${
-                active
-                  ? "bg-[var(--color-primary-700)] border-[var(--color-primary-700)] text-white"
-                  : "bg-white border-[var(--color-border)] text-[var(--color-ink-600)] hover:border-[var(--color-primary-400)] hover:text-[var(--color-primary-700)]"
-              }`}
-            >
-              {keyword}
-            </button>
-          );
-        })}
+        {OPHTHALMIC_COMPLAINTS.map((keyword) => (
+          <StandardChip
+            key={keyword}
+            keyword={keyword}
+            active={selectedChip === keyword}
+            onSelect={() => selectChip(keyword)}
+            onRemove={() => { if (value.toLowerCase() === keyword.toLowerCase()) onChange(""); }}
+          />
+        ))}
       </div>
 
       {/* ── Custom keyword chips ─────────────────────────────────────── */}
       {customKeywords.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
-          {customKeywords.map((keyword) => {
-            const active = selectedChip === keyword;
-            return (
-              <span
-                key={keyword}
-                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border transition-all ${
-                  active
-                    ? "bg-[var(--color-primary-700)] border-[var(--color-primary-700)] text-white"
-                    : "bg-[var(--color-surface-sunken)] border-[var(--color-border)] text-[var(--color-ink-700)]"
-                }`}
-              >
-                <button
-                  type="button"
-                  onClick={() => selectChip(keyword)}
-                  className="focus:outline-none"
-                >
-                  {keyword}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => removeCustom(keyword)}
-                  className={`rounded-full p-0.5 transition-colors ${
-                    active ? "hover:bg-white/20" : "hover:bg-[var(--color-border)]"
-                  }`}
-                  aria-label={`Remove ${keyword}`}
-                >
-                  <X size={9} />
-                </button>
-              </span>
-            );
-          })}
+          {customKeywords.map((keyword) => (
+            <CustomChip
+              key={keyword}
+              keyword={keyword}
+              active={selectedChip === keyword}
+              onSelect={() => selectChip(keyword)}
+              onRemoveFromText={() => { if (value.toLowerCase() === keyword.toLowerCase()) onChange(""); }}
+              onDelete={() => removeCustom(keyword)}
+            />
+          ))}
         </div>
       )}
     </div>

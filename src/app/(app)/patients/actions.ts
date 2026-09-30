@@ -679,3 +679,89 @@ export async function generateLongitudinalSummary(
     };
   }
 }
+
+// ── Universal Search Autocomplete ────────────────────────────────────────────
+
+export type PatientSearchResult = {
+  udid: string;
+  name: string;
+  mobile: string;
+  matchType: "name" | "udid" | "mobile" | "complaint" | "diagnosis";
+  matchText?: string;
+};
+
+export async function searchPatientsAutocomplete(query: string): Promise<PatientSearchResult[]> {
+  const user = await requirePermission("patients.view");
+  const doctorId = scopeDoctorId(user);
+  const q = query.trim();
+  if (q.length < 2) return [];
+
+  const mode = "insensitive" as const;
+  const patients = await prisma.patient.findMany({
+    where: {
+      doctorId,
+      OR: [
+        { name: { contains: q, mode } },
+        { udid: { contains: q, mode } },
+        { mobile: { contains: q } },
+        { complaint: { contains: q, mode } },
+        { visits: { some: { generalExam: { chiefComplaint: { contains: q, mode } } } } },
+        { visits: { some: { diagnoses: { some: { OR: [
+          { description: { contains: q, mode } },
+          { icd10Code: { contains: q, mode } },
+        ] } } } } },
+      ],
+    },
+    select: {
+      udid: true,
+      name: true,
+      mobile: true,
+      complaint: true,
+      visits: {
+        select: {
+          generalExam: { select: { chiefComplaint: true } },
+          diagnoses: { select: { description: true, icd10Code: true } },
+        },
+        orderBy: { date: "desc" },
+      },
+    },
+    take: 8,
+    orderBy: { name: "asc" },
+  });
+
+  const ql = q.toLowerCase();
+  return patients
+    .filter((p) => p.udid)
+    .map((p) => {
+      let matchType: PatientSearchResult["matchType"] = "name";
+      let matchText: string | undefined;
+
+      if (p.name.toLowerCase().includes(ql)) {
+        matchType = "name";
+      } else if (p.udid!.toLowerCase().includes(ql)) {
+        matchType = "udid";
+      } else if (p.mobile.includes(q)) {
+        matchType = "mobile";
+      } else if (p.complaint?.toLowerCase().includes(ql)) {
+        matchType = "complaint";
+        matchText = p.complaint ?? undefined;
+      } else {
+        outer: for (const v of p.visits) {
+          if (v.generalExam?.chiefComplaint?.toLowerCase().includes(ql)) {
+            matchType = "complaint";
+            matchText = v.generalExam.chiefComplaint ?? undefined;
+            break;
+          }
+          for (const d of v.diagnoses) {
+            if (d.description.toLowerCase().includes(ql) || d.icd10Code.toLowerCase().includes(ql)) {
+              matchType = "diagnosis";
+              matchText = `${d.icd10Code} ${d.description}`;
+              break outer;
+            }
+          }
+        }
+      }
+
+      return { udid: p.udid!, name: p.name, mobile: p.mobile, matchType, matchText };
+    });
+}

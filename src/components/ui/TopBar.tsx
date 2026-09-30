@@ -8,6 +8,7 @@ import { Bell, Search, LogOut, ArrowLeft, Menu } from "lucide-react";
 import Link from "next/link";
 import { signOut } from "next-auth/react";
 import { markAllRead, markOneRead } from "@/app/(app)/notifications/actions";
+import { searchPatientsAutocomplete, type PatientSearchResult } from "@/app/(app)/patients/actions";
 
 const BACK_BTN_CLS =
   "group inline-flex items-center gap-1.5 h-8 pl-3 pr-3 sm:pl-2 sm:pr-3 rounded-lg border border-[var(--color-border)] bg-white text-[13px] sm:text-sm font-medium text-[var(--color-ink-600)] hover:text-[var(--color-primary-700)] hover:border-[var(--color-primary-300)] hover:bg-[var(--color-primary-50)] active:scale-[0.97] transition-all duration-150";
@@ -151,12 +152,20 @@ export function TopBar({ name, role }: { name: string; role: string }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const bellRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
   const [q, setQ] = useState("");
   const [bellOpen, setBellOpen] = useState(false);
   const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifItems, setNotifItems] = useState<NotifItem[]>([]);
   const { toggle } = useSidebar();
+
+  // Autocomplete state
+  const [acResults, setAcResults] = useState<PatientSearchResult[]>([]);
+  const [acOpen, setAcOpen] = useState(false);
+  const [acLoading, setAcLoading] = useState(false);
+  const [acIndex, setAcIndex] = useState(-1);
+  const genRef = useRef(0);
 
   // Cmd+K shortcut
   useEffect(() => {
@@ -224,9 +233,71 @@ export function TopBar({ name, role }: { name: string; role: string }) {
     return () => document.removeEventListener("mousedown", handler);
   }, [bellOpen]);
 
+  // Debounced autocomplete
+  useEffect(() => {
+    const trimmed = q.trim();
+    if (trimmed.length < 2) {
+      setAcResults([]);
+      setAcOpen(false);
+      setAcLoading(false);
+      return;
+    }
+    setAcLoading(true);
+    const gen = ++genRef.current;
+    const id = setTimeout(async () => {
+      try {
+        const results = await searchPatientsAutocomplete(trimmed);
+        if (gen !== genRef.current) return;
+        setAcResults(results);
+        setAcOpen(true);
+        setAcIndex(-1);
+      } catch {
+        if (gen !== genRef.current) return;
+        setAcResults([]);
+      } finally {
+        if (gen === genRef.current) setAcLoading(false);
+      }
+    }, 300);
+    return () => { clearTimeout(id); genRef.current++; };
+  }, [q]);
+
+  // Click-outside to close autocomplete
+  useEffect(() => {
+    if (!acOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (!searchContainerRef.current?.contains(e.target as Node)) {
+        setAcOpen(false);
+        setAcIndex(-1);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [acOpen]);
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (q.trim()) router.push(`/patients?q=${encodeURIComponent(q.trim())}`);
+    const highlighted = acIndex >= 0 ? acResults[acIndex] : null;
+    if (highlighted) {
+      setAcOpen(false);
+      router.push(`/patients/${highlighted.udid}`);
+    } else if (q.trim()) {
+      setAcOpen(false);
+      router.push(`/patients?q=${encodeURIComponent(q.trim())}`);
+    }
+  };
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!acOpen) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setAcIndex((i) => Math.min(i + 1, acResults.length - 1));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setAcIndex((i) => Math.max(i - 1, -1));
+    } else if (e.key === "Escape") {
+      setAcOpen(false);
+      setAcIndex(-1);
+    }
   };
 
   const handleMarkRead = (id: string) => {
@@ -272,21 +343,85 @@ export function TopBar({ name, role }: { name: string; role: string }) {
         </Suspense>
 
         <form onSubmit={handleSearch} className="flex items-center flex-1 min-w-0">
-          <div className="relative flex-1 min-w-0">
-            <Search
-              size={14}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] pointer-events-none sm:w-3.5 sm:h-3.5 w-3 h-3"
-            />
+          <div ref={searchContainerRef} className="relative flex-1 min-w-0">
+            {acLoading ? (
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                <svg className="animate-spin w-3 h-3 sm:w-3.5 sm:h-3.5 text-[var(--color-primary-500)]" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                </svg>
+              </span>
+            ) : (
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] pointer-events-none sm:w-3.5 sm:h-3.5 w-3 h-3" />
+            )}
             <input
               ref={inputRef}
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder="Search patients…"
+              onKeyDown={handleSearchKeyDown}
+              onFocus={() => { if (acResults.length > 0) setAcOpen(true); }}
+              placeholder="Search patients, visits, complaints or diagnoses…"
+              aria-label="Universal search"
+              aria-autocomplete="list"
+              aria-expanded={acOpen}
+              aria-activedescendant={acIndex >= 0 ? `ac-item-${acIndex}` : undefined}
               className="w-full pl-8 pr-3 lg:pr-10 py-1 sm:py-1.5 text-[10px] placeholder:text-[10px] sm:text-sm sm:placeholder:text-sm bg-[var(--color-surface-sunken)] border border-[var(--color-border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] focus:bg-white transition-colors"
             />
             <kbd className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-medium text-[var(--color-ink-400)] bg-white border border-[var(--color-border)] rounded px-1 py-0.5 pointer-events-none hidden lg:block">
               ⌘K
             </kbd>
+
+            {/* Autocomplete dropdown */}
+            {acOpen && acResults.length > 0 && (
+              <ul
+                role="listbox"
+                className="absolute left-0 right-0 top-full mt-1 z-50 bg-white rounded-xl border border-[var(--color-border)] overflow-hidden"
+                style={{ boxShadow: "0 8px 30px -8px rgba(0,0,0,0.18), 0 2px 8px -2px rgba(0,0,0,0.08)" }}
+              >
+                {acResults.map((r, i) => (
+                  <li
+                    key={r.udid}
+                    id={`ac-item-${i}`}
+                    role="option"
+                    aria-selected={i === acIndex}
+                  >
+                    <button
+                      type="button"
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        setAcOpen(false);
+                        router.push(`/patients/${r.udid}`);
+                      }}
+                      className={`w-full text-left px-3 py-2 flex flex-col gap-0.5 transition-colors ${
+                        i === acIndex
+                          ? "bg-[var(--color-primary-50)]"
+                          : "hover:bg-[var(--color-surface-sunken)]"
+                      }`}
+                    >
+                      <span className="flex items-center gap-2 min-w-0">
+                        <span className="text-[12px] sm:text-sm font-semibold text-[var(--color-ink-800)] truncate">{r.name}</span>
+                        <span className="text-[10px] sm:text-xs text-[var(--color-ink-400)] shrink-0">{r.udid}</span>
+                        <span className="text-[10px] sm:text-xs text-[var(--color-ink-400)] shrink-0 hidden sm:inline">{r.mobile}</span>
+                      </span>
+                      {r.matchText && (r.matchType === "complaint" || r.matchType === "diagnosis") && (
+                        <span className="text-[10px] sm:text-xs text-[var(--color-primary-600)] truncate">
+                          {r.matchType === "diagnosis" ? "Dx: " : "CC: "}{r.matchText}
+                        </span>
+                      )}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {acOpen && !acLoading && q.trim().length >= 2 && acResults.length === 0 && (
+              <div
+                className="absolute left-0 right-0 top-full mt-1 z-50 bg-white rounded-xl border border-[var(--color-border)] px-3 py-4 text-center text-[11px] sm:text-xs text-[var(--color-ink-400)]"
+                style={{ boxShadow: "0 8px 30px -8px rgba(0,0,0,0.18)" }}
+              >
+                No patients found for "{q.trim()}"
+              </div>
+            )}
           </div>
         </form>
       </div>
