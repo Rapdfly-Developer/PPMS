@@ -96,6 +96,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
       priority: inv.priority,
       laterality: inv.laterality ?? null,
       status: inv.status,
+      notes: inv.notes ?? null,
     })),
     opticalRx: hasOptical ? { re, le } : null,
     minorProcedure: (visit as any).procedureName ? {

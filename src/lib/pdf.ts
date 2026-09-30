@@ -780,7 +780,7 @@ export type ShortSummaryData = {
   advice?: string | null;
   diagnoses: { description: string; icd10Code: string; status: string; laterality?: string | null }[];
   medications: { drugName: string; dosage?: string | null; frequency?: string | null; duration?: string | null; instructions?: string | null; route?: string | null; laterality?: string | null }[];
-  investigations: { testName: string; category: string; priority: string; laterality?: string | null; status: string }[];
+  investigations: { testName: string; category: string; priority: string; laterality?: string | null; status: string; notes?: string | null }[];
   opticalRx?: {
     re: { sph?: string; cyl?: string; axis?: string; nearSph?: string; va?: string; nearVa?: string };
     le: { sph?: string; cyl?: string; axis?: string; nearSph?: string; va?: string; nearVa?: string };
@@ -1100,6 +1100,7 @@ ${d.investigations.length
         <thead><tr>
           <th style="${TH}width:36px;text-align:center;">#</th>
           <th style="${TH}">Investigation</th>
+          <th style="${TH}">In View Of</th>
         </tr></thead>
         <tbody>
           ${d.investigations.map((inv, i) =>
@@ -1109,6 +1110,7 @@ ${d.investigations.length
             (inv.laterality ? `<span style="font-size:8px;font-weight:700;color:${BRAND};margin-right:4px;">${escapeHtml(inv.laterality)}</span>` : "") +
             escapeHtml(inv.testName) +
             `</td>` +
+            `<td style="${TD}font-size:9px;color:#555;">${inv.notes ? escapeHtml(inv.notes) : "<span style='color:#aaa;font-style:italic;'>—</span>"}</td>` +
             `</tr>`
           ).join("")}
         </tbody>
