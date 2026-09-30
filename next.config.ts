@@ -113,7 +113,7 @@ const nextConfig: NextConfig = {
 
     const csp = [
       `frame-src ${frameSrc}`,
-      "frame-ancestors 'none'",
+      "frame-ancestors 'self'",
     ].join("; ");
 
     headers.push({
