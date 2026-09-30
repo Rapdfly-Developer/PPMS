@@ -418,6 +418,9 @@ model Patient {
   complaint       String?
   occupation      String?
   notes           String?
+  referredBy           String?   // free-text referral source (doctor, hospital, friend, etc.)
+  referralPatientId    String?   // optional: link to another existing patient
+  referralRelationship String?   // relationship label when linked patient is chosen
   photoUrl        String?
   aadhaarPhotoUrl String?  // uploaded Aadhaar card scan (blob storage file name)
   createdAt       DateTime @default(now())
@@ -429,12 +432,15 @@ model Patient {
   surgerySchedules   SurgerySchedule[]
   consents           PatientConsent[]
   dataRightsRequests DataRightsRequest[]
+  referralPatient      Patient?  @relation("PatientReferrals", fields: [referralPatientId], references: [id])
+  referredPatients     Patient[] @relation("PatientReferrals")
 
   @@index([doctorId])
   @@index([registeredAtId])
   @@index([createdAt])
   @@index([mobile])
   @@index([category])
+  @@index([referralPatientId])
 }
 
 // AppointmentStatus: REQUESTED | CONFIRMED | RESCHEDULED | COMPLETED | CANCELLED | NO_SHOW

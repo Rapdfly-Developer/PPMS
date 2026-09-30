@@ -50,6 +50,9 @@ export async function createWalkInEncounter(formData: FormData) {
     const category    = (formData.get("category")    as string) || "GENERAL";
     const occupation  = (formData.get("occupation")  as string)?.trim() || null;
     const notes       = (formData.get("notes")       as string)?.trim() || null;
+    const referredBy          = (formData.get("referredBy")          as string)?.trim() || null;
+    const referralPatientId   = (formData.get("referralPatientId")   as string)?.trim() || null;
+    const referralRelationship = (formData.get("referralRelationship") as string)?.trim() || null;
     complaint      = formComplaint;
     const photoUrl = (formData.get("patientPhoto") as string)?.trim() || null;
     const aadhaarPhotoUrl = (formData.get("aadhaarPhoto") as string)?.trim() || null;
@@ -61,6 +64,15 @@ export async function createWalkInEncounter(formData: FormData) {
     if (isNaN(age) || age < 0 || age > 120) return { error: "Invalid age." };
     if (aadhaar && !/^\d{12}$/.test(aadhaar.replace(/\s/g, ""))) {
       return { error: "Aadhaar must be 12 digits if provided." };
+    }
+
+    if (referralPatientId) {
+      const refPatient = await prisma.patient.findUnique({
+        where: { id: referralPatientId },
+        select: { id: true, doctorId: true },
+      });
+      if (!refPatient) return { error: "The selected referral patient does not exist." };
+      if (refPatient.doctorId !== doctorId) return { error: "The selected referral patient is not in your patient list." };
     }
 
     const hospital = await prisma.hospital.findUnique({
@@ -97,6 +109,9 @@ export async function createWalkInEncounter(formData: FormData) {
         category,
         occupation,
         notes,
+        referredBy,
+        referralPatientId: referralPatientId || undefined,
+        referralRelationship,
         photoUrl,
         aadhaarPhotoUrl,
       },

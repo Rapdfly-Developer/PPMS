@@ -412,6 +412,13 @@ export default async function PatientDetailedEMR({
                     </div>
                   ) : null;
                 })()}
+                {/* Notes / Instructions */}
+                {patient.notes && (
+                  <div className="flex items-start gap-1.5 mt-1.5 text-[11px] text-white/65">
+                    <FileText size={10} className="shrink-0 mt-0.5 text-white/45" />
+                    <span className="whitespace-pre-wrap"><span className="font-semibold text-white/50">Notes:</span> {patient.notes}</span>
+                  </div>
+                )}
               </div>
             </div>
 

@@ -93,6 +93,12 @@ export function NewEncounterForm({
   const [category, setCategory] = useState("GENERAL");
   const [occupation, setOccupation] = useState("");
   const [notes, setNotes] = useState("");
+  // referral
+  const [referredBy, setReferredBy] = useState("");
+  const [referralPatient, setReferralPatient] = useState<Patient | null>(null);
+  const [referralRelationship, setReferralRelationship] = useState("");
+  const [refSearch, setRefSearch] = useState("");
+  const [showRefPatient, setShowRefPatient] = useState(false);
   const [complaint, setComplaint] = useState("");
   const [laterality, setLaterality] = useState("");
   const [sinceNum, setSinceNum] = useState("");
@@ -191,6 +197,11 @@ export function NewEncounterForm({
       fd.set("category", category);
       fd.set("occupation", occupation.trim());
       if (notes.trim()) fd.set("notes", notes.trim());
+      if (referredBy.trim()) fd.set("referredBy", referredBy.trim());
+      if (referralPatient) {
+        fd.set("referralPatientId", referralPatient.id);
+        if (referralRelationship.trim()) fd.set("referralRelationship", referralRelationship.trim());
+      }
       fd.set("complaint", fullComplaint);
       if (patientPhoto) fd.set("patientPhoto", patientPhoto.savedName);
       if (aadhaarPhoto) fd.set("aadhaarPhoto", aadhaarPhoto.savedName);
@@ -388,6 +399,108 @@ export function NewEncounterForm({
                   onChange={(e) => setNotes(e.target.value)}
                   className={`${inputCls} resize-none`}
                 />
+              </div>
+
+              {/* Referral */}
+              <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] p-4 flex flex-col gap-3">
+                <p className="text-xs font-semibold text-[var(--color-ink-700)] uppercase tracking-widest">Referral (optional)</p>
+
+                {/* Free-text source */}
+                <div>
+                  <FieldLabel>Referred By</FieldLabel>
+                  <input
+                    type="text"
+                    placeholder="e.g. Dr. Sharma, City Hospital, Friend, Advertisement…"
+                    value={referredBy}
+                    onChange={(e) => setReferredBy(e.target.value)}
+                    className={inputCls}
+                  />
+                </div>
+
+                {/* Link to existing patient */}
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <FieldLabel>Existing Patient / Relative</FieldLabel>
+                    <button
+                      type="button"
+                      onClick={() => { setShowRefPatient(!showRefPatient); setReferralPatient(null); setRefSearch(""); setReferralRelationship(""); }}
+                      className="text-[11px] font-semibold text-[var(--color-primary-700)] hover:underline"
+                    >
+                      {showRefPatient ? "Cancel" : "Link patient"}
+                    </button>
+                  </div>
+
+                  {showRefPatient && (
+                    referralPatient ? (
+                      <div className="flex items-center justify-between p-3 rounded-xl border-2 border-[var(--color-primary-500)] bg-[var(--color-primary-50)]">
+                        <div>
+                          <p className="text-sm font-semibold text-[var(--color-ink-900)]">{referralPatient.name}</p>
+                          <p className="text-xs text-[var(--color-ink-400)]">{referralPatient.udid} · {referralPatient.age ?? "?"}y {referralPatient.sex.charAt(0)}</p>
+                        </div>
+                        <button type="button" onClick={() => { setReferralPatient(null); setRefSearch(""); }} className="text-xs text-[var(--color-ink-400)] hover:text-[var(--color-danger-600)]">Change</button>
+                      </div>
+                    ) : (
+                      <>
+                        <input
+                          type="text"
+                          placeholder="Search by name or UDID…"
+                          value={refSearch}
+                          onChange={(e) => setRefSearch(e.target.value)}
+                          className={inputCls}
+                        />
+                        {refSearch.trim() && (
+                          <ul className="mt-1 divide-y divide-[var(--color-border)] rounded-xl border border-[var(--color-border)] overflow-hidden max-h-40 overflow-y-auto">
+                            {patients.filter((p) =>
+                              p.name.toLowerCase().includes(refSearch.toLowerCase()) ||
+                              p.udid.toLowerCase().includes(refSearch.toLowerCase())
+                            ).slice(0, 6).map((p) => (
+                              <li key={p.id}>
+                                <button type="button" onClick={() => { setReferralPatient(p); setRefSearch(""); }} className="w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-[var(--color-primary-50)] transition-colors">
+                                  <div className="size-7 rounded-full bg-[var(--color-surface-sunken)] flex items-center justify-center text-[var(--color-ink-500)] text-xs font-bold shrink-0">{p.name.charAt(0)}</div>
+                                  <div>
+                                    <p className="text-sm font-medium text-[var(--color-ink-900)]">{p.name}</p>
+                                    <p className="text-xs text-[var(--color-ink-400)]">{p.udid} · {p.age ?? "?"}y {p.sex.charAt(0)}</p>
+                                  </div>
+                                </button>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </>
+                    )
+                  )}
+
+                  {/* Relationship selector — shown once a patient is linked */}
+                  {showRefPatient && referralPatient && (
+                    <div className="mt-3">
+                      <FieldLabel>Relationship</FieldLabel>
+                      <div className="flex flex-wrap gap-1.5 mt-1">
+                        {["Brother", "Sister", "Parent", "Child", "Spouse", "Relative", "Friend", "Other"].map((rel) => (
+                          <button
+                            key={rel}
+                            type="button"
+                            onClick={() => setReferralRelationship(referralRelationship === rel ? "" : rel)}
+                            className="px-3 py-1 rounded-full text-xs font-medium border transition-colors"
+                            style={referralRelationship === rel ? {
+                              background: "var(--color-primary-700)", color: "#fff", borderColor: "var(--color-primary-700)",
+                            } : {
+                              background: "#fff", color: "var(--color-ink-600)", borderColor: "var(--color-border)",
+                            }}
+                          >
+                            {rel}
+                          </button>
+                        ))}
+                      </div>
+                      <input
+                        type="text"
+                        placeholder="Or type a custom relationship…"
+                        value={referralRelationship}
+                        onChange={(e) => setReferralRelationship(e.target.value)}
+                        className={`${inputCls} mt-2`}
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Photos */}

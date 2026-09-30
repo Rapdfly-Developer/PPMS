@@ -2,7 +2,7 @@ import { requirePermission } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import { format, startOfDay, endOfDay } from "date-fns";
-import { Phone, MapPin, Calendar, Hash, IdCard, Briefcase, FileText } from "lucide-react";
+import { Phone, MapPin, Calendar, Hash, IdCard, Briefcase, FileText, Link2, Users } from "lucide-react";
 import { decryptAadhaar, maskAadhaar } from "@/lib/crypto";
 import { PatientProfileClient, type SerialVisit, type TodayVisit, type LastVisitSummary } from "./PatientProfileClient";
 import { PatientActionsPanel } from "./PatientHistoryButtons";
@@ -38,6 +38,12 @@ export default async function PatientProfilePage({
           generalExam: { select: { chiefComplaint: true } },
           diagnoses:   { select: { description: true } },
         },
+      },
+      referralPatient: { select: { id: true, name: true, udid: true } },
+      referredPatients: {
+        select: { id: true, name: true, udid: true, referralRelationship: true },
+        take: 10,
+        orderBy: { createdAt: "desc" },
       },
     },
   });
@@ -301,7 +307,60 @@ export default async function PatientProfilePage({
             {patient.notes && (
               <div className="flex items-start gap-1.5 mt-2 text-[11px] sm:text-xs text-white/70">
                 <span className="text-white/50 mt-0.5 shrink-0"><FileText size={13} /></span>
-                <span>{patient.notes}</span>
+                <span className="whitespace-pre-wrap"><span className="font-semibold text-white/55">Notes:</span> {patient.notes}</span>
+              </div>
+            )}
+            {/* Referral info */}
+            {(patient.referredBy || patient.referralPatient) && (
+              <div className="flex items-start gap-1.5 mt-2 text-[11px] sm:text-xs text-white/70">
+                <span className="text-white/50 mt-0.5 shrink-0"><Link2 size={13} /></span>
+                <span>
+                  <span className="font-semibold text-white/55">Referred by:</span>{" "}
+                  {patient.referralPatient ? (
+                    <>
+                      <a
+                        href={`/patients/${patient.referralPatient.udid}`}
+                        className="underline underline-offset-2 hover:text-white transition-colors"
+                      >
+                        {patient.referralPatient.name}
+                      </a>
+                      {" "}
+                      <span className="text-white/45 font-mono text-[10px]">({patient.referralPatient.udid})</span>
+                      {patient.referralRelationship && (
+                        <span className="ml-1 px-1.5 py-0.5 rounded-full bg-white/10 text-white/60 text-[10px]">
+                          {patient.referralRelationship}
+                        </span>
+                      )}
+                    </>
+                  ) : (
+                    patient.referredBy
+                  )}
+                </span>
+              </div>
+            )}
+            {/* Related patients — those who listed this patient as their referrer */}
+            {(patient.referredPatients?.length ?? 0) > 0 && (
+              <div className="flex items-start gap-1.5 mt-2 text-[11px] sm:text-xs text-white/70">
+                <span className="text-white/50 mt-0.5 shrink-0"><Users size={13} /></span>
+                <span>
+                  <span className="font-semibold text-white/55">Related patients:</span>{" "}
+                  {patient.referredPatients!.map((rp, i) => (
+                    <span key={rp.id}>
+                      {i > 0 && <span className="text-white/35">, </span>}
+                      <a
+                        href={`/patients/${rp.udid}`}
+                        className="underline underline-offset-2 hover:text-white transition-colors"
+                      >
+                        {rp.name}
+                      </a>
+                      {rp.referralRelationship && (
+                        <span className="ml-1 px-1.5 py-0.5 rounded-full bg-white/10 text-white/60 text-[10px]">
+                          {rp.referralRelationship}
+                        </span>
+                      )}
+                    </span>
+                  ))}
+                </span>
               </div>
             )}
           </div>
