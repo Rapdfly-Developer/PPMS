@@ -143,6 +143,11 @@ function PartialDispenseRow({ appt: a, scope, serial, canDispense, canViewPatien
           <span className="text-[10px] sm:text-[11px] text-[var(--color-ink-400)]">
             {a.patient.age}y / {a.patient.sex === "MALE" ? "M" : a.patient.sex === "FEMALE" ? "F" : "O"}
           </span>
+          {canViewPatient && a.patient.mobile && (
+            <span className="inline-flex items-center gap-0.5 text-[10px] sm:text-[11px] text-[var(--color-ink-400)]">
+              <Phone size={9} /> {a.patient.mobile}
+            </span>
+          )}
           {a.partialDispenseAt && (
             <span className="inline-flex items-center gap-1 text-[9px] sm:text-[10px] text-orange-500">
               <Clock size={10} /> Added at {format(new Date(a.partialDispenseAt), "h:mm a")}
@@ -214,15 +219,20 @@ function ApptRow({ appt, scope, serial, canManageQueue, canViewPatient }: { appt
       <div className="w-px self-stretch bg-[var(--color-border)] hidden sm:block" />
       {/* Time + visit-type column */}
       <div className="w-20 shrink-0 hidden sm:flex flex-col items-center gap-0.5">
-        {/* Primary time: arrived or scheduled */}
         <p className="text-[13px] sm:text-sm font-bold text-[var(--color-ink-900)]" title="Appointment time">
           {primaryTime}
         </p>
         {/* Badge + registered time */}
         <div className="flex flex-col items-center gap-0.5">
-          <span className="inline-flex items-center gap-0.5 text-[9px] sm:text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-600">
-            <Calendar size={9} /> Appt
-          </span>
+          {appt.isWalkIn ? (
+            <span className="inline-flex items-center gap-0.5 text-[9px] sm:text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500">
+              Walk-in
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-0.5 text-[9px] sm:text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-600">
+              <Calendar size={9} /> Appt
+            </span>
+          )}
           <span className="text-[9px] font-medium text-blue-500 tabular-nums">
             {format(new Date(appt.createdAt), "h:mm a")}
           </span>

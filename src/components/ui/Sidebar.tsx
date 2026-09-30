@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect } from "react";
 import {
-  LayoutDashboard, CalendarDays, Users,
+  Stethoscope, CalendarDays, Users,
   Settings, X,
   CalendarClock, BarChart2, Lock,
   Puzzle, LayoutGrid,
@@ -27,7 +27,7 @@ type NavEntry = TopNavItem;
 
 const ALL_NAV: NavEntry[] = [
   { href: "/dashboard",    label: "Dashboard",    icon: LayoutGrid,      permission: "dashboard.view"                                        },
-  { href: "/opd",          label: "OPD",          icon: LayoutDashboard, permission: "dashboard.view"                                        },
+  { href: "/opd",          label: "OPD",          icon: Stethoscope,     permission: "dashboard.view"                                        },
   // `roles` mirrors a page that enforces requireRole; where the page enforces a
   // permission instead, the permission alone gates the link. Keeping a roles
   // list on a permission-gated page hid Appointments and Follow Ups from staff
