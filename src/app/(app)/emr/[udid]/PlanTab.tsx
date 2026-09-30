@@ -1700,7 +1700,7 @@ function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: st
       </div>
 
       {/* Keyword chips */}
-      <div className="mt-3">
+      <div data-overview-hide className="mt-3">
         <p className="text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-wide mb-2">Quick Add</p>
         <div className="flex flex-wrap gap-1.5">
           {allKeywords.map((kw) => {
