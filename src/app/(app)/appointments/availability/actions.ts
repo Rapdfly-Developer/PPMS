@@ -42,6 +42,10 @@ export async function getWeeklyAvailability() {
   });
 }
 
+export type UpsertWeeklyResult =
+  | { ok: true }
+  | { ok: false; message: string };
+
 export async function upsertWeekly(data: {
   id?: string;
   hospitalId: string;
@@ -51,9 +55,9 @@ export async function upsertWeekly(data: {
   slotMins: number;
   maxPatients: number;
   status: string;
-}) {
+}): Promise<UpsertWeeklyResult> {
   const doctorId = await getDoctorId();
-  if (data.startTime >= data.endTime) throw new Error("End time must be after start time");
+  if (data.startTime >= data.endTime) return { ok: false, message: "End time must be after start time" };
 
   const existing = await prisma.doctorAvailability.findMany({
     where: { doctorId, weekday: data.weekday, id: data.id ? { not: data.id } : undefined },
@@ -61,7 +65,7 @@ export async function upsertWeekly(data: {
   });
   for (const e of existing) {
     if (timesOverlap(data.startTime, data.endTime, e.startTime, e.endTime)) {
-      throw new Error(`Overlaps with ${e.startTime}–${e.endTime} at ${(e as any).hospital.name}`);
+      return { ok: false, message: `Overlaps with ${e.startTime}–${e.endTime} at ${(e as any).hospital.name}` };
     }
   }
 
@@ -76,6 +80,52 @@ export async function upsertWeekly(data: {
     });
   }
   revalidate();
+  return { ok: true };
+}
+
+export type UpsertWeeklyBatchResult =
+  | { ok: true; saved: number[] }
+  | { ok: false; message: string };
+
+const BATCH_DAYS = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+
+export async function upsertWeeklyBatch(data: {
+  hospitalId: string;
+  weekdays: number[];
+  startTime: string;
+  endTime: string;
+  slotMins: number;
+  maxPatients: number;
+}): Promise<UpsertWeeklyBatchResult> {
+  const doctorId = await getDoctorId();
+  if (data.startTime >= data.endTime) return { ok: false, message: "End time must be after start time" };
+  if (data.weekdays.length === 0) return { ok: false, message: "No days selected" };
+
+  const allExisting = await prisma.doctorAvailability.findMany({
+    where: { doctorId, weekday: { in: data.weekdays } },
+    include: { hospital: { select: { name: true } } },
+  });
+
+  const conflicts: string[] = [];
+  for (const wd of data.weekdays) {
+    for (const e of allExisting.filter((x) => x.weekday === wd)) {
+      if (timesOverlap(data.startTime, data.endTime, e.startTime, e.endTime)) {
+        conflicts.push(`${BATCH_DAYS[wd]} ${e.startTime}–${e.endTime} at ${(e as any).hospital.name}`);
+        break;
+      }
+    }
+  }
+  if (conflicts.length > 0) return { ok: false, message: `Conflicts: ${conflicts.join("; ")}` };
+
+  await prisma.$transaction(
+    data.weekdays.map((wd) =>
+      prisma.doctorAvailability.create({
+        data: { doctorId, hospitalId: data.hospitalId, weekday: wd, startTime: data.startTime, endTime: data.endTime, slotMins: data.slotMins, maxPatients: data.maxPatients, status: "ACTIVE" },
+      })
+    )
+  );
+  revalidate();
+  return { ok: true, saved: data.weekdays };
 }
 
 export async function deleteWeekly(id: string) {

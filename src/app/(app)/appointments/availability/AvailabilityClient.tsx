@@ -9,7 +9,7 @@ import {
   CheckSquare, Square, Info, RefreshCw, Timer,
 } from "lucide-react";
 import {
-  upsertWeekly, deleteWeekly, toggleWeeklyStatus,
+  upsertWeekly, upsertWeeklyBatch, deleteWeekly, toggleWeeklyStatus,
   generateMonthlySchedule, copyPreviousMonth,
   updateGeneratedDay, deleteGeneratedDay, bulkAssignDays,
   addLeave, addExtraOP, cancelScheduleException,
@@ -172,19 +172,18 @@ function EditSlotModal({ hospitals, slot, weekly, onClose }: {
   const [pending,    start]         = useTransition();
   const total = slotsCount(startTime, endTime, slotMins);
 
-  // Live collision check (exclude the slot being edited)
+  // Live collision check (exclude the slot being edited, check ALL hospitals)
   const collision = useMemo(() => {
     if (!startTime || !endTime || startTime >= endTime) return null;
     const conflict = weekly.find(s =>
       s.id !== slot.id &&
       s.weekday === slot.weekday &&
-      s.hospitalId === hospitalId &&
       timesOverlap(startTime, endTime, s.startTime, s.endTime)
     );
     return conflict
-      ? `Overlaps with existing slot ${fmt12(conflict.startTime)}–${fmt12(conflict.endTime)} at this hospital`
+      ? `Overlaps with existing slot ${fmt12(conflict.startTime)}–${fmt12(conflict.endTime)} at ${conflict.hospital.name}`
       : null;
-  }, [startTime, endTime, hospitalId, weekly, slot.id, slot.weekday]);
+  }, [startTime, endTime, weekly, slot.id, slot.weekday]);
 
   return (
     <Modal title="Edit Template Slot" sub={`${WEEKDAYS_FULL[slot.weekday]}, repeats every week`} onClose={onClose}>
@@ -241,8 +240,9 @@ function EditSlotModal({ hospitals, slot, weekly, onClose }: {
             if (collision) return;
             setError("");
             start(async () => {
-              try { await upsertWeekly({ id: slot.id, hospitalId, weekday: slot.weekday, startTime, endTime, slotMins, maxPatients: maxPat, status }); onClose(); }
-              catch (e: any) { setError(e.message ?? "Failed"); }
+              const result = await upsertWeekly({ id: slot.id, hospitalId, weekday: slot.weekday, startTime, endTime, slotMins, maxPatients: maxPat, status });
+              if (!result.ok) { setError(result.message); return; }
+              onClose();
             });
           }}
           className="flex-1 px-4 py-2.5 rounded-xl bg-[var(--color-primary-600)] text-white text-sm font-semibold hover:bg-[var(--color-primary-700)] disabled:opacity-60 transition-all inline-flex items-center justify-center gap-2">
@@ -287,22 +287,21 @@ function AddWeeklySlotModal({ hospitals, weekly, preWeekday, onClose }: {
 
   const total = slotsCount(startTime, endTime, slotMins);
 
-  // Per-day collision map: weekday → conflict description | null
+  // Per-day collision map: weekday → conflict description | null (all hospitals)
   const collisions = useMemo<Record<number, string | null>>(() => {
     const result: Record<number, string | null> = {};
     if (!startTime || !endTime || startTime >= endTime) return result;
     for (const wd of selDays) {
       const conflict = weekly.find(s =>
         s.weekday === wd &&
-        s.hospitalId === hospitalId &&
         timesOverlap(startTime, endTime, s.startTime, s.endTime)
       );
       result[wd] = conflict
-        ? `${fmt12(conflict.startTime)}–${fmt12(conflict.endTime)}`
+        ? `${fmt12(conflict.startTime)}–${fmt12(conflict.endTime)} at ${conflict.hospital.name}`
         : null;
     }
     return result;
-  }, [startTime, endTime, hospitalId, selDays, weekly]);
+  }, [startTime, endTime, selDays, weekly]);
 
   const blockedDays  = Object.entries(collisions).filter(([, v]) => v !== null).map(([k]) => Number(k));
   const cleanDays    = Array.from(selDays).filter(d => !collisions[d]);
@@ -374,22 +373,22 @@ function AddWeeklySlotModal({ hospitals, weekly, preWeekday, onClose }: {
           <p className="text-xs font-bold text-red-700 flex items-center gap-1.5"><AlertTriangle size={13} /> Time conflicts detected</p>
           {blockedDays.map(d => (
             <p key={d} className="text-[11px] text-red-600">
-              <span className="font-semibold">{WEEKDAYS_FULL[d]}</span> - already has {collisions[d]} at this hospital
+              <span className="font-semibold">{WEEKDAYS_FULL[d]}</span> - already has {collisions[d]}
             </p>
           ))}
           {cleanDays.length > 0 && (
-            <p className="text-[11px] text-red-500 mt-0.5">Slot will only be saved for the {cleanDays.length} conflict-free day{cleanDays.length > 1 ? "s" : ""}.</p>
+            <p className="text-[11px] text-red-500 mt-0.5">Deselect conflicted days or adjust the time before saving.</p>
           )}
         </div>
       )}
 
       {/* Summary */}
-      {startTime < endTime && total > 0 && cleanDays.length > 0 && (
+      {startTime < endTime && total > 0 && selDays.size > 0 && !hasConflicts && (
         <div className="rounded-xl bg-[var(--color-primary-50)] border border-[var(--color-primary-100)] px-4 py-3 grid grid-cols-3">
           {[
             { val: total, lbl: "Slots/day" },
             { val: total * maxPat, lbl: "Max Pts/day" },
-            { val: cleanDays.length, lbl: `Day${cleanDays.length > 1 ? "s" : ""} saved` },
+            { val: selDays.size, lbl: `Day${selDays.size > 1 ? "s" : ""}` },
           ].map((item, i) => (
             <div key={i} className={`text-center px-2 ${i > 0 ? "border-l border-[var(--color-primary-100)]" : ""}`}>
               <p className="text-sm font-bold text-[var(--color-primary-800)]">{item.val}</p>
@@ -401,25 +400,22 @@ function AddWeeklySlotModal({ hospitals, weekly, preWeekday, onClose }: {
 
       <div className="flex gap-2">
         <button onClick={onClose} className="flex-1 px-4 py-2.5 rounded-xl border border-[var(--color-border)] text-sm font-medium hover:bg-[var(--color-surface-sunken)] transition-colors">Cancel</button>
-        <button disabled={pending || cleanDays.length === 0 || startTime >= endTime}
+        <button disabled={pending || hasConflicts || selDays.size === 0 || startTime >= endTime}
           onClick={() => {
             if (!hospitalId) { setError("Select a hospital"); return; }
             if (startTime >= endTime) { setError("End time must be after start time"); return; }
-            if (cleanDays.length === 0) { setError("All selected days have conflicts, adjust the time or choose different days"); return; }
+            if (selDays.size === 0) { setError("Select at least one day"); return; }
+            if (hasConflicts) { setError("Resolve all conflicts before saving"); return; }
             setError("");
             start(async () => {
-              try {
-                // Save one slot per conflict-free day (sequential to avoid race)
-                for (const wd of cleanDays) {
-                  await upsertWeekly({ hospitalId, weekday: wd, startTime, endTime, slotMins, maxPatients: maxPat, status: "ACTIVE" });
-                }
-                onClose();
-              } catch (e: any) { setError(e.message ?? "Failed"); }
+              const result = await upsertWeeklyBatch({ hospitalId, weekdays: Array.from(selDays), startTime, endTime, slotMins, maxPatients: maxPat });
+              if (!result.ok) { setError(result.message); return; }
+              onClose();
             });
           }}
           className="flex-1 px-4 py-2.5 rounded-xl bg-[var(--color-primary-600)] text-white text-sm font-semibold hover:bg-[var(--color-primary-700)] disabled:opacity-60 transition-all inline-flex items-center justify-center gap-2">
           {pending ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
-          {pending ? "Saving…" : cleanDays.length > 0 ? `Add Slot${cleanDays.length > 1 ? `s for ${cleanDays.length} Days` : ""}` : "Add Slot"}
+          {pending ? "Saving…" : selDays.size > 1 ? `Add Slots for ${selDays.size} Days` : "Add Slot"}
         </button>
       </div>
     </Modal>

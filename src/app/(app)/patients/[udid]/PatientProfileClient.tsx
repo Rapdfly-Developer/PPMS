@@ -9,7 +9,7 @@ import {
   ChevronRight, ChevronDown, Hospital, Stethoscope, FileText,
   CheckCircle2, Clock, AlertCircle, Filter, ClipboardCheck,
   ArrowRightLeft, X, Download, Loader2,
-  Activity,
+  Activity, Sparkles,
 } from "lucide-react";
 import { EmrViewerButton, VisitDownloadButton } from "./EmrViewerModal";
 import {
@@ -17,7 +17,7 @@ import {
   Block, DataTable, Cols, DASH,
   TH, TD, TD_MUTED, COLS_INVESTIGATION,
 } from "./VisitSummaryTabs";
-import { transferPatient } from "../actions";
+import { transferPatient, generateLongitudinalSummary } from "../actions";
 import { convertNotesToCC } from "@/lib/appointment-cc";
 export { TimeStampButton } from "./PatientTimeline";
 
@@ -222,6 +222,18 @@ export type LastVisitSummary = {
   diagnoses: { id: string; description: string; icd10Code: string; laterality: string | null; status: string; provisional: boolean }[];
   medications: { id: string; drugName: string; dosage: string | null; frequency: string | null; duration: string | null; laterality: string | null }[];
   investigations: { id: string; category: string; testName: string; priority: string; laterality: string | null; status: string; notes: string | null; resultRef: string | null; createdAt: string }[];
+  followUpDate: string | null;
+};
+
+export type LongitudinalVisit = {
+  id: string;
+  date: string;
+  visitType: string | null;
+  hospitalName: string | null;
+  chiefComplaint: string | null;
+  diagnoses: { description: string; status: string; laterality: string | null }[];
+  medications: { drugName: string; dosage: string | null; frequency: string | null; duration: string | null }[];
+  investigations: { testName: string; status: string }[];
   followUpDate: string | null;
 };
 
@@ -591,6 +603,143 @@ function FinalizedVisitModal({
   );
 }
 
+/* ── Longitudinal Summary Section ───────────────────────────────────────────── */
+function LongitudinalSummarySection({ udid, visits }: { udid: string; visits: LongitudinalVisit[] }) {
+  const [aiText,    setAiText]    = useState<string | null>(null);
+  const [aiSource,  setAiSource]  = useState<"claude" | "local">("local");
+  const [aiNotice,  setAiNotice]  = useState<string | null>(null);
+  const [aiError,   setAiError]   = useState<string | null>(null);
+  const [pending,   start]        = useTransition();
+
+  if (visits.length === 0) return null;
+
+  function handleGenerate() {
+    setAiError(null);
+    setAiText(null);
+    setAiNotice(null);
+    start(async () => {
+      const res = await generateLongitudinalSummary(udid);
+      if (res.error) { setAiError(res.error); return; }
+      setAiText(res.text ?? null);
+      setAiSource(res.source ?? "local");
+      setAiNotice(res.notice ?? null);
+    });
+  }
+
+  const firstDate = visits[visits.length - 1]?.date;
+  const lastDate  = visits[0]?.date;
+
+  return (
+    <div className="mt-4 rounded-2xl border border-[var(--color-border)] bg-white overflow-hidden">
+      {/* Header */}
+      <div className="px-5 py-4 border-b border-[var(--color-border)] flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5">
+          <Activity size={16} className="text-[var(--color-primary-600)] shrink-0" />
+          <div>
+            <p className="text-sm font-bold text-[var(--color-ink-900)]">Longitudinal Summary</p>
+            <p className="text-[11px] text-[var(--color-ink-400)]">
+              {visits.length} visit{visits.length > 1 ? "s" : ""}
+              {firstDate && lastDate && visits.length > 1
+                ? ` · ${format(new Date(firstDate), "dd MMM yyyy")} – ${format(new Date(lastDate), "dd MMM yyyy")}`
+                : firstDate ? ` · ${format(new Date(firstDate), "dd MMM yyyy")}` : ""}
+            </p>
+          </div>
+        </div>
+        {!aiText && (
+          <button
+            onClick={handleGenerate}
+            disabled={pending}
+            className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1.5 rounded-lg bg-[var(--color-primary-50)] text-[var(--color-primary-700)] border border-[var(--color-primary-200)] hover:bg-[var(--color-primary-100)] disabled:opacity-60 transition-colors shrink-0"
+          >
+            {pending ? <Loader2 size={11} className="animate-spin" /> : <Sparkles size={11} />}
+            {pending ? "Generating…" : "AI Summary"}
+          </button>
+        )}
+      </div>
+
+      {/* AI error */}
+      {aiError && (
+        <div className="px-5 py-3 bg-red-50 border-b border-red-100 flex items-start gap-2 text-sm text-red-700">
+          <AlertCircle size={14} className="shrink-0 mt-0.5" />{aiError}
+        </div>
+      )}
+
+      {/* AI result */}
+      {aiText && (
+        <div className="px-5 py-4 bg-[var(--color-primary-50)] border-b border-[var(--color-primary-100)]">
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <p className="text-[11px] font-semibold text-[var(--color-primary-700)] uppercase tracking-wide">
+              {aiSource === "claude" ? "AI-generated" : "Auto-generated"} Summary
+            </p>
+            <button
+              onClick={() => { setAiText(null); setAiNotice(null); }}
+              className="p-1 rounded hover:bg-[var(--color-primary-100)] text-[var(--color-primary-400)] transition-colors"
+            >
+              <X size={12} />
+            </button>
+          </div>
+          {aiNotice && <p className="text-[11px] text-amber-600 mb-2">{aiNotice}</p>}
+          <p className="text-[13px] text-[var(--color-ink-800)] leading-relaxed">{aiText}</p>
+        </div>
+      )}
+
+      {/* Chronological visit timeline (newest first) */}
+      <div className="divide-y divide-[var(--color-border)]">
+        {visits.map((v) => (
+          <div key={v.id} className="px-5 py-3.5">
+            <div className="flex items-start justify-between gap-3 mb-1">
+              <div>
+                <p className="text-[13px] font-semibold text-[var(--color-ink-800)]">
+                  {format(new Date(v.date), "dd MMM yyyy")}
+                </p>
+                <p className="text-[11px] text-[var(--color-ink-400)]">
+                  {[v.visitType, v.hospitalName].filter(Boolean).join(" · ")}
+                </p>
+              </div>
+              {v.followUpDate && (
+                <span className="text-[10px] font-medium text-[var(--color-primary-600)] bg-[var(--color-primary-50)] border border-[var(--color-primary-100)] px-2 py-0.5 rounded-full shrink-0">
+                  F/U {format(new Date(v.followUpDate), "dd MMM")}
+                </span>
+              )}
+            </div>
+            {v.chiefComplaint && (
+              <p className="text-[12px] text-[var(--color-ink-600)] mb-1">{v.chiefComplaint}</p>
+            )}
+            {v.diagnoses.length > 0 && (
+              <p className="text-[11px] text-[var(--color-ink-500)]">
+                <span className="font-semibold">Dx:</span>{" "}
+                {v.diagnoses.map((d, i) => (
+                  <span key={i}>
+                    {d.description}{d.laterality ? ` (${d.laterality})` : ""}
+                    {d.status === "RESOLVED" ? " ✓" : ""}
+                    {i < v.diagnoses.length - 1 ? ", " : ""}
+                  </span>
+                ))}
+              </p>
+            )}
+            {v.medications.length > 0 && (
+              <p className="text-[11px] text-[var(--color-ink-500)] mt-0.5">
+                <span className="font-semibold">Rx:</span>{" "}
+                {v.medications.map((m, i) => (
+                  <span key={i}>{m.drugName}{i < v.medications.length - 1 ? ", " : ""}</span>
+                ))}
+              </p>
+            )}
+            {v.investigations.length > 0 && (
+              <p className="text-[11px] text-[var(--color-ink-500)] mt-0.5">
+                <span className="font-semibold">Inv:</span>{" "}
+                {v.investigations.map((inv, i) => (
+                  <span key={i}>{inv.testName}{i < v.investigations.length - 1 ? ", " : ""}</span>
+                ))}
+              </p>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /* ── Main export ─────────────────────────────────────────────────────────────── */
 export function PatientProfileClient({
   udid,
@@ -602,6 +751,7 @@ export function PatientProfileClient({
   showTodayVisit = true,
   timelineEntries = [],
   lastVisitSummary = null,
+  longitudinalVisits = [],
 }: {
   udid: string;
   visits: SerialVisit[];
@@ -612,6 +762,7 @@ export function PatientProfileClient({
   showTodayVisit?: boolean;
   timelineEntries?: TimelineEntry[];
   lastVisitSummary?: LastVisitSummary | null;
+  longitudinalVisits?: LongitudinalVisit[];
 }) {
   const hasToday = todayVisit !== null;
   const hasPendingAppointment = !hasToday && !!todayAppointmentId;
@@ -721,6 +872,11 @@ export function PatientProfileClient({
       {/* ── Last Visit Summary + Investigations ─────────────────────── */}
       {lastVisitSummary && (
         <LastVisitSummarySection summary={lastVisitSummary} />
+      )}
+
+      {/* ── Longitudinal Summary ─────────────────────────────────────── */}
+      {longitudinalVisits.length > 0 && (
+        <LongitudinalSummarySection udid={udid} visits={longitudinalVisits} />
       )}
     </>
   );

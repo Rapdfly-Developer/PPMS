@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/rbac";
+import { requireRole, requirePermission, scopeDoctorId } from "@/lib/rbac";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { writeAudit } from "@/lib/audit";
@@ -573,6 +573,105 @@ export async function generateAiSummary(
     return { text, source: "claude" };
   } catch (err: any) {
     // Never fail the tab — show the locally built summary and say why.
+    return {
+      text: localText,
+      source: "local",
+      notice: `Claude unavailable (${err?.message ?? "unknown error"}), showing an auto-generated summary.`,
+    };
+  }
+}
+
+export async function generateLongitudinalSummary(
+  udid: string
+): Promise<{ text?: string; source?: "claude" | "local"; notice?: string; error?: string }> {
+  const user = await requirePermission("patients.view");
+
+  const patient = await prisma.patient.findFirst({
+    where: { udid, doctorId: scopeDoctorId(user) },
+    select: { id: true, age: true, sex: true },
+  });
+  if (!patient) return { error: "Patient not found." };
+
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+
+  const visits = await prisma.visit.findMany({
+    where: { patientId: patient.id, date: { lt: todayStart } },
+    orderBy: { date: "desc" },
+    include: {
+      hospital:            { select: { name: true } },
+      generalExam:         { select: { chiefComplaint: true } },
+      diagnoses:           { select: { description: true, status: true, laterality: true } },
+      medications:         { select: { drugName: true, dosage: true, frequency: true, duration: true } },
+      investigationOrders: { select: { testName: true, status: true } },
+    },
+  });
+
+  if (visits.length === 0) return { error: "No past visits found." };
+
+  // oldest-first for chronological narrative
+  const sorted = [...visits].reverse();
+
+  const fmtDate = (d: Date) =>
+    d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+
+  // Deterministic local text
+  const localParts = sorted.map((v) => {
+    let part = `Visit (${fmtDate(v.date)}${v.visitType ? `, ${v.visitType}` : ""}${v.hospital?.name ? ` at ${v.hospital.name}` : ""})`;
+    if (v.generalExam?.chiefComplaint) part += `: ${v.generalExam.chiefComplaint}`;
+    if (v.diagnoses.length)
+      part += `. Dx: ${v.diagnoses.map((d) => `${d.description}${d.laterality ? ` (${d.laterality})` : ""}${d.status === "RESOLVED" ? " [resolved]" : ""}`).join(", ")}`;
+    if (v.medications.length)
+      part += `. Rx: ${v.medications.map((m) => [m.drugName, m.dosage, m.frequency].filter(Boolean).join(" ")).join(", ")}`;
+    if (v.investigationOrders.length)
+      part += `. Inv: ${v.investigationOrders.map((i) => i.testName).join(", ")}`;
+    if (v.followUpDate)
+      part += `. F/U: ${fmtDate(v.followUpDate)}`;
+    return part;
+  });
+  const localText =
+    `Longitudinal summary across ${sorted.length} visit${sorted.length > 1 ? "s" : ""}: ` +
+    localParts.join(". ");
+
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) return { text: localText, source: "local" };
+
+  const visitLines = sorted.map((v, idx) => {
+    const lines = [
+      `Visit ${idx + 1} — ${fmtDate(v.date)}${v.visitType ? ` (${v.visitType})` : ""}${v.hospital?.name ? ` at ${v.hospital.name}` : ""}:`,
+    ];
+    if (v.generalExam?.chiefComplaint) lines.push(`  Chief complaint: ${v.generalExam.chiefComplaint}`);
+    if (v.diagnoses.length)
+      lines.push(`  Diagnoses: ${v.diagnoses.map((d) => `${d.description}${d.laterality ? ` (${d.laterality})` : ""}${d.status === "RESOLVED" ? " [resolved]" : d.status === "CONTROLLED" ? " [controlled]" : ""}`).join("; ")}`);
+    if (v.medications.length)
+      lines.push(`  Medications: ${v.medications.map((m) => [m.drugName, m.dosage, m.frequency, m.duration && `for ${m.duration}`].filter(Boolean).join(" ")).join("; ")}`);
+    if (v.investigationOrders.length)
+      lines.push(`  Investigations: ${v.investigationOrders.map((i) => `${i.testName} (${i.status})`).join(", ")}`);
+    if (v.followUpDate)
+      lines.push(`  Follow-up: ${fmtDate(v.followUpDate)}`);
+    return lines.join("\n");
+  });
+
+  const patientDesc = [patient.age ? `${patient.age}-year-old` : "", patient.sex ?? ""].filter(Boolean).join(" ");
+  const prompt = [
+    "You are a clinical documentation assistant. Write a concise longitudinal clinical summary across the following patient visits in 4–6 sentences. Use clear flowing prose, no bullet points, no markdown. Cover only documented facts: complaint progression, diagnosis changes, medication continuity or changes, investigation history, and documented follow-up dates. Do not infer diagnoses, adherence, compliance, causation, or any clinical conclusions beyond what is explicitly recorded. Be medically precise.",
+    "",
+    ...(patientDesc ? [`Patient: ${patientDesc}`, ""] : []),
+    ...visitLines,
+  ].join("\n");
+
+  try {
+    const client = new Anthropic({ apiKey });
+    const response = await client.messages.create({
+      model: "claude-opus-4-8",
+      max_tokens: 800,
+      messages: [{ role: "user", content: prompt }],
+    });
+    const textBlock = response.content.find((b) => b.type === "text") as { type: "text"; text: string } | undefined;
+    const text = textBlock?.text?.trim();
+    if (!text) return { text: localText, source: "local", notice: "Claude returned an empty response." };
+    return { text, source: "claude" };
+  } catch (err: any) {
     return {
       text: localText,
       source: "local",

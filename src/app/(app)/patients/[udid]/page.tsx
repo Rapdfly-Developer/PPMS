@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { format, startOfDay, endOfDay } from "date-fns";
 import { Phone, MapPin, Calendar, Hash, IdCard, Briefcase, FileText, Link2, Users } from "lucide-react";
 import { decryptAadhaar, maskAadhaar } from "@/lib/crypto";
-import { PatientProfileClient, type SerialVisit, type TodayVisit, type LastVisitSummary } from "./PatientProfileClient";
+import { PatientProfileClient, type SerialVisit, type TodayVisit, type LastVisitSummary, type LongitudinalVisit } from "./PatientProfileClient";
 import { PatientActionsPanel } from "./PatientHistoryButtons";
 
 const CATEGORY_STYLES: Record<string, string> = {
@@ -200,6 +200,46 @@ export default async function PatientProfilePage({
       investigations: invOrders.map((o) => ({ ...o, createdAt: o.createdAt.toISOString() })),
       followUpDate:   lastPastVisit.followUpDate ? lastPastVisit.followUpDate.toISOString() : null,
     };
+  }
+
+  /* ── Longitudinal visits (all past visits, newest-first) ────────────── */
+  const pastVisits = patient.visits.filter((v) => v.date < todayStart);
+  let longitudinalVisits: LongitudinalVisit[] = [];
+  if (pastVisits.length > 0) {
+    const pastVisitIds = pastVisits.map((v) => v.id);
+    const [allDiags, allMeds, allInvs] = await Promise.all([
+      prisma.diagnosis.findMany({
+        where: { visitId: { in: pastVisitIds } },
+        select: { visitId: true, description: true, status: true, laterality: true },
+      }),
+      prisma.medication.findMany({
+        where: { visitId: { in: pastVisitIds } },
+        select: { visitId: true, drugName: true, dosage: true, frequency: true, duration: true },
+      }),
+      prisma.investigationOrder.findMany({
+        where: { visitId: { in: pastVisitIds } },
+        select: { visitId: true, testName: true, status: true },
+      }),
+    ]);
+
+    const diagsMap = new Map<string, typeof allDiags>(pastVisitIds.map((id) => [id, []]));
+    const medsMap  = new Map<string, typeof allMeds>(pastVisitIds.map((id) => [id, []]));
+    const invsMap  = new Map<string, typeof allInvs>(pastVisitIds.map((id) => [id, []]));
+    for (const d of allDiags) diagsMap.get(d.visitId)?.push(d);
+    for (const m of allMeds) medsMap.get(m.visitId)?.push(m);
+    for (const i of allInvs) invsMap.get(i.visitId)?.push(i);
+
+    longitudinalVisits = pastVisits.map((v) => ({
+      id:             v.id,
+      date:           v.date.toISOString(),
+      visitType:      v.visitType ?? null,
+      hospitalName:   (v as any).hospital?.name ?? null,
+      chiefComplaint: v.generalExam?.chiefComplaint ?? null,
+      diagnoses:      (diagsMap.get(v.id) ?? []).map((d) => ({ description: d.description, status: d.status, laterality: d.laterality })),
+      medications:    (medsMap.get(v.id) ?? []).map((m) => ({ drugName: m.drugName, dosage: m.dosage, frequency: m.frequency, duration: m.duration })),
+      investigations: (invsMap.get(v.id) ?? []).map((i) => ({ testName: i.testName, status: i.status })),
+      followUpDate:   (v as any).followUpDate ? (v as any).followUpDate.toISOString() : null,
+    }));
   }
 
   /* ── Banner info ──────────────────────────────────────────────────────── */
@@ -400,6 +440,7 @@ export default async function PatientProfilePage({
             showTodayVisit={showTodayVisit}
             timelineEntries={timelineEntries}
             lastVisitSummary={lastVisitSummary}
+            longitudinalVisits={longitudinalVisits}
           />
           {/* No Copilot slot here, deliberately.
 
