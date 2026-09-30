@@ -238,9 +238,6 @@ const SHARED_CSS = `
     page-break-inside: auto;
   }
   thead { display: table-header-group; }
-  thead tr {
-    background: #E8F5F3;
-  }
   th {
     text-align: left;
     font-size: 8.5px;
