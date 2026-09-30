@@ -574,7 +574,7 @@ export function NewEncounterForm({
             className="flex-1 flex items-center justify-center gap-2 bg-white border border-[var(--color-primary-700)] text-[var(--color-primary-700)] text-sm font-semibold px-6 py-3 rounded-xl hover:bg-[var(--color-primary-50)] disabled:opacity-50 transition-colors"
           >
             <ListOrdered size={16} />
-            {pending ? "Adding…" : "Add to Q"}
+            {pending ? "Adding…" : "Add to Queue"}
           </button>
         </div>
       </form>
