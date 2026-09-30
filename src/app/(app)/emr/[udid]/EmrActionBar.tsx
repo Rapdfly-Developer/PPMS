@@ -362,7 +362,7 @@ export function EmrActionBar({
           </button>
 
           {printOpen && (
-            <div className="absolute bottom-full mb-2 right-0 w-56 rounded-xl border border-[var(--color-border)] bg-white shadow-lg overflow-hidden z-30">
+            <div className="absolute bottom-full mb-2 left-0 md:left-auto md:right-0 w-56 rounded-xl border border-[var(--color-border)] bg-white shadow-lg overflow-hidden z-30">
               {/* 1. Print Long Summary */}
               <button
                 type="button"
