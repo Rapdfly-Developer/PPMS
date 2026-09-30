@@ -599,6 +599,7 @@ export function PatientProfileClient({
   todayAppointmentId,
   hasRequestedAppt = false,
   userRole,
+  showTodayVisit = true,
   timelineEntries = [],
   lastVisitSummary = null,
 }: {
@@ -608,6 +609,7 @@ export function PatientProfileClient({
   todayAppointmentId?: string | null;
   hasRequestedAppt?: boolean;
   userRole: string;
+  showTodayVisit?: boolean;
   timelineEntries?: TimelineEntry[];
   lastVisitSummary?: LastVisitSummary | null;
 }) {
@@ -649,8 +651,8 @@ export function PatientProfileClient({
           </Link>
         )}
 
-        {/* Today's Visit */}
-        {userRole === "DOCTOR" ? (
+        {/* Today's Visit — only shown when navigating from OPD Queue or Patient Library */}
+        {showTodayVisit && userRole === "DOCTOR" ? (
           hasToday ? (
             todayIsFinalized ? (
               <button

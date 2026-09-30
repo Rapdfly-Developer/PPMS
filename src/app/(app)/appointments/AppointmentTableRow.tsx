@@ -76,21 +76,12 @@ export function AppointmentTableRow({
 
       {/* Patient Name */}
       <td className="px-4 py-3">
-        {appt.visit ? (
-          <Link
-            href={`/emr/${p.udid}?visit=${appt.visit.id}&returnTo=/appointments`}
-            className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-900)] hover:text-[var(--color-primary-600)] transition-colors"
-          >
-            {p.name}
-          </Link>
-        ) : (
-          <Link
-            href={`/patients/${p.udid}?returnTo=/appointments`}
-            className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-900)] hover:text-[var(--color-primary-600)] transition-colors"
-          >
-            {p.name}
-          </Link>
-        )}
+        <Link
+          href={`/patients/${p.udid}?returnTo=/appointments&source=appointments`}
+          className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-900)] hover:text-[var(--color-primary-600)] transition-colors"
+        >
+          {p.name}
+        </Link>
       </td>
 
       {/* Age / Gender */}

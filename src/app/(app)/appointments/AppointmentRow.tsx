@@ -83,7 +83,7 @@ export function AppointmentRow({ appt, role, token }: { appt: any; role: string;
 
   const hasActions = isCompleted || showScheduleNext || showCancelConfirmed || showNoShow;
 
-  const patientUrl = `/patients/${p.udid}?returnTo=${encodeURIComponent(window.location.pathname + window.location.search)}`;
+  const patientUrl = `/patients/${p.udid}?returnTo=${encodeURIComponent(window.location.pathname + window.location.search)}&source=appointments`;
 
   return (
     <div
@@ -208,7 +208,7 @@ export function AppointmentRow({ appt, role, token }: { appt: any; role: string;
               onClick={() => hospitalSetStatus("CONFIRMED")}
               className="flex-1 text-[11px] sm:text-xs font-semibold py-1.5 rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-50 transition-colors"
             >
-              {pending ? "…" : "Add to Queue"}
+              {pending ? "…" : "Confirm / Add to Queue"}
             </button>
             <button
               disabled={pending}
@@ -289,7 +289,7 @@ export function AppointmentRow({ appt, role, token }: { appt: any; role: string;
               onClick={() => hospitalSetStatus("CONFIRMED")}
               className="text-[11px] sm:text-xs font-medium px-3 py-1 rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-50"
             >
-              {pending ? "…" : "Add to Queue"}
+              {pending ? "…" : "Confirm / Add to Queue"}
             </button>
             <button
               disabled={pending}

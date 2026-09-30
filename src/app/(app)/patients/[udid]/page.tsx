@@ -20,9 +20,13 @@ export default async function PatientProfilePage({
   searchParams,
 }: {
   params: Promise<{ udid: string }>;
-  searchParams: Promise<{ returnTo?: string }>;
+  searchParams: Promise<{ returnTo?: string; source?: string }>;
 }) {
   const { udid } = await params;
+  const { source } = await searchParams;
+  // Today's Visit is only accessible from OPD Queue and Patient Library,
+  // not from the Appointments module or OPD Partial Dispense.
+  const showTodayVisit = source !== "appointments" && source !== "partial-dispense";
   const user = await requirePermission("patients.view");
 
   const patient = await prisma.patient.findUnique({
@@ -393,6 +397,7 @@ export default async function PatientProfilePage({
             todayAppointmentId={todayAppointmentId}
             hasRequestedAppt={hasRequestedAppt}
             userRole={user.role}
+            showTodayVisit={showTodayVisit}
             timelineEntries={timelineEntries}
             lastVisitSummary={lastVisitSummary}
           />

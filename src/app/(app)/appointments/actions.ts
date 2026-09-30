@@ -147,7 +147,7 @@ export async function doctorConfirmAppointment(appointmentId: string): Promise<v
     include: { patient: true, hospital: true },
   });
   if (!appt || appt.doctorId !== scopeDoctorId(user)) throw new Error("Forbidden");
-  if (appt.status !== "REQUESTED") throw new Error("Only REQUESTED appointments can be moved to queue.");
+  if (appt.status !== "REQUESTED" && appt.status !== "SCHEDULED") throw new Error("Only REQUESTED or SCHEDULED appointments can be moved to queue.");
 
   await prisma.appointment.update({ where: { id: appointmentId }, data: { status: "CONFIRMED", arrivedAt: new Date() } });
 

@@ -104,12 +104,12 @@ function LiveTimer({ since }: { since: string }) {
    patients.view. Without it the same details still render as plain text: the
    queue has to stay readable for a role that may work it but not open records.
    /patients/[udid] enforces the permission server-side either way. */
-function PatientBlock({ udid, canView, className, children }: {
-  udid: string; canView: boolean; className: string; children: ReactNode;
+function PatientBlock({ udid, canView, source, className, children }: {
+  udid: string; canView: boolean; source: string; className: string; children: ReactNode;
 }) {
   if (!canView) return <div className={className}>{children}</div>;
   return (
-    <Link href={`/patients/${udid}?returnTo=/dashboard`} className={className}>
+    <Link href={`/patients/${udid}?returnTo=/dashboard&source=${source}`} className={className}>
       {children}
     </Link>
   );
@@ -134,7 +134,7 @@ function PartialDispenseRow({ appt: a, scope, serial, canDispense, canViewPatien
       <div className="w-px self-stretch bg-orange-200 hidden sm:block" />
 
       {/* Patient info — grows to fill */}
-      <PatientBlock udid={a.patient.udid} canView={canViewPatient} className="flex-1 min-w-0 hover:opacity-80 transition-opacity">
+      <PatientBlock udid={a.patient.udid} canView={canViewPatient} source="partial-dispense" className="flex-1 min-w-0 hover:opacity-80 transition-opacity">
         <p className="font-semibold text-[13px] sm:text-sm text-[var(--color-ink-900)] truncate">{a.patient.name}</p>
         <div className="flex items-center gap-2 mt-0.5 flex-wrap">
           <span className="font-mono text-[9px] sm:text-[10px] text-[#115E59] bg-[#F0F8F6] px-1.5 py-0.5 rounded">
@@ -239,7 +239,7 @@ function ApptRow({ appt, scope, serial, canManageQueue, canViewPatient }: { appt
         </div>
       </div>
       <div className="w-px self-stretch bg-[var(--color-border)] hidden sm:block" />
-      <PatientBlock udid={appt.patient.udid} canView={canViewPatient} className="flex-1 min-w-0 hover:opacity-80 transition-opacity">
+      <PatientBlock udid={appt.patient.udid} canView={canViewPatient} source="opd-queue" className="flex-1 min-w-0 hover:opacity-80 transition-opacity">
         <p className="font-semibold text-[var(--color-ink-900)] text-[13px] sm:text-sm truncate">{appt.patient.name}</p>
         <div className="flex items-center gap-2 mt-0.5 flex-wrap">
           <span title="UDID (Doctor ID)" className="font-mono text-[9px] sm:text-[10px] text-[#115E59] bg-[#F0F8F6] px-1.5 py-0.5 rounded">
