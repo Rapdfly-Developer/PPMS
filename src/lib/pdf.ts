@@ -851,7 +851,7 @@ async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
     `</tr>`;
 
   /* ── Table header style ── */
-  const TH = `padding:4px 7px;background:${BRAND};color:#fff;font-size:8.5px;font-weight:700;text-align:left;`;
+  const TH = `padding:4px 7px;color:#0D4A45;border-bottom:2px solid #C8E8E4;font-size:8.5px;font-weight:700;text-align:left;`;
 
   /* ── Data cell — bottom border only, clean open rows ── */
   const TD = `padding:3.5px 7px;border-bottom:1px solid #ECF3F1;font-size:9.5px;`;
@@ -1272,7 +1272,7 @@ async function renderFullEmrHtml(d: FullEmrData): Promise<string> {
   const emptyNote = none("Not recorded");
 
   /* ── Table header / cell style (matches Short Summary) ── */
-  const TH = `padding:4px 7px;background:${BRAND};color:#fff;font-size:8.5px;font-weight:700;text-align:left;`;
+  const TH = `padding:4px 7px;color:#0D4A45;border-bottom:2px solid #C8E8E4;font-size:8.5px;font-weight:700;text-align:left;`;
   const TD = `padding:3.5px 7px;border-bottom:1px solid #ECF3F1;font-size:9.5px;`;
   const MED_TD = `padding:6px 7px;border-bottom:1px dotted #C8DBD8;font-size:9.5px;`;
 
