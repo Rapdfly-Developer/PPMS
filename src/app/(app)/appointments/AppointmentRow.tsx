@@ -4,7 +4,7 @@ import { format } from "date-fns";
 import { openPdfNative } from "@/lib/open-pdf";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { Phone, Tag, FileText, CalendarPlus, Printer, UserRound, Clock, Timer, LogIn, CheckCircle2, Calendar, UserX } from "lucide-react";
+import { Phone, Tag, FileText, CalendarPlus, Printer, Clock, Timer, LogIn, CheckCircle2, Calendar, UserX } from "lucide-react";
 import { hospitalUpdateAppointmentStatus, doctorUpdateAppointmentStatus, doctorConfirmAppointment, doctorCancelAppointment } from "./actions";
 import { formatComplaintDisplay } from "@/lib/appointment-cc";
 import { ScheduleNextSlotModal } from "./ScheduleNextSlotModal";
@@ -83,6 +83,15 @@ export function AppointmentRow({ appt, role, token }: { appt: any; role: string;
 
   const hasActions = isCompleted || showScheduleNext || showCancelConfirmed || showNoShow;
 
+  // Timestamp data
+  const arrivedAt   = appt.arrivedAt          ? new Date(appt.arrivedAt)          : null;
+  const finalizedAt = appt.visit?.finalizedAt  ? new Date(appt.visit.finalizedAt)
+                    : appt.completedAt         ? new Date(appt.completedAt)        : null;
+  const fmtDuration = (m: number) => m < 60 ? `${m}m` : `${Math.floor(m / 60)}h ${m % 60}m`;
+  const totalMins = arrivedAt && finalizedAt
+    ? Math.max(0, Math.round((finalizedAt.getTime() - arrivedAt.getTime()) / 60000))
+    : null;
+
   const patientUrl = `/patients/${p.udid}?returnTo=${encodeURIComponent(window.location.pathname + window.location.search)}&source=appointments`;
 
   return (
@@ -91,215 +100,199 @@ export function AppointmentRow({ appt, role, token }: { appt: any; role: string;
       className="flex items-start gap-3 px-4 sm:px-5 py-4 rounded-xl border border-[var(--color-border)] bg-white hover:bg-[var(--color-primary-50)] hover:border-[var(--color-primary-200)] transition-colors cursor-pointer"
     >
       {/* Token badge */}
-      <div className="flex items-center justify-center shrink-0 w-9 h-9 rounded-xl text-[13px] sm:text-sm font-bold mt-0.5"
-        style={{ background: "var(--color-primary-100)", color: "var(--color-primary-700)" }}>
+      <div
+        className="flex items-center justify-center shrink-0 w-9 h-9 rounded-xl text-[13px] sm:text-sm font-bold mt-0.5"
+        style={{ background: "var(--color-primary-100)", color: "var(--color-primary-700)" }}
+      >
         {token}
       </div>
 
       <div className="w-px self-stretch bg-[var(--color-border)] hidden sm:block" />
 
-      {/* Content */}
-      <div className="flex-1 min-w-0">
+      {/* Body: patient block + right block */}
+      <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:gap-4 gap-2">
 
-        {/* Row 1: Name + Status badge */}
-        <div className="flex items-start justify-between gap-2">
+        {/* ── Patient block ─────────────────────────────────────────── */}
+        <div className="flex-1 min-w-0">
+
+          {/* Name */}
           <button
             onClick={(e) => { e.stopPropagation(); router.push(patientUrl); }}
             className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-900)] hover:text-[var(--color-primary-600)] transition-colors text-left leading-snug"
           >
             {p.name}
           </button>
-          <span className={`shrink-0 text-[10px] sm:text-[11px] font-medium px-2 py-0.5 rounded-full whitespace-nowrap ${STATUS_STYLES[appt.status] ?? ""}`}>
-            {STATUS_LABELS[appt.status] ?? appt.status.replace(/_/g, " ")}
-          </span>
-        </div>
 
-        {/* Row 2: Age · Sex on left, Time on right */}
-        <div className="flex items-center justify-between gap-2 mt-0.5">
-          <span className="text-[11px] sm:text-xs text-[var(--color-ink-400)]">
+          {/* Age · Sex */}
+          <div className="mt-0.5 text-[11px] sm:text-xs text-[var(--color-ink-400)]">
             {p.age}y · {p.sex.charAt(0).toUpperCase() + p.sex.slice(1).toLowerCase()}
-          </span>
-          <span className="text-[11px] sm:text-xs font-semibold text-[var(--color-ink-700)] whitespace-nowrap sm:hidden">
-            {format(new Date(appt.dateTime), "h:mm a")}
-          </span>
-        </div>
-
-        {/* Row 3: UDID + Phone + Visit type in one compact row */}
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5">
-          <span className="font-mono text-[11px] bg-[var(--color-primary-50)] text-[var(--color-primary-700)] px-1.5 py-0.5 rounded">
-            {p.udid}
-          </span>
-          {p.mobile && (
-            <span className="flex items-center gap-1 text-[11px] sm:text-xs text-[var(--color-ink-500)]">
-              <Phone size={11} className="shrink-0" /> {p.mobile}
-            </span>
-          )}
-          {appt.visitType && (
-            <span className="flex items-center gap-1 text-[11px] sm:text-xs text-[var(--color-ink-500)]">
-              <Tag size={11} className="shrink-0" /> {appt.visitType}
-            </span>
-          )}
-        </div>
-
-        {/* Chief complaint */}
-        {(appt.notes || p.complaint) && (
-          <div className="mt-1.5 inline-flex max-w-full items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-[11px] sm:text-xs font-medium">
-            <FileText size={11} className="shrink-0 text-amber-500" />
-            <span className="truncate">{formatComplaintDisplay(appt.notes || p.complaint)}</span>
           </div>
-        )}
 
-        {/* Provisional diagnosis */}
-        {provisionalDx.length > 0 && (
-          <div className="mt-1.5 flex items-center gap-1.5 flex-wrap max-w-full sm:max-w-md">
-            <span className="shrink-0 text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">
-              Provisional
+          {/* UDID + Phone + Visit type */}
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5">
+            <span className="font-mono text-[11px] bg-[var(--color-primary-50)] text-[var(--color-primary-700)] px-1.5 py-0.5 rounded">
+              {p.udid}
             </span>
-            {provisionalDx.slice(0, 2).map((d, i) => (
-              <span
-                key={i}
-                className="inline-flex min-w-0 max-w-full items-center gap-1 px-2.5 py-1 rounded-lg bg-teal-50 border border-teal-200 text-teal-800 text-[11px] sm:text-xs font-medium"
-              >
-                {d.laterality && <span className="font-bold shrink-0">{d.laterality}</span>}
-                <span className="truncate">{d.description}</span>
+            {p.mobile && (
+              <span className="flex items-center gap-1 text-[11px] sm:text-xs text-[var(--color-ink-500)]">
+                <Phone size={11} className="shrink-0" /> {p.mobile}
               </span>
-            ))}
-            {provisionalDx.length > 2 && (
-              <span className="shrink-0 text-[10px] sm:text-[11px] text-[var(--color-ink-400)]">
-                +{provisionalDx.length - 2} more
+            )}
+            {appt.visitType && (
+              <span className="flex items-center gap-1 text-[11px] sm:text-xs text-[var(--color-ink-500)]">
+                <Tag size={11} className="shrink-0" /> {appt.visitType}
               </span>
             )}
           </div>
-        )}
 
-        {/* Timestamp trail */}
-        {(() => {
-          const arrivedAt   = appt.arrivedAt          ? new Date(appt.arrivedAt)          : null;
-          const finalizedAt = appt.visit?.finalizedAt  ? new Date(appt.visit.finalizedAt)
-                            : appt.completedAt         ? new Date(appt.completedAt)        : null;
-          const fmtWait = (m: number) => m < 60 ? `${m}m` : `${Math.floor(m / 60)}h ${m % 60}m`;
-          if (!arrivedAt && !finalizedAt) return null;
-          return (
-            <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] mt-1.5">
-              {arrivedAt && (
-                <span className="flex items-center gap-1 text-blue-500">
-                  <LogIn size={10} /> Arrived: {format(arrivedAt, "h:mm a")}
+          {/* Chief complaint */}
+          {(appt.notes || p.complaint) && (
+            <div className="mt-1.5 inline-flex max-w-full items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-[11px] sm:text-xs font-medium">
+              <FileText size={11} className="shrink-0 text-amber-500" />
+              <span className="truncate">{formatComplaintDisplay(appt.notes || p.complaint)}</span>
+            </div>
+          )}
+
+          {/* Provisional diagnosis */}
+          {provisionalDx.length > 0 && (
+            <div className="mt-1.5 flex items-center gap-1.5 flex-wrap max-w-full">
+              <span className="shrink-0 text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">
+                Provisional
+              </span>
+              {provisionalDx.slice(0, 2).map((d, i) => (
+                <span
+                  key={i}
+                  className="inline-flex min-w-0 max-w-full items-center gap-1 px-2.5 py-1 rounded-lg bg-teal-50 border border-teal-200 text-teal-800 text-[11px] sm:text-xs font-medium"
+                >
+                  {d.laterality && <span className="font-bold shrink-0">{d.laterality}</span>}
+                  <span className="truncate">{d.description}</span>
                 </span>
-              )}
-              {finalizedAt && (
-                <span className="flex items-center gap-1 text-emerald-600">
-                  <CheckCircle2 size={10} /> Dispensed: {format(finalizedAt, "h:mm a")}
-                  {arrivedAt && (
-                    <span className="text-[var(--color-ink-400)] ml-0.5">
-                      ({fmtWait(Math.max(0, Math.round((finalizedAt.getTime() - arrivedAt.getTime()) / 60000)))} total)
-                    </span>
-                  )}
+              ))}
+              {provisionalDx.length > 2 && (
+                <span className="shrink-0 text-[10px] sm:text-[11px] text-[var(--color-ink-400)]">
+                  +{provisionalDx.length - 2} more
                 </span>
               )}
             </div>
-          );
-        })()}
+          )}
+        </div>
 
-        {/* Confirm / Reject — mobile */}
-        {showConfirmReject && (
-          <div className="flex sm:hidden items-center gap-2 mt-2.5" onClick={(e) => e.stopPropagation()}>
-            <button
-              disabled={pending}
-              onClick={() => hospitalSetStatus("CONFIRMED")}
-              className="flex-1 text-[11px] sm:text-xs font-semibold py-1.5 rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-50 transition-colors"
-            >
-              {pending ? "…" : "Confirm / Add to Queue"}
-            </button>
-            <button
-              disabled={pending}
-              onClick={() => hospitalSetStatus("CANCELLED")}
-              className="flex-1 text-[11px] sm:text-xs font-semibold py-1.5 rounded-lg bg-white border border-[var(--color-border)] text-[var(--color-danger-600)] hover:bg-[var(--color-danger-50)] disabled:opacity-50 transition-colors"
-            >
-              Reject
-            </button>
-          </div>
-        )}
+        {/* ── Right block: status, times, actions ───────────────────── */}
+        <div
+          className="flex flex-col gap-1 sm:items-end sm:shrink-0 sm:min-w-[160px] sm:max-w-[240px]"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Status badge */}
+          <span className={`self-start sm:self-auto text-[10px] sm:text-[11px] font-medium px-2 py-0.5 rounded-full whitespace-nowrap ${STATUS_STYLES[appt.status] ?? ""}`}>
+            {STATUS_LABELS[appt.status] ?? appt.status.replace(/_/g, " ")}
+          </span>
 
-        {/* Bottom actions */}
-        {hasActions && (
-          <div className="flex flex-wrap items-center gap-2 mt-2" onClick={(e) => e.stopPropagation()}>
-            {isCompleted && appt.visit && (
+          {/* Appointment time */}
+          <p className="flex items-center gap-1 text-[13px] sm:text-sm font-semibold text-[var(--color-ink-700)] whitespace-nowrap mt-0.5">
+            <Calendar size={12} className="shrink-0 text-[var(--color-ink-400)]" />
+            {format(new Date(appt.dateTime), "h:mm a")}
+          </p>
+
+          {/* Booked time */}
+          <span className="flex items-center gap-1 text-[10px] sm:text-[11px] text-[var(--color-ink-400)]">
+            <Clock size={10} className="shrink-0" /> Booked: {format(new Date(appt.createdAt), "d MMM, h:mm a")}
+          </span>
+
+          {/* Arrived */}
+          {arrivedAt && (
+            <span className="flex items-center gap-1 text-[10px] sm:text-[11px] text-blue-500">
+              <LogIn size={10} className="shrink-0" /> Arrived: {format(arrivedAt, "h:mm a")}
+            </span>
+          )}
+
+          {/* Dispensed */}
+          {finalizedAt && (
+            <span className="flex items-center gap-1 text-[10px] sm:text-[11px] text-emerald-600">
+              <CheckCircle2 size={10} className="shrink-0" /> Dispensed: {format(finalizedAt, "h:mm a")}
+            </span>
+          )}
+
+          {/* Total duration */}
+          {totalMins !== null && (
+            <span className="flex items-center gap-1 text-[10px] sm:text-[11px] text-[var(--color-ink-400)]">
+              <Timer size={10} className="shrink-0" /> Total: {fmtDuration(totalMins)}
+            </span>
+          )}
+
+          {/* Confirm / Reject */}
+          {showConfirmReject && (
+            <div className="flex flex-wrap items-center gap-2 mt-2">
               <button
-                type="button"
-                onClick={() => { void openPdfNative(`/api/prescription-pdf/${appt.visit!.id}`); }}
-                className="flex items-center gap-1 text-[11px] sm:text-xs font-medium px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors"
+                disabled={pending}
+                onClick={() => hospitalSetStatus("CONFIRMED")}
+                className="text-[11px] sm:text-xs font-medium px-3 py-1.5 rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-50 transition-colors"
               >
-                <Printer size={11} /> Prescription
+                {pending ? "…" : "Confirm / Add to Queue"}
               </button>
-            )}
-            {showScheduleNext && (
-              <>
-                <button
-                  onClick={() => setShowSlotModal(true)}
-                  className="flex items-center gap-1.5 text-[11px] sm:text-xs font-medium px-2.5 py-1 rounded-lg bg-[var(--color-primary-50)] border border-[var(--color-primary-200)] text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] transition-colors"
-                >
-                  <CalendarPlus size={12} /> Schedule Next Slot
-                </button>
-                {showSlotModal && (
-                  <span className="contents">
-                    <ScheduleNextSlotModal
-                      appointmentId={appt.id}
-                      patientName={p.name}
-                      doctorName={appt.doctor?.name ?? ""}
-                      onClose={() => setShowSlotModal(false)}
-                    />
-                  </span>
-                )}
-              </>
-            )}
-            {showCancelConfirmed && (
               <button
                 disabled={pending}
                 onClick={() => hospitalSetStatus("CANCELLED")}
-                className="text-[11px] sm:text-xs font-medium px-3 py-1 rounded-lg bg-white border border-[var(--color-border)] text-[var(--color-danger-600)] hover:bg-[var(--color-danger-50)] disabled:opacity-50"
+                className="text-[11px] sm:text-xs font-medium px-3 py-1.5 rounded-lg bg-white border border-[var(--color-border)] text-[var(--color-danger-600)] hover:bg-[var(--color-danger-50)] disabled:opacity-50 transition-colors"
               >
-                Cancel
+                Reject
               </button>
-            )}
-            {showNoShow && (
-              <button
-                disabled={pending}
-                onClick={() => doctorSetStatus("NO_SHOW")}
-                className="flex items-center gap-1 text-[11px] sm:text-xs font-medium px-3 py-1 rounded-lg bg-white border border-[var(--color-border)] text-red-500 hover:bg-red-50 hover:border-red-200 disabled:opacity-50 transition-colors"
-              >
-                <UserX size={11} /> No Show
-              </button>
-            )}
-          </div>
-        )}
-      </div>
+            </div>
+          )}
 
-      {/* Right column — desktop only (sm+) */}
-      <div className="hidden sm:flex flex-col items-end gap-1.5 shrink-0 self-start" onClick={(e) => e.stopPropagation()}>
-        <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)] whitespace-nowrap">
-          {format(new Date(appt.dateTime), "h:mm a")}
-        </p>
-        <span className="flex items-center gap-1 text-[10px] sm:text-[11px] text-[var(--color-ink-400)]">
-          <Clock size={10} /> Booked: {format(new Date(appt.createdAt), "d MMM, h:mm a")}
-        </span>
-        {showConfirmReject && (
-          <div className="flex items-center gap-2 mt-0.5">
-            <button
-              disabled={pending}
-              onClick={() => hospitalSetStatus("CONFIRMED")}
-              className="text-[11px] sm:text-xs font-medium px-3 py-1 rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-50"
-            >
-              {pending ? "…" : "Confirm / Add to Queue"}
-            </button>
-            <button
-              disabled={pending}
-              onClick={() => hospitalSetStatus("CANCELLED")}
-              className="text-[11px] sm:text-xs font-medium px-3 py-1 rounded-lg bg-white border border-[var(--color-border)] text-[var(--color-danger-600)] hover:bg-[var(--color-danger-50)] disabled:opacity-50"
-            >
-              Reject
-            </button>
-          </div>
-        )}
+          {/* Other actions */}
+          {hasActions && (
+            <div className="flex flex-wrap items-center gap-2 mt-2">
+              {isCompleted && appt.visit && (
+                <button
+                  type="button"
+                  onClick={() => { void openPdfNative(`/api/prescription-pdf/${appt.visit!.id}`); }}
+                  className="flex items-center gap-1 text-[11px] sm:text-xs font-medium px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors"
+                >
+                  <Printer size={11} /> Prescription
+                </button>
+              )}
+              {showScheduleNext && (
+                <>
+                  <button
+                    onClick={() => setShowSlotModal(true)}
+                    className="flex items-center gap-1.5 text-[11px] sm:text-xs font-medium px-2.5 py-1 rounded-lg bg-[var(--color-primary-50)] border border-[var(--color-primary-200)] text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] transition-colors"
+                  >
+                    <CalendarPlus size={12} /> Schedule Next Slot
+                  </button>
+                  {showSlotModal && (
+                    <span className="contents">
+                      <ScheduleNextSlotModal
+                        appointmentId={appt.id}
+                        patientName={p.name}
+                        doctorName={appt.doctor?.name ?? ""}
+                        onClose={() => setShowSlotModal(false)}
+                      />
+                    </span>
+                  )}
+                </>
+              )}
+              {showCancelConfirmed && (
+                <button
+                  disabled={pending}
+                  onClick={() => hospitalSetStatus("CANCELLED")}
+                  className="text-[11px] sm:text-xs font-medium px-3 py-1 rounded-lg bg-white border border-[var(--color-border)] text-[var(--color-danger-600)] hover:bg-[var(--color-danger-50)] disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+              )}
+              {showNoShow && (
+                <button
+                  disabled={pending}
+                  onClick={() => doctorSetStatus("NO_SHOW")}
+                  className="flex items-center gap-1 text-[11px] sm:text-xs font-medium px-3 py-1 rounded-lg bg-white border border-[var(--color-border)] text-red-500 hover:bg-red-50 hover:border-red-200 disabled:opacity-50 transition-colors"
+                >
+                  <UserX size={11} /> No Show
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+
       </div>
     </div>
   );
