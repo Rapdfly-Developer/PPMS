@@ -9,10 +9,6 @@ import {
   Pill, CalendarCheck, Hash, CheckCircle2, Sparkles,
 } from "lucide-react";
 import { VisitTimeline } from "./VisitTimeline";
-import { DifferentialDiagnosisPanel } from "./DifferentialDiagnosisPanel";
-import { ExamGuidancePanel } from "./ExamGuidancePanel";
-import { PlanGuidancePanel } from "./PlanGuidancePanel";
-import { AssessmentCopilotPanel, InvestigationCopilotPanel } from "./CopilotClinicalPanels";
 import { PatientPhoto } from "./PatientPhoto";
 import { convertNotesToCC, parseEMRComplaints } from "@/lib/appointment-cc";
 import { GeneralExamTab } from "./GeneralExamTab";
@@ -463,7 +459,7 @@ export default async function PatientDetailedEMR({
 
         {/* Quick-nav buttons into hidden tabs — sit at the foot of the banner */}
         {activeVisit && (
-          <EmrBannerNavButtons priorRecordsCount={patient.pastExternalVisits.length} />
+          <EmrBannerNavButtons priorRecordsCount={patient.pastExternalVisits.length} visitId={activeVisit.id} />
         )}
       </div>
 
@@ -529,8 +525,6 @@ export default async function PatientDetailedEMR({
                       readOnly={readOnly}
                       customPmhChips={customPmhChips.length > 0 ? customPmhChips : undefined}
                     />
-                    <ExamGuidancePanel visitId={activeVisit.id} />
-                    <DifferentialDiagnosisPanel visitId={activeVisit.id} />
                   </div>
                 ),
               },
@@ -555,7 +549,6 @@ export default async function PatientDetailedEMR({
                       canEdit={user.role === "DOCTOR"}
                       canUpload={user.role === "DOCTOR"}
                     />
-                    <DifferentialDiagnosisPanel visitId={activeVisit.id} />
                   </div>
                 ),
               },
@@ -571,7 +564,6 @@ export default async function PatientDetailedEMR({
                       udid={udid}
                       role={user.role}
                     />
-                    <DifferentialDiagnosisPanel visitId={activeVisit.id} />
                   </div>
                 ),
               },
@@ -583,8 +575,6 @@ export default async function PatientDetailedEMR({
                   user.role === "DOCTOR" ? (
                     <div className="flex flex-col gap-4">
                       <AssessmentTab visit={activeVisit} udid={udid} priorVisits={priorVisits} readOnly={readOnly} />
-                      {activeVisit.status !== "CLOSED" && <AssessmentCopilotPanel visitId={activeVisit.id} />}
-                      <DifferentialDiagnosisPanel visitId={activeVisit.id} />
                     </div>
                   ) : (
                     <p className="text-sm text-[var(--color-ink-400)]">Not accessible for this role.</p>
@@ -598,8 +588,6 @@ export default async function PatientDetailedEMR({
                 content: (
                   <div className="flex flex-col gap-4">
                     <InvestigationsTab visit={activeVisit} priorVisits={priorVisits} udid={udid} readOnly={readOnly} />
-                    {activeVisit.status !== "CLOSED" && <InvestigationCopilotPanel visitId={activeVisit.id} />}
-                    <DifferentialDiagnosisPanel visitId={activeVisit.id} />
                   </div>
                 ),
               },
@@ -622,8 +610,6 @@ export default async function PatientDetailedEMR({
                   user.role === "DOCTOR" ? (
                     <div className="flex flex-col gap-4">
                       <PlanTab visit={activeVisit} udid={udid} patientSex={patient.sex} priorVisits={priorVisits} />
-                      <PlanGuidancePanel visitId={activeVisit.id} />
-                      <DifferentialDiagnosisPanel visitId={activeVisit.id} />
                     </div>
                   ) : (
                     <p className="text-sm text-[var(--color-ink-400)]">Not accessible for this role.</p>
