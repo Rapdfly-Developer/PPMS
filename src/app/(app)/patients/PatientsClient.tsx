@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useTransition } from "react";
+import { useState, useRef, useEffect, useTransition, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { format } from "date-fns";
@@ -12,6 +12,9 @@ import {
 import { undoDispense } from "./actions";
 import { formatComplaintDisplay } from "@/lib/appointment-cc";
 import { filterSelectClass } from "@/components/ui/controls";
+import { OPHTHALMIC_COMPLAINTS } from "@/components/ui/ComplaintCombobox";
+import { ICD10_OPHTHALMOLOGY } from "@/lib/constants";
+import { getCustomDiagnoses } from "@/lib/customDiagnoses";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 export interface PatientRow {
@@ -63,6 +66,8 @@ const CAT: Record<string, { label: string; cls: string; color: string }> = {
   ECHS:       { label: "ECHS",       cls: "bg-purple-100 text-purple-700", color: "#9333ea" },
   INSURANCE:  { label: "Insurance",  cls: "bg-teal-100 text-teal-700",     color: "#0d9488" },
 };
+
+const LAT_OPTIONS = ["RE", "LE", "OU"] as const;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function avatarColor(name: string) {
@@ -308,7 +313,9 @@ interface Props {
   hospitalFilter: string;
   opStatusFilter: string;
   diagnosisFilter: string;
+  diagnosisLatFilter: string;
   complaintFilter: string;
+  complaintLatFilter: string;
   diagnosisOptions: string[];
   complaintOptions: string[];
   doctorHospitals: { id: string; name: string }[];
@@ -323,14 +330,22 @@ interface Props {
 
 export function PatientsClient({
   patients, total, page, pageSize, q, categoryFilter, sexFilter, hospitalFilter, opStatusFilter,
-  diagnosisFilter, complaintFilter, diagnosisOptions, complaintOptions,
+  diagnosisFilter, diagnosisLatFilter, complaintFilter, complaintLatFilter,
+  diagnosisOptions, complaintOptions,
   doctorHospitals, sortBy, activeCard, kpis, trendData, catDist, recentReg,
 }: Props) {
   const router = useRouter();
   const [searchVal, setSearchVal] = useState(q);
   const [showFilters, setShowFilters] = useState(
-    !!(categoryFilter || sexFilter || hospitalFilter || diagnosisFilter || complaintFilter || (opStatusFilter && opStatusFilter !== "dispensed" && opStatusFilter !== "all"))
+    !!(categoryFilter || sexFilter || hospitalFilter ||
+       diagnosisFilter || diagnosisLatFilter || complaintFilter || complaintLatFilter ||
+       (opStatusFilter && opStatusFilter !== "dispensed" && opStatusFilter !== "all"))
   );
+  const [complaintInput, setComplaintInput] = useState(complaintFilter);
+  const [complaintOpen, setComplaintOpen]   = useState(false);
+  const [diagnosisInput, setDiagnosisInput] = useState(diagnosisFilter);
+  const [diagnosisOpen, setDiagnosisOpen]   = useState(false);
+  const [customDiagnoses] = useState(() => { try { return getCustomDiagnoses(); } catch { return []; } });
   const [, startTransition] = useTransition();
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const filterPanelRef = useRef<HTMLDivElement>(null);
@@ -349,33 +364,66 @@ export function PatientsClient({
     return () => document.removeEventListener("mousedown", handleOutsideClick);
   }, [showFilters]);
 
+  const complaintSuggestions = useMemo(() => {
+    const q = complaintInput.toLowerCase().trim();
+    if (!q) return [];
+    const fromDB  = complaintOptions.filter(c => c.toLowerCase().includes(q));
+    const fromStd = OPHTHALMIC_COMPLAINTS.filter(
+      c => c.toLowerCase().includes(q) && !fromDB.some(d => d.toLowerCase() === c.toLowerCase())
+    );
+    return [...fromDB, ...fromStd].slice(0, 10);
+  }, [complaintInput, complaintOptions]);
+
+  const allDiagnoses = useMemo(() => [
+    ...ICD10_OPHTHALMOLOGY,
+    ...customDiagnoses.map(d => ({ code: d.code, description: d.description })),
+  ], [customDiagnoses]);
+
+  const diagnosisSuggestions = useMemo(() => {
+    const q = diagnosisInput.toLowerCase().trim();
+    if (!q) return [] as typeof allDiagnoses;
+    return allDiagnoses
+      .filter(d => d.description.toLowerCase().includes(q) || d.code.toLowerCase().includes(q))
+      .slice(0, 10);
+  }, [diagnosisInput, allDiagnoses]);
+
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const from = total === 0 ? 0 : (page - 1) * pageSize + 1;
   const to   = Math.min(page * pageSize, total);
 
   function navigate(overrides: Record<string, string>) {
-    const base = { q, category: categoryFilter, sex: sexFilter, hospital: hospitalFilter, diagnosis: diagnosisFilter, complaint: complaintFilter, opStatus: opStatusFilter, sort: sortBy, size: String(pageSize), page: String(page), card: activeCard };
+    const base = {
+      q, category: categoryFilter, sex: sexFilter, hospital: hospitalFilter,
+      diagnosis: diagnosisFilter, diagnosisLat: diagnosisLatFilter,
+      complaint: complaintFilter,  complaintLat: complaintLatFilter,
+      opStatus: opStatusFilter, sort: sortBy, size: String(pageSize), page: String(page), card: activeCard,
+    };
     const merged = { ...base, ...overrides };
     const params = new URLSearchParams();
-    if (merged.q)                         params.set("q",        merged.q);
-    if (merged.category)                  params.set("category", merged.category);
-    if (merged.sex)                       params.set("sex",      merged.sex);
-    if (merged.hospital)                  params.set("hospital",  merged.hospital);
-    if (merged.diagnosis)                 params.set("diagnosis", merged.diagnosis);
-    if (merged.complaint)                 params.set("complaint", merged.complaint);
-    if (merged.opStatus)                  params.set("opStatus",  merged.opStatus);
-    if (merged.card)                      params.set("card",      merged.card);
-    if (merged.sort && merged.sort !== "lastvisit") params.set("sort", merged.sort);
-    if (merged.size && merged.size !== "25")     params.set("size", merged.size);
-    if (merged.page && merged.page !== "1")      params.set("page", merged.page);
+    if (merged.q)                                   params.set("q",            merged.q);
+    if (merged.category)                            params.set("category",     merged.category);
+    if (merged.sex)                                 params.set("sex",          merged.sex);
+    if (merged.hospital)                            params.set("hospital",     merged.hospital);
+    if (merged.diagnosis)                           params.set("diagnosis",    merged.diagnosis);
+    if (merged.diagnosisLat)                        params.set("diagnosisLat", merged.diagnosisLat);
+    if (merged.complaint)                           params.set("complaint",    merged.complaint);
+    if (merged.complaintLat)                        params.set("complaintLat", merged.complaintLat);
+    if (merged.opStatus)                            params.set("opStatus",     merged.opStatus);
+    if (merged.card)                                params.set("card",         merged.card);
+    if (merged.sort && merged.sort !== "lastvisit") params.set("sort",         merged.sort);
+    if (merged.size && merged.size !== "25")        params.set("size",         merged.size);
+    if (merged.page && merged.page !== "1")         params.set("page",         merged.page);
     startTransition(() => router.push(`/patients${params.toString() ? `?${params}` : ""}`));
   }
 
   function clearAllFilters() {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     setSearchVal("");
+    setComplaintInput("");
+    setDiagnosisInput("");
     navigate({
-      q: "", category: "", sex: "", hospital: "", diagnosis: "", complaint: "",
+      q: "", category: "", sex: "", hospital: "",
+      diagnosis: "", diagnosisLat: "", complaint: "", complaintLat: "",
       opStatus: "all", sort: "lastvisit", card: "", page: "1",
     });
   }
@@ -388,13 +436,15 @@ export function PatientsClient({
 
   function pageUrl(p: number) {
     const params = new URLSearchParams();
-    if (q)             params.set("q",        q);
-    if (categoryFilter) params.set("category", categoryFilter);
-    if (sexFilter)      params.set("sex",      sexFilter);
-    if (hospitalFilter) params.set("hospital", hospitalFilter);
-    if (diagnosisFilter) params.set("diagnosis", diagnosisFilter);
-    if (complaintFilter) params.set("complaint", complaintFilter);
-    if (sortBy !== "lastvisit")    params.set("sort", sortBy);
+    if (q)               params.set("q",            q);
+    if (categoryFilter)  params.set("category",     categoryFilter);
+    if (sexFilter)       params.set("sex",           sexFilter);
+    if (hospitalFilter)  params.set("hospital",      hospitalFilter);
+    if (diagnosisFilter)    params.set("diagnosis",    diagnosisFilter);
+    if (diagnosisLatFilter) params.set("diagnosisLat", diagnosisLatFilter);
+    if (complaintFilter)    params.set("complaint",    complaintFilter);
+    if (complaintLatFilter) params.set("complaintLat", complaintLatFilter);
+    if (sortBy !== "lastvisit") params.set("sort", sortBy);
     if (pageSize !== 25)        params.set("size", String(pageSize));
     if (p !== 1)                params.set("page", String(p));
     return `/patients${params.toString() ? `?${params}` : ""}`;
@@ -408,8 +458,11 @@ export function PatientsClient({
   }
 
 
-  const activeFilters = [q, categoryFilter, sexFilter, hospitalFilter, diagnosisFilter, complaintFilter,
-    (opStatusFilter !== "dispensed" && opStatusFilter !== "all") ? opStatusFilter : ""].filter(Boolean).length;
+  const activeFilters = [
+    q, categoryFilter, sexFilter, hospitalFilter,
+    diagnosisFilter, diagnosisLatFilter, complaintFilter, complaintLatFilter,
+    (opStatusFilter !== "dispensed" && opStatusFilter !== "all") ? opStatusFilter : "",
+  ].filter(Boolean).length;
 
   const SEL = filterSelectClass;
 
@@ -551,39 +604,116 @@ export function PatientsClient({
                   </div>
                 </div>
 
-                {/* Diagnosis — options come from the doctor's own patients, so an
-                    empty list means nothing has been diagnosed yet rather than a
-                    fault. Hidden entirely in that case, like the Hospital filter. */}
-                {diagnosisOptions.length > 0 && (
-                  <div className="flex flex-col gap-1">
-                    <label className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Diagnosis</label>
-                    <div className="relative">
-                      <select value={diagnosisFilter} onChange={e => navigate({ diagnosis: e.target.value, page: "1" })} className={SEL}>
-                        <option value="">All Diagnoses</option>
-                        {diagnosisOptions.map(d => (
-                          <option key={d} value={d}>{d}</option>
-                        ))}
-                      </select>
-                      <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] pointer-events-none" />
-                    </div>
+                {/* Diagnosis — laterality chips + autocomplete search */}
+                <div className="flex flex-col gap-1 min-w-[160px]">
+                  <label className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Diagnosis</label>
+                  <div className="flex gap-1">
+                    {LAT_OPTIONS.map(lat => (
+                      <button
+                        key={lat}
+                        type="button"
+                        onClick={() => navigate({ diagnosisLat: diagnosisLatFilter === lat ? "" : lat, page: "1" })}
+                        className={`text-[10px] font-bold px-2 py-1 rounded border transition-colors ${
+                          diagnosisLatFilter === lat
+                            ? "bg-[var(--color-primary-600)] text-white border-[var(--color-primary-600)]"
+                            : "bg-white text-[var(--color-ink-600)] border-[var(--color-border)] hover:bg-[var(--color-ink-50)]"
+                        }`}
+                      >
+                        {lat}
+                      </button>
+                    ))}
                   </div>
-                )}
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={diagnosisInput}
+                      onChange={e => { setDiagnosisInput(e.target.value); setDiagnosisOpen(true); }}
+                      onFocus={() => { if (diagnosisSuggestions.length > 0) setDiagnosisOpen(true); }}
+                      onBlur={() => setTimeout(() => setDiagnosisOpen(false), 150)}
+                      onKeyDown={e => { if (e.key === "Enter") { navigate({ diagnosis: diagnosisInput, page: "1" }); setDiagnosisOpen(false); } }}
+                      placeholder="Diagnosis…"
+                      className="w-full py-2 px-2.5 pr-7 text-sm rounded-lg border border-[var(--color-border)] bg-white focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)]"
+                    />
+                    {diagnosisInput && (
+                      <button
+                        type="button"
+                        onClick={() => { setDiagnosisInput(""); navigate({ diagnosis: "", page: "1" }); }}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--color-ink-300)] hover:text-[var(--color-ink-600)]"
+                      >
+                        <X size={12} />
+                      </button>
+                    )}
+                    {diagnosisOpen && diagnosisSuggestions.length > 0 && (
+                      <ul className="absolute z-20 left-0 right-0 mt-1 bg-white border border-[var(--color-border)] rounded-lg shadow-md max-h-48 overflow-y-auto">
+                        {diagnosisSuggestions.map(d => (
+                          <li
+                            key={d.code || d.description}
+                            onMouseDown={() => { setDiagnosisInput(d.description); navigate({ diagnosis: d.description, page: "1" }); setDiagnosisOpen(false); }}
+                            className="px-3 py-1.5 text-[13px] text-[var(--color-ink-800)] cursor-pointer hover:bg-[var(--color-primary-50)] flex items-center justify-between gap-2"
+                          >
+                            <span className="truncate">{d.description}</span>
+                            {d.code && <span className="font-mono text-[10px] text-[var(--color-ink-400)] shrink-0">{d.code}</span>}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </div>
 
-                {/* Chief Complaint */}
-                {complaintOptions.length > 0 && (
-                  <div className="flex flex-col gap-1">
-                    <label className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Chief Complaint</label>
-                    <div className="relative">
-                      <select value={complaintFilter} onChange={e => navigate({ complaint: e.target.value, page: "1" })} className={SEL}>
-                        <option value="">All Complaints</option>
-                        {complaintOptions.map(c => (
-                          <option key={c} value={c}>{c}</option>
-                        ))}
-                      </select>
-                      <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] pointer-events-none" />
-                    </div>
+                {/* Chief Complaint — laterality chips + autocomplete search */}
+                <div className="flex flex-col gap-1 min-w-[160px]">
+                  <label className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Chief Complaint</label>
+                  <div className="flex gap-1">
+                    {LAT_OPTIONS.map(lat => (
+                      <button
+                        key={lat}
+                        type="button"
+                        onClick={() => navigate({ complaintLat: complaintLatFilter === lat ? "" : lat, page: "1" })}
+                        className={`text-[10px] font-bold px-2 py-1 rounded border transition-colors ${
+                          complaintLatFilter === lat
+                            ? "bg-[var(--color-primary-600)] text-white border-[var(--color-primary-600)]"
+                            : "bg-white text-[var(--color-ink-600)] border-[var(--color-border)] hover:bg-[var(--color-ink-50)]"
+                        }`}
+                      >
+                        {lat}
+                      </button>
+                    ))}
                   </div>
-                )}
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={complaintInput}
+                      onChange={e => { setComplaintInput(e.target.value); setComplaintOpen(true); }}
+                      onFocus={() => { if (complaintSuggestions.length > 0) setComplaintOpen(true); }}
+                      onBlur={() => setTimeout(() => setComplaintOpen(false), 150)}
+                      onKeyDown={e => { if (e.key === "Enter") { navigate({ complaint: complaintInput, page: "1" }); setComplaintOpen(false); } }}
+                      placeholder="Complaint…"
+                      className="w-full py-2 px-2.5 pr-7 text-sm rounded-lg border border-[var(--color-border)] bg-white focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)]"
+                    />
+                    {complaintInput && (
+                      <button
+                        type="button"
+                        onClick={() => { setComplaintInput(""); navigate({ complaint: "", page: "1" }); }}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--color-ink-300)] hover:text-[var(--color-ink-600)]"
+                      >
+                        <X size={12} />
+                      </button>
+                    )}
+                    {complaintOpen && complaintSuggestions.length > 0 && (
+                      <ul className="absolute z-20 left-0 right-0 mt-1 bg-white border border-[var(--color-border)] rounded-lg shadow-md max-h-48 overflow-y-auto">
+                        {complaintSuggestions.map(s => (
+                          <li
+                            key={s}
+                            onMouseDown={() => { setComplaintInput(s); navigate({ complaint: s, page: "1" }); setComplaintOpen(false); }}
+                            className="px-3 py-1.5 text-[13px] text-[var(--color-ink-800)] cursor-pointer hover:bg-[var(--color-primary-50)]"
+                          >
+                            {s}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </div>
 
                 {/* Clear all */}
                 {activeFilters > 0 && (

@@ -17,8 +17,10 @@ export default async function PatientsPage({
   const categoryFilter = sp.category  ?? "";
   const sexFilter      = sp.sex       ?? "";
   const hospitalFilter = sp.hospital  ?? "";
-  const diagnosisFilter  = sp.diagnosis ?? "";
-  const complaintFilter  = sp.complaint ?? "";
+  const diagnosisFilter    = sp.diagnosis    ?? "";
+  const diagnosisLatFilter = sp.diagnosisLat ?? "";
+  const complaintFilter    = sp.complaint    ?? "";
+  const complaintLatFilter = sp.complaintLat ?? "";
   const activeCard     = sp.card      ?? "";
   const rawOpStatus    = sp.opStatus  ?? "dispensed";
   const opStatusFilter = rawOpStatus === "all" ? "" : rawOpStatus;
@@ -74,12 +76,25 @@ export default async function PatientsPage({
   // Diagnosis is a controlled description, so it matches exactly. A chief
   // complaint is a composite string ("RE | Since: 3 days | Eye Pain"), so the
   // option value is the complaint text and it matches on contains.
-  if (diagnosisFilter) {
-    listConds.push({ visits: { some: { diagnoses: { some: { description: diagnosisFilter } } } } });
-  }
-  if (complaintFilter) {
+  if (diagnosisFilter || diagnosisLatFilter) {
+    const dxConds: any[] = [];
+    if (diagnosisFilter)    dxConds.push({ description: { contains: diagnosisFilter,  mode: "insensitive" as const } });
+    if (diagnosisLatFilter) dxConds.push({ laterality: diagnosisLatFilter });
     listConds.push({
-      visits: { some: { generalExam: { chiefComplaint: { contains: complaintFilter, mode: "insensitive" as const } } } },
+      visits: { some: { diagnoses: { some: dxConds.length === 1 ? dxConds[0] : { AND: dxConds } } } },
+    });
+  }
+  if (complaintFilter || complaintLatFilter) {
+    const ccConds: any[] = [];
+    if (complaintFilter)    ccConds.push({ chiefComplaint: { contains: complaintFilter,     mode: "insensitive" as const } });
+    if (complaintLatFilter) ccConds.push({
+      OR: [
+        { chiefComplaint: { contains: `[${complaintLatFilter}]`, mode: "insensitive" as const } },
+        { chiefComplaint: { contains: `${complaintLatFilter} |`,  mode: "insensitive" as const } },
+      ],
+    });
+    listConds.push({
+      visits: { some: { generalExam: ccConds.length === 1 ? ccConds[0] : { AND: ccConds } } },
     });
   }
   const listToday    = startOfDay(new Date());
@@ -286,7 +301,9 @@ export default async function PatientsPage({
         sexFilter={sexFilter}
         hospitalFilter={hospitalFilter}
         diagnosisFilter={diagnosisFilter}
+        diagnosisLatFilter={diagnosisLatFilter}
         complaintFilter={complaintFilter}
+        complaintLatFilter={complaintLatFilter}
         diagnosisOptions={diagnosisOptions}
         complaintOptions={complaintOptions}
         opStatusFilter={rawOpStatus}
