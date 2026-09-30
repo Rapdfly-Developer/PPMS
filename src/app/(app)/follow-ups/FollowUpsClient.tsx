@@ -10,6 +10,7 @@ import {
   Bell, ArrowRight, X, Building2, UserX, Phone,
 } from "lucide-react";
 import { rescheduleFollowUp, cancelFollowUp, completeFollowUp } from "./actions";
+import { formatComplaintDisplay } from "@/lib/appointment-cc";
 
 /* ── Types ─────────────────────────────────────────────────────────────── */
 export type FollowUpStatus = "DUE_TODAY" | "UPCOMING" | "OVERDUE" | "NO_SHOW" | "COMPLETED" | "CANCELLED" | "SCHEDULED";
@@ -478,10 +479,9 @@ function FollowUpRow({
         {/* Complaint / Diagnosis */}
         <td className="px-4 py-3">
           {v.chiefComplaint ? (
-            <p className="text-[11px] sm:text-xs text-[var(--color-ink-700)] max-w-[180px] truncate">
-              <span className="text-[9px] sm:text-[10px] text-[var(--color-ink-400)] mr-1 uppercase tracking-wide font-semibold">CC</span>
-              {v.chiefComplaint}
-            </p>
+            <span className="inline-flex max-w-[200px] items-center px-2.5 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-[10px] sm:text-[11px] font-medium">
+              <span className="truncate">{formatComplaintDisplay(v.chiefComplaint)}</span>
+            </span>
           ) : (
             <p className="text-[10px] sm:text-[11px] text-[var(--color-ink-300)] italic">No complaint recorded</p>
           )}
@@ -603,9 +603,13 @@ function FollowUpCard({
           </>
         )}
         <span className="text-[var(--color-ink-400)]">Complaint</span>
-        <span className="font-medium text-[var(--color-ink-700)] truncate">
-          {v.chiefComplaint || <span className="italic text-[var(--color-ink-300)]">—</span>}
-        </span>
+        {v.chiefComplaint ? (
+          <span className="inline-flex max-w-full items-center px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-[9px] sm:text-[10px] font-medium">
+            <span className="truncate">{formatComplaintDisplay(v.chiefComplaint)}</span>
+          </span>
+        ) : (
+          <span className="italic text-[var(--color-ink-300)] text-[10px] sm:text-[11px]">—</span>
+        )}
         {v.diagnoses[0] && (
           <>
             <span className="text-[var(--color-ink-400)]">Diagnosis</span>
