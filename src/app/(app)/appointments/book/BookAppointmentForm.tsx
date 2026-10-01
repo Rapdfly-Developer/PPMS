@@ -827,15 +827,18 @@ export function BookAppointmentForm({
                   </span>
                 )}
               </div>
-              <div className="flex flex-col gap-2 mt-1.5 mb-2">
-                {/* Laterality pills */}
-                <div className="flex gap-1.5">
+
+              {/* ── Single row on sm+: RE | LE | OU  [input  Add]  Since n unit ── */}
+              <div className="flex flex-wrap sm:flex-nowrap items-start gap-2 mt-1.5">
+
+                {/* Laterality pills — compact column, aligned with input top */}
+                <div className="flex gap-1.5 shrink-0 mt-0.5">
                   {(["RE", "LE", "OU"] as const).map((lat) => (
                     <button
                       key={lat}
                       type="button"
                       onClick={() => setLaterality(laterality === lat ? "" : lat)}
-                      className="px-3.5 py-1 rounded-full text-xs font-semibold border transition-colors"
+                      className="px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors"
                       style={laterality === lat ? {
                         background: "var(--color-primary-700)",
                         color: "#fff",
@@ -850,8 +853,18 @@ export function BookAppointmentForm({
                     </button>
                   ))}
                 </div>
-                {/* Since */}
-                <div className="flex items-center gap-1.5">
+
+                {/* Complaint combobox — input+Add on first line, chips below */}
+                <div className="flex-1 min-w-0">
+                  <ComplaintCombobox
+                    value={notes}
+                    onChange={setNotes}
+                    inputCls={inputCls}
+                  />
+                </div>
+
+                {/* Since duration — aligned with input top */}
+                <div className="flex items-center gap-1.5 shrink-0 mt-0.5">
                   <span className="text-xs text-[var(--color-ink-500)]">Since</span>
                   <select
                     value={sinceNum}
@@ -874,12 +887,8 @@ export function BookAppointmentForm({
                     <option value="years">years</option>
                   </select>
                 </div>
+
               </div>
-              <ComplaintCombobox
-                value={notes}
-                onChange={setNotes}
-                inputCls={inputCls}
-              />
             </div>
           </div>
         </section>
