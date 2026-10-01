@@ -25,14 +25,14 @@ function getFocusable(el: HTMLElement): HTMLElement[] {
 function SectionHead({ label, pill }: { label: string; pill: string }) {
   return (
     <div className="flex items-center gap-1.5 pt-1 pb-2">
-      <Sparkles size={10} className="shrink-0 text-violet-400" aria-hidden="true" />
-      <span className="text-[10px] font-semibold tracking-widest text-violet-600/80 uppercase italic">
+      <Sparkles size={10} className="shrink-0 text-[var(--color-primary-400)]" aria-hidden="true" />
+      <span className="text-[10px] font-semibold tracking-widest text-[rgba(21,122,115,0.8)] uppercase italic">
         {label}
       </span>
-      <span className="shrink-0 text-[9px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-violet-50 text-violet-600 border border-violet-200/70">
+      <span className="shrink-0 text-[9px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-[var(--color-primary-50)] text-[var(--color-primary-600)] border border-[var(--color-primary-100)]">
         {pill}
       </span>
-      <span className="flex-1 h-px bg-violet-100 ml-0.5" aria-hidden="true" />
+      <span className="flex-1 h-px bg-[var(--color-primary-100)] ml-0.5" aria-hidden="true" />
     </div>
   );
 }
@@ -450,7 +450,7 @@ function ExamGuidanceSection({ state, visitId }: { state: GuidanceState; visitId
                   </ul>
                 </div>
               ))}
-              <p className="text-[10px] text-violet-400/70 italic">
+              <p className="text-[10px] text-[rgba(43,168,156,0.7)] italic">
                 Based on what was documented when you generated this. Does not update as you add findings.
               </p>
               <ActionButton label="Regenerate" onClick={onGenerate} />
@@ -517,7 +517,7 @@ function RefractiveGuidanceSection({ state, visitId }: { state: RefractiveState;
                   <p className="mt-1 text-[13px] sm:text-sm text-[var(--color-ink-900)]">{state.result.routing.guidance}</p>
                 </div>
               )}
-              <p className="text-[10px] text-violet-400/70 italic">
+              <p className="text-[10px] text-[rgba(43,168,156,0.7)] italic">
                 Based on what was documented when you generated this. Does not update as you add findings.
               </p>
               <ActionButton label="Regenerate" onClick={onGenerate} />
@@ -630,9 +630,10 @@ export function CopilotDrawer({
         className="relative z-10 w-full sm:max-w-2xl flex flex-col rounded-t-2xl overflow-hidden mb-16 lg:mb-0"
         style={{
           maxHeight: "calc(100dvh - 5.5rem)",
-          background: "rgba(255,255,255,0.98)",
-          boxShadow:
-            "0 -8px 48px rgba(99,102,241,0.16), 0 0 0 1px rgba(200,190,255,0.35)",
+          background: "linear-gradient(135deg, rgba(240,248,246,0.82) 0%, rgba(255,255,255,0.86) 100%)",
+          backdropFilter: "blur(20px) saturate(150%)",
+          WebkitBackdropFilter: "blur(20px) saturate(150%)",
+          boxShadow: "inset 0 1px 0 rgba(255,255,255,0.85), 0 -8px 48px rgba(21,122,115,0.15), 0 0 0 1px rgba(21,122,115,0.18)",
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -640,17 +641,16 @@ export function CopilotDrawer({
         <div
           className="flex items-center justify-between px-5 py-4 shrink-0"
           style={{
-            background:
-              "linear-gradient(135deg, rgba(168,85,247,0.09) 0%, rgba(59,130,246,0.07) 50%, rgba(20,184,166,0.05) 100%)",
-            borderBottom: "1px solid rgba(200,190,255,0.4)",
+            background: "linear-gradient(135deg, rgba(240,248,246,0.76) 0%, rgba(255,255,255,0.80) 100%)",
+            borderBottom: "1px solid rgba(21,122,115,0.18)",
           }}
         >
           <div className="flex items-center gap-2 min-w-0">
-            <Sparkles size={16} className="text-violet-600 shrink-0" />
-            <h2 className="text-[13px] sm:text-sm font-bold text-violet-800">
+            <Sparkles size={16} className="text-[var(--color-primary-600)] shrink-0" />
+            <h2 className="text-[13px] sm:text-sm font-bold text-[var(--color-primary-800)]">
               Co-pilot Assistance
             </h2>
-            <span className="shrink-0 text-[9px] sm:text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-violet-50 text-violet-600 border border-violet-200/70 ml-1">
+            <span className="shrink-0 text-[9px] sm:text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-[var(--color-primary-50)] text-[var(--color-primary-600)] border border-[var(--color-primary-100)] ml-1">
               AI · guidance only
             </span>
           </div>
@@ -664,10 +664,10 @@ export function CopilotDrawer({
         </div>
 
         {/* Scrollable body */}
-        <div className="overflow-y-auto flex-1 px-4 sm:px-5 py-3">
+        <div className="overflow-y-auto flex-1 px-4 sm:px-5 py-3" style={{ background: "transparent" }}>
           {!hasAnyContent ? (
             <div className="flex flex-col items-center gap-3 py-12 text-center">
-              <Sparkles size={32} className="text-violet-300" />
+              <Sparkles size={32} className="text-[var(--color-primary-400)]" />
               <p className="text-sm font-medium text-[var(--color-ink-500)]">
                 Co-pilot is not active for this visit.
               </p>
@@ -716,8 +716,8 @@ export function CopilotDrawer({
         <div
           className="shrink-0 px-4 sm:px-5 py-3 flex flex-wrap items-center justify-between gap-3"
           style={{
-            borderTop: "1px solid rgba(200,190,255,0.3)",
-            background: "rgba(248,246,255,0.95)",
+            borderTop: "1px solid rgba(21,122,115,0.15)",
+            background: "rgba(240,248,246,0.78)",
           }}
         >
           <p className="text-[10px] sm:text-[11px] text-[var(--color-ink-400)] italic">
@@ -726,7 +726,7 @@ export function CopilotDrawer({
           </p>
           <button
             onClick={handleDecisionSupport}
-            className="flex items-center gap-1.5 text-[11px] sm:text-xs font-semibold px-3.5 py-2 rounded-lg bg-violet-600 text-white hover:bg-violet-700 active:bg-violet-800 transition-colors shrink-0"
+            className="flex items-center gap-1.5 text-[11px] sm:text-xs font-semibold px-3.5 py-2 rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] active:bg-[var(--color-primary-800)] transition-colors shrink-0"
           >
             Decision Support <ArrowRight size={12} />
           </button>
