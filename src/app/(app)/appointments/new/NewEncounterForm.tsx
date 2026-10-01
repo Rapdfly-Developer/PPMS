@@ -6,12 +6,14 @@ import {
   Search, Stethoscope, UserPlus, Users,
   User, Phone, FileText, CalendarDays,
   Building2, AlertCircle, Download, Loader2, ListOrdered,
+  Plus, X,
 } from "lucide-react";
 import { BackButton } from "@/components/ui/BackButton";
 import { SmartUploadBox, type UploadedFile } from "@/components/ui/SmartUploadBox";
 import { createWalkInEncounter } from "./actions";
 import { getLastVisitCC } from "@/app/(app)/appointments/book/actions";
 import { ComplaintCombobox } from "@/components/ui/ComplaintCombobox";
+import { CHIEF_COMPLAINT_FIELD_KEY } from "@/lib/constants";
 
 function sinceToDays(sinceStr: string): number {
   const m = sinceStr.match(/(\d+)\s*(days?|weeks?|months?|years?)/i);
@@ -32,6 +34,59 @@ function daysToParts(days: number): { num: string; unit: string } {
   const months = Math.round(days / 30);
   if (months <= 30) return { num: String(months), unit: "months" };
   return { num: String(Math.min(30, Math.round(days / 365))), unit: "years" };
+}
+
+type ComplaintEntry = { lat: string; text: string; sinceNum: string; sinceUnit: string };
+
+function isDuplicateEntry(entry: ComplaintEntry, list: ComplaintEntry[], excludeIndex?: number): boolean {
+  return list.some(
+    (b, i) =>
+      i !== excludeIndex &&
+      b.lat.toLowerCase() === entry.lat.toLowerCase() &&
+      b.text.toLowerCase() === entry.text.toLowerCase() &&
+      b.sinceNum === entry.sinceNum &&
+      b.sinceUnit === entry.sinceUnit,
+  );
+}
+
+function serializeEntries(entries: ComplaintEntry[]): string {
+  return entries
+    .filter((e) => e.text.trim())
+    .map((e) =>
+      [e.lat ? `[${e.lat}]` : "", e.sinceNum ? `[${e.sinceNum} ${e.sinceUnit}]` : "", e.text.trim()]
+        .filter(Boolean)
+        .join(" ")
+    )
+    .join(" | ");
+}
+
+function parseImportedCC(notes: string): ComplaintEntry[] {
+  const segments = notes.split(" | ").map((s) => s.trim()).filter(Boolean);
+  if (segments.length === 0) return [];
+  // New canonical: [RE] [3 days] text | ...
+  if (/^\[(RE|LE|OU)\]/.test(segments[0])) {
+    return segments.map((seg) => {
+      const latM = seg.match(/^\[(RE|LE|OU)\]\s*/);
+      const lat = latM ? latM[1] : "";
+      let rest = latM ? seg.slice(latM[0].length) : seg;
+      const sinceM = rest.match(/^\[(\d+)\s+(days|weeks|months|years)\]\s*/);
+      const sinceNum = sinceM ? sinceM[1] : "";
+      const sinceUnit = sinceM ? sinceM[2] : "days";
+      if (sinceM) rest = rest.slice(sinceM[0].length);
+      return { lat, text: rest.trim(), sinceNum, sinceUnit };
+    }).filter((e) => e.text);
+  }
+  // Old format: RE | Since: 3 days | text
+  if (segments.length >= 3 && ["RE", "LE", "OU"].includes(segments[0])) {
+    const lat = segments[0];
+    const sinceMatch = segments[1].match(/Since:\s*(.+)/i);
+    const prevSinceDays = sinceMatch ? sinceToDays(sinceMatch[1].trim()) : 0;
+    const text = segments.slice(2).join(" | ").trim();
+    const { num, unit } = prevSinceDays > 0 ? daysToParts(prevSinceDays) : { num: "", unit: "days" };
+    return text ? [{ lat, text, sinceNum: num, sinceUnit: unit }] : [];
+  }
+  const t = notes.trim();
+  return t ? [{ lat: "", text: t, sinceNum: "", sinceUnit: "days" }] : [];
 }
 
 const VISIT_TYPES = [
@@ -99,10 +154,14 @@ export function NewEncounterForm({
   const [referralRelationship, setReferralRelationship] = useState("");
   const [refSearch, setRefSearch] = useState("");
   const [showRefPatient, setShowRefPatient] = useState(false);
-  const [complaint, setComplaint] = useState("");
-  const [laterality, setLaterality] = useState("");
-  const [sinceNum, setSinceNum] = useState("");
-  const [sinceUnit, setSinceUnit] = useState("days");
+  const [composerLat, setComposerLat] = useState("");
+  const [composerText, setComposerText] = useState("");
+  const [composerSinceNum, setComposerSinceNum] = useState("");
+  const [composerSinceUnit, setComposerSinceUnit] = useState("days");
+  const [bullets, setBullets] = useState<ComplaintEntry[]>([]);
+  const [composerError, setComposerError] = useState("");
+  const [kwTick, setKwTick] = useState(0);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [aadhaarPhoto, setAadhaarPhoto] = useState<UploadedFile | null>(null);
   const [patientPhoto, setPatientPhoto] = useState<UploadedFile | null>(null);
 
@@ -118,30 +177,73 @@ export function NewEncounterForm({
     try {
       const data = await getLastVisitCC(selectedPatient.id);
       if (!data) return;
-      const parts = data.notes.split(" | ");
-      let lat = "";
-      let text = "";
-      let prevSinceDays = 0;
-      if (parts.length >= 3 && ["RE", "LE", "OU"].includes(parts[0].trim())) {
-        lat = parts[0].trim();
-        const sinceMatch = parts[1].match(/Since:\s*(.+)/i);
-        if (sinceMatch) prevSinceDays = sinceToDays(sinceMatch[1].trim());
-        text = parts.slice(2).join(" | ").trim();
-      } else {
-        text = data.notes;
-      }
       const elapsed = Math.max(0, Math.round((Date.now() - new Date(data.visitDate).getTime()) / 86_400_000));
-      const totalDays = prevSinceDays + elapsed;
-      const { num, unit } = daysToParts(totalDays);
-      if (lat) setLaterality(lat);
-      if (text) setComplaint(text);
-      setSinceNum(num);
-      setSinceUnit(unit);
+      const imported = parseImportedCC(data.notes)
+        .map((e) => {
+          if (!e.sinceNum) return e;
+          const prevDays = sinceToDays(`${e.sinceNum} ${e.sinceUnit}`);
+          const { num, unit } = daysToParts(prevDays + elapsed);
+          return { ...e, sinceNum: num, sinceUnit: unit };
+        })
+        .filter((e) => e.text.trim());
+      if (imported.length === 0) return;
+      setBullets(imported);
+      setComposerLat(""); setComposerText(""); setComposerSinceNum(""); setComposerSinceUnit("days");
+      setComposerError("");
     } catch {
       // silently ignore — fields remain as-is
     } finally {
       setImporting(false);
     }
+  }
+
+  function handleAddComplaint() {
+    setComposerError("");
+    const text = composerText.trim();
+    if (!text) return;
+    if (visitType === "General OPD") {
+      if (!composerLat) { setComposerError("Please select laterality (RE, LE, or OU)."); return; }
+      if (!composerSinceNum) { setComposerError("Please enter the duration."); return; }
+    }
+    const entry: ComplaintEntry = { lat: composerLat, text, sinceNum: composerSinceNum, sinceUnit: composerSinceUnit };
+    if (isDuplicateEntry(entry, bullets, editingIndex ?? undefined)) {
+      setComposerError("This complaint is already in the list.");
+      return;
+    }
+    if (editingIndex !== null) {
+      setBullets((prev) => prev.map((b, i) => (i === editingIndex ? entry : b)));
+      setEditingIndex(null);
+    } else {
+      setBullets((prev) => [...prev, entry]);
+    }
+    setComposerLat(""); setComposerText(""); setComposerSinceNum(""); setComposerSinceUnit("days");
+  }
+
+  function editBullet(i: number) {
+    const b = bullets[i];
+    setComposerLat(b.lat); setComposerText(b.text);
+    setComposerSinceNum(b.sinceNum); setComposerSinceUnit(b.sinceUnit);
+    setComposerError("");
+    setEditingIndex(i);
+  }
+
+  function cancelEdit() {
+    setEditingIndex(null);
+    setComposerLat(""); setComposerText(""); setComposerSinceNum(""); setComposerSinceUnit("days");
+    setComposerError("");
+  }
+
+  function saveComposerAsKeyword() {
+    const text = composerText.trim();
+    if (!text) return;
+    try {
+      const key = `kw_${CHIEF_COMPLAINT_FIELD_KEY}`;
+      const existing: string[] = JSON.parse(localStorage.getItem(key) ?? "[]");
+      if (!existing.some((k) => k.toLowerCase() === text.toLowerCase())) {
+        localStorage.setItem(key, JSON.stringify([...existing, text]));
+        setKwTick((t) => t + 1);
+      }
+    } catch {}
   }
 
   const filtered = search.trim()
@@ -168,13 +270,29 @@ export function NewEncounterForm({
     // date and time are intentionally omitted — the server action defaults to now()
 
     const isGeneralOPD = visitType === "General OPD";
-    if (isGeneralOPD && !laterality) { setError("Please select laterality, RE, LE, or OU."); return; }
-    if (isGeneralOPD && !sinceNum) { setError("Please select the 'Since' duration."); return; }
-    if (!complaint.trim()) { setError("Please describe the chief complaint."); return; }
-
-    const fullComplaint = laterality && sinceNum
-      ? `${laterality} | Since: ${sinceNum} ${sinceUnit} | ${complaint.trim()}`
-      : complaint.trim();
+    let finalEntries = [...bullets];
+    if (composerText.trim()) {
+      if (isGeneralOPD) {
+        if (!composerLat) { setError("Please select laterality, RE, LE, or OU."); return; }
+        if (!composerSinceNum) { setError("Please select the 'Since' duration."); return; }
+      }
+      const composerEntry: ComplaintEntry = {
+        lat: composerLat, text: composerText.trim(),
+        sinceNum: composerSinceNum, sinceUnit: composerSinceUnit,
+      };
+      if (!isDuplicateEntry(composerEntry, finalEntries, editingIndex ?? undefined)) {
+        if (editingIndex !== null) {
+          finalEntries = finalEntries.map((e, i) => (i === editingIndex ? composerEntry : e));
+        } else {
+          finalEntries = [...finalEntries, composerEntry];
+        }
+      }
+    }
+    if (finalEntries.length === 0) {
+      setError(isGeneralOPD ? "Please add at least one chief complaint." : "Please describe the chief complaint.");
+      return;
+    }
+    const fullComplaint = serializeEntries(finalEntries);
     fd.set("complaint", fullComplaint);
 
     if (patientMode === "existing") {
@@ -202,7 +320,6 @@ export function NewEncounterForm({
         fd.set("referralPatientId", referralPatient.id);
         if (referralRelationship.trim()) fd.set("referralRelationship", referralRelationship.trim());
       }
-      fd.set("complaint", fullComplaint);
       if (patientPhoto) fd.set("patientPhoto", patientPhoto.savedName);
       if (aadhaarPhoto) fd.set("aadhaarPhoto", aadhaarPhoto.savedName);
     }
@@ -596,23 +713,20 @@ export function NewEncounterForm({
                   </button>
                 )}
               </div>
-              {/* Single row: laterality | CC text | Since */}
-              <div className="flex items-center gap-2 mt-1.5">
+
+              {/* Composer row: lat | text | since | Add */}
+              <div className="flex items-center gap-2 mt-1.5 flex-wrap sm:flex-nowrap">
                 <div className="flex gap-1 shrink-0">
                   {(["RE", "LE", "OU"] as const).map((lat) => (
                     <button
                       key={lat}
                       type="button"
-                      onClick={() => setLaterality(laterality === lat ? "" : lat)}
+                      onClick={() => { setComposerLat(composerLat === lat ? "" : lat); setComposerError(""); }}
                       className="px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors"
-                      style={laterality === lat ? {
-                        background: "var(--color-primary-700)",
-                        color: "#fff",
-                        borderColor: "var(--color-primary-700)",
+                      style={composerLat === lat ? {
+                        background: "var(--color-primary-700)", color: "#fff", borderColor: "var(--color-primary-700)",
                       } : {
-                        background: "#fff",
-                        color: "var(--color-ink-600)",
-                        borderColor: "var(--color-border)",
+                        background: "#fff", color: "var(--color-ink-600)", borderColor: "var(--color-border)",
                       }}
                     >
                       {lat}
@@ -621,16 +735,17 @@ export function NewEncounterForm({
                 </div>
                 <input
                   type="text"
-                  value={complaint}
-                  onChange={(e) => setComplaint(e.target.value)}
+                  value={composerText}
+                  onChange={(e) => { setComposerText(e.target.value); setComposerError(""); }}
+                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleAddComplaint(); } }}
                   placeholder="Chief complaint…"
                   className="flex-1 min-w-0 rounded-xl border border-[var(--color-border)] bg-white px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] transition-shadow"
                 />
                 <div className="flex items-center gap-1 shrink-0">
                   <span className="text-xs text-[var(--color-ink-500)]">Since</span>
                   <select
-                    value={sinceNum}
-                    onChange={(e) => setSinceNum(e.target.value)}
+                    value={composerSinceNum}
+                    onChange={(e) => setComposerSinceNum(e.target.value)}
                     className="rounded-md border border-[var(--color-border)] bg-white px-1.5 py-1 text-xs text-[var(--color-ink-700)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] transition-shadow w-14"
                   >
                     <option value="">—</option>
@@ -639,8 +754,8 @@ export function NewEncounterForm({
                     ))}
                   </select>
                   <select
-                    value={sinceUnit}
-                    onChange={(e) => setSinceUnit(e.target.value)}
+                    value={composerSinceUnit}
+                    onChange={(e) => setComposerSinceUnit(e.target.value)}
                     className="rounded-md border border-[var(--color-border)] bg-white px-1.5 py-1 text-xs text-[var(--color-ink-700)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] transition-shadow w-20"
                   >
                     <option value="days">days</option>
@@ -649,15 +764,75 @@ export function NewEncounterForm({
                     <option value="years">years</option>
                   </select>
                 </div>
+                <button
+                  type="button"
+                  onClick={handleAddComplaint}
+                  disabled={!composerText.trim()}
+                  className="shrink-0 px-3 py-1.5 rounded-xl text-xs font-semibold bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-40 transition-colors"
+                >
+                  {editingIndex !== null ? "Update" : "Add"}
+                </button>
+                {editingIndex !== null && (
+                  <button
+                    type="button"
+                    onClick={cancelEdit}
+                    className="shrink-0 px-3 py-1.5 rounded-xl text-xs font-semibold border border-[var(--color-border)] bg-white text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)] transition-colors"
+                  >
+                    Cancel
+                  </button>
+                )}
               </div>
+
+              {/* Composer error */}
+              {composerError && (
+                <p className="mt-1.5 text-xs text-[var(--color-danger-600)]">{composerError}</p>
+              )}
+
               {/* Keywords row */}
-              <div className="mt-2">
-                <ComplaintCombobox
-                  value={complaint}
-                  onChange={setComplaint}
-                  hideInput
-                />
+              <div className="mt-2 flex flex-col gap-1.5">
+                <ComplaintCombobox key={kwTick} value={composerText} onChange={(v) => { setComposerText(v); setComposerError(""); }} hideInput />
+                {composerText.trim() && (
+                  <button
+                    type="button"
+                    onClick={saveComposerAsKeyword}
+                    className="self-start inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-[10px] font-medium text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] transition-colors whitespace-nowrap"
+                  >
+                    <Plus size={11} strokeWidth={2.5} /> Save as keyword
+                  </button>
+                )}
               </div>
+
+              {/* Saved complaint bullets */}
+              {bullets.length > 0 && (
+                <ul className="mt-3 flex flex-col gap-1.5">
+                  {bullets.map((b, i) => (
+                    <li key={i} className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[var(--color-surface-sunken)] border border-[var(--color-border)] text-sm">
+                      <span className="flex-1 text-[var(--color-ink-800)]">
+                        •{b.lat && <> <span className="font-semibold">{b.lat}</span></>} {b.text}
+                        {b.sinceNum && <span className="text-[var(--color-ink-500)]"> — {b.sinceNum} {b.sinceUnit}</span>}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => editBullet(i)}
+                        aria-label={`Edit complaint: ${b.text}`}
+                        title={`Edit complaint: ${b.text}`}
+                        className="text-[11px] text-[var(--color-primary-600)] hover:underline shrink-0"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setBullets((prev) => prev.filter((_, idx) => idx !== i))}
+                        aria-label={`Remove complaint: ${b.text}`}
+                        title={`Remove complaint: ${b.text}`}
+                        className="p-0.5 rounded text-[var(--color-ink-400)] hover:text-red-600 hover:bg-red-50 transition-colors shrink-0"
+                      >
+                        <X size={13} strokeWidth={2.5} />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           </div>
         </div>

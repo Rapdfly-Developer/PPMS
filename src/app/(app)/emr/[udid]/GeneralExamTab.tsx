@@ -1,15 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { convertNotesToCC } from "@/lib/appointment-cc";
-import { ChevronDown, AlertTriangle, Plus, X } from "lucide-react";
+import { ChevronDown, AlertTriangle, Plus, X, Tag } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { FieldWithHistory } from "@/components/ui/HistoryToggle";
 import { PAST_MEDICAL_HISTORY_CHIPS, VITAL_RANGES, CHIEF_COMPLAINT_FIELD_KEY, CHIEF_COMPLAINT_LEGACY_KEYS } from "@/lib/constants";
 import { OPHTHALMIC_COMPLAINTS } from "@/components/ui/ComplaintCombobox";
 import { parseJSON } from "@/lib/json";
 import { useAutoSave, SaveIndicator } from "@/lib/useAutoSave";
-import { KeywordTextarea } from "@/components/emr/KeywordField";
+import { KeywordTextarea, KeywordChipsRow, removeKeywordFromText } from "@/components/emr/KeywordField";
 import { saveGeneralExam } from "./actions";
 import { useEmrOverview } from "./EmrOverviewContext";
 
@@ -142,6 +142,79 @@ function numWarning(value: string, range: { min: number; max: number }, label: s
   return "";
 }
 
+function ComplaintKeywordButton({
+  idx,
+  open,
+  onToggle,
+  onClose,
+  getValue,
+  onAppend,
+  onRemoveFromText,
+}: {
+  idx: number;
+  open: boolean;
+  onToggle: () => void;
+  onClose: () => void;
+  getValue: () => string;
+  onAppend: (kw: string) => void;
+  onRemoveFromText: (kw: string) => void;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const popoverId = `cc-kw-popover-${idx}`;
+
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
+    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open, onClose]);
+
+  return (
+    <div ref={ref} className="relative shrink-0" data-overview-hide>
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        aria-controls={popoverId}
+        aria-label="Keyword suggestions for this complaint"
+        title="Keyword suggestions"
+        className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border text-[11px] font-medium transition-colors whitespace-nowrap ${
+          open
+            ? "border-[var(--color-primary-400)] bg-[var(--color-primary-100)] text-[var(--color-primary-700)]"
+            : "border-[var(--color-border)] bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)] hover:border-[var(--color-primary-300)] hover:text-[var(--color-primary-700)]"
+        }`}
+      >
+        <Tag size={10} strokeWidth={2} />
+        Keywords
+      </button>
+      {open && (
+        <div
+          id={popoverId}
+          role="dialog"
+          aria-label="Keyword suggestions"
+          className="absolute z-50 top-full mt-1.5 left-0 w-72 max-w-[min(18rem,calc(100vw-1rem))] bg-white border border-[var(--color-border)] rounded-xl shadow-[0_4px_24px_rgba(0,0,0,0.10)] p-3"
+        >
+          <KeywordChipsRow
+            fieldKey={CHIEF_COMPLAINT_FIELD_KEY}
+            builtIns={OPHTHALMIC_COMPLAINTS}
+            legacyKeys={CHIEF_COMPLAINT_LEGACY_KEYS}
+            getValue={getValue}
+            onAppend={(kw) => { onAppend(kw); onClose(); }}
+            onRemoveFromText={(kw) => { onRemoveFromText(kw); onClose(); }}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function GeneralExamTab({ visit, priorVisits, udid, readOnly, customPmhChips }: { visit: any; priorVisits: any[]; udid: string; readOnly: boolean; customPmhChips?: string[] }) {
   const pmhChipOptions = customPmhChips ?? [...PAST_MEDICAL_HISTORY_CHIPS];
   const ge = visit.generalExam;
@@ -151,6 +224,7 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, customPmhCh
   const [temperature, setTemperature] = useState(ge?.temperature ?? "");
   const [weight, setWeight] = useState(ge?.weight ?? "");
   const [complaints, setComplaints] = useState<Complaint[]>(() => parseComplaints(ge?.chiefComplaint ?? ""));
+  const [openKwIdx, setOpenKwIdx] = useState<number | null>(null);
   const [hpi, setHpi] = useState(ge?.hpi ?? "");
   /* One row per condition, each with an optional "since". pmhOtherText is
      still written back untouched so free text saved by the old chip UI is not
@@ -175,8 +249,10 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, customPmhCh
 
   const patchComplaint = (i: number, patch: Partial<Complaint>) =>
     setComplaints((prev) => prev.map((c, idx) => (idx === i ? { ...c, ...patch } : c)));
-  const removeComplaint = (i: number) =>
+  const removeComplaint = (i: number) => {
+    setOpenKwIdx(null);
     setComplaints((prev) => (prev.length === 1 ? [emptyComplaint()] : prev.filter((_, idx) => idx !== i)));
+  };
 
   const state = useAutoSave(data, async (d) => {
     if (readOnly) return;
@@ -213,52 +289,75 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, customPmhCh
           currentValue={chiefComplaintFull}
           onLoad={(v) => setComplaints(parseComplaints(v))}
         >
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-2">
             {complaints.map((c, i) => (
               <div
                 key={i}
-                className={i > 0 ? "pt-3 border-t border-dashed border-[var(--color-border)]" : ""}
+                className={i > 0 ? "pt-2 border-t border-dashed border-[var(--color-border)]" : ""}
               >
-                {/* Row 1: Laterality + remove */}
-                <div data-lat-row data-lat={c.lat ?? ""} className="flex items-center gap-1.5 mb-2">
-                  {complaints.length > 1 && (
-                    <span className="text-[10px] font-bold tracking-wider text-[var(--color-ink-400)] uppercase">
-                      CC {i + 1}
-                    </span>
-                  )}
-                  {LATERALITY_OPTIONS.map((opt) => {
-                    const active = c.lat === opt;
-                    return (
-                      <button
-                        key={opt}
-                        type="button"
-                        disabled={readOnly}
-                        onClick={() => patchComplaint(i, { lat: active ? null : opt })}
-                        className="px-2.5 py-0.5 rounded-full text-[11px] font-bold transition-all"
-                        style={active ? {
-                          background: "var(--color-primary-600)",
-                          color: "#fff",
-                          boxShadow: "0 2px 8px rgba(15,118,110,.25)",
-                        } : {
-                          background: "var(--color-surface-1, #F1F5F9)",
-                          color: "var(--color-ink-500, #64748B)",
-                          border: "1px solid var(--color-border, #E2E8F0)",
-                        }}
-                      >
-                        {opt}
-                      </button>
-                    );
-                  })}
-                </div>
+                {/* Single complaint line: bullet | lat | text | since | remove */}
+                <div className="flex items-center gap-1.5 min-w-0 flex-wrap sm:flex-nowrap">
+                  <span className="text-[11px] font-bold text-[var(--color-ink-400)] w-5 text-center shrink-0 select-none">
+                    {complaints.length > 1 ? `${i + 1}.` : "•"}
+                  </span>
 
-                {/* Row 2: Since controls */}
-                <div data-since-row data-since={c.sinceNum} className="flex items-center gap-1.5 mb-2">
-                  <span className="text-[11px] font-semibold text-[var(--color-ink-400)] w-8 shrink-0">Since</span>
+                  {/* Laterality */}
+                  <div className="flex gap-0.5 shrink-0">
+                    {LATERALITY_OPTIONS.map((opt) => {
+                      const active = c.lat === opt;
+                      return (
+                        <button
+                          key={opt}
+                          type="button"
+                          disabled={readOnly}
+                          onClick={() => patchComplaint(i, { lat: active ? null : opt })}
+                          className="px-2.5 py-0.5 rounded-full text-[11px] font-bold transition-all"
+                          style={active ? {
+                            background: "var(--color-primary-600)",
+                            color: "#fff",
+                            boxShadow: "0 2px 8px rgba(15,118,110,.25)",
+                          } : {
+                            background: "var(--color-surface-1, #F1F5F9)",
+                            color: "var(--color-ink-500, #64748B)",
+                            border: "1px solid var(--color-border, #E2E8F0)",
+                          }}
+                        >
+                          {opt}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Complaint text — single-line input */}
+                  <input
+                    type="text"
+                    value={c.text}
+                    onChange={(e) => patchComplaint(i, { text: e.target.value.replace(/\|/g, "/") })}
+                    disabled={readOnly}
+                    placeholder="Complaint…"
+                    className="flex-1 min-w-0 rounded-lg border border-[var(--color-border)] bg-white px-2.5 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] disabled:bg-[var(--color-surface-sunken)]"
+                  />
+
+                  {/* Keyword popover trigger */}
+                  {!readOnly && (
+                    <ComplaintKeywordButton
+                      idx={i}
+                      open={openKwIdx === i}
+                      onToggle={() => setOpenKwIdx(openKwIdx === i ? null : i)}
+                      onClose={() => setOpenKwIdx(null)}
+                      getValue={() => c.text}
+                      onAppend={(kw) => patchComplaint(i, { text: c.text ? `${c.text} ${kw}` : kw })}
+                      onRemoveFromText={(kw) => patchComplaint(i, { text: removeKeywordFromText(c.text, kw) })}
+                    />
+                  )}
+
+                  {/* Since */}
+                  <span className="text-[11px] font-semibold text-[var(--color-ink-400)] shrink-0">Since</span>
                   <select
                     value={c.sinceNum}
                     onChange={(e) => patchComplaint(i, { sinceNum: e.target.value })}
                     disabled={readOnly}
-                    className="text-[11px] border border-[var(--color-border)] rounded-md px-1.5 py-0.5 bg-white text-[var(--color-ink-700)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] disabled:opacity-50 w-12 shrink-0"
+                    className="text-[11px] border border-[var(--color-border)] rounded-md px-1.5 py-1 bg-white text-[var(--color-ink-700)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] disabled:opacity-50 w-12 shrink-0"
                   >
                     <option value="">—</option>
                     {Array.from({ length: 30 }, (_, n) => n + 1).map((n) => (
@@ -269,39 +368,42 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, customPmhCh
                     value={c.sinceUnit}
                     onChange={(e) => patchComplaint(i, { sinceUnit: e.target.value })}
                     disabled={readOnly || !c.sinceNum}
-                    className="text-[11px] border border-[var(--color-border)] rounded-md px-1.5 py-0.5 bg-white text-[var(--color-ink-700)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] disabled:opacity-50 w-16 shrink-0"
+                    className="text-[11px] border border-[var(--color-border)] rounded-md px-1.5 py-1 bg-white text-[var(--color-ink-700)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] disabled:opacity-50 w-16 shrink-0"
                   >
                     {SINCE_UNITS.map((u) => (
                       <option key={u} value={u}>{u}</option>
                     ))}
                   </select>
-                    {!readOnly && complaints.length > 1 && (
-                      <button
-                        data-overview-hide
-                        type="button"
-                        onClick={() => removeComplaint(i)}
-                        title={`Remove Chief Complaint ${i + 1}`}
-                        className="p-1 rounded-lg text-[var(--color-ink-400)] hover:text-red-600 hover:bg-red-50 transition-colors"
-                      >
-                        <X size={13} strokeWidth={2.5} />
-                      </button>
-                    )}
+
+                  {/* Remove */}
+                  {!readOnly && complaints.length > 1 && (
+                    <button
+                      data-overview-hide
+                      type="button"
+                      onClick={() => removeComplaint(i)}
+                      title={`Remove complaint ${i + 1}`}
+                      className="p-1 rounded-lg text-[var(--color-ink-400)] hover:text-red-600 hover:bg-red-50 transition-colors shrink-0"
+                    >
+                      <X size={13} strokeWidth={2.5} />
+                    </button>
+                  )}
                 </div>
 
-                {/* Complaint textarea. Chief complaint is a single entry; the
-                    map above still renders every segment of an older record that
-                    was saved with more than one, so nothing is lost on read. */}
-                <KeywordTextarea
-                  fieldKey={CHIEF_COMPLAINT_FIELD_KEY}
-                  builtIns={OPHTHALMIC_COMPLAINTS}
-                  legacyKeys={CHIEF_COMPLAINT_LEGACY_KEYS}
-                  value={c.text}
-                  onChange={(v) => patchComplaint(i, { text: v.replace(/\|/g, "/") })}
-                  disabled={readOnly}
-                  rows={2}
-                />
+
               </div>
             ))}
+
+            {/* Add Complaint */}
+            {!readOnly && (
+              <button
+                data-overview-hide
+                type="button"
+                onClick={() => setComplaints((prev) => [...prev, emptyComplaint()])}
+                className="self-start mt-0.5 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-[10px] font-medium text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] transition-colors whitespace-nowrap"
+              >
+                <Plus size={11} strokeWidth={2.5} /> Add Complaint
+              </button>
+            )}
           </div>
         </FieldWithHistory>
       </Card>

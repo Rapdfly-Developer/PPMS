@@ -197,7 +197,7 @@ function AddKeywordButton({
 
 /** Remove one occurrence of `kw` from a comma- or space/newline-separated text field.
  *  Only removes whole-word matches; does not remove when `kw` appears inside a longer word. */
-function removeKeywordFromText(text: string, kw: string): string {
+export function removeKeywordFromText(text: string, kw: string): string {
   const escaped = kw.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
   // Comma-separated: "a, Kw, b" → "a, b"  |  "a, Kw" → "a"  |  "Kw, b" → "b"
@@ -226,6 +226,42 @@ function removeKeywordFromText(text: string, kw: string): string {
     .replace(spaceRe, "")
     .replace(/[ \t]{2,}/g, " ")
     .replace(/^\s+|\s+$/g, "");
+}
+
+/* ── KeywordChipsRow ──────────────────────────────────────────────────────── */
+
+/** Renders only the Add-keyword button + keyword chips, with no input field.
+ *  Use when the text input is managed externally (e.g. inside a custom row). */
+export function KeywordChipsRow({
+  fieldKey,
+  builtIns,
+  legacyKeys,
+  getValue,
+  onAppend,
+  onRemoveFromText,
+}: {
+  fieldKey: string;
+  getValue: () => string;
+  onAppend: (kw: string) => void;
+  onRemoveFromText: (kw: string) => void;
+  builtIns?: readonly string[];
+  legacyKeys?: readonly string[];
+}) {
+  const [tick, setTick] = useState(0);
+  return (
+    <div data-overview-hide className="flex flex-wrap items-center gap-1.5">
+      <AddKeywordButton getValue={getValue} fieldKey={fieldKey} onRefresh={() => setTick((t) => t + 1)} />
+      <KeywordChips
+        key={tick}
+        fieldKey={fieldKey}
+        builtIns={builtIns}
+        legacyKeys={legacyKeys}
+        onAppend={onAppend}
+        onRemoveFromText={onRemoveFromText}
+        disabled={false}
+      />
+    </div>
+  );
 }
 
 /* ── KeywordInput ─────────────────────────────────────────────────────────── */
