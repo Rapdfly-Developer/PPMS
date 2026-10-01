@@ -158,7 +158,7 @@ export function TopBar({ name, role }: { name: string; role: string }) {
   const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifItems, setNotifItems] = useState<NotifItem[]>([]);
-  const { toggle } = useSidebar();
+  const { toggle, collapsed, toggleCollapsed } = useSidebar();
 
   // Autocomplete state
   const [acResults, setAcResults] = useState<PatientSearchResult[]>([]);
@@ -326,6 +326,16 @@ export function TopBar({ name, role }: { name: string; role: string }) {
         onClick={toggle}
         aria-label="Open menu"
         className="min-[1025px]:hidden shrink-0 p-1.5 rounded-lg text-[var(--color-ink-500)] hover:text-[var(--color-ink-800)] hover:bg-[var(--color-surface-sunken)] transition-colors"
+      >
+        <Menu size={20} />
+      </button>
+
+      {/* Sidebar collapse — desktop only */}
+      <button
+        onClick={toggleCollapsed}
+        aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+        title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+        className="hidden min-[1025px]:flex shrink-0 p-1.5 rounded-lg text-[var(--color-ink-500)] hover:text-[var(--color-ink-800)] hover:bg-[var(--color-surface-sunken)] transition-colors"
       >
         <Menu size={20} />
       </button>

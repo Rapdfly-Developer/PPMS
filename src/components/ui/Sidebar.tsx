@@ -28,10 +28,6 @@ type NavEntry = TopNavItem;
 const ALL_NAV: NavEntry[] = [
   { href: "/dashboard",    label: "Dashboard",    icon: LayoutGrid,      permission: "dashboard.view"                                        },
   { href: "/opd",          label: "OPD",          icon: Stethoscope,     permission: "dashboard.view"                                        },
-  // `roles` mirrors a page that enforces requireRole; where the page enforces a
-  // permission instead, the permission alone gates the link. Keeping a roles
-  // list on a permission-gated page hid Appointments and Follow Ups from staff
-  // who held the permission and could open the page by URL.
   { href: "/appointments", label: "Appointments", icon: CalendarDays,    permission: "appointments.view"                                     },
   { href: "/patients",     label: "Patient Library", icon: Users,        permission: "patients.view"                                         },
   { href: "/follow-ups",   label: "Follow Ups",   icon: CalendarClock,   permission: "patients.view"                                         },
@@ -64,19 +60,26 @@ function initialsOf(name: string) {
 }
 
 function NavLink({
-  item, active, locked = false, onClick, indent = false,
+  item, active, locked = false, onClick, indent = false, collapsed = false,
 }: {
-  item: NavItem & { icon?: any }; active: boolean; locked?: boolean; onClick?: () => void; indent?: boolean;
+  item: NavItem & { icon?: any }; active: boolean; locked?: boolean; onClick?: () => void; indent?: boolean; collapsed?: boolean;
 }) {
   const Icon = item.icon;
 
   if (locked) {
     return (
-      <div className={clsx("relative flex items-center gap-3 py-[8px] rounded-xl text-[12.5px] cursor-not-allowed select-none opacity-35", indent ? "pl-8 pr-3" : "pl-3.5 pr-3")}>
+      <div
+        className={clsx(
+          "relative flex items-center py-[8px] rounded-xl text-[12.5px] cursor-not-allowed select-none opacity-35",
+          collapsed ? "justify-center px-1" : (indent ? "gap-3 pl-8 pr-3" : "gap-3 pl-3.5 pr-3"),
+        )}
+        title={item.label}
+        aria-label={item.label}
+      >
         <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-0 rounded-r-full" />
-        {Icon && <Icon size={15} strokeWidth={1.8} className="shrink-0 text-[#7FAAA3]" />}
-        <span className="truncate tracking-[0.01em] text-[#9DC4BE] flex-1">{item.label}</span>
-        <Lock size={11} className="shrink-0 text-[#7FAAA3]" />
+        {Icon && <Icon size={indent ? 14 : 17} strokeWidth={1.8} className="shrink-0 text-[#7FAAA3]" />}
+        {!collapsed && <span className="truncate tracking-[0.01em] text-[#9DC4BE] flex-1">{item.label}</span>}
+        {!collapsed && <Lock size={11} className="shrink-0 text-[#7FAAA3]" />}
       </div>
     );
   }
@@ -85,9 +88,11 @@ function NavLink({
     <Link
       href={item.href}
       onClick={onClick}
+      aria-label={collapsed ? item.label : undefined}
+      title={collapsed ? item.label : undefined}
       className={clsx(
-        "group relative flex items-center gap-3 py-[8px] rounded-xl text-[12.5px] transition-all duration-200 ease-out",
-        indent ? "pl-8 pr-3" : "pl-3.5 pr-3",
+        "group relative flex items-center py-[8px] rounded-xl text-[12.5px] transition-all duration-200 ease-out",
+        collapsed ? "justify-center px-1" : (indent ? "gap-3 pl-8 pr-3" : "gap-3 pl-3.5 pr-3"),
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-300/50",
         active
           ? "text-[#F0FBF9] font-semibold bg-gradient-to-r from-white/[0.10] to-white/[0.05] ring-1 ring-white/[0.12]"
@@ -110,7 +115,7 @@ function NavLink({
           style={active ? { filter: "drop-shadow(0 0 6px rgba(94,234,212,0.45))" } : undefined}
         />
       )}
-      <span className="truncate tracking-[0.01em]">{item.label}</span>
+      {!collapsed && <span className="truncate tracking-[0.01em]">{item.label}</span>}
     </Link>
   );
 }
@@ -122,7 +127,7 @@ export function Sidebar({
   role: Role; name: string; permissions: string[]; licenseActive?: boolean;
 }) {
   const pathname  = usePathname();
-  const { open, close } = useSidebar();
+  const { open, close, collapsed, toggleCollapsed } = useSidebar();
 
   const entries      = filterNav(role, permissions);
   const mainEntries  = entries.filter((e) => e.href !== "/settings");
@@ -145,6 +150,8 @@ export function Sidebar({
     return () => window.removeEventListener("resize", onResize);
   }, [close]);
 
+  const sidebarWidth = collapsed ? "64px" : "240px";
+
   return (
     <>
       {/* Backdrop */}
@@ -153,8 +160,6 @@ export function Sidebar({
         onClick={close}
         className="min-[1025px]:hidden"
         style={{
-          // Between MobileBottomNav (z-30) and the drawer (z-60), so the nav is
-          // dimmed and non-interactive while the drawer is open.
           position: "fixed", inset: 0, zIndex: 55,
           background: "rgba(0,0,0,0.5)", backdropFilter: "blur(2px)",
           transition: "opacity 300ms ease",
@@ -166,13 +171,14 @@ export function Sidebar({
       <aside
         style={{
           position: "sticky", top: 0, height: "100vh",
-          width: "240px", flexShrink: 0, zIndex: 50,
+          width: sidebarWidth, flexShrink: 0, zIndex: 50,
           background: "linear-gradient(172deg, #0C403C 0%, #0A3532 42%, #06231F 100%)",
-          transition: "transform 300ms cubic-bezier(0.4,0,0.2,1)",
+          transition: "transform 300ms cubic-bezier(0.4,0,0.2,1), width 250ms cubic-bezier(0.4,0,0.2,1)",
           isolation: "isolate", overflow: "hidden",
           display: "flex", flexDirection: "column",
         }}
         data-sidebar
+        data-collapsed={collapsed ? "" : undefined}
       >
         {/* Grain texture */}
         <div aria-hidden style={{ position: "absolute", inset: 0, zIndex: -1, backgroundImage: NOISE, pointerEvents: "none" }} />
@@ -181,11 +187,15 @@ export function Sidebar({
         <div aria-hidden style={{ position: "absolute", top: 0, right: 0, bottom: 0, width: 1, background: "rgba(255,255,255,0.06)", pointerEvents: "none" }} />
 
         {/* Brand */}
-        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "20px 20px 24px", paddingTop: "calc(28px + env(safe-area-inset-top, 0px))" }}>
+        <div style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: collapsed ? "center" : undefined,
+          gap: collapsed ? 0 : 12,
+          padding: collapsed ? "20px 12px 24px" : "20px 20px 24px",
+          paddingTop: "calc(28px + env(safe-area-inset-top, 0px))",
+        }}>
           <div style={{ position: "relative", flexShrink: 0 }}>
-            {/* The mark ships on its own light ground, so objectFit:cover plus a
-                hairline outline keeps it reading as a badge against the dark rail
-                rather than a pale rectangle pasted on. */}
             <img
               src="/landing/logo-rf-health.webp"
               alt=""
@@ -198,14 +208,19 @@ export function Sidebar({
             />
             <span style={{ position: "absolute", bottom: -1, right: -1, width: 10, height: 10, borderRadius: "50%", background: "#34D399", outline: "2.5px solid #0B3A36" }} />
           </div>
-          <div style={{ minWidth: 0, flex: 1 }}>
-            <p style={{ fontSize: "var(--sb-brand)", fontWeight: 700, lineHeight: 1, letterSpacing: "0.02em", color: "#F4FCFA", margin: 0 }}>
-              RF Health<span style={{ color: "#5EEAD4" }}>.</span>
-            </p>
-            <p style={{ marginTop: 6, fontSize: "var(--sb-eyebrow)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.22em", color: "#6FA39C", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {ROLE_LABEL[role] ?? role}
-            </p>
-          </div>
+
+          {!collapsed && (
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <p style={{ fontSize: "var(--sb-brand)", fontWeight: 700, lineHeight: 1, letterSpacing: "0.02em", color: "#F4FCFA", margin: 0 }}>
+                RF Health<span style={{ color: "#5EEAD4" }}>.</span>
+              </p>
+              <p style={{ marginTop: 6, fontSize: "var(--sb-eyebrow)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.22em", color: "#6FA39C", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {ROLE_LABEL[role] ?? role}
+              </p>
+            </div>
+          )}
+
+          {/* Mobile close (only on small screens) */}
           <button
             onClick={close}
             aria-label="Close menu"
@@ -219,10 +234,12 @@ export function Sidebar({
         <div style={{ margin: "0 20px", height: 1, background: "linear-gradient(to right, rgba(255,255,255,0.14), rgba(255,255,255,0.05), transparent)" }} />
 
         {/* Nav */}
-        <nav style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "20px 12px 0", display: "flex", flexDirection: "column", gap: 3 }}>
-          <p style={{ padding: "0 14px 10px", fontSize: "var(--sb-eyebrow)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.22em", color: "#5E8F88", userSelect: "none" }}>
-            Overview
-          </p>
+        <nav style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: collapsed ? "16px 8px 0" : "20px 12px 0", display: "flex", flexDirection: "column", gap: 3 }}>
+          {!collapsed && (
+            <p style={{ padding: "0 14px 10px", fontSize: "var(--sb-eyebrow)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.22em", color: "#5E8F88", userSelect: "none" }}>
+              Overview
+            </p>
+          )}
           {mainEntries.map((entry) => (
             <NavLink
               key={entry.href}
@@ -230,21 +247,25 @@ export function Sidebar({
               active={isActive(entry.href)}
               locked={!licenseActive}
               onClick={close}
+              collapsed={collapsed}
             />
           ))}
         </nav>
 
         {/* Bottom rail */}
-        <div style={{ padding: "8px 12px 16px", display: "flex", flexDirection: "column", gap: 3 }}>
+        <div style={{ padding: collapsed ? "8px 8px 16px" : "8px 12px 16px", display: "flex", flexDirection: "column", gap: 3 }}>
           {settingsItem && (
             <>
-              <div style={{ margin: "0 8px 8px", height: 1, background: "linear-gradient(to right, transparent, rgba(255,255,255,0.09), transparent)" }} />
-              <NavLink item={settingsItem} active={isActive(settingsItem.href)} onClick={close} />
+              {!collapsed && <div style={{ margin: "0 8px 8px", height: 1, background: "linear-gradient(to right, transparent, rgba(255,255,255,0.09), transparent)" }} />}
+              <NavLink item={settingsItem} active={isActive(settingsItem.href)} onClick={close} collapsed={collapsed} />
             </>
           )}
           <div style={{
-            marginTop: 8, display: "flex", alignItems: "center", gap: 12,
-            borderRadius: 16, padding: "12px", outline: "1px solid rgba(255,255,255,0.09)",
+            marginTop: 8, display: "flex", alignItems: "center",
+            justifyContent: collapsed ? "center" : undefined,
+            gap: collapsed ? 0 : 12,
+            borderRadius: 16, padding: collapsed ? "12px 8px" : "12px",
+            outline: "1px solid rgba(255,255,255,0.09)",
             background: "rgba(255,255,255,0.045)",
             boxShadow: "inset 0 1px 0 rgba(255,255,255,0.06), 0 10px 24px -14px rgba(0,0,0,0.7)",
           }}>
@@ -256,13 +277,15 @@ export function Sidebar({
             }}>
               {initialsOf(name)}
             </div>
-            <div style={{ minWidth: 0 }}>
-              <p style={{ fontSize: "var(--sb-name)", fontWeight: 600, color: "#EDF9F6", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", lineHeight: 1.2 }}>{name}</p>
-              <div style={{ marginTop: 2, display: "flex", alignItems: "center", gap: 6 }}>
-                <span style={{ width: 6, height: 6, flexShrink: 0, borderRadius: "50%", background: "#34D399", boxShadow: "0 0 6px rgba(52,211,153,0.8)" }} />
-                <span style={{ fontSize: "var(--sb-role)", color: "#7FAAA3", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ROLE_LABEL[role] ?? role}</span>
+            {!collapsed && (
+              <div style={{ minWidth: 0 }}>
+                <p style={{ fontSize: "var(--sb-name)", fontWeight: 600, color: "#EDF9F6", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", lineHeight: 1.2 }}>{name}</p>
+                <div style={{ marginTop: 2, display: "flex", alignItems: "center", gap: 6 }}>
+                  <span style={{ width: 6, height: 6, flexShrink: 0, borderRadius: "50%", background: "#34D399", boxShadow: "0 0 6px rgba(52,211,153,0.8)" }} />
+                  <span style={{ fontSize: "var(--sb-role)", color: "#7FAAA3", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ROLE_LABEL[role] ?? role}</span>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </aside>
@@ -275,9 +298,9 @@ export function Sidebar({
             left: 0 !important;
             height: 100dvh !important;
             transform: ${open ? "translateX(0)" : "translateX(-100%)"};
-            /* Above the backdrop (55) and MobileBottomNav (30) so the account
-               chip at the drawer's foot is never painted over. */
             z-index: 60 !important;
+            /* On mobile always show full width regardless of collapsed state */
+            width: 240px !important;
           }
         }
         @media (min-width: 1025px) {
@@ -285,18 +308,11 @@ export function Sidebar({
             position: sticky !important;
             transform: translateX(0) !important;
           }
+          [data-sidebar][data-collapsed] {
+            width: 64px !important;
+          }
         }
 
-        /* Large-screen rail. The width is an inline style on the <aside>, so
-           it can only be rescaled from here. The steps are deliberately small:
-           the rail holds fixed-length nav labels, not fluid content, so past
-           about 300px the extra width becomes padding rather than usefulness
-           and the nav starts reading as detached from the content it labels.
-           Everything below 1920px keeps the original 240px exactly. */
-        /* The rail's own type is set inline, so it cannot be reached by the
-           class-level scale in globals.css. These five variables carry the
-           same shipped values it always had, and step with the tiers there so
-           the nav does not stay small while the content beside it grows. */
         [data-sidebar] {
           --sb-brand: 15px;
           --sb-eyebrow: 9.5px;
@@ -311,7 +327,7 @@ export function Sidebar({
           }
         }
         @media (min-width: 1920px) {
-          [data-sidebar] { width: 268px !important; }
+          [data-sidebar]:not([data-collapsed]) { width: 268px !important; }
         }
         @media (min-width: 1921px) and (max-width: 2560px) {
           [data-sidebar] {
@@ -320,7 +336,7 @@ export function Sidebar({
           }
         }
         @media (min-width: 2560px) {
-          [data-sidebar] { width: 288px !important; }
+          [data-sidebar]:not([data-collapsed]) { width: 288px !important; }
         }
         @media (min-width: 2561px) {
           [data-sidebar] {
@@ -329,7 +345,7 @@ export function Sidebar({
           }
         }
         @media (min-width: 3840px) {
-          [data-sidebar] { width: 312px !important; }
+          [data-sidebar]:not([data-collapsed]) { width: 312px !important; }
         }
       `}</style>
     </>
