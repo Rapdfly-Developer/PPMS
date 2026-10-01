@@ -9,7 +9,7 @@ import {
   ShieldCheck, PackageCheck, ChevronLeft, ChevronRight, ChevronDown, Eye,
   Phone, Building2, Undo2,
 } from "lucide-react";
-import { undoDispense } from "./actions";
+import { undoDispense, type UndoDispenseResult } from "./actions";
 import { formatComplaintDisplay } from "@/lib/appointment-cc";
 import { filterSelectClass } from "@/components/ui/controls";
 import { OPHTHALMIC_COMPLAINTS } from "@/components/ui/ComplaintCombobox";
@@ -347,6 +347,9 @@ export function PatientsClient({
   const [diagnosisOpen, setDiagnosisOpen]   = useState(false);
   const [customDiagnoses] = useState(() => { try { return getCustomDiagnoses(); } catch { return []; } });
   const [, startTransition] = useTransition();
+  const [undoPending, setUndoPending] = useState(false);
+  const [undoTarget, setUndoTarget] = useState<{ apptId: string } | null>(null);
+  const [undoError, setUndoError] = useState<string | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const filterPanelRef = useRef<HTMLDivElement>(null);
   const filterBtnRef   = useRef<HTMLButtonElement>(null);
@@ -956,7 +959,8 @@ export function PatientsClient({
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              startTransition(() => undoDispense(p.dispensedApptId!));
+                              setUndoError(null);
+                              setUndoTarget({ apptId: p.dispensedApptId! });
                             }}
                             title="Undo dispense, move back to queue"
                             className="shrink-0 flex items-center gap-1 text-[9px] sm:text-[10px] font-medium px-2 py-1 rounded-lg border border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors"
@@ -1034,6 +1038,57 @@ export function PatientsClient({
         </div>
 
       </div>
+
+      {/* Undo Dispense confirmation modal */}
+      {undoTarget && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40"
+          onClick={(e) => { if (e.target === e.currentTarget && !undoPending) { setUndoTarget(null); setUndoError(null); } }}
+        >
+          <div className="w-full max-w-sm bg-white rounded-2xl shadow-2xl p-6 flex flex-col gap-4">
+            <h2 className="text-[15px] sm:text-base font-semibold text-[var(--color-ink-800)]">Undo Dispense?</h2>
+            <p className="text-sm text-[var(--color-ink-600)]">
+              Are you sure? This will alter the timestamp and waiting time of the patient.
+            </p>
+            {undoError && (
+              <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{undoError}</p>
+            )}
+            <div className="flex gap-3 justify-end pt-1">
+              <button
+                type="button"
+                disabled={undoPending}
+                onClick={() => { setUndoTarget(null); setUndoError(null); }}
+                className="px-4 py-2 rounded-xl border border-[var(--color-border)] text-sm font-medium text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] disabled:opacity-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={undoPending}
+                onClick={async () => {
+                  if (!undoTarget) return;
+                  setUndoPending(true);
+                  setUndoError(null);
+                  try {
+                    const result: UndoDispenseResult = await undoDispense(undoTarget.apptId);
+                    if (!result.ok) {
+                      setUndoError(result.error);
+                      return;
+                    }
+                    try { sessionStorage.removeItem(`emr_consult_start_${result.visitId}`); } catch { /* storage unavailable */ }
+                    setUndoTarget(null);
+                  } finally {
+                    setUndoPending(false);
+                  }
+                }}
+                className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold disabled:opacity-60 transition-colors"
+              >
+                {undoPending ? "Undoing…" : "Confirm"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

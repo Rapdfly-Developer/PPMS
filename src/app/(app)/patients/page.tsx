@@ -145,10 +145,11 @@ export default async function PatientsPage({
       orderBy: { date: "desc" as const },
       take: 1,
       select: {
+        id: true,
         date: true,
         finalizedAt: true,
         generalExam: { select: { chiefComplaint: true } },
-        appointment: { select: { arrivedAt: true } },
+        appointment: { select: { id: true, arrivedAt: true, status: true, consultationStatus: true } },
         diagnoses: { select: { description: true, laterality: true }, orderBy: { createdAt: "asc" as const }, take: 4 },
       },
     },
@@ -234,23 +235,9 @@ export default async function PatientsPage({
     };
   });
 
-  // Fetch today's dispensed appointment IDs when filtering by dispensed
-  let dispensedApptIds: Record<string, string> = {};
-  if (opStatusFilter === "dispensed" && patients.length > 0) {
-    const dayStart = startOfDay(new Date());
-    const dayEnd   = new Date(dayStart); dayEnd.setHours(23, 59, 59, 999);
-    const dispensedAppts = await prisma.appointment.findMany({
-      where: {
-        patientId: { in: patients.map(p => p.id) },
-        status: "DISPENSED",
-        dateTime: { gte: dayStart, lte: dayEnd },
-      },
-      select: { id: true, patientId: true },
-    });
-    for (const a of dispensedAppts) {
-      dispensedApptIds[a.patientId] = a.id;
-    }
-  }
+  // dispensedApptId comes from the visit's linked appointment (already fetched above).
+  // This ensures Undo targets the exact appointment tied to the finalized visit,
+  // not an unrelated appointment that also happens to be DISPENSED today.
 
   const serialized = patients.map(p => ({
     id:           p.id,
@@ -268,7 +255,11 @@ export default async function PatientsPage({
     finalizeTime:  p.visits[0]?.finalizedAt?.toISOString() ?? null,
     chiefComplaint: p.visits[0]?.generalExam?.chiefComplaint ?? (p as any).complaint ?? null,
     photoUrl:      p.photoUrl ?? null,
-    dispensedApptId: dispensedApptIds[p.id] ?? null,
+    dispensedApptId: (
+      p.visits[0]?.appointment?.status === "DISPENSED" &&
+      p.visits[0]?.appointment?.consultationStatus === "FINALIZED" &&
+      p.visits[0]?.finalizedAt != null
+    ) ? (p.visits[0].appointment?.id ?? null) : null,
     diagnoses: (p.visits[0] as any)?.diagnoses?.map((d: any) => ({ description: d.description, laterality: d.laterality ?? null })) ?? [],
   }));
 

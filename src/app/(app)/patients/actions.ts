@@ -10,15 +10,91 @@ import { formatComplaintDisplay } from "@/lib/appointment-cc";
 
 // ── Undo Dispense ────────────────────────────────────────────────────────────
 
-export async function undoDispense(appointmentId: string) {
-  await requireRole("DOCTOR");
-  await prisma.appointment.update({
-    where: { id: appointmentId },
-    data: { status: "CONFIRMED" },
+export type UndoDispenseResult =
+  | { ok: true; visitId: string; udid: string }
+  | { ok: false; error: string };
+
+export async function undoDispense(appointmentId: string): Promise<UndoDispenseResult> {
+  const user = await requireRole("DOCTOR");
+  const doctorId = scopeDoctorId(user);
+
+  const appt = await prisma.appointment.findFirst({
+    where: {
+      id: appointmentId,
+      doctorId,
+      status: "DISPENSED",
+      consultationStatus: "FINALIZED",
+    },
+    select: {
+      id: true,
+      visit: {
+        select: {
+          id: true,
+          status: true,
+          finalizedBy: true,
+          patient: { select: { udid: true } },
+        },
+      },
+    },
   });
+
+  if (!appt) return { ok: false, error: "Appointment not found or not a finalized dispense." };
+  const visit = appt.visit;
+  if (!visit) return { ok: false, error: "No linked visit found for this appointment." };
+  if (visit.status !== "CLOSED") return { ok: false, error: "Visit is not closed." };
+  if (visit.finalizedBy?.startsWith("SYSTEM")) {
+    return { ok: false, error: "Auto-closed visits cannot be reopened via Undo." };
+  }
+  const udid = visit.patient?.udid;
+  if (!udid) return { ok: false, error: "Patient record not found." };
+
+  const now = new Date();
+
+  await prisma.$transaction([
+    prisma.appointment.update({
+      where: { id: appointmentId },
+      data: {
+        status: "CONFIRMED",
+        arrivedAt: now,
+        consultationStatus: null,
+        completedAt: null,
+        completedBy: null,
+        partialDispenseReason: null,
+        partialDispenseAt: null,
+      },
+    }),
+    prisma.visit.update({
+      where: { id: visit.id },
+      data: {
+        status: "IN_PROGRESS",
+        finalizedAt: null,
+        finalizedBy: null,
+      },
+    }),
+  ]);
+
+  await writeAudit(
+    user.id,
+    "appointment",
+    appointmentId,
+    "UNDO_DISPENSE",
+    { appointmentStatus: "CONFIRMED", visitStatus: "IN_PROGRESS", visitId: visit.id },
+    {
+      oldValue: { appointmentStatus: "DISPENSED", visitStatus: visit.status },
+      userName: user.name,
+      moduleName: "patients",
+      actionType: "UPDATE",
+    },
+  );
+
   revalidatePath("/patients");
+  revalidatePath("/opd");
   revalidatePath("/dashboard");
   revalidatePath("/appointments");
+  revalidatePath(`/patients/${udid}`);
+  revalidatePath(`/emr/${udid}`);
+
+  return { ok: true, visitId: visit.id, udid };
 }
 
 // ── Patient History Timeline ─────────────────────────────────────────────────
