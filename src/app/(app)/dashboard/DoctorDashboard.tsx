@@ -6,9 +6,9 @@ import { istTodayRange, istParts, toISTWall } from "@/lib/ist";
 import { DashboardClient } from "./DashboardClient";
 
 export async function DoctorDashboard({
-  user, doctorId,
+  user, doctorId, returnTo,
 }: {
-  user: SessionUser; doctorId: string; tab?: string;
+  user: SessionUser; doctorId: string; tab?: string; returnTo?: string;
 }) {
   const now        = new Date();
   const { dayStart, dayEnd } = istTodayRange();
@@ -116,6 +116,7 @@ export async function DoctorDashboard({
       filterOptions={hospitals}
       newEncounterHref="/appointments/new"
       newEncounterLabel="New Encounter"
+      returnTo={returnTo}
     />
   );
 }

@@ -48,6 +48,8 @@ export interface DashboardProps {
   hospitalLogoUrl?:  string | null;
   newEncounterHref:  string;
   newEncounterLabel: string;
+  /** Where the Back button on the patient profile should navigate to. Defaults to "/dashboard". */
+  returnTo?:         string;
 }
 
 /* ── Status config ──────────────────────────────────────────────────────── */
@@ -104,19 +106,19 @@ function LiveTimer({ since }: { since: string }) {
    patients.view. Without it the same details still render as plain text: the
    queue has to stay readable for a role that may work it but not open records.
    /patients/[udid] enforces the permission server-side either way. */
-function PatientBlock({ udid, canView, source, className, children }: {
-  udid: string; canView: boolean; source: string; className: string; children: ReactNode;
+function PatientBlock({ udid, canView, source, returnTo, className, children }: {
+  udid: string; canView: boolean; source: string; returnTo: string; className: string; children: ReactNode;
 }) {
   if (!canView) return <div className={className}>{children}</div>;
   return (
-    <Link href={`/patients/${udid}?returnTo=/dashboard&source=${source}`} className={className}>
+    <Link href={`/patients/${udid}?returnTo=${returnTo}&source=${source}`} className={className}>
       {children}
     </Link>
   );
 }
 
 /* ── Partial Dispense row ───────────────────────────────────────────────── */
-function PartialDispenseRow({ appt: a, scope, serial, canDispense, canViewPatient }: { appt: Appt; scope: "DOCTOR" | "HOSPITAL"; serial: number; canDispense: boolean; canViewPatient: boolean }) {
+function PartialDispenseRow({ appt: a, scope, serial, canDispense, canViewPatient, returnTo }: { appt: Appt; scope: "DOCTOR" | "HOSPITAL"; serial: number; canDispense: boolean; canViewPatient: boolean; returnTo: string }) {
   const [undoing, startUndo] = useTransition();
   const arrivedAt = a.arrivedAt ? new Date(a.arrivedAt) : null;
   const apptTime  = format(new Date(a.dateTime), "h:mm a");
@@ -134,7 +136,7 @@ function PartialDispenseRow({ appt: a, scope, serial, canDispense, canViewPatien
       <div className="w-px self-stretch bg-orange-200 hidden sm:block" />
 
       {/* Patient info — grows to fill */}
-      <PatientBlock udid={a.patient.udid} canView={canViewPatient} source="partial-dispense" className="flex-1 min-w-0 hover:opacity-80 transition-opacity">
+      <PatientBlock udid={a.patient.udid} canView={canViewPatient} source="partial-dispense" returnTo={returnTo} className="flex-1 min-w-0 hover:opacity-80 transition-opacity">
         <p className="font-semibold text-[13px] sm:text-sm text-[var(--color-ink-900)] truncate">{a.patient.name}</p>
         <div className="flex items-center gap-2 mt-0.5 flex-wrap">
           <span className="font-mono text-[9px] sm:text-[10px] text-[#115E59] bg-[#F0F8F6] px-1.5 py-0.5 rounded">
@@ -194,7 +196,7 @@ function PartialDispenseRow({ appt: a, scope, serial, canDispense, canViewPatien
 }
 
 /* ── Appointment row ────────────────────────────────────────────────────── */
-function ApptRow({ appt, scope, serial, canManageQueue, canViewPatient }: { appt: Appt; scope: "DOCTOR" | "HOSPITAL"; serial: number; canManageQueue: boolean; canViewPatient: boolean }) {
+function ApptRow({ appt, scope, serial, canManageQueue, canViewPatient, returnTo }: { appt: Appt; scope: "DOCTOR" | "HOSPITAL"; serial: number; canManageQueue: boolean; canViewPatient: boolean; returnTo: string }) {
   const cfg      = STATUS_CFG[appt.status] ?? STATUS_CFG["REQUESTED"];
   const apptTime = format(new Date(appt.dateTime), "h:mm a");
   const arrivedAt      = appt.arrivedAt      ? new Date(appt.arrivedAt)      : null;
@@ -241,7 +243,7 @@ function ApptRow({ appt, scope, serial, canManageQueue, canViewPatient }: { appt
         </div>
       </div>
       <div className="w-px self-stretch bg-[var(--color-border)] hidden sm:block" />
-      <PatientBlock udid={appt.patient.udid} canView={canViewPatient} source="opd-queue" className="flex-1 min-w-0 hover:opacity-80 transition-opacity">
+      <PatientBlock udid={appt.patient.udid} canView={canViewPatient} source="opd-queue" returnTo={returnTo} className="flex-1 min-w-0 hover:opacity-80 transition-opacity">
         <p className="font-semibold text-[var(--color-ink-900)] text-[13px] sm:text-sm truncate">{appt.patient.name}</p>
         <div className="flex items-center gap-2 mt-0.5 flex-wrap">
           <span title="UDID (Doctor ID)" className="font-mono text-[9px] sm:text-[10px] text-[#115E59] bg-[#F0F8F6] px-1.5 py-0.5 rounded">
@@ -300,7 +302,7 @@ function ApptRow({ appt, scope, serial, canManageQueue, canViewPatient }: { appt
 /* ── Main component ─────────────────────────────────────────────────────── */
 export function DashboardClient({
   scope, permissions, displayName, bannerTitle, bannerSubtitle, todayLabel, appts, filterOptions,
-  newEncounterHref, newEncounterLabel, hospitalLogoUrl,
+  newEncounterHref, newEncounterLabel, hospitalLogoUrl, returnTo = "/dashboard",
 }: DashboardProps) {
   // Same rule as userCan() in lib/rbac, so the UI hides exactly what the server
   // would refuse. The server actions enforce it independently.
@@ -530,7 +532,7 @@ export function DashboardClient({
                   </div>
                   {displayed.length > 0 && (
                     <div className="space-y-2">
-                      {displayed.map((a, idx) => <ApptRow key={a.id} appt={a} scope={scope} serial={idx + 1} canManageQueue={can("opd.queue.manage")} canViewPatient={can("patients.view")} />)}
+                      {displayed.map((a, idx) => <ApptRow key={a.id} appt={a} scope={scope} serial={idx + 1} canManageQueue={can("opd.queue.manage")} canViewPatient={can("patients.view")} returnTo={returnTo} />)}
                     </div>
                   )}
                 </div>
@@ -555,7 +557,7 @@ export function DashboardClient({
         ) : (
           <div className="space-y-2">
             {partialDispenseAppts.map((a, idx) => (
-              <PartialDispenseRow key={a.id} appt={a} scope={scope} serial={idx + 1} canDispense={can("opd.dispense")} canViewPatient={can("patients.view")} />
+              <PartialDispenseRow key={a.id} appt={a} scope={scope} serial={idx + 1} canDispense={can("opd.dispense")} canViewPatient={can("patients.view")} returnTo={returnTo} />
             ))}
           </div>
         )}

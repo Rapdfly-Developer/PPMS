@@ -9,9 +9,11 @@ import { LicenseBanner } from "./LicenseBanner";
 export async function HospitalDashboard({
   user,
   hospitalId,
+  returnTo,
 }: {
   user: SessionUser;
   hospitalId: string;
+  returnTo?: string;
 }) {
   const now       = new Date();
   const { dayStart, dayEnd } = istTodayRange();
@@ -95,6 +97,7 @@ export async function HospitalDashboard({
         hospitalLogoUrl={hospital?.logoUrl ?? null}
         newEncounterHref="/appointments/book"
         newEncounterLabel="New Appointment"
+        returnTo={returnTo}
       />
     </>
   );

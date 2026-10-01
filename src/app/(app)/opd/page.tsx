@@ -26,9 +26,9 @@ export default async function OpdPage({
 
   if (user.role !== "DOCTOR") {
     if (!user.hospitalId) return <NoHospitalAssigned />;
-    return <HospitalDashboard user={user} hospitalId={user.hospitalId} />;
+    return <HospitalDashboard user={user} hospitalId={user.hospitalId} returnTo="/opd" />;
   }
-  return <DoctorDashboard user={user} doctorId={scopeDoctorId(user)} tab={tab} />;
+  return <DoctorDashboard user={user} doctorId={scopeDoctorId(user)} tab={tab} returnTo="/opd" />;
 }
 
 function NoHospitalAssigned() {
