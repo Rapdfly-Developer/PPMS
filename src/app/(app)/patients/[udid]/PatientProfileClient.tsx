@@ -8,7 +8,7 @@ import { openPdfNative } from "@/lib/open-pdf";
 import {
   ChevronRight, ChevronDown, Hospital, Stethoscope, FileText,
   CheckCircle2, Clock, AlertCircle, Filter, ClipboardCheck,
-  ArrowRightLeft, X, Download, Loader2,
+  ArrowRightLeft, X, Download, Loader2, RefreshCw,
   Activity, Sparkles,
 } from "lucide-react";
 import { EmrViewerButton, VisitDownloadButton } from "./EmrViewerModal";
@@ -16,6 +16,7 @@ import {
   VisitSummaryTabs, useVisitSummaryState, VisitSummaryTabBar, VisitSummaryTabBody,
   Block, DataTable, Cols, DASH,
   TH, TD, TD_MUTED, COLS_INVESTIGATION,
+  AIContent,
 } from "./VisitSummaryTabs";
 import { transferPatient, generateLongitudinalSummary } from "../actions";
 import { convertNotesToCC } from "@/lib/appointment-cc";
@@ -399,8 +400,78 @@ function PreviousVisitsPanel({ visits, udid }: { visits: SerialVisit[]; udid: st
 }
 
 /* ── Last Visit Summary section ─────────────────────────────────────────────── */
-function LastVisitSummarySection({ summary }: { summary: LastVisitSummary }) {
-  const tabState = useVisitSummaryState(summary.id);
+function LastVisitSummarySection({
+  summary,
+  longitudinalVisits = [],
+  udid,
+}: {
+  summary: LastVisitSummary;
+  longitudinalVisits?: LongitudinalVisit[];
+  udid: string;
+}) {
+  const tabState = useVisitSummaryState(summary.id, { autoGenerateAI: false });
+  const hasLongitudinal = longitudinalVisits.length > 0;
+  const [aiSubTab, setAiSubTab] = useState<"single" | "longitudinal">("single");
+
+  const customAiContent = (
+    <div>
+      {/* Sub-switch — only when longitudinal data exists */}
+      {hasLongitudinal && (
+        <div className="mb-3">
+          <div className="inline-flex items-center gap-0.5 rounded-md bg-[var(--color-surface-sunken)] p-[2px]">
+            {(["single", "longitudinal"] as const).map((st) => (
+              <button
+                key={st}
+                onClick={() => setAiSubTab(st)}
+                className={`relative flex items-center rounded px-2.5 py-1 text-[9px] sm:text-[10px] font-semibold transition-all ${
+                  aiSubTab === st
+                    ? "bg-white shadow-sm text-violet-700 shadow-violet-100"
+                    : "text-[var(--color-ink-400)] hover:text-[var(--color-ink-600)]"
+                }`}
+              >
+                {st === "single" ? "Last Visit" : "Longitudinal"}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Last Visit AI — always mounted while AI tab is active; hidden when longitudinal is shown */}
+      <div hidden={aiSubTab !== "single"} aria-hidden={aiSubTab !== "single"}>
+        {tabState.aiError ? (
+          <div className="space-y-2">
+            <div className="flex items-start gap-2 p-3 rounded-xl bg-red-50 text-[10px] sm:text-[11px] text-red-700">
+              <AlertCircle size={12} className="shrink-0 mt-0.5" />
+              <span>{tabState.aiError}</span>
+            </div>
+            <button
+              onClick={() => tabState.retryAI()}
+              className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1.5 rounded-lg bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 transition-colors"
+            >
+              <RefreshCw size={11} /> Try Again
+            </button>
+          </div>
+        ) : tabState.aiText ? (
+          <AIContent text={tabState.aiText} error={null} source={tabState.aiSource} notice={tabState.aiNotice} />
+        ) : (
+          <button
+            onClick={() => tabState.requestAI()}
+            className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1.5 rounded-lg bg-[var(--color-primary-50)] text-[var(--color-primary-700)] border border-[var(--color-primary-200)] hover:bg-[var(--color-primary-100)] disabled:opacity-60 transition-colors"
+          >
+            <Sparkles size={11} /> Generate AI Summary
+          </button>
+        )}
+      </div>
+
+      {/* Longitudinal — always mounted so generated state survives Last Visit ↔ Longitudinal switches */}
+      {hasLongitudinal && (
+        <div hidden={aiSubTab !== "longitudinal"} aria-hidden={aiSubTab !== "longitudinal"}>
+          <LongitudinalSummarySection udid={udid} visits={longitudinalVisits} inline />
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <div className="mt-4 space-y-3">
       {/* ── Last Visit Summary ── */}
@@ -552,6 +623,7 @@ function LastVisitSummarySection({ summary }: { summary: LastVisitSummary }) {
                 )}
               </div>
             }
+            aiContent={customAiContent}
           />
         </div>
       </div>
@@ -564,12 +636,15 @@ function FinalizedVisitModal({
   visitId,
   udid,
   onClose,
+  returnTo,
 }: {
   visitId: string;
   udid: string;
   onClose: () => void;
+  returnTo?: string;
 }) {
   const router = useRouter();
+  const rtSuffix = returnTo ? `&returnTo=${encodeURIComponent(returnTo)}` : "";
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
@@ -586,13 +661,13 @@ function FinalizedVisitModal({
         </div>
         <div className="flex gap-3 px-6 pb-5">
           <button
-            onClick={() => { onClose(); router.push(`/emr/${udid}?visit=${visitId}`); }}
+            onClick={() => { onClose(); router.push(`/emr/${udid}?visit=${visitId}${rtSuffix}`); }}
             className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium border border-[var(--color-border)] text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] transition-colors"
           >
             View Only
           </button>
           <button
-            onClick={() => { onClose(); router.push(`/emr/${udid}?visit=${visitId}&edit=1`); }}
+            onClick={() => { onClose(); router.push(`/emr/${udid}?visit=${visitId}&edit=1${rtSuffix}`); }}
             className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold bg-[var(--color-primary-900)] text-white hover:bg-[var(--color-primary-700)] transition-colors"
           >
             Edit
@@ -604,7 +679,7 @@ function FinalizedVisitModal({
 }
 
 /* ── Longitudinal Summary Section ───────────────────────────────────────────── */
-function LongitudinalSummarySection({ udid, visits }: { udid: string; visits: LongitudinalVisit[] }) {
+function LongitudinalSummarySection({ udid, visits, inline = false }: { udid: string; visits: LongitudinalVisit[]; inline?: boolean }) {
   const [aiText,    setAiText]    = useState<string | null>(null);
   const [aiSource,  setAiSource]  = useState<"claude" | "local">("local");
   const [aiNotice,  setAiNotice]  = useState<string | null>(null);
@@ -628,6 +703,104 @@ function LongitudinalSummarySection({ udid, visits }: { udid: string; visits: Lo
 
   const firstDate = visits[visits.length - 1]?.date;
   const lastDate  = visits[0]?.date;
+
+  /* ── Inline variant — used when embedded inside another card ── */
+  if (inline) {
+    return (
+      <div className="space-y-3">
+        {/* Generate / regenerate */}
+        {!aiText && (
+          <button
+            onClick={handleGenerate}
+            disabled={pending}
+            className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1.5 rounded-lg bg-[var(--color-primary-50)] text-[var(--color-primary-700)] border border-[var(--color-primary-200)] hover:bg-[var(--color-primary-100)] disabled:opacity-60 transition-colors"
+          >
+            {pending ? <Loader2 size={11} className="animate-spin" /> : <Sparkles size={11} />}
+            {pending ? "Generating…" : "Generate AI Summary"}
+          </button>
+        )}
+        {/* AI error + retry */}
+        {aiError && (
+          <div className="space-y-2">
+            <div className="flex items-start gap-2 p-3 rounded-xl bg-red-50 text-[10px] sm:text-[11px] text-red-700">
+              <AlertCircle size={12} className="shrink-0 mt-0.5" />{aiError}
+            </div>
+            <button
+              onClick={handleGenerate}
+              className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1.5 rounded-lg bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 transition-colors"
+            >
+              <RefreshCw size={11} /> Try Again
+            </button>
+          </div>
+        )}
+        {/* AI text */}
+        {aiText && (
+          <div className="rounded-xl bg-violet-50/50 p-3.5">
+            <div className="flex items-center justify-between gap-2 mb-1.5">
+              <div className="flex items-center gap-1.5">
+                <Sparkles size={11} className="text-violet-500" />
+                <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-violet-600">
+                  {aiSource === "claude" ? "Claude AI Summary" : "Auto-Generated Summary"}
+                </span>
+              </div>
+              <button
+                onClick={() => { setAiText(null); setAiNotice(null); }}
+                className="p-1 rounded hover:bg-violet-100 text-violet-400 transition-colors"
+              >
+                <X size={12} />
+              </button>
+            </div>
+            {aiNotice && <p className="text-[9px] sm:text-[10px] leading-snug text-amber-700 mb-2">{aiNotice}</p>}
+            <div className="space-y-1.5">
+              {aiText.split(/\n+/).filter(Boolean).map((line, i) => (
+                <p key={i} className="text-[10px] sm:text-[11px] leading-relaxed text-[var(--color-ink-700)]">{line}</p>
+              ))}
+            </div>
+          </div>
+        )}
+        {/* Visit count + chronological list */}
+        <div>
+          <p className="text-[9px] sm:text-[10px] text-[var(--color-ink-400)] mb-2">
+            {visits.length} visit{visits.length > 1 ? "s" : ""}
+            {visits.length > 1 && firstDate && lastDate && (
+              <> · {format(new Date(firstDate), "dd MMM yyyy")} – {format(new Date(lastDate), "dd MMM yyyy")}</>
+            )}
+          </p>
+          <div className="divide-y divide-[var(--color-border)] rounded-xl border border-[var(--color-border)] overflow-hidden">
+            {visits.map((v) => (
+              <div key={v.id} className="px-3 py-2.5">
+                <div className="flex items-start justify-between gap-2 mb-0.5">
+                  <p className="text-[11px] font-semibold text-[var(--color-ink-800)]">
+                    {format(new Date(v.date), "dd MMM yyyy")}
+                  </p>
+                  {v.followUpDate && (
+                    <span className="text-[9px] font-medium text-[var(--color-primary-600)] bg-[var(--color-primary-50)] border border-[var(--color-primary-100)] px-1.5 py-0.5 rounded-full shrink-0">
+                      F/U {format(new Date(v.followUpDate), "dd MMM")}
+                    </span>
+                  )}
+                </div>
+                {v.visitType && <p className="text-[9px] text-[var(--color-ink-400)]">{v.visitType}</p>}
+                {v.diagnoses.length > 0 && (
+                  <p className="text-[10px] text-[var(--color-ink-500)] mt-0.5">
+                    <span className="font-semibold">Dx:</span>{" "}
+                    {v.diagnoses.map((d, i) => (
+                      <span key={i}>{d.description}{d.laterality ? ` (${d.laterality})` : ""}{d.status === "RESOLVED" ? " ✓" : ""}{i < v.diagnoses.length - 1 ? ", " : ""}</span>
+                    ))}
+                  </p>
+                )}
+                {v.medications.length > 0 && (
+                  <p className="text-[10px] text-[var(--color-ink-500)] mt-0.5">
+                    <span className="font-semibold">Rx:</span>{" "}
+                    {v.medications.map((m, i) => <span key={i}>{m.drugName}{i < v.medications.length - 1 ? ", " : ""}</span>)}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mt-4 rounded-2xl border border-[var(--color-border)] bg-white overflow-hidden">
@@ -657,10 +830,18 @@ function LongitudinalSummarySection({ udid, visits }: { udid: string; visits: Lo
         )}
       </div>
 
-      {/* AI error */}
+      {/* AI error + retry */}
       {aiError && (
-        <div className="px-5 py-3 bg-red-50 border-b border-red-100 flex items-start gap-2 text-sm text-red-700">
-          <AlertCircle size={14} className="shrink-0 mt-0.5" />{aiError}
+        <div className="px-5 py-3 bg-red-50 border-b border-red-100">
+          <div className="flex items-start gap-2 text-sm text-red-700 mb-2">
+            <AlertCircle size={14} className="shrink-0 mt-0.5" />{aiError}
+          </div>
+          <button
+            onClick={handleGenerate}
+            className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 transition-colors"
+          >
+            <RefreshCw size={11} /> Try Again
+          </button>
         </div>
       )}
 
@@ -752,6 +933,7 @@ export function PatientProfileClient({
   timelineEntries = [],
   lastVisitSummary = null,
   longitudinalVisits = [],
+  profileReturnPath,
 }: {
   udid: string;
   visits: SerialVisit[];
@@ -763,11 +945,13 @@ export function PatientProfileClient({
   timelineEntries?: TimelineEntry[];
   lastVisitSummary?: LastVisitSummary | null;
   longitudinalVisits?: LongitudinalVisit[];
+  profileReturnPath?: string;
 }) {
   const hasToday = todayVisit !== null;
   const hasPendingAppointment = !hasToday && !!todayAppointmentId;
   const todayIsFinalized = hasToday && todayVisit!.status === "CLOSED";
   const [showFinalizedModal, setShowFinalizedModal] = useState(false);
+  const emrReturnTo = profileReturnPath ?? `/patients/${udid}`;
 
   return (
     <>
@@ -776,6 +960,7 @@ export function PatientProfileClient({
           visitId={todayVisit.id}
           udid={udid}
           onClose={() => setShowFinalizedModal(false)}
+          returnTo={emrReturnTo}
         />
       )}
       {/* ── Action buttons ───────────────────────────────────────────────── */}
@@ -815,7 +1000,7 @@ export function PatientProfileClient({
               </button>
             ) : (
               <Link
-                href={`/emr/${udid}?visit=${todayVisit!.id}`}
+                href={`/emr/${udid}?visit=${todayVisit!.id}&returnTo=${encodeURIComponent(emrReturnTo)}`}
                 className="flex-1 flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-xl font-semibold text-[13px] sm:text-sm bg-emerald-600 text-white hover:bg-emerald-700 transition-colors shadow-sm"
               >
                 <Stethoscope size={16} />
@@ -824,7 +1009,7 @@ export function PatientProfileClient({
             )
           ) : hasPendingAppointment ? (
             <Link
-              href={`/emr/${udid}`}
+              href={`/emr/${udid}?returnTo=${encodeURIComponent(emrReturnTo)}`}
               className="flex-1 flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-xl font-semibold text-[13px] sm:text-sm bg-emerald-600 text-white hover:bg-emerald-700 transition-colors shadow-sm"
             >
               <Stethoscope size={16} />
@@ -869,14 +1054,13 @@ export function PatientProfileClient({
         </div>
       )}
 
-      {/* ── Last Visit Summary + Investigations ─────────────────────── */}
+      {/* ── Last Visit Summary (AI tab has Last Visit / Longitudinal sub-switch) ── */}
       {lastVisitSummary && (
-        <LastVisitSummarySection summary={lastVisitSummary} />
-      )}
-
-      {/* ── Longitudinal Summary ─────────────────────────────────────── */}
-      {longitudinalVisits.length > 0 && (
-        <LongitudinalSummarySection udid={udid} visits={longitudinalVisits} />
+        <LastVisitSummarySection
+          summary={lastVisitSummary}
+          longitudinalVisits={longitudinalVisits}
+          udid={udid}
+        />
       )}
     </>
   );

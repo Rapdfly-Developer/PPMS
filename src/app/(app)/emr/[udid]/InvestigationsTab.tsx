@@ -59,7 +59,7 @@ export function InvestigationsTab({
   return (
     <div className="flex flex-col gap-5">
       {/* Sub-tab toggle */}
-      <div className="flex gap-3 flex-wrap">
+      <div data-overview-hide className="flex gap-3 flex-wrap">
         <button className={tabCls("previous")} onClick={() => setActiveTab("previous")}>
           <History size={15} /> Previous Investigations
           {previousOrders.length > 0 && (
@@ -237,12 +237,12 @@ function InvestigationCard({
               </a>
             </>
           ) : !readOnly ? (
-            <UploadButton orderId={order.id} udid={udid} />
+            <span data-overview-hide className="contents"><UploadButton orderId={order.id} udid={udid} /></span>
           ) : (
             <span className="text-[11px] text-[var(--color-ink-400)]">Pending</span>
           )}
           {!readOnly && (
-            <button
+            <span data-overview-hide className="contents"><button
               type="button"
               onClick={handleDelete}
               disabled={deleting}
@@ -254,7 +254,7 @@ function InvestigationCard({
             >
               <Trash2 size={12} />
               {confirmDelete ? "Sure?" : ""}
-            </button>
+            </button></span>
           )}
         </div>
       </div>
@@ -616,8 +616,8 @@ function NewInvestigations({
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Order form */}
-      <Card className="p-0 overflow-hidden">
+      {/* Order form — hidden in overview mode; today's orders below remain visible */}
+      <Card data-overview-hide className="p-0 overflow-hidden">
         {/* Priority + Laterality + Add Test */}
         <div className="px-5 pt-5 pb-4 flex items-start justify-between gap-4 border-b border-[var(--color-border)]">
           <div className="flex flex-wrap gap-8">

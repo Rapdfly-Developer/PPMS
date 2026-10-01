@@ -23,10 +23,16 @@ export default async function PatientProfilePage({
   searchParams: Promise<{ returnTo?: string; source?: string }>;
 }) {
   const { udid } = await params;
-  const { source } = await searchParams;
+  const { returnTo, source } = await searchParams;
   // Today's Visit is only accessible from OPD Queue and Patient Library,
   // not from the Appointments module or OPD Partial Dispense.
   const showTodayVisit = source !== "appointments" && source !== "partial-dispense";
+
+  // Build the full URL of this profile page so EMR's Back button returns here.
+  const profileQs = new URLSearchParams();
+  if (returnTo) profileQs.set("returnTo", returnTo);
+  if (source)   profileQs.set("source",   source);
+  const profileReturnPath = `/patients/${udid}${profileQs.toString() ? `?${profileQs.toString()}` : ""}`;
   const user = await requirePermission("patients.view");
 
   const patient = await prisma.patient.findUnique({
@@ -441,6 +447,7 @@ export default async function PatientProfilePage({
             timelineEntries={timelineEntries}
             lastVisitSummary={lastVisitSummary}
             longitudinalVisits={longitudinalVisits}
+            profileReturnPath={profileReturnPath}
           />
           {/* No Copilot slot here, deliberately.
 

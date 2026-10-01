@@ -169,7 +169,7 @@ export default async function PatientDetailedEMR({
         });
         visitId = newVisit.id;
       }
-      redirect(`/emr/${udid}?visit=${visitId}`);
+      redirect(`/emr/${udid}?visit=${visitId}${returnTo ? `&returnTo=${encodeURIComponent(returnTo)}` : ""}`);
     }
   }
 

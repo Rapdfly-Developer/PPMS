@@ -189,7 +189,10 @@ function VisualAcuityCard({ visit, udid, editable, priorVisits = [] }: { visit: 
   };
 
   const distSel = (eyeKey: "re" | "le", eye: any, setEye: any, key: string) => (
-    <div className="flex flex-col items-center gap-0.5">
+    <div
+      className="flex flex-col items-center gap-0.5"
+      {...(!eye[key] || eye[key] === "-" ? { "data-ov-empty": "" } : {})}
+    >
       <div className="inline-flex items-center gap-0.5 justify-center">
         <select
           disabled={!editable}
@@ -206,7 +209,10 @@ function VisualAcuityCard({ visit, udid, editable, priorVisits = [] }: { visit: 
   );
 
   const nearSel = (eyeKey: "re" | "le", eye: any, setEye: any, key: string) => (
-    <div className="flex flex-col items-center gap-0.5">
+    <div
+      className="flex flex-col items-center gap-0.5"
+      {...(!eye[key] || eye[key] === "-" ? { "data-ov-empty": "" } : {})}
+    >
       <div className="inline-flex items-center gap-0.5 justify-center">
         <select
           disabled={!editable}
@@ -433,7 +439,10 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
      in rather than read from `val` so both eyes follow the correction's single
      method even on legacy records that stored it on the RE object only. */
   const eyeFields = (val: typeof re, setVal: typeof setRe, showNear: boolean) => (
-    <div className="grid grid-cols-2 sm:grid-cols-[88px_88px_64px_20px_80px] gap-x-2 gap-y-2 items-end">
+    <div
+      className="grid grid-cols-2 sm:grid-cols-[88px_88px_64px_20px_80px] gap-x-2 gap-y-2 items-end"
+      {...(!Object.values(val).some(Boolean) ? { "data-ov-empty": "" } : {})}
+    >
       <p className={SECTION_LABEL}>Distance</p>
       {signedSelect("Sph",   val.sph,  (v) => setVal({ ...val, sph: v }),  SPH_MAGS)}
       {signedSelect("Cyl",   val.cyl,  (v) => setVal({ ...val, cyl: v }),  CYL_MAGS)}
@@ -874,7 +883,7 @@ function IOPCard({ visit, udid, editable, priorVisits }: { visit: any; udid: str
       <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)] mb-3">Intra-Ocular Pressure (mmHg)</p>
 
       {editable && (
-        <div className="flex items-end gap-3 mb-4 flex-wrap">
+        <div data-overview-hide className="flex items-end gap-3 mb-4 flex-wrap">
           <div>
             <label className="text-[11px] sm:text-xs text-[var(--color-ink-400)] block mb-1">Method</label>
             <select value={method} onChange={(e) => setMethod(e.target.value)}
@@ -920,7 +929,7 @@ function IOPCard({ visit, udid, editable, priorVisits }: { visit: any; udid: str
                   <td className="py-2 px-3 text-center font-semibold text-[var(--color-ink-800)] tabular-nums">{r.re ?? "—"}</td>
                   <td className="py-2 px-3 text-center font-semibold text-[var(--color-ink-800)] tabular-nums">{r.le ?? "—"}</td>
                   {editable && (
-                    <td className="py-2 px-2 text-center">
+                    <td data-overview-hide className="py-2 px-2 text-center">
                       <button
                         disabled={deletePending}
                         onClick={() => startDelete(() => removeIOPReading(r.id, udid))}
@@ -1104,7 +1113,7 @@ function GonioFindingsInput({
             </button>
           ))}
           {!disabled && (
-            <>
+            <span data-overview-hide className="contents">
               <button
                 type="button"
                 onClick={addKeyword}
@@ -1116,6 +1125,7 @@ function GonioFindingsInput({
                 <span key={kw} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-[10px] sm:text-[11px] text-[var(--color-primary-700)]">
                   <button type="button" onClick={() => onChange(value ? `${value} ${kw}` : kw)} className="hover:underline">{kw}</button>
                   <button
+                    data-overview-hide
                     type="button"
                     onClick={() => { const n = savedKws.filter((k) => k !== kw); saveKws(fieldKey, n); setSavedKws(n); }}
                     className="ml-0.5 text-[var(--color-ink-400)] hover:text-red-500 transition-colors"
@@ -1124,12 +1134,12 @@ function GonioFindingsInput({
                   </button>
                 </span>
               ))}
-            </>
+            </span>
           )}
         </div>
       )}
       {!disabled && historyChips.length === 0 && savedKws.length === 0 && (
-        <div className="flex flex-wrap items-center gap-1">
+        <div data-overview-hide className="flex flex-wrap items-center gap-1">
           <button
             type="button"
             onClick={addKeyword}

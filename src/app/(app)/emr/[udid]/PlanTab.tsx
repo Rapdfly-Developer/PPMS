@@ -2076,7 +2076,7 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
 
       <div className={`flex items-center mb-3 gap-2 ${Object.keys(appliedByDiag).length > 0 ? "mt-4" : ""}`}>
         <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)]">Prescription / Medications</p>
-        <div className="flex items-center gap-2 ml-auto shrink-0">
+        <div data-overview-hide className="flex items-center gap-2 ml-auto shrink-0">
           {medications.length > 0 && (
             <button
               onClick={handleClearAll}
@@ -2100,7 +2100,7 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
       </div>
 
       {/* Medication search */}
-      <div className="relative mb-3">
+      <div data-overview-hide className="relative mb-3">
         <div className="relative">
           <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] pointer-events-none" />
           <input
@@ -2179,7 +2179,7 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
 
       {/* Add Drug form */}
       {showAddDrug && (
-        <div className="mb-4 p-3.5 rounded-xl border border-[var(--color-primary-200)] bg-[var(--color-primary-50)] shadow-sm">
+        <div data-overview-hide className="mb-4 p-3.5 rounded-xl border border-[var(--color-primary-200)] bg-[var(--color-primary-50)] shadow-sm">
           <div className="flex items-center justify-between mb-3 max-w-3xl">
             <div className="flex items-center gap-2">
               <div className="w-6 h-6 rounded-md bg-[var(--color-primary-600)] flex items-center justify-center">
@@ -2327,7 +2327,7 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
                 <th className="px-3 py-1.5 text-left text-[10px] font-bold text-[var(--color-ink-300)] uppercase tracking-widest w-20">Dose</th>
                 <th className="px-3 py-1.5 text-left text-[10px] font-bold text-[var(--color-ink-300)] uppercase tracking-widest w-44">Frequency</th>
                 <th className="px-3 py-1.5 text-left text-[10px] font-bold text-[var(--color-ink-300)] uppercase tracking-widest w-28">Duration</th>
-                <th className="px-3 py-1.5 w-20" />
+                <th data-overview-hide className="px-3 py-1.5 w-20" />
               </tr>
             </thead>
             <tbody>
@@ -2424,7 +2424,7 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
                       </td>
 
                       {/* Actions */}
-                      <td className="px-3 py-2.5">
+                      <td data-overview-hide className="px-3 py-2.5">
                         <div className="flex items-center justify-end gap-1.5">
                           {isEditing ? (
                             <>
@@ -2496,7 +2496,7 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
       <div className="mt-5 pt-4 border-t border-[var(--color-border)]">
         <div className="flex items-center justify-between mb-2">
           <label className="text-xs font-semibold text-[var(--color-ink-700)]">Advise Notes</label>
-          <div className="flex items-center gap-1.5">
+          <div data-overview-hide className="flex items-center gap-1.5">
             <button
               onClick={() => { setShowHistory((v) => !v); setShowKeywords(false); }}
               className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-medium transition-colors

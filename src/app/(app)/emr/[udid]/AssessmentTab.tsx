@@ -173,6 +173,7 @@ function DiagnosisRow({
             ))}
           </select>
           <button
+            data-overview-hide
             onClick={() => onReject(d)}
             disabled={pending}
             className="text-[var(--color-ink-400)] hover:text-[var(--color-danger-600)] disabled:opacity-50"
@@ -692,6 +693,7 @@ export function AssessmentTab({
           <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)]">Provisional Diagnosis</p>
           <button
             type="button"
+            data-overview-hide
             onClick={() => setProvHistoryOpen((v) => !v)}
             className="flex items-center gap-1 text-xs text-[#0F766E] bg-[#EEF8F7] hover:bg-[#DCF3F1] font-medium px-2.5 py-0.5 rounded-full border border-[#B2DEDA] transition-colors"
           >
@@ -765,7 +767,7 @@ export function AssessmentTab({
           </div>
         )}
 
-        <div className="flex items-end gap-3 flex-wrap mb-2">
+        <div data-overview-hide className="flex items-end gap-3 flex-wrap mb-2">
           <div>
             <p className="text-xs font-medium text-[var(--color-ink-500)] mb-1.5">Laterality</p>
             <SingleChipSelect options={LATERALITY} value={provLaterality} onChange={setProvLaterality} />
@@ -866,6 +868,7 @@ export function AssessmentTab({
           <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)]">Diagnosis (ICD-10)</p>
           <button
             type="button"
+            data-overview-hide
             onClick={() => setHistoryOpen((v) => !v)}
             className="flex items-center gap-1 text-xs text-[#0F766E] bg-[#EEF8F7] hover:bg-[#DCF3F1] font-medium px-2.5 py-0.5 rounded-full border border-[#B2DEDA] transition-colors"
           >
@@ -938,7 +941,7 @@ export function AssessmentTab({
           </div>
         )}
 
-        <div className="flex items-end gap-3 flex-wrap mb-2">
+        <div data-overview-hide className="flex items-end gap-3 flex-wrap mb-2">
           <div>
             <p className="text-xs font-medium text-[var(--color-ink-500)] mb-1.5">Laterality</p>
             <SingleChipSelect options={LATERALITY} value={laterality} onChange={setLaterality} />

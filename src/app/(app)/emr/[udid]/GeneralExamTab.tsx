@@ -352,12 +352,16 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, customPmhCh
                   )}
 
                   {/* Since */}
-                  <span className="text-[11px] font-semibold text-[var(--color-ink-400)] shrink-0">Since</span>
+                  <span
+                    className="text-[11px] font-semibold text-[var(--color-ink-400)] shrink-0"
+                    {...(!c.sinceNum ? { "data-ov-empty": "" } : {})}
+                  >Since</span>
                   <select
                     value={c.sinceNum}
                     onChange={(e) => patchComplaint(i, { sinceNum: e.target.value })}
                     disabled={readOnly}
                     className="text-[11px] border border-[var(--color-border)] rounded-md px-1.5 py-1 bg-white text-[var(--color-ink-700)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] disabled:opacity-50 w-12 shrink-0"
+                    {...(!c.sinceNum ? { "data-ov-empty": "" } : {})}
                   >
                     <option value="">—</option>
                     {Array.from({ length: 30 }, (_, n) => n + 1).map((n) => (
@@ -369,6 +373,7 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, customPmhCh
                     onChange={(e) => patchComplaint(i, { sinceUnit: e.target.value })}
                     disabled={readOnly || !c.sinceNum}
                     className="text-[11px] border border-[var(--color-border)] rounded-md px-1.5 py-1 bg-white text-[var(--color-ink-700)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] disabled:opacity-50 w-16 shrink-0"
+                    {...(!c.sinceNum ? { "data-ov-empty": "" } : {})}
                   >
                     {SINCE_UNITS.map((u) => (
                       <option key={u} value={u}>{u}</option>
@@ -438,12 +443,16 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, customPmhCh
                 placeholder="Condition"
                 className="flex-1 min-w-[140px] rounded-lg border border-[var(--color-border)] bg-white px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] disabled:bg-[var(--color-surface-sunken)]"
               />
-              <span className="text-[11px] font-semibold text-[var(--color-ink-400)] shrink-0">Since</span>
+              <span
+                className="text-[11px] font-semibold text-[var(--color-ink-400)] shrink-0"
+                {...(!entry.sinceNum ? { "data-ov-empty": "" } : {})}
+              >Since</span>
               <select
                 value={entry.sinceNum}
                 onChange={(e) => patchPmh(i, { sinceNum: e.target.value })}
                 disabled={readOnly}
                 className="text-[11px] border border-[var(--color-border)] rounded-md px-1.5 py-1 bg-white text-[var(--color-ink-700)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] disabled:opacity-50 w-12 shrink-0"
+                {...(!entry.sinceNum ? { "data-ov-empty": "" } : {})}
               >
                 <option value="">—</option>
                 {Array.from({ length: 30 }, (_, n) => n + 1).map((n) => (
@@ -455,6 +464,7 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, customPmhCh
                 onChange={(e) => patchPmh(i, { sinceUnit: e.target.value })}
                 disabled={readOnly || !entry.sinceNum}
                 className="text-[11px] border border-[var(--color-border)] rounded-md px-1.5 py-1 bg-white text-[var(--color-ink-700)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] disabled:opacity-50 w-16 shrink-0"
+                {...(!entry.sinceNum ? { "data-ov-empty": "" } : {})}
               >
                 {SINCE_UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
               </select>

@@ -932,3 +932,28 @@ body {
 .emr-overview-active [data-since-row][data-since=""] {
   display: none !important;
 }
+
+/* 7. Filled inputs and textareas appear as plain text (no border, no bg) */
+.emr-overview-active input:not(:placeholder-shown):not(:focus),
+.emr-overview-active textarea:not(:placeholder-shown):not(:focus) {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  resize: none !important;
+}
+
+/* 8. Selects lose their native arrow and appear as plain text */
+.emr-overview-active select:not(:focus) {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  pointer-events: none !important;
+}
+
+/* 9. Explicitly empty controls — no placeholder to detect via CSS alone.
+      Components set data-ov-empty when value is "" or the default sentinel. */
+.emr-overview-active [data-ov-empty] {
+  display: none !important;
+}

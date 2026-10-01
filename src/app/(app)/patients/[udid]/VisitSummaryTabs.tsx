@@ -115,7 +115,8 @@ export type ShortData = {
 };
 
 /* ─── Shared state hook (used by both the combined and split renderings) ─── */
-export function useVisitSummaryState(visitId: string) {
+export function useVisitSummaryState(visitId: string, opts?: { autoGenerateAI?: boolean }) {
+  const autoGenerateAI = opts?.autoGenerateAI ?? true;
   const [tab, setTab] = useState<Tab>("short");
   const [shortData, setShortData] = useState<ShortData | null>(null);
   const [emrData, setEmrData] = useState<any>(null);
@@ -153,6 +154,37 @@ export function useVisitSummaryState(visitId: string) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visitId]);
 
+  async function requestAI() {
+    if (loading) return;
+    setLoading(true);
+    try {
+      if (!emrData) {
+        const data = await getVisitEmrData(visitId);
+        if (currentVisit.current !== visitId) return;
+        setEmrData(data);
+      }
+      const res = await generateAiSummary(visitId);
+      if (currentVisit.current !== visitId) return;
+      if (res.error) setAiError(res.error);
+      else {
+        setAiText(res.text ?? null);
+        setAiSource(res.source ?? "local");
+        setAiNotice(res.notice ?? null);
+      }
+    } catch (err: any) {
+      setAiError(err?.message ?? "An error occurred.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function retryAI() {
+    setAiError(null);
+    setAiText(null);
+    setAiNotice(null);
+    requestAI();
+  }
+
   async function switchTab(newTab: Tab) {
     if (newTab === tab || loading) return;
     setTab(newTab);
@@ -162,7 +194,7 @@ export function useVisitSummaryState(visitId: string) {
         const data = await getVisitEmrData(visitId);
         if (currentVisit.current !== visitId) return;
         setEmrData(data);
-        if (newTab === "ai" && !aiText && !aiError) {
+        if (newTab === "ai" && autoGenerateAI && !aiText && !aiError) {
           const res = await generateAiSummary(visitId);
           if (currentVisit.current !== visitId) return;
           if (res.error) setAiError(res.error);
@@ -172,12 +204,16 @@ export function useVisitSummaryState(visitId: string) {
             setAiNotice(res.notice ?? null);
           }
         }
-      } else if (newTab === "ai" && !aiText && !aiError) {
+      } else if (newTab === "ai" && autoGenerateAI && !aiText && !aiError) {
         setLoading(true);
         const res = await generateAiSummary(visitId);
         if (currentVisit.current !== visitId) return;
         if (res.error) setAiError(res.error);
-        else setAiText(res.text ?? null);
+        else {
+          setAiText(res.text ?? null);
+          setAiSource(res.source ?? "local");
+          setAiNotice(res.notice ?? null);
+        }
       }
     } catch (err: any) {
       setAiError(err?.message ?? "An error occurred.");
@@ -186,7 +222,7 @@ export function useVisitSummaryState(visitId: string) {
     }
   }
 
-  return { tab, switchTab, loading, shortData, emrData, aiText, aiSource, aiNotice, aiError };
+  return { tab, switchTab, loading, shortData, emrData, aiText, aiSource, aiNotice, aiError, requestAI, retryAI };
 }
 
 /* ─── Standalone tab bar (compact variant for embedding in card headers) ─── */
@@ -248,6 +284,7 @@ export function VisitSummaryTabBody({
   complaint,
   diagnoses,
   shortContent,
+  aiContent,
 }: {
   tab: Tab;
   loading: boolean;
@@ -260,6 +297,8 @@ export function VisitSummaryTabBody({
   complaint: string | null;
   diagnoses: string[];
   shortContent?: React.ReactNode;
+  /** When provided, replaces the default AIContent when the ai tab is active. */
+  aiContent?: React.ReactNode;
 }) {
   const diagList = diagnoses.filter(Boolean);
   // Merge shortData into emrData shape for ShortContent when emrData isn't loaded yet.
@@ -276,7 +315,7 @@ export function VisitSummaryTabBody({
     <div className="animate-fade-in">
       {tab === "short" && (shortContent ?? <ShortContent complaint={complaint} diagnoses={diagList} emrData={shortEmrData} />)}
       {tab === "long" && <LongContentBoundary><LongContent data={emrData} complaint={complaint} diagnoses={diagList} /></LongContentBoundary>}
-      {tab === "ai" && <AIContent text={aiText} error={aiError} source={aiSource} notice={aiNotice} />}
+      {tab === "ai" && (aiContent ?? <AIContent text={aiText} error={aiError} source={aiSource} notice={aiNotice} />)}
     </div>
   );
 }
@@ -888,7 +927,7 @@ function LongContent({
 }
 
 /* ─── AI ─── */
-function AIContent({
+export function AIContent({
   text,
   error,
   source,

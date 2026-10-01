@@ -829,10 +829,10 @@ export function BookAppointmentForm({
               </div>
 
               {/* ── Single row on sm+: RE | LE | OU  [input  Add]  Since n unit ── */}
-              <div className="flex flex-wrap sm:flex-nowrap items-start gap-2 mt-1.5">
+              <div className="flex flex-wrap sm:flex-nowrap items-baseline gap-2 mt-1.5">
 
-                {/* Laterality pills — compact column, aligned with input top */}
-                <div className="flex gap-1.5 shrink-0 mt-0.5">
+                {/* Laterality pills */}
+                <div className="flex gap-1.5 shrink-0">
                   {(["RE", "LE", "OU"] as const).map((lat) => (
                     <button
                       key={lat}
@@ -863,8 +863,8 @@ export function BookAppointmentForm({
                   />
                 </div>
 
-                {/* Since duration — aligned with input top */}
-                <div className="flex items-center gap-1.5 shrink-0 mt-0.5">
+                {/* Since duration */}
+                <div className="flex items-baseline gap-1.5 shrink-0">
                   <span className="text-xs text-[var(--color-ink-500)]">Since</span>
                   <select
                     value={sinceNum}
