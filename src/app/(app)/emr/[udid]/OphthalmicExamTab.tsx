@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useTransition } from "react";
+import { useState, useEffect, useTransition, useMemo } from "react";
+import { useEmrOverview } from "./EmrOverviewContext";
 import { Trash2, Plus, X, Copy, Loader2, History } from "lucide-react";
 import { KeywordInput, KeywordTextarea } from "@/components/emr/KeywordField";
 import { Card } from "@/components/ui/Card";
@@ -47,6 +48,7 @@ import { FieldWithHistory, type HistoryEntry } from "@/components/ui/HistoryTogg
 export function OphthalmicExamTab({ visit, priorVisits, udid, role }: { visit: any; priorVisits: any[]; udid: string; role: string }) {
   const refractionistCanEdit = role === "DOCTOR";
   const doctorOnly = role === "DOCTOR";
+  const overview = useEmrOverview();
 
   useEffect(() => {
     if (role === "DOCTOR") {
@@ -55,21 +57,78 @@ export function OphthalmicExamTab({ visit, priorVisits, udid, role }: { visit: a
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Emptiness computed from persisted visit data — overview is a read mode so
+  // saved values and component state are in sync.
+  const empty = useMemo(() => {
+    const hasVal = (v: any) => v && v !== "-" && v !== "";
+    const hasObjVal = (obj: any) => Object.values(obj ?? {}).some(hasVal);
+
+    const vaRe = parseJSON(visit.visualAcuity?.re, {});
+    const vaLe = parseJSON(visit.visualAcuity?.le, {});
+    const va = !hasObjVal(vaRe) && !hasObjVal(vaLe);
+
+    const rc = visit.refraction;
+    const rxHas = (rx: any) => Object.values(rx ?? {}).some(Boolean);
+    const rxRe = parseJSON(rc?.re, {});
+    const rxLe = parseJSON(rc?.le, {});
+    const rxExtras: any[] = parseJSON(rc?.extraCorrections, []);
+    const rx = !rc || (!rxHas(rxRe) && !rxHas(rxLe) && rxExtras.every((ex: any) => !rxHas(ex.re) && !rxHas(ex.le)));
+
+    const cvRe = parseJSON(visit.colourVisionCS?.re, {}) as any;
+    const cvLe = parseJSON(visit.colourVisionCS?.le, {}) as any;
+    const cv = !visit.colourVisionCS || (!cvRe.result && !cvLe.result && !cvRe.csResult && !cvLe.csResult && !cvRe.notes && !cvLe.notes && !cvRe.csNotes && !cvLe.csNotes);
+
+    const iop = !(visit.iopReadings?.length > 0);
+
+    const g = parseJSON(visit.gonioNotes, { re: "", le: "", reDeg: "", leDeg: "" });
+    const gonio = !g.re && !g.le && !g.reDeg && !g.leDeg;
+
+    const asRe = parseJSON(visit.anteriorSegment?.re, {});
+    const asLe = parseJSON(visit.anteriorSegment?.le, {});
+    const ant = !hasObjVal(asRe) && !hasObjVal(asLe);
+
+    const psRe = parseJSON(visit.posteriorSegment?.re, {});
+    const psLe = parseJSON(visit.posteriorSegment?.le, {});
+    const post = !hasObjVal(psRe) && !hasObjVal(psLe);
+
+    const tf = visit.tearFilm;
+    const tear = !tf || (!tf.tbutRe && !tf.tbutLe && !tf.schirmer1Re && !tf.schirmer1Le && !tf.schirmer2Re && !tf.schirmer2Le);
+
+    const ls = visit.lacrimalSac;
+    const lsRe = parseJSON(ls?.re, {}) as any;
+    const lsLe = parseJSON(ls?.le, {}) as any;
+    const reChips: string[] = Array.isArray(lsRe) ? lsRe : (lsRe.chips ?? []);
+    const leChips: string[] = Array.isArray(lsLe) ? lsLe : (lsLe.chips ?? []);
+    const reF = Array.isArray(lsRe) ? "" : (lsRe.findings ?? "");
+    const leF = Array.isArray(lsLe) ? "" : (lsLe.findings ?? "");
+    const lacrimal = !reChips.length && !leChips.length && !reF && !leF;
+
+    const diplopia = Object.keys(parseJSON(visit.diplopiaChart?.grid, {})).length === 0;
+    const hess = Object.keys(parseJSON(visit.hessChart?.grid, {})).length === 0 && !visit.hessChart?.interpretation;
+
+    return { va, rx, cv, iop, gonio, ant, post, tear, lacrimal, diplopia, hess };
+  // visit object identity changes on navigation; re-compute when it does
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visit]);
+
+  const ovSect = (isEmpty: boolean) =>
+    overview && isEmpty ? { "data-overview-empty-section": "" as const } : {};
+
   return (
     <Tabs
       variant="sub"
       defaultTab="va"
       tabs={[
-        { id: "va",        label: "Visual Acuity",    content: <VisualAcuityCard visit={visit} udid={udid} editable={refractionistCanEdit} priorVisits={priorVisits} /> },
-        { id: "refraction",label: "Refraction",        content: <RefractionCard visit={visit} udid={udid} editable={refractionistCanEdit} priorVisits={priorVisits} /> },
-        { id: "cv",        label: "Colour / Contrast", content: <ColourContrastTab visit={visit} udid={udid} editable={refractionistCanEdit} priorVisits={priorVisits} /> },
-        { id: "iop",       label: "IOP / Gonio",         content: <div className="flex flex-col gap-4"><IOPCard visit={visit} udid={udid} editable={refractionistCanEdit} priorVisits={priorVisits} /><GonioscopyCard visit={visit} udid={udid} editable={doctorOnly} priorVisits={priorVisits} /></div> },
-        { id: "anterior",  label: "Anterior Segment",  content: <AnteriorSegmentCard visit={visit} udid={udid} editable={doctorOnly} priorVisits={priorVisits} /> },
-        { id: "posterior", label: "Posterior Segment", content: <PosteriorSegmentCard visit={visit} udid={udid} editable={doctorOnly} priorVisits={priorVisits} /> },
-        { id: "tear",      label: "Tear Film",          content: <TearFilmCard visit={visit} udid={udid} editable={doctorOnly} priorVisits={priorVisits} /> },
-        { id: "lacrimal",  label: "Lacrimal Sac",       content: <LacrimalSacCard visit={visit} udid={udid} editable={doctorOnly} priorVisits={priorVisits} /> },
-        { id: "diplopia",  label: "Diplopia Chart",    content: <DiplopiaCard visit={visit} udid={udid} editable={doctorOnly} /> },
-        { id: "hess",      label: "Hess Chart",        content: <HessCard visit={visit} udid={udid} editable={doctorOnly} /> },
+        { id: "va",        label: "Visual Acuity",    content: <div {...ovSect(empty.va)}><VisualAcuityCard visit={visit} udid={udid} editable={refractionistCanEdit} priorVisits={priorVisits} /></div> },
+        { id: "refraction",label: "Refraction",        content: <div {...ovSect(empty.rx)}><RefractionCard visit={visit} udid={udid} editable={refractionistCanEdit} priorVisits={priorVisits} /></div> },
+        { id: "cv",        label: "Colour / Contrast", content: <div {...ovSect(empty.cv)}><ColourContrastTab visit={visit} udid={udid} editable={refractionistCanEdit} priorVisits={priorVisits} /></div> },
+        { id: "iop",       label: "IOP / Gonio",       content: <div className="flex flex-col gap-4"><div {...ovSect(empty.iop)}><IOPCard visit={visit} udid={udid} editable={refractionistCanEdit} priorVisits={priorVisits} /></div><div {...ovSect(empty.gonio)}><GonioscopyCard visit={visit} udid={udid} editable={doctorOnly} priorVisits={priorVisits} /></div></div> },
+        { id: "anterior",  label: "Anterior Segment",  content: <div {...ovSect(empty.ant)}><AnteriorSegmentCard visit={visit} udid={udid} editable={doctorOnly} priorVisits={priorVisits} /></div> },
+        { id: "posterior", label: "Posterior Segment", content: <div {...ovSect(empty.post)}><PosteriorSegmentCard visit={visit} udid={udid} editable={doctorOnly} priorVisits={priorVisits} /></div> },
+        { id: "tear",      label: "Tear Film",          content: <div {...ovSect(empty.tear)}><TearFilmCard visit={visit} udid={udid} editable={doctorOnly} priorVisits={priorVisits} /></div> },
+        { id: "lacrimal",  label: "Lacrimal Sac",       content: <div {...ovSect(empty.lacrimal)}><LacrimalSacCard visit={visit} udid={udid} editable={doctorOnly} priorVisits={priorVisits} /></div> },
+        { id: "diplopia",  label: "Diplopia Chart",    content: <div {...ovSect(empty.diplopia)}><DiplopiaCard visit={visit} udid={udid} editable={doctorOnly} /></div> },
+        { id: "hess",      label: "Hess Chart",        content: <div {...ovSect(empty.hess)}><HessCard visit={visit} udid={udid} editable={doctorOnly} /></div> },
       ]}
     />
   );
@@ -143,6 +202,7 @@ function VisualAcuityCard({ visit, udid, editable, priorVisits = [] }: { visit: 
     const count = getHistory(section, eye, fieldKey).length;
     return (
       <button
+        data-overview-hide
         type="button"
         onClick={() => setOpenHist(active ? null : k)}
         className={`px-2.5 py-0.5 rounded-full text-[11px] sm:text-xs font-medium shrink-0 transition-colors ${
@@ -523,6 +583,7 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
         <div className="flex items-center gap-2 ml-auto shrink-0">
           {priorRefractions.length > 0 && (
             <button
+              data-overview-hide
               type="button"
               onClick={() => setShowHistory((v) => !v)}
               className="text-[11px] sm:text-xs text-[#0F766E] bg-[#EEF8F7] hover:bg-[#DCF3F1] font-medium px-2.5 py-0.5 rounded-full border border-[#B2DEDA] transition-colors"

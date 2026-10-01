@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition, useRef, useEffect, useMemo } from "react";
+import { useEmrOverview } from "./EmrOverviewContext";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/Card";
 import { SingleChipSelect } from "@/components/ui/Chip";
@@ -344,6 +345,7 @@ export function AssessmentTab({
   readOnly?: boolean;
 }) {
   const router = useRouter();
+  const overview = useEmrOverview();
   // Split diagnoses by provisional flag
   const provisionalDiagnoses: any[] = (visit.diagnoses ?? []).filter((d: any) => d.provisional);
   const diagnoses: any[] = (visit.diagnoses ?? []).filter((d: any) => !d.provisional);
@@ -688,6 +690,7 @@ export function AssessmentTab({
       )}
 
       {/* ── Provisional Diagnosis ─────────────────────────────────────────── */}
+      <div {...(overview && provisionalDiagnoses.length === 0 ? { "data-overview-empty-section": "" } : {})}>
       <Card>
         <div className="flex items-center justify-between mb-3">
           <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)]">Provisional Diagnosis</p>
@@ -844,7 +847,7 @@ export function AssessmentTab({
         </div>
 
         {provisionalDiagnoses.length === 0 ? (
-          <p className="text-[13px] sm:text-sm text-[var(--color-ink-400)] py-4 text-center">No provisional diagnoses added yet. Search above to begin.</p>
+          <p data-overview-hide className="text-[13px] sm:text-sm text-[var(--color-ink-400)] py-4 text-center">No provisional diagnoses added yet. Search above to begin.</p>
         ) : (
           <ul className="flex flex-col gap-2">
             {provisionalDiagnoses.map((d) => (
@@ -861,8 +864,10 @@ export function AssessmentTab({
           </ul>
         )}
       </Card>
+      </div>
 
       {/* ── Diagnosis (ICD-10) ────────────────────────────────────────────── */}
+      <div {...(overview && diagnoses.length === 0 ? { "data-overview-empty-section": "" } : {})}>
       <Card>
         <div className="flex items-center justify-between mb-3">
           <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)]">Diagnosis (ICD-10)</p>
@@ -1013,7 +1018,7 @@ export function AssessmentTab({
         </div>
 
         {diagnoses.length === 0 ? (
-          <p className="text-[13px] sm:text-sm text-[var(--color-ink-400)] py-4 text-center">No diagnoses added yet. Search above to begin.</p>
+          <p data-overview-hide className="text-[13px] sm:text-sm text-[var(--color-ink-400)] py-4 text-center">No diagnoses added yet. Search above to begin.</p>
         ) : (
           <ul className="flex flex-col gap-2">
             {diagnoses.map((d) => (
@@ -1029,6 +1034,7 @@ export function AssessmentTab({
           </ul>
         )}
       </Card>
+      </div>
     </div>
 
       {/* Custom Diagnosis → Add Preset modal */}

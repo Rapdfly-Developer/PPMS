@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition, useRef } from "react";
+import { useEmrOverview } from "./EmrOverviewContext";
 import { Card } from "@/components/ui/Card";
 import { SingleChipSelect } from "@/components/ui/Chip";
 import { ORDER_PRIORITIES, LATERALITY } from "@/lib/constants";
@@ -47,6 +48,7 @@ export function InvestigationsTab({
   const previousOrders = allOrders.filter((o) => format(new Date(o.createdAt), "yyyy-MM-dd") !== todayStr);
 
   const [activeTab, setActiveTab] = useState<"previous" | "new">("new");
+  const overview = useEmrOverview();
 
   const tabCls = (id: "previous" | "new") =>
     clsx(
@@ -82,13 +84,16 @@ export function InvestigationsTab({
         </button>
       </div>
 
-      {activeTab === "previous" && (
+      {/* In overview mode show all orders regardless of active sub-tab */}
+      {(overview || activeTab === "previous") && (
         <PreviousInvestigations orders={previousOrders} udid={udid} readOnly={readOnly} />
       )}
-      {activeTab === "new" && !readOnly && (
+      {/* Render NewInvestigations in overview even on read-only visits so today's
+          orders are visible; the order-entry form is hidden by data-overview-hide */}
+      {(overview || activeTab === "new") && (!readOnly || overview) && (
         <NewInvestigations visit={visit} udid={udid} todayOrders={todayOrders} onOrdered={() => {}} />
       )}
-      {activeTab === "new" && readOnly && (
+      {activeTab === "new" && readOnly && !overview && (
         <p className="text-[13px] sm:text-sm text-[var(--color-ink-400)] text-center py-8">This visit is closed, no new orders can be placed.</p>
       )}
     </div>
@@ -617,7 +622,8 @@ function NewInvestigations({
   return (
     <div className="flex flex-col gap-4">
       {/* Order form — hidden in overview mode; today's orders below remain visible */}
-      <Card data-overview-hide className="p-0 overflow-hidden">
+      <div data-overview-hide>
+      <Card className="p-0 overflow-hidden">
         {/* Priority + Laterality + Add Test */}
         <div className="px-5 pt-5 pb-4 flex items-start justify-between gap-4 border-b border-[var(--color-border)]">
           <div className="flex flex-wrap gap-8">
@@ -721,6 +727,7 @@ function NewInvestigations({
           </div>
         </div>
       </Card>
+      </div>
 
       {/* Today's placed orders */}
       {todayOrders.length > 0 && (

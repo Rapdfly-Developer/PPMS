@@ -5,6 +5,7 @@ import { SingleChipSelect } from "@/components/ui/Chip";
 import { WARDS } from "@/lib/constants";
 import { saveDispense, saveFollowUp } from "./actions";
 import { AlertTriangle, History, Plus, X } from "lucide-react";
+import { useEmrOverview } from "./EmrOverviewContext";
 
 
 const IN_VIEW_OF_KEYWORDS: { group: string; items: string[] }[] = [
@@ -79,6 +80,7 @@ export function FollowUpdatesPanel({ visit, udid, priorVisits = [] }: { visit: a
   const [showHistory, setShowHistory]         = useState(false);
   const [showKeywords, setShowKeywords]       = useState(false);
   const [pending, startTransition]            = useTransition();
+  const overview = useEmrOverview();
   const [saved, setSaved]                     = useState(false);
   const inViewOfRef = useRef<HTMLInputElement>(null);
 
@@ -141,11 +143,11 @@ export function FollowUpdatesPanel({ visit, udid, priorVisits = [] }: { visit: a
             onChange={(e) => { setFollowUpDate(e.target.value); setSaved(false); }}
             className="rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
           />
-          <button className={chipCls} onClick={() => addWeeks(1)}>1w</button>
-          <button className={chipCls} onClick={() => addWeeks(2)}>2w</button>
-          <button className={chipCls} onClick={() => addWeeks(4)}>4w</button>
-          <button className={chipCls} onClick={() => addMonths(3)}>3m</button>
-          <button className={chipCls} onClick={() => addMonths(6)}>6m</button>
+          <button data-overview-hide className={chipCls} onClick={() => addWeeks(1)}>1w</button>
+          <button data-overview-hide className={chipCls} onClick={() => addWeeks(2)}>2w</button>
+          <button data-overview-hide className={chipCls} onClick={() => addWeeks(4)}>4w</button>
+          <button data-overview-hide className={chipCls} onClick={() => addMonths(3)}>3m</button>
+          <button data-overview-hide className={chipCls} onClick={() => addMonths(6)}>6m</button>
           {followUpDate && (
             <span className="text-[13px] sm:text-sm text-[var(--color-ink-500)]">{formatDate(followUpDate)}</span>
           )}
@@ -156,7 +158,7 @@ export function FollowUpdatesPanel({ visit, udid, priorVisits = [] }: { visit: a
       <div>
         <div className="flex items-center justify-between mb-2">
           <p className="text-[10px] font-semibold tracking-widest text-[var(--color-ink-400)] uppercase">In View Of</p>
-          <div className="flex items-center gap-1.5">
+          <div data-overview-hide className="flex items-center gap-1.5">
             <button
               onClick={() => { setShowHistory((v) => !v); setShowKeywords(false); }}
               className={`${btnCls} ${showHistory
@@ -244,28 +246,39 @@ export function FollowUpdatesPanel({ visit, udid, priorVisits = [] }: { visit: a
       </div>
 
       {/* Referral */}
-      <div>
-        <p className="text-[10px] font-semibold tracking-widest text-[var(--color-ink-400)] uppercase mb-2">Referral</p>
-        <label className="flex items-center gap-2 text-[13px] sm:text-sm text-[var(--color-ink-700)] cursor-pointer">
-          <input
-            type="checkbox"
-            checked={referralEnabled}
-            onChange={(e) => { setReferralEnabled(e.target.checked); setSaved(false); }}
-          />
-          Enable referral
-        </label>
-        {referralEnabled && (
-          <textarea
-            value={referralNote}
-            onChange={(e) => { setReferralNote(e.target.value); setSaved(false); }}
-            rows={2}
-            placeholder="Referral details..."
-            className="mt-2 w-full rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
-          />
-        )}
-      </div>
+      {overview ? (
+        referralEnabled ? (
+          <div>
+            <p className="text-[10px] font-semibold tracking-widest text-[var(--color-ink-400)] uppercase mb-1">Referral</p>
+            <p className="text-[13px] sm:text-sm text-[var(--color-ink-700)]">
+              {referralNote.trim() || "Referral enabled"}
+            </p>
+          </div>
+        ) : null
+      ) : (
+        <div>
+          <p className="text-[10px] font-semibold tracking-widest text-[var(--color-ink-400)] uppercase mb-2">Referral</p>
+          <label className="flex items-center gap-2 text-[13px] sm:text-sm text-[var(--color-ink-700)] cursor-pointer">
+            <input
+              type="checkbox"
+              checked={referralEnabled}
+              onChange={(e) => { setReferralEnabled(e.target.checked); setSaved(false); }}
+            />
+            Enable referral
+          </label>
+          {referralEnabled && (
+            <textarea
+              value={referralNote}
+              onChange={(e) => { setReferralNote(e.target.value); setSaved(false); }}
+              rows={2}
+              placeholder="Referral details..."
+              className="mt-2 w-full rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
+            />
+          )}
+        </div>
+      )}
 
-      <div className="flex items-center gap-3">
+      <div data-overview-hide className="flex items-center gap-3">
         <button
           disabled={pending}
           onClick={save}

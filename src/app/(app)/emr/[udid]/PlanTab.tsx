@@ -3,6 +3,7 @@
 import { useState, useTransition, useEffect, useRef, useMemo, Fragment } from "react";
 import { Card } from "@/components/ui/Card";
 import { History } from "lucide-react";
+import { useEmrOverview } from "./EmrOverviewContext";
 import { parseJSON } from "@/lib/json";
 import { useAutoSave, SaveIndicator } from "@/lib/useAutoSave";
 import { addMedication, removeMedication, updateMedication, clearAllMedications, saveRefraction, saveFollowUp, saveAdviseNotes, saveAnesthesiaType, saveProcedureLaterality, saveProcedureName, saveProcedureNotes, addInvestigationOrder, deleteInvestigationOrder } from "./actions";
@@ -1520,6 +1521,7 @@ function parseProcedureList(raw: string): string[] {
 }
 
 function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: string; priorVisits: any[] }) {
+  const overview = useEmrOverview();
   const [laterality,     setLaterality]     = useState<string>(visit.procedureLaterality ?? "OU");
   const [anesthesia,     setAnesthesia]     = useState<string>(visit.anesthesiaType ?? "");
   const [showHistory,    setShowHistory]    = useState(false);
@@ -1569,12 +1571,15 @@ function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: st
       : "border-[var(--color-border)] text-[var(--color-ink-500)] hover:text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]"
   }`;
 
+  const procIsEmpty = !procInput.trim() && !anesthesia.trim() && !procNotes.trim();
+
   return (
+    <div {...(overview && procIsEmpty ? { "data-overview-empty-section": "" } : {})}>
     <Card>
       {/* Heading row */}
       <div className="flex items-center mb-4 gap-2">
         <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)]">Minor Procedure</p>
-        <button onClick={() => setShowHistory((v) => !v)} className={`${historyBtnCls} ml-auto shrink-0`}>
+        <button data-overview-hide onClick={() => setShowHistory((v) => !v)} className={`${historyBtnCls} ml-auto shrink-0`}>
           <History size={12} /> History
         </button>
       </div>
@@ -1797,6 +1802,7 @@ function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: st
         </div>
       )}
     </Card>
+    </div>
   );
 }
 
@@ -2645,6 +2651,7 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
 }
 
 function OpticalPrescriptionCard({ visit }: { visit: any }) {
+  const overview = useEmrOverview();
   const rc = visit.refraction;
   type RxFields = { sph: string; cyl: string; axis: string; nearSph: string; va: string; nearVa: string; method?: string };
   const emptyRx: RxFields = { sph: "", cyl: "", axis: "", nearSph: "", va: "", nearVa: "", method: "" };
@@ -2688,21 +2695,24 @@ function OpticalPrescriptionCard({ visit }: { visit: any }) {
         .filter((m): m is string => !!m),
     )];
     return (
-      <Card>
-        <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)] mb-2">Optical Prescription</p>
-        <p className="text-[13px] sm:text-sm text-[var(--color-ink-500)]">
-          No subjective refraction recorded.
-        </p>
-        <p className="mt-1 text-[11px] sm:text-xs text-[var(--color-ink-400)]">
-          {methodsPresent.length > 0
-            ? `Only ${methodsPresent.join(", ")} recorded. A prescription is issued from a subjective refraction, so nothing is carried over here.`
-            : "Record a subjective refraction in the Ophthalmic Exam tab to issue a prescription."}
-        </p>
-      </Card>
+      <div {...(overview ? { "data-overview-empty-section": "" } : {})}>
+        <Card>
+          <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)] mb-2">Optical Prescription</p>
+          <p className="text-[13px] sm:text-sm text-[var(--color-ink-500)]">
+            No subjective refraction recorded.
+          </p>
+          <p className="mt-1 text-[11px] sm:text-xs text-[var(--color-ink-400)]">
+            {methodsPresent.length > 0
+              ? `Only ${methodsPresent.join(", ")} recorded. A prescription is issued from a subjective refraction, so nothing is carried over here.`
+              : "Record a subjective refraction in the Ophthalmic Exam tab to issue a prescription."}
+          </p>
+        </Card>
+      </div>
     );
   }
 
   return (
+    <div {...(overview && !hasData ? { "data-overview-empty-section": "" } : {})}>
     <Card>
       <div className="flex items-center justify-between mb-3">
         <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)]">Optical Prescription</p>
@@ -2745,10 +2755,12 @@ function OpticalPrescriptionCard({ visit }: { visit: any }) {
         </tbody>
       </table>
     </Card>
+    </div>
   );
 }
 
 function DispositionCard({ visit, udid, patientSex, priorVisits = [] }: { visit: any; udid: string; patientSex: string; priorVisits?: any[] }) {
+  const overview = useEmrOverview();
   const [activePanels, setActivePanels] = useState<string[]>(
     [
     ].filter(Boolean) as string[]
@@ -2756,15 +2768,23 @@ function DispositionCard({ visit, udid, patientSex, priorVisits = [] }: { visit:
   const togglePanel = (id: string) =>
     setActivePanels((cur) => (cur.includes(id) ? cur.filter((p) => p !== id) : [...cur, id]));
 
+  const hasFollowUpData = !!(visit.followUpDate || visit.referralEnabled || visit.inViewOf);
+  // In overview with data, auto-open the follow panel so the values are visible
+  const displayPanels = overview && hasFollowUpData
+    ? [...new Set([...activePanels, "follow"])]
+    : activePanels;
+
   return (
+    <div {...(overview && !hasFollowUpData ? { "data-overview-empty-section": "" } : {})}>
     <Card>
       <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)] mb-3">Patient Disposition</p>
-      <div className="flex gap-3 flex-wrap mb-2">
+      <div data-overview-hide className="flex gap-3 flex-wrap mb-2">
         <DispositionToggle icon={<RefreshCw size={16} />}  label="Follow Up Dates"      active={activePanels.includes("follow")}   onClick={() => togglePanel("follow")} />
       </div>
       <div className="flex flex-col gap-4">
-        {activePanels.includes("follow")   && <FollowUpdatesPanel   visit={visit} udid={udid} priorVisits={priorVisits} />}
+        {displayPanels.includes("follow")   && <FollowUpdatesPanel   visit={visit} udid={udid} priorVisits={priorVisits} />}
       </div>
     </Card>
+    </div>
   );
 }

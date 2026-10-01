@@ -81,7 +81,7 @@ export function EmrTabsShell({
           <Tabs
             tabs={tabs}
             activeTab={activeTab}
-            onTabChange={(id) => { setActiveTab(id); setOverviewMode(false); }}
+            onTabChange={(id) => { setActiveTab(id); }}
             overviewMode={overviewMode}
             onOverviewToggle={() => setOverviewMode((v) => !v)}
           />
