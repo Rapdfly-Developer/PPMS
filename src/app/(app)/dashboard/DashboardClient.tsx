@@ -233,9 +233,11 @@ function ApptRow({ appt, scope, serial, canManageQueue, canViewPatient }: { appt
               <Calendar size={9} /> Appt
             </span>
           )}
-          <span className="text-[9px] font-medium text-blue-500 tabular-nums">
-            {format(new Date(appt.createdAt), "h:mm a")}
-          </span>
+          {!appt.isWalkIn && (
+            <span className="text-[9px] font-medium text-blue-500 tabular-nums">
+              {format(new Date(appt.createdAt), "h:mm a")}
+            </span>
+          )}
         </div>
       </div>
       <div className="w-px self-stretch bg-[var(--color-border)] hidden sm:block" />
