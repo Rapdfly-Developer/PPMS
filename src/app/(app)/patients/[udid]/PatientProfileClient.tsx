@@ -518,16 +518,16 @@ function LastVisitSummarySection({ summary }: { summary: LastVisitSummary }) {
                       <Cols widths={COLS_INVESTIGATION} />
                       <thead>
                         <tr>
-                          <th className={TH}>Test</th>
                           <th className={TH}>Eye</th>
+                          <th className={TH}>Test</th>
                           <th className={TH}>In View Of</th>
                         </tr>
                       </thead>
                       <tbody>
                         {summary.investigations.map((inv) => (
                           <tr key={inv.id}>
-                            <td className={`${TD} font-semibold`}>{inv.testName}</td>
                             <td className={TD_MUTED}>{inv.laterality || DASH}</td>
+                            <td className={`${TD} font-semibold`}>{inv.testName}</td>
                             <td className={`${TD_MUTED} italic`}>{inv.notes || DASH}</td>
                           </tr>
                         ))}

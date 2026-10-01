@@ -95,7 +95,7 @@ export const COLS_PAIR = ["30%", "70%"];
 export const COLS_COMPLAINT = ["14%", "60%", "26%"];
 export const COLS_DIAGNOSIS = ["56%", "20%", "24%"];
 export const COLS_MEDICATION = ["28%", "15%", "20%", "15%", "22%"];
-export const COLS_INVESTIGATION = ["35%", "12%", "53%"];
+export const COLS_INVESTIGATION = ["12%", "35%", "53%"];
 
 export function Cols({ widths }: { widths: string[] }) {
   return (
