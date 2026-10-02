@@ -351,6 +351,7 @@ export function KeywordTextarea({
   afterButtons,
   builtIns,
   legacyKeys,
+  showControls = true,
 }: {
   fieldKey: string;
   value: string;
@@ -361,6 +362,8 @@ export function KeywordTextarea({
   builtIns?: readonly string[];
   /** Older localStorage keys whose keywords should be folded into this field. */
   legacyKeys?: readonly string[];
+  /** Keep the textarea here while rendering its keyword controls elsewhere. */
+  showControls?: boolean;
   rows?: number;
   className?: string;
   afterButtons?: React.ReactNode;
@@ -382,17 +385,73 @@ export function KeywordTextarea({
           `${className ?? "w-full rounded-xl border border-[var(--color-border)] bg-white px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] disabled:bg-[var(--color-surface-sunken)]"} resize-none`
         }
       />
-      {!disabled && (
-        <div data-overview-hide className="flex flex-wrap items-center gap-1.5">
-          {/* The whole trimmed value, not the last word: complaints are mostly
-              multi-word ("Blurred Vision", "Foreign Body Sensation"), and the
-              old last-word behaviour saved "Vision" for "Blurred Vision". That
-              matters more now the vocabulary is shared with the booking form. */}
-          <AddKeywordButton getValue={() => value.trim()} fieldKey={fieldKey} onRefresh={() => setTick((t) => t + 1)} />
-          <KeywordChips key={tick} fieldKey={fieldKey} builtIns={builtIns} legacyKeys={legacyKeys} onAppend={(kw) => onChange(appendKeywordAsBullet(value, kw))} onRemoveFromText={(kw) => onChange(removeKeywordFromText(value, kw))} disabled={false} />
-          {afterButtons}
-        </div>
+      {!disabled && showControls && (
+        <KeywordTextareaControls
+          fieldKey={fieldKey}
+          value={value}
+          onChange={onChange}
+          builtIns={builtIns}
+          legacyKeys={legacyKeys}
+          afterButtons={afterButtons}
+          tick={tick}
+          onRefresh={() => setTick((current) => current + 1)}
+        />
       )}
     </div>
+  );
+}
+
+function KeywordTextareaControls({
+  fieldKey,
+  value,
+  onChange,
+  builtIns,
+  legacyKeys,
+  afterButtons,
+  tick,
+  onRefresh,
+}: {
+  fieldKey: string;
+  value: string;
+  onChange: (value: string) => void;
+  builtIns?: readonly string[];
+  legacyKeys?: readonly string[];
+  afterButtons?: React.ReactNode;
+  tick: number;
+  onRefresh: () => void;
+}) {
+  return (
+    <div data-overview-hide className="flex flex-wrap items-center gap-1.5">
+      <AddKeywordButton getValue={() => value.trim()} fieldKey={fieldKey} onRefresh={onRefresh} />
+      <KeywordChips key={tick} fieldKey={fieldKey} builtIns={builtIns} legacyKeys={legacyKeys} onAppend={(kw) => onChange(appendKeywordAsBullet(value, kw))} onRemoveFromText={(kw) => onChange(removeKeywordFromText(value, kw))} disabled={false} />
+      {afterButtons}
+    </div>
+  );
+}
+
+export function KeywordTextareaControlsRow({
+  fieldKey,
+  value,
+  onChange,
+  builtIns,
+  legacyKeys,
+}: {
+  fieldKey: string;
+  value: string;
+  onChange: (value: string) => void;
+  builtIns?: readonly string[];
+  legacyKeys?: readonly string[];
+}) {
+  const [tick, setTick] = useState(0);
+  return (
+    <KeywordTextareaControls
+      fieldKey={fieldKey}
+      value={value}
+      onChange={onChange}
+      builtIns={builtIns}
+      legacyKeys={legacyKeys}
+      tick={tick}
+      onRefresh={() => setTick((current) => current + 1)}
+    />
   );
 }

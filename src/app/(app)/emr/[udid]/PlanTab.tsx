@@ -20,7 +20,7 @@ import {
 import { type MedEntry, searchMedications, categoryColor } from "@/lib/ophthalmic-medications";
 import { VA_SNELLEN_VALUES, DEFAULT_REFRACTION_METHOD, isPrescribableMethod, methodHasNear } from "@/lib/constants";
 import { INV_CATALOG } from "@/lib/investigation-catalog";
-import { appendKeywordAsBullet, KeywordChipsRow, KeywordTextarea, removeKeywordFromText } from "@/components/emr/KeywordField";
+import { appendKeywordAsBullet, KeywordChipsRow, KeywordTextarea, KeywordTextareaControlsRow, removeKeywordFromText } from "@/components/emr/KeywordField";
 
 /* ── Preset types & storage ──────────────────────────────────────────────── */
 
@@ -1604,6 +1604,7 @@ function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: st
             value={procInput}
             onChange={setProcInput}
             rows={1}
+            showControls={false}
             placeholder="Select a keyword below or type a procedure…"
             className="w-full min-w-0 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-3 py-2 text-sm text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent"
           />
@@ -1655,9 +1656,21 @@ function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: st
           )}
         </div>
 
-      </div>
+        </div>
 
-      {/* Procedure Notes */}
+        {/* Original full-width quick-add arrangement */}
+        <div data-overview-hide className="mt-3">
+          <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-[var(--color-ink-400)]">Quick Add</p>
+          <KeywordTextareaControlsRow
+            fieldKey={`minor_procedure_${doctorId}`}
+            legacyKeys={legacyProcedureKwKeys}
+            builtIns={PROCEDURE_KEYWORDS}
+            value={procInput}
+            onChange={setProcInput}
+          />
+        </div>
+
+        {/* Procedure Notes */}
       <div className="mt-3">
         <label className="text-[10px] font-semibold text-[var(--color-ink-500)] uppercase tracking-wide block mb-1.5">
           Procedure Notes
