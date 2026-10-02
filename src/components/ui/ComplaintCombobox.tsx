@@ -238,6 +238,9 @@ export function ComplaintCombobox({
             <textarea
               value={value}
               onChange={(e) => onChange(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") e.stopPropagation();
+              }}
               placeholder={placeholder}
               rows={Math.max(1, Math.min(8, value.replace(/\r/g, "").split("\n").length))}
               className={`${inputCls} flex-1 resize-none`}

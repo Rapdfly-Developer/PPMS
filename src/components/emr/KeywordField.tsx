@@ -319,6 +319,9 @@ export function KeywordInput({
         disabled={disabled}
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") e.stopPropagation();
+        }}
         placeholder={placeholder}
         rows={keywordRows(value, 1)}
         className={
@@ -370,6 +373,9 @@ export function KeywordTextarea({
         disabled={disabled}
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") e.stopPropagation();
+        }}
         placeholder={placeholder}
         rows={keywordRows(value, rows ?? 2)}
         className={

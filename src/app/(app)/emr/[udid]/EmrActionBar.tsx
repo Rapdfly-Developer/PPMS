@@ -5,6 +5,7 @@ import { openPdfNative, isNativeShell } from "@/lib/open-pdf";
 import { ChevronRight, Printer, FileSignature, CheckCircle2, Download, ChevronDown, FileText, PackageOpen, X, Lock, PenLine, Search, Clock, Plus } from "lucide-react";
 import { isSameDay } from "date-fns";
 import { useRouter } from "next/navigation";
+import { useSidebar } from "@/components/ui/SidebarContext";
 import { closeVisit, markPartialDispense } from "./actions";
 
 const PARTIAL_REASONS = [
@@ -272,6 +273,7 @@ export function EmrActionBar({
   openPartialSignal?: number;
 }) {
   const router = useRouter();
+  const { collapsed } = useSidebar();
   const [pending, startTransition] = useTransition();
   const [partialPending, startPartialTransition] = useTransition();
   const [printOpen, setPrintOpen] = useState(false);
@@ -312,6 +314,9 @@ export function EmrActionBar({
 
   const pdfBase = `/api/prescription-pdf/${visit.id}`;
   const summaryBase = `/api/prescription-pdf/${visit.id}/summary`;
+  const desktopSidebarOffset = collapsed
+    ? "min-[1025px]:left-16"
+    : "min-[1025px]:left-60 min-[1920px]:left-[268px] min-[2560px]:left-[288px] min-[3840px]:left-[312px]";
 
   return (
     <>
@@ -342,7 +347,7 @@ export function EmrActionBar({
           menu (it renders above the bar via bottom-full). The row fits outright
           at >=360px now, so the scroll only ever engages on very narrow phones,
           and never while the menu is open. */}
-      <div className={`fixed bottom-16 lg:bottom-0 left-0 lg:left-60 right-0 z-20 border-t border-[var(--color-border)] bg-white/95 backdrop-blur-sm px-2 md:px-8 py-3 flex flex-nowrap items-center gap-2 md:gap-3 md:justify-end shadow-[0_-4px_16px_rgba(20,36,43,0.06)] ${printOpen ? "" : "overflow-x-auto"}`}>
+      <div className={`fixed bottom-16 lg:bottom-0 left-0 ${desktopSidebarOffset} right-0 z-20 border-t border-[var(--color-border)] bg-white/95 backdrop-blur-sm px-2 md:px-8 py-3 flex flex-nowrap items-center gap-2 md:gap-3 md:justify-end shadow-[0_-4px_16px_rgba(20,36,43,0.06)] transition-[left] duration-200 ${printOpen ? "" : "overflow-x-auto"}`}>
         {!closed && !isLastTab && (
           <button
             onClick={onNextSection}
