@@ -650,7 +650,7 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
                   </p>
 
                   <div className="flex flex-col gap-3.5">
-                    <Field label="Doctor Name *" placeholder="Dr. Full Name" value={adminName}
+                    <Field label="Doctor Name *" placeholder="Full Name" value={adminName}
                       onChange={setAdminName} icon={UserCircle} error={fieldErrors.adminName} />
                     <Field label="Mobile Number *" placeholder="10-digit number" value={mobile} type="tel"
                       onChange={setMobile} icon={Phone} error={fieldErrors.mobile} />
