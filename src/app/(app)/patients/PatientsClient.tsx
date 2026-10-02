@@ -15,6 +15,7 @@ import { OPHTHALMIC_COMPLAINTS } from "@/components/ui/ComplaintCombobox";
 import { ICD10_OPHTHALMOLOGY } from "@/lib/constants";
 import { getCustomDiagnoses } from "@/lib/customDiagnoses";
 import { ComplaintChips } from "@/components/ui/ComplaintChips";
+import { DeletePatientButton } from "./DeletePatientButton";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 export interface PatientRow {
@@ -303,6 +304,7 @@ function clinicDuration(queue: string | null, finalize: string | null): string |
 
 // ── Main Component ────────────────────────────────────────────────────────────
 interface Props {
+  canDelete?: boolean;
   patients: PatientRow[];
   total: number;
   page: number;
@@ -333,6 +335,7 @@ export function PatientsClient({
   diagnosisFilter, diagnosisLatFilter, complaintFilter, complaintLatFilter,
   diagnosisOptions, complaintOptions,
   doctorHospitals, sortBy, activeCard, kpis, trendData, catDist, recentReg,
+  canDelete = false,
 }: Props) {
   const router = useRouter();
   const [searchVal, setSearchVal] = useState(q);
@@ -960,6 +963,7 @@ export function PatientsClient({
                             Return to Queue
                           </button>
                         )}
+                        {canDelete && <DeletePatientButton patientId={p.id} patientName={p.name} patientCode={p.udid || p.uhid || p.id} />}
                       </div>
                     </li>
                   );
