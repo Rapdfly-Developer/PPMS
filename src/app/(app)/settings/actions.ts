@@ -112,7 +112,11 @@ export async function createHospitalWithUser(data: {
 
 export async function updateHospital(
   hospitalId: string,
-  data: { name?: string; shortCode?: string; address?: string; contact?: string }
+  data: {
+    name?: string; shortCode?: string; address?: string; contact?: string;
+    email?: string; website?: string; hospitalType?: string; registrationNo?: string;
+    establishedYear?: string; totalBeds?: string;
+  }
 ): Promise<{ error?: string }> {
   const authUser = await requireRole("DOCTOR");
   const doctor = await prisma.doctor.findUnique({ where: { userId: authUser.id }, select: { id: true } });
@@ -123,8 +127,35 @@ export async function updateHospital(
   });
   if (!link) return { error: "Hospital not linked to this doctor." };
 
+  if (data.name !== undefined && !data.name.trim()) return { error: "Hospital name is required." };
+
   const shortCode = data.shortCode?.trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
   if (shortCode && (shortCode.length < 2 || shortCode.length > 8)) return { error: "Short code must be 2–8 characters." };
+
+  const contact = data.contact?.trim();
+  if (contact && !/^\d{10}$/.test(contact)) return { error: "Phone number must be 10 digits." };
+
+  const email = data.email?.trim();
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { error: "Enter a valid email address." };
+
+  const yearStr = data.establishedYear?.trim();
+  let establishedYear: number | null | undefined = yearStr === undefined ? undefined : null;
+  if (yearStr) {
+    const y = Number(yearStr);
+    if (!/^\d{4}$/.test(yearStr) || y < 1800 || y > new Date().getFullYear()) {
+      return { error: "Established year must be a valid 4-digit year." };
+    }
+    establishedYear = y;
+  }
+
+  const bedsStr = data.totalBeds?.trim();
+  let totalBeds: number | null | undefined = bedsStr === undefined ? undefined : null;
+  if (bedsStr) {
+    if (!/^\d+$/.test(bedsStr)) return { error: "Total beds must be a whole number." };
+    totalBeds = Number(bedsStr);
+  }
+
+  const optText = (v?: string) => (v === undefined ? undefined : v.trim() || null);
 
   try {
     await prisma.hospital.update({
@@ -133,7 +164,13 @@ export async function updateHospital(
         ...(data.name?.trim() ? { name: data.name.trim() } : {}),
         ...(shortCode ? { shortCode } : {}),
         ...(data.address !== undefined ? { address: data.address.trim() || null } : {}),
-        ...(data.contact !== undefined ? { contact: data.contact.trim() || null } : {}),
+        ...(contact !== undefined ? { contact: contact || null } : {}),
+        email:           optText(data.email),
+        website:         optText(data.website),
+        hospitalType:    optText(data.hospitalType),
+        registrationNo:  optText(data.registrationNo),
+        establishedYear,
+        totalBeds,
       },
     });
   } catch (e: any) {

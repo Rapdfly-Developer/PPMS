@@ -112,8 +112,14 @@ export default async function SettingsPage() {
     shortCode: l.hospital.shortCode,
     address:   l.hospital.address ?? "",
     contact:   l.hospital.contact ?? "",
+    email:           l.hospital.email ?? "",
+    website:         l.hospital.website ?? "",
+    hospitalType:    l.hospital.hospitalType ?? "",
+    registrationNo:  l.hospital.registrationNo ?? "",
+    establishedYear: l.hospital.establishedYear?.toString() ?? "",
+    totalBeds:       l.hospital.totalBeds?.toString() ?? "",
     active:    l.active,
-    logoUrl:   (l.hospital as any).logoUrl ?? null,
+    logoUrl:   l.hospital.logoUrl ?? null,
   }));
 
   const serializedLoginLogs = loginLogs.map((l) => ({

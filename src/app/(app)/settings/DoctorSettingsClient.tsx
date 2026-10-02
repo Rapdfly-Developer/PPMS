@@ -56,6 +56,8 @@ interface AuditRow {
 }
 interface HospitalRow {
   id: string; name: string; shortCode: string; address: string; contact: string;
+  email: string; website: string; hospitalType: string; registrationNo: string;
+  establishedYear: string; totalBeds: string;
   active: boolean; logoUrl: string | null;
 }
 
@@ -1113,33 +1115,57 @@ function HospitalSection({ hospitals }: { hospitals: HospitalRow[] }) {
   const [logoPreview, setLogoPreview] = useState<string | null>(h?.logoUrl ?? null);
   const [logoUploading, setLogoUploading] = useState(false);
   const [logoMsg, setLogoMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
-  const [form, setForm] = useState({
-    name:    h?.name    ?? "",
-    code:    h?.shortCode ?? "",
-    address: h?.address ?? "",
-    contact: h?.contact ?? "",
-    email:   "info@sunriseeyehospital.com",
-    website: "www.sunriseeyehospital.com",
-    regNo:   "KAR-HOSP-2019-4521",
-    type:    "Eye Specialty Hospital",
-    beds:    "30",
-    estYear: "2019",
+  const router = useRouter();
+  const formFrom = (x?: HospitalRow) => ({
+    name:    x?.name ?? "",
+    code:    x?.shortCode ?? "",
+    address: x?.address ?? "",
+    contact: x?.contact ?? "",
+    email:   x?.email ?? "",
+    website: x?.website ?? "",
+    regNo:   x?.registrationNo ?? "",
+    type:    x?.hospitalType ?? "",
+    beds:    x?.totalBeds ?? "",
+    estYear: x?.establishedYear ?? "",
   });
+  const [form, setForm] = useState(() => formFrom(h));
   const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
+  const [saving, setSaving] = useState(false);
+  const [saveMsg, setSaveMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
 
   function selectHospital(id: string) {
     setSelectedId(id);
     const hosp = hospitals.find((x) => x.id === id);
     if (hosp) {
-      setForm((f) => ({
-        ...f,
-        name:    hosp.name,
-        code:    hosp.shortCode ?? "",
-        address: hosp.address ?? "",
-        contact: hosp.contact ?? "",
-      }));
+      setForm(formFrom(hosp));
       setLogoPreview(hosp.logoUrl ?? null);
       setLogoMsg(null);
+      setSaveMsg(null);
+    }
+  }
+
+  async function handleSave() {
+    if (!h) return;
+    setSaving(true);
+    setSaveMsg(null);
+    const res = await updateHospital(h.id, {
+      name:            form.name,
+      shortCode:       form.code,
+      address:         form.address,
+      contact:         form.contact,
+      email:           form.email,
+      website:         form.website,
+      hospitalType:    form.type,
+      registrationNo:  form.regNo,
+      establishedYear: form.estYear,
+      totalBeds:       form.beds,
+    });
+    setSaving(false);
+    if (res.error) {
+      setSaveMsg({ type: "err", text: res.error });
+    } else {
+      setSaveMsg({ type: "ok", text: "Hospital details saved." });
+      router.refresh();
     }
   }
 
@@ -1246,12 +1272,12 @@ function HospitalSection({ hospitals }: { hospitals: HospitalRow[] }) {
         <Card className="p-5">
           <p className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-900)] mb-4">Basic Information</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div><LBL>Hospital Name</LBL><INP value={form.name} onChange={(e) => set("name", e.target.value)} /></div>
-            <div><LBL>Short Code</LBL><INP value={form.code} onChange={(e) => set("code", e.target.value)} /></div>
-            <div><LBL>Hospital Type</LBL><INP value={form.type} onChange={(e) => set("type", e.target.value)} /></div>
-            <div><LBL>Registration No.</LBL><INP value={form.regNo} onChange={(e) => set("regNo", e.target.value)} /></div>
-            <div><LBL>Established Year</LBL><INP value={form.estYear} onChange={(e) => set("estYear", e.target.value)} /></div>
-            <div><LBL>Total Beds</LBL><INP value={form.beds} onChange={(e) => set("beds", e.target.value)} /></div>
+            <div><LBL>Hospital Name</LBL><INP value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="Enter hospital name" /></div>
+            <div><LBL>Short Code</LBL><INP value={form.code} onChange={(e) => set("code", e.target.value)} placeholder="Enter short code" /></div>
+            <div><LBL>Hospital Type</LBL><INP value={form.type} onChange={(e) => set("type", e.target.value)} placeholder="Enter hospital type" /></div>
+            <div><LBL>Registration No.</LBL><INP value={form.regNo} onChange={(e) => set("regNo", e.target.value)} placeholder="Enter registration number" /></div>
+            <div><LBL>Established Year</LBL><INP inputMode="numeric" maxLength={4} value={form.estYear} onChange={(e) => set("estYear", e.target.value.replace(/\D/g, ""))} placeholder="Enter year (YYYY)" /></div>
+            <div><LBL>Total Beds</LBL><INP inputMode="numeric" value={form.beds} onChange={(e) => set("beds", e.target.value.replace(/\D/g, ""))} placeholder="Enter number of beds" /></div>
           </div>
         </Card>
 
@@ -1262,29 +1288,43 @@ function HospitalSection({ hospitals }: { hospitals: HospitalRow[] }) {
             <div>
               <LBL>Phone Number</LBL>
               <div className="relative"><Phone size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)]" />
-                <INP className="pl-8" value={form.contact} onChange={(e) => set("contact", e.target.value)} />
+                <INP className="pl-8" inputMode="numeric" maxLength={10} value={form.contact} onChange={(e) => set("contact", e.target.value.replace(/\D/g, ""))} placeholder="Enter 10-digit phone number" />
               </div>
             </div>
             <div>
               <LBL>Email Address</LBL>
               <div className="relative"><Mail size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)]" />
-                <INP className="pl-8" value={form.email} onChange={(e) => set("email", e.target.value)} />
+                <INP className="pl-8" type="email" value={form.email} onChange={(e) => set("email", e.target.value)} placeholder="Enter email address" />
               </div>
             </div>
             <div>
               <LBL>Website</LBL>
               <div className="relative"><Globe size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)]" />
-                <INP className="pl-8" value={form.website} onChange={(e) => set("website", e.target.value)} />
+                <INP className="pl-8" value={form.website} onChange={(e) => set("website", e.target.value)} placeholder="Enter website" />
               </div>
             </div>
             <div>
               <LBL>Address</LBL>
               <div className="relative"><MapPin size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)]" />
-                <INP className="pl-8" value={form.address} onChange={(e) => set("address", e.target.value)} />
+                <INP className="pl-8" value={form.address} onChange={(e) => set("address", e.target.value)} placeholder="Enter address" />
               </div>
             </div>
           </div>
-          <SaveBar />
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-[var(--color-border)] mt-6">
+            {saveMsg && (
+              <p className={`text-[11px] sm:text-xs ${saveMsg.type === "ok" ? "text-emerald-600" : "text-red-500"}`}>
+                {saveMsg.text}
+              </p>
+            )}
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={saving || !h}
+              className="flex items-center gap-2 rounded-xl bg-[var(--color-primary-600)] px-5 py-2.5 text-[13px] sm:text-sm font-semibold text-white hover:bg-[var(--color-primary-700)] transition-colors disabled:opacity-60"
+            >
+              <Save size={14} /> {saving ? "Saving…" : "Save Changes"}
+            </button>
+          </div>
         </Card>
       </div>
     </div>

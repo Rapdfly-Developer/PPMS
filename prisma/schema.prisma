@@ -77,6 +77,11 @@ model Hospital {
   email          String?
   address        String?
   contact        String?
+  website         String?
+  hospitalType    String?
+  registrationNo  String?
+  establishedYear Int?
+  totalBeds       Int?
   logoUrl        String?
   retentionYears Int      @default(7)
   createdAt      DateTime @default(now())
