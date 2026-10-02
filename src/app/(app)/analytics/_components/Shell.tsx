@@ -27,7 +27,18 @@ export interface ShellProps {
 }
 
 const STORAGE_KEY = "rf_analytics_filters";
-const control = "h-9 rounded-lg border border-[var(--color-border)] bg-white px-2.5 text-[12.5px] text-[var(--color-ink-800)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]";
+const control = "h-10 w-full rounded-[10px] border border-[var(--color-border)] bg-white px-3 text-[13px] text-[var(--color-ink-800)] transition-colors duration-150 hover:border-[#CBD4D8] focus:outline-none focus:border-[var(--color-primary-500)] focus:ring-2 focus:ring-[var(--color-primary-500)]/20";
+const btnSecondary = "inline-flex h-10 items-center gap-2 rounded-[10px] border border-[var(--color-border)] bg-white px-3.5 text-[13px] font-medium text-[var(--color-ink-700)] shadow-[0_1px_2px_rgba(16,24,40,0.04)] transition-colors duration-150 hover:border-[#CBD4D8] hover:bg-[#F7F9FA] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary-500)]";
+const btnPrimary = "inline-flex h-10 items-center gap-2 rounded-[10px] bg-[var(--color-primary-700)] px-4 text-[13px] font-semibold text-white shadow-[0_1px_2px_rgba(16,24,40,0.08)] transition-colors duration-150 hover:bg-[var(--color-primary-800)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary-500)] focus-visible:ring-offset-2 disabled:opacity-60";
+
+function SelectBox({ children, className = "", ...props }: React.SelectHTMLAttributes<HTMLSelectElement>) {
+  return (
+    <span className="relative block">
+      <select {...props} className={`${control} appearance-none pr-9 ${className}`}>{children}</select>
+      <ChevronDown size={15} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)]" aria-hidden="true" />
+    </span>
+  );
+}
 
 function useRelativeTime(iso: string) {
   const [now, setNow] = useState(() => Date.now());
@@ -132,29 +143,35 @@ export function AnalyticsShell(props: ShellProps) {
       <div aria-hidden="true" className={`fixed left-0 right-0 top-0 z-50 h-0.5 origin-left bg-[var(--color-primary-600)] transition-transform duration-700 ${pending ? "scale-x-75" : "scale-x-0"}`} />
 
       {/* ── Header ──────────────────────────────────────────────────────── */}
-      <header className="flex flex-wrap items-start justify-between gap-3">
+      <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
         <div className="min-w-0">
-          <nav aria-label="Breadcrumb" className="mb-1.5 flex items-center gap-1.5 text-[11.5px] text-[var(--color-ink-400)]">
-            <Link href="/dashboard" className="hover:text-[var(--color-primary-600)]">Dashboard</Link>
-            <span aria-hidden="true">/</span>
+          <nav aria-label="Breadcrumb" className="mb-3 flex items-center gap-1.5 text-[12px] text-[var(--color-ink-400)]">
+            <Link href="/dashboard" className="transition-colors hover:text-[var(--color-primary-700)]">Dashboard</Link>
+            <span aria-hidden="true" className="text-[var(--color-ink-300)]">/</span>
             <span className="font-medium text-[var(--color-ink-700)]">Analytics</span>
           </nav>
-          <h1 className="flex items-center gap-2.5 text-[22px] sm:text-[26px] font-bold tracking-tight text-[var(--color-ink-900)]">
-            <BarChart3 size={22} className="text-[var(--color-primary-600)]" aria-hidden="true" />
-            Analytics &amp; Intelligence
-          </h1>
-          <p className="mt-1 max-w-2xl text-[13px] text-[var(--color-ink-500)]">
-            Monitor clinical activity, patient care, appointments and operational performance across {props.scopeLabel}.
-          </p>
+          <div className="flex items-center gap-3">
+            <span className="hidden sm:flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--color-primary-700)] text-white shadow-[0_6px_16px_-6px_rgba(17,94,89,0.55)]" aria-hidden="true">
+              <BarChart3 size={20} strokeWidth={1.9} />
+            </span>
+            <div className="min-w-0">
+              <h1 className="text-[24px] sm:text-[28px] font-bold leading-[1.15] tracking-[-0.02em] text-[var(--color-ink-900)]">Analytics &amp; Intelligence</h1>
+              <p className="mt-1 max-w-2xl text-[13.5px] leading-snug text-[var(--color-ink-500)]">
+                Monitor clinical activity, patient care, appointments and operations across {props.scopeLabel}.
+              </p>
+            </div>
+          </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-[11.5px] text-[var(--color-ink-400)]" aria-live="polite">{updated}</span>
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+          <span className="inline-flex w-full items-center gap-1.5 text-[12px] text-[var(--color-ink-400)] sm:mr-1 sm:w-auto" aria-live="polite">
+            <span className="h-1.5 w-1.5 rounded-full bg-[#12B76A]" aria-hidden="true" />{updated}
+          </span>
           <button
             type="button"
             onClick={() => start(() => router.refresh())}
-            className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-[var(--color-border)] bg-white px-3 text-[12.5px] font-medium text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]"
+            className={btnSecondary}
           >
-            <RefreshCw size={13} className={pending ? "animate-spin" : ""} /> Refresh
+            <RefreshCw size={14} className={pending ? "animate-spin" : ""} /> <span className="sr-only sm:not-sr-only">Refresh</span>
           </button>
           {props.canExport && (
             <>
@@ -164,13 +181,13 @@ export function AnalyticsShell(props: ShellProps) {
                   aria-haspopup="menu"
                   aria-expanded={exportOpen}
                   onClick={() => setExportOpen((o) => !o)}
-                  className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-[var(--color-border)] bg-white px-3 text-[12.5px] font-medium text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]"
+                  className={btnSecondary}
                 >
-                  <Download size={13} /> Export <ChevronDown size={12} />
+                  <Download size={14} /> Export <ChevronDown size={13} className={`text-[var(--color-ink-400)] transition-transform duration-200 ${exportOpen ? "rotate-180" : ""}`} />
                 </button>
                 {exportOpen && (
-                  <div role="menu" className="absolute right-0 top-full z-40 mt-1.5 w-64 rounded-xl border border-[var(--color-border)] bg-white p-1.5 shadow-[0_10px_30px_rgba(15,23,42,0.12)]">
-                    <p className="px-2.5 pb-1 pt-1.5 text-[10.5px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Current view: {tabLabel}</p>
+                  <div role="menu" className="absolute right-0 top-full z-40 mt-2 w-64 rounded-xl border border-[var(--color-border)] bg-white p-1.5 shadow-[0_16px_40px_-12px_rgba(16,24,40,0.22)] animate-[fadeIn_150ms_ease-out]">
+                    <p className="px-2.5 pb-1.5 pt-1.5 text-[11.5px] font-semibold text-[var(--color-ink-400)]">Current view: {tabLabel}</p>
                     <button role="menuitem" type="button" onClick={() => exportAs("csv")} className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[12.5px] text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]"><FileText size={14} /> CSV</button>
                     <button role="menuitem" type="button" onClick={() => exportAs("xls")} className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[12.5px] text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]"><FileSpreadsheet size={14} /> Excel workbook</button>
                     <a role="menuitem" href={reportHref([f.tab])} target="_blank" rel="noopener" onClick={() => setExportOpen(false)} className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-[12.5px] text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]"><Printer size={14} /> PDF (print)</a>
@@ -182,9 +199,9 @@ export function AnalyticsShell(props: ShellProps) {
               <button
                 type="button"
                 onClick={() => setBuilderOpen(true)}
-                className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[var(--color-primary-700)] px-3.5 text-[12.5px] font-semibold text-white hover:bg-[var(--color-primary-800)]"
+                className={btnPrimary}
               >
-                <Sparkles size={13} /> Generate report
+                <Sparkles size={14} /> Generate report
               </button>
             </>
           )}
@@ -192,18 +209,18 @@ export function AnalyticsShell(props: ShellProps) {
       </header>
 
       {/* ── Filters ─────────────────────────────────────────────────────── */}
-      <section aria-label="Analytics filters" className="rounded-xl border border-[var(--color-border)] bg-white p-3 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+      <section aria-label="Analytics filters" className="rounded-2xl border border-[var(--color-border)] bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
         <div className="flex items-center justify-between gap-2 md:hidden">
           <p className="min-w-0 truncate text-[12.5px] text-[var(--color-ink-700)]"><span className="font-semibold text-[var(--color-ink-900)]">{PRESETS.find((p) => p.id === f.preset)?.label}</span> · {hospitalName}</p>
-          <button type="button" onClick={() => setShowFilters((s) => !s)} aria-expanded={showFilters} className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg border border-[var(--color-border)] px-2.5 text-[12px] font-medium">
+          <button type="button" onClick={() => setShowFilters((s) => !s)} aria-expanded={showFilters} className={`${btnSecondary} h-9 shrink-0`}>
             <SlidersHorizontal size={13} /> Filters
           </button>
         </div>
-        <div className={`${showFilters ? "flex" : "hidden"} md:flex mt-3 md:mt-0 flex-col md:flex-row md:flex-wrap md:items-end gap-2.5`}>
+        <div className={`${showFilters ? "flex" : "hidden"} md:flex mt-4 md:mt-0 flex-col md:flex-row md:flex-wrap md:items-end gap-3`}>
           <Field label="Date range">
-            <select className={control} value={draft.range ?? "30d"} onChange={(e) => set("range", e.target.value)}>
+            <SelectBox value={draft.range ?? "30d"} onChange={(e) => set("range", e.target.value)}>
               {PRESETS.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
-            </select>
+            </SelectBox>
           </Field>
           {(draft.range ?? "30d") === "custom" && (
             <>
@@ -213,67 +230,69 @@ export function AnalyticsShell(props: ShellProps) {
           )}
           {props.hospitals.length > 1 && (
             <Field label="Hospital">
-              <select className={control} value={draft.hospital ?? ""} onChange={(e) => set("hospital", e.target.value)}>
+              <SelectBox value={draft.hospital ?? ""} onChange={(e) => set("hospital", e.target.value)}>
                 <option value="">All hospitals</option>
                 {props.hospitals.map((h) => <option key={h.id} value={h.id}>{h.name}</option>)}
-              </select>
+              </SelectBox>
             </Field>
           )}
           {props.showDoctorFilter && (
             <Field label="Doctor">
-              <select className={control} value={draft.doctor ?? ""} onChange={(e) => set("doctor", e.target.value)}>
+              <SelectBox value={draft.doctor ?? ""} onChange={(e) => set("doctor", e.target.value)}>
                 <option value="">All doctors</option>
                 {props.doctors.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
-              </select>
+              </SelectBox>
             </Field>
           )}
           {props.visitTypes.length > 0 && (
             <Field label="Visit type">
-              <select className={control} value={draft.visitType ?? ""} onChange={(e) => set("visitType", e.target.value)}>
+              <SelectBox value={draft.visitType ?? ""} onChange={(e) => set("visitType", e.target.value)}>
                 <option value="">All visit types</option>
                 {props.visitTypes.map((v) => <option key={v} value={v}>{v}</option>)}
-              </select>
+              </SelectBox>
             </Field>
           )}
           <Field label="Patients">
-            <select className={control} value={draft.patientType ?? ""} onChange={(e) => set("patientType", e.target.value)}>
+            <SelectBox value={draft.patientType ?? ""} onChange={(e) => set("patientType", e.target.value)}>
               <option value="">New and returning</option>
               <option value="new">New only</option>
               <option value="returning">Returning only</option>
-            </select>
+            </SelectBox>
           </Field>
           {f.tab === "appointments" && (
             <Field label="Status">
-              <select className={control} value={draft.status ?? ""} onChange={(e) => set("status", e.target.value)}>
+              <SelectBox value={draft.status ?? ""} onChange={(e) => set("status", e.target.value)}>
                 <option value="">All statuses</option>
                 {props.statuses.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
-              </select>
+              </SelectBox>
             </Field>
           )}
           <Field label="Compare with">
-            <select className={control} value={draft.compare ?? "prev"} onChange={(e) => set("compare", e.target.value === "prev" ? "" : e.target.value)}>
+            <SelectBox value={draft.compare ?? "prev"} onChange={(e) => set("compare", e.target.value === "prev" ? "" : e.target.value)}>
               {COMPARE_OPTIONS.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
-            </select>
+            </SelectBox>
           </Field>
           <div className="flex gap-2 md:ml-auto">
-            <button type="button" onClick={reset} className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-[var(--color-border)] bg-white px-3 text-[12.5px] font-medium text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]">
-              <RotateCcw size={13} /> Reset
+            <button type="button" onClick={reset} className={btnSecondary}>
+              <RotateCcw size={14} /> Reset
             </button>
-            <button type="button" onClick={apply} disabled={pending} className="inline-flex h-9 items-center rounded-lg bg-[var(--color-primary-700)] px-4 text-[12.5px] font-semibold text-white hover:bg-[var(--color-primary-800)] disabled:opacity-60">
-              Apply
+            <button type="button" onClick={apply} disabled={pending} className={`${btnPrimary} px-5`}>
+              Apply filters
             </button>
           </div>
         </div>
       </section>
 
-      <p className="-mt-1 text-[12px] text-[var(--color-ink-500)]">
-        Showing <span className="font-semibold text-[var(--color-ink-800)]">{f.periodLabel}</span> · {hospitalName}
-        {props.showDoctorFilter ? ` · ${doctorName}` : ""} · compared with {f.compareLabel}
+      <p className="-mt-1 px-1 text-[12.5px] text-[var(--color-ink-500)]">
+        Showing <span className="font-semibold text-[var(--color-ink-800)]">{f.periodLabel}</span>
+        <span className="text-[var(--color-ink-300)]"> · </span>{hospitalName}
+        {props.showDoctorFilter ? <><span className="text-[var(--color-ink-300)]"> · </span>{doctorName}</> : null}
+        <span className="text-[var(--color-ink-300)]"> · </span>compared with {f.compareLabel}
       </p>
 
       {/* ── Tabs ────────────────────────────────────────────────────────── */}
-      <nav aria-label="Analytics sections" className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
-        <ul className="flex min-w-max gap-1 border-b border-[var(--color-border)]">
+      <nav aria-label="Analytics sections" className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0 scrollbar-thin">
+        <ul className="inline-flex min-w-max gap-0.5 rounded-xl border border-[var(--color-border)] bg-white p-1 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
           {TABS.filter((t) => tabs.includes(t.id)).map((t) => {
             const active = t.id === f.tab;
             return (
@@ -283,12 +302,13 @@ export function AnalyticsShell(props: ShellProps) {
                   scroll={false}
                   aria-current={active ? "page" : undefined}
                   onClick={(e) => { if (!active) { e.preventDefault(); start(() => router.push(`${pathname}${buildQuery(params, { tab: t.id === "overview" ? undefined : t.id })}`, { scroll: false })); } }}
-                  className={`relative inline-flex h-10 items-center px-3 text-[13px] font-medium whitespace-nowrap transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary-500)] rounded-t-md ${
-                    active ? "text-[var(--color-primary-700)]" : "text-[var(--color-ink-500)] hover:text-[var(--color-ink-800)]"
+                  className={`inline-flex h-9 items-center rounded-lg px-3.5 text-[13px] whitespace-nowrap transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary-500)] ${
+                    active
+                      ? "bg-[var(--color-primary-50)] font-semibold text-[var(--color-primary-800)] shadow-[inset_0_0_0_1px_rgba(21,122,115,0.18)]"
+                      : "font-medium text-[var(--color-ink-500)] hover:bg-[#F2F5F6] hover:text-[var(--color-ink-900)]"
                   }`}
                 >
                   {t.label}
-                  {active && <span className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-[var(--color-primary-600)]" />}
                 </Link>
               </li>
             );
@@ -315,8 +335,8 @@ export function AnalyticsShell(props: ShellProps) {
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <label className="flex flex-col gap-1 min-w-0 md:min-w-[140px]">
-      <span className="text-[10.5px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">{label}</span>
+    <label className="flex min-w-0 flex-col gap-1.5 md:min-w-[156px]">
+      <span className="text-[12px] font-semibold text-[var(--color-ink-500)]">{label}</span>
       {children}
     </label>
   );
@@ -377,29 +397,29 @@ function ReportBuilder({ onClose, tabs, hospitals, params, reportHref }: {
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-[2px] p-0 sm:p-4" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="report-builder-title" className="relative w-full sm:max-w-lg max-h-[92vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl bg-white p-5 shadow-2xl focus:outline-none">
+      <div ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="report-builder-title" className="relative w-full sm:max-w-lg max-h-[92vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl bg-white p-6 shadow-[0_24px_64px_-16px_rgba(16,24,40,0.35)] focus:outline-none animate-[fadeIn_200ms_ease-out]">
         <button type="button" onClick={onClose} aria-label="Close" className="absolute right-3 top-3 rounded-lg p-1.5 text-[var(--color-ink-400)] hover:bg-[var(--color-surface-sunken)] hover:text-[var(--color-ink-700)]"><X size={16} /></button>
         <h2 id="report-builder-title" className="text-[17px] font-semibold text-[var(--color-ink-900)]">Generate report</h2>
         <p className="mt-0.5 text-[12.5px] text-[var(--color-ink-500)]">Builds a printable report you can save as PDF. Only data you can access is included.</p>
 
         <div className="mt-4 flex flex-col gap-3.5">
           <Field label="Report type">
-            <select className={control} value={type} onChange={(e) => pickType(e.target.value)}>
+            <SelectBox value={type} onChange={(e) => pickType(e.target.value)}>
               {types.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
-            </select>
+            </SelectBox>
           </Field>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Field label="Date range">
-              <select className={control} value={range} onChange={(e) => setRange(e.target.value)}>
+              <SelectBox value={range} onChange={(e) => setRange(e.target.value)}>
                 {PRESETS.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
-              </select>
+              </SelectBox>
             </Field>
             {hospitals.length > 1 && (
               <Field label="Hospital">
-                <select className={control} value={hospital} onChange={(e) => setHospital(e.target.value)}>
+                <SelectBox value={hospital} onChange={(e) => setHospital(e.target.value)}>
                   <option value="">All hospitals</option>
                   {hospitals.map((h) => <option key={h.id} value={h.id}>{h.name}</option>)}
-                </select>
+                </SelectBox>
               </Field>
             )}
             {range === "custom" && (
@@ -410,7 +430,7 @@ function ReportBuilder({ onClose, tabs, hospitals, params, reportHref }: {
             )}
           </div>
           <fieldset>
-            <legend className="text-[10.5px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)] mb-1.5">Sections</legend>
+            <legend className="mb-2 text-[12px] font-semibold text-[var(--color-ink-500)]">Sections</legend>
             <div className="grid grid-cols-2 gap-1.5">
               {TABS.filter((t) => tabs.includes(t.id)).map((t) => (
                 <label key={t.id} className="flex items-center gap-2 rounded-lg border border-[var(--color-border)] px-2.5 py-2 text-[12.5px] text-[var(--color-ink-700)] cursor-pointer has-[:checked]:border-[var(--color-primary-400)] has-[:checked]:bg-[var(--color-primary-50)]">
@@ -423,14 +443,14 @@ function ReportBuilder({ onClose, tabs, hospitals, params, reportHref }: {
         </div>
 
         <div className="mt-5 flex justify-end gap-2">
-          <button type="button" onClick={onClose} className="h-9 rounded-lg border border-[var(--color-border)] px-4 text-[12.5px] font-medium text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]">Cancel</button>
+          <button type="button" onClick={onClose} className={btnSecondary}>Cancel</button>
           <a
             href={ordered.length ? href : undefined}
             target="_blank"
             rel="noopener"
             aria-disabled={ordered.length === 0}
             onClick={(e) => { if (!ordered.length || (range === "custom" && (!from || !to))) { e.preventDefault(); return; } onClose(); }}
-            className={`inline-flex h-9 items-center gap-1.5 rounded-lg bg-[var(--color-primary-700)] px-4 text-[12.5px] font-semibold text-white hover:bg-[var(--color-primary-800)] ${ordered.length === 0 || (range === "custom" && (!from || !to)) ? "opacity-50 cursor-not-allowed" : ""}`}
+            className={`${btnPrimary} ${ordered.length === 0 || (range === "custom" && (!from || !to)) ? "opacity-50 cursor-not-allowed" : ""}`}
           >
             <Printer size={13} /> Generate report
           </a>

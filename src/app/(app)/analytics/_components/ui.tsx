@@ -3,8 +3,16 @@
 import { useId, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowDownRight, ArrowUpRight, ArrowUpDown, ChevronLeft, ChevronRight, Download, Info, Minus, RefreshCw, Search, AlertTriangle } from "lucide-react";
-import { METRICS, formatMetric, type KpiValue, type TableData, type CellValue } from "@/lib/analytics/definitions";
+import {
+  ArrowDownRight, ArrowUpRight, ArrowUpDown, ChevronLeft, ChevronRight, Download, Info, Minus, RefreshCw, Search, AlertTriangle,
+  Activity, AlarmClock, AlertCircle, Calendar, CalendarCheck, CalendarClock, CalendarDays, CalendarPlus, CalendarRange, CalendarX2,
+  CheckCheck, CheckCircle2, CircleCheck, CircleX, ClipboardList, Clock, Clock3, FileCheck2, FilePen, FileSearch, FlaskConical,
+  HeartPulse, HelpCircle, Hourglass, Layers, ListOrdered, LogIn, MessageSquareText, MessagesSquare, MonitorSmartphone, Percent,
+  Pill, Printer, Repeat, Repeat2, Scissors, ScrollText, Share2, ShieldAlert, Stethoscope, Timer, UserPlus, UserX, Users, XCircle,
+  type LucideIcon,
+} from "lucide-react";
+import { METRICS, formatMetric, type KpiValue, type MetricId, type TableData, type CellValue } from "@/lib/analytics/definitions";
+import { buildQuery } from "@/lib/analytics/filters";
 import { Sparkline } from "./charts";
 import { downloadTableCsv } from "./export";
 
@@ -35,53 +43,134 @@ export function InfoTip({ text, label }: { text: string; label: string }) {
 
 /* ═══ KPI card ═════════════════════════════════════════════════════════════ */
 
-function changeText(k: KpiValue, compareLabel: string): { text: string; dir: "up" | "down" | "flat" } | null {
+type Tone = "teal" | "green" | "amber" | "red" | "blue";
+
+const TONE_CLS: Record<Tone, string> = {
+  teal:  "bg-[var(--color-primary-50)] text-[var(--color-primary-700)]",
+  green: "bg-[#ECFDF3] text-[#067647]",
+  amber: "bg-[#FFF7E6] text-[#B54708]",
+  red:   "bg-[#FEF3F2] text-[#B42318]",
+  blue:  "bg-[#EFF6FF] text-[#1D4ED8]",
+};
+
+const KPI_ICON: Partial<Record<MetricId, [LucideIcon, Tone]>> = {
+  appointments: [Calendar, "teal"],
+  completedAppointments: [CheckCircle2, "green"],
+  pendingAppointments: [Clock, "amber"],
+  cancelledAppointments: [XCircle, "red"],
+  noShowAppointments: [UserX, "red"],
+  rescheduledAppointments: [CalendarClock, "blue"],
+  completionRate: [CircleCheck, "green"],
+  cancellationRate: [CircleX, "red"],
+  noShowRate: [UserX, "red"],
+  avgAppointmentsPerDay: [CalendarDays, "teal"],
+  peakDay: [CalendarRange, "blue"],
+  peakHour: [Clock3, "blue"],
+  totalPatients: [Users, "teal"],
+  newPatients: [UserPlus, "teal"],
+  patientsSeen: [Stethoscope, "teal"],
+  returningPatients: [Repeat, "blue"],
+  avgVisitsPerPatient: [Repeat2, "blue"],
+  consultations: [Stethoscope, "teal"],
+  finalizedConsultations: [FileCheck2, "green"],
+  pendingDocumentation: [FilePen, "amber"],
+  complaintsRecorded: [MessageSquareText, "teal"],
+  treatmentPlans: [ClipboardList, "teal"],
+  referrals: [Share2, "blue"],
+  followUpRecommended: [CalendarPlus, "teal"],
+  diagnoses: [Activity, "teal"],
+  uniqueDiagnoses: [Layers, "blue"],
+  provisionalDiagnoses: [HelpCircle, "amber"],
+  prescriptions: [Pill, "teal"],
+  medicationLines: [ListOrdered, "blue"],
+  drugsPerPrescription: [Pill, "blue"],
+  investigationsOrdered: [FlaskConical, "teal"],
+  investigationsOpen: [Hourglass, "amber"],
+  investigationsResultAvailable: [FileSearch, "blue"],
+  investigationsReviewed: [CheckCheck, "green"],
+  investigationReviewRate: [Percent, "green"],
+  avgTimeToReview: [Timer, "blue"],
+  surgeriesAdvised: [Scissors, "teal"],
+  surgeryCounselled: [MessagesSquare, "blue"],
+  fitForSurgery: [HeartPulse, "green"],
+  notMarkedFit: [AlertCircle, "amber"],
+  surgeriesScheduled: [CalendarCheck, "blue"],
+  surgeriesCompleted: [CheckCircle2, "green"],
+  followUpsDue: [CalendarClock, "teal"],
+  followUpsCompleted: [CheckCircle2, "green"],
+  followUpsPending: [Clock, "amber"],
+  followUpsOverdue: [AlarmClock, "red"],
+  followUpsMissed: [CalendarX2, "red"],
+  followUpCompletionRate: [Percent, "green"],
+  avgFollowUpInterval: [CalendarRange, "blue"],
+  avgWait: [Hourglass, "amber"],
+  avgTimeInClinic: [Timer, "blue"],
+  activeUsers: [Users, "teal"],
+  logins: [LogIn, "teal"],
+  failedLogins: [ShieldAlert, "red"],
+  activeSessions: [MonitorSmartphone, "green"],
+  exportsAndPrints: [Printer, "blue"],
+  auditEvents: [ScrollText, "teal"],
+};
+
+function changeOf(k: KpiValue): { chip: string; dir: "up" | "down" | "flat"; context: "vs" | "none" } | null {
   const def = METRICS[k.id];
   if (k.prev === undefined || k.prev === null || k.value === null || k.display) return null;
   if (def.format === "percent") {
     const diff = Math.round((k.value - k.prev) * 10) / 10;
-    if (diff === 0) return { text: `No change vs ${compareLabel}`, dir: "flat" };
-    return { text: `${Math.abs(diff)} pts ${diff > 0 ? "higher" : "lower"} than ${compareLabel}`, dir: diff > 0 ? "up" : "down" };
+    if (diff === 0) return { chip: "No change", dir: "flat", context: "vs" };
+    return { chip: `${diff > 0 ? "+" : "−"}${Math.abs(diff)} pts`, dir: diff > 0 ? "up" : "down", context: "vs" };
   }
-  if (k.prev === 0) {
-    return k.value === 0 ? { text: `No change vs ${compareLabel}`, dir: "flat" } : { text: `None recorded in ${compareLabel}`, dir: "up" };
-  }
+  if (k.prev === 0) return k.value === 0 ? { chip: "No change", dir: "flat", context: "vs" } : { chip: "New", dir: "up", context: "none" };
   const ch = Math.round(((k.value - k.prev) / k.prev) * 1000) / 10;
-  if (ch === 0) return { text: `No change vs ${compareLabel}`, dir: "flat" };
-  return { text: `${Math.abs(ch)}% ${ch > 0 ? "increase" : "decrease"} vs ${compareLabel}`, dir: ch > 0 ? "up" : "down" };
+  if (ch === 0) return { chip: "No change", dir: "flat", context: "vs" };
+  return { chip: `${Math.abs(ch)}%`, dir: ch > 0 ? "up" : "down", context: "vs" };
 }
 
 export function KpiCard({ kpi, compareLabel }: { kpi: KpiValue; compareLabel: string }) {
   const def = METRICS[kpi.id];
   const label = kpi.label ?? def.label;
-  const change = changeText(kpi, compareLabel);
+  const change = changeOf(kpi);
+  const [Icon, tone] = KPI_ICON[kpi.id] ?? [Activity, "teal" as Tone];
   const Arrow = change?.dir === "up" ? ArrowUpRight : change?.dir === "down" ? ArrowDownRight : Minus;
+  const dirWord = change?.dir === "up" ? "increase" : change?.dir === "down" ? "decrease" : "";
 
   const body = (
     <>
-      <div className="flex items-center gap-1.5">
-        <p className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-[var(--color-ink-500)] truncate">{label}</p>
-        <InfoTip text={def.tooltip} label={label} />
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-1.5 pt-1">
+          <p className="truncate text-[12.5px] font-semibold tracking-[0.01em] text-[var(--color-ink-500)]">{label}</p>
+          <InfoTip text={def.tooltip} label={label} />
+        </div>
+        <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] ${TONE_CLS[tone]}`} aria-hidden="true">
+          <Icon size={15} strokeWidth={1.75} />
+        </span>
       </div>
-      <div className="mt-2 flex items-end justify-between gap-2">
-        <p className="text-[26px] sm:text-[28px] font-bold leading-none tracking-tight tabular-nums text-[var(--color-ink-900)]">
-          {kpi.display ?? formatMetric(kpi.value, def.format)}
-        </p>
-        {kpi.spark && <Sparkline values={kpi.spark} />}
-      </div>
-      {kpi.sub && <p className="mt-1.5 text-[11.5px] text-[var(--color-ink-500)] truncate">{kpi.sub}</p>}
-      {change && (
-        <p className="mt-1.5 flex items-start gap-1 text-[11px] leading-snug text-[var(--color-ink-500)]">
-          <Arrow size={12} className="mt-px shrink-0" aria-hidden="true" />
-          <span>{change.text}</span>
-        </p>
+      <p className="mt-2.5 text-[28px] sm:text-[30px] font-bold leading-none tracking-[-0.02em] tabular-nums text-[var(--color-ink-900)]">
+        {kpi.display ?? formatMetric(kpi.value, def.format)}
+      </p>
+      {kpi.sub && <p className="mt-2 truncate text-[12px] text-[var(--color-ink-500)]">{kpi.sub}</p>}
+      {(change || kpi.spark) && (
+        <div className="mt-auto flex items-end justify-between gap-3 pt-4">
+          {change ? (
+            <p className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11.5px] leading-snug text-[var(--color-ink-400)]">
+              <span className="inline-flex items-center gap-0.5 rounded-full bg-[var(--color-surface-sunken)] px-1.5 py-0.5 font-semibold text-[var(--color-ink-700)]">
+                <Arrow size={11} strokeWidth={2.25} aria-hidden="true" />
+                {change.chip}
+                {dirWord && <span className="sr-only"> {dirWord}</span>}
+              </span>
+              <span>{change.context === "vs" ? `vs ${compareLabel}` : `none in ${compareLabel}`}</span>
+            </p>
+          ) : <span />}
+          {kpi.spark && <Sparkline values={kpi.spark} />}
+        </div>
       )}
     </>
   );
 
-  const cls = "block h-full rounded-xl border border-[var(--color-border)] bg-white p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-[border-color,box-shadow] duration-200";
+  const cls = "group flex h-full flex-col rounded-2xl border border-[var(--color-border)] bg-white p-5 shadow-[0_1px_2px_rgba(16,24,40,0.04)] transition-[transform,border-color,box-shadow] duration-200 ease-out hover:-translate-y-px hover:border-[#D3DCDF] hover:shadow-[0_8px_24px_-12px_rgba(16,24,40,0.14)] motion-reduce:transition-none motion-reduce:hover:translate-y-0";
   return kpi.href ? (
-    <Link href={kpi.href} className={`${cls} hover:border-[var(--color-primary-400)] hover:shadow-[0_4px_16px_rgba(21,122,115,0.08)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary-500)]`}>
+    <Link href={kpi.href} className={`${cls} focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary-500)] focus-visible:ring-offset-2`}>
       {body}
     </Link>
   ) : (
@@ -89,9 +178,22 @@ export function KpiCard({ kpi, compareLabel }: { kpi: KpiValue; compareLabel: st
   );
 }
 
+/** Column count chosen from the card count so rows fill evenly instead of leaving one card stranded. */
+function kpiCols(n: number) {
+  if (n <= 2) return "sm:grid-cols-2";
+  if (n === 3) return "sm:grid-cols-3";
+  if (n === 4) return "sm:grid-cols-2 xl:grid-cols-4";
+  if (n === 5) return "sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5";
+  if (n === 6) return "sm:grid-cols-2 lg:grid-cols-3";
+  if (n === 7 || n === 8) return "sm:grid-cols-2 lg:grid-cols-4";
+  if (n === 9) return "sm:grid-cols-3";
+  if (n === 10) return "sm:grid-cols-2 2xl:grid-cols-5";
+  return "sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4";
+}
+
 export function KpiGrid({ kpis, compareLabel }: { kpis: KpiValue[]; compareLabel: string }) {
   return (
-    <div className="grid grid-cols-1 min-[480px]:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 min-[1800px]:grid-cols-5 gap-3">
+    <div className={`grid grid-cols-1 gap-3 sm:gap-4 ${kpiCols(kpis.length)}`}>
       {kpis.map((k) => <KpiCard key={`${k.id}-${k.label ?? ""}`} kpi={k} compareLabel={compareLabel} />)}
     </div>
   );
@@ -99,36 +201,81 @@ export function KpiGrid({ kpis, compareLabel }: { kpis: KpiValue[]; compareLabel
 
 /* ═══ Panels and section headings ══════════════════════════════════════════ */
 
-export function Panel({ title, subtitle, action, children, className = "" }: { title: string; subtitle?: string; action?: ReactNode; children: ReactNode; className?: string }) {
+export function Panel({ title, subtitle, icon: Icon, action, children, className = "" }: {
+  title: string; subtitle?: string; icon?: LucideIcon; action?: ReactNode; children: ReactNode; className?: string;
+}) {
   return (
-    <section className={`rounded-xl border border-[var(--color-border)] bg-white p-4 sm:p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)] min-w-0 break-inside-avoid ${className}`}>
-      <header className="mb-4 flex flex-wrap items-start justify-between gap-2">
-        <div className="min-w-0">
-          <h3 className="text-[15px] font-semibold text-[var(--color-ink-900)]">{title}</h3>
-          {subtitle && <p className="mt-0.5 text-[12px] text-[var(--color-ink-400)]">{subtitle}</p>}
+    <section className={`min-w-0 break-inside-avoid rounded-2xl border border-[var(--color-border)] bg-white p-5 sm:p-6 shadow-[0_1px_2px_rgba(16,24,40,0.04)] ${className}`}>
+      <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
+        <div className="flex min-w-0 items-start gap-3">
+          {Icon && (
+            <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-[var(--color-primary-50)] text-[var(--color-primary-700)]" aria-hidden="true">
+              <Icon size={15} strokeWidth={1.75} />
+            </span>
+          )}
+          <div className="min-w-0">
+            {/* Pinned to the app h4 token: the global [data-main-content] h3 rule would otherwise enlarge every card title. */}
+            <h3 className="font-semibold tracking-[-0.01em] text-[var(--color-ink-900)]" style={{ fontSize: "var(--rf-fs-h4)", lineHeight: 1.3 }}>{title}</h3>
+            {subtitle && <p className="mt-1 text-[12.5px] leading-snug text-[var(--color-ink-400)]">{subtitle}</p>}
+          </div>
         </div>
         {action}
-      </header>
+      </div>
       {children}
     </section>
   );
 }
 
-export function SectionHeading({ title, subtitle }: { title: string; subtitle?: string }) {
+export function SectionHeading({ title, subtitle, icon: Icon }: { title: string; subtitle?: string; icon?: LucideIcon }) {
   return (
-    <div className="pt-2">
-      <h2 className="text-[18px] font-semibold tracking-tight text-[var(--color-ink-900)]">{title}</h2>
-      {subtitle && <p className="mt-0.5 text-[12.5px] text-[var(--color-ink-400)]">{subtitle}</p>}
+    <div className="flex items-start gap-3 pt-3">
+      {Icon && (
+        <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[var(--color-border)] bg-white text-[var(--color-primary-700)]" aria-hidden="true">
+          <Icon size={16} strokeWidth={1.75} />
+        </span>
+      )}
+      <div>
+        <h2 className="font-semibold tracking-[-0.015em] text-[var(--color-ink-900)]" style={{ fontSize: "var(--rf-fs-h3)", lineHeight: 1.3 }}>{title}</h2>
+        {subtitle && <p className="mt-0.5 text-[12.5px] text-[var(--color-ink-400)]">{subtitle}</p>}
+      </div>
     </div>
   );
 }
 
 export function Grid2({ children }: { children: ReactNode }) {
-  return <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">{children}</div>;
+  return <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">{children}</div>;
 }
 
 export function Grid3({ children }: { children: ReactNode }) {
-  return <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4">{children}</div>;
+  return <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 2xl:grid-cols-3">{children}</div>;
+}
+
+/* ═══ Segmented period control (a shortcut onto the existing date-range filter) ═ */
+
+const QUICK_RANGES = [{ id: "7d", label: "7 days" }, { id: "30d", label: "30 days" }, { id: "90d", label: "90 days" }];
+
+export function RangeSwitch({ params, tab }: { params: Record<string, string | undefined>; tab: string }) {
+  const current = params.range ?? "30d";
+  return (
+    <div role="group" aria-label="Quick date range" className="inline-flex rounded-[10px] border border-[var(--color-border)] bg-[var(--color-surface-sunken)]/60 p-0.5">
+      {QUICK_RANGES.map((r) => {
+        const active = current === r.id;
+        return (
+          <Link
+            key={r.id}
+            href={`/analytics${buildQuery(params, { range: r.id === "30d" ? undefined : r.id, from: undefined, to: undefined, tab: tab === "overview" ? undefined : tab })}`}
+            scroll={false}
+            aria-current={active ? "true" : undefined}
+            className={`rounded-lg px-3 py-1.5 text-[12px] font-semibold transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary-500)] ${
+              active ? "bg-[var(--color-primary-700)] text-white shadow-sm" : "text-[var(--color-ink-500)] hover:text-[var(--color-ink-900)]"
+            }`}
+          >
+            {r.label}
+          </Link>
+        );
+      })}
+    </div>
+  );
 }
 
 /* ═══ Error state ══════════════════════════════════════════════════════════ */
@@ -136,14 +283,14 @@ export function Grid3({ children }: { children: ReactNode }) {
 export function SectionError({ message }: { message: string }) {
   const router = useRouter();
   return (
-    <div role="alert" className="flex flex-col items-center gap-2 rounded-xl border border-red-200 bg-red-50/60 px-6 py-10 text-center">
-      <AlertTriangle size={20} className="text-red-500" />
-      <p className="text-[14px] font-semibold text-[var(--color-ink-900)]">{message}</p>
+    <div role="alert" className="flex flex-col items-center gap-2 rounded-2xl border border-[#FECDCA] bg-[#FEF3F2]/60 px-6 py-12 text-center">
+      <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-[#B42318] shadow-sm"><AlertTriangle size={18} /></span>
+      <p className="mt-1 text-[14px] font-semibold text-[var(--color-ink-900)]">{message}</p>
       <p className="text-[12.5px] text-[var(--color-ink-500)]">The rest of Analytics is unaffected.</p>
       <button
         type="button"
         onClick={() => router.refresh()}
-        className="mt-1 inline-flex items-center gap-1.5 rounded-lg border border-[var(--color-border)] bg-white px-3.5 py-1.5 text-[12.5px] font-semibold text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]"
+        className="mt-2 inline-flex h-9 items-center gap-1.5 rounded-[10px] border border-[var(--color-border)] bg-white px-3.5 text-[12.5px] font-semibold text-[var(--color-ink-700)] transition-colors hover:bg-[var(--color-surface-sunken)]"
       >
         <RefreshCw size={13} /> Retry
       </button>
@@ -212,10 +359,10 @@ export function DataTable({
           No records for this period.
         </p>
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-[var(--color-border)]">
+        <div className="overflow-x-auto rounded-xl border border-[var(--color-border)]">
           <table className="w-full text-[12.5px]">
             <caption className="sr-only">{table.title}</caption>
-            <thead className="bg-[var(--color-surface-sunken)]/70">
+            <thead className="bg-[#F7F9FA]">
               <tr>
                 {table.columns.map((c) => {
                   const active = sort?.key === c.key;
@@ -224,7 +371,7 @@ export function DataTable({
                       key={c.key}
                       scope="col"
                       aria-sort={active ? (sort!.dir === 1 ? "ascending" : "descending") : "none"}
-                      className={`px-3 py-2 font-semibold text-[11.5px] text-[var(--color-ink-500)] whitespace-nowrap ${c.align === "right" ? "text-right" : "text-left"}`}
+                      className={`px-3.5 py-2.5 font-semibold text-[12px] text-[var(--color-ink-500)] whitespace-nowrap ${c.align === "right" ? "text-right" : "text-left"}`}
                     >
                       {print ? c.label : (
                         <button
@@ -243,12 +390,12 @@ export function DataTable({
             </thead>
             <tbody className="divide-y divide-[var(--color-border)]">
               {visible.map(({ r, link }, i) => (
-                <tr key={i} className="hover:bg-[var(--color-surface-sunken)]/50">
+                <tr key={i} className="transition-colors hover:bg-[#F7F9FA]">
                   {table.columns.map((c) => {
                     const v = r[c.key];
                     const text = typeof v === "number" ? v.toLocaleString("en-IN") : (v ?? "—");
                     return (
-                      <td key={c.key} className={`px-3 py-2 text-[var(--color-ink-700)] ${c.align === "right" ? "text-right tabular-nums" : ""} ${c.key === firstKey ? "font-medium text-[var(--color-ink-900)]" : ""}`}>
+                      <td key={c.key} className={`px-3.5 py-2.5 text-[var(--color-ink-700)] ${c.align === "right" ? "text-right tabular-nums" : ""} ${c.key === firstKey ? "font-medium text-[var(--color-ink-900)]" : ""}`}>
                         {link && c.key === firstKey && !print
                           ? <Link href={link} className="text-[var(--color-primary-700)] hover:underline">{text}</Link>
                           : text}

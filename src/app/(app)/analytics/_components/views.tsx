@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
-import { ArrowRight, Building2, ChevronLeft, ChevronRight, Lightbulb } from "lucide-react";
+import { Activity, ArrowRight, Building2, CalendarClock, ChevronLeft, ChevronRight, FlaskConical, History, LayoutGrid, Lightbulb, LineChart, ListTodo, LogIn, PieChart, Pill, Scissors, ScrollText, Stethoscope, Tags, Users } from "lucide-react";
 import { COLORS, type SeriesDef } from "@/lib/analytics/definitions";
 import { buildQuery } from "@/lib/analytics/filters";
 import type {
@@ -11,7 +11,7 @@ import type {
   SurgeryData, FollowUpsData, HospitalsData, OperationsData, ActivityData,
 } from "@/lib/analytics/service";
 import { BarList, ColumnChart, Donut, Heatmap, Pipeline, TrendChart, ChartEmpty } from "./charts";
-import { DataTable, Grid2, Grid3, KpiGrid, Panel, SectionHeading } from "./ui";
+import { DataTable, Grid2, Grid3, KpiGrid, Panel, RangeSwitch, SectionHeading } from "./ui";
 
 export interface ViewCtx {
   compareLabel: string;
@@ -29,7 +29,12 @@ export function OverviewView({ data, ctx }: { data: OverviewData; ctx: ViewCtx }
     <div className="flex flex-col gap-4">
       <KpiGrid kpis={data.kpis} compareLabel={ctx.compareLabel} />
 
-      <Panel title="Patient & appointment activity" subtitle="Appointments by scheduled date; consultations and patients by visit date">
+      <Panel
+        title="Patient & appointment activity"
+        subtitle="Appointments by scheduled date; consultations and patients by visit date"
+        icon={LineChart}
+        action={!ctx.print ? <RangeSwitch params={ctx.params} tab="overview" /> : undefined}
+      >
         <TrendChart
           title="Patient and appointment activity"
           points={data.activity}
@@ -46,26 +51,26 @@ export function OverviewView({ data, ctx }: { data: OverviewData; ctx: ViewCtx }
       </Panel>
 
       <Grid2>
-        <Panel title="Appointment status" subtitle="All appointments in the period">
+        <Panel title="Appointment status" subtitle="Breakdown of appointments by current status" icon={PieChart}>
           <Donut data={data.status} title="Appointment status" centerLabel="Appointments" />
         </Panel>
-        <Panel title="Visit types" subtitle="Appointments by visit type">
+        <Panel title="Visit types" subtitle="Appointments by visit type" icon={Tags}>
           <BarList data={data.visitTypes} />
         </Panel>
       </Grid2>
 
       <Grid2>
-        <Panel title="Current workload" subtitle="Items needing attention now">
+        <Panel title="Current workload" subtitle="Items needing attention now" icon={ListTodo}>
           <BarList data={data.workload} showShare={false} />
         </Panel>
-        <Panel title="Insights" subtitle="Plain descriptions of the recorded activity">
+        <Panel title="Insights" subtitle="Plain descriptions of the recorded activity" icon={Lightbulb}>
           {data.insights.length === 0 ? (
             <ChartEmpty height={120} message="No activity recorded for this period." />
           ) : (
-            <ul className="flex flex-col gap-2.5">
+            <ul className="flex flex-col divide-y divide-[var(--color-border)]">
               {data.insights.map((t) => (
-                <li key={t} className="flex items-start gap-2.5 text-[13px] leading-relaxed text-[var(--color-ink-700)]">
-                  <Lightbulb size={14} className="mt-0.5 shrink-0 text-[var(--color-primary-600)]" aria-hidden="true" />
+                <li key={t} className="flex items-start gap-3 py-2.5 first:pt-0 last:pb-0 text-[13px] leading-relaxed text-[var(--color-ink-700)]">
+                  <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--color-primary-500)]" aria-hidden="true" />
                   <span>{t}</span>
                 </li>
               ))}
@@ -78,6 +83,7 @@ export function OverviewView({ data, ctx }: { data: OverviewData; ctx: ViewCtx }
         <Panel
           title="Recent activity"
           subtitle="Latest entries from the audit log"
+          icon={History}
           action={!ctx.print ? (
             <Link href={`/analytics${buildQuery(ctx.params, { tab: "activity" })}`} className="inline-flex items-center gap-1 text-[12px] font-semibold text-[var(--color-primary-700)] hover:underline">
               Full audit trail <ArrowRight size={12} />
@@ -109,7 +115,7 @@ export function PatientsView({ data, ctx }: { data: PatientsData; ctx: ViewCtx }
   return (
     <div className="flex flex-col gap-4">
       <KpiGrid kpis={data.kpis} compareLabel={ctx.compareLabel} />
-      <Panel title="Patient growth" subtitle="New registrations and patients seen in each period">
+      <Panel title="Patient growth" subtitle="New registrations and patients seen in each period" icon={Users}>
         <TrendChart
           title="Patient growth"
           points={data.growth}
@@ -156,7 +162,12 @@ export function AppointmentsView({ data, ctx }: { data: AppointmentsData; ctx: V
   return (
     <div className="flex flex-col gap-4">
       <KpiGrid kpis={data.kpis} compareLabel={ctx.compareLabel} />
-      <Panel title="Appointment activity" subtitle="By scheduled date">
+      <Panel
+        title="Appointment activity"
+        subtitle="Track scheduled and completed appointments over the selected period"
+        icon={LineChart}
+        action={!ctx.print ? <RangeSwitch params={ctx.params} tab="appointments" /> : undefined}
+      >
         <TrendChart
           title="Appointment activity"
           points={data.activity}
@@ -169,7 +180,7 @@ export function AppointmentsView({ data, ctx }: { data: AppointmentsData; ctx: V
         />
       </Panel>
       <Grid2>
-        <Panel title="Appointment status"><Donut data={data.status} title="Appointment status" centerLabel="Appointments" /></Panel>
+        <Panel title="Appointment status" subtitle="Breakdown of appointments by current status" icon={PieChart}><Donut data={data.status} title="Appointment status" centerLabel="Appointments" /></Panel>
         <Panel title="Booking source" subtitle="Booked in advance vs walk-in"><Donut data={data.bookingSource} title="Booking source" centerLabel="Appointments" /></Panel>
       </Grid2>
       <Grid2>
@@ -193,9 +204,9 @@ export function AppointmentsView({ data, ctx }: { data: AppointmentsData; ctx: V
 export function ClinicalView({ data, ctx }: { data: ClinicalData; ctx: ViewCtx }) {
   return (
     <div className="flex flex-col gap-4">
-      <SectionHeading title="Clinical encounters" subtitle="EMR consultations opened in the period" />
+      <SectionHeading title="Clinical encounters" subtitle="EMR consultations opened in the period" icon={Stethoscope} />
       <KpiGrid kpis={data.kpis} compareLabel={ctx.compareLabel} />
-      <Panel title="Clinical activity">
+      <Panel title="Clinical activity" subtitle="Consultations, finalized records and prescriptions over time" icon={LineChart}>
         <TrendChart
           title="Clinical activity"
           points={data.activity}
@@ -208,7 +219,7 @@ export function ClinicalView({ data, ctx }: { data: ClinicalData; ctx: ViewCtx }
         {data.byDoctor.length > 0 && <Panel title="By doctor" subtitle="Consultations, workload view"><BarList data={data.byDoctor} /></Panel>}
       </Grid3>
 
-      <SectionHeading title="Diagnoses" subtitle="Describes what was recorded. It does not imply clinical trends or causes." />
+      <SectionHeading title="Diagnoses" subtitle="Describes what was recorded. It does not imply clinical trends or causes." icon={Activity} />
       <KpiGrid kpis={data.diagnosisKpis} compareLabel={ctx.compareLabel} />
       <Grid2>
         <Panel title="Diagnosis records over time">
@@ -221,7 +232,7 @@ export function ClinicalView({ data, ctx }: { data: ClinicalData; ctx: ViewCtx }
         <Panel title={data.diagnosisTable.title}><DataTable table={data.diagnosisTable} pageSize={8} print={ctx.print} /></Panel>
       </Grid2>
 
-      <SectionHeading title="Prescriptions" subtitle="Prescribing volume only. No safety or appropriateness conclusions are drawn." />
+      <SectionHeading title="Prescriptions" subtitle="Prescribing volume only. No safety or appropriateness conclusions are drawn." icon={Pill} />
       <KpiGrid kpis={data.prescriptionKpis} compareLabel={ctx.compareLabel} />
       <Grid2>
         <Panel title="Most prescribed medications"><BarList data={data.topMedications} /></Panel>
@@ -238,7 +249,7 @@ export function InvestigationsView({ data, ctx }: { data: InvestigationsData; ct
   return (
     <div className="flex flex-col gap-4">
       <KpiGrid kpis={data.kpis} compareLabel={ctx.compareLabel} />
-      <Panel title="Investigation volume" subtitle="Orders placed in each period and how many of them are reviewed">
+      <Panel title="Investigation volume" subtitle="Orders placed in each period and how many of them are reviewed" icon={FlaskConical}>
         <TrendChart title="Investigation volume" points={data.volume} series={[s("ordered", "Ordered", COLORS.primary), s("reviewed", "Reviewed", COLORS.completed)]} />
       </Panel>
       <Grid2>
@@ -267,7 +278,7 @@ export function SurgeryView({ data, ctx }: { data: SurgeryData; ctx: ViewCtx }) 
   return (
     <div className="flex flex-col gap-4">
       <KpiGrid kpis={data.kpis} compareLabel={ctx.compareLabel} />
-      <Panel title="Surgical pipeline" subtitle="Records created in the period at each stage">
+      <Panel title="Surgical pipeline" subtitle="Records created in the period at each stage" icon={Scissors}>
         <Pipeline steps={data.pipeline} />
       </Panel>
       <Panel title="Surgery trend">
@@ -294,7 +305,7 @@ export function FollowUpsView({ data, ctx }: { data: FollowUpsData; ctx: ViewCtx
   return (
     <div className="flex flex-col gap-4">
       <KpiGrid kpis={data.kpis} compareLabel={ctx.compareLabel} />
-      <Panel title="Follow-ups by due date">
+      <Panel title="Follow-ups by due date" subtitle="Completed, pending and overdue follow-ups" icon={CalendarClock}>
         <TrendChart title="Follow-ups by due date" points={data.trend} series={[s("completed", "Completed", COLORS.completed), s("pending", "Pending", COLORS.primary), s("overdue", "Overdue / missed", COLORS.cancelled)]} />
       </Panel>
       <Grid2>
@@ -344,9 +355,9 @@ export function HospitalsView({ data, ctx }: { data: HospitalsData; ctx: ViewCtx
             </>
           );
           return ctx.print ? (
-            <div key={h.id} className="rounded-xl border border-[var(--color-border)] bg-white p-4">{body}</div>
+            <div key={h.id} className="rounded-2xl border border-[var(--color-border)] bg-white p-5">{body}</div>
           ) : (
-            <Link key={h.id} href={h.href} className="rounded-xl border border-[var(--color-border)] bg-white p-4 transition-[border-color,box-shadow] hover:border-[var(--color-primary-400)] hover:shadow-[0_4px_16px_rgba(21,122,115,0.08)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary-500)]">
+            <Link key={h.id} href={h.href} className="rounded-2xl border border-[var(--color-border)] bg-white p-5 shadow-[0_1px_2px_rgba(16,24,40,0.04)] transition-[transform,border-color,box-shadow] duration-200 hover:-translate-y-px hover:border-[#D3DCDF] hover:shadow-[0_8px_24px_-12px_rgba(16,24,40,0.14)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary-500)]">
               {body}
               <p className="mt-3 inline-flex items-center gap-1 text-[11.5px] font-semibold text-[var(--color-primary-700)]">View this hospital <ArrowRight size={11} /></p>
             </Link>
@@ -368,7 +379,7 @@ export function OperationsView({ data, ctx }: { data: OperationsData; ctx: ViewC
   return (
     <div className="flex flex-col gap-4">
       <KpiGrid kpis={data.kpis} compareLabel={ctx.compareLabel} />
-      <Panel title="Scheduled appointments by day and hour" subtitle="IST · darker cells hold more appointments">
+      <Panel title="Scheduled appointments by day and hour" subtitle="IST · darker cells hold more appointments" icon={LayoutGrid}>
         <Heatmap title="Appointments by weekday and hour" days={data.heatmap.days} hours={data.heatmap.hours} values={data.heatmap.values} />
       </Panel>
       <Grid2>
@@ -394,7 +405,7 @@ function AuditFilters({ data, ctx }: { data: ActivityData; ctx: ViewCtx }) {
   const go = (key: string, value: string) => {
     start(() => router.push(`/analytics${buildQuery(ctx.params, { tab: "activity", [key]: value || undefined, page: undefined })}`, { scroll: false }));
   };
-  const select = "rounded-lg border border-[var(--color-border)] bg-white px-2.5 py-1.5 text-[12.5px] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]";
+  const select = "h-9 rounded-[10px] border border-[var(--color-border)] bg-white px-3 text-[12.5px] transition-colors hover:border-[#CBD4D8] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]/20 focus:border-[var(--color-primary-500)]";
   return (
     <div className={`mb-3 flex flex-wrap gap-2 ${pending ? "opacity-60" : ""}`}>
       <label className="sr-only" htmlFor="audit-action">Action</label>
@@ -426,7 +437,7 @@ export function ActivityView({ data, ctx }: { data: ActivityData; ctx: ViewCtx }
         <Panel title="Sign-ins by role" subtitle="Successful sign-ins in the period"><BarList data={data.loginsByRole} /></Panel>
       </Grid2>
       <Grid2>
-        <Panel title="Sign-in activity">
+        <Panel title="Sign-in activity" subtitle="Successful and failed sign-ins" icon={LogIn}>
           <TrendChart title="Sign-in activity" points={data.logins} series={[s("logins", "Successful", COLORS.primary), s("failed", "Failed", COLORS.cancelled)]} height={220} />
         </Panel>
         <Panel title="Recorded activity">
@@ -439,7 +450,7 @@ export function ActivityView({ data, ctx }: { data: ActivityData; ctx: ViewCtx }
         <Panel title="Activity volume by user" subtitle="Records processed, not a performance measure"><BarList data={data.byUser} /></Panel>
       </Grid3>
       <div id="audit" className="scroll-mt-24">
-        <Panel title="Audit trail" subtitle={`${data.auditTotal.toLocaleString("en-IN")} matching entries`}>
+        <Panel title="Audit trail" subtitle={`${data.auditTotal.toLocaleString("en-IN")} matching entries`} icon={ScrollText}>
           {!ctx.print && <AuditFilters data={data} ctx={ctx} />}
           <DataTable
             table={data.audit}
