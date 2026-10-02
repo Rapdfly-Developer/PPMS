@@ -1,19 +1,12 @@
-import { requireRole } from "@/lib/rbac";
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { getBookingScope } from "@/lib/booking-scope";
 import { BookAppointmentForm } from "./BookAppointmentForm";
 
 export default async function BookAppointmentPage() {
-  const user = await requireRole("HOSPITAL", "DOCTOR");
-
-  // Re-fetch hospitalId from DB to guard against stale JWT
-  let hospitalId: string | null = null;
-  if (user.role === "HOSPITAL") {
-    const staff = await prisma.hospitalStaff.findUnique({
-      where: { userId: user.id },
-      select: { hospitalId: true },
-    });
-    hospitalId = staff?.hospitalId ?? null;
-  }
+  const scope = await getBookingScope();
+  if (!scope) redirect("/dashboard");
+  const { user, hospitalId } = scope;
 
   const links = await prisma.doctorHospitalLink.findMany({
     where: hospitalId

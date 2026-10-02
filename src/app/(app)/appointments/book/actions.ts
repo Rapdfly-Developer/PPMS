@@ -1,7 +1,8 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { requireRole, userCan } from "@/lib/rbac";
+import { requireUser, userCan } from "@/lib/rbac";
+import { getBookingScope } from "@/lib/booking-scope";
 import { generateUDID, generateUHID } from "@/lib/udid";
 import { encryptAadhaar } from "@/lib/crypto";
 import { redirect } from "next/navigation";
@@ -9,7 +10,9 @@ import { revalidatePath } from "next/cache";
 import { istDateTime, istParts, istHHMM, istDayRange } from "@/lib/ist";
 
 export async function getLastVisitCC(patientId: string): Promise<{ notes: string; visitDate: string } | null> {
-  await requireRole("HOSPITAL", "DOCTOR");
+  // Also used by the walk-in encounter form, so walk-in permission is enough.
+  const user = await requireUser();
+  if (!(await getBookingScope()) && !userCan(user, "opd.walkin.create")) return null;
   const appt = await prisma.appointment.findFirst({
     where: { patientId, notes: { not: null } },
     orderBy: { dateTime: "desc" },
@@ -19,8 +22,10 @@ export async function getLastVisitCC(patientId: string): Promise<{ notes: string
   return { notes: appt.notes, visitDate: appt.dateTime.toISOString() };
 }
 
-export async function getBookedSlots(doctorId: string, dateStr: string, hospitalId: string): Promise<Record<string, number>> {
-  await requireRole("HOSPITAL", "DOCTOR");
+export async function getBookedSlots(doctorId: string, dateStr: string, requestedHospitalId: string): Promise<Record<string, number>> {
+  const scope = await getBookingScope();
+  if (!scope) return {};
+  const hospitalId = scope.hospitalId ?? requestedHospitalId;
   const { dayStart, dayEnd } = istDayRange(dateStr);
 
   const appts = await prisma.appointment.findMany({
@@ -42,7 +47,9 @@ export async function getBookedSlots(doctorId: string, dateStr: string, hospital
 }
 
 export async function bookAppointment(formData: FormData) {
-  const user = await requireRole("HOSPITAL", "DOCTOR");
+  const scope = await getBookingScope();
+  if (!scope) return { error: "You do not have permission to book appointments." };
+  const { user } = scope;
 
   const mode = formData.get("mode") as string; // "existing" | "new"
   const doctorId = formData.get("doctorId") as string;
@@ -68,14 +75,27 @@ export async function bookAppointment(formData: FormData) {
 
   // Interpret the requested slot as IST regardless of server timezone (Vercel runs UTC)
   const dateTime = istDateTime(dateStr, timeStr);
-  const hospitalId = user.role === "HOSPITAL" ? user.hospitalId! : (formData.get("hospitalId") as string | null);
+  const hospitalId = scope.hospitalId ?? (formData.get("hospitalId") as string | null);
   if (!hospitalId) return { error: "Hospital is required." };
+
+  // Hospital-scoped users may only book their own hospital's doctors.
+  if (scope.hospitalId) {
+    const link = await prisma.doctorHospitalLink.findFirst({
+      where: { doctorId, hospitalId: scope.hospitalId, active: true },
+      select: { id: true },
+    });
+    if (!link) return { error: "This doctor is not available at your hospital." };
+  }
 
   let patientId: string;
 
   if (mode === "existing") {
     patientId = formData.get("patientId") as string;
     if (!patientId) return { error: "Please select an existing patient." };
+    if (scope.hospitalId) {
+      const patient = await prisma.patient.findUnique({ where: { id: patientId }, select: { registeredAtId: true } });
+      if (patient?.registeredAtId !== scope.hospitalId) return { error: "This patient is not registered at your hospital." };
+    }
     if (notes?.trim()) {
       await prisma.patient.update({ where: { id: patientId }, data: { complaint: notes.trim() } });
     }

@@ -49,7 +49,7 @@ export function AppointmentsClient({
   pageSize,
   view,
   role,
-  isHospital,
+  canBook,
   isDefaultView = false,
   dateParam,
   statusParam,
@@ -69,7 +69,7 @@ export function AppointmentsClient({
   pageSize:       number;
   view?:          string;
   role:           string;
-  isHospital:     boolean;
+  canBook:        boolean;
   isDefaultView?: boolean;
   dateParam:      string;
   statusParam:    string;
@@ -337,7 +337,7 @@ export function AppointmentsClient({
               Hospital Appt
             </Link>
           )}
-          {(isHospital || role === "DOCTOR") && (
+          {canBook && (
             <Link
               href="/appointments/book"
               className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 bg-[var(--color-primary-600)] text-white text-[12px] sm:text-sm font-semibold px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl hover:bg-[var(--color-primary-700)] transition-colors shadow-sm whitespace-nowrap"
