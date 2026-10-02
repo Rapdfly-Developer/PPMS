@@ -88,7 +88,7 @@ export function VisitTimeline({
   const consulting = consultStart && now ? elapsed(consultStart, now) : null;
 
   return (
-    <div className="space-y-1">
+    <div className="grid grid-cols-2 gap-x-4 gap-y-0.5">
       {bookingTime && <Row label="Booked" value={bookingTime} />}
       {appointmentTime && <Row label="Appt" value={appointmentTime} />}
       {visitTime && <Row label="Visit" value={visitTime} />}

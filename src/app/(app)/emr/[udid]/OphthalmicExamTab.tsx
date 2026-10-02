@@ -714,6 +714,8 @@ function ColourContrastTab({ visit, udid, editable, priorVisits = [] }: { visit:
   const [csLeResult, setCsLeResult] = useState<CVResult>(storedLe.csResult ?? "");
   const [csReNotes, setCsReNotes]   = useState<string>(storedRe.csNotes ?? "");
   const [csLeNotes, setCsLeNotes]   = useState<string>(storedLe.csNotes ?? "");
+  const [cvHistoryOpen, setCvHistoryOpen] = useState(false);
+  const [csHistoryOpen, setCsHistoryOpen] = useState(false);
 
   const [cvLoadToast, setCvLoadToast] = useState(false);
 
@@ -769,11 +771,12 @@ function ColourContrastTab({ visit, udid, editable, priorVisits = [] }: { visit:
 
   return (
     <div className="flex flex-col gap-4">
-      <SaveIndicator state={state} />
-
       {/* Colour Vision */}
-      <Card>
-        <div className="flex items-center gap-3 mb-5 flex-wrap">
+      <Card className="relative w-full">
+        <div className="flex justify-end mb-2 sm:absolute sm:right-4 sm:top-4 sm:mb-0">
+          <SaveIndicator state={state} />
+        </div>
+        <div className="flex items-center justify-start gap-3 mb-4 flex-wrap max-w-4xl mx-auto">
           <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)]">Colour Vision</p>
           <div className="flex items-center gap-2">
             <span className="text-[11px] sm:text-xs text-[var(--color-ink-400)]">Method:</span>
@@ -786,21 +789,31 @@ function ColourContrastTab({ visit, udid, editable, priorVisits = [] }: { visit:
               {CV_METHODS.map((m) => <option key={m}>{m}</option>)}
             </select>
           </div>
+          {priorCv.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setCvHistoryOpen((open) => !open)}
+              aria-expanded={cvHistoryOpen}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-[#B2DEDA] bg-[#EEF8F7] px-2.5 py-1 text-[11px] font-medium text-[#0F766E] hover:bg-[#DCF3F1] transition-colors"
+            >
+              <History size={11} /> History ({priorCv.length})
+            </button>
+          )}
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 mt-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 max-w-4xl mx-auto">
           {[
             { label: "Right Eye", result: reResult, setResult: setReResult, notes: reNotes, setNotes: setReNotes },
             { label: "Left Eye",  result: leResult, setResult: setLeResult, notes: leNotes, setNotes: setLeNotes },
           ].map(({ label, result, setResult, notes, setNotes }) => (
-            <div key={label} className="flex flex-col gap-4">
+            <div key={label} className="w-full max-w-sm mx-auto flex flex-col items-start gap-3 text-left">
               <p className="text-[11px] sm:text-xs font-semibold text-[var(--color-primary-700)] uppercase tracking-wide">{label}</p>
-              <div className="flex gap-2 flex-wrap">{resultBtns(result, setResult)}</div>
-              <KeywordInput fieldKey={`cv_${label}`} value={notes} onChange={setNotes} disabled={!editable} placeholder="Notes..." className="w-56 rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-xs disabled:bg-[var(--color-surface-sunken)]" />
+              <div className="flex w-full justify-start gap-2 flex-wrap">{resultBtns(result, setResult)}</div>
+              <KeywordInput fieldKey={`cv_${label}`} value={notes} onChange={setNotes} disabled={!editable} placeholder="Notes..." className="w-full rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-xs disabled:bg-[var(--color-surface-sunken)]" />
             </div>
           ))}
         </div>
-        {priorCv.length > 0 && (
-          <div className="mt-5 rounded-xl border border-[#B2DEDA] bg-[#EEF8F7] overflow-x-auto">
+        {cvHistoryOpen && priorCv.length > 0 && (
+          <div className="mt-4 max-w-3xl mx-auto rounded-xl border border-[#B2DEDA] bg-[#EEF8F7] overflow-x-auto">
             <div className="px-3 pt-2.5 pb-2 border-b border-[#B2DEDA]">
               <p className="text-[9px] sm:text-[10px] font-bold text-[#0F766E] uppercase tracking-widest">Previous</p>
             </div>
@@ -841,8 +854,8 @@ function ColourContrastTab({ visit, udid, editable, priorVisits = [] }: { visit:
       </Card>
 
       {/* Contrast Vision */}
-      <Card>
-        <div className="flex items-center gap-3 mb-5 flex-wrap">
+      <Card className="w-full">
+        <div className="flex items-center justify-start gap-3 mb-4 flex-wrap max-w-4xl mx-auto">
           <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)]">Contrast Vision</p>
           <div className="flex items-center gap-2">
             <span className="text-[11px] sm:text-xs text-[var(--color-ink-400)]">Method:</span>
@@ -855,21 +868,31 @@ function ColourContrastTab({ visit, udid, editable, priorVisits = [] }: { visit:
               {CS_METHODS.map((m) => <option key={m}>{m}</option>)}
             </select>
           </div>
+          {priorCv.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setCsHistoryOpen((open) => !open)}
+              aria-expanded={csHistoryOpen}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-[#B2DEDA] bg-[#EEF8F7] px-2.5 py-1 text-[11px] font-medium text-[#0F766E] hover:bg-[#DCF3F1] transition-colors"
+            >
+              <History size={11} /> History ({priorCv.length})
+            </button>
+          )}
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 mt-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 max-w-4xl mx-auto">
           {[
             { label: "Right Eye", result: csReResult, setResult: setCsReResult, notes: csReNotes, setNotes: setCsReNotes },
             { label: "Left Eye",  result: csLeResult, setResult: setCsLeResult, notes: csLeNotes, setNotes: setCsLeNotes },
           ].map(({ label, result, setResult, notes, setNotes }) => (
-            <div key={label} className="flex flex-col gap-4">
+            <div key={label} className="w-full max-w-sm mx-auto flex flex-col items-start gap-3 text-left">
               <p className="text-[11px] sm:text-xs font-semibold text-[var(--color-primary-700)] uppercase tracking-wide">{label}</p>
-              <div className="flex gap-2 flex-wrap">{resultBtns(result, setResult)}</div>
-              <KeywordInput fieldKey={`cs_${label}`} value={notes} onChange={setNotes} disabled={!editable} placeholder="Notes..." className="w-56 rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-xs disabled:bg-[var(--color-surface-sunken)]" />
+              <div className="flex w-full justify-start gap-2 flex-wrap">{resultBtns(result, setResult)}</div>
+              <KeywordInput fieldKey={`cs_${label}`} value={notes} onChange={setNotes} disabled={!editable} placeholder="Notes..." className="w-full rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-xs disabled:bg-[var(--color-surface-sunken)]" />
             </div>
           ))}
         </div>
-        {priorCv.length > 0 && (
-          <div className="mt-5 rounded-xl border border-[#B2DEDA] bg-[#EEF8F7] overflow-x-auto">
+        {csHistoryOpen && priorCv.length > 0 && (
+          <div className="mt-4 max-w-3xl mx-auto rounded-xl border border-[#B2DEDA] bg-[#EEF8F7] overflow-x-auto">
             <div className="px-3 pt-2.5 pb-2 border-b border-[#B2DEDA]">
               <p className="text-[9px] sm:text-[10px] font-bold text-[#0F766E] uppercase tracking-widest">Previous</p>
             </div>

@@ -277,7 +277,7 @@ export default async function PatientDetailedEMR({
       <EmrTabsProvider defaultTab="general">
       {/* ── Premium Patient Banner ── */}
       <div
-        className="relative rounded-2xl mb-4 overflow-hidden"
+        className="relative rounded-2xl mb-3 overflow-hidden"
         style={{
           background: "linear-gradient(135deg, #0E8282 0%, #0C7676 55%, #0A6C6C 100%)",
           boxShadow: "0 8px 32px rgba(0,0,0,0.22), 0 2px 8px rgba(0,0,0,0.14), inset 0 1px 0 rgba(255,255,255,0.10)",
@@ -318,11 +318,11 @@ export default async function PatientDetailedEMR({
         </svg>
 
         {/* Main info section */}
-        <div className="relative z-10 p-3 sm:p-4">
-          <div className="flex flex-col lg:flex-row gap-3 lg:gap-4">
+        <div className="relative z-10 p-2.5 sm:p-3">
+          <div className="flex flex-col lg:flex-row gap-2.5 lg:gap-3">
 
             {/* Left block: avatar + info */}
-            <div className="flex gap-2 sm:gap-3 flex-1 min-w-0">
+            <div className="flex gap-2 flex-1 min-w-0">
 
               {/* Avatar — click to view full size */}
               <div className="shrink-0">
@@ -340,9 +340,9 @@ export default async function PatientDetailedEMR({
               {/* Patient details */}
               <div className="flex-1 min-w-0">
                 {/* Name row */}
-                <div className="flex flex-wrap items-center gap-1.5 mb-1">
-                  <h2 className="text-lg sm:text-xl font-bold text-white leading-tight">{patient.name}</h2>
-                  <span className="text-sm text-white/55">{patient.age}y · {patient.sex.charAt(0).toUpperCase()}</span>
+                <div className="flex flex-wrap items-center gap-1.5 mb-0.5">
+                  <h2 className="text-base sm:text-lg font-bold text-white leading-tight">{patient.name}</h2>
+                  <span className="text-xs text-white/55">{patient.age}y · {patient.sex.charAt(0).toUpperCase()}</span>
                   {patient.category !== "GENERAL" && (
                     <span className={`text-[10px] font-bold tracking-wide px-2 py-0.5 rounded-full ${
                       patient.category === "BPL"        ? "bg-amber-400/20 text-amber-300" :
@@ -392,7 +392,7 @@ export default async function PatientDetailedEMR({
                   const normalized = convertNotesToCC(activeVisit.generalExam.chiefComplaint);
                   const complaints = parseEMRComplaints(normalized);
                   return complaints.length > 0 ? (
-                    <div className="flex flex-wrap gap-1.5 mt-1.5">
+                    <div className="flex flex-wrap gap-1 mt-1">
                       {complaints.map((c, i) => {
                         const parts = [
                           c.lat,
@@ -410,7 +410,7 @@ export default async function PatientDetailedEMR({
                 })()}
                 {/* Notes / Instructions */}
                 {patient.notes && (
-                  <div className="flex items-start gap-1.5 mt-1.5 text-[11px] text-white/65">
+                  <div className="flex items-start gap-1.5 mt-1 text-[11px] text-white/65">
                     <FileText size={10} className="shrink-0 mt-0.5 text-white/45" />
                     <span className="whitespace-pre-wrap"><span className="font-semibold text-white/50">Notes:</span> {patient.notes}</span>
                   </div>
@@ -420,9 +420,9 @@ export default async function PatientDetailedEMR({
 
             {/* Right: active visit status panel */}
             {activeVisit && (
-              <div className="shrink-0 lg:w-52 xl:w-56">
-                <div className="rounded-xl border border-white/12 bg-white/8 p-2.5 h-full">
-                  <div className="flex items-center gap-2 mb-2">
+              <div className="shrink-0 lg:w-64 xl:w-72">
+                <div className="rounded-xl border border-white/12 bg-white/8 p-2 h-full">
+                  <div className="flex items-center gap-2 mb-1">
                     <span className={`w-2 h-2 rounded-full shrink-0 ${
                       activeVisit.status === "IN_PROGRESS" ? "bg-emerald-400" : "bg-slate-500"
                     }`} />
@@ -432,8 +432,8 @@ export default async function PatientDetailedEMR({
                       {activeVisit.status === "IN_PROGRESS" ? "Active Visit" : "Closed Visit"}
                     </span>
                   </div>
-                  <div className="space-y-1">
-                    <div className="text-xs font-semibold text-white mb-1.5">{activeVisit.visitType}</div>
+                  <div>
+                    <div className="text-[11px] font-semibold text-white mb-1">{activeVisit.visitType}</div>
                     {/* Static stamps are formatted here so the server and the first
                         client paint agree; the two elapsed values tick in the client. */}
                     <VisitTimeline

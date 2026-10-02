@@ -226,11 +226,9 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, customPmhCh
   const [complaints, setComplaints] = useState<Complaint[]>(() => parseComplaints(ge?.chiefComplaint ?? ""));
   const [openKwIdx, setOpenKwIdx] = useState<number | null>(null);
   const [hpi, setHpi] = useState(ge?.hpi ?? "");
-  /* One row per condition, each with an optional "since". pmhOtherText is
-     still written back untouched so free text saved by the old chip UI is not
-     dropped on the next save. */
+  /* One row per condition, each with an optional "since". */
   const [pmh, setPmh] = useState<PmhEntry[]>(() => parsePmh(ge?.pastMedicalHistory));
-  const [pmhOther] = useState(ge?.pmhOtherText ?? "");
+  const [pmhOther, setPmhOther] = useState(ge?.pmhOtherText ?? "");
 
   const patchPmh = (i: number, patch: Partial<PmhEntry>) =>
     setPmh((prev) => prev.map((e, idx) => (idx === i ? { ...e, ...patch } : e)));
@@ -271,6 +269,7 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, customPmhCh
   const hasHpi        = !!hpi.trim();
   const hasPmh        = cumulativePmh.length > 0;
   const hasMeds       = !!medications.trim();
+  const hasOtherHistory = !!pmhOther.trim();
   const hasAllergies  = nkda || !!allergies.trim();
   const hasVitals     = !!(bp || pulse || temperature || weight);
 
@@ -506,6 +505,15 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, customPmhCh
       <Card>
         <FieldWithHistory label="CURRENT MEDICATIONS" history={histFor((g) => g.medications)} currentValue={medications} onLoad={readOnly ? undefined : setMedications}>
           <KeywordTextarea fieldKey="ge_medications" value={medications} onChange={setMedications} disabled={readOnly} rows={2} placeholder="Drug, dosage, frequency" />
+        </FieldWithHistory>
+      </Card>
+      </div>
+
+      {/* OTHER MEDICAL HISTORY */}
+      <div {...(overview && !hasOtherHistory ? { "data-overview-empty-section": "" } : {})}>
+      <Card>
+        <FieldWithHistory label="OTHER MEDICAL HISTORY" history={histFor((g) => g.pmhOtherText)} currentValue={pmhOther} onLoad={readOnly ? undefined : setPmhOther}>
+          <KeywordTextarea fieldKey="ge_pmh_other" value={pmhOther} onChange={setPmhOther} disabled={readOnly} rows={3} placeholder="Add any other relevant medical history..." />
         </FieldWithHistory>
       </Card>
       </div>
