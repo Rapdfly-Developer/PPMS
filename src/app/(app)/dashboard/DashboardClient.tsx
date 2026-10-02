@@ -220,7 +220,7 @@ function ApptRow({ appt, scope, serial, canManageQueue, canViewPatient, returnTo
       {/* Booked time, with whether it's a booked appointment or a walk-in. */}
       <div className="w-24 shrink-0 hidden sm:flex items-center justify-center">
         <span className="flex flex-col items-center leading-tight" title={appt.isWalkIn ? "Walk-in time" : "Appointment time"}>
-          <span className="inline-flex items-center gap-1 whitespace-nowrap text-[12px] font-semibold text-blue-600 tabular-nums">
+          <span className="inline-flex items-center gap-1 whitespace-nowrap text-[12px] font-bold text-[var(--color-ink-900)] tabular-nums">
             <Calendar size={11} /> {apptTime}
           </span>
           <span className="text-[10px] font-semibold text-gray-400 mt-0.5">
