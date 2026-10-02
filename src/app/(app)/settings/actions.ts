@@ -310,6 +310,64 @@ export async function toggleUserActive(userId: string, active: boolean): Promise
 
 // ── Doctor profile (DOCTOR role) ───────────────────────────────────────────
 
+export async function saveAppointmentSettings(data: {
+  slotMins: string; bufferMins: string; maxPerDay: string;
+  allowOnline: boolean; autoConfirm: boolean; allowWalkIn: boolean;
+}): Promise<{ error?: string }> {
+  const user = await requireRole("DOCTOR");
+  const doctor = await prisma.doctor.findUnique({ where: { userId: user.id }, select: { id: true } });
+  if (!doctor) return { error: "Doctor profile not found." };
+
+  if (!["10", "15", "20", "30", "45", "60"].includes(data.slotMins)) return { error: "Choose a valid slot duration." };
+
+  const optInt = (v: string, label: string, max: number): { value: number | null; error?: string } => {
+    const s = v.trim();
+    if (!s) return { value: null };
+    if (!/^\d+$/.test(s) || Number(s) > max) return { value: null, error: `${label} must be a whole number up to ${max}.` };
+    return { value: Number(s) };
+  };
+  const buffer = optInt(data.bufferMins, "Buffer time", 120);
+  if (buffer.error) return { error: buffer.error };
+  const maxPerDay = optInt(data.maxPerDay, "Max appointments per day", 500);
+  if (maxPerDay.error) return { error: maxPerDay.error };
+
+  await prisma.doctor.update({
+    where: { id: doctor.id },
+    data: {
+      appointmentSettings: {
+        slotMins:    Number(data.slotMins),
+        bufferMins:  buffer.value,
+        maxPerDay:   maxPerDay.value,
+        allowOnline: !!data.allowOnline,
+        autoConfirm: !!data.autoConfirm,
+        allowWalkIn: !!data.allowWalkIn,
+      },
+    },
+  });
+  revalidatePath("/settings");
+  return {};
+}
+
+const NOTIFICATION_KEYS = [
+  "apptConfirmed", "apptCancelled", "apptReminder",
+  "patientReg", "testResults", "surgeryReminder",
+  "smsAlerts", "emailAlerts", "pushAlerts",
+  "dailyDigest", "weeklyReport",
+] as const;
+
+export async function saveNotificationSettings(
+  data: Record<string, boolean>
+): Promise<{ error?: string }> {
+  const user = await requireRole("DOCTOR");
+  const doctor = await prisma.doctor.findUnique({ where: { userId: user.id }, select: { id: true } });
+  if (!doctor) return { error: "Doctor profile not found." };
+
+  const clean = Object.fromEntries(NOTIFICATION_KEYS.map((k) => [k, data[k] === true]));
+  await prisma.doctor.update({ where: { id: doctor.id }, data: { notificationSettings: clean } });
+  revalidatePath("/settings");
+  return {};
+}
+
 export async function saveDoctorProfile(
   data: {
     name?: string; specialty?: string; contact?: string; credentials?: string;

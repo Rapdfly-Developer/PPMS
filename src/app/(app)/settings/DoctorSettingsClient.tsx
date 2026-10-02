@@ -14,6 +14,8 @@ import {
   toggleUserActive as toggleUserActiveAction,
   saveDoctorProfile,
   saveHospitalLogo,
+  saveAppointmentSettings,
+  saveNotificationSettings,
   getDoctorsByHospital,
   exportPatients,
   requestExportOtp,
@@ -65,6 +67,8 @@ interface DoctorProfile {
   specialty: string; contact: string; credentials: string;
   email: string; experience: string; medicalRegNumber: string;
   qualifications: string; signatureUrl: string;
+  appointmentSettings: Record<string, unknown> | null;
+  notificationSettings: Record<string, unknown> | null;
 }
 
 interface LoginLogRow {
@@ -1332,14 +1336,52 @@ function HospitalSection({ hospitals }: { hospitals: HospitalRow[] }) {
 
 // ── SECTION: NOTIFICATIONS ───────────────────────────────────────────────────
 
-function NotificationsSection() {
-  const [cfg, setCfg] = useState({
-    apptConfirmed:   true,  apptCancelled:  true,  apptReminder:   true,
-    patientReg:      true,  testResults:    true,  surgeryReminder:true,
-    smsAlerts:       true,  emailAlerts:    true,  pushAlerts:     false,
-    dailyDigest:     false, weeklyReport:   true,
+function SaveStatus({ saving, msg, label, onSave }: {
+  saving: boolean; msg: { type: "ok" | "err"; text: string } | null; label: string; onSave: () => void;
+}) {
+  return (
+    <div className="flex items-center justify-end gap-3">
+      {msg && (
+        <p className={`text-[11px] sm:text-xs ${msg.type === "ok" ? "text-emerald-600" : "text-red-500"}`}>{msg.text}</p>
+      )}
+      <button
+        type="button"
+        onClick={onSave}
+        disabled={saving}
+        className="flex items-center gap-2 rounded-xl bg-[var(--color-primary-600)] px-5 py-2.5 text-[13px] sm:text-sm font-semibold text-white hover:bg-[var(--color-primary-700)] transition-colors disabled:opacity-60"
+      >
+        <Save size={14} /> {saving ? "Saving…" : label}
+      </button>
+    </div>
+  );
+}
+
+const NOTIFICATION_DEFAULTS = {
+  apptConfirmed:   true,  apptCancelled:  true,  apptReminder:   true,
+  patientReg:      true,  testResults:    true,  surgeryReminder:true,
+  smsAlerts:       true,  emailAlerts:    true,  pushAlerts:     false,
+  dailyDigest:     false, weeklyReport:   true,
+};
+
+function NotificationsSection({ initial }: { initial: Record<string, unknown> | null }) {
+  const [cfg, setCfg] = useState(() => {
+    const merged = { ...NOTIFICATION_DEFAULTS };
+    for (const k of Object.keys(merged) as (keyof typeof merged)[]) {
+      if (typeof initial?.[k] === "boolean") merged[k] = initial[k] as boolean;
+    }
+    return merged;
   });
   const toggle = (k: keyof typeof cfg) => setCfg((c) => ({ ...c, [k]: !c[k] }));
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+
+  async function handleSave() {
+    setSaving(true);
+    setMsg(null);
+    const res = await saveNotificationSettings(cfg);
+    setSaving(false);
+    setMsg(res.error ? { type: "err", text: res.error } : { type: "ok", text: "Preferences saved." });
+  }
 
   const GROUPS = [
     {
@@ -1395,11 +1437,7 @@ function NotificationsSection() {
             </div>
           </Card>
         ))}
-        <div className="flex justify-end">
-          <button className="flex items-center gap-2 rounded-xl bg-[var(--color-primary-600)] px-5 py-2.5 text-[13px] sm:text-sm font-semibold text-white hover:bg-[var(--color-primary-700)] transition-colors">
-            <Save size={14} /> Save Preferences
-          </button>
-        </div>
+        <SaveStatus saving={saving} msg={msg} label="Save Preferences" onSave={handleSave} />
       </div>
     </div>
   );
@@ -1572,13 +1610,28 @@ function AuditSection({ auditLogs }: { auditLogs: AuditRow[] }) {
 
 // ── SECTION: APPOINTMENT SETTINGS ────────────────────────────────────────────
 
-function AppointmentsSection() {
+function AppointmentsSection({ initial }: { initial: Record<string, unknown> | null }) {
+  const numStr = (v: unknown) => (typeof v === "number" ? String(v) : "");
+  const bool = (v: unknown, d: boolean) => (typeof v === "boolean" ? v : d);
   const [cfg, setCfg] = useState({
-    slotMins: "15", bufferMins: "5", maxPerDay: "24",
-    allowOnline: true, autoConfirm: false, reminderHrs: "24",
-    cancelCutoff: "2", allowWalkIn: true,
+    slotMins:    numStr(initial?.slotMins) || "15",
+    bufferMins:  numStr(initial?.bufferMins),
+    maxPerDay:   numStr(initial?.maxPerDay),
+    allowOnline: bool(initial?.allowOnline, true),
+    autoConfirm: bool(initial?.autoConfirm, false),
+    allowWalkIn: bool(initial?.allowWalkIn, true),
   });
   const set = (k: string, v: string | boolean) => setCfg((c) => ({ ...c, [k]: v }));
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+
+  async function handleSave() {
+    setSaving(true);
+    setMsg(null);
+    const res = await saveAppointmentSettings(cfg);
+    setSaving(false);
+    setMsg(res.error ? { type: "err", text: res.error } : { type: "ok", text: "Appointment settings saved." });
+  }
 
   return (
     <div>
@@ -1594,8 +1647,8 @@ function AppointmentsSection() {
                 {["10","15","20","30","45","60"].map((v) => <option key={v}>{v}</option>)}
               </select>
             </div>
-            <div><LBL>Buffer Time (minutes)</LBL><INP type="number" value={cfg.bufferMins} onChange={(e) => set("bufferMins", e.target.value)} /></div>
-            <div><LBL>Max Appointments / Day</LBL><INP type="number" value={cfg.maxPerDay} onChange={(e) => set("maxPerDay", e.target.value)} /></div>
+            <div><LBL>Buffer Time (minutes)</LBL><INP inputMode="numeric" value={cfg.bufferMins} onChange={(e) => set("bufferMins", e.target.value.replace(/\D/g, ""))} placeholder="Enter minutes" /></div>
+            <div><LBL>Max Appointments / Day</LBL><INP inputMode="numeric" value={cfg.maxPerDay} onChange={(e) => set("maxPerDay", e.target.value.replace(/\D/g, ""))} placeholder="Enter a number" /></div>
           </div>
         </Card>
         <Card className="p-5">
@@ -1613,7 +1666,9 @@ function AppointmentsSection() {
               </div>
             ))}
           </div>
-          <SaveBar />
+          <div className="pt-4 border-t border-[var(--color-border)] mt-6">
+            <SaveStatus saving={saving} msg={msg} label="Save Changes" onSave={handleSave} />
+          </div>
         </Card>
       </div>
     </div>
@@ -3243,8 +3298,8 @@ export function DoctorSettingsClient({ users, auditLogs, hospitals, loginLogs, p
       case "departments":  return <DepartmentsSection />;
       case "hospital":     return <HospitalSection hospitals={hospitals} />;
       case "add-hospital": return <HospitalSetupWizard returnTo={urlReturnTo} />;
-      case "appointments": return <AppointmentsSection />;
-      case "notifications":return <NotificationsSection />;
+      case "appointments": return <AppointmentsSection initial={doctor?.appointmentSettings ?? null} />;
+      case "notifications":return <NotificationsSection initial={doctor?.notificationSettings ?? null} />;
       case "audit":        return <AuditSection auditLogs={auditLogs} />;
       case "export":       return <ExportSection hospitals={hospitals} />;
       case "logs":              return <LogsSection loginLogs={loginLogs} />;

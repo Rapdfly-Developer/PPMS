@@ -60,7 +60,7 @@ export default async function SettingsPage() {
     }),
     prisma.doctor.findUnique({
       where: { id: doctorId },
-      select: { id: true, name: true, shortCode: true, specialty: true, contact: true, credentials: true, email: true, experience: true, medicalRegNumber: true, qualifications: true, signatureUrl: true },
+      select: { id: true, name: true, shortCode: true, specialty: true, contact: true, credentials: true, email: true, experience: true, medicalRegNumber: true, qualifications: true, signatureUrl: true, appointmentSettings: true, notificationSettings: true },
     }),
     // System logs scoped to: this doctor's own logins + logins at his linked hospitals
     prisma.userLoginHistory.findMany({
@@ -169,6 +169,8 @@ export default async function SettingsPage() {
         medicalRegNumber: doctorProfile.medicalRegNumber ?? "",
         qualifications: doctorProfile.qualifications ?? "",
         signatureUrl: doctorProfile.signatureUrl ?? "",
+        appointmentSettings:  (doctorProfile.appointmentSettings as Record<string, unknown> | null) ?? null,
+        notificationSettings: (doctorProfile.notificationSettings as Record<string, unknown> | null) ?? null,
       } : null}
     />
   );

@@ -48,6 +48,8 @@ model Doctor {
   medicalRegNumber    String?
   qualifications      String?
   signatureUrl        String?
+  appointmentSettings  Json?
+  notificationSettings Json?
   createdAt           DateTime @default(now())
 
   hospitalLinks  DoctorHospitalLink[]
