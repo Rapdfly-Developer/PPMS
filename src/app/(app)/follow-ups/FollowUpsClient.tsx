@@ -6,7 +6,7 @@ import Link from "next/link";
 import {
   CalendarClock, Search, AlertCircle, CheckCircle2, Clock, CalendarDays,
   XCircle, User, ChevronRight, Filter, RotateCcw, Stethoscope,
-  FileText, FlaskConical, Scissors, RefreshCw, Ban, Eye,
+  FileText, FlaskConical, Scissors, RefreshCw, Trash2, Eye,
   Bell, ArrowRight, X, Building2, UserX, Phone,
 } from "lucide-react";
 import { rescheduleFollowUp, cancelFollowUp, completeFollowUp } from "./actions";
@@ -400,13 +400,14 @@ function CompleteModal({ v, onDone, onClose }: { v: FuVisit; onDone: () => void;
 
 /* ── Row actions ────────────────────────────────────────────────────────── */
 function ActionButton({
-  icon, label, onClick, variant = "default", disabled,
+  icon, label, onClick, variant = "default", disabled, iconOnly = false,
 }: {
   icon: React.ReactNode;
   label: string;
   onClick?: () => void;
   variant?: "default" | "primary" | "danger";
   disabled?: boolean;
+  iconOnly?: boolean;
 }) {
   const styles = {
     default: "border border-[var(--color-border)] text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)]",
@@ -417,10 +418,12 @@ function ActionButton({
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`inline-flex items-center gap-1 text-[10px] sm:text-[11px] font-semibold px-2.5 py-1.5 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${styles[variant]}`}
+      title={iconOnly ? label : undefined}
+      aria-label={iconOnly ? label : undefined}
+      className={`inline-flex items-center justify-center gap-1 text-[10px] sm:text-[11px] font-semibold rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${iconOnly ? "size-8 p-0" : "px-2.5 py-1.5"} ${styles[variant]}`}
     >
       {icon}
-      {label}
+      {iconOnly ? <span className="sr-only">{label}</span> : label}
     </button>
   );
 }
@@ -522,9 +525,10 @@ function FollowUpRow({
                   onClick={() => activeReschedule === v.id ? onClosePanel() : onReschedule(v.id)}
                 />
                 <ActionButton
-                  icon={<Ban size={11} />}
-                  label="Cancel"
+                  icon={<Trash2 size={14} />}
+                  label="Cancel follow-up"
                   variant="danger"
+                  iconOnly
                   onClick={() => activeCancel === v.id ? onClosePanel() : onCancel(v.id)}
                 />
               </>
@@ -640,9 +644,10 @@ function FollowUpCard({
             onClick={() => activeReschedule === v.id ? onClosePanel() : onReschedule(v.id)}
           />
           <ActionButton
-            icon={<Ban size={11} />}
-            label="Cancel"
+            icon={<Trash2 size={14} />}
+            label="Cancel follow-up"
             variant="danger"
+            iconOnly
             onClick={() => activeCancel === v.id ? onClosePanel() : onCancel(v.id)}
           />
         </div>
