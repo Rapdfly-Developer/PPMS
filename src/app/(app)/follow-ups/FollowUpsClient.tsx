@@ -10,7 +10,7 @@ import {
   Bell, ArrowRight, X, Building2, UserX, Phone,
 } from "lucide-react";
 import { rescheduleFollowUp, cancelFollowUp, completeFollowUp } from "./actions";
-import { formatComplaintDisplay } from "@/lib/appointment-cc";
+import { ComplaintChips } from "@/components/ui/ComplaintChips";
 
 /* ── Types ─────────────────────────────────────────────────────────────── */
 export type FollowUpStatus = "DUE_TODAY" | "UPCOMING" | "OVERDUE" | "NO_SHOW" | "COMPLETED" | "CANCELLED" | "SCHEDULED";
@@ -479,9 +479,7 @@ function FollowUpRow({
         {/* Complaint / Diagnosis */}
         <td className="px-4 py-3">
           {v.chiefComplaint ? (
-            <span className="clinical-complaint-chip inline-flex max-w-[200px] items-center px-2.5 py-0.5 rounded-full border text-[10px] sm:text-[11px]">
-              <span className="truncate">{formatComplaintDisplay(v.chiefComplaint)}</span>
-            </span>
+            <ComplaintChips value={v.chiefComplaint} className="max-w-[240px]" />
           ) : (
             <p className="text-[10px] sm:text-[11px] text-[var(--color-ink-300)] italic">No complaint recorded</p>
           )}
@@ -604,9 +602,7 @@ function FollowUpCard({
         )}
         <span className="text-[var(--color-ink-400)]">Complaint</span>
         {v.chiefComplaint ? (
-          <span className="clinical-complaint-chip inline-flex max-w-full items-center px-2 py-0.5 rounded-full border text-[9px] sm:text-[10px]">
-            <span className="truncate">{formatComplaintDisplay(v.chiefComplaint)}</span>
-          </span>
+          <ComplaintChips value={v.chiefComplaint} />
         ) : (
           <span className="italic text-[var(--color-ink-300)] text-[10px] sm:text-[11px]">—</span>
         )}

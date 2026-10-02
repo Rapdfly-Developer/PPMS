@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useRef, Component, type ReactNode } from "react";
 import { Sparkles, Loader2, Activity, AlertCircle, FileText, Pill, FlaskConical, ClipboardList, CalendarClock, Microscope, Stethoscope, BookOpen, CalendarCheck, RefreshCw } from "lucide-react";
-import { formatComplaintDisplay, convertNotesToCC } from "@/lib/appointment-cc";
 import { getVisitEmrData } from "./emr-viewer-action";
 import { generateAiSummary } from "@/app/(app)/patients/actions";
+import { ComplaintChips } from "@/components/ui/ComplaintChips";
 
 type Tab = "short" | "long" | "ai";
 
@@ -363,7 +363,6 @@ function ShortContent({ complaint, diagnoses, emrData }: {
     return <EmptyNote>No clinical data recorded for this visit.</EmptyNote>;
   }
 
-  const complaints = complaint ? parseComplaints(complaint) : [];
 
   return (
     <div className="space-y-4">
@@ -372,14 +371,7 @@ function ShortContent({ complaint, diagnoses, emrData }: {
       {complaint && (
         <div>
           <SumHead icon={<FileText size={11} />} label="Reason for Visit" />
-          <div className="flex flex-wrap gap-1.5">
-            {complaints.map((c, i) => (
-              <span key={i} className="clinical-complaint-chip inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[10px] sm:text-[11px]">
-                <FileText size={10} className="shrink-0 text-amber-500" />
-                {[c.lat, c.text, c.since ? `· ${c.since}` : null].filter(Boolean).join(" ")}
-              </span>
-            ))}
-          </div>
+          <ComplaintChips value={complaint} wrap />
         </div>
       )}
 
@@ -500,18 +492,6 @@ class LongContentBoundary extends Component<{ children: ReactNode }, { error: st
   }
 }
 
-function parseComplaints(raw: string) {
-  return convertNotesToCC(raw).split("|").map((s) => s.trim()).filter(Boolean).map((seg) => {
-    let rest = seg;
-    const latM = rest.match(/^\[(RE|LE|OU)\]\s*/);
-    const lat = latM ? latM[1] : null;
-    if (latM) rest = rest.slice(latM[0].length);
-    const sinceM = rest.match(/^\[(\d+)\s+(days|weeks|months|years)\]\s*/);
-    const since = sinceM ? `${sinceM[1]} ${sinceM[2]}` : null;
-    if (sinceM) rest = rest.slice(sinceM[0].length);
-    return { lat, since, text: rest.trim() };
-  });
-}
 
 /* ─── Section group wrapper for Long Summary ─── */
 function LongSection({ head, color, children }: { head: React.ReactNode; color?: string; children: React.ReactNode }) {
@@ -614,14 +594,7 @@ function LongContent({
           {g?.chiefComplaint && (
             <div>
               <p className="text-[9px] font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-1.5">Chief Complaint</p>
-              <div className="flex flex-wrap gap-1.5">
-                {parseComplaints(g.chiefComplaint).map((c, i) => (
-                  <span key={i} className="clinical-complaint-chip inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[10px] sm:text-[11px]">
-                    <FileText size={10} className="shrink-0 text-amber-500" />
-                    {[c.lat, c.text, c.since ? `· ${c.since}` : null].filter(Boolean).join(" ")}
-                  </span>
-                ))}
-              </div>
+              <ComplaintChips value={g.chiefComplaint} wrap />
             </div>
           )}
 

@@ -15,6 +15,7 @@ import { getLastVisitCC } from "@/app/(app)/appointments/book/actions";
 import { ComplaintCombobox } from "@/components/ui/ComplaintCombobox";
 import { keywordEntries } from "@/components/emr/KeywordField";
 import { CHIEF_COMPLAINT_FIELD_KEY } from "@/lib/constants";
+import { ComplaintChips } from "@/components/ui/ComplaintChips";
 
 function sinceToDays(sinceStr: string): number {
   const m = sinceStr.match(/(\d+)\s*(days?|weeks?|months?|years?)/i);
@@ -815,9 +816,8 @@ export function NewEncounterForm({
                 <ul className="mt-3 flex flex-col gap-1.5">
                   {bullets.map((b, i) => (
                     <li key={i} className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[var(--color-surface-sunken)] border border-[var(--color-border)] text-sm">
-                      <span className="flex-1 whitespace-pre-line text-[var(--color-ink-800)]">
-                        {b.lat && <><span className="font-semibold">{b.lat}</span>{" "}</>} {b.text}
-                        {b.sinceNum && <span className="text-[var(--color-ink-500)]"> — {b.sinceNum} {b.sinceUnit}</span>}
+                      <span className="flex-1 min-w-0">
+                        <ComplaintChips value={serializeEntries([b])} wrap />
                       </span>
                       <button
                         type="button"

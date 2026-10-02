@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { VisitTimeline } from "./VisitTimeline";
 import { PatientPhoto } from "./PatientPhoto";
-import { convertNotesToCC, parseEMRComplaints } from "@/lib/appointment-cc";
+import { convertNotesToCC } from "@/lib/appointment-cc";
 import { GeneralExamTab } from "./GeneralExamTab";
 import { PastExternalVisitsTab } from "./PastExternalVisitsTab";
 import { OphthalmicExamTab } from "./OphthalmicExamTab";
@@ -28,6 +28,7 @@ import { RequestUnlockButton } from "./RequestUnlockButton";
 import { PrintHeader, PrintFooter } from "@/components/ui/PrintLayout";
 import { EmrTabsProvider } from "./EmrTabsContext";
 import { EmrBannerNavButtons } from "./EmrBannerNavButtons";
+import { ComplaintChips } from "@/components/ui/ComplaintChips";
 
 /** "h:mm a" in clinic time. Formatted on the server so the markup is stable. */
 function fmtStamp(d: Date | string | null | undefined): string | null {
@@ -384,26 +385,9 @@ export default async function PatientDetailedEMR({
                 </div>
 
                 {/* Chief complaint */}
-                {activeVisit?.generalExam?.chiefComplaint && (() => {
-                  const normalized = convertNotesToCC(activeVisit.generalExam.chiefComplaint);
-                  const complaints = parseEMRComplaints(normalized);
-                  return complaints.length > 0 ? (
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {complaints.map((c, i) => {
-                        const parts = [
-                          c.lat,
-                          c.text || null,
-                          c.since ? `· ${c.since}` : null,
-                        ].filter(Boolean);
-                        return (
-                          <span key={i} className="clinical-complaint-chip-dark inline-flex items-center gap-1 text-[11px] px-2.5 py-0.5 rounded-full border">
-                            {parts.join(" ")}
-                          </span>
-                        );
-                      })}
-                    </div>
-                  ) : null;
-                })()}
+                {activeVisit?.generalExam?.chiefComplaint && (
+                  <ComplaintChips value={activeVisit.generalExam.chiefComplaint} tone="dark" className="mt-1" />
+                )}
                 {/* Notes / Instructions */}
                 {patient.notes && (
                   <div className="flex items-start gap-1.5 mt-1 text-[11px] text-white/65">

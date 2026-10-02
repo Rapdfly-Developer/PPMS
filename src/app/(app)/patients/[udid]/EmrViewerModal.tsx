@@ -6,6 +6,7 @@ import { openPdfNative } from "@/lib/open-pdf";
 import { attachResult } from "@/app/(app)/emr/[udid]/actions";
 import { format } from "date-fns";
 import { getVisitEmrData } from "./emr-viewer-action";
+import { ComplaintChips } from "@/components/ui/ComplaintChips";
 
 function Section({ title, icon, badge, accent, children }: {
   title: string;
@@ -186,7 +187,12 @@ function EmrContent({ visit, udid, localResults, onAttach }: {
       {/* ── 1. Chief Complaint & Symptoms ─────────────────────────────── */}
       {ge && (
         <Section title="Chief Complaint &amp; Symptoms" icon={<FileText size={12} />}>
-          <Row label="Chief Complaint" value={ge.chiefComplaint} valueClassName="clinical-complaint-text" />
+          {ge.chiefComplaint && (
+            <div className="grid grid-cols-[140px_1fr] gap-2 text-sm py-1">
+              <span className="text-[var(--color-ink-400)] text-xs">Chief Complaint</span>
+              <ComplaintChips value={ge.chiefComplaint} wrap />
+            </div>
+          )}
           <Row label="History of Illness" value={ge.hpi} />
           <Row label="Known Medications" value={ge.medications} />
           <Row label="Allergies" value={ge.allergies || (ge.nkda ? "NKDA (No Known Drug Allergies)" : null)} />

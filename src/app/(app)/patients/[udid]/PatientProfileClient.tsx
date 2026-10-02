@@ -19,24 +19,9 @@ import {
   AIContent,
 } from "./VisitSummaryTabs";
 import { transferPatient, generateLongitudinalSummary } from "../actions";
-import { convertNotesToCC } from "@/lib/appointment-cc";
+import { ComplaintChips } from "@/components/ui/ComplaintChips";
 export { TimeStampButton } from "./PatientTimeline";
 
-/* ── Chief complaint parser (mirrors GeneralExamTab storage format) ──────────
-   Stored as "[RE] [3 days] Redness | [LE] Watering". Appointment booking
-   saves "RE | Since: 1 days | text" — convertNotesToCC normalises that first. */
-function parseComplaints(raw: string) {
-  return convertNotesToCC(raw).split("|").map((s) => s.trim()).filter(Boolean).map((seg) => {
-    let rest = seg;
-    const latM = rest.match(/^\[(RE|LE|OU)\]\s*/);
-    const lat = latM ? latM[1] : null;
-    if (latM) rest = rest.slice(latM[0].length);
-    const sinceM = rest.match(/^\[(\d+)\s+(days|weeks|months|years)\]\s*/);
-    const since = sinceM ? `${sinceM[1]} ${sinceM[2]}` : null;
-    if (sinceM) rest = rest.slice(sinceM[0].length);
-    return { lat, since, text: rest.trim() };
-  });
-}
 
 /* ── Transfer Button ────────────────────────────────────────────────────────── */
 export function TransferButton({
@@ -308,11 +293,7 @@ function VisitCard({ visit, udid }: { visit: SerialVisit; udid: string }) {
 
       {visit.chiefComplaint && (
         <div className="border-t border-[var(--color-border)] pt-2.5 flex flex-wrap gap-1">
-          {parseComplaints(visit.chiefComplaint).map((c, i) => (
-            <span key={i} className="clinical-complaint-chip inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border text-[10px] sm:text-[11px]">
-              {[c.lat, c.text, c.since ? `· ${c.since}` : null].filter(Boolean).join(" ")}
-            </span>
-          ))}
+          <ComplaintChips value={visit.chiefComplaint} wrap />
         </div>
       )}
 
@@ -520,12 +501,7 @@ function LastVisitSummarySection({
                 {summary.chiefComplaint && (
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-[var(--color-ink-400)] shrink-0">Chief Complaint</span>
-                    {parseComplaints(summary.chiefComplaint).map((c, i) => (
-                      <span key={i} className="clinical-complaint-chip inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[10px] sm:text-[11px]">
-                        <FileText size={11} className="shrink-0 text-amber-500" />
-                        {[c.lat, c.text, c.since ? `· ${c.since}` : null].filter(Boolean).join(" ")}
-                      </span>
-                    ))}
+                    <ComplaintChips value={summary.chiefComplaint} wrap />
                   </div>
                 )}
 
@@ -888,7 +864,7 @@ function LongitudinalSummarySection({ udid, visits, inline = false }: { udid: st
               )}
             </div>
             {v.chiefComplaint && (
-              <p className="clinical-complaint-text text-[12px] mb-1">{v.chiefComplaint}</p>
+              <ComplaintChips value={v.chiefComplaint} wrap className="mb-1" />
             )}
             {v.diagnoses.length > 0 && (
               <p className="clinical-diagnosis-text text-[11px]">

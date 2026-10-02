@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import clsx from "clsx";
 import { undoQueueEntry, undoPartialDispense } from "@/app/(app)/appointments/actions";
-import { formatComplaintDisplay } from "@/lib/appointment-cc";
+import { ComplaintChips } from "@/components/ui/ComplaintChips";
 
 /* ── Types ─────────────────────────────────────────────────────────────── */
 interface Appt {
@@ -164,11 +164,7 @@ function PartialDispenseRow({ appt: a, scope, serial, canDispense, canViewPatien
             {a.partialDispenseReason}
           </span>
         )}
-        {a.complaint && (
-          <span className="clinical-complaint-chip mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border text-[10px] sm:text-[11px] leading-relaxed">
-            {formatComplaintDisplay(a.complaint)}
-          </span>
-        )}
+        {a.complaint && <ComplaintChips value={a.complaint} className="mt-1" />}
       </PatientBlock>
 
       {/* Right side: wait time + undo */}
@@ -256,11 +252,7 @@ function ApptRow({ appt, scope, serial, canManageQueue, canViewPatient, returnTo
               Dr. {appt.doctor.name}
             </span>
           )}
-          {appt.complaint && (
-            <span className="clinical-complaint-chip inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border text-[10px] sm:text-[11px]">
-              {formatComplaintDisplay(appt.complaint)}
-            </span>
-          )}
+          {appt.complaint && <ComplaintChips value={appt.complaint} />}
         </div>
       </PatientBlock>
       <div className="flex flex-col items-end gap-1 shrink-0">

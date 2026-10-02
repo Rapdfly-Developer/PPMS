@@ -20,6 +20,7 @@ export function FieldWithHistory({
   onLoad,
   currentValue: _currentValue,
   buttonPosition = "above",
+  renderValue,
 }: {
   label?: string;
   history: HistoryEntry[];
@@ -28,6 +29,8 @@ export function FieldWithHistory({
   onLoad?: (value: string) => void;
   currentValue?: string;
   buttonPosition?: "above" | "below" | "below-label";
+  /** Custom display for each prior value (the loaded value is still the raw string). */
+  renderValue?: (value: string) => React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   const [toast, setToast] = useState(false);
@@ -116,8 +119,8 @@ export function FieldWithHistory({
                     <span className="text-[var(--color-ink-400)] whitespace-nowrap text-xs mt-0.5">
                       {format(new Date(h.date), "dd MMM yyyy")}
                     </span>
-                    <span className="text-[var(--color-ink-700)]">
-                      {h.value}
+                    <span className="min-w-0 text-[var(--color-ink-700)]">
+                      {renderValue ? renderValue(h.value) : h.value}
                     </span>
                   </li>
                 ))}

@@ -9,6 +9,7 @@ import Link from "next/link";
 import { signOut } from "next-auth/react";
 import { markAllRead, markOneRead } from "@/app/(app)/notifications/actions";
 import { searchPatientsAutocomplete, type PatientSearchResult } from "@/app/(app)/patients/actions";
+import { formatComplaintDisplay } from "@/lib/appointment-cc";
 
 const BACK_BTN_CLS =
   "group inline-flex items-center gap-1.5 h-8 pl-3 pr-3 sm:pl-2 sm:pr-3 rounded-lg border border-[var(--color-border)] bg-white text-[13px] sm:text-sm font-medium text-[var(--color-ink-600)] hover:text-[var(--color-primary-700)] hover:border-[var(--color-primary-300)] hover:bg-[var(--color-primary-50)] active:scale-[0.97] transition-all duration-150";
@@ -415,7 +416,7 @@ export function TopBar({ name, role }: { name: string; role: string }) {
                       </span>
                       {r.matchText && (r.matchType === "complaint" || r.matchType === "diagnosis") && (
                         <span className={`${r.matchType === "diagnosis" ? "clinical-diagnosis-text" : "clinical-complaint-text"} text-[10px] sm:text-xs truncate`}>
-                          {r.matchType === "diagnosis" ? "Dx: " : "CC: "}{r.matchText}
+                          {r.matchType === "diagnosis" ? `Dx: ${r.matchText}` : `CC: ${formatComplaintDisplay(r.matchText)}`}
                         </span>
                       )}
                     </button>

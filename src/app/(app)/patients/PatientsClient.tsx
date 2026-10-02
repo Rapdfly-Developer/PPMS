@@ -10,11 +10,11 @@ import {
   Phone, Building2, Undo2,
 } from "lucide-react";
 import { undoDispense, type UndoDispenseResult } from "./actions";
-import { formatComplaintDisplay } from "@/lib/appointment-cc";
 import { filterSelectClass } from "@/components/ui/controls";
 import { OPHTHALMIC_COMPLAINTS } from "@/components/ui/ComplaintCombobox";
 import { ICD10_OPHTHALMOLOGY } from "@/lib/constants";
 import { getCustomDiagnoses } from "@/lib/customDiagnoses";
+import { ComplaintChips } from "@/components/ui/ComplaintChips";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 export interface PatientRow {
@@ -858,9 +858,7 @@ export function PatientsClient({
                               here. Breakpoints are exact complements: never both, never neither. */}
                           {p.chiefComplaint && (
                             <div className="lg:hidden mt-1">
-                              <span className="clinical-complaint-chip inline-flex max-w-full items-center px-2 py-0.5 rounded-full border text-[9px] sm:text-[10px]">
-                                <span className="truncate">{formatComplaintDisplay(p.chiefComplaint)}</span>
-                              </span>
+                              <ComplaintChips value={p.chiefComplaint} />
                             </div>
                           )}
                           {/* Diagnoses — same mirroring for the xl+ column. Without this a doctor
@@ -890,9 +888,7 @@ export function PatientsClient({
                       {/* Chief Complaint — fills space, shown on lg+ */}
                       <div className="hidden lg:block flex-1 min-w-0">
                         {p.chiefComplaint ? (
-                          <span className="clinical-complaint-chip inline-flex max-w-full items-center gap-1 px-2.5 py-0.5 rounded-full border text-[10px] sm:text-[11px]">
-                            <span className="truncate">{formatComplaintDisplay(p.chiefComplaint)}</span>
-                          </span>
+                          <ComplaintChips value={p.chiefComplaint} />
                         ) : (
                           <span className="text-[10px] sm:text-[11px] italic text-[var(--color-ink-300)]">Not recorded</span>
                         )}

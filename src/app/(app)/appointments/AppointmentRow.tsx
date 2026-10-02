@@ -4,10 +4,10 @@ import { format } from "date-fns";
 import { openPdfNative } from "@/lib/open-pdf";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { Phone, Tag, FileText, CalendarPlus, Printer, Clock, Timer, LogIn, CheckCircle2, Calendar, UserX } from "lucide-react";
+import { Phone, Tag, CalendarPlus, Printer, Clock, Timer, LogIn, CheckCircle2, Calendar, UserX } from "lucide-react";
 import { hospitalUpdateAppointmentStatus, doctorUpdateAppointmentStatus, doctorConfirmAppointment, doctorCancelAppointment } from "./actions";
-import { formatComplaintDisplay } from "@/lib/appointment-cc";
 import { ScheduleNextSlotModal } from "./ScheduleNextSlotModal";
+import { ComplaintChips } from "@/components/ui/ComplaintChips";
 
 const STATUS_STYLES: Record<string, string> = {
   SCHEDULED:        "bg-[var(--color-primary-50)] text-[var(--color-primary-700)]",
@@ -152,10 +152,7 @@ export function AppointmentRow({ appt, role, token }: { appt: any; role: string;
         {/* Middle: chief complaint */}
         <div className="flex min-w-0 items-center lg:self-center lg:justify-center">
           {(appt.notes || p.complaint) && (
-            <span className="clinical-complaint-chip inline-flex min-w-0 max-w-full items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] sm:text-xs">
-              <FileText size={11} className="shrink-0 text-amber-500" />
-              <span className="truncate">{formatComplaintDisplay(appt.notes || p.complaint)}</span>
-            </span>
+            <ComplaintChips value={appt.notes || p.complaint} />
           )}
         </div>
 

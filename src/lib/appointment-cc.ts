@@ -1,59 +1,67 @@
 const LATERALITY = new Set(["RE", "LE", "OU"]);
+const UNIT = "(days?|weeks?|months?|years?|hours?)";
+
+/** One chief complaint, ready for display. */
+export interface ComplaintItem {
+  lat: string | null;
+  text: string;
+  since: string | null;
+}
+
+/** "1 days" → "1 day", "3 day" → "3 days". */
+function normalizeSince(n: string, unit: string): string {
+  const num = Number(n);
+  const base = unit.toLowerCase().replace(/s$/, "");
+  return `${num} ${base}${num === 1 ? "" : "s"}`;
+}
+
+/** Keyword bullets ("• Redness\n• Itching") read as "Redness, Itching" so "•" only separates the parts. */
+function normalizeText(text: string): string {
+  const s = text.replace(/\r/g, "");
+  const parts = s.includes("•") ? s.split("•") : s.split("\n");
+  return parts.map((p) => p.replace(/^[\s\-*·]+/, "").trim()).filter(Boolean).join(", ");
+}
 
 /**
- * Formats the stored "LAT | Since: N unit | text" string for human display
- * as "LAT text - Since Nunit". Returns the raw string unchanged for plain
- * text / legacy values that don't match the pattern.
+ * Parses every stored chief-complaint format into display items:
+ *   booking form  "RE | Since: 3 days | Eye Pain"
+ *   EMR           "[RE] [3 days] Eye Pain | [LE] Watering"
+ *   legacy        plain text
  */
-export function formatComplaintDisplay(raw: string | null | undefined): string {
-  if (!raw) return "";
+export function parseComplaintItems(raw: string | null | undefined): ComplaintItem[] {
+  const value = raw?.trim();
+  if (!value) return [];
 
-  // Appointment format: "RE | Since: 3 days | Eye Pain Severe"
-  const parts = raw.split(" | ");
-  if (parts.length >= 3) {
-    const lat = parts[0].trim();
-    const sinceRaw = parts[1].trim();
-    const text = parts.slice(2).join(" | ").trim();
-    const m = sinceRaw.match(/^Since:\s*(\d+)\s+(days?|weeks?|months?|years?)$/i);
-    if (LATERALITY.has(lat) && m) {
-      return `${lat} ${text} · ${m[1]} ${m[2]}`;
+  const parts = value.split(" | ");
+  if (parts.length >= 3 && LATERALITY.has(parts[0].trim().toUpperCase())) {
+    const m = parts[1].trim().match(new RegExp(`^Since:\\s*(\\d+)\\s*${UNIT}$`, "i"));
+    if (m) {
+      return [{ lat: parts[0].trim().toUpperCase(), text: normalizeText(parts.slice(2).join(" | ")), since: normalizeSince(m[1], m[2]) }];
     }
   }
 
-  // EMR bracket format: "[RE] [5 days] Eye Pain Severe" (possibly multi-segment separated by |)
-  const segments = raw.split("|").map((s) => s.trim()).filter(Boolean);
-  const formatted = segments.map((seg) => {
-    const m = seg.match(/^\[(RE|LE|OU)\]\s*(?:\[(\d+)\s+(days?|weeks?|months?|years?)\])?\s*(.+)?$/i);
-    if (!m) return seg;
-    const lat = m[1].toUpperCase();
-    const n = m[2];
-    const unit = m[3];
-    const text = (m[4] ?? "").trim();
-    const body = text ? `${lat} ${text}` : lat;
-    return n ? `${body} · ${n} ${unit}` : body;
-  });
-  if (formatted.some((s, i) => s !== segments[i])) {
-    return formatted.join(" · ");
-  }
-
-  return raw;
+  return value.split("|").map((seg) => {
+    let rest = seg.trim();
+    let lat: string | null = null;
+    let since: string | null = null;
+    const latM = rest.match(/^\[\s*(RE|LE|OU)\s*\]\s*/i);
+    if (latM) { lat = latM[1].toUpperCase(); rest = rest.slice(latM[0].length); }
+    const sinceM = rest.match(new RegExp(`^\\[\\s*(\\d+)\\s*${UNIT}\\s*\\]\\s*`, "i"));
+    if (sinceM) { since = normalizeSince(sinceM[1], sinceM[2]); rest = rest.slice(sinceM[0].length); }
+    return { lat, text: normalizeText(rest), since };
+  }).filter((c) => c.text || c.lat);
 }
 
-/**
- * Parses the EMR serialised format "[RE] [2 days] Pain | [LE] Redness"
- * into structured complaint objects for display.
- */
-export function parseEMRComplaints(raw: string | null | undefined): { lat: string | null; since: string | null; text: string }[] {
-  if (!raw) return [];
-  return raw
-    .split("|")
-    .map((seg) => {
-      const m = seg.trim().match(/^\[?(RE|LE|OU)\]?\s*(?:\[([^\]]+)\])?\s*(.*)$/i);
-      if (!m) return { lat: null, since: null, text: seg.trim() };
-      return { lat: m[1]?.toUpperCase() ?? null, since: m[2]?.trim() ?? null, text: m[3]?.trim() ?? "" };
-    })
-    .filter((c) => c.text || c.lat);
+/** The single display format: "RE • Blurred Vision • 8 days". */
+export function complaintLabel(c: ComplaintItem): string {
+  return [c.lat, c.text, c.since].filter(Boolean).join(" • ");
 }
+
+/** Plain-text form for non-chip contexts (search results, PDFs). Multiple complaints are separated by "; ". */
+export function formatComplaintDisplay(raw: string | null | undefined): string {
+  return parseComplaintItems(raw).map(complaintLabel).join("; ");
+}
+
 
 /**
  * Converts the "LAT | Since: N unit | text" string saved by the appointment

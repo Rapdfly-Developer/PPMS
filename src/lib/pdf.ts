@@ -2,9 +2,17 @@ import { format as formatBase } from "date-fns";
 import { toISTWall } from "@/lib/ist";
 import QRCode from "qrcode";
 import type { Browser } from "puppeteer-core";
+import { complaintLabel, parseComplaintItems } from "@/lib/appointment-cc";
 
 // All timestamps in generated PDFs are Indian wall-clock times; production runs on UTC.
 const format = (d: Date | number, fmt: string) => formatBase(toISTWall(new Date(d)), fmt);
+
+
+/** Chief complaint in the app-wide format ("RE • Blurred Vision • 8 days"), one complaint per line. */
+function complaintHtml(raw: string): string {
+  const items = parseComplaintItems(raw);
+  return items.length ? items.map((c) => escapeHtml(complaintLabel(c))).join("<br>") : escapeHtml(raw);
+}
 
 function escapeHtml(value: unknown): string {
   if (value === null || value === undefined) return "";
@@ -579,7 +587,7 @@ async function renderDispenseHtml(data: DispenseSummaryData): Promise<string> {
     <div class="ig-item"><div class="ig-label">Weight</div><div class="ig-value">${val(data.vitals.weight)}</div></div>
   </div>
 
-  ${data.chiefComplaint ? `${secHdr("Chief Complaint")}<div class="text-block">${escapeHtml(data.chiefComplaint)}</div>` : ""}
+  ${data.chiefComplaint ? `${secHdr("Chief Complaint")}<div class="text-block">${complaintHtml(data.chiefComplaint)}</div>` : ""}
 
   ${secHdr("Diagnosis")}
   <table>
@@ -791,18 +799,6 @@ export type ShortSummaryData = {
 async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
   const v2 = (x: unknown) => (x === null || x === undefined || x === "") ? "" : escapeHtml(String(x));
 
-  /* Format "[RE] [5 days] Left Eye pain" → "RE Left Eye pain · Since 5 days" */
-  const fmtComplaint = (raw: string): string => {
-    const durations: string[] = [];
-    const others: string[] = [];
-    const rest = raw.replace(/\[([^\]]+)\]/g, (_, inner) => {
-      const t = inner.trim();
-      /^\d+\s*(day|week|month|year|hour)s?/i.test(t) ? durations.push(t) : others.push(t);
-      return "";
-    }).replace(/\s+/g, " ").trim();
-    const body = [...others, rest].filter(Boolean).join(" ").trim();
-    return durations.length ? `${body} · Since ${durations.join(", ")}` : body;
-  };
 
   /*
     Palette — the app's own brand tokens from globals.css, so a printed summary
@@ -1049,7 +1045,7 @@ async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
 <!-- 1 · CHIEF COMPLAINT -->
 ${inlineCard("Chief Complaint",
   d.chiefComplaint
-    ? `<div style="font-size:10.5px;font-weight:600;color:${INK};">${escapeHtml(fmtComplaint(d.chiefComplaint))}</div>`
+    ? `<div style="font-size:10.5px;font-weight:600;color:${INK};">${complaintHtml(d.chiefComplaint)}</div>`
     : none("No complaint recorded"))}
 
 <!-- 2 · CLINICAL IMPRESSION -->
@@ -1499,7 +1495,7 @@ async function renderFullEmrHtml(d: FullEmrData): Promise<string> {
 ${ge?.chiefComplaint || ge?.hpi
   ? card("Chief Complaint & History",
       (ge.chiefComplaint
-        ? `<div style="font-size:10.5px;font-weight:600;color:${INK};${ge.hpi ? "padding-bottom:6px;" : ""}">${escapeHtml(ge.chiefComplaint)}</div>`
+        ? `<div style="font-size:10.5px;font-weight:600;color:${INK};${ge.hpi ? "padding-bottom:6px;" : ""}">${complaintHtml(ge.chiefComplaint)}</div>`
         : "") +
       (ge.hpi
         ? `<div style="background:${TINT};border-left:3px solid ${BRAND};border-radius:0 4px 4px 0;padding:6px 10px;font-size:9.5px;line-height:1.65;white-space:pre-wrap;">${escapeHtml(ge.hpi)}</div>`

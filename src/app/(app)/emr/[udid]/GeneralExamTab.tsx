@@ -12,6 +12,7 @@ import { useAutoSave, SaveIndicator } from "@/lib/useAutoSave";
 import { KeywordTextarea, KeywordChipsRow, removeKeywordFromText } from "@/components/emr/KeywordField";
 import { saveGeneralExam } from "./actions";
 import { useEmrOverview } from "./EmrOverviewContext";
+import { ComplaintChips } from "@/components/ui/ComplaintChips";
 
 const LATERALITY_OPTIONS = ["RE", "LE", "OU"] as const;
 type Laterality = typeof LATERALITY_OPTIONS[number];
@@ -309,6 +310,7 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly }: { visit: 
           history={histFor((g) => g.chiefComplaint)}
           currentValue={chiefComplaintFull}
           onLoad={(v) => setComplaints(parseComplaints(v))}
+          renderValue={(v) => <ComplaintChips value={v} wrap />}
         >
           <div className="flex flex-col gap-2">
             {complaints.map((c, i) => (
