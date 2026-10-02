@@ -14,14 +14,13 @@ import {
   toggleUserActive as toggleUserActiveAction,
   saveDoctorProfile,
   saveHospitalLogo,
-  createUserDirect,
   getDoctorsByHospital,
   exportPatients,
   requestExportOtp,
   verifyExportOtp,
 } from "@/app/(app)/settings/actions";
 import { createUser } from "@/app/(app)/users/actions";
-import { saveRolePermissions, createRole } from "@/app/(app)/settings/roles/actions";
+import { saveRolePermissions } from "@/app/(app)/settings/roles/actions";
 import { LicenseSection } from "./LicenseSection";
 import { PERMISSION_GROUPS } from "@/app/(app)/settings/roles/permission-groups";
 import {
@@ -2865,25 +2864,15 @@ interface HospitalDraft {
   name: string; shortCode: string; address: string; contact: string; email: string;
   staffName: string; username: string; password: string; mobile: string; adminEmail: string;
 }
-interface UserDraft {
-  localId: string;
-  name: string; username: string; password: string; mobile: string; role: string;
-}
-
-const WIZARD_ROLES = [
-  { value: "HOSPITAL",      label: "Hospital Admin",  desc: "Appointments, patients, billing, settings" },
-  { value: "RECEPTIONIST",  label: "Receptionist",    desc: "Register patients, book appointments" },
-];
+const ADMIN_ROLE = { value: "HOSPITAL", label: "Hospital Admin", desc: "Appointments, patients, billing, settings" };
 
 const WIZARD_STEPS = [
   { n: 1 as const, label: "Hospital"    },
-  { n: 2 as const, label: "Users"       },
-  { n: 3 as const, label: "Roles"       },
-  { n: 4 as const, label: "Permissions" },
+  { n: 2 as const, label: "Permissions" },
 ];
 
-function HospitalSetupWizard({ assignableRoles = [], returnTo = "" }: { assignableRoles?: AssignableRole[]; returnTo?: string }) {
-  const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
+function HospitalSetupWizard({ returnTo = "" }: { returnTo?: string }) {
+  const [step, setStep] = useState<1 | 2>(1);
   const [done, setDone] = useState(false);
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState("");
@@ -2908,31 +2897,6 @@ function HospitalSetupWizard({ assignableRoles = [], returnTo = "" }: { assignab
     setHosp((h) => ({ ...h, shortCode: code }));
   }, [hosp.name]);
 
-  const [users, setUsers] = useState<UserDraft[]>([]);
-  const newUser = (): UserDraft => ({ localId: Math.random().toString(36).slice(2), name: "", username: "", password: "", mobile: "", role: "HOSPITAL" });
-  const addUser = () => setUsers((u) => [...u, newUser()]);
-  const removeUser = (id: string) => setUsers((u) => u.filter((x) => x.localId !== id));
-  const setU = (id: string, k: keyof UserDraft, v: string) =>
-    setUsers((u) => u.map((x) => (x.localId === id ? { ...x, [k]: v } : x)));
-
-  const rolesUsed = [...new Set(["HOSPITAL", ...users.map((u) => u.role)])];
-
-  // All selectable roles: built-in wizard roles + custom roles from DB + anything typed in Step 2
-  const allRoles = useMemo(() => {
-    const merged = [
-      ...WIZARD_ROLES,
-      ...assignableRoles
-        .filter((ar) => !WIZARD_ROLES.some((r) => r.value === ar.name))
-        .map((ar) => ({ value: ar.name, label: ar.label, desc: "Custom role" })),
-    ];
-    for (const u of users) {
-      const r = u.role.trim();
-      if (r && !merged.some((m) => m.value === r)) {
-        merged.push({ value: r, label: r, desc: "New custom role" });
-      }
-    }
-    return merged;
-  }, [assignableRoles, users]);
   const [perms, setPerms] = useState<Record<string, string[]>>({});
   const getPerms = (role: string) => perms[role] ?? DEFAULT_PERMS_BY_ROLE[role] ?? [];
   const togglePerm = (role: string, key: string) => {
@@ -2959,30 +2923,12 @@ function HospitalSetupWizard({ assignableRoles = [], returnTo = "" }: { assignab
     adminEmail: !hosp.adminEmail.trim() ? "Admin email is required." : !emailRe.test(hosp.adminEmail.trim()) ? "Enter a valid email." : undefined,
   };
   const step1Valid = Object.values(step1Errors).every((e) => !e);
-  const step2Valid = users.every((u) => u.name.trim() && u.username.trim() && u.password.length >= 6 && u.role.trim());
-  const step3Valid = users.every((u) => !!u.role);
 
   async function handleCreate() {
     setCreating(true); setCreateError("");
     const res = await createHospitalWithUser(hosp);
     if (res.error || !res.id) { setCreateError(res.error ?? "Failed to create hospital."); setCreating(false); return; }
-    const hospitalId = res.id;
-
-    for (const u of users) {
-      const r = await createUserDirect({ name: u.name, username: u.username, password: u.password, role: u.role, hospitalId, mobile: u.mobile || undefined });
-      if (r.error) { setCreateError(r.error); setCreating(false); return; }
-    }
-
-    const existingRoleNames = new Set(assignableRoles.map((r) => r.name));
-    const systemRoles = new Set(["DOCTOR", "HOSPITAL"]);
-    for (const role of rolesUsed) {
-      if (!systemRoles.has(role) && !existingRoleNames.has(role)) {
-        const label = role.charAt(0) + role.slice(1).toLowerCase().replace(/_/g, " ");
-        await createRole({ name: role, label, color: "#6366f1" });
-      }
-      await saveRolePermissions(role, getPerms(role));
-    }
-
+    await saveRolePermissions(ADMIN_ROLE.value, getPerms(ADMIN_ROLE.value));
     setCreating(false); setDone(true);
   }
 
@@ -2998,7 +2944,7 @@ function HospitalSetupWizard({ assignableRoles = [], returnTo = "" }: { assignab
           </div>
           <p className="text-[15px] sm:text-base font-semibold text-[var(--color-ink-900)]">Hospital setup complete!</p>
           <p className="text-[13px] sm:text-sm text-[var(--color-ink-500)]">
-            <span className="font-medium">{hosp.name}</span> created with {1 + users.length} account{users.length !== 0 ? "s" : ""}.
+            <span className="font-medium">{hosp.name}</span> created with its admin account.
           </p>
           {returnTo && (
             <Link
@@ -3009,7 +2955,7 @@ function HospitalSetupWizard({ assignableRoles = [], returnTo = "" }: { assignab
             </Link>
           )}
           <button
-            onClick={() => { setDone(false); setStep(1); setHosp(blank); setUsers([]); setPerms({}); setCreateError(""); }}
+            onClick={() => { setDone(false); setStep(1); setHosp(blank); setPerms({}); setCreateError(""); }}
             className="rounded-xl bg-[var(--color-primary-600)] px-6 py-2.5 text-[13px] sm:text-sm font-semibold text-white hover:bg-[var(--color-primary-700)] transition-colors"
           >
             Add Another Hospital
@@ -3169,149 +3115,14 @@ function HospitalSetupWizard({ assignableRoles = [], returnTo = "" }: { assignab
               }}
               className="flex items-center gap-2 rounded-xl bg-[var(--color-primary-600)] px-6 py-2.5 text-[13px] sm:text-sm font-semibold text-white hover:bg-[var(--color-primary-700)] disabled:opacity-40 transition-colors"
             >
-              Next: Add Users →
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* ── Step 2: Create Users ── */}
-      {step === 2 && (
-        <div className="space-y-4">
-          <Card className="p-5">
-            <div className="flex items-start justify-between mb-4">
-              <div>
-                <p className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-900)]">Staff Accounts</p>
-                <p className="text-[11px] sm:text-xs text-[var(--color-ink-400)] mt-0.5">Add staff users for this hospital. You can skip this step if only the admin account is needed.</p>
-              </div>
-              <button onClick={addUser} className="shrink-0 flex items-center gap-1.5 rounded-xl border-2 border-[var(--color-primary-300)] text-[var(--color-primary-700)] px-4 py-1.5 text-[11px] sm:text-xs font-bold hover:bg-[var(--color-primary-50)] transition-colors">
-                <Plus size={13} /> Add User
-              </button>
-            </div>
-            {users.length === 0 ? (
-              <button onClick={addUser} className="w-full flex flex-col items-center py-8 gap-2 rounded-xl border-2 border-dashed border-[var(--color-border)] hover:border-[var(--color-primary-300)] hover:bg-[var(--color-primary-50)] transition-colors group">
-                <Users2 size={24} className="text-[var(--color-ink-300)] group-hover:text-[var(--color-primary-400)]" />
-                <p className="text-[13px] sm:text-sm text-[var(--color-ink-400)] group-hover:text-[var(--color-primary-600)]">Click to add a staff user</p>
-              </button>
-            ) : (
-              <div className="space-y-3">
-                {users.map((u, i) => (
-                  <div key={u.localId} className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-[11px] sm:text-xs font-bold text-[var(--color-ink-500)] uppercase tracking-wider">User {i + 1}</span>
-                      <button onClick={() => removeUser(u.localId)} className="text-[var(--color-ink-400)] hover:text-red-500 transition-colors p-0.5"><X size={14} /></button>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div><LBL>Full Name *</LBL><input value={u.name} onChange={(e) => setU(u.localId, "name", e.target.value)} placeholder="e.g. Priya Sharma" className={F} /></div>
-                      <div>
-                        <LBL>User Type / Role *</LBL>
-                        <input
-                          list={`wizard-role-options-${u.localId}`}
-                          value={u.role}
-                          onChange={(e) => setU(u.localId, "role", e.target.value)}
-                          placeholder="e.g. Receptionist"
-                          className={F}
-                        />
-                        <datalist id={`wizard-role-options-${u.localId}`}>
-                          {allRoles.map((r) => (
-                            <option key={r.value} value={r.value}>{r.label}</option>
-                          ))}
-                        </datalist>
-                      </div>
-                      <div><LBL>Username *</LBL><input value={u.username} onChange={(e) => setU(u.localId, "username", e.target.value)} placeholder="priya.sharma" className={F} /></div>
-                      <div><LBL>Password * <span className="normal-case font-normal text-[var(--color-ink-400)]">(min 6 chars)</span></LBL><input type="password" value={u.password} onChange={(e) => setU(u.localId, "password", e.target.value)} placeholder="••••••••" className={F} /></div>
-                      <div><LBL>Mobile</LBL><input value={u.mobile} onChange={(e) => setU(u.localId, "mobile", e.target.value)} placeholder="10-digit number" maxLength={10} className={F} /></div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </Card>
-          <div className="flex justify-between">
-            <button onClick={() => setStep(1)} className="rounded-xl border border-[var(--color-border)] px-5 py-2.5 text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] transition-colors">← Back</button>
-            <button onClick={() => setStep(3)} disabled={!step2Valid} className="flex items-center gap-2 rounded-xl bg-[var(--color-primary-600)] px-6 py-2.5 text-[13px] sm:text-sm font-semibold text-white hover:bg-[var(--color-primary-700)] disabled:opacity-40 transition-colors">
-              Next: Assign Roles →
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* ── Step 3: Assign Roles ── */}
-      {step === 3 && (
-        <div className="space-y-4">
-          <Card className="p-5">
-            <p className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-900)] mb-0.5">Assign Roles</p>
-            <p className="text-[11px] sm:text-xs text-[var(--color-ink-400)] mb-5">Roles define what each user can do. You'll fine-tune exact permissions in the next step.</p>
-
-            {/* Role legend */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-5">
-              {allRoles.map((r) => (
-                <div key={r.value} className="rounded-xl border border-[var(--color-border)] px-3 py-2.5">
-                  <p className="text-[11px] sm:text-xs font-bold text-[var(--color-ink-800)]">{r.label}</p>
-                  <p className="text-[9px] sm:text-[10px] text-[var(--color-ink-400)] mt-0.5 leading-relaxed">{r.desc}</p>
-                </div>
-              ))}
-            </div>
-
-            {/* Admin (locked) */}
-            <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 mb-3 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-emerald-200 text-emerald-800 text-[11px] sm:text-xs font-bold flex items-center justify-center shrink-0">
-                  {hosp.staffName.trim() ? hosp.staffName.trim()[0].toUpperCase() : "A"}
-                </div>
-                <div>
-                  <p className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-900)]">{hosp.staffName || "Admin"}</p>
-                  <p className="text-[11px] sm:text-xs text-[var(--color-ink-400)]">@{hosp.username} · Primary account</p>
-                </div>
-              </div>
-              <span className="text-[11px] sm:text-xs font-bold bg-emerald-200 text-emerald-800 px-3 py-1 rounded-full">Hospital Admin</span>
-            </div>
-
-            {users.length === 0 && (
-              <p className="text-[13px] sm:text-sm text-[var(--color-ink-400)] text-center py-3">No additional users to assign roles to.</p>
-            )}
-
-            {users.map((u, i) => (
-              <div key={u.localId} className="rounded-xl border border-[var(--color-border)] px-4 py-3 mb-2">
-                <div className="flex flex-wrap items-center gap-3">
-                  <div className="flex items-center gap-3 flex-1 min-w-0">
-                    <div className="w-8 h-8 rounded-full bg-[var(--color-primary-100)] text-[var(--color-primary-700)] text-[11px] sm:text-xs font-bold flex items-center justify-center shrink-0">
-                      {u.name.trim() ? u.name.trim()[0].toUpperCase() : `${i + 1}`}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-900)] truncate">{u.name || `User ${i + 1}`}</p>
-                      <p className="text-[11px] sm:text-xs text-[var(--color-ink-400)]">@{u.username}</p>
-                    </div>
-                  </div>
-                  <div className="flex gap-2 flex-wrap">
-                    {allRoles.map((r) => (
-                      <button
-                        key={r.value}
-                        onClick={() => setU(u.localId, "role", r.value)}
-                        title={r.desc}
-                        className={`px-3 py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold border-2 transition-all ${
-                          u.role === r.value
-                            ? "border-[var(--color-primary-500)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)]"
-                            : "border-[var(--color-border)] text-[var(--color-ink-500)] hover:border-[var(--color-primary-300)] hover:bg-[var(--color-primary-50)]"
-                        }`}
-                      >{r.label}</button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </Card>
-          <div className="flex justify-between">
-            <button onClick={() => setStep(2)} className="rounded-xl border border-[var(--color-border)] px-5 py-2.5 text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] transition-colors">← Back</button>
-            <button onClick={() => setStep(4)} disabled={!step3Valid} className="flex items-center gap-2 rounded-xl bg-[var(--color-primary-600)] px-6 py-2.5 text-[13px] sm:text-sm font-semibold text-white hover:bg-[var(--color-primary-700)] disabled:opacity-40 transition-colors">
               Next: Set Permissions →
             </button>
           </div>
         </div>
       )}
 
-      {/* ── Step 4: Permissions ── */}
-      {step === 4 && (
+      {/* ── Step 2: Permissions ── */}
+      {step === 2 && (
         <div className="space-y-4">
           {createError && (
             <div className="flex items-center gap-2 text-[11px] sm:text-xs text-red-700 bg-red-50 border border-red-200 px-4 py-3 rounded-xl">
@@ -3321,8 +3132,8 @@ function HospitalSetupWizard({ assignableRoles = [], returnTo = "" }: { assignab
           <p className="text-[11px] sm:text-xs text-[var(--color-ink-500)] bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5">
             These permission settings apply <strong>system-wide</strong> to each role, not just for this hospital. Adjust carefully.
           </p>
-          {rolesUsed.map((role) => {
-            const meta = allRoles.find((r) => r.value === role);
+          {[ADMIN_ROLE.value].map((role) => {
+            const meta = ADMIN_ROLE;
             const rolePerms = getPerms(role);
             return (
               <Card key={role} className="overflow-hidden">
@@ -3381,7 +3192,7 @@ function HospitalSetupWizard({ assignableRoles = [], returnTo = "" }: { assignab
             );
           })}
           <div className="flex justify-between">
-            <button onClick={() => setStep(3)} className="rounded-xl border border-[var(--color-border)] px-5 py-2.5 text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] transition-colors">← Back</button>
+            <button onClick={() => setStep(1)} className="rounded-xl border border-[var(--color-border)] px-5 py-2.5 text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] transition-colors">← Back</button>
             <button
               onClick={handleCreate}
               disabled={creating}
@@ -3431,7 +3242,7 @@ export function DoctorSettingsClient({ users, auditLogs, hospitals, loginLogs, p
       case "roles":        return <RolesSection />;
       case "departments":  return <DepartmentsSection />;
       case "hospital":     return <HospitalSection hospitals={hospitals} />;
-      case "add-hospital": return <HospitalSetupWizard assignableRoles={assignableRoles} returnTo={urlReturnTo} />;
+      case "add-hospital": return <HospitalSetupWizard returnTo={urlReturnTo} />;
       case "appointments": return <AppointmentsSection />;
       case "notifications":return <NotificationsSection />;
       case "audit":        return <AuditSection auditLogs={auditLogs} />;
