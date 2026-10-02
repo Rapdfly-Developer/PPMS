@@ -201,8 +201,6 @@ function ApptRow({ appt, scope, serial, canManageQueue, canViewPatient, returnTo
   const apptTime = format(new Date(appt.dateTime), "h:mm a");
   const arrivedAt      = appt.arrivedAt      ? new Date(appt.arrivedAt)      : null;
   const visitStartedAt = appt.visitStartedAt ? new Date(appt.visitStartedAt) : null;
-  // Always show scheduled appointment time as primary — consistent across walk-in and booked.
-  const primaryTime = apptTime;
   // Timer runs from arrival; fall back to appt time if not yet arrived
   const timerSince  = appt.arrivedAt ?? appt.dateTime;
   // Wait time = from arrival to when doctor opened the case
@@ -219,28 +217,17 @@ function ApptRow({ appt, scope, serial, canManageQueue, canViewPatient, returnTo
         <span className="text-[11px] sm:text-xs font-bold text-[var(--color-ink-400)] tabular-nums">{serial}</span>
       </div>
       <div className="w-px self-stretch bg-[var(--color-border)] hidden sm:block" />
-      {/* Time + visit-type column */}
-      <div className="w-20 shrink-0 hidden sm:flex flex-col items-center gap-0.5">
-        <p className="text-[13px] sm:text-sm font-bold text-[var(--color-ink-900)]" title="Appointment time">
-          {primaryTime}
-        </p>
-        {/* Badge + registered time */}
-        <div className="flex flex-col items-center gap-0.5">
-          {appt.isWalkIn ? (
-            <span className="inline-flex items-center gap-0.5 text-[9px] sm:text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500">
-              Walk-in
-            </span>
-          ) : (
-            <span className="inline-flex items-center gap-0.5 text-[9px] sm:text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-600">
-              <Calendar size={9} /> Appt
-            </span>
-          )}
-          {!appt.isWalkIn && (
-            <span className="text-[9px] font-medium text-blue-500 tabular-nums">
-              {format(new Date(appt.createdAt), "h:mm a")}
-            </span>
-          )}
-        </div>
+      {/* Booked appointment time or walk-in marker — always one line. */}
+      <div className="w-24 shrink-0 hidden sm:flex items-center justify-center">
+        {appt.isWalkIn ? (
+          <span className="inline-flex items-center whitespace-nowrap text-[11px] font-semibold text-gray-500">
+            Walk-in
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-1 whitespace-nowrap text-[12px] font-semibold text-blue-600 tabular-nums" title="Appointment time">
+            <Calendar size={11} /> {apptTime}
+          </span>
+        )}
       </div>
       <div className="w-px self-stretch bg-[var(--color-border)] hidden sm:block" />
       <PatientBlock udid={appt.patient.udid} canView={canViewPatient} source="opd-queue" returnTo={returnTo} className="flex-1 min-w-0 hover:opacity-80 transition-opacity">

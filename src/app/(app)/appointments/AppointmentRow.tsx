@@ -99,7 +99,6 @@ export function AppointmentRow({ appt, role, token }: { appt: any; role: string;
       onClick={() => router.push(patientUrl)}
       className="flex items-start gap-3 px-4 sm:px-5 py-4 rounded-xl border border-[var(--color-border)] bg-white hover:bg-[var(--color-primary-50)] hover:border-[var(--color-primary-200)] transition-colors cursor-pointer"
     >
-      {/* Token badge */}
       <div
         className="flex items-center justify-center shrink-0 w-9 h-9 rounded-xl text-[13px] sm:text-sm font-bold mt-0.5"
         style={{ background: "var(--color-primary-100)", color: "var(--color-primary-700)" }}
@@ -109,119 +108,92 @@ export function AppointmentRow({ appt, role, token }: { appt: any; role: string;
 
       <div className="w-px self-stretch bg-[var(--color-border)] hidden sm:block" />
 
-      {/* Body: patient block + right block */}
-      <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:gap-4 gap-2">
-
-        {/* ── Patient block ─────────────────────────────────────────── */}
-        <div className="flex-1 min-w-0">
-
-          {/* Name */}
+      <div className="flex-1 min-w-0 flex flex-col gap-2 sm:flex-row sm:justify-between sm:gap-5">
+        {/* Left: patient identity and diagnosis */}
+        <div className="min-w-0 flex-1">
           <button
             onClick={(e) => { e.stopPropagation(); router.push(patientUrl); }}
             className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-900)] hover:text-[var(--color-primary-600)] transition-colors text-left leading-snug"
           >
             {p.name}
           </button>
-
-          {/* Age · Sex */}
-          <div className="mt-0.5 text-[11px] sm:text-xs text-[var(--color-ink-400)]">
+          <p className="mt-0.5 text-[11px] sm:text-xs text-[var(--color-ink-400)]">
             {p.age}y · {p.sex.charAt(0).toUpperCase() + p.sex.slice(1).toLowerCase()}
-          </div>
-
-          {/* UDID + Phone + Visit type */}
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5">
+          </p>
+          <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
             <span className="font-mono text-[11px] bg-[var(--color-primary-50)] text-[var(--color-primary-700)] px-1.5 py-0.5 rounded">
               {p.udid}
             </span>
             {p.mobile && (
-              <span className="flex items-center gap-1 text-[11px] sm:text-xs text-[var(--color-ink-500)]">
+              <span className="inline-flex items-center gap-1 text-[11px] sm:text-xs text-[var(--color-ink-500)]">
                 <Phone size={11} className="shrink-0" /> {p.mobile}
               </span>
             )}
             {appt.visitType && (
-              <span className="flex items-center gap-1 text-[11px] sm:text-xs text-[var(--color-ink-500)]">
+              <span className="inline-flex items-center gap-1 text-[11px] sm:text-xs text-[var(--color-ink-500)]">
                 <Tag size={11} className="shrink-0" /> {appt.visitType}
               </span>
             )}
           </div>
-
-          {/* Chief complaint */}
-          {(appt.notes || p.complaint) && (
-            <div className="clinical-complaint-chip mt-1.5 inline-flex max-w-full items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] sm:text-xs">
-              <FileText size={11} className="shrink-0 text-amber-500" />
-              <span className="truncate">{formatComplaintDisplay(appt.notes || p.complaint)}</span>
-            </div>
-          )}
-
-          {/* Provisional diagnosis */}
           {provisionalDx.length > 0 && (
-            <div className="mt-1.5 flex items-center gap-1.5 flex-wrap max-w-full">
-              <span className="shrink-0 text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">
-                Provisional
-              </span>
+            <div className="mt-2 flex min-w-0 flex-wrap items-center gap-1.5">
+              <span className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Provisional</span>
               {provisionalDx.slice(0, 2).map((d, i) => (
-                <span
-                  key={i}
-                  className="clinical-diagnosis-chip inline-flex min-w-0 max-w-full items-center gap-1 px-2.5 py-1 rounded-lg border text-[11px] sm:text-xs"
-                >
+                <span key={i} className="clinical-diagnosis-chip inline-flex min-w-0 max-w-full items-center gap-1 px-2.5 py-1 rounded-lg border text-[11px] sm:text-xs">
                   {d.laterality && <span className="clinical-laterality shrink-0">{d.laterality}</span>}
                   <span className="truncate">{d.description}</span>
                 </span>
               ))}
-              {provisionalDx.length > 2 && (
-                <span className="shrink-0 text-[10px] sm:text-[11px] text-[var(--color-ink-400)]">
-                  +{provisionalDx.length - 2} more
-                </span>
-              )}
+              {provisionalDx.length > 2 && <span className="text-[10px] sm:text-[11px] text-[var(--color-ink-400)]">+{provisionalDx.length - 2} more</span>}
             </div>
           )}
         </div>
 
-        {/* ── Right block: status, times, actions ───────────────────── */}
-        <div
-          className="flex flex-col gap-1 sm:items-end sm:shrink-0 sm:min-w-[160px] sm:max-w-[240px]"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {/* Status badge */}
-          <span className={`self-start sm:self-auto text-[10px] sm:text-[11px] font-medium px-2 py-0.5 rounded-full whitespace-nowrap ${STATUS_STYLES[appt.status] ?? ""}`}>
-            {STATUS_LABELS[appt.status] ?? appt.status.replace(/_/g, " ")}
-          </span>
-
-          {/* Appointment time */}
-          <p className="flex items-center gap-1 text-[13px] sm:text-sm font-semibold text-[var(--color-ink-700)] whitespace-nowrap mt-0.5">
-            <Calendar size={12} className="shrink-0 text-[var(--color-ink-400)]" />
-            {format(new Date(appt.dateTime), "h:mm a")}
-          </p>
-
-          {/* Booked time */}
-          <span className="flex items-center gap-1 text-[10px] sm:text-[11px] text-[var(--color-ink-400)]">
-            <Clock size={10} className="shrink-0" /> Booked: {format(new Date(appt.createdAt), "d MMM, h:mm a")}
-          </span>
-
-          {/* Arrived */}
-          {arrivedAt && (
-            <span className="flex items-center gap-1 text-[10px] sm:text-[11px] text-blue-500">
-              <LogIn size={10} className="shrink-0" /> Arrived: {format(arrivedAt, "h:mm a")}
+        {/* Right: status, appointment metadata, CC and visit timestamps */}
+        <div className="w-full sm:w-[290px] sm:shrink-0" onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-center justify-between gap-3">
+            <span className={`text-[10px] sm:text-[11px] font-medium px-2 py-0.5 rounded-full whitespace-nowrap ${STATUS_STYLES[appt.status] ?? ""}`}>
+              {STATUS_LABELS[appt.status] ?? appt.status.replace(/_/g, " ")}
             </span>
-          )}
-
-          {/* Dispensed */}
-          {finalizedAt && (
-            <span className="flex items-center gap-1 text-[10px] sm:text-[11px] text-emerald-600">
-              <CheckCircle2 size={10} className="shrink-0" /> Dispensed: {format(finalizedAt, "h:mm a")}
+            <span className="inline-flex items-center gap-1 text-[12px] sm:text-sm font-semibold text-[var(--color-ink-700)] whitespace-nowrap tabular-nums">
+              <Calendar size={12} className="shrink-0 text-[var(--color-ink-400)]" />
+              {format(new Date(appt.dateTime), "h:mm a")}
             </span>
-          )}
-
-          {/* Total duration */}
-          {totalMins !== null && (
-            <span className="flex items-center gap-1 text-[10px] sm:text-[11px] text-[var(--color-ink-400)]">
-              <Timer size={10} className="shrink-0" /> Total: {fmtDuration(totalMins)}
+          </div>
+          <div className="mt-1 flex justify-end">
+            <span className="inline-flex items-center gap-1 text-[10px] sm:text-[11px] text-[var(--color-ink-400)] whitespace-nowrap tabular-nums">
+              <Clock size={10} /> Booked: {format(new Date(appt.createdAt), "d MMM, h:mm a")}
             </span>
+          </div>
+          {(appt.notes || p.complaint) && (
+            <div className="mt-2 flex justify-end">
+              <span className="clinical-complaint-chip inline-flex min-w-0 max-w-full items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] sm:text-xs">
+                <FileText size={11} className="shrink-0 text-amber-500" />
+                <span className="truncate">{formatComplaintDisplay(appt.notes || p.complaint)}</span>
+              </span>
+            </div>
           )}
+          <div className="mt-1.5 flex flex-col items-end gap-1 text-[10px] sm:text-[11px]">
+            {arrivedAt && (
+              <span className="inline-flex items-center gap-1 text-blue-500 whitespace-nowrap tabular-nums">
+                <LogIn size={10} /> Arrived: {format(arrivedAt, "h:mm a")}
+              </span>
+            )}
+            {finalizedAt && (
+              <span className="inline-flex items-center gap-1 text-emerald-600 whitespace-nowrap tabular-nums">
+                <CheckCircle2 size={10} /> Dispensed: {format(finalizedAt, "h:mm a")}
+              </span>
+            )}
+            {totalMins !== null && (
+              <span className="inline-flex items-center gap-1 text-[var(--color-ink-400)] whitespace-nowrap">
+                <Timer size={10} /> Total: {fmtDuration(totalMins)}
+              </span>
+            )}
+          </div>
 
-          {/* Confirm / Reject */}
+          <div className="flex flex-wrap justify-end gap-2 mt-2">
           {showConfirmReject && (
-            <div className="flex flex-wrap items-center gap-2 mt-2">
+            <>
               <button
                 disabled={pending}
                 onClick={() => hospitalSetStatus("CONFIRMED")}
@@ -236,12 +208,10 @@ export function AppointmentRow({ appt, role, token }: { appt: any; role: string;
               >
                 Reject
               </button>
-            </div>
+            </>
           )}
-
-          {/* Other actions */}
           {hasActions && (
-            <div className="flex flex-wrap items-center gap-2 mt-2">
+            <>
               {isCompleted && appt.visit && (
                 <button
                   type="button"
@@ -289,10 +259,10 @@ export function AppointmentRow({ appt, role, token }: { appt: any; role: string;
                   <UserX size={11} /> No Show
                 </button>
               )}
-            </div>
+            </>
           )}
+          </div>
         </div>
-
       </div>
     </div>
   );
