@@ -1742,7 +1742,9 @@ function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: st
 
 const FREQUENCY_OPTIONS = [
   "OD (Once daily)", "BD (Twice daily)", "TID (Three times daily)",
-  "QID (Four times daily)", "QHS (At bedtime)", "PRN (As needed)",
+  "QID (Four times daily)", "5 times daily", "6 times daily",
+  "Half an hourly", "Hourly", "2nd hourly", "3rd hourly", "4th hourly",
+  "QHS (At bedtime)", "PRN (As needed)",
   "Stat (Immediately)",
 ];
 
@@ -1820,14 +1822,15 @@ function OptEyeColumns({ children }: { children: [React.ReactNode, React.ReactNo
   );
 }
 
-type EditDraft = { drugName: string; dosage: string; frequency: string; duration: string; instructions: string; route?: string; laterality?: string };
+type TaperLevel = { frequency: string; durationNum: string; durationUnit: string };
+type EditDraft = { drugName: string; dosage: string; frequency: string; duration: string; instructions: string; route?: string; laterality?: string; taperLevels: TaperLevel[] };
 
 function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", adviseNotes, onAdviseChange, toastNames, onCloseToast, pendingDiagPrompts, onConfirmPrompt, onDismissPrompt, appliedByDiag, presetMatches, onRemoveApplied, onChangeProtocol, activeDialogDiag, setActiveDialogDiag, applying, onApplyProtocol }: { visit: any; udid: string; priorVisits: any[]; defaultLaterality?: string; adviseNotes: string; onAdviseChange: (notes: string) => void; toastNames: string[]; onCloseToast: () => void; pendingDiagPrompts: { diagnosisDesc: string; laterality?: string; matches: PresetMatch[] }[]; onConfirmPrompt: (diag: { diagnosisDesc: string; laterality?: string; matches: PresetMatch[] }) => void; onDismissPrompt: (desc: string, matches: PresetMatch[]) => void; appliedByDiag: Record<string, any[]>; presetMatches: PresetMatch[]; onRemoveApplied: (desc: string) => void; onChangeProtocol: (desc: string, matches: PresetMatch[]) => void; activeDialogDiag: any; setActiveDialogDiag: (v: any) => void; applying: boolean; onApplyProtocol: (selected: TreatmentPreset[], diagnosisDesc: string, isChanging: boolean) => void }) {
   const [pending, startTransition] = useTransition();
   const [showAddDrug, setShowAddDrug] = useState(false);
   const [showPresets, setShowPresets] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editDraft, setEditDraft] = useState<EditDraft>({ drugName: "", dosage: "", frequency: "", duration: "", instructions: "", route: "Topical", laterality: "OU" });
+  const [editDraft, setEditDraft] = useState<EditDraft>({ drugName: "", dosage: "", frequency: "", duration: "", instructions: "", route: "Topical", laterality: "OU", taperLevels: [] });
   const [clearConfirm, setClearConfirm] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [showKeywords, setShowKeywords] = useState(false);
@@ -1839,7 +1842,6 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
   useEffect(() => { setLaterality(defaultLaterality); }, [defaultLaterality]);
   const [frequency, setFrequency]         = useState("");
   const [durationSel, setDurationSel]     = useState("");
-  type TaperLevel = { frequency: string; durationNum: string; durationUnit: string };
   const [taperLevels, setTaperLevels] = useState<TaperLevel[]>([]);
   const [instructions, setInstructions]   = useState("");
 
@@ -1928,14 +1930,38 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
   };
 
   const startEdit = (m: any) => {
+    const instructionParts = String(m.instructions ?? "").split(" | ");
+    const instructionTaper = instructionParts.find((part) => part.startsWith("Tapering: "))?.slice("Tapering: ".length);
+    const [baseDuration, presetTaper] = String(m.duration ?? "").split(" → Taper: ", 2);
+    const savedTaper = instructionTaper || presetTaper;
+    const savedTaperLevels = savedTaper
+      ? savedTaper.split(" → ").flatMap((step) => {
+          const match = step.match(/^(.*?) × (\d+) (days|weeks|months|years)$/);
+          return match ? [{ frequency: match[1], durationNum: match[2], durationUnit: match[3] }] : [];
+        })
+      : [];
     setEditingId(m.id);
-    setEditDraft({ drugName: m.drugName ?? "", dosage: m.dosage ?? "", frequency: m.frequency ?? "", duration: m.duration ?? "", instructions: m.instructions ?? "", route: m.route ?? "Topical", laterality: m.laterality ?? defaultLaterality });
+    setEditDraft({
+      drugName: m.drugName ?? "",
+      dosage: m.dosage ?? "",
+      frequency: m.frequency ?? "",
+      duration: baseDuration,
+      instructions: instructionParts.filter((part) => !part.startsWith("Tapering: ")).join(" | "),
+      route: m.route ?? "Topical",
+      laterality: m.laterality ?? defaultLaterality,
+      taperLevels: savedTaperLevels,
+    });
   };
 
   const saveEdit = (id: string) => {
     if (!editDraft.drugName.trim()) return;
     startTransition(async () => {
-      await updateMedication(id, udid, { drugName: editDraft.drugName.trim(), dosage: editDraft.dosage, frequency: editDraft.frequency, duration: editDraft.duration, instructions: editDraft.instructions, route: editDraft.route, laterality: editDraft.route === "Topical" ? editDraft.laterality : undefined });
+      const tapParts = editDraft.taperLevels
+        .filter((level) => level.frequency && level.durationNum)
+        .map((level) => `${level.frequency} × ${level.durationNum} ${level.durationUnit}`);
+      const taperNote = tapParts.length ? `Tapering: ${tapParts.join(" → ")}` : "";
+      const finalInstructions = [editDraft.instructions.trim(), taperNote].filter(Boolean).join(" | ");
+      await updateMedication(id, udid, { drugName: editDraft.drugName.trim(), dosage: editDraft.dosage, frequency: editDraft.frequency, duration: editDraft.duration, instructions: finalInstructions, route: editDraft.route, laterality: editDraft.route === "Topical" ? editDraft.laterality : undefined });
       setEditingId(null);
     });
   };
@@ -2412,12 +2438,90 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
                         <td />
                         <td colSpan={4} className="px-3 pb-2.5 pt-0">
                           {isEditing ? (
-                            <input
-                              value={editDraft.instructions}
-                              onChange={(e) => setEditDraft({ ...editDraft, instructions: e.target.value })}
-                              placeholder="Instructions (optional)..."
-                              className={cellCls + " w-full"}
-                            />
+                            <div className="space-y-2">
+                              <input
+                                value={editDraft.instructions}
+                                onChange={(e) => setEditDraft({ ...editDraft, instructions: e.target.value })}
+                                placeholder="Instructions (optional)..."
+                                className={cellCls + " w-full"}
+                              />
+                              <label className="flex w-fit cursor-pointer items-center gap-1.5">
+                                <input
+                                  type="checkbox"
+                                  checked={editDraft.taperLevels.length > 0}
+                                  onChange={(e) => setEditDraft({
+                                    ...editDraft,
+                                    taperLevels: e.target.checked ? [{ frequency: "", durationNum: "", durationUnit: "days" }] : [],
+                                  })}
+                                  className="h-3.5 w-3.5 rounded accent-[var(--color-primary-600)]"
+                                />
+                                <span className="text-xs font-medium text-[var(--color-ink-600)]">Tapering dose</span>
+                              </label>
+                              {editDraft.taperLevels.map((level, levelIndex) => (
+                                <div key={levelIndex} className="border-l-2 border-[var(--color-primary-300)] pl-3">
+                                  <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-[var(--color-primary-600)]">
+                                    ↓ Tapering dose{editDraft.taperLevels.length > 1 ? ` ${levelIndex + 1}` : ""}
+                                  </p>
+                                  <div className="grid grid-cols-2 gap-2">
+                                    <select
+                                      value={level.frequency}
+                                      onChange={(e) => {
+                                        const levels = [...editDraft.taperLevels];
+                                        levels[levelIndex] = { ...level, frequency: e.target.value };
+                                        setEditDraft({ ...editDraft, taperLevels: levels });
+                                      }}
+                                      className={cellCls}
+                                    >
+                                      <option value="">Select frequency</option>
+                                      {FREQUENCY_OPTIONS.map((option) => <option key={option}>{option}</option>)}
+                                    </select>
+                                    <div className="flex gap-1">
+                                      <select
+                                        value={level.durationNum}
+                                        onChange={(e) => {
+                                          const levels = [...editDraft.taperLevels];
+                                          levels[levelIndex] = { ...level, durationNum: e.target.value };
+                                          setEditDraft({ ...editDraft, taperLevels: levels });
+                                        }}
+                                        className={cellCls}
+                                      >
+                                        <option value="">—</option>
+                                        {Array.from({ length: 10 }, (_, numberIndex) => numberIndex + 1).map((number) => (
+                                          <option key={number} value={String(number)}>{number}</option>
+                                        ))}
+                                      </select>
+                                      <select
+                                        value={level.durationUnit}
+                                        onChange={(e) => {
+                                          const levels = [...editDraft.taperLevels];
+                                          levels[levelIndex] = { ...level, durationUnit: e.target.value };
+                                          setEditDraft({ ...editDraft, taperLevels: levels });
+                                        }}
+                                        className={cellCls}
+                                      >
+                                        {['days', 'weeks', 'months', 'years'].map((unit) => <option key={unit}>{unit}</option>)}
+                                      </select>
+                                    </div>
+                                  </div>
+                                  {levelIndex < 4 && (
+                                    <label className="mt-1.5 flex w-fit cursor-pointer items-center gap-1.5">
+                                      <input
+                                        type="checkbox"
+                                        checked={editDraft.taperLevels.length > levelIndex + 1}
+                                        onChange={(e) => setEditDraft({
+                                          ...editDraft,
+                                          taperLevels: e.target.checked
+                                            ? [...editDraft.taperLevels.slice(0, levelIndex + 1), { frequency: "", durationNum: "", durationUnit: "days" }]
+                                            : editDraft.taperLevels.slice(0, levelIndex + 1),
+                                        })}
+                                        className="h-3.5 w-3.5 rounded accent-[var(--color-primary-600)]"
+                                      />
+                                      <span className="text-xs font-medium text-[var(--color-ink-600)]">Tapering dose</span>
+                                    </label>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
                           ) : (
                             <span className="text-xs text-[var(--color-ink-600)]">{m.instructions}</span>
                           )}

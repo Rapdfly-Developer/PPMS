@@ -20,6 +20,7 @@ const DOSAGE_OPTIONS = [
 
 const FREQUENCY_OPTIONS = [
   "Once daily (OD)","Twice daily (BD)","Three times daily (TDS)","Four times daily (QID)",
+  "5 times daily","6 times daily","Half an hourly","Hourly","2nd hourly","3rd hourly","4th hourly",
   "Every 4 hours (Q4H)","Every 6 hours (Q6H)","Every 8 hours (Q8H)","Every 12 hours (Q12H)",
   "At bedtime (HS)","Before meals","After meals","With meals",
   "Once weekly","Twice weekly","Once monthly",
