@@ -763,18 +763,17 @@ export function PatientsClient({
                   <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">Patient</span>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">Chief Complaint</span>
-                </div>
-                <div className="w-52 shrink-0">
-                  <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">Diagnoses</span>
+                  <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">Chief Complaint / Diagnosis</span>
                 </div>
                 <div className="w-28 shrink-0">
                   <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">Last Visit</span>
                 </div>
                 <div className="w-28 shrink-0">
-                  <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">Q &amp; F Time</span>
+                  <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">In / Out Time</span>
                 </div>
-                <div className="w-20 shrink-0" />
+                <div className="w-36 shrink-0">
+                  <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">Category</span>
+                </div>
               </div>
 
               <ul className="px-3 py-3 space-y-3">
@@ -844,12 +843,12 @@ export function PatientsClient({
                               )}
                               {queueTimeStr && (
                                 <span className="text-[9px] sm:text-[10px] text-[var(--color-ink-400)]">
-                                  <span className="font-semibold text-[var(--color-ink-500)]">Q</span> {queueTimeStr}
+                                  <span className="font-semibold text-[var(--color-ink-500)]">In</span> {queueTimeStr}
                                 </span>
                               )}
                               {finalTimeStr && (
                                 <span className="text-[9px] sm:text-[10px] text-[var(--color-ink-400)]">
-                                  <span className="font-semibold text-emerald-600">F</span> {finalTimeStr}
+                                  <span className="font-semibold text-emerald-600">Out</span> {finalTimeStr}
                                 </span>
                               )}
                             </div>
@@ -865,7 +864,7 @@ export function PatientsClient({
                               on a tablet loses the working diagnosis entirely. Two pills then a
                               count; that count is bounded by the `take: 4` fetch in page.tsx. */}
                           {p.diagnoses.length > 0 && (
-                            <div className="xl:hidden flex items-center gap-1 mt-1 flex-wrap">
+                            <div className="lg:hidden flex items-center gap-1 mt-1 flex-wrap">
                               {p.diagnoses.slice(0, 2).map((d, i) => (
                                 <span
                                   key={i}
@@ -885,31 +884,27 @@ export function PatientsClient({
                         </div>
                       </div>
 
-                      {/* Chief Complaint — fills space, shown on lg+ */}
-                      <div className="hidden lg:block flex-1 min-w-0">
+                      {/* Clinical summary — complaint and diagnosis stacked as specified */}
+                      <div className="hidden lg:flex flex-1 min-w-0 flex-col items-start gap-1.5">
                         {p.chiefComplaint ? (
                           <ComplaintChips value={p.chiefComplaint} />
                         ) : (
-                          <span className="text-[10px] sm:text-[11px] italic text-[var(--color-ink-300)]">Not recorded</span>
+                          <span className="text-[10px] sm:text-[11px] italic text-[var(--color-ink-300)]">Complaint not recorded</span>
                         )}
-                      </div>
-
-                      {/* Diagnoses */}
-                      <div className="hidden xl:block w-52 shrink-0">
                         {p.diagnoses.length > 0 ? (
-                          <div className="flex flex-wrap gap-1">
+                          <div className="flex max-w-full flex-wrap gap-1">
                             {p.diagnoses.slice(0, 2).map((d, i) => (
-                              <span key={i} className="clinical-diagnosis-chip inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border text-[10px] sm:text-[11px]">
-                                {d.laterality && <span className="clinical-laterality">{d.laterality}</span>}
-                                {d.description}
+                              <span key={i} className="clinical-diagnosis-chip inline-flex max-w-full items-center gap-1 px-2.5 py-0.5 rounded-full border text-[10px] sm:text-[11px]">
+                                {d.laterality && <span className="clinical-laterality shrink-0">{d.laterality}</span>}
+                                <span className="truncate">{d.description}</span>
                               </span>
                             ))}
                             {p.diagnoses.length > 2 && (
-                              <span className="text-[9px] sm:text-[10px] text-[var(--color-ink-400)] self-center">+{p.diagnoses.length - 2}</span>
+                              <span className="self-center text-[9px] sm:text-[10px] text-[var(--color-ink-400)]">+{p.diagnoses.length - 2}</span>
                             )}
                           </div>
                         ) : (
-                          <span className="text-[10px] sm:text-[11px] text-[var(--color-ink-300)]">—</span>
+                          <span className="text-[10px] sm:text-[11px] italic text-[var(--color-ink-300)]">Diagnosis not recorded</span>
                         )}
                       </div>
 
@@ -927,17 +922,17 @@ export function PatientsClient({
                         )}
                       </div>
 
-                      {/* Q & F Time */}
+                      {/* In and out times */}
                       <div className="hidden xl:block w-28 shrink-0">
                         <div className="space-y-0.5">
                           {queueTimeStr && (
                             <p className="text-[10px] sm:text-[11px] text-[var(--color-ink-600)]">
-                              <span className="font-bold text-[var(--color-ink-500)] mr-1">Q</span>{queueTimeStr}
+                              <span className="font-bold text-[var(--color-ink-500)] mr-1">In</span>{queueTimeStr}
                             </p>
                           )}
                           {finalTimeStr && (
                             <p className="text-[10px] sm:text-[11px] text-[var(--color-ink-600)]">
-                              <span className="font-bold text-emerald-600 mr-1">F</span>{finalTimeStr}
+                              <span className="font-bold text-emerald-600 mr-1">Out</span>{finalTimeStr}
                             </p>
                           )}
                           {!queueTimeStr && !finalTimeStr && (
@@ -947,7 +942,7 @@ export function PatientsClient({
                       </div>
 
                       {/* Category + Undo — right side */}
-                      <div className="flex items-center gap-2 shrink-0 justify-end">
+                      <div className="flex items-center gap-2 shrink-0 justify-end xl:w-36">
                         <span className={`hidden sm:inline-flex text-[9px] sm:text-[10px] font-semibold px-2 py-0.5 rounded-full ${cat.cls}`}>
                           {cat.label}
                         </span>
@@ -958,11 +953,11 @@ export function PatientsClient({
                               setUndoError(null);
                               setUndoTarget({ apptId: p.dispensedApptId! });
                             }}
-                            title="Undo dispense, move back to queue"
+                            title="Return patient to today's queue"
                             className="shrink-0 flex items-center gap-1 text-[9px] sm:text-[10px] font-medium px-2 py-1 rounded-lg border border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors"
                           >
                             <Undo2 size={11} />
-                            Undo
+                            Return to Queue
                           </button>
                         )}
                       </div>
@@ -1042,9 +1037,9 @@ export function PatientsClient({
           onClick={(e) => { if (e.target === e.currentTarget && !undoPending) { setUndoTarget(null); setUndoError(null); } }}
         >
           <div className="w-full max-w-sm bg-white rounded-2xl shadow-2xl p-6 flex flex-col gap-4">
-            <h2 className="text-[15px] sm:text-base font-semibold text-[var(--color-ink-800)]">Undo Dispense?</h2>
+            <h2 className="text-[15px] sm:text-base font-semibold text-[var(--color-ink-800)]">Return Patient to Today&apos;s Queue?</h2>
             <p className="text-sm text-[var(--color-ink-600)]">
-              Are you sure? This will alter the timestamp and waiting time of the patient.
+              The patient will return to today&apos;s queue with the original arrival and consultation timings preserved.
             </p>
             {undoError && (
               <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{undoError}</p>
@@ -1071,7 +1066,6 @@ export function PatientsClient({
                       setUndoError(result.error);
                       return;
                     }
-                    try { sessionStorage.removeItem(`emr_consult_start_${result.visitId}`); } catch { /* storage unavailable */ }
                     setUndoTarget(null);
                   } finally {
                     setUndoPending(false);
@@ -1079,7 +1073,7 @@ export function PatientsClient({
                 }}
                 className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold disabled:opacity-60 transition-colors"
               >
-                {undoPending ? "Undoing…" : "Confirm"}
+                {undoPending ? "Returning…" : "Return to Queue"}
               </button>
             </div>
           </div>

@@ -48,14 +48,11 @@ export async function undoDispense(appointmentId: string): Promise<UndoDispenseR
   const udid = visit.patient?.udid;
   if (!udid) return { ok: false, error: "Patient record not found." };
 
-  const now = new Date();
-
   await prisma.$transaction([
     prisma.appointment.update({
       where: { id: appointmentId },
       data: {
         status: "CONFIRMED",
-        arrivedAt: now,
         consultationStatus: null,
         completedAt: null,
         completedBy: null,
@@ -78,7 +75,7 @@ export async function undoDispense(appointmentId: string): Promise<UndoDispenseR
     "appointment",
     appointmentId,
     "UNDO_DISPENSE",
-    { appointmentStatus: "CONFIRMED", visitStatus: "IN_PROGRESS", visitId: visit.id },
+    { appointmentStatus: "CONFIRMED", visitStatus: "IN_PROGRESS", visitId: visit.id, timing: "preserved" },
     {
       oldValue: { appointmentStatus: "DISPENSED", visitStatus: visit.status },
       userName: user.name,
