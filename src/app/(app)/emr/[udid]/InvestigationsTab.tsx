@@ -13,7 +13,7 @@ import { format } from "date-fns";
 import {
   Paperclip, ExternalLink, Upload, Download, Eye, Clock,
   CheckCircle2, XCircle, FlaskConical, Plus, History, Camera,
-  X, Search, Star, Trash2,
+  X, Search, Trash2,
 } from "lucide-react";
 
 const FAVES_KEY   = "ppms_inv_favorites";
@@ -381,12 +381,11 @@ function AddCustomTestModal({
   onAdd,
   onClose,
 }: {
-  onAdd: (name: string, category: string, saveAsFav: boolean) => void;
+  onAdd: (name: string, category: string) => void;
   onClose: () => void;
 }) {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState(CATALOG_CATEGORIES[0]);
-  const [saveAsFav, setSaveAsFav] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
   const suggestions = query.length >= 2
@@ -397,7 +396,7 @@ function AddCustomTestModal({
     e.preventDefault();
     const name = query.trim();
     if (!name) return;
-    onAdd(name, category, saveAsFav);
+    onAdd(name, category);
     onClose();
   };
 
@@ -483,22 +482,6 @@ function AddCustomTestModal({
             </select>
           </div>
 
-          {/* Save as favorite */}
-          <label className="flex items-center gap-2.5 cursor-pointer">
-            <div
-              onClick={() => setSaveAsFav((v) => !v)}
-              className={clsx(
-                "flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full border transition-colors",
-                saveAsFav
-                  ? "bg-[#EEF8F7] border-[#B2DEDA] text-[#0F766E]"
-                  : "border-[var(--color-border)] text-[var(--color-ink-500)] hover:border-[#B2DEDA] hover:text-[#0F766E]"
-              )}
-            >
-              <Star size={11} fill={saveAsFav ? "#0F766E" : "none"} />
-              Save as favourite
-            </div>
-          </label>
-
           {/* Actions */}
           <div className="flex items-center justify-end gap-2.5 pt-1">
             <button
@@ -538,7 +521,7 @@ function NewInvestigations({
   const [pending, startTransition] = useTransition();
   const [showAddModal, setShowAddModal] = useState(false);
 
-  // Custom tests: favorites (localStorage) + session additions (sessionStorage)
+  // Every custom test is retained in the existing browser library.
   const [customTests, setCustomTests] = useState<{ name: string; category: string }[]>(() => {
     if (typeof window === "undefined") return [];
     try {
@@ -555,7 +538,7 @@ function NewInvestigations({
   const toggleTest = (name: string) =>
     setSelected((prev) => prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name]);
 
-  const handleAddCustom = (name: string, category: string, saveAsFav: boolean) => {
+  const handleAddCustom = (name: string, category: string) => {
     // If it's already in the catalog just select it and navigate to its tab
     const catalogCat = Object.entries(INV_CATALOG).find(([, items]) => items.some((i) => i.name === name))?.[0];
     if (catalogCat) {
@@ -572,15 +555,13 @@ function NewInvestigations({
         sessionStorage.setItem(SESSION_KEY, JSON.stringify([...session, { name, category }]));
       }
     } catch {}
-    // Also persist to localStorage if save as favorite
-    if (saveAsFav) {
-      try {
-        const stored: { name: string; category: string }[] = JSON.parse(localStorage.getItem(FAVES_KEY) ?? "[]");
-        if (!stored.some((t) => t.name === name)) {
-          localStorage.setItem(FAVES_KEY, JSON.stringify([...stored, { name, category }]));
-        }
-      } catch {}
-    }
+    // Persist automatically so it is available for every patient and future session.
+    try {
+      const stored: { name: string; category: string }[] = JSON.parse(localStorage.getItem(FAVES_KEY) ?? "[]");
+      if (!stored.some((t) => t.name.toLowerCase() === name.toLowerCase())) {
+        localStorage.setItem(FAVES_KEY, JSON.stringify([...stored, { name, category }]));
+      }
+    } catch {}
     // Auto-select and navigate to its category tab
     const targetCat = Object.keys(INV_CATALOG).includes(category) ? category : "Other";
     setActiveCategory(targetCat);

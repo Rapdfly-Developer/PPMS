@@ -17,7 +17,7 @@ import {
   getDismissedPresets, addDismissedPreset, clearDismissedPresets,
   saveTreatmentPresets,
 } from "./treatmentPresets";
-import { type MedEntry, searchMedications, categoryColor } from "@/lib/ophthalmic-medications";
+import { type MedEntry, searchMedications, categoryColor, saveCustomMedication } from "@/lib/ophthalmic-medications";
 import { VA_SNELLEN_VALUES, DEFAULT_REFRACTION_METHOD, isPrescribableMethod, methodHasNear } from "@/lib/constants";
 import { INV_CATALOG } from "@/lib/investigation-catalog";
 import { appendKeywordAsBullet, KeywordChipsRow, KeywordTextarea, KeywordTextareaControlsRow, removeKeywordFromText } from "@/components/emr/KeywordField";
@@ -109,6 +109,7 @@ function PresetPanel({ onApply, onClose }: { onApply: (drugs: PresetDrug[]) => v
   const saveForm = () => {
     const drugs = formDrugs.filter((d) => d.drugName.trim());
     if (!formName.trim() || !formCategory.trim() || !drugs.length) return;
+    drugs.forEach((drug) => saveCustomMedication({ name: drug.drugName, defaultDose: drug.dosage }));
     let updated: Preset[];
     if (editId) {
       updated = presets.map((p) => p.id === editId ? { id: editId, category: formCategory.trim(), name: formName.trim(), drugs } : p);
@@ -515,6 +516,7 @@ function PresetSelectDialog({
   const saveCustomProtocol = () => {
     const meds = formMeds.filter((m) => m.drugName.trim());
     if (!formName.trim() || !meds.length) return;
+    meds.forEach((med) => saveCustomMedication({ name: med.drugName, defaultDose: med.dosage }));
     const newPreset: TreatmentPreset = {
       id: `custom-tx-${Date.now()}`,
       name: formName.trim(),
@@ -541,6 +543,7 @@ function PresetSelectDialog({
     if (!editingPresetId) return;
     const meds = formMeds.filter((m) => m.drugName.trim());
     if (!formName.trim() || !meds.length) return;
+    meds.forEach((med) => saveCustomMedication({ name: med.drugName, defaultDose: med.dosage }));
     const all = getTreatmentPresets();
     const existing = all.find((p) => p.id === editingPresetId);
     const updated: TreatmentPreset = {
@@ -1329,6 +1332,7 @@ export function PlanTab({ visit, udid, patientSex, priorVisits = [] }: { visit: 
   const applyPresetsForDiag = async (selected: TreatmentPreset[], diagnosisDesc: string, baselineMeds: any[]) => {
     const newMeds = mergeMeds(selected, baselineMeds);
     for (const med of newMeds) {
+      saveCustomMedication({ name: med.drugName, defaultDose: med.dosage });
       await addMedication(visit.id, udid, { ...med, laterality: (med as any).laterality ?? diagLaterality });
     }
     const followUpDays = selected.map((p) => p.followUpDays).filter((d): d is number => !!d);
@@ -1504,21 +1508,23 @@ const PROCEDURE_KEYWORDS = [
   "Cauterization of corneal ulcer",
 ];
 
-// Scoped per-doctor, same pattern as seg_custom_* in Anterior Segment
+// Legacy per-doctor key retained only so existing saved procedures can be
+// folded into the universal browser library.
 const procKwKey = (doctorId: string) => `proc_custom_${doctorId}`;
 
-function getCustomProcedureKws(doctorId: string): string[] {
-  try { return JSON.parse(localStorage.getItem(procKwKey(doctorId)) ?? "[]"); } catch { return []; }
+const ANESTHESIA_LIBRARY_KEY = "ppms_custom_anesthesia_v1";
+
+function getCustomAnesthesia(): string[] {
+  try { return JSON.parse(localStorage.getItem(ANESTHESIA_LIBRARY_KEY) ?? "[]"); } catch { return []; }
 }
-function saveCustomProcedureKw(doctorId: string, kw: string): void {
-  const cur = getCustomProcedureKws(doctorId);
-  // Case-insensitive duplicate guard — same logic as Anterior Segment's addKeyword
-  if (cur.some((k) => k.toLowerCase() === kw.toLowerCase())) return;
-  localStorage.setItem(procKwKey(doctorId), JSON.stringify([...cur, kw]));
-}
-function deleteCustomProcedureKw(doctorId: string, kw: string): void {
-  const cur = getCustomProcedureKws(doctorId).filter((k) => k !== kw);
-  localStorage.setItem(procKwKey(doctorId), JSON.stringify(cur));
+
+function saveCustomAnesthesia(value: string): string[] {
+  const trimmed = value.trim();
+  const current = getCustomAnesthesia();
+  if (!trimmed || ANESTHESIA_KEYWORDS.some((item) => item.toLowerCase() === trimmed.toLowerCase()) || current.some((item) => item.toLowerCase() === trimmed.toLowerCase())) return current;
+  const next = [...current, trimmed];
+  localStorage.setItem(ANESTHESIA_LIBRARY_KEY, JSON.stringify(next));
+  return next;
 }
 
 function parseProcedureList(raw: string): string[] {
@@ -1534,6 +1540,7 @@ function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: st
   const overview = useEmrOverview();
   const [laterality,     setLaterality]     = useState<string>(visit.procedureLaterality ?? "OU");
   const [anesthesia,     setAnesthesia]     = useState<string>(visit.anesthesiaType ?? "");
+  const [customAnesthesia, setCustomAnesthesia] = useState<string[]>(() => typeof window === "undefined" ? [] : getCustomAnesthesia());
   const [showHistory,    setShowHistory]    = useState(false);
   const [anesthesiaOpen, setAnesthesiaOpen] = useState(false);
 
@@ -1544,7 +1551,7 @@ function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: st
   });
   const [procNotes, setProcNotes]   = useState<string>(visit.procedureNotes ?? "");
 
-  // Per-doctor scope — same as seg_custom_* in Anterior Segment
+  // Existing per-doctor terms are migrated into one browser-wide library.
   const doctorId: string = visit.doctorId ?? "";
   const legacyProcedureKwKeys = useMemo(() => [procKwKey(doctorId)], [doctorId]);
 
@@ -1553,7 +1560,7 @@ function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: st
   useAutoSave(procInput,  (val) => saveProcedureName(visit.id, udid, val));
   useAutoSave(procNotes,  (val) => saveProcedureNotes(visit.id, udid, val));
 
-  const filteredAnesthesia = ANESTHESIA_KEYWORDS.filter((kw) =>
+  const filteredAnesthesia = [...ANESTHESIA_KEYWORDS, ...customAnesthesia].filter((kw) =>
     anesthesia.trim() === "" || kw.toLowerCase().includes(anesthesia.toLowerCase())
   );
 
@@ -1607,7 +1614,7 @@ function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: st
             Procedure
           </label>
           <KeywordTextarea
-            fieldKey={`minor_procedure_${doctorId}`}
+            fieldKey="minor_procedure"
             legacyKeys={legacyProcedureKwKeys}
             builtIns={PROCEDURE_KEYWORDS}
             value={procInput}
@@ -1630,7 +1637,10 @@ function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: st
               value={anesthesia}
               onChange={(e) => { setAnesthesia(e.target.value); setAnesthesiaOpen(true); }}
               onFocus={() => setAnesthesiaOpen(true)}
-              onBlur={() => setTimeout(() => setAnesthesiaOpen(false), 150)}
+              onBlur={() => {
+                setCustomAnesthesia(saveCustomAnesthesia(anesthesia));
+                setTimeout(() => setAnesthesiaOpen(false), 150);
+              }}
               placeholder="Search anesthesia…"
               className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] pl-8 pr-7 py-2 text-sm text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent"
             />
@@ -1671,7 +1681,7 @@ function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: st
         <div data-overview-hide className="mt-3">
           <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-[var(--color-ink-400)]">Quick Add</p>
           <KeywordTextareaControlsRow
-            fieldKey={`minor_procedure_${doctorId}`}
+            fieldKey="minor_procedure"
             legacyKeys={legacyProcedureKwKeys}
             builtIns={PROCEDURE_KEYWORDS}
             value={procInput}
@@ -1979,7 +1989,10 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
 
   const applyPreset = (drugs: PresetDrug[]) => {
     startTransition(async () => {
-      for (const d of drugs) await addMedication(visit.id, udid, d);
+      for (const d of drugs) {
+        saveCustomMedication({ name: d.drugName, defaultDose: d.dosage });
+        await addMedication(visit.id, udid, d);
+      }
       setShowPresets(false);
     });
   };
@@ -2002,6 +2015,7 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
   const saveEdit = (id: string) => {
     if (!editDraft.drugName.trim()) return;
     startTransition(async () => {
+      saveCustomMedication({ name: editDraft.drugName, route: editDraft.route, defaultDose: editDraft.dosage });
       const tapParts = formatTaperSteps(editDraft.taperLevels);
       const taperNote = tapParts.length ? `Tapering: ${tapParts.join(" → ")}` : "";
       const finalInstructions = [editDraft.instructions.trim(), taperNote].filter(Boolean).join(" | ");
@@ -2021,6 +2035,7 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
   const submitDrug = () => {
     if (!drugName.trim()) return;
     startTransition(async () => {
+      saveCustomMedication({ name: drugName, route, defaultDose: dose });
       const duration = durationSel;
       const tapParts = formatTaperSteps(taperLevels);
       const tapNote = tapParts.length ? `Tapering: ${tapParts.join(" → ")}` : "";

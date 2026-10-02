@@ -113,6 +113,7 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Toast } from "@/components/ui/Toast";
 import { format } from "date-fns";
 import { getCustomDiagnoses, saveCustomDiagnosis, isDuplicateDescription, type CustomDx } from "@/lib/customDiagnoses";
+import { saveCustomMedication } from "@/lib/ophthalmic-medications";
 
 type DiagnosisItem = { code: string; description: string; custom: boolean; category?: string };
 
@@ -540,6 +541,7 @@ export function AssessmentTab({
     };
 
     const existing = getTreatmentPresets().filter((p) => !p.isDefault);
+    validMeds.forEach((med) => saveCustomMedication({ name: med.drugName, defaultDose: med.dosage }));
     saveTreatmentPresets([...existing, newPreset]);
 
     // The diagnosis itself was already added in the modal's first step. The new

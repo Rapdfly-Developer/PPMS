@@ -10,6 +10,46 @@ export interface MedEntry {
   defaultDose?: string;
 }
 
+const CUSTOM_MEDICATIONS_KEY = "ppms_custom_medications_v1";
+
+export function getCustomMedications(): MedEntry[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const parsed = JSON.parse(localStorage.getItem(CUSTOM_MEDICATIONS_KEY) ?? "[]");
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+/** Keep manually entered medicines reusable without changing the database schema. */
+export function saveCustomMedication(input: {
+  name: string;
+  route?: string;
+  defaultDose?: string;
+}): void {
+  if (typeof window === "undefined") return;
+  const name = input.name.trim();
+  if (!name || OPHTHALMIC_MEDICATIONS.some((med) => med.name.toLowerCase() === name.toLowerCase())) return;
+
+  const current = getCustomMedications();
+  const existing = current.findIndex((med) => med.name.toLowerCase() === name.toLowerCase());
+  const entry: MedEntry = {
+    id: existing >= 0 ? current[existing].id : `custom-med-${Date.now()}`,
+    name,
+    generic: name,
+    strength: "",
+    form: "Custom",
+    category: "Custom",
+    route: input.route?.trim() || "Topical",
+    defaultDose: input.defaultDose?.trim() || undefined,
+  };
+  const next = existing >= 0
+    ? current.map((med, index) => index === existing ? entry : med)
+    : [...current, entry];
+  localStorage.setItem(CUSTOM_MEDICATIONS_KEY, JSON.stringify(next));
+}
+
 export const OPHTHALMIC_MEDICATIONS: MedEntry[] = [
   // ── Beta-blockers (Glaucoma) ──
   { id: "t1",  name: "Timolol 0.5% Eye Drops",        generic: "Timolol",       strength: "0.5%",        form: "Eye Drops",              category: "Beta-blocker",    route: "Topical",       defaultDose: "1 drop" },
@@ -177,7 +217,8 @@ export const OPHTHALMIC_MEDICATIONS: MedEntry[] = [
 export function searchMedications(query: string, limit = 8): MedEntry[] {
   const q = query.trim().toLowerCase();
   if (q.length < 2) return [];
-  return OPHTHALMIC_MEDICATIONS
+  const medicines = [...OPHTHALMIC_MEDICATIONS, ...getCustomMedications()];
+  return medicines
     .filter(
       (m) =>
         m.name.toLowerCase().includes(q) ||
