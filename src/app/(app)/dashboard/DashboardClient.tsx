@@ -217,11 +217,14 @@ function ApptRow({ appt, scope, serial, canManageQueue, canViewPatient, returnTo
         <span className="text-[11px] sm:text-xs font-bold text-[var(--color-ink-400)] tabular-nums">{serial}</span>
       </div>
       <div className="w-px self-stretch bg-[var(--color-border)] hidden sm:block" />
-      {/* Booked appointment time or walk-in marker — always one line. */}
+      {/* Booked appointment time, or walk-in time with a label underneath. */}
       <div className="w-24 shrink-0 hidden sm:flex items-center justify-center">
         {appt.isWalkIn ? (
-          <span className="inline-flex items-center whitespace-nowrap text-[11px] font-semibold text-gray-500">
-            Walk-in
+          <span className="flex flex-col items-center leading-tight" title="Walk-in time">
+            <span className="inline-flex items-center gap-1 whitespace-nowrap text-[12px] font-semibold text-gray-600 tabular-nums">
+              <Clock size={11} /> {format(arrivedAt ?? new Date(appt.dateTime), "h:mm a")}
+            </span>
+            <span className="text-[10px] font-semibold text-gray-400 mt-0.5">Walk-in</span>
           </span>
         ) : (
           <span className="inline-flex items-center gap-1 whitespace-nowrap text-[12px] font-semibold text-blue-600 tabular-nums" title="Appointment time">
