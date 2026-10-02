@@ -6,7 +6,7 @@ import { ChevronDown, AlertTriangle, Plus, X, Tag } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { FieldWithHistory } from "@/components/ui/HistoryToggle";
 import { PAST_MEDICAL_HISTORY_CHIPS, VITAL_RANGES, CHIEF_COMPLAINT_FIELD_KEY, CHIEF_COMPLAINT_LEGACY_KEYS } from "@/lib/constants";
-import { OPHTHALMIC_COMPLAINTS } from "@/components/ui/ComplaintCombobox";
+import { appendComplaintKeyword, OPHTHALMIC_COMPLAINTS } from "@/components/ui/ComplaintCombobox";
 import { parseJSON } from "@/lib/json";
 import { useAutoSave, SaveIndicator } from "@/lib/useAutoSave";
 import { KeywordTextarea, KeywordChipsRow, removeKeywordFromText } from "@/components/emr/KeywordField";
@@ -297,9 +297,11 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, customPmhCh
               >
                 {/* Single complaint line: bullet | lat | text | since | remove */}
                 <div className="flex items-center gap-1.5 min-w-0 flex-wrap sm:flex-nowrap">
-                  <span className="text-[11px] font-bold text-[var(--color-ink-400)] w-5 text-center shrink-0 select-none">
-                    {complaints.length > 1 ? `${i + 1}.` : "•"}
-                  </span>
+                  {complaints.length > 1 && (
+                    <span className="text-[11px] font-bold text-[var(--color-ink-400)] w-5 text-center shrink-0 select-none">
+                      {i + 1}.
+                    </span>
+                  )}
 
                   {/* Laterality */}
                   <div className="flex gap-0.5 shrink-0">
@@ -328,14 +330,14 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, customPmhCh
                     })}
                   </div>
 
-                  {/* Complaint text — single-line input */}
-                  <input
-                    type="text"
+                  {/* Complaint text — multiple selected keywords stay in this field as bullets */}
+                  <textarea
                     value={c.text}
                     onChange={(e) => patchComplaint(i, { text: e.target.value.replace(/\|/g, "/") })}
                     disabled={readOnly}
                     placeholder="Complaint…"
-                    className="flex-1 min-w-0 rounded-lg border border-[var(--color-border)] bg-white px-2.5 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] disabled:bg-[var(--color-surface-sunken)]"
+                    rows={Math.max(1, Math.min(5, c.text.split("\n").length))}
+                    className="flex-1 min-w-0 resize-none rounded-lg border border-[var(--color-border)] bg-white px-2.5 py-1 text-sm leading-5 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] disabled:bg-[var(--color-surface-sunken)]"
                   />
 
                   {/* Keyword popover trigger */}
@@ -346,7 +348,7 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, customPmhCh
                       onToggle={() => setOpenKwIdx(openKwIdx === i ? null : i)}
                       onClose={() => setOpenKwIdx(null)}
                       getValue={() => c.text}
-                      onAppend={(kw) => patchComplaint(i, { text: c.text ? `${c.text} ${kw}` : kw })}
+                      onAppend={(kw) => patchComplaint(i, { text: appendComplaintKeyword(c.text, kw) })}
                       onRemoveFromText={(kw) => patchComplaint(i, { text: removeKeywordFromText(c.text, kw) })}
                     />
                   )}
@@ -397,18 +399,6 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, customPmhCh
 
               </div>
             ))}
-
-            {/* Add Complaint */}
-            {!readOnly && (
-              <button
-                data-overview-hide
-                type="button"
-                onClick={() => setComplaints((prev) => [...prev, emptyComplaint()])}
-                className="self-start mt-0.5 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-[10px] font-medium text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] transition-colors whitespace-nowrap"
-              >
-                <Plus size={11} strokeWidth={2.5} /> Add Complaint
-              </button>
-            )}
           </div>
         </FieldWithHistory>
       </Card>

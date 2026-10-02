@@ -6,6 +6,7 @@ import { WARDS } from "@/lib/constants";
 import { saveDispense, saveFollowUp } from "./actions";
 import { AlertTriangle, History, Plus, X } from "lucide-react";
 import { useEmrOverview } from "./EmrOverviewContext";
+import { appendKeywordAsBullet, KeywordChipsRow, removeKeywordFromText } from "@/components/emr/KeywordField";
 
 
 const IN_VIEW_OF_KEYWORDS: { group: string; items: string[] }[] = [
@@ -30,6 +31,7 @@ const IN_VIEW_OF_KEYWORDS: { group: string; items: string[] }[] = [
     items: ["Contact lens fitting", "Spectacle prescription update", "Second opinion", "Routine review"],
   },
 ];
+const ALL_IN_VIEW_OF_KEYWORDS = IN_VIEW_OF_KEYWORDS.flatMap((group) => group.items);
 
 // Disposition panels (Dispense / Admit / Follow Up Dates), rendered
 // inside the Plan tab's toggle group - see PlanTab.tsx.
@@ -82,7 +84,7 @@ export function FollowUpdatesPanel({ visit, udid, priorVisits = [] }: { visit: a
   const [pending, startTransition]            = useTransition();
   const overview = useEmrOverview();
   const [saved, setSaved]                     = useState(false);
-  const inViewOfRef = useRef<HTMLInputElement>(null);
+  const inViewOfRef = useRef<HTMLTextAreaElement>(null);
 
   /* Applying a treatment preset writes followUpDate straight to the visit, but
      this panel stays mounted throughout — so the initial useState value would
@@ -111,10 +113,7 @@ export function FollowUpdatesPanel({ visit, udid, priorVisits = [] }: { visit: a
   };
 
   const appendKeyword = (kw: string) => {
-    setInViewOf((prev: string) => {
-      const sep = prev.trim() ? (prev.trimEnd().endsWith(".") ? " " : ", ") : "";
-      return prev.trimEnd() + sep + kw;
-    });
+    setInViewOf((prev: string) => appendKeywordAsBullet(prev, kw));
     setSaved(false);
     inViewOfRef.current?.focus();
   };
@@ -178,12 +177,13 @@ export function FollowUpdatesPanel({ visit, udid, priorVisits = [] }: { visit: a
           </div>
         </div>
 
-        <input
+        <textarea
           ref={inViewOfRef}
           value={inViewOf}
           onChange={(e) => { setInViewOf(e.target.value); setSaved(false); }}
           placeholder="e.g. Review of treatment response, IOP check…"
-          className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-3 py-2 text-sm text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent"
+          rows={Math.max(1, Math.min(8, inViewOf.replace(/\r/g, "").split("\n").length))}
+          className="w-full resize-none rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-3 py-2 text-sm text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent"
         />
 
         {/* History panel */}
@@ -223,23 +223,14 @@ export function FollowUpdatesPanel({ visit, udid, priorVisits = [] }: { visit: a
               <span className="text-[10px] font-bold text-[var(--color-ink-400)] uppercase tracking-widest">Add Keyword</span>
               <button onClick={() => setShowKeywords(false)} className="text-[var(--color-ink-300)] hover:text-[var(--color-ink-700)]"><X size={12} /></button>
             </div>
-            <div className="p-3 flex flex-col gap-3">
-              {IN_VIEW_OF_KEYWORDS.map((group) => (
-                <div key={group.group}>
-                  <p className="text-[10px] font-bold text-[var(--color-ink-400)] uppercase tracking-widest mb-1.5">{group.group}</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {group.items.map((kw) => (
-                      <button
-                        key={kw}
-                        onClick={() => appendKeyword(kw)}
-                        className="px-2 py-0.5 rounded-full border border-[var(--color-primary-200)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)] text-[11px] font-medium hover:bg-[var(--color-primary-100)] transition-colors"
-                      >
-                        {kw}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ))}
+            <div className="p-3">
+              <KeywordChipsRow
+                fieldKey="plan_in_view_of"
+                builtIns={ALL_IN_VIEW_OF_KEYWORDS}
+                getValue={() => inViewOf}
+                onAppend={appendKeyword}
+                onRemoveFromText={(kw) => { setInViewOf((prev: string) => removeKeywordFromText(prev, kw)); setSaved(false); }}
+              />
             </div>
           </div>
         )}

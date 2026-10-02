@@ -20,6 +20,7 @@ import {
 import { type MedEntry, searchMedications, categoryColor } from "@/lib/ophthalmic-medications";
 import { VA_SNELLEN_VALUES, DEFAULT_REFRACTION_METHOD, isPrescribableMethod, methodHasNear } from "@/lib/constants";
 import { INV_CATALOG } from "@/lib/investigation-catalog";
+import { appendKeywordAsBullet, KeywordChipsRow, KeywordTextarea, removeKeywordFromText } from "@/components/emr/KeywordField";
 
 /* ── Preset types & storage ──────────────────────────────────────────────── */
 
@@ -1530,36 +1531,18 @@ function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: st
   // Input IS the procedure — auto-saved directly, no separate add step
   const [procInput, setProcInput]   = useState<string>(() => {
     const list = parseProcedureList(visit.procedureName ?? "");
-    return list.join(", ");
+    return list.length > 1 ? list.map((item) => `• ${item}`).join("\n") : (list[0] ?? "");
   });
   const [procNotes, setProcNotes]   = useState<string>(visit.procedureNotes ?? "");
-  const [customKws, setCustomKws]   = useState<string[]>([]);
-  const procInputRef = useRef<HTMLInputElement>(null);
 
   // Per-doctor scope — same as seg_custom_* in Anterior Segment
   const doctorId: string = visit.doctorId ?? "";
-
-  useEffect(() => { setCustomKws(getCustomProcedureKws(doctorId)); }, [doctorId]);
+  const legacyProcedureKwKeys = useMemo(() => [procKwKey(doctorId)], [doctorId]);
 
   useAutoSave(laterality, (val) => saveProcedureLaterality(visit.id, udid, val));
   useAutoSave(anesthesia, (val) => saveAnesthesiaType(visit.id, udid, val));
   useAutoSave(procInput,  (val) => saveProcedureName(visit.id, udid, val));
   useAutoSave(procNotes,  (val) => saveProcedureNotes(visit.id, udid, val));
-
-  const allKeywords = [...PROCEDURE_KEYWORDS, ...customKws];
-
-  // Save the current input text as a permanent custom keyword (does not clear input)
-  const saveKeyword = () => {
-    const trimmed = procInput.trim();
-    if (!trimmed) return;
-    if (!allKeywords.some((k) => k.toLowerCase() === trimmed.toLowerCase())) {
-      saveCustomProcedureKw(doctorId, trimmed);
-      setCustomKws(getCustomProcedureKws(doctorId));
-    }
-  };
-
-  const isNewKeyword = procInput.trim().length > 0 &&
-    !allKeywords.some((k) => k.toLowerCase() === procInput.trim().toLowerCase());
 
   const filteredAnesthesia = ANESTHESIA_KEYWORDS.filter((kw) =>
     anesthesia.trim() === "" || kw.toLowerCase().includes(anesthesia.toLowerCase())
@@ -1609,37 +1592,21 @@ function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: st
           </div>
         </div>
 
-        {/* Procedure — custom input only, keywords shown as chips below */}
+        {/* Procedure keywords */}
         <div className="min-w-0">
           <label className="text-[10px] font-semibold text-[var(--color-ink-500)] uppercase tracking-wide block mb-1.5">
             Procedure
           </label>
-          {/* min-w-0 is the fix: an input is a flex item with min-width:auto, which
-              resolves to its intrinsic size, so flex-1 could grow it but never shrink
-              it — the row demanded a constant 206+8+100px and the shrink-0 button was
-              pushed past the right edge (clipped at 320px, spilling its column even at
-              768px). basis-full also drops the button to its own line below sm, and
-              grow is used rather than flex-1 because flex-1 sets flex-basis and would
-              override basis-full. */}
-          <div className="flex flex-wrap gap-2">
-            <input
-              ref={procInputRef}
-              value={procInput}
-              onChange={(e) => setProcInput(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Escape") setProcInput(""); }}
-              placeholder="Select a keyword below or type a procedure…"
-              className="grow basis-full sm:basis-0 min-w-0 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-3 py-2 text-sm text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent"
-            />
-            {isNewKeyword && (
-              <button
-                onClick={saveKeyword}
-                className="shrink-0 px-3 py-2 rounded-xl border border-amber-300 bg-amber-50 text-amber-700 text-xs font-semibold hover:bg-amber-100 transition-colors flex items-center gap-1"
-                title="Save as a permanent keyword"
-              >
-                Save keyword
-              </button>
-            )}
-          </div>
+          <KeywordTextarea
+            fieldKey={`minor_procedure_${doctorId}`}
+            legacyKeys={legacyProcedureKwKeys}
+            builtIns={PROCEDURE_KEYWORDS}
+            value={procInput}
+            onChange={setProcInput}
+            rows={1}
+            placeholder="Select a keyword below or type a procedure…"
+            className="w-full min-w-0 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-3 py-2 text-sm text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent"
+          />
         </div>
 
         {/* Anesthesia */}
@@ -1702,39 +1669,6 @@ function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: st
           rows={3}
           className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-3 py-2 text-sm text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent resize-none"
         />
-      </div>
-
-      {/* Keyword chips */}
-      <div data-overview-hide className="mt-3">
-        <p className="text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-wide mb-2">Quick Add</p>
-        <div className="flex flex-wrap gap-1.5">
-          {allKeywords.map((kw) => {
-            const isCustom = customKws.includes(kw);
-            return (
-              <div key={kw} className="flex items-center">
-                <button
-                  onClick={() => { setProcInput(kw); procInputRef.current?.focus(); }}
-                  className={`text-xs px-2.5 py-1 rounded-l-full border transition-colors ${
-                    isCustom
-                      ? "border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100"
-                      : "border-[var(--color-border)] bg-[var(--color-surface-sunken)] text-[var(--color-ink-700)] hover:border-[var(--color-primary-300)] hover:bg-[var(--color-primary-50)] hover:text-[var(--color-primary-700)]"
-                  } ${isCustom ? "" : "rounded-r-full"}`}
-                >
-                  {kw}
-                </button>
-                {isCustom && (
-                  <button
-                    onClick={() => { deleteCustomProcedureKw(doctorId, kw); setCustomKws(getCustomProcedureKws(doctorId)); }}
-                    className="px-1.5 py-1 rounded-r-full border border-l-0 border-amber-200 bg-amber-50 text-amber-400 hover:text-red-500 hover:bg-red-50 hover:border-red-200 transition-colors"
-                    title="Remove custom keyword"
-                  >
-                    <X size={10} />
-                  </button>
-                )}
-              </div>
-            );
-          })}
-        </div>
       </div>
 
       {/* History panel */}
@@ -1856,6 +1790,7 @@ const ADVISE_KEYWORDS: { group: string; items: string[] }[] = [
     items: ["Follow up as scheduled", "Return immediately if vision worsens", "Return if pain increases", "Call clinic if discharge occurs"],
   },
 ];
+const ALL_ADVISE_KEYWORDS = ADVISE_KEYWORDS.flatMap((group) => group.items);
 
 /* ── Optical Prescription helpers ────────────────────────────────────────── */
 const OPT_SPH_MAGS  = ["", ...Array.from({ length: 81 }, (_, i) => (i * 0.25).toFixed(2))];
@@ -1896,7 +1831,6 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
   const [clearConfirm, setClearConfirm] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [showKeywords, setShowKeywords] = useState(false);
-  const adviseRef = useRef<HTMLTextAreaElement>(null);
 
   const [drugName, setDrugName]       = useState("");
   const [dose, setDose]               = useState("");
@@ -2527,10 +2461,9 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
         </div>
 
         <textarea
-          ref={adviseRef}
           value={adviseNotes}
           onChange={(e) => onAdviseChange(e.target.value)}
-          rows={3}
+          rows={Math.max(3, Math.min(8, adviseNotes.replace(/\r/g, "").split("\n").length))}
           placeholder="Type advise notes or use keywords below…"
           className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-3 py-2.5 text-sm text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent resize-none leading-relaxed"
         />
@@ -2574,28 +2507,14 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
               <span className="text-[10px] font-bold text-[var(--color-ink-400)] uppercase tracking-widest">Add Keyword</span>
               <button onClick={() => setShowKeywords(false)} className="text-[var(--color-ink-300)] hover:text-[var(--color-ink-700)]"><X size={12} /></button>
             </div>
-            <div className="p-3 flex flex-col gap-3">
-              {ADVISE_KEYWORDS.map((group) => (
-                <div key={group.group}>
-                  <p className="text-[10px] font-bold text-[var(--color-ink-400)] uppercase tracking-widest mb-1.5">{group.group}</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {group.items.map((kw) => (
-                      <button
-                        key={kw}
-                        onClick={() => {
-                          onAdviseChange(adviseNotes.trim()
-                            ? adviseNotes.trimEnd() + (adviseNotes.trimEnd().endsWith(".") ? " " : ". ") + kw + "."
-                            : kw + ".");
-                          adviseRef.current?.focus();
-                        }}
-                        className="px-2 py-0.5 rounded-full border border-[var(--color-primary-200)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)] text-[11px] font-medium hover:bg-[var(--color-primary-100)] transition-colors"
-                      >
-                        {kw}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ))}
+            <div className="p-3">
+              <KeywordChipsRow
+                fieldKey="plan_advise_notes"
+                builtIns={ALL_ADVISE_KEYWORDS}
+                getValue={() => adviseNotes}
+                onAppend={(kw) => onAdviseChange(appendKeywordAsBullet(adviseNotes, kw))}
+                onRemoveFromText={(kw) => onAdviseChange(removeKeywordFromText(adviseNotes, kw))}
+              />
             </div>
           </div>
         )}

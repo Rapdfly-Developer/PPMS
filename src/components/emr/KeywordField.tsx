@@ -41,6 +41,24 @@ function saveKws(fieldKey: string, kws: string[]) {
   try { localStorage.setItem(`kw_${fieldKey}`, JSON.stringify(kws)); } catch { /* storage unavailable */ }
 }
 
+export function keywordEntries(text: string): string[] {
+  const normalized = text.replace(/\r/g, "");
+  const parts = normalized.includes("•") ? normalized.split("•") : normalized.split("\n");
+  return parts.map((part) => part.trim()).filter(Boolean);
+}
+
+export function appendKeywordAsBullet(text: string, keyword: string): string {
+  const items = keywordEntries(text);
+  if (!items.some((item) => item.toLowerCase() === keyword.toLowerCase())) {
+    items.push(keyword);
+  }
+  return items.map((item) => `• ${item}`).join("\n");
+}
+
+function keywordRows(value: string, minimum: number): number {
+  return Math.max(minimum, Math.min(8, value.replace(/\r/g, "").split("\n").length));
+}
+
 /**
  * Folds keywords saved under older storage keys into this field's key, once.
  *
@@ -175,7 +193,8 @@ function AddKeywordButton({
   onRefresh: () => void;
 }) {
   const add = () => {
-    const raw = getValue().trim();
+    const entries = keywordEntries(getValue());
+    const raw = entries.at(-1)?.trim() ?? "";
     if (!raw) return;
     const kws = loadKws(fieldKey);
     if (kws.includes(raw)) return;
@@ -195,9 +214,15 @@ function AddKeywordButton({
   );
 }
 
-/** Remove one occurrence of `kw` from a comma- or space/newline-separated text field.
- *  Only removes whole-word matches; does not remove when `kw` appears inside a longer word. */
+/** Remove one complete keyword entry without affecting longer phrases that contain it. */
 export function removeKeywordFromText(text: string, kw: string): string {
+  if (text.includes("•") || text.includes("\n")) {
+    return keywordEntries(text)
+      .filter((entry) => entry.toLowerCase() !== kw.toLowerCase())
+      .map((entry) => `• ${entry}`)
+      .join("\n");
+  }
+
   const escaped = kw.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
   // Comma-separated: "a, Kw, b" → "a, b"  |  "a, Kw" → "a"  |  "Kw, b" → "b"
@@ -220,7 +245,6 @@ export function removeKeywordFromText(text: string, kw: string): string {
   }
 
   // Space/newline-separated (textarea): use word boundaries
-  // \b works for ASCII keywords; multi-word keywords need exact sequence match
   const spaceRe = new RegExp(`(?<![\\w])${escaped}(?![\\w])`, "i");
   return text
     .replace(spaceRe, "")
@@ -291,20 +315,20 @@ export function KeywordInput({
 
   return (
     <div className="flex flex-col gap-1.5">
-      <input
+      <textarea
         disabled={disabled}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
+        rows={keywordRows(value, 1)}
         className={
-          className ??
-          "w-full rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] disabled:bg-[var(--color-surface-sunken)]"
+          `${className ?? "w-full rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] disabled:bg-[var(--color-surface-sunken)]"} resize-none`
         }
       />
       {!disabled && (
         <div data-overview-hide className="flex flex-wrap items-center gap-1.5">
           <AddKeywordButton getValue={() => value} fieldKey={fieldKey} onRefresh={() => setTick((t) => t + 1)} />
-          <KeywordChips key={tick} fieldKey={fieldKey} builtIns={builtIns} legacyKeys={legacyKeys} onAppend={(kw) => onChange(value ? `${value}, ${kw}` : kw)} onRemoveFromText={(kw) => onChange(removeKeywordFromText(value, kw))} disabled={false} />
+          <KeywordChips key={tick} fieldKey={fieldKey} builtIns={builtIns} legacyKeys={legacyKeys} onAppend={(kw) => onChange(appendKeywordAsBullet(value, kw))} onRemoveFromText={(kw) => onChange(removeKeywordFromText(value, kw))} disabled={false} />
         </div>
       )}
     </div>
@@ -347,10 +371,9 @@ export function KeywordTextarea({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        rows={rows ?? 2}
+        rows={keywordRows(value, rows ?? 2)}
         className={
-          className ??
-          "w-full rounded-xl border border-[var(--color-border)] bg-white px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] disabled:bg-[var(--color-surface-sunken)]"
+          `${className ?? "w-full rounded-xl border border-[var(--color-border)] bg-white px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] disabled:bg-[var(--color-surface-sunken)]"} resize-none`
         }
       />
       {!disabled && (
@@ -360,7 +383,7 @@ export function KeywordTextarea({
               old last-word behaviour saved "Vision" for "Blurred Vision". That
               matters more now the vocabulary is shared with the booking form. */}
           <AddKeywordButton getValue={() => value.trim()} fieldKey={fieldKey} onRefresh={() => setTick((t) => t + 1)} />
-          <KeywordChips key={tick} fieldKey={fieldKey} builtIns={builtIns} legacyKeys={legacyKeys} onAppend={(kw) => onChange(value ? `${value} ${kw}` : kw)} onRemoveFromText={(kw) => onChange(removeKeywordFromText(value, kw))} disabled={false} />
+          <KeywordChips key={tick} fieldKey={fieldKey} builtIns={builtIns} legacyKeys={legacyKeys} onAppend={(kw) => onChange(appendKeywordAsBullet(value, kw))} onRemoveFromText={(kw) => onChange(removeKeywordFromText(value, kw))} disabled={false} />
           {afterButtons}
         </div>
       )}

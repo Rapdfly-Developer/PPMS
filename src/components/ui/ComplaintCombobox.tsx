@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback, KeyboardEvent } from "react";
 import { Plus, X } from "lucide-react";
 import { CHIEF_COMPLAINT_FIELD_KEY, CHIEF_COMPLAINT_LEGACY_KEYS } from "@/lib/constants";
+import { appendKeywordAsBullet, keywordEntries, removeKeywordFromText } from "@/components/emr/KeywordField";
 
 export const OPHTHALMIC_COMPLAINTS = [
   "Blurred Vision",
@@ -82,7 +83,11 @@ interface Props {
   inputCls?: string;
   /** When true, hides the text input row — only keyword chips are rendered. */
   hideInput?: boolean;
+  /** Appends each selected keyword as a bullet inside the same complaint field. */
+  keywordMode?: "replace" | "bullet";
 }
+
+export const appendComplaintKeyword = appendKeywordAsBullet;
 
 function StandardChip({ keyword, active, onSelect, onRemove }: {
   keyword: string;
@@ -150,6 +155,7 @@ export function ComplaintCombobox({
   placeholder = "Or type a custom complaint…",
   inputCls = "",
   hideInput = false,
+  keywordMode = "replace",
 }: Props) {
   // Same key the EMR's chief-complaint field uses, so a keyword saved here
   // shows up there and vice versa.
@@ -176,15 +182,25 @@ export function ComplaintCombobox({
   const selectedChip = [...allStandard, ...customKeywords].find(
     (k) => k.toLowerCase() === value.toLowerCase()
   ) ?? null;
+  const selectedBulletKeywords = new Set(keywordEntries(value).map((entry) => entry.toLowerCase()));
+  const isSelected = (keyword: string) => keywordMode === "bullet"
+    ? selectedBulletKeywords.has(keyword.toLowerCase())
+    : selectedChip === keyword;
 
   // Clicking a chip fills the input; clicking the active chip clears it
   function selectChip(keyword: string) {
+    if (keywordMode === "bullet") {
+      onChange(appendKeywordAsBullet(value, keyword));
+      return;
+    }
     onChange(selectedChip === keyword ? "" : keyword);
   }
 
   // Add current input value as a new custom keyword chip
   function addCustom() {
-    const trimmed = value.trim();
+    const trimmed = keywordMode === "bullet"
+      ? (keywordEntries(value).at(-1) ?? "").trim()
+      : value.trim();
     if (!trimmed) return;
     const exists = [...allStandard, ...customKeywords].some(
       (k) => k.toLowerCase() === trimmed.toLowerCase()
@@ -217,16 +233,26 @@ export function ComplaintCombobox({
 
       {/* ── Input — shows selected value; typing sets a custom complaint ── */}
       {!hideInput && (
-        <div className="flex gap-2">
-          <input
-            ref={inputRef}
-            type="text"
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={placeholder}
-            className={`${inputCls} flex-1`}
-          />
+        <div className="flex items-start gap-2">
+          {keywordMode === "bullet" ? (
+            <textarea
+              value={value}
+              onChange={(e) => onChange(e.target.value)}
+              placeholder={placeholder}
+              rows={Math.max(1, Math.min(8, value.replace(/\r/g, "").split("\n").length))}
+              className={`${inputCls} flex-1 resize-none`}
+            />
+          ) : (
+            <input
+              ref={inputRef}
+              type="text"
+              value={value}
+              onChange={(e) => onChange(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={placeholder}
+              className={`${inputCls} flex-1`}
+            />
+          )}
           <button
             type="button"
             onClick={addCustom}
@@ -245,9 +271,9 @@ export function ComplaintCombobox({
           <StandardChip
             key={keyword}
             keyword={keyword}
-            active={selectedChip === keyword}
+            active={isSelected(keyword)}
             onSelect={() => selectChip(keyword)}
-            onRemove={() => { if (value.toLowerCase() === keyword.toLowerCase()) onChange(""); }}
+            onRemove={() => onChange(keywordMode === "bullet" ? removeKeywordFromText(value, keyword) : (value.toLowerCase() === keyword.toLowerCase() ? "" : value))}
           />
         ))}
       </div>
@@ -259,9 +285,9 @@ export function ComplaintCombobox({
             <CustomChip
               key={keyword}
               keyword={keyword}
-              active={selectedChip === keyword}
+              active={isSelected(keyword)}
               onSelect={() => selectChip(keyword)}
-              onRemoveFromText={() => { if (value.toLowerCase() === keyword.toLowerCase()) onChange(""); }}
+              onRemoveFromText={() => onChange(keywordMode === "bullet" ? removeKeywordFromText(value, keyword) : (value.toLowerCase() === keyword.toLowerCase() ? "" : value))}
               onDelete={() => removeCustom(keyword)}
             />
           ))}

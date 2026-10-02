@@ -860,6 +860,7 @@ export function BookAppointmentForm({
                     value={notes}
                     onChange={setNotes}
                     inputCls={inputCls}
+                    keywordMode="bullet"
                   />
                 </div>
 

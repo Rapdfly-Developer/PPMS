@@ -1348,30 +1348,37 @@ function GonioscopyCard({
 
   const recentReDeg = [...new Set(historyRows.map((r) => r.reDeg).filter(Boolean))];
   const recentLeDeg = [...new Set(historyRows.map((r) => r.leDeg).filter(Boolean))];
-  const recentRe    = [...new Set(historyRows.map((r) => r.re).filter(Boolean))];
-  const recentLe    = [...new Set(historyRows.map((r) => r.le).filter(Boolean))];
 
   return (
     <Card>
       <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
         <div className="flex items-center gap-3 flex-wrap">
           <h3 className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-700)]">Gonioscopy</h3>
-          <div className="flex items-center gap-2">
+          <div className="flex items-start gap-2">
             <span className="text-[11px] sm:text-xs text-[var(--color-ink-400)]">Method:</span>
-            <select
-              disabled={!editable}
-              value={method}
-              onChange={(e) => setMethod(e.target.value)}
-              className="rounded-lg border border-[var(--color-border)] bg-white px-2.5 py-1 text-xs disabled:bg-[var(--color-surface-sunken)]"
-            >
-              <option value="">Not recorded</option>
-              {GONIO_METHODS.map((m) => <option key={m} value={m}>{m}</option>)}
-              {customMethods.map((m) => <option key={`custom-${m}`} value={m}>{m}</option>)}
-            </select>
-          </div>
-          {editable && (
-            addingMethod ? (
-              <div className="flex items-center gap-1">
+            <div className="flex flex-col gap-1.5">
+              <select
+                disabled={!editable}
+                value={addingMethod ? "__add_custom__" : method}
+                onChange={(e) => {
+                  if (e.target.value === "__add_custom__") {
+                    setAddingMethod(true);
+                    setNewMethodText("");
+                    return;
+                  }
+                  setAddingMethod(false);
+                  setNewMethodText("");
+                  setMethod(e.target.value);
+                }}
+                className="rounded-lg border border-[var(--color-border)] bg-white px-2.5 py-1 text-xs disabled:bg-[var(--color-surface-sunken)]"
+              >
+                <option value="">Not recorded</option>
+                {GONIO_METHODS.map((m) => <option key={m} value={m}>{m}</option>)}
+                {customMethods.map((m) => <option key={`custom-${m}`} value={m}>{m}</option>)}
+                {editable && <option value="__add_custom__">+ Add custom method…</option>}
+              </select>
+              {editable && addingMethod && (
+                <div className="flex items-center gap-1">
                 <input
                   autoFocus
                   type="text"
@@ -1383,17 +1390,10 @@ function GonioscopyCard({
                 />
                 <button type="button" onClick={handleAddMethod} className="text-xs text-[var(--color-primary-600)] font-semibold px-2 py-0.5 rounded hover:bg-[var(--color-primary-50)] transition-colors">Add</button>
                 <button type="button" onClick={() => { setAddingMethod(false); setNewMethodText(""); }} className="text-xs text-[var(--color-ink-400)] px-1.5 py-0.5 rounded hover:bg-[var(--color-surface-sunken)] transition-colors"><X size={11} /></button>
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setAddingMethod(true)}
-                className="flex items-center gap-1 text-[10px] font-semibold text-[var(--color-primary-600)] px-2 py-1 rounded-lg border border-dashed border-[var(--color-primary-300)] hover:bg-[var(--color-primary-50)] transition-colors whitespace-nowrap"
-              >
-                <Plus size={10} /> Add Method
-              </button>
-            )
-          )}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           {historyRows.length > 0 && (
@@ -1445,13 +1445,14 @@ function GonioscopyCard({
                 </div>
               )}
             </div>
-            <GonioFindingsInput
+            <KeywordTextarea
               value={re}
               onChange={setRe}
               disabled={!editable}
               placeholder="Right eye gonioscopy findings…"
               fieldKey="gonio_re"
-              recentHistory={recentRe}
+              builtIns={ALL_GONIO_KW}
+              rows={2}
             />
           </div>
         </div>
@@ -1490,13 +1491,14 @@ function GonioscopyCard({
                 </div>
               )}
             </div>
-            <GonioFindingsInput
+            <KeywordTextarea
               value={le}
               onChange={setLe}
               disabled={!editable}
               placeholder="Left eye gonioscopy findings…"
               fieldKey="gonio_le"
-              recentHistory={recentLe}
+              builtIns={ALL_GONIO_KW}
+              rows={2}
             />
           </div>
         </div>
@@ -1541,34 +1543,8 @@ function SegmentEyeInput({
   history?: HistoryEntry[];
 }) {
   const lsKey = CUSTOM_KW_KEY(structureKey, eye);
-  const [customKws, setCustomKws] = useState<string[]>([]);
+  const legacyKwKeys = useMemo(() => [lsKey], [lsKey]);
   const [histOpen, setHistOpen] = useState(false);
-  useEffect(() => {
-    try { setCustomKws(JSON.parse(localStorage.getItem(lsKey) ?? "[]")); } catch { setCustomKws([]); }
-  }, [lsKey]);
-
-  const saveCustomKws = (kws: string[]) => {
-    setCustomKws(kws);
-    localStorage.setItem(lsKey, JSON.stringify(kws));
-  };
-
-  const append = (kw: string) => {
-    onChange(value ? `${value} • ${kw}` : `• ${kw}`);
-  };
-
-  const addKeyword = () => {
-    const typed = value.split(",").map((s) => s.trim()).filter(Boolean).pop() ?? "";
-    if (!typed || options.includes(typed) || customKws.includes(typed)) return;
-    saveCustomKws([...customKws, typed]);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") addKeyword();
-  };
-
-  const removeCustomKw = (kw: string) => {
-    saveCustomKws(customKws.filter((k) => k !== kw));
-  };
 
   const ph = placeholder ?? `${toLabel(structureKey)} ${eye}...`;
   const hasHistory = history && history.length > 0;
@@ -1617,51 +1593,19 @@ function SegmentEyeInput({
 
   return (
     <div className="flex flex-col gap-1.5">
-      <input
+      <KeywordTextarea
+        fieldKey={`segment_${structureKey}_${eye.toLowerCase()}`}
+        legacyKeys={legacyKwKeys}
+        builtIns={options}
         disabled={disabled}
         value={value}
-        onChange={(e) => onChange(e.target.value)}
-        onKeyDown={handleKeyDown}
+        onChange={onChange}
         placeholder={ph}
+        rows={1}
+        afterButtons={histBtn}
         className="w-full rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] disabled:bg-[var(--color-surface-sunken)]"
       />
-      {!disabled ? (
-        <div className="flex flex-wrap items-center gap-1.5">
-          <button
-            type="button"
-            onClick={addKeyword}
-            className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-[9px] sm:text-[10px] font-medium text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] transition-colors whitespace-nowrap"
-          >
-            <Plus size={11} strokeWidth={2.5} />
-            Keyword
-          </button>
-          {customKws.map((kw) => (
-            <span key={kw} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-[10px] sm:text-[11px] text-[var(--color-primary-700)]">
-              <button type="button" onClick={() => append(kw)} className="hover:underline">{kw}</button>
-              <button type="button" onClick={() => removeCustomKw(kw)} className="ml-0.5 text-[var(--color-ink-400)] hover:text-red-500 transition-colors">
-                <X size={9} strokeWidth={2.5} />
-              </button>
-            </span>
-          ))}
-          {histBtn}
-        </div>
-      ) : (
-        histBtn && <div>{histBtn}</div>
-      )}
-      {!disabled && options.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
-          {options.map((opt) => (
-            <button
-              key={opt}
-              type="button"
-              onClick={() => append(opt)}
-              className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full border border-[var(--color-border)] bg-white text-[10px] sm:text-[11px] text-[var(--color-ink-500)] hover:bg-[var(--color-primary-50)] hover:border-[var(--color-primary-300)] hover:text-[var(--color-primary-700)] transition-colors"
-            >
-              {opt}
-            </button>
-          ))}
-        </div>
-      )}
+      {disabled && histBtn && <div>{histBtn}</div>}
       {histPanel}
     </div>
   );

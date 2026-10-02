@@ -13,6 +13,7 @@ import { SmartUploadBox, type UploadedFile } from "@/components/ui/SmartUploadBo
 import { createWalkInEncounter } from "./actions";
 import { getLastVisitCC } from "@/app/(app)/appointments/book/actions";
 import { ComplaintCombobox } from "@/components/ui/ComplaintCombobox";
+import { keywordEntries } from "@/components/emr/KeywordField";
 import { CHIEF_COMPLAINT_FIELD_KEY } from "@/lib/constants";
 
 function sinceToDays(sinceStr: string): number {
@@ -234,7 +235,7 @@ export function NewEncounterForm({
   }
 
   function saveComposerAsKeyword() {
-    const text = composerText.trim();
+    const text = (keywordEntries(composerText).at(-1) ?? "").trim();
     if (!text) return;
     try {
       const key = `kw_${CHIEF_COMPLAINT_FIELD_KEY}`;
@@ -714,7 +715,7 @@ export function NewEncounterForm({
                 )}
               </div>
 
-              {/* Composer row: lat | text | since | Add */}
+              {/* Composer row: lat | text | since */}
               <div className="flex items-center gap-2 mt-1.5 flex-wrap sm:flex-nowrap">
                 <div className="flex gap-1 shrink-0">
                   {(["RE", "LE", "OU"] as const).map((lat) => (
@@ -733,13 +734,12 @@ export function NewEncounterForm({
                     </button>
                   ))}
                 </div>
-                <input
-                  type="text"
+                <textarea
                   value={composerText}
                   onChange={(e) => { setComposerText(e.target.value); setComposerError(""); }}
-                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleAddComplaint(); } }}
                   placeholder="Chief complaint…"
-                  className="flex-1 min-w-0 rounded-xl border border-[var(--color-border)] bg-white px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] transition-shadow"
+                  rows={Math.max(1, Math.min(5, composerText.split("\n").length))}
+                  className="flex-1 min-w-0 resize-none rounded-xl border border-[var(--color-border)] bg-white px-3 py-1.5 text-sm leading-5 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] transition-shadow"
                 />
                 <div className="flex items-center gap-1 shrink-0">
                   <span className="text-xs text-[var(--color-ink-500)]">Since</span>
@@ -764,22 +764,24 @@ export function NewEncounterForm({
                     <option value="years">years</option>
                   </select>
                 </div>
-                <button
-                  type="button"
-                  onClick={handleAddComplaint}
-                  disabled={!composerText.trim()}
-                  className="shrink-0 px-3 py-1.5 rounded-xl text-xs font-semibold bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-40 transition-colors"
-                >
-                  {editingIndex !== null ? "Update" : "Add"}
-                </button>
                 {editingIndex !== null && (
-                  <button
-                    type="button"
-                    onClick={cancelEdit}
-                    className="shrink-0 px-3 py-1.5 rounded-xl text-xs font-semibold border border-[var(--color-border)] bg-white text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)] transition-colors"
-                  >
-                    Cancel
-                  </button>
+                  <>
+                    <button
+                      type="button"
+                      onClick={handleAddComplaint}
+                      disabled={!composerText.trim()}
+                      className="shrink-0 px-3 py-1.5 rounded-xl text-xs font-semibold bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-40 transition-colors"
+                    >
+                      Update
+                    </button>
+                    <button
+                      type="button"
+                      onClick={cancelEdit}
+                      className="shrink-0 px-3 py-1.5 rounded-xl text-xs font-semibold border border-[var(--color-border)] bg-white text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)] transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </>
                 )}
               </div>
 
@@ -790,7 +792,13 @@ export function NewEncounterForm({
 
               {/* Keywords row */}
               <div className="mt-2 flex flex-col gap-1.5">
-                <ComplaintCombobox key={kwTick} value={composerText} onChange={(v) => { setComposerText(v); setComposerError(""); }} hideInput />
+                <ComplaintCombobox
+                  key={kwTick}
+                  value={composerText}
+                  onChange={(v) => { setComposerText(v); setComposerError(""); }}
+                  hideInput
+                  keywordMode="bullet"
+                />
                 {composerText.trim() && (
                   <button
                     type="button"
@@ -807,8 +815,8 @@ export function NewEncounterForm({
                 <ul className="mt-3 flex flex-col gap-1.5">
                   {bullets.map((b, i) => (
                     <li key={i} className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[var(--color-surface-sunken)] border border-[var(--color-border)] text-sm">
-                      <span className="flex-1 text-[var(--color-ink-800)]">
-                        •{b.lat && <> <span className="font-semibold">{b.lat}</span></>} {b.text}
+                      <span className="flex-1 whitespace-pre-line text-[var(--color-ink-800)]">
+                        {b.lat && <><span className="font-semibold">{b.lat}</span>{" "}</>} {b.text}
                         {b.sinceNum && <span className="text-[var(--color-ink-500)]"> — {b.sinceNum} {b.sinceUnit}</span>}
                       </span>
                       <button
