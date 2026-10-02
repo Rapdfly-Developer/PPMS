@@ -37,7 +37,10 @@ type ProvisionalDx = {
   provisional: boolean;
 };
 
-export function AppointmentRow({ appt, role, token }: { appt: any; role: string; token: number }) {
+/** Hospital-side actions this user may take (see staffAppointmentPerms). */
+export type ApptPerms = { confirm: boolean; cancel: boolean; schedule: boolean };
+
+export function AppointmentRow({ appt, role, perms, token }: { appt: any; role: string; perms: ApptPerms; token: number }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [showSlotModal, setShowSlotModal] = useState(false);
@@ -64,17 +67,18 @@ export function AppointmentRow({ appt, role, token }: { appt: any; role: string;
 
   const isCompleted = appt.status === "DISPENSED";
 
-  const showConfirmReject =
-    (role === "HOSPITAL" || role === "DOCTOR") &&
-    !isCompleted &&
-    (appt.status === "REQUESTED" || appt.status === "SCHEDULED") &&
-    !appt.isWalkIn;
+  const isDoctor = role === "DOCTOR";
+  const awaitingConfirmation =
+    !isCompleted && (appt.status === "REQUESTED" || appt.status === "SCHEDULED") && !appt.isWalkIn;
+  const showConfirm = awaitingConfirmation && (isDoctor || perms.confirm);
+  const showReject = awaitingConfirmation && (isDoctor || perms.cancel);
+  const showConfirmReject = showConfirm || showReject;
 
   const showScheduleNext =
-    role === "HOSPITAL" && !isCompleted && appt.isWalkIn && appt.status === "CONFIRMED";
+    perms.schedule && !isCompleted && appt.isWalkIn && appt.status === "CONFIRMED";
 
   const showCancelConfirmed =
-    role === "HOSPITAL" && !isCompleted && appt.status === "CONFIRMED" && !appt.isWalkIn;
+    perms.cancel && !isCompleted && appt.status === "CONFIRMED" && !appt.isWalkIn;
 
   const showNoShow =
     role === "DOCTOR" &&
@@ -193,20 +197,20 @@ export function AppointmentRow({ appt, role, token }: { appt: any; role: string;
           <div className="flex flex-wrap justify-end gap-2 mt-2">
           {showConfirmReject && (
             <>
-              <button
+              {showConfirm && <button
                 disabled={pending}
                 onClick={() => hospitalSetStatus("CONFIRMED")}
                 className="text-[11px] sm:text-xs font-medium px-3 py-1.5 rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-50 transition-colors"
               >
                 {pending ? "…" : "Confirm / Add to Queue"}
-              </button>
-              <button
+              </button>}
+              {showReject && <button
                 disabled={pending}
                 onClick={() => hospitalSetStatus("CANCELLED")}
                 className="text-[11px] sm:text-xs font-medium px-3 py-1.5 rounded-lg bg-white border border-[var(--color-border)] text-[var(--color-danger-600)] hover:bg-[var(--color-danger-50)] disabled:opacity-50 transition-colors"
               >
                 Reject
-              </button>
+              </button>}
             </>
           )}
           {hasActions && (

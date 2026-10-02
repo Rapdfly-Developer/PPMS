@@ -10,7 +10,7 @@ import {
 import Link from "next/link";
 import clsx from "clsx";
 import { AppointmentTableRow } from "./AppointmentTableRow";
-import { AppointmentRow } from "./AppointmentRow";
+import { AppointmentRow, type ApptPerms } from "./AppointmentRow";
 import { filterSelectClass } from "@/components/ui/controls";
 
 // ── helpers ────────────────────────────────────────────────────────────────
@@ -50,6 +50,7 @@ export function AppointmentsClient({
   view,
   role,
   canBook,
+  apptPerms,
   isDefaultView = false,
   dateParam,
   statusParam,
@@ -70,6 +71,7 @@ export function AppointmentsClient({
   view?:          string;
   role:           string;
   canBook:        boolean;
+  apptPerms:      ApptPerms;
   isDefaultView?: boolean;
   dateParam:      string;
   statusParam:    string;
@@ -633,7 +635,7 @@ export function AppointmentsClient({
                           </p>
                           <div className="flex flex-col gap-3">
                             {(dkAppts as any[]).map((appt: any, idx: number) => (
-                              <AppointmentRow key={appt.id} appt={appt} role={role} token={idx + 1} />
+                              <AppointmentRow key={appt.id} appt={appt} role={role} perms={apptPerms} token={idx + 1} />
                             ))}
                           </div>
                         </div>
@@ -734,7 +736,7 @@ export function AppointmentsClient({
                     .slice()
                     .sort((a: any, b: any) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime())
                     .map((appt: any, idx: number) => (
-                      <AppointmentRow key={appt.id} appt={appt} role={role} token={idx + 1} />
+                      <AppointmentRow key={appt.id} appt={appt} role={role} perms={apptPerms} token={idx + 1} />
                     ))}
                 </div>
               </div>
@@ -772,7 +774,7 @@ export function AppointmentsClient({
                 </div>
                 <div className="flex flex-col gap-3">
                   {dateAppts.map((appt: any) => (
-                    <AppointmentRow key={appt.id} appt={appt} role={role} token={tokenMap[appt.id]} />
+                    <AppointmentRow key={appt.id} appt={appt} role={role} perms={apptPerms} token={tokenMap[appt.id]} />
                   ))}
                 </div>
               </div>

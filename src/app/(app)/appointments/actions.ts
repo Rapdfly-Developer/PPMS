@@ -8,6 +8,16 @@ import { notifyAppointmentRequested, notifyAppointmentStatus } from "@/lib/maile
 import { createNotification } from "@/lib/notify";
 import { writeAudit } from "@/lib/audit";
 import { istDateTime } from "@/lib/ist";
+import { getStaffHospitalId, staffAppointmentPerms } from "@/lib/booking-scope";
+
+/** Hospital staff acting on their own hospital's appointments, gated by permission. */
+async function requireStaffHospital(action: "confirm" | "cancel" | "schedule") {
+  const user = await requireUser();
+  if (!staffAppointmentPerms(user)[action]) throw new Error("Forbidden");
+  const hospitalId = await getStaffHospitalId(user.id);
+  if (!hospitalId) throw new Error("Forbidden");
+  return { user, hospitalId };
+}
 
 // ── Hospital: confirm or reject a single appointment ─────────────────────────
 
@@ -15,7 +25,7 @@ export async function hospitalUpdateAppointmentStatus(
   appointmentId: string,
   status: "CONFIRMED" | "CANCELLED"
 ): Promise<void> {
-  const user = await requireRole("HOSPITAL");
+  const { user, hospitalId } = await requireStaffHospital(status === "CONFIRMED" ? "confirm" : "cancel");
 
   const appt = await prisma.appointment.findUnique({
     where: { id: appointmentId },
@@ -24,7 +34,7 @@ export async function hospitalUpdateAppointmentStatus(
       hospital: { include: { staff: { include: { user: true } } } },
     },
   });
-  if (!appt || appt.hospitalId !== user.hospitalId) throw new Error("Forbidden");
+  if (!appt || appt.hospitalId !== hospitalId) throw new Error("Forbidden");
 
   await prisma.appointment.update({
     where: { id: appointmentId },
@@ -257,13 +267,13 @@ export async function scheduleNextSlot(
   date: string,
   time: string
 ): Promise<{ error?: string } | void> {
-  const user = await requireRole("HOSPITAL");
+  const { hospitalId } = await requireStaffHospital("schedule");
 
   const source = await prisma.appointment.findUnique({
     where: { id: fromAppointmentId },
     include: { patient: true },
   });
-  if (!source || source.hospitalId !== user.hospitalId) throw new Error("Forbidden");
+  if (!source || source.hospitalId !== hospitalId) throw new Error("Forbidden");
   if (!source.doctorId) return { error: "No doctor linked to this appointment." };
 
   const dateTime = istDateTime(date, time);

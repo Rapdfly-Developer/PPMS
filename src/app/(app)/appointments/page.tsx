@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { istDayRange, istTodayStr } from "@/lib/ist";
 import { autoCloseStaleVisits } from "@/lib/autoClose";
 import { AppointmentsClient } from "./AppointmentsClient";
-import { canBookAppointments } from "@/lib/booking-scope";
+import { canBookAppointments, staffAppointmentPerms } from "@/lib/booking-scope";
 
 async function expireStaleRequested() {
   await prisma.appointment.updateMany({
@@ -165,6 +165,7 @@ export default async function AppointmentsPage({
         view={view}
         role={user.role}
         canBook={canBookAppointments(user)}
+        apptPerms={staffAppointmentPerms(user)}
         isDefaultView={isDefaultView}
         dateParam={dateParam}
         statusParam={statusParam}
