@@ -643,7 +643,15 @@ function FinalizedVisitModal({
   const rtSuffix = returnTo ? `&returnTo=${encodeURIComponent(returnTo)}` : "";
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
+      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close"
+          className="absolute top-3 right-3 p-1.5 rounded-lg text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] transition-colors"
+        >
+          <X size={16} />
+        </button>
         <div className="px-6 py-5 flex flex-col items-center text-center gap-3">
           <div className="w-11 h-11 rounded-full bg-blue-50 flex items-center justify-center">
             <CheckCircle2 size={20} className="text-blue-500" />
