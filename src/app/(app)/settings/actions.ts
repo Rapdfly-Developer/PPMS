@@ -385,11 +385,11 @@ export async function saveDoctorProfile(
 
   // Uniqueness checks (skip empty values)
   if (data.email?.trim()) {
-    if (await isEmailTaken(data.email.trim(), { excludeDoctorId: doctor.id }))
+    if (await isEmailTaken(data.email.trim(), { excludeDoctorId: doctor.id, excludeUserId: user.id }))
       return { error: "This email address is already registered to another account." };
   }
   if (data.contact?.trim()) {
-    if (await isMobileTaken(data.contact.trim(), { excludeDoctorId: doctor.id }))
+    if (await isMobileTaken(data.contact.trim(), { excludeDoctorId: doctor.id, excludeUserId: user.id }))
       return { error: "This mobile number is already registered to another account." };
   }
 
