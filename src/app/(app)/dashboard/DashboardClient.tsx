@@ -221,7 +221,7 @@ function ApptRow({ appt, scope, serial, canManageQueue, canViewPatient, returnTo
             className="inline-flex items-center gap-1 whitespace-nowrap text-[12px] font-bold text-[var(--color-ink-900)] tabular-nums"
             title={appt.isWalkIn ? "Walk-in time" : "Booked appointment time"}
           >
-            <Calendar size={11} /> {appt.isWalkIn && arrivedAt ? format(arrivedAt, "h:mm a") : apptTime}
+            <Calendar size={11} /> {appt.isWalkIn ? format(new Date(appt.createdAt), "hh:mm a") : apptTime}
           </span>
           <span className="text-[10px] font-semibold text-gray-400 mt-0.5">
             {appt.isWalkIn ? "Walk-in" : "Appointment"}

@@ -1,7 +1,8 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { requireRole, requirePermission, scopeDoctorId } from "@/lib/rbac";
+import { requireRole, requirePermission, requireUser, userCan, scopeDoctorId } from "@/lib/rbac";
+import { getStaffHospitalId } from "@/lib/booking-scope";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { writeAudit } from "@/lib/audit";
@@ -296,14 +297,95 @@ export async function getPatientTimeline(patientId: string): Promise<TimelineEve
   return events;
 }
 
-export async function deletePatient(patientId: string) {
-  const user = await requireRole("DOCTOR", "HOSPITAL");
-  const patient = await prisma.patient.findUnique({ where: { id: patientId }, select: { name: true, udid: true } });
-  await prisma.patient.delete({ where: { id: patientId } });
-  writeAudit(user.id, "Patient", patientId, "DELETE", { name: patient?.name, udid: patient?.udid }, {
-    moduleName: "Patient", actionType: "DELETE", userName: patient?.name,
+/**
+ * Permanently deletes a patient and every record that belongs to them:
+ * appointments, visits and all EMR sections, prescriptions, investigations,
+ * diagnoses, surgery, insurance, consents and data-rights requests. Runs in
+ * one transaction so a failure leaves nothing half-deleted. The audit log
+ * entry is kept as the record of the deletion.
+ */
+export async function deletePatient(patientId: string): Promise<{ error?: string }> {
+  const user = await requireUser();
+  if (!userCan(user, "patients.delete")) return { error: "You do not have permission to delete patients." };
+
+  const patient = await prisma.patient.findUnique({
+    where: { id: patientId },
+    select: { id: true, name: true, udid: true, doctorId: true, registeredAtId: true },
+  });
+  if (!patient) return { error: "Patient not found." };
+
+  // Only the patient's own doctor, or staff of the hospital they are registered at.
+  if (user.role === "DOCTOR") {
+    if (patient.doctorId !== user.profileId) return { error: "You can only delete your own patients." };
+  } else {
+    const hospitalId = await getStaffHospitalId(user.id);
+    if (!hospitalId || patient.registeredAtId !== hospitalId) return { error: "You can only delete patients registered at your hospital." };
+  }
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      const visitIds = (await tx.visit.findMany({ where: { patientId }, select: { id: true } })).map((v) => v.id);
+      const insuranceIds = (await tx.patientInsurance.findMany({ where: { patientId }, select: { id: true } })).map((i) => i.id);
+      const surgeryIds = (await tx.surgerySchedule.findMany({ where: { patientId }, select: { id: true } })).map((s) => s.id);
+      const claimIds = (await tx.insuranceClaim.findMany({ where: { patientInsuranceId: { in: insuranceIds } }, select: { id: true } })).map((c) => c.id);
+      const otIds = (await tx.otRecord.findMany({ where: { surgeryScheduleId: { in: surgeryIds } }, select: { id: true } })).map((o) => o.id);
+      const byVisit = { where: { visitId: { in: visitIds } } };
+
+      // Surgery
+      await tx.otTimeline.deleteMany({ where: { otRecordId: { in: otIds } } });
+      await tx.otRecord.deleteMany({ where: { id: { in: otIds } } });
+      await tx.surgeryConsent.deleteMany({ where: { surgeryScheduleId: { in: surgeryIds } } });
+      await tx.preOpAssessment.deleteMany({ where: { surgeryScheduleId: { in: surgeryIds } } });
+      await tx.postOpReview.deleteMany({ where: { surgeryScheduleId: { in: surgeryIds } } });
+      await tx.surgerySchedule.deleteMany({ where: { id: { in: surgeryIds } } });
+
+      // Insurance
+      await tx.insuranceClaimDocument.deleteMany({ where: { claimId: { in: claimIds } } });
+      await tx.insuranceSettlement.deleteMany({ where: { claimId: { in: claimIds } } });
+      await tx.insurancePayment.deleteMany({ where: { claimId: { in: claimIds } } });
+      await tx.insuranceQuery.deleteMany({ where: { claimId: { in: claimIds } } });
+      await tx.insuranceClaim.deleteMany({ where: { id: { in: claimIds } } });
+      await tx.insurancePreAuthorization.deleteMany({ where: { patientInsuranceId: { in: insuranceIds } } });
+      await tx.patientInsurance.deleteMany({ where: { id: { in: insuranceIds } } });
+
+      // EMR
+      await tx.generalExamination.deleteMany(byVisit);
+      await tx.medication.deleteMany(byVisit);
+      await tx.visualAcuity.deleteMany(byVisit);
+      await tx.refractiveCorrection.deleteMany(byVisit);
+      await tx.colourVisionContrastSensitivity.deleteMany(byVisit);
+      await tx.iOPReading.deleteMany(byVisit);
+      await tx.anteriorSegment.deleteMany(byVisit);
+      await tx.posteriorSegment.deleteMany(byVisit);
+      await tx.diplopiaChart.deleteMany(byVisit);
+      await tx.hessChart.deleteMany(byVisit);
+      await tx.retinoscopy.deleteMany(byVisit);
+      await tx.tearFilm.deleteMany(byVisit);
+      await tx.lacrimalSacSyringing.deleteMany(byVisit);
+      await tx.investigationOrder.deleteMany(byVisit);
+      await tx.diagnosis.deleteMany(byVisit);
+      await tx.dispense.deleteMany(byVisit);
+      await tx.counsellingRecord.deleteMany(byVisit);
+      await tx.visit.deleteMany({ where: { id: { in: visitIds } } });
+
+      // Everything else tied to the patient
+      await tx.appointment.deleteMany({ where: { patientId } });
+      await tx.pastExternalVisit.deleteMany({ where: { patientId } });
+      await tx.patientConsent.deleteMany({ where: { patientId } });
+      await tx.dataRightsRequest.deleteMany({ where: { patientId } });
+      await tx.patient.updateMany({ where: { referralPatientId: patientId }, data: { referralPatientId: null } });
+      await tx.patient.delete({ where: { id: patientId } });
+    }, { timeout: 30_000 });
+  } catch (e) {
+    console.error("[deletePatient] failed", e);
+    return { error: "Could not delete this patient. Nothing was removed." };
+  }
+
+  writeAudit(user.id, "Patient", patientId, "DELETE", { name: patient.name, udid: patient.udid }, {
+    moduleName: "Patient", actionType: "DELETE", userName: patient.name,
   });
   revalidatePath("/patients");
+  return {};
 }
 
 export async function transferPatient(patientId: string, toHospitalId: string, reason?: string) {
