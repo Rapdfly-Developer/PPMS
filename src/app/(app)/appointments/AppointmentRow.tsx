@@ -108,7 +108,7 @@ export function AppointmentRow({ appt, role, token }: { appt: any; role: string;
 
       <div className="w-px self-stretch bg-[var(--color-border)] hidden sm:block" />
 
-      <div className="flex-1 min-w-0 flex flex-col gap-2 sm:flex-row sm:justify-between sm:gap-5">
+      <div className="flex-1 min-w-0 flex flex-col gap-3 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(180px,260px)_220px] lg:items-start lg:gap-5">
         {/* Left: patient identity and diagnosis */}
         <div className="min-w-0 flex-1">
           <button
@@ -149,8 +149,18 @@ export function AppointmentRow({ appt, role, token }: { appt: any; role: string;
           )}
         </div>
 
-        {/* Right: status, appointment metadata, CC and visit timestamps */}
-        <div className="w-full sm:w-[290px] sm:shrink-0" onClick={(e) => e.stopPropagation()}>
+        {/* Middle: chief complaint */}
+        <div className="flex min-w-0 items-center lg:self-center lg:justify-center">
+          {(appt.notes || p.complaint) && (
+            <span className="clinical-complaint-chip inline-flex min-w-0 max-w-full items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] sm:text-xs">
+              <FileText size={11} className="shrink-0 text-amber-500" />
+              <span className="truncate">{formatComplaintDisplay(appt.notes || p.complaint)}</span>
+            </span>
+          )}
+        </div>
+
+        {/* Right: status, appointment metadata and visit timestamps */}
+        <div className="w-full lg:w-[220px] lg:shrink-0" onClick={(e) => e.stopPropagation()}>
           <div className="flex items-center justify-between gap-3">
             <span className={`text-[10px] sm:text-[11px] font-medium px-2 py-0.5 rounded-full whitespace-nowrap ${STATUS_STYLES[appt.status] ?? ""}`}>
               {STATUS_LABELS[appt.status] ?? appt.status.replace(/_/g, " ")}
@@ -165,14 +175,6 @@ export function AppointmentRow({ appt, role, token }: { appt: any; role: string;
               <Clock size={10} /> Booked: {format(new Date(appt.createdAt), "d MMM, h:mm a")}
             </span>
           </div>
-          {(appt.notes || p.complaint) && (
-            <div className="mt-2 flex justify-end">
-              <span className="clinical-complaint-chip inline-flex min-w-0 max-w-full items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] sm:text-xs">
-                <FileText size={11} className="shrink-0 text-amber-500" />
-                <span className="truncate">{formatComplaintDisplay(appt.notes || p.complaint)}</span>
-              </span>
-            </div>
-          )}
           <div className="mt-1.5 flex flex-col items-end gap-1 text-[10px] sm:text-[11px]">
             {arrivedAt && (
               <span className="inline-flex items-center gap-1 text-blue-500 whitespace-nowrap tabular-nums">
