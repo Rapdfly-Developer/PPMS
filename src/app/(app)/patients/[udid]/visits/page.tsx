@@ -20,6 +20,7 @@ export default async function PatientVisitsPage({
       name: true,
       udid: true,
       visits: {
+        where: { appointment: { is: { status: "DISPENSED" } } },
         orderBy: { date: "desc" },
         include: {
           hospital:    { select: { name: true } },

@@ -46,6 +46,7 @@ export default async function PatientProfilePage({
         include: {
           hospital: { select: { name: true } },
           doctor:   { select: { name: true } },
+          appointment: { select: { status: true } },
           generalExam: { select: { chiefComplaint: true } },
           diagnoses:   { select: { description: true } },
         },
@@ -70,9 +71,13 @@ export default async function PatientProfilePage({
     .join("")
     .toUpperCase();
 
-  const totalVisits = patient.visits.length;
-  const firstVisit  = patient.visits[patient.visits.length - 1];
-  const lastVisit   = patient.visits[0];
+  // A visit counts on the patient profile only after the patient is dispensed.
+  // Booking an appointment or adding a patient to Today's Queue may create a
+  // Visit record, but neither action represents a completed visit.
+  const dispensedVisits = patient.visits.filter((v) => v.appointment?.status === "DISPENSED");
+  const totalVisits = dispensedVisits.length;
+  const firstVisit  = dispensedVisits[dispensedVisits.length - 1];
+  const lastVisit   = dispensedVisits[0];
 
   /* ── Today's visit / appointment ─────────────────────────────────────── */
   // Prefer the patient's CURRENT registered hospital: after a transfer, a
@@ -165,7 +170,7 @@ export default async function PatientProfilePage({
   });
 
   /* ── Serialise visits for client (previous = strictly before today) ──── */
-  const serialVisits: SerialVisit[] = patient.visits
+  const serialVisits: SerialVisit[] = dispensedVisits
     .map((v, i) => ({
       id:            v.id,
       date:          v.date.toISOString(),
@@ -183,7 +188,7 @@ export default async function PatientProfilePage({
   /* ── Last visit full detail (summary + investigations) ───────────────── */
   // "Last visit" = the most recent visit BEFORE today; today's visit lives
   // under the Today's Visit button, not in history.
-  const lastPastVisit = patient.visits.find((v) => v.date < todayStart) ?? null;
+  const lastPastVisit = dispensedVisits.find((v) => v.date < todayStart) ?? null;
   let lastVisitSummary: LastVisitSummary | null = null;
   if (lastPastVisit) {
     const [hosp, doc, genExam, diags, meds, invOrders] = await Promise.all([
@@ -210,7 +215,7 @@ export default async function PatientProfilePage({
   }
 
   /* ── Longitudinal visits (all past visits, newest-first) ────────────── */
-  const pastVisits = patient.visits.filter((v) => v.date < todayStart);
+  const pastVisits = dispensedVisits.filter((v) => v.date < todayStart);
   let longitudinalVisits: LongitudinalVisit[] = [];
   if (pastVisits.length > 0) {
     const pastVisitIds = pastVisits.map((v) => v.id);
