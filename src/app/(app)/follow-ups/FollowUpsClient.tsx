@@ -298,7 +298,7 @@ function CompleteModal({ v, onDone, onClose }: { v: FuVisit; onDone: () => void;
                   <span className="text-[var(--color-ink-400)] shrink-0 w-24">Diagnoses</span>
                   <div className="flex flex-wrap gap-1">
                     {v.diagnoses.map((d, i) => (
-                      <span key={i} className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-teal-50 border border-teal-200 text-teal-800 text-[10px] sm:text-[11px] font-medium">
+                      <span key={i} className="clinical-diagnosis-chip inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border text-[10px] sm:text-[11px]">
                         {d.description}
                       </span>
                     ))}
@@ -479,14 +479,14 @@ function FollowUpRow({
         {/* Complaint / Diagnosis */}
         <td className="px-4 py-3">
           {v.chiefComplaint ? (
-            <span className="inline-flex max-w-[200px] items-center px-2.5 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-[10px] sm:text-[11px] font-medium">
+            <span className="clinical-complaint-chip inline-flex max-w-[200px] items-center px-2.5 py-0.5 rounded-full border text-[10px] sm:text-[11px]">
               <span className="truncate">{formatComplaintDisplay(v.chiefComplaint)}</span>
             </span>
           ) : (
             <p className="text-[10px] sm:text-[11px] text-[var(--color-ink-300)] italic">No complaint recorded</p>
           )}
           {v.diagnoses[0] && (
-            <span className="inline-flex items-center gap-1 mt-1 px-2.5 py-0.5 rounded-full bg-teal-50 border border-teal-200 text-teal-800 text-[10px] sm:text-[11px] font-medium">
+            <span className="clinical-diagnosis-chip inline-flex items-center gap-1 mt-1 px-2.5 py-0.5 rounded-full border text-[10px] sm:text-[11px]">
               {v.diagnoses[0].description}
             </span>
           )}
@@ -604,7 +604,7 @@ function FollowUpCard({
         )}
         <span className="text-[var(--color-ink-400)]">Complaint</span>
         {v.chiefComplaint ? (
-          <span className="inline-flex max-w-full items-center px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-[9px] sm:text-[10px] font-medium">
+          <span className="clinical-complaint-chip inline-flex max-w-full items-center px-2 py-0.5 rounded-full border text-[9px] sm:text-[10px]">
             <span className="truncate">{formatComplaintDisplay(v.chiefComplaint)}</span>
           </span>
         ) : (
@@ -613,7 +613,7 @@ function FollowUpCard({
         {v.diagnoses[0] && (
           <>
             <span className="text-[var(--color-ink-400)]">Diagnosis</span>
-            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-teal-50 border border-teal-200 text-teal-800 text-[10px] sm:text-[11px] font-medium">
+            <span className="clinical-diagnosis-chip inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border text-[10px] sm:text-[11px]">
               {v.diagnoses[0].description}
             </span>
           </>

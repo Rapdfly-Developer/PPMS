@@ -353,8 +353,8 @@ export default async function PatientDetailedEMR({
                     }`}>{patient.category}</span>
                   )}
                   {latestDiagnosis && (
-                    <span className="text-[9px] font-normal px-2 py-0.5 rounded-full text-white/40 border border-white/15">
-                      Dx: {latestDiagnosis.laterality ? `${latestDiagnosis.laterality} ` : ""}{latestDiagnosis.description}
+                    <span className="clinical-diagnosis-chip-dark text-[9px] px-2 py-0.5 rounded-full border">
+                      Dx: {latestDiagnosis.laterality && <span className="clinical-laterality">{latestDiagnosis.laterality} </span>}{latestDiagnosis.description}
                     </span>
                   )}
                 </div>
@@ -400,7 +400,7 @@ export default async function PatientDetailedEMR({
                           c.since ? `· ${c.since}` : null,
                         ].filter(Boolean);
                         return (
-                          <span key={i} className="inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-teal-400/20 text-teal-200 border border-teal-400/30">
+                          <span key={i} className="clinical-complaint-chip-dark inline-flex items-center gap-1 text-[11px] px-2.5 py-0.5 rounded-full border">
                             {parts.join(" ")}
                           </span>
                         );

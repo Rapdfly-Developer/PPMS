@@ -309,7 +309,7 @@ function VisitCard({ visit, udid }: { visit: SerialVisit; udid: string }) {
       {visit.chiefComplaint && (
         <div className="border-t border-[var(--color-border)] pt-2.5 flex flex-wrap gap-1">
           {parseComplaints(visit.chiefComplaint).map((c, i) => (
-            <span key={i} className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-[10px] sm:text-[11px] font-medium">
+            <span key={i} className="clinical-complaint-chip inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border text-[10px] sm:text-[11px]">
               {[c.lat, c.text, c.since ? `· ${c.since}` : null].filter(Boolean).join(" ")}
             </span>
           ))}
@@ -319,7 +319,7 @@ function VisitCard({ visit, udid }: { visit: SerialVisit; udid: string }) {
       {visit.diagnoses.length > 0 && (
         <div className="flex flex-wrap gap-1">
           {visit.diagnoses.map((d, i) => (
-            <span key={i} className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-teal-50 border border-teal-200 text-teal-800 text-[10px] sm:text-[11px] font-medium">
+            <span key={i} className="clinical-diagnosis-chip inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border text-[10px] sm:text-[11px]">
               {d.description}
             </span>
           ))}
@@ -521,7 +521,7 @@ function LastVisitSummarySection({
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-[var(--color-ink-400)] shrink-0">Chief Complaint</span>
                     {parseComplaints(summary.chiefComplaint).map((c, i) => (
-                      <span key={i} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-[10px] sm:text-[11px] font-medium">
+                      <span key={i} className="clinical-complaint-chip inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[10px] sm:text-[11px]">
                         <FileText size={11} className="shrink-0 text-amber-500" />
                         {[c.lat, c.text, c.since ? `· ${c.since}` : null].filter(Boolean).join(" ")}
                       </span>
@@ -538,12 +538,8 @@ function LastVisitSummarySection({
                         return (ord[a.status] ?? 3) - (ord[b.status] ?? 3);
                       })
                       .map((d) => (
-                        <span key={d.id} className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] sm:text-[11px] font-medium border ${
-                          d.status === "RESOLVED" ? "bg-emerald-50 border-emerald-200 text-emerald-800"
-                          : d.status === "CHRONIC" ? "bg-amber-50 border-amber-200 text-amber-800"
-                          : "bg-red-50 border-red-200 text-red-800"
-                        }`}>
-                          {d.laterality && <span className="font-bold mr-1">{d.laterality}</span>}
+                        <span key={d.id} className="clinical-diagnosis-chip inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] sm:text-[11px] border">
+                          {d.laterality && <span className="clinical-laterality mr-1">{d.laterality}</span>}
                           {d.description}
                         </span>
                       ))}
@@ -781,7 +777,7 @@ function LongitudinalSummarySection({ udid, visits, inline = false }: { udid: st
                 </div>
                 {v.visitType && <p className="text-[9px] text-[var(--color-ink-400)]">{v.visitType}</p>}
                 {v.diagnoses.length > 0 && (
-                  <p className="text-[10px] text-[var(--color-ink-500)] mt-0.5">
+                  <p className="clinical-diagnosis-text text-[10px] mt-0.5">
                     <span className="font-semibold">Dx:</span>{" "}
                     {v.diagnoses.map((d, i) => (
                       <span key={i}>{d.description}{d.laterality ? ` (${d.laterality})` : ""}{d.status === "RESOLVED" ? " ✓" : ""}{i < v.diagnoses.length - 1 ? ", " : ""}</span>
@@ -884,10 +880,10 @@ function LongitudinalSummarySection({ udid, visits, inline = false }: { udid: st
               )}
             </div>
             {v.chiefComplaint && (
-              <p className="text-[12px] text-[var(--color-ink-600)] mb-1">{v.chiefComplaint}</p>
+              <p className="clinical-complaint-text text-[12px] mb-1">{v.chiefComplaint}</p>
             )}
             {v.diagnoses.length > 0 && (
-              <p className="text-[11px] text-[var(--color-ink-500)]">
+              <p className="clinical-diagnosis-text text-[11px]">
                 <span className="font-semibold">Dx:</span>{" "}
                 {v.diagnoses.map((d, i) => (
                   <span key={i}>

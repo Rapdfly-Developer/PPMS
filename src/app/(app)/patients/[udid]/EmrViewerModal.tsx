@@ -34,12 +34,12 @@ function Section({ title, icon, badge, accent, children }: {
   );
 }
 
-function Row({ label, value }: { label: string; value?: string | null }) {
+function Row({ label, value, valueClassName = "text-[var(--color-ink-800)]" }: { label: string; value?: string | null; valueClassName?: string }) {
   if (!value) return null;
   return (
     <div className="grid grid-cols-[140px_1fr] gap-2 text-sm py-1">
       <span className="text-[var(--color-ink-400)] text-xs">{label}</span>
-      <span className="text-[var(--color-ink-800)]">{value}</span>
+      <span className={valueClassName}>{value}</span>
     </div>
   );
 }
@@ -186,7 +186,7 @@ function EmrContent({ visit, udid, localResults, onAttach }: {
       {/* ── 1. Chief Complaint & Symptoms ─────────────────────────────── */}
       {ge && (
         <Section title="Chief Complaint &amp; Symptoms" icon={<FileText size={12} />}>
-          <Row label="Chief Complaint" value={ge.chiefComplaint} />
+          <Row label="Chief Complaint" value={ge.chiefComplaint} valueClassName="clinical-complaint-text" />
           <Row label="History of Illness" value={ge.hpi} />
           <Row label="Known Medications" value={ge.medications} />
           <Row label="Allergies" value={ge.allergies || (ge.nkda ? "NKDA (No Known Drug Allergies)" : null)} />
@@ -349,8 +349,8 @@ function EmrContent({ visit, udid, localResults, onAttach }: {
           <ul className="flex flex-col gap-1.5">
             {diag.map((d: any) => (
               <li key={d.id} className="flex flex-wrap items-center gap-2 py-1.5 border-b border-[var(--color-border)] last:border-0">
-                {d.laterality && <span className="text-xs font-semibold text-[var(--color-primary-700)] shrink-0">{d.laterality}</span>}
-                <span className="font-medium text-[var(--color-ink-800)] flex-1">{d.description}</span>
+                {d.laterality && <span className="clinical-diagnosis-text clinical-laterality text-xs shrink-0">{d.laterality}</span>}
+                <span className="clinical-diagnosis-text flex-1">{d.description}</span>
                 {d.icd10Code && <span className="font-mono text-[10px] text-[var(--color-ink-400)]">{d.icd10Code}</span>}
               </li>
             ))}

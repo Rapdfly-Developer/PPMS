@@ -152,8 +152,8 @@ function DiagnosisRow({
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            {d.laterality && <span className="text-[11px] font-bold text-[var(--color-primary-700)] shrink-0">{d.laterality}</span>}
-            <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-900)]">{d.description}</p>
+            {d.laterality && <span className="clinical-diagnosis-text clinical-laterality text-[11px] shrink-0">{d.laterality}</span>}
+            <p className="clinical-diagnosis-text text-[13px] sm:text-sm">{d.description}</p>
             {isCustom && (
               <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">Custom</span>
             )}
@@ -739,8 +739,10 @@ export function AssessmentTab({
                           <div key={di} className="flex items-center gap-2 py-1 border-b border-[#B2DEDA]/40 last:border-0">
                             <div className="flex-1 min-w-0">
                               <p className="text-xs font-semibold text-[var(--color-ink-800)] leading-tight truncate">
-                                {d.laterality && <span className="text-[var(--color-primary-700)] mr-1">{d.laterality}</span>}
-                                {d.description}
+                                <span className="clinical-diagnosis-text">
+                                  {d.laterality && <span className="clinical-laterality mr-1">{d.laterality}</span>}
+                                  {d.description}
+                                </span>
                               </p>
                               {d.icd10Code && (
                                 <p className="text-[10px] font-mono text-[var(--color-ink-400)] mt-0.5">
@@ -915,8 +917,10 @@ export function AssessmentTab({
                           <div key={di} className="flex items-center gap-2 py-1 border-b border-[#B2DEDA]/40 last:border-0">
                             <div className="flex-1 min-w-0">
                               <p className="text-xs font-semibold text-[var(--color-ink-800)] leading-tight truncate">
-                                {d.laterality && <span className="text-[var(--color-primary-700)] mr-1">{d.laterality}</span>}
-                                {d.description}
+                                <span className="clinical-diagnosis-text">
+                                  {d.laterality && <span className="clinical-laterality mr-1">{d.laterality}</span>}
+                                  {d.description}
+                                </span>
                               </p>
                               {d.icd10Code && (
                                 <p className="text-[10px] font-mono text-[var(--color-ink-400)] mt-0.5">

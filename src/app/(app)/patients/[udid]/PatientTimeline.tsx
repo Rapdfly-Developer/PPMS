@@ -220,7 +220,7 @@ function EventDetail({ ev }: { ev: TimelineEvent }) {
   if (ev.type === "EXTERNAL") return (
     <div className="mt-3 text-[11px] sm:text-xs text-[var(--color-ink-700)] space-y-1">
       {d.externalHospital  && <p><span className="font-semibold">Hospital: </span>{d.externalHospital}</p>}
-      {d.externalDiagnosis && <p><span className="font-semibold">Diagnosis: </span>{d.externalDiagnosis}</p>}
+      {d.externalDiagnosis && <p className="clinical-diagnosis-text"><span className="font-semibold">Diagnosis: </span>{d.externalDiagnosis}</p>}
       {d.externalTreatment && <p><span className="font-semibold">Treatment: </span>{d.externalTreatment}</p>}
       {d.scanRef && (
         <a href={d.scanRef} target="_blank" rel="noopener noreferrer"

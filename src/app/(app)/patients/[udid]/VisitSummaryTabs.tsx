@@ -374,7 +374,7 @@ function ShortContent({ complaint, diagnoses, emrData }: {
           <SumHead icon={<FileText size={11} />} label="Reason for Visit" />
           <div className="flex flex-wrap gap-1.5">
             {complaints.map((c, i) => (
-              <span key={i} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-[10px] sm:text-[11px] font-medium">
+              <span key={i} className="clinical-complaint-chip inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[10px] sm:text-[11px]">
                 <FileText size={10} className="shrink-0 text-amber-500" />
                 {[c.lat, c.text, c.since ? `· ${c.since}` : null].filter(Boolean).join(" ")}
               </span>
@@ -386,11 +386,11 @@ function ShortContent({ complaint, diagnoses, emrData }: {
       {/* Diagnosis */}
       {diagnoses.length > 0 && (
         <div>
-          <SumHead icon={<Stethoscope size={11} />} label="Diagnosis" color="text-teal-500" />
+          <SumHead icon={<Stethoscope size={11} />} label="Diagnosis" color="clinical-diagnosis-text" />
           <div className="flex flex-wrap gap-1.5">
             {diagnoses.map((d, i) => (
-              <span key={i} className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-teal-50 border border-teal-200 text-teal-800 text-[10px] sm:text-[11px] font-medium">
-                <span className="w-1.5 h-1.5 rounded-full bg-teal-400 shrink-0" />{d}
+              <span key={i} className="clinical-diagnosis-chip inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-[10px] sm:text-[11px]">
+                <span className="w-1.5 h-1.5 rounded-full bg-current shrink-0" />{d}
               </span>
             ))}
           </div>
@@ -616,7 +616,7 @@ function LongContent({
               <p className="text-[9px] font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-1.5">Chief Complaint</p>
               <div className="flex flex-wrap gap-1.5">
                 {parseComplaints(g.chiefComplaint).map((c, i) => (
-                  <span key={i} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-[10px] sm:text-[11px] font-medium">
+                  <span key={i} className="clinical-complaint-chip inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[10px] sm:text-[11px]">
                     <FileText size={10} className="shrink-0 text-amber-500" />
                     {[c.lat, c.text, c.since ? `· ${c.since}` : null].filter(Boolean).join(" ")}
                   </span>
@@ -820,7 +820,7 @@ function LongContent({
 
       {/* ── 3. Diagnosis ──────────────────────────────────────────────── */}
       {hasDiag && (
-        <LongSection head={<SumHead icon={<Stethoscope size={11} />} label="Diagnosis" color="text-teal-500" />}>
+        <LongSection head={<SumHead icon={<Stethoscope size={11} />} label="Diagnosis" color="clinical-diagnosis-text" />}>
           <div className="flex flex-col gap-1.5">
             {[...data.diagnoses]
               .sort((a: any, b: any) => {
@@ -829,8 +829,8 @@ function LongContent({
               })
               .map((d: any, i: number) => (
                 <div key={i} className="py-1 border-b border-[var(--color-border)] last:border-0">
-                  <span className="text-[10px] sm:text-[11px] text-[var(--color-ink-700)]">
-                    {d.laterality && <span className="font-bold text-[var(--color-primary-700)] mr-1">{d.laterality}</span>}
+                  <span className="clinical-diagnosis-text text-[10px] sm:text-[11px]">
+                    {d.laterality && <span className="clinical-laterality mr-1">{d.laterality}</span>}
                     {d.description}
                     {d.icd10Code && <span className="font-mono text-[9px] text-[var(--color-ink-400)] ml-1.5">{d.icd10Code}</span>}
                   </span>

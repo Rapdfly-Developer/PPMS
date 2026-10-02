@@ -147,7 +147,7 @@ export function AppointmentRow({ appt, role, token }: { appt: any; role: string;
 
           {/* Chief complaint */}
           {(appt.notes || p.complaint) && (
-            <div className="mt-1.5 inline-flex max-w-full items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-[11px] sm:text-xs font-medium">
+            <div className="clinical-complaint-chip mt-1.5 inline-flex max-w-full items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] sm:text-xs">
               <FileText size={11} className="shrink-0 text-amber-500" />
               <span className="truncate">{formatComplaintDisplay(appt.notes || p.complaint)}</span>
             </div>
@@ -162,9 +162,9 @@ export function AppointmentRow({ appt, role, token }: { appt: any; role: string;
               {provisionalDx.slice(0, 2).map((d, i) => (
                 <span
                   key={i}
-                  className="inline-flex min-w-0 max-w-full items-center gap-1 px-2.5 py-1 rounded-lg bg-teal-50 border border-teal-200 text-teal-800 text-[11px] sm:text-xs font-medium"
+                  className="clinical-diagnosis-chip inline-flex min-w-0 max-w-full items-center gap-1 px-2.5 py-1 rounded-lg border text-[11px] sm:text-xs"
                 >
-                  {d.laterality && <span className="font-bold shrink-0">{d.laterality}</span>}
+                  {d.laterality && <span className="clinical-laterality shrink-0">{d.laterality}</span>}
                   <span className="truncate">{d.description}</span>
                 </span>
               ))}

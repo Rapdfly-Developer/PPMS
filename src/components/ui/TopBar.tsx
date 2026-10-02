@@ -414,7 +414,7 @@ export function TopBar({ name, role }: { name: string; role: string }) {
                         <span className="text-[10px] sm:text-xs text-[var(--color-ink-400)] shrink-0 hidden sm:inline">{r.mobile}</span>
                       </span>
                       {r.matchText && (r.matchType === "complaint" || r.matchType === "diagnosis") && (
-                        <span className="text-[10px] sm:text-xs text-[var(--color-primary-600)] truncate">
+                        <span className={`${r.matchType === "diagnosis" ? "clinical-diagnosis-text" : "clinical-complaint-text"} text-[10px] sm:text-xs truncate`}>
                           {r.matchType === "diagnosis" ? "Dx: " : "CC: "}{r.matchText}
                         </span>
                       )}

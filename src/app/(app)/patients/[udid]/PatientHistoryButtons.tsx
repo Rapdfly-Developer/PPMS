@@ -319,9 +319,9 @@ function TreatmentDrawer({
               <div className="flex flex-col gap-1">
                 {v.diagnoses.map((d, i) => (
                   <div key={i} className="flex items-center gap-2">
-                    <p className="text-xs text-[var(--color-ink-800)] flex-1 min-w-0">
+                    <p className="clinical-diagnosis-text text-xs flex-1 min-w-0">
                       <span className="font-mono text-[10px] text-[var(--color-ink-400)] mr-1">{d.icd10Code}</span>
-                      {d.laterality && <span className="font-semibold text-[var(--color-primary-700)] mr-1">{d.laterality}</span>}
+                      {d.laterality && <span className="clinical-laterality mr-1">{d.laterality}</span>}
                       {d.description}
                     </p>
                   </div>

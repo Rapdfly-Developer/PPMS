@@ -165,7 +165,7 @@ function PartialDispenseRow({ appt: a, scope, serial, canDispense, canViewPatien
           </span>
         )}
         {a.complaint && (
-          <span className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-50 border border-amber-100 text-amber-800 text-[10px] sm:text-[11px] font-medium leading-relaxed">
+          <span className="clinical-complaint-chip mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border text-[10px] sm:text-[11px] leading-relaxed">
             {formatComplaintDisplay(a.complaint)}
           </span>
         )}
@@ -263,7 +263,7 @@ function ApptRow({ appt, scope, serial, canManageQueue, canViewPatient, returnTo
             </span>
           )}
           {appt.complaint && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-50 border border-amber-100 text-amber-800 text-[10px] sm:text-[11px] font-medium">
+            <span className="clinical-complaint-chip inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border text-[10px] sm:text-[11px]">
               {formatComplaintDisplay(appt.complaint)}
             </span>
           )}

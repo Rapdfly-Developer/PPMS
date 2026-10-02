@@ -858,7 +858,7 @@ export function PatientsClient({
                               here. Breakpoints are exact complements: never both, never neither. */}
                           {p.chiefComplaint && (
                             <div className="lg:hidden mt-1">
-                              <span className="inline-flex max-w-full items-center px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-[9px] sm:text-[10px] font-medium">
+                              <span className="clinical-complaint-chip inline-flex max-w-full items-center px-2 py-0.5 rounded-full border text-[9px] sm:text-[10px]">
                                 <span className="truncate">{formatComplaintDisplay(p.chiefComplaint)}</span>
                               </span>
                             </div>
@@ -871,9 +871,9 @@ export function PatientsClient({
                               {p.diagnoses.slice(0, 2).map((d, i) => (
                                 <span
                                   key={i}
-                                  className="inline-flex max-w-full items-center gap-1 px-2 py-0.5 rounded-full bg-teal-50 border border-teal-200 text-teal-800 text-[9px] sm:text-[10px] font-medium"
+                                  className="clinical-diagnosis-chip inline-flex max-w-full items-center gap-1 px-2 py-0.5 rounded-full border text-[9px] sm:text-[10px]"
                                 >
-                                  {d.laterality && <span className="font-bold shrink-0">{d.laterality}</span>}
+                                  {d.laterality && <span className="clinical-laterality shrink-0">{d.laterality}</span>}
                                   <span className="truncate">{d.description}</span>
                                 </span>
                               ))}
@@ -890,7 +890,7 @@ export function PatientsClient({
                       {/* Chief Complaint — fills space, shown on lg+ */}
                       <div className="hidden lg:block flex-1 min-w-0">
                         {p.chiefComplaint ? (
-                          <span className="inline-flex max-w-full items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-[10px] sm:text-[11px] font-medium">
+                          <span className="clinical-complaint-chip inline-flex max-w-full items-center gap-1 px-2.5 py-0.5 rounded-full border text-[10px] sm:text-[11px]">
                             <span className="truncate">{formatComplaintDisplay(p.chiefComplaint)}</span>
                           </span>
                         ) : (
@@ -903,8 +903,8 @@ export function PatientsClient({
                         {p.diagnoses.length > 0 ? (
                           <div className="flex flex-wrap gap-1">
                             {p.diagnoses.slice(0, 2).map((d, i) => (
-                              <span key={i} className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-teal-50 border border-teal-200 text-teal-800 text-[10px] sm:text-[11px] font-medium">
-                                {d.laterality && <span className="font-bold">{d.laterality}</span>}
+                              <span key={i} className="clinical-diagnosis-chip inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border text-[10px] sm:text-[11px]">
+                                {d.laterality && <span className="clinical-laterality">{d.laterality}</span>}
                                 {d.description}
                               </span>
                             ))}
