@@ -217,20 +217,16 @@ function ApptRow({ appt, scope, serial, canManageQueue, canViewPatient, returnTo
         <span className="text-[11px] sm:text-xs font-bold text-[var(--color-ink-400)] tabular-nums">{serial}</span>
       </div>
       <div className="w-px self-stretch bg-[var(--color-border)] hidden sm:block" />
-      {/* Booked appointment time, or walk-in time with a label underneath. */}
+      {/* Booked time, with whether it's a booked appointment or a walk-in. */}
       <div className="w-24 shrink-0 hidden sm:flex items-center justify-center">
-        {appt.isWalkIn ? (
-          <span className="flex flex-col items-center leading-tight" title="Walk-in time">
-            <span className="inline-flex items-center gap-1 whitespace-nowrap text-[12px] font-semibold text-gray-600 tabular-nums">
-              <Clock size={11} /> {format(arrivedAt ?? new Date(appt.dateTime), "h:mm a")}
-            </span>
-            <span className="text-[10px] font-semibold text-gray-400 mt-0.5">Walk-in</span>
-          </span>
-        ) : (
-          <span className="inline-flex items-center gap-1 whitespace-nowrap text-[12px] font-semibold text-blue-600 tabular-nums" title="Appointment time">
+        <span className="flex flex-col items-center leading-tight" title={appt.isWalkIn ? "Walk-in time" : "Appointment time"}>
+          <span className="inline-flex items-center gap-1 whitespace-nowrap text-[12px] font-semibold text-blue-600 tabular-nums">
             <Calendar size={11} /> {apptTime}
           </span>
-        )}
+          <span className="text-[10px] font-semibold text-gray-400 mt-0.5">
+            {appt.isWalkIn ? "Walk-in" : "Appointment"}
+          </span>
+        </span>
       </div>
       <div className="w-px self-stretch bg-[var(--color-border)] hidden sm:block" />
       <PatientBlock udid={appt.patient.udid} canView={canViewPatient} source="opd-queue" returnTo={returnTo} className="flex-1 min-w-0 hover:opacity-80 transition-opacity">
