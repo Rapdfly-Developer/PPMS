@@ -219,6 +219,60 @@ export async function undoQueueEntry(appointmentId: string): Promise<void> {
   revalidatePath("/dashboard");
 }
 
+// ── Delete a walk-in queue entry and its linked, unfinished visit ────────────
+export async function deleteWalkInVisit(appointmentId: string): Promise<void> {
+  const { id: userId } = await requirePermission("opd.queue.manage");
+
+  const appt = await prisma.appointment.findUnique({
+    where: { id: appointmentId },
+    include: {
+      patient: { select: { name: true, udid: true } },
+      hospital: { select: { name: true } },
+      visit: { select: { id: true, finalizedAt: true } },
+    },
+  });
+  if (!appt) throw new Error("Walk-in visit not found.");
+  if (!appt.isWalkIn || appt.status !== "CONFIRMED") {
+    throw new Error("Only waiting walk-in visits can be deleted from the OPD queue.");
+  }
+  if (appt.visit?.finalizedAt) throw new Error("A finalized visit cannot be deleted.");
+
+  await prisma.$transaction(async (tx) => {
+    if (appt.visit) {
+      const visitId = appt.visit.id;
+      await tx.counsellingRecord.deleteMany({ where: { visitId } });
+      await tx.generalExamination.deleteMany({ where: { visitId } });
+      await tx.medication.deleteMany({ where: { visitId } });
+      await tx.visualAcuity.deleteMany({ where: { visitId } });
+      await tx.refractiveCorrection.deleteMany({ where: { visitId } });
+      await tx.colourVisionContrastSensitivity.deleteMany({ where: { visitId } });
+      await tx.iOPReading.deleteMany({ where: { visitId } });
+      await tx.anteriorSegment.deleteMany({ where: { visitId } });
+      await tx.posteriorSegment.deleteMany({ where: { visitId } });
+      await tx.diplopiaChart.deleteMany({ where: { visitId } });
+      await tx.hessChart.deleteMany({ where: { visitId } });
+      await tx.retinoscopy.deleteMany({ where: { visitId } });
+      await tx.tearFilm.deleteMany({ where: { visitId } });
+      await tx.lacrimalSacSyringing.deleteMany({ where: { visitId } });
+      await tx.investigationOrder.deleteMany({ where: { visitId } });
+      await tx.diagnosis.deleteMany({ where: { visitId } });
+      await tx.dispense.deleteMany({ where: { visitId } });
+      await tx.visit.delete({ where: { id: visitId } });
+    }
+    await tx.appointment.delete({ where: { id: appointmentId } });
+  });
+
+  writeAudit(userId, "Appointment", appointmentId, "DELETE_WALK_IN_VISIT",
+    { patient: appt.patient.name, hospital: appt.hospital.name, note: "Deleted walk-in visit from Today's Queue" },
+    { moduleName: "OPD", actionType: "DELETE",
+      hospitalId: appt.hospitalId, userName: appt.patient.name });
+
+  revalidatePath("/opd");
+  revalidatePath("/dashboard");
+  revalidatePath("/appointments");
+  revalidatePath(`/patients/${appt.patient.udid}`);
+}
+
 export async function undoPartialDispense(appointmentId: string): Promise<void> {
   const { id: userId } = await requirePermission("opd.dispense");
 

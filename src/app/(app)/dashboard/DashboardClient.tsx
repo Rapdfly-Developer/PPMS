@@ -5,10 +5,10 @@ import { format } from "date-fns";
 import Link from "next/link";
 import {
   ChevronDown, Plus, Building2, Phone, LogIn, Loader2,
-  Sun, Sunset, Moon, CalendarX2, Calendar, PersonStanding, Clock, Undo2, Timer, CheckCircle2,
+  Sun, Sunset, Moon, CalendarX2, Calendar, PersonStanding, Clock, Undo2, Trash2, Timer, CheckCircle2,
 } from "lucide-react";
 import clsx from "clsx";
-import { undoQueueEntry, undoPartialDispense } from "@/app/(app)/appointments/actions";
+import { deleteWalkInVisit, undoQueueEntry, undoPartialDispense } from "@/app/(app)/appointments/actions";
 import { ComplaintChips } from "@/components/ui/ComplaintChips";
 
 /* ── Types ─────────────────────────────────────────────────────────────── */
@@ -204,7 +204,8 @@ function ApptRow({ appt, scope, serial, canManageQueue, canViewPatient, returnTo
     ? Math.max(0, Math.round((visitStartedAt.getTime() - arrivedAt.getTime()) / 60000))
     : null;
 
-  const [undoing, startUndo] = useTransition();
+  const [updating, startUpdate] = useTransition();
+  const isOpdWalkIn = returnTo === "/opd" && appt.isWalkIn;
 
   return (
     <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-[var(--color-border)] bg-white hover:bg-[var(--color-primary-50)] hover:border-[var(--color-primary-200)] transition-colors">
@@ -270,12 +271,27 @@ function ApptRow({ appt, scope, serial, canManageQueue, canViewPatient, returnTo
           )}
           {appt.status === "CONFIRMED" && canManageQueue && (
             <button
-              disabled={undoing}
-              title={`Move back to appointment time (${apptTime})`}
-              onClick={e => { e.preventDefault(); startUndo(async () => { await undoQueueEntry(appt.id); }); }}
-              className="p-1.5 rounded-lg border border-[var(--color-border)] bg-white text-[var(--color-ink-400)] hover:text-amber-600 hover:border-amber-300 hover:bg-amber-50 disabled:opacity-50 transition-all"
+              disabled={updating}
+              title={isOpdWalkIn ? "Delete walk-in visit" : `Move back to appointment time (${apptTime})`}
+              aria-label={isOpdWalkIn ? `Delete walk-in visit for ${appt.patient.name}` : `Move ${appt.patient.name} back to appointment time`}
+              onClick={e => {
+                e.preventDefault();
+                if (isOpdWalkIn && !window.confirm(`Delete the walk-in visit for ${appt.patient.name}? This action cannot be undone.`)) return;
+                startUpdate(async () => {
+                  if (isOpdWalkIn) await deleteWalkInVisit(appt.id);
+                  else await undoQueueEntry(appt.id);
+                });
+              }}
+              className={clsx(
+                "p-1.5 rounded-lg border bg-white disabled:opacity-50 transition-all",
+                isOpdWalkIn
+                  ? "border-red-200 text-red-500 hover:text-red-700 hover:border-red-300 hover:bg-red-50"
+                  : "border-[var(--color-border)] text-[var(--color-ink-400)] hover:text-amber-600 hover:border-amber-300 hover:bg-amber-50",
+              )}
             >
-              {undoing ? <Loader2 size={12} className="animate-spin" /> : <Undo2 size={12} />}
+              {updating
+                ? <Loader2 size={12} className="animate-spin" />
+                : isOpdWalkIn ? <Trash2 size={12} /> : <Undo2 size={12} />}
             </button>
           )}
         </div>
