@@ -217,21 +217,21 @@ function ApptRow({ appt, scope, serial, canManageQueue, canViewPatient, returnTo
         <span className="text-[11px] sm:text-xs font-bold text-[var(--color-ink-400)] tabular-nums">{serial}</span>
       </div>
       <div className="w-px self-stretch bg-[var(--color-border)] hidden sm:block" />
-      {/* Arrival time on top; appointments also show their booked slot in blue. */}
+      {/* Booked time on top; appointments show the arrival time in blue beneath. */}
       <div className="w-24 shrink-0 hidden sm:flex items-center justify-center">
         <span className="flex flex-col items-center leading-tight">
           <span
             className="inline-flex items-center gap-1 whitespace-nowrap text-[12px] font-bold text-[var(--color-ink-900)] tabular-nums"
-            title={arrivedAt ? "Arrival time" : appt.isWalkIn ? "Walk-in time" : "Appointment time"}
+            title={appt.isWalkIn ? "Walk-in time" : "Booked appointment time"}
           >
-            <Calendar size={11} /> {arrivedAt ? format(arrivedAt, "h:mm a") : apptTime}
+            <Calendar size={11} /> {appt.isWalkIn && arrivedAt ? format(arrivedAt, "h:mm a") : apptTime}
           </span>
           <span className="text-[10px] font-semibold text-gray-400 mt-0.5">
             {appt.isWalkIn ? "Walk-in" : "Appointment"}
           </span>
-          {!appt.isWalkIn && (
-            <span className="text-[10px] font-semibold text-blue-600 tabular-nums" title="Booked appointment time">
-              {apptTime}
+          {!appt.isWalkIn && arrivedAt && (
+            <span className="text-[10px] font-semibold text-blue-600 tabular-nums" title="Arrival time">
+              {format(arrivedAt, "h:mm a")}
             </span>
           )}
         </span>
