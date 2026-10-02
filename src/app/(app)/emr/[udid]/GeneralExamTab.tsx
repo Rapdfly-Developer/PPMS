@@ -215,8 +215,7 @@ function ComplaintKeywordButton({
   );
 }
 
-export function GeneralExamTab({ visit, priorVisits, udid, readOnly, customPmhChips }: { visit: any; priorVisits: any[]; udid: string; readOnly: boolean; customPmhChips?: string[] }) {
-  const pmhChipOptions = customPmhChips ?? [...PAST_MEDICAL_HISTORY_CHIPS];
+export function GeneralExamTab({ visit, priorVisits, udid, readOnly }: { visit: any; priorVisits: any[]; udid: string; readOnly: boolean }) {
   const ge = visit.generalExam;
   const [vitalsOpen, setVitalsOpen] = useState(true);
   const [bp, setBp] = useState(ge?.bp ?? "");
@@ -226,14 +225,15 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, customPmhCh
   const [complaints, setComplaints] = useState<Complaint[]>(() => parseComplaints(ge?.chiefComplaint ?? ""));
   const [openKwIdx, setOpenKwIdx] = useState<number | null>(null);
   const [hpi, setHpi] = useState(ge?.hpi ?? "");
-  /* One row per condition, each with an optional "since". */
   const [pmh, setPmh] = useState<PmhEntry[]>(() => parsePmh(ge?.pastMedicalHistory));
+  const [pmhOptions, setPmhOptions] = useState<string[]>(() => {
+    const saved = parsePmh(ge?.pastMedicalHistory).map((entry) => entry.name);
+    return [...new Set([...PAST_MEDICAL_HISTORY_CHIPS, ...saved])];
+  });
+  const [addingPmhKeyword, setAddingPmhKeyword] = useState(false);
+  const [newPmhKeyword, setNewPmhKeyword] = useState("");
   const [pmhOther, setPmhOther] = useState(ge?.pmhOtherText ?? "");
 
-  const patchPmh = (i: number, patch: Partial<PmhEntry>) =>
-    setPmh((prev) => prev.map((e, idx) => (idx === i ? { ...e, ...patch } : e)));
-  const addPmh = (name = "") => setPmh((prev) => [...prev, emptyPmh(name)]);
-  const removePmh = (i: number) => setPmh((prev) => prev.filter((_, idx) => idx !== i));
   const [medications, setMedications] = useState(ge?.medications ?? "");
   const [allergies, setAllergies] = useState(ge?.allergies ?? "");
   const [nkda, setNkda] = useState(ge?.nkda ?? false);
@@ -241,6 +241,25 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, customPmhCh
   // PMH persists cumulatively across visits per the PRD
   const priorPmh = priorVisits.flatMap((v) => parsePmh(v.generalExam?.pastMedicalHistory));
   const cumulativePmh = mergePmh(priorPmh, pmh);
+  const displayPmhOptions = [...new Set([...pmhOptions, ...cumulativePmh.map((entry) => entry.name)])];
+
+  const togglePmh = (name: string) => {
+    setPmh((current) => {
+      const exists = current.some((entry) => entry.name.toLowerCase() === name.toLowerCase());
+      return exists
+        ? current.filter((entry) => entry.name.toLowerCase() !== name.toLowerCase())
+        : [...current, emptyPmh(name)];
+    });
+  };
+
+  const addPmhKeyword = () => {
+    const name = newPmhKeyword.trim();
+    if (!name) return;
+    setPmhOptions((current) => current.some((option) => option.toLowerCase() === name.toLowerCase()) ? current : [...current, name]);
+    setPmh((current) => current.some((entry) => entry.name.toLowerCase() === name.toLowerCase()) ? current : [...current, emptyPmh(name)]);
+    setNewPmhKeyword("");
+    setAddingPmhKeyword(false);
+  };
 
   const chiefComplaintFull = serializeComplaints(complaints);
   const data = { bp, pulse, temperature, weight, chiefComplaint: chiefComplaintFull, hpi, pastMedicalHistory: JSON.stringify(cumulativePmh), pmhOtherText: pmhOther, medications, allergies, nkda };
@@ -258,6 +277,9 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, customPmhCh
   });
 
   const overview = useEmrOverview();
+  const visiblePmhOptions = overview
+    ? displayPmhOptions.filter((option) => cumulativePmh.some((entry) => entry.name.toLowerCase() === option.toLowerCase()))
+    : displayPmhOptions;
 
   const histFor = (field: (g: any) => string | undefined) =>
     priorVisits
@@ -418,85 +440,51 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, customPmhCh
         <p className="text-xs font-semibold tracking-widest text-[var(--color-ink-500)] uppercase mb-3">
           Past Medical History <span className="text-[10px] font-normal normal-case tracking-normal text-[var(--color-ink-400)]">(cumulative across visits)</span>
         </p>
-        {/* One row per condition: the name (with the same keyword picker as
-            elsewhere) plus an optional duration. The eight standard conditions
-            and any custom keyword add a NEW row rather than appending text, so
-            each condition keeps its own "since". */}
-        <div className="flex flex-col gap-2">
-          {pmh.map((entry, i) => (
-            <div key={i} className="flex items-center gap-1.5 flex-wrap">
-              <input
-                value={entry.name}
-                onChange={(e) => patchPmh(i, { name: e.target.value })}
-                disabled={readOnly}
-                placeholder="Condition"
-                className="flex-1 min-w-[140px] rounded-lg border border-[var(--color-border)] bg-white px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] disabled:bg-[var(--color-surface-sunken)]"
-              />
-              <span
-                className="text-[11px] font-semibold text-[var(--color-ink-400)] shrink-0"
-                {...(!entry.sinceNum ? { "data-ov-empty": "" } : {})}
-              >Since</span>
-              <select
-                value={entry.sinceNum}
-                onChange={(e) => patchPmh(i, { sinceNum: e.target.value })}
-                disabled={readOnly}
-                className="text-[11px] border border-[var(--color-border)] rounded-md px-1.5 py-1 bg-white text-[var(--color-ink-700)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] disabled:opacity-50 w-12 shrink-0"
-                {...(!entry.sinceNum ? { "data-ov-empty": "" } : {})}
-              >
-                <option value="">—</option>
-                {Array.from({ length: 30 }, (_, n) => n + 1).map((n) => (
-                  <option key={n} value={String(n)}>{n}</option>
-                ))}
-              </select>
-              <select
-                value={entry.sinceUnit}
-                onChange={(e) => patchPmh(i, { sinceUnit: e.target.value })}
-                disabled={readOnly || !entry.sinceNum}
-                className="text-[11px] border border-[var(--color-border)] rounded-md px-1.5 py-1 bg-white text-[var(--color-ink-700)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] disabled:opacity-50 w-16 shrink-0"
-                {...(!entry.sinceNum ? { "data-ov-empty": "" } : {})}
-              >
-                {SINCE_UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
-              </select>
-              {!readOnly && (
-                <button
-                  data-overview-hide
-                  type="button"
-                  onClick={() => removePmh(i)}
-                  title={`Remove ${entry.name || "entry"}`}
-                  className="p-1 rounded-lg text-[var(--color-ink-400)] hover:text-red-600 hover:bg-red-50 transition-colors shrink-0"
-                >
-                  <X size={13} strokeWidth={2.5} />
-                </button>
-              )}
-            </div>
-          ))}
-
+        <div className="flex flex-wrap items-center gap-1.5">
           {!readOnly && (
-            <div data-overview-hide className="flex flex-wrap items-center gap-1.5">
-              <button
-                type="button"
-                onClick={() => addPmh()}
-                className="self-start inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-[10px] font-medium text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] transition-colors whitespace-nowrap"
-              >
-                <Plus size={11} strokeWidth={2.5} /> Add
-              </button>
-              {/* Quick-add: each keyword starts its own row. Already-listed
-                  conditions are hidden so the same one is not added twice. */}
-              {pmhChipOptions
-                .filter((opt) => !pmh.some((e) => e.name.trim().toLowerCase() === opt.toLowerCase()))
-                .map((opt) => (
-                  <button
-                    key={opt}
-                    type="button"
-                    onClick={() => addPmh(opt)}
-                    className="inline-flex items-center px-2 py-0.5 rounded-full border border-[var(--color-border)] bg-white text-[11px] text-[var(--color-ink-600)] hover:border-[var(--color-primary-400)] hover:text-[var(--color-primary-700)] transition-colors"
-                  >
-                    {opt}
-                  </button>
-                ))}
-            </div>
+            <button
+              data-overview-hide
+              type="button"
+              onClick={() => setAddingPmhKeyword(true)}
+              className="inline-flex items-center gap-0.5 rounded border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] px-2 py-1 text-[11px] font-medium text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] transition-colors"
+            >
+              <Plus size={12} strokeWidth={2.5} /> Add
+            </button>
           )}
+          {visiblePmhOptions.map((option) => (
+            <button
+              key={option}
+              type="button"
+              disabled={readOnly}
+              className="chip disabled:cursor-default"
+              data-active={cumulativePmh.some((entry) => entry.name.toLowerCase() === option.toLowerCase())}
+              onClick={() => togglePmh(option)}
+            >
+              {option}
+            </button>
+          ))}
         </div>
+        {addingPmhKeyword && !readOnly && (
+          <div className="mt-2 flex max-w-sm items-center gap-2">
+            <input
+              autoFocus
+              value={newPmhKeyword}
+              onChange={(event) => setNewPmhKeyword(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") { event.preventDefault(); addPmhKeyword(); }
+                if (event.key === "Escape") { setAddingPmhKeyword(false); setNewPmhKeyword(""); }
+              }}
+              placeholder="Add medical history keyword"
+              className="min-w-0 flex-1 rounded-lg border border-[var(--color-border)] bg-white px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
+            />
+            <button type="button" onClick={addPmhKeyword} disabled={!newPmhKeyword.trim()} className="rounded-lg bg-[var(--color-primary-600)] px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50">
+              Add
+            </button>
+            <button type="button" onClick={() => { setAddingPmhKeyword(false); setNewPmhKeyword(""); }} className="p-1.5 text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)]" aria-label="Cancel adding keyword">
+              <X size={14} />
+            </button>
+          </div>
+        )}
       </Card>
       </div>
 

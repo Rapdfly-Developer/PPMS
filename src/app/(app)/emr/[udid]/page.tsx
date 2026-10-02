@@ -190,10 +190,6 @@ export default async function PatientDetailedEMR({
 
   const chiefComplaintSummary = activeVisit?.generalExam?.chiefComplaint ?? latestDiagnosis?.description ?? null;
 
-  // Custom PMH chips per hospital — active after next server restart
-  // (Prisma client regenerates on restart; ChipOption table is seeded via /settings/chips)
-  const customPmhChips: string[] = [];
-
   // CLOSED visits remain editable until midnight on the day of finalization,
   // then become permanently read-only for everyone including the doctor.
   const finalizedToday = activeVisit?.finalizedAt
@@ -523,7 +519,6 @@ export default async function PatientDetailedEMR({
                       priorVisits={priorVisits}
                       udid={udid}
                       readOnly={readOnly}
-                      customPmhChips={customPmhChips.length > 0 ? customPmhChips : undefined}
                     />
                   </div>
                 ),

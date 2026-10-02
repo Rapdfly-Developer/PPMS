@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useTransition, useMemo } from "react";
+import { useState, useEffect, useTransition, useMemo, useRef } from "react";
 import { useEmrOverview } from "./EmrOverviewContext";
-import { Trash2, Plus, X, Copy, Loader2, History } from "lucide-react";
+import { Trash2, Plus, X, Copy, Loader2, History, ImagePlus, ExternalLink } from "lucide-react";
 import { KeywordInput, KeywordTextarea } from "@/components/emr/KeywordField";
 import { Card } from "@/components/ui/Card";
 import { Tabs } from "@/components/ui/Tabs";
@@ -369,15 +369,105 @@ function parseSignedVal(v: string): { sign: "+" | "-"; mag: string } {
   return v.startsWith("-") ? { sign: "-", mag: v.slice(1) } : { sign: "+", mag: v.replace(/^\+/, "") };
 }
 
+function ArSlipUpload({
+  url,
+  editable,
+  label,
+  onChange,
+}: {
+  url?: string;
+  editable: boolean;
+  label: string;
+  onChange: (url: string) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState("");
+
+  const upload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    setError("");
+    try {
+      const body = new FormData();
+      body.append("file", file);
+      const response = await fetch("/api/uploads", { method: "POST", body });
+      const result = await response.json();
+      if (!response.ok || result.error || !result.url) {
+        throw new Error(result.error ?? "AR slip upload failed.");
+      }
+      onChange(result.url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "AR slip upload failed.");
+    } finally {
+      setUploading(false);
+      event.target.value = "";
+    }
+  };
+
+  if (!editable && !url) return null;
+
+  return (
+    <div className="flex flex-col items-end gap-1">
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/png,image/jpeg,image/webp"
+        className="hidden"
+        aria-label={`Upload AR slip for ${label}`}
+        onChange={upload}
+      />
+      <div className="flex items-center gap-1.5">
+        {url && (
+          <a
+            href={url}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1 rounded-lg border border-[var(--color-border)] bg-white px-2 py-1 text-[10px] sm:text-[11px] font-medium text-[var(--color-ink-600)] hover:text-[var(--color-primary-700)] hover:border-[var(--color-primary-300)] transition-colors"
+          >
+            <ExternalLink size={11} /> View AR slip
+          </a>
+        )}
+        {editable && (
+          <button
+            data-overview-hide
+            type="button"
+            disabled={uploading}
+            onClick={() => inputRef.current?.click()}
+            className="inline-flex items-center gap-1 rounded-lg border border-dashed border-[var(--color-primary-300)] bg-[var(--color-primary-50)] px-2 py-1 text-[10px] sm:text-[11px] font-medium text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] disabled:opacity-50 transition-colors"
+          >
+            {uploading ? <Loader2 size={11} className="animate-spin" /> : <ImagePlus size={11} />}
+            {uploading ? "Uploading…" : url ? "Replace" : "Upload AR slip"}
+          </button>
+        )}
+        {editable && url && (
+          <button
+            data-overview-hide
+            type="button"
+            onClick={() => onChange("")}
+            aria-label={`Remove AR slip from ${label}`}
+            title="Remove AR slip"
+            className="rounded-lg p-1 text-[var(--color-ink-400)] hover:bg-red-50 hover:text-red-600 transition-colors"
+          >
+            <X size={13} />
+          </button>
+        )}
+      </div>
+      {error && <p className="text-[10px] text-red-600" role="alert">{error}</p>}
+    </div>
+  );
+}
+
 /* ── Refraction ────────────────────────────────────────────────────────── */
 
 function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: any; udid: string; editable: boolean; priorVisits?: any[] }) {
   const rc = visit.refraction;
 
-  type RxFields = { sph: string; cyl: string; axis: string; nearSph: string; va: string; nearVa: string; method: string };
+  type RxFields = { sph: string; cyl: string; axis: string; nearSph: string; va: string; nearVa: string; method: string; arSlipUrl?: string };
   const emptyRx: RxFields = { sph: "", cyl: "", axis: "", nearSph: "", va: "", nearVa: "", method: "" };
 
-  type ExtraCorrection = { label: string; re: RxFields; le: RxFields };
+  type ExtraCorrection = { label: string; re: RxFields; le: RxFields; arSlipUrl?: string };
 
   const [re, setRe] = useState(parseJSON(rc?.re, emptyRx));
   const [le, setLe] = useState(parseJSON(rc?.le, emptyRx));
@@ -561,7 +651,7 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
   return (
     <Card>
       {/* ── Correction 1 (primary) ── */}
-      <div className="flex items-center mb-3 gap-3">
+      <div className="flex items-center mb-3 gap-3 flex-wrap">
         <div className="flex items-center gap-3 flex-wrap">
           <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)]">Correction 1</p>
           <div className="flex items-center gap-2">
@@ -580,7 +670,13 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
             </select>
           </div>
         </div>
-        <div className="flex items-center gap-2 ml-auto shrink-0">
+        <div className="flex items-center justify-end gap-2 ml-auto flex-wrap">
+          <ArSlipUpload
+            url={re.arSlipUrl}
+            editable={editable}
+            label="Correction 1"
+            onChange={(url) => setRe({ ...re, arSlipUrl: url })}
+          />
           {priorRefractions.length > 0 && (
             <button
               data-overview-hide
@@ -602,7 +698,7 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
       {/* ── Extra corrections ── */}
       {extras.map((ex, idx) => (
         <div key={idx} className="mt-5 pt-4 border-t border-[var(--color-border)]">
-          <div className="flex items-center mb-3 gap-3">
+          <div className="flex items-center mb-3 gap-3 flex-wrap">
             <div className="flex items-center gap-3 flex-wrap">
               <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)]">{ex.label}</p>
               <div className="flex items-center gap-2">
@@ -621,15 +717,23 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
                 </select>
               </div>
             </div>
-            {editable && (
-              <button
-                type="button"
-                onClick={() => removeCorrection(idx)}
-                className="ml-auto shrink-0 text-[11px] sm:text-xs text-red-500 hover:text-red-700 hover:bg-red-50 px-2.5 py-0.5 rounded-full border border-red-200 transition-colors"
-              >
-                Remove
-              </button>
-            )}
+            <div className="ml-auto flex items-center gap-2 shrink-0">
+              <ArSlipUpload
+                url={ex.arSlipUrl}
+                editable={editable}
+                label={ex.label}
+                onChange={(url) => setExtras((prev) => prev.map((item, itemIdx) => itemIdx === idx ? { ...item, arSlipUrl: url } : item))}
+              />
+              {editable && (
+                <button
+                  type="button"
+                  onClick={() => removeCorrection(idx)}
+                  className="text-[11px] sm:text-xs text-red-500 hover:text-red-700 hover:bg-red-50 px-2.5 py-0.5 rounded-full border border-red-200 transition-colors"
+                >
+                  Remove
+                </button>
+              )}
+            </div>
           </div>
           <EyeColumns>
             {eyeFields(ex.re, (v) => updateExtra(idx, "re", typeof v === "function" ? v(ex.re) : v), methodHasNear(ex.re.method || ex.le.method))}
