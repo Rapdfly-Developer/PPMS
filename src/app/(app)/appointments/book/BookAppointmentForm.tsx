@@ -828,11 +828,15 @@ export function BookAppointmentForm({
                 )}
               </div>
 
-              {/* ── Single row on sm+: RE | LE | OU  [input  Add]  Since n unit ── */}
-              <div className="flex flex-wrap sm:flex-nowrap items-baseline gap-2 mt-1.5">
-
-                {/* Laterality pills */}
-                <div className="flex gap-1.5 shrink-0">
+              {/* Row: RE | LE | OU  [input  Add]  Since n unit — keyword chips span the full width below */}
+              <div className="mt-1.5">
+                <ComplaintCombobox
+                  value={notes}
+                  onChange={setNotes}
+                  inputCls={inputCls}
+                  keywordMode="bullet"
+                  leading={
+                <div className="flex gap-1.5 shrink-0 mt-2">
                   {(["RE", "LE", "OU"] as const).map((lat) => (
                     <button
                       key={lat}
@@ -853,19 +857,9 @@ export function BookAppointmentForm({
                     </button>
                   ))}
                 </div>
-
-                {/* Complaint combobox — input+Add on first line, chips below */}
-                <div className="flex-1 min-w-0">
-                  <ComplaintCombobox
-                    value={notes}
-                    onChange={setNotes}
-                    inputCls={inputCls}
-                    keywordMode="bullet"
-                  />
-                </div>
-
-                {/* Since duration */}
-                <div className="flex items-baseline gap-1.5 shrink-0">
+                  }
+                  trailing={
+                <div className="flex items-center gap-1.5 shrink-0 mt-2.5">
                   <span className="text-xs text-[var(--color-ink-500)]">Since</span>
                   <select
                     value={sinceNum}
@@ -888,7 +882,8 @@ export function BookAppointmentForm({
                     <option value="years">years</option>
                   </select>
                 </div>
-
+                  }
+                />
               </div>
             </div>
           </div>

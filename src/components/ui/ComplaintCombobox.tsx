@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback, KeyboardEvent } from "react";
+import { useState, useEffect, useRef, KeyboardEvent, ReactNode } from "react";
 import { Plus, X } from "lucide-react";
 import { CHIEF_COMPLAINT_FIELD_KEY, CHIEF_COMPLAINT_LEGACY_KEYS } from "@/lib/constants";
 import { appendKeywordAsBullet, keywordEntries, removeKeywordFromText } from "@/components/emr/KeywordField";
@@ -53,29 +53,6 @@ function readMergedKeywords(storageKey: string): string[] {
   }
 }
 
-function useDoubleActivation(onSingle: () => void, onDouble: () => void, delay = 250) {
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const singleRef = useRef(onSingle);
-  const doubleRef = useRef(onDouble);
-  singleRef.current = onSingle;
-  doubleRef.current = onDouble;
-
-  useEffect(() => () => { if (timerRef.current !== null) clearTimeout(timerRef.current); }, []);
-
-  return useCallback(() => {
-    if (timerRef.current !== null) {
-      clearTimeout(timerRef.current);
-      timerRef.current = null;
-      doubleRef.current();
-    } else {
-      timerRef.current = setTimeout(() => {
-        timerRef.current = null;
-        singleRef.current();
-      }, delay);
-    }
-  }, [delay]);
-}
-
 interface Props {
   value: string;
   onChange: (v: string) => void;
@@ -85,6 +62,9 @@ interface Props {
   hideInput?: boolean;
   /** Appends each selected keyword as a bullet inside the same complaint field. */
   keywordMode?: "replace" | "bullet";
+  /** Rendered before / after the input on the same row; chips then span the full width below. */
+  leading?: ReactNode;
+  trailing?: ReactNode;
 }
 
 export const appendComplaintKeyword = appendKeywordAsBullet;
@@ -95,12 +75,12 @@ function StandardChip({ keyword, active, onSelect, onRemove }: {
   onSelect: () => void;
   onRemove: () => void;
 }) {
-  const activate = useDoubleActivation(onSelect, onRemove);
   return (
     <button
       type="button"
-      onClick={activate}
-      title={`${keyword} — double-tap to remove from text`}
+      onClick={active ? onRemove : onSelect}
+      aria-pressed={active}
+      title={active ? `Remove ${keyword}` : `Add ${keyword}`}
       className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-all ${
         active
           ? "bg-[var(--color-primary-700)] border-[var(--color-primary-700)] text-white"
@@ -119,7 +99,6 @@ function CustomChip({ keyword, active, onSelect, onRemoveFromText, onDelete }: {
   onRemoveFromText: () => void;
   onDelete: () => void;
 }) {
-  const activate = useDoubleActivation(onSelect, onRemoveFromText);
   return (
     <span
       className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border transition-all ${
@@ -130,8 +109,9 @@ function CustomChip({ keyword, active, onSelect, onRemoveFromText, onDelete }: {
     >
       <button
         type="button"
-        onClick={activate}
-        title={`${keyword} — double-tap to remove from text`}
+        onClick={active ? onRemoveFromText : onSelect}
+        aria-pressed={active}
+        title={active ? `Remove ${keyword}` : `Add ${keyword}`}
         className="focus:outline-none"
       >
         {keyword}
@@ -156,6 +136,8 @@ export function ComplaintCombobox({
   inputCls = "",
   hideInput = false,
   keywordMode = "replace",
+  leading,
+  trailing,
 }: Props) {
   // Same key the EMR's chief-complaint field uses, so a keyword saved here
   // shows up there and vice versa.
@@ -233,7 +215,8 @@ export function ComplaintCombobox({
 
       {/* ── Input — shows selected value; typing sets a custom complaint ── */}
       {!hideInput && (
-        <div className="flex items-start gap-2">
+        <div className="flex flex-wrap sm:flex-nowrap items-start gap-2">
+          {leading}
           {keywordMode === "bullet" ? (
             <textarea
               value={value}
@@ -243,7 +226,7 @@ export function ComplaintCombobox({
               }}
               placeholder={placeholder}
               rows={Math.max(1, Math.min(8, value.replace(/\r/g, "").split("\n").length))}
-              className={`${inputCls} flex-1 resize-none`}
+              className={`${inputCls} flex-1 min-w-[12rem] resize-none`}
             />
           ) : (
             <input
@@ -265,6 +248,7 @@ export function ComplaintCombobox({
           >
             <Plus size={12} /> Add
           </button>
+          {trailing}
         </div>
       )}
 
