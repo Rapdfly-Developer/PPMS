@@ -1,7 +1,8 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { requireRole, requireUser } from "@/lib/rbac";
+import { requireRole, requireUser, userCan } from "@/lib/rbac";
+import { getStaffHospitalId } from "@/lib/booking-scope";
 import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import { createNotification } from "@/lib/notify";
@@ -22,6 +23,23 @@ async function assertVisitAccess(visitId: string) {
   }
   if (user.role === "DOCTOR" && visit.doctorId !== user.profileId) throw new Error("Forbidden");
   return visit;
+}
+
+/**
+ * Refraction-workflow writes (VA, refraction, colour vision, IOP). Doctors keep
+ * full access; other staff need refraction.create to add a record and
+ * refraction.edit to change an existing one, and only at their own hospital.
+ */
+async function requireRefractionWrite(visitId: string, existing: boolean) {
+  const user = await requireUser();
+  const visit = await assertVisitAccess(visitId);
+  if (user.role === "DOCTOR") return user;
+  if (!userCan(user, existing ? "refraction.edit" : "refraction.create")) {
+    throw new Error(existing ? "You do not have permission to edit refraction records." : "You do not have permission to record refraction.");
+  }
+  const hospitalId = await getStaffHospitalId(user.id);
+  if (!hospitalId || visit.hospitalId !== hospitalId) throw new Error("Forbidden");
+  return user;
 }
 
 function revalidate(udid: string) {
@@ -148,8 +166,8 @@ export async function verifyPastExternalVisit(id: string, udid: string, status: 
 // ── Ophthalmic Examination sub-modules ───────────────────────────────────
 
 export async function saveVisualAcuity(visitId: string, udid: string, data: { testMethod: string; re: string; le: string }) {
-  const user = await requireRole("DOCTOR");
-  await assertVisitAccess(visitId);
+  const exists = !!(await prisma.visualAcuity.findUnique({ where: { visitId }, select: { id: true } }));
+  const user = await requireRefractionWrite(visitId, exists);
   const reviewedByDoctor = user.role === "DOCTOR";
   await prisma.visualAcuity.upsert({
     where: { visitId },
@@ -161,8 +179,8 @@ export async function saveVisualAcuity(visitId: string, udid: string, data: { te
 }
 
 export async function saveRefraction(visitId: string, udid: string, data: { re: string; le: string; extraCorrections?: string }) {
-  const user = await requireRole("DOCTOR");
-  await assertVisitAccess(visitId);
+  const exists = !!(await prisma.refractiveCorrection.findUnique({ where: { visitId }, select: { id: true } }));
+  const user = await requireRefractionWrite(visitId, exists);
   const reviewedByDoctor = user.role === "DOCTOR";
   await prisma.refractiveCorrection.upsert({
     where: { visitId },
@@ -205,8 +223,8 @@ export async function sendToOpticals(visitId: string, udid: string) {
 }
 
 export async function saveColourVision(visitId: string, udid: string, data: { re: string; le: string }) {
-  const user = await requireRole("DOCTOR");
-  await assertVisitAccess(visitId);
+  const exists = !!(await prisma.colourVisionContrastSensitivity.findUnique({ where: { visitId }, select: { id: true } }));
+  const user = await requireRefractionWrite(visitId, exists);
   const reviewedByDoctor = user.role === "DOCTOR";
   await prisma.colourVisionContrastSensitivity.upsert({
     where: { visitId },
@@ -218,8 +236,7 @@ export async function saveColourVision(visitId: string, udid: string, data: { re
 }
 
 export async function addIOPReading(visitId: string, udid: string, data: { re?: number; le?: number; method: string }) {
-  const user = await requireRole("DOCTOR");
-  await assertVisitAccess(visitId);
+  const user = await requireRefractionWrite(visitId, false);
   await prisma.iOPReading.create({
     data: { visitId, re: data.re, le: data.le, method: data.method, source: user.role, reviewedByDoctor: user.role === "DOCTOR" },
   });
@@ -228,7 +245,9 @@ export async function addIOPReading(visitId: string, udid: string, data: { re?: 
 }
 
 export async function removeIOPReading(id: string, udid: string) {
-  const user = await requireRole("DOCTOR");
+  const reading = await prisma.iOPReading.findUnique({ where: { id }, select: { visitId: true } });
+  if (!reading) throw new Error("Reading not found");
+  const user = await requireRefractionWrite(reading.visitId, true);
   await prisma.iOPReading.delete({ where: { id } });
   await writeAudit(user.id, "IOPReading", id, "DELETE", {});
   revalidate(udid);

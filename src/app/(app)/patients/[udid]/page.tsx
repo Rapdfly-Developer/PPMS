@@ -1,4 +1,5 @@
-import { requirePermission } from "@/lib/rbac";
+import { requirePermission, userCan } from "@/lib/rbac";
+import { canRecordRefraction } from "@/lib/refraction-access";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import { format, startOfDay, endOfDay } from "date-fns";
@@ -443,6 +444,7 @@ export default async function PatientProfilePage({
             todayAppointmentId={todayAppointmentId}
             hasRequestedAppt={hasRequestedAppt}
             userRole={user.role}
+            canOpenTodayVisit={user.role === "DOCTOR" || (userCan(user, "emr.view") && canRecordRefraction(user))}
             showTodayVisit={showTodayVisit}
             timelineEntries={timelineEntries}
             lastVisitSummary={lastVisitSummary}

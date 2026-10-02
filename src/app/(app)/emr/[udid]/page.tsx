@@ -1,4 +1,5 @@
 import { requirePermission } from "@/lib/rbac";
+import { canRecordRefraction } from "@/lib/refraction-access";
 import { prisma } from "@/lib/prisma";
 import { notFound, redirect } from "next/navigation";
 import { Card } from "@/components/ui/Card";
@@ -196,7 +197,10 @@ export default async function PatientDetailedEMR({
   const finalizedToday = activeVisit?.finalizedAt
     ? isSameDay(new Date(activeVisit.finalizedAt), new Date())
     : false;
-  const readOnly = user.role !== "DOCTOR" || (activeVisit?.status === "CLOSED" && !finalizedToday);
+  const visitLocked = activeVisit?.status === "CLOSED" && !finalizedToday;
+  const readOnly = user.role !== "DOCTOR" || visitLocked;
+  // Refraction-workflow sections (VA, refraction, colour, IOP) follow the refraction permissions.
+  const canEditRefraction = user.role === "DOCTOR" || (canRecordRefraction(user) && !visitLocked);
 
   // Closed by the EOD sweep rather than finalized & signed by the doctor
   const autoClosed =
@@ -542,6 +546,7 @@ export default async function PatientDetailedEMR({
                       priorVisits={priorVisits}
                       udid={udid}
                       role={user.role}
+                      canEditRefraction={canEditRefraction}
                     />
                   </div>
                 ),

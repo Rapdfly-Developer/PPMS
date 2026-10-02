@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireRole } from "@/lib/rbac";
+import { requireUser } from "@/lib/rbac";
+import { canRecordRefraction } from "@/lib/refraction-access";
 import crypto from "crypto";
 import path from "path";
 
@@ -7,7 +8,11 @@ const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/webp", "application/pdf
 const MAX_SIZE = 15 * 1024 * 1024;
 
 export async function POST(req: NextRequest) {
-  await requireRole("DOCTOR", "HOSPITAL");
+  // Staff recording refraction attach AR slips, so they may upload too.
+  const user = await requireUser();
+  if (user.role !== "DOCTOR" && user.role !== "HOSPITAL" && !canRecordRefraction(user)) {
+    return NextResponse.json({ error: "You do not have permission to upload files." }, { status: 403 });
+  }
 
   const formData = await req.formData();
   const file = formData.get("file");

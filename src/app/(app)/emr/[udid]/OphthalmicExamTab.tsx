@@ -45,8 +45,8 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Toast } from "@/components/ui/Toast";
 import { FieldWithHistory, type HistoryEntry } from "@/components/ui/HistoryToggle";
 
-export function OphthalmicExamTab({ visit, priorVisits, udid, role }: { visit: any; priorVisits: any[]; udid: string; role: string }) {
-  const refractionistCanEdit = role === "DOCTOR";
+export function OphthalmicExamTab({ visit, priorVisits, udid, role, canEditRefraction }: { visit: any; priorVisits: any[]; udid: string; role: string; canEditRefraction?: boolean }) {
+  const refractionistCanEdit = canEditRefraction ?? role === "DOCTOR";
   const doctorOnly = role === "DOCTOR";
   const overview = useEmrOverview();
 

@@ -909,6 +909,7 @@ export function PatientProfileClient({
   todayAppointmentId,
   hasRequestedAppt = false,
   userRole,
+  canOpenTodayVisit = false,
   showTodayVisit = true,
   timelineEntries = [],
   lastVisitSummary = null,
@@ -921,6 +922,8 @@ export function PatientProfileClient({
   todayAppointmentId?: string | null;
   hasRequestedAppt?: boolean;
   userRole: string;
+  /** Doctors, plus staff with refraction access (who open existing visits but cannot start one). */
+  canOpenTodayVisit?: boolean;
   showTodayVisit?: boolean;
   timelineEntries?: TimelineEntry[];
   lastVisitSummary?: LastVisitSummary | null;
@@ -968,7 +971,7 @@ export function PatientProfileClient({
         )}
 
         {/* Today's Visit — only shown when navigating from OPD Queue or Patient Library */}
-        {showTodayVisit && userRole === "DOCTOR" ? (
+        {showTodayVisit && canOpenTodayVisit ? (
           hasToday ? (
             todayIsFinalized ? (
               <button
@@ -987,7 +990,7 @@ export function PatientProfileClient({
                 Today's Visit
               </Link>
             )
-          ) : hasPendingAppointment ? (
+          ) : hasPendingAppointment && userRole === "DOCTOR" ? (
             <Link
               href={`/emr/${udid}?returnTo=${encodeURIComponent(emrReturnTo)}`}
               className="flex-1 flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-xl font-semibold text-[13px] sm:text-sm bg-emerald-600 text-white hover:bg-emerald-700 transition-colors shadow-sm"
@@ -995,7 +998,7 @@ export function PatientProfileClient({
               <Stethoscope size={16} />
               Today&apos;s Visit
             </Link>
-          ) : hasRequestedAppt ? (
+          ) : hasRequestedAppt || hasPendingAppointment ? (
             <button
               disabled
               className="flex-1 flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-xl font-semibold text-[13px] sm:text-sm bg-[var(--color-surface-sunken)] text-[var(--color-ink-400)] border border-[var(--color-border)] cursor-not-allowed"
