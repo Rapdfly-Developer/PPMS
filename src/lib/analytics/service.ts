@@ -97,6 +97,33 @@ function titleCase(s: string) {
   return s.toLowerCase().replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+const LAT_PREFIX = /^\[\s*(RE|LE|OU)\s*\]\s*/i;
+const DUR_PREFIX = /^\[\s*\d+\s+(?:days?|weeks?|months?|years?)\s*\]\s*/i;
+
+function extractComplaintKeywords(raw: string): string[] {
+  if (!raw.trim()) return [];
+  let value = raw.trim();
+  // Convert old booking-form format "LE | Since: 3 days | Eye Pain" → "[LE] [3 days] Eye Pain"
+  const pipeParts = value.split(" | ");
+  if (pipeParts.length >= 3 && /^(RE|LE|OU)$/i.test(pipeParts[0].trim())) {
+    const sinceM = pipeParts[1].trim().match(/^Since:\s*(\d+)\s+(days?|weeks?|months?|years?)$/i);
+    if (sinceM) {
+      value = `[${pipeParts[0].trim().toUpperCase()}] [${sinceM[1]} ${sinceM[2].toLowerCase()}] ${pipeParts.slice(2).join(" | ")}`;
+    }
+  }
+  const keywords: string[] = [];
+  for (let seg of value.split("|").map((s) => s.trim()).filter(Boolean)) {
+    seg = seg.replace(LAT_PREFIX, "").replace(DUR_PREFIX, "").trim();
+    if (!seg) continue;
+    const parts = seg.includes("•") ? seg.split("•") : seg.includes("\n") ? seg.split("\n") : [seg];
+    for (const p of parts) {
+      const kw = p.replace(/^[\s\-*·]+/, "").trim();
+      if (kw) keywords.push(kw);
+    }
+  }
+  return keywords;
+}
+
 async function safe<T>(name: string, fn: () => Promise<T>): Promise<Section<T>> {
   try {
     return { ok: true, data: await fn() };
@@ -294,6 +321,13 @@ function followUpCounts(rows: { status: FollowUpStatus; due: string }[]) {
 
 /* ═══ Overview ═════════════════════════════════════════════════════════════ */
 
+export interface SwotData {
+  strengths: string[];
+  weaknesses: string[];
+  opportunities: string[];
+  threats: string[];
+}
+
 export interface OverviewData {
   kpis: KpiValue[];
   activity: SeriesPoint[];
@@ -302,6 +336,7 @@ export interface OverviewData {
   insights: string[];
   workload: Cat[];
   recent: { time: string; activity: string; user: string; module: string }[] | null;
+  swot: SwotData;
 }
 
 export function getOverview(scope: AnalyticsScope, f: AnalyticsFilters): Promise<Section<OverviewData>> {
@@ -311,7 +346,7 @@ export function getOverview(scope: AnalyticsScope, f: AnalyticsFilters): Promise
     const vScope = visitWhere(scope, f, null, cur.gte);
 
     const [appts, prevStatus, visits, prevVisits, newPats, prevNewPats, rx, prevRx, invCur, invPrev, invOpen,
-      surgCur, surgPrev, followUps, awaiting, recent] = await Promise.all([
+      surgCur, surgPrev, followUps, awaiting, recent, seenDemographics] = await Promise.all([
       prisma.appointment.findMany({ where: apptWhere(scope, f, cur), select: { dateTime: true, status: true, visitType: true } }),
       prevStatusMap(apptWhere(scope, f, prev)),
       prisma.visit.findMany({ where: visitWhere(scope, f, cur, cur.gte), select: { date: true, patientId: true, finalizedAt: true } }),
@@ -328,6 +363,9 @@ export function getOverview(scope: AnalyticsScope, f: AnalyticsFilters): Promise
       scope.canViewPatients ? loadFollowUps(scope, f) : Promise.resolve(null),
       prisma.appointment.count({ where: { ...apptWhere(scope, f, { gte: new Date(), lte: new Date(Date.now() + 365 * DAY_MS) }), status: "REQUESTED" } }),
       scope.canAudit ? recentActivity(scope, 8) : Promise.resolve(null),
+      scope.canViewPatients
+        ? prisma.visit.findMany({ where: visitWhere(scope, f, cur, cur.gte), select: { patientId: true, patient: { select: { age: true, sex: true } } } })
+        : Promise.resolve([] as { patientId: string; patient: { age: number; sex: string } }[]),
     ]);
 
     const buckets = bucketsOf(f);
@@ -387,6 +425,107 @@ export function getOverview(scope: AnalyticsScope, f: AnalyticsFilters): Promise
     if (fu && fu.overdue > 0) insights.push(`${fu.overdue} follow-up${fu.overdue === 1 ? " is" : "s are"} overdue by up to 14 days.`);
     if (awaiting > 0) insights.push(`${awaiting} upcoming appointment request${awaiting === 1 ? " is" : "s are"} awaiting confirmation.`);
 
+    // ── SWOT ─────────────────────────────────────────────────────────────────
+    const swotStrengths: string[] = [];
+    const swotWeaknesses: string[] = [];
+    const swotOpportunities: string[] = [];
+    const swotThreats: string[] = [];
+    const completionPct = pct(t.completed, t.total);
+    const noShowPct = pct(t.noShow, t.total);
+    const cancPct = pct(t.cancelled, t.total);
+    const docRate = pct(finalized, visits.length);
+    const MIN_APPTS = 20;
+
+    if (t.total >= MIN_APPTS) {
+      if ((completionPct ?? 0) >= 80)
+        swotStrengths.push(`Strong completion rate — ${completionPct}% of appointments are completed.`);
+      else if ((completionPct ?? 100) < 50)
+        swotWeaknesses.push(`Low completion rate — only ${completionPct}% of appointments reach completion.`);
+      if ((noShowPct ?? 0) <= 5)
+        swotStrengths.push(`Low no-show rate — only ${noShowPct}% of patients did not attend.`);
+      else if ((noShowPct ?? 0) >= 15)
+        swotThreats.push(`No-show rate is ${noShowPct}% — ${t.noShow} patients did not attend. Reminder calls may help.`);
+      if ((cancPct ?? 0) >= 20)
+        swotWeaknesses.push(`High cancellation rate at ${cancPct}% (${t.cancelled} appointments cancelled).`);
+    }
+    if (pt.total >= MIN_APPTS) {
+      const apptChg = round1(((t.total - pt.total) / pt.total) * 100);
+      if (apptChg >= 15)
+        swotOpportunities.push(`Appointment volume is up ${apptChg}% vs. ${f.compareLabel} — practice is growing.`);
+      else if (apptChg <= -15)
+        swotThreats.push(`Appointment volume is down ${Math.abs(apptChg)}% vs. ${f.compareLabel}.`);
+    }
+    if (prevNewPats >= 5) {
+      const npChg = round1(((newPats.length - prevNewPats) / prevNewPats) * 100);
+      if (npChg >= 20)
+        swotOpportunities.push(`New patient registrations are up ${npChg}% vs. ${f.compareLabel}.`);
+      else if (npChg <= -20)
+        swotThreats.push(`New patient registrations fell ${Math.abs(npChg)}% vs. ${f.compareLabel}.`);
+    } else if (newPats.length >= 10) {
+      swotOpportunities.push(`${newPats.length} new patients registered this period.`);
+    }
+    if (visits.length >= 10) {
+      if ((docRate ?? 0) >= 80)
+        swotStrengths.push(`Documentation is current — ${docRate}% of consultations are finalized.`);
+      else if (visits.length - finalized >= 10)
+        swotWeaknesses.push(`${visits.length - finalized} of ${visits.length} consultations are not yet finalized.`);
+    }
+    if (scope.canViewInvestigations && invOpen >= 10)
+      swotWeaknesses.push(`${invOpen} investigations are pending review.`);
+    if (fu && fu.total >= 5) {
+      if ((fu.rate ?? 0) >= 70)
+        swotStrengths.push(`Good follow-up discipline — ${fu.rate}% of due follow-ups have been completed.`);
+      else if ((fu.rate ?? 100) < 40 && fu.total >= 10)
+        swotWeaknesses.push(`Follow-up completion rate is ${fu.rate}% — ${fu.overdue + fu.missed} patients have not attended their follow-up.`);
+      if (fu.missed >= 5)
+        swotThreats.push(`${fu.missed} patients have missed their follow-up by more than 14 days and may be lost to care.`);
+    }
+
+    // ── Demographics signals ──────────────────────────────────────────────────
+    if (seenDemographics.length > 0) {
+      const uniquePats = new Map<string, { age: number; sex: string }>();
+      for (const { patientId, patient } of seenDemographics) {
+        if (!uniquePats.has(patientId)) uniquePats.set(patientId, patient);
+      }
+      const pats = [...uniquePats.values()];
+      const demTotal = pats.length;
+      if (demTotal >= 10) {
+        const female = pats.filter((p) => p.sex === "FEMALE").length;
+        const male = pats.filter((p) => p.sex === "MALE").length;
+        const femalePct = pct(female, demTotal);
+        const malePct = pct(male, demTotal);
+        const pediatric = pats.filter((p) => p.age <= 17).length;
+        const senior = pats.filter((p) => p.age >= 60).length;
+        const pediatricPct = pct(pediatric, demTotal);
+        const seniorPct = pct(senior, demTotal);
+        if ((femalePct ?? 0) >= 70)
+          swotOpportunities.push(`${femalePct}% of seen patients (${female} of ${demTotal}) are female — could inform targeted outreach.`);
+        else if ((malePct ?? 0) >= 70)
+          swotOpportunities.push(`${malePct}% of seen patients (${male} of ${demTotal}) are male — gender distribution is skewed.`);
+        if ((pediatricPct ?? 0) >= 20)
+          swotStrengths.push(`Strong pediatric presence — ${pediatricPct}% of seen patients (${pediatric} of ${demTotal}) are under 18.`);
+        if ((seniorPct ?? 0) >= 40)
+          swotStrengths.push(`Significant senior patient base — ${seniorPct}% of seen patients (${senior} of ${demTotal}) are 60 or older.`);
+      }
+    }
+
+    // ── Rush-hour / peak day (based on consultations, includes walk-ins) ────────
+    if (visits.length >= MIN_APPTS) {
+      const wd = new Map<number, number>();
+      for (const v of visits) {
+        const day = istWeekday(v.date);
+        wd.set(day, (wd.get(day) ?? 0) + 1);
+      }
+      const peakEntry = [...wd.entries()].sort((a, b) => b[1] - a[1])[0];
+      if (peakEntry) {
+        const peakPct = pct(peakEntry[1], visits.length);
+        if ((peakPct ?? 0) >= 35)
+          swotWeaknesses.push(`Load is concentrated on ${WEEKDAYS_FULL[peakEntry[0]]}s — ${peakPct}% of consultations (${peakEntry[1]} of ${visits.length}) fall on a single day.`);
+        else
+          swotStrengths.push(`Consultations are spread across the week; ${WEEKDAYS_FULL[peakEntry[0]]} is the busiest day with ${peakEntry[1]} of ${visits.length} consultations (${peakPct}%).`);
+      }
+    }
+
     const workload: Cat[] = [
       { label: "Requests awaiting confirmation", value: awaiting, color: COLORS.pending, href: "/appointments" },
       ...(scope.canViewInvestigations ? [{ label: "Investigations awaiting review", value: invOpen, color: COLORS.info, href: link(f, { tab: "investigations" }) }] : []),
@@ -402,6 +541,7 @@ export function getOverview(scope: AnalyticsScope, f: AnalyticsFilters): Promise
       insights,
       workload,
       recent,
+      swot: { strengths: swotStrengths, weaknesses: swotWeaknesses, opportunities: swotOpportunities, threats: swotThreats },
     };
   });
 }
@@ -641,6 +781,7 @@ export interface ClinicalData {
   documentation: Cat[];
   byHospital: Cat[];
   byDoctor: Cat[];
+  topComplaints: Cat[];
   diagnosisTrend: SeriesPoint[];
   topDiagnoses: Cat[];
   diagnosesByHospital: Cat[];
@@ -658,7 +799,7 @@ export function getClinical(scope: AnalyticsScope, f: AnalyticsFilters): Promise
     const vPrev = visitWhere(scope, f, prev, prev.gte);
     const vAll = visitWhere(scope, f, null, cur.gte);
 
-    const [visits, prevVisitCount, prevFinalized, prevRx, diagnoses, prevDiagnoses, medGroups, medCount, prevMedCount, complaints, advice] = await Promise.all([
+    const [visits, prevVisitCount, prevFinalized, prevRx, diagnoses, prevDiagnoses, medGroups, medCount, prevMedCount, complaints, advice, complaintsGrouped] = await Promise.all([
       prisma.visit.findMany({
         where: vCur,
         select: { date: true, finalizedAt: true, hospitalId: true, doctorId: true, referralEnabled: true, followUpDate: true, _count: { select: { medications: true } } },
@@ -676,6 +817,7 @@ export function getClinical(scope: AnalyticsScope, f: AnalyticsFilters): Promise
       prisma.medication.count({ where: { visit: vPrev } }),
       prisma.generalExamination.count({ where: { visit: vCur, chiefComplaint: { not: null }, NOT: { chiefComplaint: "" } } }),
       prisma.visit.count({ where: { ...vCur, adviseNotes: { not: null }, NOT: { adviseNotes: "" } } }),
+      prisma.generalExamination.findMany({ where: { visit: vCur, chiefComplaint: { not: null }, NOT: { chiefComplaint: "" } }, select: { chiefComplaint: true } }),
     ]);
 
     const finalized = visits.filter((v) => v.finalizedAt).length;
@@ -694,6 +836,28 @@ export function getClinical(scope: AnalyticsScope, f: AnalyticsFilters): Promise
       bump(dx.at, k, "diagnoses");
       if (d.confirmedAt) bump(dx.at, k, "confirmed");
     }
+
+    const kwCounts = new Map<string, number>(); // lowercase key → total count
+    const kwSpells = new Map<string, Map<string, number>>(); // lowercase key → spelling → count
+    for (const { chiefComplaint } of complaintsGrouped) {
+      if (!chiefComplaint) continue;
+      for (const kw of extractComplaintKeywords(chiefComplaint)) {
+        const trimmed = kw.trim();
+        if (!trimmed) continue;
+        const key = trimmed.toLowerCase();
+        kwCounts.set(key, (kwCounts.get(key) ?? 0) + 1);
+        if (!kwSpells.has(key)) kwSpells.set(key, new Map());
+        const spells = kwSpells.get(key)!;
+        spells.set(trimmed, (spells.get(trimmed) ?? 0) + 1);
+      }
+    }
+    const topComplaints: Cat[] = toCats(kwCounts, {
+      limit: 12,
+      labelFn: (k) => {
+        const spells = kwSpells.get(k);
+        return spells ? ([...spells.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? k) : k;
+      },
+    });
 
     const hName = hospitalName(scope);
     const dName = doctorName(scope);
@@ -734,6 +898,7 @@ export function getClinical(scope: AnalyticsScope, f: AnalyticsFilters): Promise
       ].filter((c) => c.value > 0),
       byHospital: toCats(countBy(visits, (v) => hName(v.hospitalId))),
       byDoctor: scope.doctors.length > 1 ? toCats(countBy(visits, (v) => dName(v.doctorId))) : [],
+      topComplaints,
       diagnosisTrend: dx.points,
       topDiagnoses: topCodes.slice(0, 10).map(([code, c]) => ({ label: `${code} · ${c.description}`, value: c.count })),
       diagnosesByHospital: toCats(countBy(diagnoses, (d) => hName(d.visit.hospitalId))),

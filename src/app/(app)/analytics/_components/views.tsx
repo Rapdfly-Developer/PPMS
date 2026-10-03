@@ -3,12 +3,12 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
-import { Activity, ArrowRight, Building2, CalendarClock, ChevronLeft, ChevronRight, FlaskConical, History, LayoutGrid, Lightbulb, LineChart, ListTodo, LogIn, PieChart, Pill, Scissors, ScrollText, Stethoscope, Tags, Users } from "lucide-react";
+import { Activity, AlertCircle, AlertTriangle, ArrowRight, Building2, CalendarClock, ChevronLeft, ChevronRight, FlaskConical, History, LayoutGrid, Lightbulb, LineChart, ListTodo, LogIn, MessageSquareText, PieChart, Pill, Scissors, ScrollText, ShieldCheck, Stethoscope, Tags, TrendingUp, Users } from "lucide-react";
 import { COLORS, type SeriesDef } from "@/lib/analytics/definitions";
 import { buildQuery } from "@/lib/analytics/filters";
 import type {
   OverviewData, PatientsData, AppointmentsData, ClinicalData, InvestigationsData,
-  SurgeryData, FollowUpsData, HospitalsData, OperationsData, ActivityData,
+  SurgeryData, FollowUpsData, HospitalsData, OperationsData, ActivityData, SwotData,
 } from "@/lib/analytics/service";
 import { BarList, ColumnChart, Donut, Heatmap, Pipeline, TrendChart, ChartEmpty } from "./charts";
 import { DataTable, Grid2, Grid3, KpiGrid, Panel, RangeSwitch, SectionHeading } from "./ui";
@@ -21,6 +21,49 @@ export interface ViewCtx {
 }
 
 const s = (key: string, label: string, color: string): SeriesDef => ({ key, label, color });
+
+/* ═══ SWOT ══════════════════════════════════════════════════════════════════ */
+
+const SWOT_QUADRANTS = [
+  { key: "strengths",    title: "Strengths",    Icon: ShieldCheck,   textCls: "text-[#067647]", bgCls: "bg-[#ECFDF3]", borderCls: "border-[#ABEFC6]", dotCls: "bg-[#067647]" },
+  { key: "weaknesses",   title: "Weaknesses",   Icon: AlertCircle,   textCls: "text-[#B42318]", bgCls: "bg-[#FEF3F2]", borderCls: "border-[#FECDCA]", dotCls: "bg-[#B42318]" },
+  { key: "opportunities",title: "Opportunities",Icon: TrendingUp,    textCls: "text-[#1D4ED8]", bgCls: "bg-[#EFF6FF]", borderCls: "border-[#BFDBFE]", dotCls: "bg-[#1D4ED8]" },
+  { key: "threats",      title: "Threats",      Icon: AlertTriangle, textCls: "text-[#B54708]", bgCls: "bg-[#FFF7E6]", borderCls: "border-[#FEE2A0]", dotCls: "bg-[#B54708]" },
+] as const;
+
+function SwotPanel({ swot }: { swot: SwotData }) {
+  const total = swot.strengths.length + swot.weaknesses.length + swot.opportunities.length + swot.threats.length;
+  if (total === 0) return <ChartEmpty height={120} message="Not enough activity in this period to generate a practice analysis." />;
+  const itemsOf = (key: string) =>
+    key === "strengths" ? swot.strengths : key === "weaknesses" ? swot.weaknesses : key === "opportunities" ? swot.opportunities : swot.threats;
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      {SWOT_QUADRANTS.map(({ key, title, Icon, textCls, bgCls, borderCls, dotCls }) => {
+        const items = itemsOf(key);
+        return (
+          <div key={key} className={`rounded-xl border ${borderCls} ${bgCls} p-4`}>
+            <div className="flex items-center gap-2 mb-2.5">
+              <Icon size={14} className={textCls} />
+              <span className={`text-[11px] font-bold uppercase tracking-widest ${textCls}`}>{title}</span>
+            </div>
+            {items.length === 0 ? (
+              <p className="text-[12px] text-[var(--color-ink-400)]">No signals identified for this period.</p>
+            ) : (
+              <ul className="flex flex-col gap-1.5">
+                {items.map((item, i) => (
+                  <li key={i} className="flex items-start gap-2 text-[12.5px] leading-snug text-[var(--color-ink-700)]">
+                    <span className={`mt-[5px] h-1.5 w-1.5 shrink-0 rounded-full ${dotCls}`} aria-hidden="true" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 /* ═══ Overview ═════════════════════════════════════════════════════════════ */
 
@@ -78,6 +121,10 @@ export function OverviewView({ data, ctx }: { data: OverviewData; ctx: ViewCtx }
           )}
         </Panel>
       </Grid2>
+
+      <Panel title="Practice analysis" subtitle="Strengths, weaknesses, opportunities and threats derived from this period's recorded data" icon={Activity}>
+        <SwotPanel swot={data.swot} />
+      </Panel>
 
       {data.recent && (
         <Panel
@@ -218,6 +265,15 @@ export function ClinicalView({ data, ctx }: { data: ClinicalData; ctx: ViewCtx }
         <Panel title="By hospital" subtitle="Consultations"><BarList data={data.byHospital} /></Panel>
         {data.byDoctor.length > 0 && <Panel title="By doctor" subtitle="Consultations, workload view"><BarList data={data.byDoctor} /></Panel>}
       </Grid3>
+
+      {data.topComplaints.length > 0 && (
+        <>
+          <SectionHeading title="Chief complaints" subtitle="Most commonly documented reasons for visit in consultations" icon={MessageSquareText} />
+          <Panel title="Most common chief complaints" subtitle="Free-text as recorded — top 12 by frequency">
+            <BarList data={data.topComplaints} />
+          </Panel>
+        </>
+      )}
 
       <SectionHeading title="Diagnoses" subtitle="Describes what was recorded. It does not imply clinical trends or causes." icon={Activity} />
       <KpiGrid kpis={data.diagnosisKpis} compareLabel={ctx.compareLabel} />
