@@ -45,11 +45,14 @@ export function NewUserForm({
   doctorId,
   hospitals,
   assignableRoles,
+  savedPerms = {},
   returnTo,
 }: {
   doctorId: string;
   hospitals: { id: string; name: string }[];
   assignableRoles: { name: string; label: string }[];
+  /** The doctor's saved permissions per role (Role Manager), used as the starting selection. */
+  savedPerms?: Record<string, string[]>;
   returnTo: string;
 }) {
   const router = useRouter();
@@ -79,7 +82,7 @@ export function NewUserForm({
 
   // Step 3 — Permissions
   const [permsMap, setPermsMap] = useState<Record<string, string[]>>({});
-  const getRolePerms = (r: string) => permsMap[r] ?? DEFAULT_PERMS[r] ?? [];
+  const getRolePerms = (r: string) => permsMap[r] ?? savedPerms[r] ?? DEFAULT_PERMS[r] ?? [];
   const togglePerm = (r: string, key: string) => {
     const cur = getRolePerms(r);
     setPermsMap((p) => ({ ...p, [r]: cur.includes(key) ? cur.filter((k) => k !== key) : [...cur, key] }));

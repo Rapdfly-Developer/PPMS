@@ -99,6 +99,8 @@ interface Props {
   patientApptLogs: PatientApptLogRow[];
   doctor: DoctorProfile | null;
   assignableRoles: AssignableRole[];
+  /** The doctor's saved permissions per role (Role Manager), used to prefill the setup wizard. */
+  savedPerms?: Record<string, string[]>;
 }
 
 // ── Sidebar config ───────────────────────────────────────────────────────────
@@ -2927,7 +2929,7 @@ const WIZARD_STEPS = [
   { n: 2 as const, label: "Permissions" },
 ];
 
-function HospitalSetupWizard({ returnTo = "" }: { returnTo?: string }) {
+function HospitalSetupWizard({ returnTo = "", savedPerms = {} }: { returnTo?: string; savedPerms?: Record<string, string[]> }) {
   const [step, setStep] = useState<1 | 2>(1);
   const [done, setDone] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -2954,7 +2956,7 @@ function HospitalSetupWizard({ returnTo = "" }: { returnTo?: string }) {
   }, [hosp.name]);
 
   const [perms, setPerms] = useState<Record<string, string[]>>({});
-  const getPerms = (role: string) => perms[role] ?? DEFAULT_PERMS_BY_ROLE[role] ?? [];
+  const getPerms = (role: string) => perms[role] ?? savedPerms[role] ?? DEFAULT_PERMS_BY_ROLE[role] ?? [];
   const togglePerm = (role: string, key: string) => {
     const cur = getPerms(role);
     setPerms((p) => ({ ...p, [role]: cur.includes(key) ? cur.filter((k) => k !== key) : [...cur, key] }));
@@ -3268,7 +3270,7 @@ function HospitalSetupWizard({ returnTo = "" }: { returnTo?: string }) {
 const LICENSE_SUBTABS = ["overview", "activate", "plans", "renewal", "history"] as const;
 type LicSubTab = typeof LICENSE_SUBTABS[number];
 
-export function DoctorSettingsClient({ users, auditLogs, hospitals, loginLogs, patientApptLogs, assignableRoles, doctor }: Props) {
+export function DoctorSettingsClient({ users, auditLogs, hospitals, loginLogs, patientApptLogs, assignableRoles, doctor, savedPerms }: Props) {
   const searchParams = useSearchParams();
   const urlTab = searchParams.get("tab") ?? "";
   const urlSection = searchParams.get("section") as Section | null;
@@ -3298,7 +3300,7 @@ export function DoctorSettingsClient({ users, auditLogs, hospitals, loginLogs, p
       case "roles":        return <RolesSection />;
       case "departments":  return <DepartmentsSection />;
       case "hospital":     return <HospitalSection hospitals={hospitals} />;
-      case "add-hospital": return <HospitalSetupWizard returnTo={urlReturnTo} />;
+      case "add-hospital": return <HospitalSetupWizard returnTo={urlReturnTo} savedPerms={savedPerms} />;
       case "appointments": return <AppointmentsSection initial={doctor?.appointmentSettings ?? null} />;
       case "notifications":return <NotificationsSection initial={doctor?.notificationSettings ?? null} />;
       case "audit":        return <AuditSection auditLogs={auditLogs} />;

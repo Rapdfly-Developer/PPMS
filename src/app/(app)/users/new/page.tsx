@@ -1,5 +1,6 @@
 import { requireRole } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
+import { getSavedPermsForForms } from "@/lib/role-permissions";
 import { NewUserForm } from "./NewUserForm";
 
 export default async function NewUserPage({
@@ -24,6 +25,7 @@ export default async function NewUserPage({
   ]);
 
   const hospitals = linkedHospitals.map((l) => l.hospital);
+  const savedPerms = await getSavedPermsForForms(assignableRoles.map((r) => r.name), doctor.profileId);
   const backHref = returnTo ?? "/users";
 
   return (
@@ -38,6 +40,7 @@ export default async function NewUserPage({
         doctorId={doctor.profileId}
         hospitals={hospitals}
         assignableRoles={assignableRoles}
+        savedPerms={savedPerms}
         returnTo={backHref}
       />
     </div>

@@ -46,6 +46,23 @@ export async function getRolePermissionsForDoctor(role: string, doctorId: string
   return getSharedRolePermissions(role);
 }
 
+/**
+ * Starting permissions for the Add User / Add Hospital forms: the doctor's own
+ * settings for each role, else the shared set. Roles with nothing configured
+ * are left out so the form falls back to its built-in defaults.
+ */
+export async function getSavedPermsForForms(roles: string[], doctorId: string): Promise<Record<string, string[]>> {
+  const names = roles.filter((r) => r !== "DOCTOR");
+  const [own, shared] = await Promise.all([
+    prisma.doctorRolePermission.findMany({ where: { doctorId, role: { in: names } }, select: { role: true, permissions: true } }),
+    prisma.rolePermission.findMany({ where: { role: { in: names } }, select: { role: true, permission: { select: { key: true } } } }),
+  ]);
+  const out: Record<string, string[]> = {};
+  for (const r of shared) (out[r.role] ??= []).push(r.permission.key);
+  for (const r of own) out[r.role] = r.permissions;
+  return out;
+}
+
 /** Effective permissions for a signed-in account. */
 export async function getUserPermissions(userId: string, role: string): Promise<string[]> {
   if (role === "DOCTOR") return ["*"];

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { HospitalSettingsClient } from "./HospitalSettingsClient";
 import { DoctorSettingsClient } from "./DoctorSettingsClient";
 import { redirect } from "next/navigation";
+import { getSavedPermsForForms } from "@/lib/role-permissions";
 
 export default async function SettingsPage() {
   const user = await requireRole("HOSPITAL", "DOCTOR");
@@ -149,8 +150,11 @@ export default async function SettingsPage() {
     timestamp:  l.timestamp.toISOString(),
   }));
 
+  const savedPerms = await getSavedPermsForForms(["HOSPITAL"], doctorId);
+
   return (
     <DoctorSettingsClient
+      savedPerms={savedPerms}
       users={serializedUsers}
       auditLogs={serializedAudit}
       hospitals={serializedHospitals}
