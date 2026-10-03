@@ -1,9 +1,10 @@
 import { requirePermission } from "@/lib/rbac";
 import { canRecordRefraction } from "@/lib/refraction-access";
+import { getStaffHospitalId } from "@/lib/booking-scope";
 import { prisma } from "@/lib/prisma";
 import { notFound, redirect } from "next/navigation";
 import { Card } from "@/components/ui/Card";
-import { format, isSameDay } from "date-fns";
+import { endOfDay, format, isSameDay, startOfDay } from "date-fns";
 import {
   User, Eye, Activity, Link2, FileText, FolderOpen, Lock,
   Phone, Calendar, AlertTriangle,
@@ -99,6 +100,20 @@ export default async function PatientDetailedEMR({
     }
   }
 
+  // Staff only see patients of their own hospital.
+  let staffHospitalId: string | null = null;
+  if (user.role !== "DOCTOR") {
+    staffHospitalId = await getStaffHospitalId(user.id);
+    if (!staffHospitalId) notFound();
+    const atHospital =
+      patient.registeredAtId === staffHospitalId ||
+      patient.visits.some((v) => v.hospitalId === staffHospitalId) ||
+      (await prisma.appointment.count({ where: { patientId: patient.id, hospitalId: staffHospitalId } })) > 0;
+    if (!atHospital) notFound();
+  }
+  // Refraction staff start the visit for a patient already in their hospital's queue.
+  const staffCanStartVisit = !!staffHospitalId && canRecordRefraction(user);
+
   const requestedVisit = visitIdParam
     ? patient.visits.find((v) => v.id === visitIdParam)
     : undefined;
@@ -123,12 +138,14 @@ export default async function PatientDetailedEMR({
   const activeVisitAtOtherHospital =
     !!activeVisit && !!patient.registeredAtId && activeVisit.hospitalId !== patient.registeredAtId;
 
-  if (!requestedVisit && user.role === "DOCTOR" && (!activeVisit || activeVisitAtOtherHospital || activeVisit.status === "CLOSED")) {
+  if (!requestedVisit && (user.role === "DOCTOR" || staffCanStartVisit) && (!activeVisit || activeVisitAtOtherHospital || activeVisit.status === "CLOSED")) {
     const pendingAppointment = await prisma.appointment.findFirst({
       where: {
         patientId: patient.id,
-        doctorId: user.profileId,
-        status: { in: ["CONFIRMED", "REQUESTED", "SCHEDULED"] },
+        ...(user.role === "DOCTOR"
+          ? { doctorId: user.profileId, status: { in: ["CONFIRMED", "REQUESTED", "SCHEDULED"] } }
+          // Staff: only today's queued (CONFIRMED) appointment at their own hospital.
+          : { hospitalId: staffHospitalId!, status: "CONFIRMED", dateTime: { gte: startOfDay(new Date()), lte: endOfDay(new Date()) } }),
         visit: null,
         // Only hijack an existing in-progress visit for the current hospital's appointment
         ...(activeVisitAtOtherHospital ? { hospitalId: patient.registeredAtId! } : {}),
@@ -136,7 +153,8 @@ export default async function PatientDetailedEMR({
       orderBy: { dateTime: "asc" },
     });
 
-    if (pendingAppointment) {
+    const visitDoctorId = pendingAppointment?.doctorId ?? patient.doctorId;
+    if (pendingAppointment && visitDoctorId) {
       // Race guard: check if visit was already created for this appointment
       let visitId: string;
       const existing = await prisma.visit.findUnique({
@@ -149,7 +167,7 @@ export default async function PatientDetailedEMR({
         const newVisit = await prisma.visit.create({
           data: {
             patientId: patient.id,
-            doctorId: user.profileId!,
+            doctorId: visitDoctorId,
             hospitalId: pendingAppointment.hospitalId,
             appointmentId: pendingAppointment.id,
             visitType: (pendingAppointment as any).visitType ?? "General OPD",
