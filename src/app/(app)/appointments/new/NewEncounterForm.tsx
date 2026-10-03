@@ -312,6 +312,7 @@ export function NewEncounterForm({
       );
       fd.set("name", name.trim());
       fd.set("age", String(dobAge));
+      fd.set("dob", dob);
       fd.set("sex", sex);
       fd.set("mobile", mobile.trim());
       fd.set("category", category);

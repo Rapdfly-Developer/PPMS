@@ -114,6 +114,7 @@ export async function bookAppointment(formData: FormData) {
     const category     = (formData.get("category")        as string) || "GENERAL";
     const occupation   = (formData.get("occupation")      as string)?.trim() || null;
     const patientNotes = (formData.get("patientNotes")    as string)?.trim() || null;
+    const dobRaw       = (formData.get("dob")             as string)?.trim() || null;
     const photoUrl     = (formData.get("patientPhotoFile") as string)?.trim() || null;
     const aadhaarPhotoUrl = (formData.get("aadhaarPhotoFile") as string)?.trim() || null;
 
@@ -125,6 +126,20 @@ export async function bookAppointment(formData: FormData) {
     }
     if (pincode && !/^\d{6}$/.test(pincode)) {
       return { error: "Pincode must be 6 digits if provided." };
+    }
+
+    let dateOfBirth: Date | null = null;
+    if (dobRaw) {
+      const d = new Date(dobRaw);
+      const now = new Date();
+      const minDob = new Date(now.getFullYear() - 120, now.getMonth(), now.getDate());
+      if (isNaN(d.getTime()) || d > now) {
+        return { error: "Date of birth cannot be in the future." };
+      }
+      if (d < minDob) {
+        return { error: "Date of birth cannot be more than 120 years ago." };
+      }
+      dateOfBirth = d;
     }
 
     const hospital = hospitalId
@@ -151,6 +166,7 @@ export async function bookAppointment(formData: FormData) {
         registeredAtId: hospitalId || null,
         name,
         age,
+        dateOfBirth,
         sex,
         mobile,
         aadhaarEncrypted: aadhaar ? encryptAadhaar(aadhaar.replace(/\s/g, "")) : encryptAadhaar("000000000000"),

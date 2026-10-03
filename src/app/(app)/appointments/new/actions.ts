@@ -47,6 +47,7 @@ export async function createWalkInEncounter(formData: FormData) {
     const sex      = formData.get("sex") as string;
     const mobile   = (formData.get("mobile")   as string)?.trim();
     const aadhaar     = (formData.get("aadhaar")     as string)?.trim() || "";
+    const dobRaw      = (formData.get("dob")         as string)?.trim() || null;
     const category    = (formData.get("category")    as string) || "GENERAL";
     const occupation  = (formData.get("occupation")  as string)?.trim() || null;
     const notes       = (formData.get("notes")       as string)?.trim() || null;
@@ -64,6 +65,20 @@ export async function createWalkInEncounter(formData: FormData) {
     if (isNaN(age) || age < 0 || age > 120) return { error: "Invalid age." };
     if (aadhaar && !/^\d{12}$/.test(aadhaar.replace(/\s/g, ""))) {
       return { error: "Aadhaar must be 12 digits if provided." };
+    }
+
+    let dateOfBirth: Date | null = null;
+    if (dobRaw) {
+      const d = new Date(dobRaw);
+      const now = new Date();
+      const minDob = new Date(now.getFullYear() - 120, now.getMonth(), now.getDate());
+      if (isNaN(d.getTime()) || d > now) {
+        return { error: "Date of birth cannot be in the future." };
+      }
+      if (d < minDob) {
+        return { error: "Date of birth cannot be more than 120 years ago." };
+      }
+      dateOfBirth = d;
     }
 
     if (referralPatientId) {
@@ -100,6 +115,7 @@ export async function createWalkInEncounter(formData: FormData) {
         registeredAtId: hospitalId,
         name,
         age,
+        dateOfBirth,
         sex,
         mobile,
         aadhaarEncrypted: aadhaar

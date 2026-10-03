@@ -414,6 +414,7 @@ model Patient {
   registeredAt    Hospital? @relation(fields: [registeredAtId], references: [id])
   name            String
   age             Int
+  dateOfBirth     DateTime? @db.Date
   sex             String
   mobile          String
   aadhaarEncrypted String  // encrypted at rest; masked in UI except for Doctor

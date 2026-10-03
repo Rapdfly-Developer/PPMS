@@ -335,6 +335,7 @@ export function BookAppointmentForm({
         ? Math.floor((Date.now() - new Date(npDob).getTime()) / (365.25 * 86_400_000))
         : 0;
       fd.set("age", String(dobAge));
+      if (npDob) fd.set("dob", npDob);
       fd.set("sex",         npSex);
       fd.set("mobile",      npMobile);
       fd.set("category",    npCategory);
