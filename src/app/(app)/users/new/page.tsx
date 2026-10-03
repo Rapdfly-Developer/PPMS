@@ -1,8 +1,6 @@
 import { requireRole } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { NewUserForm } from "./NewUserForm";
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
 
 export default async function NewUserPage({
   searchParams,
@@ -30,13 +28,6 @@ export default async function NewUserPage({
 
   return (
     <div className="fade-in max-w-2xl">
-      <Link
-        href={backHref}
-        className="inline-flex items-center gap-1.5 text-sm text-[var(--color-ink-500)] hover:text-[var(--color-ink-800)] mb-5 transition-colors"
-      >
-        <ArrowLeft size={15} />
-        Back
-      </Link>
       <h1 className="text-xl sm:text-2xl font-semibold text-[var(--color-ink-900)] tracking-tight mb-1">
         Add User
       </h1>
