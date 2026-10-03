@@ -974,6 +974,19 @@ model RolePermission {
   @@index([role])
 }
 
+// A doctor's own permission set for a role. When present it replaces the shared
+// RolePermission defaults for that doctor's staff only; absent = shared defaults.
+model DoctorRolePermission {
+  id          String   @id @default(cuid())
+  doctorId    String
+  role        String
+  permissions String[]
+  updatedAt   DateTime @updatedAt
+
+  @@unique([doctorId, role])
+  @@index([doctorId])
+}
+
 // Configurable chip/dropdown values per hospital (or global when hospitalId is null)
 // category examples: "PMH", "VISIT_TYPE", "INVESTIGATION_TYPE"
 model ChipOption {

@@ -155,6 +155,7 @@ function DeleteConfirm({ role, onClose, onDeleted }: {
   onDeleted: () => void;
 }) {
   const [pending, start] = useTransition();
+  const [error, setError] = useState("");
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4" onClick={onClose}>
       <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-sm p-6" onClick={(e) => e.stopPropagation()}>
@@ -164,15 +165,20 @@ function DeleteConfirm({ role, onClose, onDeleted }: {
           </div>
           <p className="font-semibold text-[var(--color-ink-900)]">Delete role "{role.label}"?</p>
           <p className="text-sm text-[var(--color-ink-500)]">
-            All permission assignments for this role will also be removed. Users with this role will lose access until reassigned.
+            All permission assignments for this role will also be removed.
           </p>
+          {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
         </div>
         <div className="flex gap-2 mt-5 pb-safe">
           <button onClick={onClose} className="flex-1 px-4 py-2 rounded-lg border border-[var(--color-border)] text-sm font-medium hover:bg-[var(--color-surface-sunken)] transition-colors">
             Cancel
           </button>
           <button
-            onClick={() => start(async () => { await deleteRole(role.id); onDeleted(); onClose(); })}
+            onClick={() => start(async () => {
+              const res = await deleteRole(role.id);
+              if (res.error) { setError(res.error); return; }
+              onDeleted(); onClose();
+            })}
             disabled={pending}
             className="flex-1 px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 disabled:opacity-60 transition-colors inline-flex items-center justify-center gap-2"
           >
@@ -423,7 +429,8 @@ function RoleList({
                   </span>
                 )}
                 <div className="ml-auto flex gap-1">
-                  {role.name !== "DOCTOR" && (
+                  {/* Name/colour of system and shared roles are common to every doctor; only own roles are editable. */}
+                  {role.createdByDoctorId && (
                     <button
                       onClick={(e) => { e.stopPropagation(); onEdit(role); }}
                       className="p-1 rounded hover:bg-[var(--color-ink-100)] text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)] transition-colors"
@@ -432,7 +439,7 @@ function RoleList({
                       <Edit2 size={12} />
                     </button>
                   )}
-                  {!role.isSystem && (
+                  {!role.isSystem && role.createdByDoctorId && (
                     <button
                       onClick={(e) => { e.stopPropagation(); onDelete(role); }}
                       className="p-1 rounded hover:bg-red-50 text-[var(--color-ink-400)] hover:text-red-600 transition-colors"

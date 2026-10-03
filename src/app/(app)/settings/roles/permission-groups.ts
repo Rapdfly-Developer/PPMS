@@ -7,6 +7,8 @@ export type RoleWithPerms = {
   isActive: boolean;
   color: string;
   createdAt: Date;
+  /** Null for system and older shared roles; set for roles a doctor created. */
+  createdByDoctorId: string | null;
   permissionKeys: string[];
   totalPerms: number;
 };

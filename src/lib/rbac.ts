@@ -1,8 +1,8 @@
 import { cache } from "react";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
-import { prisma } from "@/lib/prisma";
 import type { Role } from "@/lib/constants";
+import { getUserPermissions } from "@/lib/role-permissions";
 
 export type SessionUser = {
   id: string;
@@ -15,14 +15,13 @@ export type SessionUser = {
   permissions?: string[];
 };
 
-/** Fetches fresh permissions from DB so role-manager changes apply immediately. */
-async function freshPermissions(role: string): Promise<string[]> {
-  if (role === "DOCTOR") return ["*"];
-  const rows = await prisma.rolePermission.findMany({
-    where: { role },
-    select: { permission: { select: { key: true } } },
-  });
-  return rows.map((r) => r.permission.key);
+/**
+ * Fetches fresh permissions from DB so role-manager changes apply immediately.
+ * Each doctor configures roles for their own staff, so the set comes from the
+ * account's doctor, falling back to the shared defaults.
+ */
+async function freshPermissions(userId: string, role: string): Promise<string[]> {
+  return getUserPermissions(userId, role);
 }
 
 /**
@@ -43,7 +42,7 @@ const loadSessionUser = cache(async (): Promise<SessionUser | null> => {
 
   // Copy rather than mutate the session object, since this result is now shared.
   const user = { ...(session.user as unknown as SessionUser) };
-  user.permissions = await freshPermissions(user.role);
+  user.permissions = await freshPermissions(user.id, user.role);
   return user;
 });
 

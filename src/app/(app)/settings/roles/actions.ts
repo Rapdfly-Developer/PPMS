@@ -1,7 +1,8 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/rbac";
+import { requireRole, scopeDoctorId } from "@/lib/rbac";
+import { getRolePermissionsForDoctor } from "@/lib/role-permissions";
 import { revalidatePath } from "next/cache";
 import { PERMISSION_GROUPS, type RoleWithPerms } from "./permission-groups";
 
@@ -100,20 +101,25 @@ export async function seedRolesAndPermissions() {
 }
 
 // ── Load page data ────────────────────────────────────────────────────────
-export async function loadRolesPageData(doctorId?: string) {
-  const [dbRoles, rolePerms] = await Promise.all([
+/**
+ * Roles this doctor manages: system roles, roles they created, and older shared
+ * custom roles (no creator). Permissions shown are the doctor's own set where
+ * they have customised the role, otherwise the shared defaults.
+ */
+export async function loadRolesPageData(doctorId: string) {
+  const [dbRoles, rolePerms, ownPerms] = await Promise.all([
     prisma.role.findMany({
-      where: doctorId
-        ? {
-            OR: [
-              { isSystem: true },
-              { createdByDoctorId: doctorId },
-            ],
-          }
-        : undefined,
+      where: {
+        OR: [
+          { isSystem: true },
+          { createdByDoctorId: doctorId },
+          { createdByDoctorId: null },
+        ],
+      },
       orderBy: { createdAt: "asc" },
     }),
     prisma.rolePermission.findMany({ include: { permission: true } }),
+    prisma.doctorRolePermission.findMany({ where: { doctorId } }),
   ]);
 
   const permsByRole: Record<string, string[]> = {};
@@ -121,6 +127,7 @@ export async function loadRolesPageData(doctorId?: string) {
     if (!permsByRole[rp.role]) permsByRole[rp.role] = [];
     permsByRole[rp.role].push(rp.permission.key);
   }
+  for (const own of ownPerms) permsByRole[own.role] = own.permissions;
 
   const totalPerms = PERMISSION_GROUPS.reduce((a, g) => a + g.permissions.length, 0);
 
@@ -133,38 +140,35 @@ export async function loadRolesPageData(doctorId?: string) {
 
 
 // ── CRUD actions ──────────────────────────────────────────────────────────
+/**
+ * Saves this doctor's permission set for a role. It applies only to the
+ * doctor's own staff; other doctors keep their own settings (or the shared
+ * defaults).
+ */
 export async function saveRolePermissions(roleName: string, keys: string[]) {
   const user = await requireRole("DOCTOR");
   if (roleName === "DOCTOR") return; // super admin always has *
+  const doctorId = scopeDoctorId(user);
 
-  // Fetch permission records for requested keys
-  const perms = await prisma.permission.findMany({ where: { key: { in: keys } } });
+  // Keep only real permission keys
+  const perms = await prisma.permission.findMany({ where: { key: { in: keys } }, select: { key: true } });
+  const validKeys = perms.map((p) => p.key).sort();
 
-  // Replace all RolePermissions for this role in a transaction
-  const oldPerms = await prisma.rolePermission.findMany({
-    where: { role: roleName },
-    include: { permission: true },
+  const oldKeys = (await getRolePermissionsForDoctor(roleName, doctorId)).sort().join(",");
+  const newKeys = validKeys.join(",");
+
+  await prisma.doctorRolePermission.upsert({
+    where: { doctorId_role: { doctorId, role: roleName } },
+    update: { permissions: validKeys },
+    create: { doctorId, role: roleName, permissions: validKeys },
   });
-  const oldKeys = oldPerms.map((rp) => rp.permission.key).sort().join(",");
-  const newKeys = keys.sort().join(",");
-
-  const txOps: any[] = [
-    prisma.rolePermission.deleteMany({ where: { role: roleName } }),
-    ...(perms.length > 0
-      ? [prisma.rolePermission.createMany({
-          data: perms.map((p) => ({ role: roleName, permissionId: p.id })),
-          skipDuplicates: true,
-        })]
-      : []),
-  ];
-  await prisma.$transaction(txOps);
 
   // Audit log
   await prisma.auditLog.create({
     data: {
       userId: user.id,
       entityType: "RolePermission",
-      entityId: roleName,
+      entityId: `${roleName}@${doctorId}`,
       action: "UPDATE_PERMISSIONS",
       oldValue: oldKeys,
       newValue: newKeys,
@@ -218,18 +222,27 @@ export async function updateRoleMeta(
   roleId: string,
   data: { label: string; description?: string | null; color: string },
 ) {
-  await requireRole("DOCTOR");
+  const user = await requireRole("DOCTOR");
+  const role = await prisma.role.findUnique({ where: { id: roleId } });
+  if (!role) throw new Error("Role not found");
+  // System and shared roles carry the same name for every doctor.
+  if (role.createdByDoctorId !== scopeDoctorId(user)) throw new Error("You can only rename roles you created.");
   await prisma.role.update({ where: { id: roleId }, data });
   revalidatePath("/settings/roles");
 }
 
-export async function deleteRole(roleId: string) {
+export async function deleteRole(roleId: string): Promise<{ error?: string }> {
   const user = await requireRole("DOCTOR");
   const role = await prisma.role.findUnique({ where: { id: roleId } });
-  if (!role || role.isSystem) throw new Error("Cannot delete a system role");
+  if (!role || role.isSystem) return { error: "System roles cannot be deleted." };
+  // Shared roles (no creator) may still be used by other doctors' staff.
+  if (role.createdByDoctorId !== scopeDoctorId(user)) return { error: "You can only delete roles you created." };
+  const inUse = await prisma.user.count({ where: { role: role.name } });
+  if (inUse > 0) return { error: `Reassign the ${inUse} user(s) with this role before deleting it.` };
 
   await prisma.$transaction([
     prisma.rolePermission.deleteMany({ where: { role: role.name } }),
+    prisma.doctorRolePermission.deleteMany({ where: { role: role.name } }),
     prisma.role.delete({ where: { id: roleId } }),
   ]);
 
@@ -244,4 +257,5 @@ export async function deleteRole(roleId: string) {
   });
 
   revalidatePath("/settings/roles");
+  return {};
 }

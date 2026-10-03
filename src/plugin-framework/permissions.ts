@@ -52,6 +52,17 @@ export async function registerPluginPermissions(
         permission: { key: { in: manifest.permissions } },
       },
     });
+    // Doctors who customised this role get the plugin defaults too, unless
+    // their set already mentions one of the plugin's permissions.
+    const overrides = await prisma.doctorRolePermission.findMany({ where: { role: roleName } });
+    for (const o of overrides) {
+      if (o.permissions.some((k) => manifest.permissions.includes(k))) continue;
+      await prisma.doctorRolePermission.update({
+        where: { id: o.id },
+        data: { permissions: [...o.permissions, ...keysToGrant] },
+      });
+    }
+
     // Skip if already set — respect admin role management
     if (existingCount > 0) continue;
 
@@ -85,6 +96,13 @@ export async function deregisterPluginPermissions(
 
   if (permIds.length > 0) {
     await prisma.rolePermission.deleteMany({ where: { permissionId: { in: permIds } } });
+    const overrides = await prisma.doctorRolePermission.findMany();
+    for (const o of overrides) {
+      const kept = o.permissions.filter((k) => !manifest.permissions.includes(k));
+      if (kept.length !== o.permissions.length) {
+        await prisma.doctorRolePermission.update({ where: { id: o.id }, data: { permissions: kept } });
+      }
+    }
     await prisma.permission.deleteMany({ where: { id: { in: permIds } } });
   }
 }

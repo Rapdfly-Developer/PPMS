@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import type { Role } from "@/lib/constants";
+import { getUserPermissions } from "@/lib/role-permissions";
 
 /* ── Shared: fetch user with all profile relations ────────────────────── */
 async function fetchUserWithRelations(where: Prisma.UserWhereInput) {
@@ -62,16 +63,7 @@ async function buildPayload(user: NonNullable<Awaited<ReturnType<typeof fetchUse
     hospitalId  = user.refractionist.hospitalId;
   }
 
-  let permissions: string[];
-  if (user.role === "DOCTOR") {
-    permissions = ["*"];
-  } else {
-    const rolePerms = await prisma.rolePermission.findMany({
-      where: { role: user.role },
-      include: { permission: { select: { key: true } } },
-    });
-    permissions = rolePerms.map((rp) => rp.permission.key);
-  }
+  const permissions = await getUserPermissions(user.id, user.role);
 
   return {
     id: user.id,
