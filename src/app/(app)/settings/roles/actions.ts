@@ -12,6 +12,7 @@ const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
     "dashboard.view",
     "appointments.view", "appointments.create", "appointments.edit", "appointments.cancel",
     "patients.view", "patients.create", "patients.edit",
+    "opd.view", "opd.walkin.create", "opd.queue.manage", "opd.dispense",
     "emr.view", "refraction.view",
     "investigations.view", "investigations.create", "investigations.edit",
     "billing.view", "billing.create", "billing.edit", "billing.print",
