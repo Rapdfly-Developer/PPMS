@@ -1,4 +1,4 @@
-import { requirePermission, scopeDoctorId, userCan } from "@/lib/rbac";
+import { requirePermission, scopeDoctorId } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { startOfDay, subDays, format } from "date-fns";
 import { complaintText } from "@/lib/appointment-cc";
@@ -283,7 +283,7 @@ export default async function PatientsPage({
         </div>
       )}
       <PatientsClient
-        canDelete={userCan(user, "patients.delete")}
+        canDelete={user.role === "DOCTOR"}
         patients={serialized}
         total={total}
         page={page}

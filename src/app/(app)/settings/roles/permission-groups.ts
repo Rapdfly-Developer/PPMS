@@ -49,7 +49,6 @@ export const PERMISSION_GROUPS: {
       { key: "patients.view",   label: "View Patients",    description: "Browse and search the patient directory" },
       { key: "patients.create", label: "Register Patients", description: "Create new patient records" },
       { key: "patients.edit",   label: "Edit Patient Info", description: "Update demographics and contact details" },
-      { key: "patients.delete", label: "Delete Patients",  description: "Permanently remove a patient record" },
     ],
   },
   {
