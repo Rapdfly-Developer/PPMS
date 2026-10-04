@@ -108,6 +108,9 @@ export async function seedRolesAndPermissions() {
  * they have customised the role, otherwise the shared defaults.
  */
 export async function loadRolesPageData(doctorId: string) {
+  // Public action endpoint: only the doctor may read their own role settings.
+  const user = await requireRole("DOCTOR");
+  if (scopeDoctorId(user) !== doctorId) throw new Error("Forbidden");
   const [dbRoles, rolePerms, ownPerms] = await Promise.all([
     prisma.role.findMany({
       where: {

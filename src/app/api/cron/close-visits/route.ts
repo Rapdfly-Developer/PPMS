@@ -1,3 +1,4 @@
+import { isCronAuthorized } from "@/lib/cron-auth";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { startOfDay, endOfDay, subDays } from "date-fns";
@@ -6,7 +7,7 @@ import { startOfDay, endOfDay, subDays } from "date-fns";
 // 1. Closes any IN_PROGRESS visits from previous days.
 // 2. Cancels CONFIRMED/REQUESTED appointments from yesterday that never became a visit (no-shows).
 export async function GET(req: Request) {
-  if (req.headers.get("x-cron-secret") !== process.env.CRON_SECRET) {
+  if (!isCronAuthorized(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

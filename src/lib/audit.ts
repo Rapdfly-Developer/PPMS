@@ -1,4 +1,5 @@
-"use server";
+// Server-only helpers. Deliberately NOT "use server": every export of a
+// "use server" module is a public endpoint, which let anyone write audit rows.
 import { prisma } from "@/lib/prisma";
 
 export async function writeAudit(

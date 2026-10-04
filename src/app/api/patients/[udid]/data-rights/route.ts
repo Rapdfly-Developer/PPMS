@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireRole } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
+import { patientRecordScope } from "@/lib/patient-access";
 
 // DPDP Act 2023, Sections 11-15 — Data principal rights.
 // Patients (or staff on their behalf) submit requests; Grievance Officer resolves them.
@@ -15,14 +16,12 @@ export async function GET(_req: NextRequest, { params }: Params) {
   const user = await requireRole("DOCTOR", "HOSPITAL");
   const { udid } = await params;
 
-  const patient = await prisma.patient.findFirst({
-    where: { OR: [{ udid }, { uhid: udid }] },
+  const scope = await patientRecordScope(user);
+  const patient = scope && await prisma.patient.findFirst({
+    where: { AND: [{ OR: [{ udid }, { uhid: udid }] }, scope] },
     select: { id: true, registeredAtId: true },
   });
   if (!patient) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  if (user.hospitalId && patient.registeredAtId !== user.hospitalId) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
 
   const requests = await prisma.dataRightsRequest.findMany({
     where: { patientId: patient.id },
@@ -45,14 +44,12 @@ export async function POST(req: NextRequest, { params }: Params) {
     return NextResponse.json({ error: `type must be one of: ${VALID_TYPES.join(", ")}` }, { status: 400 });
   }
 
-  const patient = await prisma.patient.findFirst({
-    where: { OR: [{ udid }, { uhid: udid }] },
+  const scope = await patientRecordScope(user);
+  const patient = scope && await prisma.patient.findFirst({
+    where: { AND: [{ OR: [{ udid }, { uhid: udid }] }, scope] },
     select: { id: true, registeredAtId: true },
   });
   if (!patient) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  if (user.hospitalId && patient.registeredAtId !== user.hospitalId) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
 
   const request = await prisma.dataRightsRequest.create({
     data: { patientId: patient.id, type, description },
@@ -77,14 +74,12 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     return NextResponse.json({ error: "requestId and valid status required" }, { status: 400 });
   }
 
-  const patient = await prisma.patient.findFirst({
-    where: { OR: [{ udid }, { uhid: udid }] },
+  const scope = await patientRecordScope(user);
+  const patient = scope && await prisma.patient.findFirst({
+    where: { AND: [{ OR: [{ udid }, { uhid: udid }] }, scope] },
     select: { id: true, registeredAtId: true },
   });
   if (!patient) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  if (user.hospitalId && patient.registeredAtId !== user.hospitalId) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
 
   const updated = await prisma.dataRightsRequest.updateMany({
     where: { id: requestId, patientId: patient.id },

@@ -1,6 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
+import { requireSuperAdmin } from "@/lib/rbac";
 import bcrypt from "bcryptjs";
 import { generateUniqueShortCode, generateUniqueHospitalShortCode } from "@/lib/doctor-utils";
 
@@ -10,6 +11,7 @@ export async function createDoctor(
   _prev: ActionResult,
   formData: FormData
 ): Promise<ActionResult> {
+  await requireSuperAdmin();
   const name      = (formData.get("name") as string)?.trim();
   const username  = (formData.get("username") as string)?.trim().toLowerCase();
   const password  = (formData.get("password") as string);
@@ -42,6 +44,7 @@ export async function createHospital(
   _prev: ActionResult,
   formData: FormData
 ): Promise<ActionResult> {
+  await requireSuperAdmin();
   const name    = (formData.get("name") as string)?.trim();
   const address = (formData.get("address") as string)?.trim() || null;
   const contact = (formData.get("contact") as string)?.trim() || null;
@@ -62,6 +65,7 @@ export async function linkDoctorToHospitals(
   _prev: ActionResult,
   formData: FormData
 ): Promise<ActionResult> {
+  await requireSuperAdmin();
   const doctorId    = (formData.get("doctorId") as string)?.trim();
   const hospitalIds = formData.getAll("hospitalIds") as string[];
 

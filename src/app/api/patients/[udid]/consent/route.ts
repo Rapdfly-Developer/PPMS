@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireRole } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
+import { patientRecordScope } from "@/lib/patient-access";
 
 type Params = { params: Promise<{ udid: string }> };
 
@@ -9,14 +10,12 @@ export async function GET(_req: NextRequest, { params }: Params) {
   const user = await requireRole("DOCTOR", "HOSPITAL");
   const { udid } = await params;
 
-  const patient = await prisma.patient.findFirst({
-    where: { OR: [{ udid }, { uhid: udid }] },
+  const scope = await patientRecordScope(user);
+  const patient = scope && await prisma.patient.findFirst({
+    where: { AND: [{ OR: [{ udid }, { uhid: udid }] }, scope] },
     select: { id: true, registeredAtId: true },
   });
   if (!patient) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  if (user.hospitalId && patient.registeredAtId !== user.hospitalId) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
 
   const latest = await prisma.patientConsent.findFirst({
     where: { patientId: patient.id, purpose: "TREATMENT" },
@@ -44,14 +43,12 @@ export async function POST(req: NextRequest, { params }: Params) {
     return NextResponse.json({ error: "status must be GRANTED or WITHDRAWN" }, { status: 400 });
   }
 
-  const patient = await prisma.patient.findFirst({
-    where: { OR: [{ udid }, { uhid: udid }] },
+  const scope = await patientRecordScope(user);
+  const patient = scope && await prisma.patient.findFirst({
+    where: { AND: [{ OR: [{ udid }, { uhid: udid }] }, scope] },
     select: { id: true, registeredAtId: true },
   });
   if (!patient) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  if (user.hospitalId && patient.registeredAtId !== user.hospitalId) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
 
   const consent = await prisma.patientConsent.create({
     data: {

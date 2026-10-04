@@ -2,14 +2,18 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/rbac";
 import { generateVisitSummaryPdf } from "@/lib/pdf";
+import { visitRecordScope } from "@/lib/patient-access";
 import { format } from "date-fns";
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ visitId: string }> }) {
   const { visitId } = await params;
-  await requireUser();
+  const user = await requireUser();
+  const scope = await visitRecordScope(user);
+  if (!scope) return NextResponse.json({ error: "Visit not found" }, { status: 404 });
 
-  const visit = await prisma.visit.findUnique({
-    where: { id: visitId },
+  // Only visits this user may read; anything else is reported as not found.
+  const visit = await prisma.visit.findFirst({
+    where: { id: visitId, ...scope },
     include: {
       patient:           true,
       hospital:          true,

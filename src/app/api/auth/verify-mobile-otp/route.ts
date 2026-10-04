@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { OTP_MAX_ATTEMPTS } from "@/lib/auth-limits";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 
@@ -25,6 +26,18 @@ export async function POST(req: Request) {
       return NextResponse.json(
         { success: false, error: "OTP expired or not found. Please request a new one." },
         { status: 400 }
+      );
+    }
+
+    // Claim one attempt atomically, so parallel guesses cannot exceed the cap.
+    const claimed = await prisma.mobileOtp.updateMany({
+      where: { id: record.id, attempts: { lt: OTP_MAX_ATTEMPTS } },
+      data: { attempts: { increment: 1 } },
+    });
+    if (claimed.count === 0) {
+      return NextResponse.json(
+        { success: false, error: "Too many incorrect attempts. Please request a new OTP." },
+        { status: 429 }
       );
     }
 

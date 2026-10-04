@@ -17,15 +17,22 @@ export async function GET(req: NextRequest) {
   const fromDate            = sp.get("fromDate") || undefined;
   const toDate              = sp.get("toDate")   || undefined;
 
-  // F-10: scope export to the authenticated doctor's own hospital.
-  // Reject requests for a different hospital to prevent cross-tenant data leakage.
-  const effectiveHospitalId = user.hospitalId;
-  if (requestedHospitalId && requestedHospitalId !== effectiveHospitalId) {
+  // Scope the export to the doctor's own patients — the same rule as the
+  // Patients list: patients they own, or registered at a hospital they are
+  // linked to. A hospital filter must be one of those linked hospitals.
+  const links = await prisma.doctorHospitalLink.findMany({
+    where: { doctorId: user.profileId, active: true },
+    select: { hospitalId: true },
+  });
+  const linkedHospitalIds = links.map((l) => l.hospitalId);
+  if (requestedHospitalId && !linkedHospitalIds.includes(requestedHospitalId)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
-  const hospitalId = effectiveHospitalId;
+  const hospitalId = requestedHospitalId;
 
-  const where: any = hospitalId ? { registeredAtId: hospitalId } : {};
+  const where: any = hospitalId
+    ? { registeredAtId: hospitalId }
+    : { OR: [{ doctorId: user.profileId }, ...(linkedHospitalIds.length ? [{ registeredAtId: { in: linkedHospitalIds } }] : [])] };
   if (category) where.category = category;
   if (sex)      where.sex = sex;
   if (ageMin !== undefined || ageMax !== undefined) {

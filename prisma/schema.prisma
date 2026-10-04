@@ -905,6 +905,7 @@ model EmailOtp {
   tokenExpAt DateTime?           // 5 min window to exchange token → session
   expiresAt  DateTime
   used       Boolean   @default(false)
+  attempts   Int       @default(0)   // wrong guesses; locked at OTP_MAX_ATTEMPTS
   createdAt  DateTime  @default(now())
 
   @@index([email, createdAt])
@@ -919,6 +920,7 @@ model MobileOtp {
   tokenExpAt DateTime?           // 5 min window to exchange token → session
   expiresAt  DateTime
   used       Boolean   @default(false)
+  attempts   Int       @default(0)   // wrong guesses; locked at OTP_MAX_ATTEMPTS
   createdAt  DateTime  @default(now())
 
   @@index([mobile, createdAt])
@@ -935,6 +937,7 @@ model PasswordResetToken {
   tokenExpAt DateTime?           // resetToken expires 10 min after OTP verify
   usedAt     DateTime?
   ipAddress  String?
+  attempts   Int       @default(0)   // wrong guesses; locked at OTP_MAX_ATTEMPTS
   createdAt  DateTime  @default(now())
 
   @@index([email, createdAt])

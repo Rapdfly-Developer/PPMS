@@ -5,6 +5,7 @@ import { AuthError } from "next-auth";
 
 import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
+import { isLoginLocked } from "@/lib/auth-limits";
 
 function getIp(hdrs: Headers) {
   return (
@@ -68,25 +69,14 @@ export async function loginAction(_prev: { error?: string } | undefined, formDat
     return {};
   } catch (err) {
     if (err instanceof AuthError) {
-      // Record failed attempt
+      // The failure itself is recorded in authorize() (src/auth.ts).
       const user = await prisma.user.findFirst({
         where: { OR: [{ username }, { email: username }] },
-        select: { id: true, role: true, hospitalStaff: { select: { hospitalId: true } } },
+        select: { id: true },
       }).catch(() => null);
-
-      prisma.userLoginHistory.create({
-        data: {
-          userId: user?.id ?? "unknown",
-          userName: username,
-          role: user?.role ?? "UNKNOWN",
-          hospitalId: user?.hospitalStaff?.hospitalId,
-          ipAddress: ip,
-          userAgent: ua,
-          status: "FAILED",
-          isActive: false,
-          failReason: "Invalid credentials",
-        },
-      }).catch(() => {});
+      if (user && await isLoginLocked(user.id).catch(() => false)) {
+        return { error: "Too many failed attempts. Try again in 15 minutes, or reset your password." };
+      }
 
       return { error: "Invalid username or password." };
     }

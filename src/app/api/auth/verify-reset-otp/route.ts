@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { OTP_MAX_ATTEMPTS } from "@/lib/auth-limits";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 
@@ -29,6 +30,18 @@ export async function POST(req: Request) {
     }
 
     // Constant-time OTP comparison via bcrypt
+    // Claim one attempt atomically, so parallel guesses cannot exceed the cap.
+    const claimed = await prisma.passwordResetToken.updateMany({
+      where: { id: token.id, attempts: { lt: OTP_MAX_ATTEMPTS } },
+      data: { attempts: { increment: 1 } },
+    });
+    if (claimed.count === 0) {
+      return NextResponse.json(
+        { success: false, error: "Too many incorrect attempts. Please request a new OTP." },
+        { status: 429 }
+      );
+    }
+
     const valid = await bcrypt.compare(otp, token.otpHash);
     if (!valid) {
       return NextResponse.json({ success: false, error: "Incorrect OTP. Please check and try again." }, { status: 400 });

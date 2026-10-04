@@ -2,14 +2,18 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/rbac";
 import { generateAllVisitsSummaryPdf } from "@/lib/pdf";
+import { patientRecordScope } from "@/lib/patient-access";
 import { format } from "date-fns";
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ udid: string }> }) {
   const { udid } = await params;
-  await requireUser();
+  const user = await requireUser();
+  const scope = await patientRecordScope(user);
+  if (!scope) return NextResponse.json({ error: "No visits found" }, { status: 404 });
 
+  // UDIDs are sequential, so the patient must be within this user's scope.
   const visits = await prisma.visit.findMany({
-    where: { patient: { udid } },
+    where: { patient: { udid, ...scope } },
     orderBy: { date: "desc" },
     include: {
       patient:             true,

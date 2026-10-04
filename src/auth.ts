@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import type { Role } from "@/lib/constants";
 import { getUserPermissions } from "@/lib/role-permissions";
+import { isLoginLocked } from "@/lib/auth-limits";
 
 /* ── Shared: fetch user with all profile relations ────────────────────── */
 async function fetchUserWithRelations(where: Prisma.UserWhereInput) {
@@ -91,7 +92,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         username: { label: "Username" },
         password: { label: "Password", type: "password" },
       },
-      authorize: async (creds) => {
+      authorize: async (creds, request) => {
         const username = creds?.username as string | undefined;
         const password = creds?.password as string | undefined;
         if (!username || !password) return null;
@@ -111,8 +112,27 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         }
         if (!user || !user.active) return null;
 
+        // Lockout lives here, not in the login action: the credentials
+        // callback can be POSTed directly, bypassing the action.
+        if (await isLoginLocked(user.id)) return null;
+
         const valid = await bcrypt.compare(password, user.passwordHash);
-        if (!valid) return null;
+        if (!valid) {
+          await prisma.userLoginHistory.create({
+            data: {
+              userId: user.id,
+              userName: username,
+              role: user.role,
+              hospitalId: user.hospitalStaff?.hospitalId,
+              ipAddress: request?.headers?.get("x-forwarded-for")?.split(",")[0]?.trim() || null,
+              userAgent: request?.headers?.get("user-agent") || null,
+              status: "FAILED",
+              isActive: false,
+              failReason: "Invalid credentials",
+            },
+          }).catch(() => {});
+          return null;
+        }
 
         const payload = await buildPayload(user);
 

@@ -1,10 +1,11 @@
+import { isCronAuthorized } from "@/lib/cron-auth";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 // Called by Vercel Cron or external scheduler daily.
 // Secured with CRON_SECRET header.
 export async function GET(req: Request) {
-  if (req.headers.get("x-cron-secret") !== process.env.CRON_SECRET) {
+  if (!isCronAuthorized(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
