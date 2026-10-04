@@ -7,6 +7,7 @@ import { Phone, MapPin, Calendar, Hash, IdCard, Briefcase, FileText, Link2, User
 import { decryptAadhaar, maskAadhaar } from "@/lib/crypto";
 import { PatientProfileClient, type SerialVisit, type TodayVisit, type LastVisitSummary, type LongitudinalVisit } from "./PatientProfileClient";
 import { PatientActionsPanel } from "./PatientHistoryButtons";
+import { fileHref } from "@/lib/file-href";
 
 const CATEGORY_STYLES: Record<string, string> = {
   GENERAL:    "bg-white/20 text-white border border-white/30",
@@ -296,11 +297,7 @@ export default async function PatientProfilePage({
           {/* Avatar */}
           {patient.photoUrl ? (
             <img
-              src={
-                patient.photoUrl.startsWith("http")
-                  ? `/api/secure-blob?url=${encodeURIComponent(patient.photoUrl)}`
-                  : `/api/upload?file=${encodeURIComponent(patient.photoUrl)}`
-              }
+              src={fileHref(patient.photoUrl)!}
               alt={patient.name}
               className="w-14 h-14 rounded-2xl object-cover shrink-0 ring-2 ring-white/30"
             />
@@ -345,11 +342,7 @@ export default async function PatientProfilePage({
                 ))}
                 {patient.aadhaarPhotoUrl && (
                   <a
-                    href={
-                      patient.aadhaarPhotoUrl.startsWith("http")
-                        ? `/api/secure-blob?url=${encodeURIComponent(patient.aadhaarPhotoUrl)}`
-                        : `/api/upload?file=${encodeURIComponent(patient.aadhaarPhotoUrl)}`
-                    }
+                    href={fileHref(patient.aadhaarPhotoUrl)!}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-1.5 underline underline-offset-2 hover:text-white transition-colors"

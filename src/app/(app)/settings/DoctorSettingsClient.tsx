@@ -1186,6 +1186,7 @@ function HospitalSection({ hospitals }: { hospitals: HospitalRow[] }) {
     try {
       const fd = new FormData();
       fd.append("file", file);
+      fd.append("kind", "branding"); // logos are loaded by URL in printed PDFs
       const res = await fetch("/api/uploads", { method: "POST", body: fd });
       if (!res.ok) throw new Error("Upload failed");
       const { url } = await res.json();
@@ -2463,7 +2464,10 @@ function ProfileSection({ doctor }: { doctor: DoctorProfile | null }) {
     setSigUploading(true);
     const fd = new FormData();
     fd.append("file", file);
-    const res = await fetch("/api/upload", { method: "POST", body: fd });
+    // Signatures print on prescriptions, so they are branding (public) files.
+    // /api/upload returns `savedName`, not `url`, so this was silently lost.
+    fd.append("kind", "branding");
+    const res = await fetch("/api/uploads", { method: "POST", body: fd });
     if (res.ok) {
       const json = await res.json();
       setSignatureUrl(json.url ?? "");

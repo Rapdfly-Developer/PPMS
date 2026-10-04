@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/Card";
 import { format } from "date-fns";
 import { Upload, Camera, Loader2, FileText, ZoomIn, X, Images, FolderOpen, FileScan, Pencil, Check } from "lucide-react";
 import { addPastExternalVisit, renamePastExternalVisit } from "./actions";
+import { fileHref } from "@/lib/file-href";
 
 // ── Inline rename widget for existing entries ────────────────────────────────
 function InlineRename({
@@ -282,13 +283,13 @@ export function PastExternalVisitsTab({
                   <div className="relative group rounded-xl overflow-hidden border border-[var(--color-border)]">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={fileUrl!}
+                      src={fileHref(fileUrl)!}
                       alt={displayName}
                       className="w-full max-h-56 object-contain bg-[var(--color-surface-sunken)] cursor-zoom-in"
-                      onClick={() => setLightbox(fileUrl)}
+                      onClick={() => setLightbox(fileHref(fileUrl))}
                     />
                     <button
-                      onClick={() => setLightbox(fileUrl)}
+                      onClick={() => setLightbox(fileHref(fileUrl))}
                       className="absolute top-2 right-2 bg-black/50 text-white p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
                       title="View full size"
                     >
@@ -299,7 +300,7 @@ export function PastExternalVisitsTab({
 
                 {isPdf && (
                   <a
-                    href={fileUrl!}
+                    href={fileHref(fileUrl)!}
                     target="_blank"
                     rel="noreferrer"
                     className="flex items-center gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-4 py-4 hover:bg-[var(--color-primary-50)] hover:border-[var(--color-primary-200)] transition-colors"

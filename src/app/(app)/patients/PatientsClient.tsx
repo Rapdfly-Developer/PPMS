@@ -16,6 +16,7 @@ import { ICD10_OPHTHALMOLOGY } from "@/lib/constants";
 import { getCustomDiagnoses } from "@/lib/customDiagnoses";
 import { ComplaintChips } from "@/components/ui/ComplaintChips";
 import { DeletePatientButton } from "./DeletePatientButton";
+import { fileHref } from "@/lib/file-href";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 export interface PatientRow {
@@ -75,11 +76,8 @@ function avatarColor(name: string) {
   return AVATAR_COLORS[name.charCodeAt(0) % AVATAR_COLORS.length];
 }
 function photoSrc(photoUrl: string) {
-  // Blob URLs are proxied through the authenticated secure-blob route.
-  // Local dev stores a bare filename served by /api/upload.
-  return photoUrl.startsWith("http")
-    ? `/api/secure-blob?url=${encodeURIComponent(photoUrl)}`
-    : `/api/upload?file=${encodeURIComponent(photoUrl)}`;
+  // Served through /api/files, which checks the viewer may see the patient.
+  return fileHref(photoUrl)!;
 }
 function initials(name: string) {
   const parts = name.trim().split(/\s+/);

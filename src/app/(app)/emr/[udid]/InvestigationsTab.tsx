@@ -19,6 +19,7 @@ import {
 const FAVES_KEY   = "ppms_inv_favorites";
 const SESSION_KEY = "ppms_inv_session_customs";
 import clsx from "clsx";
+import { fileHref } from "@/lib/file-href";
 
 // ── Main export ───────────────────────────────────────────────────────────
 
@@ -226,13 +227,13 @@ function InvestigationCard({
           {order.resultRef ? (
             <>
               <button
-                onClick={() => onView(order.resultRef)}
+                onClick={() => onView(fileHref(order.resultRef)!)}
                 className="flex items-center gap-1 text-caption font-medium px-2 py-1 rounded-lg border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] transition-colors"
               >
                 <Eye size={12} /> View
               </button>
               <a
-                href={order.resultRef}
+                href={fileHref(order.resultRef)!}
                 download
                 target="_blank"
                 rel="noreferrer"
@@ -293,14 +294,14 @@ function InvestigationCard({
           </p>
           {isImage ? (
             <img
-              src={order.resultRef}
+              src={fileHref(order.resultRef)!}
               alt={`${order.testName} result`}
               className="max-h-52 rounded-xl cursor-pointer object-contain border border-[var(--color-border)]"
-              onClick={() => onView(order.resultRef)}
+              onClick={() => onView(fileHref(order.resultRef)!)}
             />
           ) : (
             <button
-              onClick={() => onView(order.resultRef)}
+              onClick={() => onView(fileHref(order.resultRef)!)}
               className="flex items-center gap-2 text-xs text-[var(--color-primary-700)] bg-[var(--color-primary-50)] border border-[var(--color-primary-200)] px-3 py-2 rounded-lg hover:bg-[var(--color-primary-100)] transition-colors"
             >
               <Paperclip size={13} /> {order.testName} result file, click to view

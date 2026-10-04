@@ -538,6 +538,12 @@ function bottomSection(doctorName: string, hospitalName: string, qrDataUrl: stri
 /*  DISPENSE PDF                                                               */
 /* ─────────────────────────────────────────────────────────────────────────── */
 
+/** A stored result file prints as a note, never as its (private) storage address. */
+function printableResult(ref: string | null | undefined): string | null {
+  if (!ref) return null;
+  return /^(https?:|local:)/.test(ref) || /\.(pdf|png|jpe?g|webp)$/i.test(ref) ? "Report attached" : ref;
+}
+
 export type DispenseSummaryData = {
   patient: { udid: string; name: string; age: number; sex: string; mobileMasked: string };
   visit: { date: Date; hospitalName: string; doctorName: string };
@@ -1779,7 +1785,7 @@ export async function generateAllVisitsSummaryPdf(visits: any[]): Promise<Buffer
         re: { sph: reRef?.sph, cyl: reRef?.cyl, axis: reRef?.axis, nearSph: reRef?.nearSph },
         le: { sph: leRef?.sph, cyl: leRef?.cyl, axis: leRef?.axis, nearSph: leRef?.nearSph },
       },
-      investigations: (visit.investigationOrders ?? []).map((o: any) => ({ testName: o.testName, priority: o.priority ?? null, status: o.status ?? null, result: o.resultRef ?? null, notes: o.notes ?? null })),
+      investigations: (visit.investigationOrders ?? []).map((o: any) => ({ testName: o.testName, priority: o.priority ?? null, status: o.status ?? null, result: printableResult(o.resultRef), notes: o.notes ?? null })),
     };
   }
 
@@ -1983,7 +1989,7 @@ export async function generateVisitSummaryPdf(visit: any): Promise<Buffer> {
       re: { sph: reRef?.sph, cyl: reRef?.cyl, axis: reRef?.axis, nearSph: reRef?.nearSph, nearCyl: reRef?.nearCyl, nearAxis: reRef?.nearAxis },
       le: { sph: leRef?.sph, cyl: leRef?.cyl, axis: leRef?.axis, nearSph: leRef?.nearSph, nearCyl: leRef?.nearCyl, nearAxis: leRef?.nearAxis },
     },
-    investigations: (visit.investigationOrders ?? []).map((o: any) => ({ testName: o.testName, priority: o.priority ?? null, status: o.status ?? null, result: o.resultRef ?? null, notes: o.notes ?? null })),
+    investigations: (visit.investigationOrders ?? []).map((o: any) => ({ testName: o.testName, priority: o.priority ?? null, status: o.status ?? null, result: printableResult(o.resultRef), notes: o.notes ?? null })),
   };
 
   return htmlToPdf(await renderFullEmrHtml(data));

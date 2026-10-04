@@ -1,53 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/auth";
-import { readFile, writeFile, mkdir } from "fs/promises";
-import path from "path";
-import crypto from "crypto";
+import { requireUser } from "@/lib/rbac";
+import { storeUpload, UPLOAD_TYPES } from "@/lib/file-storage";
+import { fileHref } from "@/lib/file-href";
 
-const UPLOAD_DIR = path.join(process.cwd(), "uploads", "past-visits");
-const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/webp", "application/pdf"];
 const MAX_SIZE = 20 * 1024 * 1024; // 20MB
 
-const MIME: Record<string, string> = {
-  ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
-  ".png": "image/png",  ".webp": "image/webp",
-  ".pdf": "application/pdf",
-};
-
-async function requireAuth(req: NextRequest): Promise<NextResponse | null> {
-  const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-  return null;
-}
-
+/**
+ * GET /api/upload?file=<name> — legacy local-development address; now goes
+ * through the same access check as every other file.
+ */
 export async function GET(req: NextRequest) {
-  const unauth = await requireAuth(req);
-  if (unauth) return unauth;
-  const file = req.nextUrl.searchParams.get("file");
-  if (!file || file.includes("..") || file.includes("/")) {
-    return NextResponse.json({ error: "Invalid file name" }, { status: 400 });
-  }
-  const filePath = path.join(UPLOAD_DIR, file);
-  try {
-    const buffer = await readFile(filePath);
-    const ext = path.extname(file).toLowerCase();
-    const contentType = MIME[ext] ?? "application/octet-stream";
-    return new NextResponse(buffer, {
-      headers: {
-        "Content-Type": contentType,
-        "Cache-Control": "private, max-age=31536000, immutable",
-      },
-    });
-  } catch {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
-  }
+  const href = fileHref(req.nextUrl.searchParams.get("file"));
+  if (!href) return NextResponse.json({ error: "Invalid file name" }, { status: 400 });
+  return NextResponse.redirect(new URL(href, req.nextUrl.origin));
 }
 
+/**
+ * POST /api/upload — patient photos, Aadhaar scans and other clinical
+ * documents. Always stored as clinical (private once the private store is
+ * configured). `savedName` is the reference to save on the record.
+ */
 export async function POST(req: NextRequest) {
-  const unauth = await requireAuth(req);
-  if (unauth) return unauth;
+  const user = await requireUser();
 
   const formData = await req.formData();
   const file = formData.get("file");
@@ -55,39 +29,17 @@ export async function POST(req: NextRequest) {
   if (!(file instanceof File)) {
     return NextResponse.json({ error: "No file provided" }, { status: 400 });
   }
-  if (!ALLOWED_TYPES.includes(file.type)) {
+  if (!UPLOAD_TYPES[file.type]) {
     return NextResponse.json({ error: "Unsupported file type. Upload PNG, JPEG, WebP or PDF." }, { status: 400 });
   }
   if (file.size > MAX_SIZE) {
     return NextResponse.json({ error: "File too large (max 20 MB)." }, { status: 400 });
   }
 
-  const ext = path.extname(file.name) || ".bin";
-  const savedName = `${crypto.randomUUID()}${ext}`;
-  const buffer = Buffer.from(await file.arrayBuffer());
-
-  // Production (Vercel): filesystem is read-only — store in Vercel Blob.
-  // savedName becomes the full blob URL, which callers can use directly.
-  if (process.env.BLOB_READ_WRITE_TOKEN) {
-    const { put } = await import("@vercel/blob");
-    const blob = await put(`past-visits/${savedName}`, buffer, {
-      access: "public",
-      contentType: file.type,
-    });
-    return NextResponse.json({
-      savedName: blob.url,
-      originalFileName: file.name,
-      mimeType: file.type,
-      sizeBytes: file.size,
-    });
-  }
-
-  // Local dev fallback — write to uploads/past-visits on disk.
-  await mkdir(UPLOAD_DIR, { recursive: true });
-  await writeFile(path.join(UPLOAD_DIR, savedName), buffer);
-
+  const savedName = await storeUpload(file, "clinical", user.id);
   return NextResponse.json({
     savedName,
+    href: fileHref(savedName),
     originalFileName: file.name,
     mimeType: file.type,
     sizeBytes: file.size,

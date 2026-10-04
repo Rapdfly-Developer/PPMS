@@ -7,6 +7,7 @@ import { attachResult } from "@/app/(app)/emr/[udid]/actions";
 import { format } from "date-fns";
 import { getVisitEmrData } from "./emr-viewer-action";
 import { ComplaintChips } from "@/components/ui/ComplaintChips";
+import { fileHref } from "@/lib/file-href";
 
 function Section({ title, icon, badge, accent, children }: {
   title: string;
@@ -306,7 +307,7 @@ function EmrContent({ visit, udid, localResults, onAttach }: {
                           <span className="inline-flex items-center gap-1 text-caption font-medium px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700">
                             <CheckCircle2 size={10} /> Result Uploaded
                           </span>
-                          <a href={resultUrl} target="_blank" rel="noreferrer"
+                          <a href={fileHref(resultUrl)!} target="_blank" rel="noreferrer"
                             className="p-1 rounded text-[var(--color-ink-400)] hover:text-[var(--color-primary-600)] hover:bg-[var(--color-primary-50)] transition-colors"
                             title="Download result">
                             <Download size={13} />
@@ -330,12 +331,12 @@ function EmrContent({ visit, udid, localResults, onAttach }: {
                     <div className="ml-1 pl-3 border-l-2 border-[var(--color-primary-200)]">
                       <p className="text-caption font-semibold text-[var(--color-ink-400)] uppercase tracking-wide mb-1">{o.testName} Result</p>
                       {isImage ? (
-                        <a href={resultUrl} target="_blank" rel="noreferrer">
-                          <img src={resultUrl} alt={`${o.testName} result`}
+                        <a href={fileHref(resultUrl)!} target="_blank" rel="noreferrer">
+                          <img src={fileHref(resultUrl)!} alt={`${o.testName} result`}
                             className="max-h-40 rounded-lg object-contain border border-[var(--color-border)] cursor-pointer hover:opacity-90 transition-opacity" />
                         </a>
                       ) : (
-                        <a href={resultUrl} target="_blank" rel="noreferrer"
+                        <a href={fileHref(resultUrl)!} target="_blank" rel="noreferrer"
                           className="inline-flex items-center gap-2 text-xs text-[var(--color-primary-700)] bg-[var(--color-primary-50)] border border-[var(--color-primary-200)] px-3 py-1.5 rounded-lg hover:bg-[var(--color-primary-100)] transition-colors">
                           <Paperclip size={12} /> {o.testName} result - click to open
                         </a>

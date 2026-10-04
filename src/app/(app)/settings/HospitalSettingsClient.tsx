@@ -184,6 +184,7 @@ function HospitalInfoSection({ hospital, onSaved }: { hospital: Hospital; onSave
     try {
       const fd = new FormData();
       fd.append("file", file);
+      fd.append("kind", "branding"); // logos are loaded by URL in printed PDFs
       const res = await fetch("/api/uploads", { method: "POST", body: fd });
       if (!res.ok) throw new Error("Upload failed");
       const { url } = await res.json();

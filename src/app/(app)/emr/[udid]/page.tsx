@@ -31,6 +31,7 @@ import { PrintHeader, PrintFooter } from "@/components/ui/PrintLayout";
 import { EmrTabsProvider } from "./EmrTabsContext";
 import { EmrBannerNavButtons } from "./EmrBannerNavButtons";
 import { ComplaintChips } from "@/components/ui/ComplaintChips";
+import { fileHref } from "@/lib/file-href";
 
 /** "h:mm a" in clinic time. Formatted on the server so the markup is stable. */
 function fmtStamp(d: Date | string | null | undefined): string | null {
@@ -347,9 +348,7 @@ export default async function PatientDetailedEMR({
               <div className="shrink-0">
                 <PatientPhoto
                   src={patient.photoUrl
-                    ? (patient.photoUrl.startsWith("http")
-                        ? `/api/secure-blob?url=${encodeURIComponent(patient.photoUrl)}`
-                        : `/api/upload?file=${encodeURIComponent(patient.photoUrl)}`)
+                    ? fileHref(patient.photoUrl)!
                     : null}
                   alt={patient.name}
                   statusDot={activeVisit ? (activeVisit.status === "IN_PROGRESS" ? "active" : "closed") : null}

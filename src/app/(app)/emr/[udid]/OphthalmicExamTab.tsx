@@ -44,6 +44,7 @@ import { ChipGroup } from "@/components/ui/Chip";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Toast } from "@/components/ui/Toast";
 import { FieldWithHistory, type HistoryEntry } from "@/components/ui/HistoryToggle";
+import { fileHref } from "@/lib/file-href";
 
 export function OphthalmicExamTab({ visit, priorVisits, udid, role, canEditRefraction }: { visit: any; priorVisits: any[]; udid: string; role: string; canEditRefraction?: boolean }) {
   const refractionistCanEdit = canEditRefraction ?? role === "DOCTOR";
@@ -421,7 +422,7 @@ function ArSlipUpload({
       <div className="flex items-center gap-1.5">
         {url && (
           <a
-            href={url}
+            href={fileHref(url)!}
             target="_blank"
             rel="noreferrer"
             className="inline-flex items-center gap-1 rounded-lg border border-[var(--color-border)] bg-white px-2 py-1 text-caption sm:text-caption font-medium text-[var(--color-ink-600)] hover:text-[var(--color-primary-700)] hover:border-[var(--color-primary-300)] transition-colors"

@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { rescheduleFollowUp, cancelFollowUp, completeFollowUp } from "./actions";
 import { ComplaintChips } from "@/components/ui/ComplaintChips";
+import { fileHref } from "@/lib/file-href";
 
 /* ── Types ─────────────────────────────────────────────────────────────── */
 export type FollowUpStatus = "DUE_TODAY" | "UPCOMING" | "OVERDUE" | "NO_SHOW" | "COMPLETED" | "CANCELLED" | "SCHEDULED";
@@ -451,7 +452,7 @@ function FollowUpRow({
           <div className="flex items-center gap-2.5">
             <div className="w-7 h-7 rounded-full bg-[var(--color-primary-100)] flex items-center justify-center shrink-0 overflow-hidden">
               {v.patient.photoUrl
-                ? <img src={v.patient.photoUrl.startsWith("http") ? `/api/secure-blob?url=${encodeURIComponent(v.patient.photoUrl)}` : `/api/upload?file=${encodeURIComponent(v.patient.photoUrl)}`} alt={v.patient.name} className="w-full h-full object-cover" />
+                ? <img src={fileHref(v.patient.photoUrl)!} alt={v.patient.name} className="w-full h-full object-cover" />
                 : <User size={13} className="text-[var(--color-primary-700)]" />}
             </div>
             <div className="min-w-0">
@@ -575,7 +576,7 @@ function FollowUpCard({
         <div className="flex items-center gap-2.5 min-w-0">
           <div className="w-8 h-8 rounded-full bg-[var(--color-primary-100)] flex items-center justify-center shrink-0 overflow-hidden">
             {v.patient.photoUrl
-              ? <img src={v.patient.photoUrl} alt={v.patient.name} className="w-full h-full object-cover" />
+              ? <img src={fileHref(v.patient.photoUrl)!} alt={v.patient.name} className="w-full h-full object-cover" />
               : <User size={14} className="text-[var(--color-primary-700)]" />}
           </div>
           <div className="min-w-0">

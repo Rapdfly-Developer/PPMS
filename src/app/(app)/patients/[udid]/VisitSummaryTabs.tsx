@@ -5,6 +5,7 @@ import { Sparkles, Loader2, Activity, AlertCircle, FileText, Pill, FlaskConical,
 import { getVisitEmrData } from "./emr-viewer-action";
 import { generateAiSummary } from "@/app/(app)/patients/actions";
 import { ComplaintChips } from "@/components/ui/ComplaintChips";
+import { fileHref } from "@/lib/file-href";
 
 type Tab = "short" | "long" | "ai";
 
@@ -861,7 +862,7 @@ function LongContent({
                   )}
                 </div>
                 {o.resultRef && (
-                  <a href={o.resultRef} target="_blank" rel="noreferrer" className="text-micro sm:text-caption text-[var(--color-primary-600)] underline shrink-0">View Result</a>
+                  <a href={fileHref(o.resultRef)!} target="_blank" rel="noreferrer" className="text-micro sm:text-caption text-[var(--color-primary-600)] underline shrink-0">View Result</a>
                 )}
               </div>
             ))}
