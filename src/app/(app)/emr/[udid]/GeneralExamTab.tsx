@@ -360,7 +360,7 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly }: { visit: 
                     disabled={readOnly}
                     placeholder="Complaint…"
                     rows={Math.max(1, Math.min(5, c.text.split("\n").length))}
-                    className="flex-1 min-w-0 resize-none rounded-lg border border-[var(--color-border)] bg-white px-2.5 py-1 text-sm leading-5 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] disabled:bg-[var(--color-surface-sunken)]"
+                    className="grow basis-full sm:basis-0 min-w-0 resize-none rounded-lg border border-[var(--color-border)] bg-white px-2.5 py-1 text-sm leading-5 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] disabled:bg-[var(--color-surface-sunken)]"
                   />
 
                   {/* Keyword popover trigger */}

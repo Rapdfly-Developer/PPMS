@@ -270,7 +270,8 @@ function RecentPanel({ recentReg }: { recentReg: RecentPat[] }) {
                 </div>
                 <Link
                   href={`/patients/${p.udid}?returnTo=/patients`}
-                  className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 p-1.5 rounded-lg text-[var(--color-ink-400)] hover:bg-[var(--color-ink-100)] hover:text-[var(--color-ink-700)]"
+                  aria-label={`Open ${p.name}'s profile`}
+                  className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity flex-shrink-0 p-1.5 rounded-lg text-[var(--color-ink-400)] hover:bg-[var(--color-ink-100)] hover:text-[var(--color-ink-700)]"
                 >
                   <Eye size={12} />
                 </Link>
@@ -858,7 +859,9 @@ export function PatientsClient({
                               here. Breakpoints are exact complements: never both, never neither. */}
                           {p.chiefComplaint && (
                             <div className="lg:hidden mt-1">
-                              <ComplaintChips value={p.chiefComplaint} />
+                              {/* Wrap rather than truncate: on a phone this card is the only
+                                  place the complaint is shown, so it must be readable in full. */}
+                              <ComplaintChips value={p.chiefComplaint} wrap />
                             </div>
                           )}
                           {/* Diagnoses — same mirroring for the xl+ column. Without this a doctor
@@ -872,7 +875,7 @@ export function PatientsClient({
                                   className="clinical-diagnosis-chip inline-flex max-w-full items-center gap-1 px-2 py-0.5 rounded-full border text-micro sm:text-caption"
                                 >
                                   {d.laterality && <span className="clinical-laterality shrink-0">{d.laterality}</span>}
-                                  <span className="truncate">{d.description}</span>
+                                  <span className="break-words">{d.description}</span>
                                 </span>
                               ))}
                               {p.diagnoses.length > 2 && (

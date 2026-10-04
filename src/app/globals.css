@@ -1,5 +1,12 @@
 @import "tailwindcss";
 
+/* `short:` — a phone held in landscape (or any very short window). The fixed
+   bottom nav, the EMR action bar and the header together took ~190px of a
+   375px-tall screen, leaving the clinical content a sliver. In this mode the
+   bottom nav steps aside (the header menu still opens full navigation) and
+   bars that sat above it drop to the bottom edge. */
+@custom-variant short (@media (orientation: landscape) and (max-height: 500px));
+
 /* Section 12: prevent iOS Safari auto-zoom (triggered when a focused control's
    font-size < 16px). Only applies below the lg breakpoint (1024px); desktop
    styling is untouched.
@@ -440,6 +447,28 @@ h1, h2, h3, h4 { text-wrap: balance; }
 .rf-label     { font-size: var(--rf-fs-label);     line-height: var(--rf-lh-label);     }
 .rf-caption   { font-size: var(--rf-fs-caption);   line-height: var(--rf-lh-caption);   }
 .rf-btn       { font-size: var(--rf-fs-btn);       line-height: var(--rf-lh-btn);       }
+
+/* ── App header height ────────────────────────────────────────────────────
+   56px everywhere up to QHD; a touch taller on 2K/4K so the bar keeps its
+   proportion to a 1440–2160px-tall screen instead of reading as a hairline. */
+:root { --rf-header-h: 3.5rem; }
+@media (min-width: 2560px) { :root { --rf-header-h: 4rem; } }
+@media (min-width: 3840px) { :root { --rf-header-h: 4.5rem; } }
+
+/* ── Dialog overlays on short screens ────────────────────────────────────
+   Every modal in the app is a `fixed inset-0 flex items-center` overlay
+   holding a panel. Few panels cap their height, so on a phone in landscape
+   (~360px tall) a tall panel overflowed the overlay: plain `center` pushed
+   its top above the screen where it could not be scrolled to.
+
+   One rule fixes all of them at the root: the overlay itself scrolls, and
+   `safe center` centres a panel that fits but top-aligns one that does not.
+   Unlayered so it applies over the Tailwind `items-center` utility.        */
+.fixed.inset-0.items-center {
+  align-items: safe center;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
 
 /* ── Print styles ─────────────────────────────────────────────────────── */
 @media print {

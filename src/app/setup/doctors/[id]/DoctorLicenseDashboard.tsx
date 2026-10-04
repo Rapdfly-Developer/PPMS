@@ -118,7 +118,7 @@ function LicenseActionsPanel({ lic, doctor }: {
     <>
       {/* Toast */}
       {toast && (
-        <div className={`fixed top-5 right-5 z-[100] flex items-center gap-2.5 px-4 py-3 rounded-xl shadow-2xl text-sm font-semibold ${
+        <div className={`fixed top-5 right-5 z-[100] max-w-[calc(100vw-2.5rem)] flex items-center gap-2.5 px-4 py-3 rounded-xl shadow-2xl text-sm font-semibold ${
           toast.type === "success" ? "bg-emerald-600 text-white" : "bg-red-600 text-white"
         }`}>
           {toast.type === "success" ? <CheckCircle2 size={16} /> : <XCircle size={16} />}

@@ -627,7 +627,7 @@ export function CopilotDrawer({
       {/* Drawer panel — lifted above fixed action bar on mobile (bottom-16) */}
       <div
         ref={panelRef}
-        className="relative z-10 w-full sm:max-w-2xl flex flex-col rounded-t-2xl overflow-hidden mb-16 lg:mb-0"
+        className="relative z-10 w-full sm:max-w-2xl flex flex-col rounded-t-2xl overflow-hidden mb-16 lg:mb-0 short:mb-0"
         style={{
           maxHeight: "calc(100dvh - 5.5rem)",
           background: "linear-gradient(135deg, rgba(240,248,246,0.82) 0%, rgba(255,255,255,0.86) 100%)",

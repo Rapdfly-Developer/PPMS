@@ -329,8 +329,9 @@ export function AppointmentsClient({
           )}
         </div>
 
-        {/* Action buttons + filter — full-width row on mobile */}
-        <div className="flex items-center gap-2">
+        {/* Action buttons + filter — full-width row on mobile; wraps on the
+            narrowest phones (320px) instead of pushing Filter off-screen. */}
+        <div className="flex flex-wrap items-center gap-2">
           {role === "DOCTOR" && (
             <Link
               href="/appointments/availability"

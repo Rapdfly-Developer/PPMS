@@ -91,7 +91,7 @@ type ToastType = { id: number; msg: string; ok: boolean };
 
 function ToastList({ toasts, onDismiss }: { toasts: ToastType[]; onDismiss: (id: number) => void }) {
   return (
-    <div className="fixed top-5 right-5 z-[200] flex flex-col gap-2 pointer-events-none">
+    <div className="fixed top-5 right-5 z-[200] max-w-[calc(100vw-2.5rem)] flex flex-col gap-2 pointer-events-none">
       {toasts.map((t) => (
         <div key={t.id}
           className={`flex items-center gap-2.5 px-4 py-3 rounded-xl text-sm font-medium shadow-lg pointer-events-auto transition-all ${

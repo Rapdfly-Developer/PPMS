@@ -10,7 +10,7 @@ const INACTIVE_COLOR = "#94A3B8";
 
 const NAV_ITEMS = [
   { href: "/dashboard",      label: "Home",         icon: LayoutGrid  },
-  { href: "/patients",      label: "Patient Library", icon: Users    },
+  { href: "/patients",      label: "Patients",     icon: Users       },
   { href: "/appointments",  label: "Appointments", icon: CalendarDays},
   { href: "/notifications", label: "Alerts",       icon: Bell        },
   { href: "/settings",      label: "Profile",      icon: User        },
@@ -60,7 +60,7 @@ export function MobileBottomNav() {
       // which tied with those overlays — and because this nav renders last in
       // (app)/layout.tsx, the tie broke in its favour and it painted over
       // bottom-aligned sheets and full-height drawers.
-      className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-slate-100 rounded-t-2xl"
+      className="lg:hidden short:hidden fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-slate-100 rounded-t-2xl"
       style={{
         boxShadow: "0 -4px 24px rgba(0,0,0,0.08)",
         paddingBottom: "env(safe-area-inset-bottom, 0px)",

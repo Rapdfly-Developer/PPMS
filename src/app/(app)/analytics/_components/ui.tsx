@@ -20,8 +20,23 @@ import { downloadTableCsv } from "./export";
 
 export function InfoTip({ text, label }: { text: string; label: string }) {
   const id = useId();
+  // Centred over its icon the tip ran off-screen for icons near either edge
+  // (e.g. two-up KPI tiles on a phone). On open, nudge it sideways so it stays
+  // at least 16px inside the viewport.
+  const [shift, setShift] = useState(0);
+  const place = (el: HTMLElement) => {
+    const r = el.getBoundingClientRect();
+    const vw = document.documentElement.clientWidth;
+    const w = Math.min(240, vw - 32);
+    const left = r.left + r.width / 2 - w / 2;
+    setShift(Math.max(16, Math.min(left, vw - 16 - w)) - left);
+  };
   return (
-    <span className="relative inline-flex group/tip">
+    <span
+      className="relative inline-flex group/tip"
+      onPointerEnter={(e) => place(e.currentTarget)}
+      onFocus={(e) => place(e.currentTarget)}
+    >
       <button
         type="button"
         aria-describedby={id}
@@ -33,7 +48,8 @@ export function InfoTip({ text, label }: { text: string; label: string }) {
       <span
         id={id}
         role="tooltip"
-        className="invisible opacity-0 group-hover/tip:visible group-hover/tip:opacity-100 group-focus-within/tip:visible group-focus-within/tip:opacity-100 transition-opacity absolute left-1/2 -translate-x-1/2 bottom-full mb-2 z-30 w-60 rounded-lg bg-[var(--color-ink-900)] px-3 py-2 text-caption font-normal normal-case tracking-normal leading-snug text-white shadow-lg"
+        style={{ transform: `translateX(calc(-50% + ${shift}px))` }}
+        className="invisible opacity-0 group-hover/tip:visible group-hover/tip:opacity-100 group-focus-within/tip:visible group-focus-within/tip:opacity-100 transition-opacity absolute left-1/2 bottom-full mb-2 z-30 w-[min(15rem,calc(100vw-2rem))] rounded-lg bg-[var(--color-ink-900)] px-3 py-2 text-caption font-normal normal-case tracking-normal leading-snug text-white shadow-lg"
       >
         {text}
       </span>
@@ -139,17 +155,18 @@ export function KpiCard({ kpi, compareLabel }: { kpi: KpiValue; compareLabel: st
     <>
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-center gap-1.5 pt-1">
-          <p className="truncate text-label font-semibold tracking-[0.01em] text-[var(--color-ink-500)]">{label}</p>
+          {/* Wraps on phones (two-up tiles are narrow); the metric name must stay readable. */}
+          <p className="break-words sm:truncate text-label font-semibold tracking-[0.01em] text-[var(--color-ink-500)]">{label}</p>
           <InfoTip text={def.tooltip} label={label} />
         </div>
-        <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] ${TONE_CLS[tone]}`} aria-hidden="true">
+        <span className={`hidden sm:flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] ${TONE_CLS[tone]}`} aria-hidden="true">
           <Icon size={15} strokeWidth={1.75} />
         </span>
       </div>
-      <p className="mt-2.5 text-[28px] sm:text-[30px] font-bold leading-none tracking-[-0.02em] tabular-nums text-[var(--color-ink-900)]">
+      <p className="mt-2.5 text-heading-lg min-[400px]:text-[28px] sm:text-[30px] font-bold leading-none tracking-[-0.02em] tabular-nums text-[var(--color-ink-900)]">
         {kpi.display ?? formatMetric(kpi.value, def.format)}
       </p>
-      {kpi.sub && <p className="mt-2 truncate text-caption text-[var(--color-ink-500)]">{kpi.sub}</p>}
+      {kpi.sub && <p className="mt-2 break-words sm:truncate text-caption text-[var(--color-ink-500)]">{kpi.sub}</p>}
       {(change || kpi.spark) && (
         <div className="mt-auto flex items-end justify-between gap-3 pt-4">
           {change ? (
@@ -162,13 +179,13 @@ export function KpiCard({ kpi, compareLabel }: { kpi: KpiValue; compareLabel: st
               <span>{change.context === "vs" ? `vs ${compareLabel}` : `none in ${compareLabel}`}</span>
             </p>
           ) : <span />}
-          {kpi.spark && <Sparkline values={kpi.spark} />}
+          {kpi.spark && <span className="hidden sm:block"><Sparkline values={kpi.spark} /></span>}
         </div>
       )}
     </>
   );
 
-  const cls = "group flex h-full flex-col rounded-2xl border border-[var(--color-border)] bg-white p-5 shadow-[0_1px_2px_rgba(16,24,40,0.04)] transition-[transform,border-color,box-shadow] duration-200 ease-out hover:-translate-y-px hover:border-[#D3DCDF] hover:shadow-[0_8px_24px_-12px_rgba(16,24,40,0.14)] motion-reduce:transition-none motion-reduce:hover:translate-y-0";
+  const cls = "group flex h-full min-w-0 flex-col rounded-2xl border border-[var(--color-border)] bg-white p-4 sm:p-5 shadow-[0_1px_2px_rgba(16,24,40,0.04)] transition-[transform,border-color,box-shadow] duration-200 ease-out hover:-translate-y-px hover:border-[#D3DCDF] hover:shadow-[0_8px_24px_-12px_rgba(16,24,40,0.14)] motion-reduce:transition-none motion-reduce:hover:translate-y-0";
   return kpi.href ? (
     <Link href={kpi.href} className={`${cls} focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary-500)] focus-visible:ring-offset-2`}>
       {body}
@@ -193,7 +210,9 @@ function kpiCols(n: number) {
 
 export function KpiGrid({ kpis, compareLabel }: { kpis: KpiValue[]; compareLabel: string }) {
   return (
-    <div className={`grid grid-cols-1 gap-3 sm:gap-4 ${kpiCols(kpis.length)}`}>
+    // Four or more tiles go two-up on phones: one per row made the Overview
+    // eight screens of scrolling before the first chart.
+    <div className={`grid ${kpis.length >= 4 ? "grid-cols-2" : "grid-cols-1"} gap-3 sm:gap-4 ${kpiCols(kpis.length)}`}>
       {kpis.map((k) => <KpiCard key={`${k.id}-${k.label ?? ""}`} kpi={k} compareLabel={compareLabel} />)}
     </div>
   );

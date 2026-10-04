@@ -290,8 +290,9 @@ export function PastExternalVisitsTab({
                     />
                     <button
                       onClick={() => setLightbox(fileHref(fileUrl))}
-                      className="absolute top-2 right-2 bg-black/50 text-white p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="absolute top-2 right-2 bg-black/50 text-white p-1.5 rounded-lg opacity-0 group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity"
                       title="View full size"
+                      aria-label="View full size"
                     >
                       <ZoomIn size={14} />
                     </button>

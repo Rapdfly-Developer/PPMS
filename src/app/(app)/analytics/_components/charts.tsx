@@ -186,11 +186,15 @@ export function TrendChart({
         )}
       </div>
 
-      <table className="sr-only">
+      {/* sr-only on a wrapper: a table ignores width:1px, so a hidden table
+          kept its full width and scrolled the page sideways on phones. */}
+      <div className="sr-only">
+      <table>
         <caption>{title}</caption>
         <thead><tr><th>Period</th>{series.map((s) => <th key={s.key}>{s.label}</th>)}</tr></thead>
         <tbody>{points.map((p) => <tr key={p.key}><td>{p.label}</td>{series.map((s) => <td key={s.key}>{p.values[s.key] ?? 0}</td>)}</tr>)}</tbody>
       </table>
+      </div>
     </figure>
   );
 }
@@ -236,10 +240,12 @@ export function ColumnChart({ data, color = "var(--color-primary-600)", height =
           </svg>
         )}
       </div>
-      <table className="sr-only">
+      <div className="sr-only">
+      <table>
         <caption>{title}</caption>
         <tbody>{data.map((d) => <tr key={d.label}><th>{d.label}</th><td>{d.value}</td></tr>)}</tbody>
       </table>
+      </div>
     </figure>
   );
 }

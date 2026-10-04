@@ -352,7 +352,7 @@ export function ActivationClient({ initial }: { initial: ActivationPageData }) {
         )}
 
         {/* ── Three cards ─────────────────────────────────────────────────────── */}
-        <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-5 mb-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 mb-5">
 
           {/* Card 1 — License Holder */}
           <Card title="License Holder" icon={UserCircle} className="act-fadein" style={{ animationDelay: "120ms" } as React.CSSProperties}>
@@ -499,7 +499,7 @@ export function ActivationClient({ initial }: { initial: ActivationPageData }) {
         <div className="act-fadein rounded-2xl overflow-hidden" style={{ animationDelay: "300ms", background: T.card, border: `1px solid ${T.border2}`, boxShadow: "0 2px 16px rgba(15,41,38,.07)" }}>
           <div style={{ height: "2px", background: `linear-gradient(90deg,transparent,${T.border2} 40%,transparent)` }} />
           <div className="p-5">
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: T.track, border: `1px solid ${T.border}` }}>
                   <Server size={14} style={{ color: T.faint }} />

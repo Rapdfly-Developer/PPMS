@@ -378,7 +378,9 @@ export function IntegrationsClient({
 
       {/* Hospital cards */}
       <h2 className="text-sm font-bold text-[var(--color-ink-800)] mt-7 mb-3">Hospitals</h2>
-      <div className="grid sm:grid-cols-2 gap-3">
+      {/* grid-cols-1 (minmax(0,1fr)): an implicit column sized to the
+          un-wrappable hospital name and pushed the cards off a 320px screen. */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {hospitals.map((h) => (
           <div key={h.id} className="rounded-xl border border-[var(--color-border)] bg-white p-4">
             <div className="flex items-start justify-between gap-2">
@@ -387,11 +389,11 @@ export function IntegrationsClient({
                 <p className="text-caption font-mono text-[var(--color-ink-400)]">{h.shortCode}</p>
               </div>
               {h.integration ? (
-                <span className={`text-caption font-bold px-2 py-0.5 rounded border ${TYPE_BADGE[h.integration.integrationType] ?? "bg-slate-50 text-slate-600 border-slate-200"}`}>
+                <span className={`shrink-0 text-caption font-bold px-2 py-0.5 rounded border ${TYPE_BADGE[h.integration.integrationType] ?? "bg-slate-50 text-slate-600 border-slate-200"}`}>
                   {h.integration.integrationType}
                 </span>
               ) : (
-                <span className="text-caption font-medium px-2 py-0.5 rounded bg-slate-100 text-slate-500">Not configured</span>
+                <span className="shrink-0 text-caption font-medium px-2 py-0.5 rounded bg-slate-100 text-slate-500">Not configured</span>
               )}
             </div>
 

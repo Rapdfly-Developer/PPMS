@@ -319,14 +319,14 @@ export function TopBar({ name, role }: { name: string; role: string }) {
   return (
     <header
       className="shrink-0 flex items-center gap-2 px-4 lg:px-6 bg-white border-b border-[var(--color-border)] z-30 relative"
-      style={{ paddingTop: "env(safe-area-inset-top, 0px)", minHeight: "calc(3.5rem + env(safe-area-inset-top, 0px))" }}
+      style={{ paddingTop: "env(safe-area-inset-top, 0px)", minHeight: "calc(var(--rf-header-h) + env(safe-area-inset-top, 0px))" }}
     >
 
       {/* Hamburger — mobile + tablet (≤1024px) */}
       <button
         onClick={toggle}
         aria-label="Open menu"
-        className="min-[1025px]:hidden shrink-0 p-1.5 rounded-lg text-[var(--color-ink-500)] hover:text-[var(--color-ink-800)] hover:bg-[var(--color-surface-sunken)] transition-colors"
+        className="min-[1025px]:hidden shrink-0 p-2.5 -ml-1.5 rounded-lg text-[var(--color-ink-500)] hover:text-[var(--color-ink-800)] hover:bg-[var(--color-surface-sunken)] transition-colors"
       >
         <Menu size={20} />
       </button>
@@ -454,9 +454,9 @@ export function TopBar({ name, role }: { name: string; role: string }) {
             }}
             title="Notifications"
             aria-label="Notifications"
-            className="relative p-1.5 text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)] rounded-lg hover:bg-[var(--color-surface-sunken)] transition-colors"
+            className="relative p-2.5 sm:p-1.5 text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)] rounded-lg hover:bg-[var(--color-surface-sunken)] transition-colors"
           >
-            <Bell size={17} className="w-[14px] h-[14px] sm:w-[17px] sm:h-[17px]" />
+            <Bell size={17} className="w-[18px] h-[18px] sm:w-[17px] sm:h-[17px]" />
             {unreadCount > 0 && (
               <span className="absolute -top-0.5 -right-0.5 h-4 min-w-4 flex items-center justify-center rounded-full bg-red-500 text-white text-micro sm:text-caption font-bold px-1 leading-none">
                 {unreadCount > 9 ? "9+" : unreadCount}
@@ -484,7 +484,8 @@ export function TopBar({ name, role }: { name: string; role: string }) {
         {/* Sign out */}
         <button
           onClick={() => signOut({ callbackUrl: "/login" })}
-          className="flex items-center gap-1.5 text-label sm:text-sm text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)] transition-colors"
+          aria-label="Sign out"
+          className="flex items-center justify-center gap-1.5 min-h-10 min-w-10 -mr-2 sm:mr-0 sm:min-h-0 sm:min-w-0 rounded-lg text-label sm:text-sm text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)] transition-colors"
           title="Sign out"
         >
           <LogOut size={15} />

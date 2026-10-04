@@ -819,7 +819,7 @@ export function HospitalSettingsClient({ hospital }: { hospital: Hospital }) {
     <div className="fade-in">
       {/* Toast */}
       {savedToast && (
-        <div className="fixed top-4 right-4 z-50 flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 text-white text-label sm:text-sm font-medium shadow-lg animate-in slide-in-from-top-2">
+        <div className="fixed top-4 right-4 z-50 max-w-[calc(100vw-2rem)] flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 text-white text-label sm:text-sm font-medium shadow-lg animate-in slide-in-from-top-2">
           <CheckCircle2 size={15} /> Settings saved successfully
         </div>
       )}
