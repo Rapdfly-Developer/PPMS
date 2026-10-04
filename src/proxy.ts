@@ -79,8 +79,16 @@ export default auth((req) => {
   const isSubscriptionPage = pathname.startsWith("/subscription");
   const isRazorpayApi      = pathname.startsWith("/api/razorpay");
   const isCronApi          = pathname.startsWith("/api/cron");
+  // Server-to-server and public endpoints that authenticate themselves (cron
+  // secret, Razorpay signature) or are meant for anonymous visitors (landing
+  // demo form, DPDP grievance contact). Redirecting them to /login meant the
+  // nightly jobs, payment webhooks and demo form never reached their handlers.
+  const isSelfAuthedApi    = isCronApi
+    || pathname === "/api/razorpay/webhook"
+    || pathname === "/api/demo-request"
+    || pathname === "/api/grievance-contact";
 
-  if (!isLoggedIn && !isLoginPage && !isLandingPage && !isPrivacyPage && !isTermsPage && !isRefundPage && !isSubPage && !isLicensePage && !isLicenseApi && !isSetupPage && !isSetupApi) {
+  if (!isLoggedIn && !isLoginPage && !isLandingPage && !isPrivacyPage && !isTermsPage && !isRefundPage && !isSubPage && !isLicensePage && !isLicenseApi && !isSetupPage && !isSetupApi && !isSelfAuthedApi) {
     return NextResponse.redirect(new URL("/login", req.nextUrl.origin));
   }
   // Redirect logged-in users off the login page — but only for page

@@ -47,7 +47,7 @@ export async function GET(req: Request) {
       dateTime: { gte: yesterdayStart, lte: yesterdayEnd },
       visit: null,
     },
-    select: { id: true },
+    select: { id: true, hospitalId: true, doctor: { select: { userId: true } } },
     take: 500,
   });
 
@@ -59,12 +59,18 @@ export async function GET(req: Request) {
       data: { status: "CANCELLED" },
     });
     // Write audit log for each no-show
+    // AuditLog.userId is a foreign key and there is no "system" user, so the
+    // row is attributed to the appointment's doctor and labelled as automatic.
     await prisma.auditLog.createMany({
-      data: ids.map((id) => ({
-        userId: "system",
+      data: noShows.filter((a) => a.doctor?.userId).map((a) => ({
+        userId: a.doctor!.userId,
+        userName: "System (auto-cancel)",
         action: "AUTO_CANCEL_NO_SHOW",
+        actionType: "UPDATE",
+        moduleName: "Appointment",
         entityType: "Appointment",
-        entityId: id,
+        entityId: a.id,
+        hospitalId: a.hospitalId,
         newValue: JSON.stringify({ reason: "Patient did not visit, auto-cancelled at end of day" }),
       })),
       skipDuplicates: true,
