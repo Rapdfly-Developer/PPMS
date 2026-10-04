@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { HospitalSettingsClient } from "./HospitalSettingsClient";
 import { DoctorSettingsClient } from "./DoctorSettingsClient";
 import { redirect } from "next/navigation";
+import { doctorActivityScope } from "@/lib/staff-scope";
 import { getSavedPermsForForms } from "@/lib/role-permissions";
 
 export default async function SettingsPage() {
@@ -34,6 +35,10 @@ export default async function SettingsPage() {
     select: { name: true, label: true, color: true },
   });
 
+  // Audit feeds show only this practice: the doctor, their staff, their hospitals.
+  const activity = await doctorActivityScope(doctorId, user.id);
+  const activityWhere = { OR: [{ userId: { in: activity.userIds } }, { hospitalId: { in: activity.hospitalIds } }] };
+
   const [allUsers, auditLogs, doctorLinks, doctorProfile, loginLogs, patientApptLogs] = await Promise.all([
     // Only show: the doctor himself + staff/refractionists from his linked hospitals
     prisma.user.findMany({
@@ -52,6 +57,7 @@ export default async function SettingsPage() {
       orderBy: { createdAt: "desc" },
     }),
     prisma.auditLog.findMany({
+      where: activityWhere,
       orderBy: { timestamp: "desc" },
       take: 60,
     }),
@@ -76,9 +82,12 @@ export default async function SettingsPage() {
     }),
     prisma.auditLog.findMany({
       where: {
-        OR: [
-          { moduleName: { in: ["Patient", "Appointment"] } },
-          { entityType: { in: ["Patient", "Appointment", "Medication", "InvestigationOrder", "Diagnosis"] } },
+        AND: [
+          activityWhere,
+          { OR: [
+            { moduleName: { in: ["Patient", "Appointment"] } },
+            { entityType: { in: ["Patient", "Appointment", "Medication", "InvestigationOrder", "Diagnosis"] } },
+          ] },
         ],
       },
       orderBy: { timestamp: "desc" },

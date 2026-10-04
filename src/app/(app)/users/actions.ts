@@ -1,7 +1,8 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/rbac";
+import { requireRole, scopeDoctorId } from "@/lib/rbac";
+import { doctorManagesUser, doctorHospitalIds } from "@/lib/staff-scope";
 import { revalidatePath } from "next/cache";
 import bcrypt from "bcryptjs";
 import { isEmailTaken, isMobileTaken } from "@/lib/uniqueness";
@@ -71,7 +72,8 @@ export async function createUser(formData: FormData): Promise<{ error?: string }
 }
 
 export async function updateUser(userId: string, formData: FormData): Promise<{ error?: string }> {
-  await requireRole("DOCTOR");
+  const me = await requireRole("DOCTOR");
+  if (!(await doctorManagesUser(scopeDoctorId(me), userId))) return { error: "User not found." };
 
   const name = (formData.get("name") as string)?.trim();
   const email = (formData.get("email") as string)?.trim() || null;
@@ -81,6 +83,9 @@ export async function updateUser(userId: string, formData: FormData): Promise<{ 
   const active = formData.get("active") === "true";
 
   if (!name) return { error: "Name is required." };
+  if (hospitalId && !(await doctorHospitalIds(scopeDoctorId(me))).includes(hospitalId)) {
+    return { error: "Choose one of your own hospitals." };
+  }
   if (mobile && !/^\d{10}$/.test(mobile)) {
     return { error: "Mobile number must be exactly 10 digits." };
   }
@@ -124,7 +129,8 @@ export async function updateUser(userId: string, formData: FormData): Promise<{ 
 }
 
 export async function deleteUser(userId: string): Promise<{ error?: string }> {
-  await requireRole("DOCTOR");
+  const me = await requireRole("DOCTOR");
+  if (!(await doctorManagesUser(scopeDoctorId(me), userId))) return { error: "User not found." };
 
   try {
     await prisma.hospitalStaff.deleteMany({ where: { userId } });
@@ -142,7 +148,8 @@ export async function deleteUser(userId: string): Promise<{ error?: string }> {
 }
 
 export async function toggleUserActive(userId: string, active: boolean): Promise<void> {
-  await requireRole("DOCTOR");
+  const me = await requireRole("DOCTOR");
+  if (!(await doctorManagesUser(scopeDoctorId(me), userId))) throw new Error("User not found.");
   await prisma.user.update({ where: { id: userId }, data: { active } });
   revalidatePath("/users");
 }

@@ -1,7 +1,8 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/rbac";
+import { requireRole, scopeDoctorId } from "@/lib/rbac";
+import { doctorManagesUser } from "@/lib/staff-scope";
 import { revalidatePath } from "next/cache";
 import { manualActivateLicense } from "@/lib/license";
 import { generateLicenseKey } from "@/lib/license-key";
@@ -280,7 +281,8 @@ export async function updateUser(
 }
 
 export async function deleteUser(userId: string): Promise<{ error?: string }> {
-  await requireRole("DOCTOR");
+  const me = await requireRole("DOCTOR");
+  if (!(await doctorManagesUser(scopeDoctorId(me), userId))) return { error: "User not found." };
 
   const user = await prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
   if (!user) return { error: "User not found." };
@@ -297,7 +299,8 @@ export async function deleteUser(userId: string): Promise<{ error?: string }> {
 }
 
 export async function toggleUserActive(userId: string, active: boolean): Promise<{ error?: string }> {
-  await requireRole("DOCTOR");
+  const me = await requireRole("DOCTOR");
+  if (!(await doctorManagesUser(scopeDoctorId(me), userId))) return { error: "User not found." };
 
   const user = await prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
   if (!user) return { error: "User not found." };

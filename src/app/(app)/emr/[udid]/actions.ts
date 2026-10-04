@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { requireRole, requireUser, userCan } from "@/lib/rbac";
 import { getStaffHospitalId } from "@/lib/booking-scope";
+import { patientRecordScope, visitRecordScope } from "@/lib/patient-access";
 import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import { createNotification } from "@/lib/notify";
@@ -23,6 +24,34 @@ async function assertVisitAccess(visitId: string) {
   }
   if (user.role === "DOCTOR" && visit.doctorId !== user.profileId) throw new Error("Forbidden");
   return visit;
+}
+
+/**
+ * Ownership only: the visit is this doctor's, or at the staff member's own
+ * hospital. Unlike assertVisitAccess it does not apply the finalised-visit
+ * lock, so follow-up edits (e.g. resolving an older diagnosis) keep working.
+ */
+async function assertVisitOwner(visitId: string) {
+  const user = await requireUser();
+  const scope = await visitRecordScope(user);
+  const visit = scope && await prisma.visit.findFirst({ where: { id: visitId, ...scope }, select: { id: true } });
+  if (!visit) throw new Error("Forbidden");
+}
+
+/** The visit a diagnosis / medication / investigation row belongs to, checked for ownership. */
+async function assertRowOwner(model: "diagnosis" | "medication" | "investigationOrder", id: string) {
+  const delegate = prisma[model] as unknown as { findUnique(args: object): Promise<{ visitId: string } | null> };
+  const row = await delegate.findUnique({ where: { id }, select: { visitId: true } });
+  if (!row) throw new Error("Record not found");
+  await assertVisitOwner(row.visitId);
+}
+
+/** The patient must be within this user's clinical scope. */
+async function assertPatientOwner(patientId: string) {
+  const user = await requireUser();
+  const scope = await patientRecordScope(user);
+  const patient = scope && await prisma.patient.findFirst({ where: { id: patientId, ...scope }, select: { id: true } });
+  if (!patient) throw new Error("Forbidden");
 }
 
 /**
@@ -126,6 +155,7 @@ export async function addPastExternalVisit(
   }
 ) {
   const user = await requireRole("DOCTOR", "HOSPITAL");
+  await assertPatientOwner(patientId);
 
   await prisma.pastExternalVisit.create({
     data: {
@@ -145,6 +175,9 @@ export async function addPastExternalVisit(
 
 export async function renamePastExternalVisit(id: string, udid: string, label: string): Promise<void> {
   const user = await requireRole("DOCTOR", "HOSPITAL");
+  const past = await prisma.pastExternalVisit.findUnique({ where: { id }, select: { patientId: true } });
+  if (!past) throw new Error("Record not found");
+  await assertPatientOwner(past.patientId);
   await prisma.pastExternalVisit.update({
     where: { id },
     data: { label: label.trim() || null },
@@ -155,6 +188,9 @@ export async function renamePastExternalVisit(id: string, udid: string, label: s
 
 export async function verifyPastExternalVisit(id: string, udid: string, status: "VERIFIED" | "REJECTED", corrected?: Record<string, string>) {
   const user = await requireRole("DOCTOR");
+  const past = await prisma.pastExternalVisit.findUnique({ where: { id }, select: { patientId: true } });
+  if (!past) throw new Error("Record not found");
+  await assertPatientOwner(past.patientId);
   await prisma.pastExternalVisit.update({
     where: { id },
     data: { verificationStatus: status, ...(corrected ?? {}) },
@@ -218,6 +254,7 @@ export async function saveRefraction(visitId: string, udid: string, data: { re: 
 
 export async function sendToOpticals(visitId: string, udid: string) {
   await requireRole("DOCTOR");
+  await assertVisitOwner(visitId);
   await prisma.refractiveCorrection.update({ where: { visitId }, data: { sentToOpticals: true } });
   revalidate(udid);
 }
@@ -255,6 +292,7 @@ export async function removeIOPReading(id: string, udid: string) {
 
 export async function markOphthalmicReviewed(visitId: string) {
   await requireRole("DOCTOR");
+  await assertVisitOwner(visitId);
   await Promise.all([
     prisma.visualAcuity.update({ where: { visitId }, data: { reviewedByDoctor: true } }).catch(() => {}),
     prisma.refractiveCorrection.update({ where: { visitId }, data: { reviewedByDoctor: true } }).catch(() => {}),
@@ -309,6 +347,7 @@ export async function saveRetinoscopy(visitId: string, udid: string, data: { re:
 
 export async function getRefractionForVisit(visitId: string) {
   await requireUser();
+  await assertVisitOwner(visitId);
   const rx = await prisma.refractiveCorrection.findFirst({ where: { visitId } });
   return rx ? { re: rx.re ?? "", le: rx.le ?? "" } : null;
 }
@@ -355,6 +394,7 @@ export async function addInvestigationOrder(
 
 export async function deleteInvestigationOrder(id: string, udid: string) {
   const user = await requireRole("DOCTOR");
+  await assertRowOwner("investigationOrder", id);
   await prisma.investigationOrder.delete({ where: { id } });
   await writeAudit(user.id, "InvestigationOrder", id, "DELETE", {});
   revalidate(udid);
@@ -380,6 +420,7 @@ export async function updateInvestigationNotes(id: string, udid: string, notes: 
 
 export async function updateInvestigationStatus(id: string, udid: string, status: string) {
   const user = await requireRole("DOCTOR");
+  await assertRowOwner("investigationOrder", id);
   await prisma.investigationOrder.update({ where: { id }, data: { status } });
   await writeAudit(user.id, "InvestigationOrder", id, "STATUS", { status });
   revalidate(udid);
@@ -387,6 +428,7 @@ export async function updateInvestigationStatus(id: string, udid: string, status
 
 export async function attachResult(id: string, udid: string, resultRef: string): Promise<{ error?: string }> {
   const user = await requireRole("DOCTOR", "HOSPITAL");
+  await assertRowOwner("investigationOrder", id);
   const order = await prisma.investigationOrder.findUnique({ where: { id }, include: { visit: { select: { doctorId: true } } } });
   if (!order) return { error: "Order not found." };
   await prisma.investigationOrder.update({
@@ -426,6 +468,7 @@ export async function addDiagnosis(
 
 export async function updateDiagnosisStatus(id: string, udid: string, status: string) {
   const user = await requireRole("DOCTOR");
+  await assertRowOwner("diagnosis", id);
   await prisma.diagnosis.update({ where: { id }, data: { status } });
   await writeAudit(user.id, "Diagnosis", id, "STATUS", { status });
   revalidate(udid);
@@ -438,6 +481,7 @@ export async function confirmDiagnosis(
   data: { protocolId?: string; protocolName?: string; status?: string }
 ) {
   const user = await requireRole("DOCTOR");
+  await assertRowOwner("diagnosis", id);
   await prisma.diagnosis.update({
     where: { id },
     data: {
@@ -458,6 +502,7 @@ export async function setDiagnosisProtocol(
   data: { protocolId?: string; protocolName?: string }
 ) {
   const user = await requireRole("DOCTOR");
+  await assertRowOwner("diagnosis", id);
   await prisma.diagnosis.update({
     where: { id },
     data: {
@@ -471,6 +516,7 @@ export async function setDiagnosisProtocol(
 
 export async function removeDiagnosis(id: string, udid: string) {
   const user = await requireRole("DOCTOR");
+  await assertRowOwner("diagnosis", id).catch((e) => { if ((e as Error).message !== "Record not found") throw e; });
   const existing = await prisma.diagnosis.findUnique({ where: { id } });
   if (!existing) { revalidate(udid); return; }
   await prisma.diagnosis.delete({ where: { id } });
@@ -494,6 +540,7 @@ export async function addMedication(
 
 export async function removeMedication(id: string, udid: string) {
   const user = await requireRole("DOCTOR");
+  await assertRowOwner("medication", id);
   await prisma.medication.delete({ where: { id } });
   await writeAudit(user.id, "Medication", id, "REMOVE");
   revalidate(udid);
@@ -505,6 +552,7 @@ export async function updateMedication(
   data: { drugName: string; dosage?: string; frequency?: string; duration?: string; instructions?: string; route?: string; laterality?: string }
 ) {
   const user = await requireRole("DOCTOR");
+  await assertRowOwner("medication", id);
   await prisma.medication.update({ where: { id }, data });
   await writeAudit(user.id, "Medication", id, "UPDATE", data);
   revalidate(udid);
@@ -512,6 +560,7 @@ export async function updateMedication(
 
 export async function clearAllMedications(visitId: string, udid: string) {
   const user = await requireRole("DOCTOR");
+  await assertVisitOwner(visitId);
   await prisma.medication.deleteMany({ where: { visitId } });
   await writeAudit(user.id, "Medication", visitId, "CLEAR_ALL");
   revalidate(udid);
@@ -608,6 +657,7 @@ export async function saveProcedureNotes(visitId: string, udid: string, value: s
 
 export async function closeVisit(visitId: string, udid: string) {
   const user = await requireRole("DOCTOR");
+  await assertVisitOwner(visitId);
 
   const visit = await prisma.visit.findUnique({
     where: { id: visitId },
@@ -697,6 +747,7 @@ export async function closeVisit(visitId: string, udid: string) {
 
 export async function markPartialDispense(visitId: string, udid: string, reason?: string) {
   const user = await requireRole("DOCTOR");
+  await assertVisitOwner(visitId);
 
   const visit = await prisma.visit.findUnique({
     where: { id: visitId },

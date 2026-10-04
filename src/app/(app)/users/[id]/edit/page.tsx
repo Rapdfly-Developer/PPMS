@@ -1,4 +1,5 @@
-import { requireRole } from "@/lib/rbac";
+import { requireRole, scopeDoctorId } from "@/lib/rbac";
+import { doctorManagesUser, doctorHospitalIds } from "@/lib/staff-scope";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import { UserProfileClient } from "./UserProfileClient";
@@ -8,8 +9,11 @@ export default async function EditUserPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  await requireRole("DOCTOR");
+  const me = await requireRole("DOCTOR");
   const { id } = await params;
+  const doctorId = scopeDoctorId(me);
+  if (!(await doctorManagesUser(doctorId, id))) notFound();
+  const hospitalIds = await doctorHospitalIds(doctorId);
 
   const [user, hospitals] = await Promise.all([
     prisma.user.findUnique({
@@ -19,7 +23,7 @@ export default async function EditUserPage({
         refractionist:  { include: { hospital: true } },
       },
     }),
-    prisma.hospital.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } }),
+    prisma.hospital.findMany({ where: { id: { in: hospitalIds } }, select: { id: true, name: true }, orderBy: { name: "asc" } }),
   ]);
   if (!user) notFound();
 

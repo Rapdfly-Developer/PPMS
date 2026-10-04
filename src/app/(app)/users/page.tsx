@@ -1,14 +1,15 @@
-import { requireRole } from "@/lib/rbac";
+import { requireRole, scopeDoctorId } from "@/lib/rbac";
+import { doctorStaffWhere } from "@/lib/staff-scope";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { UserPlus, Pencil } from "lucide-react";
 import { DeleteUserButton } from "./DeleteUserButton";
 
 export default async function UsersPage() {
-  await requireRole("DOCTOR");
+  const me = await requireRole("DOCTOR");
 
   const staffUsers = await (prisma.user as any).findMany({
-    where: { role: { not: "DOCTOR" } },
+    where: await doctorStaffWhere(scopeDoctorId(me)),
     include: { hospitalStaff: { include: { hospital: true } } },
     orderBy: { createdAt: "desc" },
   });
