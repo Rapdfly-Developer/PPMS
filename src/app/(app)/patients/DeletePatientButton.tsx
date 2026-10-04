@@ -55,29 +55,29 @@ export function DeletePatientButton({ patientId, patientName, patientCode }: { p
             <div className="flex items-start gap-3">
               <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-50 text-red-600"><AlertTriangle size={18} /></span>
               <div>
-                <h2 id="delete-patient-title" className="text-[16px] font-semibold text-[var(--color-ink-900)]">Delete {patientName}?</h2>
-                <p className="mt-1 text-[13px] leading-relaxed text-[var(--color-ink-500)]">
+                <h2 id="delete-patient-title" className="text-heading-sm font-semibold text-[var(--color-ink-900)]">Delete {patientName}?</h2>
+                <p className="mt-1 text-label leading-relaxed text-[var(--color-ink-500)]">
                   This permanently deletes the patient and <strong>all</strong> their records: appointments, visits, EMR, prescriptions, investigations, diagnoses, surgery and insurance details. This cannot be undone.
                 </p>
               </div>
             </div>
-            <label className="mt-5 block text-[12.5px] font-medium text-[var(--color-ink-700)]">
+            <label className="mt-5 block text-label font-medium text-[var(--color-ink-700)]">
               Type <span className="font-mono font-semibold text-[var(--color-ink-900)]">{patientCode}</span> to confirm
               <input
                 autoFocus
                 value={typed}
                 onChange={(e) => setTyped(e.target.value)}
-                className="mt-1.5 w-full rounded-lg border border-[var(--color-border)] px-3 py-2 font-mono text-[13px] focus:outline-none focus:ring-2 focus:ring-red-400"
+                className="mt-1.5 w-full rounded-lg border border-[var(--color-border)] px-3 py-2 font-mono text-label focus:outline-none focus:ring-2 focus:ring-red-400"
               />
             </label>
-            {error && <p role="alert" className="mt-2 text-[12px] text-red-600">{error}</p>}
+            {error && <p role="alert" className="mt-2 text-caption text-red-600">{error}</p>}
             <div className="mt-5 flex justify-end gap-2">
-              <button type="button" onClick={close} disabled={pending} className="h-9 rounded-lg border border-[var(--color-border)] px-4 text-[13px] font-medium text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]">Cancel</button>
+              <button type="button" onClick={close} disabled={pending} className="h-9 rounded-lg border border-[var(--color-border)] px-4 text-label font-medium text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]">Cancel</button>
               <button
                 type="button"
                 onClick={confirmDelete}
                 disabled={!matches || pending}
-                className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-red-600 px-4 text-[13px] font-semibold text-white hover:bg-red-700 disabled:opacity-40"
+                className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-red-600 px-4 text-label font-semibold text-white hover:bg-red-700 disabled:opacity-40"
               >
                 <Trash2 size={13} /> {pending ? "Deleting…" : "Delete permanently"}
               </button>

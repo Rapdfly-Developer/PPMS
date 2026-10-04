@@ -47,12 +47,12 @@ function Shell({ children, note }: { children: React.ReactNode; note?: string })
       >
         <div className="flex items-center gap-2 mb-3 flex-wrap">
           <Sparkles size={13} className="shrink-0 text-violet-500" />
-          <p className="text-[11px] font-semibold tracking-widest text-violet-600/80 uppercase italic">
+          <p className="text-caption font-semibold tracking-widest text-violet-600/80 uppercase italic">
             Differential Diagnosis
           </p>
           {/* Not tucked in a corner: this is the load-bearing caveat, sitting
               beside fields the doctor is actively editing. */}
-          <span className="ml-auto shrink-0 text-[9px] sm:text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-violet-50 text-violet-600 border border-violet-200/70">
+          <span className="ml-auto shrink-0 text-micro sm:text-caption font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-violet-50 text-violet-600 border border-violet-200/70">
             AI · not a diagnosis
           </span>
         </div>
@@ -60,7 +60,7 @@ function Shell({ children, note }: { children: React.ReactNode; note?: string })
         {children}
 
         {note && (
-          <p className="mt-2 text-[10px] text-violet-400/70 italic">{note}</p>
+          <p className="mt-2 text-caption text-violet-400/70 italic">{note}</p>
         )}
       </div>
     </div>
@@ -71,7 +71,7 @@ export function DifferentialDiagnosisCard({ state }: { state: DdxState }) {
   if (state.status === "loading") {
     return (
       <Shell>
-        <p className="flex items-center gap-2 text-[13px] sm:text-sm text-[var(--color-ink-500)]">
+        <p className="flex items-center gap-2 text-label sm:text-sm text-[var(--color-ink-500)]">
           <span
             aria-hidden="true"
             className="w-3 h-3 rounded-full border-2 border-[var(--color-primary-300)] border-t-[var(--color-primary-600)] animate-spin"
@@ -85,10 +85,10 @@ export function DifferentialDiagnosisCard({ state }: { state: DdxState }) {
   if (state.status === "timeout") {
     return (
       <Shell>
-        <p className="text-[13px] sm:text-sm text-[var(--color-ink-500)]">
+        <p className="text-label sm:text-sm text-[var(--color-ink-500)]">
           Couldn&apos;t generate suggestions.
         </p>
-        <p className="mt-1 text-[11px] sm:text-xs text-[var(--color-ink-400)]">
+        <p className="mt-1 text-caption sm:text-xs text-[var(--color-ink-400)]">
           The assistant did not return a differential for this visit. Open the AI Clinical
           Copilot below to retry.
         </p>
@@ -101,7 +101,7 @@ export function DifferentialDiagnosisCard({ state }: { state: DdxState }) {
       <Shell>
         {/* Explicitly "nothing to suggest", never blank — a silent empty card
             would read as "no differentials exist", which is a clinical claim. */}
-        <p className="text-[13px] sm:text-sm text-[var(--color-ink-500)]">
+        <p className="text-label sm:text-sm text-[var(--color-ink-500)]">
           No suggestions returned: insufficient information in the record.
         </p>
       </Shell>
@@ -113,11 +113,11 @@ export function DifferentialDiagnosisCard({ state }: { state: DdxState }) {
       <ul className="flex flex-col divide-y divide-[var(--color-border)]">
         {state.items.map((d, i) => (
           <li key={`${d.name}-${i}`} className="py-2 first:pt-0 last:pb-0">
-            <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-900)]">
+            <p className="text-label sm:text-sm font-medium text-[var(--color-ink-900)]">
               {d.name}
             </p>
             {(d.confidence || d.source) && (
-              <p className="mt-0.5 text-[11px] sm:text-xs text-[var(--color-ink-500)]">
+              <p className="mt-0.5 text-caption sm:text-xs text-[var(--color-ink-500)]">
                 {d.confidence && <>Confidence: {d.confidence}</>}
                 {/* The separator belongs to the source, so a missing citation
                     does not leave a dangling "·". */}

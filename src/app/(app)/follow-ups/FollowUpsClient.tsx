@@ -84,7 +84,7 @@ function overdueText(fuDate: string): string {
 function StatusBadge({ status }: { status: FollowUpStatus }) {
   const m = STATUS_META[status];
   return (
-    <span className={`inline-flex items-center gap-1.5 text-[9px] sm:text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap ${m.pill}`}>
+    <span className={`inline-flex items-center gap-1.5 text-micro sm:text-caption font-bold px-2 py-0.5 rounded-full whitespace-nowrap ${m.pill}`}>
       <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${m.dot}`} />
       {m.label}
     </span>
@@ -111,7 +111,7 @@ function StatCard({
         <p className={`text-lg sm:text-2xl font-bold leading-none tabular-nums ${count > 0 ? accent : "text-[var(--color-ink-300)]"}`}>
           {count}
         </p>
-        <p className="text-[9px] sm:text-xs text-[var(--color-ink-500)] mt-0.5 leading-tight">{label}</p>
+        <p className="text-micro sm:text-xs text-[var(--color-ink-500)] mt-0.5 leading-tight">{label}</p>
       </div>
     </button>
   );
@@ -136,10 +136,10 @@ function ReschedulePanel({
 
   return (
     <div className="mt-2 p-3 rounded-xl border border-[var(--color-primary-200)] bg-[var(--color-primary-50)]">
-      <p className="text-[11px] sm:text-xs font-semibold text-[var(--color-primary-800)] mb-2">Reschedule Follow-up</p>
+      <p className="text-caption sm:text-xs font-semibold text-[var(--color-primary-800)] mb-2">Reschedule Follow-up</p>
       <div className="flex items-end gap-2 flex-wrap">
         <div>
-          <label className="text-[9px] sm:text-[10px] font-semibold text-[var(--color-ink-500)] uppercase tracking-wide block mb-1">New Date</label>
+          <label className="text-micro sm:text-caption font-semibold text-[var(--color-ink-500)] uppercase tracking-wide block mb-1">New Date</label>
           <input
             type="date"
             value={date}
@@ -151,18 +151,18 @@ function ReschedulePanel({
         <button
           onClick={save}
           disabled={pending || !date}
-          className="text-[11px] sm:text-xs font-semibold px-3 py-1.5 rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-50 transition-colors"
+          className="text-caption sm:text-xs font-semibold px-3 py-1.5 rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-50 transition-colors"
         >
           {pending ? "Saving…" : "Save"}
         </button>
         <button
           onClick={onClose}
-          className="text-[11px] sm:text-xs px-3 py-1.5 rounded-lg border border-[var(--color-border)] text-[var(--color-ink-500)] hover:bg-white transition-colors"
+          className="text-caption sm:text-xs px-3 py-1.5 rounded-lg border border-[var(--color-border)] text-[var(--color-ink-500)] hover:bg-white transition-colors"
         >
           Cancel
         </button>
       </div>
-      {err && <p className="text-[11px] sm:text-xs text-red-600 mt-1.5">{err}</p>}
+      {err && <p className="text-caption sm:text-xs text-red-600 mt-1.5">{err}</p>}
     </div>
   );
 }
@@ -185,7 +185,7 @@ function CancelPanel({
 
   return (
     <div className="mt-2 p-3 rounded-xl border border-red-200 bg-red-50">
-      <p className="text-[11px] sm:text-xs font-semibold text-red-800 mb-2">Cancel Follow-up</p>
+      <p className="text-caption sm:text-xs font-semibold text-red-800 mb-2">Cancel Follow-up</p>
       <textarea
         rows={2}
         value={reason}
@@ -197,7 +197,7 @@ function CancelPanel({
         <button
           onClick={save}
           disabled={pending}
-          className="text-[11px] sm:text-xs font-semibold px-3 py-1.5 rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 transition-colors"
+          className="text-caption sm:text-xs font-semibold px-3 py-1.5 rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 transition-colors"
         >
           {pending ? "Cancelling…" : "Confirm Cancel"}
         </button>
@@ -205,7 +205,7 @@ function CancelPanel({
           Back
         </button>
       </div>
-      {err && <p className="text-[11px] sm:text-xs text-red-600 mt-1">{err}</p>}
+      {err && <p className="text-caption sm:text-xs text-red-600 mt-1">{err}</p>}
     </div>
   );
 }
@@ -254,8 +254,8 @@ function CompleteModal({ v, onDone, onClose }: { v: FuVisit; onDone: () => void;
               <CheckCircle2 size={16} className="text-[var(--color-primary-700)]" />
             </div>
             <div>
-              <p className="text-[13px] sm:text-sm font-bold text-[var(--color-ink-900)]">Complete Follow-up</p>
-              <p className="text-[10px] sm:text-[11px] text-[var(--color-ink-400)]">{v.patient.name}</p>
+              <p className="text-label sm:text-sm font-bold text-[var(--color-ink-900)]">Complete Follow-up</p>
+              <p className="text-caption sm:text-caption text-[var(--color-ink-400)]">{v.patient.name}</p>
             </div>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-[var(--color-surface-sunken)] text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)] transition-colors">
@@ -267,38 +267,38 @@ function CompleteModal({ v, onDone, onClose }: { v: FuVisit; onDone: () => void;
           {/* Visit summary */}
           <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] p-3.5">
             <div className="flex items-center justify-between mb-2.5">
-              <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-[var(--color-ink-400)]">Previous Visit Summary</p>
+              <p className="text-micro sm:text-caption font-bold uppercase tracking-widest text-[var(--color-ink-400)]">Previous Visit Summary</p>
               <Link
                 href={`/emr/${v.patient.udid}`}
-                className="inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-semibold text-[var(--color-primary-600)] hover:text-[var(--color-primary-800)] transition-colors"
+                className="inline-flex items-center gap-1 text-micro sm:text-caption font-semibold text-[var(--color-primary-600)] hover:text-[var(--color-primary-800)] transition-colors"
               >
                 Open EMR <ArrowRight size={10} />
               </Link>
             </div>
             <div className="space-y-1.5">
-              <div className="flex items-start gap-2 text-[11px] sm:text-xs">
+              <div className="flex items-start gap-2 text-caption sm:text-xs">
                 <span className="text-[var(--color-ink-400)] shrink-0 w-24">Visit Date</span>
                 <span className="font-medium text-[var(--color-ink-700)]">
                   {format(new Date(v.date), "dd MMM yyyy")}
                   {overdueDays > 0 && (
-                    <span className="ml-1.5 text-[9px] sm:text-[10px] font-semibold text-red-600 bg-red-50 px-1.5 py-0.5 rounded">
+                    <span className="ml-1.5 text-micro sm:text-caption font-semibold text-red-600 bg-red-50 px-1.5 py-0.5 rounded">
                       {overdueDays}d overdue
                     </span>
                   )}
                 </span>
               </div>
               {v.inViewOf && (
-                <div className="flex items-start gap-2 text-[11px] sm:text-xs">
+                <div className="flex items-start gap-2 text-caption sm:text-xs">
                   <span className="text-[var(--color-ink-400)] shrink-0 w-24">Follow-up For</span>
                   <span className="font-medium text-[var(--color-ink-700)]">{v.inViewOf}</span>
                 </div>
               )}
               {v.diagnoses.length > 0 && (
-                <div className="flex items-start gap-2 text-[11px] sm:text-xs">
+                <div className="flex items-start gap-2 text-caption sm:text-xs">
                   <span className="text-[var(--color-ink-400)] shrink-0 w-24">Diagnoses</span>
                   <div className="flex flex-wrap gap-1">
                     {v.diagnoses.map((d, i) => (
-                      <span key={i} className="clinical-diagnosis-chip inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border text-[10px] sm:text-[11px]">
+                      <span key={i} className="clinical-diagnosis-chip inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border text-caption sm:text-caption">
                         {d.description}
                       </span>
                     ))}
@@ -310,7 +310,7 @@ function CompleteModal({ v, onDone, onClose }: { v: FuVisit; onDone: () => void;
 
           {/* Outcome selection */}
           <div>
-            <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-2">Outcome</p>
+            <p className="text-micro sm:text-caption font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-2">Outcome</p>
             <div className="grid grid-cols-1 gap-1.5">
               {OUTCOMES.map((o) => {
                 const Icon = o.icon;
@@ -320,7 +320,7 @@ function CompleteModal({ v, onDone, onClose }: { v: FuVisit; onDone: () => void;
                     key={o.id}
                     type="button"
                     onClick={() => setOutcome(o.id)}
-                    className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl border text-[13px] sm:text-sm font-medium transition-colors text-left
+                    className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl border text-label sm:text-sm font-medium transition-colors text-left
                       ${selected
                         ? "border-[var(--color-primary-400)] bg-[var(--color-primary-50)] text-[var(--color-ink-900)]"
                         : "border-[var(--color-border)] hover:border-[var(--color-primary-300)] text-[var(--color-ink-700)]"
@@ -340,10 +340,10 @@ function CompleteModal({ v, onDone, onClose }: { v: FuVisit; onDone: () => void;
           {/* Next follow-up form */}
           {showNext && (
             <div className="rounded-xl border border-[var(--color-primary-200)] bg-[var(--color-primary-50)] p-3.5 space-y-3">
-              <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-[var(--color-primary-700)]">Schedule Next Follow-up</p>
+              <p className="text-micro sm:text-caption font-bold uppercase tracking-widest text-[var(--color-primary-700)]">Schedule Next Follow-up</p>
               <div className="grid grid-cols-2 gap-3 items-end">
                 <div>
-                  <label className="text-[9px] sm:text-[10px] font-semibold text-[var(--color-ink-500)] uppercase tracking-wide block mb-1">Date <span className="text-red-500">*</span></label>
+                  <label className="text-micro sm:text-caption font-semibold text-[var(--color-ink-500)] uppercase tracking-wide block mb-1">Date <span className="text-red-500">*</span></label>
                   <input
                     type="date"
                     value={nextDate}
@@ -353,7 +353,7 @@ function CompleteModal({ v, onDone, onClose }: { v: FuVisit; onDone: () => void;
                   />
                 </div>
                 <div>
-                  <label className="text-[9px] sm:text-[10px] font-semibold text-[var(--color-ink-500)] uppercase tracking-wide block mb-1">Type</label>
+                  <label className="text-micro sm:text-caption font-semibold text-[var(--color-ink-500)] uppercase tracking-wide block mb-1">Type</label>
                   <select
                     value={nextType}
                     onChange={(e) => setNextType(e.target.value)}
@@ -364,7 +364,7 @@ function CompleteModal({ v, onDone, onClose }: { v: FuVisit; onDone: () => void;
                 </div>
               </div>
               <div>
-                <label className="text-[9px] sm:text-[10px] font-semibold text-[var(--color-ink-500)] uppercase tracking-wide block mb-1">Notes</label>
+                <label className="text-micro sm:text-caption font-semibold text-[var(--color-ink-500)] uppercase tracking-wide block mb-1">Notes</label>
                 <textarea
                   rows={2}
                   value={nextNotes}
@@ -376,18 +376,18 @@ function CompleteModal({ v, onDone, onClose }: { v: FuVisit; onDone: () => void;
             </div>
           )}
 
-          {err && <p className="text-[11px] sm:text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{err}</p>}
+          {err && <p className="text-caption sm:text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{err}</p>}
         </div>
 
         {/* Footer */}
         <div className="px-5 py-4 border-t border-[var(--color-border)] flex items-center justify-end gap-2.5 shrink-0">
-          <button onClick={onClose} className="px-4 py-2 rounded-lg text-[13px] sm:text-sm font-medium text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)] transition-colors">
+          <button onClick={onClose} className="px-4 py-2 rounded-lg text-label sm:text-sm font-medium text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)] transition-colors">
             Cancel
           </button>
           <button
             onClick={save}
             disabled={!canSave || pending}
-            className="flex items-center gap-2 px-5 py-2 rounded-lg bg-[var(--color-primary-600)] text-white text-[13px] sm:text-sm font-semibold hover:bg-[var(--color-primary-700)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="flex items-center gap-2 px-5 py-2 rounded-lg bg-[var(--color-primary-600)] text-white text-label sm:text-sm font-semibold hover:bg-[var(--color-primary-700)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             <CheckCircle2 size={14} />
             {pending ? "Saving…" : "Save & Update Record"}
@@ -420,7 +420,7 @@ function ActionButton({
       disabled={disabled}
       title={iconOnly ? label : undefined}
       aria-label={iconOnly ? label : undefined}
-      className={`inline-flex items-center justify-center gap-1 text-[10px] sm:text-[11px] font-semibold rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${iconOnly ? "size-8 p-0" : "px-2.5 py-1.5"} ${styles[variant]}`}
+      className={`inline-flex items-center justify-center gap-1 text-caption sm:text-caption font-semibold rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${iconOnly ? "size-8 p-0" : "px-2.5 py-1.5"} ${styles[variant]}`}
     >
       {icon}
       {iconOnly ? <span className="sr-only">{label}</span> : label}
@@ -457,16 +457,16 @@ function FollowUpRow({
             <div className="min-w-0">
               <Link
                 href={`/patients/${v.patient.udid}`}
-                className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-900)] hover:text-[var(--color-primary-700)] hover:underline truncate block"
+                className="text-label sm:text-sm font-semibold text-[var(--color-ink-900)] hover:text-[var(--color-primary-700)] hover:underline truncate block"
               >
                 {v.patient.name}
               </Link>
               <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                <span className="text-[10px] sm:text-[11px] text-[var(--color-ink-400)]">
+                <span className="text-caption sm:text-caption text-[var(--color-ink-400)]">
                   {v.patient.uhid ?? v.patient.udid} · {v.patient.age}y/{SEX_SHORT[v.patient.sex] ?? v.patient.sex}
                 </span>
                 {v.patient.mobile && (
-                  <span className="inline-flex items-center gap-1 text-[9px] sm:text-[10px] text-[var(--color-ink-500)]">
+                  <span className="inline-flex items-center gap-1 text-micro sm:text-caption text-[var(--color-ink-500)]">
                     <Phone size={9} className="shrink-0 text-[var(--color-ink-400)]" />
                     <span className="font-mono">{v.patient.mobile}</span>
                   </span>
@@ -477,32 +477,32 @@ function FollowUpRow({
         </td>
         {/* Doctor (hospital role only) */}
         {role === "HOSPITAL" && (
-          <td className="px-4 py-3 text-[11px] sm:text-xs text-[var(--color-ink-600)]">Dr. {v.doctor.name}</td>
+          <td className="px-4 py-3 text-caption sm:text-xs text-[var(--color-ink-600)]">Dr. {v.doctor.name}</td>
         )}
         {/* Complaint / Diagnosis */}
         <td className="px-4 py-3">
           {v.chiefComplaint ? (
             <ComplaintChips value={v.chiefComplaint} className="max-w-[240px]" />
           ) : (
-            <p className="text-[10px] sm:text-[11px] text-[var(--color-ink-300)] italic">No complaint recorded</p>
+            <p className="text-caption sm:text-caption text-[var(--color-ink-300)] italic">No complaint recorded</p>
           )}
           {v.diagnoses[0] && (
-            <span className="clinical-diagnosis-chip inline-flex items-center gap-1 mt-1 px-2.5 py-0.5 rounded-full border text-[10px] sm:text-[11px]">
+            <span className="clinical-diagnosis-chip inline-flex items-center gap-1 mt-1 px-2.5 py-0.5 rounded-full border text-caption sm:text-caption">
               {v.diagnoses[0].description}
             </span>
           )}
         </td>
         {/* Prev visit */}
-        <td className="px-4 py-3 text-[11px] sm:text-xs text-[var(--color-ink-500)]">
+        <td className="px-4 py-3 text-caption sm:text-xs text-[var(--color-ink-500)]">
           {format(new Date(v.date), "d MMM yyyy")}
         </td>
         {/* Follow-up date */}
         <td className="px-4 py-3">
-          <p className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-800)]">
+          <p className="text-label sm:text-sm font-semibold text-[var(--color-ink-800)]">
             {format(new Date(v.followUpDate), "d MMM yyyy")}
           </p>
           {(v.status === "OVERDUE" || v.status === "DUE_TODAY" || v.status === "NO_SHOW") && (
-            <p className={`text-[10px] sm:text-[11px] font-medium flex items-center gap-0.5 mt-0.5 ${v.status === "NO_SHOW" ? "text-orange-700" : "text-red-600"}`}>
+            <p className={`text-caption sm:text-caption font-medium flex items-center gap-0.5 mt-0.5 ${v.status === "NO_SHOW" ? "text-orange-700" : "text-red-600"}`}>
               <Bell size={9} /> {overdueText(v.followUpDate)}
             </p>
           )}
@@ -510,7 +510,7 @@ function FollowUpRow({
         {/* Status */}
         <td className="px-4 py-3">
           {v.inViewOf && (
-            <p className="text-[10px] sm:text-[11px] text-[var(--color-ink-500)] mb-1 max-w-[140px] truncate">{v.inViewOf}</p>
+            <p className="text-caption sm:text-caption text-[var(--color-ink-500)] mb-1 max-w-[140px] truncate">{v.inViewOf}</p>
           )}
           <StatusBadge status={v.status} />
         </td>
@@ -579,13 +579,13 @@ function FollowUpCard({
               : <User size={14} className="text-[var(--color-primary-700)]" />}
           </div>
           <div className="min-w-0">
-            <p className="text-[13px] sm:text-sm font-bold text-[var(--color-ink-900)] truncate">{v.patient.name}</p>
+            <p className="text-label sm:text-sm font-bold text-[var(--color-ink-900)] truncate">{v.patient.name}</p>
             <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-              <span className="text-[10px] sm:text-[11px] text-[var(--color-ink-400)]">
+              <span className="text-caption sm:text-caption text-[var(--color-ink-400)]">
                 {v.patient.uhid ?? v.patient.udid} · {v.patient.age}y/{SEX_SHORT[v.patient.sex] ?? v.patient.sex}
               </span>
               {v.patient.mobile && (
-                <span className="inline-flex items-center gap-1 text-[9px] sm:text-[10px] text-[var(--color-ink-500)]">
+                <span className="inline-flex items-center gap-1 text-micro sm:text-caption text-[var(--color-ink-500)]">
                   <Phone size={9} className="shrink-0 text-[var(--color-ink-400)]" />
                   <span className="font-mono">{v.patient.mobile}</span>
                 </span>
@@ -597,7 +597,7 @@ function FollowUpCard({
       </div>
 
       {/* Details grid */}
-      <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[11px] sm:text-xs">
+      <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-caption sm:text-xs">
         {role === "HOSPITAL" && (
           <>
             <span className="text-[var(--color-ink-400)]">Doctor</span>
@@ -608,12 +608,12 @@ function FollowUpCard({
         {v.chiefComplaint ? (
           <ComplaintChips value={v.chiefComplaint} />
         ) : (
-          <span className="italic text-[var(--color-ink-300)] text-[10px] sm:text-[11px]">—</span>
+          <span className="italic text-[var(--color-ink-300)] text-caption sm:text-caption">—</span>
         )}
         {v.diagnoses[0] && (
           <>
             <span className="text-[var(--color-ink-400)]">Diagnosis</span>
-            <span className="clinical-diagnosis-chip inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border text-[10px] sm:text-[11px]">
+            <span className="clinical-diagnosis-chip inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border text-caption sm:text-caption">
               {v.diagnoses[0].description}
             </span>
           </>
@@ -630,7 +630,7 @@ function FollowUpCard({
         <span className={`font-semibold ${v.status === "OVERDUE" ? "text-red-600" : v.status === "NO_SHOW" ? "text-orange-700" : v.status === "DUE_TODAY" ? "text-amber-700" : "text-[var(--color-ink-700)]"}`}>
           {format(new Date(v.followUpDate), "d MMM yyyy")}
           {(v.status === "OVERDUE" || v.status === "NO_SHOW") && (
-            <span className={`ml-1 text-[9px] sm:text-[10px] font-medium ${v.status === "NO_SHOW" ? "text-orange-600" : "text-red-500"}`}>{overdueText(v.followUpDate)}</span>
+            <span className={`ml-1 text-micro sm:text-caption font-medium ${v.status === "NO_SHOW" ? "text-orange-600" : "text-red-500"}`}>{overdueText(v.followUpDate)}</span>
           )}
         </span>
       </div>
@@ -725,21 +725,21 @@ export function FollowUpsClient({
           </div>
           <div>
             <h1 className="text-lg sm:text-xl font-bold text-[var(--color-ink-900)]">Follow-up Management</h1>
-            <p className="text-[11px] sm:text-xs text-[var(--color-ink-400)] mt-0.5">
+            <p className="text-caption sm:text-xs text-[var(--color-ink-400)] mt-0.5">
               {visits.length} total · {format(new Date(), "EEEE, d MMMM yyyy")}
             </p>
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {(counts.OVERDUE > 0 || counts.DUE_TODAY > 0) && (
-            <div className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl border border-red-200 bg-red-50 text-[11px] sm:text-xs font-semibold text-red-700">
+            <div className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl border border-red-200 bg-red-50 text-caption sm:text-xs font-semibold text-red-700">
               <Bell size={13} className="animate-pulse" />
               {counts.OVERDUE + counts.DUE_TODAY} need attention
             </div>
           )}
           <button
             onClick={() => setShowFilters((v) => !v)}
-            className={`relative inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border text-[13px] sm:text-sm font-medium transition-colors
+            className={`relative inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border text-label sm:text-sm font-medium transition-colors
               ${showFilters
                 ? "border-[var(--color-primary-400)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)]"
                 : "border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)]"}`}
@@ -852,7 +852,7 @@ export function FollowUpsClient({
           {(search || statusFilter !== "ALL" || doctorFilter !== "ALL") && (
             <button
               onClick={() => { setSearch(""); setStatusFilter("DUE_TODAY"); setDoctorFilter("ALL"); }}
-              className="inline-flex items-center gap-1 text-[11px] sm:text-xs font-medium px-2.5 py-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-ink-500)] hover:bg-white transition-colors"
+              className="inline-flex items-center gap-1 text-caption sm:text-xs font-medium px-2.5 py-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-ink-500)] hover:bg-white transition-colors"
             >
               <X size={12} /> Reset
             </button>
@@ -861,7 +861,7 @@ export function FollowUpsClient({
       )}
 
       {/* Result count */}
-      <p className="text-[11px] sm:text-xs text-[var(--color-ink-400)] mb-3 mt-2">
+      <p className="text-caption sm:text-xs text-[var(--color-ink-400)] mb-3 mt-2">
         Showing {filtered.length} of {visits.length} follow-ups
         {statusFilter !== "ALL" && ` · ${STATUS_META[statusFilter].label}`}
       </p>
@@ -870,14 +870,14 @@ export function FollowUpsClient({
       {filtered.length === 0 && (
         <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] flex flex-col items-center gap-3 py-16 text-center">
           <CalendarClock size={36} className="text-[var(--color-ink-200)]" />
-          <p className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-500)]">
+          <p className="text-label sm:text-sm font-semibold text-[var(--color-ink-500)]">
             {visits.length === 0
               ? "No follow-ups scheduled"
               : statusFilter === "DUE_TODAY"
               ? "No follow-ups due today"
               : "No results match your filters"}
           </p>
-          <p className="text-[11px] sm:text-xs text-[var(--color-ink-400)]">
+          <p className="text-caption sm:text-xs text-[var(--color-ink-400)]">
             {visits.length === 0
               ? "Set a follow-up date in the EMR to see patients here."
               : statusFilter === "DUE_TODAY"
@@ -895,15 +895,15 @@ export function FollowUpsClient({
               <table className="w-full">
                 <thead>
                   <tr className="bg-[var(--color-surface-sunken)] border-b border-[var(--color-border)]">
-                    <th className="px-4 py-3 text-left text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-[var(--color-ink-400)]">Patient</th>
+                    <th className="px-4 py-3 text-left text-micro sm:text-caption font-bold uppercase tracking-widest text-[var(--color-ink-400)]">Patient</th>
                     {role === "HOSPITAL" && (
-                      <th className="px-4 py-3 text-left text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-[var(--color-ink-400)]">Doctor</th>
+                      <th className="px-4 py-3 text-left text-micro sm:text-caption font-bold uppercase tracking-widest text-[var(--color-ink-400)]">Doctor</th>
                     )}
-                    <th className="px-4 py-3 text-left text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-[var(--color-ink-400)]">Complaint / Diagnosis</th>
-                    <th className="px-4 py-3 text-left text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-[var(--color-ink-400)]">Prev Visit</th>
-                    <th className="px-4 py-3 text-left text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-[var(--color-ink-400)]">Follow-up Date</th>
-                    <th className="px-4 py-3 text-left text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-[var(--color-ink-400)]">Status</th>
-                    <th className="px-4 py-3 text-left text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-[var(--color-ink-400)]">Actions</th>
+                    <th className="px-4 py-3 text-left text-micro sm:text-caption font-bold uppercase tracking-widest text-[var(--color-ink-400)]">Complaint / Diagnosis</th>
+                    <th className="px-4 py-3 text-left text-micro sm:text-caption font-bold uppercase tracking-widest text-[var(--color-ink-400)]">Prev Visit</th>
+                    <th className="px-4 py-3 text-left text-micro sm:text-caption font-bold uppercase tracking-widest text-[var(--color-ink-400)]">Follow-up Date</th>
+                    <th className="px-4 py-3 text-left text-micro sm:text-caption font-bold uppercase tracking-widest text-[var(--color-ink-400)]">Status</th>
+                    <th className="px-4 py-3 text-left text-micro sm:text-caption font-bold uppercase tracking-widest text-[var(--color-ink-400)]">Actions</th>
                   </tr>
                 </thead>
                 <tbody>

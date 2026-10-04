@@ -133,7 +133,7 @@ function PresetPanel({ onApply, onClose }: { onApply: (drugs: PresetDrug[]) => v
     <div className="border border-[var(--color-border)] rounded-xl bg-white mb-4 overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--color-border)]">
-        <p className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-700)]">Medication Presets</p>
+        <p className="text-label sm:text-sm font-semibold text-[var(--color-ink-700)]">Medication Presets</p>
         <div className="flex items-center gap-2">
           <button
             onClick={() => { resetForm(); setShowForm(true); }}
@@ -177,11 +177,11 @@ function PresetPanel({ onApply, onClose }: { onApply: (drugs: PresetDrug[]) => v
       {/* Preset list */}
       <div className="px-4 py-3 max-h-96 overflow-y-auto">
         {Object.keys(grouped).length === 0 ? (
-          <p className="text-[13px] sm:text-sm text-[var(--color-ink-400)] text-center py-6">No presets yet. Click &quot;+ New Preset&quot; to create one.</p>
+          <p className="text-label sm:text-sm text-[var(--color-ink-400)] text-center py-6">No presets yet. Click &quot;+ New Preset&quot; to create one.</p>
         ) : (
           Object.entries(grouped).map(([cat, items]) => (
             <div key={cat} className="mb-5">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-2">{cat}</p>
+              <p className="text-caption font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-2">{cat}</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {items.map((p) => (
                   <div key={p.id} className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] p-3">
@@ -194,7 +194,7 @@ function PresetPanel({ onApply, onClose }: { onApply: (drugs: PresetDrug[]) => v
                     </div>
                     <ul className="mb-3 space-y-0.5">
                       {p.drugs.map((d, i) => (
-                        <li key={i} className="text-[11px] text-[var(--color-ink-500)]">
+                        <li key={i} className="text-caption text-[var(--color-ink-500)]">
                           · {d.drugName}{d.dosage ? ` ${d.dosage}` : ""}{d.frequency ? ` ${d.frequency}` : ""}{d.duration ? ` ${d.duration}` : ""}
                         </li>
                       ))}
@@ -368,7 +368,7 @@ function DrugNameInput({
             >
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-semibold text-[var(--color-ink-800)] truncate">{med.name}</p>
-                <p className="text-[10px] text-[var(--color-ink-400)] truncate">
+                <p className="text-caption text-[var(--color-ink-400)] truncate">
                   {med.category}
                   {med.brand ? ` · ${med.brand}` : ""}
                   {med.defaultDose ? ` · ${med.defaultDose}` : ""}
@@ -629,7 +629,7 @@ function PresetSelectDialog({
         >
           <div className="flex items-center gap-2.5">
             <Sparkles size={17} className="text-white/80" />
-            <p className="text-[13px] sm:text-sm font-semibold text-white">Select Treatment Preset</p>
+            <p className="text-label sm:text-sm font-semibold text-white">Select Treatment Preset</p>
           </div>
           <button type="button" onClick={onClose} className="text-white/60 hover:text-white p-1">
             <X size={16} />
@@ -659,17 +659,17 @@ function PresetSelectDialog({
                   {/* Header row */}
                   <div className="flex items-start justify-between gap-2 mb-2">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#0F766E] text-white shrink-0">
+                      <span className="text-caption font-bold px-2 py-0.5 rounded-full bg-[#0F766E] text-white shrink-0">
                         Protocol {protocolNum}
                       </span>
-                      <p className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-800)]">{preset.name}</p>
+                      <p className="text-label sm:text-sm font-semibold text-[var(--color-ink-800)]">{preset.name}</p>
                       {isCustom && (
-                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 shrink-0">CUSTOM</span>
+                        <span className="text-micro font-bold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 shrink-0">CUSTOM</span>
                       )}
                     </div>
                     <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.preventDefault()}>
                       {preset.followUpDays && (
-                        <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-[#EEF8F7] text-[#0F766E] border border-[#B2DEDA]">
+                        <span className="text-caption font-medium px-2 py-0.5 rounded-full bg-[#EEF8F7] text-[#0F766E] border border-[#B2DEDA]">
                           F/U {preset.followUpDays}d
                         </span>
                       )}
@@ -686,7 +686,7 @@ function PresetSelectDialog({
                           <button
                             type="button"
                             onClick={(e) => { e.preventDefault(); deleteProtocol(preset.id); }}
-                            className="px-2 py-0.5 rounded-lg bg-red-500 text-white text-[10px] font-semibold hover:bg-red-600 transition-colors"
+                            className="px-2 py-0.5 rounded-lg bg-red-500 text-white text-caption font-semibold hover:bg-red-600 transition-colors"
                           >
                             Confirm
                           </button>
@@ -718,7 +718,7 @@ function PresetSelectDialog({
                         <span className="w-1.5 h-1.5 rounded-full bg-[#0F766E]/50 shrink-0 mt-1.5" />
                         <span className="text-xs font-medium text-[var(--color-ink-800)]">{m.drugName}</span>
                         {(m.dosage || m.frequency || m.duration) && (
-                          <span className="text-[11px] text-[var(--color-ink-400)]">
+                          <span className="text-caption text-[var(--color-ink-400)]">
                             {[m.dosage, m.frequency, m.duration].filter(Boolean).join(" · ")}
                           </span>
                         )}
@@ -728,12 +728,12 @@ function PresetSelectDialog({
 
                   {/* Extras */}
                   {preset.investigations && preset.investigations.length > 0 && (
-                    <p className="text-[11px] text-[var(--color-ink-400)] mt-1">
+                    <p className="text-caption text-[var(--color-ink-400)] mt-1">
                       <span className="font-semibold">Investigations:</span> {preset.investigations.join(", ")}
                     </p>
                   )}
                   {preset.advice && (
-                    <p className="text-[11px] text-[var(--color-ink-400)] italic mt-0.5">
+                    <p className="text-caption text-[var(--color-ink-400)] italic mt-0.5">
                       <span className="font-semibold not-italic">Advice:</span> {preset.advice}
                     </p>
                   )}
@@ -764,18 +764,18 @@ function PresetSelectDialog({
 
               {/* Name */}
               <div>
-                <label className="text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-wide block mb-1">Protocol Name *</label>
+                <label className="text-caption font-semibold text-[var(--color-ink-400)] uppercase tracking-wide block mb-1">Protocol Name *</label>
                 <input autoFocus value={formName} onChange={(e) => setFormName(e.target.value)} className={inp} placeholder="e.g. Corneal Ulcer, Protocol 2" />
               </div>
 
               {/* Drug rows */}
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-wide">Medications *</label>
+                  <label className="text-caption font-semibold text-[var(--color-ink-400)] uppercase tracking-wide">Medications *</label>
                   <button
                     type="button"
                     onClick={() => setFormMeds([...formMeds, blankMed()])}
-                    className="flex items-center gap-1 text-[10px] font-semibold text-[#0F766E] hover:underline"
+                    className="flex items-center gap-1 text-caption font-semibold text-[#0F766E] hover:underline"
                   >
                     <Plus size={10} /> Add Drug
                   </button>
@@ -840,14 +840,14 @@ function PresetSelectDialog({
                             }}
                             className="accent-[var(--color-primary-600)] w-3 h-3 rounded"
                           />
-                          <span className="text-[11px] font-medium text-[var(--color-ink-500)]">Tapering dose</span>
+                          <span className="text-caption font-medium text-[var(--color-ink-500)]">Tapering dose</span>
                         </label>
                       </div>
 
                       {/* Tapering levels */}
                       {med.taperLevels.map((level, li) => (
                         <div key={li} className="pl-4 border-l-2 border-[var(--color-primary-300)]" style={{ marginLeft: `${li * 10 + 4}px` }}>
-                          <p className="text-[9px] font-bold uppercase tracking-widest text-[var(--color-primary-600)] mb-1">
+                          <p className="text-micro font-bold uppercase tracking-widest text-[var(--color-primary-600)] mb-1">
                             ↓ Taper{med.taperLevels.length > 1 ? ` ${li + 1}` : ""}
                           </p>
                           <div className="overflow-x-auto">
@@ -902,7 +902,7 @@ function PresetSelectDialog({
                                   }}
                                   className="accent-[var(--color-primary-600)] w-3 h-3"
                                 />
-                                <span className="text-[10px] text-[var(--color-ink-500)]">+ Taper</span>
+                                <span className="text-caption text-[var(--color-ink-500)]">+ Taper</span>
                               </label>
                             )}
                             {li < med.taperLevels.length - 1 && (
@@ -923,13 +923,13 @@ function PresetSelectDialog({
 
               {/* Follow-up */}
               <div>
-                <label className="text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-wide block mb-1">Follow-up Days</label>
+                <label className="text-caption font-semibold text-[var(--color-ink-400)] uppercase tracking-wide block mb-1">Follow-up Days</label>
                 <input type="number" min="1" value={formFollowUp} onChange={(e) => setFormFollowUp(e.target.value)} placeholder="e.g. 7" className={inp} />
               </div>
 
               {/* Investigations */}
               <div>
-                <label className="text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-wide block mb-1">Investigations</label>
+                <label className="text-caption font-semibold text-[var(--color-ink-400)] uppercase tracking-wide block mb-1">Investigations</label>
                 <div className="flex flex-col gap-1">
                   {formInvestigations.map((inv, i) => (
                     <div key={i} className="flex items-center gap-2 rounded-lg border border-[var(--color-border)] bg-white px-2.5 py-1.5">
@@ -972,13 +972,13 @@ function PresetSelectDialog({
                     </div>
                   ))}
                   {formInvestigations.length === 0 && (
-                    <p className="text-[11px] text-[var(--color-ink-300)] italic px-0.5">No investigations added.</p>
+                    <p className="text-caption text-[var(--color-ink-300)] italic px-0.5">No investigations added.</p>
                   )}
                 </div>
                 <button
                   type="button"
                   onClick={() => setShowInvPicker(true)}
-                  className="mt-1.5 flex items-center gap-1 text-[10px] font-semibold text-[#0F766E] hover:underline"
+                  className="mt-1.5 flex items-center gap-1 text-caption font-semibold text-[#0F766E] hover:underline"
                 >
                   <Plus size={10} /> Add
                 </button>
@@ -986,7 +986,7 @@ function PresetSelectDialog({
 
               {/* Advice */}
               <div>
-                <label className="text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-wide block mb-1">Advice (optional)</label>
+                <label className="text-caption font-semibold text-[var(--color-ink-400)] uppercase tracking-wide block mb-1">Advice (optional)</label>
                 <textarea
                   value={formAdvice}
                   onChange={(e) => setFormAdvice(e.target.value)}
@@ -1017,7 +1017,7 @@ function PresetSelectDialog({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-xl border border-[var(--color-border)] text-[13px] sm:text-sm font-medium text-[var(--color-ink-500)] hover:bg-[var(--color-surface-sunken)] transition-colors"
+              className="px-4 py-2 rounded-xl border border-[var(--color-border)] text-label sm:text-sm font-medium text-[var(--color-ink-500)] hover:bg-[var(--color-surface-sunken)] transition-colors"
             >
               Cancel
             </button>
@@ -1025,7 +1025,7 @@ function PresetSelectDialog({
               type="button"
               disabled={selected.size === 0 || applying}
               onClick={() => onApply(selectedPresets)}
-              className="px-5 py-2 rounded-xl bg-[#0F766E] text-white text-[13px] sm:text-sm font-semibold hover:bg-[#0D6862] transition-colors disabled:opacity-40 flex items-center gap-2"
+              className="px-5 py-2 rounded-xl bg-[#0F766E] text-white text-label sm:text-sm font-semibold hover:bg-[#0D6862] transition-colors disabled:opacity-40 flex items-center gap-2"
             >
               {applying ? (
                 <><RefreshCw size={13} className="animate-spin" /> Applying…</>
@@ -1096,7 +1096,7 @@ function InvestigationPickerModal({
           className="px-5 py-4 flex items-center justify-between shrink-0"
           style={{ background: "linear-gradient(135deg, #0F766E 0%, #0D9488 100%)" }}
         >
-          <p className="text-[13px] sm:text-sm font-semibold text-white">Add Investigation</p>
+          <p className="text-label sm:text-sm font-semibold text-white">Add Investigation</p>
           <button type="button" onClick={onClose} className="text-white/60 hover:text-white p-1">
             <X size={16} />
           </button>
@@ -1159,7 +1159,7 @@ function InvestigationPickerModal({
                   className="accent-[#0F766E]"
                 />
                 {item.name}
-                {alreadyAdded && <span className="ml-auto text-[10px] italic">Added</span>}
+                {alreadyAdded && <span className="ml-auto text-caption italic">Added</span>}
               </label>
             );
           })}
@@ -1577,7 +1577,7 @@ function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: st
     <Card>
       {/* Heading row */}
       <div className="flex items-center mb-4 gap-2">
-        <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)]">Minor Procedure</p>
+        <p className="text-label sm:text-sm font-medium text-[var(--color-ink-700)]">Minor Procedure</p>
         <button data-overview-hide onClick={() => setShowHistory((v) => !v)} className={`${historyBtnCls} ml-auto shrink-0`}>
           <History size={12} /> History
         </button>
@@ -1588,7 +1588,7 @@ function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: st
 
         {/* Laterality */}
         <div className="shrink-0">
-          <label className="text-[10px] font-semibold text-[var(--color-ink-500)] uppercase tracking-wide block mb-1.5">
+          <label className="text-caption font-semibold text-[var(--color-ink-500)] uppercase tracking-wide block mb-1.5">
             Laterality
           </label>
           <div className="flex gap-1">
@@ -1610,7 +1610,7 @@ function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: st
 
         {/* Procedure keywords */}
         <div className="min-w-0">
-          <label className="text-[10px] font-semibold text-[var(--color-ink-500)] uppercase tracking-wide block mb-1.5">
+          <label className="text-caption font-semibold text-[var(--color-ink-500)] uppercase tracking-wide block mb-1.5">
             Procedure
           </label>
           <KeywordTextarea
@@ -1628,7 +1628,7 @@ function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: st
 
         {/* Anesthesia */}
         <div className="min-w-0 relative">
-          <label className="text-[10px] font-semibold text-[var(--color-ink-500)] uppercase tracking-wide block mb-1.5">
+          <label className="text-caption font-semibold text-[var(--color-ink-500)] uppercase tracking-wide block mb-1.5">
             Type of Anesthesia
           </label>
           <div className="relative">
@@ -1661,7 +1661,7 @@ function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: st
                   key={kw}
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => { setAnesthesia(kw); setAnesthesiaOpen(false); }}
-                  className={`w-full text-left px-3 py-2.5 text-[13px] sm:text-sm transition-colors flex items-center justify-between gap-2 ${
+                  className={`w-full text-left px-3 py-2.5 text-label sm:text-sm transition-colors flex items-center justify-between gap-2 ${
                     anesthesia === kw
                       ? "bg-[var(--color-primary-50)] text-[var(--color-primary-700)] font-medium"
                       : "text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]"
@@ -1679,7 +1679,7 @@ function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: st
 
         {/* Original full-width quick-add arrangement */}
         <div data-overview-hide className="mt-3">
-          <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-[var(--color-ink-400)]">Quick Add</p>
+          <p className="mb-2 text-caption font-semibold uppercase tracking-wide text-[var(--color-ink-400)]">Quick Add</p>
           <KeywordTextareaControlsRow
             fieldKey="minor_procedure"
             legacyKeys={legacyProcedureKwKeys}
@@ -1691,7 +1691,7 @@ function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: st
 
         {/* Procedure Notes */}
       <div className="mt-3">
-        <label className="text-[10px] font-semibold text-[var(--color-ink-500)] uppercase tracking-wide block mb-1.5">
+        <label className="text-caption font-semibold text-[var(--color-ink-500)] uppercase tracking-wide block mb-1.5">
           Procedure Notes
         </label>
         <textarea
@@ -1707,7 +1707,7 @@ function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: st
       {showHistory && (
         <div className="mt-4 rounded-xl border border-[var(--color-border)] bg-white shadow-sm overflow-hidden">
           <div className="px-3 py-2 bg-[var(--color-surface-sunken)] border-b border-[var(--color-border)] flex items-center justify-between">
-            <span className="text-[10px] font-bold text-[var(--color-ink-400)] uppercase tracking-widest">Previous Procedures</span>
+            <span className="text-caption font-bold text-[var(--color-ink-400)] uppercase tracking-widest">Previous Procedures</span>
             <button onClick={() => setShowHistory(false)} className="text-[var(--color-ink-300)] hover:text-[var(--color-ink-700)]"><X size={12} /></button>
           </div>
           <div className="max-h-64 overflow-y-auto divide-y divide-[var(--color-border)]">
@@ -1721,13 +1721,13 @@ function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: st
                   return (
                     <div key={v.id} className="px-3 py-2.5 flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
-                        <p className="text-[10px] font-semibold text-[var(--color-ink-400)] mb-1">
+                        <p className="text-caption font-semibold text-[var(--color-ink-400)] mb-1">
                           {new Date(v.date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
                           {v.procedureLaterality && <span className="ml-1.5 font-bold text-[var(--color-primary-600)]">{v.procedureLaterality}</span>}
                         </p>
                         {(priorProcs.length > 0 || v.procedureName) && (
                           <div className="mb-0.5">
-                            <span className="text-[9px] font-bold uppercase tracking-wide text-[var(--color-ink-300)]">Procedure</span>
+                            <span className="text-micro font-bold uppercase tracking-wide text-[var(--color-ink-300)]">Procedure</span>
                             {priorProcs.length > 0
                               ? priorProcs.map((p, i) => <p key={i} className="text-xs font-medium text-[var(--color-ink-700)]">{p}</p>)
                               : <p className="text-xs font-medium text-[var(--color-ink-700)]">{v.procedureName}</p>
@@ -1736,13 +1736,13 @@ function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: st
                         )}
                         {v.anesthesiaType && (
                           <div className="mb-0.5">
-                            <span className="text-[9px] font-bold uppercase tracking-wide text-[var(--color-ink-300)]">Anesthesia</span>
+                            <span className="text-micro font-bold uppercase tracking-wide text-[var(--color-ink-300)]">Anesthesia</span>
                             <p className="text-xs text-[var(--color-ink-600)]">{v.anesthesiaType}</p>
                           </div>
                         )}
                         {v.procedureNotes && (
                           <div>
-                            <span className="text-[9px] font-bold uppercase tracking-wide text-[var(--color-ink-300)]">Notes</span>
+                            <span className="text-micro font-bold uppercase tracking-wide text-[var(--color-ink-300)]">Notes</span>
                             <p className="text-xs text-[var(--color-ink-600)] whitespace-pre-wrap">{v.procedureNotes}</p>
                           </div>
                         )}
@@ -1756,7 +1756,7 @@ function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: st
                           if (v.procedureNotes) setProcNotes(v.procedureNotes);
                           setShowHistory(false);
                         }}
-                        className="shrink-0 text-[10px] font-medium text-[var(--color-primary-600)] hover:underline"
+                        className="shrink-0 text-caption font-medium text-[var(--color-primary-600)] hover:underline"
                       >
                         Use this
                       </button>
@@ -2098,7 +2098,7 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
       )}
 
       <div className={`flex items-center mb-3 gap-2 ${Object.keys(appliedByDiag).length > 0 ? "mt-4" : ""}`}>
-        <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)]">Prescription / Medications</p>
+        <p className="text-label sm:text-sm font-medium text-[var(--color-ink-700)]">Prescription / Medications</p>
         <div data-overview-hide className="flex items-center gap-2 ml-auto shrink-0">
           {medications.length > 0 && (
             <button
@@ -2161,7 +2161,7 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
                   {(() => {
                     const badge = getMedBadge(med.route, null, med.name);
                     return badge ? (
-                      <span className={`min-w-[32px] h-8 px-1.5 rounded-lg flex items-center justify-center text-[10px] font-bold shrink-0 ${badge.bg} ${badge.text}`}>
+                      <span className={`min-w-[32px] h-8 px-1.5 rounded-lg flex items-center justify-center text-caption font-bold shrink-0 ${badge.bg} ${badge.text}`}>
                         {badge.label === "OU" || badge.label === "RE" || badge.label === "LE" ? "EYE" : badge.label}
                       </span>
                     ) : (
@@ -2174,8 +2174,8 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
                   })()}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-900)]">{med.name}</span>
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full border font-medium shrink-0 ${categoryColor(med.category)}`}>
+                      <span className="text-label sm:text-sm font-medium text-[var(--color-ink-900)]">{med.name}</span>
+                      <span className={`text-caption px-1.5 py-0.5 rounded-full border font-medium shrink-0 ${categoryColor(med.category)}`}>
                         {med.category}
                       </span>
                     </div>
@@ -2214,7 +2214,7 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-2 max-w-3xl">
             <div className="col-span-2">
-              <label className="text-[10px] font-medium text-[var(--color-ink-400)] uppercase tracking-wide block mb-0.5">Drug Name</label>
+              <label className="text-caption font-medium text-[var(--color-ink-400)] uppercase tracking-wide block mb-0.5">Drug Name</label>
               <DrugNameInput
                 value={drugName}
                 onChange={(name, defaultDose) => { setDrugName(name); if (defaultDose && !dose) setDose(defaultDose); }}
@@ -2223,11 +2223,11 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
               />
             </div>
             <div>
-              <label className="text-[10px] font-medium text-[var(--color-ink-400)] uppercase tracking-wide block mb-0.5">Dose</label>
+              <label className="text-caption font-medium text-[var(--color-ink-400)] uppercase tracking-wide block mb-0.5">Dose</label>
               <OptionsInput value={dose} onChange={setDose} options={DOSE_OPTIONS} placeholder="Dose" className={inputCls} />
             </div>
             <div>
-              <label className="text-[10px] font-medium text-[var(--color-ink-400)] uppercase tracking-wide block mb-0.5">Route</label>
+              <label className="text-caption font-medium text-[var(--color-ink-400)] uppercase tracking-wide block mb-0.5">Route</label>
               <select value={route} onChange={(e) => setRoute(e.target.value)} className={inputCls}>
                 {ROUTE_OPTIONS.map((r) => <option key={r}>{r}</option>)}
               </select>
@@ -2235,11 +2235,11 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-2 max-w-3xl">
             <div className="col-span-2">
-              <label className="text-[10px] font-medium text-[var(--color-ink-400)] uppercase tracking-wide block mb-0.5">Frequency</label>
+              <label className="text-caption font-medium text-[var(--color-ink-400)] uppercase tracking-wide block mb-0.5">Frequency</label>
               <OptionsInput value={frequency} onChange={setFrequency} options={FREQUENCY_OPTIONS} placeholder="Frequency" className={inputCls} />
             </div>
             <div>
-              <label className="text-[10px] font-medium text-[var(--color-ink-400)] uppercase tracking-wide block mb-0.5">Duration</label>
+              <label className="text-caption font-medium text-[var(--color-ink-400)] uppercase tracking-wide block mb-0.5">Duration</label>
               <OptionsInput value={durationSel} onChange={setDurationSel} options={DURATION_OPTIONS} placeholder="Duration" className={inputCls} />
             </div>
             <div className="flex flex-col justify-end">
@@ -2267,12 +2267,12 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
               className="mb-2 max-w-3xl pl-3 border-l-2 border-[var(--color-primary-300)]"
               style={{ marginLeft: `${i * 14}px` }}
             >
-              <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-primary-600)] mb-1.5">
+              <p className="text-caption font-bold uppercase tracking-widest text-[var(--color-primary-600)] mb-1.5">
                 ↓ Tapering dose{taperLevels.length > 1 ? ` ${i + 1}` : ""}
               </p>
               <div className="grid grid-cols-3 gap-2 mb-2">
                 <div>
-                  <label className="text-[10px] font-medium text-[var(--color-ink-400)] uppercase tracking-wide block mb-0.5">Dose</label>
+                  <label className="text-caption font-medium text-[var(--color-ink-400)] uppercase tracking-wide block mb-0.5">Dose</label>
                   <OptionsInput
                     value={level.dose}
                     onChange={(v) => { const n = [...taperLevels]; n[i] = { ...n[i], dose: v }; setTaperLevels(n); }}
@@ -2282,7 +2282,7 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] font-medium text-[var(--color-ink-400)] uppercase tracking-wide block mb-0.5">Frequency</label>
+                  <label className="text-caption font-medium text-[var(--color-ink-400)] uppercase tracking-wide block mb-0.5">Frequency</label>
                   <select
                     value={level.frequency}
                     onChange={(e) => { const n = [...taperLevels]; n[i] = { ...n[i], frequency: e.target.value }; setTaperLevels(n); }}
@@ -2293,7 +2293,7 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
                   </select>
                 </div>
                 <div>
-                  <label className="text-[10px] font-medium text-[var(--color-ink-400)] uppercase tracking-wide block mb-0.5">Duration</label>
+                  <label className="text-caption font-medium text-[var(--color-ink-400)] uppercase tracking-wide block mb-0.5">Duration</label>
                   <div className="flex gap-1">
                     <select
                       value={level.durationNum}
@@ -2335,7 +2335,7 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
             </div>
           ))}
           <div className="max-w-3xl">
-            <label className="text-[10px] font-medium text-[var(--color-ink-400)] uppercase tracking-wide block mb-0.5">Instructions</label>
+            <label className="text-caption font-medium text-[var(--color-ink-400)] uppercase tracking-wide block mb-0.5">Instructions</label>
             <input value={instructions} onChange={(e) => setInstructions(e.target.value)} placeholder="e.g. Apply 1 drop in RE at bedtime, shake well before use" className={inputCls} />
           </div>
         </div>
@@ -2346,7 +2346,7 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
           <div className="w-10 h-10 rounded-xl bg-[var(--color-surface-sunken)] flex items-center justify-center">
             <Pill size={20} className="text-[var(--color-ink-300)]" />
           </div>
-          <p className="text-[13px] sm:text-sm text-[var(--color-ink-400)]">Search for a medication above to add it to the prescription.</p>
+          <p className="text-label sm:text-sm text-[var(--color-ink-400)]">Search for a medication above to add it to the prescription.</p>
         </div>
       ) : (
         // The columns are fixed-width and total ~470px, so on a phone the table
@@ -2355,11 +2355,11 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
           <table className="w-full min-w-[640px] text-sm">
             <thead>
               <tr className="border-b border-[var(--color-border)]">
-                <th className="px-3 py-1.5 text-left text-[10px] font-bold text-[var(--color-ink-300)] uppercase tracking-widest w-10">#</th>
-                <th className="px-3 py-1.5 text-left text-[10px] font-bold text-[var(--color-ink-300)] uppercase tracking-widest w-40">Drug Name</th>
-                <th className="px-3 py-1.5 text-left text-[10px] font-bold text-[var(--color-ink-300)] uppercase tracking-widest w-20">Dose</th>
-                <th className="px-3 py-1.5 text-left text-[10px] font-bold text-[var(--color-ink-300)] uppercase tracking-widest w-44">Frequency</th>
-                <th className="px-3 py-1.5 text-left text-[10px] font-bold text-[var(--color-ink-300)] uppercase tracking-widest w-28">Duration</th>
+                <th className="px-3 py-1.5 text-left text-caption font-bold text-[var(--color-ink-300)] uppercase tracking-widest w-10">#</th>
+                <th className="px-3 py-1.5 text-left text-caption font-bold text-[var(--color-ink-300)] uppercase tracking-widest w-40">Drug Name</th>
+                <th className="px-3 py-1.5 text-left text-caption font-bold text-[var(--color-ink-300)] uppercase tracking-widest w-20">Dose</th>
+                <th className="px-3 py-1.5 text-left text-caption font-bold text-[var(--color-ink-300)] uppercase tracking-widest w-44">Frequency</th>
+                <th className="px-3 py-1.5 text-left text-caption font-bold text-[var(--color-ink-300)] uppercase tracking-widest w-28">Duration</th>
                 <th data-overview-hide className="px-3 py-1.5 w-20" />
               </tr>
             </thead>
@@ -2398,7 +2398,7 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
                             {(() => {
                               const badge = getMedBadge(m.route, m.laterality, m.drugName);
                               return badge ? (
-                                <span className={`min-w-[32px] h-7 px-1.5 rounded-lg flex items-center justify-center text-[10px] font-bold shrink-0 ${badge.bg} ${badge.text}`}>
+                                <span className={`min-w-[32px] h-7 px-1.5 rounded-lg flex items-center justify-center text-caption font-bold shrink-0 ${badge.bg} ${badge.text}`}>
                                   {badge.label}
                                 </span>
                               ) : (
@@ -2407,7 +2407,7 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
                                 </div>
                               );
                             })()}
-                            <span className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-900)] break-words">{m.drugName}</span>
+                            <span className="text-label sm:text-sm font-semibold text-[var(--color-ink-900)] break-words">{m.drugName}</span>
                           </div>
                         )}
                       </td>
@@ -2505,7 +2505,7 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
                       <tr key={`${m.id}-taper-${ti}`}>
                         <td />
                         <td className="px-3 pb-2 pt-0">
-                          <span className="pl-9 text-[10px] font-bold uppercase tracking-widest text-[var(--color-primary-600)]">
+                          <span className="pl-9 text-caption font-bold uppercase tracking-widest text-[var(--color-primary-600)]">
                             ↓ Taper{view.taper.length > 1 ? ` ${ti + 1}` : ""}
                           </span>
                         </td>
@@ -2543,7 +2543,7 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
                               </label>
                               {editDraft.taperLevels.map((level, levelIndex) => (
                                 <div key={levelIndex} className="border-l-2 border-[var(--color-primary-300)] pl-3">
-                                  <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-[var(--color-primary-600)]">
+                                  <p className="mb-1 text-caption font-bold uppercase tracking-widest text-[var(--color-primary-600)]">
                                     ↓ Tapering dose{editDraft.taperLevels.length > 1 ? ` ${levelIndex + 1}` : ""}
                                   </p>
                                   <div className="grid grid-cols-3 gap-2">
@@ -2671,7 +2671,7 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
         {showHistory && (
           <div className="mt-2 rounded-xl border border-[var(--color-border)] bg-white shadow-sm overflow-hidden">
             <div className="px-3 py-2 bg-[var(--color-surface-sunken)] border-b border-[var(--color-border)] flex items-center justify-between">
-              <span className="text-[10px] font-bold text-[var(--color-ink-400)] uppercase tracking-widest">Previous Advise Notes</span>
+              <span className="text-caption font-bold text-[var(--color-ink-400)] uppercase tracking-widest">Previous Advise Notes</span>
               <button onClick={() => setShowHistory(false)} className="text-[var(--color-ink-300)] hover:text-[var(--color-ink-700)]"><X size={12} /></button>
             </div>
             <div className="max-h-56 overflow-y-auto divide-y divide-[var(--color-border)]">
@@ -2682,13 +2682,13 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
                   .filter((v) => v.id !== visit.id && v.adviseNotes)
                   .map((v) => (
                     <div key={v.id} className="px-3 py-2.5">
-                      <p className="text-[10px] font-semibold text-[var(--color-ink-400)] mb-1">
+                      <p className="text-caption font-semibold text-[var(--color-ink-400)] mb-1">
                         {new Date(v.date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
                       </p>
                       <p className="text-xs text-[var(--color-ink-700)] whitespace-pre-wrap leading-relaxed">{v.adviseNotes}</p>
                       <button
                         onClick={() => { onAdviseChange(v.adviseNotes); setShowHistory(false); }}
-                        className="mt-1.5 text-[10px] font-medium text-[var(--color-primary-600)] hover:underline"
+                        className="mt-1.5 text-caption font-medium text-[var(--color-primary-600)] hover:underline"
                       >
                         Use this
                       </button>
@@ -2703,7 +2703,7 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
         {showKeywords && (
           <div className="mt-2 rounded-xl border border-[var(--color-border)] bg-white shadow-sm overflow-hidden">
             <div className="px-3 py-2 bg-[var(--color-surface-sunken)] border-b border-[var(--color-border)] flex items-center justify-between">
-              <span className="text-[10px] font-bold text-[var(--color-ink-400)] uppercase tracking-widest">Add Keyword</span>
+              <span className="text-caption font-bold text-[var(--color-ink-400)] uppercase tracking-widest">Add Keyword</span>
               <button onClick={() => setShowKeywords(false)} className="text-[var(--color-ink-300)] hover:text-[var(--color-ink-700)]"><X size={12} /></button>
             </div>
             <div className="p-3">
@@ -2722,7 +2722,7 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
       {/* ── Suggested Investigations (from applied protocols) ───────────── */}
       {allSuggestedInvs.length > 0 && (
         <div className="mt-4 pt-4 border-t border-[var(--color-border)]">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-[#0F766E]/70 mb-2">Suggested Investigations</p>
+          <p className="text-caption font-bold uppercase tracking-widest text-[#0F766E]/70 mb-2">Suggested Investigations</p>
           <div className="flex flex-wrap gap-1.5">
             {allSuggestedInvs.map(({ name: inv, indication }) => {
               const key   = normInv(inv);
@@ -2750,7 +2750,7 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
                       setInvOrderMap((prev) => { const m = new Map(prev); m.set(key, "__pending__"); return m; });
                     }
                   }}
-                  className={`flex items-center gap-1 text-[11px] px-2.5 py-0.5 rounded-full border transition-colors ${
+                  className={`flex items-center gap-1 text-caption px-2.5 py-0.5 rounded-full border transition-colors ${
                     added
                       ? "bg-[#0F766E] border-[#0F766E] text-white hover:bg-[#0D6862] cursor-pointer"
                       : "bg-white border-[#B2DEDA] text-[#0F766E] hover:bg-[#DCF3F1] hover:border-[#0F766E] cursor-pointer"
@@ -2815,11 +2815,11 @@ function OpticalPrescriptionCard({ visit }: { visit: any }) {
     return (
       <div {...(overview ? { "data-overview-empty-section": "" } : {})}>
         <Card>
-          <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)] mb-2">Optical Prescription</p>
-          <p className="text-[13px] sm:text-sm text-[var(--color-ink-500)]">
+          <p className="text-label sm:text-sm font-medium text-[var(--color-ink-700)] mb-2">Optical Prescription</p>
+          <p className="text-label sm:text-sm text-[var(--color-ink-500)]">
             No subjective refraction recorded.
           </p>
-          <p className="mt-1 text-[11px] sm:text-xs text-[var(--color-ink-400)]">
+          <p className="mt-1 text-caption sm:text-xs text-[var(--color-ink-400)]">
             {methodsPresent.length > 0
               ? `Only ${methodsPresent.join(", ")} recorded. A prescription is issued from a subjective refraction, so nothing is carried over here.`
               : "Record a subjective refraction in the Ophthalmic Exam tab to issue a prescription."}
@@ -2833,9 +2833,9 @@ function OpticalPrescriptionCard({ visit }: { visit: any }) {
     <div {...(overview && !hasData ? { "data-overview-empty-section": "" } : {})}>
     <Card>
       <div className="flex items-center justify-between mb-3">
-        <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)]">Optical Prescription</p>
+        <p className="text-label sm:text-sm font-medium text-[var(--color-ink-700)]">Optical Prescription</p>
         {hasData && (
-          <span className="flex items-center gap-1 text-[10px] font-semibold text-[var(--color-primary-600)] bg-[var(--color-primary-50)] border border-[var(--color-primary-200)] rounded-full px-2 py-0.5">
+          <span className="flex items-center gap-1 text-caption font-semibold text-[var(--color-primary-600)] bg-[var(--color-primary-50)] border border-[var(--color-primary-200)] rounded-full px-2 py-0.5">
             <CheckCircle2 size={10} />
             Added to Summary
           </span>
@@ -2844,9 +2844,9 @@ function OpticalPrescriptionCard({ visit }: { visit: any }) {
       <table className="w-full table-fixed border-collapse">
         <thead>
           <tr className="border-b border-[var(--color-border)]">
-            <th className="text-left pb-2 pr-2 text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)] w-[22%]" />
+            <th className="text-left pb-2 pr-2 text-caption font-bold uppercase tracking-wider text-[var(--color-ink-400)] w-[22%]" />
             {HEADERS.map((h) => (
-              <th key={h} className="text-center pb-2 px-1 text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">
+              <th key={h} className="text-center pb-2 px-1 text-caption font-bold uppercase tracking-wider text-[var(--color-ink-400)]">
                 {h === "VA" || h === "NV"
                   ? <span className="inline-block px-1.5 py-0.5 rounded bg-[var(--color-surface-sunken)] text-[var(--color-ink-300)]">{h}</span>
                   : h}
@@ -2858,14 +2858,14 @@ function OpticalPrescriptionCard({ visit }: { visit: any }) {
           {ROWS.map(({ label, rx }) => (
             <tr key={label} className="border-b border-[var(--color-border)]">
               <td className="py-3 pr-2 text-xs font-semibold text-[var(--color-primary-700)] whitespace-nowrap">{label}</td>
-              <td className="text-center py-3 px-1 text-[13px] sm:text-sm text-[var(--color-ink-800)]">{cell(rx.sph)}</td>
-              <td className="text-center py-3 px-1 text-[13px] sm:text-sm text-[var(--color-ink-800)]">{cell(rx.cyl)}</td>
-              <td className="text-center py-3 px-1 text-[13px] sm:text-sm text-[var(--color-ink-800)]">{cell(rx.axis)}</td>
-              <td className="text-center py-3 px-1 text-[13px] sm:text-sm">
+              <td className="text-center py-3 px-1 text-label sm:text-sm text-[var(--color-ink-800)]">{cell(rx.sph)}</td>
+              <td className="text-center py-3 px-1 text-label sm:text-sm text-[var(--color-ink-800)]">{cell(rx.cyl)}</td>
+              <td className="text-center py-3 px-1 text-label sm:text-sm text-[var(--color-ink-800)]">{cell(rx.axis)}</td>
+              <td className="text-center py-3 px-1 text-label sm:text-sm">
                 <span className="inline-block px-1.5 py-0.5 rounded bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)]">{cell(rx.va)}</span>
               </td>
-              <td className="text-center py-3 px-1 text-[13px] sm:text-sm text-[var(--color-ink-800)]">{showNear ? cell(rx.nearSph) : cell("")}</td>
-              <td className="text-center py-3 px-1 text-[13px] sm:text-sm">
+              <td className="text-center py-3 px-1 text-label sm:text-sm text-[var(--color-ink-800)]">{showNear ? cell(rx.nearSph) : cell("")}</td>
+              <td className="text-center py-3 px-1 text-label sm:text-sm">
                 <span className="inline-block px-1.5 py-0.5 rounded bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)]">{showNear ? cell(rx.nearVa) : cell("")}</span>
               </td>
             </tr>
@@ -2895,7 +2895,7 @@ function DispositionCard({ visit, udid, patientSex, priorVisits = [] }: { visit:
   return (
     <div {...(overview && !hasFollowUpData ? { "data-overview-empty-section": "" } : {})}>
     <Card>
-      <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)] mb-3">Patient Disposition</p>
+      <p className="text-label sm:text-sm font-medium text-[var(--color-ink-700)] mb-3">Patient Disposition</p>
       <div data-overview-hide className="flex gap-3 flex-wrap mb-2">
         <DispositionToggle icon={<RefreshCw size={16} />}  label="Follow Up Dates"      active={activePanels.includes("follow")}   onClick={() => togglePanel("follow")} />
       </div>

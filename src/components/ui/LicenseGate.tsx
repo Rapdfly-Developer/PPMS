@@ -44,7 +44,7 @@ export function LicenseGate({ active, status, expiryDate, remainingDays, userRol
         <ShieldOff size={32} className="text-red-500" />
       </div>
 
-      <h1 className="text-2xl font-black text-[var(--color-text,#111827)] mb-2">
+      <h1 className="text-2xl font-bold text-[var(--color-text,#111827)] mb-2">
         License Required
       </h1>
       <p className="text-sm text-[var(--color-text-muted,#6B7280)] max-w-md mb-6 leading-relaxed">
@@ -59,7 +59,7 @@ export function LicenseGate({ active, status, expiryDate, remainingDays, userRol
         className="rounded-xl p-5 mb-7 w-full max-w-sm text-left"
         style={{ background: "var(--color-surface,#fff)", border: "1px solid var(--color-border,#E2E6E8)" }}
       >
-        <p className="text-[10px] font-bold text-[var(--color-text-muted,#6B7280)] uppercase tracking-widest mb-3">
+        <p className="text-caption font-bold text-[var(--color-text-muted,#6B7280)] uppercase tracking-widest mb-3">
           License Status
         </p>
         <div className="flex flex-col gap-2.5">

@@ -72,17 +72,17 @@ function Shell({ children, note }: { children: React.ReactNode; note?: string })
       >
         <div className="flex items-center gap-2 mb-3 flex-wrap">
           <Glasses size={13} className="shrink-0 text-violet-500" />
-          <p className="text-[11px] font-semibold tracking-widest text-violet-600/80 uppercase italic">
+          <p className="text-caption font-semibold tracking-widest text-violet-600/80 uppercase italic">
             Refractive Guidance
           </p>
-          <span className="ml-auto shrink-0 text-[9px] sm:text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-violet-50 text-violet-600 border border-violet-200/70">
+          <span className="ml-auto shrink-0 text-micro sm:text-caption font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-violet-50 text-violet-600 border border-violet-200/70">
             AI · guidance only
           </span>
         </div>
 
         {children}
 
-        {note && <p className="mt-2 text-[10px] text-violet-400/70 italic">{note}</p>}
+        {note && <p className="mt-2 text-caption text-violet-400/70 italic">{note}</p>}
       </div>
     </div>
   );
@@ -95,8 +95,8 @@ function TriggerButton({ label, onClick, primary }: { label: string; onClick: ()
       onClick={onClick}
       className={
         primary
-          ? "shrink-0 px-3 py-1.5 rounded-lg text-[12px] sm:text-[13px] font-medium bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] active:scale-[0.98] transition-all"
-          : "shrink-0 px-3 py-1.5 rounded-lg text-[12px] sm:text-[13px] font-medium border border-[var(--color-border)] text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)] transition-colors"
+          ? "shrink-0 px-3 py-1.5 rounded-lg text-caption sm:text-label font-medium bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] active:scale-[0.98] transition-all"
+          : "shrink-0 px-3 py-1.5 rounded-lg text-caption sm:text-label font-medium border border-[var(--color-border)] text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)] transition-colors"
       }
     >
       {label}
@@ -115,7 +115,7 @@ export function RefractiveGuidanceCard({
     return (
       <Shell>
         <div className="flex items-center justify-between gap-3 flex-wrap">
-          <p className="text-[13px] sm:text-sm text-[var(--color-ink-500)]">
+          <p className="text-label sm:text-sm text-[var(--color-ink-500)]">
             Interpret the recorded refraction and check what the record still lacks.
           </p>
           <TriggerButton label="Generate guidance" onClick={onGenerate} primary />
@@ -127,7 +127,7 @@ export function RefractiveGuidanceCard({
   if (state.status === "loading") {
     return (
       <Shell>
-        <p className="flex items-center gap-2 text-[13px] sm:text-sm text-[var(--color-ink-500)]">
+        <p className="flex items-center gap-2 text-label sm:text-sm text-[var(--color-ink-500)]">
           <span
             aria-hidden="true"
             className="w-3 h-3 rounded-full border-2 border-[var(--color-primary-300)] border-t-[var(--color-primary-600)] animate-spin"
@@ -143,10 +143,10 @@ export function RefractiveGuidanceCard({
       <Shell>
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div>
-            <p className="text-[13px] sm:text-sm text-[var(--color-ink-500)]">
+            <p className="text-label sm:text-sm text-[var(--color-ink-500)]">
               Couldn&apos;t generate refractive guidance.
             </p>
-            <p className="mt-1 text-[11px] sm:text-xs text-[var(--color-ink-400)]">{state.message}</p>
+            <p className="mt-1 text-caption sm:text-xs text-[var(--color-ink-400)]">{state.message}</p>
           </div>
           <TriggerButton label="Try again" onClick={onGenerate} />
         </div>
@@ -167,15 +167,15 @@ export function RefractiveGuidanceCard({
       <div className="flex flex-col gap-3">
         {eyes.map((e) => (
           <div key={e.eye}>
-            <p className="text-[11px] sm:text-xs font-semibold text-[var(--color-ink-700)]">{e.eye}</p>
+            <p className="text-caption sm:text-xs font-semibold text-[var(--color-ink-700)]">{e.eye}</p>
             {e.documented && (
-              <p className="mt-1 text-[13px] sm:text-sm text-[var(--color-ink-900)]">
+              <p className="mt-1 text-label sm:text-sm text-[var(--color-ink-900)]">
                 <span className="text-[var(--color-ink-500)]">Documented: </span>
                 {e.documented}
               </p>
             )}
             {e.interpretation && (
-              <p className="mt-0.5 text-[11px] sm:text-xs text-[var(--color-ink-500)]">
+              <p className="mt-0.5 text-caption sm:text-xs text-[var(--color-ink-500)]">
                 {e.interpretation}
               </p>
             )}
@@ -184,8 +184,8 @@ export function RefractiveGuidanceCard({
 
         {state.result.routing.guidance && (
           <div className="pt-2 border-t border-[var(--color-border)]">
-            <p className="text-[11px] sm:text-xs font-semibold text-[var(--color-ink-700)]">Routing</p>
-            <p className="mt-1 text-[13px] sm:text-sm text-[var(--color-ink-900)]">
+            <p className="text-caption sm:text-xs font-semibold text-[var(--color-ink-700)]">Routing</p>
+            <p className="mt-1 text-label sm:text-sm text-[var(--color-ink-900)]">
               {state.result.routing.guidance}
             </p>
           </div>

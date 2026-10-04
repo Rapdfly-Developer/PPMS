@@ -52,7 +52,7 @@ export function InvestigationsTab({
 
   const tabCls = (id: "previous" | "new") =>
     clsx(
-      "flex items-center gap-2 px-5 py-2.5 text-[13px] sm:text-sm font-medium rounded-xl border transition-colors",
+      "flex items-center gap-2 px-5 py-2.5 text-label sm:text-sm font-medium rounded-xl border transition-colors",
       activeTab === id
         ? "bg-[var(--color-primary-600)] text-white border-[var(--color-primary-600)]"
         : "bg-white text-[var(--color-ink-600)] border-[var(--color-border)] hover:border-[var(--color-primary-400)]"
@@ -65,7 +65,7 @@ export function InvestigationsTab({
         <button className={tabCls("previous")} onClick={() => setActiveTab("previous")}>
           <History size={15} /> Previous Investigations
           {previousOrders.length > 0 && (
-            <span className={clsx("rounded-full text-[10px] font-semibold px-1.5 py-0.5",
+            <span className={clsx("rounded-full text-caption font-semibold px-1.5 py-0.5",
               activeTab === "previous" ? "bg-white/20 text-white" : "bg-[var(--color-primary-100)] text-[var(--color-primary-700)]"
             )}>
               {previousOrders.length}
@@ -75,7 +75,7 @@ export function InvestigationsTab({
         <button className={tabCls("new")} onClick={() => setActiveTab("new")}>
           <Plus size={15} /> New Investigations
           {todayOrders.length > 0 && (
-            <span className={clsx("rounded-full text-[10px] font-semibold px-1.5 py-0.5",
+            <span className={clsx("rounded-full text-caption font-semibold px-1.5 py-0.5",
               activeTab === "new" ? "bg-white/20 text-white" : "bg-[var(--color-primary-100)] text-[var(--color-primary-700)]"
             )}>
               {todayOrders.length}
@@ -94,7 +94,7 @@ export function InvestigationsTab({
         <NewInvestigations visit={visit} udid={udid} todayOrders={todayOrders} onOrdered={() => {}} />
       )}
       {activeTab === "new" && readOnly && !overview && (
-        <p className="text-[13px] sm:text-sm text-[var(--color-ink-400)] text-center py-8">This visit is closed, no new orders can be placed.</p>
+        <p className="text-label sm:text-sm text-[var(--color-ink-400)] text-center py-8">This visit is closed, no new orders can be placed.</p>
       )}
     </div>
   );
@@ -110,7 +110,7 @@ function PreviousInvestigations({ orders, udid, readOnly }: { orders: any[]; udi
       <Card>
         <div className="flex flex-col items-center justify-center py-12 text-center gap-2">
           <FlaskConical size={36} className="text-[var(--color-ink-300)]" />
-          <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-500)]">No previous investigations</p>
+          <p className="text-label sm:text-sm font-medium text-[var(--color-ink-500)]">No previous investigations</p>
           <p className="text-xs text-[var(--color-ink-400)]">Switch to New Investigations to place an order.</p>
         </div>
       </Card>
@@ -132,7 +132,7 @@ function PreviousInvestigations({ orders, udid, readOnly }: { orders: any[]; udi
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setViewUrl(null)}>
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl mx-4 max-h-[90vh] flex flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--color-border)]">
-              <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)]">Result Viewer</p>
+              <p className="text-label sm:text-sm font-medium text-[var(--color-ink-700)]">Result Viewer</p>
               <div className="flex items-center gap-2">
                 <a href={viewUrl} download target="_blank" rel="noreferrer"
                   className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-[var(--color-border)] hover:border-[var(--color-primary-400)] text-[var(--color-ink-600)] transition-colors">
@@ -205,7 +205,7 @@ function InvestigationCard({
   return (
     <Card className="px-3 py-2.5">
       {/* Row 1: test name */}
-      <p className="text-[13px] font-semibold text-[var(--color-ink-900)] leading-snug mb-1.5">
+      <p className="text-label font-semibold text-[var(--color-ink-900)] leading-snug mb-1.5">
         {order.laterality && <span className="text-[var(--color-primary-700)] mr-1.5">{order.laterality}</span>}
         {order.testName}
       </p>
@@ -216,7 +216,7 @@ function InvestigationCard({
         <div className="flex flex-wrap items-center gap-1 min-w-0">
           <PriorityPill priority={order.priority} />
           <StatusBadge status={order.status} resultRef={order.resultRef} />
-          <span className="text-[11px] text-[var(--color-ink-400)] flex items-center gap-0.5">
+          <span className="text-caption text-[var(--color-ink-400)] flex items-center gap-0.5">
             <Clock size={10} />{format(new Date(order.createdAt), "h:mm a")}
           </span>
         </div>
@@ -227,7 +227,7 @@ function InvestigationCard({
             <>
               <button
                 onClick={() => onView(order.resultRef)}
-                className="flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-lg border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] transition-colors"
+                className="flex items-center gap-1 text-caption font-medium px-2 py-1 rounded-lg border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] transition-colors"
               >
                 <Eye size={12} /> View
               </button>
@@ -236,7 +236,7 @@ function InvestigationCard({
                 download
                 target="_blank"
                 rel="noreferrer"
-                className="flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-lg border border-[var(--color-border)] text-[var(--color-ink-600)] hover:border-[var(--color-primary-400)] transition-colors"
+                className="flex items-center gap-1 text-caption font-medium px-2 py-1 rounded-lg border border-[var(--color-border)] text-[var(--color-ink-600)] hover:border-[var(--color-primary-400)] transition-colors"
               >
                 <Download size={12} />
               </a>
@@ -244,14 +244,14 @@ function InvestigationCard({
           ) : !readOnly ? (
             <span data-overview-hide className="contents"><UploadButton orderId={order.id} udid={udid} /></span>
           ) : (
-            <span className="text-[11px] text-[var(--color-ink-400)]">Pending</span>
+            <span className="text-caption text-[var(--color-ink-400)]">Pending</span>
           )}
           {!readOnly && (
             <span data-overview-hide className="contents"><button
               type="button"
               onClick={handleDelete}
               disabled={deleting}
-              className={`flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-lg border transition-colors disabled:opacity-50 ${
+              className={`flex items-center gap-1 text-caption font-medium px-2 py-1 rounded-lg border transition-colors disabled:opacity-50 ${
                 confirmDelete
                   ? "border-red-300 bg-red-50 text-red-600 hover:bg-red-100"
                   : "border-[var(--color-border)] text-[var(--color-ink-400)] hover:border-red-300 hover:text-red-600 hover:bg-red-50"
@@ -269,11 +269,11 @@ function InvestigationCard({
           with the complaint or exam keyword lists. */}
       {readOnly ? (
         order.notes ? (
-          <p className="text-[11px] text-[var(--color-ink-500)] italic mt-1.5">In view of: {order.notes}</p>
+          <p className="text-caption text-[var(--color-ink-500)] italic mt-1.5">In view of: {order.notes}</p>
         ) : null
       ) : (
         <div className="mt-2">
-          <label className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)] block mb-1">
+          <label className="text-caption font-semibold uppercase tracking-wider text-[var(--color-ink-400)] block mb-1">
             In view of
           </label>
           <KeywordInput
@@ -288,7 +288,7 @@ function InvestigationCard({
       {/* Inline result preview */}
       {order.resultRef && (
         <div className="mt-3 pt-3 border-t border-[var(--color-border)]">
-          <p className="text-[11px] font-semibold text-[var(--color-ink-400)] uppercase tracking-wide mb-2">
+          <p className="text-caption font-semibold text-[var(--color-ink-400)] uppercase tracking-wide mb-2">
             {order.testName}, Result
           </p>
           {isImage ? (
@@ -353,7 +353,7 @@ function UploadButton({ orderId, udid }: { orderId: string; udid: string }) {
           type="button"
           disabled={uploading}
           onClick={() => fileRef.current?.click()}
-          className="flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-lg border border-dashed border-[var(--color-primary-400)] text-[var(--color-primary-600)] hover:bg-[var(--color-primary-50)] disabled:opacity-50 transition-colors"
+          className="flex items-center gap-1 text-caption font-medium px-2 py-1 rounded-lg border border-dashed border-[var(--color-primary-400)] text-[var(--color-primary-600)] hover:bg-[var(--color-primary-50)] disabled:opacity-50 transition-colors"
         >
           {uploading ? <Upload size={12} className="animate-pulse" /> : <Upload size={12} />}
           {uploading ? "…" : "File"}
@@ -362,12 +362,12 @@ function UploadButton({ orderId, udid }: { orderId: string; udid: string }) {
           type="button"
           disabled={uploading}
           onClick={() => cameraRef.current?.click()}
-          className="flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-lg border border-dashed border-[var(--color-accent-400)] text-[var(--color-accent-600)] hover:bg-[var(--color-accent-50)] disabled:opacity-50 transition-colors"
+          className="flex items-center gap-1 text-caption font-medium px-2 py-1 rounded-lg border border-dashed border-[var(--color-accent-400)] text-[var(--color-accent-600)] hover:bg-[var(--color-accent-50)] disabled:opacity-50 transition-colors"
         >
           <Camera size={12} /> Cam
         </button>
       </div>
-      {error && <p className="text-[10px] text-red-600">{error}</p>}
+      {error && <p className="text-caption text-red-600">{error}</p>}
     </div>
   );
 }
@@ -415,7 +415,7 @@ function AddCustomTestModal({
         <div className="px-5 py-4 flex items-center justify-between border-b border-[var(--color-border)]">
           <div className="flex items-center gap-2.5">
             <FlaskConical size={17} className="text-[var(--color-primary-600)]" />
-            <p className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-800)] tracking-tight">Add Test</p>
+            <p className="text-label sm:text-sm font-semibold text-[var(--color-ink-800)] tracking-tight">Add Test</p>
           </div>
           <button
             type="button"
@@ -487,14 +487,14 @@ function AddCustomTestModal({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-xl border border-[var(--color-border)] text-[13px] sm:text-sm font-medium text-[var(--color-ink-500)] hover:bg-[var(--color-surface-sunken)] transition-colors"
+              className="px-4 py-2 rounded-xl border border-[var(--color-border)] text-label sm:text-sm font-medium text-[var(--color-ink-500)] hover:bg-[var(--color-surface-sunken)] transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={!query.trim()}
-              className="px-5 py-2 rounded-xl bg-[#0F766E] text-white text-[13px] sm:text-sm font-semibold hover:bg-[#0D6862] transition-colors disabled:opacity-40"
+              className="px-5 py-2 rounded-xl bg-[#0F766E] text-white text-label sm:text-sm font-semibold hover:bg-[#0D6862] transition-colors disabled:opacity-40"
             >
               Add Test
             </button>
@@ -634,7 +634,7 @@ function NewInvestigations({
               key={cat}
               onClick={() => setActiveCategory(cat)}
               className={clsx(
-                "px-4 py-2.5 text-[13px] sm:text-sm whitespace-nowrap transition-colors border-b-2",
+                "px-4 py-2.5 text-label sm:text-sm whitespace-nowrap transition-colors border-b-2",
                 activeCategory === cat
                   ? "border-[var(--color-primary-600)] text-[var(--color-primary-700)] font-semibold bg-[var(--color-primary-50)]"
                   : "border-transparent text-[var(--color-ink-500)] font-medium hover:text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]"
@@ -659,7 +659,7 @@ function NewInvestigations({
                       : "border-[var(--color-border)] hover:border-[var(--color-primary-300)] hover:bg-[var(--color-surface-sunken)]"
                   )}
                 >
-                  <span className="flex items-center gap-2.5 text-[13px] sm:text-sm text-[var(--color-ink-700)]">
+                  <span className="flex items-center gap-2.5 text-label sm:text-sm text-[var(--color-ink-700)]">
                     <input
                       type="checkbox"
                       checked={checked}
@@ -669,14 +669,14 @@ function NewInvestigations({
                     {item.name}
                   </span>
                   {item.isCustom && (
-                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-[#EEF8F7] text-[#0F766E] border border-[#B2DEDA] ml-2 shrink-0">
+                    <span className="text-caption font-medium px-1.5 py-0.5 rounded-full bg-[#EEF8F7] text-[#0F766E] border border-[#B2DEDA] ml-2 shrink-0">
                       Custom
                     </span>
                   )}
                 </label>
                 {checked && (
                   <div className="px-3 py-2 rounded-b-xl border border-t-0 border-[var(--color-primary-400)] bg-[var(--color-primary-50)]">
-                    <p className="text-[9px] font-semibold uppercase tracking-wider text-[var(--color-primary-600)] mb-1">In view of</p>
+                    <p className="text-micro font-semibold uppercase tracking-wider text-[var(--color-primary-600)] mb-1">In view of</p>
                     <input
                       type="text"
                       value={testNotes[item.name] ?? ""}
@@ -701,7 +701,7 @@ function NewInvestigations({
             <button
               disabled={pending || selected.length === 0}
               onClick={placeOrders}
-              className="rounded-xl bg-[var(--color-primary-600)] text-white text-[13px] sm:text-sm font-medium px-5 py-2 hover:bg-[var(--color-primary-700)] disabled:opacity-50"
+              className="rounded-xl bg-[var(--color-primary-600)] text-white text-label sm:text-sm font-medium px-5 py-2 hover:bg-[var(--color-primary-700)] disabled:opacity-50"
             >
               {pending ? "Placing…" : `Place Order${selected.length > 1 ? "s" : ""}`}
             </button>
@@ -716,8 +716,8 @@ function NewInvestigations({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <CheckCircle2 size={15} className="text-[var(--color-success-600)]" />
-              <p className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-800)]">Today&apos;s Orders</p>
-              <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-[var(--color-primary-100)] text-[var(--color-primary-700)]">
+              <p className="text-label sm:text-sm font-semibold text-[var(--color-ink-800)]">Today&apos;s Orders</p>
+              <span className="text-caption font-semibold px-1.5 py-0.5 rounded-full bg-[var(--color-primary-100)] text-[var(--color-primary-700)]">
                 {todayOrders.length}
               </span>
             </div>
@@ -734,7 +734,7 @@ function NewInvestigations({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setViewUrl(null)}>
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl mx-4 max-h-[90vh] flex flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--color-border)]">
-              <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)]">Result Viewer</p>
+              <p className="text-label sm:text-sm font-medium text-[var(--color-ink-700)]">Result Viewer</p>
               <div className="flex items-center gap-2">
                 <a href={viewUrl} download target="_blank" rel="noreferrer"
                   className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-[var(--color-border)] hover:border-[var(--color-primary-400)] text-[var(--color-ink-600)] transition-colors">
@@ -771,7 +771,7 @@ function PriorityPill({ priority }: { priority: string }) {
     STAT:    "bg-[var(--color-danger-100)] text-[var(--color-danger-600)]",
   };
   return (
-    <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${map[priority] ?? map.ROUTINE}`}>
+    <span className={`text-caption font-medium px-2 py-0.5 rounded-full ${map[priority] ?? map.ROUTINE}`}>
       {priority}
     </span>
   );
@@ -780,7 +780,7 @@ function PriorityPill({ priority }: { priority: string }) {
 function StatusBadge({ status, resultRef }: { status: string; resultRef?: string | null }) {
   if (resultRef) {
     return (
-      <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-[var(--color-success-100)] text-[var(--color-success-600)]">
+      <span className="inline-flex items-center gap-1 text-caption font-medium px-2 py-0.5 rounded-full bg-[var(--color-success-100)] text-[var(--color-success-600)]">
         <CheckCircle2 size={11} /> Result Uploaded
       </span>
     );
@@ -794,7 +794,7 @@ function StatusBadge({ status, resultRef }: { status: string; resultRef?: string
   };
   const s = map[status] ?? map.ORDERED;
   return (
-    <span className={`inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full ${s.cls}`}>
+    <span className={`inline-flex items-center gap-1 text-caption font-medium px-2 py-0.5 rounded-full ${s.cls}`}>
       {s.icon} {s.label}
     </span>
   );

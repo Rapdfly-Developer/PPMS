@@ -118,7 +118,7 @@ function parseBP(value: string): { sys: number; dia: number } | null {
 
 function VitalWarning({ message }: { message: string }) {
   return (
-    <span className="flex items-center gap-1 text-[10px] text-amber-600 mt-0.5 font-medium">
+    <span className="flex items-center gap-1 text-caption text-amber-600 mt-0.5 font-medium">
       <AlertTriangle size={10} /> {message}
     </span>
   );
@@ -186,7 +186,7 @@ function ComplaintKeywordButton({
         aria-controls={popoverId}
         aria-label="Keyword suggestions for this complaint"
         title="Keyword suggestions"
-        className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border text-[11px] font-medium transition-colors whitespace-nowrap ${
+        className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border text-caption font-medium transition-colors whitespace-nowrap ${
           open
             ? "border-[var(--color-primary-400)] bg-[var(--color-primary-100)] text-[var(--color-primary-700)]"
             : "border-[var(--color-border)] bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)] hover:border-[var(--color-primary-300)] hover:text-[var(--color-primary-700)]"
@@ -321,7 +321,7 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly }: { visit: 
                 {/* Single complaint line: bullet | lat | text | since | remove */}
                 <div className="flex items-center gap-1.5 min-w-0 flex-wrap sm:flex-nowrap">
                   {complaints.length > 1 && (
-                    <span className="text-[11px] font-bold text-[var(--color-ink-400)] w-5 text-center shrink-0 select-none">
+                    <span className="text-caption font-bold text-[var(--color-ink-400)] w-5 text-center shrink-0 select-none">
                       {i + 1}.
                     </span>
                   )}
@@ -336,7 +336,7 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly }: { visit: 
                           type="button"
                           disabled={readOnly}
                           onClick={() => patchComplaint(i, { lat: active ? null : opt })}
-                          className="px-2.5 py-0.5 rounded-full text-[11px] font-bold transition-all"
+                          className="px-2.5 py-0.5 rounded-full text-caption font-bold transition-all"
                           style={active ? {
                             background: "var(--color-primary-600)",
                             color: "#fff",
@@ -378,14 +378,14 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly }: { visit: 
 
                   {/* Since */}
                   <span
-                    className="text-[11px] font-semibold text-[var(--color-ink-400)] shrink-0"
+                    className="text-caption font-semibold text-[var(--color-ink-400)] shrink-0"
                     {...(!c.sinceNum ? { "data-ov-empty": "" } : {})}
                   >Since</span>
                   <select
                     value={c.sinceNum}
                     onChange={(e) => patchComplaint(i, { sinceNum: e.target.value })}
                     disabled={readOnly}
-                    className="text-[11px] border border-[var(--color-border)] rounded-md px-1.5 py-1 bg-white text-[var(--color-ink-700)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] disabled:opacity-50 w-12 shrink-0"
+                    className="text-caption border border-[var(--color-border)] rounded-md px-1.5 py-1 bg-white text-[var(--color-ink-700)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] disabled:opacity-50 w-12 shrink-0"
                     {...(!c.sinceNum ? { "data-ov-empty": "" } : {})}
                   >
                     <option value="">—</option>
@@ -397,7 +397,7 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly }: { visit: 
                     value={c.sinceUnit}
                     onChange={(e) => patchComplaint(i, { sinceUnit: e.target.value })}
                     disabled={readOnly || !c.sinceNum}
-                    className="text-[11px] border border-[var(--color-border)] rounded-md px-1.5 py-1 bg-white text-[var(--color-ink-700)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] disabled:opacity-50 w-16 shrink-0"
+                    className="text-caption border border-[var(--color-border)] rounded-md px-1.5 py-1 bg-white text-[var(--color-ink-700)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] disabled:opacity-50 w-16 shrink-0"
                     {...(!c.sinceNum ? { "data-ov-empty": "" } : {})}
                   >
                     {SINCE_UNITS.map((u) => (
@@ -440,7 +440,7 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly }: { visit: 
       <div {...(overview && !hasPmh ? { "data-overview-empty-section": "" } : {})}>
       <Card>
         <p className="text-xs font-semibold tracking-widest text-[var(--color-ink-500)] uppercase mb-3">
-          Past Medical History <span className="text-[10px] font-normal normal-case tracking-normal text-[var(--color-ink-400)]">(cumulative across visits)</span>
+          Past Medical History <span className="text-caption font-normal normal-case tracking-normal text-[var(--color-ink-400)]">(cumulative across visits)</span>
         </p>
         <div className="flex flex-wrap items-center gap-1.5">
           {!readOnly && (
@@ -448,7 +448,7 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly }: { visit: 
               data-overview-hide
               type="button"
               onClick={() => setAddingPmhKeyword(true)}
-              className="inline-flex items-center gap-0.5 rounded border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] px-2 py-1 text-[11px] font-medium text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] transition-colors"
+              className="inline-flex items-center gap-0.5 rounded border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] px-2 py-1 text-caption font-medium text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] transition-colors"
             >
               <Plus size={12} strokeWidth={2.5} /> Add
             </button>

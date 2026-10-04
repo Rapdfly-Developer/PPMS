@@ -55,7 +55,7 @@ function StatusBadge({ status }: { status: string }) {
   };
   const s = map[status] ?? map.NOT_INSTALLED;
   return (
-    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10.5px] font-semibold border ${s.className}`}>
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-caption font-semibold border ${s.className}`}>
       {s.icon}{s.label}
     </span>
   );
@@ -70,7 +70,7 @@ function LicenseBadge({ info }: { info: LicenseInfo | null }) {
     SUSPENDED: "bg-red-50 text-red-600 border-red-200",
   };
   return (
-    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10.5px] font-semibold border ${map[info.status] ?? "bg-gray-100 text-gray-500 border-gray-200"}`}>
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-caption font-semibold border ${map[info.status] ?? "bg-gray-100 text-gray-500 border-gray-200"}`}>
       {info.status}
     </span>
   );
@@ -131,7 +131,7 @@ function PluginCard({
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-1.5 flex-wrap min-w-0">
               <span className="text-sm font-semibold text-gray-900 truncate">{plugin.name}</span>
-              <span className="text-[10px] text-gray-400 font-mono shrink-0">v{plugin.version}</span>
+              <span className="text-caption text-gray-400 font-mono shrink-0">v{plugin.version}</span>
               <StatusBadge status={plugin.status} />
               <LicenseBadge info={plugin.license} />
             </div>
@@ -176,7 +176,7 @@ function PluginCard({
           {showPerms && (
             <div className="flex flex-wrap gap-1.5 mt-2">
               {plugin.permissions.map((p) => (
-                <span key={p} className="px-2 py-0.5 rounded text-[10px] font-mono bg-gray-100 text-gray-600 border border-gray-200">
+                <span key={p} className="px-2 py-0.5 rounded text-caption font-mono bg-gray-100 text-gray-600 border border-gray-200">
                   {p}
                 </span>
               ))}

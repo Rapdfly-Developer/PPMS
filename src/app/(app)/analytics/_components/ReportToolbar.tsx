@@ -13,12 +13,12 @@ export function ReportToolbar() {
 
   return (
     <div data-no-print className="mb-6 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-[var(--color-primary-50)] px-4 py-3">
-      <p className="text-[12.5px] text-[var(--color-ink-700)]">Use your browser&apos;s print dialog and choose <span className="font-semibold">Save as PDF</span>.</p>
+      <p className="text-label text-[var(--color-ink-700)]">Use your browser&apos;s print dialog and choose <span className="font-semibold">Save as PDF</span>.</p>
       <div className="flex gap-2">
-        <Link href="/analytics" className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-[var(--color-border)] bg-white px-3 text-[12px] font-medium text-[var(--color-ink-700)]">
+        <Link href="/analytics" className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-[var(--color-border)] bg-white px-3 text-caption font-medium text-[var(--color-ink-700)]">
           <ArrowLeft size={13} /> Analytics
         </Link>
-        <button type="button" onClick={() => window.print()} className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-[var(--color-primary-700)] px-3 text-[12px] font-semibold text-white">
+        <button type="button" onClick={() => window.print()} className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-[var(--color-primary-700)] px-3 text-caption font-semibold text-white">
           <Printer size={13} /> Print / Save PDF
         </button>
       </div>

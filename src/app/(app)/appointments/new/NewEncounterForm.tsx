@@ -544,7 +544,7 @@ export function NewEncounterForm({
                     <button
                       type="button"
                       onClick={() => { setShowRefPatient(!showRefPatient); setReferralPatient(null); setRefSearch(""); setReferralRelationship(""); }}
-                      className="text-[11px] font-semibold text-[var(--color-primary-700)] hover:underline"
+                      className="text-caption font-semibold text-[var(--color-primary-700)] hover:underline"
                     >
                       {showRefPatient ? "Cancel" : "Link patient"}
                     </button>
@@ -709,7 +709,7 @@ export function NewEncounterForm({
                     type="button"
                     onClick={handleImportPrevCC}
                     disabled={importing}
-                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold border border-[var(--color-primary-200)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] disabled:opacity-60 transition-colors"
+                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-caption font-semibold border border-[var(--color-primary-200)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] disabled:opacity-60 transition-colors"
                   >
                     {importing ? <Loader2 size={11} className="animate-spin" /> : <Download size={11} />}
                     {importing ? "Importing…" : "Import from last visit"}
@@ -805,7 +805,7 @@ export function NewEncounterForm({
                   <button
                     type="button"
                     onClick={saveComposerAsKeyword}
-                    className="self-start inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-[10px] font-medium text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] transition-colors whitespace-nowrap"
+                    className="self-start inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-caption font-medium text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] transition-colors whitespace-nowrap"
                   >
                     <Plus size={11} strokeWidth={2.5} /> Save as keyword
                   </button>
@@ -825,7 +825,7 @@ export function NewEncounterForm({
                         onClick={() => editBullet(i)}
                         aria-label={`Edit complaint: ${b.text}`}
                         title={`Edit complaint: ${b.text}`}
-                        className="text-[11px] text-[var(--color-primary-600)] hover:underline shrink-0"
+                        className="text-caption text-[var(--color-primary-600)] hover:underline shrink-0"
                       >
                         Edit
                       </button>

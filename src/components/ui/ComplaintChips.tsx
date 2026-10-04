@@ -27,7 +27,7 @@ export function ComplaintChips({
           <span
             key={i}
             title={label}
-            className={`${tone === "dark" ? "clinical-complaint-chip-dark" : "clinical-complaint-chip"} inline-flex max-w-full items-center rounded-full border px-2.5 py-0.5 text-[11px] leading-[18px]`}
+            className={`${tone === "dark" ? "clinical-complaint-chip-dark" : "clinical-complaint-chip"} inline-flex max-w-full items-center rounded-full border px-2.5 py-0.5 text-caption leading-[18px]`}
           >
             <span className={wrap ? "break-words" : "truncate"}>{label}</span>
           </span>

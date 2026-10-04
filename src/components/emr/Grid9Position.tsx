@@ -36,8 +36,8 @@ export function DiplopiaGrid({
               STATUS_STYLES[cell.status]
             )}
           >
-            <span className="text-[11px] font-semibold leading-tight">{pos}</span>
-            <span className="text-[9px] opacity-80">{cell.status.replace(/_/g, " ")}</span>
+            <span className="text-caption font-semibold leading-tight">{pos}</span>
+            <span className="text-micro opacity-80">{cell.status.replace(/_/g, " ")}</span>
           </button>
         );
       })}
@@ -58,7 +58,7 @@ export function HessGrid({
         const cell = grid[pos] ?? {};
         return (
           <div key={pos} className="rounded-xl border border-[var(--color-border)] bg-white p-2">
-            <p className="text-[11px] font-semibold text-center text-[var(--color-ink-700)] mb-1.5">{pos}</p>
+            <p className="text-caption font-semibold text-center text-[var(--color-ink-700)] mb-1.5">{pos}</p>
             <div className="grid grid-cols-2 gap-1">
               <input
                 placeholder="RE-H"

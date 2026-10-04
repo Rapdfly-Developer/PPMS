@@ -217,10 +217,10 @@ export function ConsultationExitGuard({
             <AlertTriangle size={18} />
           </span>
           <div className="flex-1 min-w-0">
-            <h2 id="emr-exit-title" className="text-[15px] sm:text-base font-bold text-[var(--color-ink-900)]">
+            <h2 id="emr-exit-title" className="text-heading-sm sm:text-base font-bold text-[var(--color-ink-900)]">
               Your progress will be lost
             </h2>
-            <p className="mt-1 text-[13px] sm:text-sm text-[var(--color-ink-500)]">
+            <p className="mt-1 text-label sm:text-sm text-[var(--color-ink-500)]">
               The consultation duration for this visit will be reset. Do you wish to
               partially dispense instead?
             </p>
@@ -239,21 +239,21 @@ export function ConsultationExitGuard({
           <button
             type="button"
             onClick={onCancel}
-            className="px-4 py-2 rounded-xl text-[13px] sm:text-sm font-semibold border border-[var(--color-border)] text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] transition-colors disabled:opacity-60"
+            className="px-4 py-2 rounded-xl text-label sm:text-sm font-semibold border border-[var(--color-border)] text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] transition-colors disabled:opacity-60"
           >
             Cancel
           </button>
           <button
             type="button"
             onClick={onPartial}
-            className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-[13px] sm:text-sm font-semibold border border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors disabled:opacity-60"
+            className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-label sm:text-sm font-semibold border border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors disabled:opacity-60"
           >
             <PackageOpen size={14} /> Partial Dispense
           </button>
           <button
             type="button"
             onClick={onOk}
-            className="px-4 py-2 rounded-xl text-[13px] sm:text-sm font-semibold bg-[var(--color-primary-600)] text-white hover:opacity-90 transition-opacity disabled:opacity-60"
+            className="px-4 py-2 rounded-xl text-label sm:text-sm font-semibold bg-[var(--color-primary-600)] text-white hover:opacity-90 transition-opacity disabled:opacity-60"
           >
             OK
           </button>

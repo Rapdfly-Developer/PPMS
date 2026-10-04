@@ -255,7 +255,7 @@ export function NewUserForm({
               }`}>
                 {step > s.n ? <Check size={13} /> : s.n}
               </div>
-              <span className={`text-[10px] font-semibold mt-1 whitespace-nowrap ${
+              <span className={`text-caption font-semibold mt-1 whitespace-nowrap ${
                 step === s.n ? "text-[var(--color-primary-700)]"
                 : step > s.n ? "text-emerald-600"
                 : "text-[var(--color-ink-400)]"
@@ -448,7 +448,7 @@ export function NewUserForm({
                       }`}
                     >
                       <p className={`text-xs font-bold ${role === r.name ? "text-[var(--color-primary-700)]" : "text-[var(--color-ink-800)]"}`}>{r.label}</p>
-                      <p className="text-[10px] text-[var(--color-ink-400)] mt-0.5">{r.name}</p>
+                      <p className="text-caption text-[var(--color-ink-400)] mt-0.5">{r.name}</p>
                     </button>
                   ))}
                 </div>
@@ -522,7 +522,7 @@ export function NewUserForm({
                       <p className="text-xs font-bold text-[var(--color-ink-500)] uppercase tracking-wider">{group.category}</p>
                       <button
                         onClick={() => toggleGroupAll(role, groupKeys)}
-                        className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border transition-colors ${
+                        className={`text-caption font-bold px-2.5 py-0.5 rounded-full border transition-colors ${
                           allOn
                             ? "bg-[var(--color-primary-100)] text-[var(--color-primary-700)] border-[var(--color-primary-200)]"
                             : "bg-white text-[var(--color-ink-400)] border-[var(--color-border)] hover:border-[var(--color-primary-300)]"
@@ -547,7 +547,7 @@ export function NewUserForm({
                             </div>
                             <div>
                               <p className={`font-semibold leading-tight ${on ? "text-[var(--color-primary-800)]" : "text-[var(--color-ink-700)]"}`}>{p.label}</p>
-                              <p className="text-[var(--color-ink-400)] text-[10px] mt-0.5 leading-snug">{p.description}</p>
+                              <p className="text-[var(--color-ink-400)] text-caption mt-0.5 leading-snug">{p.description}</p>
                             </div>
                           </button>
                         );

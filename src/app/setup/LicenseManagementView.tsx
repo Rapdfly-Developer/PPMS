@@ -51,7 +51,7 @@ const STATUS_CFG: Record<LicStatus, { label: string; bg: string; text: string; b
 function StatusBadge({ status }: { status: LicStatus }) {
   const c = STATUS_CFG[status] ?? STATUS_CFG.EXPIRED;
   return (
-    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border ${c.bg} ${c.text} ${c.border}`}>
+    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-caption font-semibold border ${c.bg} ${c.text} ${c.border}`}>
       <span className={`w-1.5 h-1.5 rounded-full ${c.dot}`} />
       {c.label}
     </span>
@@ -135,10 +135,10 @@ function KpiCard({ icon, value, label, sub, tint, onClick, active }: {
         </div>
         <div>
           <p className="text-2xl font-bold text-slate-900 leading-none">{value}</p>
-          <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mt-0.5">{label}</p>
+          <p className="text-caption font-semibold text-slate-400 uppercase tracking-wider mt-0.5">{label}</p>
         </div>
       </div>
-      {sub && <p className="text-[11px] text-slate-400 mt-2">{sub}</p>}
+      {sub && <p className="text-caption text-slate-400 mt-2">{sub}</p>}
     </button>
   );
 }
@@ -168,7 +168,7 @@ function Modal({ title, onClose, children, danger }: {
 
 const inputCls = "w-full px-3 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-400/30 focus:border-teal-500 transition-all";
 const selectCls = inputCls;
-const labelCls = "block text-[10px] font-semibold text-slate-500 uppercase tracking-widest mb-1.5";
+const labelCls = "block text-caption font-semibold text-slate-500 uppercase tracking-widest mb-1.5";
 
 // ── Detail Drawer ──────────────────────────────────────────────────────────
 
@@ -240,7 +240,7 @@ function DetailDrawer({ lic, events, loadingEvents, onClose, onAction, onRefresh
             <div className="space-y-5">
               {/* Customer */}
               <section>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Customer</p>
+                <p className="text-caption font-bold text-slate-400 uppercase tracking-widest mb-3">Customer</p>
                 <div className="rounded-xl border border-slate-100 divide-y divide-slate-50">
                   <Row icon={<User size={13} />} label="Name" value={lic.doctorName} />
                   <Row icon={<Building2 size={13} />} label="Hospital" value={lic.hospitalName} />
@@ -251,7 +251,7 @@ function DetailDrawer({ lic, events, loadingEvents, onClose, onAction, onRefresh
 
               {/* License Info */}
               <section>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">License</p>
+                <p className="text-caption font-bold text-slate-400 uppercase tracking-widest mb-3">License</p>
                 <div className="rounded-xl border border-slate-100 divide-y divide-slate-50">
                   <div className="flex items-center justify-between px-3 py-2.5">
                     <span className="text-xs text-slate-500 flex items-center gap-1.5"><Key size={13} />Key</span>
@@ -283,7 +283,7 @@ function DetailDrawer({ lic, events, loadingEvents, onClose, onAction, onRefresh
               {/* Trial Info */}
               {!lic.licenseKey && (
                 <section>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Trial</p>
+                  <p className="text-caption font-bold text-slate-400 uppercase tracking-widest mb-3">Trial</p>
                   <div className="rounded-xl border border-amber-100 divide-y divide-amber-50 bg-amber-50/30">
                     <Row icon={<Clock size={13} />} label="Trial Started" value={fmt(lic.trialStartsAt)} />
                     <Row icon={<Clock size={13} />} label="Trial Ends" value={fmt(lic.trialEndsAt)} />
@@ -339,7 +339,7 @@ function DetailDrawer({ lic, events, loadingEvents, onClose, onAction, onRefresh
                     <span className={`font-bold ${e.status === "SUCCESS" ? "text-slate-700" : "text-red-700"}`}>
                       {e.action.replace(/_/g, " ")}
                     </span>
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                    <span className={`px-2 py-0.5 rounded-full text-caption font-semibold ${
                       e.status === "SUCCESS"
                         ? "bg-emerald-50 text-emerald-700"
                         : "bg-red-50 text-red-600"
@@ -583,7 +583,7 @@ export function LicenseManagementView() {
                 <thead>
                   <tr className="border-b border-slate-100 bg-slate-50/60">
                     {["Doctor / Customer", "Hospital", "License Key", "Plan", "Status", "Expiry", "Remaining", "Last Check", "Actions"].map((h) => (
-                      <th key={h} className="px-4 py-3 text-left text-[10px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">{h}</th>
+                      <th key={h} className="px-4 py-3 text-left text-caption font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -594,7 +594,7 @@ export function LicenseManagementView() {
                       className={`hover:bg-teal-50/30 transition-colors cursor-pointer ${selected?.id === lic.id ? "bg-teal-50/50" : ""}`}>
                       <td className="px-4 py-3">
                         <p className="font-semibold text-slate-800 leading-tight">{lic.doctorName}</p>
-                        <p className="text-[11px] text-slate-400 font-mono">@{lic.username}</p>
+                        <p className="text-caption text-slate-400 font-mono">@{lic.username}</p>
                       </td>
                       <td className="px-4 py-3">
                         <span className="text-slate-600 text-xs">{lic.hospitalName ?? <span className="text-slate-300">—</span>}</span>
@@ -615,7 +615,7 @@ export function LicenseManagementView() {
                         <DaysChip days={lic.daysRemaining} status={lic.status as LicStatus} />
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap">
-                        <span className="text-[11px] text-slate-400">{fmtDt(lic.lastVerifiedAt)}</span>
+                        <span className="text-caption text-slate-400">{fmtDt(lic.lastVerifiedAt)}</span>
                       </td>
                       <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center gap-1">

@@ -137,7 +137,7 @@ export default async function DoctorDetailPage({
         <div className="max-w-7xl mx-auto flex items-center gap-2 text-sm">
           <div className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0"
             style={{ background: "linear-gradient(135deg, #0f766e, #14b8a6)" }}>
-            <span className="text-white text-[10px] font-bold">P</span>
+            <span className="text-white text-caption font-bold">P</span>
           </div>
           <span className="font-bold text-[#111827]">PPMS</span>
           <span className="text-[#D1D5DB]">/</span>

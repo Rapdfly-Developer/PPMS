@@ -39,9 +39,9 @@ export default async function AnalyticsReportPage({
       <ReportToolbar />
 
       <div className="border-b border-[var(--color-border)] pb-5">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--color-primary-700)]">RF Health · Analytics &amp; Intelligence</p>
-        <h1 className="mt-1.5 text-[24px] font-bold tracking-tight text-[var(--color-ink-900)]">{title}</h1>
-        <dl className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5 text-[12.5px]">
+        <p className="text-caption font-semibold uppercase tracking-[0.14em] text-[var(--color-primary-700)]">RF Health · Analytics &amp; Intelligence</p>
+        <h1 className="mt-1.5 text-heading-lg font-bold tracking-tight text-[var(--color-ink-900)]">{title}</h1>
+        <dl className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5 text-label">
           {[
             ["Reporting period", filters.periodLabel],
             ["Compared with", filters.compareLabel],
@@ -62,14 +62,14 @@ export default async function AnalyticsReportPage({
 
       {sections.map((tab, i) => (
         <section key={tab} className={`pt-6 ${i > 0 ? "break-before-page" : ""}`}>
-          <h2 className="mb-4 text-[18px] font-semibold tracking-tight text-[var(--color-ink-900)]">
+          <h2 className="mb-4 text-heading-md font-semibold tracking-tight text-[var(--color-ink-900)]">
             {TABS.find((t) => t.id === tab)!.label}
           </h2>
           <SectionView tab={tab} section={results[i]} ctx={{ compareLabel: filters.compareLabel, params, print: true }} />
         </section>
       ))}
 
-      <p className="mt-8 border-t border-[var(--color-border)] pt-3 text-[11px] text-[var(--color-ink-400)]">
+      <p className="mt-8 border-t border-[var(--color-border)] pt-3 text-caption text-[var(--color-ink-400)]">
         Generated from records you are authorised to view. Figures describe recorded activity and are not clinical conclusions.
       </p>
     </div>

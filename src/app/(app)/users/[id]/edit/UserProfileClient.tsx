@@ -49,10 +49,10 @@ function ReadOnlyRow({ icon: Icon, label, value }: { icon: React.ElementType; la
         <Icon size={14} className="text-emerald-500" />
       </div>
       <div className="min-w-0">
-        <p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-600">{label}</p>
+        <p className="text-caption font-semibold uppercase tracking-wider text-emerald-600">{label}</p>
         <p className="text-sm font-medium text-[var(--color-ink-700)] truncate mt-0.5">{value || "—"}</p>
       </div>
-      <span className="ml-auto text-[10px] font-medium text-emerald-500 bg-emerald-100 border border-emerald-200 rounded-md px-1.5 py-0.5 shrink-0">
+      <span className="ml-auto text-caption font-medium text-emerald-500 bg-emerald-100 border border-emerald-200 rounded-md px-1.5 py-0.5 shrink-0">
         locked
       </span>
     </div>
@@ -192,10 +192,10 @@ export function UserProfileClient({
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <h1 className="text-base sm:text-lg font-bold text-[var(--color-ink-900)]">{name || username}</h1>
-                <span className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full ring-1 ${roleMeta.color} ${roleMeta.ring}`}>
+                <span className={`text-caption font-semibold px-2.5 py-0.5 rounded-full ring-1 ${roleMeta.color} ${roleMeta.ring}`}>
                   {roleMeta.label}
                 </span>
-                <span className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full ${isActive ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200" : "bg-red-50 text-red-600 ring-1 ring-red-200"}`}>
+                <span className={`text-caption font-semibold px-2.5 py-0.5 rounded-full ${isActive ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200" : "bg-red-50 text-red-600 ring-1 ring-red-200"}`}>
                   {isActive ? "Active" : "Inactive"}
                 </span>
               </div>
@@ -213,7 +213,7 @@ export function UserProfileClient({
             <div className="shrink-0 text-right hidden sm:block">
               <div className="flex items-center gap-1.5 text-[var(--color-ink-400)] justify-end">
                 <CalendarDays size={12} />
-                <span className="text-[11px]">Joined</span>
+                <span className="text-caption">Joined</span>
               </div>
               <p className="text-sm font-semibold text-[var(--color-ink-700)] mt-0.5">{joined}</p>
             </div>
@@ -264,7 +264,7 @@ export function UserProfileClient({
                     onChange={(e) => setContactForm((f) => ({ ...f, mobile: e.target.value }))}
                     placeholder="10-digit number"
                   />
-                  <p className="text-[11px] text-[var(--color-ink-400)]">10 digits</p>
+                  <p className="text-caption text-[var(--color-ink-400)]">10 digits</p>
                 </div>
               </div>
 
@@ -321,7 +321,7 @@ export function UserProfileClient({
                     {showPw ? <EyeOff size={14} /> : <Eye size={14} />}
                   </button>
                 </div>
-                <p className="text-[11px] text-[var(--color-ink-400)]">Minimum 6 characters.</p>
+                <p className="text-caption text-[var(--color-ink-400)]">Minimum 6 characters.</p>
               </div>
 
               {secMsg && <Msg msg={secMsg} />}

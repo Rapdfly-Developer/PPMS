@@ -151,7 +151,7 @@ function LicenseActionsPanel({ lic, doctor }: {
             </div>
             <div className="text-left flex-1">
               <p className="text-sm font-bold text-white leading-tight">Generate License</p>
-              <p className="text-[10px] text-violet-300 mt-0.5">
+              <p className="text-caption text-violet-300 mt-0.5">
                 {hasLicense ? "Regenerate key" : "Issue 7-day trial"}
               </p>
             </div>
@@ -176,7 +176,7 @@ function LicenseActionsPanel({ lic, doctor }: {
               </div>
               <div>
                 <p className="text-xs font-bold text-emerald-900">Activate</p>
-                <p className="text-[9px] text-emerald-600 mt-0.5">Enable access</p>
+                <p className="text-micro text-emerald-600 mt-0.5">Enable access</p>
               </div>
             </button>
 
@@ -195,7 +195,7 @@ function LicenseActionsPanel({ lic, doctor }: {
               </div>
               <div>
                 <p className="text-xs font-bold text-amber-900">Deactivate</p>
-                <p className="text-[9px] text-amber-600 mt-0.5">Pause access</p>
+                <p className="text-micro text-amber-600 mt-0.5">Pause access</p>
               </div>
             </button>
 
@@ -208,7 +208,7 @@ function LicenseActionsPanel({ lic, doctor }: {
               </div>
               <div>
                 <p className="text-xs font-bold text-blue-900">Renew</p>
-                <p className="text-[9px] text-blue-600 mt-0.5">Extend from expiry</p>
+                <p className="text-micro text-blue-600 mt-0.5">Extend from expiry</p>
               </div>
             </button>
 
@@ -221,7 +221,7 @@ function LicenseActionsPanel({ lic, doctor }: {
               </div>
               <div>
                 <p className="text-xs font-bold text-teal-900">Extend</p>
-                <p className="text-[9px] text-teal-600 mt-0.5">Add extra days</p>
+                <p className="text-micro text-teal-600 mt-0.5">Add extra days</p>
               </div>
             </button>
 
@@ -307,7 +307,7 @@ function LicenseActionsPanel({ lic, doctor }: {
                     className={`py-2.5 rounded-lg text-xs font-semibold border-2 transition-all ${
                       days === d && !customDays ? "border-blue-500 bg-blue-500 text-white" : "border-slate-200 text-slate-700 hover:border-blue-300"
                     }`}>
-                    {l}<span className="block text-[9px] font-normal opacity-70 mt-0.5">{d} days</span>
+                    {l}<span className="block text-micro font-normal opacity-70 mt-0.5">{d} days</span>
                   </button>
                 ))}
               </div>
@@ -454,7 +454,7 @@ function AuditLog({ events }: { events: DoctorLicensePageData["events"] }) {
           <thead>
             <tr className="bg-slate-50 border-b border-slate-100">
               {["Date & Time", "Action", "Performed By", "Status", "Detail"].map(h => (
-                <th key={h} className="text-left px-4 py-2.5 text-[10px] font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">{h}</th>
+                <th key={h} className="text-left px-4 py-2.5 text-caption font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">{h}</th>
               ))}
             </tr>
           </thead>
@@ -621,7 +621,7 @@ export function DoctorLicenseDashboard({ data }: { data: DoctorLicensePageData }
             </div>
             <span className="text-sm font-bold text-slate-800">{plan === "—" ? "No Plan" : `${plan} Plan`}</span>
             {lic && (lic.status === "SUBSCRIBED" || lic.status === "TRIAL_ACTIVE") && (
-              <span className={`text-[11px] font-medium ${isCritical ? "text-red-600" : isWarning ? "text-amber-600" : "text-emerald-600"}`}>
+              <span className={`text-caption font-medium ${isCritical ? "text-red-600" : isWarning ? "text-amber-600" : "text-emerald-600"}`}>
                 {lic.daysRemaining} days remaining
               </span>
             )}
@@ -682,7 +682,7 @@ export function DoctorLicenseDashboard({ data }: { data: DoctorLicensePageData }
                       <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${h.active ? "bg-emerald-500" : "bg-slate-300"}`} />
                       <span className="text-xs text-slate-700 truncate">{h.name}</span>
                     </div>
-                    <span className="text-[10px] font-mono text-slate-400 shrink-0 ml-2">{h.shortCode}</span>
+                    <span className="text-caption font-mono text-slate-400 shrink-0 ml-2">{h.shortCode}</span>
                   </div>
                 ))}
               </div>

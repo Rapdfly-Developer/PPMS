@@ -42,7 +42,7 @@ function IconField({ label, name, type = "text", placeholder, required, hint, ic
 }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-widest">
+      <label className="text-caption font-semibold text-slate-500 uppercase tracking-widest">
         {label}{required && <span className="text-red-400 ml-1">*</span>}
       </label>
       <div className="relative">
@@ -56,7 +56,7 @@ function IconField({ label, name, type = "text", placeholder, required, hint, ic
                      transition-all duration-200 placeholder:text-slate-300"
         />
       </div>
-      {hint && <p className="text-[11px] text-slate-400 pl-1">{hint}</p>}
+      {hint && <p className="text-caption text-slate-400 pl-1">{hint}</p>}
     </div>
   );
 }
@@ -155,7 +155,7 @@ function HospitalView({ onCreated }: { onCreated: () => void }) {
 
         {/* Hospital Name */}
         <div className="flex flex-col gap-1.5">
-          <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-widest">
+          <label className="text-caption font-semibold text-slate-500 uppercase tracking-widest">
             Hospital Name <span className="text-red-400">*</span>
           </label>
           <div className="relative">
@@ -174,7 +174,7 @@ function HospitalView({ onCreated }: { onCreated: () => void }) {
 
         {/* Short Code (auto-generated, read-only) */}
         <div className="flex flex-col gap-1.5">
-          <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-widest">
+          <label className="text-caption font-semibold text-slate-500 uppercase tracking-widest">
             Short Code
           </label>
           <div className="relative">
@@ -186,7 +186,7 @@ function HospitalView({ onCreated }: { onCreated: () => void }) {
               {shortCodePreview || <span className="text-slate-300">Auto-generated from name</span>}
             </div>
           </div>
-          <p className="text-[11px] text-slate-400 pl-1">Auto-generated from hospital name. Used as UHID prefix.</p>
+          <p className="text-caption text-slate-400 pl-1">Auto-generated from hospital name. Used as UHID prefix.</p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -232,7 +232,7 @@ function Sidebar({ active, onNav }: { active: View; onNav: (v: View) => void }) 
         </div>
         <div>
           <p className="font-bold text-white text-sm leading-none">PPMS</p>
-          <p className="text-[10px] text-slate-400 mt-0.5">Setup Console</p>
+          <p className="text-caption text-slate-400 mt-0.5">Setup Console</p>
         </div>
       </div>
 
@@ -278,7 +278,7 @@ function Sidebar({ active, onNav }: { active: View; onNav: (v: View) => void }) 
           </div>
           <div className="min-w-0">
             <p className="text-xs font-semibold text-white leading-tight">Super Admin</p>
-            <p className="text-[10px] text-slate-400 mt-0.5">Administrator</p>
+            <p className="text-caption text-slate-400 mt-0.5">Administrator</p>
           </div>
         </div>
         <Link

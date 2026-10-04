@@ -86,7 +86,7 @@ export function MobileBottomNav() {
                 />
                 {showBadge && (
                   <span
-                    className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-[3px] rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center leading-none tabular-nums"
+                    className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-[3px] rounded-full bg-red-500 text-white text-micro font-bold flex items-center justify-center leading-none tabular-nums"
                     aria-label={`${unread} unread notifications`}
                   >
                     {unread > 99 ? "99+" : unread}
@@ -94,7 +94,7 @@ export function MobileBottomNav() {
                 )}
               </div>
               <span
-                className="text-[9px] font-medium leading-none tracking-wide"
+                className="text-micro font-medium leading-none tracking-wide"
                 style={{ color: active ? ACTIVE_COLOR : INACTIVE_COLOR }}
               >
                 {label}

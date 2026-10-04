@@ -27,9 +27,9 @@ export interface ShellProps {
 }
 
 const STORAGE_KEY = "rf_analytics_filters";
-const control = "h-10 w-full rounded-[10px] border border-[var(--color-border)] bg-white px-3 text-[13px] text-[var(--color-ink-800)] transition-colors duration-150 hover:border-[#CBD4D8] focus:outline-none focus:border-[var(--color-primary-500)] focus:ring-2 focus:ring-[var(--color-primary-500)]/20";
-const btnSecondary = "inline-flex h-10 items-center gap-2 rounded-[10px] border border-[var(--color-border)] bg-white px-3.5 text-[13px] font-medium text-[var(--color-ink-700)] shadow-[0_1px_2px_rgba(16,24,40,0.04)] transition-colors duration-150 hover:border-[#CBD4D8] hover:bg-[#F7F9FA] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary-500)]";
-const btnPrimary = "inline-flex h-10 items-center gap-2 rounded-[10px] bg-[var(--color-primary-700)] px-4 text-[13px] font-semibold text-white shadow-[0_1px_2px_rgba(16,24,40,0.08)] transition-colors duration-150 hover:bg-[var(--color-primary-800)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary-500)] focus-visible:ring-offset-2 disabled:opacity-60";
+const control = "h-10 w-full rounded-[10px] border border-[var(--color-border)] bg-white px-3 text-label text-[var(--color-ink-800)] transition-colors duration-150 hover:border-[#CBD4D8] focus:outline-none focus:border-[var(--color-primary-500)] focus:ring-2 focus:ring-[var(--color-primary-500)]/20";
+const btnSecondary = "inline-flex h-10 items-center gap-2 rounded-[10px] border border-[var(--color-border)] bg-white px-3.5 text-label font-medium text-[var(--color-ink-700)] shadow-[0_1px_2px_rgba(16,24,40,0.04)] transition-colors duration-150 hover:border-[#CBD4D8] hover:bg-[#F7F9FA] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary-500)]";
+const btnPrimary = "inline-flex h-10 items-center gap-2 rounded-[10px] bg-[var(--color-primary-700)] px-4 text-label font-semibold text-white shadow-[0_1px_2px_rgba(16,24,40,0.08)] transition-colors duration-150 hover:bg-[var(--color-primary-800)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary-500)] focus-visible:ring-offset-2 disabled:opacity-60";
 
 function SelectBox({ children, className = "", ...props }: React.SelectHTMLAttributes<HTMLSelectElement>) {
   return (
@@ -145,7 +145,7 @@ export function AnalyticsShell(props: ShellProps) {
       {/* ── Header ──────────────────────────────────────────────────────── */}
       <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
         <div className="min-w-0">
-          <nav aria-label="Breadcrumb" className="mb-3 flex items-center gap-1.5 text-[12px] text-[var(--color-ink-400)]">
+          <nav aria-label="Breadcrumb" className="mb-3 flex items-center gap-1.5 text-caption text-[var(--color-ink-400)]">
             <Link href="/dashboard" className="transition-colors hover:text-[var(--color-primary-700)]">Dashboard</Link>
             <span aria-hidden="true" className="text-[var(--color-ink-300)]">/</span>
             <span className="font-medium text-[var(--color-ink-700)]">Analytics</span>
@@ -155,15 +155,15 @@ export function AnalyticsShell(props: ShellProps) {
               <BarChart3 size={20} strokeWidth={1.9} />
             </span>
             <div className="min-w-0">
-              <h1 className="text-[24px] sm:text-[28px] font-bold leading-[1.15] tracking-[-0.02em] text-[var(--color-ink-900)]">Analytics &amp; Intelligence</h1>
-              <p className="mt-1 max-w-2xl text-[13.5px] leading-snug text-[var(--color-ink-500)]">
+              <h1 className="text-heading-lg sm:text-[28px] font-bold leading-[1.15] tracking-[-0.02em] text-[var(--color-ink-900)]">Analytics &amp; Intelligence</h1>
+              <p className="mt-1 max-w-2xl text-label leading-snug text-[var(--color-ink-500)]">
                 Monitor clinical activity, patient care, appointments and operations across {props.scopeLabel}.
               </p>
             </div>
           </div>
         </div>
         <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
-          <span className="inline-flex w-full items-center gap-1.5 text-[12px] text-[var(--color-ink-400)] sm:mr-1 sm:w-auto" aria-live="polite">
+          <span className="inline-flex w-full items-center gap-1.5 text-caption text-[var(--color-ink-400)] sm:mr-1 sm:w-auto" aria-live="polite">
             <span className="h-1.5 w-1.5 rounded-full bg-[#12B76A]" aria-hidden="true" />{updated}
           </span>
           <button
@@ -187,12 +187,12 @@ export function AnalyticsShell(props: ShellProps) {
                 </button>
                 {exportOpen && (
                   <div role="menu" className="absolute right-0 top-full z-40 mt-2 w-64 rounded-xl border border-[var(--color-border)] bg-white p-1.5 shadow-[0_16px_40px_-12px_rgba(16,24,40,0.22)] animate-[fadeIn_150ms_ease-out]">
-                    <p className="px-2.5 pb-1.5 pt-1.5 text-[11.5px] font-semibold text-[var(--color-ink-400)]">Current view: {tabLabel}</p>
-                    <button role="menuitem" type="button" onClick={() => exportAs("csv")} className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[12.5px] text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]"><FileText size={14} /> CSV</button>
-                    <button role="menuitem" type="button" onClick={() => exportAs("xls")} className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[12.5px] text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]"><FileSpreadsheet size={14} /> Excel workbook</button>
-                    <a role="menuitem" href={reportHref([f.tab])} target="_blank" rel="noopener" onClick={() => setExportOpen(false)} className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-[12.5px] text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]"><Printer size={14} /> PDF (print)</a>
+                    <p className="px-2.5 pb-1.5 pt-1.5 text-caption font-semibold text-[var(--color-ink-400)]">Current view: {tabLabel}</p>
+                    <button role="menuitem" type="button" onClick={() => exportAs("csv")} className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-label text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]"><FileText size={14} /> CSV</button>
+                    <button role="menuitem" type="button" onClick={() => exportAs("xls")} className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-label text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]"><FileSpreadsheet size={14} /> Excel workbook</button>
+                    <a role="menuitem" href={reportHref([f.tab])} target="_blank" rel="noopener" onClick={() => setExportOpen(false)} className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-label text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]"><Printer size={14} /> PDF (print)</a>
                     <div className="my-1 h-px bg-[var(--color-border)]" />
-                    <a role="menuitem" href={reportHref(tabs)} target="_blank" rel="noopener" onClick={() => setExportOpen(false)} className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-[12.5px] text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]"><FileText size={14} /> Complete analytics report</a>
+                    <a role="menuitem" href={reportHref(tabs)} target="_blank" rel="noopener" onClick={() => setExportOpen(false)} className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-label text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]"><FileText size={14} /> Complete analytics report</a>
                   </div>
                 )}
               </div>
@@ -211,7 +211,7 @@ export function AnalyticsShell(props: ShellProps) {
       {/* ── Filters ─────────────────────────────────────────────────────── */}
       <section aria-label="Analytics filters" className="rounded-2xl border border-[var(--color-border)] bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
         <div className="flex items-center justify-between gap-2 md:hidden">
-          <p className="min-w-0 truncate text-[12.5px] text-[var(--color-ink-700)]"><span className="font-semibold text-[var(--color-ink-900)]">{PRESETS.find((p) => p.id === f.preset)?.label}</span> · {hospitalName}</p>
+          <p className="min-w-0 truncate text-label text-[var(--color-ink-700)]"><span className="font-semibold text-[var(--color-ink-900)]">{PRESETS.find((p) => p.id === f.preset)?.label}</span> · {hospitalName}</p>
           <button type="button" onClick={() => setShowFilters((s) => !s)} aria-expanded={showFilters} className={`${btnSecondary} h-9 shrink-0`}>
             <SlidersHorizontal size={13} /> Filters
           </button>
@@ -283,7 +283,7 @@ export function AnalyticsShell(props: ShellProps) {
         </div>
       </section>
 
-      <p className="-mt-1 px-1 text-[12.5px] text-[var(--color-ink-500)]">
+      <p className="-mt-1 px-1 text-label text-[var(--color-ink-500)]">
         Showing <span className="font-semibold text-[var(--color-ink-800)]">{f.periodLabel}</span>
         <span className="text-[var(--color-ink-300)]"> · </span>{hospitalName}
         {props.showDoctorFilter ? <><span className="text-[var(--color-ink-300)]"> · </span>{doctorName}</> : null}
@@ -302,7 +302,7 @@ export function AnalyticsShell(props: ShellProps) {
                   scroll={false}
                   aria-current={active ? "page" : undefined}
                   onClick={(e) => { if (!active) { e.preventDefault(); start(() => router.push(`${pathname}${buildQuery(params, { tab: t.id === "overview" ? undefined : t.id })}`, { scroll: false })); } }}
-                  className={`inline-flex h-9 items-center rounded-lg px-3.5 text-[13px] whitespace-nowrap transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary-500)] ${
+                  className={`inline-flex h-9 items-center rounded-lg px-3.5 text-label whitespace-nowrap transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary-500)] ${
                     active
                       ? "bg-[var(--color-primary-50)] font-semibold text-[var(--color-primary-800)] shadow-[inset_0_0_0_1px_rgba(21,122,115,0.18)]"
                       : "font-medium text-[var(--color-ink-500)] hover:bg-[#F2F5F6] hover:text-[var(--color-ink-900)]"
@@ -336,7 +336,7 @@ export function AnalyticsShell(props: ShellProps) {
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <label className="flex min-w-0 flex-col gap-1.5 md:min-w-[156px]">
-      <span className="text-[12px] font-semibold text-[var(--color-ink-500)]">{label}</span>
+      <span className="text-caption font-semibold text-[var(--color-ink-500)]">{label}</span>
       {children}
     </label>
   );
@@ -399,8 +399,8 @@ function ReportBuilder({ onClose, tabs, hospitals, params, reportHref }: {
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-[2px] p-0 sm:p-4" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="report-builder-title" className="relative w-full sm:max-w-lg max-h-[92vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl bg-white p-6 shadow-[0_24px_64px_-16px_rgba(16,24,40,0.35)] focus:outline-none animate-[fadeIn_200ms_ease-out]">
         <button type="button" onClick={onClose} aria-label="Close" className="absolute right-3 top-3 rounded-lg p-1.5 text-[var(--color-ink-400)] hover:bg-[var(--color-surface-sunken)] hover:text-[var(--color-ink-700)]"><X size={16} /></button>
-        <h2 id="report-builder-title" className="text-[17px] font-semibold text-[var(--color-ink-900)]">Generate report</h2>
-        <p className="mt-0.5 text-[12.5px] text-[var(--color-ink-500)]">Builds a printable report you can save as PDF. Only data you can access is included.</p>
+        <h2 id="report-builder-title" className="text-heading-sm font-semibold text-[var(--color-ink-900)]">Generate report</h2>
+        <p className="mt-0.5 text-label text-[var(--color-ink-500)]">Builds a printable report you can save as PDF. Only data you can access is included.</p>
 
         <div className="mt-4 flex flex-col gap-3.5">
           <Field label="Report type">
@@ -430,10 +430,10 @@ function ReportBuilder({ onClose, tabs, hospitals, params, reportHref }: {
             )}
           </div>
           <fieldset>
-            <legend className="mb-2 text-[12px] font-semibold text-[var(--color-ink-500)]">Sections</legend>
+            <legend className="mb-2 text-caption font-semibold text-[var(--color-ink-500)]">Sections</legend>
             <div className="grid grid-cols-2 gap-1.5">
               {TABS.filter((t) => tabs.includes(t.id)).map((t) => (
-                <label key={t.id} className="flex items-center gap-2 rounded-lg border border-[var(--color-border)] px-2.5 py-2 text-[12.5px] text-[var(--color-ink-700)] cursor-pointer has-[:checked]:border-[var(--color-primary-400)] has-[:checked]:bg-[var(--color-primary-50)]">
+                <label key={t.id} className="flex items-center gap-2 rounded-lg border border-[var(--color-border)] px-2.5 py-2 text-label text-[var(--color-ink-700)] cursor-pointer has-[:checked]:border-[var(--color-primary-400)] has-[:checked]:bg-[var(--color-primary-50)]">
                   <input type="checkbox" checked={sections.has(t.id)} onChange={() => toggle(t.id)} className="accent-[var(--color-primary-600)]" />
                   {t.label}
                 </label>

@@ -15,13 +15,13 @@ function Shell({ title, children, ready }: { title: string; children: ReactNode;
         }}
       >
         <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-          <h3 className="text-[11px] font-semibold tracking-widest text-violet-600/80 uppercase italic">{title}</h3>
-          <span className="shrink-0 text-[9px] sm:text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-violet-50 text-violet-600 border border-violet-200/70">
+          <h3 className="text-caption font-semibold tracking-widest text-violet-600/80 uppercase italic">{title}</h3>
+          <span className="shrink-0 text-micro sm:text-caption font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-violet-50 text-violet-600 border border-violet-200/70">
             AI · guidance only
           </span>
         </div>
         {children}
-        {ready && <p className="mt-3 text-[10px] text-violet-400/70 italic">Based on the record when the analysis ran. Regenerate in AI Clinical Copilot after adding findings.</p>}
+        {ready && <p className="mt-3 text-caption text-violet-400/70 italic">Based on the record when the analysis ran. Regenerate in AI Clinical Copilot after adding findings.</p>}
       </div>
     </section>
   );

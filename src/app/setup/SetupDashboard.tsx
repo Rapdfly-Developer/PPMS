@@ -68,7 +68,7 @@ function StatTile({ icon, label, value, tint, suffix }: {
           <p className="text-[28px] leading-8 font-bold text-slate-900 tabular-nums">
             {isNum ? counted : value}{suffix}
           </p>
-          <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest mt-0.5">{label}</p>
+          <p className="text-caption font-semibold text-slate-400 uppercase tracking-widest mt-0.5">{label}</p>
         </div>
       </div>
     </motion.div>
@@ -115,12 +115,12 @@ function SetupCard({ icon, title, desc, badge, badgeTone, minutes, done, locked,
         >
           {done ? <Check size={24} /> : icon}
         </motion.div>
-        <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold border ${done ? tones.emerald : tones[badgeTone]}`}>
+        <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-caption font-semibold border ${done ? tones.emerald : tones[badgeTone]}`}>
           {done ? <><Check size={11} /> Completed</> : locked ? <><Lock size={11} /> {badge}</> : badge}
         </span>
       </div>
 
-      <h3 className="text-[19px] font-bold text-slate-900 mt-4">{title}</h3>
+      <h3 className="text-heading-md font-bold text-slate-900 mt-4">{title}</h3>
       <p className="text-sm text-slate-500 mt-1 leading-relaxed">{desc}</p>
 
       <div className="flex items-center gap-1.5 mt-3 text-xs text-slate-400">
@@ -174,7 +174,7 @@ function Timeline({ steps }: { steps: { label: string; done: boolean }[] }) {
                     {s.done ? <Check size={15} /> : i + 1}
                   </div>
                 </div>
-                <p className={`text-[11px] font-semibold mt-2 whitespace-nowrap ${s.done || isCurrent ? "text-slate-700" : "text-slate-400"}`}>
+                <p className={`text-caption font-semibold mt-2 whitespace-nowrap ${s.done || isCurrent ? "text-slate-700" : "text-slate-400"}`}>
                   {s.label}
                 </p>
               </div>
@@ -210,7 +210,7 @@ function WelcomeWidget({ pct, remainingMin, onContinue, complete }: {
       <p className="text-xs text-slate-400 mt-0.5">Super Administrator</p>
 
       <div className="mt-5 rounded-2xl bg-slate-50 border border-slate-100 p-4">
-        <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest">Today&apos;s Goal</p>
+        <p className="text-caption font-semibold text-slate-400 uppercase tracking-widest">Today&apos;s Goal</p>
         <p className="text-sm font-semibold text-slate-800 mt-1">
           {complete ? "Setup Complete 🎉" : "Complete Initial Setup"}
         </p>
@@ -226,7 +226,7 @@ function WelcomeWidget({ pct, remainingMin, onContinue, complete }: {
         <div className="flex items-center justify-between mt-2">
           <p className="text-xs font-bold text-blue-600 tabular-nums">{pct}%</p>
           {!complete && (
-            <p className="text-[11px] text-slate-400">≈ {remainingMin} min left</p>
+            <p className="text-caption text-slate-400">≈ {remainingMin} min left</p>
           )}
         </div>
       </div>
@@ -294,11 +294,11 @@ function Checklist({ items }: { items: { label: string; done: boolean }[] }) {
             ) : (
               <span className="w-5 h-5 rounded-full border-2 border-slate-200 shrink-0" />
             )}
-            <p className={`text-[13px] ${it.done ? "text-slate-400 line-through" : "text-slate-700 font-medium"}`}>{it.label}</p>
+            <p className={`text-label ${it.done ? "text-slate-400 line-through" : "text-slate-700 font-medium"}`}>{it.label}</p>
           </div>
         ))}
       </div>
-      <p className="text-[11px] text-slate-400 mt-4 pt-3 border-t border-slate-100">
+      <p className="text-caption text-slate-400 mt-4 pt-3 border-t border-slate-100">
         {allDone ? "All steps complete, PPMS is live." : "Complete all steps to activate the system."}
       </p>
     </motion.div>
@@ -322,9 +322,9 @@ function ActivityFeed({ recent }: { recent: Stats["recent"] }) {
           <div key={i} className="flex items-start gap-2.5">
             <span className="w-2 h-2 rounded-full mt-1.5 shrink-0" style={{ background: it.tint }} />
             <div className="min-w-0">
-              <p className="text-[13px] text-slate-600 leading-snug">{it.label}</p>
+              <p className="text-label text-slate-600 leading-snug">{it.label}</p>
               {it.at && (
-                <p className="text-[11px] text-slate-300 mt-0.5">
+                <p className="text-caption text-slate-300 mt-0.5">
                   {new Date(it.at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
                 </p>
               )}
@@ -398,7 +398,7 @@ export function SetupDashboard({ onGo }: { onGo: (v: View) => void }) {
               <h1 className="text-[28px] md:text-[36px] font-bold leading-tight tracking-tight">
                 👋 Welcome to PPMS Setup
               </h1>
-              <p className="text-sm md:text-[15px] text-white/80 mt-2 max-w-md leading-relaxed">
+              <p className="text-sm md:text-heading-sm text-white/80 mt-2 max-w-md leading-relaxed">
                 Let&apos;s configure your healthcare platform in just a few minutes.
               </p>
 

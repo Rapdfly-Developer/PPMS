@@ -154,10 +154,10 @@ function DiagnosisRow({
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            {d.laterality && <span className="clinical-diagnosis-text clinical-laterality text-[11px] shrink-0">{d.laterality}</span>}
-            <p className="clinical-diagnosis-text text-[13px] sm:text-sm">{d.description}</p>
+            {d.laterality && <span className="clinical-diagnosis-text clinical-laterality text-caption shrink-0">{d.laterality}</span>}
+            <p className="clinical-diagnosis-text text-label sm:text-sm">{d.description}</p>
             {isCustom && (
-              <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">Custom</span>
+              <span className="text-caption font-semibold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">Custom</span>
             )}
           </div>
           <p className="text-xs text-[var(--color-ink-400)] font-mono">
@@ -236,8 +236,8 @@ function ProtocolPickerModal({
           <div className="flex items-center gap-2.5 text-white">
             <Stethoscope size={17} />
             <div>
-              <p className="text-[13px] font-semibold">Select Treatment Protocol</p>
-              <p className="text-[11px] text-white/70 mt-0.5 truncate max-w-[200px]">{diagnosis.description}</p>
+              <p className="text-label font-semibold">Select Treatment Protocol</p>
+              <p className="text-caption text-white/70 mt-0.5 truncate max-w-[200px]">{diagnosis.description}</p>
             </div>
           </div>
           <button
@@ -250,7 +250,7 @@ function ProtocolPickerModal({
         </div>
 
         <div className="px-5 py-4 space-y-2.5">
-          <p className="text-[11px] font-semibold uppercase tracking-widest text-[var(--color-ink-400)] mb-1">
+          <p className="text-caption font-semibold uppercase tracking-widest text-[var(--color-ink-400)] mb-1">
             Which protocol are you selecting?
           </p>
 
@@ -271,7 +271,7 @@ function ProtocolPickerModal({
               >
                 <div className="flex items-center justify-between gap-2">
                   <div>
-                    <p className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-800)]">{label}</p>
+                    <p className="text-label sm:text-sm font-semibold text-[var(--color-ink-800)]">{label}</p>
                     {preset && (
                       <p className="text-xs text-[var(--color-ink-500)] mt-0.5">{preset.name}</p>
                     )}
@@ -297,7 +297,7 @@ function ProtocolPickerModal({
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <FileText size={15} className="text-amber-600 shrink-0" />
-                <p className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-800)]">Custom</p>
+                <p className="text-label sm:text-sm font-semibold text-[var(--color-ink-800)]">Custom</p>
               </div>
               {selected === "custom" && <Check size={16} className="text-amber-600 shrink-0" />}
             </div>
@@ -319,7 +319,7 @@ function ProtocolPickerModal({
           <button
             type="button"
             onClick={onCancel}
-            className="px-4 py-2 rounded-lg text-[13px] sm:text-sm font-medium text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)] transition-colors"
+            className="px-4 py-2 rounded-lg text-label sm:text-sm font-medium text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)] transition-colors"
           >
             Cancel
           </button>
@@ -327,7 +327,7 @@ function ProtocolPickerModal({
             type="button"
             disabled={!canSubmit || pending}
             onClick={handleConfirm}
-            className="flex items-center gap-1.5 px-5 py-2 rounded-lg bg-[var(--color-primary-600)] text-white text-[13px] sm:text-sm font-semibold hover:bg-[var(--color-primary-700)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="flex items-center gap-1.5 px-5 py-2 rounded-lg bg-[var(--color-primary-600)] text-white text-label sm:text-sm font-semibold hover:bg-[var(--color-primary-700)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             <Check size={14} />
             Confirm Diagnosis
@@ -696,7 +696,7 @@ export function AssessmentTab({
       <div {...(overview && provisionalDiagnoses.length === 0 ? { "data-overview-empty-section": "" } : {})}>
       <Card>
         <div className="flex items-center justify-between mb-3">
-          <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)]">Provisional Diagnosis</p>
+          <p className="text-label sm:text-sm font-medium text-[var(--color-ink-700)]">Provisional Diagnosis</p>
           <button
             type="button"
             data-overview-hide
@@ -712,9 +712,9 @@ export function AssessmentTab({
         {provHistoryOpen && (
           <div className="mb-4 rounded-xl border border-[#B2DEDA] bg-[#EEF8F7] p-3">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-[#0F766E]">Previous Provisional Diagnoses</p>
+              <p className="text-caption font-bold uppercase tracking-widest text-[#0F766E]">Previous Provisional Diagnoses</p>
               {priorProvGroups.length > 0 && (
-                <p className="text-[10px] text-[#0D9488]">Double-click a visit to load its diagnoses</p>
+                <p className="text-caption text-[#0D9488]">Double-click a visit to load its diagnoses</p>
               )}
             </div>
             {priorProvGroups.length === 0 ? (
@@ -728,7 +728,7 @@ export function AssessmentTab({
                     title="Double-click to add these diagnoses"
                     className="cursor-pointer rounded-lg px-2 py-1.5 -mx-1.5 hover:bg-[#DCF3F1] transition-colors select-none"
                   >
-                    <p className="text-[10px] font-semibold text-[var(--color-ink-400)] mb-2">{format(new Date(g.date), "d MMM yyyy")}</p>
+                    <p className="text-caption font-semibold text-[var(--color-ink-400)] mb-2">{format(new Date(g.date), "d MMM yyyy")}</p>
                     <div className="flex flex-col gap-1.5">
                       {g.diagnoses.map((d: any, di: number) => {
                         const sm = ({
@@ -748,19 +748,19 @@ export function AssessmentTab({
                                 </span>
                               </p>
                               {d.icd10Code && (
-                                <p className="text-[10px] font-mono text-[var(--color-ink-400)] mt-0.5">
+                                <p className="text-caption font-mono text-[var(--color-ink-400)] mt-0.5">
                                   {d.icd10Code}
                                 </p>
                               )}
                             </div>
-                            <span className={`inline-flex shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full border whitespace-nowrap ${sm.pill}`}>
+                            <span className={`inline-flex shrink-0 text-caption font-bold px-2 py-0.5 rounded-full border whitespace-nowrap ${sm.pill}`}>
                               {sm.label}
                             </span>
                             <button
                               type="button"
                               onClick={(e) => { e.stopPropagation(); handleStatusChange(d, nextStatus); }}
                               disabled={pending}
-                              className="shrink-0 text-[10px] font-semibold px-2.5 py-1.5 rounded-lg border border-[var(--color-border)] bg-white text-[var(--color-ink-600)] hover:border-[var(--color-primary-300)] hover:text-[var(--color-primary-700)] transition-colors disabled:opacity-40"
+                              className="shrink-0 text-caption font-semibold px-2.5 py-1.5 rounded-lg border border-[var(--color-border)] bg-white text-[var(--color-ink-600)] hover:border-[var(--color-primary-300)] hover:text-[var(--color-primary-700)] transition-colors disabled:opacity-40"
                             >
                               {nextLabel}
                             </button>
@@ -819,7 +819,7 @@ export function AssessmentTab({
                           <span className="flex-1 min-w-0 truncate">{s.description}</span>
                           <div className="flex items-center gap-2 shrink-0">
                             {s.custom && (
-                              <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">Custom</span>
+                              <span className="text-caption font-semibold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">Custom</span>
                             )}
                             {s.code && <span className="text-xs font-mono text-[var(--color-ink-400)]">{s.code}</span>}
                           </div>
@@ -852,7 +852,7 @@ export function AssessmentTab({
         </div>
 
         {provisionalDiagnoses.length === 0 ? (
-          <p data-overview-hide className="text-[13px] sm:text-sm text-[var(--color-ink-400)] py-4 text-center">No provisional diagnoses added yet. Search above to begin.</p>
+          <p data-overview-hide className="text-label sm:text-sm text-[var(--color-ink-400)] py-4 text-center">No provisional diagnoses added yet. Search above to begin.</p>
         ) : (
           <ul className="flex flex-col gap-2">
             {provisionalDiagnoses.map((d) => (
@@ -875,7 +875,7 @@ export function AssessmentTab({
       <div {...(overview && diagnoses.length === 0 ? { "data-overview-empty-section": "" } : {})}>
       <Card>
         <div className="flex items-center justify-between mb-3">
-          <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)]">Diagnosis (ICD-10)</p>
+          <p className="text-label sm:text-sm font-medium text-[var(--color-ink-700)]">Diagnosis (ICD-10)</p>
           <button
             type="button"
             data-overview-hide
@@ -890,9 +890,9 @@ export function AssessmentTab({
         {historyOpen && (
           <div className="mb-4 rounded-xl border border-[#B2DEDA] bg-[#EEF8F7] p-3">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-[#0F766E]">Previous Diagnoses</p>
+              <p className="text-caption font-bold uppercase tracking-widest text-[#0F766E]">Previous Diagnoses</p>
               {priorDxGroups.length > 0 && (
-                <p className="text-[10px] text-[#0D9488]">Double-click a visit to load its diagnoses</p>
+                <p className="text-caption text-[#0D9488]">Double-click a visit to load its diagnoses</p>
               )}
             </div>
             {priorDxGroups.length === 0 ? (
@@ -906,7 +906,7 @@ export function AssessmentTab({
                     title="Double-click to add these diagnoses"
                     className="cursor-pointer rounded-lg px-2 py-1.5 -mx-1.5 hover:bg-[#DCF3F1] transition-colors select-none"
                   >
-                    <p className="text-[10px] font-semibold text-[var(--color-ink-400)] mb-2">{format(new Date(g.date), "d MMM yyyy")}</p>
+                    <p className="text-caption font-semibold text-[var(--color-ink-400)] mb-2">{format(new Date(g.date), "d MMM yyyy")}</p>
                     <div className="flex flex-col gap-1.5">
                       {g.diagnoses.map((d: any, di: number) => {
                         const sm = ({
@@ -926,19 +926,19 @@ export function AssessmentTab({
                                 </span>
                               </p>
                               {d.icd10Code && (
-                                <p className="text-[10px] font-mono text-[var(--color-ink-400)] mt-0.5">
+                                <p className="text-caption font-mono text-[var(--color-ink-400)] mt-0.5">
                                   {d.icd10Code}
                                 </p>
                               )}
                             </div>
-                            <span className={`inline-flex shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full border whitespace-nowrap ${sm.pill}`}>
+                            <span className={`inline-flex shrink-0 text-caption font-bold px-2 py-0.5 rounded-full border whitespace-nowrap ${sm.pill}`}>
                               {sm.label}
                             </span>
                             <button
                               type="button"
                               onClick={(e) => { e.stopPropagation(); handleStatusChange(d, nextStatus); }}
                               disabled={pending}
-                              className="shrink-0 text-[10px] font-semibold px-2.5 py-1.5 rounded-lg border border-[var(--color-border)] bg-white text-[var(--color-ink-600)] hover:border-[var(--color-primary-300)] hover:text-[var(--color-primary-700)] transition-colors disabled:opacity-40"
+                              className="shrink-0 text-caption font-semibold px-2.5 py-1.5 rounded-lg border border-[var(--color-border)] bg-white text-[var(--color-ink-600)] hover:border-[var(--color-primary-300)] hover:text-[var(--color-primary-700)] transition-colors disabled:opacity-40"
                             >
                               {nextLabel}
                             </button>
@@ -993,7 +993,7 @@ export function AssessmentTab({
                           <span className="flex-1 min-w-0 truncate">{m.description}</span>
                           <div className="flex items-center gap-2 shrink-0">
                             {m.custom && (
-                              <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">Custom</span>
+                              <span className="text-caption font-semibold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">Custom</span>
                             )}
                             {m.code && <span className="text-xs font-mono text-[var(--color-ink-400)]">{m.code}</span>}
                           </div>
@@ -1025,7 +1025,7 @@ export function AssessmentTab({
         </div>
 
         {diagnoses.length === 0 ? (
-          <p data-overview-hide className="text-[13px] sm:text-sm text-[var(--color-ink-400)] py-4 text-center">No diagnoses added yet. Search above to begin.</p>
+          <p data-overview-hide className="text-label sm:text-sm text-[var(--color-ink-400)] py-4 text-center">No diagnoses added yet. Search above to begin.</p>
         ) : (
           <ul className="flex flex-col gap-2">
             {diagnoses.map((d) => (
@@ -1064,7 +1064,7 @@ export function AssessmentTab({
                   <Plus size={15} className="text-white" />
                 </div>
                 <div>
-                  <p className="text-[13px] sm:text-sm font-semibold text-white">
+                  <p className="text-label sm:text-sm font-semibold text-white">
                     {customModal.step === "preset" ? "Add Treatment Preset" : "Add Custom Diagnosis"}
                   </p>
                   {customModal.step === "preset" && (
@@ -1074,9 +1074,9 @@ export function AssessmentTab({
               </div>
               <div className="flex items-center gap-2">
                 <div className="flex items-center gap-1.5 mr-2">
-                  <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${customModal.step === "diagnosis" ? "bg-white text-[#0F766E]" : "bg-white/30 text-white"}`}>1</div>
+                  <div className={`w-5 h-5 rounded-full flex items-center justify-center text-caption font-bold ${customModal.step === "diagnosis" ? "bg-white text-[#0F766E]" : "bg-white/30 text-white"}`}>1</div>
                   <div className="w-4 h-px bg-white/30" />
-                  <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${customModal.step === "preset" ? "bg-white text-[#0F766E]" : "bg-white/30 text-white"}`}>2</div>
+                  <div className={`w-5 h-5 rounded-full flex items-center justify-center text-caption font-bold ${customModal.step === "preset" ? "bg-white text-[#0F766E]" : "bg-white/30 text-white"}`}>2</div>
                 </div>
                 <button type="button" onClick={() => setCustomModal(null)} className="text-white/60 hover:text-white p-1 transition-colors">
                   <X size={16} />
@@ -1139,17 +1139,17 @@ export function AssessmentTab({
                       className="w-full rounded-xl border border-[var(--color-border)] px-3.5 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
                     />
                   </div>
-                  <p className="text-[11px] text-[var(--color-ink-400)] -mt-1">
+                  <p className="text-caption text-[var(--color-ink-400)] -mt-1">
                     Saved to your custom library. Next step: add a treatment preset so medications auto-populate in Plan.
                   </p>
                 </div>
                 <div className="px-5 py-4 border-t border-[var(--color-border)] flex items-center justify-end gap-2">
                   <button type="button" onClick={() => setCustomModal(null)}
-                    className="px-4 py-2 rounded-xl border border-[var(--color-border)] text-[13px] sm:text-sm font-medium text-[var(--color-ink-500)] hover:bg-[var(--color-surface-sunken)] transition-colors">
+                    className="px-4 py-2 rounded-xl border border-[var(--color-border)] text-label sm:text-sm font-medium text-[var(--color-ink-500)] hover:bg-[var(--color-surface-sunken)] transition-colors">
                     Cancel
                   </button>
                   <button type="button" disabled={!customModal.name.trim()} onClick={handleSaveCustomDx}
-                    className="px-5 py-2 rounded-xl bg-[#0F766E] text-white text-[13px] sm:text-sm font-semibold hover:bg-[#0D6862] transition-colors disabled:opacity-40">
+                    className="px-5 py-2 rounded-xl bg-[#0F766E] text-white text-label sm:text-sm font-semibold hover:bg-[#0D6862] transition-colors disabled:opacity-40">
                     Save &amp; Add →
                   </button>
                 </div>
@@ -1212,7 +1212,7 @@ export function AssessmentTab({
                                     >
                                       <p className="text-xs font-medium text-[var(--color-ink-800)] truncate">{med.drugName}</p>
                                       {(med.dosage || med.frequency || med.duration) && (
-                                        <p className="text-[11px] text-[var(--color-ink-400)] mt-0.5 truncate">
+                                        <p className="text-caption text-[var(--color-ink-400)] mt-0.5 truncate">
                                           {[med.dosage, med.frequency, med.duration].filter(Boolean).join(" · ")}
                                         </p>
                                       )}
@@ -1226,11 +1226,11 @@ export function AssessmentTab({
                           {/* Tapering steps */}
                           <div className="flex flex-col gap-2">
                             <div className="flex items-center justify-between">
-                              <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Tapering Schedule</p>
+                              <p className="text-caption font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Tapering Schedule</p>
                             </div>
                             {m.steps.map((step, si) => (
                               <div key={si} className="flex items-center gap-2">
-                                <span className="text-[10px] font-bold text-[var(--color-ink-400)] w-10 shrink-0 text-right">
+                                <span className="text-caption font-bold text-[var(--color-ink-400)] w-10 shrink-0 text-right">
                                   {si === 0 ? "Start" : `Step ${si + 1}`}
                                 </span>
                                 <div className="grid grid-cols-3 gap-1.5 flex-1">
@@ -1331,7 +1331,7 @@ export function AssessmentTab({
                     <button type="button"
                       disabled={!presetMeds.some((m) => m.drugName.trim())}
                       onClick={handleSavePreset}
-                      className="px-5 py-2 rounded-xl bg-[#0F766E] text-white text-[13px] sm:text-sm font-semibold hover:bg-[#0D6862] transition-colors disabled:opacity-40">
+                      className="px-5 py-2 rounded-xl bg-[#0F766E] text-white text-label sm:text-sm font-semibold hover:bg-[#0D6862] transition-colors disabled:opacity-40">
                       Save Preset &amp; Apply to Plan
                     </button>
                   </div>

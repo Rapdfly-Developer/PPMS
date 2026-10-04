@@ -73,17 +73,17 @@ function Shell({ children, note }: { children: React.ReactNode; note?: string })
       >
         <div className="flex items-center gap-2 mb-3 flex-wrap">
           <ClipboardList size={13} className="shrink-0 text-violet-500" />
-          <p className="text-[11px] font-semibold tracking-widest text-violet-600/80 uppercase italic">
+          <p className="text-caption font-semibold tracking-widest text-violet-600/80 uppercase italic">
             Plan Guidance
           </p>
-          <span className="ml-auto shrink-0 text-[9px] sm:text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-violet-50 text-violet-600 border border-violet-200/70">
+          <span className="ml-auto shrink-0 text-micro sm:text-caption font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-violet-50 text-violet-600 border border-violet-200/70">
             AI · guidance only
           </span>
         </div>
 
         {children}
 
-        {note && <p className="mt-2 text-[10px] text-violet-400/70 italic">{note}</p>}
+        {note && <p className="mt-2 text-caption text-violet-400/70 italic">{note}</p>}
       </div>
     </div>
   );
@@ -149,8 +149,8 @@ function parseBody(body: string): Block[] {
 
 /* Same type as the section label above, so a "##" heading reads as a
    sub-heading of this card rather than as something the plugin styled. */
-const HEADING_CLASS = "text-[11px] sm:text-xs font-semibold text-[var(--color-ink-700)]";
-const BODY_CLASS = "text-[13px] sm:text-sm text-[var(--color-ink-900)]";
+const HEADING_CLASS = "text-caption sm:text-xs font-semibold text-[var(--color-ink-700)]";
+const BODY_CLASS = "text-label sm:text-sm text-[var(--color-ink-900)]";
 
 function Body({ body }: { body: string }) {
   return (
@@ -179,7 +179,7 @@ function Body({ body }: { body: string }) {
 function Section({ title, body }: { title: string; body: string }) {
   return (
     <div>
-      <p className="text-[11px] sm:text-xs font-semibold text-[var(--color-ink-700)]">{title}</p>
+      <p className="text-caption sm:text-xs font-semibold text-[var(--color-ink-700)]">{title}</p>
       <Body body={body} />
     </div>
   );
@@ -189,7 +189,7 @@ export function PlanGuidanceCard({ state }: { state: PlanState }) {
   if (state.status === "loading") {
     return (
       <Shell>
-        <p className="flex items-center gap-2 text-[13px] sm:text-sm text-[var(--color-ink-500)]">
+        <p className="flex items-center gap-2 text-label sm:text-sm text-[var(--color-ink-500)]">
           <span
             aria-hidden="true"
             className="w-3 h-3 rounded-full border-2 border-[var(--color-primary-300)] border-t-[var(--color-primary-600)] animate-spin"
@@ -203,10 +203,10 @@ export function PlanGuidanceCard({ state }: { state: PlanState }) {
   if (state.status === "timeout") {
     return (
       <Shell>
-        <p className="text-[13px] sm:text-sm text-[var(--color-ink-500)]">
+        <p className="text-label sm:text-sm text-[var(--color-ink-500)]">
           Couldn&apos;t generate plan guidance.
         </p>
-        <p className="mt-1 text-[11px] sm:text-xs text-[var(--color-ink-400)]">
+        <p className="mt-1 text-caption sm:text-xs text-[var(--color-ink-400)]">
           The assistant did not return guidance for this visit. Open the AI Clinical Copilot
           to retry.
         </p>
@@ -219,7 +219,7 @@ export function PlanGuidanceCard({ state }: { state: PlanState }) {
       <Shell>
         {/* Explicit, never blank — a silent empty card would read as "there is
             nothing to consider", which is a clinical claim. */}
-        <p className="text-[13px] sm:text-sm text-[var(--color-ink-500)]">
+        <p className="text-label sm:text-sm text-[var(--color-ink-500)]">
           No plan guidance returned: insufficient information in the record.
         </p>
       </Shell>
@@ -245,19 +245,19 @@ export function PlanGuidanceCard({ state }: { state: PlanState }) {
             exists. No placeholder, no "none found" line — see GovtSchemeCitation. */}
         {govtScheme && (
           <div className="pt-2 border-t border-[var(--color-border)]">
-            <p className="text-[11px] sm:text-xs font-semibold text-[var(--color-ink-700)]">
+            <p className="text-caption sm:text-xs font-semibold text-[var(--color-ink-700)]">
               Government schemes
             </p>
-            <p className="mt-1 text-[13px] sm:text-sm font-medium text-[var(--color-ink-900)]">
+            <p className="mt-1 text-label sm:text-sm font-medium text-[var(--color-ink-900)]">
               {govtScheme.schemeName}
             </p>
             {govtScheme.description && (
-              <p className="mt-0.5 text-[13px] sm:text-sm text-[var(--color-ink-900)]">
+              <p className="mt-0.5 text-label sm:text-sm text-[var(--color-ink-900)]">
                 {govtScheme.description}
               </p>
             )}
             {govtScheme.eligibilitySummary && (
-              <p className="mt-0.5 text-[11px] sm:text-xs text-[var(--color-ink-500)]">
+              <p className="mt-0.5 text-caption sm:text-xs text-[var(--color-ink-500)]">
                 <span className="font-medium">Eligibility: </span>
                 {govtScheme.eligibilitySummary}
               </p>
@@ -269,7 +269,7 @@ export function PlanGuidanceCard({ state }: { state: PlanState }) {
                 treatment plan" pill does not cover a stale eligibility rule. */}
             <div className="mt-2 flex items-start gap-1.5 rounded-lg bg-amber-50 border border-amber-200 px-2 py-1.5">
               <ShieldAlert size={12} className="shrink-0 mt-0.5 text-amber-700" />
-              <p className="text-[10px] sm:text-[11px] text-amber-800">
+              <p className="text-caption sm:text-caption text-amber-800">
                 Scheme details last verified {govtScheme.lastVerified}. Eligibility and
                 coverage change; confirm against the official source before advising the
                 patient.

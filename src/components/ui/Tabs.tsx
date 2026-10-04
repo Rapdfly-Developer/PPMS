@@ -54,7 +54,7 @@ export function Tabs({
                 {tab.icon && <span className="opacity-70">{tab.icon}</span>}
                 {tab.label}
                 {!!tab.badge && (
-                  <span className="rounded-full bg-[var(--color-accent-600)] text-white text-[9px] font-semibold px-1.5 py-0.5">
+                  <span className="rounded-full bg-[var(--color-accent-600)] text-white text-micro font-semibold px-1.5 py-0.5">
                     {tab.badge}
                   </span>
                 )}
@@ -108,7 +108,7 @@ export function Tabs({
                     "min-h-[44px] sm:min-h-[48px]",
                     "text-left w-full",
                     // Typography
-                    "text-[12px] sm:text-[13px] font-medium leading-tight",
+                    "text-caption sm:text-label font-medium leading-tight",
                     // Transitions
                     "transition-colors duration-150",
                     // Focus
@@ -153,7 +153,7 @@ export function Tabs({
                   {!!tab.badge && (
                     <span
                       aria-label={`${tab.badge} notification${tab.badge !== 1 ? "s" : ""}`}
-                      className="shrink-0 flex items-center justify-center h-4 w-4 rounded-full text-[9px] font-bold text-white bg-[var(--color-accent-600,#EA580C)]"
+                      className="shrink-0 flex items-center justify-center h-4 w-4 rounded-full text-micro font-bold text-white bg-[var(--color-accent-600,#EA580C)]"
                     >
                       {tab.badge}
                     </span>
@@ -190,7 +190,7 @@ export function Tabs({
               {!!tab.badge && (
                 <span
                   aria-label={`${tab.badge} notification${tab.badge !== 1 ? "s" : ""}`}
-                  className="rounded-full bg-[var(--color-accent-600)] text-white text-[10px] font-semibold px-1.5 py-0.5"
+                  className="rounded-full bg-[var(--color-accent-600)] text-white text-caption font-semibold px-1.5 py-0.5"
                 >
                   {tab.badge}
                 </span>

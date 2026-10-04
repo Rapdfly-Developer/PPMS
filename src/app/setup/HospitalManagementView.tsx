@@ -64,7 +64,7 @@ const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.05 } } };
 function StatusChip({ active, onToggle }: { active: boolean | null; onToggle: () => void }) {
   if (active === null) {
     return (
-      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-500 border border-slate-200">
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-caption font-semibold bg-slate-100 text-slate-500 border border-slate-200">
         <KeyRound size={11} />
         No Login
       </span>
@@ -75,7 +75,7 @@ function StatusChip({ active, onToggle }: { active: boolean | null; onToggle: ()
       type="button"
       onClick={onToggle}
       title={active ? "Click to deactivate, blocks login" : "Click to activate, allows login"}
-      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-all hover:scale-[1.04] ${
+      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-caption font-semibold border transition-all hover:scale-[1.04] ${
         active
           ? "bg-emerald-50 text-emerald-700 border-emerald-200"
           : "bg-red-50 text-red-600 border-red-200"
@@ -93,7 +93,7 @@ function StatusChip({ active, onToggle }: { active: boolean | null; onToggle: ()
 
 function DoctorCountChip({ count }: { count: number }) {
   return (
-    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border ${
+    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-caption font-semibold border ${
       count > 0
         ? "bg-blue-50 text-blue-700 border-blue-200"
         : "bg-slate-100 text-slate-500 border-slate-200"
@@ -116,17 +116,17 @@ function DoctorStack({ doctors }: { doctors: HospitalInfo["doctors"] }) {
       {shown.map((d, i) => (
         <div key={i} className="flex items-center gap-2.5 min-w-0" title={`@${d.username}${d.specialty ? " · " + d.specialty : ""}`}>
           <div
-            className="rounded-lg flex items-center justify-center text-white font-bold text-[10px] shrink-0"
+            className="rounded-lg flex items-center justify-center text-white font-bold text-caption shrink-0"
             style={{ width: 26, height: 26, background: avatarGradient(d.name) }}
           >
             {initials(d.name)}
           </div>
           <p className="text-xs font-medium text-slate-600 truncate">{d.name}</p>
-          {d.specialty && <p className="text-[10px] text-slate-300 truncate hidden sm:block">{d.specialty}</p>}
+          {d.specialty && <p className="text-caption text-slate-300 truncate hidden sm:block">{d.specialty}</p>}
         </div>
       ))}
       {extra > 0 && (
-        <p className="text-[11px] font-semibold text-blue-600 pl-9" title={doctors.slice(3).map((d) => d.name).join(", ")}>
+        <p className="text-caption font-semibold text-blue-600 pl-9" title={doctors.slice(3).map((d) => d.name).join(", ")}>
           +{extra} more
         </p>
       )}
@@ -174,10 +174,10 @@ function StatCard({ icon, value, label, sub, tint }: {
         </div>
         <div className="min-w-0">
           <p className="text-[26px] leading-8 font-bold text-slate-900 tabular-nums">{counted}</p>
-          <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest">{label}</p>
+          <p className="text-caption font-semibold text-slate-400 uppercase tracking-widest">{label}</p>
         </div>
       </div>
-      <p className="text-[11px] text-slate-400 mt-2">{sub}</p>
+      <p className="text-caption text-slate-400 mt-2">{sub}</p>
     </motion.div>
   );
 }
@@ -473,7 +473,7 @@ export function HospitalManagementView({ onAddHospital }: { onAddHospital: () =>
                   {initials(h.name)}
                 </motion.div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[17px] font-bold text-slate-900 leading-tight truncate">{h.name}</p>
+                  <p className="text-heading-sm font-bold text-slate-900 leading-tight truncate">{h.name}</p>
                   <p className="text-xs text-slate-400 mt-0.5">
                     Code: <span className="font-mono text-slate-600">{h.shortCode}</span>
                   </p>
@@ -509,7 +509,7 @@ export function HospitalManagementView({ onAddHospital }: { onAddHospital: () =>
 
               {/* linked doctors */}
               <div className="relative flex-1">
-                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-2.5 flex items-center gap-1.5">
+                <p className="text-caption font-semibold text-slate-400 uppercase tracking-widest mb-2.5 flex items-center gap-1.5">
                   <Users size={11} /> Linked Doctors
                 </p>
                 <DoctorStack doctors={h.doctors} />
@@ -628,21 +628,21 @@ export function HospitalManagementView({ onAddHospital }: { onAddHospital: () =>
             </div>
             <div className="flex flex-col gap-3.5">
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest">Hospital Name</label>
+                <label className="text-caption font-semibold text-slate-400 uppercase tracking-widest">Hospital Name</label>
                 <input value={editForm.name} onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))} className={inputCls} />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest">Short Code</label>
+                  <label className="text-caption font-semibold text-slate-400 uppercase tracking-widest">Short Code</label>
                   <input value={editForm.shortCode} onChange={(e) => setEditForm((f) => ({ ...f, shortCode: e.target.value }))} className={inputCls} />
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest">Contact</label>
+                  <label className="text-caption font-semibold text-slate-400 uppercase tracking-widest">Contact</label>
                   <input value={editForm.contact} onChange={(e) => setEditForm((f) => ({ ...f, contact: e.target.value }))} className={inputCls} />
                 </div>
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest">Address</label>
+                <label className="text-caption font-semibold text-slate-400 uppercase tracking-widest">Address</label>
                 <input value={editForm.address} onChange={(e) => setEditForm((f) => ({ ...f, address: e.target.value }))} className={inputCls} />
               </div>
             </div>

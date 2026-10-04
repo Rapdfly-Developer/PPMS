@@ -77,7 +77,7 @@ function PatientAvatar({ name }: { name: string }) {
   const initials = name.split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase();
   const color = AVATAR_COLORS[name.charCodeAt(0) % AVATAR_COLORS.length];
   return (
-    <div className={clsx("shrink-0 w-9 h-9 rounded-full flex items-center justify-center font-bold text-white text-[11px]", color)}>
+    <div className={clsx("shrink-0 w-9 h-9 rounded-full flex items-center justify-center font-bold text-white text-caption", color)}>
       {initials}
     </div>
   );
@@ -98,7 +98,7 @@ function LiveTimer({ since }: { since: string }) {
   const label = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
   const color = totalMins > 30 ? "text-red-500" : totalMins > 15 ? "text-amber-500" : "text-emerald-600";
   return (
-    <span suppressHydrationWarning className={clsx("inline-flex items-center gap-0.5 text-[9px] font-semibold", color)}>
+    <span suppressHydrationWarning className={clsx("inline-flex items-center gap-0.5 text-micro font-semibold", color)}>
       <Clock size={9} /> {label}
     </span>
   );
@@ -123,7 +123,7 @@ function KpiCard({ icon, iconBg, label, value, sub, pct, pctUp }: {
           {icon}
         </div>
         {pct !== undefined && (
-          <span className={clsx("inline-flex items-center gap-0.5 text-[11px] font-semibold", pctUp ? "text-emerald-600" : "text-red-500")}>
+          <span className={clsx("inline-flex items-center gap-0.5 text-caption font-semibold", pctUp ? "text-emerald-600" : "text-red-500")}>
             {pctUp ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
             {pct}%
           </span>
@@ -133,8 +133,8 @@ function KpiCard({ icon, iconBg, label, value, sub, pct, pctUp }: {
         <p className="text-2xl font-bold text-[var(--color-ink-900)] tabular-nums leading-none">
           {String(value).padStart(2, "0")}
         </p>
-        <p className="text-[12px] font-semibold text-[var(--color-ink-700)] mt-1">{label}</p>
-        <p className="text-[10px] text-[var(--color-ink-400)] mt-0.5">{sub}</p>
+        <p className="text-caption font-semibold text-[var(--color-ink-700)] mt-1">{label}</p>
+        <p className="text-caption text-[var(--color-ink-400)] mt-0.5">{sub}</p>
       </div>
     </div>
   );
@@ -226,20 +226,20 @@ function TableApptRow({ appt, scope, canManageQueue, canViewPatient, consultantN
 
   return (
     <tr className="border-b border-gray-50 hover:bg-blue-50/40 transition-colors">
-      <td className="px-4 py-3 text-[12px] font-medium text-[var(--color-ink-600)] whitespace-nowrap">{time}</td>
+      <td className="px-4 py-3 text-caption font-medium text-[var(--color-ink-600)] whitespace-nowrap">{time}</td>
       <td className="px-4 py-3">
         <PatientBlock udid={appt.patient.udid} canView={canViewPatient} className="flex items-center gap-2.5 hover:opacity-80 transition-opacity">
           <PatientAvatar name={appt.patient.name} />
           <div className="min-w-0">
-            <p className="text-[13px] font-semibold text-[var(--color-ink-900)] truncate">{appt.patient.name}</p>
+            <p className="text-label font-semibold text-[var(--color-ink-900)] truncate">{appt.patient.name}</p>
             {scope === "HOSPITAL" && appt.doctor && (
-              <p className="text-[10px] text-[var(--color-ink-500)] font-medium truncate">Dr. {appt.doctor.name}</p>
+              <p className="text-caption text-[var(--color-ink-500)] font-medium truncate">Dr. {appt.doctor.name}</p>
             )}
             {scope === "DOCTOR" && consultantName && (
-              <p className="text-[10px] text-[var(--color-ink-500)] font-medium truncate">{consultantName}</p>
+              <p className="text-caption text-[var(--color-ink-500)] font-medium truncate">{consultantName}</p>
             )}
             {appt.patient.uhid && (
-              <span className="inline-block mt-0.5 font-mono text-[10px] text-[#115E59] bg-[#F0F8F6] px-1.5 py-0.5 rounded">
+              <span className="inline-block mt-0.5 font-mono text-caption text-[#115E59] bg-[#F0F8F6] px-1.5 py-0.5 rounded">
                 {appt.patient.uhid}
               </span>
             )}
@@ -248,7 +248,7 @@ function TableApptRow({ appt, scope, canManageQueue, canViewPatient, consultantN
       </td>
       <td className="px-4 py-3 hidden lg:table-cell">
         <span className={clsx(
-          "inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold whitespace-nowrap",
+          "inline-flex items-center px-2.5 py-1 rounded-full text-caption font-semibold whitespace-nowrap",
           visitTypeLabel === "Follow-up" ? "bg-purple-100 text-purple-700" : "bg-blue-100 text-blue-700"
         )}>
           {visitTypeLabel}
@@ -258,16 +258,16 @@ function TableApptRow({ appt, scope, canManageQueue, canViewPatient, consultantN
         <div className="flex items-center gap-1.5">
           {scope === "DOCTOR" ? (
             <><Building2 size={12} className="shrink-0 text-[var(--color-ink-400)]" />
-            <span className="text-[12px] text-[var(--color-ink-600)] truncate max-w-[140px]">{appt.hospital?.name ?? ""}</span></>
+            <span className="text-caption text-[var(--color-ink-600)] truncate max-w-[140px]">{appt.hospital?.name ?? ""}</span></>
           ) : (
             <><Stethoscope size={12} className="shrink-0 text-[var(--color-ink-400)]" />
-            <span className="text-[12px] text-[var(--color-ink-600)] truncate max-w-[140px]">{appt.doctor ? `Dr. ${appt.doctor.name}` : ""}</span></>
+            <span className="text-caption text-[var(--color-ink-600)] truncate max-w-[140px]">{appt.doctor ? `Dr. ${appt.doctor.name}` : ""}</span></>
           )}
         </div>
       </td>
       <td className="px-4 py-3">
         <div className="flex flex-col gap-1 items-start">
-          <span className={clsx("inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold whitespace-nowrap", cfg.color)}>
+          <span className={clsx("inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-caption font-semibold whitespace-nowrap", cfg.color)}>
             <span className={clsx("w-1.5 h-1.5 rounded-full shrink-0", cfg.dot)} />
             {cfg.label}
           </span>
@@ -278,12 +278,12 @@ function TableApptRow({ appt, scope, canManageQueue, canViewPatient, consultantN
         <div className="flex items-center gap-1.5">
           {canViewPatient && (isActive ? (
             <Link href={`/patients/${appt.patient.udid}?returnTo=/dashboard`}
-              className="px-3 py-1.5 rounded-lg bg-[var(--color-primary-700)] text-white text-[11px] font-semibold hover:opacity-90 transition-opacity whitespace-nowrap">
+              className="px-3 py-1.5 rounded-lg bg-[var(--color-primary-700)] text-white text-caption font-semibold hover:opacity-90 transition-opacity whitespace-nowrap">
               Open
             </Link>
           ) : (
             <Link href={`/patients/${appt.patient.udid}?returnTo=/dashboard`}
-              className="px-3 py-1.5 rounded-lg border border-[var(--color-border)] bg-white text-[var(--color-ink-700)] text-[11px] font-semibold hover:bg-[var(--color-surface-sunken)] transition-colors whitespace-nowrap">
+              className="px-3 py-1.5 rounded-lg border border-[var(--color-border)] bg-white text-[var(--color-ink-700)] text-caption font-semibold hover:bg-[var(--color-surface-sunken)] transition-colors whitespace-nowrap">
               View
             </Link>
           ))}
@@ -307,28 +307,28 @@ function PartialDispenseRow({ appt: a, scope, canDispense, canViewPatient }: {
   const [undoing, startUndo] = useTransition();
   return (
     <tr className="border-b border-orange-100 bg-orange-50/50 hover:bg-orange-50 transition-colors">
-      <td className="px-4 py-3 text-[12px] font-medium text-orange-600 whitespace-nowrap">
+      <td className="px-4 py-3 text-caption font-medium text-orange-600 whitespace-nowrap">
         {format(new Date(a.dateTime), "hh:mm a")}
       </td>
       <td className="px-4 py-3">
         <PatientBlock udid={a.patient.udid} canView={canViewPatient} className="flex items-center gap-2.5 hover:opacity-80 transition-opacity">
           <PatientAvatar name={a.patient.name} />
           <div className="min-w-0">
-            <p className="text-[13px] font-semibold text-[var(--color-ink-900)] truncate">{a.patient.name}</p>
-            <p className="text-[10px] text-[var(--color-ink-400)]">{a.patient.age}y / {a.patient.sex === "MALE" ? "M" : "F"}</p>
-            <p className="text-[10px] font-mono text-[#115E59] mt-0.5">MRN: {a.patient.uhid || a.patient.udid}</p>
+            <p className="text-label font-semibold text-[var(--color-ink-900)] truncate">{a.patient.name}</p>
+            <p className="text-caption text-[var(--color-ink-400)]">{a.patient.age}y / {a.patient.sex === "MALE" ? "M" : "F"}</p>
+            <p className="text-caption font-mono text-[#115E59] mt-0.5">MRN: {a.patient.uhid || a.patient.udid}</p>
           </div>
         </PatientBlock>
       </td>
       <td className="px-4 py-3 hidden lg:table-cell">
-        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold bg-orange-100 text-orange-700 whitespace-nowrap">Partial</span>
+        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-caption font-semibold bg-orange-100 text-orange-700 whitespace-nowrap">Partial</span>
       </td>
       <td className="px-4 py-3 hidden xl:table-cell">
-        {scope === "DOCTOR" && a.hospital && <span className="text-[12px] text-[var(--color-ink-600)]">{a.hospital.name}</span>}
-        {scope === "HOSPITAL" && a.doctor && <span className="text-[12px] text-[var(--color-ink-600)]">Dr. {a.doctor.name}</span>}
+        {scope === "DOCTOR" && a.hospital && <span className="text-caption text-[var(--color-ink-600)]">{a.hospital.name}</span>}
+        {scope === "HOSPITAL" && a.doctor && <span className="text-caption text-[var(--color-ink-600)]">Dr. {a.doctor.name}</span>}
       </td>
       <td className="px-4 py-3">
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-orange-100 text-orange-700">
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-caption font-semibold bg-orange-100 text-orange-700">
           <span className="w-1.5 h-1.5 rounded-full bg-orange-500 shrink-0" />Partial Dispense
         </span>
       </td>
@@ -336,7 +336,7 @@ function PartialDispenseRow({ appt: a, scope, canDispense, canViewPatient }: {
         {canDispense && (
           <button disabled={undoing}
             onClick={() => startUndo(async () => { await undoPartialDispense(a.id); })}
-            className="px-3 py-1.5 rounded-lg border border-orange-300 bg-white text-orange-700 text-[11px] font-semibold hover:bg-orange-50 disabled:opacity-50 transition-all">
+            className="px-3 py-1.5 rounded-lg border border-orange-300 bg-white text-orange-700 text-caption font-semibold hover:bg-orange-50 disabled:opacity-50 transition-all">
             {undoing ? <Loader2 size={11} className="animate-spin" /> : "To Queue"}
           </button>
         )}
@@ -427,25 +427,25 @@ export function HomeDashboardClient({
         </div>
         <div className="relative z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-4 sm:p-5">
           <div>
-            <p className="text-[13px] text-[var(--color-ink-400)] font-medium mb-0.5">{greeting}</p>
+            <p className="text-label text-[var(--color-ink-400)] font-medium mb-0.5">{greeting}</p>
             <h1 className="text-xl sm:text-2xl font-bold text-[var(--color-ink-900)]">{bannerTitle}</h1>
-            {bannerSubtitle && <p className="text-[13px] text-[var(--color-ink-500)] mt-0.5">{bannerSubtitle}</p>}
-            <p className="text-[12px] text-[var(--color-ink-400)] mt-1">
+            {bannerSubtitle && <p className="text-label text-[var(--color-ink-500)] mt-0.5">{bannerSubtitle}</p>}
+            <p className="text-caption text-[var(--color-ink-400)] mt-1">
               Here&apos;s your overview across all assigned hospitals today.
             </p>
-            <p className="mt-1.5 inline-flex items-center gap-1.5 text-[12px] font-medium text-[var(--color-ink-500)]">
+            <p className="mt-1.5 inline-flex items-center gap-1.5 text-caption font-medium text-[var(--color-ink-500)]">
               <Calendar size={12} /> {todayLabel}
             </p>
           </div>
           <div className="flex items-center gap-3 flex-wrap">
             {can("appointments.view") && filterOptions.length > 0 && (
               <div className="bg-white rounded-xl border border-[var(--color-border)] p-3 min-w-[160px] shadow-sm">
-                <p className="text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-wide mb-1">
+                <p className="text-caption font-semibold text-[var(--color-ink-400)] uppercase tracking-wide mb-1">
                   {scope === "DOCTOR" ? "All Hospitals" : "All Doctors"}
                 </p>
                 <div className="relative">
                   <select value={selectedFilter} onChange={(e) => setSelectedFilter(e.target.value)}
-                    className="w-full appearance-none pr-6 text-[13px] font-semibold text-[var(--color-ink-800)] bg-transparent focus:outline-none cursor-pointer">
+                    className="w-full appearance-none pr-6 text-label font-semibold text-[var(--color-ink-800)] bg-transparent focus:outline-none cursor-pointer">
                     <option value="all">All</option>
                     {filterOptions.map((opt) => (
                       <option key={opt.id} value={opt.id}>{scope === "HOSPITAL" ? `Dr. ${opt.name}` : opt.name}</option>
@@ -456,23 +456,23 @@ export function HomeDashboardClient({
               </div>
             )}
             <div className="bg-white rounded-xl border border-[var(--color-border)] p-3 shadow-sm text-center min-w-[120px]">
-              <p className="text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-wide">
+              <p className="text-caption font-semibold text-[var(--color-ink-400)] uppercase tracking-wide">
                 {filterOptions.length} Hospital{filterOptions.length !== 1 ? "s" : ""}
               </p>
-              <p className="text-[12px] text-[var(--color-ink-500)] mt-0.5">You have access to</p>
+              <p className="text-caption text-[var(--color-ink-500)] mt-0.5">You have access to</p>
             </div>
             {scope === "DOCTOR" && activeHospitalCount > 0 && (
               <div className="bg-white rounded-xl border border-[var(--color-border)] p-3 shadow-sm text-center min-w-[120px]">
-                <p className="text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-wide flex items-center justify-center gap-1">
+                <p className="text-caption font-semibold text-[var(--color-ink-400)] uppercase tracking-wide flex items-center justify-center gap-1">
                   <Building2 size={10} className="shrink-0" />Active Today
                 </p>
-                <p className="text-[22px] font-bold text-[var(--color-ink-900)] leading-tight mt-0.5">{activeHospitalCount}</p>
-                <p className="text-[12px] text-[var(--color-ink-500)]">hospital{activeHospitalCount !== 1 ? "s" : ""}</p>
+                <p className="text-heading-lg font-bold text-[var(--color-ink-900)] leading-tight mt-0.5">{activeHospitalCount}</p>
+                <p className="text-caption text-[var(--color-ink-500)]">hospital{activeHospitalCount !== 1 ? "s" : ""}</p>
               </div>
             )}
             {can("opd.walkin.create") && (
               <Link href={newEncounterHref}
-                className="inline-flex items-center gap-2 bg-[var(--color-primary-700)] text-white text-[13px] font-semibold px-4 py-2.5 rounded-xl hover:opacity-90 transition-opacity shadow-sm whitespace-nowrap">
+                className="inline-flex items-center gap-2 bg-[var(--color-primary-700)] text-white text-label font-semibold px-4 py-2.5 rounded-xl hover:opacity-90 transition-opacity shadow-sm whitespace-nowrap">
                 <Plus size={15} /> {newEncounterLabel}
               </Link>
             )}
@@ -508,13 +508,13 @@ export function HomeDashboardClient({
             <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--color-border)] shrink-0">
               <div className="flex items-center gap-2">
                 <Calendar size={16} className="text-[var(--color-primary-600)]" />
-                <h2 className="text-[15px] font-bold text-[var(--color-ink-900)]">Today&apos;s Appointment Queue</h2>
-                <span className="ml-1 px-2 py-0.5 rounded-full bg-[var(--color-primary-50)] text-[var(--color-primary-700)] text-[10px] font-bold">
+                <h2 className="text-heading-sm font-bold text-[var(--color-ink-900)]">Today&apos;s Appointment Queue</h2>
+                <span className="ml-1 px-2 py-0.5 rounded-full bg-[var(--color-primary-50)] text-[var(--color-primary-700)] text-caption font-bold">
                   {tableRows.active.length + tableRows.partial.length}
                 </span>
               </div>
               {can("appointments.view") && (
-                <Link href="/appointments" className="text-[12px] font-semibold text-[var(--color-primary-600)] hover:underline flex items-center gap-1">
+                <Link href="/appointments" className="text-caption font-semibold text-[var(--color-primary-600)] hover:underline flex items-center gap-1">
                   View All <ArrowRight size={12} />
                 </Link>
               )}
@@ -526,13 +526,13 @@ export function HomeDashboardClient({
                   <CalendarX2 size={28} className="text-[var(--color-ink-300)]" />
                 </div>
                 <div>
-                  <p className="text-[15px] font-semibold text-[var(--color-ink-700)]">No appointments today</p>
-                  <p className="text-[13px] text-[var(--color-ink-400)] mt-1 max-w-xs mx-auto">
+                  <p className="text-heading-sm font-semibold text-[var(--color-ink-700)]">No appointments today</p>
+                  <p className="text-label text-[var(--color-ink-400)] mt-1 max-w-xs mx-auto">
                     Confirmed appointments will appear here once patients arrive.
                   </p>
                 </div>
                 {can("opd.walkin.create") && (
-                  <Link href={newEncounterHref} className="inline-flex items-center gap-2 text-[13px] font-semibold text-[var(--color-primary-600)] hover:underline">
+                  <Link href={newEncounterHref} className="inline-flex items-center gap-2 text-label font-semibold text-[var(--color-primary-600)] hover:underline">
                     <Plus size={14} /> {newEncounterLabel}
                   </Link>
                 )}
@@ -544,7 +544,7 @@ export function HomeDashboardClient({
                     <tr className="border-b border-[var(--color-border)] bg-[var(--color-surface-sunken)]">
                       {["Time", "Patient", "Type", scope === "DOCTOR" ? "Hospital" : "Doctor", "Status", "Action"].map((h, i) => (
                         <th key={h} className={clsx(
-                          "px-4 py-3 text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]",
+                          "px-4 py-3 text-caption font-bold uppercase tracking-wider text-[var(--color-ink-400)]",
                           i === 2 && "hidden lg:table-cell",
                           i === 3 && "hidden xl:table-cell",
                         )}>{h}</th>
@@ -577,15 +577,15 @@ export function HomeDashboardClient({
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
                 <BarChart2 size={15} className="text-[var(--color-primary-600)]" />
-                <h3 className="text-[14px] font-bold text-[var(--color-ink-900)]">Appointments Overview</h3>
+                <h3 className="text-body font-bold text-[var(--color-ink-900)]">Appointments Overview</h3>
               </div>
-              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-lg bg-[var(--color-primary-700)] text-white">Today</span>
+              <span className="text-caption font-semibold px-2 py-0.5 rounded-lg bg-[var(--color-primary-700)] text-white">Today</span>
             </div>
             <div className="flex items-center gap-3 mb-2">
-              <span className="inline-flex items-center gap-1 text-[10px] text-[var(--color-ink-400)]">
+              <span className="inline-flex items-center gap-1 text-caption text-[var(--color-ink-400)]">
                 <span className="w-2 h-2 rounded-sm bg-blue-300 inline-block" /> Scheduled
               </span>
-              <span className="inline-flex items-center gap-1 text-[10px] text-[var(--color-ink-400)]">
+              <span className="inline-flex items-center gap-1 text-caption text-[var(--color-ink-400)]">
                 <span className="w-2 h-2 rounded-sm bg-emerald-500 inline-block" /> Completed
               </span>
             </div>
@@ -596,7 +596,7 @@ export function HomeDashboardClient({
           <div className="bg-white rounded-2xl border border-[var(--color-border)] p-4">
             <div className="flex items-center gap-2 mb-3">
               <Users size={15} className="text-[var(--color-primary-600)]" />
-              <h3 className="text-[14px] font-bold text-[var(--color-ink-900)]">Patient Overview</h3>
+              <h3 className="text-body font-bold text-[var(--color-ink-900)]">Patient Overview</h3>
             </div>
             <div className="flex items-center gap-4">
               <PatientDonut
@@ -618,11 +618,11 @@ export function HomeDashboardClient({
                     <div key={label} className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-1.5 min-w-0">
                         <span className={clsx("w-2 h-2 rounded-full shrink-0", color)} />
-                        <span className="text-[11px] text-[var(--color-ink-600)] truncate">{label}</span>
+                        <span className="text-caption text-[var(--color-ink-600)] truncate">{label}</span>
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0">
-                        <span className="text-[12px] font-bold text-[var(--color-ink-900)] tabular-nums">{value}</span>
-                        <span className="text-[10px] text-[var(--color-ink-400)]">({pct}%)</span>
+                        <span className="text-caption font-bold text-[var(--color-ink-900)] tabular-nums">{value}</span>
+                        <span className="text-caption text-[var(--color-ink-400)]">({pct}%)</span>
                       </div>
                     </div>
                   );
@@ -649,8 +649,8 @@ export function HomeDashboardClient({
               <BedDouble size={17} className="text-indigo-600" />
             </div>
             <div>
-              <h3 className="text-[14px] font-bold text-[var(--color-ink-900)]">IPD &amp; Surgery</h3>
-              <p className="text-[10px] text-[var(--color-ink-400)]">Inpatient &amp; Surgical Management</p>
+              <h3 className="text-body font-bold text-[var(--color-ink-900)]">IPD &amp; Surgery</h3>
+              <p className="text-caption text-[var(--color-ink-400)]">Inpatient &amp; Surgical Management</p>
             </div>
           </div>
 
@@ -666,7 +666,7 @@ export function HomeDashboardClient({
                   <Icon size={14} className={color} />
                 </div>
                 <p className="text-base font-bold text-[var(--color-ink-300)] tabular-nums">0</p>
-                <p className="text-[9px] text-[var(--color-ink-300)] mt-0.5 leading-tight">{label}</p>
+                <p className="text-micro text-[var(--color-ink-300)] mt-0.5 leading-tight">{label}</p>
               </div>
             ))}
           </div>
@@ -674,7 +674,7 @@ export function HomeDashboardClient({
           {/* Coming soon notice */}
           <div className="relative flex items-start gap-2 bg-white/60 rounded-xl p-2.5 border border-indigo-100/80 backdrop-blur-sm">
             <Lock size={12} className="text-indigo-400 shrink-0 mt-0.5" />
-            <p className="text-[11px] text-indigo-700 leading-snug">
+            <p className="text-caption text-indigo-700 leading-snug">
               Full IPD admissions, bed management &amp; surgical scheduling. <span className="font-bold">Coming soon.</span>
             </p>
           </div>
@@ -685,21 +685,21 @@ export function HomeDashboardClient({
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <Calendar size={15} className="text-[var(--color-primary-600)]" />
-              <h3 className="text-[14px] font-bold text-[var(--color-ink-900)]">Upcoming Follow Ups</h3>
+              <h3 className="text-body font-bold text-[var(--color-ink-900)]">Upcoming Follow Ups</h3>
             </div>
             {can("appointments.view") && (
-              <Link href="/appointments" className="text-[11px] font-semibold text-[var(--color-primary-600)] hover:underline">View all</Link>
+              <Link href="/appointments" className="text-caption font-semibold text-[var(--color-primary-600)] hover:underline">View all</Link>
             )}
           </div>
           {upcomingFollowUps.length === 0 ? (
-            <p className="text-[12px] text-[var(--color-ink-400)] text-center py-6">No upcoming follow-ups this week</p>
+            <p className="text-caption text-[var(--color-ink-400)] text-center py-6">No upcoming follow-ups this week</p>
           ) : (
             <div className="flex flex-col divide-y divide-[var(--color-border)]">
               {upcomingFollowUps.map((f) => (
                 <div key={f.id} className="flex items-center justify-between py-2.5 gap-2">
                   <div className="min-w-0">
-                    <p className="text-[13px] font-semibold text-[var(--color-ink-900)] truncate">{f.patient.name}</p>
-                    <p className="text-[10px] text-[var(--color-ink-400)] mt-0.5">
+                    <p className="text-label font-semibold text-[var(--color-ink-900)] truncate">{f.patient.name}</p>
+                    <p className="text-caption text-[var(--color-ink-400)] mt-0.5">
                       {format(new Date(f.dateTime), "dd MMM · hh:mm a")} · {f.hospitalName}
                     </p>
                   </div>
@@ -719,16 +719,16 @@ export function HomeDashboardClient({
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
-                <p className="text-[13px] font-bold text-[var(--color-ink-900)]">AI Clinical Copilot</p>
-                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[var(--color-primary-700)] text-white">New</span>
+                <p className="text-label font-bold text-[var(--color-ink-900)]">AI Clinical Copilot</p>
+                <span className="text-micro font-bold px-1.5 py-0.5 rounded-full bg-[var(--color-primary-700)] text-white">New</span>
               </div>
-              <p className="text-[11px] text-[var(--color-ink-500)] leading-relaxed">
+              <p className="text-caption text-[var(--color-ink-500)] leading-relaxed">
                 AI powered insights and clinical support. Open a patient record to launch.
               </p>
             </div>
           </div>
           <button disabled title="Open any patient record to launch the AI Copilot panel"
-            className="mt-3 flex items-center justify-center gap-2 w-full py-1.5 rounded-xl bg-[var(--color-primary-200)] text-[var(--color-primary-500)] text-[12px] font-bold cursor-not-allowed">
+            className="mt-3 flex items-center justify-center gap-2 w-full py-1.5 rounded-xl bg-[var(--color-primary-200)] text-[var(--color-primary-500)] text-caption font-bold cursor-not-allowed">
             Open via Patient EMR <ArrowRight size={13} />
           </button>
         </div>

@@ -33,7 +33,7 @@ export function InfoTip({ text, label }: { text: string; label: string }) {
       <span
         id={id}
         role="tooltip"
-        className="invisible opacity-0 group-hover/tip:visible group-hover/tip:opacity-100 group-focus-within/tip:visible group-focus-within/tip:opacity-100 transition-opacity absolute left-1/2 -translate-x-1/2 bottom-full mb-2 z-30 w-60 rounded-lg bg-[var(--color-ink-900)] px-3 py-2 text-[11.5px] font-normal normal-case tracking-normal leading-snug text-white shadow-lg"
+        className="invisible opacity-0 group-hover/tip:visible group-hover/tip:opacity-100 group-focus-within/tip:visible group-focus-within/tip:opacity-100 transition-opacity absolute left-1/2 -translate-x-1/2 bottom-full mb-2 z-30 w-60 rounded-lg bg-[var(--color-ink-900)] px-3 py-2 text-caption font-normal normal-case tracking-normal leading-snug text-white shadow-lg"
       >
         {text}
       </span>
@@ -139,7 +139,7 @@ export function KpiCard({ kpi, compareLabel }: { kpi: KpiValue; compareLabel: st
     <>
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-center gap-1.5 pt-1">
-          <p className="truncate text-[12.5px] font-semibold tracking-[0.01em] text-[var(--color-ink-500)]">{label}</p>
+          <p className="truncate text-label font-semibold tracking-[0.01em] text-[var(--color-ink-500)]">{label}</p>
           <InfoTip text={def.tooltip} label={label} />
         </div>
         <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] ${TONE_CLS[tone]}`} aria-hidden="true">
@@ -149,11 +149,11 @@ export function KpiCard({ kpi, compareLabel }: { kpi: KpiValue; compareLabel: st
       <p className="mt-2.5 text-[28px] sm:text-[30px] font-bold leading-none tracking-[-0.02em] tabular-nums text-[var(--color-ink-900)]">
         {kpi.display ?? formatMetric(kpi.value, def.format)}
       </p>
-      {kpi.sub && <p className="mt-2 truncate text-[12px] text-[var(--color-ink-500)]">{kpi.sub}</p>}
+      {kpi.sub && <p className="mt-2 truncate text-caption text-[var(--color-ink-500)]">{kpi.sub}</p>}
       {(change || kpi.spark) && (
         <div className="mt-auto flex items-end justify-between gap-3 pt-4">
           {change ? (
-            <p className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11.5px] leading-snug text-[var(--color-ink-400)]">
+            <p className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5 text-caption leading-snug text-[var(--color-ink-400)]">
               <span className="inline-flex items-center gap-0.5 rounded-full bg-[var(--color-surface-sunken)] px-1.5 py-0.5 font-semibold text-[var(--color-ink-700)]">
                 <Arrow size={11} strokeWidth={2.25} aria-hidden="true" />
                 {change.chip}
@@ -216,7 +216,7 @@ export function Panel({ title, subtitle, icon: Icon, action, children, className
           <div className="min-w-0">
             {/* Pinned to the app h4 token: the global [data-main-content] h3 rule would otherwise enlarge every card title. */}
             <h3 className="font-semibold tracking-[-0.01em] text-[var(--color-ink-900)]" style={{ fontSize: "var(--rf-fs-h4)", lineHeight: 1.3 }}>{title}</h3>
-            {subtitle && <p className="mt-1 text-[12.5px] leading-snug text-[var(--color-ink-400)]">{subtitle}</p>}
+            {subtitle && <p className="mt-1 text-label leading-snug text-[var(--color-ink-400)]">{subtitle}</p>}
           </div>
         </div>
         {action}
@@ -236,7 +236,7 @@ export function SectionHeading({ title, subtitle, icon: Icon }: { title: string;
       )}
       <div>
         <h2 className="font-semibold tracking-[-0.015em] text-[var(--color-ink-900)]" style={{ fontSize: "var(--rf-fs-h3)", lineHeight: 1.3 }}>{title}</h2>
-        {subtitle && <p className="mt-0.5 text-[12.5px] text-[var(--color-ink-400)]">{subtitle}</p>}
+        {subtitle && <p className="mt-0.5 text-label text-[var(--color-ink-400)]">{subtitle}</p>}
       </div>
     </div>
   );
@@ -266,7 +266,7 @@ export function RangeSwitch({ params, tab }: { params: Record<string, string | u
             href={`/analytics${buildQuery(params, { range: r.id === "30d" ? undefined : r.id, from: undefined, to: undefined, tab: tab === "overview" ? undefined : tab })}`}
             scroll={false}
             aria-current={active ? "true" : undefined}
-            className={`rounded-lg px-3 py-1.5 text-[12px] font-semibold transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary-500)] ${
+            className={`rounded-lg px-3 py-1.5 text-caption font-semibold transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary-500)] ${
               active ? "bg-[var(--color-primary-700)] text-white shadow-sm" : "text-[var(--color-ink-500)] hover:text-[var(--color-ink-900)]"
             }`}
           >
@@ -285,12 +285,12 @@ export function SectionError({ message }: { message: string }) {
   return (
     <div role="alert" className="flex flex-col items-center gap-2 rounded-2xl border border-[#FECDCA] bg-[#FEF3F2]/60 px-6 py-12 text-center">
       <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-[#B42318] shadow-sm"><AlertTriangle size={18} /></span>
-      <p className="mt-1 text-[14px] font-semibold text-[var(--color-ink-900)]">{message}</p>
-      <p className="text-[12.5px] text-[var(--color-ink-500)]">The rest of Analytics is unaffected.</p>
+      <p className="mt-1 text-body font-semibold text-[var(--color-ink-900)]">{message}</p>
+      <p className="text-label text-[var(--color-ink-500)]">The rest of Analytics is unaffected.</p>
       <button
         type="button"
         onClick={() => router.refresh()}
-        className="mt-2 inline-flex h-9 items-center gap-1.5 rounded-[10px] border border-[var(--color-border)] bg-white px-3.5 text-[12.5px] font-semibold text-[var(--color-ink-700)] transition-colors hover:bg-[var(--color-surface-sunken)]"
+        className="mt-2 inline-flex h-9 items-center gap-1.5 rounded-[10px] border border-[var(--color-border)] bg-white px-3.5 text-label font-semibold text-[var(--color-ink-700)] transition-colors hover:bg-[var(--color-surface-sunken)]"
       >
         <RefreshCw size={13} /> Retry
       </button>
@@ -338,7 +338,7 @@ export function DataTable({
                 value={query}
                 onChange={(e) => { setQuery(e.target.value); setPage(0); }}
                 placeholder="Search"
-                className="w-full rounded-lg border border-[var(--color-border)] bg-white py-1.5 pl-8 pr-3 text-[12.5px] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
+                className="w-full rounded-lg border border-[var(--color-border)] bg-white py-1.5 pl-8 pr-3 text-label focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
               />
             </label>
           ) : <span />}
@@ -346,7 +346,7 @@ export function DataTable({
             <button
               type="button"
               onClick={() => downloadTableCsv(table)}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--color-border)] bg-white px-3 py-1.5 text-[12px] font-medium text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--color-border)] bg-white px-3 py-1.5 text-caption font-medium text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]"
             >
               <Download size={12} /> CSV
             </button>
@@ -355,12 +355,12 @@ export function DataTable({
       )}
 
       {table.rows.length === 0 ? (
-        <p className="rounded-lg border border-dashed border-[var(--color-border)] px-4 py-8 text-center text-[12.5px] text-[var(--color-ink-400)]">
+        <p className="rounded-lg border border-dashed border-[var(--color-border)] px-4 py-8 text-center text-label text-[var(--color-ink-400)]">
           No records for this period.
         </p>
       ) : (
         <div className="overflow-x-auto rounded-xl border border-[var(--color-border)]">
-          <table className="w-full text-[12.5px]">
+          <table className="w-full text-label">
             <caption className="sr-only">{table.title}</caption>
             <thead className="bg-[#F7F9FA]">
               <tr>
@@ -371,7 +371,7 @@ export function DataTable({
                       key={c.key}
                       scope="col"
                       aria-sort={active ? (sort!.dir === 1 ? "ascending" : "descending") : "none"}
-                      className={`px-3.5 py-2.5 font-semibold text-[12px] text-[var(--color-ink-500)] whitespace-nowrap ${c.align === "right" ? "text-right" : "text-left"}`}
+                      className={`px-3.5 py-2.5 font-semibold text-caption text-[var(--color-ink-500)] whitespace-nowrap ${c.align === "right" ? "text-right" : "text-left"}`}
                     >
                       {print ? c.label : (
                         <button
@@ -410,7 +410,7 @@ export function DataTable({
       )}
 
       {(table.note || pages > 1 || footer) && (
-        <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 text-[11.5px] text-[var(--color-ink-400)]">
+        <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 text-caption text-[var(--color-ink-400)]">
           <span>{table.note}</span>
           {footer ?? (pages > 1 && !print && (
             <nav aria-label={`${table.title} pages`} className="flex items-center gap-1">

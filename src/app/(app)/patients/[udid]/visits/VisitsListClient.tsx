@@ -74,10 +74,10 @@ export function VisitsListClient({ visits, udid }: { visits: VisitRow[]; udid: s
                     : "border-[var(--color-border)] bg-white text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)]"
                 }`}
               >
-                <span className={`text-[9px] sm:text-[10px] font-bold ${active ? "text-white/80" : "text-[var(--color-primary-600)]"}`}>
+                <span className={`text-micro sm:text-caption font-bold ${active ? "text-white/80" : "text-[var(--color-primary-600)]"}`}>
                   Visit #{visit.visitNumber}
                 </span>
-                <span className={`text-[11px] sm:text-xs font-semibold leading-tight ${active ? "text-white" : "text-[var(--color-ink-800)]"}`}>
+                <span className={`text-caption sm:text-xs font-semibold leading-tight ${active ? "text-white" : "text-[var(--color-ink-800)]"}`}>
                   {format(new Date(visit.date), "dd MMM")}
                 </span>
               </button>
@@ -109,12 +109,12 @@ export function VisitsListClient({ visits, udid }: { visits: VisitRow[]; udid: s
                   Visit #{v.visitNumber}
                 </span>
                 {isClosed ? (
-                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">Completed</span>
+                  <span className="text-caption font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">Completed</span>
                 ) : (
-                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">In Progress</span>
+                  <span className="text-caption font-semibold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">In Progress</span>
                 )}
                 {v.visitType && (
-                  <span className="text-[10px] text-[var(--color-ink-400)] font-medium">{v.visitType}</span>
+                  <span className="text-caption text-[var(--color-ink-400)] font-medium">{v.visitType}</span>
                 )}
               </div>
               <p className="text-base sm:text-lg font-bold text-[var(--color-ink-900)]">
@@ -127,13 +127,13 @@ export function VisitsListClient({ visits, udid }: { visits: VisitRow[]; udid: s
               {v.hospital && (
                 <div className="flex items-center gap-2">
                   <Building2 size={13} className="shrink-0 text-[var(--color-ink-400)]" />
-                  <span className="text-[12px] sm:text-[13px] text-[var(--color-ink-600)] leading-snug">{v.hospital.name}</span>
+                  <span className="text-caption sm:text-label text-[var(--color-ink-600)] leading-snug">{v.hospital.name}</span>
                 </div>
               )}
               {v.doctor && (
                 <div className="flex items-center gap-2">
                   <Stethoscope size={13} className="shrink-0 text-[var(--color-ink-400)]" />
-                  <span className="text-[12px] sm:text-[13px] text-[var(--color-ink-600)]">Dr. {v.doctor.name}</span>
+                  <span className="text-caption sm:text-label text-[var(--color-ink-600)]">Dr. {v.doctor.name}</span>
                 </div>
               )}
             </div>
@@ -146,7 +146,7 @@ export function VisitsListClient({ visits, udid }: { visits: VisitRow[]; udid: s
                   <VisitDownloadButton visitId={v.id} />
                 </>
               ) : (
-                <span className="inline-flex items-center text-[11px] font-semibold px-3 py-1.5 rounded-lg bg-white border border-[var(--color-border)] text-[var(--color-ink-400)] cursor-not-allowed">
+                <span className="inline-flex items-center text-caption font-semibold px-3 py-1.5 rounded-lg bg-white border border-[var(--color-border)] text-[var(--color-ink-400)] cursor-not-allowed">
                   No EMR
                 </span>
               )}

@@ -183,13 +183,40 @@
    must stay ABOVE them — moved below, it would win at every width and flatten
    the entire 1441px-and-up ramp. It therefore governs <=1440px only.        */
 @theme {
-  --text-xs:   0.6875rem;
-  --text-sm:   0.8125rem;
-  --text-base: 0.9375rem;
-  --text-lg:   1.0625rem;
-  --text-xl:   1.1875rem;
-  --text-2xl:  1.375rem;
+  /* Primary UI font. Inter is self-hosted by next/font (layout.tsx) and
+     exposed as --font-inter; the rest is the platform fallback chain. */
+  --font-sans: var(--font-inter), Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
+  /* Named Tailwind sizes. In this codebase text-sm carries body copy and
+     text-base carries card titles, so they map to body (14) and heading-sm
+     (16); text-xs is captions and labels (12).                            */
+  --text-xs:   0.75rem;    --text-xs--line-height:   1.4;
+  --text-sm:   0.875rem;   --text-sm--line-height:   1.5;
+  --text-base: 1rem;       --text-base--line-height: 1.5;
+  --text-lg:   1.125rem;   --text-lg--line-height:   1.45;
+  --text-xl:   1.25rem;    --text-xl--line-height:   1.35;
+  --text-2xl:  1.5rem;     --text-2xl--line-height:  1.3;
   --text-3xl:  1.625rem;
+
+  /* Semantic type tokens - use these for new UI.
+       text-micro       11px  uppercase eyebrows, count badges (the floor)
+       text-caption     12px  helper text, metadata, badges, table headers
+       text-label       13px  field labels, secondary values
+       text-body        14px  body copy, table values, inputs, buttons
+       text-heading-sm  16px  card titles, patient names
+       text-heading-md  20px  section and dialog titles
+       text-heading-lg  24px  page titles
+     Weights: 400 body, 500 labels/nav/buttons, 600 titles, 700 key values. */
+  --text-micro:      0.6875rem; --text-micro--line-height:      1.4;
+  --text-caption:    0.75rem;   --text-caption--line-height:    1.4;
+  --text-label:      0.8125rem; --text-label--line-height:      1.45;
+  --text-body:       0.875rem;  --text-body--line-height:       1.5;
+  --text-heading-sm: 1rem;      --text-heading-sm--line-height: 1.4;
+  --text-heading-md: 1.25rem;   --text-heading-md--line-height: 1.35;
+  --text-heading-lg: 1.5rem;    --text-heading-lg--line-height: 1.3;
+
+  /* Uppercase micro-labels only; 0.1em read as shouting at 11px. */
+  --tracking-widest: 0.08em;
 }
 
 /* ── Layout utilities ──────────────────────────────────────────────────────
@@ -238,16 +265,26 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: "Segoe UI", "Inter", Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+  line-height: var(--text-body--line-height);
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  /* Stop iOS/Android inflating text after rotation. */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
+
+h1, h2, h3, h4 { text-wrap: balance; }
 
 /* ── Reusable utility classes ───────────────────────────────────────── */
 
 .label-xs {
-  font-size: 0.6875rem;
+  font-size: var(--text-micro);
+  line-height: var(--text-micro--line-height);
   font-weight: 600;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--color-ink-500);
 }
@@ -258,7 +295,8 @@ body {
   border: 1px solid var(--color-border);
   background: var(--color-surface-sunken);
   padding: 8px 12px;
-  font-size: 0.8125rem;
+  font-size: var(--text-body);
+  line-height: var(--text-body--line-height);
   color: var(--color-ink-900);
   outline: none;
   transition: border-color 150ms, box-shadow 150ms;
@@ -288,7 +326,7 @@ body {
   gap: 6px;
   padding: 6px 14px;
   border-radius: 999px;
-  font-size: 0.75rem;
+  font-size: var(--text-caption);
   font-weight: 500;
   border: 1px solid var(--color-border);
   background: var(--color-surface-sunken);
@@ -311,7 +349,7 @@ body {
 
 .chip-sm {
   padding: 2px 8px;
-  font-size: 0.6875rem;
+  font-size: var(--text-micro);
   border-radius: 999px;
   font-weight: 500;
   border: 1px solid var(--color-border);
@@ -331,77 +369,61 @@ body {
 .scrollbar-thin::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 999px; }
 
 /* ── RF Health responsive typography tokens ──────────────────────────────
-   Semantic scale with exact pixel targets at each breakpoint. The --rf-fs-*
-   prefix avoids collision with --fs-* tokens used by login/landing pages.
-   Values below 1440px match the existing laptop/tablet/mobile appearance.   */
+   Semantic aliases for inline styles (style={{ fontSize: "var(--rf-fs-h4)" }}).
+   They follow the same scale as the text-* tokens in @theme above.
+   The --rf-fs-* prefix avoids collision with --fs-* tokens used by the
+   login and licence pages.                                                  */
 
 :root {
-  --rf-fs-display:   28px; --rf-lh-display:   1.20;
-  --rf-fs-h1:        22px; --rf-lh-h1:        1.25;
-  --rf-fs-h2:        18px; --rf-lh-h2:        1.30;
-  --rf-fs-h3:        16px; --rf-lh-h3:        1.35;
-  --rf-fs-h4:        15px; --rf-lh-h4:        1.35;
+  --rf-fs-display:   26px; --rf-lh-display:   1.20;
+  --rf-fs-h1:        20px; --rf-lh-h1:        1.30;
+  --rf-fs-h2:        18px; --rf-lh-h2:        1.35;
+  --rf-fs-h3:        16px; --rf-lh-h3:        1.40;
+  --rf-fs-h4:        15px; --rf-lh-h4:        1.40;
   --rf-fs-body:      14px; --rf-lh-body:      1.50;
   --rf-fs-secondary: 13px; --rf-lh-secondary: 1.45;
   --rf-fs-label:     12px; --rf-lh-label:     1.40;
-  --rf-fs-caption:   11px; --rf-lh-caption:   1.40;
-  --rf-fs-btn:       13px; --rf-lh-btn:       1.25;
+  --rf-fs-caption:   12px; --rf-lh-caption:   1.40;
+  --rf-fs-btn:       14px; --rf-lh-btn:       1.25;
   --rf-fs-input:     14px; --rf-lh-input:     1.50;
 }
 @media (min-width: 768px) {
   :root {
-    --rf-fs-display: 32px;
-    --rf-fs-h1:      24px;
+    --rf-fs-display: 28px;
+    --rf-fs-h1:      22px;
     --rf-fs-h2:      20px;
-    --rf-fs-h3:      17px;
-    --rf-fs-h4:      16px;
-    --rf-fs-btn:     14px;
   }
 }
 @media (min-width: 1024px) {
   :root {
-    --rf-fs-display: 36px;
-    --rf-fs-h1:      26px;
-    --rf-fs-h2:      22px;
-    --rf-fs-h3:      18px;
+    --rf-fs-display: 32px;
+    --rf-fs-h1:      24px;
     --rf-fs-label:   13px;
-    --rf-fs-caption: 12px;
-  }
-}
-@media (min-width: 1440px) {
-  :root {
-    --rf-fs-display:   40px;
-    --rf-fs-h1:        28px;
-    --rf-fs-h2:        24px;
-    --rf-fs-h3:        20px;
-    --rf-fs-h4:        17px;
-    --rf-fs-body:      15px;
-    --rf-fs-secondary: 14px;
-    --rf-fs-btn:       14px;
-    --rf-fs-input:     15px;
   }
 }
 @media (min-width: 1920px) {
   :root {
-    --rf-fs-display:   44px;
-    --rf-fs-h1:        30px;
-    --rf-fs-h2:        26px;
-    --rf-fs-h3:        21px;
-    --rf-fs-h4:        18px;
-    --rf-fs-body:      16px;
+    --rf-fs-display:   36px;
+    --rf-fs-h1:        26px;
+    --rf-fs-h2:        22px;
+    --rf-fs-h3:        17px;
+    --rf-fs-h4:        16px;
+    --rf-fs-body:      15px;
+    --rf-fs-secondary: 14px;
     --rf-fs-label:     14px;
     --rf-fs-caption:   13px;
     --rf-fs-btn:       15px;
-    --rf-fs-input:     16px;
+    --rf-fs-input:     15px;
   }
 }
 @media (min-width: 2560px) {
   :root {
-    --rf-fs-display:   48px;
-    --rf-fs-h1:        32px;
-    --rf-fs-h2:        28px;
-    --rf-fs-h3:        22px;
-    --rf-fs-h4:        19px;
+    --rf-fs-display:   40px;
+    --rf-fs-h1:        28px;
+    --rf-fs-h2:        23px;
+    --rf-fs-h3:        18px;
+    --rf-fs-h4:        17px;
+    --rf-fs-body:      16px;
     --rf-fs-secondary: 15px;
   }
 }
@@ -418,20 +440,6 @@ body {
 .rf-label     { font-size: var(--rf-fs-label);     line-height: var(--rf-lh-label);     }
 .rf-caption   { font-size: var(--rf-fs-caption);   line-height: var(--rf-lh-caption);   }
 .rf-btn       { font-size: var(--rf-fs-btn);       line-height: var(--rf-lh-btn);       }
-
-/* ── App content: semantic element scaling at 1440px+ ────────────────────
-   Selector [data-main-content] h2 has specificity (0,1,1), beating Tailwind
-   utilities (0,1,0), so these apply even when a Tailwind text-* class is on
-   the element. h1 is intentionally excluded — the OPD banner uses text-3xl
-   (30px at sm+) which already exceeds the h1 spec target of 28px at 1440px,
-   and a global h1 override would shrink it.                                  */
-@media (min-width: 1440px) {
-  [data-main-content] h2 { font-size: var(--rf-fs-h2); line-height: var(--rf-lh-h2); }
-  [data-main-content] h3 { font-size: var(--rf-fs-h3); line-height: var(--rf-lh-h3); }
-  [data-main-content] h4 { font-size: var(--rf-fs-h4); line-height: var(--rf-lh-h4); }
-  [data-main-content] th,
-  [data-main-content] td { font-size: var(--rf-fs-body); }
-}
 
 /* ── Print styles ─────────────────────────────────────────────────────── */
 @media print {
@@ -724,17 +732,18 @@ body {
    - Arbitrary values (.text-[13px]) compile to literal font-size rules; a
      same-specificity unlayered rule overrides them.
 
-   Scale targets (per design spec):
-   ─────────────────────────────────────────────────────────
-            1441–1920px    1921–2560px    2561px+
-   Caption  12px           13px           13px
-   Label    13px           14px           14px
-   Body     15px           16px           16px
-   H3       20px           21px           22px
-   H2       24px           26px           28px
-   H1       28px           30px           32px
-   Display  40px           44px           48px
-   ────────────────────────────────────────────────────────  */
+   Scale targets (text-* tokens):
+   ─────────────────────────────────────────────────────────────
+                   <=1919px   1920-2559   2560-3839   3840+
+   caption         12px       13px        14px        15px
+   label           13px       14px        15px        16px
+   body            14px       15px        16px        17px
+   heading-sm      16px       17px        18px        20px
+   heading-md      20px       22px        23px        26px
+   heading-lg      24px       26px        28px        30px
+   ─────────────────────────────────────────────────────────────
+   Body text grows ~28% from 1080p to 4K, so it keeps its physical size
+   without the page reading as zoomed in.                              */
 
 /* Step 1 — 1920px–2559px (true 1080p/1440p monitors at 100% DPI) */
 @media (min-width: 1920px) and (max-width: 2559px) {
@@ -742,15 +751,22 @@ body {
     --text-xs:                13px;
     --text-xs--line-height:   18px;
     --text-sm:                15px;
-    --text-sm--line-height:   21px;
+    --text-sm--line-height:   22px;
     --text-base:              17px;
-    --text-base--line-height: 24px;
-    --text-lg:                20px;
+    --text-base--line-height: 26px;
+    --text-lg:                19px;
     --text-lg--line-height:   28px;
     --text-xl:                22px;
     --text-xl--line-height:   30px;
     --text-2xl:               26px;
     --text-2xl--line-height:  34px;
+    --text-micro:             12px;
+    --text-caption:           13px;
+    --text-label:             14px;
+    --text-body:              15px;
+    --text-heading-sm:        17px;
+    --text-heading-md:        22px;
+    --text-heading-lg:        26px;
     --text-3xl:               32px;
     --text-3xl--line-height:  40px;
     --text-4xl:               40px;
@@ -797,15 +813,22 @@ body {
     --text-xs:                14px;
     --text-xs--line-height:   20px;
     --text-sm:                16px;
-    --text-sm--line-height:   23px;
+    --text-sm--line-height:   24px;
     --text-base:              18px;
-    --text-base--line-height: 26px;
-    --text-lg:                21px;
-    --text-lg--line-height:   30px;
-    --text-xl:                24px;
-    --text-xl--line-height:   33px;
+    --text-base--line-height: 27px;
+    --text-lg:                20px;
+    --text-lg--line-height:   29px;
+    --text-xl:                23px;
+    --text-xl--line-height:   31px;
     --text-2xl:               28px;
-    --text-2xl--line-height:  37px;
+    --text-2xl--line-height:  36px;
+    --text-micro:             13px;
+    --text-caption:           14px;
+    --text-label:             15px;
+    --text-body:              16px;
+    --text-heading-sm:        18px;
+    --text-heading-md:        23px;
+    --text-heading-lg:        28px;
     --text-3xl:               34px;
     --text-3xl--line-height:  44px;
     --text-4xl:               44px;
@@ -850,17 +873,24 @@ body {
 @media (min-width: 3840px) {
   :root {
     --text-xs:                15px;
-    --text-xs--line-height:   22px;
-    --text-sm:                16px;
-    --text-sm--line-height:   24px;
+    --text-xs--line-height:   21px;
+    --text-sm:                17px;
+    --text-sm--line-height:   26px;
     --text-base:              19px;
-    --text-base--line-height: 27px;
+    --text-base--line-height: 28px;
     --text-lg:                22px;
-    --text-lg--line-height:   31px;
+    --text-lg--line-height:   32px;
     --text-xl:                26px;
-    --text-xl--line-height:   36px;
-    --text-2xl:               28px;
-    --text-2xl--line-height:  38px;
+    --text-xl--line-height:   35px;
+    --text-2xl:               30px;
+    --text-2xl--line-height:  39px;
+    --text-micro:             14px;
+    --text-caption:           15px;
+    --text-label:             16px;
+    --text-body:              17px;
+    --text-heading-sm:        20px;
+    --text-heading-md:        26px;
+    --text-heading-lg:        30px;
     --text-3xl:               36px;
     --text-3xl--line-height:  46px;
     --text-4xl:               48px;

@@ -81,7 +81,7 @@ function VisitGroup({
             {format(new Date(date), "dd MMM yyyy")}
           </span>
           {hospitalName && (
-            <span className="ml-2 text-[10px] text-[var(--color-ink-400)]">{hospitalName}</span>
+            <span className="ml-2 text-caption text-[var(--color-ink-400)]">{hospitalName}</span>
           )}
         </div>
         {open ? <ChevronUp size={14} className="text-[var(--color-ink-400)]" /> : <ChevronDown size={14} className="text-[var(--color-ink-400)]" />}
@@ -140,16 +140,16 @@ function InvUploadButton({ orderId, udid }: { orderId: string; udid: string }) {
       <input ref={camRef}  type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFile} />
       <div className="flex items-center gap-1">
         <button type="button" disabled={uploading} onClick={() => fileRef.current?.click()}
-          className="flex items-center gap-1 text-[11px] font-medium px-2 py-1.5 rounded-lg border border-dashed border-[var(--color-primary-400)] text-[var(--color-primary-600)] hover:bg-[var(--color-primary-50)] disabled:opacity-50 transition-colors">
+          className="flex items-center gap-1 text-caption font-medium px-2 py-1.5 rounded-lg border border-dashed border-[var(--color-primary-400)] text-[var(--color-primary-600)] hover:bg-[var(--color-primary-50)] disabled:opacity-50 transition-colors">
           {uploading ? <Upload size={12} className="animate-pulse" /> : <Upload size={12} />}
           {uploading ? "Uploading…" : "Add File"}
         </button>
         <button type="button" disabled={uploading} onClick={() => camRef.current?.click()}
-          className="flex items-center gap-1 text-[11px] font-medium px-2 py-1.5 rounded-lg border border-dashed border-amber-400 text-amber-600 hover:bg-amber-50 disabled:opacity-50 transition-colors">
+          className="flex items-center gap-1 text-caption font-medium px-2 py-1.5 rounded-lg border border-dashed border-amber-400 text-amber-600 hover:bg-amber-50 disabled:opacity-50 transition-colors">
           <Camera size={12} /> Camera
         </button>
       </div>
-      {error && <p className="text-[10px] text-red-600">{error}</p>}
+      {error && <p className="text-caption text-red-600">{error}</p>}
     </div>
   );
 }
@@ -191,10 +191,10 @@ function InvestigationsDrawer({
           <div key={v.visitId} className="flex flex-col gap-1">
             {/* Visit date header */}
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-[11px] font-semibold text-[var(--color-ink-400)]">
+              <span className="text-caption font-semibold text-[var(--color-ink-400)]">
                 {format(new Date(v.date), "dd MMM yyyy")}
               </span>
-              {v.hospitalName && <span className="text-[10px] text-[var(--color-ink-300)]">· {v.hospitalName}</span>}
+              {v.hospitalName && <span className="text-caption text-[var(--color-ink-300)]">· {v.hospitalName}</span>}
               <div className="flex-1 h-px bg-[var(--color-border)]" />
             </div>
             {/* Orders timeline — one entry per investigation ordered that date */}
@@ -213,23 +213,23 @@ function InvestigationsDrawer({
                     <div className={`flex-1 min-w-0 bg-slate-50 rounded-xl border border-slate-100 px-3 py-2.5 flex items-center gap-3 ${isLast ? "mb-0" : "mb-2"}`}>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${p.badge}`}>
+                          <span className={`text-caption font-semibold px-2 py-0.5 rounded-full ${p.badge}`}>
                             {o.category || "Test"}
                           </span>
                           <p className="text-sm font-semibold text-[var(--color-ink-800)]">{o.testName}</p>
                         </div>
-                        <p className="text-[11px] text-[var(--color-ink-400)] mt-0.5">
+                        <p className="text-caption text-[var(--color-ink-400)] mt-0.5">
                           {[o.laterality, o.priority, o.status.replace(/_/g, " ")].filter(Boolean).join(" · ")}
                           {o.notes && <span className="italic"> · {o.notes}</span>}
                         </p>
                       </div>
-                      <p className="shrink-0 text-[10px] text-[var(--color-ink-400)]">
+                      <p className="shrink-0 text-caption text-[var(--color-ink-400)]">
                         {format(new Date(o.createdAt), "h:mm a")}
                       </p>
                       {o.resultRef ? (
                         <button
                           onClick={() => setLightbox(o.resultRef)}
-                          className="shrink-0 inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-1.5 rounded-lg border border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-100 transition-colors"
+                          className="shrink-0 inline-flex items-center gap-1 text-caption font-medium px-2.5 py-1.5 rounded-lg border border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-100 transition-colors"
                         >
                           <Eye size={12} /> View
                         </button>
@@ -315,12 +315,12 @@ function TreatmentDrawer({
         <VisitGroup key={v.visitId} date={v.date} hospitalName={v.hospitalName}>
           {v.diagnoses.length > 0 && (
             <div className="mb-2">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)] mb-1.5">Diagnoses</p>
+              <p className="text-caption font-semibold uppercase tracking-wider text-[var(--color-ink-400)] mb-1.5">Diagnoses</p>
               <div className="flex flex-col gap-1">
                 {v.diagnoses.map((d, i) => (
                   <div key={i} className="flex items-center gap-2">
                     <p className="clinical-diagnosis-text text-xs flex-1 min-w-0">
-                      <span className="font-mono text-[10px] text-[var(--color-ink-400)] mr-1">{d.icd10Code}</span>
+                      <span className="font-mono text-caption text-[var(--color-ink-400)] mr-1">{d.icd10Code}</span>
                       {d.laterality && <span className="clinical-laterality mr-1">{d.laterality}</span>}
                       {d.description}
                     </p>
@@ -331,29 +331,29 @@ function TreatmentDrawer({
           )}
           {v.medications.length > 0 && (
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)] mb-1.5">Medications</p>
+              <p className="text-caption font-semibold uppercase tracking-wider text-[var(--color-ink-400)] mb-1.5">Medications</p>
               <div className="flex flex-col gap-1.5">
                 {v.medications.map((m, idx) => (
                   <div key={m.id} className="rounded-lg bg-[var(--color-surface-sunken)] px-3 py-2 flex items-start gap-2.5">
                     {/* Number */}
-                    <span className="shrink-0 mt-0.5 w-5 h-5 rounded-full bg-[var(--color-primary-100)] text-[var(--color-primary-700)] text-[10px] font-bold flex items-center justify-center">
+                    <span className="shrink-0 mt-0.5 w-5 h-5 rounded-full bg-[var(--color-primary-100)] text-[var(--color-primary-700)] text-caption font-bold flex items-center justify-center">
                       {idx + 1}
                     </span>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap mb-0.5">
                         {/* Laterality badge */}
                         {m.laterality && (
-                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[var(--color-primary-600)] text-white shrink-0">
+                          <span className="text-micro font-bold px-1.5 py-0.5 rounded-full bg-[var(--color-primary-600)] text-white shrink-0">
                             {m.laterality}
                           </span>
                         )}
                         <p className="text-xs font-semibold text-[var(--color-ink-800)]">{m.drugName}</p>
                       </div>
-                      <p className="text-[10px] text-[var(--color-ink-500)]">
+                      <p className="text-caption text-[var(--color-ink-500)]">
                         {[m.dosage, m.frequency, m.duration].filter(Boolean).join(" · ")}
                       </p>
                       {m.instructions && (
-                        <p className="text-[10px] text-[var(--color-ink-400)] mt-0.5 italic">{m.instructions}</p>
+                        <p className="text-caption text-[var(--color-ink-400)] mt-0.5 italic">{m.instructions}</p>
                       )}
                     </div>
                   </div>
@@ -402,11 +402,11 @@ const SPECT_LS_KEY = (udid: string) => `spect_pin_${udid}`;
 function SpectEyeTable({ re, le }: { re: RxFields; le: RxFields }) {
   const fmt = (v: string) => { const { sign, mag } = parseSignedVal(v); return mag ? `${sign}${mag}` : ""; };
   const cell = (v: string) => (
-    <td className="px-2 py-1 text-center text-[11px] font-semibold tabular-nums text-[var(--color-ink-800)]">{v || <span className="text-[var(--color-ink-300)]">—</span>}</td>
+    <td className="px-2 py-1 text-center text-caption font-semibold tabular-nums text-[var(--color-ink-800)]">{v || <span className="text-[var(--color-ink-300)]">—</span>}</td>
   );
   return (
     <div className="overflow-x-auto">
-      <table className="w-full border-collapse text-[10px]">
+      <table className="w-full border-collapse text-caption">
         <thead>
           <tr className="bg-[var(--color-surface-sunken)]">
             <th className="px-2 py-1 text-left font-semibold text-[var(--color-ink-500)] w-[90px]"></th>
@@ -481,7 +481,7 @@ function SpectacleDrawer({
   return (
     <Drawer open={open} onClose={onClose} title="Previous Spectacle History" icon={<Glasses size={16} />}>
       {!isPending && data && data.length > 0 && (
-        <p className="text-[10px] text-[var(--color-ink-400)] mb-3">
+        <p className="text-caption text-[var(--color-ink-400)] mb-3">
           Check a prescription to include it in the short summary.
         </p>
       )}
@@ -503,14 +503,14 @@ function SpectacleDrawer({
             {/* Header row with checkbox */}
             <div className="flex items-center justify-between gap-3 px-4 py-2.5 border-b border-[var(--color-border)]">
               <div className="flex items-center gap-2 min-w-0">
-                <span className="text-[11px] font-bold text-[var(--color-ink-800)]">
+                <span className="text-caption font-bold text-[var(--color-ink-800)]">
                   {format(new Date(v.date), "dd MMM yyyy")}
                 </span>
                 {v.hospitalName && (
-                  <span className="text-[10px] text-[var(--color-ink-400)] truncate">{v.hospitalName}</span>
+                  <span className="text-caption text-[var(--color-ink-400)] truncate">{v.hospitalName}</span>
                 )}
                 {re.method && (
-                  <span className="text-[9px] bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)] px-1.5 py-0.5 rounded-full border border-[var(--color-border)]">
+                  <span className="text-micro bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)] px-1.5 py-0.5 rounded-full border border-[var(--color-border)]">
                     {re.method}
                   </span>
                 )}
@@ -521,7 +521,7 @@ function SpectacleDrawer({
             <div className="p-3">
               <SpectEyeTable re={re} le={le} />
               {v.sentToOpticals && (
-                <p className="text-[10px] text-emerald-600 font-semibold mt-2">✓ Sent to Opticals</p>
+                <p className="text-caption text-emerald-600 font-semibold mt-2">✓ Sent to Opticals</p>
               )}
             </div>
           </div>

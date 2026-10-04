@@ -104,7 +104,7 @@ export function PhotoUploadBox({
           >
             <UploadCloud size={18} className="text-[var(--color-primary-600)]" />
             <p className="text-xs font-semibold text-[var(--color-ink-700)]">{uploading ? "Uploading…" : "Upload File"}</p>
-            <p className="text-[10px] text-[var(--color-ink-400)]">{hint}</p>
+            <p className="text-caption text-[var(--color-ink-400)]">{hint}</p>
           </button>
           <input ref={fileRef} type="file" accept={accept} className="hidden"
             onChange={(e) => { const f = e.target.files?.[0]; if (f) upload(f, f.name); e.target.value = ""; }} />
@@ -116,7 +116,7 @@ export function PhotoUploadBox({
           >
             <Camera size={18} className="text-[var(--color-primary-600)]" />
             <p className="text-xs font-semibold text-[var(--color-ink-700)]">Camera</p>
-            <p className="text-[10px] text-[var(--color-ink-400)]">Capture now</p>
+            <p className="text-caption text-[var(--color-ink-400)]">Capture now</p>
           </button>
         </div>
       )}

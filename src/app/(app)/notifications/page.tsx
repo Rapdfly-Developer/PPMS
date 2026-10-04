@@ -171,7 +171,7 @@ function NotificationRow({ n }: { n: NotifRow }) {
       <NotificationIcon type={n.type} />
       <div className="flex-1 min-w-0">
         <p
-          className={`text-[13px] sm:text-sm leading-snug ${
+          className={`text-label sm:text-sm leading-snug ${
             !n.read
               ? "font-medium text-[var(--color-ink-900)]"
               : "text-[var(--color-ink-700)]"
@@ -180,7 +180,7 @@ function NotificationRow({ n }: { n: NotifRow }) {
           {n.message}
         </p>
         <div className="flex items-center gap-3 mt-1">
-          <p className="text-[11px] sm:text-xs text-[var(--color-ink-400)]">
+          <p className="text-caption sm:text-xs text-[var(--color-ink-400)]">
             {isBirthday && n.entityId
               ? (() => {
                   const parts = n.entityId.split(":");
@@ -194,7 +194,7 @@ function NotificationRow({ n }: { n: NotifRow }) {
           {profileHref && (
             <Link
               href={profileHref}
-              className="text-[11px] sm:text-xs text-[var(--color-primary-600)] hover:underline font-medium"
+              className="text-caption sm:text-xs text-[var(--color-primary-600)] hover:underline font-medium"
             >
               View profile
             </Link>
@@ -213,10 +213,10 @@ function NotificationRow({ n }: { n: NotifRow }) {
 function SectionHeading({ label, count }: { label: string; count: number }) {
   return (
     <div className="px-5 py-2.5 bg-[var(--color-surface-sunken)] border-b border-[var(--color-border)]">
-      <span className="text-[10px] font-bold tracking-widest text-[var(--color-ink-400)] uppercase">
+      <span className="text-caption font-bold tracking-widest text-[var(--color-ink-400)] uppercase">
         {label}
       </span>
-      <span className="ml-2 text-[10px] text-[var(--color-ink-300)]">{count}</span>
+      <span className="ml-2 text-caption text-[var(--color-ink-300)]">{count}</span>
     </div>
   );
 }
@@ -271,7 +271,7 @@ export default async function NotificationsPage() {
             Notifications
           </h1>
           {unreadCount > 0 && (
-            <p className="text-[13px] sm:text-sm text-[var(--color-ink-500)] mt-1">
+            <p className="text-label sm:text-sm text-[var(--color-ink-500)] mt-1">
               {unreadCount} unread notification{unreadCount !== 1 ? "s" : ""}
             </p>
           )}
@@ -281,7 +281,7 @@ export default async function NotificationsPage() {
 
       <div className="surface-card divide-y divide-[var(--color-border)] overflow-hidden">
         {isEmpty ? (
-          <div className="py-16 text-center text-[var(--color-ink-400)] text-[13px] sm:text-sm">
+          <div className="py-16 text-center text-[var(--color-ink-400)] text-label sm:text-sm">
             No notifications yet.
           </div>
         ) : (

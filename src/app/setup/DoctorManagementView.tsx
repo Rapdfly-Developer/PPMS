@@ -70,7 +70,7 @@ function StatusChip({ active, onToggle }: { active: boolean; onToggle: () => voi
       type="button"
       onClick={onToggle}
       title={active ? "Click to deactivate, blocks login" : "Click to activate, allows login"}
-      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-all hover:scale-[1.04] ${
+      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-caption font-semibold border transition-all hover:scale-[1.04] ${
         active
           ? "bg-emerald-50 text-emerald-700 border-emerald-200"
           : "bg-red-50 text-red-600 border-red-200"
@@ -89,7 +89,7 @@ function StatusChip({ active, onToggle }: { active: boolean; onToggle: () => voi
 function LicenseChip({ lic }: { lic: DoctorInfo["license"] }) {
   if (lic.active) {
     return (
-      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-caption font-semibold bg-blue-50 text-blue-700 border border-blue-200">
         <FileBadge size={11} />
         Licensed · {lic.daysRemaining}d
       </span>
@@ -98,7 +98,7 @@ function LicenseChip({ lic }: { lic: DoctorInfo["license"] }) {
   if (lic.isTrial) {
     const urgent = lic.trialDaysRemaining <= 7;
     return (
-      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border ${
+      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-caption font-semibold border ${
         urgent
           ? "bg-orange-50 text-orange-700 border-orange-300"
           : "bg-amber-50 text-amber-700 border-amber-200"
@@ -110,14 +110,14 @@ function LicenseChip({ lic }: { lic: DoctorInfo["license"] }) {
   }
   if (lic.hasKey) {
     return (
-      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-red-50 text-red-600 border border-red-200">
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-caption font-semibold bg-red-50 text-red-600 border border-red-200">
         <FileBadge size={11} />
         Expired
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-500 border border-slate-200">
+    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-caption font-semibold bg-slate-100 text-slate-500 border border-slate-200">
       <FileBadge size={11} />
       No License
     </span>
@@ -165,10 +165,10 @@ function StatCard({ icon, value, label, sub, tint }: {
         </div>
         <div className="min-w-0">
           <p className="text-[26px] leading-8 font-bold text-slate-900 tabular-nums">{counted}</p>
-          <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest">{label}</p>
+          <p className="text-caption font-semibold text-slate-400 uppercase tracking-widest">{label}</p>
         </div>
       </div>
-      <p className="text-[11px] text-slate-400 mt-2">{sub}</p>
+      <p className="text-caption text-slate-400 mt-2">{sub}</p>
     </motion.div>
   );
 }
@@ -478,7 +478,7 @@ export function DoctorManagementView({ onAddDoctor }: { onAddDoctor: () => void 
                   {initials(d.name)}
                 </motion.div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[17px] font-bold text-slate-900 leading-tight truncate">{d.name}</p>
+                  <p className="text-heading-sm font-bold text-slate-900 leading-tight truncate">{d.name}</p>
                   <p className="text-xs text-slate-400 font-mono mt-0.5 truncate">@{d.username}</p>
                   {d.specialty && (
                     <p className="text-xs text-slate-500 mt-1 truncate">{d.specialty}</p>
@@ -501,7 +501,7 @@ export function DoctorManagementView({ onAddDoctor }: { onAddDoctor: () => void 
                 }`}>
                   {d.license.trialDaysRemaining <= 7 && <AlertTriangle size={12} className="text-orange-500 shrink-0" />}
                   <div className="flex-1 min-w-0">
-                    <p className={`text-[11px] font-semibold ${d.license.trialDaysRemaining <= 7 ? "text-orange-700" : "text-amber-700"}`}>
+                    <p className={`text-caption font-semibold ${d.license.trialDaysRemaining <= 7 ? "text-orange-700" : "text-amber-700"}`}>
                       Trial ends {d.license.trialEndsAt ? new Date(d.license.trialEndsAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "—"}
                     </p>
                     <div className="mt-1 h-1.5 rounded-full bg-amber-100 overflow-hidden">
@@ -511,7 +511,7 @@ export function DoctorManagementView({ onAddDoctor }: { onAddDoctor: () => void 
                       />
                     </div>
                   </div>
-                  <span className={`text-[11px] font-bold tabular-nums shrink-0 ${d.license.trialDaysRemaining <= 7 ? "text-orange-600" : "text-amber-600"}`}>
+                  <span className={`text-caption font-bold tabular-nums shrink-0 ${d.license.trialDaysRemaining <= 7 ? "text-orange-600" : "text-amber-600"}`}>
                     {d.license.trialDaysRemaining}d
                   </span>
                 </div>
@@ -540,7 +540,7 @@ export function DoctorManagementView({ onAddDoctor }: { onAddDoctor: () => void 
                 <IconBtn title="Delete doctor" tone="red" onClick={() => setDeleting(d)}>
                   <Trash2 size={14} />
                 </IconBtn>
-                <span className="ml-auto text-[10px] text-slate-300 font-mono">{d.shortCode ?? ""}</span>
+                <span className="ml-auto text-caption text-slate-300 font-mono">{d.shortCode ?? ""}</span>
               </div>
             </motion.div>
           ))}
@@ -569,7 +569,7 @@ export function DoctorManagementView({ onAddDoctor }: { onAddDoctor: () => void 
               <StatusChip active={d.active} onToggle={() => toggleActive(d)} />
               <LicenseChip lic={d.license} />
               {d.license.isTrial && (
-                <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold border ${
+                <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-caption font-semibold border ${
                   d.license.trialDaysRemaining <= 7
                     ? "bg-orange-50 text-orange-700 border-orange-200"
                     : "bg-amber-50 text-amber-600 border-amber-100"
@@ -659,21 +659,21 @@ export function DoctorManagementView({ onAddDoctor }: { onAddDoctor: () => void 
             </div>
             <div className="flex flex-col gap-3.5">
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest">Name</label>
+                <label className="text-caption font-semibold text-slate-400 uppercase tracking-widest">Name</label>
                 <input value={editForm.name} onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))} className={inputCls} />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest">Specialty</label>
+                  <label className="text-caption font-semibold text-slate-400 uppercase tracking-widest">Specialty</label>
                   <input value={editForm.specialty} onChange={(e) => setEditForm((f) => ({ ...f, specialty: e.target.value }))} className={inputCls} />
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest">Contact</label>
+                  <label className="text-caption font-semibold text-slate-400 uppercase tracking-widest">Contact</label>
                   <input value={editForm.contact} onChange={(e) => setEditForm((f) => ({ ...f, contact: e.target.value }))} className={inputCls} />
                 </div>
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest">New Password <span className="normal-case">(optional)</span></label>
+                <label className="text-caption font-semibold text-slate-400 uppercase tracking-widest">New Password <span className="normal-case">(optional)</span></label>
                 <input type="password" value={editForm.password} onChange={(e) => setEditForm((f) => ({ ...f, password: e.target.value }))}
                   placeholder="Leave blank to keep current" className={inputCls} />
               </div>

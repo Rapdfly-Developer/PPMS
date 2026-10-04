@@ -26,10 +26,10 @@ function SectionHead({ label, pill }: { label: string; pill: string }) {
   return (
     <div className="flex items-center gap-1.5 pt-1 pb-2">
       <Sparkles size={10} className="shrink-0 text-[var(--color-primary-400)]" aria-hidden="true" />
-      <span className="text-[10px] font-semibold tracking-widest text-[rgba(21,122,115,0.8)] uppercase italic">
+      <span className="text-caption font-semibold tracking-widest text-[rgba(21,122,115,0.8)] uppercase italic">
         {label}
       </span>
-      <span className="shrink-0 text-[9px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-[var(--color-primary-50)] text-[var(--color-primary-600)] border border-[var(--color-primary-100)]">
+      <span className="shrink-0 text-micro font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-[var(--color-primary-50)] text-[var(--color-primary-600)] border border-[var(--color-primary-100)]">
         {pill}
       </span>
       <span className="flex-1 h-px bg-[var(--color-primary-100)] ml-0.5" aria-hidden="true" />
@@ -44,7 +44,7 @@ function SectionDivider() {
 function Pending({ status }: { status: "loading" | "timeout" }) {
   if (status === "loading") {
     return (
-      <p role="status" className="flex items-center gap-2 text-[13px] sm:text-sm text-[var(--color-ink-500)] pb-3">
+      <p role="status" className="flex items-center gap-2 text-label sm:text-sm text-[var(--color-ink-500)] pb-3">
         <span
           aria-hidden="true"
           className="w-3 h-3 rounded-full border-2 border-[var(--color-primary-300)] border-t-[var(--color-primary-600)] animate-spin shrink-0"
@@ -54,7 +54,7 @@ function Pending({ status }: { status: "loading" | "timeout" }) {
     );
   }
   return (
-    <p role="status" className="text-[13px] sm:text-sm text-[var(--color-ink-500)] pb-3">
+    <p role="status" className="text-label sm:text-sm text-[var(--color-ink-500)] pb-3">
       The assistant did not return this content. Open AI Clinical Copilot and select Regenerate to retry.
     </p>
   );
@@ -62,7 +62,7 @@ function Pending({ status }: { status: "loading" | "timeout" }) {
 
 function Prose({ text }: { text: string }) {
   return (
-    <div className="space-y-1 text-[13px] sm:text-sm leading-relaxed text-[var(--color-ink-900)] [overflow-wrap:anywhere]">
+    <div className="space-y-1 text-label sm:text-sm leading-relaxed text-[var(--color-ink-900)] [overflow-wrap:anywhere]">
       {text.split("\n").map((line, i) => {
         const isHeading = /^#{1,3}\s+/.test(line);
         const content = line.replace(/^#{1,3}\s+/, "");
@@ -119,15 +119,15 @@ function PlanBody({ body }: { body: string }) {
     <div className="mt-1 flex flex-col gap-1">
       {parsePlanBody(body).map((block, i) =>
         block.kind === "heading" ? (
-          <p key={i} className={`text-[11px] sm:text-xs font-semibold text-[var(--color-ink-700)]${i > 0 ? " mt-1" : ""}`}>
+          <p key={i} className={`text-caption sm:text-xs font-semibold text-[var(--color-ink-700)]${i > 0 ? " mt-1" : ""}`}>
             {block.text}
           </p>
         ) : block.kind === "bullets" ? (
-          <ul key={i} className="text-[13px] sm:text-sm text-[var(--color-ink-900)] list-disc pl-4 flex flex-col gap-0.5">
+          <ul key={i} className="text-label sm:text-sm text-[var(--color-ink-900)] list-disc pl-4 flex flex-col gap-0.5">
             {block.items.map((item, j) => <li key={j}>{item}</li>)}
           </ul>
         ) : (
-          <p key={i} className="text-[13px] sm:text-sm text-[var(--color-ink-900)] whitespace-pre-line">
+          <p key={i} className="text-label sm:text-sm text-[var(--color-ink-900)] whitespace-pre-line">
             {block.lines.join("\n")}
           </p>
         ),
@@ -150,7 +150,7 @@ function AssessmentSection({ state }: { state: CopilotCardState<"assessment"> })
             <Prose text={state.result.assessmentContext} />
             {state.result.diagnosisComparison?.plausibility && (
               <div>
-                <p className="text-[11px] sm:text-xs font-semibold text-[var(--color-ink-700)]">
+                <p className="text-caption sm:text-xs font-semibold text-[var(--color-ink-700)]">
                   Plausibility · {state.result.diagnosisComparison.plausibility.assessment}
                 </p>
                 <Prose text={state.result.diagnosisComparison.plausibility.reason} />
@@ -161,12 +161,12 @@ function AssessmentSection({ state }: { state: CopilotCardState<"assessment"> })
             )}
             {!!state.result.diagnosisComparison?.differentialDiagnosisReasoning?.length && (
               <div>
-                <p className="mb-1.5 text-[11px] sm:text-xs font-semibold text-[var(--color-ink-700)]">
+                <p className="mb-1.5 text-caption sm:text-xs font-semibold text-[var(--color-ink-700)]">
                   Differential diagnosis reasoning
                 </p>
                 <ul className="space-y-2.5">
                   {state.result.diagnosisComparison.differentialDiagnosisReasoning.map((item, i) => (
-                    <li key={`${i}-${item.name}`} className="text-[13px] sm:text-sm [overflow-wrap:anywhere]">
+                    <li key={`${i}-${item.name}`} className="text-label sm:text-sm [overflow-wrap:anywhere]">
                       <strong>{item.name}: </strong>
                       <span className="whitespace-pre-wrap">{item.reason}</span>
                     </li>
@@ -189,16 +189,16 @@ function DdxSection({ state }: { state: DdxState }) {
         {state.status === "loading" && <Pending status="loading" />}
         {state.status === "timeout" && (
           <div className="pb-1 space-y-1">
-            <p className="text-[13px] sm:text-sm text-[var(--color-ink-500)]">
+            <p className="text-label sm:text-sm text-[var(--color-ink-500)]">
               Couldn&apos;t generate suggestions.
             </p>
-            <p className="text-[11px] sm:text-xs text-[var(--color-ink-400)]">
+            <p className="text-caption sm:text-xs text-[var(--color-ink-400)]">
               Open AI Clinical Copilot to retry.
             </p>
           </div>
         )}
         {state.status === "none" && (
-          <p className="text-[13px] sm:text-sm text-[var(--color-ink-500)] pb-1">
+          <p className="text-label sm:text-sm text-[var(--color-ink-500)] pb-1">
             No suggestions returned: insufficient information in the record.
           </p>
         )}
@@ -206,9 +206,9 @@ function DdxSection({ state }: { state: DdxState }) {
           <ul className="divide-y divide-[var(--color-border)]">
             {state.items.map((d, i) => (
               <li key={`${d.name}-${i}`} className="py-2 first:pt-0 last:pb-0">
-                <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-900)]">{d.name}</p>
+                <p className="text-label sm:text-sm font-medium text-[var(--color-ink-900)]">{d.name}</p>
                 {(d.confidence || d.source) && (
-                  <p className="mt-0.5 text-[11px] sm:text-xs text-[var(--color-ink-500)]">
+                  <p className="mt-0.5 text-caption sm:text-xs text-[var(--color-ink-500)]">
                     {d.confidence && <>Confidence: {d.confidence}</>}
                     {d.confidence && d.source && " · "}
                     {d.source && <>Source: {d.source}</>}
@@ -234,7 +234,7 @@ function InvestigationsSection({ state }: { state: CopilotCardState<"investigati
           <div className="space-y-4">
             {state.result.investigationsSummary && (
               <div>
-                <p className="mb-1 text-[11px] sm:text-xs font-semibold text-[var(--color-ink-700)]">
+                <p className="mb-1 text-caption sm:text-xs font-semibold text-[var(--color-ink-700)]">
                   Investigations summary
                 </p>
                 <Prose
@@ -246,14 +246,14 @@ function InvestigationsSection({ state }: { state: CopilotCardState<"investigati
               </div>
             )}
             <div>
-              <p className="mb-1.5 text-[11px] sm:text-xs font-semibold text-[var(--color-ink-700)]">
+              <p className="mb-1.5 text-caption sm:text-xs font-semibold text-[var(--color-ink-700)]">
                 Suggested investigations
               </p>
               {state.result.suggestedInvestigations.length ? (
                 <ul className="space-y-3">
                   {state.result.suggestedInvestigations.map((item, i) => (
                     <li key={`${i}-${item.name}`}>
-                      <p className="text-[13px] sm:text-sm font-semibold [overflow-wrap:anywhere]">
+                      <p className="text-label sm:text-sm font-semibold [overflow-wrap:anywhere]">
                         {item.name}{" "}
                         <span className="font-normal text-[var(--color-ink-500)]">
                           · {item.confidence} confidence
@@ -269,7 +269,7 @@ function InvestigationsSection({ state }: { state: CopilotCardState<"investigati
                   ))}
                 </ul>
               ) : (
-                <p className="text-[13px] sm:text-sm text-[var(--color-ink-500)]">
+                <p className="text-label sm:text-sm text-[var(--color-ink-500)]">
                   No additional investigations suggested from the documented record.
                 </p>
               )}
@@ -289,16 +289,16 @@ function PlanSection({ state }: { state: PlanState }) {
         {state.status === "loading" && <Pending status="loading" />}
         {state.status === "timeout" && (
           <div className="pb-1 space-y-1">
-            <p className="text-[13px] sm:text-sm text-[var(--color-ink-500)]">
+            <p className="text-label sm:text-sm text-[var(--color-ink-500)]">
               Couldn&apos;t generate plan guidance.
             </p>
-            <p className="text-[11px] sm:text-xs text-[var(--color-ink-400)]">
+            <p className="text-caption sm:text-xs text-[var(--color-ink-400)]">
               Open AI Clinical Copilot to retry.
             </p>
           </div>
         )}
         {state.status === "none" && (
-          <p className="text-[13px] sm:text-sm text-[var(--color-ink-500)] pb-1">
+          <p className="text-label sm:text-sm text-[var(--color-ink-500)] pb-1">
             No plan guidance returned: insufficient information in the record.
           </p>
         )}
@@ -306,7 +306,7 @@ function PlanSection({ state }: { state: PlanState }) {
           <div className="flex flex-col gap-3">
             {state.result.documentedProgression && (
               <div>
-                <p className="text-[11px] sm:text-xs font-semibold text-[var(--color-ink-700)]">
+                <p className="text-caption sm:text-xs font-semibold text-[var(--color-ink-700)]">
                   Escalation ladder
                 </p>
                 <PlanBody body={state.result.documentedProgression} />
@@ -314,7 +314,7 @@ function PlanSection({ state }: { state: PlanState }) {
             )}
             {state.result.followUpSummary && (
               <div>
-                <p className="text-[11px] sm:text-xs font-semibold text-[var(--color-ink-700)]">
+                <p className="text-caption sm:text-xs font-semibold text-[var(--color-ink-700)]">
                   Follow-up
                 </p>
                 <PlanBody body={state.result.followUpSummary} />
@@ -322,7 +322,7 @@ function PlanSection({ state }: { state: PlanState }) {
             )}
             {state.result.comfortingGuidance && (
               <div>
-                <p className="text-[11px] sm:text-xs font-semibold text-[var(--color-ink-700)]">
+                <p className="text-caption sm:text-xs font-semibold text-[var(--color-ink-700)]">
                   Comforting methods
                 </p>
                 <PlanBody body={state.result.comfortingGuidance} />
@@ -330,22 +330,22 @@ function PlanSection({ state }: { state: PlanState }) {
             )}
             {state.result.govtScheme && (
               <div className="pt-2 border-t border-[var(--color-border)]">
-                <p className="text-[11px] sm:text-xs font-semibold text-[var(--color-ink-700)]">
+                <p className="text-caption sm:text-xs font-semibold text-[var(--color-ink-700)]">
                   Government schemes
                 </p>
-                <p className="mt-1 text-[13px] sm:text-sm font-medium text-[var(--color-ink-900)]">
+                <p className="mt-1 text-label sm:text-sm font-medium text-[var(--color-ink-900)]">
                   {state.result.govtScheme.schemeName}
                 </p>
-                <p className="mt-0.5 text-[13px] sm:text-sm text-[var(--color-ink-900)]">
+                <p className="mt-0.5 text-label sm:text-sm text-[var(--color-ink-900)]">
                   {state.result.govtScheme.description}
                 </p>
-                <p className="mt-0.5 text-[11px] sm:text-xs text-[var(--color-ink-500)]">
+                <p className="mt-0.5 text-caption sm:text-xs text-[var(--color-ink-500)]">
                   <span className="font-medium">Eligibility: </span>
                   {state.result.govtScheme.eligibilitySummary}
                 </p>
                 <div className="mt-2 flex items-start gap-1.5 rounded-lg bg-amber-50 border border-amber-200 px-2 py-1.5">
                   <ShieldAlert size={12} className="shrink-0 mt-0.5 text-amber-700" />
-                  <p className="text-[10px] sm:text-[11px] text-amber-800">
+                  <p className="text-caption sm:text-caption text-amber-800">
                     Scheme details last verified {state.result.govtScheme.lastVerified}. Eligibility
                     and coverage change; confirm against the official source before advising the
                     patient.
@@ -378,8 +378,8 @@ function ActionButton({
       onClick={onClick}
       className={
         primary
-          ? "shrink-0 px-3 py-1.5 rounded-lg text-[12px] sm:text-[13px] font-medium bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] active:scale-[0.98] transition-all"
-          : "shrink-0 px-3 py-1.5 rounded-lg text-[12px] sm:text-[13px] font-medium border border-[var(--color-border)] text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)] transition-colors"
+          ? "shrink-0 px-3 py-1.5 rounded-lg text-caption sm:text-label font-medium bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] active:scale-[0.98] transition-all"
+          : "shrink-0 px-3 py-1.5 rounded-lg text-caption sm:text-label font-medium border border-[var(--color-border)] text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)] transition-colors"
       }
     >
       {label}
@@ -395,14 +395,14 @@ function ExamGuidanceSection({ state, visitId }: { state: GuidanceState; visitId
       <div className="pb-4">
         {state.status === "idle" && (
           <div className="flex items-center justify-between gap-3 flex-wrap pb-1">
-            <p className="text-[13px] sm:text-sm text-[var(--color-ink-500)]">
+            <p className="text-label sm:text-sm text-[var(--color-ink-500)]">
               Correlate what you have documented with findings to look for.
             </p>
             <ActionButton label="Generate guidance" onClick={onGenerate} primary />
           </div>
         )}
         {state.status === "loading" && (
-          <p role="status" className="flex items-center gap-2 text-[13px] sm:text-sm text-[var(--color-ink-500)] pb-1">
+          <p role="status" className="flex items-center gap-2 text-label sm:text-sm text-[var(--color-ink-500)] pb-1">
             <span aria-hidden="true" className="w-3 h-3 rounded-full border-2 border-[var(--color-primary-300)] border-t-[var(--color-primary-600)] animate-spin shrink-0" />
             Correlating the documented record…
           </p>
@@ -410,15 +410,15 @@ function ExamGuidanceSection({ state, visitId }: { state: GuidanceState; visitId
         {state.status === "error" && (
           <div className="flex items-center justify-between gap-3 flex-wrap pb-1">
             <div>
-              <p className="text-[13px] sm:text-sm text-[var(--color-ink-500)]">Couldn&apos;t generate exam guidance.</p>
-              <p className="mt-0.5 text-[11px] sm:text-xs text-[var(--color-ink-400)]">{state.message}</p>
+              <p className="text-label sm:text-sm text-[var(--color-ink-500)]">Couldn&apos;t generate exam guidance.</p>
+              <p className="mt-0.5 text-caption sm:text-xs text-[var(--color-ink-400)]">{state.message}</p>
             </div>
             <ActionButton label="Try again" onClick={onGenerate} />
           </div>
         )}
         {state.status === "insufficient" && (
           <div className="flex items-center justify-between gap-3 flex-wrap pb-1">
-            <p className="text-[13px] sm:text-sm text-[var(--color-ink-500)]">
+            <p className="text-label sm:text-sm text-[var(--color-ink-500)]">
               Not enough documented yet to correlate; add to the General tab and regenerate.
             </p>
             <ActionButton label="Regenerate" onClick={onGenerate} />
@@ -432,16 +432,16 @@ function ExamGuidanceSection({ state, visitId }: { state: GuidanceState; visitId
             <div className="flex flex-col gap-3">
               {bySegment.map(({ seg, rows }) => (
                 <div key={seg}>
-                  <p className="text-[11px] sm:text-xs font-semibold text-[var(--color-ink-700)]">{seg}</p>
+                  <p className="text-caption sm:text-xs font-semibold text-[var(--color-ink-700)]">{seg}</p>
                   <ul className="mt-1 flex flex-col divide-y divide-[var(--color-border)]">
                     {rows.map((row: ExamGuidanceItem, i: number) => (
                       <li key={`${seg}-${i}`} className="py-2 first:pt-1 last:pb-0">
-                        <p className="text-[13px] sm:text-sm text-[var(--color-ink-900)]">
+                        <p className="text-label sm:text-sm text-[var(--color-ink-900)]">
                           <span className="text-[var(--color-ink-500)]">Documented: </span>
                           {row.documented}
                         </p>
                         {row.associatedFindingsNotDocumented && (
-                          <p className="mt-0.5 text-[11px] sm:text-xs text-[var(--color-ink-500)]">
+                          <p className="mt-0.5 text-caption sm:text-xs text-[var(--color-ink-500)]">
                             Associated findings not yet documented: {row.associatedFindingsNotDocumented}
                           </p>
                         )}
@@ -450,7 +450,7 @@ function ExamGuidanceSection({ state, visitId }: { state: GuidanceState; visitId
                   </ul>
                 </div>
               ))}
-              <p className="text-[10px] text-[rgba(43,168,156,0.7)] italic">
+              <p className="text-caption text-[rgba(43,168,156,0.7)] italic">
                 Based on what was documented when you generated this. Does not update as you add findings.
               </p>
               <ActionButton label="Regenerate" onClick={onGenerate} />
@@ -470,14 +470,14 @@ function RefractiveGuidanceSection({ state, visitId }: { state: RefractiveState;
       <div className="pb-4">
         {state.status === "idle" && (
           <div className="flex items-center justify-between gap-3 flex-wrap pb-1">
-            <p className="text-[13px] sm:text-sm text-[var(--color-ink-500)]">
+            <p className="text-label sm:text-sm text-[var(--color-ink-500)]">
               Interpret the recorded refraction and check what the record still lacks.
             </p>
             <ActionButton label="Generate guidance" onClick={onGenerate} primary />
           </div>
         )}
         {state.status === "loading" && (
-          <p role="status" className="flex items-center gap-2 text-[13px] sm:text-sm text-[var(--color-ink-500)] pb-1">
+          <p role="status" className="flex items-center gap-2 text-label sm:text-sm text-[var(--color-ink-500)] pb-1">
             <span aria-hidden="true" className="w-3 h-3 rounded-full border-2 border-[var(--color-primary-300)] border-t-[var(--color-primary-600)] animate-spin shrink-0" />
             Interpreting the recorded refraction…
           </p>
@@ -485,8 +485,8 @@ function RefractiveGuidanceSection({ state, visitId }: { state: RefractiveState;
         {state.status === "error" && (
           <div className="flex items-center justify-between gap-3 flex-wrap pb-1">
             <div>
-              <p className="text-[13px] sm:text-sm text-[var(--color-ink-500)]">Couldn&apos;t generate refractive guidance.</p>
-              <p className="mt-0.5 text-[11px] sm:text-xs text-[var(--color-ink-400)]">{state.message}</p>
+              <p className="text-label sm:text-sm text-[var(--color-ink-500)]">Couldn&apos;t generate refractive guidance.</p>
+              <p className="mt-0.5 text-caption sm:text-xs text-[var(--color-ink-400)]">{state.message}</p>
             </div>
             <ActionButton label="Try again" onClick={onGenerate} />
           </div>
@@ -499,25 +499,25 @@ function RefractiveGuidanceSection({ state, visitId }: { state: RefractiveState;
             <div className="flex flex-col gap-3">
               {eyes.map((e) => (
                 <div key={e.eye}>
-                  <p className="text-[11px] sm:text-xs font-semibold text-[var(--color-ink-700)]">{e.eye}</p>
+                  <p className="text-caption sm:text-xs font-semibold text-[var(--color-ink-700)]">{e.eye}</p>
                   {e.documented && (
-                    <p className="mt-1 text-[13px] sm:text-sm text-[var(--color-ink-900)]">
+                    <p className="mt-1 text-label sm:text-sm text-[var(--color-ink-900)]">
                       <span className="text-[var(--color-ink-500)]">Documented: </span>
                       {e.documented}
                     </p>
                   )}
                   {e.interpretation && (
-                    <p className="mt-0.5 text-[11px] sm:text-xs text-[var(--color-ink-500)]">{e.interpretation}</p>
+                    <p className="mt-0.5 text-caption sm:text-xs text-[var(--color-ink-500)]">{e.interpretation}</p>
                   )}
                 </div>
               ))}
               {state.result.routing.guidance && (
                 <div className="pt-2 border-t border-[var(--color-border)]">
-                  <p className="text-[11px] sm:text-xs font-semibold text-[var(--color-ink-700)]">Routing</p>
-                  <p className="mt-1 text-[13px] sm:text-sm text-[var(--color-ink-900)]">{state.result.routing.guidance}</p>
+                  <p className="text-caption sm:text-xs font-semibold text-[var(--color-ink-700)]">Routing</p>
+                  <p className="mt-1 text-label sm:text-sm text-[var(--color-ink-900)]">{state.result.routing.guidance}</p>
                 </div>
               )}
-              <p className="text-[10px] text-[rgba(43,168,156,0.7)] italic">
+              <p className="text-caption text-[rgba(43,168,156,0.7)] italic">
                 Based on what was documented when you generated this. Does not update as you add findings.
               </p>
               <ActionButton label="Regenerate" onClick={onGenerate} />
@@ -647,10 +647,10 @@ export function CopilotDrawer({
         >
           <div className="flex items-center gap-2 min-w-0">
             <Sparkles size={16} className="text-[var(--color-primary-600)] shrink-0" />
-            <h2 className="text-[13px] sm:text-sm font-bold text-[var(--color-primary-800)]">
+            <h2 className="text-label sm:text-sm font-bold text-[var(--color-primary-800)]">
               Co-pilot Assistance
             </h2>
-            <span className="shrink-0 text-[9px] sm:text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-[var(--color-primary-50)] text-[var(--color-primary-600)] border border-[var(--color-primary-100)] ml-1">
+            <span className="shrink-0 text-micro sm:text-caption font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-[var(--color-primary-50)] text-[var(--color-primary-600)] border border-[var(--color-primary-100)] ml-1">
               AI · guidance only
             </span>
           </div>
@@ -720,13 +720,13 @@ export function CopilotDrawer({
             background: "rgba(240,248,246,0.78)",
           }}
         >
-          <p className="text-[10px] sm:text-[11px] text-[var(--color-ink-400)] italic">
+          <p className="text-caption sm:text-caption text-[var(--color-ink-400)] italic">
             Results are based on the record when the analysis ran. Regenerate in AI Clinical
             Copilot after adding findings.
           </p>
           <button
             onClick={handleDecisionSupport}
-            className="flex items-center gap-1.5 text-[11px] sm:text-xs font-semibold px-3.5 py-2 rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] active:bg-[var(--color-primary-800)] transition-colors shrink-0"
+            className="flex items-center gap-1.5 text-caption sm:text-xs font-semibold px-3.5 py-2 rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] active:bg-[var(--color-primary-800)] transition-colors shrink-0"
           >
             Decision Support <ArrowRight size={12} />
           </button>

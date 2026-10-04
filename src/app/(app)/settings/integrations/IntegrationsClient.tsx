@@ -58,10 +58,10 @@ const TYPE_BADGE: Record<string, string> = {
 /* ── Status badge ───────────────────────────────────────────────────────────── */
 function LogStatusBadge({ status }: { status: string }) {
   if (status === "SUCCESS")
-    return <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700"><CheckCircle2 size={10} /> Success</span>;
+    return <span className="inline-flex items-center gap-1 text-caption font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700"><CheckCircle2 size={10} /> Success</span>;
   if (status === "FAILED")
-    return <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-700"><XCircle size={10} /> Failed</span>;
-  return <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700"><Clock size={10} /> Pending</span>;
+    return <span className="inline-flex items-center gap-1 text-caption font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-700"><XCircle size={10} /> Failed</span>;
+  return <span className="inline-flex items-center gap-1 text-caption font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700"><Clock size={10} /> Pending</span>;
 }
 
 /* ── Config modal ───────────────────────────────────────────────────────────── */
@@ -126,7 +126,7 @@ function ConfigModal({ hospital, onClose }: { hospital: HospitalRow; onClose: ()
     >
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 my-8 text-[var(--color-ink-900)]">
         <div className="flex items-center justify-between mb-1">
-          <h2 className="text-[15px] sm:text-base font-bold text-[var(--color-ink-800)]">Integration, {hospital.name}</h2>
+          <h2 className="text-heading-sm sm:text-base font-bold text-[var(--color-ink-800)]">Integration, {hospital.name}</h2>
           <button onClick={onClose} className="text-[var(--color-ink-400)] hover:text-[var(--color-ink-800)]"><X size={18} /></button>
         </div>
         <p className="text-xs text-[var(--color-ink-400)] mb-3">
@@ -167,7 +167,7 @@ function ConfigModal({ hospital, onClose }: { hospital: HospitalRow; onClose: ()
               className={inputCls}
               autoComplete="off"
             />
-            <p className="text-[10px] text-[var(--color-ink-400)] mt-1">Encrypted at rest (AES-256-GCM). Never shown again after saving.</p>
+            <p className="text-caption text-[var(--color-ink-400)] mt-1">Encrypted at rest (AES-256-GCM). Never shown again after saving.</p>
           </>
         )}
 
@@ -282,13 +282,13 @@ function PayloadModal({ log, onClose }: { log: LogRow; onClose: () => void }) {
         <div className="overflow-y-auto space-y-3 text-xs">
           <div>
             <p className="font-semibold text-[var(--color-ink-500)] mb-1">Request payload</p>
-            <pre className="bg-[var(--color-surface-sunken)] rounded-lg p-3 whitespace-pre-wrap break-all font-mono text-[11px] text-[var(--color-ink-700)]">
+            <pre className="bg-[var(--color-surface-sunken)] rounded-lg p-3 whitespace-pre-wrap break-all font-mono text-caption text-[var(--color-ink-700)]">
               {log.requestPayload ?? "- not recorded -"}
             </pre>
           </div>
           <div>
             <p className="font-semibold text-[var(--color-ink-500)] mb-1">Response / acknowledgment</p>
-            <pre className="bg-[var(--color-surface-sunken)] rounded-lg p-3 whitespace-pre-wrap break-all font-mono text-[11px] text-[var(--color-ink-700)]">
+            <pre className="bg-[var(--color-surface-sunken)] rounded-lg p-3 whitespace-pre-wrap break-all font-mono text-caption text-[var(--color-ink-700)]">
               {log.responsePayload ?? log.errorMessage ?? "- not recorded -"}
             </pre>
           </div>
@@ -366,7 +366,7 @@ export function IntegrationsClient({
           { label: "Pending", value: counts.PENDING, cls: "text-amber-600" },
         ].map((k) => (
           <div key={k.label} className="rounded-xl border border-[var(--color-border)] bg-white p-4">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">{k.label}</p>
+            <p className="text-caption font-bold uppercase tracking-wider text-[var(--color-ink-400)]">{k.label}</p>
             <p className={`text-2xl font-bold mt-1 ${k.cls}`}>{k.value}</p>
           </div>
         ))}
@@ -384,19 +384,19 @@ export function IntegrationsClient({
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
                 <p className="text-sm font-semibold text-[var(--color-ink-800)] truncate">{h.name}</p>
-                <p className="text-[10px] font-mono text-[var(--color-ink-400)]">{h.shortCode}</p>
+                <p className="text-caption font-mono text-[var(--color-ink-400)]">{h.shortCode}</p>
               </div>
               {h.integration ? (
-                <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${TYPE_BADGE[h.integration.integrationType] ?? "bg-slate-50 text-slate-600 border-slate-200"}`}>
+                <span className={`text-caption font-bold px-2 py-0.5 rounded border ${TYPE_BADGE[h.integration.integrationType] ?? "bg-slate-50 text-slate-600 border-slate-200"}`}>
                   {h.integration.integrationType}
                 </span>
               ) : (
-                <span className="text-[10px] font-medium px-2 py-0.5 rounded bg-slate-100 text-slate-500">Not configured</span>
+                <span className="text-caption font-medium px-2 py-0.5 rounded bg-slate-100 text-slate-500">Not configured</span>
               )}
             </div>
 
             {h.integration?.apiEndpoint && (
-              <p className="text-[11px] font-mono text-[var(--color-ink-400)] mt-2 truncate" title={h.integration.apiEndpoint}>
+              <p className="text-caption font-mono text-[var(--color-ink-400)] mt-2 truncate" title={h.integration.apiEndpoint}>
                 {h.integration.apiEndpoint}
               </p>
             )}
@@ -442,10 +442,10 @@ export function IntegrationsClient({
                     <span className="text-sm font-medium text-[var(--color-ink-800)]">{log.hospitalName}</span>
                     <LogStatusBadge status={log.status} />
                     {log.triggeredBy && (
-                      <span className="text-[10px] text-[var(--color-ink-400)] font-medium">{log.triggeredBy}</span>
+                      <span className="text-caption text-[var(--color-ink-400)] font-medium">{log.triggeredBy}</span>
                     )}
                     {log.retryCount > 0 && (
-                      <span className="text-[10px] text-[var(--color-ink-400)]">retries: {log.retryCount}</span>
+                      <span className="text-caption text-[var(--color-ink-400)]">retries: {log.retryCount}</span>
                     )}
                   </div>
                   <p className="text-xs text-[var(--color-ink-400)] mt-0.5">

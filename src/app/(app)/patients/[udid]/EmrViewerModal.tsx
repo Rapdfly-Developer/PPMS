@@ -19,11 +19,11 @@ function Section({ title, icon, badge, accent, children }: {
     <div className="mb-5 rounded-lg border border-[var(--color-border)] overflow-hidden">
       <div className={`flex items-center gap-2 px-3 py-2 border-b border-[var(--color-border)] ${accent ?? "bg-[var(--color-surface-sunken)]"}`}>
         {icon && <span className="text-[var(--color-ink-400)] shrink-0">{icon}</span>}
-        <p className="text-[10px] font-black tracking-[0.15em] text-[var(--color-ink-500)] uppercase flex-1">
+        <p className="text-caption font-bold tracking-[0.15em] text-[var(--color-ink-500)] uppercase flex-1">
           {title}
         </p>
         {badge !== undefined && badge > 0 && (
-          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-600">
+          <span className="text-caption font-semibold px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-600">
             {badge} pending
           </span>
         )}
@@ -117,7 +117,7 @@ function InvUploadButton({ orderId, udid, onDone }: { orderId: string; udid: str
           <Camera size={13} />
         </button>
       </span>
-      {error && <span className="text-[10px] text-red-500">{error}</span>}
+      {error && <span className="text-caption text-red-500">{error}</span>}
     </span>
   );
 }
@@ -175,7 +175,7 @@ function EmrContent({ visit, udid, localResults, onAttach }: {
             {visit.visitType}
           </span>
         )}
-        <span className={`ml-auto px-2 py-0.5 rounded-full text-[11px] font-bold uppercase ${
+        <span className={`ml-auto px-2 py-0.5 rounded-full text-caption font-bold uppercase ${
           isClosed
             ? "bg-emerald-50 text-emerald-700"
             : "bg-blue-50 text-blue-700"
@@ -218,7 +218,7 @@ function EmrContent({ visit, udid, localResults, onAttach }: {
           {/* Visual Acuity */}
           {va && (reVA || leVA) && (
             <div className="mb-3">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-1.5">Visual Acuity{va.testMethod ? ` · ${va.testMethod}` : ""}</p>
+              <p className="text-caption font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-1.5">Visual Acuity{va.testMethod ? ` · ${va.testMethod}` : ""}</p>
               <div className="grid grid-cols-[140px_1fr_1fr] gap-2 text-xs text-[var(--color-ink-400)] mb-1">
                 <span /><span className="font-semibold">Right Eye</span><span className="font-semibold">Left Eye</span>
               </div>
@@ -233,7 +233,7 @@ function EmrContent({ visit, udid, localResults, onAttach }: {
           {/* Refractive Correction */}
           {ref && (reRef || leRef) && (
             <div className="mb-3">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-1.5">Refractive Correction</p>
+              <p className="text-caption font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-1.5">Refractive Correction</p>
               <div className="grid grid-cols-[140px_1fr_1fr] gap-2 text-xs text-[var(--color-ink-400)] mb-1">
                 <span /><span className="font-semibold">Right Eye</span><span className="font-semibold">Left Eye</span>
               </div>
@@ -248,15 +248,15 @@ function EmrContent({ visit, udid, localResults, onAttach }: {
           {/* IOP */}
           {iop.length > 0 && (
             <div className="mb-3">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-1.5">Intraocular Pressure (mmHg)</p>
+              <p className="text-caption font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-1.5">Intraocular Pressure (mmHg)</p>
               <div className="grid grid-cols-[120px_1fr_1fr] gap-2 text-xs text-[var(--color-ink-400)] mb-1">
                 <span className="font-semibold">Method</span><span className="font-semibold">Right Eye</span><span className="font-semibold">Left Eye</span>
               </div>
               {iop.map((r: any, i: number) => (
                 <div key={i} className="grid grid-cols-[120px_1fr_1fr] gap-2 py-1 border-b border-[var(--color-border)] last:border-0">
-                  <span className="text-[11px] text-[var(--color-ink-500)]">{r.method || "—"}</span>
-                  <span className="text-[11px] font-medium text-[var(--color-ink-800)]">{r.re != null ? `${r.re} mmHg` : "—"}</span>
-                  <span className="text-[11px] font-medium text-[var(--color-ink-800)]">{r.le != null ? `${r.le} mmHg` : "—"}</span>
+                  <span className="text-caption text-[var(--color-ink-500)]">{r.method || "—"}</span>
+                  <span className="text-caption font-medium text-[var(--color-ink-800)]">{r.re != null ? `${r.re} mmHg` : "—"}</span>
+                  <span className="text-caption font-medium text-[var(--color-ink-800)]">{r.le != null ? `${r.le} mmHg` : "—"}</span>
                 </div>
               ))}
             </div>
@@ -265,7 +265,7 @@ function EmrContent({ visit, udid, localResults, onAttach }: {
           {/* Anterior Segment */}
           {ant && (reAnt || leAnt) && (
             <div className="mb-3">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-1.5">Anterior Segment</p>
+              <p className="text-caption font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-1.5">Anterior Segment</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {reAnt && <div><p className="text-xs font-semibold text-[var(--color-ink-500)] mb-1">Right Eye</p>{Object.entries(reAnt).map(([k, v]: any) => v ? <Row key={k} label={k} value={v} /> : null)}</div>}
                 {leAnt && <div><p className="text-xs font-semibold text-[var(--color-ink-500)] mb-1">Left Eye</p>{Object.entries(leAnt).map(([k, v]: any) => v ? <Row key={k} label={k} value={v} /> : null)}</div>}
@@ -276,7 +276,7 @@ function EmrContent({ visit, udid, localResults, onAttach }: {
           {/* Posterior Segment */}
           {pos && (rePos || lePos) && (
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-1.5">Posterior Segment</p>
+              <p className="text-caption font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-1.5">Posterior Segment</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {rePos && <div><p className="text-xs font-semibold text-[var(--color-ink-500)] mb-1">Right Eye</p>{Object.entries(rePos).map(([k, v]: any) => v ? <Row key={k} label={k} value={v} /> : null)}</div>}
                 {lePos && <div><p className="text-xs font-semibold text-[var(--color-ink-500)] mb-1">Left Eye</p>{Object.entries(lePos).map(([k, v]: any) => v ? <Row key={k} label={k} value={v} /> : null)}</div>}
@@ -303,7 +303,7 @@ function EmrContent({ visit, udid, localResults, onAttach }: {
                     <span className="ml-auto flex items-center gap-1.5">
                       {resultUrl ? (
                         <>
-                          <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700">
+                          <span className="inline-flex items-center gap-1 text-caption font-medium px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700">
                             <CheckCircle2 size={10} /> Result Uploaded
                           </span>
                           <a href={resultUrl} target="_blank" rel="noreferrer"
@@ -315,7 +315,7 @@ function EmrContent({ visit, udid, localResults, onAttach }: {
                       ) : (
                         <>
                           <InvUploadButton orderId={o.id} udid={udid} onDone={(url) => onAttach(o.id, url)} />
-                          <span className={`text-[11px] px-2 py-0.5 rounded-full font-semibold ${
+                          <span className={`text-caption px-2 py-0.5 rounded-full font-semibold ${
                             o.status === "COMPLETED" ? "bg-emerald-50 text-emerald-700"
                             : o.status === "ORDERED" ? "bg-blue-50 text-blue-700"
                             : "bg-amber-50 text-amber-700"
@@ -328,7 +328,7 @@ function EmrContent({ visit, udid, localResults, onAttach }: {
                   </div>
                   {resultUrl && (
                     <div className="ml-1 pl-3 border-l-2 border-[var(--color-primary-200)]">
-                      <p className="text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-wide mb-1">{o.testName} Result</p>
+                      <p className="text-caption font-semibold text-[var(--color-ink-400)] uppercase tracking-wide mb-1">{o.testName} Result</p>
                       {isImage ? (
                         <a href={resultUrl} target="_blank" rel="noreferrer">
                           <img src={resultUrl} alt={`${o.testName} result`}
@@ -357,7 +357,7 @@ function EmrContent({ visit, udid, localResults, onAttach }: {
               <li key={d.id} className="flex flex-wrap items-center gap-2 py-1.5 border-b border-[var(--color-border)] last:border-0">
                 {d.laterality && <span className="clinical-diagnosis-text clinical-laterality text-xs shrink-0">{d.laterality}</span>}
                 <span className="clinical-diagnosis-text flex-1">{d.description}</span>
-                {d.icd10Code && <span className="font-mono text-[10px] text-[var(--color-ink-400)]">{d.icd10Code}</span>}
+                {d.icd10Code && <span className="font-mono text-caption text-[var(--color-ink-400)]">{d.icd10Code}</span>}
               </li>
             ))}
           </ul>
@@ -375,13 +375,13 @@ function EmrContent({ visit, udid, localResults, onAttach }: {
           )}
           {visit.procedureNotes && (
             <div className="bg-[var(--color-surface-sunken)] rounded-lg p-2.5 mt-1">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-1">Procedure Notes</p>
+              <p className="text-caption font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-1">Procedure Notes</p>
               <p className="text-xs leading-relaxed text-[var(--color-ink-700)]">{visit.procedureNotes}</p>
             </div>
           )}
           {visit.surgeryAdvised && (
             <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-amber-700 mb-1">Surgery Advised</p>
+              <p className="text-caption font-bold uppercase tracking-widest text-amber-700 mb-1">Surgery Advised</p>
               {visit.advisedSurgeryName && <Row label="Procedure" value={`${visit.advisedSurgeryEye ? `[${visit.advisedSurgeryEye}] ` : ""}${visit.advisedSurgeryName}`} />}
               {visit.advisedSurgeryDate && <Row label="Target Date" value={format(new Date(visit.advisedSurgeryDate), "dd MMM yyyy")} />}
               {visit.advisedSurgeryNotes && <Row label="Notes" value={visit.advisedSurgeryNotes} />}
@@ -396,7 +396,7 @@ function EmrContent({ visit, udid, localResults, onAttach }: {
           <ul className="flex flex-col divide-y divide-[var(--color-border)]">
             {meds.map((m: any, i: number) => (
               <li key={m.id} className="flex items-start gap-2.5 py-2 first:pt-0 last:pb-0">
-                <span className="text-[10px] text-[var(--color-ink-400)] tabular-nums w-5 shrink-0 mt-0.5">{i + 1}.</span>
+                <span className="text-caption text-[var(--color-ink-400)] tabular-nums w-5 shrink-0 mt-0.5">{i + 1}.</span>
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-[var(--color-ink-900)] text-sm leading-snug">
                     {m.laterality && <span className="font-bold text-[var(--color-primary-700)] mr-1.5">{m.laterality}</span>}
@@ -420,13 +420,13 @@ function EmrContent({ visit, udid, localResults, onAttach }: {
         <Section title="Clinical Notes &amp; Doctor's Advice" icon={<BookOpen size={12} />}>
           {visit.adviseNotes && (
             <div className="mb-2">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-1">Advice / Instructions</p>
+              <p className="text-caption font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-1">Advice / Instructions</p>
               <p className="text-xs leading-relaxed text-[var(--color-ink-700)]">{visit.adviseNotes}</p>
             </div>
           )}
           {visit.gonioNotes && (
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-1">Gonioscopy Notes</p>
+              <p className="text-caption font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-1">Gonioscopy Notes</p>
               <p className="text-xs leading-relaxed text-[var(--color-ink-700)]">{visit.gonioNotes}</p>
             </div>
           )}
@@ -440,17 +440,17 @@ function EmrContent({ visit, udid, localResults, onAttach }: {
             <div className="flex items-center gap-2 mb-2 rounded-lg bg-[var(--color-primary-50)] border border-[var(--color-primary-100)] px-3 py-2">
               <Calendar size={13} className="shrink-0 text-[var(--color-primary-600)]" />
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-primary-700)]">Next Appointment</p>
+                <p className="text-caption font-bold uppercase tracking-widest text-[var(--color-primary-700)]">Next Appointment</p>
                 <p className="text-sm font-semibold text-[var(--color-primary-800)]">
                   {format(new Date(visit.followUpDate), "dd MMM yyyy")}
-                  {visit.followUpCompleted && <span className="ml-2 text-[10px] font-bold text-emerald-600">· Completed</span>}
+                  {visit.followUpCompleted && <span className="ml-2 text-caption font-bold text-emerald-600">· Completed</span>}
                 </p>
               </div>
             </div>
           )}
           {visit.referralEnabled && visit.referralNote && (
             <div className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-blue-700 mb-1">Referral</p>
+              <p className="text-caption font-bold uppercase tracking-widest text-blue-700 mb-1">Referral</p>
               <p className="text-xs leading-relaxed text-blue-800">{visit.referralNote}</p>
             </div>
           )}
@@ -479,8 +479,8 @@ function EmrContent({ visit, udid, localResults, onAttach }: {
 function VitalCard({ label, value, unit }: { label: string; value: string; unit: string }) {
   return (
     <div className="bg-[var(--color-surface-sunken)] rounded-lg px-3 py-2 text-center">
-      <p className="text-[10px] text-[var(--color-ink-400)] mb-0.5">{label}</p>
-      <p className="font-semibold text-[var(--color-ink-800)] text-sm">{value}{unit ? <span className="text-[10px] font-normal text-[var(--color-ink-400)] ml-0.5">{unit}</span> : null}</p>
+      <p className="text-caption text-[var(--color-ink-400)] mb-0.5">{label}</p>
+      <p className="font-semibold text-[var(--color-ink-800)] text-sm">{value}{unit ? <span className="text-caption font-normal text-[var(--color-ink-400)] ml-0.5">{unit}</span> : null}</p>
     </div>
   );
 }

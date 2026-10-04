@@ -12,7 +12,7 @@ import { searchPatientsAutocomplete, type PatientSearchResult } from "@/app/(app
 import { formatComplaintDisplay } from "@/lib/appointment-cc";
 
 const BACK_BTN_CLS =
-  "group inline-flex items-center gap-1.5 h-8 pl-3 pr-3 sm:pl-2 sm:pr-3 rounded-lg border border-[var(--color-border)] bg-white text-[13px] sm:text-sm font-medium text-[var(--color-ink-600)] hover:text-[var(--color-primary-700)] hover:border-[var(--color-primary-300)] hover:bg-[var(--color-primary-50)] active:scale-[0.97] transition-all duration-150";
+  "group inline-flex items-center gap-1.5 h-8 pl-3 pr-3 sm:pl-2 sm:pr-3 rounded-lg border border-[var(--color-border)] bg-white text-label sm:text-sm font-medium text-[var(--color-ink-600)] hover:text-[var(--color-primary-700)] hover:border-[var(--color-primary-300)] hover:bg-[var(--color-primary-50)] active:scale-[0.97] transition-all duration-150";
 
 const BackBtnContent = () => (
   <>
@@ -92,16 +92,16 @@ function BellDropdown({ items, onRead, onMarkAll, dropdownRef, style }: {
       }}
     >
       <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--color-border)]">
-        <span className="text-[11px] sm:text-sm font-semibold text-[var(--color-ink-800)]">Notifications</span>
+        <span className="text-caption sm:text-sm font-semibold text-[var(--color-ink-800)]">Notifications</span>
         {items.length > 0 && (
-          <span className="text-[10px] sm:text-xs font-semibold text-red-500">{items.length} unread</span>
+          <span className="text-caption sm:text-xs font-semibold text-red-500">{items.length} unread</span>
         )}
       </div>
 
       {items.length === 0 ? (
         <div className="px-4 py-8 text-center">
           <Bell size={20} className="mx-auto mb-2 text-[var(--color-ink-300)]" />
-          <p className="text-[11px] sm:text-sm text-[var(--color-ink-400)]">No new notifications</p>
+          <p className="text-caption sm:text-sm text-[var(--color-ink-400)]">No new notifications</p>
         </div>
       ) : (
         <ul className="max-h-72 overflow-y-auto divide-y divide-[var(--color-border)]">
@@ -119,8 +119,8 @@ function BellDropdown({ items, onRead, onMarkAll, dropdownRef, style }: {
                   <Bell size={13} className="text-[var(--color-primary-600)]" />
                 </span>
                 <span className="flex-1 min-w-0">
-                  <span className="block text-[11px] sm:text-sm text-[var(--color-ink-800)] leading-snug">{item.message}</span>
-                  <span className="block text-[10px] sm:text-xs text-[var(--color-ink-400)] mt-0.5">{timeAgo(item.createdAt)}</span>
+                  <span className="block text-caption sm:text-sm text-[var(--color-ink-800)] leading-snug">{item.message}</span>
+                  <span className="block text-caption sm:text-xs text-[var(--color-ink-400)] mt-0.5">{timeAgo(item.createdAt)}</span>
                 </span>
               </button>
             </li>
@@ -131,14 +131,14 @@ function BellDropdown({ items, onRead, onMarkAll, dropdownRef, style }: {
       <div className="px-4 py-2.5 border-t border-[var(--color-border)] flex items-center justify-between gap-2">
         <Link
           href="/notifications"
-          className="text-[10px] sm:text-xs font-medium text-[var(--color-primary-600)] hover:underline"
+          className="text-caption sm:text-xs font-medium text-[var(--color-primary-600)] hover:underline"
         >
           View all notifications →
         </Link>
         {items.length > 0 && (
           <button
             onClick={onMarkAll}
-            className="text-[10px] sm:text-xs font-medium text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)] transition-colors"
+            className="text-caption sm:text-xs font-medium text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)] transition-colors"
           >
             Mark all read
           </button>
@@ -376,9 +376,9 @@ export function TopBar({ name, role }: { name: string; role: string }) {
               aria-autocomplete="list"
               aria-expanded={acOpen}
               aria-activedescendant={acIndex >= 0 ? `ac-item-${acIndex}` : undefined}
-              className="w-full pl-8 pr-3 lg:pr-10 py-1 sm:py-1.5 text-[10px] placeholder:text-[10px] sm:text-sm sm:placeholder:text-sm bg-[var(--color-surface-sunken)] border border-[var(--color-border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] focus:bg-white transition-colors"
+              className="w-full pl-8 pr-3 lg:pr-10 py-1 sm:py-1.5 text-caption placeholder:text-caption sm:text-sm sm:placeholder:text-sm bg-[var(--color-surface-sunken)] border border-[var(--color-border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] focus:bg-white transition-colors"
             />
-            <kbd className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-medium text-[var(--color-ink-400)] bg-white border border-[var(--color-border)] rounded px-1 py-0.5 pointer-events-none hidden lg:block">
+            <kbd className="absolute right-2 top-1/2 -translate-y-1/2 text-caption font-medium text-[var(--color-ink-400)] bg-white border border-[var(--color-border)] rounded px-1 py-0.5 pointer-events-none hidden lg:block">
               ⌘K
             </kbd>
 
@@ -410,12 +410,12 @@ export function TopBar({ name, role }: { name: string; role: string }) {
                       }`}
                     >
                       <span className="flex items-center gap-2 min-w-0">
-                        <span className="text-[12px] sm:text-sm font-semibold text-[var(--color-ink-800)] truncate">{r.name}</span>
-                        <span className="text-[10px] sm:text-xs text-[var(--color-ink-400)] shrink-0">{r.udid}</span>
-                        <span className="text-[10px] sm:text-xs text-[var(--color-ink-400)] shrink-0 hidden sm:inline">{r.mobile}</span>
+                        <span className="text-caption sm:text-sm font-semibold text-[var(--color-ink-800)] truncate">{r.name}</span>
+                        <span className="text-caption sm:text-xs text-[var(--color-ink-400)] shrink-0">{r.udid}</span>
+                        <span className="text-caption sm:text-xs text-[var(--color-ink-400)] shrink-0 hidden sm:inline">{r.mobile}</span>
                       </span>
                       {r.matchText && (r.matchType === "complaint" || r.matchType === "diagnosis") && (
-                        <span className={`${r.matchType === "diagnosis" ? "clinical-diagnosis-text" : "clinical-complaint-text"} text-[10px] sm:text-xs truncate`}>
+                        <span className={`${r.matchType === "diagnosis" ? "clinical-diagnosis-text" : "clinical-complaint-text"} text-caption sm:text-xs truncate`}>
                           {r.matchType === "diagnosis" ? `Dx: ${r.matchText}` : `CC: ${formatComplaintDisplay(r.matchText)}`}
                         </span>
                       )}
@@ -427,7 +427,7 @@ export function TopBar({ name, role }: { name: string; role: string }) {
 
             {acOpen && !acLoading && q.trim().length >= 2 && acResults.length === 0 && (
               <div
-                className="absolute left-0 right-0 top-full mt-1 z-50 bg-white rounded-xl border border-[var(--color-border)] px-3 py-4 text-center text-[11px] sm:text-xs text-[var(--color-ink-400)]"
+                className="absolute left-0 right-0 top-full mt-1 z-50 bg-white rounded-xl border border-[var(--color-border)] px-3 py-4 text-center text-caption sm:text-xs text-[var(--color-ink-400)]"
                 style={{ boxShadow: "0 8px 30px -8px rgba(0,0,0,0.18)" }}
               >
                 No patients found for "{q.trim()}"
@@ -458,7 +458,7 @@ export function TopBar({ name, role }: { name: string; role: string }) {
           >
             <Bell size={17} className="w-[14px] h-[14px] sm:w-[17px] sm:h-[17px]" />
             {unreadCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 h-4 min-w-4 flex items-center justify-center rounded-full bg-red-500 text-white text-[9px] sm:text-[10px] font-bold px-1 leading-none">
+              <span className="absolute -top-0.5 -right-0.5 h-4 min-w-4 flex items-center justify-center rounded-full bg-red-500 text-white text-micro sm:text-caption font-bold px-1 leading-none">
                 {unreadCount > 9 ? "9+" : unreadCount}
               </span>
             )}
@@ -478,13 +478,13 @@ export function TopBar({ name, role }: { name: string; role: string }) {
           <div className="size-8 rounded-full bg-[var(--color-primary-700)] flex items-center justify-center text-white text-xs font-bold select-none shrink-0">
             {initials}
           </div>
-          <span className="hidden sm:block text-[13px] sm:text-sm font-medium text-[var(--color-ink-800)]">{name}</span>
+          <span className="hidden sm:block text-label sm:text-sm font-medium text-[var(--color-ink-800)]">{name}</span>
         </div>
 
         {/* Sign out */}
         <button
           onClick={() => signOut({ callbackUrl: "/login" })}
-          className="flex items-center gap-1.5 text-[13px] sm:text-sm text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)] transition-colors"
+          className="flex items-center gap-1.5 text-label sm:text-sm text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)] transition-colors"
           title="Sign out"
         >
           <LogOut size={15} />

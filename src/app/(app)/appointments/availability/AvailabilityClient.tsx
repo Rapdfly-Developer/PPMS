@@ -86,8 +86,8 @@ function Modal({ title, sub, onClose, children }: { title: string; sub?: string;
         <div className="flex items-center justify-between px-6 py-4 rounded-t-2xl"
           style={{ background: "linear-gradient(135deg,#0F4039,var(--color-primary-600))" }}>
           <div>
-            <p className="font-bold text-white text-[15px]">{title}</p>
-            {sub && <p className="text-[11px] text-white/60 mt-0.5">{sub}</p>}
+            <p className="font-bold text-white text-heading-sm">{title}</p>
+            {sub && <p className="text-caption text-white/60 mt-0.5">{sub}</p>}
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors"><X size={15} /></button>
         </div>
@@ -137,7 +137,7 @@ function HospChip({ hospitalId, hospitals, small = false, isExtra = false }: {
   const color = getColor(idx);
   const name  = hospitals.find(h => h.id === hospitalId)?.name ?? "?";
   const code  = hospCode(name);
-  const sz    = small ? "text-[9px] px-1 py-0.5" : "text-[11px] px-2 py-0.5";
+  const sz    = small ? "text-micro px-1 py-0.5" : "text-caption px-2 py-0.5";
   return (
     <span className={`inline-flex items-center gap-1 rounded-md font-bold text-white truncate ${sz}`}
       style={{ background: color.bg }} title={name}>
@@ -217,7 +217,7 @@ function EditSlotModal({ hospitals, slot, weekly, onClose }: {
           {[{ val: total, lbl: "Slots" }, { val: total * maxPat, lbl: "Max Patients" }, { val: `${fmt12(startTime)}–${fmt12(endTime)}`, lbl: WEEKDAYS_FULL[slot.weekday] }].map((item, i) => (
             <div key={i} className={`text-center px-2 ${i > 0 ? "border-l border-[var(--color-primary-100)]" : ""}`}>
               <p className="text-sm font-bold text-[var(--color-primary-800)]">{item.val}</p>
-              <p className="text-[11px] text-[var(--color-primary-600)] mt-0.5">{item.lbl}</p>
+              <p className="text-caption text-[var(--color-primary-600)] mt-0.5">{item.lbl}</p>
             </div>
           ))}
         </div>
@@ -323,7 +323,7 @@ function AddWeeklySlotModal({ hospitals, weekly, preWeekday, onClose }: {
         <div className="flex items-center justify-between mb-1.5">
           <label className={LBL + " mb-0"}>Days</label>
           <button type="button" onClick={toggleAll}
-            className="text-[11px] font-semibold text-[var(--color-primary-600)] hover:underline">
+            className="text-caption font-semibold text-[var(--color-primary-600)] hover:underline">
             {allSelected ? "Deselect All" : "All Days"}
           </button>
         </div>
@@ -347,7 +347,7 @@ function AddWeeklySlotModal({ hospitals, weekly, preWeekday, onClose }: {
           })}
         </div>
         {selDays.size === 0 && (
-          <p className="text-[11px] text-[var(--color-ink-400)] mt-1.5">Select at least one day</p>
+          <p className="text-caption text-[var(--color-ink-400)] mt-1.5">Select at least one day</p>
         )}
       </div>
 
@@ -372,12 +372,12 @@ function AddWeeklySlotModal({ hospitals, weekly, preWeekday, onClose }: {
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 flex flex-col gap-1.5">
           <p className="text-xs font-bold text-red-700 flex items-center gap-1.5"><AlertTriangle size={13} /> Time conflicts detected</p>
           {blockedDays.map(d => (
-            <p key={d} className="text-[11px] text-red-600">
+            <p key={d} className="text-caption text-red-600">
               <span className="font-semibold">{WEEKDAYS_FULL[d]}</span> - already has {collisions[d]}
             </p>
           ))}
           {cleanDays.length > 0 && (
-            <p className="text-[11px] text-red-500 mt-0.5">Deselect conflicted days or adjust the time before saving.</p>
+            <p className="text-caption text-red-500 mt-0.5">Deselect conflicted days or adjust the time before saving.</p>
           )}
         </div>
       )}
@@ -392,7 +392,7 @@ function AddWeeklySlotModal({ hospitals, weekly, preWeekday, onClose }: {
           ].map((item, i) => (
             <div key={i} className={`text-center px-2 ${i > 0 ? "border-l border-[var(--color-primary-100)]" : ""}`}>
               <p className="text-sm font-bold text-[var(--color-primary-800)]">{item.val}</p>
-              <p className="text-[11px] text-[var(--color-primary-600)] mt-0.5">{item.lbl}</p>
+              <p className="text-caption text-[var(--color-primary-600)] mt-0.5">{item.lbl}</p>
             </div>
           ))}
         </div>
@@ -496,7 +496,7 @@ function TemplateTab({ weekly, hospitals, onGenerate }: {
 
                     {/* Day header */}
                     <div className="relative flex flex-col items-center gap-1 px-2 pt-3 pb-3 border-b border-[var(--color-border)]">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">
+                      <p className="text-caption font-bold uppercase tracking-wider text-[var(--color-ink-400)]">
                         {WEEKDAYS[wd].toUpperCase()}
                       </p>
                       <span className={`flex items-center justify-center tabular-nums leading-none ${
@@ -506,8 +506,8 @@ function TemplateTab({ weekly, hospitals, onGenerate }: {
                       }`}>
                         {dayNum}
                       </span>
-                      <p className="text-[10px] text-[var(--color-ink-400)]">{monLbl}</p>
-                      <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                      <p className="text-caption text-[var(--color-ink-400)]">{monLbl}</p>
+                      <span className={`text-caption font-semibold px-2 py-0.5 rounded-full ${
                         today
                           ? "bg-[var(--color-primary-100)] text-[var(--color-primary-700)]"
                           : "bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)]"
@@ -538,12 +538,12 @@ function TemplateTab({ weekly, hospitals, onGenerate }: {
 
                             {/* Hospital + status */}
                             <div className="flex items-center gap-1.5">
-                              <span className="inline-flex items-center gap-1 min-w-0 px-1.5 py-0.5 rounded-md text-[9px] font-bold text-white"
+                              <span className="inline-flex items-center gap-1 min-w-0 px-1.5 py-0.5 rounded-md text-micro font-bold text-white"
                                 style={{ background: c.bg }}>
                                 <Building2 size={9} strokeWidth={2.5} className="shrink-0" />
                                 <span className="truncate">{slot.hospital.name}</span>
                               </span>
-                              <span className={`ml-auto shrink-0 text-[8px] font-bold tracking-wide px-1.5 py-0.5 rounded-md ${
+                              <span className={`ml-auto shrink-0 text-micro font-bold tracking-wide px-1.5 py-0.5 rounded-md ${
                                 active ? "bg-emerald-100 text-emerald-700" : "bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)]"
                               }`}>
                                 {active ? "ACTIVE" : "PAUSED"}
@@ -551,16 +551,16 @@ function TemplateTab({ weekly, hospitals, onGenerate }: {
                             </div>
 
                             {/* Date */}
-                            <p className="text-[10px] text-[var(--color-ink-400)] tabular-nums">{fullLbl}</p>
+                            <p className="text-caption text-[var(--color-ink-400)] tabular-nums">{fullLbl}</p>
 
                             {/* Time range */}
-                            <p className="flex items-center gap-1 text-[11px] font-bold tabular-nums whitespace-nowrap" style={{ color: c.text }}>
+                            <p className="flex items-center gap-1 text-caption font-bold tabular-nums whitespace-nowrap" style={{ color: c.text }}>
                               <Clock size={10} strokeWidth={2.5} className="shrink-0" />
                               {fmt12(slot.startTime)} – {fmt12(slot.endTime)}
                             </p>
 
                             {/* Meta */}
-                            <div className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[10px] text-[var(--color-ink-500)]">
+                            <div className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-caption text-[var(--color-ink-500)]">
                               <span className="inline-flex items-center gap-1"><Timer size={9} className="shrink-0" />{slot.slotMins} min</span>
                               <span className="inline-flex items-center gap-1"><Layers size={9} className="shrink-0" />{slotsCount(slot.startTime, slot.endTime, slot.slotMins)} slots</span>
                               <span className="inline-flex items-center gap-1"><Users size={9} className="shrink-0" />{slot.maxPatients}/slot</span>
@@ -995,7 +995,7 @@ function DayPopup({ dateStr, dayData, hospitals, onClose, onRefresh }: {
           <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--color-border)]">
             <div>
               <p className="font-bold text-[var(--color-ink-900)] text-sm">{fmtFullDate(dateStr)}</p>
-              <p className="text-[11px] text-[var(--color-ink-400)] mt-0.5">
+              <p className="text-caption text-[var(--color-ink-400)] mt-0.5">
                 {leave ? "Leave applied" : slots.length > 0 ? `${slots.length} session${slots.length > 1 ? "s" : ""}` : "No schedule"}
               </p>
             </div>
@@ -1010,11 +1010,11 @@ function DayPopup({ dateStr, dayData, hospitals, onClose, onRefresh }: {
                   <p className="text-xs font-bold text-red-700">
                     {leave.type === "HALF_DAY" ? `Half Day Leave: ${leave.halfPeriod === "MORNING" ? "Morning" : "Afternoon"}` : "Full Day Leave"}
                   </p>
-                  {leave.reason && <p className="text-[11px] text-red-500 mt-0.5">{leave.reason}</p>}
+                  {leave.reason && <p className="text-caption text-red-500 mt-0.5">{leave.reason}</p>}
                 </div>
                 <button disabled={pending}
                   onClick={() => start(async () => { await cancelScheduleException(leave.id); onRefresh(); onClose(); })}
-                  className="text-[11px] font-semibold text-red-600 hover:text-red-800 transition-colors px-2 py-1 rounded-lg hover:bg-red-100">
+                  className="text-caption font-semibold text-red-600 hover:text-red-800 transition-colors px-2 py-1 rounded-lg hover:bg-red-100">
                   {pending ? <Loader2 size={12} className="animate-spin" /> : "Cancel"}
                 </button>
               </div>
@@ -1028,17 +1028,17 @@ function DayPopup({ dateStr, dayData, hospitals, onClose, onRefresh }: {
                   const color = getColor(idx);
                   return (
                     <div key={slot.id} className="flex items-center gap-2.5 p-2.5 rounded-xl bg-[var(--color-surface-sunken)]/50 border border-[var(--color-border)]">
-                      <div className="w-9 h-9 rounded-lg flex items-center justify-center text-[10px] font-extrabold text-white shrink-0"
+                      <div className="w-9 h-9 rounded-lg flex items-center justify-center text-caption font-bold text-white shrink-0"
                         style={{ background: color.bg }}>
                         {hospCode(slot.hospitalName)}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5">
                           <p className="text-xs font-semibold text-[var(--color-ink-900)] truncate">{slot.hospitalName}</p>
-                          {slot.source === "extra_op" && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">Extra</span>}
-                          {slot.isModified && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700">Edited</span>}
+                          {slot.source === "extra_op" && <span className="text-micro font-bold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">Extra</span>}
+                          {slot.isModified && <span className="text-micro font-bold px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700">Edited</span>}
                         </div>
-                        <p className="text-[11px] text-[var(--color-ink-500)] tabular-nums">{fmt12(slot.startTime)} – {fmt12(slot.endTime)} · {slot.slotMins}m · {slot.maxPatients}p</p>
+                        <p className="text-caption text-[var(--color-ink-500)] tabular-nums">{fmt12(slot.startTime)} – {fmt12(slot.endTime)} · {slot.slotMins}m · {slot.maxPatients}p</p>
                       </div>
                       <div className="flex gap-0.5 shrink-0">
                         {slot.source === "generated" && (
@@ -1102,7 +1102,7 @@ function DayPopup({ dateStr, dayData, hospitals, onClose, onRefresh }: {
 // Legend
 function Legend({ hospitals }: { hospitals: Hospital[] }) {
   return (
-    <div className="flex flex-wrap items-center gap-3 text-[11px]">
+    <div className="flex flex-wrap items-center gap-3 text-caption">
       {hospitals.map((h, i) => {
         const color = getColor(i);
         return (
@@ -1153,7 +1153,7 @@ function CalendarGrid({ year, month, calData, hospitals, selectMode, selectedDat
         {/* Header */}
         <div className="grid grid-cols-7 mb-1.5">
           {WEEKDAYS.map(d => (
-            <div key={d} className="text-center text-[11px] font-bold text-[var(--color-ink-500)] uppercase tracking-wide py-1.5">{d}</div>
+            <div key={d} className="text-center text-caption font-bold text-[var(--color-ink-500)] uppercase tracking-wide py-1.5">{d}</div>
           ))}
         </div>
         {/* Grid */}
@@ -1198,20 +1198,20 @@ function CalendarGrid({ year, month, calData, hospitals, selectMode, selectedDat
 
                 {/* Content */}
                 {isLeave && !isHalfDay ? (
-                  <div className="text-[9px] font-bold text-red-600 bg-red-100 rounded px-1 py-0.5 text-center truncate">Leave</div>
+                  <div className="text-micro font-bold text-red-600 bg-red-100 rounded px-1 py-0.5 text-center truncate">Leave</div>
                 ) : isHalfDay ? (
-                  <div className="text-[9px] font-bold text-amber-700 bg-amber-100 rounded px-1 py-0.5 text-center truncate">Half Day</div>
+                  <div className="text-micro font-bold text-amber-700 bg-amber-100 rounded px-1 py-0.5 text-center truncate">Half Day</div>
                 ) : hasSlots ? (
                   <div className="flex flex-col gap-0.5">
                     {slots.slice(0, 2).map(slot => (
                       <HospChip key={slot.id} hospitalId={slot.hospitalId} hospitals={hospitals} small isExtra={slot.source === "extra_op"} />
                     ))}
                     {slots.length > 2 && (
-                      <span className="text-[8px] text-[var(--color-ink-400)] pl-0.5">+{slots.length - 2} more</span>
+                      <span className="text-micro text-[var(--color-ink-400)] pl-0.5">+{slots.length - 2} more</span>
                     )}
                   </div>
                 ) : (
-                  <div className="text-[9px] text-[var(--color-ink-300)] text-center mt-1">—</div>
+                  <div className="text-micro text-[var(--color-ink-300)] text-center mt-1">—</div>
                 )}
               </div>
             );
@@ -1478,7 +1478,7 @@ export function AvailabilityClient({
 
         <div className="relative flex flex-col sm:flex-row sm:items-start gap-4 sm:gap-6">
           <div className="flex-1 min-w-0">
-            <div className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-widest text-white/50 mb-1.5">
+            <div className="inline-flex items-center gap-2 text-caption font-semibold uppercase tracking-widest text-white/50 mb-1.5">
               <CalendarDays size={12} /> Template + Exceptions Model
             </div>
             <h1 className="text-2xl sm:text-[28px] font-bold tracking-tight leading-tight">My Availability</h1>
@@ -1498,8 +1498,8 @@ export function AvailabilityClient({
             <div key={c.label} className="rounded-2xl border border-white/10 px-4 py-3"
               style={{ background: "rgba(255,255,255,0.07)", backdropFilter: "blur(12px)" }}>
               <p className={`text-2xl font-bold tracking-tight tabular-nums ${c.teal ? "text-[#18D2C3]" : ""}`}>{c.value}</p>
-              <p className="text-[11px] font-semibold text-white/70 mt-1">{c.label}</p>
-              <p className="text-[10px] text-white/40">{c.sub}</p>
+              <p className="text-caption font-semibold text-white/70 mt-1">{c.label}</p>
+              <p className="text-caption text-white/40">{c.sub}</p>
             </div>
           ))}
         </div>
@@ -1520,7 +1520,7 @@ export function AvailabilityClient({
               }`}>
               {tab.icon}{tab.label}
               {tab.badge !== null && (
-                <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${activeTab === tab.key ? "bg-[var(--color-primary-100)] text-[var(--color-primary-700)]" : "bg-[var(--color-surface-sunken)] text-[var(--color-ink-400)]"}`}>
+                <span className={`text-caption font-bold px-2 py-0.5 rounded-full ${activeTab === tab.key ? "bg-[var(--color-primary-100)] text-[var(--color-primary-700)]" : "bg-[var(--color-surface-sunken)] text-[var(--color-ink-400)]"}`}>
                   {tab.badge}
                 </span>
               )}

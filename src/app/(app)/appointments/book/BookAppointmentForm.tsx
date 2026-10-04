@@ -490,11 +490,11 @@ export function BookAppointmentForm({
                   <div>
                     <p className="text-sm font-semibold text-[var(--color-ink-900)]">{selectedPatient.name}</p>
                     <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                      <span title="UDID (Doctor ID)" className="font-mono text-[10px] text-[#115E59] bg-[#F0F8F6] px-1.5 py-0.5 rounded">
+                      <span title="UDID (Doctor ID)" className="font-mono text-caption text-[#115E59] bg-[#F0F8F6] px-1.5 py-0.5 rounded">
                         {selectedPatient.udid}
                       </span>
                       {selectedPatient.uhid && (
-                        <span title="UHID (Hospital ID)" className="font-mono text-[10px] text-[#1E4B8F] bg-[#F0F4FA] px-1.5 py-0.5 rounded">
+                        <span title="UHID (Hospital ID)" className="font-mono text-caption text-[#1E4B8F] bg-[#F0F4FA] px-1.5 py-0.5 rounded">
                           {selectedPatient.uhid}
                         </span>
                       )}
@@ -553,9 +553,9 @@ export function BookAppointmentForm({
                             <div>
                               <p className="text-sm font-medium text-[var(--color-ink-900)]">{p.name}</p>
                               <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                                <span title="UDID (Doctor ID)" className="font-mono text-[10px] text-[#115E59] bg-[#F0F8F6] px-1.5 py-0.5 rounded">{p.udid}</span>
+                                <span title="UDID (Doctor ID)" className="font-mono text-caption text-[#115E59] bg-[#F0F8F6] px-1.5 py-0.5 rounded">{p.udid}</span>
                                 {p.uhid && (
-                                  <span title="UHID (Hospital ID)" className="font-mono text-[10px] text-[#1E4B8F] bg-[#F0F4FA] px-1.5 py-0.5 rounded">{p.uhid}</span>
+                                  <span title="UHID (Hospital ID)" className="font-mono text-caption text-[#1E4B8F] bg-[#F0F4FA] px-1.5 py-0.5 rounded">{p.uhid}</span>
                                 )}
                                 <span className="text-xs text-[var(--color-ink-400)]">{p.age ?? "?"}y {p.sex.charAt(0)}</span>
                                 <span className="text-[var(--color-ink-300)] text-xs">·</span>
@@ -776,7 +776,7 @@ export function BookAppointmentForm({
                           >
                             {to12h(t)}
                             {cap > 1 && (
-                              <span className="ml-1 text-[10px] opacity-70">{count}/{cap}</span>
+                              <span className="ml-1 text-caption opacity-70">{count}/{cap}</span>
                             )}
                           </button>
                         );
@@ -823,7 +823,7 @@ export function BookAppointmentForm({
               <div className="flex items-center justify-between mb-1.5">
                 <FieldLabel icon={<FileText size={12} />}>Chief Complaint *</FieldLabel>
                 {followUpBase && (
-                  <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-teal-50 border border-teal-200 text-teal-700">
+                  <span className="text-caption font-medium px-2 py-0.5 rounded-full bg-teal-50 border border-teal-200 text-teal-700">
                     Auto-filled from previous visit
                   </span>
                 )}

@@ -27,9 +27,9 @@ interface Props {
    Rows carry no rules; separation comes from row padding alone.               */
 
 export const TH =
-  "pb-2 pr-4 text-left align-bottom text-[9px] font-bold uppercase tracking-widest text-[var(--color-ink-400)]";
-export const TD = "py-1.5 pr-4 align-top text-[10px] sm:text-[11px] leading-snug text-[var(--color-ink-700)]";
-export const TD_MUTED = "py-1.5 pr-4 align-top text-[10px] sm:text-[11px] leading-snug text-[var(--color-ink-500)]";
+  "pb-2 pr-4 text-left align-bottom text-micro font-bold uppercase tracking-widest text-[var(--color-ink-400)]";
+export const TD = "py-1.5 pr-4 align-top text-caption sm:text-caption leading-snug text-[var(--color-ink-700)]";
+export const TD_MUTED = "py-1.5 pr-4 align-top text-caption sm:text-caption leading-snug text-[var(--color-ink-500)]";
 
 /** Wraps a table so narrow screens scroll it rather than crushing the columns. */
 export function DataTable({
@@ -52,7 +52,7 @@ function SectionLabel({ icon, label }: { icon?: React.ReactNode; label: string }
   return (
     <div className="flex items-center gap-1.5 mb-1">
       {icon}
-      <span className="text-[9px] sm:text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-[var(--color-ink-400)]">
+      <span className="text-micro sm:text-micro sm:text-caption font-bold uppercase tracking-widest text-[var(--color-ink-400)]">
         {label}
       </span>
     </div>
@@ -83,7 +83,7 @@ function EmptyNote({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex items-start gap-2.5 py-2 px-3 rounded-xl bg-[var(--color-surface-sunken)]">
       <AlertCircle size={13} className="shrink-0 mt-0.5 text-[var(--color-ink-300)]" />
-      <p className="text-[10px] sm:text-[11px] text-[var(--color-ink-400)]">{children}</p>
+      <p className="text-caption sm:text-caption text-[var(--color-ink-400)]">{children}</p>
     </div>
   );
 }
@@ -247,7 +247,7 @@ export function VisitSummaryTabBar({
           className={`
             relative flex items-center gap-0.5 rounded
             transition-all duration-150 disabled:cursor-not-allowed
-            ${compact ? "px-2 py-0.5 text-[9px] sm:text-[10px]" : "px-3 py-1.5 text-[10px] sm:text-[11px]"}
+            ${compact ? "px-2 py-0.5 text-micro sm:text-caption" : "px-3 py-1.5 text-caption sm:text-caption"}
             font-semibold
             ${tab === t
               ? t === "ai"
@@ -305,7 +305,7 @@ export function VisitSummaryTabBody({
   const shortEmrData = emrData ?? shortData ?? null;
   if (loading) {
     return (
-      <div className="flex items-center gap-2 py-2 text-[10px] sm:text-[11px] text-[var(--color-ink-400)]">
+      <div className="flex items-center gap-2 py-2 text-caption sm:text-caption text-[var(--color-ink-400)]">
         <Loader2 size={13} className="animate-spin shrink-0" />
         {tab === "ai" ? "Generating AI summary…" : "Loading visit details…"}
       </div>
@@ -346,7 +346,7 @@ function SumHead({ icon, label, color = "text-[var(--color-ink-400)]" }: { icon:
   return (
     <div className="flex items-center gap-1.5 mb-2">
       <span className={color}>{icon}</span>
-      <span className="text-[9px] font-black uppercase tracking-[0.16em] text-[var(--color-ink-400)]">{label}</span>
+      <span className="text-micro font-bold uppercase tracking-[0.16em] text-[var(--color-ink-400)]">{label}</span>
     </div>
   );
 }
@@ -381,7 +381,7 @@ function ShortContent({ complaint, diagnoses, emrData }: {
           <SumHead icon={<Stethoscope size={11} />} label="Diagnosis" color="clinical-diagnosis-text" />
           <div className="flex flex-wrap gap-1.5">
             {diagnoses.map((d, i) => (
-              <span key={i} className="clinical-diagnosis-chip inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-[10px] sm:text-[11px]">
+              <span key={i} className="clinical-diagnosis-chip inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-caption sm:text-caption">
                 <span className="w-1.5 h-1.5 rounded-full bg-current shrink-0" />{d}
               </span>
             ))}
@@ -396,14 +396,14 @@ function ShortContent({ complaint, diagnoses, emrData }: {
           <div className="space-y-1">
             {emrData.medications.map((m: any, i: number) => (
               <div key={i} className="flex items-start gap-2 py-1.5 border-b border-[var(--color-border)] last:border-0">
-                <span className="text-[10px] text-[var(--color-ink-400)] tabular-nums w-4 shrink-0 mt-0.5">{i + 1}.</span>
+                <span className="text-caption text-[var(--color-ink-400)] tabular-nums w-4 shrink-0 mt-0.5">{i + 1}.</span>
                 <div className="min-w-0">
-                  <span className="text-[11px] sm:text-[12px] font-semibold text-[var(--color-ink-800)]">
+                  <span className="text-caption sm:text-caption font-semibold text-[var(--color-ink-800)]">
                     {m.laterality && <span className="text-[var(--color-primary-700)] mr-1">{m.laterality}</span>}
                     {m.drugName}
                   </span>
                   {(m.dosage || m.frequency || m.duration) && (
-                    <span className="text-[10px] sm:text-[11px] text-[var(--color-ink-500)] ml-2">
+                    <span className="text-caption sm:text-caption text-[var(--color-ink-500)] ml-2">
                       {[m.dosage, m.frequency, m.duration].filter(Boolean).join(" · ")}
                     </span>
                   )}
@@ -420,7 +420,7 @@ function ShortContent({ complaint, diagnoses, emrData }: {
           <SumHead icon={<CalendarClock size={11} />} label="Pending Follow-Up" color="text-blue-500" />
           <div className="flex flex-wrap gap-1.5">
             {followUpInv.map((o: any, i: number) => (
-              <span key={i} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-50 border border-blue-200 text-blue-800 text-[10px] sm:text-[11px] font-medium">
+              <span key={i} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-50 border border-blue-200 text-blue-800 text-caption sm:text-caption font-medium">
                 {o.laterality && <span className="font-bold text-[var(--color-primary-700)]">{o.laterality}</span>}
                 {o.testName}
                 {o.notes && <span className="italic font-normal text-blue-600/70"> · {o.notes}</span>}
@@ -482,7 +482,7 @@ class LongContentBoundary extends Component<{ children: ReactNode }, { error: st
   render() {
     if (this.state.error) {
       return (
-        <div className="flex items-start gap-2 p-3 rounded-xl bg-red-50 text-[10px] sm:text-[11px] text-red-700">
+        <div className="flex items-start gap-2 p-3 rounded-xl bg-red-50 text-caption sm:text-caption text-red-700">
           <AlertCircle size={12} className="shrink-0 mt-0.5" />
           <span>Could not render detailed summary. Open browser console for details.</span>
         </div>
@@ -586,22 +586,22 @@ function LongContent({
       {(data.visitType || g?.chiefComplaint || g?.hpi) && (
         <LongSection head={<SumHead icon={<ClipboardList size={11} />} label="Visit Details" />}>
           {data.visitType && (
-            <span className="inline-block px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-medium bg-[var(--color-primary-50)] text-[var(--color-primary-600)]">
+            <span className="inline-block px-2 py-0.5 rounded-full text-caption sm:text-caption font-medium bg-[var(--color-primary-50)] text-[var(--color-primary-600)]">
               {data.visitType}
             </span>
           )}
 
           {g?.chiefComplaint && (
             <div>
-              <p className="text-[9px] font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-1.5">Chief Complaint</p>
+              <p className="text-micro font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-1.5">Chief Complaint</p>
               <ComplaintChips value={g.chiefComplaint} wrap />
             </div>
           )}
 
           {g?.hpi && (
             <div>
-              <p className="text-[9px] font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-1">History of Present Illness</p>
-              <p className="text-[10px] sm:text-[11px] leading-relaxed text-[var(--color-ink-700)]">{g.hpi}</p>
+              <p className="text-micro font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-1">History of Present Illness</p>
+              <p className="text-caption sm:text-caption leading-relaxed text-[var(--color-ink-700)]">{g.hpi}</p>
             </div>
           )}
         </LongSection>
@@ -615,28 +615,28 @@ function LongContent({
               {pmhList.map((item, i) => {
                 const since = item.sinceNum ? `${item.sinceNum} ${item.sinceUnit ?? ""}`.trim() : null;
                 return (
-                  <span key={i} className="px-2.5 py-0.5 rounded-full bg-orange-50 border border-orange-200 text-orange-800 text-[10px] sm:text-[11px] font-medium">
+                  <span key={i} className="px-2.5 py-0.5 rounded-full bg-orange-50 border border-orange-200 text-orange-800 text-caption sm:text-caption font-medium">
                     {item.name}{since ? <span className="opacity-70 ml-1 font-normal">· {since}</span> : null}
                   </span>
                 );
               })}
               {g.pmhOtherText && (
-                <span className="px-2.5 py-0.5 rounded-full bg-orange-50 border border-orange-200 text-orange-800 text-[10px] sm:text-[11px] font-medium">{g.pmhOtherText}</span>
+                <span className="px-2.5 py-0.5 rounded-full bg-orange-50 border border-orange-200 text-orange-800 text-caption sm:text-caption font-medium">{g.pmhOtherText}</span>
               )}
             </div>
           )}
           {g?.allergies && (
             <div>
-              <p className="text-[9px] font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-1">Allergies</p>
-              <p className="text-[10px] sm:text-[11px] text-[var(--color-ink-700)]">
+              <p className="text-micro font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-1">Allergies</p>
+              <p className="text-caption sm:text-caption text-[var(--color-ink-700)]">
                 {g.nkda ? <span className="text-green-700 font-medium">NKDA</span> : g.allergies}
               </p>
             </div>
           )}
           {g?.familyHistory && (
             <div>
-              <p className="text-[9px] font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-1">Family History</p>
-              <p className="text-[10px] sm:text-[11px] text-[var(--color-ink-700)]">{g.familyHistory}</p>
+              <p className="text-micro font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-1">Family History</p>
+              <p className="text-caption sm:text-caption text-[var(--color-ink-700)]">{g.familyHistory}</p>
             </div>
           )}
         </LongSection>
@@ -782,7 +782,7 @@ function LongContent({
                   </tbody>
                 </DataTable>
                 {pos.notes && (
-                  <p className="mt-1.5 text-[10px] sm:text-[11px] italic leading-snug text-[var(--color-ink-500)]">{pos.notes}</p>
+                  <p className="mt-1.5 text-caption sm:text-caption italic leading-snug text-[var(--color-ink-500)]">{pos.notes}</p>
                 )}
               </Block>
             );
@@ -802,10 +802,10 @@ function LongContent({
               })
               .map((d: any, i: number) => (
                 <div key={i} className="py-1 border-b border-[var(--color-border)] last:border-0">
-                  <span className="clinical-diagnosis-text text-[10px] sm:text-[11px]">
+                  <span className="clinical-diagnosis-text text-caption sm:text-caption">
                     {d.laterality && <span className="clinical-laterality mr-1">{d.laterality}</span>}
                     {d.description}
-                    {d.icd10Code && <span className="font-mono text-[9px] text-[var(--color-ink-400)] ml-1.5">{d.icd10Code}</span>}
+                    {d.icd10Code && <span className="font-mono text-micro text-[var(--color-ink-400)] ml-1.5">{d.icd10Code}</span>}
                   </span>
                 </div>
               ))}
@@ -819,22 +819,22 @@ function LongContent({
           <div className="flex flex-col divide-y divide-[var(--color-border)]">
             {data.medications.map((m: any, i: number) => (
               <div key={i} className="flex items-start gap-2.5 py-2 first:pt-0 last:pb-0">
-                <span className="text-[9px] sm:text-[10px] text-[var(--color-ink-400)] font-medium w-4 shrink-0 mt-0.5 tabular-nums">{i + 1}</span>
+                <span className="text-micro sm:text-caption text-[var(--color-ink-400)] font-medium w-4 shrink-0 mt-0.5 tabular-nums">{i + 1}</span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[12px] font-semibold text-[var(--color-ink-800)] leading-snug">
+                  <p className="text-caption font-semibold text-[var(--color-ink-800)] leading-snug">
                     {m.laterality && (
                       <span className="font-bold text-[var(--color-primary-700)] mr-1.5">{m.laterality}</span>
                     )}
                     {m.drugName}
                   </p>
                   <div className="flex flex-wrap items-center gap-x-1 gap-y-0.5 mt-0.5">
-                    {m.dosage && <span className="text-[10px] sm:text-[11px] text-[var(--color-ink-500)]">{m.dosage}</span>}
-                    {m.route && <><span className="text-[var(--color-ink-300)] text-[10px]">·</span><span className="text-[10px] sm:text-[11px] text-[var(--color-ink-500)]">{m.route}</span></>}
-                    {m.frequency && <><span className="text-[var(--color-ink-300)] text-[10px]">·</span><span className="text-[10px] sm:text-[11px] text-[var(--color-ink-500)]">{m.frequency}</span></>}
-                    {m.duration && <><span className="text-[var(--color-ink-300)] text-[10px]">·</span><span className="text-[10px] sm:text-[11px] text-[var(--color-ink-500)]">{m.duration}</span></>}
+                    {m.dosage && <span className="text-caption sm:text-caption text-[var(--color-ink-500)]">{m.dosage}</span>}
+                    {m.route && <><span className="text-[var(--color-ink-300)] text-caption">·</span><span className="text-caption sm:text-caption text-[var(--color-ink-500)]">{m.route}</span></>}
+                    {m.frequency && <><span className="text-[var(--color-ink-300)] text-caption">·</span><span className="text-caption sm:text-caption text-[var(--color-ink-500)]">{m.frequency}</span></>}
+                    {m.duration && <><span className="text-[var(--color-ink-300)] text-caption">·</span><span className="text-caption sm:text-caption text-[var(--color-ink-500)]">{m.duration}</span></>}
                   </div>
                   {m.instructions && (
-                    <p className="text-[10px] sm:text-[11px] text-[var(--color-ink-500)] italic mt-0.5">{m.instructions}</p>
+                    <p className="text-caption sm:text-caption text-[var(--color-ink-500)] italic mt-0.5">{m.instructions}</p>
                   )}
                 </div>
               </div>
@@ -850,18 +850,18 @@ function LongContent({
             {data.investigationOrders.map((o: any, i: number) => (
               <div key={i} className="flex items-start justify-between gap-3 py-2 first:pt-0 last:pb-0">
                 <div className="flex-1 min-w-0">
-                  <p className="text-[12px] font-semibold text-[var(--color-ink-800)] leading-snug">
+                  <p className="text-caption font-semibold text-[var(--color-ink-800)] leading-snug">
                     {o.laterality && <span className="text-[var(--color-primary-700)] mr-1">{o.laterality}</span>}
                     {o.testName}
                   </p>
                   {o.notes && (
-                    <p className="text-[10px] sm:text-[11px] text-[var(--color-ink-500)] mt-0.5 leading-snug italic">
+                    <p className="text-caption sm:text-caption text-[var(--color-ink-500)] mt-0.5 leading-snug italic">
                       In view of: {o.notes}
                     </p>
                   )}
                 </div>
                 {o.resultRef && (
-                  <a href={o.resultRef} target="_blank" rel="noreferrer" className="text-[9px] sm:text-[10px] text-[var(--color-primary-600)] underline shrink-0">View Result</a>
+                  <a href={o.resultRef} target="_blank" rel="noreferrer" className="text-micro sm:text-caption text-[var(--color-primary-600)] underline shrink-0">View Result</a>
                 )}
               </div>
             ))}
@@ -874,22 +874,22 @@ function LongContent({
         <LongSection head={<SumHead icon={<CalendarCheck size={11} />} label="Follow-Up &amp; Advice" color="text-emerald-600" />}>
           {data.followUpDate && (
             <div>
-              <p className="text-[9px] font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-1">Follow-Up Date</p>
-              <p className="text-[10px] sm:text-[11px] font-medium text-[var(--color-ink-800)]">
+              <p className="text-micro font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-1">Follow-Up Date</p>
+              <p className="text-caption sm:text-caption font-medium text-[var(--color-ink-800)]">
                 {new Date(data.followUpDate).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })}
               </p>
             </div>
           )}
           {data.advice && (
             <div>
-              <p className="text-[9px] font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-1">Advice</p>
-              <p className="text-[10px] sm:text-[11px] leading-relaxed text-[var(--color-ink-700)]">{data.advice}</p>
+              <p className="text-micro font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-1">Advice</p>
+              <p className="text-caption sm:text-caption leading-relaxed text-[var(--color-ink-700)]">{data.advice}</p>
             </div>
           )}
           {data.referral && (
             <div>
-              <p className="text-[9px] font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-1">Referral</p>
-              <p className="text-[10px] sm:text-[11px] text-[var(--color-ink-700)]">{data.referral}</p>
+              <p className="text-micro font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-1">Referral</p>
+              <p className="text-caption sm:text-caption text-[var(--color-ink-700)]">{data.referral}</p>
             </div>
           )}
         </LongSection>
@@ -913,7 +913,7 @@ export function AIContent({
 }) {
   if (error) {
     return (
-      <div className="flex items-start gap-2 p-3 rounded-xl bg-red-50 text-[10px] sm:text-[11px] text-red-700">
+      <div className="flex items-start gap-2 p-3 rounded-xl bg-red-50 text-caption sm:text-caption text-red-700">
         <AlertCircle size={12} className="shrink-0 mt-0.5" />
         <span>{error}</span>
       </div>
@@ -928,17 +928,17 @@ export function AIContent({
     <div className="rounded-xl bg-violet-50/50 p-3.5">
       <div className="flex items-center gap-1.5 mb-1.5">
         <Sparkles size={11} className="text-violet-500" />
-        <span className="text-[9px] sm:text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-violet-600">
+        <span className="text-micro sm:text-micro sm:text-caption font-bold uppercase tracking-widest text-violet-600">
           {source === "claude" ? "Claude AI Summary" : "Auto-Generated Summary"}
         </span>
       </div>
       <div className="space-y-1.5">
         {text.split(/\n+/).filter(Boolean).map((line, i) => (
-          <p key={i} className="text-[10px] sm:text-[11px] leading-relaxed text-[var(--color-ink-700)]">{line}</p>
+          <p key={i} className="text-caption sm:text-caption leading-relaxed text-[var(--color-ink-700)]">{line}</p>
         ))}
       </div>
       {notice && (
-        <p className="mt-2.5 text-[9px] sm:text-[10px] leading-snug text-amber-700">{notice}</p>
+        <p className="mt-2.5 text-micro sm:text-caption leading-snug text-amber-700">{notice}</p>
       )}
     </div>
   );

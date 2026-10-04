@@ -143,13 +143,13 @@ function StatusBanner({ data }: { data: LicenseFullData }) {
             : `Your subscription expired on ${fmt(data.subscriptionEndsAt)}. Renew now to restore access.`}
         </p>
         <div className="mt-3 flex flex-wrap gap-2">
-          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-red-700 bg-red-100 px-2.5 py-1 rounded-full">
+          <span className="inline-flex items-center gap-1 text-caption font-semibold text-red-700 bg-red-100 px-2.5 py-1 rounded-full">
             <XCircle size={11} /> Staff logins blocked
           </span>
-          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-red-700 bg-red-100 px-2.5 py-1 rounded-full">
+          <span className="inline-flex items-center gap-1 text-caption font-semibold text-red-700 bg-red-100 px-2.5 py-1 rounded-full">
             <XCircle size={11} /> Data access restricted
           </span>
-          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-700 bg-amber-100 px-2.5 py-1 rounded-full">
+          <span className="inline-flex items-center gap-1 text-caption font-semibold text-amber-700 bg-amber-100 px-2.5 py-1 rounded-full">
             <CheckCircle2 size={11} /> All data preserved
           </span>
         </div>
@@ -255,13 +255,13 @@ function OverviewTab({ data, onTabChange }: { data: LicenseFullData; onTabChange
               <div>
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-xs font-bold uppercase tracking-wider text-[var(--color-ink-400)]">{planCfg.name} Plan</span>
-                  <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-600 text-white">
+                  <span className="inline-flex items-center gap-1 text-caption font-bold px-2 py-0.5 rounded-full bg-emerald-600 text-white">
                     <span className="w-1.5 h-1.5 rounded-full bg-white" /> ACTIVE
                   </span>
                 </div>
-                <p className="text-[11px] text-[var(--color-ink-400)]">{planCfg.tag}</p>
+                <p className="text-caption text-[var(--color-ink-400)]">{planCfg.tag}</p>
                 <div className="flex items-end gap-1 mt-2">
-                  <span className="text-3xl font-black text-[var(--color-ink-900)]">{planCfg.price}</span>
+                  <span className="text-3xl font-bold text-[var(--color-ink-900)]">{planCfg.price}</span>
                   <span className="text-sm text-[var(--color-ink-400)] mb-1">/ month</span>
                 </div>
               </div>
@@ -271,17 +271,17 @@ function OverviewTab({ data, onTabChange }: { data: LicenseFullData; onTabChange
           <div className="px-6 py-4 flex flex-col sm:flex-row sm:items-center gap-4">
             <div className="flex flex-col sm:flex-row gap-4 flex-1 text-sm">
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Started</p>
+                <p className="text-caption font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Started</p>
                 <p className="text-sm font-semibold text-[var(--color-ink-800)] mt-0.5">{fmt(data.subscriptionStartsAt)}</p>
               </div>
               <div className="hidden sm:block w-px bg-[var(--color-border)]" />
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Next Renewal</p>
+                <p className="text-caption font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Next Renewal</p>
                 <p className="text-sm font-semibold text-[var(--color-ink-800)] mt-0.5">{fmt(data.subscriptionEndsAt)}</p>
               </div>
               <div className="hidden sm:block w-px bg-[var(--color-border)]" />
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Days Remaining</p>
+                <p className="text-caption font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Days Remaining</p>
                 <p className="text-sm font-semibold text-emerald-700 mt-0.5">{data.remainingDays} days</p>
               </div>
             </div>
@@ -340,25 +340,25 @@ function OverviewTab({ data, onTabChange }: { data: LicenseFullData; onTabChange
             </div>
             <div className="px-5 py-4 grid grid-cols-2 sm:grid-cols-4 gap-4">
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Amount</p>
+                <p className="text-caption font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Amount</p>
                 <p className="text-sm font-bold text-[var(--color-ink-900)] mt-1">{planCfg.price}</p>
               </div>
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Date</p>
+                <p className="text-caption font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Date</p>
                 <p className="text-sm font-semibold text-[var(--color-ink-800)] mt-1">{fmt(data.subscriptionStartsAt)}</p>
               </div>
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Status</p>
+                <p className="text-caption font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Status</p>
                 <span className="inline-flex items-center gap-1 mt-1 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
                   <CheckCircle2 size={10} /> Paid
                 </span>
               </div>
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Payment ID</p>
+                <p className="text-caption font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Payment ID</p>
                 <p className="text-xs font-mono text-[var(--color-ink-500)] mt-1 truncate">{data.razorpayPaymentId}</p>
               </div>
             </div>
-            <div className="px-5 pb-4 flex items-center gap-3 text-[11px] text-[var(--color-ink-400)]">
+            <div className="px-5 pb-4 flex items-center gap-3 text-caption text-[var(--color-ink-400)]">
               <span>Method: Razorpay</span>
               <span>·</span>
               <span>Cycle: {planCfg.billingCycle}</span>
@@ -380,9 +380,9 @@ function OverviewTab({ data, onTabChange }: { data: LicenseFullData; onTabChange
                 <div className="flex items-center justify-between p-4 rounded-xl bg-[var(--color-primary-50)] border border-[var(--color-primary-100)]">
                   <div>
                     <p className="text-xs font-bold uppercase tracking-wider text-[var(--color-ink-400)]">{planCfg.name}</p>
-                    <p className="text-lg font-black text-[var(--color-ink-900)]">{planCfg.price}<span className="text-sm font-normal text-[var(--color-ink-400)]"> / month</span></p>
+                    <p className="text-lg font-bold text-[var(--color-ink-900)]">{planCfg.price}<span className="text-sm font-normal text-[var(--color-ink-400)]"> / month</span></p>
                   </div>
-                  <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-600 text-white">
+                  <span className="inline-flex items-center gap-1 text-caption font-bold px-2 py-0.5 rounded-full bg-emerald-600 text-white">
                     <span className="w-1.5 h-1.5 rounded-full bg-white" /> ACTIVE
                   </span>
                 </div>
@@ -440,7 +440,7 @@ function OverviewTab({ data, onTabChange }: { data: LicenseFullData; onTabChange
     },
     {
       label: "Days Remaining",
-      value: <span className={`text-xl font-black ${urgent ? "text-red-600" : data.remainingDays <= 30 ? "text-amber-600" : "text-emerald-600"}`}>{data.remainingDays}</span>,
+      value: <span className={`text-xl font-bold ${urgent ? "text-red-600" : data.remainingDays <= 30 ? "text-amber-600" : "text-emerald-600"}`}>{data.remainingDays}</span>,
       icon: Clock,
       color: "bg-slate-50 border-slate-200",
     },
@@ -463,7 +463,7 @@ function OverviewTab({ data, onTabChange }: { data: LicenseFullData; onTabChange
             <div key={m.label} className={`rounded-xl border px-4 py-3 ${m.color}`}>
               <div className="flex items-center gap-2 mb-2">
                 <Icon size={13} className="text-[var(--color-ink-400)] shrink-0" />
-                <p className="text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-wider">{m.label}</p>
+                <p className="text-caption font-semibold text-[var(--color-ink-400)] uppercase tracking-wider">{m.label}</p>
               </div>
               {m.value}
             </div>
@@ -663,7 +663,7 @@ function ActivateTab({ data, onRefresh }: { data: LicenseFullData; onRefresh: ()
 
           <div className="mt-4 flex items-start gap-2.5 px-3 py-3 rounded-xl bg-[var(--color-surface-sunken)] border border-[var(--color-border)]">
             <Info size={13} className="text-[var(--color-ink-400)] shrink-0 mt-0.5" />
-            <p className="text-[11px] text-[var(--color-ink-500)] leading-relaxed">
+            <p className="text-caption text-[var(--color-ink-500)] leading-relaxed">
               The license belongs to <strong>Dr. {data.doctorName}</strong> and covers all linked hospitals.
               To transfer to a new machine, use Reactivate with the same key.
             </p>
@@ -884,7 +884,7 @@ function PlansTab({ data, onRefresh, onTabChange }: { data: LicenseFullData; onR
                   <p className="text-xs text-emerald-700">Your {cfg?.name ?? ""} plan is now active.</p>
                 </div>
               </div>
-              <div className="text-2xl font-black text-[var(--color-ink-900)]">
+              <div className="text-2xl font-bold text-[var(--color-ink-900)]">
                 {cfg?.price ?? ""} <span className="text-sm font-normal text-[var(--color-ink-400)]">/ month</span>
               </div>
               <p className="text-xs text-emerald-700 mt-1">Subscription activated successfully. You now have access to all {cfg?.name ?? ""} features.</p>
@@ -906,16 +906,16 @@ function PlansTab({ data, onRefresh, onTabChange }: { data: LicenseFullData; onR
             <div className="px-6 py-4 grid grid-cols-2 sm:grid-cols-3 gap-4 border-b border-[var(--color-border)]">
               {paidPaymentId && (
                 <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Transaction ID</p>
+                  <p className="text-caption font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Transaction ID</p>
                   <p className="text-xs font-mono text-[var(--color-ink-700)] mt-1 break-all">{paidPaymentId}</p>
                 </div>
               )}
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Subscription Start</p>
+                <p className="text-caption font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Subscription Start</p>
                 <p className="text-sm font-semibold text-[var(--color-ink-800)] mt-1">{fmt(startDate.toISOString())}</p>
               </div>
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Next Renewal</p>
+                <p className="text-caption font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Next Renewal</p>
                 <p className="text-sm font-semibold text-[var(--color-ink-800)] mt-1">{fmt(renewDate.toISOString())}</p>
               </div>
             </div>
@@ -979,12 +979,12 @@ function PlansTab({ data, onRefresh, onTabChange }: { data: LicenseFullData; onR
               }`}
             >
               {plan.badge && (
-                <div className="absolute top-3 right-3 text-[10px] font-bold px-2 py-0.5 rounded-full bg-[var(--color-primary-600)] text-white">
+                <div className="absolute top-3 right-3 text-caption font-bold px-2 py-0.5 rounded-full bg-[var(--color-primary-600)] text-white">
                   {plan.badge}
                 </div>
               )}
               {isCurrent && !plan.badge && (
-                <div className="absolute top-3 right-3 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500 text-white">
+                <div className="absolute top-3 right-3 text-caption font-bold px-2 py-0.5 rounded-full bg-emerald-500 text-white">
                   Current
                 </div>
               )}
@@ -995,23 +995,23 @@ function PlansTab({ data, onRefresh, onTabChange }: { data: LicenseFullData; onR
                 return (
                   <div className={`px-5 py-5 ${plan.highlight ? "bg-[var(--color-primary-50)]" : "bg-white"}`}>
                     {showDiscount && (
-                      <div className="mb-2 inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500 text-white">
+                      <div className="mb-2 inline-flex items-center gap-1 text-caption font-bold px-2 py-0.5 rounded-full bg-amber-500 text-white">
                         <Sparkles size={9} /> 75% off first month
                       </div>
                     )}
                     <p className="text-xs font-bold uppercase tracking-wider text-[var(--color-ink-400)]">{plan.name}</p>
-                    <p className="text-[10px] text-[var(--color-ink-400)]">{plan.tag}</p>
+                    <p className="text-caption text-[var(--color-ink-400)]">{plan.tag}</p>
                     {showDiscount ? (
                       <div className="mt-2">
                         <div className="flex items-end gap-1">
-                          <span className="text-2xl font-black text-amber-600">{discount!.firstPrice}</span>
+                          <span className="text-2xl font-bold text-amber-600">{discount!.firstPrice}</span>
                           <span className="text-xs text-[var(--color-ink-400)] mb-0.5">{discount!.firstLabel}</span>
                         </div>
-                        <p className="text-[11px] text-[var(--color-ink-400)] mt-0.5">then {discount!.regularPrice}</p>
+                        <p className="text-caption text-[var(--color-ink-400)] mt-0.5">then {discount!.regularPrice}</p>
                       </div>
                     ) : (
                       <div className="mt-2 flex items-end gap-1">
-                        <span className="text-2xl font-black text-[var(--color-ink-900)]">{plan.price}</span>
+                        <span className="text-2xl font-bold text-[var(--color-ink-900)]">{plan.price}</span>
                         <span className="text-xs text-[var(--color-ink-400)] mb-0.5">{plan.priceSub}</span>
                       </div>
                     )}
@@ -1072,7 +1072,7 @@ function PlansTab({ data, onRefresh, onTabChange }: { data: LicenseFullData; onR
         })}
       </div>
 
-      <div className="flex items-center justify-center gap-2 text-[11px] text-[var(--color-ink-400)]">
+      <div className="flex items-center justify-center gap-2 text-caption text-[var(--color-ink-400)]">
         <ShieldCheck size={12} className="text-emerald-500" />
         Payments secured by Razorpay · 256-bit SSL encryption
       </div>
@@ -1110,7 +1110,7 @@ function RenewalTab({ data }: { data: LicenseFullData }) {
           },
         ].map((c) => (
           <div key={c.label} className="rounded-xl bg-[var(--color-surface-sunken)] border border-[var(--color-border)] px-4 py-4">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">{c.label}</p>
+            <p className="text-caption font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">{c.label}</p>
             <p className="text-sm font-bold text-[var(--color-ink-900)] mt-1">{c.value}</p>
             <p className="text-xs text-[var(--color-ink-400)] mt-0.5">{c.sub}</p>
           </div>
@@ -1224,8 +1224,8 @@ function HistoryTab({ data }: { data: LicenseFullData }) {
           { label: "Failed",         value: data.events.filter((e) => e.status === "FAILED").length },
         ].map((s) => (
           <div key={s.label} className="rounded-xl border border-[var(--color-border)] bg-white px-4 py-3 text-center">
-            <p className="text-xl font-black text-[var(--color-ink-900)]">{s.value}</p>
-            <p className="text-[10px] font-semibold text-[var(--color-ink-400)] uppercase tracking-wide mt-0.5">{s.label}</p>
+            <p className="text-xl font-bold text-[var(--color-ink-900)]">{s.value}</p>
+            <p className="text-caption font-semibold text-[var(--color-ink-400)] uppercase tracking-wide mt-0.5">{s.label}</p>
           </div>
         ))}
       </div>
@@ -1264,23 +1264,23 @@ function HistoryTab({ data }: { data: LicenseFullData }) {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-sm font-semibold text-[var(--color-ink-800)]">{meta.label}</span>
-                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                      <span className={`text-caption font-bold px-1.5 py-0.5 rounded-full ${
                         ok ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"
                       }`}>
                         {ok ? "Success" : "Failed"}
                       </span>
                     </div>
                     {e.keyMasked && (
-                      <p className="text-[11px] font-mono text-[var(--color-ink-400)] mt-0.5">{e.keyMasked}</p>
+                      <p className="text-caption font-mono text-[var(--color-ink-400)] mt-0.5">{e.keyMasked}</p>
                     )}
                     {e.detail && (
-                      <p className="text-[11px] text-[var(--color-ink-400)] mt-0.5">{e.detail}</p>
+                      <p className="text-caption text-[var(--color-ink-400)] mt-0.5">{e.detail}</p>
                     )}
                     {e.performedBy && (
-                      <p className="text-[11px] text-[var(--color-ink-400)] mt-0.5">By: {e.performedBy}</p>
+                      <p className="text-caption text-[var(--color-ink-400)] mt-0.5">By: {e.performedBy}</p>
                     )}
                   </div>
-                  <p className="text-[11px] text-[var(--color-ink-400)] shrink-0 whitespace-nowrap">{fmtDt(e.date)}</p>
+                  <p className="text-caption text-[var(--color-ink-400)] shrink-0 whitespace-nowrap">{fmtDt(e.date)}</p>
                 </div>
               );
             })}

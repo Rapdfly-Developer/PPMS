@@ -70,7 +70,7 @@ function NavLink({
     return (
       <div
         className={clsx(
-          "relative flex items-center py-[8px] rounded-xl text-[12.5px] cursor-not-allowed select-none opacity-35",
+          "relative flex items-center py-[8px] rounded-xl text-label cursor-not-allowed select-none opacity-35",
           collapsed ? "justify-center px-1" : (indent ? "gap-3 pl-8 pr-3" : "gap-3 pl-3.5 pr-3"),
         )}
         title={item.label}
@@ -91,7 +91,7 @@ function NavLink({
       aria-label={collapsed ? item.label : undefined}
       title={collapsed ? item.label : undefined}
       className={clsx(
-        "group relative flex items-center py-[8px] rounded-xl text-[12.5px] transition-all duration-200 ease-out",
+        "group relative flex items-center py-[8px] rounded-xl text-label transition-all duration-200 ease-out",
         collapsed ? "justify-center px-1" : (indent ? "gap-3 pl-8 pr-3" : "gap-3 pl-3.5 pr-3"),
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-300/50",
         active

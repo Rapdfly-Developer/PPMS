@@ -96,7 +96,7 @@ function RoleFormModal({
               disabled={initial?.isSystem}
             />
             {!initial && label && (
-              <p className="text-[11px] text-[var(--color-ink-400)]">
+              <p className="text-caption text-[var(--color-ink-400)]">
                 Internal key: {label.toUpperCase().replace(/[^A-Z0-9]/g, "_")}
               </p>
             )}
@@ -312,7 +312,7 @@ function PermissionPanel({ role, onSaved, onBack }: {
                   <button
                     type="button"
                     onClick={() => toggleAll(keys, !allChecked)}
-                    className="text-[11px] text-[var(--color-primary-600)] hover:underline shrink-0"
+                    className="text-caption text-[var(--color-primary-600)] hover:underline shrink-0"
                   >
                     {allChecked ? "Deselect all" : "Select all"}
                   </button>
@@ -343,7 +343,7 @@ function PermissionPanel({ role, onSaved, onBack }: {
                         <p className="text-sm font-medium text-[var(--color-ink-800)]">{perm.label}</p>
                         <p className="text-xs text-[var(--color-ink-400)] mt-0.5">{perm.description}</p>
                       </div>
-                      <code className="text-[10px] text-[var(--color-ink-300)] shrink-0 mt-1 hidden sm:block">{perm.key}</code>
+                      <code className="text-caption text-[var(--color-ink-300)] shrink-0 mt-1 hidden sm:block">{perm.key}</code>
                     </label>
                   ))}
                 </div>
@@ -403,7 +403,7 @@ function RoleList({
                 <RoleAvatar color={role.color} label={role.label} />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-[var(--color-ink-900)] truncate">{role.label}</p>
-                  <p className="text-[11px] text-[var(--color-ink-400)]">
+                  <p className="text-caption text-[var(--color-ink-400)]">
                     {role.name === "DOCTOR" ? "All permissions" : `${count} / ${totalPerms}`}
                   </p>
                 </div>
@@ -419,12 +419,12 @@ function RoleList({
 
               <div className="flex items-center gap-1.5 mt-2">
                 {role.name === "DOCTOR" && (
-                  <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-[var(--color-primary-100)] text-[var(--color-primary-700)]">
+                  <span className="inline-flex items-center gap-0.5 text-caption font-semibold px-1.5 py-0.5 rounded-full bg-[var(--color-primary-100)] text-[var(--color-primary-700)]">
                     <Crown size={9} /> Super Admin
                   </span>
                 )}
                 {role.isSystem && role.name !== "DOCTOR" && (
-                  <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)]">
+                  <span className="text-caption font-semibold px-1.5 py-0.5 rounded-full bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)]">
                     System
                   </span>
                 )}
@@ -456,7 +456,7 @@ function RoleList({
       </div>
 
       <div className="mt-auto pt-3 border-t border-[var(--color-border)] hidden md:block">
-        <p className="text-[11px] text-[var(--color-ink-400)] leading-relaxed">
+        <p className="text-caption text-[var(--color-ink-400)] leading-relaxed">
           <strong>System roles</strong> cannot be deleted but their permissions can be edited. Changes take effect on next login.
         </p>
       </div>

@@ -9,7 +9,7 @@ const STATUS_STYLES: Record<string, string> = {
 
 export function StatusBadge({ status }: { status: string }) {
   return (
-    <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${STATUS_STYLES[status] ?? ""}`}>
+    <span className={`text-caption font-medium px-2 py-0.5 rounded-full ${STATUS_STYLES[status] ?? ""}`}>
       {status.replace(/_/g, " ")}
     </span>
   );

@@ -40,7 +40,7 @@ export function DispositionToggle({ icon, label, active, onClick }: { icon: Reac
   return (
     <button
       onClick={onClick}
-      className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-[13px] sm:text-sm font-medium border transition-colors ${
+      className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-label sm:text-sm font-medium border transition-colors ${
         active
           ? "bg-[var(--color-primary-600)] text-white border-[var(--color-primary-600)]"
           : "bg-white text-[var(--color-ink-700)] border-[var(--color-border)] hover:border-[var(--color-primary-500)]"
@@ -61,7 +61,7 @@ export function DispensePanel({ visit, udid }: { visit: any; udid: string }) {
 
   return (
     <div className="rounded-xl border border-[var(--color-border)] p-4">
-      <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-700)] mb-2">Patient Dispense, Short Summary</p>
+      <p className="text-label sm:text-sm font-medium text-[var(--color-ink-700)] mb-2">Patient Dispense, Short Summary</p>
       <textarea
         value={summary}
         onChange={(e) => setSummary(e.target.value)}
@@ -133,7 +133,7 @@ export function FollowUpdatesPanel({ visit, udid, priorVisits = [] }: { visit: a
     <div className="rounded-xl border border-[var(--color-border)] p-4 flex flex-col gap-5">
       {/* Follow-up date */}
       <div>
-        <p className="text-[10px] font-semibold tracking-widest text-[var(--color-ink-400)] uppercase mb-2">Follow-up</p>
+        <p className="text-caption font-semibold tracking-widest text-[var(--color-ink-400)] uppercase mb-2">Follow-up</p>
         <p className="text-xs text-[var(--color-ink-500)] mb-1.5">Follow-up Date</p>
         <div className="flex flex-wrap items-center gap-2">
           <input
@@ -148,7 +148,7 @@ export function FollowUpdatesPanel({ visit, udid, priorVisits = [] }: { visit: a
           <button data-overview-hide className={chipCls} onClick={() => addMonths(3)}>3m</button>
           <button data-overview-hide className={chipCls} onClick={() => addMonths(6)}>6m</button>
           {followUpDate && (
-            <span className="text-[13px] sm:text-sm text-[var(--color-ink-500)]">{formatDate(followUpDate)}</span>
+            <span className="text-label sm:text-sm text-[var(--color-ink-500)]">{formatDate(followUpDate)}</span>
           )}
         </div>
       </div>
@@ -156,7 +156,7 @@ export function FollowUpdatesPanel({ visit, udid, priorVisits = [] }: { visit: a
       {/* In View Of */}
       <div>
         <div className="flex items-center justify-between mb-2">
-          <p className="text-[10px] font-semibold tracking-widest text-[var(--color-ink-400)] uppercase">In View Of</p>
+          <p className="text-caption font-semibold tracking-widest text-[var(--color-ink-400)] uppercase">In View Of</p>
           <div data-overview-hide className="flex items-center gap-1.5">
             <button
               onClick={() => { setShowHistory((v) => !v); setShowKeywords(false); }}
@@ -190,7 +190,7 @@ export function FollowUpdatesPanel({ visit, udid, priorVisits = [] }: { visit: a
         {showHistory && (
           <div className="mt-2 rounded-xl border border-[var(--color-border)] bg-white shadow-sm overflow-hidden">
             <div className="px-3 py-2 bg-[var(--color-surface-sunken)] border-b border-[var(--color-border)] flex items-center justify-between">
-              <span className="text-[10px] font-bold text-[var(--color-ink-400)] uppercase tracking-widest">Previous, In View Of</span>
+              <span className="text-caption font-bold text-[var(--color-ink-400)] uppercase tracking-widest">Previous, In View Of</span>
               <button onClick={() => setShowHistory(false)} className="text-[var(--color-ink-300)] hover:text-[var(--color-ink-700)]"><X size={12} /></button>
             </div>
             <div className="max-h-48 overflow-y-auto divide-y divide-[var(--color-border)]">
@@ -199,13 +199,13 @@ export function FollowUpdatesPanel({ visit, udid, priorVisits = [] }: { visit: a
               ) : (
                 pastWithViewOf.map((v) => (
                   <div key={v.id} className="px-3 py-2.5">
-                    <p className="text-[10px] font-semibold text-[var(--color-ink-400)] mb-0.5">
+                    <p className="text-caption font-semibold text-[var(--color-ink-400)] mb-0.5">
                       {new Date(v.date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
                     </p>
                     <p className="text-xs text-[var(--color-ink-700)]">{v.inViewOf}</p>
                     <button
                       onClick={() => { setInViewOf(v.inViewOf); setSaved(false); setShowHistory(false); }}
-                      className="mt-1 text-[10px] font-medium text-[var(--color-primary-600)] hover:underline"
+                      className="mt-1 text-caption font-medium text-[var(--color-primary-600)] hover:underline"
                     >
                       Use this
                     </button>
@@ -220,7 +220,7 @@ export function FollowUpdatesPanel({ visit, udid, priorVisits = [] }: { visit: a
         {showKeywords && (
           <div className="mt-2 rounded-xl border border-[var(--color-border)] bg-white shadow-sm overflow-hidden">
             <div className="px-3 py-2 bg-[var(--color-surface-sunken)] border-b border-[var(--color-border)] flex items-center justify-between">
-              <span className="text-[10px] font-bold text-[var(--color-ink-400)] uppercase tracking-widest">Add Keyword</span>
+              <span className="text-caption font-bold text-[var(--color-ink-400)] uppercase tracking-widest">Add Keyword</span>
               <button onClick={() => setShowKeywords(false)} className="text-[var(--color-ink-300)] hover:text-[var(--color-ink-700)]"><X size={12} /></button>
             </div>
             <div className="p-3">
@@ -240,16 +240,16 @@ export function FollowUpdatesPanel({ visit, udid, priorVisits = [] }: { visit: a
       {overview ? (
         referralEnabled ? (
           <div>
-            <p className="text-[10px] font-semibold tracking-widest text-[var(--color-ink-400)] uppercase mb-1">Referral</p>
-            <p className="text-[13px] sm:text-sm text-[var(--color-ink-700)]">
+            <p className="text-caption font-semibold tracking-widest text-[var(--color-ink-400)] uppercase mb-1">Referral</p>
+            <p className="text-label sm:text-sm text-[var(--color-ink-700)]">
               {referralNote.trim() || "Referral enabled"}
             </p>
           </div>
         ) : null
       ) : (
         <div>
-          <p className="text-[10px] font-semibold tracking-widest text-[var(--color-ink-400)] uppercase mb-2">Referral</p>
-          <label className="flex items-center gap-2 text-[13px] sm:text-sm text-[var(--color-ink-700)] cursor-pointer">
+          <p className="text-caption font-semibold tracking-widest text-[var(--color-ink-400)] uppercase mb-2">Referral</p>
+          <label className="flex items-center gap-2 text-label sm:text-sm text-[var(--color-ink-700)] cursor-pointer">
             <input
               type="checkbox"
               checked={referralEnabled}
@@ -273,7 +273,7 @@ export function FollowUpdatesPanel({ visit, udid, priorVisits = [] }: { visit: a
         <button
           disabled={pending}
           onClick={save}
-          className="text-[13px] sm:text-sm font-medium px-4 py-2 rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-60 transition-colors"
+          className="text-label sm:text-sm font-medium px-4 py-2 rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-60 transition-colors"
         >
           Save
         </button>

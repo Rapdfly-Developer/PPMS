@@ -61,17 +61,17 @@ function Shell({ children, note }: { children: React.ReactNode; note?: string })
       >
         <div className="flex items-center gap-2 mb-3 flex-wrap">
           <ScanEye size={13} className="shrink-0 text-violet-500" />
-          <p className="text-[11px] font-semibold tracking-widest text-violet-600/80 uppercase italic">
+          <p className="text-caption font-semibold tracking-widest text-violet-600/80 uppercase italic">
             Exam Guidance
           </p>
-          <span className="ml-auto shrink-0 text-[9px] sm:text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-violet-50 text-violet-600 border border-violet-200/70">
+          <span className="ml-auto shrink-0 text-micro sm:text-caption font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-violet-50 text-violet-600 border border-violet-200/70">
             AI · guidance only
           </span>
         </div>
 
         {children}
 
-        {note && <p className="mt-2 text-[10px] text-violet-400/70 italic">{note}</p>}
+        {note && <p className="mt-2 text-caption text-violet-400/70 italic">{note}</p>}
       </div>
     </div>
   );
@@ -88,13 +88,13 @@ export function ExamGuidanceCard({
     return (
       <Shell>
         <div className="flex items-center justify-between gap-3 flex-wrap">
-          <p className="text-[13px] sm:text-sm text-[var(--color-ink-500)]">
+          <p className="text-label sm:text-sm text-[var(--color-ink-500)]">
             Correlate what you have documented with findings to look for.
           </p>
           <button
             type="button"
             onClick={onGenerate}
-            className="shrink-0 px-3 py-1.5 rounded-lg text-[12px] sm:text-[13px] font-medium bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] active:scale-[0.98] transition-all"
+            className="shrink-0 px-3 py-1.5 rounded-lg text-caption sm:text-label font-medium bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] active:scale-[0.98] transition-all"
           >
             Generate guidance
           </button>
@@ -106,7 +106,7 @@ export function ExamGuidanceCard({
   if (state.status === "loading") {
     return (
       <Shell>
-        <p className="flex items-center gap-2 text-[13px] sm:text-sm text-[var(--color-ink-500)]">
+        <p className="flex items-center gap-2 text-label sm:text-sm text-[var(--color-ink-500)]">
           <span
             aria-hidden="true"
             className="w-3 h-3 rounded-full border-2 border-[var(--color-primary-300)] border-t-[var(--color-primary-600)] animate-spin"
@@ -122,17 +122,17 @@ export function ExamGuidanceCard({
       <Shell>
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div>
-            <p className="text-[13px] sm:text-sm text-[var(--color-ink-500)]">
+            <p className="text-label sm:text-sm text-[var(--color-ink-500)]">
               Couldn&apos;t generate exam guidance.
             </p>
-            <p className="mt-1 text-[11px] sm:text-xs text-[var(--color-ink-400)]">
+            <p className="mt-1 text-caption sm:text-xs text-[var(--color-ink-400)]">
               {state.message}
             </p>
           </div>
           <button
             type="button"
             onClick={onGenerate}
-            className="shrink-0 px-3 py-1.5 rounded-lg text-[12px] sm:text-[13px] font-medium border border-[var(--color-border)] text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)] transition-colors"
+            className="shrink-0 px-3 py-1.5 rounded-lg text-caption sm:text-label font-medium border border-[var(--color-border)] text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)] transition-colors"
           >
             Try again
           </button>
@@ -147,13 +147,13 @@ export function ExamGuidanceCard({
         <div className="flex items-center justify-between gap-3 flex-wrap">
           {/* Explicit, never blank — a silent empty card would read as "there is
               nothing worth examining for", which is a clinical claim. */}
-          <p className="text-[13px] sm:text-sm text-[var(--color-ink-500)]">
+          <p className="text-label sm:text-sm text-[var(--color-ink-500)]">
             Not enough documented yet to correlate; add to the General tab and regenerate.
           </p>
           <button
             type="button"
             onClick={onGenerate}
-            className="shrink-0 px-3 py-1.5 rounded-lg text-[12px] sm:text-[13px] font-medium border border-[var(--color-border)] text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)] transition-colors"
+            className="shrink-0 px-3 py-1.5 rounded-lg text-caption sm:text-label font-medium border border-[var(--color-border)] text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)] transition-colors"
           >
             Regenerate
           </button>
@@ -174,18 +174,18 @@ export function ExamGuidanceCard({
       <div className="flex flex-col gap-3">
         {bySegment.map(({ segment, rows }) => (
           <div key={segment}>
-            <p className="text-[11px] sm:text-xs font-semibold text-[var(--color-ink-700)]">
+            <p className="text-caption sm:text-xs font-semibold text-[var(--color-ink-700)]">
               {segment}
             </p>
             <ul className="mt-1 flex flex-col divide-y divide-[var(--color-border)]">
               {rows.map((row, i) => (
                 <li key={`${segment}-${i}`} className="py-2 first:pt-1 last:pb-0">
-                  <p className="text-[13px] sm:text-sm text-[var(--color-ink-900)]">
+                  <p className="text-label sm:text-sm text-[var(--color-ink-900)]">
                     <span className="text-[var(--color-ink-500)]">Documented: </span>
                     {row.documented}
                   </p>
                   {row.associatedFindingsNotDocumented && (
-                    <p className="mt-0.5 text-[11px] sm:text-xs text-[var(--color-ink-500)]">
+                    <p className="mt-0.5 text-caption sm:text-xs text-[var(--color-ink-500)]">
                       Associated findings not yet documented:{" "}
                       {row.associatedFindingsNotDocumented}
                     </p>
@@ -198,7 +198,7 @@ export function ExamGuidanceCard({
         <button
           type="button"
           onClick={onGenerate}
-          className="self-start px-3 py-1.5 rounded-lg text-[12px] sm:text-[13px] font-medium border border-[var(--color-border)] text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)] transition-colors"
+          className="self-start px-3 py-1.5 rounded-lg text-caption sm:text-label font-medium border border-[var(--color-border)] text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)] transition-colors"
         >
           Regenerate
         </button>

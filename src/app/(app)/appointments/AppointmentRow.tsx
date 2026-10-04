@@ -104,7 +104,7 @@ export function AppointmentRow({ appt, role, perms, token }: { appt: any; role: 
       className="flex items-start gap-3 px-4 sm:px-5 py-4 rounded-xl border border-[var(--color-border)] bg-white hover:bg-[var(--color-primary-50)] hover:border-[var(--color-primary-200)] transition-colors cursor-pointer"
     >
       <div
-        className="flex items-center justify-center shrink-0 w-9 h-9 rounded-xl text-[13px] sm:text-sm font-bold mt-0.5"
+        className="flex items-center justify-center shrink-0 w-9 h-9 rounded-xl text-label sm:text-sm font-bold mt-0.5"
         style={{ background: "var(--color-primary-100)", color: "var(--color-primary-700)" }}
       >
         {token}
@@ -117,38 +117,38 @@ export function AppointmentRow({ appt, role, perms, token }: { appt: any; role: 
         <div className="min-w-0 flex-1">
           <button
             onClick={(e) => { e.stopPropagation(); router.push(patientUrl); }}
-            className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-900)] hover:text-[var(--color-primary-600)] transition-colors text-left leading-snug"
+            className="text-label sm:text-sm font-semibold text-[var(--color-ink-900)] hover:text-[var(--color-primary-600)] transition-colors text-left leading-snug"
           >
             {p.name}
           </button>
-          <p className="mt-0.5 text-[11px] sm:text-xs text-[var(--color-ink-400)]">
+          <p className="mt-0.5 text-caption sm:text-xs text-[var(--color-ink-400)]">
             {p.age}y · {p.sex.charAt(0).toUpperCase() + p.sex.slice(1).toLowerCase()}
           </p>
           <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
-            <span className="font-mono text-[11px] bg-[var(--color-primary-50)] text-[var(--color-primary-700)] px-1.5 py-0.5 rounded">
+            <span className="font-mono text-caption bg-[var(--color-primary-50)] text-[var(--color-primary-700)] px-1.5 py-0.5 rounded">
               {p.udid}
             </span>
             {p.mobile && (
-              <span className="inline-flex items-center gap-1 text-[11px] sm:text-xs text-[var(--color-ink-500)]">
+              <span className="inline-flex items-center gap-1 text-caption sm:text-xs text-[var(--color-ink-500)]">
                 <Phone size={11} className="shrink-0" /> {p.mobile}
               </span>
             )}
             {appt.visitType && (
-              <span className="inline-flex items-center gap-1 text-[11px] sm:text-xs text-[var(--color-ink-500)]">
+              <span className="inline-flex items-center gap-1 text-caption sm:text-xs text-[var(--color-ink-500)]">
                 <Tag size={11} className="shrink-0" /> {appt.visitType}
               </span>
             )}
           </div>
           {provisionalDx.length > 0 && (
             <div className="mt-2 flex min-w-0 flex-wrap items-center gap-1.5">
-              <span className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Provisional</span>
+              <span className="text-micro sm:text-caption font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Provisional</span>
               {provisionalDx.slice(0, 2).map((d, i) => (
-                <span key={i} className="clinical-diagnosis-chip inline-flex min-w-0 max-w-full items-center gap-1 px-2.5 py-1 rounded-lg border text-[11px] sm:text-xs">
+                <span key={i} className="clinical-diagnosis-chip inline-flex min-w-0 max-w-full items-center gap-1 px-2.5 py-1 rounded-lg border text-caption sm:text-xs">
                   {d.laterality && <span className="clinical-laterality shrink-0">{d.laterality}</span>}
                   <span className="truncate">{d.description}</span>
                 </span>
               ))}
-              {provisionalDx.length > 2 && <span className="text-[10px] sm:text-[11px] text-[var(--color-ink-400)]">+{provisionalDx.length - 2} more</span>}
+              {provisionalDx.length > 2 && <span className="text-caption sm:text-caption text-[var(--color-ink-400)]">+{provisionalDx.length - 2} more</span>}
             </div>
           )}
         </div>
@@ -163,20 +163,20 @@ export function AppointmentRow({ appt, role, perms, token }: { appt: any; role: 
         {/* Right: status, appointment metadata and visit timestamps */}
         <div className="w-full lg:w-[220px] lg:shrink-0" onClick={(e) => e.stopPropagation()}>
           <div className="flex items-center justify-between gap-3">
-            <span className={`text-[10px] sm:text-[11px] font-medium px-2 py-0.5 rounded-full whitespace-nowrap ${STATUS_STYLES[appt.status] ?? ""}`}>
+            <span className={`text-caption sm:text-caption font-medium px-2 py-0.5 rounded-full whitespace-nowrap ${STATUS_STYLES[appt.status] ?? ""}`}>
               {STATUS_LABELS[appt.status] ?? appt.status.replace(/_/g, " ")}
             </span>
-            <span className="inline-flex items-center gap-1 text-[12px] sm:text-sm font-semibold text-[var(--color-ink-700)] whitespace-nowrap tabular-nums">
+            <span className="inline-flex items-center gap-1 text-caption sm:text-sm font-semibold text-[var(--color-ink-700)] whitespace-nowrap tabular-nums">
               <Calendar size={12} className="shrink-0 text-[var(--color-ink-400)]" />
               {format(new Date(appt.dateTime), "h:mm a")}
             </span>
           </div>
           <div className="mt-1 flex justify-end">
-            <span className="inline-flex items-center gap-1 text-[10px] sm:text-[11px] text-[var(--color-ink-400)] whitespace-nowrap tabular-nums">
+            <span className="inline-flex items-center gap-1 text-caption sm:text-caption text-[var(--color-ink-400)] whitespace-nowrap tabular-nums">
               <Clock size={10} /> Booked: {format(new Date(appt.createdAt), "d MMM, h:mm a")}
             </span>
           </div>
-          <div className="mt-1.5 flex flex-col items-end gap-1 text-[10px] sm:text-[11px]">
+          <div className="mt-1.5 flex flex-col items-end gap-1 text-caption sm:text-caption">
             {arrivedAt && (
               <span className="inline-flex items-center gap-1 text-blue-500 whitespace-nowrap tabular-nums">
                 <LogIn size={10} /> Arrived: {format(arrivedAt, "h:mm a")}
@@ -200,14 +200,14 @@ export function AppointmentRow({ appt, role, perms, token }: { appt: any; role: 
               {showConfirm && <button
                 disabled={pending}
                 onClick={() => hospitalSetStatus("CONFIRMED")}
-                className="text-[11px] sm:text-xs font-medium px-3 py-1.5 rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-50 transition-colors"
+                className="text-caption sm:text-xs font-medium px-3 py-1.5 rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-50 transition-colors"
               >
                 {pending ? "…" : "Confirm / Add to Queue"}
               </button>}
               {showReject && <button
                 disabled={pending}
                 onClick={() => hospitalSetStatus("CANCELLED")}
-                className="text-[11px] sm:text-xs font-medium px-3 py-1.5 rounded-lg bg-white border border-[var(--color-border)] text-[var(--color-danger-600)] hover:bg-[var(--color-danger-50)] disabled:opacity-50 transition-colors"
+                className="text-caption sm:text-xs font-medium px-3 py-1.5 rounded-lg bg-white border border-[var(--color-border)] text-[var(--color-danger-600)] hover:bg-[var(--color-danger-50)] disabled:opacity-50 transition-colors"
               >
                 Reject
               </button>}
@@ -219,7 +219,7 @@ export function AppointmentRow({ appt, role, perms, token }: { appt: any; role: 
                 <button
                   type="button"
                   onClick={() => { void openPdfNative(`/api/prescription-pdf/${appt.visit!.id}`); }}
-                  className="flex items-center gap-1 text-[11px] sm:text-xs font-medium px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors"
+                  className="flex items-center gap-1 text-caption sm:text-xs font-medium px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors"
                 >
                   <Printer size={11} /> Prescription
                 </button>
@@ -228,7 +228,7 @@ export function AppointmentRow({ appt, role, perms, token }: { appt: any; role: 
                 <>
                   <button
                     onClick={() => setShowSlotModal(true)}
-                    className="flex items-center gap-1.5 text-[11px] sm:text-xs font-medium px-2.5 py-1 rounded-lg bg-[var(--color-primary-50)] border border-[var(--color-primary-200)] text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] transition-colors"
+                    className="flex items-center gap-1.5 text-caption sm:text-xs font-medium px-2.5 py-1 rounded-lg bg-[var(--color-primary-50)] border border-[var(--color-primary-200)] text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] transition-colors"
                   >
                     <CalendarPlus size={12} /> Schedule Next Slot
                   </button>
@@ -248,7 +248,7 @@ export function AppointmentRow({ appt, role, perms, token }: { appt: any; role: 
                 <button
                   disabled={pending}
                   onClick={() => hospitalSetStatus("CANCELLED")}
-                  className="text-[11px] sm:text-xs font-medium px-3 py-1 rounded-lg bg-white border border-[var(--color-border)] text-[var(--color-danger-600)] hover:bg-[var(--color-danger-50)] disabled:opacity-50"
+                  className="text-caption sm:text-xs font-medium px-3 py-1 rounded-lg bg-white border border-[var(--color-border)] text-[var(--color-danger-600)] hover:bg-[var(--color-danger-50)] disabled:opacity-50"
                 >
                   Cancel
                 </button>
@@ -257,7 +257,7 @@ export function AppointmentRow({ appt, role, perms, token }: { appt: any; role: 
                 <button
                   disabled={pending}
                   onClick={() => doctorSetStatus("NO_SHOW")}
-                  className="flex items-center gap-1 text-[11px] sm:text-xs font-medium px-3 py-1 rounded-lg bg-white border border-[var(--color-border)] text-red-500 hover:bg-red-50 hover:border-red-200 disabled:opacity-50 transition-colors"
+                  className="flex items-center gap-1 text-caption sm:text-xs font-medium px-3 py-1 rounded-lg bg-white border border-[var(--color-border)] text-red-500 hover:bg-red-50 hover:border-red-200 disabled:opacity-50 transition-colors"
                 >
                   <UserX size={11} /> No Show
                 </button>

@@ -363,7 +363,7 @@ export default async function PatientDetailedEMR({
                   <h2 className="text-base sm:text-lg font-bold text-white leading-tight">{patient.name}</h2>
                   <span className="text-xs text-white/55">{patient.age}y · {patient.sex.charAt(0).toUpperCase()}</span>
                   {patient.category !== "GENERAL" && (
-                    <span className={`text-[10px] font-bold tracking-wide px-2 py-0.5 rounded-full ${
+                    <span className={`text-caption font-bold tracking-wide px-2 py-0.5 rounded-full ${
                       patient.category === "BPL"        ? "bg-amber-400/20 text-amber-300" :
                       patient.category === "SUBSIDISED" ? "bg-sky-400/20 text-sky-300" :
                       patient.category === "ECHS"       ? "bg-green-400/20 text-green-300" :
@@ -372,7 +372,7 @@ export default async function PatientDetailedEMR({
                     }`}>{patient.category}</span>
                   )}
                   {latestDiagnosis && (
-                    <span className="clinical-diagnosis-chip-dark text-[9px] px-2 py-0.5 rounded-full border">
+                    <span className="clinical-diagnosis-chip-dark text-micro px-2 py-0.5 rounded-full border">
                       Dx: {latestDiagnosis.laterality && <span className="clinical-laterality">{latestDiagnosis.laterality} </span>}{latestDiagnosis.description}
                     </span>
                   )}
@@ -381,7 +381,7 @@ export default async function PatientDetailedEMR({
                 {/* Identity line — one row, no per-item borders. Doctor and hospital
                     are deliberately absent: both are already implied by the context
                     the EMR was opened from, and they crowded the line. */}
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-white/65">
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-caption text-white/65">
                   <span className="inline-flex items-center gap-1.5 text-sky-200 font-mono font-semibold tracking-wide">
                     <Hash size={10} />{patient.udid ?? "—"}
                   </span>
@@ -396,11 +396,11 @@ export default async function PatientDetailedEMR({
                     </span>
                   )}
                   {activeVisit?.generalExam?.nkda ? (
-                    <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-emerald-400/15 text-emerald-300 border border-emerald-400/25">
+                    <span className="inline-flex items-center gap-1 text-caption px-2 py-0.5 rounded-full bg-emerald-400/15 text-emerald-300 border border-emerald-400/25">
                       <CheckCircle2 size={10} />NKDA
                     </span>
                   ) : activeVisit?.generalExam?.allergies ? (
-                    <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-amber-400/15 text-amber-300 border border-amber-400/25">
+                    <span className="inline-flex items-center gap-1 text-caption px-2 py-0.5 rounded-full bg-amber-400/15 text-amber-300 border border-amber-400/25">
                       <AlertTriangle size={10} />{activeVisit.generalExam.allergies}
                     </span>
                   ) : null}
@@ -412,7 +412,7 @@ export default async function PatientDetailedEMR({
                 )}
                 {/* Notes / Instructions */}
                 {patient.notes && (
-                  <div className="flex items-start gap-1.5 mt-1 text-[11px] text-white/65">
+                  <div className="flex items-start gap-1.5 mt-1 text-caption text-white/65">
                     <FileText size={10} className="shrink-0 mt-0.5 text-white/45" />
                     <span className="whitespace-pre-wrap"><span className="font-semibold text-white/50">Notes:</span> {patient.notes}</span>
                   </div>
@@ -435,7 +435,7 @@ export default async function PatientDetailedEMR({
                     </span>
                   </div>
                   <div>
-                    <div className="text-[11px] font-semibold text-white mb-1">{activeVisit.visitType}</div>
+                    <div className="text-caption font-semibold text-white mb-1">{activeVisit.visitType}</div>
                     {/* Static stamps are formatted here so the server and the first
                         client paint agree; the two elapsed values tick in the client. */}
                     <VisitTimeline
@@ -447,7 +447,7 @@ export default async function PatientDetailedEMR({
                       visitClosed={activeVisit.status !== "IN_PROGRESS"}
                     />
                     {activeVisit.finalizedAt && (
-                      <div className="flex items-center gap-1 text-[11px] text-emerald-300/80 pt-1 border-t border-white/10 mt-1.5">
+                      <div className="flex items-center gap-1 text-caption text-emerald-300/80 pt-1 border-t border-white/10 mt-1.5">
                         <CheckCircle2 size={10} className="shrink-0" />
                         Signed {fmtStamp(activeVisit.finalizedAt)}
                       </div>

@@ -65,8 +65,8 @@ export function ChartEmpty({ message = "No data for this period", height = 160 }
       <span className="mb-1 flex h-9 w-9 items-center justify-center rounded-full bg-white text-[var(--color-ink-400)] shadow-[0_1px_2px_rgba(16,24,40,0.06)]" aria-hidden="true">
         <BarChart3 size={16} strokeWidth={1.75} />
       </span>
-      <p className="text-[13px] font-semibold text-[var(--color-ink-700)]">{message}</p>
-      <p className="max-w-[260px] text-[12px] leading-snug text-[var(--color-ink-400)]">Nothing was recorded for the selected filters. Try a wider date range or another hospital.</p>
+      <p className="text-label font-semibold text-[var(--color-ink-700)]">{message}</p>
+      <p className="max-w-[260px] text-caption leading-snug text-[var(--color-ink-400)]">Nothing was recorded for the selected filters. Try a wider date range or another hospital.</p>
     </div>
   );
 }
@@ -112,7 +112,7 @@ export function TrendChart({
               aria-pressed={!off}
               onClick={() => setHidden((h) => { const n = new Set(h); if (n.has(s.key)) n.delete(s.key); else n.add(s.key); return n; })}
               title={off ? `Show ${s.label}` : `Hide ${s.label}`}
-              className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-medium transition-[opacity,background-color] duration-150 hover:bg-[#F2F5F6] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary-500)] ${off ? "opacity-40" : ""}`}
+              className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-caption font-medium transition-[opacity,background-color] duration-150 hover:bg-[#F2F5F6] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary-500)] ${off ? "opacity-40" : ""}`}
             >
               <span className="h-2 w-2 rounded-full" style={{ background: s.color }} />
               <span className="text-[var(--color-ink-700)]">{s.label}</span>
@@ -171,10 +171,10 @@ export function TrendChart({
                 className="pointer-events-none absolute top-1 z-10 min-w-[170px] rounded-xl border border-[var(--color-border)] bg-white px-3.5 py-3 shadow-[0_12px_32px_-12px_rgba(16,24,40,0.22)] animate-[fadeIn_150ms_ease-out]"
                 style={xOf(hover) > width / 2 ? { right: width - xOf(hover) + 14 } : { left: xOf(hover) + 14 }}
               >
-                <p className="mb-2 text-[12px] font-semibold text-[var(--color-ink-900)]">{points[hover].label}</p>
+                <p className="mb-2 text-caption font-semibold text-[var(--color-ink-900)]">{points[hover].label}</p>
                 <div className="flex flex-col gap-1.5">
                   {visible.map((s) => (
-                    <p key={s.key} className="flex items-center justify-between gap-5 text-[12px] text-[var(--color-ink-500)]">
+                    <p key={s.key} className="flex items-center justify-between gap-5 text-caption text-[var(--color-ink-500)]">
                       <span className="inline-flex items-center gap-2"><span className="h-2 w-2 rounded-full" style={{ background: s.color }} />{s.label}</span>
                       <span className="font-semibold tabular-nums text-[var(--color-ink-900)]">{fmt(points[hover].values[s.key] ?? 0)}</span>
                     </p>
@@ -258,8 +258,8 @@ export function BarList({ data, color = "var(--color-primary-600)", limit, showS
         const inner = (
           <>
             <div className="flex items-baseline justify-between gap-3 mb-1">
-              <span className="min-w-0 truncate text-[13px] text-[var(--color-ink-700)]" title={d.label}>{d.label}</span>
-              <span className="shrink-0 text-[12px] tabular-nums">
+              <span className="min-w-0 truncate text-label text-[var(--color-ink-700)]" title={d.label}>{d.label}</span>
+              <span className="shrink-0 text-caption tabular-nums">
                 <span className="font-semibold text-[var(--color-ink-900)]">{fmt(d.value)}</span>
                 {showShare && <span className="text-[var(--color-ink-400)] ml-1.5">{Math.round((d.value / total) * 100)}%</span>}
               </span>
@@ -335,7 +335,7 @@ export function Donut({ data, centerLabel = "Total", title }: { data: Cat[]; cen
             key={d.label}
             onPointerEnter={() => setHover(i)}
             onPointerLeave={() => setHover(null)}
-            className={`flex items-center justify-between gap-3 rounded-md px-1.5 py-1 text-[12.5px] ${hover === i ? "bg-[var(--color-surface-sunken)]" : ""}`}
+            className={`flex items-center justify-between gap-3 rounded-md px-1.5 py-1 text-label ${hover === i ? "bg-[var(--color-surface-sunken)]" : ""}`}
           >
             <span className="inline-flex items-center gap-2 min-w-0">
               <span className="h-2.5 w-2.5 shrink-0 rounded-sm" style={{ background: d.color }} />
@@ -392,7 +392,7 @@ export function Heatmap({ days, hours, values, title }: { days: string[]; hours:
   if (total === 0) return <ChartEmpty height={180} />;
   return (
     <div className="overflow-x-auto">
-      <table className="border-separate border-spacing-[3px] text-[10.5px]" aria-label={title}>
+      <table className="border-separate border-spacing-[3px] text-caption" aria-label={title}>
         <thead>
           <tr>
             <th className="w-10" />
@@ -434,12 +434,12 @@ export function Pipeline({ steps }: { steps: Cat[] }) {
         const prev = i > 0 ? steps[i - 1].value : null;
         return (
           <li key={s.label} className="relative rounded-xl border border-[var(--color-border)] bg-white p-3">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--color-ink-500)]">{s.label}</p>
-            <p className="mt-1 text-[22px] font-bold tabular-nums text-[var(--color-ink-900)] leading-none">{fmt(s.value)}</p>
+            <p className="text-caption font-semibold uppercase tracking-wide text-[var(--color-ink-500)]">{s.label}</p>
+            <p className="mt-1 text-heading-lg font-bold tabular-nums text-[var(--color-ink-900)] leading-none">{fmt(s.value)}</p>
             <div className="mt-2.5 h-1.5 rounded-full bg-[var(--color-surface-sunken)] overflow-hidden">
               <div className="h-full rounded-full" style={{ width: `${(s.value / max) * 100}%`, background: s.color }} />
             </div>
-            <p className="mt-1.5 text-[11px] text-[var(--color-ink-400)]">
+            <p className="mt-1.5 text-caption text-[var(--color-ink-400)]">
               {prev === null ? "Starting stage" : prev > 0 ? `${Math.round((s.value / prev) * 100)}% of previous stage` : "—"}
             </p>
           </li>

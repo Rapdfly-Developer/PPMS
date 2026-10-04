@@ -102,7 +102,7 @@ export function FieldWithHistory({
                 </button>
               </div>
               {onLoad && (
-                <p className="text-[10px] text-[var(--color-ink-400)] mb-2">
+                <p className="text-caption text-[var(--color-ink-400)] mb-2">
                   Double-click any entry to load it into the form.
                 </p>
               )}

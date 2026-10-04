@@ -87,10 +87,10 @@ function EventDetail({ ev }: { ev: TimelineEvent }) {
     const fmtDur = (m: number) => m < 60 ? `${m} min` : `${Math.floor(m / 60)}h ${m % 60}m`;
 
     return (
-      <div className="mt-3 space-y-3 text-[11px] sm:text-xs text-[var(--color-ink-700)]">
+      <div className="mt-3 space-y-3 text-caption sm:text-xs text-[var(--color-ink-700)]">
         {(d.bookedAt || d.arrivedAt || d.seenAt || d.finalizedAt) && (
           <div className="rounded-xl border border-[var(--color-border)] overflow-hidden">
-            <p className="px-3 py-1.5 text-[9px] sm:text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-500)] bg-[var(--color-surface-sunken)] border-b border-[var(--color-border)]">
+            <p className="px-3 py-1.5 text-micro sm:text-micro sm:text-caption font-bold uppercase tracking-wider text-[var(--color-ink-500)] bg-[var(--color-surface-sunken)] border-b border-[var(--color-border)]">
               Visit Timeline
             </p>
             <div className="divide-y divide-[var(--color-border)]">
@@ -179,11 +179,11 @@ function EventDetail({ ev }: { ev: TimelineEvent }) {
         return (
           <div key={o.id} className="flex items-center gap-2 text-xs bg-white rounded-lg px-3 py-2.5 border border-violet-100">
             {o.laterality && (
-              <span className="shrink-0 text-[9px] sm:text-[10px] font-bold text-violet-600">{o.laterality}</span>
+              <span className="shrink-0 text-micro sm:text-caption font-bold text-violet-600">{o.laterality}</span>
             )}
             <span className="flex-1 min-w-0 font-medium text-[var(--color-ink-800)] truncate">{o.testName}</span>
             {time && (
-              <span className={`shrink-0 flex items-center gap-1 text-[10px] ${hasReport ? "text-emerald-600" : "text-[var(--color-ink-400)]"}`}>
+              <span className={`shrink-0 flex items-center gap-1 text-caption ${hasReport ? "text-emerald-600" : "text-[var(--color-ink-400)]"}`}>
                 {hasReport ? <CheckCircle2 size={9} className="shrink-0" /> : <Clock size={9} className="shrink-0" />}
                 {hasReport ? "Report updated" : "Ordered"}: {format(new Date(time), "d MMM yyyy, h:mm a")}
               </span>
@@ -195,7 +195,7 @@ function EventDetail({ ev }: { ev: TimelineEvent }) {
   );
 
   if (ev.type === "SURGERY") return (
-    <div className="mt-3 text-[11px] sm:text-xs text-[var(--color-ink-700)] space-y-1">
+    <div className="mt-3 text-caption sm:text-xs text-[var(--color-ink-700)] space-y-1">
       <p><span className="font-semibold">Type: </span>{d.surgeryType}</p>
       {d.surgeryDate && <p><span className="font-semibold">Date: </span>{format(new Date(d.surgeryDate), "dd MMM yyyy")}</p>}
       <p><span className="font-semibold">Eye: </span>{[d.rightEye && "Right Eye", d.leftEye && "Left Eye"].filter(Boolean).join(", ") || "—"}</p>
@@ -204,13 +204,13 @@ function EventDetail({ ev }: { ev: TimelineEvent }) {
   );
 
   if (ev.type === "BILLING") return (
-    <div className="mt-3 text-[11px] sm:text-xs text-[var(--color-ink-700)]">
+    <div className="mt-3 text-caption sm:text-xs text-[var(--color-ink-700)]">
       {d.billSummary && <p>{d.billSummary}</p>}
     </div>
   );
 
   if (ev.type === "TRANSFER") return (
-    <div className="mt-3 text-[11px] sm:text-xs text-[var(--color-ink-700)] space-y-1">
+    <div className="mt-3 text-caption sm:text-xs text-[var(--color-ink-700)] space-y-1">
       {d.fromHospital    && <p><span className="font-semibold">From: </span>{d.fromHospital}</p>}
       {d.toHospital      && <p><span className="font-semibold">To: </span>{d.toHospital}</p>}
       {d.transferReason  && <p><span className="font-semibold">Reason: </span>{d.transferReason}</p>}
@@ -218,7 +218,7 @@ function EventDetail({ ev }: { ev: TimelineEvent }) {
   );
 
   if (ev.type === "EXTERNAL") return (
-    <div className="mt-3 text-[11px] sm:text-xs text-[var(--color-ink-700)] space-y-1">
+    <div className="mt-3 text-caption sm:text-xs text-[var(--color-ink-700)] space-y-1">
       {d.externalHospital  && <p><span className="font-semibold">Hospital: </span>{d.externalHospital}</p>}
       {d.externalDiagnosis && <p className="clinical-diagnosis-text"><span className="font-semibold">Diagnosis: </span>{d.externalDiagnosis}</p>}
       {d.externalTreatment && <p><span className="font-semibold">Treatment: </span>{d.externalTreatment}</p>}
@@ -252,26 +252,26 @@ function EventCard({ ev, isLast }: { ev: TimelineEvent; isLast: boolean }) {
           <div className="flex items-start justify-between gap-2">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
-                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-bold uppercase tracking-wide ${cfg.badge}`}>
+                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-micro sm:text-caption font-bold uppercase tracking-wide ${cfg.badge}`}>
                   <cfg.Icon size={9} />{cfg.label}
                 </span>
                 {ev.detail.visitStatus === "CLOSED" && (
-                  <span className="text-[10px] font-semibold bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full">
+                  <span className="text-caption font-semibold bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full">
                     Finalized
                   </span>
                 )}
               </div>
-              <p className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-800)] leading-tight">{ev.title}</p>
+              <p className="text-label sm:text-sm font-semibold text-[var(--color-ink-800)] leading-tight">{ev.title}</p>
             </div>
             <div className="flex items-center gap-1.5 shrink-0">
-              <span className="text-[10px] sm:text-[11px] font-medium text-[var(--color-ink-400)]">{fullTime(ev.date)}</span>
+              <span className="text-caption sm:text-caption font-medium text-[var(--color-ink-400)]">{fullTime(ev.date)}</span>
               {expanded
                 ? <ChevronUp size={13} className="text-[var(--color-ink-400)]" />
                 : <ChevronDown size={13} className="text-[var(--color-ink-400)]" />}
             </div>
           </div>
           {(ev.hospitalName || ev.doctorName) && (
-            <p className="mt-1 text-[10px] sm:text-[11px] text-[var(--color-ink-400)] flex items-center gap-1.5 flex-wrap">
+            <p className="mt-1 text-caption sm:text-caption text-[var(--color-ink-400)] flex items-center gap-1.5 flex-wrap">
               {ev.hospitalName && <span>{ev.hospitalName}</span>}
               {ev.hospitalName && ev.doctorName && <span>·</span>}
               {ev.doctorName && <span>{ev.doctorName}</span>}
@@ -326,12 +326,12 @@ function CalendarGrid({
         </button>
 
         <div className="flex items-center gap-1.5">
-          <h3 className="text-[11px] sm:text-xs font-bold text-[var(--color-ink-800)]">
+          <h3 className="text-caption sm:text-xs font-bold text-[var(--color-ink-800)]">
             {format(currentMonth, "MMMM yyyy")}
           </h3>
           <button
             onClick={onToday}
-            className="text-[9px] sm:text-[10px] font-semibold px-1.5 py-0.5 rounded-full border border-[var(--color-primary-300)] text-[var(--color-primary-600)] hover:bg-[var(--color-primary-50)] transition-colors"
+            className="text-micro sm:text-caption font-semibold px-1.5 py-0.5 rounded-full border border-[var(--color-primary-300)] text-[var(--color-primary-600)] hover:bg-[var(--color-primary-50)] transition-colors"
           >
             Today
           </button>
@@ -348,7 +348,7 @@ function CalendarGrid({
       {/* Day-of-week header */}
       <div className="grid grid-cols-7 px-2 pt-1.5">
         {DAY_LABELS.map((d) => (
-          <div key={d} className="text-center text-[9px] font-bold text-[var(--color-ink-400)] uppercase tracking-wide pb-0.5">
+          <div key={d} className="text-center text-micro font-bold text-[var(--color-ink-400)] uppercase tracking-wide pb-0.5">
             {d}
           </div>
         ))}
@@ -388,7 +388,7 @@ function CalendarGrid({
 
               {/* Date number */}
               <span className={[
-                "text-[10px] sm:text-[11px] font-semibold leading-none",
+                "text-caption sm:text-caption font-semibold leading-none",
                 isSelected ? "text-gray-700" : isTod ? "text-[var(--color-primary-700)]" : "",
               ].join(" ")}>
                 {format(day, "d")}
@@ -414,7 +414,7 @@ function CalendarGrid({
       {/* Legend */}
       <div className="flex items-center gap-2.5 flex-wrap px-3 py-1.5 border-t border-[var(--color-border)] bg-[var(--color-surface-sunken)]">
         {ALL_TYPES.map((t) => (
-          <span key={t} className="flex items-center gap-1 text-[9px] text-[var(--color-ink-400)]">
+          <span key={t} className="flex items-center gap-1 text-micro text-[var(--color-ink-400)]">
             <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: EVENT_CFG[t].dotHex }} />
             {EVENT_CFG[t].label}
           </span>
@@ -436,10 +436,10 @@ function DayEventsPanel({ selectedKey, dayEvents }: { selectedKey: string; dayEv
       <div className="sticky top-0 z-10 flex items-center justify-between px-4 py-2.5 bg-[var(--color-surface-sunken)] border-b border-[var(--color-border)]">
         <div className="flex items-center gap-2">
           <CalendarDays size={13} className="text-[var(--color-primary-500)]" />
-          <span className="text-[11px] sm:text-xs font-bold text-[var(--color-ink-700)]">{label}</span>
+          <span className="text-caption sm:text-xs font-bold text-[var(--color-ink-700)]">{label}</span>
         </div>
         {dayEvents.length > 0 && (
-          <span className="text-[9px] sm:text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[var(--color-primary-100)] text-[var(--color-primary-700)]">
+          <span className="text-micro sm:text-caption font-semibold px-2 py-0.5 rounded-full bg-[var(--color-primary-100)] text-[var(--color-primary-700)]">
             {dayEvents.length} event{dayEvents.length !== 1 ? "s" : ""}
           </span>
         )}
@@ -450,8 +450,8 @@ function DayEventsPanel({ selectedKey, dayEvents }: { selectedKey: string; dayEv
         {dayEvents.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 gap-2 text-[var(--color-ink-400)]">
             <CalendarDays size={32} className="opacity-25" />
-            <p className="text-[13px] sm:text-sm font-medium text-[var(--color-ink-500)]">No events recorded for this date</p>
-            <p className="text-[11px] sm:text-xs text-[var(--color-ink-400)]">Select a highlighted date to view patient activity</p>
+            <p className="text-label sm:text-sm font-medium text-[var(--color-ink-500)]">No events recorded for this date</p>
+            <p className="text-caption sm:text-xs text-[var(--color-ink-400)]">Select a highlighted date to view patient activity</p>
           </div>
         ) : (
           <div className="pl-1">
@@ -582,11 +582,11 @@ export function PatientTimelineModal({
         >
           <Timer size={18} />
           <div className="flex-1 min-w-0">
-            <p className="text-[11px] sm:text-xs text-white/70 font-medium">Patient History Timeline</p>
-            <h2 className="text-[15px] sm:text-base font-bold leading-tight">{patientName}</h2>
+            <p className="text-caption sm:text-xs text-white/70 font-medium">Patient History Timeline</p>
+            <h2 className="text-heading-sm sm:text-base font-bold leading-tight">{patientName}</h2>
           </div>
           {events && (
-            <span className="text-[11px] sm:text-xs bg-white/15 px-2 py-0.5 rounded-full font-semibold">
+            <span className="text-caption sm:text-xs bg-white/15 px-2 py-0.5 rounded-full font-semibold">
               {filtered.length} / {events.length} events
             </span>
           )}
@@ -613,7 +613,7 @@ export function PatientTimelineModal({
             </div>
             <button
               onClick={() => setShowFilters((p) => !p)}
-              className={`shrink-0 flex items-center gap-1 px-3 py-2 rounded-lg text-[11px] sm:text-xs font-semibold border transition-colors ${showFilters ? "bg-[var(--color-primary-50)] border-[var(--color-primary-400)] text-[var(--color-primary-700)]" : "border-[var(--color-border)] text-[var(--color-ink-600)]"}`}
+              className={`shrink-0 flex items-center gap-1 px-3 py-2 rounded-lg text-caption sm:text-xs font-semibold border transition-colors ${showFilters ? "bg-[var(--color-primary-50)] border-[var(--color-primary-400)] text-[var(--color-primary-700)]" : "border-[var(--color-border)] text-[var(--color-ink-600)]"}`}
             >
               <SlidersHorizontal size={12} /> Filters
             </button>
@@ -641,7 +641,7 @@ export function PatientTimelineModal({
               {(hospitalFilter !== "ALL" || doctorFilter !== "ALL" || search) && (
                 <button
                   onClick={clearFilters}
-                  className="col-span-2 text-[11px] sm:text-xs text-[var(--color-primary-600)] hover:underline text-left"
+                  className="col-span-2 text-caption sm:text-xs text-[var(--color-primary-600)] hover:underline text-left"
                 >
                   Clear all filters
                 </button>
@@ -654,7 +654,7 @@ export function PatientTimelineModal({
         {isPending ? (
           <div className="flex-1 flex flex-col items-center justify-center gap-3 text-[var(--color-ink-400)]">
             <Loader2 size={28} className="animate-spin text-[var(--color-primary-500)]" />
-            <p className="text-[13px] sm:text-sm">Loading patient history…</p>
+            <p className="text-label sm:text-sm">Loading patient history…</p>
           </div>
         ) : (
           <div className="flex-1 flex flex-col overflow-hidden">

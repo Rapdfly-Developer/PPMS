@@ -72,7 +72,7 @@ export function TransferButton({
     <>
       <button
         onClick={() => setOpen(true)}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold border border-[var(--color-border)] text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)] transition-colors"
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-caption sm:text-xs font-semibold border border-[var(--color-border)] text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)] transition-colors"
       >
         <ArrowRightLeft size={13} />
         Transfer
@@ -90,14 +90,14 @@ export function TransferButton({
                 <div className="mx-auto w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center mb-3">
                   <CheckCircle2 size={24} className="text-emerald-600" />
                 </div>
-                <h2 className="text-[15px] sm:text-base font-bold text-[var(--color-ink-800)] mb-1">Transfer Complete</h2>
-                <p className="text-[13px] sm:text-sm text-[var(--color-ink-500)] mb-5">
+                <h2 className="text-heading-sm sm:text-base font-bold text-[var(--color-ink-800)] mb-1">Transfer Complete</h2>
+                <p className="text-label sm:text-sm text-[var(--color-ink-500)] mb-5">
                   <span className="font-semibold text-[var(--color-ink-800)]">{patientName}</span> is now registered at{" "}
                   <span className="font-semibold text-[var(--color-ink-800)]">{done}</span>. All records moved with the patient.
                 </p>
                 <button
                   onClick={close}
-                  className="w-full py-2 rounded-xl bg-[var(--color-primary-600)] text-white text-[13px] sm:text-sm font-semibold hover:bg-[var(--color-primary-700)] transition-colors"
+                  className="w-full py-2 rounded-xl bg-[var(--color-primary-600)] text-white text-label sm:text-sm font-semibold hover:bg-[var(--color-primary-700)] transition-colors"
                 >
                   Done
                 </button>
@@ -105,19 +105,19 @@ export function TransferButton({
             ) : (
               <>
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-[15px] sm:text-base font-bold text-[var(--color-ink-800)]">Transfer Patient</h2>
+                  <h2 className="text-heading-sm sm:text-base font-bold text-[var(--color-ink-800)]">Transfer Patient</h2>
                   <button onClick={close} className="text-[var(--color-ink-400)] hover:text-[var(--color-ink-800)]">
                     <X size={18} />
                   </button>
                 </div>
-                <p className="text-[13px] sm:text-sm text-[var(--color-ink-500)] mb-4">
+                <p className="text-label sm:text-sm text-[var(--color-ink-500)] mb-4">
                   Transferring <span className="font-semibold text-[var(--color-ink-800)]">{patientName}</span>
                   {currentHospitalName && (
                     <> from <span className="font-semibold text-[var(--color-ink-800)]">{currentHospitalName}</span></>
                   )}
                   . The patient and all records (visits, EMR, appointments) will be registered at the selected hospital.
                 </p>
-                <label className="block text-[11px] sm:text-xs font-semibold text-[var(--color-ink-600)] mb-1">Destination Hospital</label>
+                <label className="block text-caption sm:text-xs font-semibold text-[var(--color-ink-600)] mb-1">Destination Hospital</label>
                 <select
                   value={hospitalId}
                   onChange={(e) => setHospitalId(e.target.value)}
@@ -129,9 +129,9 @@ export function TransferButton({
                   ))}
                 </select>
                 {options.length === 0 && (
-                  <p className="text-[11px] sm:text-xs text-[var(--color-ink-400)] -mt-1 mb-3">No other hospitals available.</p>
+                  <p className="text-caption sm:text-xs text-[var(--color-ink-400)] -mt-1 mb-3">No other hospitals available.</p>
                 )}
-                <label className="block text-[11px] sm:text-xs font-semibold text-[var(--color-ink-600)] mb-1">Reason for Transfer <span className="font-normal text-[var(--color-ink-400)]">(optional)</span></label>
+                <label className="block text-caption sm:text-xs font-semibold text-[var(--color-ink-600)] mb-1">Reason for Transfer <span className="font-normal text-[var(--color-ink-400)]">(optional)</span></label>
                 <textarea
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
@@ -140,7 +140,7 @@ export function TransferButton({
                   className="w-full border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm mb-2 outline-none focus:border-[var(--color-primary-500)] resize-none"
                 />
                 {error && (
-                  <p className="text-[11px] sm:text-xs text-red-600 mb-2 flex items-center gap-1.5">
+                  <p className="text-caption sm:text-xs text-red-600 mb-2 flex items-center gap-1.5">
                     <AlertCircle size={12} className="shrink-0" /> {error}
                   </p>
                 )}
@@ -148,14 +148,14 @@ export function TransferButton({
                   <button
                     onClick={close}
                     disabled={pending}
-                    className="flex-1 py-2 rounded-xl border border-[var(--color-border)] text-[13px] sm:text-sm font-semibold text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)] disabled:opacity-40 transition-colors"
+                    className="flex-1 py-2 rounded-xl border border-[var(--color-border)] text-label sm:text-sm font-semibold text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)] disabled:opacity-40 transition-colors"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={confirm}
                     disabled={!hospitalId || pending}
-                    className="flex-1 py-2 rounded-xl bg-[var(--color-primary-600)] text-white text-[13px] sm:text-sm font-semibold hover:bg-[var(--color-primary-700)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    className="flex-1 py-2 rounded-xl bg-[var(--color-primary-600)] text-white text-label sm:text-sm font-semibold hover:bg-[var(--color-primary-700)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                   >
                     {pending ? "Transferring…" : "Confirm Transfer"}
                   </button>
@@ -226,11 +226,11 @@ export type LongitudinalVisit = {
 /* ── Status badge ────────────────────────────────────────────────────────────── */
 function StatusBadge({ status }: { status: SerialVisit["status"] }) {
   return status === "CLOSED" ? (
-    <span className="inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
+    <span className="inline-flex items-center gap-1 text-micro sm:text-caption font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
       <CheckCircle2 size={10} /> Completed
     </span>
   ) : (
-    <span className="inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">
+    <span className="inline-flex items-center gap-1 text-micro sm:text-caption font-semibold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">
       <Clock size={10} /> In Progress
     </span>
   );
@@ -246,17 +246,17 @@ function VisitCard({ visit, udid }: { visit: SerialVisit; udid: string }) {
       <div className="flex items-start justify-between gap-2">
         <div>
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-[11px] sm:text-xs font-bold text-[var(--color-primary-700)] bg-[var(--color-primary-50)] px-2 py-0.5 rounded-md">
+            <span className="text-caption sm:text-xs font-bold text-[var(--color-primary-700)] bg-[var(--color-primary-50)] px-2 py-0.5 rounded-md">
               Visit #{visit.visitNumber}
             </span>
             <StatusBadge status={visit.status} />
             {visit.visitType && (
-              <span className="text-[9px] sm:text-[10px] text-[var(--color-ink-400)] font-medium">
+              <span className="text-micro sm:text-caption text-[var(--color-ink-400)] font-medium">
                 {visit.visitType}
               </span>
             )}
           </div>
-          <p className="text-[13px] sm:text-sm font-semibold text-[var(--color-ink-800)] mt-1.5">
+          <p className="text-label sm:text-sm font-semibold text-[var(--color-ink-800)] mt-1.5">
             {format(new Date(visit.date), "dd MMM yyyy")}
           </p>
         </div>
@@ -267,7 +267,7 @@ function VisitCard({ visit, udid }: { visit: SerialVisit; udid: string }) {
           </div>
         ) : (
           <span
-            className="shrink-0 inline-flex items-center gap-1.5 text-[11px] sm:text-xs font-semibold px-3 py-1.5 rounded-lg bg-[var(--color-surface-sunken)] text-[var(--color-ink-400)] cursor-not-allowed"
+            className="shrink-0 inline-flex items-center gap-1.5 text-caption sm:text-xs font-semibold px-3 py-1.5 rounded-lg bg-[var(--color-surface-sunken)] text-[var(--color-ink-400)] cursor-not-allowed"
             title="No EMR available for this visit"
           >
             <FileText size={12} /> No EMR
@@ -276,7 +276,7 @@ function VisitCard({ visit, udid }: { visit: SerialVisit; udid: string }) {
       </div>
 
       {/* Details */}
-      <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[11px] sm:text-xs text-[var(--color-ink-600)]">
+      <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-caption sm:text-xs text-[var(--color-ink-600)]">
         {visit.hospital && (
           <span className="flex items-center gap-1.5 col-span-2 sm:col-span-1">
             <Hospital size={11} className="shrink-0 text-[var(--color-ink-400)]" />
@@ -300,7 +300,7 @@ function VisitCard({ visit, udid }: { visit: SerialVisit; udid: string }) {
       {visit.diagnoses.length > 0 && (
         <div className="flex flex-wrap gap-1">
           {visit.diagnoses.map((d, i) => (
-            <span key={i} className="clinical-diagnosis-chip inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border text-[10px] sm:text-[11px]">
+            <span key={i} className="clinical-diagnosis-chip inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border text-caption sm:text-caption">
               {d.description}
             </span>
           ))}
@@ -332,14 +332,14 @@ function PreviousVisitsPanel({ visits, udid }: { visits: SerialVisit[]; udid: st
     <div className="mt-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 bg-[var(--color-primary-800)] text-white">
-        <p className="font-semibold text-[13px] sm:text-sm">Previous Visits</p>
+        <p className="font-semibold text-label sm:text-sm">Previous Visits</p>
         <div className="flex items-center gap-3">
-          <span className="text-[11px] sm:text-xs text-white/60">{visits.length} visit{visits.length !== 1 ? "s" : ""}</span>
+          <span className="text-caption sm:text-xs text-white/60">{visits.length} visit{visits.length !== 1 ? "s" : ""}</span>
           {visits.length > 0 && (
             <button
               onClick={handleDownloadAll}
               title="Print all visit summaries"
-              className="inline-flex items-center gap-1.5 text-[11px] sm:text-xs font-medium px-2.5 py-1 rounded-lg bg-white/15 hover:bg-white/25 transition-colors"
+              className="inline-flex items-center gap-1.5 text-caption sm:text-xs font-medium px-2.5 py-1 rounded-lg bg-white/15 hover:bg-white/25 transition-colors"
             >
               <Download size={12} />
               Download All
@@ -370,7 +370,7 @@ function PreviousVisitsPanel({ visits, udid }: { visits: SerialVisit[]; udid: st
         {filtered.length === 0 ? (
           <div className="text-center py-8">
             <AlertCircle size={28} className="mx-auto text-[var(--color-ink-300)] mb-2" />
-            <p className="text-[13px] sm:text-sm text-[var(--color-ink-400)]">No visits found.</p>
+            <p className="text-label sm:text-sm text-[var(--color-ink-400)]">No visits found.</p>
           </div>
         ) : (
           filtered.map((v) => <VisitCard key={v.id} visit={v} udid={udid} />)
@@ -404,7 +404,7 @@ function LastVisitSummarySection({
               <button
                 key={st}
                 onClick={() => setAiSubTab(st)}
-                className={`relative flex items-center rounded px-2.5 py-1 text-[9px] sm:text-[10px] font-semibold transition-all ${
+                className={`relative flex items-center rounded px-2.5 py-1 text-micro sm:text-caption font-semibold transition-all ${
                   aiSubTab === st
                     ? "bg-white shadow-sm text-violet-700 shadow-violet-100"
                     : "text-[var(--color-ink-400)] hover:text-[var(--color-ink-600)]"
@@ -421,13 +421,13 @@ function LastVisitSummarySection({
       <div hidden={aiSubTab !== "single"} aria-hidden={aiSubTab !== "single"}>
         {tabState.aiError ? (
           <div className="space-y-2">
-            <div className="flex items-start gap-2 p-3 rounded-xl bg-red-50 text-[10px] sm:text-[11px] text-red-700">
+            <div className="flex items-start gap-2 p-3 rounded-xl bg-red-50 text-caption sm:text-caption text-red-700">
               <AlertCircle size={12} className="shrink-0 mt-0.5" />
               <span>{tabState.aiError}</span>
             </div>
             <button
               onClick={() => tabState.retryAI()}
-              className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1.5 rounded-lg bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 transition-colors"
+              className="inline-flex items-center gap-1.5 text-caption font-semibold px-3 py-1.5 rounded-lg bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 transition-colors"
             >
               <RefreshCw size={11} /> Try Again
             </button>
@@ -437,7 +437,7 @@ function LastVisitSummarySection({
         ) : (
           <button
             onClick={() => tabState.requestAI()}
-            className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1.5 rounded-lg bg-[var(--color-primary-50)] text-[var(--color-primary-700)] border border-[var(--color-primary-200)] hover:bg-[var(--color-primary-100)] disabled:opacity-60 transition-colors"
+            className="inline-flex items-center gap-1.5 text-caption font-semibold px-3 py-1.5 rounded-lg bg-[var(--color-primary-50)] text-[var(--color-primary-700)] border border-[var(--color-primary-200)] hover:bg-[var(--color-primary-100)] disabled:opacity-60 transition-colors"
           >
             <Sparkles size={11} /> Generate AI Summary
           </button>
@@ -460,9 +460,9 @@ function LastVisitSummarySection({
         <div className="px-4 py-2 border-b border-[var(--color-border)] flex items-center justify-between gap-2 flex-wrap">
           <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
             <Activity size={13} className="text-[var(--color-primary-600)] shrink-0" />
-            <span className="text-[11px] sm:text-xs font-semibold text-[var(--color-ink-800)]">Last Visit Summary</span>
-            <span className="text-[var(--color-ink-300)] text-[9px] sm:text-[10px]">·</span>
-            <span className="text-[9px] sm:text-[10px] text-[var(--color-ink-400)]">{format(new Date(summary.date), "dd MMM yyyy")}</span>
+            <span className="text-caption sm:text-xs font-semibold text-[var(--color-ink-800)]">Last Visit Summary</span>
+            <span className="text-[var(--color-ink-300)] text-micro sm:text-caption">·</span>
+            <span className="text-micro sm:text-caption text-[var(--color-ink-400)]">{format(new Date(summary.date), "dd MMM yyyy")}</span>
             <VisitSummaryTabBar
               tab={tabState.tab}
               switchTab={tabState.switchTab}
@@ -471,7 +471,7 @@ function LastVisitSummarySection({
             />
           </div>
           {summary.hospitalName && (
-            <span className="flex items-center gap-1 text-[10px] sm:text-[11px] text-[var(--color-ink-400)] shrink-0">
+            <span className="flex items-center gap-1 text-caption sm:text-caption text-[var(--color-ink-400)] shrink-0">
               <Hospital size={11} />{summary.hospitalName}
             </span>
           )}
@@ -495,26 +495,26 @@ function LastVisitSummarySection({
                     and cell classes, so switching tabs does not shift the
                     columns around under the reader. */}
                 {summary.visitType && (
-                  <span className="inline-block px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-medium bg-[var(--color-primary-50)] text-[var(--color-primary-600)]">{summary.visitType}</span>
+                  <span className="inline-block px-2 py-0.5 rounded-full text-caption sm:text-caption font-medium bg-[var(--color-primary-50)] text-[var(--color-primary-600)]">{summary.visitType}</span>
                 )}
 
                 {summary.chiefComplaint && (
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-[var(--color-ink-400)] shrink-0">Chief Complaint</span>
+                    <span className="text-micro sm:text-caption font-bold uppercase tracking-widest text-[var(--color-ink-400)] shrink-0">Chief Complaint</span>
                     <ComplaintChips value={summary.chiefComplaint} wrap />
                   </div>
                 )}
 
                 {summary.diagnoses.length > 0 && (
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-[var(--color-ink-400)] shrink-0">Diagnoses</span>
+                    <span className="text-micro sm:text-caption font-bold uppercase tracking-widest text-[var(--color-ink-400)] shrink-0">Diagnoses</span>
                     {[...summary.diagnoses]
                       .sort((a, b) => {
                         const ord: Record<string, number> = { ACTIVE: 0, CHRONIC: 1, RESOLVED: 2 };
                         return (ord[a.status] ?? 3) - (ord[b.status] ?? 3);
                       })
                       .map((d) => (
-                        <span key={d.id} className="clinical-diagnosis-chip inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] sm:text-[11px] border">
+                        <span key={d.id} className="clinical-diagnosis-chip inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-caption sm:text-caption border">
                           {d.laterality && <span className="clinical-laterality mr-1">{d.laterality}</span>}
                           {d.description}
                         </span>
@@ -581,7 +581,7 @@ function LastVisitSummarySection({
 
                 {summary.followUpDate && (
                   <Block label="Follow-up">
-                    <p className="text-[10px] sm:text-[11px] font-semibold text-[var(--color-ink-800)]">
+                    <p className="text-caption sm:text-caption font-semibold text-[var(--color-ink-800)]">
                       {format(new Date(summary.followUpDate), "EEEE, dd MMM yyyy")}
                     </p>
                   </Block>
@@ -589,7 +589,7 @@ function LastVisitSummarySection({
 
                 {!summary.chiefComplaint && summary.diagnoses.length === 0 && summary.medications.length === 0
                   && summary.investigations.length === 0 && !summary.followUpDate && (
-                  <p className="text-[10px] sm:text-[11px] italic text-[var(--color-ink-300)]">
+                  <p className="text-caption sm:text-caption italic text-[var(--color-ink-300)]">
                     No clinical data recorded for this visit.
                   </p>
                 )}
@@ -633,8 +633,8 @@ function FinalizedVisitModal({
             <CheckCircle2 size={20} className="text-blue-500" />
           </div>
           <div>
-            <p className="text-[15px] sm:text-base font-bold text-[var(--color-ink-900)]">Finalized &amp; Signed</p>
-            <p className="text-[13px] sm:text-sm text-[var(--color-ink-500)] mt-1">
+            <p className="text-heading-sm sm:text-base font-bold text-[var(--color-ink-900)]">Finalized &amp; Signed</p>
+            <p className="text-label sm:text-sm text-[var(--color-ink-500)] mt-1">
               You can only view. Do you wish to edit?
             </p>
           </div>
@@ -693,7 +693,7 @@ function LongitudinalSummarySection({ udid, visits, inline = false }: { udid: st
           <button
             onClick={handleGenerate}
             disabled={pending}
-            className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1.5 rounded-lg bg-[var(--color-primary-50)] text-[var(--color-primary-700)] border border-[var(--color-primary-200)] hover:bg-[var(--color-primary-100)] disabled:opacity-60 transition-colors"
+            className="inline-flex items-center gap-1.5 text-caption font-semibold px-3 py-1.5 rounded-lg bg-[var(--color-primary-50)] text-[var(--color-primary-700)] border border-[var(--color-primary-200)] hover:bg-[var(--color-primary-100)] disabled:opacity-60 transition-colors"
           >
             {pending ? <Loader2 size={11} className="animate-spin" /> : <Sparkles size={11} />}
             {pending ? "Generating…" : "Generate AI Summary"}
@@ -702,12 +702,12 @@ function LongitudinalSummarySection({ udid, visits, inline = false }: { udid: st
         {/* AI error + retry */}
         {aiError && (
           <div className="space-y-2">
-            <div className="flex items-start gap-2 p-3 rounded-xl bg-red-50 text-[10px] sm:text-[11px] text-red-700">
+            <div className="flex items-start gap-2 p-3 rounded-xl bg-red-50 text-caption sm:text-caption text-red-700">
               <AlertCircle size={12} className="shrink-0 mt-0.5" />{aiError}
             </div>
             <button
               onClick={handleGenerate}
-              className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1.5 rounded-lg bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 transition-colors"
+              className="inline-flex items-center gap-1.5 text-caption font-semibold px-3 py-1.5 rounded-lg bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 transition-colors"
             >
               <RefreshCw size={11} /> Try Again
             </button>
@@ -719,7 +719,7 @@ function LongitudinalSummarySection({ udid, visits, inline = false }: { udid: st
             <div className="flex items-center justify-between gap-2 mb-1.5">
               <div className="flex items-center gap-1.5">
                 <Sparkles size={11} className="text-violet-500" />
-                <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-violet-600">
+                <span className="text-micro sm:text-caption font-bold uppercase tracking-widest text-violet-600">
                   {aiSource === "claude" ? "Claude AI Summary" : "Auto-Generated Summary"}
                 </span>
               </div>
@@ -730,17 +730,17 @@ function LongitudinalSummarySection({ udid, visits, inline = false }: { udid: st
                 <X size={12} />
               </button>
             </div>
-            {aiNotice && <p className="text-[9px] sm:text-[10px] leading-snug text-amber-700 mb-2">{aiNotice}</p>}
+            {aiNotice && <p className="text-micro sm:text-caption leading-snug text-amber-700 mb-2">{aiNotice}</p>}
             <div className="space-y-1.5">
               {aiText.split(/\n+/).filter(Boolean).map((line, i) => (
-                <p key={i} className="text-[10px] sm:text-[11px] leading-relaxed text-[var(--color-ink-700)]">{line}</p>
+                <p key={i} className="text-caption sm:text-caption leading-relaxed text-[var(--color-ink-700)]">{line}</p>
               ))}
             </div>
           </div>
         )}
         {/* Visit count + chronological list */}
         <div>
-          <p className="text-[9px] sm:text-[10px] text-[var(--color-ink-400)] mb-2">
+          <p className="text-micro sm:text-caption text-[var(--color-ink-400)] mb-2">
             {visits.length} visit{visits.length > 1 ? "s" : ""}
             {visits.length > 1 && firstDate && lastDate && (
               <> · {format(new Date(firstDate), "dd MMM yyyy")} – {format(new Date(lastDate), "dd MMM yyyy")}</>
@@ -750,18 +750,18 @@ function LongitudinalSummarySection({ udid, visits, inline = false }: { udid: st
             {visits.map((v) => (
               <div key={v.id} className="px-3 py-2.5">
                 <div className="flex items-start justify-between gap-2 mb-0.5">
-                  <p className="text-[11px] font-semibold text-[var(--color-ink-800)]">
+                  <p className="text-caption font-semibold text-[var(--color-ink-800)]">
                     {format(new Date(v.date), "dd MMM yyyy")}
                   </p>
                   {v.followUpDate && (
-                    <span className="text-[9px] font-medium text-[var(--color-primary-600)] bg-[var(--color-primary-50)] border border-[var(--color-primary-100)] px-1.5 py-0.5 rounded-full shrink-0">
+                    <span className="text-micro font-medium text-[var(--color-primary-600)] bg-[var(--color-primary-50)] border border-[var(--color-primary-100)] px-1.5 py-0.5 rounded-full shrink-0">
                       F/U {format(new Date(v.followUpDate), "dd MMM")}
                     </span>
                   )}
                 </div>
-                {v.visitType && <p className="text-[9px] text-[var(--color-ink-400)]">{v.visitType}</p>}
+                {v.visitType && <p className="text-micro text-[var(--color-ink-400)]">{v.visitType}</p>}
                 {v.diagnoses.length > 0 && (
-                  <p className="clinical-diagnosis-text text-[10px] mt-0.5">
+                  <p className="clinical-diagnosis-text text-caption mt-0.5">
                     <span className="font-semibold">Dx:</span>{" "}
                     {v.diagnoses.map((d, i) => (
                       <span key={i}>{d.description}{d.laterality ? ` (${d.laterality})` : ""}{d.status === "RESOLVED" ? " ✓" : ""}{i < v.diagnoses.length - 1 ? ", " : ""}</span>
@@ -769,7 +769,7 @@ function LongitudinalSummarySection({ udid, visits, inline = false }: { udid: st
                   </p>
                 )}
                 {v.medications.length > 0 && (
-                  <p className="text-[10px] text-[var(--color-ink-500)] mt-0.5">
+                  <p className="text-caption text-[var(--color-ink-500)] mt-0.5">
                     <span className="font-semibold">Rx:</span>{" "}
                     {v.medications.map((m, i) => <span key={i}>{m.drugName}{i < v.medications.length - 1 ? ", " : ""}</span>)}
                   </p>
@@ -790,7 +790,7 @@ function LongitudinalSummarySection({ udid, visits, inline = false }: { udid: st
           <Activity size={16} className="text-[var(--color-primary-600)] shrink-0" />
           <div>
             <p className="text-sm font-bold text-[var(--color-ink-900)]">Longitudinal Summary</p>
-            <p className="text-[11px] text-[var(--color-ink-400)]">
+            <p className="text-caption text-[var(--color-ink-400)]">
               {visits.length} visit{visits.length > 1 ? "s" : ""}
               {firstDate && lastDate && visits.length > 1
                 ? ` · ${format(new Date(firstDate), "dd MMM yyyy")} – ${format(new Date(lastDate), "dd MMM yyyy")}`
@@ -802,7 +802,7 @@ function LongitudinalSummarySection({ udid, visits, inline = false }: { udid: st
           <button
             onClick={handleGenerate}
             disabled={pending}
-            className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1.5 rounded-lg bg-[var(--color-primary-50)] text-[var(--color-primary-700)] border border-[var(--color-primary-200)] hover:bg-[var(--color-primary-100)] disabled:opacity-60 transition-colors shrink-0"
+            className="inline-flex items-center gap-1.5 text-caption font-semibold px-3 py-1.5 rounded-lg bg-[var(--color-primary-50)] text-[var(--color-primary-700)] border border-[var(--color-primary-200)] hover:bg-[var(--color-primary-100)] disabled:opacity-60 transition-colors shrink-0"
           >
             {pending ? <Loader2 size={11} className="animate-spin" /> : <Sparkles size={11} />}
             {pending ? "Generating…" : "AI Summary"}
@@ -829,7 +829,7 @@ function LongitudinalSummarySection({ udid, visits, inline = false }: { udid: st
       {aiText && (
         <div className="px-5 py-4 bg-[var(--color-primary-50)] border-b border-[var(--color-primary-100)]">
           <div className="flex items-center justify-between gap-2 mb-2">
-            <p className="text-[11px] font-semibold text-[var(--color-primary-700)] uppercase tracking-wide">
+            <p className="text-caption font-semibold text-[var(--color-primary-700)] uppercase tracking-wide">
               {aiSource === "claude" ? "AI-generated" : "Auto-generated"} Summary
             </p>
             <button
@@ -839,8 +839,8 @@ function LongitudinalSummarySection({ udid, visits, inline = false }: { udid: st
               <X size={12} />
             </button>
           </div>
-          {aiNotice && <p className="text-[11px] text-amber-600 mb-2">{aiNotice}</p>}
-          <p className="text-[13px] text-[var(--color-ink-800)] leading-relaxed">{aiText}</p>
+          {aiNotice && <p className="text-caption text-amber-600 mb-2">{aiNotice}</p>}
+          <p className="text-label text-[var(--color-ink-800)] leading-relaxed">{aiText}</p>
         </div>
       )}
 
@@ -850,15 +850,15 @@ function LongitudinalSummarySection({ udid, visits, inline = false }: { udid: st
           <div key={v.id} className="px-5 py-3.5">
             <div className="flex items-start justify-between gap-3 mb-1">
               <div>
-                <p className="text-[13px] font-semibold text-[var(--color-ink-800)]">
+                <p className="text-label font-semibold text-[var(--color-ink-800)]">
                   {format(new Date(v.date), "dd MMM yyyy")}
                 </p>
-                <p className="text-[11px] text-[var(--color-ink-400)]">
+                <p className="text-caption text-[var(--color-ink-400)]">
                   {[v.visitType, v.hospitalName].filter(Boolean).join(" · ")}
                 </p>
               </div>
               {v.followUpDate && (
-                <span className="text-[10px] font-medium text-[var(--color-primary-600)] bg-[var(--color-primary-50)] border border-[var(--color-primary-100)] px-2 py-0.5 rounded-full shrink-0">
+                <span className="text-caption font-medium text-[var(--color-primary-600)] bg-[var(--color-primary-50)] border border-[var(--color-primary-100)] px-2 py-0.5 rounded-full shrink-0">
                   F/U {format(new Date(v.followUpDate), "dd MMM")}
                 </span>
               )}
@@ -867,7 +867,7 @@ function LongitudinalSummarySection({ udid, visits, inline = false }: { udid: st
               <ComplaintChips value={v.chiefComplaint} wrap className="mb-1" />
             )}
             {v.diagnoses.length > 0 && (
-              <p className="clinical-diagnosis-text text-[11px]">
+              <p className="clinical-diagnosis-text text-caption">
                 <span className="font-semibold">Dx:</span>{" "}
                 {v.diagnoses.map((d, i) => (
                   <span key={i}>
@@ -879,7 +879,7 @@ function LongitudinalSummarySection({ udid, visits, inline = false }: { udid: st
               </p>
             )}
             {v.medications.length > 0 && (
-              <p className="text-[11px] text-[var(--color-ink-500)] mt-0.5">
+              <p className="text-caption text-[var(--color-ink-500)] mt-0.5">
                 <span className="font-semibold">Rx:</span>{" "}
                 {v.medications.map((m, i) => (
                   <span key={i}>{m.drugName}{i < v.medications.length - 1 ? ", " : ""}</span>
@@ -887,7 +887,7 @@ function LongitudinalSummarySection({ udid, visits, inline = false }: { udid: st
               </p>
             )}
             {v.investigations.length > 0 && (
-              <p className="text-[11px] text-[var(--color-ink-500)] mt-0.5">
+              <p className="text-caption text-[var(--color-ink-500)] mt-0.5">
                 <span className="font-semibold">Inv:</span>{" "}
                 {v.investigations.map((inv, i) => (
                   <span key={i}>{inv.testName}{i < v.investigations.length - 1 ? ", " : ""}</span>
@@ -951,7 +951,7 @@ export function PatientProfileClient({
         {visits.length === 0 ? (
           <button
             disabled
-            className="flex-1 flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-xl font-semibold text-[13px] sm:text-sm bg-[var(--color-primary-600)] text-white opacity-40 cursor-not-allowed shadow-sm"
+            className="flex-1 flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-xl font-semibold text-label sm:text-sm bg-[var(--color-primary-600)] text-white opacity-40 cursor-not-allowed shadow-sm"
           >
             <ChevronRight size={16} />
             Previous Visits
@@ -959,11 +959,11 @@ export function PatientProfileClient({
         ) : (
           <Link
             href={`/patients/${udid}/visits`}
-            className="flex-1 flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-xl font-semibold text-[13px] sm:text-sm bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] transition-colors shadow-sm"
+            className="flex-1 flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-xl font-semibold text-label sm:text-sm bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] transition-colors shadow-sm"
           >
             <ChevronRight size={16} />
             Previous Visits
-            <span className="ml-1 bg-white/20 text-white text-[10px] sm:text-[11px] font-bold px-2 py-0.5 rounded-full">
+            <span className="ml-1 bg-white/20 text-white text-caption sm:text-caption font-bold px-2 py-0.5 rounded-full">
               {visits.length}
             </span>
           </Link>
@@ -975,7 +975,7 @@ export function PatientProfileClient({
             todayIsFinalized ? (
               <button
                 onClick={() => setShowFinalizedModal(true)}
-                className="flex-1 flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-xl font-semibold text-[13px] sm:text-sm bg-emerald-600 text-white hover:bg-emerald-700 transition-colors shadow-sm"
+                className="flex-1 flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-xl font-semibold text-label sm:text-sm bg-emerald-600 text-white hover:bg-emerald-700 transition-colors shadow-sm"
               >
                 <Stethoscope size={16} />
                 Today's Visit
@@ -983,7 +983,7 @@ export function PatientProfileClient({
             ) : (
               <Link
                 href={`/emr/${udid}?visit=${todayVisit!.id}&returnTo=${encodeURIComponent(emrReturnTo)}`}
-                className="flex-1 flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-xl font-semibold text-[13px] sm:text-sm bg-emerald-600 text-white hover:bg-emerald-700 transition-colors shadow-sm"
+                className="flex-1 flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-xl font-semibold text-label sm:text-sm bg-emerald-600 text-white hover:bg-emerald-700 transition-colors shadow-sm"
               >
                 <Stethoscope size={16} />
                 Today's Visit
@@ -992,7 +992,7 @@ export function PatientProfileClient({
           ) : hasPendingAppointment ? (
             <Link
               href={`/emr/${udid}?returnTo=${encodeURIComponent(emrReturnTo)}`}
-              className="flex-1 flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-xl font-semibold text-[13px] sm:text-sm bg-emerald-600 text-white hover:bg-emerald-700 transition-colors shadow-sm"
+              className="flex-1 flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-xl font-semibold text-label sm:text-sm bg-emerald-600 text-white hover:bg-emerald-700 transition-colors shadow-sm"
             >
               <Stethoscope size={16} />
               Today&apos;s Visit
@@ -1000,7 +1000,7 @@ export function PatientProfileClient({
           ) : hasRequestedAppt ? (
             <button
               disabled
-              className="flex-1 flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-xl font-semibold text-[13px] sm:text-sm bg-[var(--color-surface-sunken)] text-[var(--color-ink-400)] border border-[var(--color-border)] cursor-not-allowed"
+              className="flex-1 flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-xl font-semibold text-label sm:text-sm bg-[var(--color-surface-sunken)] text-[var(--color-ink-400)] border border-[var(--color-border)] cursor-not-allowed"
               title="Patient has an appointment today but has not been moved to the queue yet"
             >
               <Clock size={16} />
@@ -1009,7 +1009,7 @@ export function PatientProfileClient({
           ) : (
             <button
               disabled
-              className="flex-1 flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-xl font-semibold text-[13px] sm:text-sm bg-[var(--color-surface-sunken)] text-[var(--color-ink-400)] border border-[var(--color-border)] cursor-not-allowed"
+              className="flex-1 flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-xl font-semibold text-label sm:text-sm bg-[var(--color-surface-sunken)] text-[var(--color-ink-400)] border border-[var(--color-border)] cursor-not-allowed"
             >
               <AlertCircle size={16} />
               No Appointment Today
@@ -1022,7 +1022,7 @@ export function PatientProfileClient({
       {todayIsFinalized && todayVisit?.finalizedAt && (
         <div className="flex items-center gap-1.5 mt-2">
           <CheckCircle2 size={12} className="text-emerald-500 shrink-0" />
-          <span className="text-[10px] sm:text-[11px] text-[var(--color-ink-500)]">
+          <span className="text-caption sm:text-caption text-[var(--color-ink-500)]">
             Finalized at{" "}
             <span className="font-semibold text-emerald-600">
               {new Date(todayVisit.finalizedAt).toLocaleTimeString("en-IN", {

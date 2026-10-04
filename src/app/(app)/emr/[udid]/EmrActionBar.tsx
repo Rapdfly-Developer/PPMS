@@ -89,7 +89,7 @@ function PartialDispenseModal({
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
           <div className="flex items-center gap-2">
             <PackageOpen size={18} className="text-amber-600" />
-            <h2 className="text-[15px] sm:text-base font-bold text-[var(--color-ink-900)]">Reason for Partial Dispense</h2>
+            <h2 className="text-heading-sm sm:text-base font-bold text-[var(--color-ink-900)]">Reason for Partial Dispense</h2>
           </div>
           <button onClick={onCancel} className="p-1.5 rounded-lg hover:bg-[var(--color-surface-sunken)] text-[var(--color-ink-400)]">
             <X size={16} />
@@ -128,7 +128,7 @@ function PartialDispenseModal({
                 {/* Preset reasons */}
                 {filteredPresets.length > 0 && (
                   <>
-                    <li className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-[var(--color-ink-400)] bg-[var(--color-surface-sunken)]">
+                    <li className="px-3 py-1.5 text-caption font-bold uppercase tracking-widest text-[var(--color-ink-400)] bg-[var(--color-surface-sunken)]">
                       Presets
                     </li>
                     {filteredPresets.map((r) => (
@@ -153,7 +153,7 @@ function PartialDispenseModal({
                 {/* History */}
                 {filteredHistory.length > 0 && (
                   <>
-                    <li className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-[var(--color-ink-400)] bg-[var(--color-surface-sunken)] flex items-center gap-1.5 border-t border-[var(--color-border)]">
+                    <li className="px-3 py-1.5 text-caption font-bold uppercase tracking-widest text-[var(--color-ink-400)] bg-[var(--color-surface-sunken)] flex items-center gap-1.5 border-t border-[var(--color-border)]">
                       <Clock size={10} /> Recent
                     </li>
                     {filteredHistory.map((r) => (
@@ -208,7 +208,7 @@ function PartialDispenseModal({
             </div>
           )}
 
-          <p className="text-[11px] text-[var(--color-ink-400)]">
+          <p className="text-caption text-[var(--color-ink-400)]">
             Type a keyword to search presets, pick a recent reason, or enter a custom one and press Enter.
           </p>
         </div>
@@ -351,7 +351,7 @@ export function EmrActionBar({
         {!closed && !isLastTab && (
           <button
             onClick={onNextSection}
-            className="flex-1 md:flex-none flex items-center justify-center gap-1 text-[11px] sm:text-sm font-medium px-2.5 py-2.5 md:px-4 md:py-2 rounded-xl bg-white border border-[var(--color-border)] hover:border-[var(--color-primary-500)] text-[var(--color-ink-700)] whitespace-nowrap"
+            className="flex-1 md:flex-none flex items-center justify-center gap-1 text-caption sm:text-sm font-medium px-2.5 py-2.5 md:px-4 md:py-2 rounded-xl bg-white border border-[var(--color-border)] hover:border-[var(--color-primary-500)] text-[var(--color-ink-700)] whitespace-nowrap"
           >
             Next <ChevronRight size={13} />
           </button>
@@ -361,7 +361,7 @@ export function EmrActionBar({
         <div className="flex-1 md:flex-none relative" ref={printRef}>
           <button
             onClick={() => setPrintOpen((v) => !v)}
-            className="w-full flex items-center justify-center gap-1 text-[11px] sm:text-sm font-medium px-2.5 py-2.5 md:px-4 md:py-2 rounded-xl bg-white border border-[var(--color-border)] hover:border-[var(--color-primary-500)] text-[var(--color-ink-700)] whitespace-nowrap"
+            className="w-full flex items-center justify-center gap-1 text-caption sm:text-sm font-medium px-2.5 py-2.5 md:px-4 md:py-2 rounded-xl bg-white border border-[var(--color-border)] hover:border-[var(--color-primary-500)] text-[var(--color-ink-700)] whitespace-nowrap"
           >
             <Printer size={13} /> Print Rx <ChevronDown size={11} className={`transition-transform ${printOpen ? "rotate-180" : ""}`} />
           </button>
@@ -372,12 +372,12 @@ export function EmrActionBar({
               <button
                 type="button"
                 onClick={() => { setPrintOpen(false); void openPdfNative(pdfBase); }}
-                className="flex items-center gap-3 px-4 py-3 w-full text-left text-[13px] sm:text-sm text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] transition-colors"
+                className="flex items-center gap-3 px-4 py-3 w-full text-left text-label sm:text-sm text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] transition-colors"
               >
                 <Printer size={15} className="text-[var(--color-primary-600)] shrink-0" />
                 <div>
                   <p className="font-medium">Print Long Summary</p>
-                  <p className="text-[10px] text-[var(--color-ink-400)]">Full Rx in browser</p>
+                  <p className="text-caption text-[var(--color-ink-400)]">Full Rx in browser</p>
                 </div>
               </button>
 
@@ -397,12 +397,12 @@ export function EmrActionBar({
                     void openPdfNative(`${pdfBase}?dl=1`);
                   }
                 }}
-                className="flex items-center gap-3 px-4 py-3 text-[13px] sm:text-sm text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] transition-colors"
+                className="flex items-center gap-3 px-4 py-3 text-label sm:text-sm text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] transition-colors"
               >
                 <Download size={15} className="text-[var(--color-primary-600)] shrink-0" />
                 <div>
                   <p className="font-medium">Download PDF</p>
-                  <p className="text-[10px] text-[var(--color-ink-400)]">Save full EMR to device</p>
+                  <p className="text-caption text-[var(--color-ink-400)]">Save full EMR to device</p>
                 </div>
               </a>
 
@@ -416,12 +416,12 @@ export function EmrActionBar({
                   const url = `/api/prescription-pdf/${visit.id}/summary${spv ? `?spv=${spv}` : ""}`;
                   void openPdfNative(url);
                 }}
-                className="flex items-center gap-3 px-4 py-3 w-full text-left text-[13px] sm:text-sm text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] transition-colors"
+                className="flex items-center gap-3 px-4 py-3 w-full text-left text-label sm:text-sm text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] transition-colors"
               >
                 <FileText size={15} className="text-[var(--color-primary-600)] shrink-0" />
                 <div>
                   <p className="font-medium">Print Short Summary</p>
-                  <p className="text-[10px] text-[var(--color-ink-400)]">Plan, Rx &amp; advice only</p>
+                  <p className="text-caption text-[var(--color-ink-400)]">Plan, Rx &amp; advice only</p>
                 </div>
               </button>
             </div>
@@ -432,7 +432,7 @@ export function EmrActionBar({
           <button
             disabled={partialPending}
             onClick={() => setShowPartialModal(true)}
-            className="flex-1 md:flex-none flex items-center justify-center gap-1 text-[11px] sm:text-sm font-medium px-2.5 py-2.5 md:px-4 md:py-2 rounded-xl bg-amber-50 border border-amber-300 text-amber-700 hover:bg-amber-100 disabled:opacity-60 whitespace-nowrap"
+            className="flex-1 md:flex-none flex items-center justify-center gap-1 text-caption sm:text-sm font-medium px-2.5 py-2.5 md:px-4 md:py-2 rounded-xl bg-amber-50 border border-amber-300 text-amber-700 hover:bg-amber-100 disabled:opacity-60 whitespace-nowrap"
           >
             <PackageOpen size={13} /> {partialPending ? "Saving…" : <><span className="hidden sm:inline">Partial </span>Dispense</>}
           </button>
@@ -440,7 +440,7 @@ export function EmrActionBar({
 
         {closed ? (
           autoClosed ? (
-            <span className="flex-1 md:flex-none flex items-center justify-center gap-1 text-[11px] sm:text-sm font-medium px-2.5 py-2.5 md:px-4 md:py-2 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 whitespace-nowrap">
+            <span className="flex-1 md:flex-none flex items-center justify-center gap-1 text-caption sm:text-sm font-medium px-2.5 py-2.5 md:px-4 md:py-2 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 whitespace-nowrap">
               <Lock size={13} /> <span className="hidden sm:inline">Auto-closed at </span>EOD
             </span>
           ) : finalizedToday ? (
@@ -448,7 +448,7 @@ export function EmrActionBar({
               {!editMode && (
                 <button
                   onClick={onEnterEditMode}
-                  className="flex-1 md:flex-none flex items-center justify-center gap-1 text-[11px] sm:text-xs font-medium px-2.5 py-2.5 md:px-3 md:py-2 rounded-xl bg-blue-50 border border-blue-200 text-blue-600 hover:bg-blue-100 hover:border-blue-300 transition-colors whitespace-nowrap"
+                  className="flex-1 md:flex-none flex items-center justify-center gap-1 text-caption sm:text-xs font-medium px-2.5 py-2.5 md:px-3 md:py-2 rounded-xl bg-blue-50 border border-blue-200 text-blue-600 hover:bg-blue-100 hover:border-blue-300 transition-colors whitespace-nowrap"
                 >
                   <PenLine size={12} /> Edit
                 </button>
@@ -461,13 +461,13 @@ export function EmrActionBar({
                     setShowSuccess(true);
                   })
                 }
-                className="flex-1 md:flex-none flex items-center justify-center gap-1 text-[11px] sm:text-sm font-medium px-2.5 py-2.5 md:px-5 md:py-2 rounded-xl bg-[var(--color-primary-900)] text-white hover:bg-[var(--color-primary-700)] transition-colors disabled:opacity-60 whitespace-nowrap"
+                className="flex-1 md:flex-none flex items-center justify-center gap-1 text-caption sm:text-sm font-medium px-2.5 py-2.5 md:px-5 md:py-2 rounded-xl bg-[var(--color-primary-900)] text-white hover:bg-[var(--color-primary-700)] transition-colors disabled:opacity-60 whitespace-nowrap"
               >
                 <FileSignature size={13} /> {pending ? "Saving…" : <><span className="hidden sm:inline">Finalize &amp; </span>Sign</>}
               </button>
             </>
           ) : (
-            <span className="flex-1 md:flex-none flex items-center justify-center gap-1 text-[11px] sm:text-sm font-medium px-2.5 py-2.5 md:px-4 md:py-2 rounded-xl bg-[var(--color-success-100)] text-[var(--color-success-600)] whitespace-nowrap">
+            <span className="flex-1 md:flex-none flex items-center justify-center gap-1 text-caption sm:text-sm font-medium px-2.5 py-2.5 md:px-4 md:py-2 rounded-xl bg-[var(--color-success-100)] text-[var(--color-success-600)] whitespace-nowrap">
               <CheckCircle2 size={13} /> Finalized
             </span>
           )
@@ -480,7 +480,7 @@ export function EmrActionBar({
                 setShowSuccess(true);
               })
             }
-            className="flex-1 md:flex-none flex items-center justify-center gap-1 text-[11px] sm:text-sm font-medium px-2.5 py-2.5 md:px-5 md:py-2 rounded-xl bg-[var(--color-primary-900)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-60 whitespace-nowrap"
+            className="flex-1 md:flex-none flex items-center justify-center gap-1 text-caption sm:text-sm font-medium px-2.5 py-2.5 md:px-5 md:py-2 rounded-xl bg-[var(--color-primary-900)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-60 whitespace-nowrap"
           >
             <FileSignature size={13} /> {pending ? "Saving…" : <><span className="hidden sm:inline">Finalize &amp; </span>Sign</>}
           </button>

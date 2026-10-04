@@ -156,7 +156,7 @@ function KeywordChips({
           kw={kw}
           onSingle={() => onAppend(kw)}
           onDouble={() => onRemoveFromText(kw)}
-          className="inline-flex items-center px-2 py-0.5 rounded-full border border-[var(--color-border)] bg-white text-[11px] text-[var(--color-ink-600)] hover:border-[var(--color-primary-400)] hover:text-[var(--color-primary-700)] transition-colors"
+          className="inline-flex items-center px-2 py-0.5 rounded-full border border-[var(--color-border)] bg-white text-caption text-[var(--color-ink-600)] hover:border-[var(--color-primary-400)] hover:text-[var(--color-primary-700)] transition-colors"
         >
           {kw}
         </ChipBtn>
@@ -164,7 +164,7 @@ function KeywordChips({
       {custom.map((kw) => (
         <span
           key={kw}
-          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-[11px] text-[var(--color-primary-700)]"
+          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-caption text-[var(--color-primary-700)]"
         >
           <ChipBtn
             kw={kw}
@@ -206,7 +206,7 @@ function AddKeywordButton({
     <button
       type="button"
       onClick={add}
-      className="self-start inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-[10px] font-medium text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] transition-colors whitespace-nowrap"
+      className="self-start inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-caption font-medium text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] transition-colors whitespace-nowrap"
     >
       <Plus size={11} strokeWidth={2.5} />
       Keyword

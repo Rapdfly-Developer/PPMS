@@ -44,14 +44,14 @@ function SwotPanel({ swot }: { swot: SwotData }) {
           <div key={key} className={`rounded-xl border ${borderCls} ${bgCls} p-4`}>
             <div className="flex items-center gap-2 mb-2.5">
               <Icon size={14} className={textCls} />
-              <span className={`text-[11px] font-bold uppercase tracking-widest ${textCls}`}>{title}</span>
+              <span className={`text-caption font-bold uppercase tracking-widest ${textCls}`}>{title}</span>
             </div>
             {items.length === 0 ? (
-              <p className="text-[12px] text-[var(--color-ink-400)]">No signals identified for this period.</p>
+              <p className="text-caption text-[var(--color-ink-400)]">No signals identified for this period.</p>
             ) : (
               <ul className="flex flex-col gap-1.5">
                 {items.map((item, i) => (
-                  <li key={i} className="flex items-start gap-2 text-[12.5px] leading-snug text-[var(--color-ink-700)]">
+                  <li key={i} className="flex items-start gap-2 text-label leading-snug text-[var(--color-ink-700)]">
                     <span className={`mt-[5px] h-1.5 w-1.5 shrink-0 rounded-full ${dotCls}`} aria-hidden="true" />
                     {item}
                   </li>
@@ -112,7 +112,7 @@ export function OverviewView({ data, ctx }: { data: OverviewData; ctx: ViewCtx }
           ) : (
             <ul className="flex flex-col divide-y divide-[var(--color-border)]">
               {data.insights.map((t) => (
-                <li key={t} className="flex items-start gap-3 py-2.5 first:pt-0 last:pb-0 text-[13px] leading-relaxed text-[var(--color-ink-700)]">
+                <li key={t} className="flex items-start gap-3 py-2.5 first:pt-0 last:pb-0 text-label leading-relaxed text-[var(--color-ink-700)]">
                   <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--color-primary-500)]" aria-hidden="true" />
                   <span>{t}</span>
                 </li>
@@ -132,7 +132,7 @@ export function OverviewView({ data, ctx }: { data: OverviewData; ctx: ViewCtx }
           subtitle="Latest entries from the audit log"
           icon={History}
           action={!ctx.print ? (
-            <Link href={`/analytics${buildQuery(ctx.params, { tab: "activity" })}`} className="inline-flex items-center gap-1 text-[12px] font-semibold text-[var(--color-primary-700)] hover:underline">
+            <Link href={`/analytics${buildQuery(ctx.params, { tab: "activity" })}`} className="inline-flex items-center gap-1 text-caption font-semibold text-[var(--color-primary-700)] hover:underline">
               Full audit trail <ArrowRight size={12} />
             </Link>
           ) : undefined}
@@ -374,7 +374,7 @@ export function FollowUpsView({ data, ctx }: { data: FollowUpsData; ctx: ViewCtx
       </Grid2>
       <Panel
         title={data.table.title}
-        action={!ctx.print ? <Link href="/follow-ups" className="inline-flex items-center gap-1 text-[12px] font-semibold text-[var(--color-primary-700)] hover:underline">Open Follow-ups <ArrowRight size={12} /></Link> : undefined}
+        action={!ctx.print ? <Link href="/follow-ups" className="inline-flex items-center gap-1 text-caption font-semibold text-[var(--color-primary-700)] hover:underline">Open Follow-ups <ArrowRight size={12} /></Link> : undefined}
       >
         <DataTable table={data.table} print={ctx.print} />
       </Panel>
@@ -393,9 +393,9 @@ export function HospitalsView({ data, ctx }: { data: HospitalsData; ctx: ViewCtx
             <>
               <div className="flex items-center gap-2.5">
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--color-primary-50)] text-[var(--color-primary-700)]"><Building2 size={15} /></span>
-                <p className="min-w-0 truncate text-[14px] font-semibold text-[var(--color-ink-900)]">{h.name}</p>
+                <p className="min-w-0 truncate text-body font-semibold text-[var(--color-ink-900)]">{h.name}</p>
               </div>
-              <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-[12px]">
+              <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-caption">
                 {[
                   ["Appointments", h.appointments.toLocaleString("en-IN")],
                   ["Consultations", h.consultations.toLocaleString("en-IN")],
@@ -415,7 +415,7 @@ export function HospitalsView({ data, ctx }: { data: HospitalsData; ctx: ViewCtx
           ) : (
             <Link key={h.id} href={h.href} className="rounded-2xl border border-[var(--color-border)] bg-white p-5 shadow-[0_1px_2px_rgba(16,24,40,0.04)] transition-[transform,border-color,box-shadow] duration-200 hover:-translate-y-px hover:border-[#D3DCDF] hover:shadow-[0_8px_24px_-12px_rgba(16,24,40,0.14)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary-500)]">
               {body}
-              <p className="mt-3 inline-flex items-center gap-1 text-[11.5px] font-semibold text-[var(--color-primary-700)]">View this hospital <ArrowRight size={11} /></p>
+              <p className="mt-3 inline-flex items-center gap-1 text-caption font-semibold text-[var(--color-primary-700)]">View this hospital <ArrowRight size={11} /></p>
             </Link>
           );
         })}
@@ -461,7 +461,7 @@ function AuditFilters({ data, ctx }: { data: ActivityData; ctx: ViewCtx }) {
   const go = (key: string, value: string) => {
     start(() => router.push(`/analytics${buildQuery(ctx.params, { tab: "activity", [key]: value || undefined, page: undefined })}`, { scroll: false }));
   };
-  const select = "h-9 rounded-[10px] border border-[var(--color-border)] bg-white px-3 text-[12.5px] transition-colors hover:border-[#CBD4D8] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]/20 focus:border-[var(--color-primary-500)]";
+  const select = "h-9 rounded-[10px] border border-[var(--color-border)] bg-white px-3 text-label transition-colors hover:border-[#CBD4D8] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]/20 focus:border-[var(--color-primary-500)]";
   return (
     <div className={`mb-3 flex flex-wrap gap-2 ${pending ? "opacity-60" : ""}`}>
       <label className="sr-only" htmlFor="audit-action">Action</label>

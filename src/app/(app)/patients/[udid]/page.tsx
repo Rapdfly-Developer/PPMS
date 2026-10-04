@@ -316,18 +316,18 @@ export default async function PatientProfilePage({
               <div>
                 <h1 className="text-lg sm:text-xl font-bold leading-tight">{patient.name}</h1>
                 <div className="flex items-center gap-2 mt-1 flex-wrap">
-                  <span className="font-mono text-[10px] sm:text-[11px] bg-white/10 px-2 py-0.5 rounded" title="UDID (Doctor ID)">
+                  <span className="font-mono text-caption sm:text-caption bg-white/10 px-2 py-0.5 rounded" title="UDID (Doctor ID)">
                     <Hash size={9} className="inline mr-0.5" />{patient.udid ?? "—"}
                   </span>
                   {patient.uhid && (
-                    <span className="font-mono text-[10px] sm:text-[11px] bg-white/10 px-2 py-0.5 rounded" title="UHID (Hospital ID)">
+                    <span className="font-mono text-caption sm:text-caption bg-white/10 px-2 py-0.5 rounded" title="UHID (Hospital ID)">
                       <Hash size={9} className="inline mr-0.5" />{patient.uhid}
                     </span>
                   )}
-                  <span className="text-[13px] sm:text-sm text-white/80">
+                  <span className="text-label sm:text-sm text-white/80">
                     {patient.age}y · {patient.sex.charAt(0) + patient.sex.slice(1).toLowerCase()}
                   </span>
-                  <span className={`text-[10px] sm:text-[11px] font-semibold px-2.5 py-0.5 rounded-full ${CATEGORY_STYLES[patient.category] ?? CATEGORY_STYLES.GENERAL}`}>
+                  <span className={`text-caption sm:text-caption font-semibold px-2.5 py-0.5 rounded-full ${CATEGORY_STYLES[patient.category] ?? CATEGORY_STYLES.GENERAL}`}>
                     {patient.category}
                   </span>
                 </div>
@@ -336,7 +336,7 @@ export default async function PatientProfilePage({
 
             {/* Extra info chips */}
             {(bannerItems.length > 0 || patient.aadhaarPhotoUrl) && (
-              <div className="flex flex-wrap gap-x-4 gap-y-1.5 mt-3 text-[11px] sm:text-xs text-white/70">
+              <div className="flex flex-wrap gap-x-4 gap-y-1.5 mt-3 text-caption sm:text-xs text-white/70">
                 {bannerItems.map((item, i) => (
                   <span key={i} className="flex items-center gap-1.5">
                     <span className="text-white/50">{item.icon}</span>
@@ -361,14 +361,14 @@ export default async function PatientProfilePage({
               </div>
             )}
             {patient.notes && (
-              <div className="flex items-start gap-1.5 mt-2 text-[11px] sm:text-xs text-white/70">
+              <div className="flex items-start gap-1.5 mt-2 text-caption sm:text-xs text-white/70">
                 <span className="text-white/50 mt-0.5 shrink-0"><FileText size={13} /></span>
                 <span className="whitespace-pre-wrap"><span className="font-semibold text-white/55">Notes:</span> {patient.notes}</span>
               </div>
             )}
             {/* Referral info */}
             {(patient.referredBy || patient.referralPatient) && (
-              <div className="flex items-start gap-1.5 mt-2 text-[11px] sm:text-xs text-white/70">
+              <div className="flex items-start gap-1.5 mt-2 text-caption sm:text-xs text-white/70">
                 <span className="text-white/50 mt-0.5 shrink-0"><Link2 size={13} /></span>
                 <span>
                   <span className="font-semibold text-white/55">Referred by:</span>{" "}
@@ -381,9 +381,9 @@ export default async function PatientProfilePage({
                         {patient.referralPatient.name}
                       </a>
                       {" "}
-                      <span className="text-white/45 font-mono text-[10px]">({patient.referralPatient.udid})</span>
+                      <span className="text-white/45 font-mono text-caption">({patient.referralPatient.udid})</span>
                       {patient.referralRelationship && (
-                        <span className="ml-1 px-1.5 py-0.5 rounded-full bg-white/10 text-white/60 text-[10px]">
+                        <span className="ml-1 px-1.5 py-0.5 rounded-full bg-white/10 text-white/60 text-caption">
                           {patient.referralRelationship}
                         </span>
                       )}
@@ -396,7 +396,7 @@ export default async function PatientProfilePage({
             )}
             {/* Related patients — those who listed this patient as their referrer */}
             {(patient.referredPatients?.length ?? 0) > 0 && (
-              <div className="flex items-start gap-1.5 mt-2 text-[11px] sm:text-xs text-white/70">
+              <div className="flex items-start gap-1.5 mt-2 text-caption sm:text-xs text-white/70">
                 <span className="text-white/50 mt-0.5 shrink-0"><Users size={13} /></span>
                 <span>
                   <span className="font-semibold text-white/55">Related patients:</span>{" "}
@@ -410,7 +410,7 @@ export default async function PatientProfilePage({
                         {rp.name}
                       </a>
                       {rp.referralRelationship && (
-                        <span className="ml-1 px-1.5 py-0.5 rounded-full bg-white/10 text-white/60 text-[10px]">
+                        <span className="ml-1 px-1.5 py-0.5 rounded-full bg-white/10 text-white/60 text-caption">
                           {rp.referralRelationship}
                         </span>
                       )}
