@@ -62,3 +62,5 @@ dev-err.log
 
 # Local Claude Code permissions (may contain credentials)
 .claude/settings.local.json
+# Throwaway local DB query scripts
+q-tmp.*
