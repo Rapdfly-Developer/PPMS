@@ -5,6 +5,12 @@ export const P = {
   // Dashboard
   DASHBOARD_VIEW:          "dashboard.view",
 
+  // OPD
+  OPD_VIEW:                "opd.view",
+  OPD_WALKIN_CREATE:       "opd.walkin.create",
+  OPD_QUEUE_MANAGE:        "opd.queue.manage",
+  OPD_DISPENSE:            "opd.dispense",
+
   // Patients
   PATIENTS_VIEW:           "patients.view",
   PATIENTS_CREATE:         "patients.create",
@@ -74,6 +80,10 @@ export const ROLE_DEFAULT_PERMISSIONS: Record<string, string[]> = {
 
   HOSPITAL: [
     P.DASHBOARD_VIEW,
+    P.OPD_VIEW,
+    P.OPD_WALKIN_CREATE,
+    P.OPD_QUEUE_MANAGE,
+    P.OPD_DISPENSE,
     P.PATIENTS_VIEW,
     P.PATIENTS_CREATE,
     P.PATIENTS_EDIT,
