@@ -17,6 +17,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
       hospital: true,
       doctor: true,
       refraction: true,
+      visualAcuity: true,
+      retinoscopy: true,
       generalExam: true,
       diagnoses: { orderBy: { createdAt: "asc" } },
       medications: { orderBy: { createdAt: "asc" } },
@@ -27,8 +29,15 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
   if (!visit) return NextResponse.json({ error: "Visit not found" }, { status: 404 });
   if (visit.doctorId !== user.profileId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
+  // Refraction-section inclusion params (absent or "1" = include, "0" = exclude)
+  const sp = req.nextUrl.searchParams;
+  const inclRx     = sp.get("rx")     !== "0";
+  const inclExtras = sp.get("extras") !== "0";
+  const inclVa     = sp.get("va")     !== "0";
+  const inclRetino = sp.get("retino") !== "0";
+
   // ?spv=<visitId> pins a historical spectacle Rx to the summary
-  const spv = req.nextUrl.searchParams.get("spv");
+  const spv = sp.get("spv");
   let spectRc: any = null;
   if (spv) {
     if (spv === visitId) {
@@ -45,6 +54,30 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
   const le = parseJSON((rc as any)?.le, { sph: "", cyl: "", axis: "", nearSph: "", va: "", nearVa: "" });
 
   const hasOptical = rc && (re.sph || re.cyl || re.axis || le.sph || le.cyl || le.axis || re.nearSph || le.nearSph || re.va || le.va);
+
+  // Extra corrections from current visit's refraction (not overridable by spv)
+  const rawExtras: { label: string; re: any; le: any }[] = parseJSON((visit.refraction as any)?.extraCorrections, []);
+  const extraCorrections = inclExtras && rawExtras.length > 0 ? rawExtras : null;
+
+  // Visual Acuity
+  const va = visit.visualAcuity as any;
+  const visualAcuity = inclVa && va
+    ? {
+        reDistance: parseJSON(va.reDistance, null) as { unaided?: string; ph?: string; bcva?: string } | null,
+        leDistance: parseJSON(va.leDistance, null) as { unaided?: string; ph?: string; bcva?: string } | null,
+        reNear: va.reNear ?? null,
+        leNear: va.leNear ?? null,
+      }
+    : null;
+
+  // Retinoscopy
+  const reti = visit.retinoscopy as any;
+  const retinoscopy = inclRetino && reti
+    ? {
+        re: parseJSON(reti.re, null) as { sph?: string; cyl?: string; axis?: string } | null,
+        le: parseJSON(reti.le, null) as { sph?: string; cyl?: string; axis?: string } | null,
+      }
+    : null;
 
   const pdf = await generateShortSummaryPdf({
     patient: {
@@ -98,7 +131,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
       status: inv.status,
       notes: inv.notes ?? null,
     })),
-    opticalRx: hasOptical ? { re, le } : null,
+    opticalRx: inclRx && hasOptical ? { re, le } : null,
+    extraCorrections,
+    visualAcuity,
+    retinoscopy,
     minorProcedure: (visit as any).procedureName ? {
       procedureName: (visit as any).procedureName ?? null,
       procedureLaterality: (visit as any).procedureLaterality ?? null,
@@ -109,7 +145,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
   const dateStr = format(visit.date, "ddMMyyyy");
   const patientName = visit.patient.name.replace(/\s+/g, "_");
   const filename = `${patientName}_${visit.patient.udid}_${dateStr}_Summary.pdf`;
-  const disposition = req.nextUrl.searchParams.get("dl") === "1"
+  const disposition = sp.get("dl") === "1"
     ? `attachment; filename="${filename}"`
     : `inline; filename="${filename}"`;
 

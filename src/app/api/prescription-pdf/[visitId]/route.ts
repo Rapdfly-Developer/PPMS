@@ -8,6 +8,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
   const { visitId } = await params;
   const user = await requireRole("DOCTOR");
 
+  // Refraction-section inclusion params (absent or "1" = include, "0" = exclude)
+  const sp = req.nextUrl.searchParams;
+  const inclExtras = sp.get("extras") !== "0";
+  const inclRetino = sp.get("retino") !== "0";
+
   const visit = await prisma.visit.findUnique({
     where: { id: visitId },
     include: {
@@ -17,6 +22,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
       generalExam: true,
       visualAcuity: true,
       refraction: true,
+      retinoscopy: true,
       colourVisionCS: true,
       iopReadings: { orderBy: { takenAt: "desc" } },
       anteriorSegment: true,
@@ -106,6 +112,18 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
         re: parseJSON(rc?.re, { sph: "", cyl: "", axis: "", nearSph: "", nearCyl: "", nearAxis: "" }),
         le: parseJSON(rc?.le, { sph: "", cyl: "", axis: "", nearSph: "", nearCyl: "", nearAxis: "" }),
       },
+      extraCorrections: inclExtras
+        ? (parseJSON((rc as any)?.extraCorrections, []) as { label: string; re: any; le: any }[]) || null
+        : null,
+      retinoscopy: (() => {
+        if (!inclRetino) return null;
+        const reti = visit.retinoscopy as any;
+        if (!reti) return null;
+        return {
+          re: parseJSON(reti.re, null) as { sph?: string; cyl?: string; axis?: string } | null,
+          le: parseJSON(reti.le, null) as { sph?: string; cyl?: string; axis?: string } | null,
+        };
+      })(),
       investigations: visit.investigationOrders.map((i: any) => ({
         testName: i.testName, priority: i.priority, status: i.status,
         result: i.result ?? null, notes: i.notes ?? null,

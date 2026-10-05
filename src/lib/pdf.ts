@@ -799,6 +799,9 @@ export type ShortSummaryData = {
     re: { sph?: string; cyl?: string; axis?: string; nearSph?: string; va?: string; nearVa?: string };
     le: { sph?: string; cyl?: string; axis?: string; nearSph?: string; va?: string; nearVa?: string };
   } | null;
+  extraCorrections?: { label: string; re: { sph?: string; cyl?: string; axis?: string; nearSph?: string; va?: string; nearVa?: string }; le: { sph?: string; cyl?: string; axis?: string; nearSph?: string; va?: string; nearVa?: string } }[] | null;
+  visualAcuity?: { reDistance?: { unaided?: string; ph?: string; bcva?: string } | null; leDistance?: { unaided?: string; ph?: string; bcva?: string } | null; reNear?: string | null; leNear?: string | null } | null;
+  retinoscopy?: { re?: { sph?: string; cyl?: string; axis?: string } | null; le?: { sph?: string; cyl?: string; axis?: string } | null } | null;
   minorProcedure?: { procedureName?: string | null; procedureLaterality?: string | null; anesthesiaType?: string | null } | null;
 };
 
@@ -1139,6 +1142,74 @@ ${hasRx
       </table>`)
   : ""}
 
+<!-- 5b · EXTRA CORRECTIONS -->
+${d.extraCorrections && d.extraCorrections.length > 0
+  ? d.extraCorrections.map((ec) =>
+      card(`Extra Correction: ${escapeHtml(ec.label)}`,
+        `<table>
+          <thead><tr>
+            <th style="${TH}width:90px;">Eye</th>
+            <th style="${TH}text-align:center;">Sph</th>
+            <th style="${TH}text-align:center;">Cyl</th>
+            <th style="${TH}text-align:center;">Axis°</th>
+            <th style="${TH}text-align:center;">VA</th>
+            <th style="${TH}text-align:center;">Add</th>
+            <th style="${TH}text-align:center;">NV</th>
+          </tr></thead>
+          <tbody>
+            ${rxRowFn("Right Eye", ec.re?.sph, ec.re?.cyl, ec.re?.axis, ec.re?.va, ec.re?.nearSph, ec.re?.nearVa)}
+            ${rxRowFn("Left Eye", ec.le?.sph, ec.le?.cyl, ec.le?.axis, ec.le?.va, ec.le?.nearSph, ec.le?.nearVa)}
+          </tbody>
+        </table>`)
+    ).join("")
+  : ""}
+
+<!-- 5c · VISUAL ACUITY -->
+${d.visualAcuity
+  ? (() => {
+      const va = d.visualAcuity!;
+      const vaRow = (eye: string, dist?: { unaided?: string; ph?: string; bcva?: string } | null, near?: string | null) =>
+        `<tr><td style="${TD}font-weight:700;color:#0B3D3A;">${eye}</td>` +
+        `<td style="${TD}text-align:center;">${v2(dist?.unaided)}</td>` +
+        `<td style="${TD}text-align:center;">${v2(dist?.ph)}</td>` +
+        `<td style="${TD}text-align:center;">${v2(dist?.bcva)}</td>` +
+        `<td style="${TD}text-align:center;">${v2(near)}</td></tr>`;
+      return card("Visual Acuity",
+        `<table><thead><tr>
+          <th style="${TH}width:90px;">Eye</th>
+          <th style="${TH}text-align:center;">Dist Unaided</th>
+          <th style="${TH}text-align:center;">Dist PH</th>
+          <th style="${TH}text-align:center;">Dist BCVA</th>
+          <th style="${TH}text-align:center;">Near</th>
+        </tr></thead><tbody>
+          ${vaRow("Right Eye", va.reDistance, va.reNear)}
+          ${vaRow("Left Eye", va.leDistance, va.leNear)}
+        </tbody></table>`);
+    })()
+  : ""}
+
+<!-- 5d · RETINOSCOPY -->
+${d.retinoscopy
+  ? (() => {
+      const r = d.retinoscopy!;
+      const rRow = (eye: string, rx?: { sph?: string; cyl?: string; axis?: string } | null) =>
+        `<tr><td style="${TD}font-weight:700;color:#0B3D3A;">${eye}</td>` +
+        `<td style="${TD}text-align:center;">${v2(rx?.sph)}</td>` +
+        `<td style="${TD}text-align:center;">${v2(rx?.cyl)}</td>` +
+        `<td style="${TD}text-align:center;">${v2(rx?.axis)}</td></tr>`;
+      return card("Retinoscopy",
+        `<table><thead><tr>
+          <th style="${TH}width:90px;">Eye</th>
+          <th style="${TH}text-align:center;">Sph</th>
+          <th style="${TH}text-align:center;">Cyl</th>
+          <th style="${TH}text-align:center;">Axis°</th>
+        </tr></thead><tbody>
+          ${rRow("Right Eye", r.re)}
+          ${rRow("Left Eye", r.le)}
+        </tbody></table>`);
+    })()
+  : ""}
+
 <!-- 6 · FOLLOW-UP (only date & day, inline) -->
 ${d.visit.followUpDate
   ? inlineCard("Follow-up",
@@ -1234,6 +1305,8 @@ export type FullEmrData = {
     re: { sph?: string; cyl?: string; axis?: string; nearSph?: string; nearCyl?: string; nearAxis?: string };
     le: { sph?: string; cyl?: string; axis?: string; nearSph?: string; nearCyl?: string; nearAxis?: string };
   };
+  extraCorrections?: { label: string; re: { sph?: string; cyl?: string; axis?: string; nearSph?: string; va?: string; nearVa?: string }; le: { sph?: string; cyl?: string; axis?: string; nearSph?: string; va?: string; nearVa?: string } }[] | null;
+  retinoscopy?: { re?: { sph?: string; cyl?: string; axis?: string } | null; le?: { sph?: string; cyl?: string; axis?: string } | null } | null;
   investigations: { testName: string; priority: string; status: string; result?: string | null; notes?: string | null }[];
 };
 
@@ -1671,6 +1744,54 @@ ${card("Optical Prescription (Refraction)",
         })).join("")}
     </tbody>
   </table>`)}
+
+<!-- 11b · EXTRA CORRECTIONS -->
+${d.extraCorrections && d.extraCorrections.length > 0
+  ? d.extraCorrections.map((ec) =>
+      card(`Extra Correction: ${escapeHtml(ec.label)}`,
+        `<table style="width:100%;border-collapse:collapse;"><thead><tr>
+          <th style="${TH}width:110px;">Eye</th>
+          <th style="${TH}text-align:center;">SPH</th>
+          <th style="${TH}text-align:center;">CYL</th>
+          <th style="${TH}text-align:center;">Axis</th>
+          <th style="${TH}text-align:center;">VA</th>
+          <th style="${TH}text-align:center;">Near Add</th>
+        </tr></thead><tbody>
+          ${["re","le"].map((eye, ei) => {
+            const rx = ec[eye as "re" | "le"] as any;
+            return `<tr style="background:${ei % 2 === 0 ? "#fff" : TINT};">` +
+              `<td style="${TD}font-weight:600;color:${LABEL_C};">${eye.toUpperCase()}</td>` +
+              `<td style="${TD}text-align:center;">${v2(rx?.sph)}</td>` +
+              `<td style="${TD}text-align:center;">${v2(rx?.cyl)}</td>` +
+              `<td style="${TD}text-align:center;">${v2(rx?.axis)}</td>` +
+              `<td style="${TD}text-align:center;">${v2(rx?.va)}</td>` +
+              `<td style="${TD}text-align:center;">${v2(rx?.nearSph)}</td>` +
+              `</tr>`;
+          }).join("")}
+        </tbody></table>`)
+    ).join("")
+  : ""}
+
+<!-- 11c · RETINOSCOPY -->
+${d.retinoscopy
+  ? card("Retinoscopy",
+      `<table style="width:100%;border-collapse:collapse;"><thead><tr>
+        <th style="${TH}width:110px;">Eye</th>
+        <th style="${TH}text-align:center;">SPH</th>
+        <th style="${TH}text-align:center;">CYL</th>
+        <th style="${TH}text-align:center;">Axis</th>
+      </tr></thead><tbody>
+        ${["re","le"].map((eye, ei) => {
+          const rx = d.retinoscopy![eye as "re" | "le"] as any;
+          return `<tr style="background:${ei % 2 === 0 ? "#fff" : TINT};">` +
+            `<td style="${TD}font-weight:600;color:${LABEL_C};">${eye.toUpperCase()}</td>` +
+            `<td style="${TD}text-align:center;">${v2(rx?.sph)}</td>` +
+            `<td style="${TD}text-align:center;">${v2(rx?.cyl)}</td>` +
+            `<td style="${TD}text-align:center;">${v2(rx?.axis)}</td>` +
+            `</tr>`;
+        }).join("")}
+      </tbody></table>`)
+  : ""}
 
 <!-- 12 · INVESTIGATIONS -->
 ${d.investigations.length
