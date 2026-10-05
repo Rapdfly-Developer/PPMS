@@ -4,6 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Mail, Phone, ChevronDown } from "lucide-react";
+import { CookieSettingsButton } from "../consent/CookieSettingsButton";
 
 const NAV_SECTIONS = [
   {
@@ -217,6 +218,10 @@ export function MobileFooter() {
             <Link href="/refund" className="text-[12px] text-slate-400 active:text-emerald-700 transition-colors">
               Refund Policy
             </Link>
+            <Link href="/privacy#cookies" className="text-[12px] text-slate-400 active:text-emerald-700 transition-colors">
+              Cookie Policy
+            </Link>
+            <CookieSettingsButton className="text-[12px] text-slate-400 active:text-emerald-700 transition-colors" />
           </div>
         </div>
 

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Sora, Plus_Jakarta_Sans } from "next/font/google";
 import { Nav } from "@/components/landing/Nav";
+import { CookieSettingsButton } from "@/components/consent/CookieSettingsButton";
 import {
   Mail, Phone, MapPin, ShieldCheck, Lock, Database, Users,
   History, FileText, AlertCircle, Eye, Trash2, RefreshCw, ArrowLeft,
@@ -528,6 +529,18 @@ export default function PrivacyPage() {
                 The session cookie is essential for the platform to work. Blocking it will
                 prevent sign-in. You can sign out at any time to invalidate your session cookie.
               </P>
+              {/* LEGAL REVIEW: factual description of the cookie consent tool added
+                  Oct 2026. Review wording before relying on it. */}
+              <SubHead>Your cookie preferences</SubHead>
+              <P>
+                On your first visit we ask which optional categories you allow: functional
+                (remembered preferences such as layout settings), analytics and marketing. All
+                are off unless you turn them on. Necessary cookies, including the session cookie
+                and the cookie that stores your choice, are always active. Your choice is kept in a
+                first-party cookie named rf_consent for up to 12 months, after which, or when this
+                policy changes, we ask again. It holds only your choices and the date. You can change
+                them at any time from Cookie Settings in the footer.
+              </P>
             </SectionCard>
 
             {/* 11. Data breach */}
@@ -715,11 +728,12 @@ export default function PrivacyPage() {
       <footer className="border-t border-emerald-950/[0.07] bg-white">
         <div className="mx-auto w-[min(92%,1760px)] py-7 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between text-[13px] text-slate-400">
           <p>© {new Date().getFullYear()} RAPDFLY PRIVATE LIMITED. All rights reserved.</p>
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
             <a href="/" className="hover:text-emerald-800 transition-colors">Home</a>
             <a href="/privacy" className="font-medium text-emerald-700">Privacy Policy</a>
             <a href="/terms" className="hover:text-emerald-800 transition-colors">Terms of Service</a>
             <a href="/refund" className="hover:text-emerald-800 transition-colors">Refund Policy</a>
+            <CookieSettingsButton className="hover:text-emerald-800 transition-colors" />
           </div>
         </div>
       </footer>

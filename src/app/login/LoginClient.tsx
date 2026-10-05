@@ -4,6 +4,7 @@ import { useActionState, useState, useRef, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { loginAction, emailOtpLoginAction } from "./actions";
+import { CookieSettingsButton } from "@/components/consent/CookieSettingsButton";
 import {
   Eye, EyeOff, User, Lock, AlertCircle, CheckCircle2,
   ShieldCheck, Loader2, Check, Mail, X, KeyRound, RotateCcw, Zap, ArrowLeft,
@@ -1276,6 +1277,8 @@ export default function LoginPage() {
                   <a href="/privacy" className="pp-link" style={{ color: T.faint }}>Privacy Policy</a>
                   <span aria-hidden="true">·</span>
                   <a href="/terms" className="pp-link" style={{ color: T.faint }}>Terms of Service</a>
+                  <span aria-hidden="true">·</span>
+                  <CookieSettingsButton className="pp-link" style={{ color: T.faint }} />
                 </footer>
               </div>
             </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, useCallback, useEffect } from "react";
+import { hasConsent } from "@/lib/consent/consent";
 
 interface SidebarCtx {
   open: boolean;
@@ -33,7 +34,8 @@ export function SidebarProvider({ children }: { children: React.ReactNode }) {
   const toggleCollapsed = useCallback(() => {
     setCollapsed((p) => {
       const next = !p;
-      try { localStorage.setItem("sidebar-collapsed", String(next)); } catch {}
+      // A remembered layout preference: only persisted with functional consent.
+      try { if (hasConsent("functional")) localStorage.setItem("sidebar-collapsed", String(next)); } catch {}
       return next;
     });
   }, []);

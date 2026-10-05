@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Sora, Plus_Jakarta_Sans } from "next/font/google";
 import { Nav } from "@/components/landing/Nav";
+import { CookieSettingsButton } from "@/components/consent/CookieSettingsButton";
 import {
   Mail, Phone, MapPin, FileText, CreditCard, Clock,
   CheckCircle, XCircle, RefreshCw, AlertCircle, ArrowLeft,
@@ -371,11 +372,12 @@ export default function RefundPage() {
       <footer className="border-t border-emerald-950/[0.07] bg-white">
         <div className="mx-auto w-[min(92%,1760px)] py-7 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between text-[13px] text-slate-400">
           <p>© {new Date().getFullYear()} RAPDFLY PRIVATE LIMITED. All rights reserved.</p>
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
             <a href="/" className="hover:text-emerald-800 transition-colors">Home</a>
             <a href="/privacy" className="hover:text-emerald-800 transition-colors">Privacy Policy</a>
             <a href="/terms" className="hover:text-emerald-800 transition-colors">Terms of Service</a>
             <a href="/refund" className="font-medium text-emerald-700">Refund Policy</a>
+            <CookieSettingsButton className="hover:text-emerald-800 transition-colors" />
           </div>
         </div>
       </footer>

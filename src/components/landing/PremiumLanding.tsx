@@ -34,6 +34,7 @@ import { Nav } from "./Nav";
 import { DemoForm } from "./DemoForm";
 import { Counter, Magnetic, Marquee, Parallax, Reveal, RevealGroup, RevealItem, ScrollRail } from "./ui";
 import { MobileFooter } from "./MobileFooter";
+import { CookieSettingsButton } from "../consent/CookieSettingsButton";
 
 const IMG = "/landing/v3";
 
@@ -1115,6 +1116,10 @@ export function PremiumLanding() {
             <Link href="/refund" className="hover:text-emerald-700 transition-colors duration-200">
               Refund Policy
             </Link>
+            <Link href="/privacy#cookies" className="hover:text-emerald-700 transition-colors duration-200">
+              Cookie Policy
+            </Link>
+            <CookieSettingsButton className="hover:text-emerald-700 transition-colors duration-200" />
           </div>
         </div>
       </footer>
