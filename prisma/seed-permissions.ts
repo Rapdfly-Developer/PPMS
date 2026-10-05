@@ -55,6 +55,11 @@ const ALL_PERMISSIONS: { key: string; label: string }[] = [
   { key: "emr.refraction.edit",     label: "Edit Refraction" },
   { key: "emr.general.edit",        label: "Edit General Exam" },
   { key: "emr.ophthalmic.edit",     label: "Edit Ophthalmic Exam" },
+  // ── Insurance ────────────────────────────────────────────────────────────
+  { key: "insurance.view",   label: "View Insurance" },
+  { key: "insurance.create", label: "Create Insurance Records" },
+  { key: "insurance.edit",   label: "Edit Insurance Records" },
+  { key: "insurance.manage", label: "Manage Insurance Claims" },
   // ── AI Clinical Copilot plugin permissions ───────────────────────────────
   { key: "ai.copilot.view",      label: "View AI Clinical Copilot" },
   { key: "ai.copilot.summarize", label: "AI Copilot — Summarise Patient Record" },
@@ -71,11 +76,15 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
 
   HOSPITAL: [
     "dashboard.view",
+    "opd.view", "opd.walkin.create", "opd.queue.manage", "opd.dispense",
     "patients.view", "patients.create", "patients.edit",
     "appointments.view", "appointments.create", "appointments.edit", "appointments.cancel",
     "investigations.view", "investigations.create", "investigations.edit",
     "billing.view", "billing.create", "billing.edit", "billing.print",
     "reports.view", "reports.export",
+    "insurance.view", "insurance.create", "insurance.edit", "insurance.manage",
+    "followups.view",
+    "settings.view",
   ],
 
   REFRACTIONIST: [

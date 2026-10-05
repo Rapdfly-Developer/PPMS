@@ -114,6 +114,8 @@ export const ROLE_DEFAULT_PERMISSIONS: Record<string, string[]> = {
     P.INSURANCE_CREATE,
     P.INSURANCE_EDIT,
     P.INSURANCE_MANAGE,
+    P.FOLLOWUPS_VIEW,
+    P.SETTINGS_VIEW,
   ],
 
   REFRACTIONIST: [

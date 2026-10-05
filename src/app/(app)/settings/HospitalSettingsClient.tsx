@@ -25,15 +25,9 @@ type Hospital = {
 // ── Sidebar nav ───────────────────────────────────────────────────────────────
 const NAV: { key: Section; label: string; icon: React.ReactNode; badge?: string }[] = [
   { key: "hospital",      label: "Hospital Info",   icon: <Building2 size={15} />    },
-  { key: "departments",   label: "Departments",     icon: <Layers size={15} />       },
-  { key: "users",         label: "Users & Roles",   icon: <Users size={15} />        },
-  { key: "appointments",  label: "Appointments",    icon: <Calendar size={15} />     },
   { key: "notifications", label: "Notifications",   icon: <Bell size={15} />         },
-  { key: "backup",        label: "Data & Backup",   icon: <Database size={15} />     },
-  { key: "audit",         label: "Audit Logs",      icon: <ClipboardList size={15} />},
 ];
-// divider after index 3, 6, 9
-const DIVIDERS = new Set([4, 7, 10]);
+const DIVIDERS = new Set<number>();
 
 // ── Shared UI pieces ──────────────────────────────────────────────────────────
 function SectionHeader({ title, desc }: { title: string; desc: string }) {
