@@ -274,7 +274,7 @@ function EventCard({ ev, isLast }: { ev: TimelineEvent; isLast: boolean }) {
             <p className="mt-1 text-caption sm:text-caption text-[var(--color-ink-400)] flex items-center gap-1.5 flex-wrap">
               {ev.hospitalName && <span>{ev.hospitalName}</span>}
               {ev.hospitalName && ev.doctorName && <span>·</span>}
-              {ev.doctorName && <span>{ev.doctorName}</span>}
+              {ev.doctorName && <span>Dr. {ev.doctorName}</span>}
             </p>
           )}
         </div>

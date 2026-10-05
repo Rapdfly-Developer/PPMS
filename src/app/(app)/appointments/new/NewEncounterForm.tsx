@@ -305,7 +305,6 @@ export function NewEncounterForm({
       if (!dob)                { setError("Date of birth is required."); return; }
       if (!mobile.trim())      { setError("Phone number is required."); return; }
       if (!occupation.trim())  { setError("Occupation is required."); return; }
-      if (!patientPhoto)       { setError("Patient photo is required."); return; }
 
       const dobAge = Math.floor(
         (Date.now() - new Date(dob).getTime()) / (365.25 * 86_400_000)
@@ -625,7 +624,7 @@ export function NewEncounterForm({
 
               {/* Photos */}
               <div>
-                <FieldLabel>Photos *</FieldLabel>
+                <FieldLabel>Photos</FieldLabel>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-0.5">
                   <SmartUploadBox
                     label="Aadhaar Photocopy"
@@ -636,7 +635,7 @@ export function NewEncounterForm({
                     onChange={setAadhaarPhoto}
                   />
                   <SmartUploadBox
-                    label="Patient Photo *"
+                    label="Patient Photo"
                     uploadLabel="Upload Photo"
                     subtitle="JPG / PNG"
                     accept="image/jpeg,image/jpg,image/png"

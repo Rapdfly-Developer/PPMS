@@ -208,7 +208,7 @@ function DetailDrawer({ lic, events, loadingEvents, onClose, onAction, onRefresh
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
           <div className="min-w-0">
-            <p className="font-bold text-slate-900 truncate">{lic.doctorName}</p>
+            <p className="font-bold text-slate-900 truncate">Dr. {lic.doctorName}</p>
             <p className="text-xs text-slate-400 font-mono mt-0.5">@{lic.username}</p>
           </div>
           <div className="flex items-center gap-2 shrink-0 ml-3">
@@ -242,7 +242,7 @@ function DetailDrawer({ lic, events, loadingEvents, onClose, onAction, onRefresh
               <section>
                 <p className="text-caption font-bold text-slate-400 uppercase tracking-widest mb-3">Customer</p>
                 <div className="rounded-xl border border-slate-100 divide-y divide-slate-50">
-                  <Row icon={<User size={13} />} label="Name" value={lic.doctorName} />
+                  <Row icon={<User size={13} />} label="Name" value={`Dr. ${lic.doctorName}`} />
                   <Row icon={<Building2 size={13} />} label="Hospital" value={lic.hospitalName} />
                   <Row icon={<Mail size={13} />} label="Email" value={lic.email} />
                   <Row icon={<Phone size={13} />} label="Mobile" value={lic.contact} />
@@ -593,7 +593,7 @@ export function LicenseManagementView() {
                       onClick={() => openDrawer(lic)}
                       className={`hover:bg-teal-50/30 transition-colors cursor-pointer ${selected?.id === lic.id ? "bg-teal-50/50" : ""}`}>
                       <td className="px-4 py-3">
-                        <p className="font-semibold text-slate-800 leading-tight">{lic.doctorName}</p>
+                        <p className="font-semibold text-slate-800 leading-tight">Dr. {lic.doctorName}</p>
                         <p className="text-caption text-slate-400 font-mono">@{lic.username}</p>
                       </td>
                       <td className="px-4 py-3">
@@ -669,7 +669,7 @@ export function LicenseManagementView() {
       {modal === "renew" && (
         <Modal title="Renew License" onClose={() => setModal(null)}>
           <div className="space-y-4">
-            <p className="text-sm text-slate-500">Extend the subscription expiry for <strong>{selected?.doctorName}</strong>.</p>
+            <p className="text-sm text-slate-500">Extend the subscription expiry for <strong>Dr. {selected?.doctorName}</strong>.</p>
             <div>
               <label className={labelCls}>Extend By</label>
               <select value={renewDays} onChange={(e) => setRenewDays(e.target.value)} className={selectCls}>
@@ -717,7 +717,7 @@ export function LicenseManagementView() {
         <Modal title="Suspend License" onClose={() => setModal(null)} danger>
           <div className="space-y-4">
             <p className="text-sm text-slate-500">
-              Suspend <strong>{selected?.doctorName}</strong>. Login will still be allowed but all modules will be locked.
+              Suspend <strong>Dr. {selected?.doctorName}</strong>. Login will still be allowed but all modules will be locked.
             </p>
             <div>
               <label className={labelCls}>Reason</label>
@@ -745,7 +745,7 @@ export function LicenseManagementView() {
       {modal === "resume" && (
         <Modal title="Resume License" onClose={() => setModal(null)}>
           <div className="space-y-4">
-            <p className="text-sm text-slate-500">Re-enable access for <strong>{selected?.doctorName}</strong>. All modules will be restored immediately.</p>
+            <p className="text-sm text-slate-500">Re-enable access for <strong>Dr. {selected?.doctorName}</strong>. All modules will be restored immediately.</p>
             <div className="flex gap-2 pt-2">
               <button onClick={() => setModal(null)} className="flex-1 py-2.5 text-sm border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50">Cancel</button>
               <button onClick={() => doAction("resume")} disabled={saving}
@@ -787,7 +787,7 @@ export function LicenseManagementView() {
       {modal === "emergency" && (
         <Modal title="Emergency License" onClose={() => setModal(null)}>
           <div className="space-y-4">
-            <p className="text-sm text-slate-500">Grant temporary access to <strong>{selected?.doctorName}</strong>. Emergency license expires automatically.</p>
+            <p className="text-sm text-slate-500">Grant temporary access to <strong>Dr. {selected?.doctorName}</strong>. Emergency license expires automatically.</p>
             <div>
               <label className={labelCls}>Duration</label>
               <select value={emergencyDays} onChange={(e) => setEmergencyDays(e.target.value)} className={selectCls}>
@@ -819,7 +819,7 @@ export function LicenseManagementView() {
         <Modal title="Repair License Signature" onClose={() => setModal(null)}>
           <div className="space-y-4">
             <p className="text-sm text-slate-500">
-              Re-generates the HMAC signature for <strong>{selected?.doctorName}</strong>. Use this when validation fails due to a corrupted signature. No subscription data is changed.
+              Re-generates the HMAC signature for <strong>Dr. {selected?.doctorName}</strong>. Use this when validation fails due to a corrupted signature. No subscription data is changed.
             </p>
             <div className="flex gap-2 pt-2">
               <button onClick={() => setModal(null)} className="flex-1 py-2.5 text-sm border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50">Cancel</button>

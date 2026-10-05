@@ -292,7 +292,7 @@ export function AnalyticsShell(props: ShellProps) {
       <p className="-mt-1 px-1 text-label text-[var(--color-ink-500)]">
         Showing <span className="font-semibold text-[var(--color-ink-800)]">{f.periodLabel}</span>
         <span className="text-[var(--color-ink-300)]"> · </span>{hospitalName}
-        {props.showDoctorFilter ? <><span className="text-[var(--color-ink-300)]"> · </span>{doctorName}</> : null}
+        {props.showDoctorFilter ? <><span className="text-[var(--color-ink-300)]"> · </span>{(doctorName === "All doctors" || doctorName === "—") ? doctorName : `Dr. ${doctorName}`}</> : null}
         <span className="text-[var(--color-ink-300)]"> · </span>compared with {f.compareLabel}
       </p>
 

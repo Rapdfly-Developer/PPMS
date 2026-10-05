@@ -44,7 +44,7 @@ export function PrintHeader({
         </div>
         {doctorName && (
           <div className="text-right">
-            <p className="text-sm font-semibold text-gray-900">{doctorName}</p>
+            <p className="text-sm font-semibold text-gray-900">Dr. {doctorName}</p>
             <p className="text-xs text-gray-600">{doctorSpecialty}</p>
           </div>
         )}
@@ -86,7 +86,7 @@ export function PrintFooter({
       <div className="flex items-end justify-between">
         <div className="text-center">
           <div className="w-40 border-b border-gray-400 mb-1" />
-          <p className="text-xs text-gray-600">{doctorName ?? "Doctor's Signature"}</p>
+          <p className="text-xs text-gray-600">{doctorName ? `Dr. ${doctorName}` : "Doctor's Signature"}</p>
           {doctorSpecialty && <p className="text-[10px] text-gray-500">{doctorSpecialty}</p>}
         </div>
         <div className="text-center text-[10px] text-gray-400 max-w-xs">

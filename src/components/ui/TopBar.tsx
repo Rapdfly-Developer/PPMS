@@ -478,7 +478,7 @@ export function TopBar({ name, role }: { name: string; role: string }) {
           <div className="size-8 rounded-full bg-[var(--color-primary-700)] flex items-center justify-center text-white text-xs font-bold select-none shrink-0">
             {initials}
           </div>
-          <span className="hidden sm:block text-label sm:text-sm font-medium text-[var(--color-ink-800)]">{name}</span>
+          <span className="hidden sm:block text-label sm:text-sm font-medium text-[var(--color-ink-800)]">{role === "DOCTOR" ? `Dr. ${name}` : name}</span>
         </div>
 
         {/* Sign out */}

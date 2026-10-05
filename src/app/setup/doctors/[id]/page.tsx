@@ -143,7 +143,7 @@ export default async function DoctorDetailPage({
           <span className="text-[#D1D5DB]">/</span>
           <a href="/setup" className="text-[#6B7280] hover:text-[#111827] transition-colors">Setup</a>
           <span className="text-[#D1D5DB]">/</span>
-          <span className="text-[#374151] font-medium truncate max-w-[200px]">{doctor.name}</span>
+          <span className="text-[#374151] font-medium truncate max-w-[200px]">Dr. {doctor.name}</span>
         </div>
       </div>
 

@@ -577,7 +577,7 @@ export function DoctorLicenseDashboard({ data }: { data: DoctorLicensePageData }
               {doctor.initials}
             </div>
             <div>
-              <h1 className="text-base font-bold text-slate-900">{doctor.name}</h1>
+              <h1 className="text-base font-bold text-slate-900">Dr. {doctor.name}</h1>
               <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
                 {doctor.specialty && <span className="text-xs text-slate-500">{doctor.specialty}</span>}
                 <span className="text-slate-300 hidden sm:inline">·</span>
