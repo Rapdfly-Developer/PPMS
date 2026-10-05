@@ -217,12 +217,12 @@ export function AppointmentRow({ appt, role, perms, token }: { appt: any; role: 
             </span>
           </div>
           <div className="mt-1.5 flex flex-col items-end gap-1 text-caption sm:text-caption">
-            {arrivedAt && (
+            {arrivedAt && appt.status !== "NO_SHOW" && (
               <span className="inline-flex items-center gap-1 text-blue-500 whitespace-nowrap tabular-nums">
                 <LogIn size={10} /> Arrived: {format(arrivedAt, "h:mm a")}
               </span>
             )}
-            {finalizedAt && (
+            {finalizedAt && appt.status !== "NO_SHOW" && (
               <span className="inline-flex items-center gap-1 text-emerald-600 whitespace-nowrap tabular-nums">
                 <CheckCircle2 size={10} /> Dispensed: {format(finalizedAt, "h:mm a")}
               </span>

@@ -132,10 +132,13 @@ export async function doctorUpdateAppointmentStatus(
 
   const appt = await prisma.appointment.findUnique({
     where: { id: appointmentId },
-    include: { patient: true, hospital: true },
+    include: { patient: true, hospital: true, visit: { select: { finalizedAt: true } } },
   });
   if (!appt || appt.doctorId !== scopeDoctorId(user)) throw new Error("Forbidden");
   if (appt.status !== "CONFIRMED") throw new Error("Only confirmed appointments can be updated.");
+  if (status === "NO_SHOW" && appt.visit?.finalizedAt) {
+    throw new Error("Cannot mark a dispensed patient as No Show.");
+  }
 
   await prisma.appointment.update({ where: { id: appointmentId }, data: { status } });
 
