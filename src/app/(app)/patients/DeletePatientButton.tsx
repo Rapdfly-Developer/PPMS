@@ -6,7 +6,7 @@ import { AlertTriangle, Trash2, X } from "lucide-react";
 import { deletePatient } from "./actions";
 
 /** Trash button + confirmation dialog. The user must type the patient ID to enable deletion. */
-export function DeletePatientButton({ patientId, patientName, patientCode }: { patientId: string; patientName: string; patientCode: string }) {
+export function DeletePatientButton({ patientId, patientName, patientCode, redirectTo, className }: { patientId: string; patientName: string; patientCode: string; redirectTo?: string; className?: string }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [typed, setTyped] = useState("");
@@ -27,7 +27,7 @@ export function DeletePatientButton({ patientId, patientName, patientCode }: { p
       const res = await deletePatient(patientId);
       if (res.error) { setError(res.error); return; }
       setOpen(false);
-      router.refresh();
+      if (redirectTo) { router.push(redirectTo); } else { router.refresh(); }
     });
   }
 
@@ -38,7 +38,7 @@ export function DeletePatientButton({ patientId, patientName, patientCode }: { p
         onClick={(e) => { e.stopPropagation(); setOpen(true); }}
         title="Delete patient"
         aria-label={`Delete patient ${patientName}`}
-        className="shrink-0 rounded-lg p-1.5 text-[var(--color-ink-400)] transition-colors hover:bg-red-50 hover:text-red-600"
+        className={className ?? "shrink-0 rounded-lg p-1.5 text-[var(--color-ink-400)] transition-colors hover:bg-red-50 hover:text-red-600"}
       >
         <Trash2 size={14} />
       </button>

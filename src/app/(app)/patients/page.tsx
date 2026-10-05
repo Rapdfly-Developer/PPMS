@@ -283,7 +283,6 @@ export default async function PatientsPage({
         </div>
       )}
       <PatientsClient
-        canDelete={user.role === "DOCTOR"}
         patients={serialized}
         total={total}
         page={page}

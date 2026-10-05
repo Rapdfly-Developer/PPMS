@@ -7,6 +7,7 @@ import { Phone, MapPin, Calendar, Hash, IdCard, Briefcase, FileText, Link2, User
 import { decryptAadhaar, maskAadhaar } from "@/lib/crypto";
 import { PatientProfileClient, type SerialVisit, type TodayVisit, type LastVisitSummary, type LongitudinalVisit } from "./PatientProfileClient";
 import { PatientActionsPanel } from "./PatientHistoryButtons";
+import { DeletePatientButton } from "../DeletePatientButton";
 import { fileHref } from "@/lib/file-href";
 
 const CATEGORY_STYLES: Record<string, string> = {
@@ -329,6 +330,15 @@ export default async function PatientProfilePage({
                   </span>
                 </div>
               </div>
+              {user.role === "DOCTOR" && (
+                <DeletePatientButton
+                  patientId={patient.id}
+                  patientName={patient.name}
+                  patientCode={patient.udid || patient.uhid || patient.id}
+                  redirectTo="/patients"
+                  className="shrink-0 rounded-lg p-1.5 text-white/50 transition-colors hover:bg-white/10 hover:text-red-300"
+                />
+              )}
             </div>
 
             {/* Extra info chips */}
