@@ -247,32 +247,29 @@ function parseJSON<T>(raw: unknown, fallback: T): T {
 
 function getAvailableRxSections(visit: any): RxOption[] {
   const options: RxOption[] = [];
-  const rc = visit.refraction as any;
-  if (rc) {
-    const re = parseJSON<Record<string, string>>(rc.re, {});
-    const le = parseJSON<Record<string, string>>(rc.le, {});
-    if (Object.values({ ...re, ...le }).some(Boolean)) {
-      options.push({ key: "rx", label: "Spectacle Rx", sub: "Primary distance & near correction" });
-    }
-    const extras: any[] = parseJSON(rc.extraCorrections, []);
-    if (extras.length > 0 && extras.some((e) => Object.values({ ...(e.re ?? {}), ...(e.le ?? {}) }).some(Boolean))) {
+
+  if (visit?.refraction) {
+    options.push({ key: "rx", label: "Spectacle Rx", sub: "Primary distance & near correction" });
+  }
+
+  if (visit?.visualAcuity) {
+    options.push({ key: "va", label: "Visual Acuity", sub: "Unaided / PH / BCVA" });
+  }
+
+  if (visit?.retinoscopy) {
+    options.push({ key: "retino", label: "Retinoscopy", sub: "RE / LE findings" });
+  }
+
+  if (visit?.refraction?.extraCorrections) {
+    const raw = visit.refraction.extraCorrections;
+    const extras: any[] = Array.isArray(raw)
+      ? raw
+      : (() => { try { return JSON.parse(raw); } catch { return []; } })();
+    if (extras.length > 0) {
       options.push({ key: "extras", label: "Extra Corrections", sub: "Bifocal, contact lens, etc." });
     }
   }
-  if (visit.visualAcuity) {
-    const vaRe = parseJSON<Record<string, unknown>>(visit.visualAcuity.re, {});
-    const vaLe = parseJSON<Record<string, unknown>>(visit.visualAcuity.le, {});
-    if (Object.values({ ...vaRe, ...vaLe }).some(Boolean)) {
-      options.push({ key: "va", label: "Visual Acuity", sub: "Unaided / PH / BCVA" });
-    }
-  }
-  if (visit.retinoscopy) {
-    const rRe = parseJSON<Record<string, string>>(visit.retinoscopy.re, {});
-    const rLe = parseJSON<Record<string, string>>(visit.retinoscopy.le, {});
-    if (Object.values({ ...rRe, ...rLe }).some(Boolean)) {
-      options.push({ key: "retino", label: "Retinoscopy", sub: "RE / LE findings" });
-    }
-  }
+
   return options;
 }
 

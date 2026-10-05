@@ -39,7 +39,7 @@ import {
   saveLacrimalSac,
   markOphthalmicReviewed,
 } from "./actions";
-import { format } from "date-fns";
+import { format, isSameDay } from "date-fns";
 import { ChipGroup } from "@/components/ui/Chip";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Toast } from "@/components/ui/Toast";
@@ -47,8 +47,9 @@ import { FieldWithHistory, type HistoryEntry } from "@/components/ui/HistoryTogg
 import { fileHref } from "@/lib/file-href";
 
 export function OphthalmicExamTab({ visit, priorVisits, udid, role, canEditRefraction }: { visit: any; priorVisits: any[]; udid: string; role: string; canEditRefraction?: boolean }) {
-  const refractionistCanEdit = canEditRefraction ?? role === "DOCTOR";
-  const doctorOnly = role === "DOCTOR";
+  const visitLocked = visit?.status === "CLOSED" && !(visit?.finalizedAt && isSameDay(new Date(visit.finalizedAt), new Date()));
+  const refractionistCanEdit = canEditRefraction ?? (role === "DOCTOR" && !visitLocked);
+  const doctorOnly = role === "DOCTOR" && !visitLocked;
   const overview = useEmrOverview();
 
   useEffect(() => {

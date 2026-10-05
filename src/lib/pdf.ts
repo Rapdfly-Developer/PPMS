@@ -1296,7 +1296,11 @@ export type FullEmrData = {
     reNearN?: string | null; leNearN?: string | null;
   } | null;
   iopReadings: { method: string; re?: string | null; le?: string | null; takenAt: Date }[];
-  colourVision?: { re?: string | null; le?: string | null; notes?: string | null } | null;
+  colourVision?: {
+    re?: { cvMethod?: string; result?: string; notes?: string; csMethod?: string; csResult?: string; csNotes?: string } | null;
+    le?: { cvMethod?: string; result?: string; notes?: string; csMethod?: string; csResult?: string; csNotes?: string } | null;
+    notes?: string | null;
+  } | null;
   anteriorSegment?: Record<string, string[]> | null;
   posteriorSegment?: { data?: Record<string, string[]>; cdr?: string | null; notes?: string | null } | null;
   diagnoses: { description: string; icd10Code: string; status: string; laterality?: string | null }[];
@@ -1666,12 +1670,40 @@ ${card("Intraocular Pressure (IOP)",
 
 <!-- 6 · COLOUR VISION -->
 ${d.colourVision
-  ? card("Colour Vision",
-      `<table style="width:100%;border-collapse:collapse;"><tbody><tr>` +
-      fbox("Right Eye (RE)", v2(d.colourVision.re)) +
-      fbox("Left Eye (LE)", v2(d.colourVision.le)) +
-      (d.colourVision.notes ? fbox("Notes", escapeHtml(d.colourVision.notes)) : `<td></td>`) +
-      `</tr></tbody></table>`)
+  ? (() => {
+      const cvEye = (eye: typeof d.colourVision extends null | undefined ? never : NonNullable<typeof d.colourVision>["re"]) => {
+        if (!eye) return "";
+        const rows: string[] = [];
+        if (eye.cvMethod || eye.result) rows.push(
+          `<tr><td style="${TD}font-weight:600;color:${LABEL_C};white-space:nowrap;">CV Method</td><td style="${TD}">${v2(eye.cvMethod)}</td>` +
+          `<td style="${TD}font-weight:600;color:${LABEL_C};white-space:nowrap;">Result</td><td style="${TD}">${v2(eye.result)}</td></tr>`
+        );
+        if (eye.notes) rows.push(
+          `<tr><td style="${TD}font-weight:600;color:${LABEL_C};">Notes</td><td style="${TD}" colspan="3">${v2(eye.notes)}</td></tr>`
+        );
+        if (eye.csMethod || eye.csResult) rows.push(
+          `<tr><td style="${TD}font-weight:600;color:${LABEL_C};white-space:nowrap;">CS Method</td><td style="${TD}">${v2(eye.csMethod)}</td>` +
+          `<td style="${TD}font-weight:600;color:${LABEL_C};white-space:nowrap;">CS Result</td><td style="${TD}">${v2(eye.csResult)}</td></tr>`
+        );
+        if (eye.csNotes) rows.push(
+          `<tr><td style="${TD}font-weight:600;color:${LABEL_C};">CS Notes</td><td style="${TD}" colspan="3">${v2(eye.csNotes)}</td></tr>`
+        );
+        return rows.length ? `<table style="width:100%;border-collapse:collapse;">${rows.join("")}</table>` : "";
+      };
+      const reHtml = cvEye(d.colourVision!.re);
+      const leHtml = cvEye(d.colourVision!.le);
+      const inner =
+        `<table style="width:100%;border-collapse:collapse;"><tbody><tr>` +
+        `<td style="width:50%;padding-right:8px;vertical-align:top;">` +
+        `<div style="font-size:8px;font-weight:700;color:${LABEL_C};margin-bottom:4px;text-transform:uppercase;">Right Eye (RE)</div>` +
+        (reHtml || `<span style="color:#9AA5A3;font-style:italic;font-size:9px;">—</span>`) +
+        `</td><td style="width:50%;padding-left:8px;vertical-align:top;border-left:1px solid ${LINE};">` +
+        `<div style="font-size:8px;font-weight:700;color:${LABEL_C};margin-bottom:4px;text-transform:uppercase;">Left Eye (LE)</div>` +
+        (leHtml || `<span style="color:#9AA5A3;font-style:italic;font-size:9px;">—</span>`) +
+        `</td></tr></tbody></table>` +
+        (d.colourVision!.notes ? `<div style="margin-top:6px;font-size:9.5px;"><span style="font-weight:700;color:${LABEL_C};">Notes:</span> ${escapeHtml(d.colourVision!.notes)}</div>` : "");
+      return card("Colour Vision", inner);
+    })()
   : ""}
 
 <!-- 7 · ANTERIOR SEGMENT -->
@@ -2096,11 +2128,15 @@ export async function generateVisitSummaryPdf(visit: any): Promise<Buffer> {
     colourVision: (visit as any).colourVisionCS ? (() => {
       const reJ = parseJ2((visit as any).colourVisionCS.re) as any;
       const leJ = parseJ2((visit as any).colourVisionCS.le) as any;
-      const fmt = (eye: any): string | null => {
-        if (!eye?.result) return null;
-        return eye.cvMethod ? `${eye.cvMethod}: ${eye.result}` : eye.result;
+      const fmtEye = (eye: any) => !eye ? null : {
+        cvMethod: eye.cvMethod ?? undefined,
+        result: eye.result ?? undefined,
+        notes: eye.notes ?? undefined,
+        csMethod: eye.csMethod ?? undefined,
+        csResult: eye.csResult ?? undefined,
+        csNotes: eye.csNotes ?? undefined,
       };
-      return { re: fmt(reJ), le: fmt(leJ), notes: (visit as any).colourVisionCS.notes ?? null };
+      return { re: fmtEye(reJ), le: fmtEye(leJ), notes: (visit as any).colourVisionCS.notes ?? null };
     })() : null,
     anteriorSegment: ant ? (parseJ2(ant.re) || parseJ2(ant.le) ? { re: parseJ2(ant.re), le: parseJ2(ant.le) } : null) : null,
     posteriorSegment: pos ? { data: { re: parseJ2(pos.re), le: parseJ2(pos.le) }, cdr: pos.cdr ?? null, notes: pos.notes ?? null } : null,

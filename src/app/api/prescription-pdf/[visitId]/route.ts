@@ -88,11 +88,22 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
       iopReadings: visit.iopReadings.map((r: any) => ({
         method: r.method, re: r.re, le: r.le, takenAt: r.takenAt,
       })),
-      colourVision: cv ? {
-        re: (cv as any).re ?? null,
-        le: (cv as any).le ?? null,
-        notes: (cv as any).notes ?? null,
-      } : null,
+      colourVision: cv ? (() => {
+        const parseCvEye = (raw: unknown) => {
+          if (!raw) return null;
+          const eye: any = typeof raw === "string" ? (() => { try { return JSON.parse(raw); } catch { return null; } })() : raw;
+          if (!eye) return null;
+          return {
+            cvMethod: eye.cvMethod ?? undefined,
+            result: eye.result ?? undefined,
+            notes: eye.notes ?? undefined,
+            csMethod: eye.csMethod ?? undefined,
+            csResult: eye.csResult ?? undefined,
+            csNotes: eye.csNotes ?? undefined,
+          };
+        };
+        return { re: parseCvEye((cv as any).re), le: parseCvEye((cv as any).le), notes: (cv as any).notes ?? null };
+      })() : null,
       anteriorSegment: as_ ? parseJSON((as_ as any).data, undefined) : null,
       posteriorSegment: ps ? {
         data: parseJSON((ps as any).data, undefined),
