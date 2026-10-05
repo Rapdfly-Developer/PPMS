@@ -8,7 +8,7 @@ import {
   FileText, Calendar, Building2, UserCircle, Users,
   BarChart3, Cloud, Shield, CheckCircle2, AlertTriangle,
   XCircle, Key, ArrowLeft, Loader2, Eye, EyeOff,
-  Phone, Mail, Lock, Star, Zap,
+  Phone, Mail, Lock, Star, Zap, Check,
   AlertCircle, RotateCcw, ShieldCheck,
 } from "lucide-react";
 import { startTrial, activateLicenseKey, sendVerificationCode } from "./actions";
@@ -410,6 +410,16 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
   const [password, setPassword]   = useState("");
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
+  const pwCriteria = {
+    length:    password.length >= 8,
+    uppercase: /[A-Z]/.test(password),
+    lowercase: /[a-z]/.test(password),
+    number:    /[0-9]/.test(password),
+    special:   /[^A-Za-z0-9]/.test(password),
+  };
+  const pwScore   = Object.values(pwCriteria).filter(Boolean).length;
+  const pwAllMet  = Object.values(pwCriteria).every(Boolean);
+
   const [otpStep, setOtpStep]           = useState(false);
   const [otp, setOtp]                   = useState("");
   const [otpError, setOtpError]         = useState("");
@@ -430,7 +440,7 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
     if (!adminName.trim()) errs.adminName = "Required";
     if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errs.email = "Valid email required";
     if (!/^\d{10}$/.test(mobile.replace(/\D/g, ""))) errs.mobile = "10-digit mobile required";
-    if (password.length < 6) errs.password = "At least 6 characters";
+    if (!pwAllMet) errs.password = "Password does not meet all requirements.";
     setFieldErrors(errs);
     return Object.keys(errs).length === 0;
   }
@@ -656,15 +666,68 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
                       onChange={setMobile} icon={Phone} error={fieldErrors.mobile} />
                     <Field label="Email Address *" placeholder="doctor@clinic.com" value={email} type="email"
                       onChange={setEmail} icon={Mail} error={fieldErrors.email} />
-                    <Field label="Create Password *" placeholder="Min. 6 characters" value={password} type="password"
-                      onChange={setPassword} icon={Lock} error={fieldErrors.password} />
+                    <div>
+                      <Field label="Create Password *" placeholder="Create a strong password" value={password} type="password"
+                        onChange={setPassword} icon={Lock} error={fieldErrors.password} />
+
+                      {/* Strength bar + checklist */}
+                      {password.length > 0 && (
+                        <div style={{ marginTop: "8px" }}>
+                          <div className="flex items-center gap-2" style={{ marginBottom: "6px" }}>
+                            <div className="flex gap-1 flex-1">
+                              {[1, 2, 3, 4, 5].map((i) => (
+                                <div key={i} style={{
+                                  height: "6px", flex: 1, borderRadius: "999px",
+                                  transition: "background .3s",
+                                  background: i <= pwScore
+                                    ? pwScore <= 2 ? "#f87171"
+                                    : pwScore <= 3 ? "#fbbf24"
+                                    : pwScore <= 4 ? "#facc15"
+                                    : "#10b981"
+                                    : T.track,
+                                }} />
+                              ))}
+                            </div>
+                            <span style={{
+                              fontSize: "var(--fs-xs)", fontWeight: 700, flexShrink: 0,
+                              color: pwScore <= 2 ? "#ef4444" : pwScore <= 3 ? "#f59e0b" : pwScore <= 4 ? "#ca8a04" : "#059669",
+                            }}>
+                              {pwScore <= 2 ? "Weak" : pwScore <= 3 ? "Fair" : pwScore <= 4 ? "Good" : "Strong"}
+                            </span>
+                          </div>
+                          <ul className="grid grid-cols-2 gap-x-3 gap-y-1" style={{ listStyle: "none", padding: 0, margin: 0 }}>
+                            {([
+                              [pwCriteria.length,    "At least 8 characters"],
+                              [pwCriteria.uppercase, "One uppercase (A–Z)"],
+                              [pwCriteria.lowercase, "One lowercase (a–z)"],
+                              [pwCriteria.number,    "One number (0–9)"],
+                              [pwCriteria.special,   "One special char (!@#$…)"],
+                            ] as [boolean, string][]).map(([met, label]) => (
+                              <li key={label} className="flex items-center gap-1.5" style={{
+                                fontSize: "var(--fs-xs)", color: met ? "#059669" : T.faint,
+                                transition: "color .2s",
+                              }}>
+                                <span className="inline-flex items-center justify-center shrink-0 rounded-full" style={{
+                                  width: 14, height: 14,
+                                  background: met ? "#10b981" : T.track,
+                                  transition: "background .2s",
+                                }}>
+                                  {met && <Check size={8} color="white" strokeWidth={3} />}
+                                </span>
+                                {label}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   {error && <div className="mt-4"><ErrBanner msg={error} /></div>}
 
-                  <button onClick={handleSendOtp} disabled={isPending}
+                  <button onClick={handleSendOtp} disabled={isPending || !pwAllMet}
                     className="lg-btn mt-5 w-full flex items-center justify-center gap-2 font-semibold"
-                    style={{ height: "var(--ctl-h)", borderRadius: "10px", fontSize: "var(--fs-btn)", ...(isPending ? btnDisabled : btnPrimary) }}>
+                    style={{ height: "var(--ctl-h)", borderRadius: "10px", fontSize: "var(--fs-btn)", ...((isPending || !pwAllMet) ? btnDisabled : btnPrimary) }}>
                     {isPending
                       ? <><Loader2 size={16} className="animate-spin" /> Sending Code…</>
                       : <><Mail size={16} /> Verify Email &amp; Continue</>}

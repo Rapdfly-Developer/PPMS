@@ -99,12 +99,22 @@ export function NewUserForm({
 
   const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+  const pwCriteria = {
+    length:    password.length >= 8,
+    uppercase: /[A-Z]/.test(password),
+    lowercase: /[a-z]/.test(password),
+    number:    /[0-9]/.test(password),
+    special:   /[^A-Za-z0-9]/.test(password),
+  };
+  const pwScore = Object.values(pwCriteria).filter(Boolean).length;
+  const pwAllMet = Object.values(pwCriteria).every(Boolean);
+
   const step1Errors: Record<string, string | undefined> = {
     name:      !name.trim() ? "Name is required." : undefined,
     username:  !username.trim() ? "Username is required." : !/^[a-z0-9._-]{3,}$/.test(username.trim()) ? "Lowercase letters only (a–z, 0–9, . _ -). No uppercase or spaces." : serverFieldErrors.username,
     mobile:    mobile.trim() && !/^\d{10}$/.test(mobile.trim()) ? "Must be exactly 10 digits." : serverFieldErrors.mobile,
     email:     email.trim() && !emailRe.test(email.trim()) ? "Enter a valid email." : serverFieldErrors.email,
-    password:  password.length < 6 ? "Min 6 characters." : undefined,
+    password:  !pwAllMet ? "Password does not meet all requirements." : undefined,
     confirmPw: password !== confirmPw ? "Passwords do not match." : undefined,
   };
   const step1Valid = Object.values(step1Errors).every((e) => !e);
@@ -127,7 +137,7 @@ export function NewUserForm({
       username:  !username.trim() || !/^[a-z0-9._-]{3,}$/.test(username.trim()),
       mobile:    !!(mobile.trim() && !/^\d{10}$/.test(mobile.trim())),
       email:     !!(email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())),
-      password:  password.length < 6,
+      password:  !pwAllMet,
       confirmPw: password !== confirmPw,
     };
     if (Object.values(localErrors).some(Boolean)) return;
@@ -328,20 +338,68 @@ export function NewUserForm({
               </div>
 
               {/* Password */}
-              <div>
-                <label className={LBL}>Password * <span className="normal-case font-normal text-[var(--color-ink-400)]">(min 6 chars)</span></label>
+              <div className="sm:col-span-2">
+                <label className={LBL}>Password *</label>
                 <input
                   type="password" value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   onBlur={() => setTouched1((t) => ({ ...t, password: true }))}
                   placeholder="••••••••" autoComplete="new-password"
-                  className={`${F} ${touched1.password && step1Errors.password ? "border-red-400 focus:ring-red-400" : ""}`}
+                  className={`${F} ${touched1.password && step1Errors.password ? "border-red-400 focus:ring-red-400" : password && pwAllMet ? "border-emerald-400 focus:ring-emerald-400" : ""}`}
                 />
-                {touched1.password && step1Errors.password && <p className="text-xs text-red-600 mt-1">{step1Errors.password}</p>}
+
+                {/* Strength bar */}
+                {password.length > 0 && (
+                  <div className="mt-2 space-y-1.5">
+                    <div className="flex items-center gap-2">
+                      <div className="flex gap-1 flex-1">
+                        {[1, 2, 3, 4, 5].map((i) => (
+                          <div
+                            key={i}
+                            className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
+                              i <= pwScore
+                                ? pwScore <= 2 ? "bg-red-400"
+                                : pwScore <= 3 ? "bg-amber-400"
+                                : pwScore <= 4 ? "bg-yellow-400"
+                                : "bg-emerald-500"
+                                : "bg-[var(--color-border)]"
+                            }`}
+                          />
+                        ))}
+                      </div>
+                      <span className={`text-caption font-semibold shrink-0 ${
+                        pwScore <= 2 ? "text-red-500"
+                        : pwScore <= 3 ? "text-amber-500"
+                        : pwScore <= 4 ? "text-yellow-600"
+                        : "text-emerald-600"
+                      }`}>
+                        {pwScore <= 2 ? "Weak" : pwScore <= 3 ? "Fair" : pwScore <= 4 ? "Good" : "Strong"}
+                      </span>
+                    </div>
+
+                    {/* Criteria checklist */}
+                    <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-0.5 mt-1">
+                      {([
+                        [pwCriteria.length,    "At least 8 characters"],
+                        [pwCriteria.uppercase, "One uppercase letter (A–Z)"],
+                        [pwCriteria.lowercase, "One lowercase letter (a–z)"],
+                        [pwCriteria.number,    "One number (0–9)"],
+                        [pwCriteria.special,   "One special character (!@#$…)"],
+                      ] as [boolean, string][]).map(([met, label]) => (
+                        <li key={label} className={`flex items-center gap-1.5 text-caption transition-colors ${met ? "text-emerald-600" : "text-[var(--color-ink-400)]"}`}>
+                          <span className={`inline-flex shrink-0 w-3.5 h-3.5 rounded-full items-center justify-center ${met ? "bg-emerald-500" : "bg-[var(--color-border)]"}`}>
+                            {met && <Check size={8} className="text-white" strokeWidth={3} />}
+                          </span>
+                          {label}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
 
               {/* Confirm Password */}
-              <div>
+              <div className="sm:col-span-2">
                 <label className={LBL}>Confirm Password *</label>
                 <input
                   type="password" value={confirmPw}
