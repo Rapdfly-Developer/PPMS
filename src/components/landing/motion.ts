@@ -14,6 +14,8 @@ export const EASE = {
   enter: [0.25, 0.1, 0.25, 1] as const,
   /** Expo out — dramatic single-element reveals (hero headline). */
   expo: [0.16, 1, 0.3, 1] as const,
+  /** Scroll reveals: quick start, long soft landing. */
+  reveal: [0.22, 1, 0.36, 1] as const,
   /** Accelerate out — exits only. */
   exit: [0.4, 0, 1, 1] as const,
 };
@@ -27,5 +29,8 @@ export const DURATION = {
 /** Tailwind-side twin of EASE.smooth, for CSS-only transitions on hover. */
 export const CSS_EASE = "cubic-bezier(0.32,0.72,0,1)";
 
-/** Viewport config shared by every scroll reveal — fires once, slightly early. */
-export const VIEWPORT = { once: true, margin: "-90px" } as const;
+/** Viewport config shared by every scroll reveal — fires once, slightly early.
+ *  The inset is vertical only ("-90px 0px"): a single value insets all four
+ *  sides, so anything within 90px of the left or right edge of a phone screen
+ *  (e.g. the left column of a 2-up grid) never counted as in view. */
+export const VIEWPORT = { once: true, margin: "-90px 0px" } as const;
