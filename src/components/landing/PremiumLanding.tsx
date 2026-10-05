@@ -78,7 +78,7 @@ function Frame({
       style={{ borderRadius: radius }}
     >
       <div
-        className={`relative overflow-hidden bg-slate-100 shadow-[inset_0_1px_1px_rgba(255,255,255,0.7)] ${aspect}`}
+        className={`lp-frame relative overflow-hidden bg-slate-100 shadow-[inset_0_1px_1px_rgba(255,255,255,0.7)] ${aspect}`}
         style={{ borderRadius: `calc(${radius} - 0.5rem)` }}
       >
         <Image
@@ -88,7 +88,7 @@ function Frame({
           sizes={sizes}
           quality={quality}
           priority={priority}
-          className="object-cover object-center"
+          className="lp-frame-img object-cover object-center"
         />
       </div>
     </div>
@@ -586,7 +586,7 @@ export function PremiumLanding() {
             <div className="lp-in" style={inDelay(0)}>
               <Eyebrow>
                 <span className="relative flex h-1.5 w-1.5">
-                  <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-500" />
+                  <span className="lp-live-dot absolute inline-flex h-full w-full rounded-full bg-emerald-500" />
                 </span>
                 Private practice management system
               </Eyebrow>

@@ -101,12 +101,23 @@ export function WorkflowTabs({ tabs }: { tabs: WorkflowTab[] }) {
                   "transition-[background-color,color,transform] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600",
                   "sm:px-5 sm:py-2.5 sm:text-[14.5px]",
+                  "relative",
                   isActive
-                    ? "bg-emerald-950 text-white"
+                    ? "bg-white text-white"
                     : "bg-white text-emerald-900 hover:-translate-y-0.5 hover:bg-emerald-50",
                 ].join(" ")}
               >
-                {t.label}
+                {/* The dark active pill is one shared element that glides to the
+                    selected tab; at rest it looks exactly like the old fill. */}
+                {isActive && (
+                  <motion.span
+                    layoutId="wt-active-pill"
+                    aria-hidden="true"
+                    className="absolute inset-0 rounded-full bg-emerald-950"
+                    transition={reduce ? { duration: 0 } : { type: "spring", stiffness: 420, damping: 38 }}
+                  />
+                )}
+                <span className="relative">{t.label}</span>
               </button>
             );
           })}

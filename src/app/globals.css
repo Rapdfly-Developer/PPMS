@@ -1106,3 +1106,36 @@ h1, h2, h3, h4 { text-wrap: balance; }
 .emr-overview-active [data-ov-empty] {
   display: none !important;
 }
+
+/* ── Landing interaction polish (motion only — nothing changes at rest) ────── */
+
+/* Anchor links (nav, footer, "Book a demo") glide instead of jumping; the
+   sections already carry scroll-margin for the fixed nav. */
+@media (prefers-reduced-motion: no-preference) {
+  html:has(.ppms-landing) { scroll-behavior: smooth; }
+}
+
+/* Photo plates: a slow, slight zoom inside their frame on hover. Pointer
+   devices only, so a tap on a phone never leaves an image stuck enlarged. */
+.lp-frame-img { transition: transform 900ms cubic-bezier(0.32, 0.72, 0, 1); }
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .lp-frame:hover .lp-frame-img { transform: scale(1.035); }
+}
+
+/* The capability marquee pauses while it is hovered or holds focus, so a
+   label can actually be read. */
+.ppms-marquee-track:hover,
+.ppms-marquee-track:focus-within { animation-play-state: paused !important; }
+
+/* Hero "live" dot: a soft ring breathes out every few seconds (box-shadow
+   on a 6px dot — negligible cost). */
+.lp-live-dot { animation: lp-live 2.8s cubic-bezier(0.22, 1, 0.36, 1) infinite; }
+@keyframes lp-live {
+  0%   { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.45); }
+  70%  { box-shadow: 0 0 0 7px rgba(16, 185, 129, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lp-live-dot { animation: none; }
+  .lp-frame-img { transition: none; }
+}

@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { motion, useReducedMotion } from "framer-motion";
+import { EASE } from "./motion";
 import {
   ArrowRight,
   CalendarDays,
@@ -68,6 +70,7 @@ const INPUT_CLS =
   "w-full rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-[14px] text-slate-800 placeholder:text-slate-400 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 transition-all duration-200";
 
 export function DemoForm() {
+  const reduce = useReducedMotion();
   const [fields, setFields] = useState<Fields>({
     fullName: "", email: "", phone: "", clinicName: "",
     specialization: "", city: "", preferredDate: "", preferredTime: "", message: "",
@@ -115,10 +118,22 @@ export function DemoForm() {
 
   if (done) {
     return (
-      <div className="flex flex-col items-center justify-center gap-5 rounded-2xl border border-emerald-200 bg-emerald-50/60 px-8 py-14 text-center">
-        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 ring-8 ring-emerald-50">
+      // The thank-you card settles in and its tick pops once, rather than the
+      // form being swapped out in a single frame.
+      <motion.div
+        initial={reduce ? { opacity: 0 } : { opacity: 0, y: 12, scale: 0.985 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: reduce ? 0.15 : 0.45, ease: EASE.smooth }}
+        className="flex flex-col items-center justify-center gap-5 rounded-2xl border border-emerald-200 bg-emerald-50/60 px-8 py-14 text-center"
+      >
+        <motion.div
+          initial={reduce ? false : { scale: 0.6, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ type: "spring", stiffness: 320, damping: 22, delay: reduce ? 0 : 0.15 }}
+          className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 ring-8 ring-emerald-50"
+        >
           <CheckCircle2 size={32} className="text-emerald-600" strokeWidth={1.5} />
-        </div>
+        </motion.div>
         <div>
           <h3 className="font-display text-[20px] font-bold text-emerald-950">
             Thank you for your interest in RF Health!
@@ -141,7 +156,7 @@ export function DemoForm() {
         >
           Submit another request
         </button>
-      </div>
+      </motion.div>
     );
   }
 
@@ -263,7 +278,7 @@ export function DemoForm() {
       <button
         type="submit"
         disabled={loading}
-        className="group mt-1 flex w-full items-center justify-center gap-2.5 rounded-xl bg-emerald-950 py-4 text-[15px] font-semibold text-white shadow-[0_12px_30px_-10px_rgba(6,60,45,0.5)] transition-all duration-300 hover:shadow-[0_16px_40px_-10px_rgba(6,60,45,0.6)] hover:-translate-y-0.5 disabled:opacity-60 disabled:cursor-not-allowed disabled:translate-y-0"
+        className="group mt-1 flex w-full items-center justify-center gap-2.5 rounded-xl bg-emerald-950 py-4 text-[15px] font-semibold text-white shadow-[0_12px_30px_-10px_rgba(6,60,45,0.5)] transition-all duration-300 hover:shadow-[0_16px_40px_-10px_rgba(6,60,45,0.6)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99] disabled:opacity-60 disabled:cursor-not-allowed disabled:translate-y-0"
       >
         {loading
           ? <><Loader2 size={16} className="animate-spin" /> Sending request…</>
