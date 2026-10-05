@@ -218,19 +218,19 @@ function ApptRow({ appt, scope, serial, canManageQueue, canViewPatient, returnTo
       <div className="w-24 shrink-0 hidden sm:flex items-center justify-center">
         <span className="flex flex-col items-center leading-tight">
           <span
-            className="inline-flex items-center gap-1 whitespace-nowrap text-caption font-bold text-[var(--color-ink-900)] tabular-nums"
+            className="whitespace-nowrap text-caption font-bold text-[var(--color-ink-900)] tabular-nums"
             title={appt.isWalkIn ? "Walk-in time" : "Booked appointment time"}
           >
-            <Calendar size={11} /> {appt.isWalkIn ? format(new Date(appt.createdAt), "hh:mm a") : apptTime}
+            {appt.isWalkIn ? format(new Date(appt.createdAt), "hh:mm a") : apptTime}
           </span>
-          <span className="text-caption font-semibold text-gray-400 mt-0.5">
-            {appt.isWalkIn ? "Walk-in" : "Appointment"}
+          <span className="inline-flex items-center gap-1 mt-0.5 whitespace-nowrap text-caption text-blue-600">
+            <Calendar size={10} className="shrink-0" />
+            {appt.isWalkIn
+              ? "Walk-in"
+              : arrivedAt
+                ? `Appt - ${format(arrivedAt, "h:mm a")}`
+                : "Appointment"}
           </span>
-          {!appt.isWalkIn && arrivedAt && (
-            <span className="text-caption font-semibold text-blue-600 tabular-nums" title="Arrival time">
-              {format(arrivedAt, "h:mm a")}
-            </span>
-          )}
         </span>
       </div>
       <div className="w-px self-stretch bg-[var(--color-border)] hidden sm:block" />
