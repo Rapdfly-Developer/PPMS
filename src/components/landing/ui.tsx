@@ -58,7 +58,7 @@ const REVEAL_TO: Record<RevealVariant, Record<string, number | string>> = {
  * Scroll-triggered entrance. Under `prefers-reduced-motion` it collapses to a
  * plain, near-instant fade — the content still arrives, it just stops moving.
  */
-export function Reveal({ children, delay = 0, y = 24, className, variant = "fade" }: RevealProps) {
+export function Reveal({ children, delay = 0, y = 28, className, variant = "fade" }: RevealProps) {
   const reduce = useReducedMotion();
 
   return (
@@ -68,9 +68,9 @@ export function Reveal({ children, delay = 0, y = 24, className, variant = "fade
       whileInView={reduce ? { opacity: 1 } : REVEAL_TO[variant]}
       viewport={VIEWPORT}
       transition={{
-        duration: reduce ? 0.01 : variant === "fade" ? 0.65 : DURATION.slow,
+        duration: reduce ? 0.01 : variant === "fade" ? DURATION.normal + 0.1 : DURATION.slow,
         delay: reduce ? 0 : delay,
-        ease: variant === "fade" ? EASE.reveal : EASE.smooth,
+        ease: EASE.smooth,
       }}
     >
       {children}
@@ -259,18 +259,13 @@ export function Counter({
   to,
   suffix = "",
   decimals = 0,
-  delay = 0,
-  duration = 1.6,
 }: {
   to: number;
   suffix?: string;
   decimals?: number;
-  /** Seconds to wait after entering view — lets a dashboard sequence its figures. */
-  delay?: number;
-  duration?: number;
 }) {
   const ref = useRef<HTMLSpanElement>(null);
-  const inView = useInView(ref, { once: true, margin: "-60px 0px" });
+  const inView = useInView(ref, { once: true, margin: "-60px" });
   const reduce = useReducedMotion();
   // Starts at the real figure so the server HTML (and search engines, link
   // previews and no-JS readers) show "500+" rather than "0+". Once hydrated it
@@ -288,13 +283,12 @@ export function Counter({
   useEffect(() => {
     if (!inView || reduce) return;
     const controls = animate(0, to, {
-      duration,
-      delay,
+      duration: 1.6,
       ease: EASE.expo,
       onUpdate: (v) => setValue(v),
     });
     return () => controls.stop();
-  }, [inView, to, reduce, delay, duration]);
+  }, [inView, to, reduce]);
 
   return (
     <span ref={ref} className="tabular-nums">
@@ -355,10 +349,3 @@ export function Marquee({
     </div>
   );
 }
-
-/* ─── Named aliases for the landing experience components ─────────────────── */
-
-/** The reusable scroll reveal (fade + 24px rise, once, eased 0.22/1/0.36/1). */
-export const ScrollReveal = Reveal;
-/** Counts 0 → value when visible; the real figure is in the server HTML. */
-export const AnimatedCounter = Counter;

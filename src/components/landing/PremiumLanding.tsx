@@ -32,13 +32,7 @@ import { Faq, type FaqItem } from "./Faq";
 import { WorkflowTabs } from "./WorkflowTabs";
 import { Nav } from "./Nav";
 import { DemoForm } from "./DemoForm";
-import { Counter, Marquee, Reveal, RevealGroup, RevealItem, ScrollRail } from "./ui";
-import { AnimatedBackground, DataNodes } from "./experience/Ambient";
-import { AnimatedDashboardPreview } from "./experience/AnimatedDashboardPreview";
-import { AiPipeline, WorkflowTimeline } from "./experience/Flows";
-import { FeatureCard, MicroInteractionButton } from "./experience/Cards";
-import { LiveQueue } from "./experience/LiveQueue";
-import { ProductShowcase } from "./experience/ProductShowcase";
+import { Counter, Magnetic, Marquee, Parallax, Reveal, RevealGroup, RevealItem, ScrollRail } from "./ui";
 import { MobileFooter } from "./MobileFooter";
 
 const IMG = "/landing/v3";
@@ -132,20 +126,6 @@ function Section({
     </section>
   );
 }
-
-/** Platform modules — each card jumps to the part of the page that shows it. */
-const MODULES = [
-  { icon: Building2, title: "Hospital management", desc: "Every hospital you visit, its staff, schedules and settings in one account.", href: "#hospitals" },
-  { icon: Users, title: "Patient management", desc: "One UHID per patient, with history that follows them between hospitals.", href: "#tour" },
-  { icon: Stethoscope, title: "Doctor workspace", desc: "Your availability, queue and records across every hospital you practise at.", href: "#workflow" },
-  { icon: CalendarRange, title: "Appointments & queue", desc: "Bookings against your real hours and a live OPD queue at reception.", href: "#ai" },
-  { icon: ClipboardPlus, title: "Electronic medical records", desc: "Structured examination, diagnosis and plan, legible years later.", href: "#emr" },
-  { icon: Pill, title: "Prescriptions", desc: "Printed prescriptions, with dispensing tracked at the pharmacy.", href: "#tour" },
-  { icon: ScanLine, title: "Investigations", desc: "Order labs and imaging and attach results back to the same visit.", href: "#tour" },
-  { icon: ReceiptIndianRupee, title: "Billing", desc: "Consultation and procedure charges settled at the counter.", href: "#tour" },
-  { icon: ChartNoAxesColumn, title: "Analytics", desc: "Practice-wide trends across hospitals, appointments and clinical work.", href: "#hospitals" },
-  { icon: Sparkles, title: "AI clinical assistance", desc: "Co-pilot suggestions for the doctor to review, never applied on its own.", href: "#ai" },
-];
 
 /** Stagger for the CSS hero entrance (see .lp-in / .lp-line in globals.css). */
 function inDelay(ms: number): React.CSSProperties {
@@ -586,10 +566,16 @@ export function PremiumLanding() {
           content, which is the opposite of filling the screen. Letting the
           next section peek in also tells the reader there is more. */}
       <section id="platform" className={`lp-hero relative overflow-hidden ${GUTTER} pb-10 pt-32 sm:pb-12 sm:pt-32 lg:pb-14 lg:pt-28`}>
-        {/* Atmosphere: dot grid, slow light fields and a sparse field of data
-            nodes that light up a few at a time — CSS only (globals.css). */}
-        <AnimatedBackground />
-        <DataNodes />
+        {/* Two soft emerald orbs, well below the content — the only colour in the
+            page background. Fixed-size, blurred once, never animated. */}
+        <div
+          aria-hidden="true"
+          className="ppms-orb-a pointer-events-none absolute -left-40 -top-40 h-[560px] w-[560px] rounded-full bg-emerald-200/30 blur-[120px]"
+        />
+        <div
+          aria-hidden="true"
+          className="ppms-orb-b pointer-events-none absolute -right-52 top-40 h-[620px] w-[620px] rounded-full bg-teal-100/50 blur-[130px]"
+        />
 
         <div className={`relative grid w-full items-center gap-10 sm:gap-12 lg:grid-cols-[1.05fr_1fr] lg:gap-14 4xl:gap-20 ${SHELL}`}>
           <div>
@@ -630,8 +616,25 @@ export function PremiumLanding() {
 
             <div className="lp-in" style={inDelay(440)}>
               <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center">
-                <MicroInteractionButton href="/license">Start 7-day free trial</MicroInteractionButton>
-                <MicroInteractionButton href="#contact" variant="secondary">Book a demo</MicroInteractionButton>
+                <Magnetic
+                  href="/license"
+                  className="group inline-flex items-center justify-between gap-3 rounded-full bg-emerald-950 py-2 pl-7 pr-2 text-[15px] font-semibold text-white shadow-[0_20px_40px_-20px_rgba(6,60,45,0.6)]"
+                >
+                  Start 7-day free trial
+                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white/12 transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:translate-x-[3px] group-hover:-translate-y-[2px] group-hover:scale-105">
+                    <ArrowUpRight size={17} strokeWidth={1.25} aria-hidden="true" />
+                  </span>
+                </Magnetic>
+
+                <a
+                  href="#contact"
+                  className="group inline-flex items-center justify-between gap-3 rounded-full border border-emerald-950/[0.1] py-2 pl-7 pr-2 text-[15px] font-medium text-emerald-950 transition-[background-color,transform] duration-500 active:scale-[0.975] ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-emerald-50"
+                >
+                  Book a demo
+                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-950/[0.05] transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:translate-x-[3px] group-hover:-translate-y-[2px] group-hover:scale-105">
+                    <ArrowUpRight size={17} strokeWidth={1.25} aria-hidden="true" />
+                  </span>
+                </a>
               </div>
             </div>
 
@@ -649,10 +652,39 @@ export function PremiumLanding() {
 
           {/* Z-axis cascade: the main plate, with a second smaller plate breaking
               its lower-left corner. Overlap is removed below lg. */}
-          {/* The product itself is the hero visual: a dashboard that assembles
-              in sequence (frame → bar → stats → chart → rows → co-pilot). */}
-          <div className="lp-plate relative min-w-0" style={inDelay(160)}>
-            <AnimatedDashboardPreview />
+          <div className="lp-plate relative" style={inDelay(160)}>
+            <Frame
+              src={`${IMG}/hero-clinician-tablet-dashboard.jpg`}
+              alt="A clinician in gloves reviewing a RF Health patient dashboard on a tablet in a hospital corridor"
+              // Portrait on mobile, where the plate is full width and tall is
+              // correct. From lg it relaxes, because that is where the copy
+              // sits beside it: held at 3/4 the plate ran 765px against a
+              // 528px text column, and items-center split the 236px difference
+              // above and below the headline. Squaring it at lg brings the two
+              // columns within ~50px of each other. The frame crops with
+              // object-cover, so this trims the photo rather than distorting it.
+              aspect="aspect-[3/4] lg:aspect-[1/1] 4xl:aspect-[5/4] 5xl:aspect-[4/3]"
+              sizes="(max-width: 1024px) 92vw, 46vw"
+              priority
+              quality={85}
+              radius="2.25rem"
+            />
+            {/* The overlapping plate slides in last and then drifts against the
+                scroll, so the two plates separate in depth as the page moves. */}
+            <div className="lp-plate-float pointer-events-none absolute -bottom-10 -left-6 hidden w-[46%] lg:block" style={inDelay(620)}>
+              <Parallax distance={26}>
+                <div className="ppms-float">
+                  <Frame
+                    src={`${IMG}/laptop-holographic-practice-dashboard.jpg`}
+                    alt="Practice analytics projected above a laptop screen"
+                    aspect="aspect-square"
+                    sizes="22vw"
+                    radius="1.5rem"
+                    className="shadow-[0_40px_70px_-35px_rgba(6,60,45,0.5)]"
+                  />
+                </div>
+              </Parallax>
+            </div>
           </div>
         </div>
       </section>
@@ -676,67 +708,6 @@ export function PremiumLanding() {
             ))}
           </div>
         </Reveal>
-      </Section>
-
-      {/* ── Connected workflow ───────────────────────────────────────────── */}
-      <Section id="workflow" className="bg-gradient-to-b from-white via-slate-50/70 to-white">
-        <SectionHead
-          eyebrow="One connected workflow"
-          title={<>Every step of care, on the same record.</>}
-          lede="From the moment a patient is registered to the analytics at month end, each step picks up where the last one left off: no re-typing, no paper hand-offs between desks."
-          align="center"
-        />
-        <div className="mt-10 sm:mt-12">
-          <WorkflowTimeline />
-        </div>
-      </Section>
-
-      {/* ── Platform modules ─────────────────────────────────────────────── */}
-      <Section id="modules">
-        <SectionHead
-          eyebrow="Platform"
-          title={<>Everything a visiting doctor runs, in one system.</>}
-          align="center"
-        />
-        <RevealGroup className="mt-10 grid grid-cols-1 gap-3 sm:mt-12 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 xl:grid-cols-5" stagger={0.08}>
-          {MODULES.map((m) => (
-            <RevealItem key={m.title} className="h-full" y={16}>
-              <FeatureCard {...m} />
-            </RevealItem>
-          ))}
-        </RevealGroup>
-      </Section>
-
-      {/* ── Product tour ─────────────────────────────────────────────────── */}
-      <Section id="tour" className="bg-gradient-to-b from-white via-teal-50/40 to-white">
-        <SectionHead
-          eyebrow="Product tour"
-          title={<>See the screens your team will use.</>}
-          lede="The same interface at the front desk, in the consulting room and at month end. Pick a screen, or let the tour run."
-          align="center"
-        />
-        <div className="mt-10 sm:mt-12">
-          <ProductShowcase />
-        </div>
-      </Section>
-
-      {/* ── Clinical intelligence + live operations ──────────────────────── */}
-      <Section id="ai">
-        <div className="grid gap-8 lg:grid-cols-[1.6fr_1fr] lg:gap-10">
-          <div>
-            <SectionHead
-              eyebrow="Clinical co-pilot"
-              title={<>Assistance that informs. The doctor decides.</>}
-              lede="The co-pilot reads what is already in the visit and offers suggestions alongside it. Nothing is written to the record unless you accept it."
-            />
-            <div className="mt-8">
-              <AiPipeline />
-            </div>
-          </div>
-          <Reveal variant="image" delay={0.1} className="lg:pt-24">
-            <LiveQueue />
-          </Reveal>
-        </div>
       </Section>
 
       {/* ── EMR ──────────────────────────────────────────────────────────── */}
