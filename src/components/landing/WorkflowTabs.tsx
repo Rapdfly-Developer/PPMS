@@ -23,6 +23,8 @@ export type WorkflowTab = {
  */
 export function WorkflowTabs({ tabs }: { tabs: WorkflowTab[] }) {
   const [active, setActive] = useState(0);
+  // Which way the panel slides in: +1 when moving right along the tabs, -1 left.
+  const [dir, setDir] = useState(0);
   const reduce = useReducedMotion();
   const btnRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
@@ -34,6 +36,11 @@ export function WorkflowTabs({ tabs }: { tabs: WorkflowTab[] }) {
     const i = tabs.findIndex((t) => t.id === hash);
     if (i >= 0) setActive(i);
   }, [tabs]);
+
+  function go(i: number) {
+    setDir(Math.sign(i - active));
+    setActive(i);
+  }
 
   useEffect(() => {
     // Has to run after mount, not during render: there is no `window` on the
@@ -54,7 +61,7 @@ export function WorkflowTabs({ tabs }: { tabs: WorkflowTab[] }) {
     else if (e.key === "End") next = last;
     if (next === null) return;
     e.preventDefault();
-    setActive(next);
+    go(next);
     btnRefs.current[next]?.focus();
   }
 
@@ -94,7 +101,7 @@ export function WorkflowTabs({ tabs }: { tabs: WorkflowTab[] }) {
                 aria-selected={isActive}
                 aria-controls={`wt-panel-${t.id}`}
                 tabIndex={isActive ? 0 : -1}
-                onClick={() => setActive(i)}
+                onClick={() => go(i)}
                 className={[
                   "snap-start whitespace-nowrap rounded-full px-4 py-2 text-[13.5px] font-semibold tracking-tight",
                   "ring-1 ring-inset ring-emerald-950/[0.07]",
@@ -129,9 +136,9 @@ export function WorkflowTabs({ tabs }: { tabs: WorkflowTab[] }) {
         role="tabpanel"
         id={`wt-panel-${tabs[active].id}`}
         aria-labelledby={`wt-tab-${tabs[active].id}`}
-        initial={{ opacity: 0, y: reduce ? 0 : 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: reduce ? 0.01 : 0.4, ease: EASE.smooth }}
+        initial={reduce ? { opacity: 0 } : { opacity: 0, x: dir * 24, y: dir ? 0 : 10, filter: "blur(4px)" }}
+        animate={{ opacity: 1, x: 0, y: 0, filter: "blur(0px)" }}
+        transition={{ duration: reduce ? 0.01 : 0.5, ease: EASE.expo }}
         className="mt-8 sm:mt-10"
       >
         {tabs[active].content}

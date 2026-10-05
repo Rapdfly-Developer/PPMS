@@ -18,7 +18,8 @@ import {
   useScroll,
   useTransform,
 } from "framer-motion";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
+import type { TargetAndTransition } from "framer-motion";
 import { DURATION, EASE, VIEWPORT } from "./motion";
 
 /* ─── Reveal ──────────────────────────────────────────────────────────────── */
@@ -43,15 +44,17 @@ type RevealProps = {
   variant?: RevealVariant;
 };
 
-const REVEAL_FROM: Record<RevealVariant, (y: number) => Record<string, number | string>> = {
+const REVEAL_FROM: Record<RevealVariant, (y: number) => TargetAndTransition> = {
   fade: (y) => ({ opacity: 0, y }),
   heading: (y) => ({ opacity: 0, y, filter: "blur(6px)" }),
-  image: (y) => ({ opacity: 0, y: Math.round(y * 0.6), scale: 1.035 }),
+  // A curtain that rises over the plate. The sides and bottom of the clip sit
+  // outside the box so the frame's drop shadow is never cut off.
+  image: (y) => ({ y: Math.round(y * 0.5), clipPath: "inset(100% -20% 0% -20%)" }),
 };
-const REVEAL_TO: Record<RevealVariant, Record<string, number | string>> = {
+const REVEAL_TO: Record<RevealVariant, TargetAndTransition> = {
   fade: { opacity: 1, y: 0 },
   heading: { opacity: 1, y: 0, filter: "blur(0px)" },
-  image: { opacity: 1, y: 0, scale: 1 },
+  image: { y: 0, clipPath: "inset(0% -20% -30% -20%)", transitionEnd: { clipPath: "none" } },
 };
 
 /**
@@ -68,13 +71,69 @@ export function Reveal({ children, delay = 0, y = 28, className, variant = "fade
       whileInView={reduce ? { opacity: 1 } : REVEAL_TO[variant]}
       viewport={VIEWPORT}
       transition={{
-        duration: reduce ? 0.01 : variant === "fade" ? DURATION.normal + 0.1 : DURATION.slow,
+        duration: reduce ? 0.01 : variant === "fade" ? DURATION.normal + 0.1 : variant === "image" ? 1.1 : DURATION.slow,
         delay: reduce ? 0 : delay,
-        ease: EASE.smooth,
+        ease: variant === "image" ? EASE.expo : EASE.smooth,
       }}
     >
       {children}
     </motion.div>
+  );
+}
+
+/* ─── Word reveal ─────────────────────────────────────────────────────────── */
+
+/**
+ * Section headlines: each word rises out of its own mask, one after another.
+ * The words stay real text separated by real spaces, so wrapping, text-balance
+ * and screen readers behave exactly as with a plain string. Reduced motion is
+ * handled in globals.css (.lp-word), which pins every word in place.
+ */
+export function Words({ text, delay = 0 }: { text: string; delay?: number }) {
+  const words = text.split(" ");
+  return (
+    <motion.span
+      initial="hidden"
+      whileInView="visible"
+      viewport={VIEWPORT}
+      variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.05, delayChildren: delay } } }}
+    >
+      {words.map((w, i) => (
+        <Fragment key={i}>
+          <span className="lp-word inline-block overflow-hidden px-[0.05em] pb-[0.14em] align-top -mx-[0.05em] -mb-[0.14em]">
+            <motion.span
+              className="inline-block"
+              variants={{
+                hidden: { y: "110%" },
+                visible: { y: "0%", transition: { duration: 0.9, ease: EASE.expo } },
+              }}
+            >
+              {w}
+            </motion.span>
+          </span>
+          {i < words.length - 1 && " "}
+        </Fragment>
+      ))}
+    </motion.span>
+  );
+}
+
+/* ─── Sheen ───────────────────────────────────────────────────────────────── */
+
+/**
+ * One soft band of light that crosses a card once, the first time it is
+ * scrolled into view. The parent must be `relative overflow-hidden`.
+ */
+export function Sheen() {
+  return (
+    <motion.span
+      aria-hidden="true"
+      className="lp-sheen pointer-events-none absolute inset-y-0 -left-1/2 w-1/2 -skew-x-12 bg-gradient-to-r from-transparent via-white/[0.10] to-transparent"
+      initial={{ x: "0%" }}
+      whileInView={{ x: "420%" }}
+      viewport={{ once: true, margin: "-120px" }}
+      transition={{ duration: 1.8, delay: 0.45, ease: EASE.smooth }}
+    />
   );
 }
 

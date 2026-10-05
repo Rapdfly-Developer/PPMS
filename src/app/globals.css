@@ -1122,6 +1122,24 @@ h1, h2, h3, h4 { text-wrap: balance; }
   .lp-frame:hover .lp-frame-img { transform: scale(1.035); }
 }
 
+/* Photo plates also pan gently inside their frame as they cross the viewport
+   (scroll-driven, no JS). Uses the standalone `translate`/`scale` properties
+   so it composes with the hover zoom above. Browsers without view timelines
+   simply show the still image. */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .ppms-landing .lp-frame-img {
+      scale: 1.08;
+      animation: lp-inner-pan linear both;
+      animation-timeline: view();
+    }
+  }
+}
+@keyframes lp-inner-pan {
+  from { translate: 0 -3.5%; }
+  to   { translate: 0 3.5%; }
+}
+
 /* The capability marquee pauses while it is hovered or holds focus, so a
    label can actually be read. */
 .ppms-marquee-track:hover,
@@ -1138,6 +1156,8 @@ h1, h2, h3, h4 { text-wrap: balance; }
 @media (prefers-reduced-motion: reduce) {
   .lp-live-dot { animation: none; }
   .lp-frame-img { transition: none; }
+  .lp-word > span { transform: none !important; }
+  .lp-sheen { display: none; }
 }
 
 /* ── Landing cursor interactions (CursorEffects.tsx) ──────────────────────────

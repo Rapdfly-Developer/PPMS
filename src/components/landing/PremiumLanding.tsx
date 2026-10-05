@@ -32,7 +32,7 @@ import { Faq, type FaqItem } from "./Faq";
 import { WorkflowTabs } from "./WorkflowTabs";
 import { Nav } from "./Nav";
 import { DemoForm } from "./DemoForm";
-import { Magnetic, Marquee, Parallax, Reveal, RevealGroup, RevealItem, ScrollRail } from "./ui";
+import { Magnetic, Marquee, Parallax, Reveal, RevealGroup, RevealItem, ScrollRail, Sheen, Words } from "./ui";
 import { CursorEffects } from "./CursorEffects";
 import { MobileFooter } from "./MobileFooter";
 import { CookieSettingsButton } from "../consent/CookieSettingsButton";
@@ -143,24 +143,30 @@ function SectionHead({
 }: {
   /** Omitted inside WorkflowTabs, where the tab label already names the panel. */
   eyebrow?: string;
-  title: React.ReactNode;
+  title: string;
   lede?: string;
   align?: "center" | "left";
 }) {
   return (
-    <Reveal variant="heading" className={align === "center" ? "mx-auto max-w-[var(--lp-measure)] text-center" : "max-w-[var(--lp-measure)]"}>
-      {eyebrow && <Eyebrow>{eyebrow}</Eyebrow>}
+    <div className={align === "center" ? "mx-auto max-w-[var(--lp-measure)] text-center" : "max-w-[var(--lp-measure)]"}>
+      {eyebrow && (
+        <Reveal y={12}>
+          <Eyebrow>{eyebrow}</Eyebrow>
+        </Reveal>
+      )}
       {/* Fluid between 320px and ~1536px, then pinned — clamp keeps the headline
           inside a 320px viewport without a stack of breakpoint overrides. */}
       <h2 className="font-display mt-4 text-[length:var(--lp-h2)] font-bold leading-[1.06] tracking-[-0.03em] text-balance text-emerald-950 sm:mt-5">
-        {title}
+        <Words text={title} delay={eyebrow ? 0.08 : 0} />
       </h2>
       {lede && (
-        <p className="mt-4 text-[length:var(--lp-lede)] leading-relaxed text-slate-600 sm:mt-5">
-          {lede}
-        </p>
+        <Reveal delay={0.22} y={16}>
+          <p className="mt-4 text-[length:var(--lp-lede)] leading-relaxed text-slate-600 sm:mt-5">
+            {lede}
+          </p>
+        </Reveal>
       )}
-    </Reveal>
+    </div>
   );
 }
 
@@ -176,7 +182,7 @@ function Split({
 }: {
   /** Omitted inside WorkflowTabs, where the tab label already names the panel. */
   eyebrow?: string;
-  title: React.ReactNode;
+  title: string;
   lede: string;
   points: { icon: React.ReactNode; label: string; desc: string }[];
   flip?: boolean;
@@ -187,11 +193,15 @@ function Split({
   return (
     <div className="grid items-center gap-8 sm:gap-10 lg:grid-cols-2 lg:gap-12 xl:gap-16">
       <div className={flip ? "lg:order-2" : ""}>
-        <Reveal variant="heading">
-          {eyebrow && <Eyebrow>{eyebrow}</Eyebrow>}
-          <h2 className="font-display mt-4 text-[length:var(--lp-h2-split)] font-bold leading-[1.07] tracking-[-0.03em] text-balance text-emerald-950 sm:mt-5">
-            {title}
-          </h2>
+        {eyebrow && (
+          <Reveal y={12}>
+            <Eyebrow>{eyebrow}</Eyebrow>
+          </Reveal>
+        )}
+        <h2 className="font-display mt-4 text-[length:var(--lp-h2-split)] font-bold leading-[1.07] tracking-[-0.03em] text-balance text-emerald-950 sm:mt-5">
+          <Words text={title} delay={eyebrow ? 0.08 : 0} />
+        </h2>
+        <Reveal delay={0.22} y={16}>
           <p className="mt-4 text-[length:var(--lp-lede)] leading-relaxed text-slate-600 sm:mt-5">
             {lede}
           </p>
@@ -238,7 +248,7 @@ function JourneyPanel() {
   return (
     <>
       <SectionHead
-        title={<>From first call to follow-up, on one thread.</>}
+        title="From first call to follow-up, on one thread."
         lede="Every stage writes to the same record, so the next person to see the patient starts from what actually happened rather than from what was remembered."
       />
 
@@ -299,7 +309,7 @@ function JourneyPanel() {
 function SurgeryPanel() {
   return (
       <Split
-        title={<>Every operation, documented the same way.</>}
+        title="Every operation, documented the same way."
         lede="Schedule the theatre, record the operative note against a consistent structure, and keep the pre-op diagnosis, findings and post-op plan attached to the patient's timeline."
         points={[
           {
@@ -378,7 +388,7 @@ function AnalyticsPanel() {
   return (
       <Split
         flip
-        title={<>The numbers you actually run the practice on.</>}
+        title="The numbers you actually run the practice on."
         lede="Today's queue, this month's revenue by hospital, no-show rate, repeat-visit rate, computed from the same records your staff are already entering, so there is no separate reporting exercise."
         points={[
           {
@@ -701,29 +711,27 @@ export function PremiumLanding() {
 
       {/* ── Social proof numbers ─────────────────────────────────────────── */}
       <Section className="lp-tight-top pt-8 md:pt-10 lg:pt-12">
-        <Reveal>
-          <div className="flex flex-wrap items-center justify-center gap-x-10 gap-y-5 sm:gap-x-14">
+        <RevealGroup className="flex flex-wrap items-center justify-center gap-x-10 gap-y-5 sm:gap-x-14" stagger={0.1}>
             {[
               { num: "1 login", label: "For every hospital you visit" },
               { num: "1 record", label: "Per patient, across hospitals" },
               { num: "7-day", label: "Free trial, no card" },
             ].map((s, i) => (
-              <div key={s.label} className={`text-center ${i < 2 ? "sm:border-r sm:border-emerald-950/[0.07] sm:pr-10 sm:last:border-0" : ""}`}>
+              <RevealItem key={s.label} y={18} className={`text-center ${i < 2 ? "sm:border-r sm:border-emerald-950/[0.07] sm:pr-10" : ""}`}>
                 <p className="font-display text-[clamp(1.6rem,3vw,2.25rem)] font-bold leading-none tracking-[-0.03em] text-emerald-950">
                   {s.num}
                 </p>
                 <p className="mt-1.5 text-[13px] text-slate-500">{s.label}</p>
-              </div>
+              </RevealItem>
             ))}
-          </div>
-        </Reveal>
+        </RevealGroup>
       </Section>
 
       {/* ── EMR ──────────────────────────────────────────────────────────── */}
       <Section id="emr" className="bg-gradient-to-b from-white via-slate-50/60 to-white">
         <Split
           eyebrow="Electronic medical records"
-          title={<>Notes that stay legible five years later.</>}
+          title="Notes that stay legible five years later."
           lede="Structured consultation notes with vitals, diagnosis, investigations and plan, captured in the room, not written up afterwards from memory."
           points={[
             {
@@ -788,7 +796,7 @@ export function PremiumLanding() {
       <Section id="pricing">
         <SectionHead
           eyebrow="Pricing"
-          title={<>Priced per practice, not per patient.</>}
+          title="Priced per practice, not per patient."
           lede="Start with a 7-day free trial, no card required. First month 75% off on Monthly and 5 Doctors plans."
         />
         <Reveal>
@@ -820,10 +828,11 @@ export function PremiumLanding() {
                   className={[
                     "flex h-full flex-col rounded-[1.5rem] p-6 md:p-5 lg:p-7",
                     p.featured
-                      ? "bg-white/[0.04] shadow-[inset_0_1px_1px_rgba(255,255,255,0.12)]"
+                      ? "relative overflow-hidden bg-white/[0.04] shadow-[inset_0_1px_1px_rgba(255,255,255,0.12)]"
                       : "bg-gradient-to-b from-slate-50/70 to-white",
                   ].join(" ")}
                 >
+                  {p.featured && <Sheen />}
                   {p.featured && (
                     <span className="mb-5 inline-flex w-max items-center gap-1.5 rounded-full bg-emerald-500/15 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-400">
                       Most popular
@@ -919,7 +928,7 @@ export function PremiumLanding() {
       <Section id="faq">
         <SectionHead
           eyebrow="FAQ"
-          title={<>Questions we hear most.</>}
+          title="Questions we hear most."
         />
         <Reveal>
           <div className="mx-auto mt-10 max-w-3xl">
@@ -936,7 +945,7 @@ export function PremiumLanding() {
           <Reveal className="lg:sticky lg:top-28">
             <Eyebrow>Free Demo</Eyebrow>
             <h2 className="font-display mt-5 text-[length:var(--lp-h2-split)] font-bold leading-[1.07] tracking-[-0.03em] text-balance text-emerald-950 sm:mt-6">
-              See How RF Health Can Transform Your Practice
+              <Words text="See How RF Health Can Transform Your Practice" delay={0.1} />
             </h2>
             <p className="mt-5 text-[16px] leading-relaxed text-slate-600">
               Book a free, personalised demo with our team. We will walk you through
