@@ -8,7 +8,7 @@ import { deletePatient } from "./actions";
 /** Trash button + confirmation dialog. The user must type the patient ID to enable deletion. */
 export function DeletePatientButton({ patientId, patientName, patientCode, redirectTo, className }: { patientId: string; patientName: string; patientCode: string; redirectTo?: string; className?: string }) {
   const router = useRouter();
-  const [open, setOpen] = useState(false);
+  const [step, setStep] = useState<"idle" | "first" | "second">("idle");
   const [typed, setTyped] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -16,7 +16,7 @@ export function DeletePatientButton({ patientId, patientName, patientCode, redir
 
   function close() {
     if (pending) return;
-    setOpen(false);
+    setStep("idle");
     setTyped("");
     setError(null);
   }
@@ -26,7 +26,7 @@ export function DeletePatientButton({ patientId, patientName, patientCode, redir
     startTransition(async () => {
       const res = await deletePatient(patientId);
       if (res.error) { setError(res.error); return; }
-      setOpen(false);
+      setStep("idle");
       if (redirectTo) { router.push(redirectTo); } else { router.refresh(); }
     });
   }
@@ -35,7 +35,7 @@ export function DeletePatientButton({ patientId, patientName, patientCode, redir
     <>
       <button
         type="button"
-        onClick={(e) => { e.stopPropagation(); setOpen(true); }}
+        onClick={(e) => { e.stopPropagation(); setStep("first"); }}
         title="Delete patient"
         aria-label={`Delete patient ${patientName}`}
         className={className ?? "shrink-0 rounded-lg p-1.5 text-[var(--color-ink-400)] transition-colors hover:bg-red-50 hover:text-red-600"}
@@ -43,7 +43,39 @@ export function DeletePatientButton({ patientId, patientName, patientCode, redir
         <Trash2 size={14} />
       </button>
 
-      {open && (
+      {step === "first" && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 backdrop-blur-sm"
+          onClick={(e) => { e.stopPropagation(); close(); }}
+        >
+          <div role="dialog" aria-modal="true" aria-labelledby="delete-first-title" onClick={(e) => e.stopPropagation()} className="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+            <button type="button" onClick={close} aria-label="Close" className="absolute right-3 top-3 rounded-lg p-1.5 text-[var(--color-ink-400)] hover:bg-[var(--color-surface-sunken)]">
+              <X size={16} />
+            </button>
+            <div className="flex items-start gap-3">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-50 text-red-600"><AlertTriangle size={18} /></span>
+              <div>
+                <h2 id="delete-first-title" className="text-heading-sm font-semibold text-[var(--color-ink-900)]">Delete Patient Record?</h2>
+                <p className="mt-1 text-label leading-relaxed text-[var(--color-ink-500)]">
+                  This action is permanent and cannot be reversed. The patient&apos;s entire medical history, visits, prescriptions and records will be deleted forever. Are you sure you want to continue?
+                </p>
+              </div>
+            </div>
+            <div className="mt-5 flex justify-end gap-2">
+              <button type="button" onClick={close} className="h-9 rounded-lg border border-[var(--color-border)] px-4 text-label font-medium text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]">Cancel</button>
+              <button
+                type="button"
+                onClick={() => setStep("second")}
+                className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-red-600 px-4 text-label font-semibold text-white hover:bg-red-700"
+              >
+                Yes, continue
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {step === "second" && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 backdrop-blur-sm"
           onClick={(e) => { e.stopPropagation(); close(); }}

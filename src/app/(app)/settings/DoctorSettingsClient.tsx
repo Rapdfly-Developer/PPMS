@@ -937,7 +937,7 @@ function UsersSection({ users, hospitals, assignableRoles, doctorId }: { users: 
       <SectionHeader
         title="Users"
         desc={`${users.length} users across ${hospitals.length} linked hospital${hospitals.length !== 1 ? "s" : ""}`}
-        action={{ label: "Add User", icon: UserPlus, onClick: () => router.push("/users/new?returnTo=/settings"), disabled: true }}
+        action={{ label: "Add User", icon: UserPlus, onClick: () => router.push("/users/new?returnTo=/settings") }}
       />
 
       <Card>
