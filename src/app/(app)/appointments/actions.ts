@@ -370,6 +370,190 @@ export async function scheduleNextSlot(
   revalidatePath("/dashboard");
 }
 
+// ── Confirm only: status → CONFIRMED, no arrivedAt, no Visit ─────────────────
+export async function confirmAppointmentOnly(appointmentId: string): Promise<void> {
+  const user = await requireRole("DOCTOR", "HOSPITAL");
+
+  const appt = await prisma.appointment.findUnique({
+    where: { id: appointmentId },
+    include: {
+      patient: true,
+      hospital: { include: { staff: { include: { user: true } } } },
+    },
+  });
+  if (!appt) throw new Error("Appointment not found");
+  if (appt.status !== "REQUESTED" && appt.status !== "SCHEDULED") {
+    throw new Error("Only REQUESTED or SCHEDULED appointments can be confirmed.");
+  }
+
+  if (user.role === "DOCTOR") {
+    if (appt.doctorId !== scopeDoctorId(user)) throw new Error("Forbidden");
+  } else {
+    if (!staffAppointmentPerms(user).confirm) throw new Error("Forbidden");
+    const hospitalId = await getStaffHospitalId(user.id);
+    if (appt.hospitalId !== hospitalId) throw new Error("Forbidden");
+  }
+
+  await prisma.appointment.update({
+    where: { id: appointmentId },
+    data: { status: "CONFIRMED" },
+  });
+
+  const doctor = appt.doctorId
+    ? await prisma.doctor.findUnique({ where: { id: appt.doctorId }, select: { name: true } })
+    : null;
+  const doctorLabel = doctor?.name ? `Dr. ${doctor.name}` : "The doctor";
+
+  for (const staff of appt.hospital.staff) {
+    await createNotification(
+      staff.user.id,
+      "APPOINTMENT_CONFIRMED",
+      `${doctorLabel} confirmed the appointment for ${appt.patient.name}.`,
+      appt.id
+    );
+  }
+
+  writeAudit(user.id, "Appointment", appointmentId, "CONFIRMED",
+    { patient: appt.patient.name, hospital: appt.hospital.name },
+    { moduleName: "Appointment", actionType: "UPDATE",
+      hospitalId: appt.hospitalId, userName: appt.patient.name });
+
+  revalidatePath("/appointments");
+}
+
+// ── Reject appointment: CANCELLED + notify hospital staff ─────────────────────
+export async function rejectAppointment(appointmentId: string): Promise<void> {
+  const user = await requireRole("DOCTOR", "HOSPITAL");
+
+  const appt = await prisma.appointment.findUnique({
+    where: { id: appointmentId },
+    include: {
+      patient: true,
+      hospital: { include: { staff: { include: { user: true } } } },
+    },
+  });
+  if (!appt) throw new Error("Appointment not found");
+
+  if (user.role === "DOCTOR") {
+    if (appt.doctorId !== scopeDoctorId(user)) throw new Error("Forbidden");
+  } else {
+    if (!staffAppointmentPerms(user).cancel) throw new Error("Forbidden");
+    const hospitalId = await getStaffHospitalId(user.id);
+    if (appt.hospitalId !== hospitalId) throw new Error("Forbidden");
+  }
+
+  await prisma.appointment.update({
+    where: { id: appointmentId },
+    data: { status: "CANCELLED" },
+  });
+
+  const doctor = appt.doctorId
+    ? await prisma.doctor.findUnique({ where: { id: appt.doctorId }, select: { name: true } })
+    : null;
+  const doctorLabel = doctor?.name ? `Dr. ${doctor.name}` : "The doctor";
+
+  for (const staff of appt.hospital.staff) {
+    await createNotification(
+      staff.user.id,
+      "APPOINTMENT_CANCELLED",
+      `${doctorLabel} rejected the appointment for ${appt.patient.name}.`,
+      appt.id
+    );
+  }
+
+  writeAudit(user.id, "Appointment", appointmentId, "CANCELLED",
+    { patient: appt.patient.name, hospital: appt.hospital.name },
+    { moduleName: "Appointment", actionType: "UPDATE",
+      hospitalId: appt.hospitalId, userName: appt.patient.name });
+
+  revalidatePath("/appointments");
+  revalidatePath("/dashboard");
+}
+
+// ── Add to OPD queue: arrivedAt + CONFIRMED + create Visit ────────────────────
+export async function addToQueue(appointmentId: string): Promise<void> {
+  const user = await requireRole("DOCTOR", "HOSPITAL");
+
+  const appt = await prisma.appointment.findUnique({
+    where: { id: appointmentId },
+    include: { patient: true, hospital: true },
+  });
+  if (!appt) throw new Error("Appointment not found");
+
+  if (user.role === "DOCTOR") {
+    if (appt.doctorId !== scopeDoctorId(user)) throw new Error("Forbidden");
+  } else {
+    if (!staffAppointmentPerms(user).confirm) throw new Error("Forbidden");
+    const hospitalId = await getStaffHospitalId(user.id);
+    if (appt.hospitalId !== hospitalId) throw new Error("Forbidden");
+  }
+
+  await prisma.appointment.update({
+    where: { id: appointmentId },
+    data: { status: "CONFIRMED", arrivedAt: new Date() },
+  });
+
+  const existing = await prisma.visit.findUnique({ where: { appointmentId } });
+  if (!existing) {
+    if (!appt.doctorId) throw new Error("Appointment has no doctor assigned.");
+    const visit = await prisma.visit.create({
+      data: {
+        patientId: appt.patientId,
+        doctorId: appt.doctorId,
+        hospitalId: appt.hospitalId,
+        appointmentId: appt.id,
+      },
+    });
+    const seedComplaint = (appt as any).notes || appt.patient.complaint;
+    if (seedComplaint) {
+      await prisma.generalExamination.create({
+        data: { visitId: visit.id, chiefComplaint: seedComplaint },
+      });
+    }
+  }
+
+  writeAudit(user.id, "Appointment", appointmentId, "CONFIRMED",
+    { patient: appt.patient.name, hospital: appt.hospital.name, note: "Added to OPD queue" },
+    { moduleName: "Appointment", actionType: "UPDATE",
+      hospitalId: appt.hospitalId, userName: appt.patient.name });
+
+  revalidatePath("/appointments");
+  revalidatePath("/dashboard");
+}
+
+// ── Undo confirm: revert CONFIRMED → REQUESTED (5-second window, no notification) ──
+export async function undoConfirmAppointment(appointmentId: string): Promise<void> {
+  const user = await requireRole("DOCTOR", "HOSPITAL");
+
+  const appt = await prisma.appointment.findUnique({
+    where: { id: appointmentId },
+    include: { patient: true, hospital: true },
+  });
+  if (!appt) throw new Error("Appointment not found");
+  if (appt.status !== "CONFIRMED" || appt.arrivedAt !== null) {
+    throw new Error("Can only undo a confirmed appointment that has not been queued yet.");
+  }
+
+  if (user.role === "DOCTOR") {
+    if (appt.doctorId !== scopeDoctorId(user)) throw new Error("Forbidden");
+  } else {
+    const hospitalId = await getStaffHospitalId(user.id);
+    if (appt.hospitalId !== hospitalId) throw new Error("Forbidden");
+  }
+
+  await prisma.appointment.update({
+    where: { id: appointmentId },
+    data: { status: "REQUESTED" },
+  });
+
+  writeAudit(user.id, "Appointment", appointmentId, "APPOINTMENT_REQUESTED",
+    { patient: appt.patient.name, hospital: appt.hospital.name, note: "Confirm undone" },
+    { moduleName: "Appointment", actionType: "UPDATE",
+      hospitalId: appt.hospitalId, userName: appt.patient.name });
+
+  revalidatePath("/appointments");
+}
+
 // ── Hospital: book a new appointment (unchanged) ──────────────────────────────
 
 export async function requestAppointment(formData: FormData): Promise<{ error?: string } | undefined> {

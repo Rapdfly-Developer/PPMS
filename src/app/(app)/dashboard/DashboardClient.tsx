@@ -331,7 +331,10 @@ export function DashboardClient({
 
   /* Today's Queue: active only — exclude terminal/inactive statuses. */
   const queueAppts = useMemo(
-    () => filteredAppts.filter((a) => !["REQUESTED", "DISPENSED", "PARTIAL_DISPENSE", "CANCELLED", "NO_SHOW", "RESCHEDULED"].includes(a.status)),
+    () => filteredAppts.filter((a) =>
+      !["REQUESTED", "DISPENSED", "PARTIAL_DISPENSE", "CANCELLED", "NO_SHOW", "RESCHEDULED"].includes(a.status) &&
+      (a.isWalkIn || a.arrivedAt !== null)
+    ),
     [filteredAppts],
   );
 

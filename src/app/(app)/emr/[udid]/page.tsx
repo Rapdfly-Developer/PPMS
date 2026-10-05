@@ -144,9 +144,9 @@ export default async function PatientDetailedEMR({
       where: {
         patientId: patient.id,
         ...(user.role === "DOCTOR"
-          ? { doctorId: user.profileId, status: { in: ["CONFIRMED", "REQUESTED", "SCHEDULED"] } }
+          ? { doctorId: user.profileId, status: "CONFIRMED", arrivedAt: { not: null } }
           // Staff: only today's queued (CONFIRMED) appointment at their own hospital.
-          : { hospitalId: staffHospitalId!, status: "CONFIRMED", dateTime: { gte: startOfDay(new Date()), lte: endOfDay(new Date()) } }),
+          : { hospitalId: staffHospitalId!, status: "CONFIRMED", arrivedAt: { not: null }, dateTime: { gte: startOfDay(new Date()), lte: endOfDay(new Date()) } }),
         visit: null,
         // Only hijack an existing in-progress visit for the current hospital's appointment
         ...(activeVisitAtOtherHospital ? { hospitalId: patient.registeredAtId! } : {}),

@@ -95,7 +95,7 @@ export function AppointmentsClient({
   const [showFilters, setShowFilters] = useState(false);
 
   // active section for default three-group view
-  const [activeSection, setActiveSection] = useState<"today" | "upcoming" | "previous">("today");
+  const [activeSection, setActiveSection] = useState<"today" | "upcoming" | "previous" | "noshow">("today");
 
   // previous section pagination
   const PREV_PAGE_SIZE = 10;
@@ -143,10 +143,12 @@ export function AppointmentsClient({
 
   // ── Three-group view (default, no specific date selected) ──────────────
   const todayStr = format(new Date(), "yyyy-MM-dd");
-  const prevAppts     = appointments.filter((a) => format(new Date(a.dateTime), "yyyy-MM-dd") < todayStr)
+  const noShowAppts   = appointments.filter((a) => a.status === "NO_SHOW")
+    .sort((a, b) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime()); // newest first
+  const prevAppts     = appointments.filter((a) => format(new Date(a.dateTime), "yyyy-MM-dd") < todayStr && a.status !== "NO_SHOW")
     .sort((a, b) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime()); // newest first
   // Today's Appointments shows only patients still awaiting confirmation.
-  const todayAppts    = appointments.filter((a) => format(new Date(a.dateTime), "yyyy-MM-dd") === todayStr && a.status === "REQUESTED")
+  const todayAppts    = appointments.filter((a) => format(new Date(a.dateTime), "yyyy-MM-dd") === todayStr && ["REQUESTED", "CONFIRMED"].includes(a.status))
     .sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime()); // earliest first
   const upcomingAppts = appointments.filter((a) => format(new Date(a.dateTime), "yyyy-MM-dd") > todayStr)
     .sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime()); // earliest first
@@ -513,6 +515,15 @@ export function AppointmentsClient({
             badge:  "bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)]",
             head:   "text-[var(--color-ink-600)]",
           },
+          {
+            key:    "noshow",
+            label:  "No Shows",
+            sub:    null,
+            appts:  noShowAppts,
+            accent: "border-l-red-300 bg-red-50/30",
+            badge:  "bg-red-100 text-red-700",
+            head:   "text-red-700",
+          },
         ];
 
         return (
@@ -579,15 +590,22 @@ export function AppointmentsClient({
                   </button>
                 );
               })}
-              {/* No Show — static card, same dimensions and style as the section cards above */}
-              <div className="rounded-xl border-2 border-red-200 bg-red-50 px-2 sm:px-4 py-2.5 sm:py-3 flex flex-col gap-0.5 min-w-0 w-full">
+              {/* No Show — clickable card like the other section cards */}
+              <button
+                onClick={() => setActiveSection("noshow")}
+                className={`rounded-xl border-2 px-2 sm:px-4 py-2.5 sm:py-3 flex flex-col gap-0.5 text-left cursor-pointer transition-all min-w-0 w-full ${
+                  activeSection === "noshow"
+                    ? "border-red-300 bg-red-50 shadow-sm ring-2 ring-offset-1 ring-red-200"
+                    : "border-[var(--color-border)] bg-white hover:bg-red-50/50 opacity-70"
+                }`}
+              >
                 <div className="flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full shrink-0 bg-red-400" />
-                  <span className="text-caption sm:text-xs font-semibold truncate text-red-600">No Show</span>
+                  <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${activeSection === "noshow" ? "bg-red-400" : "bg-[var(--color-ink-300)]"}`} />
+                  <span className={`text-caption sm:text-xs font-semibold truncate ${activeSection === "noshow" ? "text-red-600" : "text-[var(--color-ink-400)]"}`}>No Show</span>
                 </div>
-                <p className="text-lg sm:text-2xl font-bold leading-none mt-0.5 sm:mt-1 text-red-700">{noShows.length}</p>
-                <p className="text-micro sm:text-caption leading-tight truncate text-red-400">Selected period</p>
-              </div>
+                <p className={`text-lg sm:text-2xl font-bold leading-none mt-0.5 sm:mt-1 ${activeSection === "noshow" ? "text-red-700" : "text-[var(--color-ink-600)]"}`}>{noShowAppts.length}</p>
+                <p className={`text-micro sm:text-caption leading-tight truncate ${activeSection === "noshow" ? "text-red-400" : "text-[var(--color-ink-400)]"}`}>Selected period</p>
+              </button>
             </div>
 
             {groups.filter(({ key }) => key === activeSection).map(({ key, label, sub, appts: grpAppts, accent, badge, head }) => {

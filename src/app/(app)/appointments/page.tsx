@@ -67,7 +67,7 @@ export default async function AppointmentsPage({
     where.dateTime = dateFilter;
     // For a specific today/future date with All Status: limit to pending only
     if (!isDefaultView && statusParam === "ALL" && !isPastDate) {
-      where.status = { in: ["REQUESTED", "SCHEDULED"] };
+      where.status = { in: ["REQUESTED", "SCHEDULED", "CONFIRMED"] };
     }
   } else {
     // Any hospital-affiliated user — the shared HOSPITAL login and every named
@@ -77,7 +77,7 @@ export default async function AppointmentsPage({
     where.hospitalId = user.hospitalId ?? "__no_scope__";
     where.dateTime = dateFilter;
     if (!isDefaultView && statusParam === "ALL" && !isPastDate) {
-      where.status = { notIn: ["DISPENSED", "CANCELLED", "NO_SHOW", "CONFIRMED"] };
+      where.status = { notIn: ["DISPENSED", "CANCELLED", "NO_SHOW"] };
     }
   }
 

@@ -3,9 +3,17 @@
 import { format } from "date-fns";
 import { openPdfNative } from "@/lib/open-pdf";
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
-import { Phone, Tag, CalendarPlus, Printer, Clock, Timer, LogIn, CheckCircle2, Calendar, UserX } from "lucide-react";
-import { hospitalUpdateAppointmentStatus, doctorUpdateAppointmentStatus, doctorConfirmAppointment, doctorCancelAppointment } from "./actions";
+import { useState, useTransition, useRef } from "react";
+import { Phone, Tag, CalendarPlus, Printer, Clock, Timer, LogIn, CheckCircle2, Calendar, UserX, Undo2 } from "lucide-react";
+import {
+  confirmAppointmentOnly,
+  rejectAppointment,
+  addToQueue,
+  undoConfirmAppointment,
+  hospitalUpdateAppointmentStatus,
+  doctorUpdateAppointmentStatus,
+  doctorCancelAppointment,
+} from "./actions";
 import { ScheduleNextSlotModal } from "./ScheduleNextSlotModal";
 import { ComplaintChips } from "@/components/ui/ComplaintChips";
 
@@ -23,7 +31,7 @@ const STATUS_STYLES: Record<string, string> = {
 const STATUS_LABELS: Record<string, string> = {
   SCHEDULED:        "Scheduled",
   REQUESTED:        "Requested",
-  CONFIRMED:        "In Queue",
+  CONFIRMED:        "Confirmed",
   RESCHEDULED:      "Rescheduled",
   DISPENSED:        "Dispensed",
   CANCELLED:        "Cancelled",
@@ -44,21 +52,45 @@ export function AppointmentRow({ appt, role, perms, token }: { appt: any; role: 
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [showSlotModal, setShowSlotModal] = useState(false);
+  const [confirmToast, setConfirmToast] = useState(false);
+  const [rejectToast, setRejectToast] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const p = appt.patient;
   const provisionalDx: ProvisionalDx[] = (appt.visit?.diagnoses ?? []).filter(
     (d: ProvisionalDx) => d.provisional,
   );
 
-  function hospitalSetStatus(status: "CONFIRMED" | "CANCELLED") {
+  // ── Cancel Confirmed (existing flow, no notification change) ─────────────
+  function cancelConfirmedAppt() {
     if (role === "DOCTOR") {
-      startTransition(() =>
-        status === "CONFIRMED"
-          ? doctorConfirmAppointment(appt.id)
-          : doctorCancelAppointment(appt.id)
-      );
+      startTransition(() => doctorCancelAppointment(appt.id));
     } else {
-      startTransition(() => hospitalUpdateAppointmentStatus(appt.id, status));
+      startTransition(() => hospitalUpdateAppointmentStatus(appt.id, "CANCELLED"));
     }
+  }
+
+  // ── New 3-button handlers ─────────────────────────────────────────────────
+  function handleConfirm() {
+    setConfirmToast(true);
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => setConfirmToast(false), 5000);
+    startTransition(() => confirmAppointmentOnly(appt.id));
+  }
+
+  function handleReject() {
+    startTransition(() => rejectAppointment(appt.id));
+    setRejectToast(true);
+    setTimeout(() => setRejectToast(false), 3000);
+  }
+
+  function handleAddToQueue() {
+    startTransition(() => addToQueue(appt.id));
+  }
+
+  function handleUndo() {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    setConfirmToast(false);
+    startTransition(() => undoConfirmAppointment(appt.id));
   }
 
   function doctorSetStatus(status: "DISPENSED" | "NO_SHOW" | "RESCHEDULED") {
@@ -66,13 +98,17 @@ export function AppointmentRow({ appt, role, perms, token }: { appt: any; role: 
   }
 
   const isCompleted = appt.status === "DISPENSED";
-
   const isDoctor = role === "DOCTOR";
+
+  // REQUESTED or SCHEDULED (not walk-in): show 3-button confirm/add-to-q/reject
   const awaitingConfirmation =
     !isCompleted && (appt.status === "REQUESTED" || appt.status === "SCHEDULED") && !appt.isWalkIn;
-  const showConfirm = awaitingConfirmation && (isDoctor || perms.confirm);
-  const showReject = awaitingConfirmation && (isDoctor || perms.cancel);
-  const showConfirmReject = showConfirm || showReject;
+  const showConfirmActions = awaitingConfirmation && (isDoctor || perms.confirm || perms.cancel);
+
+  // CONFIRMED + no arrivedAt (not walk-in): show Add to Q
+  const showAddToQForConfirmed =
+    !isCompleted && !appt.isWalkIn && appt.status === "CONFIRMED" && !appt.arrivedAt &&
+    (isDoctor || perms.confirm);
 
   const showScheduleNext =
     perms.schedule && !isCompleted && appt.isWalkIn && appt.status === "CONFIRMED";
@@ -85,8 +121,6 @@ export function AppointmentRow({ appt, role, perms, token }: { appt: any; role: 
     appt.status === "CONFIRMED" &&
     !appt.arrivedAt;
 
-  const hasActions = isCompleted || showScheduleNext || showCancelConfirmed || showNoShow;
-
   // Timestamp data
   const arrivedAt   = appt.arrivedAt          ? new Date(appt.arrivedAt)          : null;
   const finalizedAt = appt.visit?.finalizedAt  ? new Date(appt.visit.finalizedAt)
@@ -95,6 +129,12 @@ export function AppointmentRow({ appt, role, perms, token }: { appt: any; role: 
   const totalMins = arrivedAt && finalizedAt
     ? Math.max(0, Math.round((finalizedAt.getTime() - arrivedAt.getTime()) / 60000))
     : null;
+
+  // Dynamic label: "In Queue" only once arrivedAt is set
+  const statusLabel =
+    appt.status === "CONFIRMED"
+      ? (arrivedAt ? "In Queue" : "Confirmed")
+      : (STATUS_LABELS[appt.status] ?? appt.status.replace(/_/g, " "));
 
   const patientUrl = `/patients/${p.udid}?returnTo=${encodeURIComponent(window.location.pathname + window.location.search)}&source=appointments`;
 
@@ -164,7 +204,7 @@ export function AppointmentRow({ appt, role, perms, token }: { appt: any; role: 
         <div className="w-full lg:w-[220px] lg:shrink-0" onClick={(e) => e.stopPropagation()}>
           <div className="flex items-center justify-between gap-3">
             <span className={`text-caption sm:text-caption font-medium px-2 py-0.5 rounded-full whitespace-nowrap ${STATUS_STYLES[appt.status] ?? ""}`}>
-              {STATUS_LABELS[appt.status] ?? appt.status.replace(/_/g, " ")}
+              {statusLabel}
             </span>
             <span className="inline-flex items-center gap-1 text-caption sm:text-sm font-semibold text-[var(--color-ink-700)] whitespace-nowrap tabular-nums">
               <Calendar size={12} className="shrink-0 text-[var(--color-ink-400)]" />
@@ -194,28 +234,79 @@ export function AppointmentRow({ appt, role, perms, token }: { appt: any; role: 
             )}
           </div>
 
-          <div className="flex flex-wrap justify-end gap-2 mt-2">
-          {showConfirmReject && (
-            <>
-              {showConfirm && <button
-                disabled={pending}
-                onClick={() => hospitalSetStatus("CONFIRMED")}
-                className="text-caption sm:text-xs font-medium px-3 py-1.5 rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-50 transition-colors"
-              >
-                {pending ? "…" : "Confirm / Add to Queue"}
-              </button>}
-              {showReject && <button
-                disabled={pending}
-                onClick={() => hospitalSetStatus("CANCELLED")}
-                className="text-caption sm:text-xs font-medium px-3 py-1.5 rounded-lg bg-white border border-[var(--color-border)] text-[var(--color-danger-600)] hover:bg-[var(--color-danger-50)] disabled:opacity-50 transition-colors"
-              >
-                Reject
-              </button>}
-            </>
-          )}
-          {hasActions && (
-            <>
-              {isCompleted && appt.visit && (
+          <div className="flex flex-col gap-2 mt-2">
+
+            {/* ── REQUESTED: Confirm / Add to Q / Reject ── */}
+            {showConfirmActions && !confirmToast && (
+              <div className="flex flex-wrap justify-end gap-2">
+                {(isDoctor || perms.confirm) && (
+                  <button
+                    disabled={pending}
+                    onClick={handleConfirm}
+                    className="text-caption sm:text-xs font-medium px-3 py-1.5 rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-50 transition-colors"
+                  >
+                    {pending ? "…" : "Confirm"}
+                  </button>
+                )}
+                {(isDoctor || perms.confirm) && (
+                  <button
+                    disabled={pending}
+                    onClick={handleAddToQueue}
+                    className="text-caption sm:text-xs font-medium px-3 py-1.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50 transition-colors"
+                  >
+                    {pending ? "…" : "Add to Q"}
+                  </button>
+                )}
+                {(isDoctor || perms.cancel) && (
+                  <button
+                    disabled={pending}
+                    onClick={handleReject}
+                    className="text-caption sm:text-xs font-medium px-3 py-1.5 rounded-lg bg-white border border-[var(--color-border)] text-[var(--color-danger-600)] hover:bg-[var(--color-danger-50)] disabled:opacity-50 transition-colors"
+                  >
+                    Reject
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* ── Confirm toast with Undo (5 s) ── */}
+            {confirmToast && (
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-50 border border-emerald-200 text-caption sm:text-xs text-emerald-700">
+                <CheckCircle2 size={13} className="shrink-0 text-emerald-600" />
+                <span className="flex-1">Appointment confirmed</span>
+                <button
+                  onClick={handleUndo}
+                  disabled={pending}
+                  className="inline-flex items-center gap-1 font-semibold text-emerald-800 hover:underline disabled:opacity-50"
+                >
+                  <Undo2 size={11} /> Undo
+                </button>
+              </div>
+            )}
+
+            {/* ── Reject toast (auto-dismisses) ── */}
+            {rejectToast && (
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-50 border border-red-200 text-caption sm:text-xs text-red-700">
+                Appointment rejected
+              </div>
+            )}
+
+            {/* ── CONFIRMED + not yet queued: Add to Q ── */}
+            {showAddToQForConfirmed && (
+              <div className="flex flex-wrap justify-end gap-2">
+                <button
+                  disabled={pending}
+                  onClick={handleAddToQueue}
+                  className="text-caption sm:text-xs font-medium px-3 py-1.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50 transition-colors"
+                >
+                  {pending ? "…" : "Add to Q"}
+                </button>
+              </div>
+            )}
+
+            {/* ── Prescription (completed) ── */}
+            {isCompleted && appt.visit && (
+              <div className="flex flex-wrap justify-end gap-2">
                 <button
                   type="button"
                   onClick={() => { void openPdfNative(`/api/prescription-pdf/${appt.visit!.id}`); }}
@@ -223,47 +314,55 @@ export function AppointmentRow({ appt, role, perms, token }: { appt: any; role: 
                 >
                   <Printer size={11} /> Prescription
                 </button>
-              )}
-              {showScheduleNext && (
-                <>
+              </div>
+            )}
+
+            {/* ── Walk-in confirmed: schedule next slot ── */}
+            {showScheduleNext && (
+              <div className="flex flex-wrap justify-end gap-2">
+                <button
+                  onClick={() => setShowSlotModal(true)}
+                  className="flex items-center gap-1.5 text-caption sm:text-xs font-medium px-2.5 py-1 rounded-lg bg-[var(--color-primary-50)] border border-[var(--color-primary-200)] text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] transition-colors"
+                >
+                  <CalendarPlus size={12} /> Schedule Next Slot
+                </button>
+                {showSlotModal && (
+                  <span className="contents">
+                    <ScheduleNextSlotModal
+                      appointmentId={appt.id}
+                      patientName={p.name}
+                      doctorName={appt.doctor?.name ?? ""}
+                      onClose={() => setShowSlotModal(false)}
+                    />
+                  </span>
+                )}
+              </div>
+            )}
+
+            {/* ── Cancel Confirmed / No Show ── */}
+            {(showCancelConfirmed || showNoShow) && (
+              <div className="flex flex-wrap justify-end gap-2">
+                {showCancelConfirmed && (
                   <button
-                    onClick={() => setShowSlotModal(true)}
-                    className="flex items-center gap-1.5 text-caption sm:text-xs font-medium px-2.5 py-1 rounded-lg bg-[var(--color-primary-50)] border border-[var(--color-primary-200)] text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] transition-colors"
+                    disabled={pending}
+                    onClick={cancelConfirmedAppt}
+                    className="text-caption sm:text-xs font-medium px-3 py-1 rounded-lg bg-white border border-[var(--color-border)] text-[var(--color-danger-600)] hover:bg-[var(--color-danger-50)] disabled:opacity-50"
                   >
-                    <CalendarPlus size={12} /> Schedule Next Slot
+                    Cancel
                   </button>
-                  {showSlotModal && (
-                    <span className="contents">
-                      <ScheduleNextSlotModal
-                        appointmentId={appt.id}
-                        patientName={p.name}
-                        doctorName={appt.doctor?.name ?? ""}
-                        onClose={() => setShowSlotModal(false)}
-                      />
-                    </span>
-                  )}
-                </>
-              )}
-              {showCancelConfirmed && (
-                <button
-                  disabled={pending}
-                  onClick={() => hospitalSetStatus("CANCELLED")}
-                  className="text-caption sm:text-xs font-medium px-3 py-1 rounded-lg bg-white border border-[var(--color-border)] text-[var(--color-danger-600)] hover:bg-[var(--color-danger-50)] disabled:opacity-50"
-                >
-                  Cancel
-                </button>
-              )}
-              {showNoShow && (
-                <button
-                  disabled={pending}
-                  onClick={() => doctorSetStatus("NO_SHOW")}
-                  className="flex items-center gap-1 text-caption sm:text-xs font-medium px-3 py-1 rounded-lg bg-white border border-[var(--color-border)] text-red-500 hover:bg-red-50 hover:border-red-200 disabled:opacity-50 transition-colors"
-                >
-                  <UserX size={11} /> No Show
-                </button>
-              )}
-            </>
-          )}
+                )}
+                {showNoShow && (
+                  <button
+                    disabled={pending}
+                    onClick={() => doctorSetStatus("NO_SHOW")}
+                    className="flex items-center gap-1 text-caption sm:text-xs font-medium px-3 py-1 rounded-lg bg-white border border-[var(--color-border)] text-red-500 hover:bg-red-50 hover:border-red-200 disabled:opacity-50 transition-colors"
+                  >
+                    <UserX size={11} /> No Show
+                  </button>
+                )}
+              </div>
+            )}
+
           </div>
         </div>
       </div>
