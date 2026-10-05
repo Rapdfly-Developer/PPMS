@@ -1139,3 +1139,58 @@ h1, h2, h3, h4 { text-wrap: balance; }
   .lp-live-dot { animation: none; }
   .lp-frame-img { transition: none; }
 }
+
+/* ── Landing cursor interactions (CursorEffects.tsx) ──────────────────────────
+   Everything here is scoped to `.ppms-landing.lp-cursor-on`, a class added
+   only on the landing page, only for a hover-capable fine pointer, and only
+   without prefers-reduced-motion. Without it these rules match nothing, so
+   touch devices and every other page are untouched. Nothing here changes a
+   size, colour, spacing or layout at rest. */
+
+/* Spotlight: faint teal light trailing the cursor. Multiply blend can only
+   darken light areas very slightly, so text contrast never drops. */
+.lp-spotlight { display: none; }
+.ppms-landing.lp-cursor-on .lp-spotlight {
+  display: block; position: fixed; left: 0; top: 0; z-index: 45;
+  width: 520px; height: 520px; margin: -260px 0 0 -260px; border-radius: 9999px;
+  pointer-events: none; opacity: 0; will-change: transform;
+  background: radial-gradient(closest-side, rgba(16, 185, 129, 0.09), rgba(16, 185, 129, 0) 72%);
+  mix-blend-mode: multiply;
+  transition: opacity 400ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.ppms-landing.lp-cursor-in .lp-spotlight { opacity: 1; }
+
+/* Hero parallax: tagged elements drift by depth × (-1..1) px. `translate`
+   composes with their own transform animations (entrance, drift, float). */
+.ppms-landing.lp-cursor-on [data-lp-depth] {
+  translate: calc(var(--lp-hx, 0) * var(--lp-depth, 0) * 1px) calc(var(--lp-hy, 0) * var(--lp-depth, 0) * 1px);
+  transition: translate 900ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Cards and photo plates: up to 2.5° tilt toward the cursor, easing back on
+   leave. Their existing hover lift (Tailwind `translate`) and shadow now ease
+   too — before, the transition list named only `transform`, so they snapped. */
+.ppms-landing.lp-cursor-on [data-lp-tilt] {
+  transform: perspective(1000px) rotateX(var(--lp-rx, 0deg)) rotateY(var(--lp-ry, 0deg));
+  transition: transform 600ms cubic-bezier(0.22, 1, 0.36, 1), translate 500ms cubic-bezier(0.32, 0.72, 0, 1), box-shadow 500ms cubic-bezier(0.32, 0.72, 0, 1);
+  will-change: transform;
+}
+
+/* Buttons: a soft highlight that follows the cursor inside the button, and
+   a 1px lift where the button has no lift of its own. Only the transition
+   *property list* is extended (durations/easing stay the button's own). */
+.ppms-landing.lp-cursor-on [data-lp-btn] { position: relative; isolation: isolate; }
+.ppms-landing.lp-cursor-on [data-lp-btn]::after {
+  content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; pointer-events: none;
+  opacity: 0; transition: opacity 250ms ease-out;
+  background: radial-gradient(140px circle at var(--lp-mx, 50%) var(--lp-my, 50%), rgba(255, 255, 255, 0.16), transparent 65%);
+}
+.ppms-landing.lp-cursor-on [data-lp-btn="light"]::after {
+  background: radial-gradient(140px circle at var(--lp-mx, 50%) var(--lp-my, 50%), rgba(16, 185, 129, 0.12), transparent 65%);
+}
+.ppms-landing.lp-cursor-on [data-lp-btn]:hover::after { opacity: 1; }
+.ppms-landing.lp-cursor-on [data-lp-btn]:not([class*="hover:-translate-y"]) {
+  transition-property: transform, translate, scale, color, background-color, border-color, box-shadow;
+}
+.ppms-landing.lp-cursor-on [data-lp-btn]:not([class*="hover:-translate-y"]):hover { translate: 0 -1px; }
+.ppms-landing.lp-cursor-on [data-lp-btn]:not([class*="hover:-translate-y"]):active { translate: 0 0; }

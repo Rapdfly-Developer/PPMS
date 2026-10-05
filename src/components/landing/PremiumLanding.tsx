@@ -33,6 +33,7 @@ import { WorkflowTabs } from "./WorkflowTabs";
 import { Nav } from "./Nav";
 import { DemoForm } from "./DemoForm";
 import { Counter, Magnetic, Marquee, Parallax, Reveal, RevealGroup, RevealItem, ScrollRail } from "./ui";
+import { CursorEffects } from "./CursorEffects";
 import { MobileFooter } from "./MobileFooter";
 import { CookieSettingsButton } from "../consent/CookieSettingsButton";
 
@@ -74,6 +75,7 @@ function Frame({
 }) {
   return (
     <div
+      data-lp-tilt=""
       className={`bg-gradient-to-b from-emerald-950/[0.055] to-emerald-950/[0.015] p-2 ring-1 ring-inset ring-emerald-950/[0.06] shadow-[0_50px_90px_-50px_rgba(6,60,45,0.35)] ${className}`}
       style={{ borderRadius: radius }}
     >
@@ -273,7 +275,7 @@ function JourneyPanel() {
               { n: "04", t: "Follow-up", d: "Next appointment, repeat prescription and reminders scheduled before they leave." },
             ].map((s) => (
               <RevealItem key={s.n}>
-                <div className="flex items-start gap-5 rounded-2xl bg-white p-5 3xl:p-7 4xl:p-8 ring-1 ring-inset ring-emerald-950/[0.07] transition-[transform,box-shadow] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:-translate-y-1 hover:shadow-[0_20px_44px_-34px_rgba(6,60,45,0.5)]">
+                <div data-lp-tilt="" className="flex items-start gap-5 rounded-2xl bg-white p-5 3xl:p-7 4xl:p-8 ring-1 ring-inset ring-emerald-950/[0.07] transition-[transform,box-shadow] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:-translate-y-1 hover:shadow-[0_20px_44px_-34px_rgba(6,60,45,0.5)]">
                   <span className="font-display text-[13px] font-bold tracking-[0.1em] text-emerald-500">
                     {s.n}
                   </span>
@@ -554,6 +556,8 @@ export function PremiumLanding() {
       className="ppms-landing font-body min-h-screen bg-white text-emerald-950 antialiased"
     >
       <Nav />
+      {/* Desktop cursor micro-interactions; renders nothing on touch / reduced motion. */}
+      <CursorEffects />
 
       {/* ── Hero ─────────────────────────────────────────────────────────── */}
       {/* From 1920px up the hero claims the first screen and centres its own
@@ -571,10 +575,14 @@ export function PremiumLanding() {
             page background. Fixed-size, blurred once, never animated. */}
         <div
           aria-hidden="true"
+          data-lp-depth=""
+          style={{ ["--lp-depth" as string]: -4 } as React.CSSProperties}
           className="ppms-orb-a pointer-events-none absolute -left-40 -top-40 h-[560px] w-[560px] rounded-full bg-emerald-200/30 blur-[120px]"
         />
         <div
           aria-hidden="true"
+          data-lp-depth=""
+          style={{ ["--lp-depth" as string]: 3 } as React.CSSProperties}
           className="ppms-orb-b pointer-events-none absolute -right-52 top-40 h-[620px] w-[620px] rounded-full bg-teal-100/50 blur-[130px]"
         />
 
@@ -629,6 +637,7 @@ export function PremiumLanding() {
 
                 <a
                   href="#contact"
+                  data-lp-btn="light"
                   className="group inline-flex items-center justify-between gap-3 rounded-full border border-emerald-950/[0.1] py-2 pl-7 pr-2 text-[15px] font-medium text-emerald-950 transition-[background-color,transform] duration-500 active:scale-[0.975] ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-emerald-50"
                 >
                   Book a demo
@@ -653,7 +662,7 @@ export function PremiumLanding() {
 
           {/* Z-axis cascade: the main plate, with a second smaller plate breaking
               its lower-left corner. Overlap is removed below lg. */}
-          <div className="lp-plate relative" style={inDelay(160)}>
+          <div className="lp-plate relative" data-lp-depth="" style={{ ...inDelay(160), ["--lp-depth" as string]: 3 } as React.CSSProperties}>
             <Frame
               src={`${IMG}/hero-clinician-tablet-dashboard.jpg`}
               alt="A clinician in gloves reviewing a RF Health patient dashboard on a tablet in a hospital corridor"
@@ -672,7 +681,7 @@ export function PremiumLanding() {
             />
             {/* The overlapping plate slides in last and then drifts against the
                 scroll, so the two plates separate in depth as the page moves. */}
-            <div className="lp-plate-float pointer-events-none absolute -bottom-10 -left-6 hidden w-[46%] lg:block" style={inDelay(620)}>
+            <div className="lp-plate-float pointer-events-none absolute -bottom-10 -left-6 hidden w-[46%] lg:block" data-lp-depth="" style={{ ...inDelay(620), ["--lp-depth" as string]: 6 } as React.CSSProperties}>
               <Parallax distance={26}>
                 <div className="ppms-float">
                   <Frame
@@ -799,6 +808,7 @@ export function PremiumLanding() {
           {PLANS.map((p) => (
             <RevealItem key={p.name} className="h-full">
               <div
+                data-lp-tilt=""
                 className={[
                   "flex h-full flex-col rounded-[2rem] p-2 ring-1 ring-inset",
                   "transition-[transform,box-shadow] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:-translate-y-1.5",
@@ -876,6 +886,7 @@ export function PremiumLanding() {
 
                   <a
                     href="/license"
+                    data-lp-btn={p.featured ? "light" : "dark"}
                     className={[
                       /* Tight at md, where three cards share a 768px row, then
                          back to full size once there is room again. */

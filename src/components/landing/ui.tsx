@@ -230,6 +230,7 @@ export function Magnetic({
   return (
     <motion.a
       href={href}
+      data-lp-btn="dark"
       className={className}
       style={reduce ? undefined : { x: sx, y: sy }}
       whileTap={{ scale: 0.975 }}

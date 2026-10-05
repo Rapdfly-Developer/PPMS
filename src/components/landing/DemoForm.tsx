@@ -278,6 +278,7 @@ export function DemoForm() {
       <button
         type="submit"
         disabled={loading}
+        data-lp-btn="dark"
         className="group mt-1 flex w-full items-center justify-center gap-2.5 rounded-xl bg-emerald-950 py-4 text-[15px] font-semibold text-white shadow-[0_12px_30px_-10px_rgba(6,60,45,0.5)] transition-all duration-300 hover:shadow-[0_16px_40px_-10px_rgba(6,60,45,0.6)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99] disabled:opacity-60 disabled:cursor-not-allowed disabled:translate-y-0"
       >
         {loading
