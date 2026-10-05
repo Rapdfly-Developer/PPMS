@@ -32,7 +32,7 @@ import { Faq, type FaqItem } from "./Faq";
 import { WorkflowTabs } from "./WorkflowTabs";
 import { Nav } from "./Nav";
 import { DemoForm } from "./DemoForm";
-import { Counter, Magnetic, Marquee, Parallax, Reveal, RevealGroup, RevealItem, ScrollRail } from "./ui";
+import { Magnetic, Marquee, Parallax, Reveal, RevealGroup, RevealItem, ScrollRail } from "./ui";
 import { CursorEffects } from "./CursorEffects";
 import { MobileFooter } from "./MobileFooter";
 import { CookieSettingsButton } from "../consent/CookieSettingsButton";
@@ -704,12 +704,11 @@ export function PremiumLanding() {
         <Reveal>
           <div className="flex flex-wrap items-center justify-center gap-x-10 gap-y-5 sm:gap-x-14">
             {[
-              { num: <Counter to={500} suffix="+" />, label: "Doctors on the platform" },
-              { num: <Counter to={100} suffix="+" />, label: "Hospitals & clinics" },
-              { num: <Counter to={99.9} decimals={1} suffix="%" />, label: "Uptime target" },
+              { num: "1 login", label: "For every hospital you visit" },
+              { num: "1 record", label: "Per patient, across hospitals" },
               { num: "7-day", label: "Free trial, no card" },
             ].map((s, i) => (
-              <div key={s.label} className={`text-center ${i < 3 ? "sm:border-r sm:border-emerald-950/[0.07] sm:pr-10 sm:last:border-0" : ""}`}>
+              <div key={s.label} className={`text-center ${i < 2 ? "sm:border-r sm:border-emerald-950/[0.07] sm:pr-10 sm:last:border-0" : ""}`}>
                 <p className="font-display text-[clamp(1.6rem,3vw,2.25rem)] font-bold leading-none tracking-[-0.03em] text-emerald-950">
                   {s.num}
                 </p>

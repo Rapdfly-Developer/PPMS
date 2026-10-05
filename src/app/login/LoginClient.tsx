@@ -599,13 +599,13 @@ function HealthcareVisual() {
       {/* Stat tiles */}
       <rect x="12" y="222" width="118" height="58" rx="8" fill="rgba(13,122,99,.06)" stroke="rgba(13,122,99,.15)" strokeWidth="1"/>
       <text x="24" y="244" fill="#0D7A63" fontSize="9" fontWeight="600" fontFamily="system-ui,-apple-system,sans-serif" letterSpacing="0.09em">PATIENTS</text>
-      <text x="24" y="265" fill="#0F2926" fontSize="18" fontWeight="700" fontFamily="system-ui,-apple-system,sans-serif">2,847</text>
+      <text x="24" y="265" fill="#0F2926" fontSize="18" fontWeight="700" fontFamily="system-ui,-apple-system,sans-serif">One record</text>
       <rect x="148" y="222" width="118" height="58" rx="8" fill="rgba(13,122,99,.06)" stroke="rgba(13,122,99,.15)" strokeWidth="1"/>
       <text x="160" y="244" fill="#0D7A63" fontSize="9" fontWeight="600" fontFamily="system-ui,-apple-system,sans-serif" letterSpacing="0.09em">HOSPITALS</text>
-      <text x="160" y="265" fill="#0F2926" fontSize="18" fontWeight="700" fontFamily="system-ui,-apple-system,sans-serif">12</text>
+      <text x="160" y="265" fill="#0F2926" fontSize="18" fontWeight="700" fontFamily="system-ui,-apple-system,sans-serif">One login</text>
       <rect x="284" y="222" width="144" height="58" rx="8" fill="rgba(13,122,99,.06)" stroke="rgba(13,122,99,.15)" strokeWidth="1"/>
       <text x="296" y="244" fill="#0D7A63" fontSize="9" fontWeight="600" fontFamily="system-ui,-apple-system,sans-serif" letterSpacing="0.09em">RECORDS</text>
-      <text x="296" y="265" fill="#0F2926" fontSize="18" fontWeight="700" fontFamily="system-ui,-apple-system,sans-serif">18K+</text>
+      <text x="296" y="265" fill="#0F2926" fontSize="18" fontWeight="700" fontFamily="system-ui,-apple-system,sans-serif">Secure cloud</text>
     </svg>
   );
 }

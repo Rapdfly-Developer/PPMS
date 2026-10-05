@@ -5,7 +5,7 @@ import {
   Calendar, Users, FileText, Receipt, ShieldCheck, Lock, Cloud,
   BarChart3, Stethoscope, Building2, Sparkles, Activity,
   ClipboardList, CreditCard, CheckCircle2, Check, ArrowRight,
-  Phone, Mail, Globe, Star, Zap, Database, Fingerprint,
+  Phone, Mail, Globe, Zap, Database, Fingerprint,
   History, TrendingUp, Layers, HeartPulse, Eye, ServerCog,
   BadgeCheck, Menu, X, ArrowUpRight, CalendarDays, UserCircle,
 } from "lucide-react";
@@ -120,35 +120,6 @@ function Reveal({ children, delay = 0, style = {} }: { children: React.ReactNode
   }, []);
   return <div ref={ref} className="reveal" style={{ transitionDelay: `${delay}ms`, ...style }}>{children}</div>;
 }
-function useCount(target: number, inView: boolean) {
-  const [v, setV] = useState(0);
-  useEffect(() => {
-    if (!inView) return;
-    let cur = 0; const step = 16; const inc = target / (1800 / step);
-    const t = setInterval(() => { cur = Math.min(cur + inc, target); setV(Math.floor(cur)); if (cur >= target) clearInterval(t); }, step);
-    return () => clearInterval(t);
-  }, [inView, target]);
-  return v;
-}
-function Counter({ value, suffix, label }: { value: number; suffix: string; label: string }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [inView, setInView] = useState(false);
-  const v = useCount(value, inView);
-  useEffect(() => {
-    const el = ref.current; if (!el) return;
-    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setInView(true); obs.disconnect(); } }, { threshold: .5 });
-    obs.observe(el); return () => obs.disconnect();
-  }, []);
-  return (
-    <div ref={ref} style={{ textAlign: "center" }}>
-      <div className="font-manrope" style={{ fontSize: "clamp(38px,5vw,56px)", fontWeight: 800, background: "linear-gradient(135deg,#fff 40%,#22C55E)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-        {v.toLocaleString()}{suffix}
-      </div>
-      <div style={{ fontSize: 14, color: C.muted, marginTop: 8, fontWeight: 500 }}>{label}</div>
-    </div>
-  );
-}
-
 /* ── Mouse glow + Particles ───────────────────────────────────────────────── */
 function MouseGlow() {
   const ref = useRef<HTMLDivElement>(null);
@@ -276,27 +247,6 @@ function Hero() {
             </div>
           </div>
         </div>
-      </div>
-    </section>
-  );
-}
-
-/* ── Stats ────────────────────────────────────────────────────────────────── */
-function Stats() {
-  return (
-    <section className="section" style={{ padding: "0 clamp(16px,4vw,48px) 80px" }}>
-      <div style={{ maxWidth: 1280, margin: "0 auto" }}>
-        <Reveal>
-          <p style={{ textAlign: "center", fontSize: 13, color: C.muted, marginBottom: 40, letterSpacing: ".1em", textTransform: "uppercase", fontWeight: 600 }}>Our platform helps doctors work smarter.</p>
-        </Reveal>
-        <Reveal>
-          <div className="glass" style={{ borderRadius: 26, padding: "44px clamp(24px,5vw,80px)", display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 40 }}>
-            <Counter value={500} suffix="+" label="Doctors" />
-            <Counter value={100} suffix="+" label="Hospitals" />
-            <Counter value={100000} suffix="+" label="Patient Records" />
-            <Counter value={99} suffix=".9%" label="System Uptime" />
-          </div>
-        </Reveal>
       </div>
     </section>
   );
@@ -572,43 +522,6 @@ function Availability() {
   );
 }
 
-/* ── Testimonials ─────────────────────────────────────────────────────────── */
-function Testimonials() {
-  const t = [
-    { name: "Dr. Aravind Patel", role: "Ophthalmologist · 3 Hospitals", text: "PPMS transformed how I manage my three eye care centers. One login, all patient records, seamless billing, I save 2 hours every single day." },
-    { name: "Dr. Meera Krishnan", role: "General Physician · 2 Clinics", text: "The multi-hospital switching is flawless. My patients get consistent care records whether they visit me at Apollo or my private clinic." },
-    { name: "Admin Sundar Rajan", role: "Hospital Administrator", text: "Staff onboarded in a day. Reports that used to take hours now generate in seconds. PPMS is enterprise-grade at an accessible price." },
-  ];
-  return (
-    <section className="section" style={{ padding: "100px clamp(16px,4vw,48px)" }}>
-      <div style={{ maxWidth: 1280, margin: "0 auto" }}>
-        <Reveal style={{ textAlign: "center", marginBottom: 52 }}>
-          <div className="badge"><Star size={11} />Testimonials</div>
-          <h2 className="font-sora" style={{ fontSize: "clamp(28px,4vw,48px)", fontWeight: 800, letterSpacing: "-.02em" }}>
-            Loved by Doctors <span className="gradient-text">Across India.</span>
-          </h2>
-        </Reveal>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))", gap: 20 }}>
-          {t.map((r, i) => (
-            <Reveal key={i} delay={i * 90}>
-              <div className="glass" style={{ borderRadius: 22, padding: 30, height: "100%", display: "flex", flexDirection: "column", gap: 18, transition: "transform .3s" }}
-                onMouseEnter={e => (e.currentTarget.style.transform = "translateY(-4px)")}
-                onMouseLeave={e => (e.currentTarget.style.transform = "")}>
-                <div style={{ display: "flex", gap: 3 }}>{[...Array(5)].map((_, j) => <Star key={j} size={13} fill="#EAB308" color="#EAB308" />)}</div>
-                <p style={{ fontSize: 14, color: "rgba(255,255,255,.82)", lineHeight: 1.7, flex: 1 }}>"{r.text}"</p>
-                <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
-                  <div style={{ width: 40, height: 40, borderRadius: "50%", background: "linear-gradient(135deg,#0F8F6F,#22C55E)", display: "grid", placeItems: "center", fontSize: 15, fontWeight: 700, color: "#fff", flexShrink: 0 }}>{r.name[3]}</div>
-                  <div><div style={{ fontSize: 13, fontWeight: 700 }}>{r.name}</div><div style={{ fontSize: 11, color: C.muted, marginTop: 1 }}>{r.role}</div></div>
-                </div>
-              </div>
-            </Reveal>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
 /* ── Security ─────────────────────────────────────────────────────────────── */
 function Security() {
   const items = [
@@ -695,7 +608,7 @@ function CTA() {
             <h2 className="font-sora" style={{ fontSize: "clamp(28px,4vw,52px)", fontWeight: 800, letterSpacing: "-.02em", marginBottom: 18 }}>
               Ready to Transform Your<br /><span className="gradient-text">Medical Practice?</span>
             </h2>
-            <p style={{ fontSize: 17, color: C.muted, maxWidth: 520, margin: "0 auto 36px" }}>Join 500+ doctors who manage their multi-hospital practice with PPMS. Start your 7-day free trial, no credit card required.</p>
+            <p style={{ fontSize: 17, color: C.muted, maxWidth: 520, margin: "0 auto 36px" }}>Manage your multi-hospital practice from one login. Start your 7-day free trial, no credit card required.</p>
             <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" }}>
               <a href="/license" className="btn-p" style={{ fontSize: 16, padding: "15px 34px" }}>Start 7-Day Free Trial <ArrowRight size={17} /></a>
               <a href="#contact" className="btn-g" style={{ fontSize: 16, padding: "15px 34px" }}>Schedule Free Demo</a>
@@ -923,14 +836,12 @@ export function SubPageClient() {
 
       <Navbar />
       <Hero />
-      <Stats />
       <Problem />
       <Features />
       <Workflow />
       <WhyPPMS />
       <Showcase />
       <Availability />
-      <Testimonials />
       <Security />
       <Pricing />
       <CTA />
