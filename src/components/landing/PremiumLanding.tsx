@@ -32,7 +32,7 @@ import { Faq, type FaqItem } from "./Faq";
 import { WorkflowTabs } from "./WorkflowTabs";
 import { Nav } from "./Nav";
 import { DemoForm } from "./DemoForm";
-import { Magnetic, Marquee, Reveal, RevealGroup, RevealItem } from "./ui";
+import { Counter, Magnetic, Marquee, Parallax, Reveal, RevealGroup, RevealItem, ScrollRail } from "./ui";
 import { MobileFooter } from "./MobileFooter";
 
 const IMG = "/landing/v3";
@@ -127,6 +127,11 @@ function Section({
   );
 }
 
+/** Stagger for the CSS hero entrance (see .lp-in / .lp-line in globals.css). */
+function inDelay(ms: number): React.CSSProperties {
+  return { ["--lp-d" as string]: `${ms}ms` } as React.CSSProperties;
+}
+
 function SectionHead({
   eyebrow,
   title,
@@ -140,7 +145,7 @@ function SectionHead({
   align?: "center" | "left";
 }) {
   return (
-    <Reveal className={align === "center" ? "mx-auto max-w-[var(--lp-measure)] text-center" : "max-w-[var(--lp-measure)]"}>
+    <Reveal variant="heading" className={align === "center" ? "mx-auto max-w-[var(--lp-measure)] text-center" : "max-w-[var(--lp-measure)]"}>
       {eyebrow && <Eyebrow>{eyebrow}</Eyebrow>}
       {/* Fluid between 320px and ~1536px, then pinned — clamp keeps the headline
           inside a 320px viewport without a stack of breakpoint overrides. */}
@@ -179,7 +184,7 @@ function Split({
   return (
     <div className="grid items-center gap-8 sm:gap-10 lg:grid-cols-2 lg:gap-12 xl:gap-16">
       <div className={flip ? "lg:order-2" : ""}>
-        <Reveal>
+        <Reveal variant="heading">
           {eyebrow && <Eyebrow>{eyebrow}</Eyebrow>}
           <h2 className="font-display mt-4 text-[length:var(--lp-h2-split)] font-bold leading-[1.07] tracking-[-0.03em] text-balance text-emerald-950 sm:mt-5">
             {title}
@@ -235,7 +240,7 @@ function JourneyPanel() {
       />
 
       <div className="mt-8 grid gap-5 sm:mt-10 lg:grid-cols-[1.1fr_0.9fr]">
-        <Reveal>
+        <Reveal variant="image">
           <Frame
             src={`${IMG}/patient-preliminary-analysis-scan.jpg`}
             alt="A clinician reviewing a patient's preliminary analysis on a full-body diagnostic display"
@@ -247,7 +252,7 @@ function JourneyPanel() {
         </Reveal>
 
         <div className="flex flex-col gap-6">
-          <Reveal delay={0.08}>
+          <Reveal variant="image" delay={0.08}>
             <Frame
               src={`${IMG}/wearable-vitals-hologram.jpg`}
               alt="Vital signs displayed above a wearable device during remote patient monitoring"
@@ -258,6 +263,7 @@ function JourneyPanel() {
             />
           </Reveal>
 
+          <ScrollRail className="flex flex-1 flex-col">
           <RevealGroup className="flex flex-1 flex-col gap-3" stagger={0.07}>
             {[
               { n: "01", t: "Booking", d: "Front desk or patient books against your real availability at that hospital." },
@@ -280,6 +286,7 @@ function JourneyPanel() {
               </RevealItem>
             ))}
           </RevealGroup>
+          </ScrollRail>
         </div>
       </div>
     </>
@@ -337,7 +344,7 @@ function SurgeryPanel() {
         }
       >
         <div className="relative">
-          <Reveal>
+          <Reveal variant="image">
             <Frame
               src={`${IMG}/surgery-operative-report.jpg`}
               alt="A structured surgery operative report template showing pre-operative diagnosis, procedure and clinical findings"
@@ -348,7 +355,7 @@ function SurgeryPanel() {
             />
           </Reveal>
           <div className="ppms-float pointer-events-none absolute -bottom-10 -right-3 hidden w-[42%] lg:block">
-            <Reveal delay={0.14}>
+            <Reveal variant="image" delay={0.14}>
               <Frame
                 src={`${IMG}/neuro-imaging-analysis-screen.jpg`}
                 alt="A radiologist reviewing neuro-imaging analysis with region-of-interest findings on a diagnostic workstation"
@@ -422,7 +429,7 @@ function AnalyticsPanel() {
         }
       >
         <div className="relative">
-          <Reveal>
+          <Reveal variant="image">
             <Frame
               src={`${IMG}/clinician-analytics-wall.jpg`}
               alt="A doctor reviewing practice analytics charts on a large transparent display"
@@ -433,7 +440,7 @@ function AnalyticsPanel() {
             />
           </Reveal>
           <div className="ppms-float-slow pointer-events-none absolute -bottom-10 -left-3 hidden w-[40%] lg:block">
-            <Reveal delay={0.14}>
+            <Reveal variant="image" delay={0.14}>
               <Frame
                 src={`${IMG}/printed-clinical-reports.jpg`}
                 alt="Printed clinical summary reports and charts beside a stethoscope"
@@ -572,38 +579,42 @@ export function PremiumLanding() {
 
         <div className={`relative grid w-full items-center gap-10 sm:gap-12 lg:grid-cols-[1.05fr_1fr] lg:gap-14 4xl:gap-20 ${SHELL}`}>
           <div>
-            <Reveal y={20}>
+            {/* The hero animates with CSS (lp-in, globals.css), not <Reveal>: it is
+                in the HTML and moving from the first paint, instead of sitting
+                at opacity 0 until the client bundle hydrates. */}
+            <div className="lp-in" style={inDelay(0)}>
               <Eyebrow>
                 <span className="relative flex h-1.5 w-1.5">
                   <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-500" />
                 </span>
                 Private practice management system
               </Eyebrow>
-            </Reveal>
+            </div>
 
-            <Reveal y={34} delay={0.06}>
+            <div>
               {/* "Every hospital." is the widest line and sets the floor: at
                   320px it has to fit 288px of usable width. */}
               <h1 className="font-display mt-5 text-[length:var(--lp-h1)] font-bold leading-[1.03] tracking-[-0.035em] text-emerald-950 sm:mt-6">
-                One doctor.
-                <br />
-                Every hospital.
-                <br />
-                <span className="bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-500 bg-clip-text text-transparent">
-                  One record.
+                {/* Each line rises on its own beat — the page's one orchestrated moment. */}
+                <span className="lp-line" style={inDelay(80)}>One doctor.</span>
+                <span className="lp-line" style={inDelay(170)}>Every hospital.</span>
+                <span className="lp-line" style={inDelay(260)}>
+                  <span className="bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-500 bg-clip-text text-transparent">
+                    One record.
+                  </span>
                 </span>
               </h1>
-            </Reveal>
+            </div>
 
-            <Reveal y={24} delay={0.14}>
+            <div className="lp-in" style={inDelay(360)}>
               <p className="mt-5 max-w-xl 2xl:max-w-[680px] 4xl:max-w-[760px] 5xl:max-w-[880px] 6xl:max-w-[1040px] text-[length:var(--lp-lede-hero)] leading-relaxed text-slate-600 sm:mt-6">
                 Appointments, medical records, prescriptions, surgery and billing across every
                 hospital you practise at, managed from a single secure account, with the patient
                 history following the patient rather than the building.
               </p>
-            </Reveal>
+            </div>
 
-            <Reveal y={20} delay={0.22}>
+            <div className="lp-in" style={inDelay(440)}>
               <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center">
                 <Magnetic
                   href="/license"
@@ -617,7 +628,7 @@ export function PremiumLanding() {
 
                 <a
                   href="#contact"
-                  className="group inline-flex items-center justify-between gap-3 rounded-full border border-emerald-950/[0.1] py-2 pl-7 pr-2 text-[15px] font-medium text-emerald-950 transition-colors duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-emerald-50"
+                  className="group inline-flex items-center justify-between gap-3 rounded-full border border-emerald-950/[0.1] py-2 pl-7 pr-2 text-[15px] font-medium text-emerald-950 transition-[background-color,transform] duration-500 active:scale-[0.975] ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-emerald-50"
                 >
                   Book a demo
                   <span className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-950/[0.05] transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:translate-x-[3px] group-hover:-translate-y-[2px] group-hover:scale-105">
@@ -625,9 +636,9 @@ export function PremiumLanding() {
                   </span>
                 </a>
               </div>
-            </Reveal>
+            </div>
 
-            <Reveal y={16} delay={0.3}>
+            <div className="lp-in" style={inDelay(520)}>
               <ul className="mt-7 flex flex-wrap items-center gap-x-6 gap-y-2.5 text-[13.5px] text-slate-500">
                 {["No credit card", "Set up in minutes", "Cancel anytime"].map((t) => (
                   <li key={t} className="flex items-center gap-2">
@@ -636,12 +647,12 @@ export function PremiumLanding() {
                   </li>
                 ))}
               </ul>
-            </Reveal>
+            </div>
           </div>
 
           {/* Z-axis cascade: the main plate, with a second smaller plate breaking
               its lower-left corner. Overlap is removed below lg. */}
-          <Reveal y={40} delay={0.1} className="relative">
+          <div className="lp-plate relative" style={inDelay(160)}>
             <Frame
               src={`${IMG}/hero-clinician-tablet-dashboard.jpg`}
               alt="A clinician in gloves reviewing a RF Health patient dashboard on a tablet in a hospital corridor"
@@ -658,17 +669,23 @@ export function PremiumLanding() {
               quality={85}
               radius="2.25rem"
             />
-            <div className="ppms-float pointer-events-none absolute -bottom-10 -left-6 hidden w-[46%] lg:block">
-              <Frame
-                src={`${IMG}/laptop-holographic-practice-dashboard.jpg`}
-                alt="Practice analytics projected above a laptop screen"
-                aspect="aspect-square"
-                sizes="22vw"
-                radius="1.5rem"
-                className="shadow-[0_40px_70px_-35px_rgba(6,60,45,0.5)]"
-              />
+            {/* The overlapping plate slides in last and then drifts against the
+                scroll, so the two plates separate in depth as the page moves. */}
+            <div className="lp-plate-float pointer-events-none absolute -bottom-10 -left-6 hidden w-[46%] lg:block" style={inDelay(620)}>
+              <Parallax distance={26}>
+                <div className="ppms-float">
+                  <Frame
+                    src={`${IMG}/laptop-holographic-practice-dashboard.jpg`}
+                    alt="Practice analytics projected above a laptop screen"
+                    aspect="aspect-square"
+                    sizes="22vw"
+                    radius="1.5rem"
+                    className="shadow-[0_40px_70px_-35px_rgba(6,60,45,0.5)]"
+                  />
+                </div>
+              </Parallax>
             </div>
-          </Reveal>
+          </div>
         </div>
       </section>
 
@@ -677,9 +694,9 @@ export function PremiumLanding() {
         <Reveal>
           <div className="flex flex-wrap items-center justify-center gap-x-10 gap-y-5 sm:gap-x-14">
             {[
-              { num: "500+", label: "Doctors on the platform" },
-              { num: "100+", label: "Hospitals & clinics" },
-              { num: "99.9%", label: "Uptime target" },
+              { num: <Counter to={500} suffix="+" />, label: "Doctors on the platform" },
+              { num: <Counter to={100} suffix="+" />, label: "Hospitals & clinics" },
+              { num: <Counter to={99.9} decimals={1} suffix="%" />, label: "Uptime target" },
               { num: "7-day", label: "Free trial, no card" },
             ].map((s, i) => (
               <div key={s.label} className={`text-center ${i < 3 ? "sm:border-r sm:border-emerald-950/[0.07] sm:pr-10 sm:last:border-0" : ""}`}>
@@ -718,7 +735,7 @@ export function PremiumLanding() {
           ]}
         >
           <div className="relative">
-            <Reveal>
+            <Reveal variant="image">
               <Frame
                 src={`${IMG}/emr-records-tablet.jpg`}
                 alt="A doctor reviewing a list of electronic medical records on a tablet"
@@ -729,7 +746,7 @@ export function PremiumLanding() {
               />
             </Reveal>
             <div className="ppms-float pointer-events-none absolute -bottom-10 -right-3 hidden w-[42%] lg:block">
-              <Reveal delay={0.14}>
+              <Reveal variant="image" delay={0.14}>
                 <Frame
                   src={`${IMG}/clinician-holographic-chart.jpg`}
                   alt="A clinician examining a patient's anatomical chart on a large clinical display"

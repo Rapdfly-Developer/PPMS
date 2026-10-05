@@ -23,38 +23,52 @@ import { DURATION, EASE, VIEWPORT } from "./motion";
 
 /* ─── Reveal ──────────────────────────────────────────────────────────────── */
 
+type RevealVariant = "fade" | "heading" | "image";
+
 type RevealProps = {
   children: ReactNode;
   delay?: number;
   /** Distance travelled on entry. Larger for hero-scale blocks. */
   y?: number;
   className?: string;
+  /**
+   * What is entering, so each kind of content gets its own motion instead of
+   * one move stamped on everything:
+   * - "fade"    (default) body copy and lists: opacity + rise, no blur — blur
+   *             forces a full repaint every frame on large text blocks.
+   * - "heading" section headlines: the house move, a rise out of a light blur.
+   * - "image"   photo plates: settle from a slight scale-up, like a print
+   *             being laid down.
+   */
+  variant?: RevealVariant;
+};
+
+const REVEAL_FROM: Record<RevealVariant, (y: number) => Record<string, number | string>> = {
+  fade: (y) => ({ opacity: 0, y }),
+  heading: (y) => ({ opacity: 0, y, filter: "blur(6px)" }),
+  image: (y) => ({ opacity: 0, y: Math.round(y * 0.6), scale: 1.035 }),
+};
+const REVEAL_TO: Record<RevealVariant, Record<string, number | string>> = {
+  fade: { opacity: 1, y: 0 },
+  heading: { opacity: 1, y: 0, filter: "blur(0px)" },
+  image: { opacity: 1, y: 0, scale: 1 },
 };
 
 /**
- * The house entrance: a heavy fade-up that resolves out of a slight blur.
- * Under `prefers-reduced-motion` it collapses to a plain, near-instant fade —
- * the content still arrives, it just stops moving.
+ * Scroll-triggered entrance. Under `prefers-reduced-motion` it collapses to a
+ * plain, near-instant fade — the content still arrives, it just stops moving.
  */
-export function Reveal({ children, delay = 0, y = 28, className }: RevealProps) {
+export function Reveal({ children, delay = 0, y = 28, className, variant = "fade" }: RevealProps) {
   const reduce = useReducedMotion();
 
   return (
     <motion.div
       className={className}
-      initial={
-        reduce
-          ? { opacity: 0 }
-          : { opacity: 0, y, filter: "blur(10px)" }
-      }
-      whileInView={
-        reduce
-          ? { opacity: 1 }
-          : { opacity: 1, y: 0, filter: "blur(0px)" }
-      }
+      initial={reduce ? { opacity: 0 } : REVEAL_FROM[variant](y)}
+      whileInView={reduce ? { opacity: 1 } : REVEAL_TO[variant]}
       viewport={VIEWPORT}
       transition={{
-        duration: reduce ? 0.01 : DURATION.slow,
+        duration: reduce ? 0.01 : variant === "fade" ? DURATION.normal + 0.1 : DURATION.slow,
         delay: reduce ? 0 : delay,
         ease: EASE.smooth,
       }}
@@ -115,11 +129,12 @@ export function RevealItem({
     <motion.div
       className={className}
       variants={{
-        hidden: reduce ? { opacity: 0 } : { opacity: 0, y, filter: "blur(8px)" },
+        // No blur: list rows are body text, and animating filter on them
+        // repainted every row on every frame.
+        hidden: reduce ? { opacity: 0 } : { opacity: 0, y },
         visible: {
           opacity: 1,
           y: 0,
-          filter: "blur(0px)",
           transition: {
             duration: reduce ? 0.01 : DURATION.normal,
             ease: EASE.smooth,
@@ -159,6 +174,32 @@ export function Parallax({
   return (
     <div ref={ref} className={className}>
       <motion.div style={reduce ? undefined : { y }}>{children}</motion.div>
+    </div>
+  );
+}
+
+/* ─── Scroll rail ───────────────────────────────────────────────────────── */
+
+/**
+ * A connector line beside a sequence of steps that draws itself as the reader
+ * scrolls through them, so the steps read as one journey rather than four
+ * separate cards. Transform-only (scaleY), spring-smoothed.
+ */
+export function ScrollRail({ children, className }: { children: ReactNode; className?: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const reduce = useReducedMotion();
+  const { scrollYProgress } = useScroll({ target: ref, offset: ["start 85%", "end 55%"] });
+  const progress = useSpring(scrollYProgress, { stiffness: 120, damping: 30 });
+
+  return (
+    <div ref={ref} className={`relative sm:pl-7 ${className ?? ""}`}>
+      <div aria-hidden="true" className="pointer-events-none absolute bottom-7 left-2 top-7 hidden w-[2px] rounded-full bg-emerald-950/[0.07] sm:block" />
+      <motion.div
+        aria-hidden="true"
+        className="pointer-events-none absolute bottom-7 left-2 top-7 hidden w-[2px] origin-top rounded-full bg-gradient-to-b from-emerald-400 to-teal-500 sm:block"
+        style={{ scaleY: reduce ? 1 : progress }}
+      />
+      {children}
     </div>
   );
 }
@@ -226,14 +267,21 @@ export function Counter({
   const ref = useRef<HTMLSpanElement>(null);
   const inView = useInView(ref, { once: true, margin: "-60px" });
   const reduce = useReducedMotion();
-  const [value, setValue] = useState(0);
+  // Starts at the real figure so the server HTML (and search engines, link
+  // previews and no-JS readers) show "500+" rather than "0+". Once hydrated it
+  // rewinds to 0 out of view, then counts up when scrolled into view.
+  const [value, setValue] = useState(to);
+  const armed = useRef(false);
 
   useEffect(() => {
-    if (!inView) return;
-    if (reduce) {
-      setValue(to);
-      return;
-    }
+    if (reduce || armed.current) return;
+    armed.current = true;
+    const t = setTimeout(() => setValue(0), 0);
+    return () => clearTimeout(t);
+  }, [reduce]);
+
+  useEffect(() => {
+    if (!inView || reduce) return;
     const controls = animate(0, to, {
       duration: 1.6,
       ease: EASE.expo,
