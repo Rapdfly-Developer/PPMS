@@ -2,11 +2,12 @@
 
 import { useState, useTransition, useRef, useEffect } from "react";
 import { openPdfNative, isNativeShell } from "@/lib/open-pdf";
-import { ChevronRight, Printer, FileSignature, CheckCircle2, Download, ChevronDown, FileText, PackageOpen, X, Lock, PenLine, Search, Clock, Plus } from "lucide-react";
+import { ChevronRight, Printer, FileSignature, CheckCircle2, CheckCheck, Download, ChevronDown, FileText, PackageOpen, X, Lock, PenLine, Search, Clock, Plus } from "lucide-react";
 import { isSameDay } from "date-fns";
 import { useRouter } from "next/navigation";
 import { useSidebar } from "@/components/ui/SidebarContext";
-import { closeVisit, markPartialDispense } from "./actions";
+import { Toast } from "@/components/ui/Toast";
+import { closeVisit, markPartialDispense, passOverToDoctor } from "./actions";
 
 const PARTIAL_REASONS = [
   "Glasses not ready",
@@ -260,7 +261,7 @@ function SuccessModal({ udid, onClose }: { udid: string; onClose: () => void }) 
 
 export function EmrActionBar({
   visit, udid, patientName, currentTabIndex = 0, totalTabs = 1, onNextSection,
-  editMode, onEnterEditMode, openPartialSignal = 0,
+  editMode, onEnterEditMode, openPartialSignal = 0, isRefractionist = false,
 }: {
   visit: any; udid: string; patientName?: string;
   currentTabIndex?: number; totalTabs?: number; onNextSection?: () => void;
@@ -271,11 +272,14 @@ export function EmrActionBar({
    * still fires after the modal has been dismissed once.
    */
   openPartialSignal?: number;
+  isRefractionist?: boolean;
 }) {
   const router = useRouter();
   const { collapsed } = useSidebar();
   const [pending, startTransition] = useTransition();
   const [partialPending, startPartialTransition] = useTransition();
+  const [passOverPending, startPassOver] = useTransition();
+  const [passOverDone, setPassOverDone] = useState(false);
   const [printOpen, setPrintOpen] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [showPartialModal, setShowPartialModal] = useState(false);
@@ -295,6 +299,12 @@ export function EmrActionBar({
   useEffect(() => {
     if (partialDone) router.push("/dashboard");
   }, [partialDone, router]);
+
+  useEffect(() => {
+    if (!passOverDone) return;
+    const t = setTimeout(() => router.push("/opd"), 1500);
+    return () => clearTimeout(t);
+  }, [passOverDone, router]);
   const closed = visit.status === "CLOSED";
   const isLastTab = currentTabIndex >= totalTabs - 1;
   const finalizedToday = visit.finalizedAt
@@ -321,6 +331,7 @@ export function EmrActionBar({
   return (
     <>
       {showSuccess && <SuccessModal udid={udid} onClose={() => setShowSuccess(false)} />}
+      {passOverDone && <Toast message="Passed over to doctor." onDone={() => {}} />}
       {showPartial && (
         <PartialDispenseModal
           loading={partialPending}
@@ -357,8 +368,8 @@ export function EmrActionBar({
           </button>
         )}
 
-        {/* Print Rx dropdown */}
-        <div className="flex-1 md:flex-none relative" ref={printRef}>
+        {/* Print Rx dropdown — hidden for REFRACTIONIST */}
+        {!isRefractionist && <div className="flex-1 md:flex-none relative" ref={printRef}>
           <button
             onClick={() => setPrintOpen((v) => !v)}
             className="w-full flex items-center justify-center gap-1 text-caption sm:text-sm font-medium px-2.5 py-2.5 md:px-4 md:py-2 rounded-xl bg-white border border-[var(--color-border)] hover:border-[var(--color-primary-500)] text-[var(--color-ink-700)] whitespace-nowrap"
@@ -426,9 +437,9 @@ export function EmrActionBar({
               </button>
             </div>
           )}
-        </div>
+        </div>}
 
-        {!closed && (
+        {!isRefractionist && !closed && (
           <button
             disabled={partialPending}
             onClick={() => setShowPartialModal(true)}
@@ -438,7 +449,18 @@ export function EmrActionBar({
           </button>
         )}
 
-        {closed ? (
+        {isRefractionist ? (
+          <button
+            disabled={passOverPending || passOverDone}
+            onClick={() => startPassOver(async () => {
+              await passOverToDoctor(visit.id);
+              setPassOverDone(true);
+            })}
+            className="flex-1 md:flex-none flex items-center justify-center gap-1 text-caption sm:text-sm font-medium px-2.5 py-2.5 md:px-5 md:py-2 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-60 whitespace-nowrap"
+          >
+            <CheckCheck size={13} /> {passOverPending ? "Saving…" : passOverDone ? "Passed over" : "Pass Over to Doctor"}
+          </button>
+        ) : closed ? (
           autoClosed ? (
             <span className="flex-1 md:flex-none flex items-center justify-center gap-1 text-caption sm:text-sm font-medium px-2.5 py-2.5 md:px-4 md:py-2 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 whitespace-nowrap">
               <Lock size={13} /> <span className="hidden sm:inline">Auto-closed at </span>EOD

@@ -179,7 +179,7 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: () => void 
 
 function SectionHeader({ title, desc, action }: {
   title: string; desc: string;
-  action?: { label: string; icon?: any; onClick?: () => void };
+  action?: { label: string; icon?: any; onClick?: () => void; disabled?: boolean };
 }) {
   const Icon = action?.icon;
   return (
@@ -190,8 +190,8 @@ function SectionHeader({ title, desc, action }: {
       </div>
       {action && (
         <button
-          onClick={action.onClick}
-          className="flex items-center gap-2 rounded-xl bg-[var(--color-primary-600)] px-4 py-2 text-label sm:text-sm font-semibold text-white hover:bg-[var(--color-primary-700)] transition-colors"
+          onClick={action.disabled ? undefined : action.onClick}
+          className={`flex items-center gap-2 rounded-xl bg-[var(--color-primary-600)] px-4 py-2 text-label sm:text-sm font-semibold text-white transition-colors ${action.disabled ? "opacity-50 cursor-not-allowed pointer-events-none" : "hover:bg-[var(--color-primary-700)]"}`}
         >
           {Icon && <Icon size={14} />} {action.label}
         </button>
@@ -937,7 +937,7 @@ function UsersSection({ users, hospitals, assignableRoles, doctorId }: { users: 
       <SectionHeader
         title="Users"
         desc={`${users.length} users across ${hospitals.length} linked hospital${hospitals.length !== 1 ? "s" : ""}`}
-        action={{ label: "Add User", icon: UserPlus, onClick: () => router.push("/users/new?returnTo=/settings") }}
+        action={{ label: "Add User", icon: UserPlus, onClick: () => router.push("/users/new?returnTo=/settings"), disabled: true }}
       />
 
       <Card>

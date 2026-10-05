@@ -25,7 +25,7 @@ export async function DoctorDashboard({
     include: {
       patient:  { select: { name: true, udid: true, uhid: true, age: true, sex: true, mobile: true, complaint: true } },
       hospital: { select: { id: true, name: true, logoUrl: true } },
-      visit:    { select: { id: true, date: true, finalizedAt: true } },
+      visit:    { select: { id: true, date: true, finalizedAt: true, refractionDone: true } },
     },
     orderBy: { dateTime: "asc" },
   });
@@ -74,6 +74,7 @@ export async function DoctorDashboard({
     visitId:          a.visit?.id ?? null,
     visitStartedAt:   a.visit?.date?.toISOString() ?? null,
     visitFinalizedAt: a.visit?.finalizedAt?.toISOString() ?? null,
+    refractionDone:   a.visit?.refractionDone ?? false,
   }));
 
   const hospitals = linkedHospitals.map((l) => ({ id: l.hospital.id, name: l.hospital.name, logoUrl: l.hospital.logoUrl ?? null }));

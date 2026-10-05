@@ -431,10 +431,11 @@ function ActionButton({
 
 /* ── Desktop row ────────────────────────────────────────────────────────── */
 function FollowUpRow({
-  v, role, onReschedule, onCancel, onComplete, activeReschedule, activeCancel, onClosePanel,
+  v, role, readOnly, onReschedule, onCancel, onComplete, activeReschedule, activeCancel, onClosePanel,
 }: {
   v: FuVisit;
   role: string;
+  readOnly?: boolean;
   onReschedule: (id: string) => void;
   onCancel: (id: string) => void;
   onComplete: (v: FuVisit) => void;
@@ -518,7 +519,7 @@ function FollowUpRow({
         {/* Actions */}
         <td className="px-4 py-3">
           <div className="flex items-center gap-1.5 flex-wrap">
-            {!isDone && (
+            {!isDone && !readOnly && (
               <>
                 <ActionButton
                   icon={<RotateCcw size={11} />}
@@ -556,10 +557,11 @@ function FollowUpRow({
 
 /* ── Mobile card ────────────────────────────────────────────────────────── */
 function FollowUpCard({
-  v, role, onReschedule, onCancel, onComplete, activeReschedule, activeCancel, onClosePanel,
+  v, role, readOnly, onReschedule, onCancel, onComplete, activeReschedule, activeCancel, onClosePanel,
 }: {
   v: FuVisit;
   role: string;
+  readOnly?: boolean;
   onReschedule: (id: string) => void;
   onCancel: (id: string) => void;
   onComplete: (v: FuVisit) => void;
@@ -637,7 +639,7 @@ function FollowUpCard({
       </div>
 
       {/* Actions */}
-      {!isDone && (
+      {!isDone && !readOnly && (
         <div className="flex flex-wrap gap-1.5 pt-1 border-t border-[var(--color-border)]">
           <ActionButton
             icon={<RotateCcw size={11} />}
@@ -670,10 +672,12 @@ export function FollowUpsClient({
   visits,
   role,
   doctorOptions,
+  readOnly = false,
 }: {
   visits: FuVisit[];
   role: "DOCTOR" | "HOSPITAL";
   doctorOptions: { id: string; name: string }[];
+  readOnly?: boolean;
 }) {
   const [search, setSearch]             = useState("");
   const [statusFilter, setStatusFilter] = useState<FollowUpStatus | "ALL">("DUE_TODAY");
@@ -913,6 +917,7 @@ export function FollowUpsClient({
                       key={v.id}
                       v={v}
                       role={role}
+                      readOnly={readOnly}
                       onReschedule={(id) => { setActiveReschedule(id); setActiveCancel(null); }}
                       onCancel={(id) => { setActiveCancel(id); setActiveReschedule(null); }}
                       onComplete={setCompleteVisit}
@@ -933,6 +938,7 @@ export function FollowUpsClient({
                 key={v.id}
                 v={v}
                 role={role}
+                readOnly={readOnly}
                 onReschedule={(id) => { setActiveReschedule(id); setActiveCancel(null); }}
                 onCancel={(id) => { setActiveCancel(id); setActiveReschedule(null); }}
                 onComplete={setCompleteVisit}

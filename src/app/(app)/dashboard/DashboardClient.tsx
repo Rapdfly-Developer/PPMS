@@ -5,7 +5,7 @@ import { format } from "date-fns";
 import Link from "next/link";
 import {
   ChevronDown, Plus, Building2, Phone, LogIn, Loader2,
-  Sun, Sunset, Moon, CalendarX2, Calendar, PersonStanding, Clock, Undo2, Trash2, Timer, CheckCircle2,
+  Sun, Sunset, Moon, CalendarX2, Calendar, PersonStanding, Clock, Undo2, Trash2, Timer, CheckCircle2, CheckCheck,
 } from "lucide-react";
 import clsx from "clsx";
 import { deleteWalkInVisit, undoQueueEntry, undoPartialDispense } from "@/app/(app)/appointments/actions";
@@ -29,6 +29,7 @@ interface Appt {
   visitId:          string | null;
   visitStartedAt:   string | null;
   visitFinalizedAt: string | null;
+  refractionDone?:  boolean;
 }
 
 export interface DashboardProps {
@@ -261,6 +262,11 @@ function ApptRow({ appt, scope, serial, canManageQueue, canViewPatient, returnTo
           {appt.visitType && (
             <span className="hidden sm:inline text-caption font-medium px-2 py-0.5 rounded-full bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)] whitespace-nowrap">
               {appt.visitType}
+            </span>
+          )}
+          {appt.refractionDone && (
+            <span title="Refraction done — passed over to doctor" className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-caption font-semibold whitespace-nowrap">
+              <CheckCheck size={11} /> Refraction done
             </span>
           )}
           {appt.status !== "CONFIRMED" && (

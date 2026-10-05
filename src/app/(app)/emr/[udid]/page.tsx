@@ -217,7 +217,10 @@ export default async function PatientDetailedEMR({
     ? isSameDay(new Date(activeVisit.finalizedAt), new Date())
     : false;
   const visitLocked = activeVisit?.status === "CLOSED" && !finalizedToday;
+  const isRefractionist = user.role === "REFRACTIONIST";
   const readOnly = user.role !== "DOCTOR" || visitLocked;
+  // Refractionist can edit general + ophthalmic (except anterior/posterior)
+  const generalReadOnly = (user.role !== "DOCTOR" && !isRefractionist) || visitLocked;
   // Refraction-workflow sections (VA, refraction, colour, IOP) follow the refraction permissions.
   const canEditRefraction = user.role === "DOCTOR" || (canRecordRefraction(user) && !visitLocked);
 
@@ -479,7 +482,8 @@ export default async function PatientDetailedEMR({
             visit={activeVisit}
             udid={udid}
             patientName={patient.name}
-            showActionBar={user.role === "DOCTOR"}
+            showActionBar={user.role === "DOCTOR" || isRefractionist}
+            isRefractionist={isRefractionist}
             finalizedToday={finalizedToday}
             pluginSlot={
               <PluginEmrSlot
@@ -498,7 +502,7 @@ export default async function PatientDetailedEMR({
                nothing, matching how ConsultationExitGuard stands down. */
             tabScopedSlotTabId="ai-copilot"
             tabScopedSlot={
-              activeVisit.status !== "CLOSED"
+              !isRefractionist && activeVisit.status !== "CLOSED"
                 ? getAllRegisteredPlugins()
                     .filter((p) => p.manifest.externalOrigin)
                     .map((p) => (
@@ -523,7 +527,7 @@ export default async function PatientDetailedEMR({
                       visit={activeVisit}
                       priorVisits={priorVisits}
                       udid={udid}
-                      readOnly={readOnly}
+                      readOnly={generalReadOnly}
                     />
                   </div>
                 ),
@@ -546,8 +550,8 @@ export default async function PatientDetailedEMR({
                       patientId={patient.id}
                       udid={udid}
                       entries={patient.pastExternalVisits}
-                      canEdit={user.role === "DOCTOR"}
-                      canUpload={user.role === "DOCTOR"}
+                      canEdit={user.role === "DOCTOR" || isRefractionist}
+                      canUpload={user.role === "DOCTOR" || isRefractionist}
                     />
                   </div>
                 ),
@@ -572,6 +576,7 @@ export default async function PatientDetailedEMR({
                 id: "assess",
                 label: "Assessment",
                 icon: <Activity size={14} />,
+                hidden: isRefractionist,
                 content:
                   user.role === "DOCTOR" ? (
                     <div className="flex flex-col gap-4">
@@ -585,8 +590,11 @@ export default async function PatientDetailedEMR({
                 id: "inv",
                 label: "Investigations",
                 icon: <FileText size={14} />,
+                hidden: isRefractionist,
                 badge: activeVisit.investigationOrders.filter((o) => !o.resultRef && o.status !== "REVIEWED" && o.status !== "CANCELLED").length,
-                content: (
+                content: isRefractionist ? (
+                  <p className="text-sm text-[var(--color-ink-400)]">Not accessible for this role.</p>
+                ) : (
                   <div className="flex flex-col gap-4">
                     <InvestigationsTab visit={activeVisit} priorVisits={priorVisits} udid={udid} readOnly={readOnly} />
                   </div>
@@ -607,6 +615,7 @@ export default async function PatientDetailedEMR({
                 id: "plan",
                 label: "Plan",
                 icon: <Link2 size={14} />,
+                hidden: isRefractionist,
                 content:
                   user.role === "DOCTOR" ? (
                     <div className="flex flex-col gap-4">

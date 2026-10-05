@@ -31,7 +31,7 @@ const ALL_NAV: NavEntry[] = [
   { href: "/appointments",    label: "Appointments",    icon: CalendarDays, permission: "appointments.view"                                    },
   { href: "/hospital-manager", label: "Hospital Manager", icon: Building2, permission: "availability.manage", roles: ["DOCTOR"]              },
   { href: "/patients",     label: "Patient Library", icon: Users,        permission: "patients.view"                                         },
-  { href: "/follow-ups",   label: "Follow Ups",   icon: CalendarClock,   permission: "patients.view"                                         },
+  { href: "/follow-ups",   label: "Follow Ups",   icon: CalendarClock,   permission: "followups.view"                                        },
   { href: "/analytics",    label: "Analytics",     icon: BarChart2,      permission: "reports.view",      roles: ["DOCTOR", "HOSPITAL"]      },
   { href: "/settings/plugins", label: "Plugins", icon: Puzzle, permission: "plugins.view", roles: ["DOCTOR"] },
   { href: "/settings",     label: "Settings",     icon: Settings,        permission: "settings.view"                                         },

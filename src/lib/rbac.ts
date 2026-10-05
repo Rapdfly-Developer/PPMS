@@ -95,5 +95,6 @@ export function scopeDoctorId(user: SessionUser): string {
 export function roleHome(role: Role): string {
   if (role === "DOCTOR") return "/dashboard";
   if (role === "HOSPITAL") return "/dashboard";
-  return "/dashboard"; // custom roles always land on dashboard
+  if (role === "REFRACTIONIST") return "/opd";
+  return "/dashboard";
 }

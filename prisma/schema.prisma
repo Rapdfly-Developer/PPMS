@@ -513,6 +513,10 @@ model Visit {
   followUpCompleted   Boolean   @default(false)
   followUpCancelledAt DateTime?
   gonioNotes          String?  // JSON: { re: string, le: string }
+  refractionDone          Boolean   @default(false)
+  refractionStartedAt     DateTime?
+  refractionCompletedAt   DateTime?
+  refractionPassedOverAt  DateTime?
 
   // AI Clinical Copilot draft — written only after the doctor explicitly confirms
   aiDraftText         String?

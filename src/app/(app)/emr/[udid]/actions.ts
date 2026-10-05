@@ -63,7 +63,10 @@ async function requireRefractionWrite(visitId: string, existing: boolean) {
   const user = await requireUser();
   const visit = await assertVisitAccess(visitId);
   if (user.role === "DOCTOR") return user;
-  if (!userCan(user, existing ? "refraction.edit" : "refraction.create")) {
+  if (
+    !userCan(user, existing ? "refraction.edit" : "refraction.create") &&
+    !userCan(user, "emr.refraction.edit")
+  ) {
     throw new Error(existing ? "You do not have permission to edit refraction records." : "You do not have permission to record refraction.");
   }
   const hospitalId = await getStaffHospitalId(user.id);
@@ -127,7 +130,8 @@ export async function startVisit(patientId: string, appointmentId: string, udid:
 // ── General Examination ──────────────────────────────────────────────────
 
 export async function saveGeneralExam(visitId: string, udid: string, data: Record<string, any>) {
-  const user = await requireRole("DOCTOR");
+  const user = await requireUser();
+  if (user.role !== "DOCTOR" && !userCan(user, "emr.general.edit")) throw new Error("Forbidden");
   await assertVisitAccess(visitId);
   await prisma.generalExamination.upsert({
     where: { visitId },
@@ -253,7 +257,8 @@ export async function saveRefraction(visitId: string, udid: string, data: { re: 
 }
 
 export async function sendToOpticals(visitId: string, udid: string) {
-  await requireRole("DOCTOR");
+  const user = await requireUser();
+  if (user.role !== "DOCTOR" && !userCan(user, "emr.refraction.edit")) throw new Error("Forbidden");
   await assertVisitOwner(visitId);
   await prisma.refractiveCorrection.update({ where: { visitId }, data: { sentToOpticals: true } });
   revalidate(udid);
@@ -318,7 +323,8 @@ export async function savePosteriorSegment(visitId: string, udid: string, data: 
 }
 
 export async function saveDiplopia(visitId: string, udid: string, grid: string) {
-  const user = await requireRole("DOCTOR");
+  const user = await requireUser();
+  if (user.role !== "DOCTOR" && !userCan(user, "emr.ophthalmic.edit")) throw new Error("Forbidden");
   await assertVisitAccess(visitId);
   await prisma.diplopiaChart.upsert({ where: { visitId }, create: { visitId, grid }, update: { grid } });
   await writeAudit(user.id, "DiplopiaChart", visitId, "SAVE", { grid });
@@ -326,7 +332,8 @@ export async function saveDiplopia(visitId: string, udid: string, grid: string) 
 }
 
 export async function saveHess(visitId: string, udid: string, grid: string, interpretation?: string) {
-  const user = await requireRole("DOCTOR");
+  const user = await requireUser();
+  if (user.role !== "DOCTOR" && !userCan(user, "emr.ophthalmic.edit")) throw new Error("Forbidden");
   await assertVisitAccess(visitId);
   await prisma.hessChart.upsert({
     where: { visitId },
@@ -338,7 +345,8 @@ export async function saveHess(visitId: string, udid: string, grid: string, inte
 }
 
 export async function saveRetinoscopy(visitId: string, udid: string, data: { re: string; le: string }) {
-  const user = await requireRole("DOCTOR");
+  const user = await requireUser();
+  if (user.role !== "DOCTOR" && !userCan(user, "emr.ophthalmic.edit")) throw new Error("Forbidden");
   await assertVisitAccess(visitId);
   await prisma.retinoscopy.upsert({ where: { visitId }, create: { visitId, ...data }, update: data });
   await writeAudit(user.id, "Retinoscopy", visitId, "SAVE", data);
@@ -353,7 +361,8 @@ export async function getRefractionForVisit(visitId: string) {
 }
 
 export async function saveTearFilm(visitId: string, udid: string, data: Record<string, number | undefined>) {
-  const user = await requireRole("DOCTOR");
+  const user = await requireUser();
+  if (user.role !== "DOCTOR" && !userCan(user, "emr.ophthalmic.edit")) throw new Error("Forbidden");
   await assertVisitAccess(visitId);
   await prisma.tearFilm.upsert({ where: { visitId }, create: { visitId, ...data }, update: data });
   await writeAudit(user.id, "TearFilm", visitId, "SAVE", data);
@@ -361,7 +370,8 @@ export async function saveTearFilm(visitId: string, udid: string, data: Record<s
 }
 
 export async function saveLacrimalSac(visitId: string, udid: string, data: { re: string; le: string }) {
-  const user = await requireRole("DOCTOR");
+  const user = await requireUser();
+  if (user.role !== "DOCTOR" && !userCan(user, "emr.ophthalmic.edit")) throw new Error("Forbidden");
   await assertVisitAccess(visitId);
   await prisma.lacrimalSacSyringing.upsert({ where: { visitId }, create: { visitId, ...data }, update: data });
   await writeAudit(user.id, "LacrimalSac", visitId, "SAVE", data);
@@ -782,5 +792,13 @@ export async function markPartialDispense(visitId: string, udid: string, reason?
   await writeAudit(user.id, "Appointment", appointmentId ?? visitId, "PARTIAL_DISPENSE", { visitId });
 
   revalidate(udid);
+  revalidatePath("/dashboard");
+}
+
+export async function passOverToDoctor(visitId: string) {
+  const user = await requireUser();
+  if (user.role !== "REFRACTIONIST") throw new Error("Forbidden");
+  await prisma.visit.update({ where: { id: visitId }, data: { refractionDone: true } });
+  await writeAudit(user.id, "Visit", visitId, "PASS_OVER", {});
   revalidatePath("/dashboard");
 }

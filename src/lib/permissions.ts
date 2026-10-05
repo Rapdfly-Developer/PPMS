@@ -64,6 +64,16 @@ export const P = {
   INSURANCE_EDIT:          "insurance.edit",
   INSURANCE_MANAGE:        "insurance.manage",
 
+  // Follow-ups
+  FOLLOWUPS_VIEW:          "followups.view",
+
+  // Fine-grained EMR (Refractionist-level)
+  EMR_LAB_REPORTS_UPLOAD:  "emr.labReports.upload",
+  EMR_LAB_REPORTS_EDIT:    "emr.labReports.edit",
+  EMR_REFRACTION_EDIT:     "emr.refraction.edit",
+  EMR_GENERAL_EDIT:        "emr.general.edit",
+  EMR_OPHTHALMIC_EDIT:     "emr.ophthalmic.edit",
+
   // User & Role management (Doctor/super-admin only)
   USERS_MANAGE:            "users.manage",
   ROLES_MANAGE:            "roles.manage",
@@ -104,6 +114,21 @@ export const ROLE_DEFAULT_PERMISSIONS: Record<string, string[]> = {
     P.INSURANCE_CREATE,
     P.INSURANCE_EDIT,
     P.INSURANCE_MANAGE,
+  ],
+
+  REFRACTIONIST: [
+    P.OPD_VIEW,
+    P.OPD_QUEUE_MANAGE,
+    P.APPOINTMENTS_VIEW,
+    P.APPOINTMENTS_EDIT,
+    P.PATIENTS_VIEW,
+    P.FOLLOWUPS_VIEW,
+    P.EMR_VIEW,
+    P.EMR_LAB_REPORTS_UPLOAD,
+    P.EMR_LAB_REPORTS_EDIT,
+    P.EMR_REFRACTION_EDIT,
+    P.EMR_GENERAL_EDIT,
+    P.EMR_OPHTHALMIC_EDIT,
   ],
 
 };

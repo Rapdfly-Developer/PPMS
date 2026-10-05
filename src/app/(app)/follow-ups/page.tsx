@@ -27,7 +27,7 @@ function computeStatus(
 }
 
 export default async function FollowUpsPage() {
-  const user = await requirePermission("patients.view");
+  const user = await requirePermission("followups.view");
   const today = new Date();
 
   // Any hospital-affiliated user is scoped to their own hospital; an unscoped
@@ -142,6 +142,7 @@ export default async function FollowUpsPage() {
       visits={visits}
       role={user.role as "DOCTOR" | "HOSPITAL"}
       doctorOptions={doctorOptions}
+      readOnly={user.role === "REFRACTIONIST"}
     />
   );
 }

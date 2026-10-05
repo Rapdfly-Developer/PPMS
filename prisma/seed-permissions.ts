@@ -12,6 +12,10 @@ const prisma = new PrismaClient();
 
 const ALL_PERMISSIONS: { key: string; label: string }[] = [
   { key: "dashboard.view",        label: "View Dashboard" },
+  { key: "opd.view",              label: "View OPD" },
+  { key: "opd.walkin.create",     label: "Create Walk-in" },
+  { key: "opd.queue.manage",      label: "Manage OPD Queue" },
+  { key: "opd.dispense",          label: "Dispense from OPD" },
   { key: "patients.view",         label: "View Patients" },
   { key: "patients.create",       label: "Register Patients" },
   { key: "patients.edit",         label: "Edit Patient Info" },
@@ -44,6 +48,13 @@ const ALL_PERMISSIONS: { key: string; label: string }[] = [
   { key: "settings.manage",       label: "Manage Settings" },
   { key: "users.manage",          label: "Manage Users" },
   { key: "roles.manage",          label: "Manage Roles & Permissions" },
+  { key: "followups.view",          label: "View Follow-ups" },
+  // ── Fine-grained EMR (Refractionist-level) ───────────────────────────────
+  { key: "emr.labReports.upload",   label: "Upload Lab Reports" },
+  { key: "emr.labReports.edit",     label: "Edit Lab Reports" },
+  { key: "emr.refraction.edit",     label: "Edit Refraction" },
+  { key: "emr.general.edit",        label: "Edit General Exam" },
+  { key: "emr.ophthalmic.edit",     label: "Edit Ophthalmic Exam" },
   // ── AI Clinical Copilot plugin permissions ───────────────────────────────
   { key: "ai.copilot.view",      label: "View AI Clinical Copilot" },
   { key: "ai.copilot.summarize", label: "AI Copilot — Summarise Patient Record" },
@@ -68,12 +79,16 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
   ],
 
   REFRACTIONIST: [
-    "dashboard.view",
+    "opd.view",
+    "opd.queue.manage",
+    "appointments.view", "appointments.edit",
     "patients.view",
-    "appointments.view",
+    "followups.view",
     "emr.view",
-    "refraction.view", "refraction.create", "refraction.edit",
-    "investigations.view", "investigations.create", "investigations.edit",
+    "emr.labReports.upload", "emr.labReports.edit",
+    "emr.refraction.edit",
+    "emr.general.edit",
+    "emr.ophthalmic.edit",
   ],
 };
 

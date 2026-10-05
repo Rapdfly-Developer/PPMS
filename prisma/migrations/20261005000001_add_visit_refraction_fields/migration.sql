@@ -1,0 +1,4 @@
+ALTER TABLE "Visit" ADD COLUMN IF NOT EXISTS "refractionDone"          BOOLEAN      NOT NULL DEFAULT false;
+ALTER TABLE "Visit" ADD COLUMN IF NOT EXISTS "refractionStartedAt"     TIMESTAMP(3);
+ALTER TABLE "Visit" ADD COLUMN IF NOT EXISTS "refractionCompletedAt"   TIMESTAMP(3);
+ALTER TABLE "Visit" ADD COLUMN IF NOT EXISTS "refractionPassedOverAt"  TIMESTAMP(3);
