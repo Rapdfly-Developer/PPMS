@@ -7,7 +7,7 @@ import {
   Stethoscope, CalendarDays, Users,
   Settings, X,
   CalendarClock, BarChart2, Lock,
-  Puzzle, LayoutGrid,
+  Puzzle, LayoutGrid, Building2,
 } from "lucide-react";
 import clsx from "clsx";
 import type { Role } from "@/lib/constants";
@@ -28,7 +28,8 @@ type NavEntry = TopNavItem;
 const ALL_NAV: NavEntry[] = [
   { href: "/dashboard",    label: "Dashboard",    icon: LayoutGrid,      permission: "dashboard.view"                                        },
   { href: "/opd",          label: "OPD",          icon: Stethoscope,     permission: "opd.view"                                              },
-  { href: "/appointments", label: "Appointments", icon: CalendarDays,    permission: "appointments.view"                                     },
+  { href: "/appointments",    label: "Appointments",    icon: CalendarDays, permission: "appointments.view"                                    },
+  { href: "/hospital-manager", label: "Hospital Manager", icon: Building2, permission: "availability.manage", roles: ["DOCTOR"]              },
   { href: "/patients",     label: "Patient Library", icon: Users,        permission: "patients.view"                                         },
   { href: "/follow-ups",   label: "Follow Ups",   icon: CalendarClock,   permission: "patients.view"                                         },
   { href: "/analytics",    label: "Analytics",     icon: BarChart2,      permission: "reports.view",      roles: ["DOCTOR", "HOSPITAL"]      },

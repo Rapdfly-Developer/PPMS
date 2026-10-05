@@ -5,7 +5,7 @@ import { useCallback, useTransition, useState, useRef, useEffect } from "react";
 import { format, isToday, isTomorrow } from "date-fns";
 import {
   Search, X, ChevronDown, ChevronRight,
-  Filter, Calendar, Plus, Building2,
+  Filter, Calendar, Plus, Building2, UserX, Eye,
 } from "lucide-react";
 import Link from "next/link";
 import clsx from "clsx";
@@ -48,6 +48,7 @@ export function AppointmentsClient({
   page,
   pageSize,
   view,
+  noShows,
   role,
   canBook,
   apptPerms,
@@ -84,6 +85,7 @@ export function AppointmentsClient({
   hospitals:      { id: string; name: string }[];
   booked:         boolean;
   pendingCount:   number;
+  noShows:        { id: string; dateTime: string; patient: { name: string; udid: string | null }; hospital: { name: string } | null }[];
 }) {
   const router   = useRouter();
   const pathname = usePathname();
@@ -332,14 +334,6 @@ export function AppointmentsClient({
         {/* Action buttons + filter — full-width row on mobile; wraps on the
             narrowest phones (320px) instead of pushing Filter off-screen. */}
         <div className="flex flex-wrap items-center gap-2">
-          {role === "DOCTOR" && (
-            <Link
-              href="/appointments/availability"
-              className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 bg-[var(--color-primary-600)] text-white text-caption sm:text-sm font-semibold px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl hover:bg-[var(--color-primary-700)] transition-colors shadow-sm whitespace-nowrap"
-            >
-              Hospital Appt
-            </Link>
-          )}
           {canBook && (
             <Link
               href="/appointments/book"
@@ -524,7 +518,7 @@ export function AppointmentsClient({
         return (
           <div className="flex flex-col gap-6">
             {/* Summary cards */}
-            <div className="grid grid-cols-3 gap-1.5 sm:gap-3 w-full">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 sm:gap-3 w-full">
               {[
                 {
                   label: "Today",
@@ -585,6 +579,15 @@ export function AppointmentsClient({
                   </button>
                 );
               })}
+              {/* No Show — static card, same dimensions and style as the section cards above */}
+              <div className="rounded-xl border-2 border-red-200 bg-red-50 px-2 sm:px-4 py-2.5 sm:py-3 flex flex-col gap-0.5 min-w-0 w-full">
+                <div className="flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full shrink-0 bg-red-400" />
+                  <span className="text-caption sm:text-xs font-semibold truncate text-red-600">No Show</span>
+                </div>
+                <p className="text-lg sm:text-2xl font-bold leading-none mt-0.5 sm:mt-1 text-red-700">{noShows.length}</p>
+                <p className="text-micro sm:text-caption leading-tight truncate text-red-400">Selected period</p>
+              </div>
             </div>
 
             {groups.filter(({ key }) => key === activeSection).map(({ key, label, sub, appts: grpAppts, accent, badge, head }) => {

@@ -112,7 +112,11 @@ export default async function AppointmentsPage({
   if (user.role === "DOCTOR") pendingWhere.doctorId   = scopeDoctorId(user);
   else                        pendingWhere.hospitalId = user.hospitalId ?? "__no_scope__";
 
-  const [total, appts, doctors, hospitals, pendingCount] = await Promise.all([
+  const noShowWhere: any = { status: "NO_SHOW", dateTime: dateFilter };
+  if (user.role === "DOCTOR") noShowWhere.doctorId   = scopeDoctorId(user);
+  else                        noShowWhere.hospitalId = user.hospitalId ?? "__no_scope__";
+
+  const [total, appts, doctors, hospitals, pendingCount, noShows] = await Promise.all([
     prisma.appointment.count({ where }),
     prisma.appointment.findMany({
       where,
@@ -153,7 +157,25 @@ export default async function AppointmentsPage({
         }).then(links => links.map(l => l.hospital))
       : Promise.resolve([]),
     prisma.appointment.count({ where: pendingWhere }),
+    prisma.appointment.findMany({
+      where: noShowWhere,
+      select: {
+        id:       true,
+        dateTime: true,
+        patient:  { select: { name: true, udid: true } },
+        hospital: { select: { name: true } },
+      },
+      orderBy: { dateTime: "desc" },
+      take: 50,
+    }),
   ]);
+
+  const noShowsSerialized = noShows.map((ns) => ({
+    id:       ns.id,
+    dateTime: ns.dateTime.toISOString(),
+    patient:  ns.patient,
+    hospital: ns.hospital,
+  }));
 
   return (
     <div className="fade-in">
@@ -178,6 +200,7 @@ export default async function AppointmentsPage({
         hospitals={hospitals}
         booked={booked}
         pendingCount={pendingCount}
+        noShows={noShowsSerialized}
       />
     </div>
   );
