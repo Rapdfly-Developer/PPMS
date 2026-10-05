@@ -8,6 +8,7 @@ import {
   User, Phone, AlertCircle, CheckCircle2, Building2,
 } from "lucide-react";
 import { bookAppointment, getBookedSlots, getLastVisitCC } from "./actions";
+import { istTodayStr } from "@/lib/ist";
 import { BackButton } from "@/components/ui/BackButton";
 import { SmartUploadBox, type UploadedFile } from "@/components/ui/SmartUploadBox";
 import { ComplaintCombobox } from "@/components/ui/ComplaintCombobox";
@@ -103,7 +104,9 @@ export function BookAppointmentForm({
 
   /* ── Step 2: appointment details ── */
   const [doctorId,   setDoctorId]   = useState(doctors[0]?.id ?? "");
-  const [date, setDate] = useState(() => new Date().toISOString().split("T")[0]);
+  // Today in India. toISOString() is UTC, which pre-filled yesterday's date
+  // between 12:00 and 5:30 AM IST.
+  const [date, setDate] = useState(() => istTodayStr());
   const [time, setTime] = useState("09:00");
   const [visitType,  setVisitType]  = useState("General OPD");
   const [notes,      setNotes]      = useState("");

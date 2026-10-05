@@ -41,10 +41,16 @@ function SelectBox({ children, className = "", ...props }: React.SelectHTMLAttri
 }
 
 function useRelativeTime(iso: string) {
-  const [now, setNow] = useState(() => Date.now());
+  // First render must match the server's HTML, so it starts from the
+  // generation time itself ("Updated just now") rather than the browser clock:
+  // a late hydration or a skewed PC clock otherwise rendered "Updated 2
+  // minutes ago" against the server's "just now" — a hydration mismatch that
+  // makes React throw away the server markup. The real clock takes over on mount.
+  const [now, setNow] = useState(() => new Date(iso).getTime());
   useEffect(() => {
+    const first = setTimeout(() => setNow(Date.now()), 0);
     const t = setInterval(() => setNow(Date.now()), 30_000);
-    return () => clearInterval(t);
+    return () => { clearTimeout(first); clearInterval(t); };
   }, []);
   const mins = Math.max(0, Math.round((now - new Date(iso).getTime()) / 60_000));
   return mins < 1 ? "Updated just now" : mins === 1 ? "Updated 1 minute ago" : mins < 60 ? `Updated ${mins} minutes ago` : `Updated ${Math.round(mins / 60)} h ago`;
