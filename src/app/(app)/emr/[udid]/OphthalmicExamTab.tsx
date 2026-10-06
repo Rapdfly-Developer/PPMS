@@ -466,53 +466,107 @@ function ArSlipUpload({
 function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: any; udid: string; editable: boolean; priorVisits?: any[] }) {
   const rc = visit.refraction;
 
-  type RxFields = { sph: string; cyl: string; axis: string; nearSph: string; va: string; nearVa: string; method: string; arSlipUrl?: string };
-  const emptyRx: RxFields = { sph: "", cyl: "", axis: "", nearSph: "", va: "", nearVa: "", method: "" };
+  // ── Types ──────────────────────────────────────────────────────────────────
+  type RxEye = { sph: string; cyl: string; axis: string; nearSph: string; va: string; nearVa: string };
+  const emptyEye: RxEye = { sph: "", cyl: "", axis: "", nearSph: "", va: "", nearVa: "" };
 
-  type ExtraCorrection = { label: string; re: RxFields; le: RxFields; arSlipUrl?: string };
+  // Each method within a correction card stores its own eye data, print flag, and AR slip.
+  type MethodEntry = { re: RxEye; le: RxEye; includedInPrint: boolean; arSlipUrl?: string };
 
-  const [re, setRe] = useState(parseJSON(rc?.re, emptyRx));
-  const [le, setLe] = useState(parseJSON(rc?.le, emptyRx));
-  const [extras, setExtras] = useState<ExtraCorrection[]>(() =>
-    parseJSON<ExtraCorrection[]>(rc?.extraCorrections, [])
-  );
+  // A correction card holds per-method data keyed by method name.
+  // Stored as { _v: 2, label, activeMethod, methods: {...} } in the DB re field.
+  type CorrV2 = { label: string; activeMethod: string; methods: Record<string, MethodEntry> };
+
+  // ── Parse helpers ──────────────────────────────────────────────────────────
+  const toEye = (src: any): RxEye => ({
+    sph: src?.sph || "", cyl: src?.cyl || "", axis: src?.axis || "",
+    nearSph: src?.nearSph || "", va: src?.va || "", nearVa: src?.nearVa || "",
+  });
+
+  const parseC1 = (): CorrV2 => {
+    const raw = parseJSON(rc?.re, {} as any);
+    if (raw._v === 2) return raw as CorrV2;
+    // v1: single flat method — migrate to per-method map
+    const reF = parseJSON(rc?.re, {} as any);
+    const leF = parseJSON(rc?.le, {} as any);
+    const method: string = reF.method || DEFAULT_REFRACTION_METHOD;
+    return {
+      label: "Correction 1", activeMethod: method,
+      methods: { [method]: { re: toEye(reF), le: toEye(leF), includedInPrint: reF.includedInPrint !== false, arSlipUrl: reF.arSlipUrl } },
+    };
+  };
+
+  const parseExtras = (): CorrV2[] => {
+    const raw = parseJSON(rc?.extraCorrections, [] as any[]);
+    return raw.map((ex: any) => {
+      if (ex._v === 2) return ex as CorrV2;
+      const method: string = ex.re?.method || DEFAULT_REFRACTION_METHOD;
+      return {
+        label: ex.label || "Correction", activeMethod: method,
+        methods: { [method]: { re: toEye(ex.re), le: toEye(ex.le), includedInPrint: ex.includedInPrint !== false, arSlipUrl: ex.arSlipUrl } },
+      };
+    });
+  };
+
+  // ── State ──────────────────────────────────────────────────────────────────
+  const [c1, setC1] = useState<CorrV2>(parseC1);
+  const [extras, setExtras] = useState<CorrV2[]>(parseExtras);
   const [showHistory, setShowHistory] = useState(false);
   const [confirmRx, setConfirmRx] = useState<typeof priorRefractions[0] | null>(null);
   const [rxToast, setRxToast] = useState(false);
 
+  // ── History: prior visits, adapted to v2 structure ─────────────────────────
   const priorRefractions = priorVisits
     .filter((v) => v.refraction)
-    .map((v) => ({
-      date: v.date,
-      re: parseJSON<RxFields>(v.refraction?.re, emptyRx),
-      le: parseJSON<RxFields>(v.refraction?.le, emptyRx),
-    }));
+    .map((v) => {
+      const raw = parseJSON(v.refraction?.re, {} as any);
+      if (raw._v === 2) return { date: v.date, correction: raw as CorrV2 };
+      const reF = parseJSON(v.refraction?.re, {} as any);
+      const leF = parseJSON(v.refraction?.le, {} as any);
+      const method: string = reF.method || DEFAULT_REFRACTION_METHOD;
+      return {
+        date: v.date,
+        correction: { label: "Correction 1", activeMethod: method, methods: { [method]: { re: toEye(reF), le: toEye(leF), includedInPrint: true } } } as CorrV2,
+      };
+    });
 
+  // ── Auto-save: v2 format; le is unused but kept for schema compatibility ───
   const state = useAutoSave(
-    { re: JSON.stringify(re), le: JSON.stringify(le), extraCorrections: JSON.stringify(extras) },
+    {
+      re: JSON.stringify({ _v: 2, ...c1 }),
+      le: "",
+      extraCorrections: JSON.stringify(extras.map((ex) => ({ _v: 2, ...ex }))),
+    },
     async (d) => { if (!editable) return; await saveRefraction(visit.id, udid, d); }
   );
 
-  const addCorrection = () => {
-    setExtras((prev) => [
-      ...prev,
-      { label: `Correction ${prev.length + 2}`, re: { ...emptyRx }, le: { ...emptyRx } },
-    ]);
+  // ── Correction helpers ─────────────────────────────────────────────────────
+  // Returns the active method's entry, creating an empty one if not yet filled.
+  const activeEntry = (corr: CorrV2): MethodEntry =>
+    corr.methods[corr.activeMethod] ?? { re: { ...emptyEye }, le: { ...emptyEye }, includedInPrint: false };
+
+  // Updates only the active method's entry inside a correction.
+  const patchEntry = (corr: CorrV2, patch: (prev: MethodEntry) => MethodEntry): CorrV2 => {
+    const prev = corr.methods[corr.activeMethod] ?? { re: { ...emptyEye }, le: { ...emptyEye }, includedInPrint: false };
+    return { ...corr, methods: { ...corr.methods, [corr.activeMethod]: patch(prev) } };
   };
+
+  const setExtra = (idx: number, fn: (prev: CorrV2) => CorrV2) =>
+    setExtras((prev) => prev.map((item, i) => i === idx ? fn(item) : item));
+
+  const addCorrection = () =>
+    setExtras((prev) => [...prev, { label: `Correction ${prev.length + 2}`, activeMethod: DEFAULT_REFRACTION_METHOD, methods: {} }]);
 
   const removeCorrection = (idx: number) =>
     setExtras((prev) => prev.filter((_, i) => i !== idx));
 
-  const updateExtra = (idx: number, side: "re" | "le", val: RxFields) =>
-    setExtras((prev) => prev.map((e, i) => i === idx ? { ...e, [side]: val } : e));
-
+  // ── UI helpers ─────────────────────────────────────────────────────────────
   const SEL = "rounded border border-[var(--color-border)] bg-white px-1.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-400)] disabled:bg-[var(--color-surface-sunken)]";
 
   const signedSelect = (label: string, value: string, onChange: (v: string) => void, mags: string[]) => {
     const { sign, mag } = parseSignedVal(value);
     const toggle = () => {
       const ns = sign === "+" ? "-" : "+";
-      // Always persist the new sign, even when no magnitude selected yet
       onChange(mag ? `${ns}${mag}` : ns);
     };
     return (
@@ -543,8 +597,6 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
     );
   };
 
-  // Axis is 0–180°, never signed — no +/- toggle. parseSignedVal still reads the
-  // stored value so rows saved earlier as "+90" render as 90 rather than blank.
   const axisSelect = (label: string, value: string, onChange: (v: string) => void) => (
     <div className="flex flex-col gap-0.5 min-w-0">
       <label className="text-micro sm:text-caption text-[var(--color-ink-400)] font-medium">{label}</label>
@@ -568,29 +620,9 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
     </div>
   );
 
-  // One grid spans both Distance and Near so the columns line up: Resulting NV
-  // sits in the same column as Resulting VA. That holds in either track count —
-  // last column at 4-up, second column at 2-up (where VA wraps to row 2).
-  // Axis and VA get wider tracks than Sph/Cyl, which lose width to the +/- toggle.
   const SECTION_LABEL = "col-span-2 sm:col-span-5 text-micro sm:text-caption font-semibold text-[var(--color-ink-400)] uppercase tracking-widest";
 
-  /* Method is a property of the CORRECTION, not of one eye, but the dropdown
-     historically wrote re.method only — leaving le.method unset and the two
-     eyes able to disagree. Both are written here.
-     Switching to a distance-only method also CLEARS that correction's near
-     values: hidden-but-stored values would reappear if the method were switched
-     back, and could still reach the prescription. */
-  const applyMethod = (rx: typeof re, method: string) => {
-    const next = { ...rx, method };
-    if (!methodHasNear(method)) { next.nearSph = ""; next.nearVa = ""; }
-    return next;
-  };
-
-  /* Retinoscopy, auto-refraction and cycloplegic readings are distance-only
-     measurements, so their near row is not rendered at all. showNear is passed
-     in rather than read from `val` so both eyes follow the correction's single
-     method even on legacy records that stored it on the RE object only. */
-  const eyeFields = (val: typeof re, setVal: typeof setRe, showNear: boolean) => (
+  const eyeFields = (val: RxEye, setVal: (v: RxEye) => void, showNear: boolean) => (
     <div
       className="grid grid-cols-2 sm:grid-cols-[88px_88px_64px_20px_80px] gap-x-2 gap-y-2 items-end"
       {...(!Object.values(val).some(Boolean) ? { "data-ov-empty": "" } : {})}
@@ -601,7 +633,6 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
       {axisSelect("Axis°",   val.axis, (v) => setVal({ ...val, axis: v }))}
       <div aria-hidden="true" className="hidden sm:block" />
       {vaSelect("Resulting VA", val.va, (v) => setVal({ ...val, va: v }))}
-
       {showNear && (
         <>
           <p className={`${SECTION_LABEL} mt-2`}>Near</p>
@@ -619,7 +650,8 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
       <div className="w-full min-w-0 rounded border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-1.5 py-1 text-caption sm:text-xs text-[var(--color-ink-800)] tabular-nums">{value}</div>
     </div>
   );
-  const historyEyeFields = (rx: RxFields) => (
+
+  const historyEyeFields = (rx: RxEye, showNear: boolean) => (
     <div className="grid grid-cols-2 sm:grid-cols-[88px_88px_64px_20px_80px] gap-x-2 gap-y-2 items-end">
       <p className={SECTION_LABEL}>Distance</p>
       {roBox("Sph", fmtSigned(rx.sph))}
@@ -627,27 +659,28 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
       {roBox("Axis°", parseSignedVal(rx.axis).mag || "—")}
       <div aria-hidden="true" className="hidden sm:block" />
       {roBox("Resulting VA", rx.va || "—")}
-      <p className={`${SECTION_LABEL} mt-2`}>Near</p>
-      {roBox("Sph (Add)", fmtSigned(rx.nearSph))}
-      {roBox("Resulting NV", rx.nearVa || "—", "col-start-2 sm:col-start-5")}
+      {showNear && (
+        <>
+          <p className={`${SECTION_LABEL} mt-2`}>Near</p>
+          {roBox("Sph (Add)", fmtSigned(rx.nearSph))}
+          {roBox("Resulting NV", rx.nearVa || "—", "col-start-2 sm:col-start-5")}
+        </>
+      )}
     </div>
   );
 
-  const hasRxData = (rx: typeof re) => Object.values(rx).some(Boolean);
-
   const loadRx = (pr: typeof priorRefractions[0]) => {
-    setRe({ ...emptyRx, ...pr.re });
-    setLe({ ...emptyRx, ...pr.le });
+    const prEntry = pr.correction.methods[pr.correction.activeMethod];
+    if (!prEntry) return;
+    setC1((prev) => patchEntry(prev, (ent) => ({ ...ent, re: { ...prEntry.re }, le: { ...prEntry.le } })));
     setShowHistory(false);
     setRxToast(true);
   };
 
   const handleHistoryDoubleClick = (pr: typeof priorRefractions[0]) => {
-    if (hasRxData(re) || hasRxData(le)) {
-      setConfirmRx(pr);
-    } else {
-      loadRx(pr);
-    }
+    const ent = activeEntry(c1);
+    const hasData = Object.values(ent.re).some(Boolean) || Object.values(ent.le).some(Boolean);
+    if (hasData) { setConfirmRx(pr); } else { loadRx(pr); }
   };
 
   return (
@@ -660,12 +693,8 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
             <span className="text-caption sm:text-xs text-[var(--color-ink-400)]">Method:</span>
             <select
               disabled={!editable}
-              value={re.method || le.method || DEFAULT_REFRACTION_METHOD}
-              onChange={(e) => {
-                const m = e.target.value;
-                setRe(applyMethod(re, m));
-                setLe(applyMethod(le, m));
-              }}
+              value={c1.activeMethod}
+              onChange={(e) => setC1((prev) => ({ ...prev, activeMethod: e.target.value }))}
               className="rounded-lg border border-[var(--color-border)] bg-white px-2.5 py-1 text-xs disabled:bg-[var(--color-surface-sunken)]"
             >
               {REFRACTION_METHODS.map((m) => <option key={m}>{m}</option>)}
@@ -674,10 +703,10 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
         </div>
         <div className="flex items-center justify-end gap-2 ml-auto flex-wrap">
           <ArSlipUpload
-            url={re.arSlipUrl}
+            url={activeEntry(c1).arSlipUrl}
             editable={editable}
             label="Correction 1"
-            onChange={(url) => setRe({ ...re, arSlipUrl: url })}
+            onChange={(url) => setC1((prev) => patchEntry(prev, (ent) => ({ ...ent, arSlipUrl: url })))}
           />
           {priorRefractions.length > 0 && (
             <button
@@ -692,9 +721,29 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
           <SaveIndicator state={state} />
         </div>
       </div>
+      {/* Per-method print checkbox — reflects the currently selected method */}
+      <div className="flex justify-end mb-3">
+        <label className="flex items-center gap-1.5 text-caption cursor-pointer select-none text-[var(--color-ink-500)] hover:text-[var(--color-ink-700)]">
+          <input
+            type="checkbox"
+            checked={activeEntry(c1).includedInPrint}
+            onChange={(e) => { const v = e.target.checked; setC1((prev) => patchEntry(prev, (ent) => ({ ...ent, includedInPrint: v }))); }}
+            className="accent-[var(--color-primary-600)]"
+          />
+          Include in summary &amp; print
+        </label>
+      </div>
       <EyeColumns>
-        {eyeFields(re, setRe, methodHasNear(re.method || le.method))}
-        {eyeFields(le, setLe, methodHasNear(re.method || le.method))}
+        {eyeFields(
+          activeEntry(c1).re,
+          (re) => setC1((prev) => patchEntry(prev, (ent) => ({ ...ent, re }))),
+          methodHasNear(c1.activeMethod)
+        )}
+        {eyeFields(
+          activeEntry(c1).le,
+          (le) => setC1((prev) => patchEntry(prev, (ent) => ({ ...ent, le }))),
+          methodHasNear(c1.activeMethod)
+        )}
       </EyeColumns>
 
       {/* ── Extra corrections ── */}
@@ -707,24 +756,20 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
                 <span className="text-caption sm:text-xs text-[var(--color-ink-400)]">Method:</span>
                 <select
                   disabled={!editable}
-                  value={ex.re.method || ex.le.method || DEFAULT_REFRACTION_METHOD}
-                  onChange={(e) => {
-                    const m = e.target.value;
-                    updateExtra(idx, "re", applyMethod(ex.re, m));
-                    updateExtra(idx, "le", applyMethod(ex.le, m));
-                  }}
+                  value={ex.activeMethod}
+                  onChange={(e) => setExtra(idx, (prev) => ({ ...prev, activeMethod: e.target.value }))}
                   className="rounded-lg border border-[var(--color-border)] bg-white px-2.5 py-1 text-xs disabled:bg-[var(--color-surface-sunken)]"
                 >
                   {REFRACTION_METHODS.map((m) => <option key={m}>{m}</option>)}
                 </select>
               </div>
             </div>
-            <div className="ml-auto flex items-center gap-2 shrink-0">
+            <div className="ml-auto flex items-center gap-2 shrink-0 flex-wrap">
               <ArSlipUpload
-                url={ex.arSlipUrl}
+                url={activeEntry(ex).arSlipUrl}
                 editable={editable}
                 label={ex.label}
-                onChange={(url) => setExtras((prev) => prev.map((item, itemIdx) => itemIdx === idx ? { ...item, arSlipUrl: url } : item))}
+                onChange={(url) => setExtra(idx, (prev) => patchEntry(prev, (ent) => ({ ...ent, arSlipUrl: url })))}
               />
               {editable && (
                 <button
@@ -737,9 +782,29 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
               )}
             </div>
           </div>
+          {/* Per-method print checkbox */}
+          <div className="flex justify-end mb-3">
+            <label className="flex items-center gap-1.5 text-caption cursor-pointer select-none text-[var(--color-ink-500)] hover:text-[var(--color-ink-700)]">
+              <input
+                type="checkbox"
+                checked={activeEntry(ex).includedInPrint}
+                onChange={(e) => { const v = e.target.checked; setExtra(idx, (prev) => patchEntry(prev, (ent) => ({ ...ent, includedInPrint: v }))); }}
+                className="accent-[var(--color-primary-600)]"
+              />
+              Include in summary &amp; print
+            </label>
+          </div>
           <EyeColumns>
-            {eyeFields(ex.re, (v) => updateExtra(idx, "re", typeof v === "function" ? v(ex.re) : v), methodHasNear(ex.re.method || ex.le.method))}
-            {eyeFields(ex.le, (v) => updateExtra(idx, "le", typeof v === "function" ? v(ex.le) : v), methodHasNear(ex.re.method || ex.le.method))}
+            {eyeFields(
+              activeEntry(ex).re,
+              (re) => setExtra(idx, (prev) => patchEntry(prev, (ent) => ({ ...ent, re }))),
+              methodHasNear(ex.activeMethod)
+            )}
+            {eyeFields(
+              activeEntry(ex).le,
+              (le) => setExtra(idx, (prev) => patchEntry(prev, (ent) => ({ ...ent, le }))),
+              methodHasNear(ex.activeMethod)
+            )}
           </EyeColumns>
         </div>
       ))}
@@ -762,20 +827,27 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
             <p className="text-micro sm:text-caption text-[#0D9488]">Double-click an entry to load it</p>
           </div>
           <div className="flex flex-col gap-3">
-            {priorRefractions.map((pr, i) => (
-              <div
-                key={i}
-                onDoubleClick={() => handleHistoryDoubleClick(pr)}
-                title="Double-click to load this prescription"
-                className="rounded-lg border border-[#B2DEDA] bg-white p-4 cursor-pointer select-none transition-all hover:border-[#0F766E]/40 hover:shadow-sm"
-              >
-                <p className="text-caption sm:text-caption font-bold text-[#0F766E] mb-3">{format(new Date(pr.date), "dd MMM yyyy")}</p>
-                <EyeColumns>
-                  {historyEyeFields(pr.re)}
-                  {historyEyeFields(pr.le)}
-                </EyeColumns>
-              </div>
-            ))}
+            {priorRefractions.map((pr, i) => {
+              const prEnt = pr.correction.methods[pr.correction.activeMethod];
+              const prShowNear = methodHasNear(pr.correction.activeMethod);
+              return (
+                <div
+                  key={i}
+                  onDoubleClick={() => handleHistoryDoubleClick(pr)}
+                  title="Double-click to load this prescription"
+                  className="rounded-lg border border-[#B2DEDA] bg-white p-4 cursor-pointer select-none transition-all hover:border-[#0F766E]/40 hover:shadow-sm"
+                >
+                  <p className="text-caption sm:text-caption font-bold text-[#0F766E] mb-1">{format(new Date(pr.date), "dd MMM yyyy")}</p>
+                  <p className="text-micro sm:text-caption text-[#0D9488] mb-3">{pr.correction.activeMethod}</p>
+                  {prEnt && (
+                    <EyeColumns>
+                      {historyEyeFields(prEnt.re, prShowNear)}
+                      {historyEyeFields(prEnt.le, prShowNear)}
+                    </EyeColumns>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

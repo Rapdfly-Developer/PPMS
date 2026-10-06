@@ -119,13 +119,47 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
         duration: m.duration, instructions: m.instructions ?? null,
         route: m.route ?? null, laterality: m.laterality ?? null,
       })),
-      opticalRx: {
-        re: parseJSON(rc?.re, { sph: "", cyl: "", axis: "", nearSph: "", nearCyl: "", nearAxis: "" }),
-        le: parseJSON(rc?.le, { sph: "", cyl: "", axis: "", nearSph: "", nearCyl: "", nearAxis: "" }),
-      },
-      extraCorrections: inclExtras
-        ? (parseJSON((rc as any)?.extraCorrections, []) as { label: string; re: any; le: any }[]) || null
-        : null,
+      opticalRx: null,
+      extraCorrections: (() => {
+        type FlatCorr = { label: string; re: any; le: any; method: string };
+        const c1Corrs: FlatCorr[] = [];
+        const extraCorrs: FlatCorr[] = [];
+        const reRaw = parseJSON(rc?.re, {} as any);
+        if (reRaw._v === 2) {
+          const methods = (reRaw.methods || {}) as Record<string, { re: any; le: any; includedInPrint?: boolean }>;
+          Object.entries(methods).forEach(([method, entry]) => {
+            if (entry.includedInPrint !== false && Object.values(entry.re || {}).some(Boolean)) {
+              c1Corrs.push({ label: "Correction 1", re: entry.re || {}, le: entry.le || {}, method });
+            }
+          });
+        } else {
+          const rcRe = parseJSON(rc?.re, { sph: "", cyl: "", axis: "", nearSph: "", nearCyl: "", nearAxis: "", includedInPrint: true } as any);
+          if (rcRe.includedInPrint !== false) {
+            c1Corrs.push({ label: "Correction 1", re: rcRe, le: parseJSON(rc?.le, {} as any), method: rcRe.method || "" });
+          }
+        }
+        if (inclExtras) {
+          const rawExtras: any[] = parseJSON((rc as any)?.extraCorrections, []);
+          rawExtras.forEach((ex: any) => {
+            if (ex._v === 2) {
+              const methods = (ex.methods || {}) as Record<string, { re: any; le: any; includedInPrint?: boolean }>;
+              Object.entries(methods).forEach(([method, entry]) => {
+                if (entry.includedInPrint !== false && Object.values(entry.re || {}).some(Boolean)) {
+                  extraCorrs.push({ label: ex.label, re: entry.re || {}, le: entry.le || {}, method });
+                }
+              });
+            } else {
+              if (ex.includedInPrint !== false) {
+                extraCorrs.push({ label: ex.label, re: ex.re || {}, le: ex.le || {}, method: ex.re?.method || "" });
+              }
+            }
+          });
+        }
+        const all = [...c1Corrs, ...extraCorrs];
+        return all.length > 0
+          ? all.map((c) => ({ label: c.label, re: { ...c.re, method: c.method }, le: { ...c.le, method: c.method } }))
+          : null;
+      })(),
       retinoscopy: (() => {
         if (!inclRetino) return null;
         const reti = visit.retinoscopy as any;

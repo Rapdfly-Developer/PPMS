@@ -50,14 +50,55 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
 
   // Use pinned spectacle Rx if set, otherwise fall back to current visit's refraction
   const rc = spectRc ?? visit.refraction ?? null;
-  const re = parseJSON((rc as any)?.re, { sph: "", cyl: "", axis: "", nearSph: "", va: "", nearVa: "" });
-  const le = parseJSON((rc as any)?.le, { sph: "", cyl: "", axis: "", nearSph: "", va: "", nearVa: "" });
 
-  const hasOptical = rc && (re.sph || re.cyl || re.axis || le.sph || le.cyl || le.axis || re.nearSph || le.nearSph || re.va || le.va);
+  // Collect all checked corrections as a flat list, handling both v1 and v2 storage formats.
+  type FlatCorr = { label: string; re: Record<string, string>; le: Record<string, string>; method: string };
+  const c1Corrections: FlatCorr[] = [];
+  const extraCorrectionsList: FlatCorr[] = [];
+
+  const reRaw = parseJSON((rc as any)?.re, {} as any);
+  if (reRaw._v === 2) {
+    // v2: per-method map stored in re field
+    const methods = (reRaw.methods || {}) as Record<string, { re: any; le: any; includedInPrint?: boolean }>;
+    Object.entries(methods).forEach(([method, entry]) => {
+      if (entry.includedInPrint !== false && Object.values(entry.re || {}).some(Boolean)) {
+        c1Corrections.push({ label: "Correction 1", re: entry.re || {}, le: entry.le || {}, method });
+      }
+    });
+  } else {
+    // v1: flat re/le
+    const re = parseJSON((rc as any)?.re, { sph: "", cyl: "", axis: "", nearSph: "", va: "", nearVa: "" } as any);
+    const le = parseJSON((rc as any)?.le, { sph: "", cyl: "", axis: "", nearSph: "", va: "", nearVa: "" } as any);
+    const included = (re as any).includedInPrint !== false;
+    if (included && rc && (re.sph || re.cyl || re.axis || (le as any).sph || (le as any).cyl || (le as any).axis || re.nearSph || (le as any).nearSph || re.va || (le as any).va)) {
+      c1Corrections.push({ label: "Correction 1", re: re as any, le: le as any, method: (re as any).method || "" });
+    }
+  }
 
   // Extra corrections from current visit's refraction (not overridable by spv)
-  const rawExtras: { label: string; re: any; le: any }[] = parseJSON((visit.refraction as any)?.extraCorrections, []);
-  const extraCorrections = inclExtras && rawExtras.length > 0 ? rawExtras : null;
+  const rawExtras: any[] = parseJSON((visit.refraction as any)?.extraCorrections, []);
+  rawExtras.forEach((ex: any) => {
+    if (ex._v === 2) {
+      const methods = (ex.methods || {}) as Record<string, { re: any; le: any; includedInPrint?: boolean }>;
+      Object.entries(methods).forEach(([method, entry]) => {
+        if (entry.includedInPrint !== false && Object.values(entry.re || {}).some(Boolean)) {
+          extraCorrectionsList.push({ label: ex.label, re: entry.re || {}, le: entry.le || {}, method });
+        }
+      });
+    } else {
+      if (ex.includedInPrint !== false) {
+        extraCorrectionsList.push({ label: ex.label, re: ex.re || {}, le: ex.le || {}, method: ex.re?.method || "" });
+      }
+    }
+  });
+
+  const allCorrections = [
+    ...(inclRx ? c1Corrections : []),
+    ...(inclExtras ? extraCorrectionsList : []),
+  ];
+  const extraCorrections = allCorrections.length > 0
+    ? allCorrections.map((c) => ({ label: c.label, re: { ...c.re, method: c.method }, le: { ...c.le, method: c.method } }))
+    : null;
 
   // Visual Acuity
   const va = visit.visualAcuity as any;
@@ -131,7 +172,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
       status: inv.status,
       notes: inv.notes ?? null,
     })),
-    opticalRx: inclRx && hasOptical ? { re, le } : null,
+    opticalRx: null,
     extraCorrections,
     visualAcuity,
     retinoscopy,

@@ -796,10 +796,10 @@ export type ShortSummaryData = {
   medications: { drugName: string; dosage?: string | null; frequency?: string | null; duration?: string | null; instructions?: string | null; route?: string | null; laterality?: string | null }[];
   investigations: { testName: string; category: string; priority: string; laterality?: string | null; status: string; notes?: string | null }[];
   opticalRx?: {
-    re: { sph?: string; cyl?: string; axis?: string; nearSph?: string; va?: string; nearVa?: string };
-    le: { sph?: string; cyl?: string; axis?: string; nearSph?: string; va?: string; nearVa?: string };
+    re: { sph?: string; cyl?: string; axis?: string; nearSph?: string; va?: string; nearVa?: string; method?: string };
+    le: { sph?: string; cyl?: string; axis?: string; nearSph?: string; va?: string; nearVa?: string; method?: string };
   } | null;
-  extraCorrections?: { label: string; re: { sph?: string; cyl?: string; axis?: string; nearSph?: string; va?: string; nearVa?: string }; le: { sph?: string; cyl?: string; axis?: string; nearSph?: string; va?: string; nearVa?: string } }[] | null;
+  extraCorrections?: { label: string; re: { sph?: string; cyl?: string; axis?: string; nearSph?: string; va?: string; nearVa?: string; method?: string }; le: { sph?: string; cyl?: string; axis?: string; nearSph?: string; va?: string; nearVa?: string; method?: string } }[] | null;
   visualAcuity?: { reDistance?: { unaided?: string; ph?: string; bcva?: string } | null; leDistance?: { unaided?: string; ph?: string; bcva?: string } | null; reNear?: string | null; leNear?: string | null } | null;
   retinoscopy?: { re?: { sph?: string; cyl?: string; axis?: string } | null; le?: { sph?: string; cyl?: string; axis?: string } | null } | null;
   minorProcedure?: { procedureName?: string | null; procedureLaterality?: string | null; anesthesiaType?: string | null } | null;
@@ -1124,7 +1124,7 @@ ${d.investigations.length
 
 <!-- 5 · SPECTACLES / REFRACTION (only if an Rx exists) -->
 ${hasRx
-  ? card("Spectacles / Refraction",
+  ? card(`Spectacles / Refraction${d.opticalRx?.re.method || d.opticalRx?.le.method ? ` — ${escapeHtml(d.opticalRx!.re.method || d.opticalRx!.le.method || "")}` : ""}`,
       `<table>
         <thead><tr>
           <th style="${TH}width:90px;">Eye</th>
@@ -1144,8 +1144,9 @@ ${hasRx
 
 <!-- 5b · EXTRA CORRECTIONS -->
 ${d.extraCorrections && d.extraCorrections.length > 0
-  ? d.extraCorrections.map((ec) =>
-      card(`Extra Correction: ${escapeHtml(ec.label)}`,
+  ? d.extraCorrections.map((ec) => {
+      const ecMethod = ec.re?.method || ec.le?.method || "";
+      return card(`${escapeHtml(ec.label)}${ecMethod ? ` — ${escapeHtml(ecMethod)}` : ""}`,
         `<table>
           <thead><tr>
             <th style="${TH}width:90px;">Eye</th>
@@ -1160,8 +1161,8 @@ ${d.extraCorrections && d.extraCorrections.length > 0
             ${rxRowFn("Right Eye", ec.re?.sph, ec.re?.cyl, ec.re?.axis, ec.re?.va, ec.re?.nearSph, ec.re?.nearVa)}
             ${rxRowFn("Left Eye", ec.le?.sph, ec.le?.cyl, ec.le?.axis, ec.le?.va, ec.le?.nearSph, ec.le?.nearVa)}
           </tbody>
-        </table>`)
-    ).join("")
+        </table>`);
+    }).join("")
   : ""}
 
 <!-- 5c · VISUAL ACUITY -->
@@ -1305,11 +1306,11 @@ export type FullEmrData = {
   posteriorSegment?: { data?: Record<string, string[]>; cdr?: string | null; notes?: string | null } | null;
   diagnoses: { description: string; icd10Code: string; status: string; laterality?: string | null }[];
   medications: { drugName: string; dosage?: string | null; frequency?: string | null; duration?: string | null; instructions?: string | null; route?: string | null; laterality?: string | null }[];
-  opticalRx: {
-    re: { sph?: string; cyl?: string; axis?: string; nearSph?: string; nearCyl?: string; nearAxis?: string };
-    le: { sph?: string; cyl?: string; axis?: string; nearSph?: string; nearCyl?: string; nearAxis?: string };
-  };
-  extraCorrections?: { label: string; re: { sph?: string; cyl?: string; axis?: string; nearSph?: string; va?: string; nearVa?: string }; le: { sph?: string; cyl?: string; axis?: string; nearSph?: string; va?: string; nearVa?: string } }[] | null;
+  opticalRx?: {
+    re: { sph?: string; cyl?: string; axis?: string; nearSph?: string; nearCyl?: string; nearAxis?: string; method?: string };
+    le: { sph?: string; cyl?: string; axis?: string; nearSph?: string; nearCyl?: string; nearAxis?: string; method?: string };
+  } | null;
+  extraCorrections?: { label: string; re: { sph?: string; cyl?: string; axis?: string; nearSph?: string; va?: string; nearVa?: string; method?: string }; le: { sph?: string; cyl?: string; axis?: string; nearSph?: string; va?: string; nearVa?: string; method?: string } }[] | null;
   retinoscopy?: { re?: { sph?: string; cyl?: string; axis?: string } | null; le?: { sph?: string; cyl?: string; axis?: string } | null } | null;
   investigations: { testName: string; priority: string; status: string; result?: string | null; notes?: string | null }[];
 };
@@ -1751,7 +1752,7 @@ ${card("Medications Prescribed",
   </table>`)}
 
 <!-- 11 · OPTICAL PRESCRIPTION -->
-${card("Optical Prescription (Refraction)",
+${d.opticalRx ? card(`Optical Prescription${d.opticalRx.re.method || d.opticalRx.le.method ? ` — ${escapeHtml(d.opticalRx.re.method || d.opticalRx.le.method || "")}` : ""}`,
   `<table style="width:100%;border-collapse:collapse;">
     <thead><tr>
       <th style="${TH}width:110px;">Eye</th>
@@ -1763,7 +1764,7 @@ ${card("Optical Prescription (Refraction)",
     <tbody>
       ${["re", "le"].flatMap((eye, ei) =>
         [["Distance", "sph", "cyl", "axis", "nearSph"], ["Near Add", "nearSph", "nearCyl", "nearAxis", ""]].map(([sub, s, c, a, n], ri) => {
-          const rx = d.opticalRx[eye as "re" | "le"] as any;
+          const rx = d.opticalRx![eye as "re" | "le"] as any;
           const hasData = rx?.[s] || rx?.[c] || rx?.[a];
           if (sub === "Near Add" && !hasData) return "";
           return `<tr style="background:${(ei * 2 + ri) % 2 === 0 ? "#fff" : TINT};">` +
@@ -1775,12 +1776,13 @@ ${card("Optical Prescription (Refraction)",
             `</tr>`;
         })).join("")}
     </tbody>
-  </table>`)}
+  </table>`) : ""}
 
 <!-- 11b · EXTRA CORRECTIONS -->
 ${d.extraCorrections && d.extraCorrections.length > 0
-  ? d.extraCorrections.map((ec) =>
-      card(`Extra Correction: ${escapeHtml(ec.label)}`,
+  ? d.extraCorrections.map((ec) => {
+      const ecMethod = ec.re?.method || ec.le?.method || "";
+      return card(`${escapeHtml(ec.label)}${ecMethod ? ` — ${escapeHtml(ecMethod)}` : ""}`,
         `<table style="width:100%;border-collapse:collapse;"><thead><tr>
           <th style="${TH}width:110px;">Eye</th>
           <th style="${TH}text-align:center;">SPH</th>
@@ -1800,8 +1802,8 @@ ${d.extraCorrections && d.extraCorrections.length > 0
               `<td style="${TD}text-align:center;">${v2(rx?.nearSph)}</td>` +
               `</tr>`;
           }).join("")}
-        </tbody></table>`)
-    ).join("")
+        </tbody></table>`);
+    }).join("")
   : ""}
 
 <!-- 11c · RETINOSCOPY -->
