@@ -249,7 +249,7 @@ function TableApptRow({ appt, scope, canManageQueue, canViewPatient, consultantN
       <td className="px-4 py-3 hidden lg:table-cell">
         <span className={clsx(
           "inline-flex items-center px-2.5 py-1 rounded-full text-caption font-semibold whitespace-nowrap",
-          visitTypeLabel === "Follow-up" ? "bg-purple-100 text-purple-700" : "bg-blue-100 text-blue-700"
+          visitTypeLabel === "Follow-up" ? "bg-purple-100 text-purple-700" : visitTypeLabel === "Walk-in" ? "bg-gray-100 text-gray-500" : "bg-blue-100 text-blue-700"
         )}>
           {visitTypeLabel}
         </span>

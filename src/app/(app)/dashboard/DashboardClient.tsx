@@ -224,7 +224,7 @@ function ApptRow({ appt, scope, serial, canManageQueue, canViewPatient, returnTo
           >
             {appt.isWalkIn ? format(new Date(appt.createdAt), "hh:mm a") : apptTime}
           </span>
-          <span className="inline-flex items-center gap-1 mt-0.5 whitespace-nowrap text-caption text-blue-600">
+          <span className={`inline-flex items-center gap-1 mt-0.5 whitespace-nowrap text-caption ${appt.isWalkIn ? "text-gray-400" : "text-blue-600"}`}>
             <Calendar size={10} className="shrink-0" />
             {appt.isWalkIn
               ? "Walk-in"

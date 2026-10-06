@@ -129,6 +129,8 @@ export function Sidebar({
 }) {
   const pathname  = usePathname();
   const { open, close, collapsed, toggleCollapsed } = useSidebar();
+  // On mobile overlay (open=true), always show full labels regardless of collapsed state
+  const effectiveCollapsed = collapsed && !open;
 
   const entries      = filterNav(role, permissions);
   const mainEntries  = entries.filter((e) => e.href !== "/settings");
@@ -191,9 +193,9 @@ export function Sidebar({
         <div style={{
           display: "flex",
           alignItems: "center",
-          justifyContent: collapsed ? "center" : undefined,
-          gap: collapsed ? 0 : 12,
-          padding: collapsed ? "20px 12px 24px" : "20px 20px 24px",
+          justifyContent: effectiveCollapsed ? "center" : undefined,
+          gap: effectiveCollapsed ? 0 : 12,
+          padding: effectiveCollapsed ? "20px 12px 24px" : "20px 20px 24px",
           paddingTop: "calc(28px + env(safe-area-inset-top, 0px))",
         }}>
           <div style={{ position: "relative", flexShrink: 0 }}>
@@ -210,7 +212,7 @@ export function Sidebar({
             <span style={{ position: "absolute", bottom: -1, right: -1, width: 10, height: 10, borderRadius: "50%", background: "#34D399", outline: "2.5px solid #0B3A36" }} />
           </div>
 
-          {!collapsed && (
+          {!effectiveCollapsed && (
             <div style={{ minWidth: 0, flex: 1 }}>
               <p style={{ fontSize: "var(--sb-brand)", fontWeight: 700, lineHeight: 1, letterSpacing: "0.02em", color: "#F4FCFA", margin: 0 }}>
                 RF Health<span style={{ color: "#5EEAD4" }}>.</span>
@@ -235,8 +237,8 @@ export function Sidebar({
         <div style={{ margin: "0 20px", height: 1, background: "linear-gradient(to right, rgba(255,255,255,0.14), rgba(255,255,255,0.05), transparent)" }} />
 
         {/* Nav */}
-        <nav style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: collapsed ? "16px 8px 0" : "20px 12px 0", display: "flex", flexDirection: "column", gap: 3 }}>
-          {!collapsed && (
+        <nav style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: effectiveCollapsed ? "16px 8px 0" : "20px 12px 0", display: "flex", flexDirection: "column", gap: 3 }}>
+          {!effectiveCollapsed && (
             <p style={{ padding: "0 14px 10px", fontSize: "var(--sb-eyebrow)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.22em", color: "#5E8F88", userSelect: "none" }}>
               Overview
             </p>
@@ -248,24 +250,24 @@ export function Sidebar({
               active={isActive(entry.href)}
               locked={!licenseActive}
               onClick={close}
-              collapsed={collapsed}
+              collapsed={effectiveCollapsed}
             />
           ))}
         </nav>
 
         {/* Bottom rail */}
-        <div style={{ padding: collapsed ? "8px 8px 16px" : "8px 12px 16px", display: "flex", flexDirection: "column", gap: 3 }}>
+        <div style={{ padding: effectiveCollapsed ? "8px 8px 16px" : "8px 12px 16px", display: "flex", flexDirection: "column", gap: 3 }}>
           {settingsItem && (
             <>
-              {!collapsed && <div style={{ margin: "0 8px 8px", height: 1, background: "linear-gradient(to right, transparent, rgba(255,255,255,0.09), transparent)" }} />}
-              <NavLink item={settingsItem} active={isActive(settingsItem.href)} onClick={close} collapsed={collapsed} />
+              {!effectiveCollapsed && <div style={{ margin: "0 8px 8px", height: 1, background: "linear-gradient(to right, transparent, rgba(255,255,255,0.09), transparent)" }} />}
+              <NavLink item={settingsItem} active={isActive(settingsItem.href)} onClick={close} collapsed={effectiveCollapsed} />
             </>
           )}
           <div style={{
             marginTop: 8, display: "flex", alignItems: "center",
-            justifyContent: collapsed ? "center" : undefined,
-            gap: collapsed ? 0 : 12,
-            borderRadius: 16, padding: collapsed ? "12px 8px" : "12px",
+            justifyContent: effectiveCollapsed ? "center" : undefined,
+            gap: effectiveCollapsed ? 0 : 12,
+            borderRadius: 16, padding: effectiveCollapsed ? "12px 8px" : "12px",
             outline: "1px solid rgba(255,255,255,0.09)",
             background: "rgba(255,255,255,0.045)",
             boxShadow: "inset 0 1px 0 rgba(255,255,255,0.06), 0 10px 24px -14px rgba(0,0,0,0.7)",
@@ -278,7 +280,7 @@ export function Sidebar({
             }}>
               {initialsOf(name)}
             </div>
-            {!collapsed && (
+            {!effectiveCollapsed && (
               <div style={{ minWidth: 0 }}>
                 <p style={{ fontSize: "var(--sb-name)", fontWeight: 600, color: "#EDF9F6", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", lineHeight: 1.2 }}>{name}</p>
                 <div style={{ marginTop: 2, display: "flex", alignItems: "center", gap: 6 }}>

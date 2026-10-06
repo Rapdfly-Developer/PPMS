@@ -175,7 +175,7 @@ export async function createWalkInEncounter(formData: FormData) {
   });
 
   if (intent === "addToQ") {
-    redirect("/appointments");
+    redirect("/opd");
   }
 
   const visit = await prisma.visit.create({
