@@ -194,7 +194,7 @@ export async function doctorConfirmAppointment(appointmentId: string): Promise<v
   revalidatePath("/dashboard");
 }
 
-// ── Undo queue entry: revert CONFIRMED → REQUESTED (move patient back to Visit time) ──
+// ── Undo queue entry: restore the appointment's exact pre-queue status ────────
 export async function undoQueueEntry(appointmentId: string): Promise<void> {
   // Permission, not role: the old requireRole("DOCTOR") locked this away from
   // hospital staff who are granted it, and handed it to every doctor whether or
@@ -208,13 +208,35 @@ export async function undoQueueEntry(appointmentId: string): Promise<void> {
   if (!appt) throw new Error("Appointment not found");
   if (appt.status !== "CONFIRMED") throw new Error("Only Waiting appointments can be moved back.");
 
+  // Look up the status the appointment had before it entered the queue.
+  // addToQueue writes the pre-queue status into oldValue of the CONFIRMED audit.
+  // Fall back to REQUESTED for appointments queued before this audit field was added.
+  let restoreStatus = "REQUESTED";
+  const queueAudit = await prisma.auditLog.findFirst({
+    where: { entityType: "Appointment", entityId: appointmentId, action: "CONFIRMED", oldValue: { not: null } },
+    orderBy: { timestamp: "desc" },
+  });
+  if (queueAudit?.oldValue) {
+    try {
+      const parsed = JSON.parse(queueAudit.oldValue) as { preQueueStatus?: string };
+      if (parsed?.preQueueStatus) restoreStatus = parsed.preQueueStatus;
+    } catch {}
+  }
+
   await prisma.appointment.update({
     where: { id: appointmentId },
-    data: { status: "REQUESTED", arrivedAt: null },
+    data: { status: restoreStatus, arrivedAt: null },
   });
 
-  writeAudit(userId, "Appointment", appointmentId, "APPOINTMENT_REQUESTED",
-    { patient: appt.patient.name, hospital: appt.hospital.name, note: "Moved back to Visit time" },
+  // If restoring to CONFIRMED (was pre-confirmed before queuing), preserve the
+  // confirmation audit trail — just log a note that arrivedAt/queue state was cleared.
+  const auditAction = restoreStatus === "CONFIRMED" ? "CONFIRMED" : "APPOINTMENT_REQUESTED";
+  const auditNote   = restoreStatus === "CONFIRMED"
+    ? "Removed from OPD queue (pre-confirmed; confirmation preserved)"
+    : "Moved back to Visit time";
+
+  writeAudit(userId, "Appointment", appointmentId, auditAction,
+    { patient: appt.patient.name, hospital: appt.hospital.name, note: auditNote },
     { moduleName: "Appointment", actionType: "UPDATE",
       hospitalId: appt.hospitalId, userName: appt.patient.name });
 
@@ -491,6 +513,8 @@ export async function addToQueue(appointmentId: string): Promise<void> {
     if (appt.hospitalId !== hospitalId) throw new Error("Forbidden");
   }
 
+  const preQueueStatus = appt.status; // captured before the update for undo restoration
+
   await prisma.appointment.update({
     where: { id: appointmentId },
     data: { status: "CONFIRMED", arrivedAt: new Date() },
@@ -515,9 +539,10 @@ export async function addToQueue(appointmentId: string): Promise<void> {
     }
   }
 
+  // oldValue stores the pre-queue status so undoQueueEntry can restore it exactly.
   writeAudit(user.id, "Appointment", appointmentId, "CONFIRMED",
     { patient: appt.patient.name, hospital: appt.hospital.name, note: "Added to OPD queue" },
-    { moduleName: "Appointment", actionType: "UPDATE",
+    { oldValue: { preQueueStatus }, moduleName: "Appointment", actionType: "UPDATE",
       hospitalId: appt.hospitalId, userName: appt.patient.name });
 
   revalidatePath("/appointments");
