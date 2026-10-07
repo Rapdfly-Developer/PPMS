@@ -98,6 +98,15 @@ export function UserProfileClient({
   const [secPending, startSecTransition] = useTransition();
   const [secMsg, setSecMsg]     = useState<{ type: "success" | "error"; text: string } | null>(null);
 
+  const pwCriteria = {
+    length:    password.length >= 8,
+    uppercase: /[A-Z]/.test(password),
+    lowercase: /[a-z]/.test(password),
+    number:    /[0-9]/.test(password),
+    special:   /[^A-Za-z0-9]/.test(password),
+  };
+  const pwScore = Object.values(pwCriteria).filter(Boolean).length;
+
   const [isActive, setIsActive]   = useState(active);
   const [toggling, startToggleTransition] = useTransition();
 
@@ -128,7 +137,7 @@ export function UserProfileClient({
   function handleSecurity(e: React.FormEvent) {
     e.preventDefault();
     if (!password) { setSecMsg({ type: "error", text: "Enter a new password." }); return; }
-    if (password.length < 6) { setSecMsg({ type: "error", text: "Password must be at least 6 characters." }); return; }
+    if (password.length < 8) { setSecMsg({ type: "error", text: "Password must be at least 8 characters." }); return; }
     setSecMsg(null);
     const fd = new FormData();
     fd.set("name",       name);
@@ -321,7 +330,55 @@ export function UserProfileClient({
                     {showPw ? <EyeOff size={14} /> : <Eye size={14} />}
                   </button>
                 </div>
-                <p className="text-caption text-[var(--color-ink-400)]">Minimum 6 characters.</p>
+                {/* Strength bar */}
+                {password.length > 0 && (
+                  <div className="mt-2 space-y-1.5">
+                    <div className="flex items-center gap-2">
+                      <div className="flex gap-1 flex-1">
+                        {[1, 2, 3, 4, 5].map((i) => (
+                          <div
+                            key={i}
+                            className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
+                              i <= pwScore
+                                ? pwScore <= 2 ? "bg-red-400"
+                                : pwScore <= 3 ? "bg-amber-400"
+                                : pwScore <= 4 ? "bg-yellow-400"
+                                : "bg-emerald-500"
+                                : "bg-[var(--color-border)]"
+                            }`}
+                          />
+                        ))}
+                      </div>
+                      <span className={`text-caption font-semibold shrink-0 ${
+                        pwScore <= 2 ? "text-red-500"
+                        : pwScore <= 3 ? "text-amber-500"
+                        : pwScore <= 4 ? "text-yellow-600"
+                        : "text-emerald-600"
+                      }`}>
+                        {pwScore <= 2 ? "Weak" : pwScore <= 3 ? "Fair" : pwScore <= 4 ? "Good" : "Strong"}
+                      </span>
+                    </div>
+                    <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-0.5 mt-1">
+                      {([
+                        [pwCriteria.length,    "At least 8 characters"],
+                        [pwCriteria.uppercase, "One uppercase letter (A–Z)"],
+                        [pwCriteria.lowercase, "One lowercase letter (a–z)"],
+                        [pwCriteria.number,    "One number (0–9)"],
+                        [pwCriteria.special,   "One special character (!@#$…)"],
+                      ] as [boolean, string][]).map(([met, label]) => (
+                        <li key={label} className={`flex items-center gap-1.5 text-caption transition-colors ${met ? "text-emerald-600" : "text-[var(--color-ink-400)]"}`}>
+                          <span className={`inline-flex shrink-0 w-3.5 h-3.5 rounded-full items-center justify-center ${met ? "bg-emerald-500" : "bg-[var(--color-border)]"}`}>
+                            {met && <Check size={8} className="text-white" strokeWidth={3} />}
+                          </span>
+                          {label}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {password.length === 0 && (
+                  <p className="text-caption text-[var(--color-ink-400)]">Minimum 8 characters.</p>
+                )}
               </div>
 
               {secMsg && <Msg msg={secMsg} />}
