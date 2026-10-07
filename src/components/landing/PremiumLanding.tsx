@@ -252,20 +252,9 @@ function JourneyPanel() {
         lede="Every stage writes to the same record, so the next person to see the patient starts from what actually happened rather than from what was remembered."
       />
 
-      <div className="mt-8 grid gap-5 sm:mt-10 lg:grid-cols-[1.1fr_0.9fr]">
-        <Reveal variant="image">
-          <Frame
-            src={`${IMG}/patient-preliminary-analysis-scan.jpg`}
-            alt="A clinician reviewing a patient's preliminary analysis on a full-body diagnostic display"
-            aspect="aspect-[2/3]"
-            sizes="(max-width: 1024px) 92vw, 50vw"
-            quality={82}
-            radius="2.25rem"
-          />
-        </Reveal>
-
+      <div className="mt-8 grid gap-5 sm:mt-10 lg:grid-cols-[0.9fr_1.1fr]">
         <div className="flex flex-col gap-6">
-          <Reveal variant="image" delay={0.08}>
+          <Reveal variant="image">
             <Frame
               src={`${IMG}/wearable-vitals-hologram.jpg`}
               alt="Vital signs displayed above a wearable device during remote patient monitoring"
@@ -301,6 +290,17 @@ function JourneyPanel() {
           </RevealGroup>
           </ScrollRail>
         </div>
+
+        <Reveal>
+          <Frame
+            src={`${IMG}/patient-preliminary-analysis-scan.jpg`}
+            alt="A clinician reviewing a patient's preliminary analysis on a full-body diagnostic display"
+            aspect="aspect-[2/3]"
+            sizes="(max-width: 1024px) 92vw, 50vw"
+            quality={82}
+            radius="2.25rem"
+          />
+        </Reveal>
       </div>
     </>
   );
