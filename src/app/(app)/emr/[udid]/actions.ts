@@ -78,6 +78,13 @@ function revalidate(udid: string) {
   revalidatePath(`/emr/${udid}`);
 }
 
+// For auto-save actions the doctor is already on the page with fresh React
+// state, so blocking the save response for cache invalidation is unnecessary.
+// Defer it to after the response is sent so the "Saved" indicator appears faster.
+function revalidateAfter(udid: string) {
+  after(() => revalidate(udid));
+}
+
 // ── Start Visit ─────────────────────────────────────────────────────────
 
 export async function startVisit(patientId: string, appointmentId: string, udid: string) {
@@ -139,7 +146,7 @@ export async function saveGeneralExam(visitId: string, udid: string, data: Recor
     update: data,
   });
   await writeAudit(user.id, "GeneralExamination", visitId, "SAVE", data);
-  revalidate(udid);
+  revalidateAfter(udid);
 }
 
 // ── Past External Visits (OCR) ───────────────────────────────────────────
@@ -215,7 +222,7 @@ export async function saveVisualAcuity(visitId: string, udid: string, data: { te
     update: { ...data, reviewedByDoctor },
   });
   await writeAudit(user.id, "VisualAcuity", visitId, "SAVE", data);
-  revalidate(udid);
+  revalidateAfter(udid);
 }
 
 export async function saveRefraction(visitId: string, udid: string, data: { re: string; le: string; extraCorrections?: string }) {
@@ -253,7 +260,7 @@ export async function saveRefraction(visitId: string, udid: string, data: { re: 
     }
   } catch { /* best-effort, don't break refraction save */ }
 
-  revalidate(udid);
+  revalidateAfter(udid);
 }
 
 export async function sendToOpticals(visitId: string, udid: string) {
@@ -274,7 +281,7 @@ export async function saveColourVision(visitId: string, udid: string, data: { re
     update: { ...data, reviewedByDoctor },
   });
   await writeAudit(user.id, "ColourVisionCS", visitId, "SAVE", data);
-  revalidate(udid);
+  revalidateAfter(udid);
 }
 
 export async function addIOPReading(visitId: string, udid: string, data: { re?: number; le?: number; method: string }) {
@@ -311,7 +318,7 @@ export async function saveAnteriorSegment(visitId: string, udid: string, data: {
   await assertVisitAccess(visitId);
   await prisma.anteriorSegment.upsert({ where: { visitId }, create: { visitId, ...data }, update: data });
   await writeAudit(user.id, "AnteriorSegment", visitId, "SAVE", data);
-  revalidate(udid);
+  revalidateAfter(udid);
 }
 
 export async function savePosteriorSegment(visitId: string, udid: string, data: { re: string; le: string; notes?: string }) {
@@ -319,7 +326,7 @@ export async function savePosteriorSegment(visitId: string, udid: string, data: 
   await assertVisitAccess(visitId);
   await prisma.posteriorSegment.upsert({ where: { visitId }, create: { visitId, ...data }, update: data });
   await writeAudit(user.id, "PosteriorSegment", visitId, "SAVE", data);
-  revalidate(udid);
+  revalidateAfter(udid);
 }
 
 export async function saveDiplopia(visitId: string, udid: string, grid: string) {
@@ -328,7 +335,7 @@ export async function saveDiplopia(visitId: string, udid: string, grid: string) 
   await assertVisitAccess(visitId);
   await prisma.diplopiaChart.upsert({ where: { visitId }, create: { visitId, grid }, update: { grid } });
   await writeAudit(user.id, "DiplopiaChart", visitId, "SAVE", { grid });
-  revalidate(udid);
+  revalidateAfter(udid);
 }
 
 export async function saveHess(visitId: string, udid: string, grid: string, interpretation?: string) {
@@ -341,7 +348,7 @@ export async function saveHess(visitId: string, udid: string, grid: string, inte
     update: { grid, interpretation },
   });
   await writeAudit(user.id, "HessChart", visitId, "SAVE", { grid, interpretation });
-  revalidate(udid);
+  revalidateAfter(udid);
 }
 
 export async function saveRetinoscopy(visitId: string, udid: string, data: { re: string; le: string }) {
@@ -350,7 +357,7 @@ export async function saveRetinoscopy(visitId: string, udid: string, data: { re:
   await assertVisitAccess(visitId);
   await prisma.retinoscopy.upsert({ where: { visitId }, create: { visitId, ...data }, update: data });
   await writeAudit(user.id, "Retinoscopy", visitId, "SAVE", data);
-  revalidate(udid);
+  revalidateAfter(udid);
 }
 
 export async function getRefractionForVisit(visitId: string) {
@@ -366,7 +373,7 @@ export async function saveTearFilm(visitId: string, udid: string, data: Record<s
   await assertVisitAccess(visitId);
   await prisma.tearFilm.upsert({ where: { visitId }, create: { visitId, ...data }, update: data });
   await writeAudit(user.id, "TearFilm", visitId, "SAVE", data);
-  revalidate(udid);
+  revalidateAfter(udid);
 }
 
 export async function saveLacrimalSac(visitId: string, udid: string, data: { re: string; le: string }) {
@@ -375,7 +382,7 @@ export async function saveLacrimalSac(visitId: string, udid: string, data: { re:
   await assertVisitAccess(visitId);
   await prisma.lacrimalSacSyringing.upsert({ where: { visitId }, create: { visitId, ...data }, update: data });
   await writeAudit(user.id, "LacrimalSac", visitId, "SAVE", data);
-  revalidate(udid);
+  revalidateAfter(udid);
 }
 
 // ── Investigations ───────────────────────────────────────────────────────
@@ -394,7 +401,6 @@ export async function addInvestigationOrder(
   const existing = await prisma.investigationOrder.findMany({ where: { visitId }, select: { testName: true } });
   const norm = normalizeInvName(data.testName);
   if (existing.some((o) => normalizeInvName(o.testName) === norm)) {
-    revalidate(udid);
     return;
   }
   await prisma.investigationOrder.create({ data: { visitId, ...data } });
@@ -425,7 +431,7 @@ export async function updateInvestigationNotes(id: string, udid: string, notes: 
 
   await prisma.investigationOrder.update({ where: { id }, data: { notes: notes || null } });
   await writeAudit(user.id, "InvestigationOrder", id, "UPDATE_NOTES", { notes });
-  revalidate(udid);
+  revalidateAfter(udid);
 }
 
 export async function updateInvestigationStatus(id: string, udid: string, status: string) {
@@ -627,42 +633,42 @@ export async function saveGonioNotes(visitId: string, udid: string, data: { re: 
   await requireRole("DOCTOR");
   await assertVisitAccess(visitId);
   await prisma.visit.update({ where: { id: visitId }, data: { gonioNotes: JSON.stringify(data) } });
-  revalidate(udid);
+  revalidateAfter(udid);
 }
 
 export async function saveAdviseNotes(visitId: string, udid: string, notes: string) {
   await requireRole("DOCTOR");
   await assertVisitAccess(visitId);
   await prisma.visit.update({ where: { id: visitId }, data: { adviseNotes: notes } });
-  revalidate(udid);
+  revalidateAfter(udid);
 }
 
 export async function saveAnesthesiaType(visitId: string, udid: string, value: string) {
   await requireRole("DOCTOR");
   await assertVisitAccess(visitId);
   await prisma.visit.update({ where: { id: visitId }, data: { anesthesiaType: value || null } });
-  revalidate(udid);
+  revalidateAfter(udid);
 }
 
 export async function saveProcedureLaterality(visitId: string, udid: string, value: string) {
   await requireRole("DOCTOR");
   await assertVisitAccess(visitId);
   await prisma.visit.update({ where: { id: visitId }, data: { procedureLaterality: value || null } });
-  revalidate(udid);
+  revalidateAfter(udid);
 }
 
 export async function saveProcedureName(visitId: string, udid: string, value: string) {
   await requireRole("DOCTOR");
   await assertVisitAccess(visitId);
   await prisma.visit.update({ where: { id: visitId }, data: { procedureName: value || null } });
-  revalidate(udid);
+  revalidateAfter(udid);
 }
 
 export async function saveProcedureNotes(visitId: string, udid: string, value: string) {
   await requireRole("DOCTOR");
   await assertVisitAccess(visitId);
   await prisma.visit.update({ where: { id: visitId }, data: { procedureNotes: value || null } });
-  revalidate(udid);
+  revalidateAfter(udid);
 }
 
 export async function closeVisit(visitId: string, udid: string) {
