@@ -71,13 +71,11 @@ export default auth((req) => {
   const isPrivacyPage      = pathname.startsWith("/privacy");
   const isTermsPage        = pathname.startsWith("/terms");
   const isRefundPage       = pathname.startsWith("/refund");
-  const isSubPage          = pathname.startsWith("/sub_page") || pathname.startsWith("/sub/");
+  const isSubdomainPage    = pathname.startsWith("/sub/");
   const isLicensePage      = pathname.startsWith("/license");
   const isLicenseApi       = pathname.startsWith("/api/license");
   const isSetupPage        = pathname.startsWith("/setup");
   const isSetupApi         = pathname.startsWith("/api/setup");
-  const isSubscriptionPage = pathname.startsWith("/subscription");
-  const isRazorpayApi      = pathname.startsWith("/api/razorpay");
   const isCronApi          = pathname.startsWith("/api/cron");
   // Server-to-server and public endpoints that authenticate themselves (cron
   // secret, Razorpay signature) or are meant for anonymous visitors (landing
@@ -88,7 +86,7 @@ export default auth((req) => {
     || pathname === "/api/demo-request"
     || pathname === "/api/grievance-contact";
 
-  if (!isLoggedIn && !isLoginPage && !isLandingPage && !isPrivacyPage && !isTermsPage && !isRefundPage && !isSubPage && !isLicensePage && !isLicenseApi && !isSetupPage && !isSetupApi && !isSelfAuthedApi) {
+  if (!isLoggedIn && !isLoginPage && !isLandingPage && !isPrivacyPage && !isTermsPage && !isRefundPage && !isSubdomainPage && !isLicensePage && !isLicenseApi && !isSetupPage && !isSetupApi && !isSelfAuthedApi) {
     return NextResponse.redirect(new URL("/login", req.nextUrl.origin));
   }
   // Redirect logged-in users off the login page — but only for page
