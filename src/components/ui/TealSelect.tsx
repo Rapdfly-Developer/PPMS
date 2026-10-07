@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useRef, useEffect, useId } from "react";
+import { useState, useRef, useEffect, useId, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { ChevronDown, Check } from "lucide-react";
 
 export interface TealSelectOption {
@@ -30,20 +31,51 @@ export function TealSelect({
   variant = "filter",
 }: TealSelectProps) {
   const [open, setOpen] = useState(false);
+  const [panelStyle, setPanelStyle] = useState<React.CSSProperties>({});
   const ref = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLUListElement>(null);
   const panelId = useId();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => { setMounted(true); }, []);
 
   const selected = options.find((o) => o.value === value);
   const label = selected?.label ?? options[0]?.label ?? "";
 
+  const positionPanel = useCallback(() => {
+    if (!ref.current) return;
+    const rect = ref.current.getBoundingClientRect();
+    setPanelStyle({
+      position: "fixed",
+      top: rect.bottom + 4,
+      left: rect.left,
+      minWidth: rect.width,
+      zIndex: 9999,
+    });
+  }, []);
+
   useEffect(() => {
     if (!open) return;
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    positionPanel();
+    const onMouseDown = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (
+        (ref.current && ref.current.contains(target)) ||
+        (panelRef.current && panelRef.current.contains(target))
+      ) return;
+      setOpen(false);
     };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [open]);
+    const onScroll = () => positionPanel();
+    const onResize = () => positionPanel();
+    document.addEventListener("mousedown", onMouseDown);
+    window.addEventListener("scroll", onScroll, true);
+    window.addEventListener("resize", onResize);
+    return () => {
+      document.removeEventListener("mousedown", onMouseDown);
+      window.removeEventListener("scroll", onScroll, true);
+      window.removeEventListener("resize", onResize);
+    };
+  }, [open, positionPanel]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Escape") { setOpen(false); return; }
@@ -73,6 +105,36 @@ export function TealSelect({
       ? `shrink-0 transition-transform duration-150 text-white/70${open ? " rotate-180" : ""}`
       : `shrink-0 transition-transform duration-150 text-[var(--color-ink-400)]${open ? " rotate-180" : ""}`;
 
+  const panel = (
+    <ul
+      ref={panelRef}
+      id={panelId}
+      role="listbox"
+      style={panelStyle}
+      className="max-h-64 overflow-y-auto rounded-xl border border-[var(--color-border)] bg-white shadow-lg py-1 text-sm min-w-max"
+    >
+      {options.map((opt) => {
+        const isSel = opt.value === value;
+        return (
+          <li
+            key={opt.value}
+            role="option"
+            aria-selected={isSel}
+            onMouseDown={(e) => { e.preventDefault(); onChange(opt.value); setOpen(false); }}
+            className={`flex items-center justify-between px-3 py-2 cursor-pointer select-none${
+              isSel
+                ? " bg-teal-50 text-teal-700 font-medium"
+                : " text-[var(--color-ink-700)] hover:bg-teal-50 hover:text-teal-700"
+            }`}
+          >
+            <span className="truncate">{opt.label}</span>
+            {isSel && <Check size={12} className="shrink-0 text-teal-600 ml-2" />}
+          </li>
+        );
+      })}
+    </ul>
+  );
+
   return (
     <div ref={ref} className={`relative${className ? ` ${className}` : ""}`}>
       <button
@@ -89,33 +151,7 @@ export function TealSelect({
         <ChevronDown size={13} className={chevronCls} />
       </button>
 
-      {open && (
-        <ul
-          id={panelId}
-          role="listbox"
-          className="absolute z-50 mt-1 w-full min-w-max max-h-64 overflow-y-auto rounded-xl border border-[var(--color-border)] bg-white shadow-lg py-1 text-sm"
-        >
-          {options.map((opt) => {
-            const isSel = opt.value === value;
-            return (
-              <li
-                key={opt.value}
-                role="option"
-                aria-selected={isSel}
-                onMouseDown={(e) => { e.preventDefault(); onChange(opt.value); setOpen(false); }}
-                className={`flex items-center justify-between px-3 py-2 cursor-pointer select-none${
-                  isSel
-                    ? " bg-teal-50 text-teal-700 font-medium"
-                    : " text-[var(--color-ink-700)] hover:bg-teal-50 hover:text-teal-700"
-                }`}
-              >
-                <span className="truncate">{opt.label}</span>
-                {isSel && <Check size={12} className="shrink-0 text-teal-600 ml-2" />}
-              </li>
-            );
-          })}
-        </ul>
-      )}
+      {open && mounted && createPortal(panel, document.body)}
     </div>
   );
 }
