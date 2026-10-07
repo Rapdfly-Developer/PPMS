@@ -7,14 +7,15 @@ import {
   Save, CheckCircle2, ChevronRight, Upload, Plus, X,
   Crown, Check, Minus, Eye,
   Phone, MapPin, Mail, Globe, Clock,
-  Download, RefreshCw,
+  Download, RefreshCw, Lock, AlertTriangle,
 } from "lucide-react";
-import { updateHospitalSettings, saveHospitalLogo } from "./actions";
+import { updateHospitalSettings, saveHospitalLogo, changeOwnPassword } from "./actions";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type Section =
   | "hospital" | "departments" | "users"
-  | "appointments" | "notifications" | "backup" | "audit";
+  | "appointments" | "notifications" | "backup" | "audit"
+  | "change-password";
 
 type Hospital = {
   id: string; name: string; shortCode: string;
@@ -24,8 +25,9 @@ type Hospital = {
 
 // ── Sidebar nav ───────────────────────────────────────────────────────────────
 const NAV: { key: Section; label: string; icon: React.ReactNode; badge?: string }[] = [
-  { key: "hospital",      label: "Hospital Info",   icon: <Building2 size={15} />    },
-  { key: "notifications", label: "Notifications",   icon: <Bell size={15} />         },
+  { key: "hospital",         label: "Hospital Info",    icon: <Building2 size={15} /> },
+  { key: "notifications",    label: "Notifications",    icon: <Bell size={15} />      },
+  { key: "change-password",  label: "Change Password",  icon: <Lock size={15} />      },
 ];
 const DIVIDERS = new Set<number>();
 
@@ -787,6 +789,84 @@ function AuditLogsSection() {
   );
 }
 
+// ── Section: Change Password ──────────────────────────────────────────────────
+function ChangePasswordSection() {
+  const [form, setForm] = useState({ current: "", next: "", confirm: "" });
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setSuccess(false);
+    if (form.next !== form.confirm) { setError("New passwords do not match."); return; }
+    if (form.next.length < 6) { setError("New password must be at least 6 characters."); return; }
+    setBusy(true);
+    const res = await changeOwnPassword(form.current, form.next);
+    setBusy(false);
+    if (res.error) { setError(res.error); return; }
+    setSuccess(true);
+    setForm({ current: "", next: "", confirm: "" });
+  }
+
+  return (
+    <>
+      <SectionHeader title="Change Password" desc="Update your login password" />
+      <div className="max-w-md">
+        <Card className="p-5">
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <div>
+              <label className={LBL}>Current Password</label>
+              <input
+                type="password" required autoComplete="current-password"
+                value={form.current} onChange={(e) => setForm((f) => ({ ...f, current: e.target.value }))}
+                placeholder="••••••••" className={INP}
+              />
+            </div>
+            <div>
+              <label className={LBL}>New Password <span className="font-normal text-[var(--color-ink-400)]">(min 6 chars)</span></label>
+              <input
+                type="password" required autoComplete="new-password"
+                value={form.next} onChange={(e) => setForm((f) => ({ ...f, next: e.target.value }))}
+                placeholder="••••••••" className={INP}
+              />
+            </div>
+            <div>
+              <label className={LBL}>Confirm New Password</label>
+              <input
+                type="password" required autoComplete="new-password"
+                value={form.confirm} onChange={(e) => setForm((f) => ({ ...f, confirm: e.target.value }))}
+                placeholder="••••••••" className={INP}
+              />
+            </div>
+
+            {error && (
+              <p className="flex items-center gap-1.5 text-caption sm:text-xs text-red-600">
+                <AlertTriangle size={12} className="shrink-0" /> {error}
+              </p>
+            )}
+            {success && (
+              <p className="flex items-center gap-1.5 text-caption sm:text-xs text-emerald-600">
+                <Check size={12} className="shrink-0" /> Password updated successfully.
+              </p>
+            )}
+
+            <div className="pt-2 border-t border-[var(--color-border)]">
+              <button
+                type="submit" disabled={busy}
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[var(--color-primary-600)] text-white text-label sm:text-sm font-medium hover:bg-[var(--color-primary-700)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <Lock size={14} /> {busy ? "Updating…" : "Update Password"}
+              </button>
+            </div>
+          </form>
+        </Card>
+      </div>
+    </>
+  );
+}
+
 // ── Main Component ────────────────────────────────────────────────────────────
 export function HospitalSettingsClient({ hospital }: { hospital: Hospital }) {
   const [section,    setSection]    = useState<Section>("hospital");
@@ -804,8 +884,9 @@ export function HospitalSettingsClient({ hospital }: { hospital: Hospital }) {
       case "users":         return <UsersRolesSection />;
       case "appointments":  return <AppointmentsSection />;
       case "notifications": return <NotificationsSection />;
-      case "backup":        return <DataBackupSection hospital={hospital} onSaved={handleSaved} />;
-      case "audit":         return <AuditLogsSection />;
+      case "backup":           return <DataBackupSection hospital={hospital} onSaved={handleSaved} />;
+      case "audit":            return <AuditLogsSection />;
+      case "change-password":  return <ChangePasswordSection />;
     }
   }
 
