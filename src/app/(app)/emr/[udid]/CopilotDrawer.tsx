@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { X, Sparkles, ArrowRight, ShieldAlert } from "lucide-react";
+import { AiDisclaimer } from "@/components/ui/AiDisclaimer";
 import { useEmrTabs } from "./EmrTabsContext";
 import { useCopilotCard, type CopilotCardState } from "./copilot-cards-store";
 import { useDdx, usePlan, useGuidance, useRefractive, requestGuidance, requestRefractiveGuidance } from "./copilot-store";
@@ -714,22 +715,25 @@ export function CopilotDrawer({
 
         {/* Footer */}
         <div
-          className="shrink-0 px-4 sm:px-5 py-3 flex flex-wrap items-center justify-between gap-3"
+          className="shrink-0 px-4 sm:px-5 py-3 flex flex-col gap-2.5"
           style={{
             borderTop: "1px solid rgba(21,122,115,0.15)",
             background: "rgba(240,248,246,0.78)",
           }}
         >
-          <p className="text-caption sm:text-caption text-[var(--color-ink-400)] italic">
-            Results are based on the record when the analysis ran. Regenerate in AI Clinical
-            Copilot after adding findings.
-          </p>
-          <button
-            onClick={handleDecisionSupport}
-            className="flex items-center gap-1.5 text-caption sm:text-xs font-semibold px-3.5 py-2 rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] active:bg-[var(--color-primary-800)] transition-colors shrink-0"
-          >
-            Decision Support <ArrowRight size={12} />
-          </button>
+          <AiDisclaimer />
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-caption sm:text-caption text-[var(--color-ink-400)] italic">
+              Results are based on the record when the analysis ran. Regenerate in AI Clinical
+              Copilot after adding findings.
+            </p>
+            <button
+              onClick={handleDecisionSupport}
+              className="flex items-center gap-1.5 text-caption sm:text-xs font-semibold px-3.5 py-2 rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] active:bg-[var(--color-primary-800)] transition-colors shrink-0"
+            >
+              Decision Support <ArrowRight size={12} />
+            </button>
+          </div>
         </div>
       </div>
     </div>

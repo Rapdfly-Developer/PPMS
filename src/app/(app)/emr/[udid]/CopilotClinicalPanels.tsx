@@ -2,6 +2,7 @@
 
 import { useId, useState, type ReactNode } from "react";
 import { useCopilotCard, type CopilotCardState } from "./copilot-cards-store";
+import { AiDisclaimer } from "@/components/ui/AiDisclaimer";
 
 function Shell({ title, children, ready }: { title: string; children: ReactNode; ready?: boolean }) {
   return (
@@ -22,6 +23,7 @@ function Shell({ title, children, ready }: { title: string; children: ReactNode;
         </div>
         {children}
         {ready && <p className="mt-3 text-caption text-teal-300/70 italic">Based on the record when the analysis ran. Regenerate in AI Clinical Copilot after adding findings.</p>}
+        <AiDisclaimer className="mt-3" />
       </div>
     </section>
   );

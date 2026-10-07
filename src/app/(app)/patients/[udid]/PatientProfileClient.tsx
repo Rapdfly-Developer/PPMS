@@ -20,6 +20,7 @@ import {
 } from "./VisitSummaryTabs";
 import { transferPatient, generateLongitudinalSummary } from "../actions";
 import { TealSelect } from "@/components/ui/TealSelect";
+import { AiDisclaimer } from "@/components/ui/AiDisclaimer";
 import { ComplaintChips } from "@/components/ui/ComplaintChips";
 export { TimeStampButton } from "./PatientTimeline";
 
@@ -841,6 +842,7 @@ function LongitudinalSummarySection({ udid, visits, inline = false }: { udid: st
           </div>
           {aiNotice && <p className="text-caption text-amber-600 mb-2">{aiNotice}</p>}
           <p className="text-label text-[var(--color-ink-800)] leading-relaxed">{aiText}</p>
+          <AiDisclaimer className="mt-3" />
         </div>
       )}
 
