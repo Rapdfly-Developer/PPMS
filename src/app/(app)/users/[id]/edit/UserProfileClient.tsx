@@ -317,7 +317,7 @@ export function UserProfileClient({
                   <input
                     type={showPw ? "text" : "password"}
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={(e) => { setPassword(e.target.value); setSecMsg(null); }}
                     placeholder="Enter new password"
                     autoComplete="new-password"
                     className={`${INPUT} pr-10`}
