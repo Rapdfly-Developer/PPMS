@@ -65,7 +65,7 @@ async function main() {
   for (const p of patientNames) {
     const patient = await prisma.patient.create({
       data: {
-        udid: await generateUDID(hospitalA.shortCode),
+        udid: await generateUDID(),
         doctorId: doctor.id,
         registeredAtId: hospitalA.id,
         name: p.name,

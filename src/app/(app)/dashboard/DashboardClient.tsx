@@ -442,7 +442,7 @@ export function DashboardClient({
                   { value: "all", label: filterLabel },
                   ...filterOptions.map((opt) => ({
                     value: opt.id,
-                    label: scope === "HOSPITAL" ? `Dr. ${opt.name}` : opt.name,
+                    label: opt.name,
                   })),
                 ]}
               />

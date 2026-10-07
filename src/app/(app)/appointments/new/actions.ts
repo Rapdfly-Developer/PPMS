@@ -2,7 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { requirePermission, scopeDoctorId } from "@/lib/rbac";
-import { generateUDID, generateUHID } from "@/lib/udid";
+import { generateUDID } from "@/lib/udid";
 import { encryptAadhaar } from "@/lib/crypto";
 import { redirect } from "next/navigation";
 import { istDayRange } from "@/lib/ist";
@@ -90,27 +90,12 @@ export async function createWalkInEncounter(formData: FormData) {
       if (refPatient.doctorId !== doctorId) return { error: "The selected referral patient is not in your patient list." };
     }
 
-    const hospital = await prisma.hospital.findUnique({
-      where: { id: hospitalId },
-      select: { shortCode: true },
-    });
-    const hospitalShortCode = hospital?.shortCode ?? "GEN";
-
-    const doctor = await prisma.doctor.findUnique({
-      where: { id: doctorId },
-      select: { shortCode: true },
-    });
-    const udidCode = doctor?.shortCode ?? hospitalShortCode;
-
-    const [udid, uhid] = await Promise.all([
-      generateUDID(udidCode),
-      generateUHID(hospitalShortCode),
-    ]);
+    const udid = await generateUDID();
 
     const newPatient = await prisma.patient.create({
       data: {
         udid,
-        uhid,
+        uhid: null,
         doctorId,
         registeredAtId: hospitalId,
         name,

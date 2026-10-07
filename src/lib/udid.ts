@@ -1,37 +1,20 @@
 import { prisma } from "@/lib/prisma";
+import { istTodayRange, toISTWall } from "@/lib/ist";
+import { format } from "date-fns";
 
-// UDID — Doctor-based:   PPMS-{DOCTORCODE}-NNNN  e.g. PPMS-RAM-0001
-export async function generateUDID(doctorShortCode: string): Promise<string> {
-  const prefix = `PPMS-${doctorShortCode.toUpperCase()}-`;
+// PPMS ID format: PPMS-{D}{MM}{YYYY}-{N}
+// D    = day of month, no leading zero  (e.g. 6 for 6 Oct)
+// MM   = month, 2-digit with leading zero (e.g. 10 for October)
+// YYYY = 4-digit year
+// N    = global daily sequence across all patients registered today
+// Example: PPMS-6102026-9 → 9th patient registered on 6 Oct 2026
+export async function generateUDID(): Promise<string> {
+  const { dayStart, dayEnd } = istTodayRange();
+  const dateStr = format(toISTWall(dayStart), "dMMyyyy");
   return prisma.$transaction(async (tx) => {
-    const last = await tx.patient.findFirst({
-      where: { udid: { startsWith: prefix } },
-      select: { udid: true },
-      orderBy: { udid: "desc" },
+    const count = await tx.patient.count({
+      where: { createdAt: { gte: dayStart, lte: dayEnd } },
     });
-    let maxSeq = 0;
-    if (last?.udid) {
-      const suffix = last.udid.slice(prefix.length);
-      if (/^\d+$/.test(suffix)) maxSeq = parseInt(suffix, 10);
-    }
-    return `${prefix}${String(maxSeq + 1).padStart(4, "0")}`;
-  });
-}
-
-// UHID — Hospital-based: PPMS-{HOSPITALCODE}-NNNN  e.g. PPMS-SEH-0001
-export async function generateUHID(hospitalShortCode: string): Promise<string> {
-  const prefix = `PPMS-${hospitalShortCode.toUpperCase()}-`;
-  return prisma.$transaction(async (tx) => {
-    const last = await tx.patient.findFirst({
-      where: { uhid: { startsWith: prefix } },
-      select: { uhid: true },
-      orderBy: { uhid: "desc" },
-    });
-    let maxSeq = 0;
-    if (last?.uhid) {
-      const suffix = last.uhid.slice(prefix.length);
-      if (/^\d+$/.test(suffix)) maxSeq = parseInt(suffix, 10);
-    }
-    return `${prefix}${String(maxSeq + 1).padStart(4, "0")}`;
+    return `PPMS-${dateStr}-${count + 1}`;
   });
 }

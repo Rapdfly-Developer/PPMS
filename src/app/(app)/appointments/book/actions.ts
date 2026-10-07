@@ -3,7 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { requireUser, userCan } from "@/lib/rbac";
 import { getBookingScope } from "@/lib/booking-scope";
-import { generateUDID, generateUHID } from "@/lib/udid";
+import { generateUDID } from "@/lib/udid";
 import { encryptAadhaar } from "@/lib/crypto";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -142,28 +142,14 @@ export async function bookAppointment(formData: FormData) {
       dateOfBirth = d;
     }
 
-    const hospital = hospitalId
-      ? await prisma.hospital.findUnique({ where: { id: hospitalId }, select: { shortCode: true } })
-      : null;
-    const hospitalShortCode = hospital?.shortCode ?? "GEN";
-
-    // Fetch doctor short code for UDID
-    const doctor = doctorId
-      ? await prisma.doctor.findUnique({ where: { id: doctorId }, select: { shortCode: true } })
-      : null;
-    const udidCode = doctor?.shortCode ?? hospitalShortCode;
-
-    const [udid, uhid] = await Promise.all([
-      generateUDID(udidCode),
-      generateUHID(hospitalShortCode),
-    ]);
+    const udid = await generateUDID();
 
     const consentGiven = formData.get("consentGiven") === "1";
 
     const patient = await prisma.patient.create({
       data: {
         udid,
-        uhid,
+        uhid: null,
         doctorId: doctorId || null,
         registeredAtId: hospitalId || null,
         name,
