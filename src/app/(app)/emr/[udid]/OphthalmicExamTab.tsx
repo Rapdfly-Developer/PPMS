@@ -1555,26 +1555,26 @@ function GonioscopyCard({
           <div className="flex items-start gap-2">
             <span className="text-caption sm:text-xs text-[var(--color-ink-400)]">Method:</span>
             <div className="flex flex-col gap-1.5">
-              <select
-                disabled={!editable}
-                value={addingMethod ? "__add_custom__" : method}
-                onChange={(e) => {
-                  if (e.target.value === "__add_custom__") {
+              <TealSelect
+                value={addingMethod ? "__add_custom__" : (method || "")}
+                onChange={(v) => {
+                  if (v === "__add_custom__") {
                     setAddingMethod(true);
                     setNewMethodText("");
                     return;
                   }
                   setAddingMethod(false);
                   setNewMethodText("");
-                  setMethod(e.target.value);
+                  setMethod(v);
                 }}
-                className="rounded-lg border border-[var(--color-border)] bg-white px-2.5 py-1 text-xs disabled:bg-[var(--color-surface-sunken)]"
-              >
-                <option value="">Not recorded</option>
-                {GONIO_METHODS.map((m) => <option key={m} value={m}>{m}</option>)}
-                {customMethods.map((m) => <option key={`custom-${m}`} value={m}>{m}</option>)}
-                {editable && <option value="__add_custom__">+ Add custom method…</option>}
-              </select>
+                options={[
+                  { value: "", label: "Not recorded" },
+                  ...GONIO_METHODS.map((m) => ({ value: m, label: m })),
+                  ...customMethods.map((m) => ({ value: m, label: m })),
+                  ...(editable ? [{ value: "__add_custom__", label: "+ Add custom method…" }] : []),
+                ]}
+                className="min-w-[160px]"
+              />
               {editable && addingMethod && (
                 <div className="flex items-center gap-1">
                 <input
