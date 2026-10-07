@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import clsx from "clsx";
 import { undoQueueEntry, undoPartialDispense } from "@/app/(app)/appointments/actions";
+import { TealSelect } from "@/components/ui/TealSelect";
 
 /* ── Types ──────────────────────────────────────────────────────────────── */
 interface Appt {
@@ -443,16 +444,18 @@ export function HomeDashboardClient({
                 <p className="text-caption font-semibold text-[var(--color-ink-400)] uppercase tracking-wide mb-1">
                   {scope === "DOCTOR" ? "All Hospitals" : "All Doctors"}
                 </p>
-                <div className="relative">
-                  <select value={selectedFilter} onChange={(e) => setSelectedFilter(e.target.value)}
-                    className="w-full appearance-none pr-6 text-label font-semibold text-[var(--color-ink-800)] bg-transparent focus:outline-none cursor-pointer">
-                    <option value="all">All</option>
-                    {filterOptions.map((opt) => (
-                      <option key={opt.id} value={opt.id}>{scope === "HOSPITAL" ? `Dr. ${opt.name}` : opt.name}</option>
-                    ))}
-                  </select>
-                  <ChevronDown size={12} className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none text-[var(--color-ink-400)]" />
-                </div>
+                <TealSelect
+                  variant="bare"
+                  value={selectedFilter}
+                  onChange={setSelectedFilter}
+                  options={[
+                    { value: "all", label: "All" },
+                    ...filterOptions.map((opt) => ({
+                      value: opt.id,
+                      label: scope === "HOSPITAL" ? `Dr. ${opt.name}` : opt.name,
+                    })),
+                  ]}
+                />
               </div>
             )}
             <div className="bg-white rounded-xl border border-[var(--color-border)] p-3 shadow-sm text-center min-w-[120px]">

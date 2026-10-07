@@ -14,6 +14,7 @@ import {
   ChevronLeft, ChevronRight,
 } from "lucide-react";
 import { getPatientTimeline, type TimelineEvent, type TimelineEventType } from "../actions";
+import { TealSelect } from "@/components/ui/TealSelect";
 
 /* ── Config ─────────────────────────────────────────────────────────────────── */
 const EVENT_CFG = {
@@ -622,22 +623,22 @@ export function PatientTimelineModal({
           {/* Advanced filters */}
           {showFilters && (
             <div className="grid grid-cols-2 gap-2 pt-1">
-              <select
+              <TealSelect
                 value={hospitalFilter}
-                onChange={(e) => setHospitalFilter(e.target.value)}
-                className="text-xs border border-[var(--color-border)] rounded-lg px-3 py-2 bg-white outline-none focus:border-[var(--color-primary-400)]"
-              >
-                <option value="ALL">All Hospitals</option>
-                {hospitals.map((h) => <option key={h} value={h}>{h}</option>)}
-              </select>
-              <select
+                onChange={setHospitalFilter}
+                options={[
+                  { value: "ALL", label: "All Hospitals" },
+                  ...hospitals.map((h) => ({ value: h, label: h })),
+                ]}
+              />
+              <TealSelect
                 value={doctorFilter}
-                onChange={(e) => setDoctorFilter(e.target.value)}
-                className="text-xs border border-[var(--color-border)] rounded-lg px-3 py-2 bg-white outline-none focus:border-[var(--color-primary-400)]"
-              >
-                <option value="ALL">All Doctors</option>
-                {doctors.map((d) => <option key={d} value={d}>{d}</option>)}
-              </select>
+                onChange={setDoctorFilter}
+                options={[
+                  { value: "ALL", label: "All Doctors" },
+                  ...doctors.map((d) => ({ value: d, label: d })),
+                ]}
+              />
               {(hospitalFilter !== "ALL" || doctorFilter !== "ALL" || search) && (
                 <button
                   onClick={clearFilters}

@@ -16,6 +16,7 @@ import {
   addRecurringLeave, getCalendarData,
   type CalendarData, type DaySlot, type DayLeave,
 } from "./actions";
+import { TealSelect } from "@/components/ui/TealSelect";
 
 /* ── Constants ──────────────────────────────────────────────────────────────── */
 const WEEKDAYS      = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -190,9 +191,11 @@ function EditSlotModal({ hospitals, slot, weekly, onClose }: {
       {error && <Err msg={error} />}
 
       <div><label className={LBL}>Hospital</label>
-        <select value={hospitalId} onChange={e => setHospitalId(e.target.value)} className={FLD}>
-          {hospitals.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
-        </select>
+        <TealSelect
+          value={hospitalId}
+          onChange={setHospitalId}
+          options={hospitals.map(h => ({ value: h.id, label: h.name }))}
+        />
       </div>
 
       <div className="grid grid-cols-2 gap-3">
@@ -201,9 +204,11 @@ function EditSlotModal({ hospitals, slot, weekly, onClose }: {
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div><label className={LBL}>Slot Duration</label>
-          <select value={slotMins} onChange={e => setSlotMins(Number(e.target.value))} className={FLD}>
-            {SLOT_OPTIONS.map(m => <option key={m} value={m}>{m} min</option>)}
-          </select>
+          <TealSelect
+            value={String(slotMins)}
+            onChange={(v) => setSlotMins(Number(v))}
+            options={SLOT_OPTIONS.map(m => ({ value: String(m), label: `${m} min` }))}
+          />
         </div>
         <div><label className={LBL}>Max Patients / Slot</label>
           <input type="number" min={1} max={20} value={maxPat} onChange={e => setMaxPat(Number(e.target.value))} className={FLD} />
@@ -313,9 +318,11 @@ function AddWeeklySlotModal({ hospitals, weekly, preWeekday, onClose }: {
 
       {/* Hospital */}
       <div><label className={LBL}>Hospital</label>
-        <select value={hospitalId} onChange={e => setHospitalId(e.target.value)} className={FLD}>
-          {hospitals.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
-        </select>
+        <TealSelect
+          value={hospitalId}
+          onChange={setHospitalId}
+          options={hospitals.map(h => ({ value: h.id, label: h.name }))}
+        />
       </div>
 
       {/* Day picker */}
@@ -358,9 +365,11 @@ function AddWeeklySlotModal({ hospitals, weekly, preWeekday, onClose }: {
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div><label className={LBL}>Slot Duration</label>
-          <select value={slotMins} onChange={e => setSlotMins(Number(e.target.value))} className={FLD}>
-            {SLOT_OPTIONS.map(m => <option key={m} value={m}>{m} min</option>)}
-          </select>
+          <TealSelect
+            value={String(slotMins)}
+            onChange={(v) => setSlotMins(Number(v))}
+            options={SLOT_OPTIONS.map(m => ({ value: String(m), label: `${m} min` }))}
+          />
         </div>
         <div><label className={LBL}>Max Patients / Slot</label>
           <input type="number" min={1} max={20} value={maxPat} onChange={e => setMaxPat(Number(e.target.value))} className={FLD} />
@@ -662,9 +671,11 @@ function DayEditModal({ slot, hospitals, onClose }: { slot: DaySlot; hospitals: 
     <Modal title="Edit This Day" sub="Only this date changes, template is untouched" onClose={onClose}>
       {error && <Err msg={error} />}
       <div><label className={LBL}>Hospital</label>
-        <select value={hospitalId} onChange={e => setHospitalId(e.target.value)} className={FLD}>
-          {hospitals.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
-        </select>
+        <TealSelect
+          value={hospitalId}
+          onChange={setHospitalId}
+          options={hospitals.map(h => ({ value: h.id, label: h.name }))}
+        />
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div><label className={LBL}>Start Time</label><input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} className={FLD} /></div>
@@ -672,9 +683,11 @@ function DayEditModal({ slot, hospitals, onClose }: { slot: DaySlot; hospitals: 
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div><label className={LBL}>Slot Duration</label>
-          <select value={slotMins} onChange={e => setSlotMins(Number(e.target.value))} className={FLD}>
-            {SLOT_OPTIONS.map(m => <option key={m} value={m}>{m} min</option>)}
-          </select>
+          <TealSelect
+            value={String(slotMins)}
+            onChange={(v) => setSlotMins(Number(v))}
+            options={SLOT_OPTIONS.map(m => ({ value: String(m), label: `${m} min` }))}
+          />
         </div>
         <div><label className={LBL}>Max Patients / Slot</label>
           <input type="number" min={1} max={20} value={maxPat} onChange={e => setMaxPat(Number(e.target.value))} className={FLD} />
@@ -717,9 +730,11 @@ function ExtraOPModal({ date, hospitals, onClose }: { date: string; hospitals: H
         Extra sessions override any holiday or off-day for this date only.
       </div>
       <div><label className={LBL}>Hospital</label>
-        <select value={hospitalId} onChange={e => setHospitalId(e.target.value)} className={FLD}>
-          {hospitals.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
-        </select>
+        <TealSelect
+          value={hospitalId}
+          onChange={setHospitalId}
+          options={hospitals.map(h => ({ value: h.id, label: h.name }))}
+        />
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div><label className={LBL}>Start Time</label><input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} className={FLD} /></div>
@@ -727,9 +742,11 @@ function ExtraOPModal({ date, hospitals, onClose }: { date: string; hospitals: H
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div><label className={LBL}>Slot Duration</label>
-          <select value={slotMins} onChange={e => setSlotMins(Number(e.target.value))} className={FLD}>
-            {SLOT_OPTIONS.map(m => <option key={m} value={m}>{m} min</option>)}
-          </select>
+          <TealSelect
+            value={String(slotMins)}
+            onChange={(v) => setSlotMins(Number(v))}
+            options={SLOT_OPTIONS.map(m => ({ value: String(m), label: `${m} min` }))}
+          />
         </div>
         <div><label className={LBL}>Max Patients / Slot</label>
           <input type="number" min={1} max={20} value={maxPat} onChange={e => setMaxPat(Number(e.target.value))} className={FLD} />
@@ -787,9 +804,12 @@ function LeaveModal({ preSelectedDates, hospitals, onClose }: {
           ))}
         </div>
         {!allHosp && (
-          <select value={hospId} onChange={e => setHospId(e.target.value)} className={`${FLD} mt-2`}>
-            {hospitals.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
-          </select>
+          <TealSelect
+            className="mt-2"
+            value={hospId}
+            onChange={setHospId}
+            options={hospitals.map(h => ({ value: h.id, label: h.name }))}
+          />
         )}
       </div>
 
@@ -860,9 +880,11 @@ function BulkAssignModal({ dates, hospitals, onClose }: {
     <Modal title={`Assign ${dates.length} Date${dates.length > 1 ? "s" : ""}`} sub="All selected dates get this schedule" onClose={onClose}>
       {error && <Err msg={error} />}
       <div><label className={LBL}>Hospital</label>
-        <select value={hospitalId} onChange={e => setHospitalId(e.target.value)} className={FLD}>
-          {hospitals.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
-        </select>
+        <TealSelect
+          value={hospitalId}
+          onChange={setHospitalId}
+          options={hospitals.map(h => ({ value: h.id, label: h.name }))}
+        />
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div><label className={LBL}>Start Time</label><input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} className={FLD} /></div>
@@ -870,9 +892,11 @@ function BulkAssignModal({ dates, hospitals, onClose }: {
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div><label className={LBL}>Slot Duration</label>
-          <select value={slotMins} onChange={e => setSlotMins(Number(e.target.value))} className={FLD}>
-            {SLOT_OPTIONS.map(m => <option key={m} value={m}>{m} min</option>)}
-          </select>
+          <TealSelect
+            value={String(slotMins)}
+            onChange={(v) => setSlotMins(Number(v))}
+            options={SLOT_OPTIONS.map(m => ({ value: String(m), label: `${m} min` }))}
+          />
         </div>
         <div><label className={LBL}>Max Patients / Slot</label>
           <input type="number" min={1} max={20} value={maxPat} onChange={e => setMaxPat(Number(e.target.value))} className={FLD} />

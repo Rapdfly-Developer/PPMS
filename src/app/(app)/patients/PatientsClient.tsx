@@ -10,7 +10,7 @@ import {
   Phone, Building2, Undo2,
 } from "lucide-react";
 import { undoDispense, type UndoDispenseResult } from "./actions";
-import { filterSelectClass } from "@/components/ui/controls";
+import { TealSelect } from "@/components/ui/TealSelect";
 import { OPHTHALMIC_COMPLAINTS } from "@/components/ui/ComplaintCombobox";
 import { ICD10_OPHTHALMOLOGY } from "@/lib/constants";
 import { getCustomDiagnoses } from "@/lib/customDiagnoses";
@@ -466,7 +466,6 @@ export function PatientsClient({
     (opStatusFilter !== "dispensed" && opStatusFilter !== "all") ? opStatusFilter : "",
   ].filter(Boolean).length;
 
-  const SEL = filterSelectClass;
 
   return (
     <div>
@@ -536,74 +535,77 @@ export function PatientsClient({
                 {/* Sort */}
                 <div className="flex flex-col gap-1">
                   <label className="text-micro sm:text-caption font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Sort By</label>
-                  <div className="relative">
-                    <select value={sortBy} onChange={e => navigate({ sort: e.target.value, page: "1" })} className={SEL}>
-                      <option value="newest">Newest first</option>
-                      <option value="oldest">Oldest first</option>
-                      <option value="name">Name A–Z</option>
-                      <option value="lastvisit">Last Visit</option>
-                    </select>
-                    <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] pointer-events-none" />
-                  </div>
+                  <TealSelect
+                    value={sortBy}
+                    onChange={(v) => navigate({ sort: v, page: "1" })}
+                    options={[
+                      { value: "newest", label: "Newest first" },
+                      { value: "oldest", label: "Oldest first" },
+                      { value: "name", label: "Name A–Z" },
+                      { value: "lastvisit", label: "Last Visit" },
+                    ]}
+                  />
                 </div>
 
                 {/* Sex */}
                 <div className="flex flex-col gap-1">
                   <label className="text-micro sm:text-caption font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Sex</label>
-                  <div className="relative">
-                    <select value={sexFilter} onChange={e => navigate({ sex: e.target.value, page: "1" })} className={SEL}>
-                      <option value="">All</option>
-                      <option value="MALE">Male</option>
-                      <option value="FEMALE">Female</option>
-                      <option value="OTHER">Other</option>
-                    </select>
-                    <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] pointer-events-none" />
-                  </div>
+                  <TealSelect
+                    value={sexFilter}
+                    onChange={(v) => navigate({ sex: v, page: "1" })}
+                    options={[
+                      { value: "", label: "All" },
+                      { value: "MALE", label: "Male" },
+                      { value: "FEMALE", label: "Female" },
+                      { value: "OTHER", label: "Other" },
+                    ]}
+                  />
                 </div>
 
                 {/* Category */}
                 <div className="flex flex-col gap-1">
                   <label className="text-micro sm:text-caption font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Category</label>
-                  <div className="relative">
-                    <select value={categoryFilter} onChange={e => navigate({ category: e.target.value, page: "1" })} className={SEL}>
-                      <option value="">All Categories</option>
-                      <option value="GENERAL">General</option>
-                      <option value="BPL">BPL</option>
-                      <option value="SUBSIDISED">Subsidised</option>
-                      <option value="ECHS">ECHS</option>
-                      <option value="INSURANCE">Insurance</option>
-                    </select>
-                    <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] pointer-events-none" />
-                  </div>
+                  <TealSelect
+                    value={categoryFilter}
+                    onChange={(v) => navigate({ category: v, page: "1" })}
+                    options={[
+                      { value: "", label: "All Categories" },
+                      { value: "GENERAL", label: "General" },
+                      { value: "BPL", label: "BPL" },
+                      { value: "SUBSIDISED", label: "Subsidised" },
+                      { value: "ECHS", label: "ECHS" },
+                      { value: "INSURANCE", label: "Insurance" },
+                    ]}
+                  />
                 </div>
 
                 {/* Hospital (multi-hospital doctors only) */}
                 {doctorHospitals.length > 1 && (
                   <div className="flex flex-col gap-1">
                     <label className="text-micro sm:text-caption font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Hospital</label>
-                    <div className="relative">
-                      <select value={hospitalFilter} onChange={e => navigate({ hospital: e.target.value, page: "1" })} className={SEL}>
-                        <option value="">All Hospitals</option>
-                        {doctorHospitals.map(h => (
-                          <option key={h.id} value={h.id}>{h.name}</option>
-                        ))}
-                      </select>
-                      <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] pointer-events-none" />
-                    </div>
+                    <TealSelect
+                      value={hospitalFilter}
+                      onChange={(v) => navigate({ hospital: v, page: "1" })}
+                      options={[
+                        { value: "", label: "All Hospitals" },
+                        ...doctorHospitals.map((h) => ({ value: h.id, label: h.name })),
+                      ]}
+                    />
                   </div>
                 )}
 
                 {/* Visit Status */}
                 <div className="flex flex-col gap-1">
                   <label className="text-micro sm:text-caption font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Visit Status</label>
-                  <div className="relative">
-                    <select value={opStatusFilter} onChange={e => navigate({ opStatus: e.target.value, page: "1" })} className={SEL}>
-                      <option value="all">All Patients</option>
-                      <option value="dispensed">Dispensed Today</option>
-                      <option value="surgery">Surgery Scheduled</option>
-                    </select>
-                    <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] pointer-events-none" />
-                  </div>
+                  <TealSelect
+                    value={opStatusFilter}
+                    onChange={(v) => navigate({ opStatus: v, page: "1" })}
+                    options={[
+                      { value: "all", label: "All Patients" },
+                      { value: "dispensed", label: "Dispensed Today" },
+                      { value: "surgery", label: "Surgery Scheduled" },
+                    ]}
+                  />
                 </div>
 
                 {/* Diagnosis — laterality chips + autocomplete search */}
@@ -973,15 +975,15 @@ export function PatientsClient({
             {total > 0 && (
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 px-4 py-3 border-t border-[var(--color-border)]">
                 <div className="flex items-center gap-2">
-                  <select
-                    value={pageSize}
-                    onChange={e => navigate({ size: e.target.value, page: "1" })}
-                    className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-2.5 py-1.5 text-xs text-[var(--color-ink-700)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
-                  >
-                    <option value="10">10 / page</option>
-                    <option value="25">25 / page</option>
-                    <option value="50">50 / page</option>
-                  </select>
+                  <TealSelect
+                    value={String(pageSize)}
+                    onChange={(v) => navigate({ size: v, page: "1" })}
+                    options={[
+                      { value: "10", label: "10 / page" },
+                      { value: "25", label: "25 / page" },
+                      { value: "50", label: "50 / page" },
+                    ]}
+                  />
                 </div>
                 <div className="overflow-x-auto">
                 <div className="flex items-center gap-1">

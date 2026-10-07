@@ -10,6 +10,7 @@ import {
 import clsx from "clsx";
 import { deleteWalkInVisit, undoQueueEntry, undoPartialDispense } from "@/app/(app)/appointments/actions";
 import { ComplaintChips } from "@/components/ui/ComplaintChips";
+import { TealSelect } from "@/components/ui/TealSelect";
 
 /* ── Types ─────────────────────────────────────────────────────────────── */
 interface Appt {
@@ -430,21 +431,19 @@ export function DashboardClient({
               </Link>
             )}
             {can("appointments.view") && filterOptions.length > 0 && (
-              <div className="relative min-w-0 max-w-[10rem] sm:max-w-[14rem]">
-                <select
-                  value={selectedFilter}
-                  onChange={(e) => setSelectedFilter(e.target.value)}
-                  className="w-full truncate appearance-none pl-3 pr-8 py-2 rounded-xl border border-white/20 bg-white/10 text-label sm:text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-white/40 cursor-pointer backdrop-blur-sm"
-                >
-                  <option value="all" className="text-[var(--color-ink-800)]">{filterLabel}</option>
-                  {filterOptions.map((opt) => (
-                    <option key={opt.id} value={opt.id} className="text-[var(--color-ink-800)]">
-                      {scope === "HOSPITAL" ? `Dr. ${opt.name}` : opt.name}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-white/70" />
-              </div>
+              <TealSelect
+                variant="banner"
+                className="min-w-0 max-w-[10rem] sm:max-w-[14rem]"
+                value={selectedFilter}
+                onChange={setSelectedFilter}
+                options={[
+                  { value: "all", label: filterLabel },
+                  ...filterOptions.map((opt) => ({
+                    value: opt.id,
+                    label: scope === "HOSPITAL" ? `Dr. ${opt.name}` : opt.name,
+                  })),
+                ]}
+              />
             )}
           </div>
         </div>

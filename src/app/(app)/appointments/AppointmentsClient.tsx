@@ -11,7 +11,7 @@ import Link from "next/link";
 import clsx from "clsx";
 import { AppointmentTableRow } from "./AppointmentTableRow";
 import { AppointmentRow, type ApptPerms } from "./AppointmentRow";
-import { filterSelectClass } from "@/components/ui/controls";
+import { TealSelect } from "@/components/ui/TealSelect";
 
 // ── helpers ────────────────────────────────────────────────────────────────
 const STATUSES = [
@@ -248,7 +248,6 @@ export function AppointmentsClient({
   // unique departments from doctors
   const departments = [...new Set(doctors.map((d) => d.specialty).filter(Boolean))].sort() as string[];
 
-  const SEL = filterSelectClass;
 
   // Pagination block (reused top + bottom)
   function PaginationRow() {
@@ -406,25 +405,25 @@ export function AppointmentsClient({
             {/* Status */}
             <div className="flex flex-col gap-1">
               <label className="text-micro sm:text-caption font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Status</label>
-              <div className="relative">
-                <select value={statusParam} onChange={(e) => navigate({ status: e.target.value, page: 1 })} className={SEL}>
-                  {STATUSES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
-                </select>
-                <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] pointer-events-none" />
-              </div>
+              <TealSelect
+                value={statusParam}
+                onChange={(v) => navigate({ status: v, page: 1 })}
+                options={STATUSES.map((s) => ({ value: s.value, label: s.label }))}
+              />
             </div>
 
             {/* Hospital (Doctor role only, multi-hospital) */}
             {hospitals.length > 1 && (
               <div className="flex flex-col gap-1">
                 <label className="text-micro sm:text-caption font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Hospital</label>
-                <div className="relative">
-                  <select value={hospitalParam} onChange={(e) => navigate({ hospital: e.target.value, page: 1 })} className={SEL}>
-                    <option value="">All Hospitals</option>
-                    {hospitals.map((h) => <option key={h.id} value={h.id}>{h.name}</option>)}
-                  </select>
-                  <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] pointer-events-none" />
-                </div>
+                <TealSelect
+                  value={hospitalParam}
+                  onChange={(v) => navigate({ hospital: v, page: 1 })}
+                  options={[
+                    { value: "", label: "All Hospitals" },
+                    ...hospitals.map((h) => ({ value: h.id, label: h.name })),
+                  ]}
+                />
               </div>
             )}
 
@@ -432,26 +431,28 @@ export function AppointmentsClient({
             {doctors.length > 0 && (
               <div className="flex flex-col gap-1">
                 <label className="text-micro sm:text-caption font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Doctor</label>
-                <div className="relative">
-                  <select value={doctorIdParam} onChange={(e) => navigate({ doctor: e.target.value, page: 1 })} className={SEL}>
-                    <option value="">All Doctors</option>
-                    {doctors.map((d) => <option key={d.id} value={d.id}>Dr. {d.name}</option>)}
-                  </select>
-                  <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] pointer-events-none" />
-                </div>
+                <TealSelect
+                  value={doctorIdParam}
+                  onChange={(v) => navigate({ doctor: v, page: 1 })}
+                  options={[
+                    { value: "", label: "All Doctors" },
+                    ...doctors.map((d) => ({ value: d.id, label: `Dr. ${d.name}` })),
+                  ]}
+                />
               </div>
             )}
 
             {/* Visit Type */}
             <div className="flex flex-col gap-1">
               <label className="text-micro sm:text-caption font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Visit Type</label>
-              <div className="relative">
-                <select value={visitTypeParam} onChange={(e) => navigate({ visitType: e.target.value, page: 1 })} className={SEL}>
-                  <option value="">All Types</option>
-                  {VISIT_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
-                </select>
-                <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] pointer-events-none" />
-              </div>
+              <TealSelect
+                value={visitTypeParam}
+                onChange={(v) => navigate({ visitType: v, page: 1 })}
+                options={[
+                  { value: "", label: "All Types" },
+                  ...VISIT_TYPES.map((t) => ({ value: t, label: t })),
+                ]}
+              />
             </div>
 
             {/* Clear */}
@@ -810,16 +811,11 @@ export function AppointmentsClient({
         <div className="flex items-center justify-between mt-6 flex-wrap gap-3">
           <div className="flex items-center gap-2 text-label sm:text-sm text-[var(--color-ink-500)]">
             <span>Show</span>
-            <div className="relative">
-              <select
-                value={pageSize}
-                onChange={(e) => navigate({ pageSize: e.target.value, page: 1 })}
-                className="border border-[var(--color-border)] rounded-lg pl-3 pr-6 py-1.5 text-sm bg-white focus:outline-none appearance-none cursor-pointer"
-              >
-                {PAGE_SIZES.map((n) => <option key={n} value={n}>{n}</option>)}
-              </select>
-              <ChevronDown size={12} className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] pointer-events-none" />
-            </div>
+            <TealSelect
+              value={String(pageSize)}
+              onChange={(v) => navigate({ pageSize: v, page: 1 })}
+              options={PAGE_SIZES.map((n) => ({ value: String(n), label: String(n) }))}
+            />
             <span>per page</span>
             <span className="ml-2">
               Showing <span className="font-semibold text-[var(--color-ink-700)]">{from}–{to}</span> of{" "}

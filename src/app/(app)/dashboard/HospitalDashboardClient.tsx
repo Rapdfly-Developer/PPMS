@@ -9,6 +9,7 @@ import {
   Sun, Sunset, Moon, ClipboardList,
 } from "lucide-react";
 import clsx from "clsx";
+import { TealSelect } from "@/components/ui/TealSelect";
 
 /* ── Types ─────────────────────────────────────────────────────────────── */
 interface Appt {
@@ -195,19 +196,15 @@ export function HospitalDashboardClient({ hospitalName, hospitalLogoUrl, kpis, a
                   <Plus size={15} /> New Appointment
                 </Link>
                 {doctors.length > 0 && (
-                  <div className="relative">
-                    <select
-                      value={selectedDoctor}
-                      onChange={(e) => setSelectedDoctor(e.target.value)}
-                      className="appearance-none pl-3 pr-8 py-2 rounded-xl border border-white/20 bg-white/10 text-sm font-medium text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/40 cursor-pointer backdrop-blur-sm"
-                    >
-                      <option value="all" className="text-[var(--color-ink-800)]">All Doctors</option>
-                      {doctors.map((d) => (
-                        <option key={d.id} value={d.id} className="text-[var(--color-ink-800)]">Dr. {d.name}</option>
-                      ))}
-                    </select>
-                    <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-white/70" />
-                  </div>
+                  <TealSelect
+                    variant="banner"
+                    value={selectedDoctor}
+                    onChange={setSelectedDoctor}
+                    options={[
+                      { value: "all", label: "All Doctors" },
+                      ...doctors.map((d) => ({ value: d.id, label: `Dr. ${d.name}` })),
+                    ]}
+                  />
                 )}
               </div>
             </div>

@@ -19,6 +19,7 @@ import {
   AIContent,
 } from "./VisitSummaryTabs";
 import { transferPatient, generateLongitudinalSummary } from "../actions";
+import { TealSelect } from "@/components/ui/TealSelect";
 import { ComplaintChips } from "@/components/ui/ComplaintChips";
 export { TimeStampButton } from "./PatientTimeline";
 
@@ -118,16 +119,15 @@ export function TransferButton({
                   . The patient and all records (visits, EMR, appointments) will be registered at the selected hospital.
                 </p>
                 <label className="block text-caption sm:text-xs font-semibold text-[var(--color-ink-600)] mb-1">Destination Hospital</label>
-                <select
+                <TealSelect
+                  className="mb-3"
                   value={hospitalId}
-                  onChange={(e) => setHospitalId(e.target.value)}
-                  className="w-full border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm mb-3 outline-none focus:border-[var(--color-primary-500)] bg-white cursor-pointer"
-                >
-                  <option value="">Select a hospital…</option>
-                  {options.map((h) => (
-                    <option key={h.id} value={h.id}>{h.name}</option>
-                  ))}
-                </select>
+                  onChange={setHospitalId}
+                  options={[
+                    { value: "", label: "Select a hospital…" },
+                    ...options.map((h) => ({ value: h.id, label: h.name })),
+                  ]}
+                />
                 {options.length === 0 && (
                   <p className="text-caption sm:text-xs text-[var(--color-ink-400)] -mt-1 mb-3">No other hospitals available.</p>
                 )}
@@ -352,16 +352,16 @@ function PreviousVisitsPanel({ visits, udid }: { visits: SerialVisit[]; udid: st
       {hospitals.length > 1 && (
         <div className="px-4 py-2.5 bg-white border-b border-[var(--color-border)] flex items-center gap-2">
           <Filter size={12} className="text-[var(--color-ink-400)] shrink-0" />
-          <select
+          <TealSelect
+            variant="bare"
+            className="flex-1"
             value={hospitalFilter}
-            onChange={(e) => setHospitalFilter(e.target.value)}
-            className="flex-1 text-sm text-[var(--color-ink-700)] bg-transparent outline-none cursor-pointer"
-          >
-            <option value="ALL">All Hospitals</option>
-            {hospitals.map((h) => (
-              <option key={h} value={h}>{h}</option>
-            ))}
-          </select>
+            onChange={setHospitalFilter}
+            options={[
+              { value: "ALL", label: "All Hospitals" },
+              ...hospitals.map((h) => ({ value: h, label: h })),
+            ]}
+          />
         </div>
       )}
 

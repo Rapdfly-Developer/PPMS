@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { rescheduleFollowUp, cancelFollowUp, completeFollowUp } from "./actions";
 import { ComplaintChips } from "@/components/ui/ComplaintChips";
+import { TealSelect } from "@/components/ui/TealSelect";
 import { fileHref } from "@/lib/file-href";
 
 /* ── Types ─────────────────────────────────────────────────────────────── */
@@ -355,13 +356,11 @@ function CompleteModal({ v, onDone, onClose }: { v: FuVisit; onDone: () => void;
                 </div>
                 <div>
                   <label className="text-micro sm:text-caption font-semibold text-[var(--color-ink-500)] uppercase tracking-wide block mb-1">Type</label>
-                  <select
+                  <TealSelect
                     value={nextType}
-                    onChange={(e) => setNextType(e.target.value)}
-                    className="w-full text-xs rounded-lg border border-[var(--color-primary-200)] bg-white px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)]"
-                  >
-                    {FOLLOW_UP_TYPES.map((t) => <option key={t}>{t}</option>)}
-                  </select>
+                    onChange={setNextType}
+                    options={FOLLOW_UP_TYPES.map((t) => ({ value: t, label: t }))}
+                  />
                 </div>
               </div>
               <div>
@@ -825,33 +824,31 @@ export function FollowUpsClient({
             />
           </div>
           {/* Status filter */}
-          <select
+          <TealSelect
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as FollowUpStatus | "ALL")}
-            className="text-sm rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] text-[var(--color-ink-700)]"
-          >
-            <option value="ALL">All Statuses</option>
-            <option value="DUE_TODAY">Due Today</option>
-            <option value="UPCOMING">Upcoming</option>
-            <option value="OVERDUE">Overdue</option>
-            <option value="NO_SHOW">No Show</option>
-            <option value="SCHEDULED">Scheduled</option>
-            <option value="COMPLETED">Completed</option>
-            <option value="CANCELLED">Cancelled</option>
-          </select>
+            onChange={(v) => setStatusFilter(v as FollowUpStatus | "ALL")}
+            options={[
+              { value: "ALL", label: "All Statuses" },
+              { value: "DUE_TODAY", label: "Due Today" },
+              { value: "UPCOMING", label: "Upcoming" },
+              { value: "OVERDUE", label: "Overdue" },
+              { value: "NO_SHOW", label: "No Show" },
+              { value: "SCHEDULED", label: "Scheduled" },
+              { value: "COMPLETED", label: "Completed" },
+              { value: "CANCELLED", label: "Cancelled" },
+            ]}
+          />
 
           {/* Doctor filter (hospital role) */}
           {role === "HOSPITAL" && doctorOptions.length > 1 && (
-            <select
+            <TealSelect
               value={doctorFilter}
-              onChange={(e) => setDoctorFilter(e.target.value)}
-              className="text-sm rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] text-[var(--color-ink-700)]"
-            >
-              <option value="ALL">All Doctors</option>
-              {doctorOptions.map((d) => (
-                <option key={d.id} value={d.id}>Dr. {d.name}</option>
-              ))}
-            </select>
+              onChange={setDoctorFilter}
+              options={[
+                { value: "ALL", label: "All Doctors" },
+                ...doctorOptions.map((d) => ({ value: d.id, label: `Dr. ${d.name}` })),
+              ]}
+            />
           )}
 
           {(search || statusFilter !== "ALL" || doctorFilter !== "ALL") && (

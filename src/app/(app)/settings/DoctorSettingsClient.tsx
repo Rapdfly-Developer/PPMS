@@ -36,6 +36,7 @@ import {
   CreditCard, Monitor, RefreshCw,
   Stethoscope, Users2, Tag, History, Plug, Key, Menu,
 } from "lucide-react";
+import { TealSelect } from "@/components/ui/TealSelect";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -952,25 +953,23 @@ function UsersSection({ users, hospitals, assignableRoles, doctorId }: { users: 
               className="w-full pl-8 pr-3 py-2 text-sm border border-[var(--color-border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] bg-[var(--color-surface-sunken)]"
             />
           </div>
-          <select
+          <TealSelect
             value={hospitalFilter}
-            onChange={(e) => { setHospitalFilter(e.target.value); setPage(1); }}
-            className="rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] bg-white"
-          >
-            <option value="">All Hospitals</option>
-            {hospitals.map((h) => (
-              <option key={h.id} value={h.id}>{h.name}</option>
-            ))}
-          </select>
-          <select
+            onChange={(v) => { setHospitalFilter(v); setPage(1); }}
+            options={[
+              { value: "", label: "All Hospitals" },
+              ...hospitals.map((h) => ({ value: h.id, label: h.name })),
+            ]}
+          />
+          <TealSelect
             value={roleFilter}
-            onChange={(e) => { setRoleFilter(e.target.value); setPage(1); }}
-            className="rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] bg-white"
-          >
-            <option value="">All Roles</option>
-            <option value="DOCTOR">Doctor</option>
-            <option value="HOSPITAL">Staff</option>
-          </select>
+            onChange={(v) => { setRoleFilter(v); setPage(1); }}
+            options={[
+              { value: "", label: "All Roles" },
+              { value: "DOCTOR", label: "Doctor" },
+              { value: "HOSPITAL", label: "Staff" },
+            ]}
+          />
         </div>
 
         {/* User cards */}
@@ -1509,20 +1508,24 @@ function AuditSection({ auditLogs }: { auditLogs: AuditRow[] }) {
               >{v}</button>
             ))}
           </div>
-          <select value={filterAction} onChange={(e) => setFilterAction(e.target.value)}
-            className="rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] bg-white"
-          >
-            <option value="">All Actions</option>
-            <option value="CREATE">Create</option>
-            <option value="UPDATE">Update</option>
-            <option value="DELETE">Delete</option>
-          </select>
-          <select value={filterEntity} onChange={(e) => setFilterEntity(e.target.value)}
-            className="rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] bg-white"
-          >
-            <option value="">All Modules</option>
-            {entities.map((e) => <option key={e} value={e}>{e}</option>)}
-          </select>
+          <TealSelect
+            value={filterAction}
+            onChange={setFilterAction}
+            options={[
+              { value: "", label: "All Actions" },
+              { value: "CREATE", label: "Create" },
+              { value: "UPDATE", label: "Update" },
+              { value: "DELETE", label: "Delete" },
+            ]}
+          />
+          <TealSelect
+            value={filterEntity}
+            onChange={setFilterEntity}
+            options={[
+              { value: "", label: "All Modules" },
+              ...entities.map((e) => ({ value: e, label: e })),
+            ]}
+          />
           <span className="ml-auto text-caption sm:text-xs text-[var(--color-ink-400)]">{filtered.length} events</span>
         </div>
 
@@ -2095,31 +2098,40 @@ function ExportSection({ hospitals }: { hospitals: HospitalRow[] }) {
           {/* Hospital */}
           <div className="sm:col-span-2">
             <label className="block text-caption sm:text-xs font-medium text-[var(--color-ink-600)] mb-1">Hospital</label>
-            <select value={hospitalId} onChange={(e) => setHospitalId(e.target.value)}
-              className="w-full rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-sm text-[var(--color-ink-900)]">
-              <option value="">All Hospitals</option>
-              {hospitals.map((h) => <option key={h.id} value={h.id}>{h.name}</option>)}
-            </select>
+            <TealSelect
+              value={hospitalId}
+              onChange={setHospitalId}
+              options={[
+                { value: "", label: "All Hospitals" },
+                ...hospitals.map((h) => ({ value: h.id, label: h.name })),
+              ]}
+            />
           </div>
 
           {/* Category */}
           <div>
             <label className="block text-caption sm:text-xs font-medium text-[var(--color-ink-600)] mb-1">Patient Category</label>
-            <select value={category} onChange={(e) => setCategory(e.target.value)}
-              className="w-full rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-sm text-[var(--color-ink-900)]">
-              <option value="">All Categories</option>
-              {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
-            </select>
+            <TealSelect
+              value={category}
+              onChange={setCategory}
+              options={[
+                { value: "", label: "All Categories" },
+                ...CATEGORIES.map((c) => ({ value: c, label: c })),
+              ]}
+            />
           </div>
 
           {/* Sex */}
           <div>
             <label className="block text-caption sm:text-xs font-medium text-[var(--color-ink-600)] mb-1">Sex</label>
-            <select value={sex} onChange={(e) => setSex(e.target.value)}
-              className="w-full rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-sm text-[var(--color-ink-900)]">
-              <option value="">All</option>
-              {SEXES.map((s) => <option key={s} value={s}>{s}</option>)}
-            </select>
+            <TealSelect
+              value={sex}
+              onChange={setSex}
+              options={[
+                { value: "", label: "All" },
+                ...SEXES.map((s) => ({ value: s, label: s })),
+              ]}
+            />
           </div>
 
           {/* Age Min */}
@@ -2349,17 +2361,23 @@ function LogsSection({ loginLogs }: { loginLogs: LoginLogRow[] }) {
               className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-[var(--color-border)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
             />
           </div>
-          <select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)}
-            className="rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] bg-white">
-            <option value="">All Roles</option>
-            {Object.entries(ROLE_LABEL).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-          </select>
-          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
-            className="rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] bg-white">
-            <option value="">All Status</option>
-            <option value="SUCCESS">Success</option>
-            <option value="FAILED">Failed</option>
-          </select>
+          <TealSelect
+            value={roleFilter}
+            onChange={setRoleFilter}
+            options={[
+              { value: "", label: "All Roles" },
+              ...Object.entries(ROLE_LABEL).map(([v, l]) => ({ value: v, label: l })),
+            ]}
+          />
+          <TealSelect
+            value={statusFilter}
+            onChange={setStatusFilter}
+            options={[
+              { value: "", label: "All Status" },
+              { value: "SUCCESS", label: "Success" },
+              { value: "FAILED", label: "Failed" },
+            ]}
+          />
           <span className="ml-auto text-caption sm:text-xs text-[var(--color-ink-400)]">{filtered.length} entries</span>
         </div>
 
@@ -2807,26 +2825,27 @@ function PatientApptLogsSection({ logs }: { logs: PatientApptLogRow[] }) {
               className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-[var(--color-border)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
             />
           </div>
-          <select
+          <TealSelect
             value={moduleFilter}
-            onChange={(e) => { setModuleFilter(e.target.value as any); setActionFilter(""); }}
-            className="rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] bg-white"
-          >
-            <option value="">All Modules</option>
-            <option value="patient">Patient</option>
-            <option value="appointment">Appointment</option>
-            <option value="clinical">Clinical Records</option>
-          </select>
-          <select
+            onChange={(v) => { setModuleFilter(v as any); setActionFilter(""); }}
+            options={[
+              { value: "", label: "All Modules" },
+              { value: "patient", label: "Patient" },
+              { value: "appointment", label: "Appointment" },
+              { value: "clinical", label: "Clinical Records" },
+            ]}
+          />
+          <TealSelect
             value={actionFilter}
-            onChange={(e) => setActionFilter(e.target.value)}
-            className="rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] bg-white"
-          >
-            <option value="">All Actions</option>
-            {(ACTION_OPTIONS[moduleFilter] ?? ACTION_OPTIONS[""]).map((a) => (
-              <option key={a} value={a}>{ACTION_META[a]?.label ?? a}</option>
-            ))}
-          </select>
+            onChange={setActionFilter}
+            options={[
+              { value: "", label: "All Actions" },
+              ...(ACTION_OPTIONS[moduleFilter] ?? ACTION_OPTIONS[""]).map((a) => ({
+                value: a,
+                label: ACTION_META[a]?.label ?? a,
+              })),
+            ]}
+          />
           <span className="ml-auto text-caption sm:text-xs text-[var(--color-ink-400)]">{filtered.length} records</span>
         </div>
 
