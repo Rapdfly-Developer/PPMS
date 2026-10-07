@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useRef, useEffect } from "react";
 import { openPdfNative, isNativeShell } from "@/lib/open-pdf";
-import { ChevronRight, Printer, FileSignature, CheckCircle2, CheckCheck, Download, ChevronDown, FileText, PackageOpen, X, Lock, PenLine, Search, Clock, Plus, SlidersHorizontal } from "lucide-react";
+import { ChevronRight, Printer, FileSignature, CheckCircle2, CheckCheck, Download, ChevronDown, FileText, PackageOpen, X, Lock, PenLine, Search, Clock, Plus } from "lucide-react";
 import { isSameDay } from "date-fns";
 import { useRouter } from "next/navigation";
 import { useSidebar } from "@/components/ui/SidebarContext";
@@ -234,119 +234,6 @@ function PartialDispenseModal({
   );
 }
 
-// ── Refraction section selection modal ─────────────────────────────────────
-
-type RxSection = "rx" | "extras" | "va" | "retino";
-
-interface RxOption { key: RxSection; label: string; sub: string }
-
-function parseJSON<T>(raw: unknown, fallback: T): T {
-  if (raw === null || raw === undefined) return fallback;
-  try { return typeof raw === "string" ? JSON.parse(raw) : (raw as T); } catch { return fallback; }
-}
-
-function getAvailableRxSections(visit: any): RxOption[] {
-  const options: RxOption[] = [];
-
-  if (visit?.refraction) {
-    options.push({ key: "rx", label: "Spectacle Rx", sub: "Primary distance & near correction" });
-  }
-
-  if (visit?.visualAcuity) {
-    options.push({ key: "va", label: "Visual Acuity", sub: "Unaided / PH / BCVA" });
-  }
-
-  if (visit?.retinoscopy) {
-    options.push({ key: "retino", label: "Retinoscopy", sub: "RE / LE findings" });
-  }
-
-  if (visit?.refraction?.extraCorrections) {
-    const raw = visit.refraction.extraCorrections;
-    const extras: any[] = Array.isArray(raw)
-      ? raw
-      : (() => { try { return JSON.parse(raw); } catch { return []; } })();
-    if (extras.length > 0) {
-      options.push({ key: "extras", label: "Extra Corrections", sub: "Bifocal, contact lens, etc." });
-    }
-  }
-
-  return options;
-}
-
-function RefractionSelectModal({
-  options,
-  title,
-  onConfirm,
-  onCancel,
-}: {
-  options: RxOption[];
-  title: string;
-  onConfirm: (selected: Set<RxSection>) => void;
-  onCancel: () => void;
-}) {
-  const [selected, setSelected] = useState<Set<RxSection>>(() => new Set(options.map((o) => o.key)));
-
-  function toggle(key: RxSection) {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key); else next.add(key);
-      return next;
-    });
-  }
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--color-border)]">
-          <div className="flex items-center gap-2">
-            <SlidersHorizontal size={16} className="text-[var(--color-primary-600)]" />
-            <h2 className="text-sm font-bold text-[var(--color-ink-900)]">{title}</h2>
-          </div>
-          <button onClick={onCancel} className="p-1.5 rounded-lg hover:bg-[var(--color-surface-sunken)] text-[var(--color-ink-400)]">
-            <X size={15} />
-          </button>
-        </div>
-
-        <div className="px-5 py-4 space-y-2">
-          <p className="text-xs text-[var(--color-ink-400)] mb-3">Select which refraction sections to include in the PDF.</p>
-          {options.map((opt) => (
-            <label
-              key={opt.key}
-              className="flex items-start gap-3 p-3 rounded-xl border border-[var(--color-border)] cursor-pointer hover:bg-[var(--color-surface-sunken)] transition-colors"
-            >
-              <input
-                type="checkbox"
-                checked={selected.has(opt.key)}
-                onChange={() => toggle(opt.key)}
-                className="mt-0.5 accent-[var(--color-primary-600)]"
-              />
-              <div>
-                <p className="text-sm font-semibold text-[var(--color-ink-800)]">{opt.label}</p>
-                <p className="text-caption text-[var(--color-ink-400)]">{opt.sub}</p>
-              </div>
-            </label>
-          ))}
-        </div>
-
-        <div className="flex justify-end gap-3 px-5 py-4 border-t border-[var(--color-border)]">
-          <button
-            onClick={onCancel}
-            className="px-4 py-2 rounded-xl text-sm font-medium border border-[var(--color-border)] text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)]"
-          >
-            Cancel
-          </button>
-          <button
-            disabled={selected.size === 0}
-            onClick={() => onConfirm(selected)}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium bg-[var(--color-primary-700)] text-white hover:bg-[var(--color-primary-600)] disabled:opacity-50 transition-colors"
-          >
-            <Printer size={13} /> Open PDF
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 function SuccessModal({ udid, onClose }: { udid: string; onClose: () => void }) {
   const router = useRouter();
@@ -395,7 +282,6 @@ export function EmrActionBar({
   const [passOverPending, startPassOver] = useTransition();
   const [passOverDone, setPassOverDone] = useState(false);
   const [printOpen, setPrintOpen] = useState(false);
-  const [rxSelectFor, setRxSelectFor] = useState<"summary" | "long" | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
   const [showPartialModal, setShowPartialModal] = useState(false);
   // The exit guard asks for this modal by bumping openPartialSignal. Derived
@@ -447,30 +333,6 @@ export function EmrActionBar({
     <>
       {showSuccess && <SuccessModal udid={udid} onClose={() => setShowSuccess(false)} />}
       {passOverDone && <Toast message="Passed over to doctor." onDone={() => {}} />}
-      {rxSelectFor && (() => {
-        const rxOptions = getAvailableRxSections(visit);
-        const isLong = rxSelectFor === "long";
-        const baseUrl = isLong ? pdfBase : summaryBase;
-        const spv = !isLong && typeof window !== "undefined" ? localStorage.getItem(`spect_pin_${udid}`) : null;
-        return (
-          <RefractionSelectModal
-            title={isLong ? "Long Summary — Refraction Sections" : "Short Summary — Refraction Sections"}
-            options={rxOptions}
-            onCancel={() => setRxSelectFor(null)}
-            onConfirm={(sel) => {
-              setRxSelectFor(null);
-              const params = new URLSearchParams();
-              if (spv) params.set("spv", spv);
-              if (!sel.has("rx"))     params.set("rx",     "0");
-              if (!sel.has("extras")) params.set("extras", "0");
-              if (!sel.has("va"))     params.set("va",     "0");
-              if (!sel.has("retino")) params.set("retino", "0");
-              const url = `${baseUrl}${params.toString() ? `?${params}` : ""}`;
-              void openPdfNative(url);
-            }}
-          />
-        );
-      })()}
       {showPartial && (
         <PartialDispenseModal
           loading={partialPending}
@@ -523,9 +385,7 @@ export function EmrActionBar({
                 type="button"
                 onClick={() => {
                   setPrintOpen(false);
-                  const rxOptions = getAvailableRxSections(visit);
-                  if (rxOptions.length <= 1) { void openPdfNative(pdfBase); return; }
-                  setRxSelectFor("long");
+                  void openPdfNative(pdfBase);
                 }}
                 className="flex items-center gap-3 px-4 py-3 w-full text-left text-label sm:text-sm text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] transition-colors"
               >
@@ -567,13 +427,8 @@ export function EmrActionBar({
               <button
                 onClick={() => {
                   setPrintOpen(false);
-                  const rxOptions = getAvailableRxSections(visit);
-                  if (rxOptions.length <= 1) {
-                    const spv = typeof window !== "undefined" ? localStorage.getItem(`spect_pin_${udid}`) : null;
-                    void openPdfNative(`${summaryBase}${spv ? `?spv=${spv}` : ""}`);
-                    return;
-                  }
-                  setRxSelectFor("summary");
+                  const spv = typeof window !== "undefined" ? localStorage.getItem(`spect_pin_${udid}`) : null;
+                  void openPdfNative(`${summaryBase}${spv ? `?spv=${spv}` : ""}`);
                 }}
                 className="flex items-center gap-3 px-4 py-3 w-full text-left text-label sm:text-sm text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] transition-colors"
               >
