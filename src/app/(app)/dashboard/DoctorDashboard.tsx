@@ -128,7 +128,7 @@ export async function DoctorDashboard({
       appts={appts}
       filterOptions={hospitals}
       newEncounterHref="/appointments/new"
-      newEncounterLabel="New Encounter"
+      newEncounterLabel="Add Walk-in"
       returnTo={returnTo}
     />
   );

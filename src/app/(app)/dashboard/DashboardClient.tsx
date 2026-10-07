@@ -5,7 +5,7 @@ import { format } from "date-fns";
 import Link from "next/link";
 import {
   ChevronDown, Plus, Building2, Phone, LogIn, Loader2,
-  Sun, Sunset, Moon, CalendarX2, Calendar, PersonStanding, Clock, Undo2, Trash2, Timer, CheckCircle2, CheckCheck,
+  Sun, Sunset, Moon, CalendarX2, Calendar, CalendarDays, PersonStanding, Clock, Undo2, Trash2, Timer, CheckCircle2, CheckCheck,
 } from "lucide-react";
 import clsx from "clsx";
 import { deleteWalkInVisit, undoQueueEntry, undoPartialDispense } from "@/app/(app)/appointments/actions";
@@ -225,14 +225,16 @@ function ApptRow({ appt, scope, serial, canManageQueue, canViewPatient, returnTo
           >
             {appt.isWalkIn ? format(new Date(appt.createdAt), "hh:mm a") : apptTime}
           </span>
-          <span className={`inline-flex items-center gap-1 mt-0.5 whitespace-nowrap text-caption ${appt.isWalkIn ? "text-gray-400" : "text-teal-600"}`}>
-            <Calendar size={10} className="shrink-0" />
-            {appt.isWalkIn
-              ? "Walk-in"
-              : arrivedAt
-                ? `Appt - ${format(arrivedAt, "h:mm a")}`
-                : "Appointment"}
-          </span>
+          {appt.isWalkIn ? (
+            <span className="inline-flex items-center gap-1 mt-0.5 whitespace-nowrap text-caption text-gray-400">
+              Walk-in
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 mt-0.5 whitespace-nowrap text-caption text-blue-600">
+              <CalendarDays size={10} className="shrink-0" />
+              {arrivedAt ? `Appt - ${format(arrivedAt, "h:mm a")}` : "Appointment"}
+            </span>
+          )}
         </span>
       </div>
       <div className="w-px self-stretch bg-[var(--color-border)] hidden sm:block" />
@@ -430,7 +432,7 @@ export function DashboardClient({
                 <Plus size={15} /> {newEncounterLabel}
               </Link>
             )}
-            {can("appointments.view") && filterOptions.length > 0 && (
+            {can("appointments.view") && scope === "DOCTOR" && filterOptions.length > 0 && (
               <TealSelect
                 variant="banner"
                 className="min-w-0 max-w-[10rem] sm:max-w-[14rem]"
