@@ -21,7 +21,19 @@ export async function DoctorDashboard({
 
   // Run sequentially to avoid exhausting Neon pgbouncer's connection pool
   const todayAppts = await prisma.appointment.findMany({
-    where: { doctorId, dateTime: { gte: dayStart, lte: dayEnd } },
+    where: {
+      doctorId,
+      dateTime: { gte: dayStart, lte: dayEnd },
+      // Only fetch appointments that are shown on the dashboard queue.
+      // REQUESTED/CANCELLED/NO_SHOW/RESCHEDULED are never rendered here.
+      // CONFIRMED without arrivedAt (pre-confirmed, not yet in queue) is also excluded.
+      status: { notIn: ["REQUESTED", "CANCELLED", "NO_SHOW", "RESCHEDULED"] },
+      OR: [
+        { isWalkIn: true },
+        { arrivedAt: { not: null } },
+        { status: { in: ["DISPENSED", "PARTIAL_DISPENSE"] } },
+      ],
+    },
     include: {
       patient:  { select: { name: true, udid: true, uhid: true, age: true, sex: true, mobile: true, complaint: true } },
       hospital: { select: { id: true, name: true, logoUrl: true } },
