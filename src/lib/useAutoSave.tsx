@@ -78,7 +78,7 @@ export function useAutoSave<T>(
   // doSaveRef holds the save function that timers call. It is reassigned every
   // render so it always closes over the current refs without needing to be in
   // any dependency array.
-  const doSaveRef = useRef<() => Promise<void>>();
+  const doSaveRef = useRef<(() => Promise<void>) | undefined>(undefined);
   doSaveRef.current = async () => {
     // Nothing dirty — no-op.
     if (changeVersionRef.current === savedVersionRef.current) return;
