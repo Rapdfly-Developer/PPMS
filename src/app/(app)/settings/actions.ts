@@ -905,3 +905,29 @@ export async function verifyExportOtp(code: string): Promise<{ error?: string }>
   await prisma.exportOtp.update({ where: { id: otp.id }, data: { used: true } });
   return {};
 }
+
+// ── Change own password ────────────────────────────────────────────────────
+
+export async function changeOwnPassword(
+  currentPassword: string,
+  newPassword: string,
+): Promise<{ error?: string }> {
+  const session = await auth();
+  if (!session?.user?.id) return { error: "Not authenticated." };
+
+  if (!newPassword || newPassword.length < 6) return { error: "New password must be at least 6 characters." };
+
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { passwordHash: true },
+  });
+  if (!user) return { error: "User not found." };
+
+  const bcrypt = await import("bcryptjs");
+  const match = await bcrypt.compare(currentPassword, user.passwordHash ?? "");
+  if (!match) return { error: "Current password is incorrect." };
+
+  const newHash = await bcrypt.hash(newPassword, 10);
+  await prisma.user.update({ where: { id: session.user.id }, data: { passwordHash: newHash } });
+  return {};
+}

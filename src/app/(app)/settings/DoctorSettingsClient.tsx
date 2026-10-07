@@ -20,6 +20,7 @@ import {
   exportPatients,
   requestExportOtp,
   verifyExportOtp,
+  changeOwnPassword,
 } from "@/app/(app)/settings/actions";
 import { createUser } from "@/app/(app)/users/actions";
 import { saveRolePermissions } from "@/app/(app)/settings/roles/actions";
@@ -34,14 +35,14 @@ import {
   Mail, Phone, MapPin, Save, Upload,
   Globe, HardDrive, BarChart2,
   CreditCard, Monitor, RefreshCw,
-  Stethoscope, Users2, Tag, History, Plug, Key, Menu,
+  Stethoscope, Users2, Tag, History, Plug, Key, Menu, Lock,
 } from "lucide-react";
 import { TealSelect } from "@/components/ui/TealSelect";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
 type Section =
-  | "profile"
+  | "profile" | "security"
   | "users" | "roles" | "departments"
   | "hospital" | "add-hospital" | "appointments" | "notifications"
   | "audit" | "export" | "logs" | "patient-appt-logs"
@@ -113,7 +114,8 @@ const SIDEBAR_GROUPS: {
   {
     id: "profile-group", label: "My Profile", icon: Stethoscope,
     items: [
-      { id: "profile", label: "Doctor Profile", icon: Stethoscope },
+      { id: "profile",   label: "Doctor Profile",  icon: Stethoscope },
+      { id: "security",  label: "Change Password",  icon: Lock        },
     ],
   },
   {
@@ -3288,6 +3290,90 @@ function HospitalSetupWizard({ returnTo = "", savedPerms = {} }: { returnTo?: st
   );
 }
 
+// ── SECTION: SECURITY / CHANGE PASSWORD ──────────────────────────────────────
+
+function SecuritySection() {
+  const [form, setForm] = useState({ current: "", next: "", confirm: "" });
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+
+  const F = "w-full rounded-lg border border-[var(--color-border)] px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] bg-white placeholder:text-[var(--color-ink-400)]";
+  const L = "block text-caption sm:text-xs font-medium text-[var(--color-ink-500)] mb-1.5";
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setSuccess(false);
+    if (form.next !== form.confirm) { setError("New passwords do not match."); return; }
+    if (form.next.length < 6) { setError("New password must be at least 6 characters."); return; }
+    setBusy(true);
+    const res = await changeOwnPassword(form.current, form.next);
+    setBusy(false);
+    if (res.error) { setError(res.error); return; }
+    setSuccess(true);
+    setForm({ current: "", next: "", confirm: "" });
+  }
+
+  return (
+    <div>
+      <SectionHeader title="Change Password" desc="Update your login password" />
+      <div className="max-w-md">
+        <Card>
+          <div className="p-5">
+            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+              <div>
+                <label className={L}>Current Password</label>
+                <input
+                  type="password" required autoComplete="current-password"
+                  value={form.current} onChange={(e) => setForm((f) => ({ ...f, current: e.target.value }))}
+                  placeholder="••••••••" className={F}
+                />
+              </div>
+              <div>
+                <label className={L}>New Password <span className="font-normal text-[var(--color-ink-400)]">(min 6 chars)</span></label>
+                <input
+                  type="password" required autoComplete="new-password"
+                  value={form.next} onChange={(e) => setForm((f) => ({ ...f, next: e.target.value }))}
+                  placeholder="••••••••" className={F}
+                />
+              </div>
+              <div>
+                <label className={L}>Confirm New Password</label>
+                <input
+                  type="password" required autoComplete="new-password"
+                  value={form.confirm} onChange={(e) => setForm((f) => ({ ...f, confirm: e.target.value }))}
+                  placeholder="••••••••" className={F}
+                />
+              </div>
+
+              {error && (
+                <p className="flex items-center gap-1.5 text-caption sm:text-xs text-red-600">
+                  <AlertTriangle size={12} className="shrink-0" /> {error}
+                </p>
+              )}
+              {success && (
+                <p className="flex items-center gap-1.5 text-caption sm:text-xs text-emerald-600">
+                  <Check size={12} className="shrink-0" /> Password updated successfully.
+                </p>
+              )}
+
+              <div className="pt-2 border-t border-[var(--color-border)]">
+                <button
+                  type="submit" disabled={busy}
+                  className="flex items-center gap-2 rounded-xl bg-[var(--color-primary-600)] px-5 py-2.5 text-label sm:text-sm font-semibold text-white hover:bg-[var(--color-primary-700)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Lock size={14} /> {busy ? "Updating…" : "Update Password"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
 // ── License Management, handled by LicenseSection component ─────────────────
 
 const LICENSE_SUBTABS = ["overview", "activate", "plans", "renewal", "history"] as const;
@@ -3301,7 +3387,7 @@ export function DoctorSettingsClient({ users, auditLogs, hospitals, loginLogs, p
   const isLicenseTab = (LICENSE_SUBTABS as readonly string[]).includes(urlTab) || urlTab === "license";
   const licInitialTab: LicSubTab = (LICENSE_SUBTABS as readonly string[]).includes(urlTab) ? urlTab as LicSubTab : "overview";
 
-  const VALID_SECTIONS: Section[] = ["profile","users","roles","departments","hospital","add-hospital","appointments","notifications","audit","export","logs","patient-appt-logs","licenses","integrations"];
+  const VALID_SECTIONS: Section[] = ["profile","security","users","roles","departments","hospital","add-hospital","appointments","notifications","audit","export","logs","patient-appt-logs","licenses","integrations"];
   const [activeSection, setActiveSection] = useState<Section>(
     urlSection && VALID_SECTIONS.includes(urlSection) ? urlSection :
     isLicenseTab ? "licenses" : "profile"
@@ -3319,6 +3405,7 @@ export function DoctorSettingsClient({ users, auditLogs, hospitals, loginLogs, p
   const content = () => {
     switch (activeSection) {
       case "profile":      return <ProfileSection doctor={doctor} />;
+      case "security":     return <SecuritySection />;
       case "users":        return <UsersSection users={users} hospitals={hospitals} assignableRoles={assignableRoles} doctorId={doctor?.id ?? null} />;
       case "roles":        return <RolesSection />;
       case "departments":  return <DepartmentsSection />;
