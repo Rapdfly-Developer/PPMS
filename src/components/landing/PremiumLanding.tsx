@@ -596,8 +596,8 @@ export function PremiumLanding() {
           className="ppms-orb-b pointer-events-none absolute -right-52 top-40 h-[620px] w-[620px] rounded-full bg-teal-100/50 blur-[130px]"
         />
 
-        <div className={`relative grid w-full items-center gap-10 sm:gap-12 lg:grid-cols-[1.05fr_1fr] lg:gap-14 4xl:gap-20 ${SHELL}`}>
-          <div>
+        <div className={`relative grid w-full items-center gap-10 sm:gap-12 lg:grid-cols-[1fr_1.05fr] lg:gap-14 4xl:gap-20 ${SHELL}`}>
+          <div className="lg:order-2">
             {/* The hero animates with CSS (lp-in, globals.css), not <Reveal>: it is
                 in the HTML and moving from the first paint, instead of sitting
                 at opacity 0 until the client bundle hydrates. */}
@@ -672,7 +672,7 @@ export function PremiumLanding() {
 
           {/* Z-axis cascade: the main plate, with a second smaller plate breaking
               its lower-left corner. Overlap is removed below lg. */}
-          <div className="lp-plate relative" data-lp-depth="" style={{ ...inDelay(160), ["--lp-depth" as string]: 3 } as React.CSSProperties}>
+          <div className="lp-plate relative lg:order-1" data-lp-depth="" style={{ ...inDelay(160), ["--lp-depth" as string]: 3 } as React.CSSProperties}>
             <Frame
               src={`${IMG}/hero-clinician-tablet-dashboard.jpg`}
               alt="A clinician in gloves reviewing a RF Health patient dashboard on a tablet in a hospital corridor"
