@@ -216,14 +216,18 @@ function ApptRow({ appt, scope, serial, canManageQueue, canViewPatient, returnTo
         <span className="text-caption sm:text-xs font-bold text-[var(--color-ink-400)] tabular-nums">{serial}</span>
       </div>
       <div className="w-px self-stretch bg-[var(--color-border)] hidden sm:block" />
-      {/* Booked time on top; appointments show the arrival time in blue beneath. */}
+      {/* Arrival time on top (bold); booked appt time shown small below. */}
       <div className="w-24 shrink-0 hidden sm:flex items-center justify-center">
         <span className="flex flex-col items-center leading-tight">
           <span
-            className="whitespace-nowrap text-caption font-bold text-[var(--color-ink-900)] tabular-nums"
-            title={appt.isWalkIn ? "Walk-in time" : "Booked appointment time"}
+            className="whitespace-nowrap text-sm font-black text-[var(--color-ink-900)] tabular-nums tracking-tight"
+            title={appt.isWalkIn ? "Walk-in time" : "Arrival time"}
           >
-            {appt.isWalkIn ? format(new Date(appt.createdAt), "hh:mm a") : apptTime}
+            {appt.isWalkIn
+              ? format(new Date(appt.createdAt), "h:mm a")
+              : arrivedAt
+                ? format(arrivedAt, "h:mm a")
+                : apptTime}
           </span>
           {appt.isWalkIn ? (
             <span className="inline-flex items-center gap-1 mt-0.5 whitespace-nowrap text-caption text-gray-400">
@@ -232,7 +236,7 @@ function ApptRow({ appt, scope, serial, canManageQueue, canViewPatient, returnTo
           ) : (
             <span className="inline-flex items-center gap-1 mt-0.5 whitespace-nowrap text-caption text-blue-600">
               <CalendarDays size={10} className="shrink-0" />
-              {arrivedAt ? `Appt - ${format(arrivedAt, "h:mm a")}` : "Appointment"}
+              {`Appt - ${apptTime}`}
             </span>
           )}
         </span>
