@@ -957,14 +957,12 @@ function ColourContrastTab({ visit, udid, editable, priorVisits = [] }: { visit:
           <p className="text-label sm:text-sm font-medium text-[var(--color-ink-700)]">Colour Vision</p>
           <div className="flex items-center gap-2">
             <span className="text-caption sm:text-xs text-[var(--color-ink-400)]">Method:</span>
-            <select
-              disabled={!editable}
+            <TealSelect
               value={cvMethod}
-              onChange={(e) => setCvMethod(e.target.value)}
-              className="rounded-lg border border-[var(--color-border)] bg-white px-2.5 py-1 text-xs disabled:bg-[var(--color-surface-sunken)]"
-            >
-              {CV_METHODS.map((m) => <option key={m}>{m}</option>)}
-            </select>
+              onChange={editable ? setCvMethod : () => {}}
+              options={CV_METHODS.map((m) => ({ value: m, label: m }))}
+              className="min-w-[140px]"
+            />
           </div>
           {priorCv.length > 0 && (
             <button
@@ -1036,14 +1034,12 @@ function ColourContrastTab({ visit, udid, editable, priorVisits = [] }: { visit:
           <p className="text-label sm:text-sm font-medium text-[var(--color-ink-700)]">Contrast Vision</p>
           <div className="flex items-center gap-2">
             <span className="text-caption sm:text-xs text-[var(--color-ink-400)]">Method:</span>
-            <select
-              disabled={!editable}
+            <TealSelect
               value={csMethod}
-              onChange={(e) => setCsMethod(e.target.value)}
-              className="rounded-lg border border-[var(--color-border)] bg-white px-2.5 py-1 text-xs disabled:bg-[var(--color-surface-sunken)]"
-            >
-              {CS_METHODS.map((m) => <option key={m}>{m}</option>)}
-            </select>
+              onChange={editable ? setCsMethod : () => {}}
+              options={CS_METHODS.map((m) => ({ value: m, label: m }))}
+              className="min-w-[140px]"
+            />
           </div>
           {priorCv.length > 0 && (
             <button
@@ -1147,10 +1143,12 @@ function IOPCard({ visit, udid, editable, priorVisits }: { visit: any; udid: str
         <div data-overview-hide className="flex items-end gap-3 mb-4 flex-wrap">
           <div>
             <label className="text-caption sm:text-xs text-[var(--color-ink-400)] block mb-1">Method</label>
-            <select value={method} onChange={(e) => setMethod(e.target.value)}
-              className="rounded-lg border border-[var(--color-border)] text-sm px-2.5 py-1.5 bg-white">
-              {IOP_METHODS.map((m) => <option key={m}>{m}</option>)}
-            </select>
+            <TealSelect
+              value={method}
+              onChange={setMethod}
+              options={IOP_METHODS.map((m) => ({ value: m, label: m }))}
+              className="min-w-[148px]"
+            />
           </div>
           <LabeledInput label="RE" value={re} onChange={setRe} compact numeric />
           <LabeledInput label="LE" value={le} onChange={setLe} compact numeric />
@@ -1945,14 +1943,12 @@ function AnteriorSegmentCard({ visit, udid, editable, priorVisits = [] }: { visi
           <p className="text-label sm:text-sm font-medium text-[var(--color-ink-700)]">Anterior Segment</p>
           <div className="flex items-center gap-2">
             <span className="text-caption sm:text-xs text-[var(--color-ink-400)]">Method:</span>
-            <select
-              disabled={!editable}
+            <TealSelect
               value={re._method ?? AS_METHODS[0]}
-              onChange={(e) => setRe({ ...re, _method: e.target.value })}
-              className="rounded-lg border border-[var(--color-border)] bg-white px-2.5 py-1 text-xs disabled:bg-[var(--color-surface-sunken)]"
-            >
-              {AS_METHODS.map((m) => <option key={m}>{m}</option>)}
-            </select>
+              onChange={editable ? (v) => setRe({ ...re, _method: v }) : () => {}}
+              options={AS_METHODS.map((m) => ({ value: m, label: m }))}
+              className="min-w-[140px]"
+            />
           </div>
           {editable && (
             <label className="flex items-center gap-1.5 cursor-pointer select-none">
@@ -2184,14 +2180,12 @@ function PosteriorSegmentCard({ visit, udid, editable, priorVisits = [] }: { vis
           <p className="text-label sm:text-sm font-medium text-[var(--color-ink-700)]">Posterior Segment</p>
           <div className="flex items-center gap-2">
             <span className="text-caption sm:text-xs text-[var(--color-ink-400)]">Method:</span>
-            <select
-              disabled={!editable}
+            <TealSelect
               value={re._method ?? PS_METHODS[0]}
-              onChange={(e) => setRe({ ...re, _method: e.target.value })}
-              className="rounded-lg border border-[var(--color-border)] bg-white px-2.5 py-1 text-xs disabled:bg-[var(--color-surface-sunken)]"
-            >
-              {PS_METHODS.map((m) => <option key={m}>{m}</option>)}
-            </select>
+              onChange={editable ? (v) => setRe({ ...re, _method: v }) : () => {}}
+              options={PS_METHODS.map((m) => ({ value: m, label: m }))}
+              className="min-w-[140px]"
+            />
           </div>
           {editable && (
             <label className="flex items-center gap-1.5 cursor-pointer select-none">
