@@ -2,10 +2,12 @@
 
 import { useState } from "react";
 import { requestAppointment } from "../appointments/actions";
+import { TealSelect } from "@/components/ui/TealSelect";
 
 export function RequestAppointmentButton({ patientId, hospitals, showHospitalSelect }: { patientId: string; hospitals: { id: string; name: string }[]; showHospitalSelect: boolean }) {
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hospitalId, setHospitalId] = useState(hospitals[0]?.id ?? "");
 
   if (!open) {
     return (
@@ -31,11 +33,15 @@ export function RequestAppointmentButton({ patientId, hospitals, showHospitalSel
       >
         <input type="hidden" name="patientId" value={patientId} />
         {showHospitalSelect && (
-          <select name="hospitalId" required className="text-xs rounded-lg border border-[var(--color-border)] px-2 py-1.5 bg-white">
-            {hospitals.map((h) => (
-              <option key={h.id} value={h.id}>{h.name}</option>
-            ))}
-          </select>
+          <>
+            <TealSelect
+              value={hospitalId}
+              onChange={setHospitalId}
+              options={hospitals.map((h) => ({ value: h.id, label: h.name }))}
+              className="min-w-[120px]"
+            />
+            <input type="hidden" name="hospitalId" value={hospitalId} />
+          </>
         )}
         <input type="datetime-local" name="dateTime" required className="text-xs rounded-lg border border-[var(--color-border)] px-2 py-1.5 bg-white" />
         <button type="submit" className="text-xs font-medium px-2.5 py-1.5 rounded-lg bg-[var(--color-primary-600)] text-white">Send</button>

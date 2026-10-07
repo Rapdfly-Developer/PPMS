@@ -13,6 +13,7 @@ import { SmartUploadBox, type UploadedFile } from "@/components/ui/SmartUploadBo
 import { createWalkInEncounter } from "./actions";
 import { getLastVisitCC } from "@/app/(app)/appointments/book/actions";
 import { ComplaintCombobox } from "@/components/ui/ComplaintCombobox";
+import { TealSelect } from "@/components/ui/TealSelect";
 import { keywordEntries } from "@/components/emr/KeywordField";
 import { CHIEF_COMPLAINT_FIELD_KEY } from "@/lib/constants";
 import { ComplaintChips } from "@/components/ui/ComplaintChips";
@@ -473,15 +474,16 @@ export function NewEncounterForm({
                 </div>
                 <div>
                   <FieldLabel>Sex *</FieldLabel>
-                  <select
+                  <TealSelect
                     value={sex}
-                    onChange={(e) => setSex(e.target.value)}
-                    className={inputCls}
-                  >
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                    <option value="Other">Other</option>
-                  </select>
+                    onChange={setSex}
+                    options={[
+                      { value: "Male", label: "Male" },
+                      { value: "Female", label: "Female" },
+                      { value: "Other", label: "Other" },
+                    ]}
+                    className="w-full"
+                  />
                 </div>
                 <div>
                   <FieldLabel icon={<Building2 size={12} />}>Occupation *</FieldLabel>
@@ -744,26 +746,28 @@ export function NewEncounterForm({
                 />
                 <div className="flex items-center gap-1 shrink-0">
                   <span className="text-xs text-[var(--color-ink-500)]">Since</span>
-                  <select
+                  <TealSelect
                     value={composerSinceNum}
-                    onChange={(e) => setComposerSinceNum(e.target.value)}
-                    className="rounded-md border border-[var(--color-border)] bg-white px-1.5 py-1 text-xs text-[var(--color-ink-700)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] transition-shadow w-14"
-                  >
-                    <option value="">—</option>
-                    {Array.from({ length: 30 }, (_, i) => i + 1).map((n) => (
-                      <option key={n} value={n}>{n}</option>
-                    ))}
-                  </select>
-                  <select
+                    onChange={setComposerSinceNum}
+                    options={[
+                      { value: "", label: "—" },
+                      ...Array.from({ length: 30 }, (_, i) => i + 1).map((n) => ({ value: String(n), label: String(n) })),
+                    ]}
+                    variant="bare"
+                    className="min-w-[3.5rem]"
+                  />
+                  <TealSelect
                     value={composerSinceUnit}
-                    onChange={(e) => setComposerSinceUnit(e.target.value)}
-                    className="rounded-md border border-[var(--color-border)] bg-white px-1.5 py-1 text-xs text-[var(--color-ink-700)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] transition-shadow w-20"
-                  >
-                    <option value="days">days</option>
-                    <option value="weeks">weeks</option>
-                    <option value="months">months</option>
-                    <option value="years">years</option>
-                  </select>
+                    onChange={setComposerSinceUnit}
+                    options={[
+                      { value: "days", label: "days" },
+                      { value: "weeks", label: "weeks" },
+                      { value: "months", label: "months" },
+                      { value: "years", label: "years" },
+                    ]}
+                    variant="bare"
+                    className="min-w-[5rem]"
+                  />
                 </div>
                 {editingIndex !== null && (
                   <>

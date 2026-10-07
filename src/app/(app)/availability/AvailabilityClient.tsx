@@ -5,8 +5,9 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   Clock, Plus, Trash2, Calendar, Building2, Users,
-  X, Check, ChevronDown, Power, Timer, Layers, CalendarDays,
+  X, Check, Power, Timer, Layers, CalendarDays,
 } from "lucide-react";
+import { TealSelect } from "@/components/ui/TealSelect";
 import { upsertAvailability, deleteAvailability, toggleAvailabilityStatus } from "./actions";
 
 // ── Constants ──────────────────────────────────────────────────────────────
@@ -123,18 +124,12 @@ function AddModal({
           {/* Hospital */}
           <div>
             <label className="block text-caption sm:text-xs font-semibold text-[var(--color-ink-500)] uppercase tracking-wider mb-2">Hospital</label>
-            <div className="relative">
-              <select
-                value={hospitalId}
-                onChange={(e) => setHospitalId(e.target.value)}
-                className="w-full appearance-none rounded-xl border border-[var(--color-border)] bg-white px-4 py-2.5 text-sm pr-9 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
-              >
-                {hospitals.map((h) => (
-                  <option key={h.id} value={h.id}>{h.name}</option>
-                ))}
-              </select>
-              <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] pointer-events-none" />
-            </div>
+            <TealSelect
+              value={hospitalId}
+              onChange={setHospitalId}
+              options={hospitals.map((h) => ({ value: h.id, label: h.name }))}
+              className="w-full"
+            />
             {color && (
               <span className={`inline-flex items-center gap-1.5 mt-2 text-caption sm:text-xs font-medium px-2.5 py-1 rounded-full text-white ${color.pill}`}>
                 <Building2 size={11} />
@@ -187,13 +182,12 @@ function AddModal({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-caption sm:text-xs font-semibold text-[var(--color-ink-500)] uppercase tracking-wider mb-2">Slot Duration</label>
-              <div className="relative">
-                <select value={slotMins} onChange={(e) => setSlotMins(Number(e.target.value))}
-                  className="w-full appearance-none rounded-xl border border-[var(--color-border)] bg-white px-4 py-2.5 text-sm pr-9 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]">
-                  {SLOT_OPTIONS.map((o) => <option key={o} value={o}>{o} minutes</option>)}
-                </select>
-                <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] pointer-events-none" />
-              </div>
+              <TealSelect
+                value={String(slotMins)}
+                onChange={(v) => setSlotMins(Number(v))}
+                options={SLOT_OPTIONS.map((o) => ({ value: String(o), label: `${o} minutes` }))}
+                className="w-full"
+              />
             </div>
             <div>
               <label className="block text-caption sm:text-xs font-semibold text-[var(--color-ink-500)] uppercase tracking-wider mb-2">Patients / Slot</label>
