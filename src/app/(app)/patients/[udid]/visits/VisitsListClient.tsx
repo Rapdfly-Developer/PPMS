@@ -111,7 +111,7 @@ export function VisitsListClient({ visits, udid }: { visits: VisitRow[]; udid: s
                 {isClosed ? (
                   <span className="text-caption font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">Completed</span>
                 ) : (
-                  <span className="text-caption font-semibold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">In Progress</span>
+                  <span className="text-caption font-semibold px-2 py-0.5 rounded-full bg-teal-50 text-teal-700">In Progress</span>
                 )}
                 {v.visitType && (
                   <span className="text-caption text-[var(--color-ink-400)] font-medium">{v.visitType}</span>

@@ -502,9 +502,9 @@ export function AppointmentsClient({
             label:  "Upcoming Appointments",
             sub:    null,
             appts:  upcomingAppts,
-            accent: "border-l-blue-400 bg-blue-50/30",
-            badge:  "bg-blue-100 text-blue-700",
-            head:   "text-blue-700",
+            accent: "border-l-teal-400 bg-teal-50/30",
+            badge:  "bg-teal-50 text-teal-700",
+            head:   "text-teal-700",
           },
           {
             key:    "previous",
@@ -546,12 +546,12 @@ export function AppointmentsClient({
                   label: "Upcoming",
                   count: upcomingAppts.length,
                   sub:   "Next 60 days",
-                  bg:    "bg-blue-50",
-                  border:"border-blue-200",
-                  dot:   "bg-blue-400",
-                  cnt:   "text-blue-700",
-                  lbl:   "text-blue-600",
-                  slbl:  "text-blue-400",
+                  bg:    "bg-teal-50",
+                  border:"border-teal-100",
+                  dot:   "bg-teal-400",
+                  cnt:   "text-teal-700",
+                  lbl:   "text-teal-600",
+                  slbl:  "text-teal-400",
                 },
                 {
                   label: "Overall",
@@ -575,7 +575,7 @@ export function AppointmentsClient({
                       isActive
                         ? `${border} ${bg} shadow-sm ring-2 ring-offset-1 ${
                             sectionKey === "today"    ? "ring-[var(--color-primary-300)]" :
-                            sectionKey === "upcoming" ? "ring-blue-300" :
+                            sectionKey === "upcoming" ? "ring-teal-300" :
                                                         "ring-[var(--color-border)]"
                           }`
                         : "border-[var(--color-border)] bg-white hover:bg-[var(--color-surface-sunken)] opacity-70"

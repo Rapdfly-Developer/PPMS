@@ -179,7 +179,7 @@ function EmrContent({ visit, udid, localResults, onAttach }: {
         <span className={`ml-auto px-2 py-0.5 rounded-full text-caption font-bold uppercase ${
           isClosed
             ? "bg-emerald-50 text-emerald-700"
-            : "bg-blue-50 text-blue-700"
+            : "bg-teal-50 text-teal-700"
         }`}>
           {isClosed ? "Completed" : "In Progress"}
         </span>
@@ -318,7 +318,7 @@ function EmrContent({ visit, udid, localResults, onAttach }: {
                           <InvUploadButton orderId={o.id} udid={udid} onDone={(url) => onAttach(o.id, url)} />
                           <span className={`text-caption px-2 py-0.5 rounded-full font-semibold ${
                             o.status === "COMPLETED" ? "bg-emerald-50 text-emerald-700"
-                            : o.status === "ORDERED" ? "bg-blue-50 text-blue-700"
+                            : o.status === "ORDERED" ? "bg-teal-50 text-teal-700"
                             : "bg-amber-50 text-amber-700"
                           }`}>
                             {o.status.replace(/_/g, " ")}
@@ -450,9 +450,9 @@ function EmrContent({ visit, udid, localResults, onAttach }: {
             </div>
           )}
           {visit.referralEnabled && visit.referralNote && (
-            <div className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2">
-              <p className="text-caption font-bold uppercase tracking-widest text-blue-700 mb-1">Referral</p>
-              <p className="text-xs leading-relaxed text-blue-800">{visit.referralNote}</p>
+            <div className="rounded-lg border border-teal-100 bg-teal-50 px-3 py-2">
+              <p className="text-caption font-bold uppercase tracking-widest text-teal-700 mb-1">Referral</p>
+              <p className="text-xs leading-relaxed text-teal-800">{visit.referralNote}</p>
             </div>
           )}
         </Section>

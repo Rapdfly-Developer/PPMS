@@ -195,8 +195,8 @@ function DetailDrawer({ lic, events, loadingEvents, onClose, onAction, onRefresh
     { id: "emergency" as ModalType,  label: "Emergency Access",icon: Zap,          color: "text-amber-600",  disabled: false },
     { id: "suspend" as ModalType,    label: "Suspend",          icon: Lock,         color: "text-orange-600", disabled: !lic.isActive },
     { id: "resume" as ModalType,     label: "Resume",           icon: Unlock,       color: "text-emerald-600",disabled: lic.isActive && status !== "EXPIRED" },
-    { id: "repair" as ModalType,     label: "Repair Signature", icon: RotateCcw,    color: "text-blue-600",   disabled: false },
-    { id: "regenerate" as ModalType, label: "Regenerate Key",   icon: KeyRound,     color: "text-violet-600", disabled: false },
+    { id: "repair" as ModalType,     label: "Repair Signature", icon: RotateCcw,    color: "text-teal-600",   disabled: false },
+    { id: "regenerate" as ModalType, label: "Regenerate Key",   icon: KeyRound,     color: "text-teal-600", disabled: false },
     { id: "revoke" as ModalType,     label: "Revoke License",   icon: Trash2,       color: "text-red-600",    disabled: false },
   ];
 

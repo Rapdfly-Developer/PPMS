@@ -97,7 +97,7 @@ function SetupCard({ icon, title, desc, badge, badgeTone, minutes, done, locked,
       className={`group relative flex flex-col text-left rounded-3xl border bg-white p-6 transition-all duration-300 ${
         locked
           ? "border-slate-200 opacity-70 cursor-not-allowed"
-          : "border-slate-200 hover:border-cyan-300 cursor-pointer"
+          : "border-slate-200 hover:border-teal-300 cursor-pointer"
       }`}
       style={{ boxShadow: "0 10px 30px rgba(15,23,42,0.06)" }}
     >
@@ -130,7 +130,7 @@ function SetupCard({ icon, title, desc, badge, badgeTone, minutes, done, locked,
 
       <div className="w-full h-px bg-slate-100 my-4" />
 
-      <div className={`flex items-center gap-1.5 text-sm font-semibold ${locked ? "text-slate-400" : "text-blue-600"}`}>
+      <div className={`flex items-center gap-1.5 text-sm font-semibold ${locked ? "text-slate-400" : "text-teal-600"}`}>
         {locked ? (
           <><Lock size={14} /> {lockedNote}</>
         ) : done ? (
@@ -224,7 +224,7 @@ function WelcomeWidget({ pct, remainingMin, onContinue, complete }: {
           />
         </div>
         <div className="flex items-center justify-between mt-2">
-          <p className="text-xs font-bold text-blue-600 tabular-nums">{pct}%</p>
+          <p className="text-xs font-bold text-teal-600 tabular-nums">{pct}%</p>
           {!complete && (
             <p className="text-caption text-slate-400">≈ {remainingMin} min left</p>
           )}
@@ -260,13 +260,13 @@ function QuickActions({ onGo }: { onGo: (v: View) => void }) {
           <button
             key={a.label}
             onClick={() => onGo(a.view)}
-            className="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-600 hover:text-blue-700 hover:bg-blue-50/70 transition-all text-left"
+            className="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-600 hover:text-teal-700 hover:bg-teal-50/70 transition-all text-left"
           >
-            <span className="w-7 h-7 rounded-lg bg-slate-100 group-hover:bg-blue-100 flex items-center justify-center text-slate-500 group-hover:text-blue-600 transition-colors">
+            <span className="w-7 h-7 rounded-lg bg-slate-100 group-hover:bg-teal-50 flex items-center justify-center text-slate-500 group-hover:text-teal-600 transition-colors">
               {a.icon}
             </span>
             <span className="flex-1 font-medium">{a.label}</span>
-            <ChevronRight size={14} className="text-slate-300 group-hover:text-blue-500 transition-transform duration-200 group-hover:translate-x-0.5" />
+            <ChevronRight size={14} className="text-slate-300 group-hover:text-teal-500 transition-transform duration-200 group-hover:translate-x-0.5" />
           </button>
         ))}
       </div>
@@ -431,7 +431,7 @@ export function SetupDashboard({ onGo }: { onGo: (v: View) => void }) {
               {!complete && (
                 <button
                   onClick={() => onGo(nextView)}
-                  className="group mt-6 inline-flex items-center gap-2 rounded-2xl bg-white text-blue-700 text-sm font-bold px-6 py-3 transition-all hover:scale-[1.03] active:scale-[0.98]"
+                  className="group mt-6 inline-flex items-center gap-2 rounded-2xl bg-white text-teal-700 text-sm font-bold px-6 py-3 transition-all hover:scale-[1.03] active:scale-[0.98]"
                   style={{ boxShadow: "0 8px 24px rgba(0,0,0,0.15)" }}
                 >
                   Continue Setup

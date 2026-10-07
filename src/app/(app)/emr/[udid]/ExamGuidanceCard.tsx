@@ -60,18 +60,18 @@ function Shell({ children, note }: { children: React.ReactNode; note?: string })
         }}
       >
         <div className="flex items-center gap-2 mb-3 flex-wrap">
-          <ScanEye size={13} className="shrink-0 text-violet-500" />
-          <p className="text-caption font-semibold tracking-widest text-violet-600/80 uppercase italic">
+          <ScanEye size={13} className="shrink-0 text-teal-500" />
+          <p className="text-caption font-semibold tracking-widest text-teal-600/80 uppercase italic">
             Exam Guidance
           </p>
-          <span className="ml-auto shrink-0 text-micro sm:text-caption font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-violet-50 text-violet-600 border border-violet-200/70">
+          <span className="ml-auto shrink-0 text-micro sm:text-caption font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-teal-50 text-teal-600 border border-teal-100/70">
             AI · guidance only
           </span>
         </div>
 
         {children}
 
-        {note && <p className="mt-2 text-caption text-violet-400/70 italic">{note}</p>}
+        {note && <p className="mt-2 text-caption text-teal-300/70 italic">{note}</p>}
       </div>
     </div>
   );

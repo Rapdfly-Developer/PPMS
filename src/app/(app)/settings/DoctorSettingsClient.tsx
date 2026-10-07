@@ -153,10 +153,10 @@ const ROLE_META: Record<string, { label: string; cls: string }> = {
 };
 
 const AUDIT_ENTITY_COLOR: Record<string, string> = {
-  Appointment: "bg-blue-100 text-blue-600",
+  Appointment: "bg-teal-50 text-teal-600",
   Patient:     "bg-emerald-100 text-emerald-600",
   Visit:       "bg-[var(--color-primary-100)] text-[var(--color-primary-600)]",
-  Admission:   "bg-purple-100 text-purple-600",
+  Admission:   "bg-teal-50 text-teal-600",
   Dispense:    "bg-amber-100 text-amber-600",
 };
 
@@ -1080,10 +1080,10 @@ function RolesSection() {
 // ── SECTION: DEPARTMENTS ──────────────────────────────────────────────────────
 
 const DEMO_DEPTS = [
-  { name: "Ophthalmology",     head: "Sai Dharshan",   staff: 12, color: "bg-blue-500"    },
+  { name: "Ophthalmology",     head: "Sai Dharshan",   staff: 12, color: "bg-teal-500"    },
   { name: "Optometry",         head: "Priya Menon",    staff: 5,  color: "bg-emerald-500"  },
   { name: "Pre-test / Refraction", head: "—",          staff: 3,  color: "bg-amber-500"    },
-  { name: "Front Desk",        head: "Sunrise Staff",  staff: 4,  color: "bg-purple-500"   },
+  { name: "Front Desk",        head: "Sunrise Staff",  staff: 4,  color: "bg-teal-500"   },
   { name: "Operation Theatre", head: "Sai Dharshan",   staff: 6,  color: "bg-rose-500"     },
 ];
 
@@ -1457,8 +1457,8 @@ function AuditSection({ auditLogs }: { auditLogs: AuditRow[] }) {
   // Redirect panel — full audit system is at /audit
   const AUDIT_LINKS = [
     { href: "/audit",               label: "Audit Dashboard",      desc: "KPIs, activity charts, recent events",      color: "bg-[var(--color-primary-100)] text-[var(--color-primary-700)]" },
-    { href: "/audit/login-history", label: "Login History",        desc: "All login/logout events with IP & device",  color: "bg-blue-100 text-blue-700" },
-    { href: "/audit/activity",      label: "Activity Logs",        desc: "Every create, update, delete action",       color: "bg-purple-100 text-purple-700" },
+    { href: "/audit/login-history", label: "Login History",        desc: "All login/logout events with IP & device",  color: "bg-teal-50 text-teal-700" },
+    { href: "/audit/activity",      label: "Activity Logs",        desc: "Every create, update, delete action",       color: "bg-teal-50 text-teal-700" },
     { href: "/audit/sessions",      label: "Active Sessions",      desc: "Who is currently logged in",                color: "bg-emerald-100 text-emerald-700" },
     { href: "/audit/failed-logins", label: "Failed Login Attempts",desc: "Security alerts for bad credentials",       color: "bg-red-100 text-red-700" },
   ];
@@ -1577,7 +1577,7 @@ function AuditSection({ auditLogs }: { auditLogs: AuditRow[] }) {
               <tbody className="divide-y divide-[var(--color-border)]">
                 {filtered.slice(0, 25).map((entry) => {
                   const colorCls = AUDIT_ENTITY_COLOR[entry.entityType] ?? "bg-slate-100 text-slate-500";
-                  const actionColor = entry.action === "CREATE" ? "bg-emerald-100 text-emerald-700" : entry.action === "DELETE" ? "bg-red-100 text-red-700" : "bg-blue-100 text-blue-700";
+                  const actionColor = entry.action === "CREATE" ? "bg-emerald-100 text-emerald-700" : entry.action === "DELETE" ? "bg-red-100 text-red-700" : "bg-teal-50 text-teal-700";
                   return (
                     <tr key={entry.id} className="hover:bg-[var(--color-surface-sunken)] transition-colors">
                       <td className="px-4 py-3 text-caption sm:text-xs font-mono text-[var(--color-ink-600)]">
@@ -2159,12 +2159,12 @@ function ExportSection({ hospitals }: { hospitals: HospitalRow[] }) {
             </span>
           )}
           {category && (
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 text-caption sm:text-xs font-semibold">
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-teal-50 text-teal-700 text-caption sm:text-xs font-semibold">
               {category}
             </span>
           )}
           {sex && (
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-purple-50 text-purple-700 text-caption sm:text-xs font-semibold">
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-teal-50 text-teal-700 text-caption sm:text-xs font-semibold">
               {sex}
             </span>
           )}
@@ -2327,9 +2327,9 @@ function LogsSection({ loginLogs }: { loginLogs: LoginLogRow[] }) {
           <span className="text-label sm:text-sm font-semibold text-emerald-700">{activeCount}</span>
           <span className="text-caption sm:text-xs text-emerald-600">Active now</span>
         </div>
-        <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-50 border border-blue-100">
-          <span className="text-label sm:text-sm font-semibold text-blue-700">{loginLogs.filter(l => l.status === "SUCCESS").length}</span>
-          <span className="text-caption sm:text-xs text-blue-600">Successful logins</span>
+        <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-teal-50 border border-teal-50">
+          <span className="text-label sm:text-sm font-semibold text-teal-700">{loginLogs.filter(l => l.status === "SUCCESS").length}</span>
+          <span className="text-caption sm:text-xs text-teal-600">Successful logins</span>
         </div>
         <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-red-50 border border-red-100">
           <span className="text-label sm:text-sm font-semibold text-red-700">{failedCount}</span>
@@ -2599,7 +2599,7 @@ function ProfileSection({ doctor }: { doctor: DoctorProfile | null }) {
 
 const ACTION_META: Record<string, { label: string; cls: string }> = {
   CREATE:          { label: "Created",           cls: "bg-emerald-100 text-emerald-700" },
-  UPDATE:          { label: "Updated",           cls: "bg-blue-100 text-blue-700"       },
+  UPDATE:          { label: "Updated",           cls: "bg-teal-50 text-teal-700"       },
   DELETE:          { label: "Deleted",           cls: "bg-red-100 text-red-700"         },
   CONFIRMED:       { label: "Confirmed",         cls: "bg-[var(--color-primary-100)] text-[var(--color-primary-700)]" },
   CANCELLED:       { label: "Cancelled",         cls: "bg-red-100 text-red-700"         },
@@ -2608,9 +2608,9 @@ const ACTION_META: Record<string, { label: string; cls: string }> = {
   NO_SHOW:         { label: "No Show",           cls: "bg-slate-100 text-slate-600"     },
   ADD:             { label: "Added",             cls: "bg-emerald-100 text-emerald-700" },
   REMOVE:          { label: "Removed",           cls: "bg-red-100 text-red-700"         },
-  SAVE:            { label: "Updated",           cls: "bg-blue-100 text-blue-700"       },
+  SAVE:            { label: "Updated",           cls: "bg-teal-50 text-teal-700"       },
   STATUS:          { label: "Status Changed",    cls: "bg-amber-100 text-amber-700"     },
-  RESULT_ATTACHED: { label: "Result Uploaded",   cls: "bg-purple-100 text-purple-700"   },
+  RESULT_ATTACHED: { label: "Result Uploaded",   cls: "bg-teal-50 text-teal-700"   },
 };
 
 // Entity types that belong to each module key
@@ -2638,8 +2638,8 @@ const MODULE_GROUPS = [
     key: "appointment",
     label: "Appointment Management",
     icon: Calendar,
-    color: "bg-blue-50 border-blue-200",
-    iconCls: "bg-blue-100 text-blue-700",
+    color: "bg-teal-50 border-teal-100",
+    iconCls: "bg-teal-50 text-teal-700",
     events: [
       { action: "CREATE",      label: "Appointment Created"     },
       { action: "RESCHEDULED", label: "Appointment Rescheduled" },
@@ -2651,8 +2651,8 @@ const MODULE_GROUPS = [
     key: "clinical",
     label: "Clinical Records",
     icon: FileText,
-    color: "bg-purple-50 border-purple-200",
-    iconCls: "bg-purple-100 text-purple-700",
+    color: "bg-teal-50 border-teal-100",
+    iconCls: "bg-teal-50 text-teal-700",
     events: [
       { entityTypes: ["Medication"],         action: "ADD",             label: "Prescription Added"          },
       { entityTypes: ["Medication"],         action: "SAVE",            label: "Prescription Updated"        },
@@ -2747,8 +2747,8 @@ function PatientApptLogsSection({ logs }: { logs: PatientApptLogRow[] }) {
 
   const MODULE_BADGE: Record<string, { label: string; cls: string; icon: any }> = {
     patient:     { label: "Patient",     cls: "bg-emerald-100 text-emerald-700", icon: Users     },
-    appointment: { label: "Appointment", cls: "bg-blue-100 text-blue-700",       icon: Calendar  },
-    clinical:    { label: "Clinical",    cls: "bg-purple-100 text-purple-700",   icon: FileText  },
+    appointment: { label: "Appointment", cls: "bg-teal-50 text-teal-700",       icon: Calendar  },
+    clinical:    { label: "Clinical",    cls: "bg-teal-50 text-teal-700",   icon: FileText  },
   };
 
   return (

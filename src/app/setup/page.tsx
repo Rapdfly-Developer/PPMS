@@ -256,11 +256,11 @@ function Sidebar({ active, onNav }: { active: View; onNav: (v: View) => void }) 
             >
               <Icon
                 size={16}
-                className={`transition-transform duration-200 group-hover:scale-110 ${isActive ? "text-cyan-400" : ""}`}
+                className={`transition-transform duration-200 group-hover:scale-110 ${isActive ? "text-teal-400" : ""}`}
               />
               <span className="transition-transform duration-200 group-hover:translate-x-0.5">{label}</span>
               {isActive && (
-                <span className="ml-auto w-1.5 h-1.5 rounded-full bg-cyan-400" style={{ boxShadow: "0 0 8px #06B6D4" }} />
+                <span className="ml-auto w-1.5 h-1.5 rounded-full bg-teal-400" style={{ boxShadow: "0 0 8px #06B6D4" }} />
               )}
             </button>
           );

@@ -1036,7 +1036,7 @@ function DayPopup({ dateStr, dayData, hospitals, onClose, onRefresh }: {
                         <div className="flex items-center gap-1.5">
                           <p className="text-xs font-semibold text-[var(--color-ink-900)] truncate">{slot.hospitalName}</p>
                           {slot.source === "extra_op" && <span className="text-micro font-bold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">Extra</span>}
-                          {slot.isModified && <span className="text-micro font-bold px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700">Edited</span>}
+                          {slot.isModified && <span className="text-micro font-bold px-1.5 py-0.5 rounded-full bg-teal-50 text-teal-700">Edited</span>}
                         </div>
                         <p className="text-caption text-[var(--color-ink-500)] tabular-nums">{fmt12(slot.startTime)} – {fmt12(slot.endTime)} · {slot.slotMins}m · {slot.maxPatients}p</p>
                       </div>

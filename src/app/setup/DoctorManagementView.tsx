@@ -89,7 +89,7 @@ function StatusChip({ active, onToggle }: { active: boolean; onToggle: () => voi
 function LicenseChip({ lic }: { lic: DoctorInfo["license"] }) {
   if (lic.active) {
     return (
-      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-caption font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-caption font-semibold bg-teal-50 text-teal-700 border border-teal-100">
         <FileBadge size={11} />
         Licensed · {lic.daysRemaining}d
       </span>
@@ -131,8 +131,8 @@ function IconBtn({ title, onClick, tone, children }: {
   children: React.ReactNode;
 }) {
   const tones = {
-    cyan: "text-slate-400 hover:text-cyan-600 hover:bg-cyan-50",
-    blue: "text-slate-400 hover:text-blue-600 hover:bg-blue-50",
+    cyan: "text-slate-400 hover:text-teal-600 hover:bg-teal-50",
+    blue: "text-slate-400 hover:text-teal-600 hover:bg-teal-50",
     red:  "text-slate-400 hover:text-red-500 hover:bg-red-50",
   };
   return (
@@ -197,7 +197,7 @@ function Modal({ children, onClose }: { children: React.ReactNode; onClose: () =
   );
 }
 
-const inputCls = "w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-[14px] focus:outline-none focus:ring-2 focus:ring-blue-400/30 focus:border-blue-500 transition-all placeholder:text-slate-300";
+const inputCls = "w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-[14px] focus:outline-none focus:ring-2 focus:ring-teal-400/30 focus:border-teal-500 transition-all placeholder:text-slate-300";
 
 /* ── Main view ────────────────────────────────────────────────────────── */
 export function DoctorManagementView({ onAddDoctor }: { onAddDoctor: () => void }) {
@@ -312,7 +312,7 @@ export function DoctorManagementView({ onAddDoctor }: { onAddDoctor: () => void 
 
   useEffect(() => { setPage(1); }, [q, statusFilter, licFilter, layout]);
 
-  const selectCls = "px-3 py-2 text-xs font-medium text-slate-600 border border-slate-200 rounded-xl bg-white/80 focus:outline-none focus:ring-2 focus:ring-blue-400/30 focus:border-blue-400 transition-all cursor-pointer";
+  const selectCls = "px-3 py-2 text-xs font-medium text-slate-600 border border-slate-200 rounded-xl bg-white/80 focus:outline-none focus:ring-2 focus:ring-teal-400/30 focus:border-teal-400 transition-all cursor-pointer";
 
   return (
     <motion.div variants={stagger} initial="hidden" animate="show" className="max-w-[1200px] flex flex-col gap-5">
@@ -338,7 +338,7 @@ export function DoctorManagementView({ onAddDoctor }: { onAddDoctor: () => void 
           </div>
           <button
             onClick={onAddDoctor}
-            className="group inline-flex items-center gap-2 rounded-2xl bg-white text-blue-700 text-sm font-bold px-5 py-3 transition-all hover:scale-[1.03] active:scale-[0.98]"
+            className="group inline-flex items-center gap-2 rounded-2xl bg-white text-teal-700 text-sm font-bold px-5 py-3 transition-all hover:scale-[1.03] active:scale-[0.98]"
             style={{ boxShadow: "0 8px 24px rgba(0,0,0,0.15)" }}
           >
             <UserPlus size={15} />
@@ -372,7 +372,7 @@ export function DoctorManagementView({ onAddDoctor }: { onAddDoctor: () => void 
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Search doctors…"
-            className="w-full pl-8 pr-3 py-2 text-sm border border-slate-200 rounded-xl bg-white/80 focus:outline-none focus:ring-2 focus:ring-blue-400/30 focus:border-blue-400 transition-all placeholder:text-slate-300"
+            className="w-full pl-8 pr-3 py-2 text-sm border border-slate-200 rounded-xl bg-white/80 focus:outline-none focus:ring-2 focus:ring-teal-400/30 focus:border-teal-400 transition-all placeholder:text-slate-300"
           />
         </div>
         <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as any)} className={selectCls}>
@@ -398,14 +398,14 @@ export function DoctorManagementView({ onAddDoctor }: { onAddDoctor: () => void 
           <button
             onClick={() => setLayout("grid")}
             title="Grid view"
-            className={`px-2.5 py-2 transition-colors ${layout === "grid" ? "bg-blue-600 text-white" : "bg-white text-slate-400 hover:text-slate-600"}`}
+            className={`px-2.5 py-2 transition-colors ${layout === "grid" ? "bg-teal-600 text-white" : "bg-white text-slate-400 hover:text-slate-600"}`}
           >
             <LayoutGrid size={14} />
           </button>
           <button
             onClick={() => setLayout("list")}
             title="List view"
-            className={`px-2.5 py-2 transition-colors ${layout === "list" ? "bg-blue-600 text-white" : "bg-white text-slate-400 hover:text-slate-600"}`}
+            className={`px-2.5 py-2 transition-colors ${layout === "list" ? "bg-teal-600 text-white" : "bg-white text-slate-400 hover:text-slate-600"}`}
           >
             <List size={14} />
           </button>
@@ -462,7 +462,7 @@ export function DoctorManagementView({ onAddDoctor }: { onAddDoctor: () => void 
               key={d.id}
               variants={rise}
               whileHover={{ y: -8 }}
-              className="group relative rounded-3xl bg-white border border-slate-200 p-5 transition-all duration-250 hover:border-cyan-300"
+              className="group relative rounded-3xl bg-white border border-slate-200 p-5 transition-all duration-250 hover:border-teal-300"
               style={{ boxShadow: "0 10px 30px rgba(15,23,42,0.06)" }}
             >
               <div className="absolute inset-0 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
@@ -530,7 +530,7 @@ export function DoctorManagementView({ onAddDoctor }: { onAddDoctor: () => void 
                 <Link
                   href={`/setup/doctors/${d.id}`}
                   title="View license dashboard"
-                  className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-cyan-600 hover:bg-cyan-50 transition-all duration-200 hover:scale-110"
+                  className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-teal-600 hover:bg-teal-50 transition-all duration-200 hover:scale-110"
                 >
                   <Eye size={15} />
                 </Link>
@@ -553,7 +553,7 @@ export function DoctorManagementView({ onAddDoctor }: { onAddDoctor: () => void 
               key={d.id}
               variants={rise}
               whileHover={{ y: -2 }}
-              className="group flex flex-wrap items-center gap-3 md:gap-4 rounded-2xl bg-white border border-slate-200 px-4 py-3.5 transition-all duration-200 hover:border-cyan-300"
+              className="group flex flex-wrap items-center gap-3 md:gap-4 rounded-2xl bg-white border border-slate-200 px-4 py-3.5 transition-all duration-200 hover:border-teal-300"
               style={{ boxShadow: "0 6px 20px rgba(15,23,42,0.05)" }}
             >
               <div
@@ -582,7 +582,7 @@ export function DoctorManagementView({ onAddDoctor }: { onAddDoctor: () => void 
                 <Link
                   href={`/setup/doctors/${d.id}`}
                   title="View license dashboard"
-                  className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-cyan-600 hover:bg-cyan-50 transition-all duration-200 hover:scale-110"
+                  className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-teal-600 hover:bg-teal-50 transition-all duration-200 hover:scale-110"
                 >
                   <Eye size={15} />
                 </Link>
@@ -609,7 +609,7 @@ export function DoctorManagementView({ onAddDoctor }: { onAddDoctor: () => void 
             <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={safePage === 1}
-              className="w-8 h-8 rounded-xl border border-slate-200 bg-white flex items-center justify-center text-slate-500 disabled:opacity-40 hover:border-blue-300 hover:text-blue-600 transition-all"
+              className="w-8 h-8 rounded-xl border border-slate-200 bg-white flex items-center justify-center text-slate-500 disabled:opacity-40 hover:border-teal-300 hover:text-teal-600 transition-all"
             >
               <ChevronLeft size={14} />
             </button>
@@ -620,7 +620,7 @@ export function DoctorManagementView({ onAddDoctor }: { onAddDoctor: () => void 
                 className={`w-8 h-8 rounded-xl text-xs font-semibold transition-all ${
                   safePage === i + 1
                     ? "text-white"
-                    : "border border-slate-200 bg-white text-slate-500 hover:border-blue-300 hover:text-blue-600"
+                    : "border border-slate-200 bg-white text-slate-500 hover:border-teal-300 hover:text-teal-600"
                 }`}
                 style={safePage === i + 1 ? { background: "linear-gradient(135deg,#2563EB,#06B6D4)", boxShadow: "0 4px 12px rgba(37,99,235,0.35)" } : {}}
               >
@@ -630,7 +630,7 @@ export function DoctorManagementView({ onAddDoctor }: { onAddDoctor: () => void 
             <button
               onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
               disabled={safePage === pageCount}
-              className="w-8 h-8 rounded-xl border border-slate-200 bg-white flex items-center justify-center text-slate-500 disabled:opacity-40 hover:border-blue-300 hover:text-blue-600 transition-all"
+              className="w-8 h-8 rounded-xl border border-slate-200 bg-white flex items-center justify-center text-slate-500 disabled:opacity-40 hover:border-teal-300 hover:text-teal-600 transition-all"
             >
               <ChevronRight size={14} />
             </button>

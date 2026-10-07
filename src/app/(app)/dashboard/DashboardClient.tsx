@@ -55,12 +55,12 @@ export interface DashboardProps {
 
 /* ── Status config ──────────────────────────────────────────────────────── */
 const STATUS_CFG: Record<string, { label: string; color: string; dot: string }> = {
-  REQUESTED:        { label: "Scheduled",       color: "bg-blue-100 text-blue-700",    dot: "bg-blue-500"   },
+  REQUESTED:        { label: "Scheduled",       color: "bg-teal-50 text-teal-700",    dot: "bg-teal-500"   },
   CONFIRMED:        { label: "Waiting",         color: "bg-amber-100 text-amber-700",  dot: "bg-amber-500"  },
   DISPENSED:        { label: "Dispensed",       color: "bg-green-100 text-green-700",  dot: "bg-green-500"  },
   CANCELLED:        { label: "Cancelled",       color: "bg-red-100 text-red-600",      dot: "bg-red-500"    },
   NO_SHOW:          { label: "No Show",         color: "bg-gray-100 text-gray-500",    dot: "bg-gray-400"   },
-  RESCHEDULED:      { label: "Rescheduled",     color: "bg-purple-100 text-purple-700",dot: "bg-purple-500" },
+  RESCHEDULED:      { label: "Rescheduled",     color: "bg-teal-50 text-teal-700",dot: "bg-teal-500" },
   PARTIAL_DISPENSE: { label: "Partial Dispense",color: "bg-orange-100 text-orange-700",dot: "bg-orange-500" },
 };
 
@@ -224,7 +224,7 @@ function ApptRow({ appt, scope, serial, canManageQueue, canViewPatient, returnTo
           >
             {appt.isWalkIn ? format(new Date(appt.createdAt), "hh:mm a") : apptTime}
           </span>
-          <span className={`inline-flex items-center gap-1 mt-0.5 whitespace-nowrap text-caption ${appt.isWalkIn ? "text-gray-400" : "text-blue-600"}`}>
+          <span className={`inline-flex items-center gap-1 mt-0.5 whitespace-nowrap text-caption ${appt.isWalkIn ? "text-gray-400" : "text-teal-600"}`}>
             <Calendar size={10} className="shrink-0" />
             {appt.isWalkIn
               ? "Walk-in"
@@ -398,7 +398,7 @@ export function DashboardClient({
   const isAfternoon = h >= 12;
   const greeting    = isEvening ? "Good Evening" : isAfternoon ? "Good Afternoon" : "Good Morning";
   const GreetIcon   = isEvening ? Moon : isAfternoon ? Sunset : Sun;
-  const iconColor   = isEvening ? "text-indigo-300" : isAfternoon ? "text-orange-300" : "text-amber-300";
+  const iconColor   = isEvening ? "text-teal-300" : isAfternoon ? "text-orange-300" : "text-amber-300";
   const filterLabel = scope === "DOCTOR" ? "All Hospitals" : "All Doctors";
 
   return (

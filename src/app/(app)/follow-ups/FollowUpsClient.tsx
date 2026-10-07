@@ -35,7 +35,7 @@ export interface FuVisit {
 /* ── Constants ─────────────────────────────────────────────────────────── */
 const STATUS_META: Record<FollowUpStatus, { label: string; pill: string; dot: string }> = {
   DUE_TODAY: { label: "Due Today",  pill: "bg-amber-100 text-amber-700 border border-amber-200",      dot: "bg-amber-500" },
-  UPCOMING:  { label: "Upcoming",   pill: "bg-blue-100 text-blue-700 border border-blue-200",         dot: "bg-blue-500" },
+  UPCOMING:  { label: "Upcoming",   pill: "bg-teal-50 text-teal-700 border border-teal-100",         dot: "bg-teal-500" },
   OVERDUE:   { label: "Overdue",    pill: "bg-red-100 text-red-700 border border-red-200",             dot: "bg-red-500" },
   NO_SHOW:   { label: "No Show",    pill: "bg-orange-100 text-orange-800 border border-orange-200",   dot: "bg-orange-600" },
   COMPLETED: { label: "Completed",  pill: "bg-emerald-100 text-emerald-700 border border-emerald-200", dot: "bg-emerald-500" },
@@ -45,8 +45,8 @@ const STATUS_META: Record<FollowUpStatus, { label: string; pill: string; dot: st
 
 const OUTCOMES = [
   { id: "CONTINUE",      label: "Continue Treatment",      icon: RefreshCw,  color: "text-emerald-600" },
-  { id: "MODIFY",        label: "Modify Treatment",        icon: FileText,   color: "text-blue-600" },
-  { id: "INVESTIGATION", label: "Investigation Required",   icon: FlaskConical, color: "text-purple-600" },
+  { id: "MODIFY",        label: "Modify Treatment",        icon: FileText,   color: "text-teal-600" },
+  { id: "INVESTIGATION", label: "Investigation Required",   icon: FlaskConical, color: "text-teal-600" },
   { id: "PROCEDURE",     label: "Procedure Required",      icon: Scissors,   color: "text-orange-600" },
   { id: "NO_FURTHER",    label: "No Further Follow-up",    icon: CheckCircle2, color: "text-slate-600" },
   { id: "SCHEDULE_NEXT", label: "Schedule Next Follow-up", icon: CalendarClock, color: "text-[var(--color-primary-600)]" },
@@ -771,8 +771,8 @@ export function FollowUpsClient({
         <StatCard
           label="Upcoming"
           count={counts.UPCOMING}
-          icon={<CalendarDays size={17} className="text-blue-600" />}
-          accent="text-blue-700" iconBg="bg-blue-50"
+          icon={<CalendarDays size={17} className="text-teal-600" />}
+          accent="text-teal-700" iconBg="bg-teal-50"
           onClick={() => setStatusFilter(statusFilter === "UPCOMING" ? "ALL" : "UPCOMING")}
           active={statusFilter === "UPCOMING"}
         />

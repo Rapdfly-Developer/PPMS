@@ -64,7 +64,7 @@ const CAT: Record<string, { label: string; cls: string; color: string }> = {
   GENERAL:    { label: "General",    cls: "bg-slate-100 text-slate-700",   color: "#94a3b8" },
   BPL:        { label: "BPL",        cls: "bg-green-100 text-green-700",   color: "#16a34a" },
   SUBSIDISED: { label: "Subsidised", cls: "bg-orange-100 text-orange-700", color: "#ea580c" },
-  ECHS:       { label: "ECHS",       cls: "bg-purple-100 text-purple-700", color: "#9333ea" },
+  ECHS:       { label: "ECHS",       cls: "bg-teal-50 text-teal-700", color: "#9333ea" },
   INSURANCE:  { label: "Insurance",  cls: "bg-teal-100 text-teal-700",     color: "#0d9488" },
 };
 
@@ -107,9 +107,9 @@ function KpiCard({ icon, label, value, sub, color, isActive, onSelect }: {
 }) {
   const C: Record<string, { icon: string; val: string; border: string }> = {
     teal:   { icon: "bg-[#DCEFEC] text-[#115E59]", val: "text-[#115E59]",  border: "border-[#C7E4E0]" },
-    blue:   { icon: "bg-blue-50 text-blue-600",    val: "text-blue-700",   border: "border-blue-100"  },
+    blue:   { icon: "bg-teal-50 text-teal-600",    val: "text-teal-700",   border: "border-teal-50"  },
     green:  { icon: "bg-green-50 text-green-600",  val: "text-green-700",  border: "border-green-100" },
-    purple: { icon: "bg-purple-50 text-purple-600",val: "text-purple-700", border: "border-purple-100"},
+    purple: { icon: "bg-teal-50 text-teal-600",val: "text-teal-700", border: "border-teal-50"},
     amber:  { icon: "bg-amber-50 text-amber-600",  val: "text-amber-700",  border: "border-amber-100" },
   };
   const c = C[color] ?? C.teal;

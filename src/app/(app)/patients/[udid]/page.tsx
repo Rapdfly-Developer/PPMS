@@ -14,7 +14,7 @@ const CATEGORY_STYLES: Record<string, string> = {
   GENERAL:    "bg-white/20 text-white border border-white/30",
   BPL:        "bg-green-400/30 text-white border border-green-300/40",
   SUBSIDISED: "bg-orange-400/30 text-white border border-orange-300/40",
-  ECHS:       "bg-purple-400/30 text-white border border-purple-300/40",
+  ECHS:       "bg-teal-400/30 text-white border border-teal-300/40",
   INSURANCE:  "bg-teal-400/30 text-white border border-teal-300/40",
 };
 

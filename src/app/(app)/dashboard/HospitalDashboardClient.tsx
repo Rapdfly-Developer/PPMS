@@ -43,12 +43,12 @@ interface Props {
 
 /* ── Status config ──────────────────────────────────────────────────────── */
 const STATUS_CFG: Record<string, { label: string; color: string; dot: string }> = {
-  REQUESTED:   { label: "Scheduled",   color: "bg-blue-100 text-blue-700",    dot: "bg-blue-500"   },
+  REQUESTED:   { label: "Scheduled",   color: "bg-teal-50 text-teal-700",    dot: "bg-teal-500"   },
   CONFIRMED:   { label: "Waiting",     color: "bg-amber-100 text-amber-700",  dot: "bg-amber-500"  },
   DISPENSED:   { label: "Dispensed",   color: "bg-green-100 text-green-700",  dot: "bg-green-500"  },
   CANCELLED:   { label: "Cancelled",   color: "bg-red-100 text-red-600",      dot: "bg-red-500"    },
   NO_SHOW:     { label: "No Show",     color: "bg-gray-100 text-gray-500",    dot: "bg-gray-400"   },
-  RESCHEDULED: { label: "Rescheduled", color: "bg-purple-100 text-purple-700",dot: "bg-purple-500" },
+  RESCHEDULED: { label: "Rescheduled", color: "bg-teal-50 text-teal-700",dot: "bg-teal-500" },
 };
 
 const STATUS_FILTERS = [
@@ -165,7 +165,7 @@ export function HospitalDashboardClient({ hospitalName, hospitalLogoUrl, kpis, a
         const isAfternoon = h >= 12;
         const greeting    = isEvening ? "Good Evening" : isAfternoon ? "Good Afternoon" : "Good Morning";
         const GreetIcon   = isEvening ? Moon : isAfternoon ? Sunset : Sun;
-        const iconColor   = isEvening ? "text-indigo-300" : isAfternoon ? "text-orange-300" : "text-amber-300";
+        const iconColor   = isEvening ? "text-teal-300" : isAfternoon ? "text-orange-300" : "text-amber-300";
         return (
           <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[var(--color-primary-900)] via-[var(--color-primary-700)] to-[var(--color-primary-500)] p-5 sm:p-6 text-white shadow-lg">
             {/* Decorative blobs */}
@@ -320,7 +320,7 @@ export function HospitalDashboardClient({ hospitalName, hospitalLogoUrl, kpis, a
                         )}
                       </div>
                     </div>
-                    <span className="hidden sm:inline shrink-0 text-caption sm:text-xs font-medium text-purple-700 bg-purple-50 px-2.5 py-1 rounded-full truncate max-w-[140px]">
+                    <span className="hidden sm:inline shrink-0 text-caption sm:text-xs font-medium text-teal-700 bg-teal-50 px-2.5 py-1 rounded-full truncate max-w-[140px]">
                       {s.surgeryType}
                     </span>
                     <span className="shrink-0 text-micro sm:text-caption text-[var(--color-ink-400)]">

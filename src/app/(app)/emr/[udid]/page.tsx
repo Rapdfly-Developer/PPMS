@@ -261,7 +261,7 @@ export default async function PatientDetailedEMR({
               autoClosed
                 ? "text-amber-700 bg-amber-100"
                 : finalizedToday
-                ? "text-blue-700 bg-blue-50"
+                ? "text-teal-700 bg-teal-50"
                 : "text-emerald-700 bg-emerald-100"
             }`}
           >
@@ -282,7 +282,7 @@ export default async function PatientDetailedEMR({
             autoClosed
               ? "bg-amber-50 border-amber-200 text-amber-800"
               : finalizedToday
-              ? "bg-blue-50 border-blue-200 text-blue-800"
+              ? "bg-teal-50 border-teal-100 text-teal-800"
               : "bg-emerald-50 border-emerald-200 text-emerald-800"
           }`}
         >
@@ -367,9 +367,9 @@ export default async function PatientDetailedEMR({
                   {patient.category !== "GENERAL" && (
                     <span className={`text-caption font-bold tracking-wide px-2 py-0.5 rounded-full ${
                       patient.category === "BPL"        ? "bg-amber-400/20 text-amber-300" :
-                      patient.category === "SUBSIDISED" ? "bg-sky-400/20 text-sky-300" :
+                      patient.category === "SUBSIDISED" ? "bg-teal-400/20 text-teal-300" :
                       patient.category === "ECHS"       ? "bg-green-400/20 text-green-300" :
-                      patient.category === "INSURANCE"  ? "bg-violet-400/20 text-violet-300" :
+                      patient.category === "INSURANCE"  ? "bg-teal-300/20 text-teal-300" :
                       "bg-white/15 text-white/70"
                     }`}>{patient.category}</span>
                   )}
@@ -384,7 +384,7 @@ export default async function PatientDetailedEMR({
                     are deliberately absent: both are already implied by the context
                     the EMR was opened from, and they crowded the line. */}
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-caption text-white/65">
-                  <span className="inline-flex items-center gap-1.5 text-sky-200 font-mono font-semibold tracking-wide">
+                  <span className="inline-flex items-center gap-1.5 text-teal-100 font-mono font-semibold tracking-wide">
                     <Hash size={10} />{patient.udid ?? "—"}
                   </span>
                   {patient.mobile && (

@@ -10,7 +10,7 @@ import { ScheduleNextSlotModal } from "./ScheduleNextSlotModal";
 
 const STATUS_BADGE: Record<string, { label: string; cls: string }> = {
   REQUESTED:   { label: "REQUESTED",   cls: "bg-amber-500 text-white"  },
-  CONFIRMED:   { label: "CONFIRMED",   cls: "bg-blue-500 text-white"   },
+  CONFIRMED:   { label: "CONFIRMED",   cls: "bg-teal-500 text-white"   },
   DISPENSED:   { label: "DISPENSED",   cls: "bg-emerald-500 text-white" },
   CANCELLED:   { label: "CANCELLED",   cls: "bg-red-500 text-white"    },
   NO_SHOW:     { label: "NO SHOW",     cls: "bg-red-400 text-white"    },

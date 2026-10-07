@@ -38,15 +38,15 @@ export function PatientPhoto({
           onClick={() => src && setOpen(true)}
           disabled={!src}
           aria-label={src ? `View ${alt}'s photo` : undefined}
-          className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full overflow-hidden ring-2 ring-sky-400/40 shadow-lg bg-sky-900/50 flex items-center justify-center ${
-            src ? "cursor-zoom-in hover:ring-sky-300/70 transition-all" : "cursor-default"
+          className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full overflow-hidden ring-2 ring-teal-400/40 shadow-lg bg-teal-900/50 flex items-center justify-center ${
+            src ? "cursor-zoom-in hover:ring-teal-300/70 transition-all" : "cursor-default"
           }`}
         >
           {src ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={src} alt={alt} className="w-full h-full object-cover" />
           ) : (
-            <User size={22} className="text-sky-300/70" />
+            <User size={22} className="text-teal-300/70" />
           )}
         </button>
         {statusDot && (

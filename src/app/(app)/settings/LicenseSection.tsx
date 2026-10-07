@@ -1189,7 +1189,7 @@ function RenewalTab({ data }: { data: LicenseFullData }) {
 const ACTION_META: Record<string, { label: string; cls: string; Icon: React.ElementType }> = {
   TRIAL_STARTED: { label: "Trial Started",   cls: "bg-amber-50 text-amber-700 border-amber-200",    Icon: Clock        },
   ACTIVATED:     { label: "Activated",       cls: "bg-emerald-50 text-emerald-700 border-emerald-200", Icon: Key       },
-  REACTIVATED:   { label: "Reactivated",     cls: "bg-blue-50 text-blue-700 border-blue-200",        Icon: RefreshCw   },
+  REACTIVATED:   { label: "Reactivated",     cls: "bg-teal-50 text-teal-700 border-teal-100",        Icon: RefreshCw   },
   VERIFIED:      { label: "Verified",        cls: "bg-[var(--color-primary-50)] text-[var(--color-primary-700)] border-[var(--color-primary-200)]", Icon: ShieldCheck },
 };
 

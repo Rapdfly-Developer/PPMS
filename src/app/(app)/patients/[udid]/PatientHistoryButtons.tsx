@@ -171,8 +171,8 @@ function InvestigationsDrawer({
 
   const catPalette = (category: string) => {
     const k = (category ?? "").toLowerCase();
-    if (k.includes("imag"))  return { dot: "bg-violet-100", icon: "text-violet-600", badge: "bg-violet-100 text-violet-700" };
-    if (k.includes("lab") || k.includes("pre-op")) return { dot: "bg-cyan-100", icon: "text-cyan-600", badge: "bg-cyan-100 text-cyan-700" };
+    if (k.includes("imag"))  return { dot: "bg-teal-50", icon: "text-teal-600", badge: "bg-teal-50 text-teal-700" };
+    if (k.includes("lab") || k.includes("pre-op")) return { dot: "bg-teal-50", icon: "text-teal-600", badge: "bg-teal-50 text-teal-700" };
     if (k.includes("path"))  return { dot: "bg-rose-100",   icon: "text-rose-600",   badge: "bg-rose-100 text-rose-700"   };
     if (k.includes("proc"))  return { dot: "bg-amber-100",  icon: "text-amber-600",  badge: "bg-amber-100 text-amber-700" };
     return { dot: "bg-teal-100", icon: "text-teal-600", badge: "bg-teal-100 text-teal-700" };
@@ -229,7 +229,7 @@ function InvestigationsDrawer({
                       {o.resultRef ? (
                         <button
                           onClick={() => setLightbox(o.resultRef)}
-                          className="shrink-0 inline-flex items-center gap-1 text-caption font-medium px-2.5 py-1.5 rounded-lg border border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-100 transition-colors"
+                          className="shrink-0 inline-flex items-center gap-1 text-caption font-medium px-2.5 py-1.5 rounded-lg border border-teal-100 bg-teal-50 text-teal-700 hover:bg-teal-50 transition-colors"
                         >
                           <Eye size={12} /> View
                         </button>

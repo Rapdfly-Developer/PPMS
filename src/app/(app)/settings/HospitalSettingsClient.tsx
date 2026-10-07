@@ -742,13 +742,13 @@ function DataBackupSection({ hospital, onSaved }: { hospital: Hospital; onSaved:
 // ── Section: Audit Logs ───────────────────────────────────────────────────────
 const MOCK_LOGS = [
   { time: "09:42 AM", user: "Sunrise Front Desk", action: "Confirmed appointment",    subject: "PPMS-SEH-0005 · Sreeni",     dot: "bg-emerald-500" },
-  { time: "09:31 AM", user: "Sunrise Front Desk", action: "Registered new patient",   subject: "Fathima Beevi · SEH-0004",   dot: "bg-blue-400"    },
+  { time: "09:31 AM", user: "Sunrise Front Desk", action: "Registered new patient",   subject: "Fathima Beevi · SEH-0004",   dot: "bg-teal-400"    },
   { time: "09:18 AM", user: "Sunrise Front Desk", action: "Cancelled appointment",    subject: "PPMS-SEH-0003 · Suresh Babu",dot: "bg-amber-500"   },
-  { time: "09:05 AM", user: "Dr. Ravi Kumar",     action: "Updated EMR notes",        subject: "Lakshmi Iyer · Visit #23",   dot: "bg-blue-400"    },
-  { time: "08:57 AM", user: "Sunrise Front Desk", action: "Staff login",              subject: "hospital_a · 192.168.1.10",  dot: "bg-blue-400"    },
-  { time: "08:45 AM", user: "Dr. Ravi Kumar",     action: "Updated availability",     subject: "Monday 4–7 PM slot",         dot: "bg-blue-400"    },
+  { time: "09:05 AM", user: "Dr. Ravi Kumar",     action: "Updated EMR notes",        subject: "Lakshmi Iyer · Visit #23",   dot: "bg-teal-400"    },
+  { time: "08:57 AM", user: "Sunrise Front Desk", action: "Staff login",              subject: "hospital_a · 192.168.1.10",  dot: "bg-teal-400"    },
+  { time: "08:45 AM", user: "Dr. Ravi Kumar",     action: "Updated availability",     subject: "Monday 4–7 PM slot",         dot: "bg-teal-400"    },
   { time: "08:30 AM", user: "System",             action: "Daily backup completed",   subject: "23 MB · 5 tables",           dot: "bg-emerald-500" },
-  { time: "Yesterday",user: "Sunrise Front Desk", action: "Changed hospital address", subject: "Settings updated",           dot: "bg-blue-400"    },
+  { time: "Yesterday",user: "Sunrise Front Desk", action: "Changed hospital address", subject: "Settings updated",           dot: "bg-teal-400"    },
 ];
 
 function AuditLogsSection() {

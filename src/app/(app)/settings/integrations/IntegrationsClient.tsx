@@ -49,8 +49,8 @@ type LogRow = {
 };
 
 const TYPE_BADGE: Record<string, string> = {
-  FHIR: "bg-violet-50 text-violet-700 border-violet-200",
-  HL7:  "bg-blue-50 text-blue-700 border-blue-200",
+  FHIR: "bg-teal-50 text-teal-700 border-teal-100",
+  HL7:  "bg-teal-50 text-teal-700 border-teal-100",
   REST: "bg-teal-50 text-teal-700 border-teal-200",
   CSV:  "bg-amber-50 text-amber-700 border-amber-200",
 };

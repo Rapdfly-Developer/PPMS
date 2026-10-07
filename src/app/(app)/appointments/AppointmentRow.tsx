@@ -20,7 +20,7 @@ import { ComplaintChips } from "@/components/ui/ComplaintChips";
 const STATUS_STYLES: Record<string, string> = {
   SCHEDULED:        "bg-[var(--color-primary-50)] text-[var(--color-primary-700)]",
   REQUESTED:        "bg-amber-100 text-amber-700",
-  CONFIRMED:        "bg-blue-100 text-blue-700",
+  CONFIRMED:        "bg-teal-50 text-teal-700",
   RESCHEDULED:      "bg-[var(--color-info-100)] text-[var(--color-info-600)]",
   DISPENSED:        "bg-emerald-100 text-emerald-700",
   CANCELLED:        "bg-red-100 text-red-700",
@@ -218,7 +218,7 @@ export function AppointmentRow({ appt, role, perms, token }: { appt: any; role: 
           </div>
           <div className="mt-1.5 flex flex-col items-end gap-1 text-caption sm:text-caption">
             {arrivedAt && appt.status !== "NO_SHOW" && (
-              <span className="inline-flex items-center gap-1 text-blue-500 whitespace-nowrap tabular-nums">
+              <span className="inline-flex items-center gap-1 text-teal-500 whitespace-nowrap tabular-nums">
                 <LogIn size={10} /> Arrived: {format(arrivedAt, "h:mm a")}
               </span>
             )}

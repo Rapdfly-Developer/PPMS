@@ -230,7 +230,7 @@ function StatusBadge({ status }: { status: SerialVisit["status"] }) {
       <CheckCircle2 size={10} /> Completed
     </span>
   ) : (
-    <span className="inline-flex items-center gap-1 text-micro sm:text-caption font-semibold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">
+    <span className="inline-flex items-center gap-1 text-micro sm:text-caption font-semibold px-2 py-0.5 rounded-full bg-teal-50 text-teal-700">
       <Clock size={10} /> In Progress
     </span>
   );
@@ -406,7 +406,7 @@ function LastVisitSummarySection({
                 onClick={() => setAiSubTab(st)}
                 className={`relative flex items-center rounded px-2.5 py-1 text-micro sm:text-caption font-semibold transition-all ${
                   aiSubTab === st
-                    ? "bg-white shadow-sm text-violet-700 shadow-violet-100"
+                    ? "bg-white shadow-sm text-teal-700 shadow-teal-50"
                     : "text-[var(--color-ink-400)] hover:text-[var(--color-ink-600)]"
                 }`}
               >
@@ -629,8 +629,8 @@ function FinalizedVisitModal({
           <X size={16} />
         </button>
         <div className="px-6 py-5 flex flex-col items-center text-center gap-3">
-          <div className="w-11 h-11 rounded-full bg-blue-50 flex items-center justify-center">
-            <CheckCircle2 size={20} className="text-blue-500" />
+          <div className="w-11 h-11 rounded-full bg-teal-50 flex items-center justify-center">
+            <CheckCircle2 size={20} className="text-teal-500" />
           </div>
           <div>
             <p className="text-heading-sm sm:text-base font-bold text-[var(--color-ink-900)]">Finalized &amp; Signed</p>
@@ -715,17 +715,17 @@ function LongitudinalSummarySection({ udid, visits, inline = false }: { udid: st
         )}
         {/* AI text */}
         {aiText && (
-          <div className="rounded-xl bg-violet-50/50 p-3.5">
+          <div className="rounded-xl bg-teal-50/50 p-3.5">
             <div className="flex items-center justify-between gap-2 mb-1.5">
               <div className="flex items-center gap-1.5">
-                <Sparkles size={11} className="text-violet-500" />
-                <span className="text-micro sm:text-caption font-bold uppercase tracking-widest text-violet-600">
+                <Sparkles size={11} className="text-teal-500" />
+                <span className="text-micro sm:text-caption font-bold uppercase tracking-widest text-teal-600">
                   {aiSource === "claude" ? "Claude AI Summary" : "Auto-Generated Summary"}
                 </span>
               </div>
               <button
                 onClick={() => { setAiText(null); setAiNotice(null); }}
-                className="p-1 rounded hover:bg-violet-100 text-violet-400 transition-colors"
+                className="p-1 rounded hover:bg-teal-50 text-teal-300 transition-colors"
               >
                 <X size={12} />
               </button>

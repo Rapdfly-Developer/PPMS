@@ -25,9 +25,9 @@ const EVENT_CFG = {
   },
   INVESTIGATION: {
     label: "Investigation", Icon: FlaskConical,
-    dot: "bg-violet-500", dotHex: "#8B5CF6",
-    border: "border-l-violet-400",
-    badge: "bg-violet-100 text-violet-700", card: "bg-violet-50/40",
+    dot: "bg-teal-500", dotHex: "#8B5CF6",
+    border: "border-l-teal-300",
+    badge: "bg-teal-50 text-teal-700", card: "bg-teal-50/40",
   },
   SURGERY: {
     label: "Surgery", Icon: Scissors,
@@ -116,7 +116,7 @@ function EventDetail({ ev }: { ev: TimelineEvent }) {
               )}
               {arrivedAt && (
                 <div className="flex items-center justify-between px-3 py-2">
-                  <span className="flex items-center gap-1.5 text-blue-500">
+                  <span className="flex items-center gap-1.5 text-teal-500">
                     <LogIn size={11} className="shrink-0" /> Arrived at Clinic
                   </span>
                   <span className="font-semibold text-[var(--color-ink-800)]">
@@ -177,9 +177,9 @@ function EventDetail({ ev }: { ev: TimelineEvent }) {
         const hasReport = !!o.reportUpdatedAt;
         const time = hasReport ? o.reportUpdatedAt : o.orderedAt;
         return (
-          <div key={o.id} className="flex items-center gap-2 text-xs bg-white rounded-lg px-3 py-2.5 border border-violet-100">
+          <div key={o.id} className="flex items-center gap-2 text-xs bg-white rounded-lg px-3 py-2.5 border border-teal-50">
             {o.laterality && (
-              <span className="shrink-0 text-micro sm:text-caption font-bold text-violet-600">{o.laterality}</span>
+              <span className="shrink-0 text-micro sm:text-caption font-bold text-teal-600">{o.laterality}</span>
             )}
             <span className="flex-1 min-w-0 font-medium text-[var(--color-ink-800)] truncate">{o.testName}</span>
             {time && (

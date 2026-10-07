@@ -131,8 +131,8 @@ function LicenseActionsPanel({ lic, doctor }: {
 
         {/* Header */}
         <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-2.5">
-          <div className="w-6 h-6 bg-indigo-100 rounded-lg flex items-center justify-center">
-            <Sparkles size={12} className="text-indigo-600" />
+          <div className="w-6 h-6 bg-teal-50 rounded-lg flex items-center justify-center">
+            <Sparkles size={12} className="text-teal-600" />
           </div>
           <span className="text-sm font-semibold text-slate-800">License Actions</span>
         </div>
@@ -151,11 +151,11 @@ function LicenseActionsPanel({ lic, doctor }: {
             </div>
             <div className="text-left flex-1">
               <p className="text-sm font-bold text-white leading-tight">Generate License</p>
-              <p className="text-caption text-violet-300 mt-0.5">
+              <p className="text-caption text-teal-300 mt-0.5">
                 {hasLicense ? "Regenerate key" : "Issue 7-day trial"}
               </p>
             </div>
-            <ArrowUpRight size={13} className="text-violet-300 shrink-0" />
+            <ArrowUpRight size={13} className="text-teal-300 shrink-0" />
           </button>
 
           {/* 2 × 2 grid */}
@@ -201,14 +201,14 @@ function LicenseActionsPanel({ lic, doctor }: {
 
             <button
               onClick={() => setModal("renew")}
-              className="group flex flex-col items-center gap-2 py-3.5 px-2 rounded-xl border border-blue-200 bg-blue-50 text-center transition-all duration-200 hover:bg-blue-100 hover:border-blue-300 hover:shadow-sm"
+              className="group flex flex-col items-center gap-2 py-3.5 px-2 rounded-xl border border-teal-100 bg-teal-50 text-center transition-all duration-200 hover:bg-teal-50 hover:border-teal-300 hover:shadow-sm"
             >
-              <div className="w-9 h-9 bg-blue-500 rounded-xl flex items-center justify-center group-hover:scale-105 transition-transform">
+              <div className="w-9 h-9 bg-teal-500 rounded-xl flex items-center justify-center group-hover:scale-105 transition-transform">
                 <CreditCard size={16} className="text-white" />
               </div>
               <div>
-                <p className="text-xs font-bold text-blue-900">Renew</p>
-                <p className="text-micro text-blue-600 mt-0.5">Extend from expiry</p>
+                <p className="text-xs font-bold text-teal-900">Renew</p>
+                <p className="text-micro text-teal-600 mt-0.5">Extend from expiry</p>
               </div>
             </button>
 
@@ -245,7 +245,7 @@ function LicenseActionsPanel({ lic, doctor }: {
             <ModalFooter onCancel={closeModal} loading={loading}
               onConfirm={() => callAction(hasLicense ? "regenerate" : "generate-trial")}
               confirmLabel={hasLicense ? "Regenerate" : "Generate Trial"}
-              confirmClass="bg-violet-700 hover:bg-violet-800 text-white" />
+              confirmClass="bg-teal-700 hover:bg-teal-800 text-white" />
           </div>
         </Modal>
       )}
@@ -305,7 +305,7 @@ function LicenseActionsPanel({ lic, doctor }: {
                 {[{ d: 30, l: "1 Month" }, { d: 90, l: "3 Months" }, { d: 180, l: "6 Months" }, { d: 365, l: "1 Year" }].map(({ d, l }) => (
                   <button key={d} onClick={() => { setDays(d); setCustomDays(""); }}
                     className={`py-2.5 rounded-lg text-xs font-semibold border-2 transition-all ${
-                      days === d && !customDays ? "border-blue-500 bg-blue-500 text-white" : "border-slate-200 text-slate-700 hover:border-blue-300"
+                      days === d && !customDays ? "border-teal-500 bg-teal-500 text-white" : "border-slate-200 text-slate-700 hover:border-teal-300"
                     }`}>
                     {l}<span className="block text-micro font-normal opacity-70 mt-0.5">{d} days</span>
                   </button>
@@ -316,18 +316,18 @@ function LicenseActionsPanel({ lic, doctor }: {
               <label className="text-xs font-semibold text-slate-600 block mb-1.5">Custom days</label>
               <input type="number" min={1} value={customDays} onChange={e => setCustomDays(e.target.value)}
                 placeholder="e.g. 45"
-                className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2.5 focus:outline-none focus:border-blue-400 placeholder:text-slate-300" />
+                className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2.5 focus:outline-none focus:border-teal-400 placeholder:text-slate-300" />
             </div>
             {effectiveDays > 0 && (
-              <div className="bg-blue-50 border border-blue-100 rounded-lg px-4 py-2.5 flex justify-between items-center">
-                <span className="text-xs text-blue-600">New expiry</span>
-                <span className="text-sm font-bold text-blue-800">{renewedExpiry(effectiveDays)}</span>
+              <div className="bg-teal-50 border border-teal-50 rounded-lg px-4 py-2.5 flex justify-between items-center">
+                <span className="text-xs text-teal-600">New expiry</span>
+                <span className="text-sm font-bold text-teal-800">{renewedExpiry(effectiveDays)}</span>
               </div>
             )}
             <ModalFooter onCancel={closeModal} loading={loading}
               onConfirm={() => callAction("renew", { days: effectiveDays })}
               confirmLabel={`Renew · ${effectiveDays}d`}
-              confirmClass="bg-blue-600 hover:bg-blue-700 text-white"
+              confirmClass="bg-teal-600 hover:bg-teal-700 text-white"
               disabled={effectiveDays <= 0} />
           </div>
         </Modal>

@@ -57,20 +57,20 @@ export interface HomeDashboardProps {
 
 /* ── Status config ──────────────────────────────────────────────────────── */
 const STATUS_CFG: Record<string, { label: string; color: string; dot: string }> = {
-  REQUESTED:        { label: "Scheduled",       color: "bg-blue-100 text-blue-700",      dot: "bg-blue-500"    },
+  REQUESTED:        { label: "Scheduled",       color: "bg-teal-50 text-teal-700",      dot: "bg-teal-500"    },
   CONFIRMED:        { label: "Waiting",          color: "bg-amber-100 text-amber-700",    dot: "bg-amber-500"   },
-  IN_CONSULTATION:  { label: "In Consultation",  color: "bg-[#1e3a5f] text-white",        dot: "bg-blue-300"    },
+  IN_CONSULTATION:  { label: "In Consultation",  color: "bg-[#1e3a5f] text-white",        dot: "bg-teal-300"    },
   DISPENSED:        { label: "Completed",        color: "bg-emerald-100 text-emerald-700",dot: "bg-emerald-500" },
   CANCELLED:        { label: "Cancelled",        color: "bg-red-100 text-red-600",        dot: "bg-red-500"     },
   NO_SHOW:          { label: "No Show",          color: "bg-gray-100 text-gray-500",      dot: "bg-gray-400"    },
-  RESCHEDULED:      { label: "Rescheduled",      color: "bg-purple-100 text-purple-700",  dot: "bg-purple-500"  },
+  RESCHEDULED:      { label: "Rescheduled",      color: "bg-teal-50 text-teal-700",  dot: "bg-teal-500"  },
   PARTIAL_DISPENSE: { label: "Partial Dispense", color: "bg-orange-100 text-orange-700",  dot: "bg-orange-500"  },
 };
 
 /* ── Avatar initials ────────────────────────────────────────────────────── */
 const AVATAR_COLORS = [
-  "bg-blue-500", "bg-violet-500", "bg-emerald-500", "bg-amber-500",
-  "bg-rose-500", "bg-cyan-500", "bg-indigo-500", "bg-teal-500",
+  "bg-teal-500", "bg-teal-500", "bg-emerald-500", "bg-amber-500",
+  "bg-teal-600", "bg-teal-500", "bg-teal-400", "bg-teal-700",
 ];
 
 function PatientAvatar({ name }: { name: string }) {
@@ -225,7 +225,7 @@ function TableApptRow({ appt, scope, canManageQueue, canViewPatient, consultantN
   const isActive = appt.status === "CONFIRMED" || isInConsultation;
 
   return (
-    <tr className="border-b border-gray-50 hover:bg-blue-50/40 transition-colors">
+    <tr className="border-b border-gray-50 hover:bg-teal-50/40 transition-colors">
       <td className="px-4 py-3 text-caption font-medium text-[var(--color-ink-600)] whitespace-nowrap">{time}</td>
       <td className="px-4 py-3">
         <PatientBlock udid={appt.patient.udid} canView={canViewPatient} className="flex items-center gap-2.5 hover:opacity-80 transition-opacity">
@@ -249,7 +249,7 @@ function TableApptRow({ appt, scope, canManageQueue, canViewPatient, consultantN
       <td className="px-4 py-3 hidden lg:table-cell">
         <span className={clsx(
           "inline-flex items-center px-2.5 py-1 rounded-full text-caption font-semibold whitespace-nowrap",
-          visitTypeLabel === "Follow-up" ? "bg-purple-100 text-purple-700" : visitTypeLabel === "Walk-in" ? "bg-gray-100 text-gray-500" : "bg-blue-100 text-blue-700"
+          visitTypeLabel === "Follow-up" ? "bg-teal-50 text-teal-700" : visitTypeLabel === "Walk-in" ? "bg-gray-100 text-gray-500" : "bg-teal-50 text-teal-700"
         )}>
           {visitTypeLabel}
         </span>
@@ -482,7 +482,7 @@ export function HomeDashboardClient({
 
       {/* ── KPI cards ─────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3">
-        <KpiCard icon={<Calendar size={18} className="text-blue-600" />} iconBg="bg-blue-100"
+        <KpiCard icon={<Calendar size={18} className="text-teal-600" />} iconBg="bg-teal-50"
           label="Today's Appointments" value={kpi.total}
           sub={yesterdayCount > 0 ? `${yesterdayCount} scheduled yesterday` : "All visits today"}
           pct={kpi.totalPct !== null ? Math.abs(kpi.totalPct) : undefined}
@@ -495,7 +495,7 @@ export function HomeDashboardClient({
           label="Completed" value={kpi.completed} sub={`${kpi.completed} completed`} />
         <KpiCard icon={<UserMinus size={18} className="text-red-500" />} iconBg="bg-red-100"
           label="No Shows" value={kpi.noShow} sub="Did not arrive" />
-        <KpiCard icon={<Activity size={18} className="text-violet-600" />} iconBg="bg-violet-100"
+        <KpiCard icon={<Activity size={18} className="text-teal-600" />} iconBg="bg-teal-50"
           label="New Patients" value={kpi.newPts} sub="New registrations" />
       </div>
 
@@ -583,7 +583,7 @@ export function HomeDashboardClient({
             </div>
             <div className="flex items-center gap-3 mb-2">
               <span className="inline-flex items-center gap-1 text-caption text-[var(--color-ink-400)]">
-                <span className="w-2 h-2 rounded-sm bg-blue-300 inline-block" /> Scheduled
+                <span className="w-2 h-2 rounded-sm bg-teal-300 inline-block" /> Scheduled
               </span>
               <span className="inline-flex items-center gap-1 text-caption text-[var(--color-ink-400)]">
                 <span className="w-2 h-2 rounded-sm bg-emerald-500 inline-block" /> Completed
@@ -609,7 +609,7 @@ export function HomeDashboardClient({
               />
               <div className="flex flex-col gap-2 flex-1 min-w-0">
                 {[
-                  { label: "New Patients", value: patientOverview.newPts,    color: "bg-blue-500" },
+                  { label: "New Patients", value: patientOverview.newPts,    color: "bg-teal-500" },
                   { label: "Returning",    value: patientOverview.returning, color: "bg-emerald-500" },
                   { label: "Follow-ups",   value: patientOverview.followUp,  color: "bg-amber-500" },
                 ].map(({ label, value, color }) => {
@@ -638,15 +638,15 @@ export function HomeDashboardClient({
       <div className="grid grid-cols-1 md:grid-cols-[minmax(0,2fr)_minmax(0,2fr)_minmax(0,1fr)] gap-4">
 
         {/* IPD & Surgery — Phase 2 teaser */}
-        <div className="relative overflow-hidden rounded-2xl border border-indigo-100 bg-gradient-to-br from-slate-50 via-indigo-50/40 to-purple-50/60 p-4">
+        <div className="relative overflow-hidden rounded-2xl border border-teal-50 bg-gradient-to-br from-slate-50 via-teal-50/40 to-teal-50/60 p-4">
           {/* Decorative blobs */}
-          <div className="absolute -right-6 -top-6 w-24 h-24 rounded-full bg-indigo-100/50 pointer-events-none" />
-          <div className="absolute -right-2 bottom-4 w-16 h-16 rounded-full bg-purple-100/40 pointer-events-none" />
+          <div className="absolute -right-6 -top-6 w-24 h-24 rounded-full bg-teal-50/50 pointer-events-none" />
+          <div className="absolute -right-2 bottom-4 w-16 h-16 rounded-full bg-teal-50/40 pointer-events-none" />
 
           {/* Header */}
           <div className="flex items-center gap-2.5 mb-3 relative">
-            <div className="w-9 h-9 rounded-xl bg-white border border-indigo-100 shadow-sm flex items-center justify-center shrink-0">
-              <BedDouble size={17} className="text-indigo-600" />
+            <div className="w-9 h-9 rounded-xl bg-white border border-teal-50 shadow-sm flex items-center justify-center shrink-0">
+              <BedDouble size={17} className="text-teal-600" />
             </div>
             <div>
               <h3 className="text-body font-bold text-[var(--color-ink-900)]">IPD &amp; Surgery</h3>
@@ -657,8 +657,8 @@ export function HomeDashboardClient({
           {/* Placeholder stat tiles */}
           <div className="grid grid-cols-3 gap-2 mb-3 relative select-none pointer-events-none">
             {[
-              { label: "IPD Beds",       icon: BedDouble,  color: "text-indigo-500",  bg: "bg-indigo-50"  },
-              { label: "Surgeries Today", icon: Scissors,   color: "text-purple-500",  bg: "bg-purple-50"  },
+              { label: "IPD Beds",       icon: BedDouble,  color: "text-teal-500",  bg: "bg-teal-50"  },
+              { label: "Surgeries Today", icon: Scissors,   color: "text-teal-500",  bg: "bg-teal-50"  },
               { label: "In Theatre",      icon: Stethoscope, color: "text-slate-500",  bg: "bg-slate-50"   },
             ].map(({ label, icon: Icon, color, bg }) => (
               <div key={label} className="bg-white/70 rounded-xl p-2.5 text-center border border-white/80 backdrop-blur-sm">
@@ -672,9 +672,9 @@ export function HomeDashboardClient({
           </div>
 
           {/* Coming soon notice */}
-          <div className="relative flex items-start gap-2 bg-white/60 rounded-xl p-2.5 border border-indigo-100/80 backdrop-blur-sm">
-            <Lock size={12} className="text-indigo-400 shrink-0 mt-0.5" />
-            <p className="text-caption text-indigo-700 leading-snug">
+          <div className="relative flex items-start gap-2 bg-white/60 rounded-xl p-2.5 border border-teal-50/80 backdrop-blur-sm">
+            <Lock size={12} className="text-teal-400 shrink-0 mt-0.5" />
+            <p className="text-caption text-teal-700 leading-snug">
               Full IPD admissions, bed management &amp; surgical scheduling. <span className="font-bold">Coming soon.</span>
             </p>
           </div>

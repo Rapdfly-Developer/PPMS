@@ -50,7 +50,7 @@ function StatusBadge({ status }: { status: string }) {
   const map: Record<string, { label: string; className: string; icon: React.ReactNode }> = {
     ENABLED:       { label: "Enabled",       className: "bg-emerald-50 text-emerald-700 border-emerald-200",   icon: <CheckCircle2 size={11} /> },
     DISABLED:      { label: "Disabled",      className: "bg-gray-100 text-gray-500 border-gray-200",           icon: <XCircle size={11} /> },
-    INSTALLED:     { label: "Installed",     className: "bg-blue-50 text-blue-700 border-blue-200",            icon: <Clock size={11} /> },
+    INSTALLED:     { label: "Installed",     className: "bg-teal-50 text-teal-700 border-teal-100",            icon: <Clock size={11} /> },
     NOT_INSTALLED: { label: "Not Installed", className: "bg-gray-50 text-gray-400 border-gray-200",            icon: <AlertCircle size={11} /> },
   };
   const s = map[status] ?? map.NOT_INSTALLED;

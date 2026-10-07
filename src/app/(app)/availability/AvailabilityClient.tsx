@@ -19,8 +19,8 @@ const SLOT_OPTIONS = [10, 15, 20, 30, 45, 60];
 
 const H_COLORS = [
   { pill: "bg-teal-600",   card: "bg-teal-50  border-teal-200",  label: "text-teal-700",  dot: "bg-teal-500"   },
-  { pill: "bg-blue-600",   card: "bg-blue-50  border-blue-200",  label: "text-blue-700",  dot: "bg-blue-500"   },
-  { pill: "bg-violet-600", card: "bg-violet-50 border-violet-200", label: "text-violet-700", dot: "bg-violet-500" },
+  { pill: "bg-teal-600",   card: "bg-teal-50  border-teal-100",  label: "text-teal-700",  dot: "bg-teal-500"   },
+  { pill: "bg-teal-600", card: "bg-teal-50 border-teal-100", label: "text-teal-700", dot: "bg-teal-500" },
   { pill: "bg-orange-500", card: "bg-orange-50 border-orange-200", label: "text-orange-700", dot: "bg-orange-500" },
   { pill: "bg-rose-600",   card: "bg-rose-50  border-rose-200",  label: "text-rose-700",  dot: "bg-rose-500"   },
   { pill: "bg-emerald-600",card: "bg-emerald-50 border-emerald-200", label: "text-emerald-700", dot: "bg-emerald-500" },
@@ -388,8 +388,8 @@ export function AvailabilityClient({
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-7">
         {[
           { icon: <Calendar size={18} />, value: todaySessions, label: "Today's Sessions", sub: DAYS[todayWd], color: "text-teal-600 bg-teal-50" },
-          { icon: <Building2 size={18} />, value: hospitals.length, label: "Linked Hospitals", sub: "active", color: "text-blue-600 bg-blue-50" },
-          { icon: <Layers size={18} />, value: weeklySlots, label: "Weekly Slots", sub: `${activeSchedules} active schedules`, color: "text-violet-600 bg-violet-50" },
+          { icon: <Building2 size={18} />, value: hospitals.length, label: "Linked Hospitals", sub: "active", color: "text-teal-600 bg-teal-50" },
+          { icon: <Layers size={18} />, value: weeklySlots, label: "Weekly Slots", sub: `${activeSchedules} active schedules`, color: "text-teal-600 bg-teal-50" },
           { icon: <Users size={18} />, value: upcomingCount, label: "Upcoming Appts", sub: "next 7 days", color: "text-emerald-600 bg-emerald-50" },
         ].map((s, i) => (
           <div key={i} className="bg-white rounded-2xl border border-[var(--color-border)] px-5 py-4 flex items-center gap-4">

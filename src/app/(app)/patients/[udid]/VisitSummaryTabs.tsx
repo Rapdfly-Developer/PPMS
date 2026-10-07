@@ -252,7 +252,7 @@ export function VisitSummaryTabBar({
             font-semibold
             ${tab === t
               ? t === "ai"
-                ? "bg-white shadow-sm text-violet-700 shadow-violet-100"
+                ? "bg-white shadow-sm text-teal-700 shadow-teal-50"
                 : "bg-white shadow-sm text-[var(--color-ink-800)]"
               : "text-[var(--color-ink-400)] hover:text-[var(--color-ink-600)]"
             }
@@ -261,7 +261,7 @@ export function VisitSummaryTabBar({
           {t === "ai" && (
             <Sparkles
               size={compact ? 8 : 10}
-              className={tab === "ai" ? "text-violet-500" : "text-[var(--color-ink-300)]"}
+              className={tab === "ai" ? "text-teal-500" : "text-[var(--color-ink-300)]"}
             />
           )}
           {t === "short" ? "Short" : t === "long" ? "Long" : "AI"}
@@ -393,7 +393,7 @@ function ShortContent({ complaint, diagnoses, emrData }: {
       {/* Medications (if EMR data already loaded from switching tabs) */}
       {hasMeds && (
         <div>
-          <SumHead icon={<Pill size={11} />} label="Treatment / Medications" color="text-violet-500" />
+          <SumHead icon={<Pill size={11} />} label="Treatment / Medications" color="text-teal-500" />
           <div className="space-y-1">
             {emrData.medications.map((m: any, i: number) => (
               <div key={i} className="flex items-start gap-2 py-1.5 border-b border-[var(--color-border)] last:border-0">
@@ -418,13 +418,13 @@ function ShortContent({ complaint, diagnoses, emrData }: {
       {/* Pending follow-up investigations */}
       {hasFollowUp && (
         <div>
-          <SumHead icon={<CalendarClock size={11} />} label="Pending Follow-Up" color="text-blue-500" />
+          <SumHead icon={<CalendarClock size={11} />} label="Pending Follow-Up" color="text-teal-500" />
           <div className="flex flex-wrap gap-1.5">
             {followUpInv.map((o: any, i: number) => (
-              <span key={i} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-50 border border-blue-200 text-blue-800 text-caption sm:text-caption font-medium">
+              <span key={i} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-teal-50 border border-teal-100 text-teal-800 text-caption sm:text-caption font-medium">
                 {o.laterality && <span className="font-bold text-[var(--color-primary-700)]">{o.laterality}</span>}
                 {o.testName}
-                {o.notes && <span className="italic font-normal text-blue-600/70"> · {o.notes}</span>}
+                {o.notes && <span className="italic font-normal text-teal-600/70"> · {o.notes}</span>}
               </span>
             ))}
           </div>
@@ -645,7 +645,7 @@ function LongContent({
 
       {/* ── 2. Examination Findings ───────────────────────────────────── */}
       {hasExam && (
-        <LongSection head={<SumHead icon={<Microscope size={11} />} label="Examination Findings" color="text-blue-500" />}>
+        <LongSection head={<SumHead icon={<Microscope size={11} />} label="Examination Findings" color="text-teal-500" />}>
 
           {hasVitals && (
             <Block label="Vitals" icon={<Activity size={10} className="text-[var(--color-ink-400)]" />}>
@@ -816,7 +816,7 @@ function LongContent({
 
       {/* ── 4. Treatment Plan / Medications ───────────────────────────── */}
       {hasMeds && (
-        <LongSection head={<SumHead icon={<Pill size={11} />} label="Treatment Plan: Medications" color="text-violet-500" />}>
+        <LongSection head={<SumHead icon={<Pill size={11} />} label="Treatment Plan: Medications" color="text-teal-500" />}>
           <div className="flex flex-col divide-y divide-[var(--color-border)]">
             {data.medications.map((m: any, i: number) => (
               <div key={i} className="flex items-start gap-2.5 py-2 first:pt-0 last:pb-0">
@@ -846,7 +846,7 @@ function LongContent({
 
       {/* ── 5. Investigations / Follow-Up ─────────────────────────────── */}
       {hasInv && (
-        <LongSection head={<SumHead icon={<FlaskConical size={11} />} label="Investigations &amp; Follow-Up" color="text-blue-500" />}>
+        <LongSection head={<SumHead icon={<FlaskConical size={11} />} label="Investigations &amp; Follow-Up" color="text-teal-500" />}>
           <div className="flex flex-col divide-y divide-[var(--color-border)]">
             {data.investigationOrders.map((o: any, i: number) => (
               <div key={i} className="flex items-start justify-between gap-3 py-2 first:pt-0 last:pb-0">
@@ -926,10 +926,10 @@ export function AIContent({
      consistent with the other two tabs is the label grammar, the 11px body and
      the left edge — the paragraph starts exactly where every table cell does. */
   return (
-    <div className="rounded-xl bg-violet-50/50 p-3.5">
+    <div className="rounded-xl bg-teal-50/50 p-3.5">
       <div className="flex items-center gap-1.5 mb-1.5">
-        <Sparkles size={11} className="text-violet-500" />
-        <span className="text-micro sm:text-micro sm:text-caption font-bold uppercase tracking-widest text-violet-600">
+        <Sparkles size={11} className="text-teal-500" />
+        <span className="text-micro sm:text-micro sm:text-caption font-bold uppercase tracking-widest text-teal-600">
           {source === "claude" ? "Claude AI Summary" : "Auto-Generated Summary"}
         </span>
       </div>

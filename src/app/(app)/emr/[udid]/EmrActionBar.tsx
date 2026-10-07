@@ -618,7 +618,7 @@ export function EmrActionBar({
               {!editMode && (
                 <button
                   onClick={onEnterEditMode}
-                  className="flex-1 md:flex-none flex items-center justify-center gap-1 text-caption sm:text-xs font-medium px-2.5 py-2.5 md:px-3 md:py-2 rounded-xl bg-blue-50 border border-blue-200 text-blue-600 hover:bg-blue-100 hover:border-blue-300 transition-colors whitespace-nowrap"
+                  className="flex-1 md:flex-none flex items-center justify-center gap-1 text-caption sm:text-xs font-medium px-2.5 py-2.5 md:px-3 md:py-2 rounded-xl bg-teal-50 border border-teal-100 text-teal-600 hover:bg-teal-50 hover:border-teal-300 transition-colors whitespace-nowrap"
                 >
                   <PenLine size={12} /> Edit
                 </button>
