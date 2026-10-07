@@ -440,7 +440,7 @@ export function HomeDashboardClient({
           </div>
           <div className="flex items-center gap-3 flex-wrap">
             {can("appointments.view") && filterOptions.length > 0 && (
-              <div className="bg-white rounded-xl border border-[var(--color-border)] p-3 min-w-[160px] shadow-sm">
+              <div className="bg-white rounded-xl border border-[var(--color-border)] p-3 shadow-sm flex flex-col justify-center w-[160px] h-[76px] shrink-0">
                 <p className="text-caption font-semibold text-[var(--color-ink-400)] uppercase tracking-wide mb-1">
                   {scope === "DOCTOR" ? "All Hospitals" : "All Doctors"}
                 </p>
@@ -458,18 +458,18 @@ export function HomeDashboardClient({
                 />
               </div>
             )}
-            <div className="bg-white rounded-xl border border-[var(--color-border)] p-3 shadow-sm text-center min-w-[120px]">
+            <div className="bg-white rounded-xl border border-[var(--color-border)] p-3 shadow-sm flex flex-col items-center justify-center text-center w-[160px] h-[76px] shrink-0">
               <p className="text-caption font-semibold text-[var(--color-ink-400)] uppercase tracking-wide">
                 {filterOptions.length} Hospital{filterOptions.length !== 1 ? "s" : ""}
               </p>
               <p className="text-caption text-[var(--color-ink-500)] mt-0.5">You have access to</p>
             </div>
             {scope === "DOCTOR" && activeHospitalCount > 0 && (
-              <div className="bg-white rounded-xl border border-[var(--color-border)] p-3 shadow-sm text-center min-w-[120px]">
+              <div className="bg-white rounded-xl border border-[var(--color-border)] p-3 shadow-sm flex flex-col items-center justify-center text-center w-[160px] h-[76px] shrink-0">
                 <p className="text-caption font-semibold text-[var(--color-ink-400)] uppercase tracking-wide flex items-center justify-center gap-1">
                   <Building2 size={10} className="shrink-0" />Active Today
                 </p>
-                <p className="text-heading-lg font-bold text-[var(--color-ink-900)] leading-tight mt-0.5">{activeHospitalCount}</p>
+                <p className="text-heading-lg font-bold text-[var(--color-ink-900)] leading-none mt-0.5">{activeHospitalCount}</p>
                 <p className="text-caption text-[var(--color-ink-500)]">hospital{activeHospitalCount !== 1 ? "s" : ""}</p>
               </div>
             )}
