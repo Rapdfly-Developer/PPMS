@@ -7,6 +7,7 @@ import { KeywordInput, KeywordTextarea } from "@/components/emr/KeywordField";
 import { Card } from "@/components/ui/Card";
 import { Tabs } from "@/components/ui/Tabs";
 import { SingleChipSelect } from "@/components/ui/Chip";
+import { TealSelect } from "@/components/ui/TealSelect";
 import { useAutoSave, SaveIndicator, AutoSaveSharedLock } from "@/lib/useAutoSave";
 import { parseJSON } from "@/lib/json";
 import { DiplopiaGrid, HessGrid } from "@/components/emr/Grid9Position";
@@ -693,14 +694,12 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
           <p className="text-label sm:text-sm font-medium text-[var(--color-ink-700)]">Correction 1</p>
           <div className="flex items-center gap-2">
             <span className="text-caption sm:text-xs text-[var(--color-ink-400)]">Method:</span>
-            <select
-              disabled={!editable}
+            <TealSelect
               value={c1.activeMethod}
-              onChange={(e) => setC1((prev) => ({ ...prev, activeMethod: e.target.value }))}
-              className="rounded-lg border border-[var(--color-border)] bg-white px-2.5 py-1 text-xs disabled:bg-[var(--color-surface-sunken)]"
-            >
-              {REFRACTION_METHODS.map((m) => <option key={m}>{m}</option>)}
-            </select>
+              onChange={editable ? (v) => setC1((prev) => ({ ...prev, activeMethod: v })) : () => {}}
+              options={REFRACTION_METHODS.map((m) => ({ value: m, label: m }))}
+              className="min-w-[148px]"
+            />
           </div>
         </div>
         <div className="flex items-center justify-end gap-2 ml-auto flex-wrap">
@@ -756,14 +755,12 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
               <p className="text-label sm:text-sm font-medium text-[var(--color-ink-700)]">{ex.label}</p>
               <div className="flex items-center gap-2">
                 <span className="text-caption sm:text-xs text-[var(--color-ink-400)]">Method:</span>
-                <select
-                  disabled={!editable}
+                <TealSelect
                   value={ex.activeMethod}
-                  onChange={(e) => setExtra(idx, (prev) => ({ ...prev, activeMethod: e.target.value }))}
-                  className="rounded-lg border border-[var(--color-border)] bg-white px-2.5 py-1 text-xs disabled:bg-[var(--color-surface-sunken)]"
-                >
-                  {REFRACTION_METHODS.map((m) => <option key={m}>{m}</option>)}
-                </select>
+                  onChange={editable ? (v) => setExtra(idx, (prev) => ({ ...prev, activeMethod: v })) : () => {}}
+                  options={REFRACTION_METHODS.map((m) => ({ value: m, label: m }))}
+                  className="min-w-[148px]"
+                />
               </div>
             </div>
             <div className="ml-auto flex items-center gap-2 shrink-0 flex-wrap">
