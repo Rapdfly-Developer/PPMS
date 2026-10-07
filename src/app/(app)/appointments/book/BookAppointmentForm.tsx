@@ -101,6 +101,7 @@ export function BookAppointmentForm({
   const [npInstructions, setNpInstructions] = useState("");
   const [aadhaarPhoto, setAadhaarPhoto] = useState<UploadedFile | null>(null);
   const [patientPhoto, setPatientPhoto] = useState<UploadedFile | null>(null);
+  const [npConsent,    setNpConsent]    = useState(false);
 
   /* ── Step 2: appointment details ── */
   const [doctorId,   setDoctorId]   = useState(doctors[0]?.id ?? "");
@@ -281,6 +282,7 @@ export function BookAppointmentForm({
     e.preventDefault();
     if (patientMode === "existing" && !selectedPatient) { setError("Please select a patient."); return; }
     if (patientMode === "new" && !npOccupation.trim()) { setError("Occupation is required for new patients."); return; }
+    if (patientMode === "new" && !npConsent) { setError("Please confirm the patient's consent before creating their account."); return; }
     if (!doctorId) { setError("Please select a doctor."); return; }
     if (!activeHospitalId) {
       setError(encounterType === "walkin"
@@ -345,6 +347,7 @@ export function BookAppointmentForm({
       // Photos uploaded to blob storage; savedNames passed for future DB linking
       if (aadhaarPhoto) fd.set("aadhaarPhotoFile", aadhaarPhoto.savedName);
       if (patientPhoto) fd.set("patientPhotoFile",  patientPhoto.savedName);
+      fd.set("consentGiven", npConsent ? "1" : "0");
     }
 
     startTransition(async () => {
@@ -672,6 +675,26 @@ export function BookAppointmentForm({
                     onChange={setPatientPhoto}
                   />
                 </div>
+              </div>
+
+              {/* Patient Consent */}
+              <div className="sm:col-span-2">
+                <label className={`flex items-start gap-3 rounded-xl border p-4 cursor-pointer transition-colors ${
+                  npConsent
+                    ? "border-[var(--color-primary-300)] bg-[var(--color-primary-50)]"
+                    : "border-[var(--color-ink-200)] bg-[var(--color-ink-50)] hover:border-[var(--color-primary-200)] hover:bg-[var(--color-primary-50)/50]"
+                }`}>
+                  <input
+                    type="checkbox"
+                    checked={npConsent}
+                    onChange={(e) => setNpConsent(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--color-primary-600)] cursor-pointer"
+                  />
+                  <span className="text-[13px] leading-relaxed text-[var(--color-ink-700)]">
+                    I confirm that the patient has provided consent to create and maintain their patient account and health records in RF Health for the purpose of receiving healthcare services.
+                    <span className="ml-1 text-[var(--color-error-600)] font-medium">*</span>
+                  </span>
+                </label>
               </div>
             </div>
           )}

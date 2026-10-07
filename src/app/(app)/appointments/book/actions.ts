@@ -158,6 +158,8 @@ export async function bookAppointment(formData: FormData) {
       generateUHID(hospitalShortCode),
     ]);
 
+    const consentGiven = formData.get("consentGiven") === "1";
+
     const patient = await prisma.patient.create({
       data: {
         udid,
@@ -183,6 +185,19 @@ export async function bookAppointment(formData: FormData) {
       },
     });
     patientId = patient.id;
+
+    if (consentGiven) {
+      await prisma.patientConsent.create({
+        data: {
+          patientId: patient.id,
+          purpose: "TREATMENT",
+          method: "ELECTRONIC",
+          status: "GRANTED",
+          noticeText: "I confirm that the patient has provided consent to create and maintain their patient account and health records in RF Health for the purpose of receiving healthcare services.",
+          capturedBy: doctorId || undefined,
+        },
+      });
+    }
   }
 
   // Fetch ALL availability slots for this doctor/hospital/weekday
