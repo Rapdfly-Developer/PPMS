@@ -45,6 +45,7 @@ export const PERMISSION_GROUPS: {
       { key: "appointments.create", label: "Book Appointments",   description: "Schedule new appointments" },
       { key: "appointments.edit",   label: "Edit Appointments",   description: "Modify appointment details and status" },
       { key: "appointments.cancel", label: "Cancel Appointments", description: "Cancel an existing appointment" },
+      { key: "appointments.noshow", label: "Mark No-Show",        description: "Mark a confirmed appointment as no-show" },
     ],
   },
 
@@ -65,7 +66,9 @@ export const PERMISSION_GROUPS: {
     permissions: [
       { key: "emr.view",   label: "View EMR",           description: "Open and read a patient's electronic medical record" },
       { key: "emr.create", label: "Create EMR Visit",   description: "Open a new consultation visit in the EMR" },
+      { key: "emr.edit",   label: "Edit EMR (Full)",    description: "Edit all sections of the EMR; overrides section-level restrictions" },
       { key: "emr.print",  label: "Print / Export EMR", description: "Generate and download prescription and summary PDFs" },
+      { key: "emr.copilot.view", label: "AI Copilot",  description: "Access the AI clinical copilot tab in the EMR" },
     ],
   },
 
@@ -193,6 +196,7 @@ export const PERMISSION_GROUPS: {
     category: "Follow-ups",
     permissions: [
       { key: "followups.view", label: "View Follow-ups", description: "See the follow-up worklist and upcoming recall appointments" },
+      { key: "followups.edit", label: "Edit Follow-ups", description: "Update follow-up status, schedule and notes" },
     ],
   },
 
@@ -218,8 +222,9 @@ export const PERMISSION_GROUPS: {
   {
     category: "Settings & Administration",
     permissions: [
-      { key: "settings.view",   label: "View Settings",   description: "Read clinic settings and configuration" },
-      { key: "settings.manage", label: "Manage Settings", description: "Update clinic name, hospital details, working hours and preferences" },
+      { key: "settings.view",   label: "View Settings",    description: "Read clinic settings and configuration" },
+      { key: "settings.manage", label: "Manage Settings",  description: "Update clinic name, hospital details, working hours and preferences" },
+      { key: "hospital.manage", label: "Hospital Manager", description: "Access the hospital manager to configure availability and slots" },
     ],
   },
 

@@ -245,7 +245,21 @@ export default async function PatientDetailedEMR({
   const finalizedToday = viewOnlySource ? false : finalizedTodayRaw;
   const visitLocked = activeVisit?.status === "CLOSED" && !finalizedToday;
   const isRefractionist = user.role === "REFRACTIONIST";
-  const readOnly = viewOnlySource || !userCan(user, "emr.edit") || visitLocked;
+  const canEditSomething =
+    userCan(user, "emr.edit") ||
+    userCan(user, "emr.general.edit") ||
+    userCan(user, "emr.va.edit") ||
+    userCan(user, "emr.iop.edit") ||
+    userCan(user, "emr.colour.edit") ||
+    userCan(user, "emr.anterior.edit") ||
+    userCan(user, "emr.posterior.edit") ||
+    userCan(user, "emr.assessment.edit") ||
+    userCan(user, "emr.plan.edit") ||
+    userCan(user, "emr.medications.edit") ||
+    userCan(user, "emr.refraction.edit") ||
+    userCan(user, "emr.ophthalmic.edit") ||
+    userCan(user, "emr.labReports.edit");
+  const readOnly = viewOnlySource || !canEditSomething || visitLocked;
   const generalReadOnly = viewOnlySource || !userCan(user, "emr.general.edit") || visitLocked;
   // Refraction-workflow sections split into per-section flags so each can be
   // granted or revoked independently. DOCTOR has * so all resolve true.

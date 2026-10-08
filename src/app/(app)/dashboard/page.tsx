@@ -119,6 +119,9 @@ export default async function DashboardPage() {
     );
   }
 
+  // Refractionist's home is OPD — the dashboard duplicates the queue.
+  if (user.role === "REFRACTIONIST") redirect("/opd");
+
   // ── Hospital / staff roles ─────────────────────────────────────────────
   const hospitalId = user.hospitalId;
   if (!hospitalId) redirect("/settings?section=add-hospital");

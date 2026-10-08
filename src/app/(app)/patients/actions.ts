@@ -907,6 +907,7 @@ export async function searchPatientsAutocomplete(query: string): Promise<Patient
       } else if (p.complaint?.toLowerCase().includes(ql)) {
         matchType = "complaint";
         matchText = p.complaint ?? undefined;
+        visitId = p.visits[0]?.id;
       } else {
         outer: for (const v of p.visits) {
           if (v.generalExam?.chiefComplaint?.toLowerCase().includes(ql)) {

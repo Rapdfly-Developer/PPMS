@@ -281,7 +281,7 @@ export function TopBar({ name, role }: { name: string; role: string }) {
     if (highlighted) {
       setAcOpen(false);
       router.push(highlighted.visitId
-        ? `/patients/${highlighted.udid}/visits?visitId=${highlighted.visitId}`
+        ? `/emr/${highlighted.udid}?visit=${highlighted.visitId}`
         : `/patients/${highlighted.udid}`);
     } else if (q.trim()) {
       setAcOpen(false);
@@ -404,7 +404,7 @@ export function TopBar({ name, role }: { name: string; role: string }) {
                         e.preventDefault();
                         setAcOpen(false);
                         router.push(r.visitId
-                          ? `/patients/${r.udid}/visits?visitId=${r.visitId}`
+                          ? `/emr/${r.udid}?visit=${r.visitId}`
                           : `/patients/${r.udid}`);
                       }}
                       className={`w-full text-left px-3 py-2 flex flex-col gap-0.5 transition-colors ${
