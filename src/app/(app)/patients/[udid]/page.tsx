@@ -8,6 +8,7 @@ import { decryptAadhaar, maskAadhaar } from "@/lib/crypto";
 import { PatientProfileClient, type SerialVisit, type TodayVisit, type LastVisitSummary, type LongitudinalVisit } from "./PatientProfileClient";
 import { PatientActionsPanel } from "./PatientHistoryButtons";
 import { DeletePatientButton } from "../DeletePatientButton";
+import { EditPatientButton } from "../EditPatientButton";
 import { fileHref } from "@/lib/file-href";
 
 const CATEGORY_STYLES: Record<string, string> = {
@@ -331,13 +332,32 @@ export default async function PatientProfilePage({
                 </div>
               </div>
               {user.role === "DOCTOR" && (
-                <DeletePatientButton
-                  patientId={patient.id}
-                  patientName={patient.name}
-                  patientCode={patient.udid || patient.uhid || patient.id}
-                  redirectTo="/patients"
-                  className="shrink-0 rounded-lg p-1.5 text-white/50 transition-colors hover:bg-white/10 hover:text-red-300"
-                />
+                <div className="flex items-center gap-1 shrink-0">
+                  <EditPatientButton
+                    patientId={patient.id}
+                    className="rounded-lg p-1.5 text-white/50 transition-colors hover:bg-white/10 hover:text-white"
+                    defaultValues={{
+                      name: patient.name,
+                      age: patient.age,
+                      sex: patient.sex,
+                      mobile: patient.mobile,
+                      category: patient.category,
+                      occupation: patient.occupation ?? null,
+                      notes: patient.notes ?? null,
+                      address: patient.address ?? null,
+                      city: patient.city ?? null,
+                      state: patient.state ?? null,
+                      pincode: patient.pincode ?? null,
+                    }}
+                  />
+                  <DeletePatientButton
+                    patientId={patient.id}
+                    patientName={patient.name}
+                    patientCode={patient.udid || patient.uhid || patient.id}
+                    redirectTo="/patients"
+                    className="rounded-lg p-1.5 text-white/50 transition-colors hover:bg-white/10 hover:text-red-300"
+                  />
+                </div>
               )}
             </div>
 

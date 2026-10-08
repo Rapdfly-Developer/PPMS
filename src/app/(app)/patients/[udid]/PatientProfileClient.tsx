@@ -458,7 +458,7 @@ function LastVisitSummarySection({
     <div className="mt-4 space-y-3">
       {/* ── Last Visit Summary ── */}
       <div className="rounded-xl border border-[var(--color-border)] bg-white overflow-hidden">
-        <div className="px-4 py-2 border-b border-[var(--color-border)] flex items-center justify-between gap-2 flex-wrap">
+        <div className="px-4 py-2 border-b border-[var(--color-border)] flex items-center justify-between gap-2 overflow-hidden">
           <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
             <Activity size={13} className="text-[var(--color-primary-600)] shrink-0" />
             <span className="text-caption sm:text-xs font-semibold text-[var(--color-ink-800)]">Last Visit Summary</span>
@@ -472,8 +472,8 @@ function LastVisitSummarySection({
             />
           </div>
           {summary.hospitalName && (
-            <span className="flex items-center gap-1 text-caption sm:text-caption text-[var(--color-ink-400)] shrink-0">
-              <Hospital size={11} />{summary.hospitalName}
+            <span className="flex items-center gap-1 text-caption sm:text-caption text-[var(--color-ink-400)] shrink-0 max-w-[38%] truncate" title={summary.hospitalName}>
+              <Hospital size={11} className="shrink-0" /><span className="truncate">{summary.hospitalName}</span>
             </span>
           )}
         </div>
