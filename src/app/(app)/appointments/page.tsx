@@ -101,6 +101,9 @@ export default async function AppointmentsPage({
     };
   }
 
+  // Walk-ins belong to OPD only — never show in appointments module
+  where.isWalkIn = false;
+
   // ── Fetch ───────────────────────────────────────────────────────────────
   const hospitalParam = sp.hospital ?? "";
   if (hospitalParam && user.role === "DOCTOR") {
@@ -108,11 +111,11 @@ export default async function AppointmentsPage({
   }
 
   // Pending requests for today (always today's range, ignoring dateParam)
-  const pendingWhere: any = { status: "REQUESTED", dateTime: { gte: todayStart, lte: todayEnd } };
+  const pendingWhere: any = { status: "REQUESTED", isWalkIn: false, dateTime: { gte: todayStart, lte: todayEnd } };
   if (user.role === "DOCTOR") pendingWhere.doctorId   = scopeDoctorId(user);
   else                        pendingWhere.hospitalId = user.hospitalId ?? "__no_scope__";
 
-  const noShowWhere: any = { status: "NO_SHOW", dateTime: dateFilter };
+  const noShowWhere: any = { status: "NO_SHOW", isWalkIn: false, dateTime: dateFilter };
   if (user.role === "DOCTOR") noShowWhere.doctorId   = scopeDoctorId(user);
   else                        noShowWhere.hospitalId = user.hospitalId ?? "__no_scope__";
 

@@ -147,8 +147,8 @@ export function AppointmentsClient({
     .sort((a, b) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime()); // newest first
   const prevAppts     = appointments.filter((a) => format(new Date(a.dateTime), "yyyy-MM-dd") < todayStr && a.status !== "NO_SHOW")
     .sort((a, b) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime()); // newest first
-  // Today's Appointments shows only patients still awaiting confirmation.
-  const todayAppts    = appointments.filter((a) => format(new Date(a.dateTime), "yyyy-MM-dd") === todayStr && ["REQUESTED", "CONFIRMED"].includes(a.status))
+  // Today's Appointments: awaiting confirmation only; hide once added to OPD queue (arrivedAt set)
+  const todayAppts    = appointments.filter((a) => format(new Date(a.dateTime), "yyyy-MM-dd") === todayStr && ["REQUESTED", "CONFIRMED"].includes(a.status) && !a.arrivedAt)
     .sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime()); // earliest first
   const upcomingAppts = appointments.filter((a) => format(new Date(a.dateTime), "yyyy-MM-dd") > todayStr)
     .sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime()); // earliest first
@@ -508,15 +508,6 @@ export function AppointmentsClient({
             head:   "text-teal-700",
           },
           {
-            key:    "previous",
-            label:  "Overall",
-            sub:    null,
-            appts:  prevAppts,
-            accent: "border-l-[var(--color-border)] bg-[var(--color-surface-sunken)]/20",
-            badge:  "bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)]",
-            head:   "text-[var(--color-ink-600)]",
-          },
-          {
             key:    "noshow",
             label:  "No Shows",
             sub:    null,
@@ -530,7 +521,7 @@ export function AppointmentsClient({
         return (
           <div className="flex flex-col gap-6">
             {/* Summary cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 sm:gap-3 w-full">
+            <div className="grid grid-cols-3 gap-1.5 sm:gap-3 w-full">
               {[
                 {
                   label: "Today",
@@ -554,24 +545,13 @@ export function AppointmentsClient({
                   lbl:   "text-teal-600",
                   slbl:  "text-teal-400",
                 },
-                {
-                  label: "Overall",
-                  count: prevAppts.length,
-                  sub:   "Past 30 days",
-                  bg:    "bg-[var(--color-surface-sunken)]",
-                  border:"border-[var(--color-border)]",
-                  dot:   "bg-[var(--color-ink-400)]",
-                  cnt:   "text-[var(--color-ink-700)]",
-                  lbl:   "text-[var(--color-ink-500)]",
-                  slbl:  "text-[var(--color-ink-400)]",
-                },
               ].map(({ label: cl, count, sub: csub, bg, border, dot, cnt, lbl, slbl }) => {
-                const sectionKey = (cl === "Overall" ? "previous" : cl.toLowerCase()) as "today" | "upcoming" | "previous";
+                const sectionKey = cl.toLowerCase() as "today" | "upcoming";
                 const isActive = activeSection === sectionKey;
                 return (
                   <button
                     key={cl}
-                    onClick={() => { setActiveSection(sectionKey); if (sectionKey === "previous") setPrevPage(1); }}
+                    onClick={() => setActiveSection(sectionKey)}
                     className={`rounded-xl border-2 px-2 sm:px-4 py-2.5 sm:py-3 flex flex-col gap-0.5 text-left cursor-pointer transition-all min-w-0 w-full ${
                       isActive
                         ? `${border} ${bg} shadow-sm ring-2 ring-offset-1 ${
