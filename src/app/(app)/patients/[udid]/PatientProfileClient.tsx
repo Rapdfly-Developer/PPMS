@@ -988,7 +988,7 @@ export function PatientProfileClient({
               </button>
               ) : (
               <Link
-                href={`/emr/${udid}?visit=${todayVisit!.id}&returnTo=${encodeURIComponent(emrReturnTo)}`}
+                href={`/emr/${udid}?visit=${todayVisit!.id}&source=total-dispensed&returnTo=${encodeURIComponent(emrReturnTo)}`}
                 className="flex-1 flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-xl font-semibold text-label sm:text-sm bg-emerald-600 text-white hover:bg-emerald-700 transition-colors shadow-sm"
               >
                 <Stethoscope size={16} />

@@ -46,10 +46,13 @@ export default async function PatientDetailedEMR({
   searchParams,
 }: {
   params: Promise<{ udid: string }>;
-  searchParams: Promise<{ visit?: string; returnTo?: string }>;
+  searchParams: Promise<{ visit?: string; returnTo?: string; source?: string }>;
 }) {
   const { udid } = await params;
-  const { visit: visitIdParam, returnTo } = await searchParams;
+  const { visit: visitIdParam, returnTo, source } = await searchParams;
+  // Patients accessed from Patient Library → Total Dispensed are permanently
+  // read-only regardless of role, visit date, or any URL param the caller adds.
+  const viewOnlySource = source === "total-dispensed";
   const user = await requirePermission("emr.view");
 
   const patient = await prisma.patient.findUnique({
@@ -213,16 +216,19 @@ export default async function PatientDetailedEMR({
 
   // CLOSED visits remain editable until midnight on the day of finalization,
   // then become permanently read-only for everyone including the doctor.
-  const finalizedToday = activeVisit?.finalizedAt
+  const finalizedTodayRaw = activeVisit?.finalizedAt
     ? isSameDay(new Date(activeVisit.finalizedAt), new Date())
     : false;
+  // When opened from Total Dispensed, treat the visit as permanently locked
+  // regardless of when it was finalized and regardless of any URL params.
+  const finalizedToday = viewOnlySource ? false : finalizedTodayRaw;
   const visitLocked = activeVisit?.status === "CLOSED" && !finalizedToday;
   const isRefractionist = user.role === "REFRACTIONIST";
-  const readOnly = user.role !== "DOCTOR" || visitLocked;
+  const readOnly = viewOnlySource || user.role !== "DOCTOR" || visitLocked;
   // Refractionist can edit general + ophthalmic (except anterior/posterior)
-  const generalReadOnly = (user.role !== "DOCTOR" && !isRefractionist) || visitLocked;
+  const generalReadOnly = viewOnlySource || (user.role !== "DOCTOR" && !isRefractionist) || visitLocked;
   // Refraction-workflow sections (VA, refraction, colour, IOP) follow the refraction permissions.
-  const canEditRefraction = user.role === "DOCTOR" || (canRecordRefraction(user) && !visitLocked);
+  const canEditRefraction = !viewOnlySource && (user.role === "DOCTOR" || (canRecordRefraction(user) && !visitLocked));
 
   // Closed by the EOD sweep rather than finalized & signed by the doctor
   const autoClosed =
@@ -482,7 +488,7 @@ export default async function PatientDetailedEMR({
             visit={activeVisit}
             udid={udid}
             patientName={patient.name}
-            showActionBar={user.role === "DOCTOR" || isRefractionist}
+            showActionBar={!viewOnlySource && (user.role === "DOCTOR" || isRefractionist)}
             isRefractionist={isRefractionist}
             finalizedToday={finalizedToday}
             pluginSlot={
