@@ -171,10 +171,10 @@ export function UpcomingCalendar({
         </div>
       )}
 
-      {/* ── List view (when date selected and calendar collapsed) ── */}
-      {!calendarOpen && selectedDk && selectedAppts.length > 0 && (
+      {/* ── Collapsed state: always show the calendar button ── */}
+      {!calendarOpen && (
         <div>
-          {/* Compact header: calendar toggle + date label + close/change date */}
+          {/* Header: always visible — calendar button + optional date info + X */}
           <div className="flex items-center gap-2 mb-4">
             {/* Small calendar button to reopen */}
             <button
@@ -189,31 +189,41 @@ export function UpcomingCalendar({
               <CalendarDays size={14} className="text-white" />
             </button>
 
-            {/* Date info */}
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-[var(--color-ink-900)] leading-tight truncate">
-                {format(new Date(selectedDk + "T00:00:00"), "EEEE, d MMMM yyyy")}
+            {/* Date info — only when a date with appointments is selected */}
+            {selectedDk && selectedAppts.length > 0 ? (
+              <>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-[var(--color-ink-900)] leading-tight truncate">
+                    {format(new Date(selectedDk + "T00:00:00"), "EEEE, d MMMM yyyy")}
+                  </p>
+                  <p className="text-xs text-[var(--color-ink-500)] leading-tight">
+                    {selectedAppts.length} appointment{selectedAppts.length !== 1 ? "s" : ""}
+                  </p>
+                </div>
+                {/* Clear selection */}
+                <button
+                  title="Back to calendar"
+                  onClick={() => { setSelectedDk(null); setCalendarOpen(true); }}
+                  className="flex items-center justify-center w-7 h-7 rounded-lg text-[var(--color-ink-400)] hover:bg-[var(--color-surface-sunken)] hover:text-[var(--color-ink-700)] transition-colors shrink-0"
+                >
+                  <X size={13} />
+                </button>
+              </>
+            ) : (
+              <p className="text-sm text-[var(--color-ink-400)] leading-tight">
+                Tap the calendar to view upcoming appointments
               </p>
-              <p className="text-xs text-[var(--color-ink-500)] leading-tight">
-                {selectedAppts.length} appointment{selectedAppts.length !== 1 ? "s" : ""}
-              </p>
+            )}
+          </div>
+
+          {/* Patient list — only when a date with appointments is selected */}
+          {selectedDk && selectedAppts.length > 0 && (
+            <div className="flex flex-col gap-3">
+              {selectedAppts.map((appt: any, idx: number) => (
+                <AppointmentRow key={appt.id} appt={appt} role={role} perms={perms} token={idx + 1} />
+              ))}
             </div>
-
-            {/* Clear selection */}
-            <button
-              title="Clear selection"
-              onClick={() => { setSelectedDk(null); setCalendarOpen(true); }}
-              className="flex items-center justify-center w-7 h-7 rounded-lg text-[var(--color-ink-400)] hover:bg-[var(--color-surface-sunken)] hover:text-[var(--color-ink-700)] transition-colors shrink-0"
-            >
-              <X size={13} />
-            </button>
-          </div>
-
-          <div className="flex flex-col gap-3">
-            {selectedAppts.map((appt: any, idx: number) => (
-              <AppointmentRow key={appt.id} appt={appt} role={role} perms={perms} token={idx + 1} />
-            ))}
-          </div>
+          )}
         </div>
       )}
     </div>

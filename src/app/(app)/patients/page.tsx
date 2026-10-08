@@ -102,6 +102,13 @@ export default async function PatientsPage({
   if (opStatusFilter === "dispensed") {
     listConds.push({ appointments: { some: { status: "DISPENSED", dateTime: { gte: listToday, lte: listTodayEnd } } } });
   }
+  if (opStatusFilter === "noshowreg") {
+    listConds.push({ appointments: { some: {
+      dateTime: { gte: listToday, lte: listTodayEnd },
+      status:   { in: ["CONFIRMED", "PARTIAL_DISPENSE"] },
+      OR: [{ isWalkIn: true }, { arrivedAt: { not: null } }],
+    }}});
+  }
 
   const listWhere: any = listConds.length > 0 ? { AND: listConds } : {};
 
@@ -194,6 +201,7 @@ export default async function PatientsPage({
     catGroups,
     trendRaw,
     recentReg,
+    noShowReg,
   ] = await Promise.all([
     prisma.patient.count({ where: scopeWhere }),
     prisma.patient.count({ where: { AND: [...scopeConds, { category: { in: ["ECHS", "INSURANCE"] } }] } }),
@@ -215,6 +223,24 @@ export default async function PatientsPage({
       orderBy: { createdAt: "desc" },
       take:    6,
       select:  { name: true, udid: true, uhid: true, sex: true, age: true, category: true, createdAt: true, mobile: true, photoUrl: true },
+    }),
+    // Patients who physically arrived today but didn't complete consultation.
+    // Walk-ins skip the arrivedAt flow so match on isWalkIn; regular appointments
+    // need arrivedAt set (meaning they were actually moved into the queue).
+    prisma.appointment.findMany({
+      where: {
+        ...apptScope,
+        dateTime: { gte: today, lte: todayEnd },
+        status:   { in: ["CONFIRMED", "PARTIAL_DISPENSE"] },
+        OR: [
+          { isWalkIn: true },
+          { arrivedAt: { not: null } },
+        ],
+      },
+      include: {
+        patient: { select: { name: true, udid: true, uhid: true, age: true, sex: true, mobile: true, photoUrl: true } },
+      },
+      orderBy: { arrivedAt: "asc" },
     }),
   ]);
 
@@ -274,6 +300,22 @@ export default async function PatientsPage({
     photoUrl:  p.photoUrl ?? null,
   }));
 
+  const noShowRegSerialized = noShowReg.map((a) => ({
+    id:        a.id,
+    arrivedAt: a.arrivedAt?.toISOString() ?? null,
+    status:    a.status,
+    isWalkIn:  a.isWalkIn,
+    patient: {
+      name:     a.patient.name,
+      udid:     a.patient.udid ?? "",
+      uhid:     a.patient.uhid ?? "",
+      age:      a.patient.age,
+      sex:      a.patient.sex,
+      mobile:   a.patient.mobile,
+      photoUrl: a.patient.photoUrl ?? null,
+    },
+  }));
+
   return (
     <div className="fade-in">
       {registered && (
@@ -306,6 +348,7 @@ export default async function PatientsPage({
         trendData={trendData}
         catDist={catGroups.map(g => ({ category: g.category, count: g._count.id }))}
         recentReg={recentSerialized}
+        noShowReg={noShowRegSerialized}
       />
     </div>
   );

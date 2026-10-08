@@ -7,7 +7,7 @@ import { format } from "date-fns";
 import {
   Search, Download, Filter, X, Users,
   ShieldCheck, PackageCheck, ChevronLeft, ChevronRight, ChevronDown, Eye,
-  Phone, Building2, Undo2,
+  Phone, Building2, Undo2, AlertCircle,
 } from "lucide-react";
 import { undoDispense, type UndoDispenseResult } from "./actions";
 import { TealSelect } from "@/components/ui/TealSelect";
@@ -46,6 +46,13 @@ export interface RecentPat  {
 export interface Kpis {
   totalPatients: number;
   insurancePatients: number; todayDispensed: number;
+}
+export interface NoShowRegRow {
+  id: string;
+  arrivedAt: string | null;
+  status: string;
+  isWalkIn: boolean;
+  patient: { name: string; udid: string; uhid: string; age: number; sex: string; mobile: string | null; photoUrl: string | null };
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -325,13 +332,14 @@ interface Props {
   trendData: TrendPoint[];
   catDist: CatPoint[];
   recentReg: RecentPat[];
+  noShowReg: NoShowRegRow[];
 }
 
 export function PatientsClient({
   patients, total, page, pageSize, q, categoryFilter, sexFilter, hospitalFilter, opStatusFilter,
   diagnosisFilter, diagnosisLatFilter, complaintFilter, complaintLatFilter,
   diagnosisOptions, complaintOptions,
-  doctorHospitals, sortBy, activeCard, kpis, trendData, catDist, recentReg,
+  doctorHospitals, sortBy, activeCard, kpis, trendData, catDist, recentReg, noShowReg,
 }: Props) {
   const router = useRouter();
   const [searchVal, setSearchVal] = useState(q);
@@ -496,9 +504,10 @@ export function PatientsClient({
       </div>
 
       {/* ── KPI Cards ──────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-5">
-        <KpiCard icon={<PackageCheck size={17} />}  label="Dispensed Today" value={kpis.todayDispensed} color="green" isActive={activeCard === "dispensed" || activeCard === ""} onSelect={() => navigate({ opStatus: activeCard === "dispensed" || activeCard === "" ? "all" : "dispensed", card: activeCard === "dispensed" || activeCard === "" ? "total" : "dispensed", page: "1" })} />
-        <KpiCard icon={<Users size={17} />}         label="Total Patients"  value={kpis.totalPatients}  color="teal"  isActive={activeCard === "total"}    onSelect={() => navigate({ opStatus: "all", card: activeCard === "total" ? "dispensed" : "total", page: "1" })} />
+      <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-5">
+        <KpiCard icon={<AlertCircle size={17} />}   label="No Show Registry" value={noShowReg.length}    color="amber" isActive={activeCard === "noshowreg"} onSelect={() => navigate({ opStatus: activeCard === "noshowreg" ? "dispensed" : "noshowreg", card: activeCard === "noshowreg" ? "dispensed" : "noshowreg", page: "1" })} />
+        <KpiCard icon={<PackageCheck size={17} />}  label="Dispensed Today"  value={kpis.todayDispensed} color="green" isActive={activeCard === "dispensed" || activeCard === ""} onSelect={() => navigate({ opStatus: activeCard === "dispensed" || activeCard === "" ? "all" : "dispensed", card: activeCard === "dispensed" || activeCard === "" ? "total" : "dispensed", page: "1" })} />
+        <KpiCard icon={<Users size={17} />}         label="Total Patients"   value={kpis.totalPatients}  color="teal"  isActive={activeCard === "total"}    onSelect={() => navigate({ opStatus: "all", card: activeCard === "total" ? "dispensed" : "total", page: "1" })} />
       </div>
 
       {/* ── Table + Analytics ──────────────────────────────────────────── */}
