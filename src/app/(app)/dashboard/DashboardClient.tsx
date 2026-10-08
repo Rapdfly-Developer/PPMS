@@ -120,7 +120,7 @@ function PatientBlock({ udid, canView, source, returnTo, className, children }: 
 }
 
 /* ── Partial Dispense row ───────────────────────────────────────────────── */
-function PartialDispenseRow({ appt: a, scope, serial, canDispense, canViewPatient, returnTo }: { appt: Appt; scope: "DOCTOR" | "HOSPITAL"; serial: number; canDispense: boolean; canViewPatient: boolean; returnTo: string }) {
+function PartialDispenseRow({ appt: a, serial, canDispense, canViewPatient, returnTo }: { appt: Appt; serial: number; canDispense: boolean; canViewPatient: boolean; returnTo: string }) {
   const [undoing, startUndo] = useTransition();
   const arrivedAt = a.arrivedAt ? new Date(a.arrivedAt) : null;
   const apptTime  = format(new Date(a.dateTime), "h:mm a");
@@ -147,7 +147,7 @@ function PartialDispenseRow({ appt: a, scope, serial, canDispense, canViewPatien
           <span className="text-caption sm:text-caption text-[var(--color-ink-400)]">
             {a.patient.age}y / {a.patient.sex === "MALE" ? "M" : a.patient.sex === "FEMALE" ? "F" : "O"}
           </span>
-          {canViewPatient && a.patient.mobile && (
+          {a.patient.mobile && (
             <span className="inline-flex items-center gap-0.5 text-caption sm:text-caption text-[var(--color-ink-400)]">
               <Phone size={9} /> {a.patient.mobile}
             </span>
@@ -156,9 +156,6 @@ function PartialDispenseRow({ appt: a, scope, serial, canDispense, canViewPatien
             <span className="inline-flex items-center gap-1 text-micro sm:text-caption text-orange-500">
               <Clock size={10} /> Added at {format(new Date(a.partialDispenseAt), "h:mm a")}
             </span>
-          )}
-          {scope === "HOSPITAL" && a.doctor && (
-            <span className="text-caption sm:text-caption text-[var(--color-ink-400)]">Dr. {a.doctor.name}</span>
           )}
         </div>
         {a.partialDispenseReason && (
@@ -194,7 +191,7 @@ function PartialDispenseRow({ appt: a, scope, serial, canDispense, canViewPatien
 }
 
 /* ── Appointment row ────────────────────────────────────────────────────── */
-function ApptRow({ appt, scope, serial, canManageQueue, canViewPatient, returnTo }: { appt: Appt; scope: "DOCTOR" | "HOSPITAL"; serial: number; canManageQueue: boolean; canViewPatient: boolean; returnTo: string }) {
+function ApptRow({ appt, serial, canManageQueue, canViewPatient, returnTo }: { appt: Appt; serial: number; canManageQueue: boolean; canViewPatient: boolean; returnTo: string }) {
   const cfg      = STATUS_CFG[appt.status] ?? STATUS_CFG["REQUESTED"];
   const apptTime = format(new Date(appt.dateTime), "h:mm a");
   const arrivedAt      = appt.arrivedAt      ? new Date(appt.arrivedAt)      : null;
@@ -251,14 +248,9 @@ function ApptRow({ appt, scope, serial, canManageQueue, canViewPatient, returnTo
           <span className="text-caption sm:text-caption text-[var(--color-ink-400)]">
             {appt.patient.age}y / {appt.patient.sex === "MALE" ? "M" : appt.patient.sex === "FEMALE" ? "F" : "O"}
           </span>
-          {scope === "DOCTOR" && canViewPatient && appt.patient.mobile && (
+          {appt.patient.mobile && (
             <span className="inline-flex items-center gap-0.5 text-caption sm:text-caption text-[var(--color-ink-400)]">
               <Phone size={9} /> {appt.patient.mobile}
-            </span>
-          )}
-          {scope === "HOSPITAL" && appt.doctor && (
-            <span className="text-caption sm:text-caption text-[var(--color-ink-400)]">
-              Dr. {appt.doctor.name}
             </span>
           )}
           {appt.complaint && <ComplaintChips value={appt.complaint} />}
@@ -548,7 +540,7 @@ export function DashboardClient({
                   </div>
                   {displayed.length > 0 && (
                     <div className="space-y-2">
-                      {displayed.map((a, idx) => <ApptRow key={a.id} appt={a} scope={scope} serial={idx + 1} canManageQueue={can("opd.queue.manage")} canViewPatient={can("patients.view")} returnTo={returnTo} />)}
+                      {displayed.map((a, idx) => <ApptRow key={a.id} appt={a} serial={idx + 1} canManageQueue={can("opd.queue.manage")} canViewPatient={can("patients.view")} returnTo={returnTo} />)}
                     </div>
                   )}
                 </div>
@@ -573,7 +565,7 @@ export function DashboardClient({
         ) : (
           <div className="space-y-2">
             {partialDispenseAppts.map((a, idx) => (
-              <PartialDispenseRow key={a.id} appt={a} scope={scope} serial={idx + 1} canDispense={can("opd.dispense")} canViewPatient={can("patients.view")} returnTo={returnTo} />
+              <PartialDispenseRow key={a.id} appt={a} serial={idx + 1} canDispense={can("opd.dispense")} canViewPatient={can("patients.view")} returnTo={returnTo} />
             ))}
           </div>
         )}
