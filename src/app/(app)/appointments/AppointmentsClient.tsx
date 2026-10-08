@@ -11,6 +11,7 @@ import Link from "next/link";
 import clsx from "clsx";
 import { AppointmentTableRow } from "./AppointmentTableRow";
 import { AppointmentRow, type ApptPerms } from "./AppointmentRow";
+import { UpcomingCalendar } from "./UpcomingCalendar";
 import { TealSelect } from "@/components/ui/TealSelect";
 
 // ── helpers ────────────────────────────────────────────────────────────────
@@ -594,6 +595,15 @@ export function AppointmentsClient({
                 return (
                   <div key={key} className="text-center py-12 text-[var(--color-ink-400)] text-label sm:text-sm">
                     No {label.toLowerCase()} found.
+                  </div>
+                );
+              }
+
+              // Upcoming section → calendar view
+              if (key === "upcoming") {
+                return (
+                  <div key={key} id="appt-section-upcoming">
+                    <UpcomingCalendar appts={grpAppts} role={role} perms={apptPerms} />
                   </div>
                 );
               }
