@@ -157,6 +157,7 @@ export default async function PatientsPage({
   const patientInclude = {
     registeredAt: { select: { name: true } },
     visits: {
+      where: { appointment: { is: { status: "DISPENSED" } } },
       orderBy: { date: "desc" as const },
       take: 1,
       select: {
@@ -177,7 +178,7 @@ export default async function PatientsPage({
   if (sortBy === "lastvisit") {
     const allSlim = await prisma.patient.findMany({
       where:  listWhere,
-      select: { id: true, visits: { orderBy: { date: "desc" }, take: 1, select: { date: true } } },
+      select: { id: true, visits: { where: { appointment: { is: { status: "DISPENSED" } } }, orderBy: { date: "desc" }, take: 1, select: { date: true } } },
     });
     allSlim.sort((a, b) => (b.visits[0]?.date?.getTime() ?? 0) - (a.visits[0]?.date?.getTime() ?? 0));
     total = allSlim.length;
