@@ -368,10 +368,10 @@ function ShortContent({ complaint, diagnoses, emrData }: {
   return (
     <div className="space-y-4">
 
-      {/* Reason for visit */}
+      {/* Chief complaint */}
       {complaint && (
         <div>
-          <SumHead icon={<FileText size={11} />} label="Reason for Visit" />
+          <SumHead icon={<FileText size={11} />} label="Chief Complaint" />
           <ComplaintChips value={complaint} wrap />
         </div>
       )}
@@ -390,28 +390,38 @@ function ShortContent({ complaint, diagnoses, emrData }: {
         </div>
       )}
 
-      {/* Medications (if EMR data already loaded from switching tabs) */}
+      {/* Medications */}
       {hasMeds && (
         <div>
-          <SumHead icon={<Pill size={11} />} label="Treatment / Medications" color="text-teal-500" />
-          <div className="space-y-1">
-            {emrData.medications.map((m: any, i: number) => (
-              <div key={i} className="flex items-start gap-2 py-1.5 border-b border-[var(--color-border)] last:border-0">
-                <span className="text-caption text-[var(--color-ink-400)] tabular-nums w-4 shrink-0 mt-0.5">{i + 1}.</span>
-                <div className="min-w-0">
-                  <span className="text-caption sm:text-caption font-semibold text-[var(--color-ink-800)]">
-                    {m.laterality && <span className="text-[var(--color-primary-700)] mr-1">{m.laterality}</span>}
+          <SumHead icon={<Pill size={11} />} label="Medications" color="text-teal-500" />
+          <DataTable minWidth={360}>
+            <Cols widths={["6%", "38%", "18%", "20%", "18%"]} />
+            <thead>
+              <tr>
+                <th className={TH}>#</th>
+                <th className={TH}>Drug</th>
+                <th className={TH}>Dose</th>
+                <th className={TH}>Frequency</th>
+                <th className={TH}>Duration</th>
+              </tr>
+            </thead>
+            <tbody>
+              {emrData.medications.map((m: any, i: number) => (
+                <tr key={i}>
+                  <td className={TD_MUTED}>{i + 1}</td>
+                  <td className={`${TD} font-semibold`}>
+                    {m.laterality && (
+                      <span className="font-bold text-[var(--color-primary-700)] mr-2">{m.laterality}</span>
+                    )}
                     {m.drugName}
-                  </span>
-                  {(m.dosage || m.frequency || m.duration) && (
-                    <span className="text-caption sm:text-caption text-[var(--color-ink-500)] ml-2">
-                      {[m.dosage, m.frequency, m.duration].filter(Boolean).join(" · ")}
-                    </span>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
+                  </td>
+                  <td className={TD_MUTED}>{m.dosage || DASH}</td>
+                  <td className={TD_MUTED}>{m.frequency || DASH}</td>
+                  <td className={TD_MUTED}>{m.duration || DASH}</td>
+                </tr>
+              ))}
+            </tbody>
+          </DataTable>
         </div>
       )}
 

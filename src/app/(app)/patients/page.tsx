@@ -256,7 +256,21 @@ export default async function PatientsPage({
         ],
       },
       include: {
-        patient: { select: { name: true, udid: true, uhid: true, age: true, sex: true, mobile: true, photoUrl: true } },
+        patient:  { select: { name: true, udid: true, uhid: true, age: true, sex: true, mobile: true, photoUrl: true } },
+        hospital: { select: { name: true } },
+        // Fetch clinical data from the unfinished visit so cards don't show
+        // data from a different, already-completed consultation.
+        visit: {
+          select: {
+            visitType: true,
+            generalExam: { select: { chiefComplaint: true } },
+            diagnoses: {
+              select: { description: true, laterality: true },
+              orderBy: { createdAt: "asc" as const },
+              take: 4,
+            },
+          },
+        },
       },
       orderBy: { arrivedAt: "asc" },
     }),
@@ -319,10 +333,22 @@ export default async function PatientsPage({
   }));
 
   const noShowRegSerialized = noShowReg.map((a) => ({
-    id:        a.id,
-    arrivedAt: a.arrivedAt?.toISOString() ?? null,
-    status:    a.status,
-    isWalkIn:  a.isWalkIn,
+    id:            a.id,
+    arrivedAt:     a.arrivedAt?.toISOString() ?? null,
+    // Appointment's scheduled/registered date — used as the card date in noshowreg
+    dateTime:      a.dateTime.toISOString(),
+    status:        a.status,
+    isWalkIn:      a.isWalkIn,
+    // Visit type comes from the appointment (set at booking), matching what the
+    // visit would inherit if a visit record exists.
+    visitType:     a.visitType,
+    hospitalName:  a.hospital?.name ?? null,
+    // Clinical data from the linked unfinished visit record (null if not yet created)
+    chiefComplaint: a.visit?.generalExam?.chiefComplaint ?? null,
+    diagnoses:     (a.visit?.diagnoses ?? []).map((d) => ({
+      description: d.description,
+      laterality:  d.laterality ?? null,
+    })),
     patient: {
       name:     a.patient.name,
       udid:     a.patient.udid ?? "",

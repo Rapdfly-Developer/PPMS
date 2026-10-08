@@ -50,8 +50,13 @@ export interface Kpis {
 export interface NoShowRegRow {
   id: string;
   arrivedAt: string | null;
+  dateTime: string;
   status: string;
   isWalkIn: boolean;
+  visitType: string;
+  hospitalName: string | null;
+  chiefComplaint: string | null;
+  diagnoses: { description: string; laterality?: string | null }[];
   patient: { name: string; udid: string; uhid: string; age: number; sex: string; mobile: string | null; photoUrl: string | null };
 }
 
@@ -397,11 +402,25 @@ export function PatientsClient({
       .slice(0, 10);
   }, [diagnosisInput, allDiagnoses]);
 
-  // Map from patient udid → most recent unfinished appointment for No Show Registry lookups.
-  // Appointments arrive asc by arrivedAt so last-write-wins = most recent.
+  // Map from patient udid → { most-recent unfinished appointment row, total count }.
+  // When a patient has several unfinished registrations we show the most recent one
+  // and surface the extra count as a badge. "Most recent" = highest arrivedAt, falling
+  // back to highest dateTime for walk-ins without an arrivedAt.
   const noShowByUdid = useMemo(() => {
-    const m = new Map<string, NoShowRegRow>();
-    noShowReg.forEach(r => m.set(r.patient.udid, r));
+    const m = new Map<string, { row: NoShowRegRow; count: number }>();
+    noShowReg.forEach(r => {
+      const existing = m.get(r.patient.udid);
+      if (!existing) {
+        m.set(r.patient.udid, { row: r, count: 1 });
+      } else {
+        const tExisting = new Date(existing.row.arrivedAt ?? existing.row.dateTime).getTime();
+        const tNew      = new Date(r.arrivedAt      ?? r.dateTime).getTime();
+        m.set(r.patient.udid, {
+          row:   tNew > tExisting ? r : existing.row,
+          count: existing.count + 1,
+        });
+      }
+    });
     return m;
   }, [noShowReg]);
 
@@ -798,16 +817,26 @@ export function PatientsClient({
                   const av  = avatarColor(p.name);
                   const cat = CAT[p.category] ?? { label: p.category, cls: "bg-slate-100 text-slate-700" };
                   const token = (page - 1) * pageSize + idx + 1;
-                  const lastVisitStr   = p.lastVisit    ? format(new Date(p.lastVisit),    "dd MMM yyyy") : null;
-                  // In No Show Registry mode, use the unfinished appointment's arrivedAt
-                  // instead of the previous completed visit's times.
-                  const noShowEntry   = opStatusFilter === "noshowreg" ? (noShowByUdid.get(p.udid) ?? null) : null;
-                  const rawQueueTime  = noShowEntry ? noShowEntry.arrivedAt : p.queueTime;
-                  const rawFinalTime  = noShowEntry ? null : p.finalizeTime;
-                  const queueTimeStr  = rawQueueTime  ? format(new Date(rawQueueTime),  "h:mm a") : null;
-                  const finalTimeStr  = rawFinalTime  ? format(new Date(rawFinalTime),  "h:mm a") : null;
+                  const lastVisitStr   = p.lastVisit ? format(new Date(p.lastVisit), "dd MMM yyyy") : null;
+
+                  // In No Show Registry mode, pull data from the specific unfinished
+                  // appointment — never from the patient's latest completed visit.
+                  const noShowMeta    = opStatusFilter === "noshowreg" ? (noShowByUdid.get(p.udid) ?? null) : null;
+                  const noShowRow     = noShowMeta?.row   ?? null;
+                  const noShowExtras  = noShowMeta?.count ?? 0;
+
+                  // Date shown on the card: appointment date for noshowreg, else last dispensed visit
+                  const displayDateStr    = noShowRow ? format(new Date(noShowRow.dateTime), "dd MMM yyyy") : lastVisitStr;
+                  // Clinical data: from the unfinished visit in noshowreg, else from the last dispensed visit
+                  const displayComplaint  = noShowRow ? noShowRow.chiefComplaint  : p.chiefComplaint;
+                  const displayDiagnoses  = noShowRow ? noShowRow.diagnoses       : p.diagnoses;
+
+                  const rawQueueTime  = noShowRow ? noShowRow.arrivedAt : p.queueTime;
+                  const rawFinalTime  = noShowRow ? null                : p.finalizeTime;
+                  const queueTimeStr  = rawQueueTime ? format(new Date(rawQueueTime), "h:mm a") : null;
+                  const finalTimeStr  = rawFinalTime ? format(new Date(rawFinalTime), "h:mm a") : null;
                   // Duration only meaningful for completed visits, not unfinished ones
-                  const inClinicStr = noShowEntry ? null : clinicDuration(p.queueTime, p.finalizeTime);
+                  const inClinicStr   = noShowRow ? null : clinicDuration(p.queueTime, p.finalizeTime);
                   const sexLabel = p.sex.charAt(0).toUpperCase();
                   return (
                     <li
@@ -853,14 +882,28 @@ export function PatientsClient({
                               {p.age}y · {sexLabel}{p.mobile ? ` · ${p.mobile}` : ""}
                             </span>
                           </div>
-                          {/* Date + category — always visible */}
+                          {/* Date + category / visit context — always visible */}
                           <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                            {lastVisitStr && (
-                              <span className="text-micro sm:text-caption text-[var(--color-ink-500)]">{lastVisitStr}</span>
+                            {displayDateStr && (
+                              <span className="text-micro sm:text-caption text-[var(--color-ink-500)]">{displayDateStr}</span>
                             )}
-                            <span className={`inline-flex text-micro sm:text-caption font-semibold px-2 py-0.5 rounded-full ${cat.cls}`}>
-                              {cat.label}
-                            </span>
+                            {noShowRow ? (
+                              <>
+                                <span className="text-micro sm:text-caption text-[var(--color-ink-400)]">{noShowRow.visitType}</span>
+                                {noShowRow.hospitalName && (
+                                  <span className="text-micro sm:text-caption text-[var(--color-ink-400)] truncate max-w-[120px]">{noShowRow.hospitalName}</span>
+                                )}
+                                {noShowExtras > 1 && (
+                                  <span className="text-micro font-semibold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">
+                                    +{noShowExtras - 1} more
+                                  </span>
+                                )}
+                              </>
+                            ) : (
+                              <span className={`inline-flex text-micro sm:text-caption font-semibold px-2 py-0.5 rounded-full ${cat.cls}`}>
+                                {cat.label}
+                              </span>
+                            )}
                           </div>
                           {/* Arrival / dispensed / duration — mobile/tablet only (xl column handles it) */}
                           {(queueTimeStr || finalTimeStr || inClinicStr) && (
@@ -882,19 +925,19 @@ export function PatientsClient({
                           )}
                           {/* Chief complaint — the lg+ column is hidden below lg, so mirror it
                               here. Breakpoints are exact complements: never both, never neither. */}
-                          {p.chiefComplaint && (
+                          {displayComplaint && (
                             <div className="lg:hidden mt-1">
                               {/* Wrap rather than truncate: on a phone this card is the only
                                   place the complaint is shown, so it must be readable in full. */}
-                              <ComplaintChips value={p.chiefComplaint} wrap />
+                              <ComplaintChips value={displayComplaint} wrap />
                             </div>
                           )}
                           {/* Diagnoses — same mirroring for the xl+ column. Without this a doctor
                               on a tablet loses the working diagnosis entirely. Two pills then a
                               count; that count is bounded by the `take: 4` fetch in page.tsx. */}
-                          {p.diagnoses.length > 0 && (
+                          {displayDiagnoses.length > 0 && (
                             <div className="lg:hidden flex items-center gap-1 mt-1 flex-wrap">
-                              {p.diagnoses.slice(0, 2).map((d, i) => (
+                              {displayDiagnoses.slice(0, 2).map((d, i) => (
                                 <span
                                   key={i}
                                   className="clinical-diagnosis-chip inline-flex max-w-full items-center gap-1 px-2 py-0.5 rounded-full border text-micro sm:text-caption"
@@ -903,9 +946,9 @@ export function PatientsClient({
                                   <span className="break-words">{d.description}</span>
                                 </span>
                               ))}
-                              {p.diagnoses.length > 2 && (
+                              {displayDiagnoses.length > 2 && (
                                 <span className="text-micro sm:text-caption text-[var(--color-ink-400)]">
-                                  +{p.diagnoses.length - 2} more
+                                  +{displayDiagnoses.length - 2} more
                                 </span>
                               )}
                             </div>
@@ -915,21 +958,21 @@ export function PatientsClient({
 
                       {/* Clinical summary — complaint and diagnosis stacked as specified */}
                       <div className="hidden lg:flex flex-1 min-w-0 flex-col items-start gap-1.5">
-                        {p.chiefComplaint ? (
-                          <ComplaintChips value={p.chiefComplaint} />
+                        {displayComplaint ? (
+                          <ComplaintChips value={displayComplaint} />
                         ) : (
                           <span className="text-caption sm:text-caption italic text-[var(--color-ink-300)]">Complaint not recorded</span>
                         )}
-                        {p.diagnoses.length > 0 ? (
+                        {displayDiagnoses.length > 0 ? (
                           <div className="flex max-w-full flex-wrap gap-1">
-                            {p.diagnoses.slice(0, 2).map((d, i) => (
+                            {displayDiagnoses.slice(0, 2).map((d, i) => (
                               <span key={i} className="clinical-diagnosis-chip inline-flex max-w-full items-center gap-1 px-2.5 py-0.5 rounded-full border text-caption sm:text-caption">
                                 {d.laterality && <span className="clinical-laterality shrink-0">{d.laterality}</span>}
                                 <span className="truncate">{d.description}</span>
                               </span>
                             ))}
-                            {p.diagnoses.length > 2 && (
-                              <span className="self-center text-micro sm:text-caption text-[var(--color-ink-400)]">+{p.diagnoses.length - 2}</span>
+                            {displayDiagnoses.length > 2 && (
+                              <span className="self-center text-micro sm:text-caption text-[var(--color-ink-400)]">+{displayDiagnoses.length - 2}</span>
                             )}
                           </div>
                         ) : (
