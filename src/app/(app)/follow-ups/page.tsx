@@ -1,4 +1,4 @@
-import { requirePermission } from "@/lib/rbac";
+import { requirePermission, userCan } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { startOfDay, isBefore, format, differenceInDays } from "date-fns";
 import { FollowUpsClient, type FuVisit, type FollowUpStatus } from "./FollowUpsClient";
@@ -142,7 +142,7 @@ export default async function FollowUpsPage() {
       visits={visits}
       role={user.role as "DOCTOR" | "HOSPITAL"}
       doctorOptions={doctorOptions}
-      readOnly={user.role === "REFRACTIONIST"}
+      readOnly={!userCan(user, "followups.edit")}
     />
   );
 }

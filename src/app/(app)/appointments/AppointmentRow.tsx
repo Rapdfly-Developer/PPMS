@@ -46,7 +46,7 @@ type ProvisionalDx = {
 };
 
 /** Hospital-side actions this user may take (see staffAppointmentPerms). */
-export type ApptPerms = { confirm: boolean; cancel: boolean; schedule: boolean };
+export type ApptPerms = { confirm: boolean; cancel: boolean; schedule: boolean; noshow: boolean };
 
 export function AppointmentRow({ appt, role, perms, token }: { appt: any; role: string; perms: ApptPerms; token: number }) {
   const router = useRouter();
@@ -117,7 +117,7 @@ export function AppointmentRow({ appt, role, perms, token }: { appt: any; role: 
     perms.cancel && !isCompleted && appt.status === "CONFIRMED" && !appt.isWalkIn;
 
   const showNoShow =
-    role === "DOCTOR" &&
+    perms.noshow &&
     appt.status === "CONFIRMED" &&
     !appt.arrivedAt;
 

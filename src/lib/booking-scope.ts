@@ -46,5 +46,6 @@ export function staffAppointmentPerms(user: SessionUser) {
     confirm: has("appointments.edit"),
     cancel: has("appointments.cancel"),
     schedule: has("appointments.create"),
+    noshow: userCan(user, "appointments.noshow"),
   };
 }

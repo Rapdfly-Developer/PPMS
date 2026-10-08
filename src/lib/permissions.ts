@@ -23,6 +23,7 @@ export const P = {
   APPOINTMENTS_CREATE:     "appointments.create",
   APPOINTMENTS_EDIT:       "appointments.edit",
   APPOINTMENTS_CANCEL:     "appointments.cancel",
+  APPOINTMENTS_NOSHOW:     "appointments.noshow",
 
   // EMR — top-level access
   EMR_VIEW:                "emr.view",
@@ -70,6 +71,9 @@ export const P = {
   EMR_MEDICATIONS_VIEW:    "emr.medications.view",
   EMR_MEDICATIONS_EDIT:    "emr.medications.edit",
 
+  // EMR — AI Clinical Copilot
+  EMR_COPILOT_VIEW:        "emr.copilot.view",
+
   // EMR — Lab Reports / Investigation Results
   EMR_LAB_REPORTS_UPLOAD:  "emr.labReports.upload",
   EMR_LAB_REPORTS_EDIT:    "emr.labReports.edit",
@@ -108,6 +112,11 @@ export const P = {
 
   // Follow-ups
   FOLLOWUPS_VIEW:          "followups.view",
+  FOLLOWUPS_EDIT:          "followups.edit",
+
+  // Settings — Plugins & Hospital
+  PLUGINS_MANAGE:          "plugins.manage",
+  HOSPITAL_MANAGE:         "hospital.manage",
 
   // User & Role management (Doctor/super-admin only)
   USERS_MANAGE:            "users.manage",
@@ -137,6 +146,7 @@ export const ROLE_DEFAULT_PERMISSIONS: Record<string, string[]> = {
     P.APPOINTMENTS_CREATE,
     P.APPOINTMENTS_EDIT,
     P.APPOINTMENTS_CANCEL,
+    P.APPOINTMENTS_NOSHOW,
     P.EMR_VIEW,
     P.EMR_GENERAL_VIEW,
     P.EMR_VA_VIEW,
@@ -148,6 +158,7 @@ export const ROLE_DEFAULT_PERMISSIONS: Record<string, string[]> = {
     P.INVESTIGATIONS_VIEW,
     P.INVESTIGATIONS_CREATE,
     P.INVESTIGATIONS_EDIT,
+    P.EMR_COPILOT_VIEW,
     P.BILLING_VIEW,
     P.BILLING_CREATE,
     P.BILLING_EDIT,
@@ -159,6 +170,7 @@ export const ROLE_DEFAULT_PERMISSIONS: Record<string, string[]> = {
     P.INSURANCE_EDIT,
     P.INSURANCE_MANAGE,
     P.FOLLOWUPS_VIEW,
+    P.FOLLOWUPS_EDIT,
     P.SETTINGS_VIEW,
   ],
 

@@ -1,5 +1,5 @@
 import "@/plugins";
-import { requireRole } from "@/lib/rbac";
+import { requireRole, userCan } from "@/lib/rbac";
 import { notFound } from "next/navigation";
 import { listPluginsForDoctor } from "@/plugin-framework";
 import { checkPluginLicense } from "@/plugin-framework/license";
@@ -53,7 +53,7 @@ export default async function PluginsPage() {
     featureKey: p.manifest.licensing.featureKey,
   }));
 
-  const canManage = user.role === "DOCTOR";
+  const canManage = userCan(user, "plugins.manage");
 
   return (
     <PluginManagerClient

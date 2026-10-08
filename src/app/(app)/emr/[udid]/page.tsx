@@ -245,7 +245,7 @@ export default async function PatientDetailedEMR({
   const finalizedToday = viewOnlySource ? false : finalizedTodayRaw;
   const visitLocked = activeVisit?.status === "CLOSED" && !finalizedToday;
   const isRefractionist = user.role === "REFRACTIONIST";
-  const readOnly = viewOnlySource || user.role !== "DOCTOR" || visitLocked;
+  const readOnly = viewOnlySource || !userCan(user, "emr.edit") || visitLocked;
   const generalReadOnly = viewOnlySource || !userCan(user, "emr.general.edit") || visitLocked;
   // Refraction-workflow sections split into per-section flags so each can be
   // granted or revoked independently. DOCTOR has * so all resolve true.
@@ -561,7 +561,7 @@ export default async function PatientDetailedEMR({
                nothing, matching how ConsultationExitGuard stands down. */
             tabScopedSlotTabId="ai-copilot"
             tabScopedSlot={
-              !isRefractionist && activeVisit.status !== "CLOSED"
+              userCan(user, "emr.copilot.view") && activeVisit.status !== "CLOSED"
                 ? getAllRegisteredPlugins()
                     .filter((p) => p.manifest.externalOrigin)
                     .map((p) => (
