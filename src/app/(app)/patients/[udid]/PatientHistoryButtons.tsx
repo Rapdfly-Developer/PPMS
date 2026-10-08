@@ -2,14 +2,14 @@
 
 import { useState, useTransition, useRef, useEffect } from "react";
 import { format } from "date-fns";
-import { X, FlaskConical, Pill, Glasses, Loader2, ChevronDown, ChevronUp, Upload, Camera, Eye } from "lucide-react";
+import { X, FlaskConical, Pill, Glasses, Loader2, ChevronDown, ChevronUp, Upload, Camera, Eye, Pencil, Trash2 } from "lucide-react";
 import { parseJSON } from "@/lib/json";
 import {
   getPatientInvestigations,
   getPatientTreatmentHistory,
   getPatientSpectacleHistory,
 } from "../actions";
-import { attachResult } from "@/app/(app)/emr/[udid]/actions";
+import { attachResult, deleteInvestigationOrder, updateInvestigationNotes } from "@/app/(app)/emr/[udid]/actions";
 import { TimeStampButton } from "./PatientTimeline";
 
 /* ── Shared drawer shell ──────────────────────────────────────────────────── */
@@ -155,6 +155,129 @@ function InvUploadButton({ orderId, udid }: { orderId: string; udid: string }) {
   );
 }
 
+type InvOrder = InvVisit["orders"][number];
+
+function InvOrderRow({ o, idx, udid, onView }: {
+  o: InvOrder; idx: number; udid: string; onView: (ref: string) => void;
+}) {
+  const [editing, setEditing]         = useState(false);
+  const [editNotes, setEditNotes]     = useState(o.notes ?? "");
+  const [localNotes, setLocalNotes]   = useState(o.notes ?? "");
+  const [saving, startSave]           = useTransition();
+  const [deleting, startDelete]       = useTransition();
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
+  function openEdit() { setEditNotes(localNotes); setEditing(true); }
+
+  function saveNotes() {
+    startSave(async () => {
+      await updateInvestigationNotes(o.id, udid, editNotes);
+      setLocalNotes(editNotes);
+      setEditing(false);
+    });
+  }
+
+  function doDelete() {
+    startDelete(async () => {
+      await deleteInvestigationOrder(o.id, udid);
+    });
+  }
+
+  const iconBtn = "p-1.5 rounded-md border transition-colors";
+
+  return (
+    <div className="flex items-start gap-2.5 py-2.5 border-b border-[var(--color-border)] last:border-0">
+      <span className="text-caption text-[var(--color-ink-300)] tabular-nums w-4 shrink-0 mt-0.5">{idx + 1}.</span>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-start justify-between gap-2">
+          <p className="text-sm font-semibold text-[var(--color-ink-800)] leading-snug">
+            {o.laterality && (
+              <span className="font-bold text-[var(--color-primary-700)] mr-1.5">{o.laterality}</span>
+            )}
+            {o.testName}
+          </p>
+
+          {/* Actions row */}
+          <div className="flex items-center gap-1 shrink-0">
+            <InvUploadButton orderId={o.id} udid={udid} />
+
+            {/* View */}
+            <button
+              onClick={() => o.resultRef && onView(o.resultRef)}
+              disabled={!o.resultRef}
+              title={o.resultRef ? "View result" : "No result attached"}
+              className={`${iconBtn} ${o.resultRef
+                ? "border-teal-200 text-teal-700 hover:bg-teal-50"
+                : "border-[var(--color-border)] text-[var(--color-ink-300)] cursor-not-allowed"}`}
+            >
+              <Eye size={13} />
+            </button>
+
+            {/* Edit */}
+            <button
+              onClick={openEdit}
+              title="Edit notes"
+              className={`${iconBtn} border-[var(--color-border)] text-[var(--color-ink-400)] hover:text-[var(--color-primary-600)] hover:border-[var(--color-primary-300)]`}
+            >
+              <Pencil size={13} />
+            </button>
+
+            {/* Delete */}
+            {confirmDelete ? (
+              <div className="flex items-center gap-1">
+                <button onClick={doDelete} disabled={deleting}
+                  className="text-caption font-semibold px-2 py-1 rounded-md bg-red-500 text-white hover:bg-red-600 disabled:opacity-50 transition-colors">
+                  {deleting ? "…" : "Yes"}
+                </button>
+                <button onClick={() => setConfirmDelete(false)}
+                  className="text-caption font-semibold px-2 py-1 rounded-md border border-[var(--color-border)] text-[var(--color-ink-500)] hover:bg-[var(--color-surface-sunken)] transition-colors">
+                  No
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setConfirmDelete(true)}
+                title="Delete order"
+                className={`${iconBtn} border-[var(--color-border)] text-[var(--color-ink-400)] hover:text-red-500 hover:border-red-300`}
+              >
+                <Trash2 size={13} />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Second line */}
+        {editing ? (
+          <div className="flex items-center gap-1.5 mt-1.5">
+            <input
+              autoFocus
+              value={editNotes}
+              onChange={(e) => setEditNotes(e.target.value)}
+              placeholder="In view of…"
+              className="flex-1 min-w-0 text-caption border border-[var(--color-primary-300)] rounded-md px-2 py-1 outline-none focus:border-[var(--color-primary-500)]"
+            />
+            <button onClick={saveNotes} disabled={saving}
+              className="text-caption font-semibold px-2 py-1 rounded-md bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-50 transition-colors">
+              {saving ? "…" : "Save"}
+            </button>
+            <button onClick={() => setEditing(false)}
+              className="text-caption font-semibold px-2 py-1 rounded-md border border-[var(--color-border)] text-[var(--color-ink-500)] hover:bg-[var(--color-surface-sunken)] transition-colors">
+              Cancel
+            </button>
+          </div>
+        ) : (
+          <p className="text-caption text-[var(--color-ink-400)] mt-0.5">
+            {o.priority && <span>{o.priority}</span>}
+            {o.priority && <span className="mx-1">·</span>}
+            <span>{format(new Date(o.createdAt), "h:mm a")}</span>
+            {localNotes && <span className="italic"> · in view of: {localNotes}</span>}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function InvestigationsDrawer({
   patientId, udid, open, onClose,
 }: {
@@ -195,43 +318,13 @@ function InvestigationsDrawer({
             {/* Orders — plain numbered list */}
             <div className="space-y-0">
               {v.orders.map((o, idx) => (
-                <div key={o.id} className="flex items-start gap-2.5 py-2.5 border-b border-[var(--color-border)] last:border-0">
-                  {/* Row number */}
-                  <span className="text-caption text-[var(--color-ink-300)] tabular-nums w-4 shrink-0 mt-0.5">{idx + 1}.</span>
-
-                  {/* Body */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-3">
-                      <p className="text-sm font-semibold text-[var(--color-ink-800)] leading-snug">
-                        {o.laterality && (
-                          <span className="font-bold text-[var(--color-primary-700)] mr-1.5">{o.laterality}</span>
-                        )}
-                        {o.testName}
-                      </p>
-                      {/* Actions */}
-                      <div className="shrink-0">
-                        {o.resultRef ? (
-                          <button
-                            onClick={() => setLightbox(o.resultRef)}
-                            className="inline-flex items-center gap-1 text-caption font-medium px-2.5 py-1 rounded-md border border-teal-200 bg-teal-50 text-teal-700 hover:bg-teal-100 transition-colors"
-                          >
-                            <Eye size={12} /> View
-                          </button>
-                        ) : (
-                          <InvUploadButton orderId={o.id} udid={udid} />
-                        )}
-                      </div>
-                    </div>
-                    <p className="text-caption text-[var(--color-ink-400)] mt-0.5">
-                      {o.priority && <span>{o.priority}</span>}
-                      {o.priority && <span className="mx-1">·</span>}
-                      <span>{format(new Date(o.createdAt), "h:mm a")}</span>
-                      {o.notes && (
-                        <span className="italic"> · in view of: {o.notes}</span>
-                      )}
-                    </p>
-                  </div>
-                </div>
+                <InvOrderRow
+                  key={o.id}
+                  o={o}
+                  idx={idx}
+                  udid={udid}
+                  onView={(ref) => setLightbox(ref)}
+                />
               ))}
             </div>
           </div>
