@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useRef, useEffect } from "react";
 import { format } from "date-fns";
-import { X, FlaskConical, Pill, Glasses, Loader2, ChevronDown, ChevronUp, Upload, Camera, Eye, Pencil, Trash2 } from "lucide-react";
+import { X, FlaskConical, Pill, Glasses, Loader2, ChevronDown, ChevronUp, Upload, Eye, Pencil, Trash2 } from "lucide-react";
 import { parseJSON } from "@/lib/json";
 import {
   getPatientInvestigations,
@@ -10,6 +10,7 @@ import {
   getPatientSpectacleHistory,
 } from "../actions";
 import { attachResult, deleteInvestigationOrder, updateInvestigationNotes } from "@/app/(app)/emr/[udid]/actions";
+import { fileHref } from "@/lib/file-href";
 import { TimeStampButton } from "./PatientTimeline";
 
 /* ── Shared drawer shell ──────────────────────────────────────────────────── */
@@ -109,7 +110,6 @@ function InvUploadButton({ orderId, udid }: { orderId: string; udid: string }) {
   const [error, setError] = useState("");
   const [, startTx] = useTransition();
   const fileRef = useRef<HTMLInputElement>(null);
-  const camRef  = useRef<HTMLInputElement>(null);
 
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -130,26 +130,17 @@ function InvUploadButton({ orderId, udid }: { orderId: string; udid: string }) {
     } finally {
       setUploading(false);
       if (fileRef.current) fileRef.current.value = "";
-      if (camRef.current)  camRef.current.value  = "";
     }
   };
 
   return (
     <div className="flex flex-col items-end gap-1">
       <input ref={fileRef} type="file" accept=".pdf,.jpg,.jpeg,.png,.docx" className="hidden" onChange={handleFile} />
-      <input ref={camRef}  type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFile} />
-      <div className="flex items-center gap-1">
-        <button type="button" disabled={uploading} onClick={() => fileRef.current?.click()}
-          className="flex items-center gap-1 text-caption font-medium px-2 py-1 rounded-md border border-[var(--color-primary-300)] text-[var(--color-primary-600)] hover:bg-[var(--color-primary-50)] disabled:opacity-50 transition-colors">
-          {uploading ? <Upload size={11} className="animate-pulse" /> : <Upload size={11} />}
-          {uploading ? "Uploading…" : "Add File"}
-        </button>
-        <button type="button" disabled={uploading} onClick={() => camRef.current?.click()}
-          title="Capture with camera"
-          className="p-1.5 rounded-md border border-[var(--color-border)] text-[var(--color-ink-400)] hover:text-amber-600 hover:border-amber-300 disabled:opacity-50 transition-colors">
-          <Camera size={13} />
-        </button>
-      </div>
+      <button type="button" disabled={uploading} onClick={() => fileRef.current?.click()}
+        className="flex items-center gap-1 text-caption font-medium px-2 py-1 rounded-md border border-[var(--color-primary-300)] text-[var(--color-primary-600)] hover:bg-[var(--color-primary-50)] disabled:opacity-50 transition-colors">
+        {uploading ? <Upload size={11} className="animate-pulse" /> : <Upload size={11} />}
+        {uploading ? "Uploading…" : "Add File"}
+      </button>
       {error && <p className="text-caption text-red-600 mt-0.5">{error}</p>}
     </div>
   );
@@ -335,8 +326,8 @@ function InvestigationsDrawer({
       {lightbox && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80" onClick={() => setLightbox(null)}>
           {lightbox.match(/\.(jpg|jpeg|png|webp)$/i)
-            ? <img src={lightbox} alt="Result" className="max-w-full max-h-full object-contain rounded-xl shadow-2xl" onClick={(e) => e.stopPropagation()} />
-            : <iframe src={lightbox} className="w-full max-w-3xl h-[80vh] rounded-xl bg-white" title="Result" onClick={(e) => e.stopPropagation()} />
+            ? <img src={fileHref(lightbox)!} alt="Result" className="max-w-full max-h-full object-contain rounded-xl shadow-2xl" onClick={(e) => e.stopPropagation()} />
+            : <iframe src={fileHref(lightbox)!} className="w-full max-w-3xl h-[80vh] rounded-xl bg-white" title="Result" onClick={(e) => e.stopPropagation()} />
           }
           <button onClick={() => setLightbox(null)} className="absolute top-4 right-4 bg-white/20 hover:bg-white/30 text-white p-2.5 rounded-xl">
             <X size={18} />
