@@ -47,15 +47,26 @@ import { Toast } from "@/components/ui/Toast";
 import { FieldWithHistory, type HistoryEntry } from "@/components/ui/HistoryToggle";
 import { fileHref } from "@/lib/file-href";
 
-export function OphthalmicExamTab({ visit, priorVisits, udid, role, canEditRefraction, canEditAnterior, canEditPosterior }: {
+export function OphthalmicExamTab({ visit, priorVisits, udid, role, canEditVA, canEditRefraction, canEditColour, canEditIOP, canEditAnterior, canEditPosterior, canViewVA, canViewIOP, canViewAnterior, canViewPosterior }: {
   visit: any; priorVisits: any[]; udid: string; role: string;
+  canEditVA?: boolean;
   canEditRefraction?: boolean;
+  canEditColour?: boolean;
+  canEditIOP?: boolean;
   canEditAnterior?: boolean;
   canEditPosterior?: boolean;
+  canViewVA?: boolean;
+  canViewIOP?: boolean;
+  canViewAnterior?: boolean;
+  canViewPosterior?: boolean;
 }) {
   const visitLocked = visit?.status === "CLOSED" && !(visit?.finalizedAt && isSameDay(new Date(visit.finalizedAt), new Date()));
-  const refractionistCanEdit = canEditRefraction ?? (role === "DOCTOR" && !visitLocked);
   const doctorOnly = role === "DOCTOR" && !visitLocked;
+  // Per-section edit flags — fall back to doctorOnly when the prop is not passed
+  const refractionistCanEdit = canEditRefraction ?? doctorOnly;
+  const vaCanEdit = canEditVA ?? doctorOnly;
+  const colourCanEdit = canEditColour ?? doctorOnly;
+  const iopCanEdit = canEditIOP ?? doctorOnly;
   const anteriorCanEdit = canEditAnterior ?? doctorOnly;
   const posteriorCanEdit = canEditPosterior ?? doctorOnly;
   const overview = useEmrOverview();
@@ -130,12 +141,12 @@ export function OphthalmicExamTab({ visit, priorVisits, udid, role, canEditRefra
         variant="sub"
         defaultTab="va"
         tabs={[
-          { id: "va",        label: "Visual Acuity",    content: <div {...ovSect(empty.va)}><VisualAcuityCard visit={visit} udid={udid} editable={refractionistCanEdit} priorVisits={priorVisits} /></div> },
+          { id: "va",        label: "Visual Acuity",    hidden: !(canViewVA ?? true), content: <div {...ovSect(empty.va)}><VisualAcuityCard visit={visit} udid={udid} editable={vaCanEdit} priorVisits={priorVisits} /></div> },
           { id: "refraction",label: "Refraction",        content: <div {...ovSect(empty.rx)}><RefractionCard visit={visit} udid={udid} editable={refractionistCanEdit} priorVisits={priorVisits} /></div> },
-          { id: "cv",        label: "Colour / Contrast", content: <div {...ovSect(empty.cv)}><ColourContrastTab visit={visit} udid={udid} editable={refractionistCanEdit} priorVisits={priorVisits} /></div> },
-          { id: "iop",       label: "IOP / Gonio",       content: <div className="flex flex-col gap-4"><div {...ovSect(empty.iop)}><IOPCard visit={visit} udid={udid} editable={refractionistCanEdit} priorVisits={priorVisits} /></div><div {...ovSect(empty.gonio)}><GonioscopyCard visit={visit} udid={udid} editable={anteriorCanEdit} priorVisits={priorVisits} /></div></div> },
-          { id: "anterior",  label: "Anterior Segment",  content: <div {...ovSect(empty.ant)}><AnteriorSegmentCard visit={visit} udid={udid} editable={anteriorCanEdit} priorVisits={priorVisits} /></div> },
-          { id: "posterior", label: "Posterior Segment", content: <div {...ovSect(empty.post)}><PosteriorSegmentCard visit={visit} udid={udid} editable={posteriorCanEdit} priorVisits={priorVisits} /></div> },
+          { id: "cv",        label: "Colour / Contrast", content: <div {...ovSect(empty.cv)}><ColourContrastTab visit={visit} udid={udid} editable={colourCanEdit} priorVisits={priorVisits} /></div> },
+          { id: "iop",       label: "IOP / Gonio",       hidden: !(canViewIOP ?? true), content: <div className="flex flex-col gap-4"><div {...ovSect(empty.iop)}><IOPCard visit={visit} udid={udid} editable={iopCanEdit} priorVisits={priorVisits} /></div><div {...ovSect(empty.gonio)}><GonioscopyCard visit={visit} udid={udid} editable={anteriorCanEdit} priorVisits={priorVisits} /></div></div> },
+          { id: "anterior",  label: "Anterior Segment",  hidden: !(canViewAnterior ?? true), content: <div {...ovSect(empty.ant)}><AnteriorSegmentCard visit={visit} udid={udid} editable={anteriorCanEdit} priorVisits={priorVisits} /></div> },
+          { id: "posterior", label: "Posterior Segment", hidden: !(canViewPosterior ?? true), content: <div {...ovSect(empty.post)}><PosteriorSegmentCard visit={visit} udid={udid} editable={posteriorCanEdit} priorVisits={priorVisits} /></div> },
           { id: "tear",      label: "Tear Film",          content: <div {...ovSect(empty.tear)}><TearFilmCard visit={visit} udid={udid} editable={anteriorCanEdit} priorVisits={priorVisits} /></div> },
           { id: "lacrimal",  label: "Lacrimal Sac",       content: <div {...ovSect(empty.lacrimal)}><LacrimalSacCard visit={visit} udid={udid} editable={anteriorCanEdit} priorVisits={priorVisits} /></div> },
           { id: "diplopia",  label: "Diplopia Chart",    content: <div {...ovSect(empty.diplopia)}><DiplopiaCard visit={visit} udid={udid} editable={posteriorCanEdit} /></div> },

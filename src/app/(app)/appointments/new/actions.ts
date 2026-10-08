@@ -5,7 +5,7 @@ import { requirePermission, scopeDoctorId } from "@/lib/rbac";
 import { generateUDID } from "@/lib/udid";
 import { encryptAadhaar } from "@/lib/crypto";
 import { redirect } from "next/navigation";
-import { istDayRange } from "@/lib/ist";
+import { istDateTime, istDayRange, istHHMM, istTodayStr } from "@/lib/ist";
 
 export async function createWalkInEncounter(formData: FormData) {
   const user = await requirePermission("opd.walkin.create");
@@ -127,11 +127,17 @@ export async function createWalkInEncounter(formData: FormData) {
   });
   if (!patient) return { error: "Patient not found." };
 
-  const dateStr = (formData.get("date") as string) || new Date().toISOString().split("T")[0];
-  const timeStr = (formData.get("time") as string) || `${String(new Date().getHours()).padStart(2,"0")}:${String(new Date().getMinutes()).padStart(2,"0")}`;
-  const [year, month, day] = dateStr.split("-").map(Number);
-  const [hours, mins] = timeStr.split(":").map(Number);
-  const now = new Date(year, month - 1, day, hours, mins, 0);
+  // A walk-in is physically present now. Keep the stored instant independent
+  // of the server timezone (Vercel runs in UTC), while still accepting an
+  // explicitly supplied IST wall-clock value from older clients.
+  const receivedAt = new Date();
+  const submittedDate = (formData.get("date") as string) || null;
+  const submittedTime = (formData.get("time") as string) || null;
+  const dateStr = submittedDate || istTodayStr(receivedAt);
+  const timeStr = submittedTime || istHHMM(receivedAt);
+  const appointmentAt = submittedDate || submittedTime
+    ? istDateTime(dateStr, timeStr)
+    : receivedAt;
 
   // Prevent duplicate same-day appointments for the same patient
   const { dayStart, dayEnd } = istDayRange(dateStr);
@@ -147,37 +153,45 @@ export async function createWalkInEncounter(formData: FormData) {
     return { error: "This patient already has an appointment with you today. Only one appointment per patient per day is allowed." };
   }
 
-  const appointment = await prisma.appointment.create({
-    data: {
-      patientId,
-      doctorId,
-      hospitalId,
-      dateTime:  now,
-      visitType,
-      status:    "CONFIRMED",
-      isWalkIn:  true,
-    },
+  const chiefComplaint = complaint ?? patient.complaint;
+  // Appointment, arrival, Visit/EMR and seeded complaint are one unit. The
+  // previous Add to Queue branch redirected before creating the Visit, which
+  // left queued walk-ins with a dead "Today's Visit" link.
+  const visit = await prisma.$transaction(async (tx) => {
+    const appointment = await tx.appointment.create({
+      data: {
+        patientId,
+        doctorId,
+        hospitalId,
+        dateTime: appointmentAt,
+        arrivedAt: receivedAt,
+        visitType,
+        status: "CONFIRMED",
+        isWalkIn: true,
+      },
+    });
+
+    const createdVisit = await tx.visit.create({
+      data: {
+        patientId,
+        doctorId,
+        hospitalId,
+        appointmentId: appointment.id,
+        visitType,
+      },
+    });
+
+    if (chiefComplaint) {
+      await tx.generalExamination.create({
+        data: { visitId: createdVisit.id, chiefComplaint },
+      });
+    }
+
+    return createdVisit;
   });
 
   if (intent === "addToQ") {
     redirect("/opd");
-  }
-
-  const visit = await prisma.visit.create({
-    data: {
-      patientId,
-      doctorId,
-      hospitalId,
-      appointmentId: appointment.id,
-      visitType,
-    },
-  });
-
-  const chiefComplaint = complaint ?? patient.complaint;
-  if (chiefComplaint) {
-    await prisma.generalExamination.create({
-      data: { visitId: visit.id, chiefComplaint },
-    });
   }
 
   redirect(`/emr/${patient.udid}?visit=${visit.id}`);

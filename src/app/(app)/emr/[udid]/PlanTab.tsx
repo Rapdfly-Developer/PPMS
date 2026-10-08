@@ -1252,7 +1252,7 @@ function ProtocolPromptCard({
 
 /* ── PlanTab ─────────────────────────────────────────────────────────────── */
 
-export function PlanTab({ visit, udid, patientSex, priorVisits = [] }: { visit: any; udid: string; patientSex: string; priorVisits?: any[] }) {
+export function PlanTab({ visit, udid, patientSex, priorVisits = [], readOnly = false }: { visit: any; udid: string; patientSex: string; priorVisits?: any[]; readOnly?: boolean }) {
   const [presetMatches, setPresetMatches]   = useState<PresetMatch[]>([]);
   const [appliedPresets, setAppliedPresets] = useState<AppliedPreset[]>([]);
   const [dismissedIds, setDismissedIds]     = useState<string[]>([]);
@@ -1456,10 +1456,11 @@ export function PlanTab({ visit, udid, patientSex, priorVisits = [] }: { visit: 
         onApplyProtocol={(selected, diagnosisDesc, isChanging) =>
           isChanging ? handleChangeProtocolForDiag(selected, diagnosisDesc) : handleInitialApply(selected, diagnosisDesc)
         }
+        readOnly={readOnly}
       />
-      <MinorProcedureCard visit={visit} udid={udid} priorVisits={priorVisits} />
+      <MinorProcedureCard visit={visit} udid={udid} priorVisits={priorVisits} readOnly={readOnly} />
       <OpticalPrescriptionCard visit={visit} />
-      <DispositionCard visit={visit} udid={udid} patientSex={patientSex} priorVisits={priorVisits} />
+      <DispositionCard visit={visit} udid={udid} patientSex={patientSex} priorVisits={priorVisits} readOnly={readOnly} />
 
     </div>
   );
@@ -1536,7 +1537,7 @@ function parseProcedureList(raw: string): string[] {
   return [raw];
 }
 
-function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: string; priorVisits: any[] }) {
+function MinorProcedureCard({ visit, udid, priorVisits, readOnly = false }: { visit: any; udid: string; priorVisits: any[]; readOnly?: boolean }) {
   const overview = useEmrOverview();
   const [laterality,     setLaterality]     = useState<string>(visit.procedureLaterality ?? "OU");
   const [anesthesia,     setAnesthesia]     = useState<string>(visit.anesthesiaType ?? "");
@@ -1595,12 +1596,13 @@ function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: st
             {(["RE", "LE", "OU"] as const).map((lat) => (
               <button
                 key={lat}
-                onClick={() => setLaterality(lat)}
+                onClick={() => { if (!readOnly) setLaterality(lat); }}
+                disabled={readOnly}
                 className={`w-10 py-2 rounded-lg border text-xs font-bold transition-colors ${
                   laterality === lat
                     ? "bg-[var(--color-primary-600)] border-[var(--color-primary-600)] text-white"
                     : "border-[var(--color-border)] text-[var(--color-ink-500)] hover:border-[var(--color-primary-300)] hover:text-[var(--color-primary-700)] hover:bg-[var(--color-primary-50)]"
-                }`}
+                }${readOnly ? " opacity-60 cursor-default" : ""}`}
               >
                 {lat}
               </button>
@@ -1619,6 +1621,7 @@ function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: st
             builtIns={PROCEDURE_KEYWORDS}
             value={procInput}
             onChange={setProcInput}
+            disabled={readOnly}
             rows={1}
             showControls={false}
             placeholder="Select a keyword below or type a procedure…"
@@ -1635,12 +1638,13 @@ function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: st
             <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-300)] pointer-events-none" />
             <input
               value={anesthesia}
-              onChange={(e) => { setAnesthesia(e.target.value); setAnesthesiaOpen(true); }}
-              onFocus={() => setAnesthesiaOpen(true)}
+              onChange={(e) => { if (!readOnly) { setAnesthesia(e.target.value); setAnesthesiaOpen(true); } }}
+              onFocus={() => { if (!readOnly) setAnesthesiaOpen(true); }}
               onBlur={() => {
-                setCustomAnesthesia(saveCustomAnesthesia(anesthesia));
+                if (!readOnly) setCustomAnesthesia(saveCustomAnesthesia(anesthesia));
                 setTimeout(() => setAnesthesiaOpen(false), 150);
               }}
+              readOnly={readOnly}
               placeholder="Search anesthesia…"
               className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] pl-8 pr-7 py-2 text-sm text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent"
             />
@@ -1677,17 +1681,19 @@ function MinorProcedureCard({ visit, udid, priorVisits }: { visit: any; udid: st
 
         </div>
 
-        {/* Original full-width quick-add arrangement */}
-        <div data-overview-hide className="mt-3">
-          <p className="mb-2 text-caption font-semibold uppercase tracking-wide text-[var(--color-ink-400)]">Quick Add</p>
-          <KeywordTextareaControlsRow
-            fieldKey="minor_procedure"
-            legacyKeys={legacyProcedureKwKeys}
-            builtIns={PROCEDURE_KEYWORDS}
-            value={procInput}
-            onChange={setProcInput}
-          />
-        </div>
+        {/* Original full-width quick-add arrangement — hidden when readOnly */}
+        {!readOnly && (
+          <div data-overview-hide className="mt-3">
+            <p className="mb-2 text-caption font-semibold uppercase tracking-wide text-[var(--color-ink-400)]">Quick Add</p>
+            <KeywordTextareaControlsRow
+              fieldKey="minor_procedure"
+              legacyKeys={legacyProcedureKwKeys}
+              builtIns={PROCEDURE_KEYWORDS}
+              value={procInput}
+              onChange={setProcInput}
+            />
+          </div>
+        )}
 
         {/* Procedure Notes */}
       <div className="mt-3">
@@ -1890,7 +1896,7 @@ function splitTaper(instructions: string | null | undefined, duration: string | 
 }
 type EditDraft = { drugName: string; dosage: string; frequency: string; duration: string; instructions: string; route?: string; laterality?: string; taperLevels: TaperLevel[] };
 
-function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", adviseNotes, onAdviseChange, toastNames, onCloseToast, pendingDiagPrompts, onConfirmPrompt, onDismissPrompt, appliedByDiag, presetMatches, onRemoveApplied, onChangeProtocol, activeDialogDiag, setActiveDialogDiag, applying, onApplyProtocol }: { visit: any; udid: string; priorVisits: any[]; defaultLaterality?: string; adviseNotes: string; onAdviseChange: (notes: string) => void; toastNames: string[]; onCloseToast: () => void; pendingDiagPrompts: { diagnosisDesc: string; laterality?: string; matches: PresetMatch[] }[]; onConfirmPrompt: (diag: { diagnosisDesc: string; laterality?: string; matches: PresetMatch[] }) => void; onDismissPrompt: (desc: string, matches: PresetMatch[]) => void; appliedByDiag: Record<string, any[]>; presetMatches: PresetMatch[]; onRemoveApplied: (desc: string) => void; onChangeProtocol: (desc: string, matches: PresetMatch[]) => void; activeDialogDiag: any; setActiveDialogDiag: (v: any) => void; applying: boolean; onApplyProtocol: (selected: TreatmentPreset[], diagnosisDesc: string, isChanging: boolean) => void }) {
+function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", adviseNotes, onAdviseChange, toastNames, onCloseToast, pendingDiagPrompts, onConfirmPrompt, onDismissPrompt, appliedByDiag, presetMatches, onRemoveApplied, onChangeProtocol, activeDialogDiag, setActiveDialogDiag, applying, onApplyProtocol, readOnly = false }: { visit: any; udid: string; priorVisits: any[]; defaultLaterality?: string; adviseNotes: string; onAdviseChange: (notes: string) => void; toastNames: string[]; onCloseToast: () => void; pendingDiagPrompts: { diagnosisDesc: string; laterality?: string; matches: PresetMatch[] }[]; onConfirmPrompt: (diag: { diagnosisDesc: string; laterality?: string; matches: PresetMatch[] }) => void; onDismissPrompt: (desc: string, matches: PresetMatch[]) => void; appliedByDiag: Record<string, any[]>; presetMatches: PresetMatch[]; onRemoveApplied: (desc: string) => void; onChangeProtocol: (desc: string, matches: PresetMatch[]) => void; activeDialogDiag: any; setActiveDialogDiag: (v: any) => void; applying: boolean; onApplyProtocol: (selected: TreatmentPreset[], diagnosisDesc: string, isChanging: boolean) => void; readOnly?: boolean }) {
   const [pending, startTransition] = useTransition();
   const [showAddDrug, setShowAddDrug] = useState(false);
   const [showPresets, setShowPresets] = useState(false);
@@ -2099,31 +2105,33 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
 
       <div className={`flex items-center mb-3 gap-2 ${Object.keys(appliedByDiag).length > 0 ? "mt-4" : ""}`}>
         <p className="text-label sm:text-sm font-medium text-[var(--color-ink-700)]">Prescription / Medications</p>
-        <div data-overview-hide className="flex items-center gap-2 ml-auto shrink-0">
-          {medications.length > 0 && (
+        {!readOnly && (
+          <div data-overview-hide className="flex items-center gap-2 ml-auto shrink-0">
+            {medications.length > 0 && (
+              <button
+                onClick={handleClearAll}
+                disabled={pending}
+                className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border transition-colors ${
+                  clearConfirm
+                    ? "bg-red-50 text-red-600 border-red-300 hover:bg-red-100"
+                    : "bg-white text-[var(--color-ink-500)] border-[var(--color-border)] hover:border-red-300 hover:text-red-500"
+                }`}
+              >
+                {clearConfirm ? <><AlertTriangle size={12} /> Confirm Clear All?</> : <><Trash2 size={12} /> Clear All</>}
+              </button>
+            )}
             <button
-              onClick={handleClearAll}
-              disabled={pending}
-              className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border transition-colors ${
-                clearConfirm
-                  ? "bg-red-50 text-red-600 border-red-300 hover:bg-red-100"
-                  : "bg-white text-[var(--color-ink-500)] border-[var(--color-border)] hover:border-red-300 hover:text-red-500"
-              }`}
+              onClick={() => setShowPresets((v) => !v)}
+              className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg bg-white border border-[var(--color-border)] hover:border-[var(--color-primary-500)] transition-colors"
             >
-              {clearConfirm ? <><AlertTriangle size={12} /> Confirm Clear All?</> : <><Trash2 size={12} /> Clear All</>}
+              <ChevronDown size={13} className={showPresets ? "rotate-180 transition-transform" : "transition-transform"} /> Presets
             </button>
-          )}
-          <button
-            onClick={() => setShowPresets((v) => !v)}
-            className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg bg-white border border-[var(--color-border)] hover:border-[var(--color-primary-500)] transition-colors"
-          >
-            <ChevronDown size={13} className={showPresets ? "rotate-180 transition-transform" : "transition-transform"} /> Presets
-          </button>
-        </div>
+          </div>
+        )}
       </div>
 
-      {/* Medication search */}
-      <div data-overview-hide className="relative mb-3">
+      {/* Medication search — hidden when readOnly */}
+      {!readOnly && <div data-overview-hide className="relative mb-3">
         <div className="relative">
           <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] pointer-events-none" />
           <input
@@ -2186,7 +2194,7 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
             ))}
           </ul>
         )}
-      </div>
+      </div>}
 
       {/* Per-diagnosis protocol prompt cards — shown below search */}
       {pendingDiagPrompts.map(({ diagnosisDesc, laterality: diagLat, matches }) => (
@@ -2457,46 +2465,48 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
                         )}
                       </td>
 
-                      {/* Actions */}
+                      {/* Actions — hidden when readOnly */}
                       <td data-overview-hide className="px-3 py-2.5">
-                        <div className="flex items-center justify-end gap-1.5">
-                          {isEditing ? (
-                            <>
-                              <button
-                                onClick={() => saveEdit(m.id)}
-                                disabled={pending || !editDraft.drugName.trim()}
-                                title="Save"
-                                className="p-1.5 rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-40 transition-colors"
-                              >
-                                <Check size={13} />
-                              </button>
-                              <button
-                                onClick={() => setEditingId(null)}
-                                title="Cancel"
-                                className="p-1.5 rounded-lg text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)] hover:bg-white transition-colors"
-                              >
-                                <X size={13} />
-                              </button>
-                            </>
-                          ) : (
-                            <>
-                              <button
-                                onClick={() => startEdit(m)}
-                                title="Edit"
-                                className="p-1.5 rounded-lg text-[var(--color-ink-300)] hover:text-[var(--color-primary-600)] hover:bg-[var(--color-primary-50)] transition-colors"
-                              >
-                                <Pencil size={13} />
-                              </button>
-                              <button
-                                onClick={() => removeMedication(m.id, udid)}
-                                title="Delete"
-                                className="p-1.5 rounded-lg text-[var(--color-ink-300)] hover:text-red-500 hover:bg-red-50 transition-colors"
-                              >
-                                <Trash2 size={13} />
-                              </button>
-                            </>
-                          )}
-                        </div>
+                        {!readOnly && (
+                          <div className="flex items-center justify-end gap-1.5">
+                            {isEditing ? (
+                              <>
+                                <button
+                                  onClick={() => saveEdit(m.id)}
+                                  disabled={pending || !editDraft.drugName.trim()}
+                                  title="Save"
+                                  className="p-1.5 rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-40 transition-colors"
+                                >
+                                  <Check size={13} />
+                                </button>
+                                <button
+                                  onClick={() => setEditingId(null)}
+                                  title="Cancel"
+                                  className="p-1.5 rounded-lg text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)] hover:bg-white transition-colors"
+                                >
+                                  <X size={13} />
+                                </button>
+                              </>
+                            ) : (
+                              <>
+                                <button
+                                  onClick={() => startEdit(m)}
+                                  title="Edit"
+                                  className="p-1.5 rounded-lg text-[var(--color-ink-300)] hover:text-[var(--color-primary-600)] hover:bg-[var(--color-primary-50)] transition-colors"
+                                >
+                                  <Pencil size={13} />
+                                </button>
+                                <button
+                                  onClick={() => removeMedication(m.id, udid)}
+                                  title="Delete"
+                                  className="p-1.5 rounded-lg text-[var(--color-ink-300)] hover:text-red-500 hover:bg-red-50 transition-colors"
+                                >
+                                  <Trash2 size={13} />
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        )}
                       </td>
                     </tr>
 
@@ -2635,36 +2645,39 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
       <div className="mt-5 pt-4 border-t border-[var(--color-border)]">
         <div className="flex items-center justify-between mb-2">
           <label className="text-xs font-semibold text-[var(--color-ink-700)]">Advise Notes</label>
-          <div data-overview-hide className="flex items-center gap-1.5">
-            <button
-              onClick={() => { setShowHistory((v) => !v); setShowKeywords(false); }}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-medium transition-colors
-                ${showHistory
-                  ? "bg-[var(--color-primary-50)] border-[var(--color-primary-300)] text-[var(--color-primary-700)]"
-                  : "border-[var(--color-border)] text-[var(--color-ink-500)] hover:text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]"}`}
-            >
-              <History size={12} />
-              History
-            </button>
-            <button
-              onClick={() => { setShowKeywords((v) => !v); setShowHistory(false); }}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-medium transition-colors
-                ${showKeywords
-                  ? "bg-[var(--color-primary-50)] border-[var(--color-primary-300)] text-[var(--color-primary-700)]"
-                  : "border-[var(--color-border)] text-[var(--color-ink-500)] hover:text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]"}`}
-            >
-              <Plus size={12} />
-              Keyword
-            </button>
-          </div>
+          {!readOnly && (
+            <div data-overview-hide className="flex items-center gap-1.5">
+              <button
+                onClick={() => { setShowHistory((v) => !v); setShowKeywords(false); }}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-medium transition-colors
+                  ${showHistory
+                    ? "bg-[var(--color-primary-50)] border-[var(--color-primary-300)] text-[var(--color-primary-700)]"
+                    : "border-[var(--color-border)] text-[var(--color-ink-500)] hover:text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]"}`}
+              >
+                <History size={12} />
+                History
+              </button>
+              <button
+                onClick={() => { setShowKeywords((v) => !v); setShowHistory(false); }}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-medium transition-colors
+                  ${showKeywords
+                    ? "bg-[var(--color-primary-50)] border-[var(--color-primary-300)] text-[var(--color-primary-700)]"
+                    : "border-[var(--color-border)] text-[var(--color-ink-500)] hover:text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]"}`}
+              >
+                <Plus size={12} />
+                Keyword
+              </button>
+            </div>
+          )}
         </div>
 
         <textarea
           value={adviseNotes}
-          onChange={(e) => onAdviseChange(e.target.value)}
+          onChange={(e) => { if (!readOnly) onAdviseChange(e.target.value); }}
+          readOnly={readOnly}
           rows={Math.max(3, Math.min(8, adviseNotes.replace(/\r/g, "").split("\n").length))}
           placeholder="Type advise notes or use keywords below…"
-          className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-3 py-2.5 text-sm text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent resize-none leading-relaxed"
+          className={`w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-3 py-2.5 text-sm text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent resize-none leading-relaxed${readOnly ? " cursor-default" : ""}`}
         />
 
         {/* History panel — below textarea */}
@@ -2877,7 +2890,7 @@ function OpticalPrescriptionCard({ visit }: { visit: any }) {
   );
 }
 
-function DispositionCard({ visit, udid, patientSex, priorVisits = [] }: { visit: any; udid: string; patientSex: string; priorVisits?: any[] }) {
+function DispositionCard({ visit, udid, patientSex, priorVisits = [], readOnly = false }: { visit: any; udid: string; patientSex: string; priorVisits?: any[]; readOnly?: boolean }) {
   const overview = useEmrOverview();
   const [activePanels, setActivePanels] = useState<string[]>(
     [
@@ -2896,9 +2909,11 @@ function DispositionCard({ visit, udid, patientSex, priorVisits = [] }: { visit:
     <div {...(overview && !hasFollowUpData ? { "data-overview-empty-section": "" } : {})}>
     <Card>
       <p className="text-label sm:text-sm font-medium text-[var(--color-ink-700)] mb-3">Patient Disposition</p>
-      <div data-overview-hide className="flex gap-3 flex-wrap mb-2">
-        <DispositionToggle icon={<RefreshCw size={16} />}  label="Follow Up Dates"      active={activePanels.includes("follow")}   onClick={() => togglePanel("follow")} />
-      </div>
+      {!readOnly && (
+        <div data-overview-hide className="flex gap-3 flex-wrap mb-2">
+          <DispositionToggle icon={<RefreshCw size={16} />}  label="Follow Up Dates"      active={activePanels.includes("follow")}   onClick={() => togglePanel("follow")} />
+        </div>
+      )}
       <div className="flex flex-col gap-4">
         {displayPanels.includes("follow")   && <FollowUpdatesPanel   visit={visit} udid={udid} priorVisits={priorVisits} />}
       </div>

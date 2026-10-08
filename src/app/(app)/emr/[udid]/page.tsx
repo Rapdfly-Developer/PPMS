@@ -2,9 +2,10 @@ import { requirePermission, userCan } from "@/lib/rbac";
 import { canRecordRefraction } from "@/lib/refraction-access";
 import { getStaffHospitalId } from "@/lib/booking-scope";
 import { prisma } from "@/lib/prisma";
+import { istTodayRange } from "@/lib/ist";
 import { notFound, redirect } from "next/navigation";
 import { Card } from "@/components/ui/Card";
-import { endOfDay, format, isSameDay, startOfDay } from "date-fns";
+import { format } from "date-fns";
 import {
   User, Eye, Activity, Link2, FileText, FolderOpen, Lock,
   Phone, Calendar, AlertTriangle,
@@ -141,6 +142,7 @@ export default async function PatientDetailedEMR({
   // visit left behind at the previous hospital.
   const activeVisitAtOtherHospital =
     !!activeVisit && !!patient.registeredAtId && activeVisit.hospitalId !== patient.registeredAtId;
+  const { dayStart: todayStart, dayEnd: todayEnd } = istTodayRange();
 
   if (!requestedVisit && (user.role === "DOCTOR" || staffCanStartVisit) && (!activeVisit || activeVisitAtOtherHospital || activeVisit.status === "CLOSED")) {
     const pendingAppointment = await prisma.appointment.findFirst({
@@ -157,7 +159,7 @@ export default async function PatientDetailedEMR({
               hospitalId: staffHospitalId!,
               status: "CONFIRMED",
               OR: [{ arrivedAt: { not: null } }, { isWalkIn: true }],
-              dateTime: { gte: startOfDay(new Date()), lte: endOfDay(new Date()) },
+              dateTime: { gte: todayStart, lte: todayEnd },
             }),
         visit: null,
         // Only hijack an existing in-progress visit for the current hospital's appointment
@@ -183,7 +185,7 @@ export default async function PatientDetailedEMR({
             doctorId: visitDoctorId,
             hospitalId: pendingAppointment.hospitalId,
             appointmentId: pendingAppointment.id,
-            visitType: (pendingAppointment as any).visitType ?? "General OPD",
+            visitType: pendingAppointment.visitType ?? "General OPD",
           },
         });
         {
@@ -236,7 +238,7 @@ export default async function PatientDetailedEMR({
   // CLOSED visits remain editable until midnight on the day of finalization,
   // then become permanently read-only for everyone including the doctor.
   const finalizedTodayRaw = activeVisit?.finalizedAt
-    ? isSameDay(new Date(activeVisit.finalizedAt), new Date())
+    ? new Date(activeVisit.finalizedAt) >= todayStart && new Date(activeVisit.finalizedAt) <= todayEnd
     : false;
   // When opened from Total Dispensed, treat the visit as permanently locked
   // regardless of when it was finalized and regardless of any URL params.
@@ -244,10 +246,15 @@ export default async function PatientDetailedEMR({
   const visitLocked = activeVisit?.status === "CLOSED" && !finalizedToday;
   const isRefractionist = user.role === "REFRACTIONIST";
   const readOnly = viewOnlySource || user.role !== "DOCTOR" || visitLocked;
-  // Refractionist can edit general + ophthalmic (except anterior/posterior)
-  const generalReadOnly = viewOnlySource || (user.role !== "DOCTOR" && !isRefractionist) || visitLocked;
-  // Refraction-workflow sections (VA, refraction, colour, IOP) follow the refraction permissions.
-  const canEditRefraction = !viewOnlySource && (user.role === "DOCTOR" || (canRecordRefraction(user) && !visitLocked));
+  const generalReadOnly = viewOnlySource || !userCan(user, "emr.general.edit") || visitLocked;
+  // Refraction-workflow sections split into per-section flags so each can be
+  // granted or revoked independently. DOCTOR has * so all resolve true.
+  const canEditVA         = !viewOnlySource && !visitLocked && userCan(user, "emr.va.edit");
+  const canEditRefraction = !viewOnlySource && !visitLocked && (
+    userCan(user, "emr.refraction.edit") || userCan(user, "refraction.edit") || userCan(user, "refraction.create")
+  );
+  const canEditColour     = !viewOnlySource && !visitLocked && userCan(user, "emr.colour.edit");
+  const canEditIOP        = !viewOnlySource && !visitLocked && userCan(user, "emr.iop.edit");
 
   // Granular EMR sub-section permissions — fall back to DOCTOR role if the specific
   // permission is not granted, so existing roles keep working unchanged.
@@ -265,6 +272,14 @@ export default async function PatientDetailedEMR({
   const canEditPosterior = !viewOnlySource && !visitLocked && (
     isDoctor || userCan(user, "emr.posterior.edit") || userCan(user, "emr.ophthalmic.edit")
   );
+  const canEditPlan = !viewOnlySource && !visitLocked && userCan(user, "emr.plan.edit");
+  const canPrint = userCan(user, "emr.print");
+  const canPartialDispense = userCan(user, "opd.partialDispense");
+  // Ophthalmic sub-tab visibility
+  const canViewVA       = userCan(user, "emr.va.view");
+  const canViewIOP      = userCan(user, "emr.iop.view");
+  const canViewAnterior = userCan(user, "emr.anterior.view");
+  const canViewPosterior = userCan(user, "emr.posterior.view");
 
   // Closed by the EOD sweep rather than finalized & signed by the doctor
   const autoClosed =
@@ -524,9 +539,11 @@ export default async function PatientDetailedEMR({
             visit={activeVisit}
             udid={udid}
             patientName={patient.name}
-            showActionBar={!viewOnlySource && (user.role === "DOCTOR" || isRefractionist)}
+            showActionBar={!viewOnlySource && (userCan(user, "emr.create") || isRefractionist)}
             isRefractionist={isRefractionist}
             finalizedToday={finalizedToday}
+            canPrint={canPrint}
+            canPartialDispense={canPartialDispense}
             pluginSlot={
               <PluginEmrSlot
                 patientUdid={udid}
@@ -592,8 +609,8 @@ export default async function PatientDetailedEMR({
                       patientId={patient.id}
                       udid={udid}
                       entries={patient.pastExternalVisits}
-                      canEdit={user.role === "DOCTOR" || isRefractionist}
-                      canUpload={user.role === "DOCTOR" || isRefractionist}
+                      canEdit={userCan(user, "emr.labReports.upload") || userCan(user, "emr.labReports.edit")}
+                      canUpload={userCan(user, "emr.labReports.upload") || userCan(user, "emr.labReports.edit")}
                     />
                   </div>
                 ),
@@ -609,9 +626,16 @@ export default async function PatientDetailedEMR({
                       priorVisits={priorVisits}
                       udid={udid}
                       role={user.role}
+                      canEditVA={canEditVA}
                       canEditRefraction={canEditRefraction}
+                      canEditColour={canEditColour}
+                      canEditIOP={canEditIOP}
                       canEditAnterior={canEditAnterior}
                       canEditPosterior={canEditPosterior}
+                      canViewVA={canViewVA}
+                      canViewIOP={canViewIOP}
+                      canViewAnterior={canViewAnterior}
+                      canViewPosterior={canViewPosterior}
                     />
                   </div>
                 ),
@@ -659,7 +683,7 @@ export default async function PatientDetailedEMR({
                 hidden: isRefractionist || !canViewPlan,
                 content: canViewPlan ? (
                   <div className="flex flex-col gap-4">
-                    <PlanTab visit={activeVisit} udid={udid} patientSex={patient.sex} priorVisits={priorVisits} />
+                    <PlanTab visit={activeVisit} udid={udid} patientSex={patient.sex} priorVisits={priorVisits} readOnly={!canEditPlan} />
                   </div>
                 ) : null,
               },

@@ -263,6 +263,7 @@ function SuccessModal({ udid, onClose }: { udid: string; onClose: () => void }) 
 export function EmrActionBar({
   visit, udid, patientName, currentTabIndex = 0, totalTabs = 1, onNextSection,
   editMode, onEnterEditMode, openPartialSignal = 0, isRefractionist = false,
+  canPrint = false, canPartialDispense = false,
 }: {
   visit: any; udid: string; patientName?: string;
   currentTabIndex?: number; totalTabs?: number; onNextSection?: () => void;
@@ -274,6 +275,8 @@ export function EmrActionBar({
    */
   openPartialSignal?: number;
   isRefractionist?: boolean;
+  canPrint?: boolean;
+  canPartialDispense?: boolean;
 }) {
   const router = useRouter();
   const { collapsed } = useSidebar();
@@ -369,8 +372,8 @@ export function EmrActionBar({
           </button>
         )}
 
-        {/* Print Rx dropdown — hidden for REFRACTIONIST */}
-        {!isRefractionist && <div className="flex-1 md:flex-none relative" ref={printRef}>
+        {/* Print Rx dropdown — shown when emr.print permission is granted */}
+        {canPrint && <div className="flex-1 md:flex-none relative" ref={printRef}>
           <button
             onClick={() => setPrintOpen((v) => !v)}
             className="w-full flex items-center justify-center gap-1 text-caption sm:text-sm font-medium px-2.5 py-2.5 md:px-4 md:py-2 rounded-xl bg-white border border-[var(--color-border)] hover:border-[var(--color-primary-500)] text-[var(--color-ink-700)] whitespace-nowrap"
@@ -442,7 +445,7 @@ export function EmrActionBar({
           )}
         </div>}
 
-        {!isRefractionist && !closed && (
+        {canPartialDispense && !closed && (
           <button
             disabled={partialPending}
             onClick={() => setShowPartialModal(true)}

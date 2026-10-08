@@ -26,6 +26,8 @@ export function EmrTabsShell({
   showActionBar,
   finalizedToday,
   isRefractionist,
+  canPrint,
+  canPartialDispense,
   pluginSlot,
   tabScopedSlot,
   tabScopedSlotTabId,
@@ -37,6 +39,8 @@ export function EmrTabsShell({
   showActionBar: boolean;
   finalizedToday?: boolean;
   isRefractionist?: boolean;
+  canPrint?: boolean;
+  canPartialDispense?: boolean;
   /**
    * Generic plugin UI extension point, rendered by PPMS Core and passed in as
    * an opaque node. The shell knows nothing about which plugins exist, or
@@ -140,6 +144,8 @@ export function EmrTabsShell({
               onEnterEditMode={() => setEditMode(true)}
               openPartialSignal={openPartialSignal}
               isRefractionist={isRefractionist}
+              canPrint={canPrint}
+              canPartialDispense={canPartialDispense}
             />
           </div>
         )}

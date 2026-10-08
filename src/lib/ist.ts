@@ -44,9 +44,9 @@ export function istDayRange(dateStr: string): { dayStart: Date; dayEnd: Date } {
   return { dayStart, dayEnd };
 }
 
-/** "YYYY-MM-DD" of the current IST calendar day. */
-export function istTodayStr(): string {
-  return new Date(Date.now() + IST_OFFSET_MIN * 60_000).toISOString().slice(0, 10);
+/** "YYYY-MM-DD" of the IST calendar day containing the supplied instant. */
+export function istTodayStr(now: Date = new Date()): string {
+  return new Date(now.getTime() + IST_OFFSET_MIN * 60_000).toISOString().slice(0, 10);
 }
 
 /** Start and end instants of the current IST calendar day. */
