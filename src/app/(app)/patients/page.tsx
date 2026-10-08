@@ -102,6 +102,15 @@ export default async function PatientsPage({
   if (opStatusFilter === "dispensed") {
     listConds.push({ appointments: { some: { status: "DISPENSED", dateTime: { gte: listToday, lte: listTodayEnd } } } });
   }
+  if (opStatusFilter === "totaldispensed") {
+    // Patients with at least one completed consultation who are NOT currently in queue today
+    listConds.push({
+      AND: [
+        { appointments: { some: { status: "DISPENSED" } } },
+        { appointments: { none: { status: { in: ["CONFIRMED", "PARTIAL_DISPENSE"] }, dateTime: { gte: listToday, lte: listTodayEnd } } } },
+      ],
+    });
+  }
   if (opStatusFilter === "noshowreg") {
     listConds.push({ appointments: { some: {
       dateTime: { gte: listToday, lte: listTodayEnd },
@@ -195,7 +204,7 @@ export default async function PatientsPage({
   const todayEnd = new Date(today); todayEnd.setHours(23, 59, 59, 999);
 
   const [
-    totalPatients,
+    totalDispensed,
     insurancePatients,
     todayDispensed,
     catGroups,
@@ -203,7 +212,16 @@ export default async function PatientsPage({
     recentReg,
     noShowReg,
   ] = await Promise.all([
-    prisma.patient.count({ where: scopeWhere }),
+    // All-time dispensed: completed at least one consultation ever AND not currently in queue today
+    prisma.patient.count({
+      where: {
+        AND: [
+          ...scopeConds,
+          { appointments: { some:  { status: "DISPENSED" } } },
+          { appointments: { none:  { status: { in: ["CONFIRMED", "PARTIAL_DISPENSE"] }, dateTime: { gte: today, lte: todayEnd } } } },
+        ],
+      },
+    }),
     prisma.patient.count({ where: { AND: [...scopeConds, { category: { in: ["ECHS", "INSURANCE"] } }] } }),
     prisma.patient.count({
       where: { AND: [...scopeConds, { appointments: { some: { status: "DISPENSED", dateTime: { gte: today, lte: todayEnd } } } }] },
@@ -344,7 +362,7 @@ export default async function PatientsPage({
         sortBy={sortBy}
         isHospital={isHospital}
         activeCard={activeCard}
-        kpis={{ totalPatients, insurancePatients, todayDispensed }}
+        kpis={{ totalDispensed, insurancePatients, todayDispensed }}
         trendData={trendData}
         catDist={catGroups.map(g => ({ category: g.category, count: g._count.id }))}
         recentReg={recentSerialized}

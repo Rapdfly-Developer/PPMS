@@ -912,6 +912,7 @@ export function PatientProfileClient({
   hasRequestedAppt = false,
   canOpenTodayVisit = false,
   showTodayVisit = true,
+  allowEmrEdit = true,
   timelineEntries = [],
   lastVisitSummary = null,
   longitudinalVisits = [],
@@ -926,6 +927,8 @@ export function PatientProfileClient({
   /** Doctors, plus staff with refraction access (who open existing visits but cannot start one). */
   canOpenTodayVisit?: boolean;
   showTodayVisit?: boolean;
+  /** False when navigating from the Total Dispensed card — EMR is view-only, no edit allowed. */
+  allowEmrEdit?: boolean;
   timelineEntries?: TimelineEntry[];
   lastVisitSummary?: LastVisitSummary | null;
   longitudinalVisits?: LongitudinalVisit[];
@@ -975,6 +978,7 @@ export function PatientProfileClient({
         {showTodayVisit && canOpenTodayVisit ? (
           hasToday ? (
             todayIsFinalized ? (
+              allowEmrEdit ? (
               <button
                 onClick={() => setShowFinalizedModal(true)}
                 className="flex-1 flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-xl font-semibold text-label sm:text-sm bg-emerald-600 text-white hover:bg-emerald-700 transition-colors shadow-sm"
@@ -982,6 +986,15 @@ export function PatientProfileClient({
                 <Stethoscope size={16} />
                 Today's Visit
               </button>
+              ) : (
+              <Link
+                href={`/emr/${udid}?visit=${todayVisit!.id}&returnTo=${encodeURIComponent(emrReturnTo)}`}
+                className="flex-1 flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-xl font-semibold text-label sm:text-sm bg-emerald-600 text-white hover:bg-emerald-700 transition-colors shadow-sm"
+              >
+                <Stethoscope size={16} />
+                Today's Visit (View Only)
+              </Link>
+              )
             ) : (
               <Link
                 href={`/emr/${udid}?visit=${todayVisit!.id}&returnTo=${encodeURIComponent(emrReturnTo)}`}

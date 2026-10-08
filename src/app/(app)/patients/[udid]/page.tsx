@@ -453,6 +453,7 @@ export default async function PatientProfilePage({
             hasRequestedAppt={hasRequestedAppt}
             userRole={user.role}
             canOpenTodayVisit={user.role === "DOCTOR" || (userCan(user, "emr.view") && canRecordRefraction(user))}
+          allowEmrEdit={source !== "total-dispensed"}
             showTodayVisit={showTodayVisit}
             timelineEntries={timelineEntries}
             lastVisitSummary={lastVisitSummary}

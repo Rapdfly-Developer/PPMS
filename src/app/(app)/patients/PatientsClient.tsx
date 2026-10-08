@@ -44,7 +44,7 @@ export interface RecentPat  {
   category: string; createdAt: string; mobile: string; photoUrl?: string | null;
 }
 export interface Kpis {
-  totalPatients: number;
+  totalDispensed: number;
   insurancePatients: number; todayDispensed: number;
 }
 export interface NoShowRegRow {
@@ -507,7 +507,7 @@ export function PatientsClient({
       <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-5">
         <KpiCard icon={<AlertCircle size={17} />}   label="No Show Registry" value={noShowReg.length}    color="amber" isActive={activeCard === "noshowreg"} onSelect={() => navigate({ opStatus: activeCard === "noshowreg" ? "dispensed" : "noshowreg", card: activeCard === "noshowreg" ? "dispensed" : "noshowreg", page: "1" })} />
         <KpiCard icon={<PackageCheck size={17} />}  label="Dispensed Today"  value={kpis.todayDispensed} color="green" isActive={activeCard === "dispensed" || activeCard === ""} onSelect={() => navigate({ opStatus: activeCard === "dispensed" || activeCard === "" ? "all" : "dispensed", card: activeCard === "dispensed" || activeCard === "" ? "total" : "dispensed", page: "1" })} />
-        <KpiCard icon={<Users size={17} />}         label="Total Patients"   value={kpis.totalPatients}  color="teal"  isActive={activeCard === "total"}    onSelect={() => navigate({ opStatus: "all", card: activeCard === "total" ? "dispensed" : "total", page: "1" })} />
+        <KpiCard icon={<Users size={17} />}         label="Total Dispensed"  value={kpis.totalDispensed} color="teal"  isActive={activeCard === "total"}    onSelect={() => navigate({ opStatus: activeCard === "total" ? "dispensed" : "totaldispensed", card: activeCard === "total" ? "dispensed" : "total", page: "1" })} />
       </div>
 
       {/* ── Table + Analytics ──────────────────────────────────────────── */}
@@ -803,7 +803,11 @@ export function PatientsClient({
                     <li
                       key={p.id}
                       className="px-4 py-4 flex items-center gap-4 rounded-xl border border-[var(--color-border)] bg-white transition-colors cursor-pointer hover:bg-[var(--color-surface-sunken)] hover:border-[var(--color-primary-200)] hover:shadow-sm"
-                      onClick={() => router.push(`/patients/${p.udid}?returnTo=${encodeURIComponent(window.location.pathname + window.location.search)}`)}
+                      onClick={() => {
+                        const returnTo = encodeURIComponent(window.location.pathname + window.location.search);
+                        const src = activeCard === "total" ? "&source=total-dispensed" : "";
+                        router.push(`/patients/${p.udid}?returnTo=${returnTo}${src}`);
+                      }}
                     >
                       {/* Token */}
                       <div
