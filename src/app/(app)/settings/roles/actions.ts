@@ -12,11 +12,15 @@ const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
     "dashboard.view",
     "appointments.view", "appointments.create", "appointments.edit", "appointments.cancel",
     "patients.view", "patients.create", "patients.edit",
-    "opd.view", "opd.walkin.create", "opd.queue.manage", "opd.dispense",
-    "emr.view", "refraction.view",
+    "opd.view", "opd.walkin.create", "opd.queue.manage", "opd.dispense", "opd.partialDispense",
+    "emr.view", "emr.general.view",
+    "emr.va.view", "emr.iop.view", "emr.colour.view", "emr.anterior.view", "emr.posterior.view",
+    "refraction.view",
     "investigations.view", "investigations.create", "investigations.edit",
     "billing.view", "billing.create", "billing.edit", "billing.print",
     "reports.view", "reports.export",
+    "insurance.view", "insurance.create", "insurance.edit", "insurance.manage",
+    "followups.view",
     "settings.view", "settings.manage",
     "plugins.view",
   ],
@@ -28,7 +32,30 @@ const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
  * ever add keys here — the backfill upserts and never revokes, and each key is
  * granted once, so an admin who later removes one keeps it removed.
  */
-const ADDITIVE_ROLE_PERMISSIONS: Record<string, string[]> = {};
+const ADDITIVE_ROLE_PERMISSIONS: Record<string, string[]> = {
+  // New granular view permissions for HOSPITAL — keeps existing staff from losing
+  // read access to ophthalmic sub-sections and OPD partial dispense.
+  HOSPITAL: [
+    "opd.partialDispense",
+    "emr.general.view",
+    "emr.va.view",
+    "emr.iop.view",
+    "emr.colour.view",
+    "emr.anterior.view",
+    "emr.posterior.view",
+    "followups.view",
+    "insurance.view", "insurance.create", "insurance.edit", "insurance.manage",
+  ],
+  // New granular permissions for REFRACTIONIST — adds explicit per-section perms.
+  REFRACTIONIST: [
+    "emr.general.view",
+    "emr.va.view",    "emr.va.edit",
+    "emr.iop.view",   "emr.iop.edit",
+    "emr.colour.view", "emr.colour.edit",
+    "emr.anterior.view",
+    "emr.posterior.view",
+  ],
+};
 
 // ── Default role definitions ───────────────────────────────────────────────
 const DEFAULT_ROLES = [

@@ -1,4 +1,4 @@
-import { requirePermission } from "@/lib/rbac";
+import { requirePermission, userCan } from "@/lib/rbac";
 import { canRecordRefraction } from "@/lib/refraction-access";
 import { getStaffHospitalId } from "@/lib/booking-scope";
 import { prisma } from "@/lib/prisma";
@@ -147,9 +147,18 @@ export default async function PatientDetailedEMR({
       where: {
         patientId: patient.id,
         ...(user.role === "DOCTOR"
-          ? { doctorId: user.profileId, status: "CONFIRMED", arrivedAt: { not: null } }
+          ? {
+              doctorId: user.profileId,
+              status: "CONFIRMED",
+              OR: [{ arrivedAt: { not: null } }, { isWalkIn: true }],
+            }
           // Staff: only today's queued (CONFIRMED) appointment at their own hospital.
-          : { hospitalId: staffHospitalId!, status: "CONFIRMED", arrivedAt: { not: null }, dateTime: { gte: startOfDay(new Date()), lte: endOfDay(new Date()) } }),
+          : {
+              hospitalId: staffHospitalId!,
+              status: "CONFIRMED",
+              OR: [{ arrivedAt: { not: null } }, { isWalkIn: true }],
+              dateTime: { gte: startOfDay(new Date()), lte: endOfDay(new Date()) },
+            }),
         visit: null,
         // Only hijack an existing in-progress visit for the current hospital's appointment
         ...(activeVisitAtOtherHospital ? { hospitalId: patient.registeredAtId! } : {}),
@@ -187,12 +196,22 @@ export default async function PatientDetailedEMR({
             });
           }
         }
-        await prisma.appointment.update({
-          where: { id: pendingAppointment.id },
-          data: { status: "CONFIRMED" },
-        });
         visitId = newVisit.id;
       }
+      // Repair legacy Add-to-Queue walk-ins that were created without an
+      // arrival timestamp (and with a UTC wall-clock stored as dateTime).
+      await prisma.appointment.update({
+        where: { id: pendingAppointment.id },
+        data: {
+          status: "CONFIRMED",
+          ...(pendingAppointment.isWalkIn && !pendingAppointment.arrivedAt
+            ? {
+                arrivedAt: pendingAppointment.createdAt,
+                dateTime: pendingAppointment.createdAt,
+              }
+            : {}),
+        },
+      });
       redirect(`/emr/${udid}?visit=${visitId}${returnTo ? `&returnTo=${encodeURIComponent(returnTo)}` : ""}`);
     }
   }
@@ -229,6 +248,23 @@ export default async function PatientDetailedEMR({
   const generalReadOnly = viewOnlySource || (user.role !== "DOCTOR" && !isRefractionist) || visitLocked;
   // Refraction-workflow sections (VA, refraction, colour, IOP) follow the refraction permissions.
   const canEditRefraction = !viewOnlySource && (user.role === "DOCTOR" || (canRecordRefraction(user) && !visitLocked));
+
+  // Granular EMR sub-section permissions — fall back to DOCTOR role if the specific
+  // permission is not granted, so existing roles keep working unchanged.
+  const isDoctor = user.role === "DOCTOR";
+  const canViewAssessment = isDoctor || userCan(user, "emr.assessment.view");
+  const canEditAssessment = !viewOnlySource && !visitLocked && (isDoctor || userCan(user, "emr.assessment.edit"));
+  const canViewPlan = isDoctor || userCan(user, "emr.plan.view");
+  const canViewInvestigationsTab = !isRefractionist || userCan(user, "investigations.view");
+  const canEditInvestigationsTab = !viewOnlySource && !visitLocked && (
+    isDoctor || userCan(user, "investigations.create") || userCan(user, "investigations.edit")
+  );
+  const canEditAnterior = !viewOnlySource && !visitLocked && (
+    isDoctor || userCan(user, "emr.anterior.edit") || userCan(user, "emr.ophthalmic.edit")
+  );
+  const canEditPosterior = !viewOnlySource && !visitLocked && (
+    isDoctor || userCan(user, "emr.posterior.edit") || userCan(user, "emr.ophthalmic.edit")
+  );
 
   // Closed by the EOD sweep rather than finalized & signed by the doctor
   const autoClosed =
@@ -574,6 +610,8 @@ export default async function PatientDetailedEMR({
                       udid={udid}
                       role={user.role}
                       canEditRefraction={canEditRefraction}
+                      canEditAnterior={canEditAnterior}
+                      canEditPosterior={canEditPosterior}
                     />
                   </div>
                 ),
@@ -582,29 +620,26 @@ export default async function PatientDetailedEMR({
                 id: "assess",
                 label: "Assessment",
                 icon: <Activity size={14} />,
-                hidden: isRefractionist,
-                content:
-                  user.role === "DOCTOR" ? (
-                    <div className="flex flex-col gap-4">
-                      <AssessmentTab visit={activeVisit} udid={udid} priorVisits={priorVisits} readOnly={readOnly} />
-                    </div>
-                  ) : (
-                    <p className="text-sm text-[var(--color-ink-400)]">Not accessible for this role.</p>
-                  ),
+                hidden: isRefractionist || !canViewAssessment,
+                content: canViewAssessment ? (
+                  <div className="flex flex-col gap-4">
+                    <AssessmentTab visit={activeVisit} udid={udid} priorVisits={priorVisits} readOnly={!canEditAssessment} />
+                  </div>
+                ) : null,
               },
               {
                 id: "inv",
                 label: "Investigations",
                 icon: <FileText size={14} />,
-                hidden: isRefractionist,
-                badge: activeVisit.investigationOrders.filter((o) => !o.resultRef && o.status !== "REVIEWED" && o.status !== "CANCELLED").length,
-                content: isRefractionist ? (
-                  <p className="text-sm text-[var(--color-ink-400)]">Not accessible for this role.</p>
-                ) : (
+                hidden: !canViewInvestigationsTab,
+                badge: canViewInvestigationsTab
+                  ? activeVisit.investigationOrders.filter((o) => !o.resultRef && o.status !== "REVIEWED" && o.status !== "CANCELLED").length
+                  : undefined,
+                content: canViewInvestigationsTab ? (
                   <div className="flex flex-col gap-4">
-                    <InvestigationsTab visit={activeVisit} priorVisits={priorVisits} udid={udid} readOnly={readOnly} />
+                    <InvestigationsTab visit={activeVisit} priorVisits={priorVisits} udid={udid} readOnly={!canEditInvestigationsTab} />
                   </div>
-                ),
+                ) : null,
               },
               {
                 id: "ai-copilot",
@@ -621,15 +656,12 @@ export default async function PatientDetailedEMR({
                 id: "plan",
                 label: "Plan",
                 icon: <Link2 size={14} />,
-                hidden: isRefractionist,
-                content:
-                  user.role === "DOCTOR" ? (
-                    <div className="flex flex-col gap-4">
-                      <PlanTab visit={activeVisit} udid={udid} patientSex={patient.sex} priorVisits={priorVisits} />
-                    </div>
-                  ) : (
-                    <p className="text-sm text-[var(--color-ink-400)]">Not accessible for this role.</p>
-                  ),
+                hidden: isRefractionist || !canViewPlan,
+                content: canViewPlan ? (
+                  <div className="flex flex-col gap-4">
+                    <PlanTab visit={activeVisit} udid={udid} patientSex={patient.sex} priorVisits={priorVisits} />
+                  </div>
+                ) : null,
               },
             ]}
           />

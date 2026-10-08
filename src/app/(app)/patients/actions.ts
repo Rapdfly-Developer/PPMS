@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { requireRole, requirePermission, requireUser, scopeDoctorId } from "@/lib/rbac";
+import { requireRole, requirePermission, requireUser, userCan, scopeDoctorId } from "@/lib/rbac";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { writeAudit } from "@/lib/audit";
@@ -304,9 +304,10 @@ export async function getPatientTimeline(patientId: string): Promise<TimelineEve
  * entry is kept as the record of the deletion.
  */
 export async function deletePatient(patientId: string): Promise<{ error?: string }> {
-  // Deleting a patient is reserved for the doctor (super user); it is not a grantable role permission.
-  const user = await requireUser();
-  if (user.role !== "DOCTOR") return { error: "Only the doctor can delete patients." };
+  const user = await requirePermission("patients.delete");
+  if (user.role !== "DOCTOR" && !userCan(user, "patients.delete")) {
+    return { error: "You do not have permission to delete patients." };
+  }
 
   const patient = await prisma.patient.findUnique({
     where: { id: patientId },
