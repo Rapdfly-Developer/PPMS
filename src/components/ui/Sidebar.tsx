@@ -38,8 +38,9 @@ const ALL_NAV: NavEntry[] = [
 ];
 
 const ROLE_LABEL: Record<string, string> = {
-  DOCTOR:   "Doctor",
-  HOSPITAL: "Hospital Admin",
+  DOCTOR:        "Doctor",
+  HOSPITAL:      "Hospital Admin",
+  REFRACTIONIST: "Refractionist",
 };
 
 const NOISE =

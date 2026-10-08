@@ -87,7 +87,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       </div>
 
       {/* Fixed bottom nav — mobile only (<lg), hidden on desktop */}
-      <MobileBottomNav />
+      <MobileBottomNav role={user.role} />
     </SidebarProvider>
   );
 }

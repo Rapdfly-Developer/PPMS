@@ -8,15 +8,13 @@ import { LayoutGrid, Users, CalendarDays, Bell, User } from "lucide-react";
 const ACTIVE_COLOR = "#1C9388";
 const INACTIVE_COLOR = "#94A3B8";
 
-const NAV_ITEMS = [
-  { href: "/dashboard",      label: "Home",         icon: LayoutGrid  },
-  { href: "/patients",      label: "Patients",     icon: Users       },
-  { href: "/appointments",  label: "Appointments", icon: CalendarDays},
-  { href: "/notifications", label: "Alerts",       icon: Bell        },
-  { href: "/settings",      label: "Profile",      icon: User        },
-];
+function roleHome(role: string): string {
+  if (role === "REFRACTIONIST") return "/opd";
+  return "/dashboard";
+}
 
-export function MobileBottomNav() {
+export function MobileBottomNav({ role = "DOCTOR" }: { role?: string }) {
+  const homeHref = roleHome(role);
   const pathname = usePathname();
   const [unread, setUnread] = useState(0);
 
@@ -68,7 +66,13 @@ export function MobileBottomNav() {
       aria-label="Mobile navigation"
     >
       <div className="flex items-center justify-around h-16 px-1">
-        {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
+        {[
+          { href: homeHref,         label: "Home",         icon: LayoutGrid  },
+          { href: "/patients",      label: "Patients",     icon: Users       },
+          { href: "/appointments",  label: "Appointments", icon: CalendarDays},
+          { href: "/notifications", label: "Alerts",       icon: Bell        },
+          { href: "/settings",      label: "Profile",      icon: User        },
+        ].map(({ href, label, icon: Icon }) => {
           const active = isActive(href);
           const showBadge = href === "/notifications" && unread > 0;
           return (
