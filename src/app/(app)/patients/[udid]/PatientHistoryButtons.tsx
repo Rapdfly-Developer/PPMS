@@ -135,21 +135,22 @@ function InvUploadButton({ orderId, udid }: { orderId: string; udid: string }) {
   };
 
   return (
-    <div className="flex flex-col items-end gap-1 shrink-0">
+    <div className="flex flex-col items-end gap-1">
       <input ref={fileRef} type="file" accept=".pdf,.jpg,.jpeg,.png,.docx" className="hidden" onChange={handleFile} />
       <input ref={camRef}  type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFile} />
       <div className="flex items-center gap-1">
         <button type="button" disabled={uploading} onClick={() => fileRef.current?.click()}
-          className="flex items-center gap-1 text-caption font-medium px-2 py-1.5 rounded-lg border border-dashed border-[var(--color-primary-400)] text-[var(--color-primary-600)] hover:bg-[var(--color-primary-50)] disabled:opacity-50 transition-colors">
-          {uploading ? <Upload size={12} className="animate-pulse" /> : <Upload size={12} />}
+          className="flex items-center gap-1 text-caption font-medium px-2 py-1 rounded-md border border-[var(--color-primary-300)] text-[var(--color-primary-600)] hover:bg-[var(--color-primary-50)] disabled:opacity-50 transition-colors">
+          {uploading ? <Upload size={11} className="animate-pulse" /> : <Upload size={11} />}
           {uploading ? "Uploading…" : "Add File"}
         </button>
         <button type="button" disabled={uploading} onClick={() => camRef.current?.click()}
-          className="flex items-center gap-1 text-caption font-medium px-2 py-1.5 rounded-lg border border-dashed border-amber-400 text-amber-600 hover:bg-amber-50 disabled:opacity-50 transition-colors">
-          <Camera size={12} /> Camera
+          title="Capture with camera"
+          className="p-1.5 rounded-md border border-[var(--color-border)] text-[var(--color-ink-400)] hover:text-amber-600 hover:border-amber-300 disabled:opacity-50 transition-colors">
+          <Camera size={13} />
         </button>
       </div>
-      {error && <p className="text-caption text-red-600">{error}</p>}
+      {error && <p className="text-caption text-red-600 mt-0.5">{error}</p>}
     </div>
   );
 }
@@ -169,15 +170,6 @@ function InvestigationsDrawer({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, data]);
 
-  const catPalette = (category: string) => {
-    const k = (category ?? "").toLowerCase();
-    if (k.includes("imag"))  return { dot: "bg-teal-50", icon: "text-teal-600", badge: "bg-teal-50 text-teal-700" };
-    if (k.includes("lab") || k.includes("pre-op")) return { dot: "bg-teal-50", icon: "text-teal-600", badge: "bg-teal-50 text-teal-700" };
-    if (k.includes("path"))  return { dot: "bg-rose-100",   icon: "text-rose-600",   badge: "bg-rose-100 text-rose-700"   };
-    if (k.includes("proc"))  return { dot: "bg-amber-100",  icon: "text-amber-600",  badge: "bg-amber-100 text-amber-700" };
-    return { dot: "bg-teal-100", icon: "text-teal-600", badge: "bg-teal-100 text-teal-700" };
-  };
-
   return (
     <>
       <Drawer open={open} onClose={onClose} title="Previous Investigation Orders" icon={<FlaskConical size={16} />}>
@@ -188,59 +180,60 @@ function InvestigationsDrawer({
         )}
         {!isPending && data?.length === 0 && <Empty label="investigation orders" />}
         {!isPending && data && data.map((v) => (
-          <div key={v.visitId} className="flex flex-col gap-1">
+          <div key={v.visitId}>
             {/* Visit date header */}
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-caption font-semibold text-[var(--color-ink-400)]">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-caption font-semibold text-[var(--color-ink-700)]">
                 {format(new Date(v.date), "dd MMM yyyy")}
               </span>
-              {v.hospitalName && <span className="text-caption text-[var(--color-ink-300)]">· {v.hospitalName}</span>}
+              {v.hospitalName && (
+                <span className="text-caption text-[var(--color-ink-400)]">· {v.hospitalName}</span>
+              )}
               <div className="flex-1 h-px bg-[var(--color-border)]" />
             </div>
-            {/* Orders timeline — one entry per investigation ordered that date */}
-            <ul className="space-y-0">
-              {v.orders.map((o, idx) => {
-                const p = catPalette(o.category);
-                const isLast = idx === v.orders.length - 1;
-                return (
-                  <li key={o.id} className="flex gap-3">
-                    <div className="flex flex-col items-center shrink-0">
-                      <div className={`w-8 h-8 rounded-full ${p.dot} flex items-center justify-center z-10`}>
-                        <FlaskConical size={13} className={p.icon} />
-                      </div>
-                      {!isLast && <div className="w-0.5 flex-1 my-1 bg-slate-100" />}
-                    </div>
-                    <div className={`flex-1 min-w-0 bg-slate-50 rounded-xl border border-slate-100 px-3 py-2.5 flex items-center gap-3 ${isLast ? "mb-0" : "mb-2"}`}>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className={`text-caption font-semibold px-2 py-0.5 rounded-full ${p.badge}`}>
-                            {o.category || "Test"}
-                          </span>
-                          <p className="text-sm font-semibold text-[var(--color-ink-800)]">{o.testName}</p>
-                        </div>
-                        <p className="text-caption text-[var(--color-ink-400)] mt-0.5">
-                          {[o.laterality, o.priority, o.status.replace(/_/g, " ")].filter(Boolean).join(" · ")}
-                          {o.notes && <span className="italic"> · {o.notes}</span>}
-                        </p>
-                      </div>
-                      <p className="shrink-0 text-caption text-[var(--color-ink-400)]">
-                        {format(new Date(o.createdAt), "h:mm a")}
+
+            {/* Orders — plain numbered list */}
+            <div className="space-y-0">
+              {v.orders.map((o, idx) => (
+                <div key={o.id} className="flex items-start gap-2.5 py-2.5 border-b border-[var(--color-border)] last:border-0">
+                  {/* Row number */}
+                  <span className="text-caption text-[var(--color-ink-300)] tabular-nums w-4 shrink-0 mt-0.5">{idx + 1}.</span>
+
+                  {/* Body */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-3">
+                      <p className="text-sm font-semibold text-[var(--color-ink-800)] leading-snug">
+                        {o.laterality && (
+                          <span className="font-bold text-[var(--color-primary-700)] mr-1.5">{o.laterality}</span>
+                        )}
+                        {o.testName}
                       </p>
-                      {o.resultRef ? (
-                        <button
-                          onClick={() => setLightbox(o.resultRef)}
-                          className="shrink-0 inline-flex items-center gap-1 text-caption font-medium px-2.5 py-1.5 rounded-lg border border-teal-100 bg-teal-50 text-teal-700 hover:bg-teal-50 transition-colors"
-                        >
-                          <Eye size={12} /> View
-                        </button>
-                      ) : (
-                        <InvUploadButton orderId={o.id} udid={udid} />
-                      )}
+                      {/* Actions */}
+                      <div className="shrink-0">
+                        {o.resultRef ? (
+                          <button
+                            onClick={() => setLightbox(o.resultRef)}
+                            className="inline-flex items-center gap-1 text-caption font-medium px-2.5 py-1 rounded-md border border-teal-200 bg-teal-50 text-teal-700 hover:bg-teal-100 transition-colors"
+                          >
+                            <Eye size={12} /> View
+                          </button>
+                        ) : (
+                          <InvUploadButton orderId={o.id} udid={udid} />
+                        )}
+                      </div>
                     </div>
-                  </li>
-                );
-              })}
-            </ul>
+                    <p className="text-caption text-[var(--color-ink-400)] mt-0.5">
+                      {o.priority && <span>{o.priority}</span>}
+                      {o.priority && <span className="mx-1">·</span>}
+                      <span>{format(new Date(o.createdAt), "h:mm a")}</span>
+                      {o.notes && (
+                        <span className="italic"> · in view of: {o.notes}</span>
+                      )}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         ))}
       </Drawer>
