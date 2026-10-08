@@ -100,7 +100,7 @@ export default async function PatientsPage({
   const listToday    = startOfDay(new Date());
   const listTodayEnd = new Date(listToday); listTodayEnd.setHours(23, 59, 59, 999);
   if (opStatusFilter === "dispensed") {
-    listConds.push({ appointments: { some: { status: "DISPENSED", dateTime: { gte: listToday, lte: listTodayEnd } } } });
+    listConds.push({ visits: { some: { finalizedAt: { gte: listToday, lte: listTodayEnd }, appointment: { status: "DISPENSED" } } } });
   }
   if (opStatusFilter === "totaldispensed") {
     // Patients with at least one completed consultation who are NOT currently in queue today
@@ -113,8 +113,7 @@ export default async function PatientsPage({
   }
   if (opStatusFilter === "noshowreg") {
     listConds.push({ appointments: { some: {
-      dateTime: { gte: listToday, lte: listTodayEnd },
-      status:   { in: ["CONFIRMED", "PARTIAL_DISPENSE"] },
+      status: { in: ["CONFIRMED", "PARTIAL_DISPENSE"] },
       OR: [{ isWalkIn: true }, { arrivedAt: { not: null } }],
     }}});
   }
@@ -224,7 +223,7 @@ export default async function PatientsPage({
     }),
     prisma.patient.count({ where: { AND: [...scopeConds, { category: { in: ["ECHS", "INSURANCE"] } }] } }),
     prisma.patient.count({
-      where: { AND: [...scopeConds, { appointments: { some: { status: "DISPENSED", dateTime: { gte: today, lte: todayEnd } } } }] },
+      where: { AND: [...scopeConds, { visits: { some: { finalizedAt: { gte: today, lte: todayEnd }, appointment: { status: "DISPENSED" } } } }] },
     }),
     prisma.patient.groupBy({
       by:    ["category"],
@@ -242,14 +241,14 @@ export default async function PatientsPage({
       take:    6,
       select:  { name: true, udid: true, uhid: true, sex: true, age: true, category: true, createdAt: true, mobile: true, photoUrl: true },
     }),
-    // Patients who physically arrived today but didn't complete consultation.
+    // Patients who physically arrived (any date) but didn't complete consultation.
     // Walk-ins skip the arrivedAt flow so match on isWalkIn; regular appointments
     // need arrivedAt set (meaning they were actually moved into the queue).
+    // No date filter — older unfinished cases must persist in the registry.
     prisma.appointment.findMany({
       where: {
         ...apptScope,
-        dateTime: { gte: today, lte: todayEnd },
-        status:   { in: ["CONFIRMED", "PARTIAL_DISPENSE"] },
+        status: { in: ["CONFIRMED", "PARTIAL_DISPENSE"] },
         OR: [
           { isWalkIn: true },
           { arrivedAt: { not: null } },
