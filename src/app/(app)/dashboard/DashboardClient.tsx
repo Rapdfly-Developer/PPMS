@@ -242,9 +242,18 @@ function ApptRow({ appt, serial, canManageQueue, canViewPatient, returnTo }: { a
       <PatientBlock udid={appt.patient.udid} canView={canViewPatient} source="opd-queue" returnTo={returnTo} className="flex-1 min-w-0 hover:opacity-80 transition-opacity">
         <p className="font-semibold text-[var(--color-ink-900)] text-label sm:text-sm truncate">{appt.patient.name}</p>
         <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-          <span title="UDID (Doctor ID)" className="font-mono text-micro sm:text-caption text-[#115E59] bg-[#F0F8F6] px-1.5 py-0.5 rounded">
+          <span title="PPMS ID" className="font-mono text-micro sm:text-caption text-[#115E59] bg-[#F0F8F6] px-1.5 py-0.5 rounded">
             {appt.patient.udid}
           </span>
+          {appt.patient.uhid ? (
+            <span title="Hospital ID" className="font-mono text-micro sm:text-caption bg-amber-50 text-amber-700 border border-amber-200 px-1.5 py-0.5 rounded">
+              {appt.patient.uhid}
+            </span>
+          ) : (
+            <span title="Hospital ID not yet assigned" className="font-mono text-micro sm:text-caption bg-[var(--color-surface-sunken)] text-[var(--color-ink-400)] border border-dashed border-[var(--color-border)] px-1.5 py-0.5 rounded">
+              HID: —
+            </span>
+          )}
           <span className="text-caption sm:text-caption text-[var(--color-ink-400)]">
             {appt.patient.age}y / {appt.patient.sex === "MALE" ? "M" : appt.patient.sex === "FEMALE" ? "F" : "O"}
           </span>
