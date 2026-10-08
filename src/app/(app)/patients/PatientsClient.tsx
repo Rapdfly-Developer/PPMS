@@ -7,7 +7,7 @@ import { format } from "date-fns";
 import {
   Search, Download, Filter, X, Users,
   ShieldCheck, PackageCheck, ChevronLeft, ChevronRight, ChevronDown, Eye,
-  Phone, Building2, Undo2, AlertCircle,
+  Building2, Undo2, AlertCircle,
 } from "lucide-react";
 import { undoDispense, type UndoDispenseResult } from "./actions";
 import { TealSelect } from "@/components/ui/TealSelect";
@@ -397,6 +397,19 @@ export function PatientsClient({
       .slice(0, 10);
   }, [diagnosisInput, allDiagnoses]);
 
+  // Map from patient udid → most recent unfinished appointment for No Show Registry lookups.
+  // Appointments arrive asc by arrivedAt so last-write-wins = most recent.
+  const noShowByUdid = useMemo(() => {
+    const m = new Map<string, NoShowRegRow>();
+    noShowReg.forEach(r => m.set(r.patient.udid, r));
+    return m;
+  }, [noShowReg]);
+
+  const noShowPatientCount = useMemo(
+    () => new Set(noShowReg.map(r => r.patient.udid)).size,
+    [noShowReg],
+  );
+
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const from = total === 0 ? 0 : (page - 1) * pageSize + 1;
   const to   = Math.min(page * pageSize, total);
@@ -505,7 +518,7 @@ export function PatientsClient({
 
       {/* ── KPI Cards ──────────────────────────────────────────────────── */}
       <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-5">
-        <KpiCard icon={<AlertCircle size={17} />}   label="No Show Registry" value={noShowReg.length}    color="amber" isActive={activeCard === "noshowreg"} onSelect={() => navigate({ opStatus: activeCard === "noshowreg" ? "dispensed" : "noshowreg", card: activeCard === "noshowreg" ? "dispensed" : "noshowreg", page: "1" })} />
+        <KpiCard icon={<AlertCircle size={17} />}   label="No Show Registry" value={noShowPatientCount}    color="amber" isActive={activeCard === "noshowreg"} onSelect={() => navigate({ opStatus: activeCard === "noshowreg" ? "dispensed" : "noshowreg", card: activeCard === "noshowreg" ? "dispensed" : "noshowreg", page: "1" })} />
         <KpiCard icon={<PackageCheck size={17} />}  label="Dispensed Today"  value={kpis.todayDispensed} color="green" isActive={activeCard === "dispensed" || activeCard === ""} onSelect={() => navigate({ opStatus: activeCard === "dispensed" || activeCard === "" ? "all" : "dispensed", card: activeCard === "dispensed" || activeCard === "" ? "total" : "dispensed", page: "1" })} />
         <KpiCard icon={<Users size={17} />}         label="Total Dispensed"  value={kpis.totalDispensed} color="teal"  isActive={activeCard === "total"}    onSelect={() => navigate({ opStatus: activeCard === "total" ? "dispensed" : "totaldispensed", card: activeCard === "total" ? "dispensed" : "total", page: "1" })} />
       </div>
@@ -769,20 +782,14 @@ export function PatientsClient({
               {/* Column headers */}
               <div className="hidden xl:flex items-center gap-4 px-7 py-2.5 border-b border-[var(--color-border)] bg-[var(--color-surface-sunken)]">
                 <div className="size-8 shrink-0" />
-                <div className="w-56 shrink-0">
+                <div className="w-64 shrink-0">
                   <span className="text-micro sm:text-caption font-bold uppercase tracking-wider text-[var(--color-ink-400)]">Patient</span>
                 </div>
                 <div className="flex-1 min-w-0">
                   <span className="text-micro sm:text-caption font-bold uppercase tracking-wider text-[var(--color-ink-400)]">Chief Complaint / Diagnosis</span>
                 </div>
-                <div className="w-28 shrink-0">
-                  <span className="text-micro sm:text-caption font-bold uppercase tracking-wider text-[var(--color-ink-400)]">Last Visit</span>
-                </div>
-                <div className="w-28 shrink-0">
-                  <span className="text-micro sm:text-caption font-bold uppercase tracking-wider text-[var(--color-ink-400)]">In / Out Time</span>
-                </div>
-                <div className="w-36 shrink-0">
-                  <span className="text-micro sm:text-caption font-bold uppercase tracking-wider text-[var(--color-ink-400)]">Category</span>
+                <div className="w-44 shrink-0">
+                  <span className="text-micro sm:text-caption font-bold uppercase tracking-wider text-[var(--color-ink-400)]">Visit Times</span>
                 </div>
               </div>
 
@@ -792,12 +799,15 @@ export function PatientsClient({
                   const cat = CAT[p.category] ?? { label: p.category, cls: "bg-slate-100 text-slate-700" };
                   const token = (page - 1) * pageSize + idx + 1;
                   const lastVisitStr   = p.lastVisit    ? format(new Date(p.lastVisit),    "dd MMM yyyy") : null;
-                  const queueTimeStr  = p.queueTime    ? format(new Date(p.queueTime),    "h:mm a")      : null;
-                  const finalTimeStr  = p.finalizeTime ? format(new Date(p.finalizeTime), "h:mm a")      : null;
-                  // Time inside the clinic: arrival (appointment.arrivedAt) to
-                  // finalisation (visit.finalizedAt). Only meaningful when both
-                  // exist and the visit was finalised after arrival.
-                  const inClinicStr = clinicDuration(p.queueTime, p.finalizeTime);
+                  // In No Show Registry mode, use the unfinished appointment's arrivedAt
+                  // instead of the previous completed visit's times.
+                  const noShowEntry   = opStatusFilter === "noshowreg" ? (noShowByUdid.get(p.udid) ?? null) : null;
+                  const rawQueueTime  = noShowEntry ? noShowEntry.arrivedAt : p.queueTime;
+                  const rawFinalTime  = noShowEntry ? null : p.finalizeTime;
+                  const queueTimeStr  = rawQueueTime  ? format(new Date(rawQueueTime),  "h:mm a") : null;
+                  const finalTimeStr  = rawFinalTime  ? format(new Date(rawFinalTime),  "h:mm a") : null;
+                  // Duration only meaningful for completed visits, not unfinished ones
+                  const inClinicStr = noShowEntry ? null : clinicDuration(p.queueTime, p.finalizeTime);
                   const sexLabel = p.sex.charAt(0).toUpperCase();
                   return (
                     <li
@@ -817,8 +827,8 @@ export function PatientsClient({
                         {token}
                       </div>
 
-                      {/* Avatar + name + UDID + age/sex */}
-                      <div className="flex items-center gap-3 flex-1 min-w-0 xl:w-56 xl:flex-none xl:shrink-0">
+                      {/* Avatar + name + UDID + age/sex + date + category */}
+                      <div className="flex items-center gap-3 flex-1 min-w-0 xl:w-64 xl:flex-none xl:shrink-0">
                         {p.photoUrl ? (
                           <img
                             src={photoSrc(p.photoUrl)}
@@ -839,22 +849,22 @@ export function PatientsClient({
                             <span className="font-mono text-micro sm:text-caption bg-[#F0F8F6] text-[#115E59] px-1.5 py-0.5 rounded">
                               {p.udid}
                             </span>
-                            <span className="text-micro sm:text-caption text-[var(--color-ink-400)]">{p.age}y · {sexLabel}</span>
-                            {p.mobile && (
-                              <span className="inline-flex items-center gap-1 text-micro sm:text-caption text-[var(--color-ink-500)]">
-                                <Phone size={9} className="shrink-0 text-[var(--color-ink-400)]" />
-                                <span className="font-mono">{p.mobile}</span>
-                              </span>
-                            )}
+                            <span className="text-micro sm:text-caption text-[var(--color-ink-400)]">
+                              {p.age}y · {sexLabel}{p.mobile ? ` · ${p.mobile}` : ""}
+                            </span>
                           </div>
-                          {/* Queue + finalize times — visible on mobile/tablet where Last Visit column is hidden */}
-                          {(lastVisitStr || queueTimeStr || finalTimeStr) && (
-                            <div className="xl:hidden flex items-center gap-2 mt-1 flex-wrap">
-                              {lastVisitStr && (
-                                <span className="text-micro sm:text-caption font-medium text-[var(--color-ink-600)]">
-                                  {lastVisitStr}{inClinicStr ? ` · ${inClinicStr}` : ""}
-                                </span>
-                              )}
+                          {/* Date + category — always visible */}
+                          <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                            {lastVisitStr && (
+                              <span className="text-micro sm:text-caption text-[var(--color-ink-500)]">{lastVisitStr}</span>
+                            )}
+                            <span className={`inline-flex text-micro sm:text-caption font-semibold px-2 py-0.5 rounded-full ${cat.cls}`}>
+                              {cat.label}
+                            </span>
+                          </div>
+                          {/* Arrival / dispensed / duration — mobile/tablet only (xl column handles it) */}
+                          {(queueTimeStr || finalTimeStr || inClinicStr) && (
+                            <div className="xl:hidden flex items-center gap-2 mt-0.5 flex-wrap">
                               {queueTimeStr && (
                                 <span className="text-micro sm:text-caption text-[var(--color-ink-400)]">
                                   <span className="font-semibold text-[var(--color-ink-500)]">In</span> {queueTimeStr}
@@ -864,6 +874,9 @@ export function PatientsClient({
                                 <span className="text-micro sm:text-caption text-[var(--color-ink-400)]">
                                   <span className="font-semibold text-emerald-600">Out</span> {finalTimeStr}
                                 </span>
+                              )}
+                              {inClinicStr && (
+                                <span className="text-micro sm:text-caption font-semibold text-[var(--color-ink-600)]">{inClinicStr}</span>
                               )}
                             </div>
                           )}
@@ -924,44 +937,32 @@ export function PatientsClient({
                         )}
                       </div>
 
-                      {/* Last Visit (date only) */}
-                      <div className="hidden xl:block w-28 shrink-0">
-                        {lastVisitStr ? (
-                          <>
-                            <p className="text-label sm:text-sm font-medium text-[var(--color-ink-800)]">{lastVisitStr}</p>
-                            {inClinicStr && (
-                              <p className="text-caption sm:text-caption text-[var(--color-ink-400)]">{inClinicStr}</p>
-                            )}
-                          </>
-                        ) : (
-                          <span className="text-caption sm:text-caption text-[var(--color-ink-300)]">—</span>
-                        )}
-                      </div>
-
-                      {/* In and out times */}
-                      <div className="hidden xl:block w-28 shrink-0">
+                      {/* Visit Times: Arrival / Dispensed / Duration */}
+                      <div className="hidden xl:block w-44 shrink-0">
                         <div className="space-y-0.5">
-                          {queueTimeStr && (
-                            <p className="text-caption sm:text-caption text-[var(--color-ink-600)]">
-                              <span className="font-bold text-[var(--color-ink-500)] mr-1">In</span>{queueTimeStr}
+                          {queueTimeStr ? (
+                            <p className="text-caption text-[var(--color-ink-600)]">
+                              <span className="text-micro font-semibold text-[var(--color-ink-400)] mr-1">Arrival</span>{queueTimeStr}
                             </p>
-                          )}
-                          {finalTimeStr && (
-                            <p className="text-caption sm:text-caption text-[var(--color-ink-600)]">
-                              <span className="font-bold text-emerald-600 mr-1">Out</span>{finalTimeStr}
+                          ) : null}
+                          {finalTimeStr ? (
+                            <p className="text-caption text-[var(--color-ink-600)]">
+                              <span className="text-micro font-semibold text-emerald-600 mr-1">Dispensed</span>{finalTimeStr}
                             </p>
-                          )}
+                          ) : null}
+                          {inClinicStr ? (
+                            <p className="text-caption font-semibold text-[var(--color-ink-700)]">
+                              <span className="text-micro font-semibold text-[var(--color-ink-400)] mr-1">Duration</span>{inClinicStr}
+                            </p>
+                          ) : null}
                           {!queueTimeStr && !finalTimeStr && (
-                            <span className="text-caption sm:text-caption text-[var(--color-ink-300)]">—</span>
+                            <span className="text-caption text-[var(--color-ink-300)]">—</span>
                           )}
                         </div>
                       </div>
 
-                      {/* Category + Undo — right side */}
-                      <div className="flex items-center gap-2 shrink-0 justify-end xl:w-36">
-                        <span className={`hidden sm:inline-flex text-micro sm:text-caption font-semibold px-2 py-0.5 rounded-full ${cat.cls}`}>
-                          {cat.label}
-                        </span>
+                      {/* Undo — right side */}
+                      <div className="flex items-center gap-2 shrink-0 justify-end">
                         {opStatusFilter === "dispensed" && p.dispensedApptId && (
                           <button
                             onClick={(e) => {
