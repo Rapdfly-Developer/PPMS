@@ -280,7 +280,9 @@ export function TopBar({ name, role }: { name: string; role: string }) {
     const highlighted = acIndex >= 0 ? acResults[acIndex] : null;
     if (highlighted) {
       setAcOpen(false);
-      router.push(`/patients/${highlighted.udid}`);
+      router.push(highlighted.visitId
+        ? `/patients/${highlighted.udid}/visits?visitId=${highlighted.visitId}`
+        : `/patients/${highlighted.udid}`);
     } else if (q.trim()) {
       setAcOpen(false);
       router.push(`/patients?q=${encodeURIComponent(q.trim())}`);
@@ -401,7 +403,9 @@ export function TopBar({ name, role }: { name: string; role: string }) {
                       onMouseDown={(e) => {
                         e.preventDefault();
                         setAcOpen(false);
-                        router.push(`/patients/${r.udid}`);
+                        router.push(r.visitId
+                          ? `/patients/${r.udid}/visits?visitId=${r.visitId}`
+                          : `/patients/${r.udid}`);
                       }}
                       className={`w-full text-left px-3 py-2 flex flex-col gap-0.5 transition-colors ${
                         i === acIndex

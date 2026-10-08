@@ -837,6 +837,7 @@ export type PatientSearchResult = {
   mobile: string;
   matchType: "name" | "udid" | "mobile" | "complaint" | "diagnosis";
   matchText?: string;
+  visitId?: string;
 };
 
 export async function searchPatientsAutocomplete(query: string): Promise<PatientSearchResult[]> {
@@ -868,6 +869,7 @@ export async function searchPatientsAutocomplete(query: string): Promise<Patient
       complaint: true,
       visits: {
         select: {
+          id: true,
           generalExam: { select: { chiefComplaint: true } },
           diagnoses: { select: { description: true, icd10Code: true } },
         },
@@ -884,6 +886,7 @@ export async function searchPatientsAutocomplete(query: string): Promise<Patient
     .map((p) => {
       let matchType: PatientSearchResult["matchType"] = "name";
       let matchText: string | undefined;
+      let visitId: string | undefined;
 
       if (p.name.toLowerCase().includes(ql)) {
         matchType = "name";
@@ -899,18 +902,20 @@ export async function searchPatientsAutocomplete(query: string): Promise<Patient
           if (v.generalExam?.chiefComplaint?.toLowerCase().includes(ql)) {
             matchType = "complaint";
             matchText = v.generalExam.chiefComplaint ?? undefined;
+            visitId = v.id;
             break;
           }
           for (const d of v.diagnoses) {
             if (d.description.toLowerCase().includes(ql) || d.icd10Code.toLowerCase().includes(ql)) {
               matchType = "diagnosis";
               matchText = `${d.icd10Code} ${d.description}`;
+              visitId = v.id;
               break outer;
             }
           }
         }
       }
 
-      return { udid: p.udid!, name: p.name, mobile: p.mobile, matchType, matchText };
+      return { udid: p.udid!, name: p.name, mobile: p.mobile, matchType, matchText, visitId };
     });
 }

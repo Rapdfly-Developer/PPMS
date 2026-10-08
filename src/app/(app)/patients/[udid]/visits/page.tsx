@@ -7,10 +7,13 @@ import { DownloadAllButton } from "./DownloadAllButton";
 
 export default async function PatientVisitsPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ udid: string }>;
+  searchParams: Promise<{ visitId?: string }>;
 }) {
   const { udid } = await params;
+  const { visitId } = await searchParams;
   await requirePermission("patients.view");
 
   const patient = await prisma.patient.findUnique({
@@ -68,7 +71,7 @@ export default async function PatientVisitsPage({
         )}
       </div>
 
-      <VisitsListClient visits={pastVisits} udid={udid} />
+      <VisitsListClient visits={pastVisits} udid={udid} initialVisitId={visitId} />
     </div>
   );
 }

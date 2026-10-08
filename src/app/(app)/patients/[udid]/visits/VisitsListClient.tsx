@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { format } from "date-fns";
 import { ChevronLeft, ChevronRight, Building2, Stethoscope } from "lucide-react";
 import { EmrViewerButton, VisitDownloadButton } from "../EmrViewerModal";
@@ -18,9 +18,22 @@ export interface VisitRow {
   diagnoses:   { description: string }[];
 }
 
-export function VisitsListClient({ visits, udid }: { visits: VisitRow[]; udid: string }) {
-  const [selectedIdx, setSelectedIdx] = useState(0);
+export function VisitsListClient({ visits, udid, initialVisitId }: { visits: VisitRow[]; udid: string; initialVisitId?: string }) {
+  const initialIdx = initialVisitId
+    ? Math.max(0, visits.findIndex((v) => v.id === initialVisitId))
+    : 0;
+  const [selectedIdx, setSelectedIdx] = useState(initialIdx);
   const tabsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (initialIdx > 0) {
+      const tabs = tabsRef.current;
+      if (!tabs) return;
+      const tab = tabs.children[initialIdx] as HTMLElement | undefined;
+      tab?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   if (visits.length === 0) {
     return (
