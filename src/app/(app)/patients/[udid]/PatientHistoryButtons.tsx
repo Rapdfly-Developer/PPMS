@@ -105,7 +105,9 @@ function Empty({ label }: { label: string }) {
 ══════════════════════════════════════════════════════════════════════════ */
 type InvVisit = Awaited<ReturnType<typeof getPatientInvestigations>>[number];
 
-function InvUploadButton({ orderId, udid }: { orderId: string; udid: string }) {
+function InvUploadButton({ orderId, udid, onUploaded }: {
+  orderId: string; udid: string; onUploaded: (url: string) => void;
+}) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
   const [, startTx] = useTransition();
@@ -121,6 +123,8 @@ function InvUploadButton({ orderId, udid }: { orderId: string; udid: string }) {
       const res  = await fetch("/api/uploads", { method: "POST", body: fd });
       const json = await res.json();
       if (!res.ok || json.error) throw new Error(json.error ?? "Upload failed");
+      // Update local state immediately so the View button activates without a page reload
+      onUploaded(json.url);
       startTx(async () => {
         const r = await attachResult(orderId, udid, json.url);
         if (r?.error) setError(r.error);
@@ -151,11 +155,12 @@ type InvOrder = InvVisit["orders"][number];
 function InvOrderRow({ o, idx, udid, onView }: {
   o: InvOrder; idx: number; udid: string; onView: (ref: string) => void;
 }) {
-  const [editing, setEditing]         = useState(false);
-  const [editNotes, setEditNotes]     = useState(o.notes ?? "");
-  const [localNotes, setLocalNotes]   = useState(o.notes ?? "");
-  const [saving, startSave]           = useTransition();
-  const [deleting, startDelete]       = useTransition();
+  const [editing, setEditing]             = useState(false);
+  const [editNotes, setEditNotes]         = useState(o.notes ?? "");
+  const [localNotes, setLocalNotes]       = useState(o.notes ?? "");
+  const [localResultRef, setLocalResultRef] = useState(o.resultRef ?? null);
+  const [saving, startSave]               = useTransition();
+  const [deleting, startDelete]           = useTransition();
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   function openEdit() { setEditNotes(localNotes); setEditing(true); }
@@ -190,14 +195,14 @@ function InvOrderRow({ o, idx, udid, onView }: {
 
           {/* Actions row */}
           <div className="flex items-center gap-1 shrink-0">
-            <InvUploadButton orderId={o.id} udid={udid} />
+            <InvUploadButton orderId={o.id} udid={udid} onUploaded={(url) => setLocalResultRef(url)} />
 
             {/* View */}
             <button
-              onClick={() => o.resultRef && onView(o.resultRef)}
-              disabled={!o.resultRef}
-              title={o.resultRef ? "View result" : "No result attached"}
-              className={`${iconBtn} ${o.resultRef
+              onClick={() => localResultRef && onView(localResultRef)}
+              disabled={!localResultRef}
+              title={localResultRef ? "View result" : "No result attached"}
+              className={`${iconBtn} ${localResultRef
                 ? "border-teal-200 text-teal-700 hover:bg-teal-50"
                 : "border-[var(--color-border)] text-[var(--color-ink-300)] cursor-not-allowed"}`}
             >
