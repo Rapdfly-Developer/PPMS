@@ -428,7 +428,7 @@ function ShortContent({ complaint, diagnoses, emrData }: {
       {/* Pending follow-up investigations */}
       {hasFollowUp && (
         <div>
-          <SumHead icon={<CalendarClock size={11} />} label="Pending Follow-Up" color="text-teal-500" />
+          <SumHead icon={<CalendarClock size={11} />} label="Investigations" color="text-teal-500" />
           <div className="flex flex-wrap gap-1.5">
             {followUpInv.map((o: any, i: number) => (
               <span key={i} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-teal-50 border border-teal-100 text-teal-800 text-caption sm:text-caption font-medium">

@@ -165,15 +165,6 @@ export function AppointmentRow({ appt, role, perms, token }: { appt: any; role: 
             <span className="font-mono text-caption bg-[var(--color-primary-50)] text-[var(--color-primary-700)] px-1.5 py-0.5 rounded">
               {p.udid}
             </span>
-            {p.uhid ? (
-              <span className="font-mono text-caption bg-amber-50 text-amber-700 border border-amber-200 px-1.5 py-0.5 rounded">
-                {p.uhid}
-              </span>
-            ) : (
-              <span title="Hospital ID not yet assigned" className="font-mono text-caption bg-[var(--color-surface-sunken)] text-[var(--color-ink-400)] border border-dashed border-[var(--color-border)] px-1.5 py-0.5 rounded">
-                HID: —
-              </span>
-            )}
             <span className="text-caption sm:text-xs text-[var(--color-ink-400)]">
               {p.age}y / {p.sex === "MALE" ? "M" : p.sex === "FEMALE" ? "F" : "O"}
             </span>
@@ -211,7 +202,7 @@ export function AppointmentRow({ appt, role, perms, token }: { appt: any; role: 
 
         {/* Right: status, appointment metadata and visit timestamps */}
         <div className="w-full lg:w-[220px] lg:shrink-0" onClick={(e) => e.stopPropagation()}>
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center justify-end gap-2 flex-wrap">
             <span className={`text-caption sm:text-caption font-medium px-2 py-0.5 rounded-full whitespace-nowrap ${STATUS_STYLES[appt.status] ?? ""}`}>
               {statusLabel}
             </span>

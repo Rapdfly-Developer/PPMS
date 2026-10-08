@@ -1014,10 +1014,9 @@ export function PatientsClient({
                               setUndoTarget({ apptId: p.dispensedApptId! });
                             }}
                             title="Return patient to today's queue"
-                            className="shrink-0 flex items-center gap-1 text-micro sm:text-caption font-medium px-2 py-1 rounded-lg border border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors"
+                            className="shrink-0 flex items-center justify-center p-1.5 rounded-lg border border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors"
                           >
-                            <Undo2 size={11} />
-                            Return to Queue
+                            <Undo2 size={13} />
                           </button>
                         )}
                       </div>
