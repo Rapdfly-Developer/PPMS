@@ -4,7 +4,7 @@ import { format } from "date-fns";
 import { openPdfNative } from "@/lib/open-pdf";
 import { useRouter } from "next/navigation";
 import { useState, useTransition, useRef } from "react";
-import { Phone, Tag, CalendarPlus, Printer, Clock, Timer, LogIn, CheckCircle2, Calendar, UserX, Undo2 } from "lucide-react";
+import { Phone, Tag, CalendarPlus, Printer, Clock, Timer, LogIn, CheckCircle2, Calendar, UserX, Undo2, Check, ListPlus, X } from "lucide-react";
 import {
   confirmAppointmentOnly,
   rejectAppointment,
@@ -161,16 +161,16 @@ export function AppointmentRow({ appt, role, perms, token }: { appt: any; role: 
           >
             {p.name}
           </button>
-          <p className="mt-0.5 text-caption sm:text-xs text-[var(--color-ink-400)]">
-            {p.age}y · {p.sex.charAt(0).toUpperCase() + p.sex.slice(1).toLowerCase()}
-          </p>
-          <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+          <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5">
             <span className="font-mono text-caption bg-[var(--color-primary-50)] text-[var(--color-primary-700)] px-1.5 py-0.5 rounded">
               {p.udid}
             </span>
+            <span className="text-caption sm:text-xs text-[var(--color-ink-400)]">
+              {p.age}y / {p.sex === "MALE" ? "M" : p.sex === "FEMALE" ? "F" : "O"}
+            </span>
             {p.mobile && (
-              <span className="inline-flex items-center gap-1 text-caption sm:text-xs text-[var(--color-ink-500)]">
-                <Phone size={11} className="shrink-0" /> {p.mobile}
+              <span className="inline-flex items-center gap-0.5 text-caption sm:text-xs text-[var(--color-ink-400)]">
+                <Phone size={9} className="shrink-0" /> {p.mobile}
               </span>
             )}
             {appt.visitType && (
@@ -202,12 +202,12 @@ export function AppointmentRow({ appt, role, perms, token }: { appt: any; role: 
 
         {/* Right: status, appointment metadata and visit timestamps */}
         <div className="w-full lg:w-[220px] lg:shrink-0" onClick={(e) => e.stopPropagation()}>
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 flex-wrap">
             <span className={`text-caption sm:text-caption font-medium px-2 py-0.5 rounded-full whitespace-nowrap ${STATUS_STYLES[appt.status] ?? ""}`}>
               {statusLabel}
             </span>
-            <span className="inline-flex items-center gap-1 text-caption sm:text-sm font-semibold text-[var(--color-ink-700)] whitespace-nowrap tabular-nums">
-              <Calendar size={12} className="shrink-0 text-[var(--color-ink-400)]" />
+            <span className="inline-flex items-center gap-1 text-caption sm:text-sm font-semibold text-blue-600 whitespace-nowrap tabular-nums">
+              <Calendar size={12} className="shrink-0 text-blue-600" />
               {format(new Date(appt.dateTime), "h:mm a")}
             </span>
           </div>
@@ -238,32 +238,35 @@ export function AppointmentRow({ appt, role, perms, token }: { appt: any; role: 
 
             {/* ── REQUESTED: Confirm / Add to Q / Reject ── */}
             {showConfirmActions && !confirmToast && (
-              <div className="flex flex-wrap justify-end gap-2">
+              <div className="flex items-center justify-end gap-1.5">
                 {(isDoctor || perms.confirm) && (
                   <button
+                    title="Confirm"
                     disabled={pending}
                     onClick={handleConfirm}
-                    className="text-caption sm:text-xs font-medium px-3 py-1.5 rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-50 transition-colors"
+                    className="p-1.5 rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-50 transition-colors"
                   >
-                    {pending ? "…" : "Confirm"}
+                    <Check size={14} />
                   </button>
                 )}
                 {(isDoctor || perms.confirm) && (
                   <button
+                    title="Add to Queue"
                     disabled={pending}
                     onClick={handleAddToQueue}
-                    className="text-caption sm:text-xs font-medium px-3 py-1.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50 transition-colors"
+                    className="p-1.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50 transition-colors"
                   >
-                    {pending ? "…" : "Add to Q"}
+                    <ListPlus size={14} />
                   </button>
                 )}
                 {(isDoctor || perms.cancel) && (
                   <button
+                    title="Reject"
                     disabled={pending}
                     onClick={handleReject}
-                    className="text-caption sm:text-xs font-medium px-3 py-1.5 rounded-lg bg-white border border-[var(--color-border)] text-[var(--color-danger-600)] hover:bg-[var(--color-danger-50)] disabled:opacity-50 transition-colors"
+                    className="p-1.5 rounded-lg bg-white border border-[var(--color-border)] text-[var(--color-danger-600)] hover:bg-[var(--color-danger-50)] disabled:opacity-50 transition-colors"
                   >
-                    Reject
+                    <X size={14} />
                   </button>
                 )}
               </div>
