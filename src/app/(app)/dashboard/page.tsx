@@ -1,12 +1,12 @@
 import { redirect } from "next/navigation";
-import { requireUser, scopeDoctorId } from "@/lib/rbac";
+import { requirePermission, scopeDoctorId } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { format } from "date-fns";
 import { istTodayRange, istParts, toISTWall } from "@/lib/ist";
 import { HomeDashboardClient } from "@/app/(app)/home/HomeDashboardClient";
 
 export default async function DashboardPage() {
-  const user = await requireUser();
+  const user = await requirePermission("dashboard.view");
 
   if (user.role === "DOCTOR") {
     const doctorId = scopeDoctorId(user);

@@ -843,14 +843,23 @@ export type PatientSearchResult = {
 
 export async function searchPatientsAutocomplete(query: string): Promise<PatientSearchResult[]> {
   const user = await requirePermission("patients.view");
-  const doctorId = scopeDoctorId(user);
   const q = query.trim();
   if (q.length < 2) return [];
+
+  // Mirror the same scoping logic used in the patients list page.
+  let scopeWhere: Record<string, any>;
+  if (user.role === "DOCTOR") {
+    scopeWhere = { doctorId: user.profileId };
+  } else if (user.hospitalId) {
+    scopeWhere = { registeredAtId: user.hospitalId };
+  } else {
+    return [];
+  }
 
   const mode = "insensitive" as const;
   const patients = await prisma.patient.findMany({
     where: {
-      doctorId,
+      ...scopeWhere,
       OR: [
         { name: { contains: q, mode } },
         { udid: { contains: q, mode } },
