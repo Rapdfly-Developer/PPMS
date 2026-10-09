@@ -220,7 +220,7 @@ export function UpcomingCalendar({
           {selectedDk && selectedAppts.length > 0 && (
             <div className="flex flex-col gap-3">
               {selectedAppts.map((appt: any, idx: number) => (
-                <AppointmentRow key={appt.id} appt={appt} role={role} perms={perms} token={idx + 1} />
+                <AppointmentRow key={appt.id} appt={appt} role={role} perms={perms} token={idx + 1} hideAddToQueue />
               ))}
             </div>
           )}

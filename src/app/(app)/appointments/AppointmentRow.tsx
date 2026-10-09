@@ -48,7 +48,7 @@ type ProvisionalDx = {
 /** Hospital-side actions this user may take (see staffAppointmentPerms). */
 export type ApptPerms = { confirm: boolean; cancel: boolean; schedule: boolean; noshow: boolean };
 
-export function AppointmentRow({ appt, role, perms, token }: { appt: any; role: string; perms: ApptPerms; token: number }) {
+export function AppointmentRow({ appt, role, perms, token, hideAddToQueue }: { appt: any; role: string; perms: ApptPerms; token: number; hideAddToQueue?: boolean }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [showSlotModal, setShowSlotModal] = useState(false);
@@ -249,7 +249,7 @@ export function AppointmentRow({ appt, role, perms, token }: { appt: any; role: 
                     <Check size={14} />
                   </button>
                 )}
-                {(isDoctor || perms.confirm) && (
+                {!hideAddToQueue && (isDoctor || perms.confirm) && (
                   <button
                     title="Add to Queue"
                     disabled={pending}
@@ -295,7 +295,7 @@ export function AppointmentRow({ appt, role, perms, token }: { appt: any; role: 
             )}
 
             {/* ── CONFIRMED + not yet queued: Add to Q ── */}
-            {showAddToQForConfirmed && (
+            {showAddToQForConfirmed && !hideAddToQueue && (
               <div className="flex flex-wrap justify-end gap-2">
                 <button
                   disabled={pending}
