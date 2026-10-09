@@ -13,6 +13,7 @@ import { KeywordTextarea, KeywordChipsRow, removeKeywordFromText } from "@/compo
 import { saveGeneralExam } from "./actions";
 import { type MedEntry, searchMedications } from "@/lib/ophthalmic-medications";
 import { useEmrOverview } from "./EmrOverviewContext";
+import { useCustomPrintPref } from "@/lib/useCustomPrintPref";
 import { ComplaintChips } from "@/components/ui/ComplaintChips";
 
 const LATERALITY_OPTIONS = ["RE", "LE", "OU"] as const;
@@ -263,6 +264,9 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly }: { visit: 
   const [allergies, setAllergies] = useState(ge?.allergies ?? "");
   const [nkda, setNkda] = useState(ge?.nkda ?? false);
 
+  const [ccInPrint, setCcInPrint] = useCustomPrintPref(visit.id, "cc");
+  const [allergyInPrint, setAllergyInPrint] = useCustomPrintPref(visit.id, "allergy");
+
   const cumulativePmh = pmh.filter((entry) => entry.name.trim());
   const displayPmhOptions = [...new Set([...PAST_MEDICAL_HISTORY_CHIPS, ...cumulativePmh.map((entry) => entry.name)])];
 
@@ -451,6 +455,12 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly }: { visit: 
             ))}
           </div>
         </FieldWithHistory>
+        <div className="flex justify-end mt-2">
+          <label className="flex items-center gap-1.5 text-caption cursor-pointer select-none text-[var(--color-ink-500)] hover:text-[var(--color-ink-700)]">
+            <input type="checkbox" checked={ccInPrint} onChange={(e) => setCcInPrint(e.target.checked)} className="accent-[var(--color-primary-600)]" />
+            Add to custom print
+          </label>
+        </div>
       </Card>
       </div>
 
@@ -604,6 +614,12 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly }: { visit: 
         {!nkda && (
           <KeywordTextarea fieldKey="ge_allergies" value={allergies} onChange={setAllergies} disabled={readOnly} rows={2} />
         )}
+        <div className="flex justify-end mt-2">
+          <label className="flex items-center gap-1.5 text-caption cursor-pointer select-none text-[var(--color-ink-500)] hover:text-[var(--color-ink-700)]">
+            <input type="checkbox" checked={allergyInPrint} onChange={(e) => setAllergyInPrint(e.target.checked)} className="accent-[var(--color-primary-600)]" />
+            Add to custom print
+          </label>
+        </div>
       </Card>
       </div>
 

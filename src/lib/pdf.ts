@@ -803,6 +803,17 @@ export type ShortSummaryData = {
   visualAcuity?: { reDistance?: { unaided?: string; ph?: string; bcva?: string } | null; leDistance?: { unaided?: string; ph?: string; bcva?: string } | null; reNear?: string | null; leNear?: string | null } | null;
   retinoscopy?: { re?: { sph?: string; cyl?: string; axis?: string } | null; le?: { sph?: string; cyl?: string; axis?: string } | null } | null;
   minorProcedure?: { procedureName?: string | null; procedureLaterality?: string | null; anesthesiaType?: string | null } | null;
+  allergies?: string | null;
+  anteriorSegment?: { re?: Record<string, string> | null; le?: Record<string, string> | null } | null;
+  posteriorSegment?: { re?: Record<string, string> | null; le?: Record<string, string> | null; notes?: string | null } | null;
+  colourVision?: { re?: Record<string, string> | null; le?: Record<string, string> | null } | null;
+  contrastSensitivity?: { re?: Record<string, string> | null; le?: Record<string, string> | null } | null;
+  iopReadings?: { method?: string | null; takenAt?: Date | string | null; re?: number | null; le?: number | null }[] | null;
+  gonioscopy?: Record<string, string> | null;
+  tearFilm?: Record<string, number | null> | null;
+  lacrimalSac?: { re?: { chips?: string[]; findings?: string } | null; le?: { chips?: string[]; findings?: string } | null } | null;
+  diplopiaChart?: Record<string, { status?: string; notes?: string }> | null;
+  hessChart?: { grid?: Record<string, { reH?: string; reV?: string; leH?: string; leV?: string }>; interpretation?: string | null } | null;
 };
 
 async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
@@ -854,6 +865,11 @@ async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
     `<td style="padding:2.5px 12px 2.5px 0;font-size:9.5px;font-weight:700;color:#4A5A57;width:34%;">${label}</td>` +
     `<td style="padding:2.5px 0;font-size:9.5px;color:#1a1a1a;">${value}</td>` +
     `</tr>`;
+
+  const simpleRows = (rows: Array<readonly string[]>) =>
+    `<table style="width:100%;"><tbody>${rows.map(([label, value]) =>
+      `<tr><td style="${TD}width:34%;font-weight:700;color:#4A5A57;">${escapeHtml(label ?? "")}</td><td style="${TD}">${v2(value ?? "")}</td></tr>`
+    ).join("")}</tbody></table>`;
 
   /* ── Table header style ── */
   const TH = `padding:4px 7px;color:#0D4A45;border-bottom:2px solid #C8E8E4;font-size:8.5px;font-weight:700;text-align:left;`;
@@ -1052,10 +1068,16 @@ async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
 </table>
 
 <!-- 1 · CHIEF COMPLAINT -->
-${inlineCard("Chief Complaint",
-  d.chiefComplaint
-    ? `<div style="font-size:10.5px;font-weight:600;color:${INK};">${complaintHtml(d.chiefComplaint)}</div>`
-    : none("No complaint recorded"))}
+${d.chiefComplaint
+  ? inlineCard("Chief Complaint",
+      `<div style="font-size:10.5px;font-weight:600;color:${INK};">${complaintHtml(d.chiefComplaint)}</div>`)
+  : ""}
+
+<!-- 1b · DRUG ALLERGY -->
+${d.allergies
+  ? inlineCard("Drug Allergy",
+      `<div style="font-size:10.5px;font-weight:600;color:#DC2626;">${escapeHtml(d.allergies)}</div>`)
+  : ""}
 
 <!-- 2 · CLINICAL IMPRESSION -->
 ${inlineCard("Clinical Impression",
@@ -1209,6 +1231,107 @@ ${d.retinoscopy
           ${rRow("Left Eye", r.le)}
         </tbody></table>`);
     })()
+  : ""}
+
+<!-- 5e · ANTERIOR SEGMENT -->
+${d.anteriorSegment && (d.anteriorSegment.re || d.anteriorSegment.le)
+  ? (() => {
+      const hasVal = (side?: Record<string, string> | null) =>
+        side ? Object.values(side).some((v) => v && v.trim()) : false;
+      const hasRE = hasVal(d.anteriorSegment!.re), hasLE = hasVal(d.anteriorSegment!.le);
+      if (!hasRE && !hasLE) return "";
+      const allKeys = [...new Set([
+        ...Object.keys(d.anteriorSegment!.re ?? {}),
+        ...Object.keys(d.anteriorSegment!.le ?? {}),
+      ])].filter((k) => (d.anteriorSegment!.re?.[k] ?? "") || (d.anteriorSegment!.le?.[k] ?? ""));
+      if (!allKeys.length) return "";
+      return card("Anterior Segment",
+        `<table style="width:100%;"><thead><tr>
+          <th style="${TH}width:100px;"></th>
+          ${hasRE ? `<th style="${TH}">Right Eye</th>` : ""}
+          ${hasLE ? `<th style="${TH}">Left Eye</th>` : ""}
+        </tr></thead><tbody>
+          ${allKeys.map((k) => {
+            const rv = escapeHtml(d.anteriorSegment!.re?.[k] ?? "");
+            const lv = escapeHtml(d.anteriorSegment!.le?.[k] ?? "");
+            return `<tr><td style="${TD}font-size:9px;color:#6B8A85;">${escapeHtml(k)}</td>${hasRE ? `<td style="${TD}font-size:9.5px;">${rv || "—"}</td>` : ""}${hasLE ? `<td style="${TD}font-size:9.5px;">${lv || "—"}</td>` : ""}</tr>`;
+          }).join("")}
+        </tbody></table>`);
+    })()
+  : ""}
+
+<!-- 5f · POSTERIOR SEGMENT -->
+${d.posteriorSegment && (d.posteriorSegment.re || d.posteriorSegment.le || d.posteriorSegment.notes)
+  ? (() => {
+      const hasVal = (side?: Record<string, string> | null) =>
+        side ? Object.values(side).some((v) => v && v.trim()) : false;
+      const hasRE = hasVal(d.posteriorSegment!.re), hasLE = hasVal(d.posteriorSegment!.le);
+      const allKeys = [...new Set([
+        ...Object.keys(d.posteriorSegment!.re ?? {}),
+        ...Object.keys(d.posteriorSegment!.le ?? {}),
+      ])].filter((k) => (d.posteriorSegment!.re?.[k] ?? "") || (d.posteriorSegment!.le?.[k] ?? ""));
+      const notesHtml = d.posteriorSegment!.notes
+        ? `<div style="font-size:9.5px;color:#4A5A57;margin-top:${allKeys.length ? "6" : "0"}px;">${escapeHtml(d.posteriorSegment!.notes)}</div>`
+        : "";
+      if (!allKeys.length && !notesHtml) return "";
+      return card("Posterior Segment",
+        `${allKeys.length ? `<table style="width:100%;"><thead><tr>
+          <th style="${TH}width:100px;"></th>
+          ${hasRE ? `<th style="${TH}">Right Eye</th>` : ""}
+          ${hasLE ? `<th style="${TH}">Left Eye</th>` : ""}
+        </tr></thead><tbody>
+          ${allKeys.map((k) => {
+            const rv = escapeHtml(d.posteriorSegment!.re?.[k] ?? "");
+            const lv = escapeHtml(d.posteriorSegment!.le?.[k] ?? "");
+            return `<tr><td style="${TD}font-size:9px;color:#6B8A85;">${escapeHtml(k)}</td>${hasRE ? `<td style="${TD}font-size:9.5px;">${rv || "—"}</td>` : ""}${hasLE ? `<td style="${TD}font-size:9.5px;">${lv || "—"}</td>` : ""}</tr>`;
+          }).join("")}
+        </tbody></table>` : ""}${notesHtml}`);
+    })()
+  : ""}
+
+<!-- OPHTHALMIC SUBTAB CARDS SELECTED FOR CUSTOM PRINT -->
+${d.colourVision && [d.colourVision.re, d.colourVision.le].some((eye) => eye && Object.values(eye).some(Boolean))
+  ? card("Colour Vision", simpleRows([
+      ["Right eye method", d.colourVision.re?.method ?? ""], ["Right eye result", d.colourVision.re?.result ?? ""], ["Right eye notes", d.colourVision.re?.notes ?? ""],
+      ["Left eye method", d.colourVision.le?.method ?? ""], ["Left eye result", d.colourVision.le?.result ?? ""], ["Left eye notes", d.colourVision.le?.notes ?? ""],
+    ].filter(([, value]) => !!value)))
+  : ""}
+${d.contrastSensitivity && [d.contrastSensitivity.re, d.contrastSensitivity.le].some((eye) => eye && Object.values(eye).some(Boolean))
+  ? card("Contrast Sensitivity", simpleRows([
+      ["Right eye method", d.contrastSensitivity.re?.method ?? ""], ["Right eye result", d.contrastSensitivity.re?.result ?? ""], ["Right eye notes", d.contrastSensitivity.re?.notes ?? ""],
+      ["Left eye method", d.contrastSensitivity.le?.method ?? ""], ["Left eye result", d.contrastSensitivity.le?.result ?? ""], ["Left eye notes", d.contrastSensitivity.le?.notes ?? ""],
+    ].filter(([, value]) => !!value)))
+  : ""}
+${d.iopReadings?.length
+  ? card("Intra-Ocular Pressure", `<table style="width:100%;"><thead><tr><th style="${TH}">Method</th><th style="${TH}">Date &amp; time</th><th style="${TH}">RE (mmHg)</th><th style="${TH}">LE (mmHg)</th></tr></thead><tbody>${d.iopReadings.map((r) => `<tr><td style="${TD}">${v2(r.method)}</td><td style="${TD}">${r.takenAt ? format(new Date(r.takenAt), "dd MMM yyyy, h:mm a") : ""}</td><td style="${TD}">${v2(r.re == null ? "" : String(r.re))}</td><td style="${TD}">${v2(r.le == null ? "" : String(r.le))}</td></tr>`).join("")}</tbody></table>`)
+  : ""}
+${d.gonioscopy && Object.values(d.gonioscopy).some(Boolean)
+  ? card("Gonioscopy", simpleRows([
+      ["Method", d.gonioscopy.method ?? ""], ["Right eye angle", d.gonioscopy.reDeg ?? ""], ["Right eye findings", d.gonioscopy.re ?? ""],
+      ["Left eye angle", d.gonioscopy.leDeg ?? ""], ["Left eye findings", d.gonioscopy.le ?? ""],
+    ].filter(([, value]) => !!value)))
+  : ""}
+${d.tearFilm && Object.values(d.tearFilm).some((value) => value != null)
+  ? card("Tear Film, TBUT &amp; Schirmer's", simpleRows([
+      ["TBUT · RE (seconds)", d.tearFilm.tbutRe == null ? "" : String(d.tearFilm.tbutRe)], ["TBUT · LE (seconds)", d.tearFilm.tbutLe == null ? "" : String(d.tearFilm.tbutLe)],
+      ["Schirmer's 1 · RE (mm)", d.tearFilm.schirmer1Re == null ? "" : String(d.tearFilm.schirmer1Re)], ["Schirmer's 1 · LE (mm)", d.tearFilm.schirmer1Le == null ? "" : String(d.tearFilm.schirmer1Le)],
+      ["Schirmer's 2 · RE (mm)", d.tearFilm.schirmer2Re == null ? "" : String(d.tearFilm.schirmer2Re)], ["Schirmer's 2 · LE (mm)", d.tearFilm.schirmer2Le == null ? "" : String(d.tearFilm.schirmer2Le)],
+    ].filter(([, value]) => !!value)))
+  : ""}
+${d.lacrimalSac && [d.lacrimalSac.re, d.lacrimalSac.le].some((eye) => eye && ((eye.chips?.length ?? 0) > 0 || !!eye.findings))
+  ? card("Lacrimal Sac Syringing", simpleRows([
+      ["Right eye", [...(d.lacrimalSac.re?.chips ?? []), d.lacrimalSac.re?.findings ?? ""].filter(Boolean).join(" · ")],
+      ["Left eye", [...(d.lacrimalSac.le?.chips ?? []), d.lacrimalSac.le?.findings ?? ""].filter(Boolean).join(" · ")],
+    ].filter(([, value]) => !!value)))
+  : ""}
+${d.diplopiaChart && Object.keys(d.diplopiaChart).length
+  ? card("Diplopia Charting", simpleRows(Object.entries(d.diplopiaChart).map(([position, result]) => [position, [result.status, result.notes].filter(Boolean).join(" · ")]).filter(([, value]) => !!value)))
+  : ""}
+${d.hessChart && (Object.keys(d.hessChart.grid ?? {}).length || d.hessChart.interpretation)
+  ? card("Hess Charting", simpleRows([
+      ...Object.entries(d.hessChart.grid ?? {}).map(([position, result]) => [position, [result.reH && `RE H ${result.reH}`, result.reV && `RE V ${result.reV}`, result.leH && `LE H ${result.leH}`, result.leV && `LE V ${result.leV}`].filter(Boolean).join(" · ")] as [string, string]),
+      ["Interpretation", d.hessChart.interpretation ?? ""],
+    ].filter(([, value]) => !!value)))
   : ""}
 
 <!-- 6 · FOLLOW-UP (only date & day, inline) -->

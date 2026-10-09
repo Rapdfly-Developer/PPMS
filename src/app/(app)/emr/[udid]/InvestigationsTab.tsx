@@ -9,6 +9,7 @@ import { INV_CATALOG } from "@/lib/investigation-catalog";
 import { addInvestigationOrder, updateInvestigationStatus, attachResult, deleteInvestigationOrder, updateInvestigationNotes } from "./actions";
 import { KeywordInput } from "@/components/emr/KeywordField";
 import { useAutoSave } from "@/lib/useAutoSave";
+import { useCustomPrintPref } from "@/lib/useCustomPrintPref";
 import { format } from "date-fns";
 import {
   Paperclip, ExternalLink, Upload, Download, Eye, Clock,
@@ -495,6 +496,7 @@ function NewInvestigations({
   visit: any; udid: string; todayOrders: any[]; onOrdered: () => void;
 }) {
   const [viewUrl, setViewUrl] = useState<string | null>(null);
+  const [invInPrint, setInvInPrint] = useCustomPrintPref(visit.id, "inv");
   const [activeCategory, setActiveCategory] = useState(Object.keys(INV_CATALOG)[0]);
   const [selected, setSelected] = useState<string[]>([]);
   const [priority, setPriority] = useState("ROUTINE");
@@ -599,14 +601,16 @@ function NewInvestigations({
               <SingleChipSelect options={LATERALITY} value={laterality} onChange={setLaterality} />
             </div>
           </div>
-          <button
-            type="button"
-            onClick={() => setShowAddModal(true)}
-            className="shrink-0 flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl border border-[#B2DEDA] bg-[#EEF8F7] text-[#0F766E] hover:bg-[#DCF3F1] transition-colors whitespace-nowrap mt-0.5"
-          >
-            <Plus size={13} />
-            Add Test
-          </button>
+          <div className="flex flex-col items-end shrink-0">
+            <button
+              type="button"
+              onClick={() => setShowAddModal(true)}
+              className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl border border-[#B2DEDA] bg-[#EEF8F7] text-[#0F766E] hover:bg-[#DCF3F1] transition-colors whitespace-nowrap"
+            >
+              <Plus size={13} />
+              Add Test
+            </button>
+          </div>
         </div>
 
         {/* Category sub-tabs */}
@@ -687,6 +691,12 @@ function NewInvestigations({
             >
               {pending ? "Placing…" : `Place Order${selected.length > 1 ? "s" : ""}`}
             </button>
+          </div>
+          <div className="flex justify-end">
+            <label className="flex items-center gap-1.5 text-caption cursor-pointer select-none text-[var(--color-ink-500)] hover:text-[var(--color-ink-700)]">
+              <input type="checkbox" checked={invInPrint} onChange={(e) => setInvInPrint(e.target.checked)} className="accent-[var(--color-primary-600)]" />
+              Add to custom print
+            </label>
           </div>
         </div>
       </Card>

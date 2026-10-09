@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useTransition, useRef, useEffect } from "react";
+import { useState, useTransition, useRef, useEffect, useCallback } from "react";
+import { readCustomPrintPref } from "@/lib/useCustomPrintPref";
 import { openPdfNative, isNativeShell } from "@/lib/open-pdf";
 import { ChevronRight, Printer, FileSignature, CheckCircle2, CheckCheck, Download, ChevronDown, FileText, PackageOpen, X, Lock, PenLine, Search, Clock, Plus } from "lucide-react";
 import { isSameDay } from "date-fns";
@@ -260,6 +261,93 @@ function SuccessModal({ udid, onClose }: { udid: string; onClose: () => void }) 
   );
 }
 
+type CustomSection = {
+  id: string;
+  label: string;
+  param: string;
+  hasData: boolean;
+};
+
+function CustomPrintModal({
+  summaryBase,
+  spv,
+  sections,
+  visitId,
+  onClose,
+}: {
+  summaryBase: string;
+  spv: string | null;
+  sections: CustomSection[];
+  visitId: string;
+  onClose: () => void;
+}) {
+  const filledSections = sections.filter((s) => s.hasData);
+  const [checked, setChecked] = useState<Record<string, boolean>>(() =>
+    Object.fromEntries(filledSections.map((s) => [s.id, readCustomPrintPref(visitId, s.id)]))
+  );
+
+  const toggle = (id: string) => setChecked((prev) => ({ ...prev, [id]: !prev[id] }));
+
+  const handlePrint = () => {
+    const params = new URLSearchParams();
+    if (spv) params.set("spv", spv);
+    // Set =0 for any filled section that is unchecked
+    for (const s of filledSections) {
+      if (!checked[s.id]) params.set(s.param, "0");
+    }
+    const url = `${summaryBase}${params.toString() ? `?${params.toString()}` : ""}`;
+    void openPdfNative(url);
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--color-border)]">
+          <h2 className="text-sm font-semibold text-[var(--color-ink-800)]">Custom Print</h2>
+          <button onClick={onClose} className="text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)]">
+            <X size={16} />
+          </button>
+        </div>
+
+        <div className="px-5 py-4 space-y-1 max-h-80 overflow-y-auto">
+          {filledSections.length === 0 ? (
+            <p className="text-sm text-[var(--color-ink-400)] text-center py-4">No data available to print.</p>
+          ) : (
+            filledSections.map((s) => (
+              <label key={s.id} className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-[var(--color-surface-sunken)] cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={checked[s.id] ?? false}
+                  onChange={() => toggle(s.id)}
+                  className="accent-[var(--color-primary-600)] w-4 h-4 shrink-0"
+                />
+                <span className="text-sm text-[var(--color-ink-700)]">{s.label}</span>
+              </label>
+            ))
+          )}
+        </div>
+
+        <div className="flex justify-end gap-3 px-5 py-4 border-t border-[var(--color-border)]">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 rounded-xl text-sm font-medium border border-[var(--color-border)] text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)]"
+          >
+            Cancel
+          </button>
+          <button
+            disabled={filledSections.length === 0 || !filledSections.some((s) => checked[s.id])}
+            onClick={handlePrint}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-50 transition-colors"
+          >
+            <Printer size={14} /> Print
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function EmrActionBar({
   visit, udid, patientName, currentTabIndex = 0, totalTabs = 1, onNextSection,
   editMode, onEnterEditMode, openPartialSignal = 0, isRefractionist = false,
@@ -285,6 +373,7 @@ export function EmrActionBar({
   const [passOverPending, startPassOver] = useTransition();
   const [passOverDone, setPassOverDone] = useState(false);
   const [printOpen, setPrintOpen] = useState(false);
+  const [showCustomPrint, setShowCustomPrint] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [showPartialModal, setShowPartialModal] = useState(false);
   // The exit guard asks for this modal by bumping openPartialSignal. Derived
@@ -336,6 +425,49 @@ export function EmrActionBar({
     <>
       {showSuccess && <SuccessModal udid={udid} onClose={() => setShowSuccess(false)} />}
       {passOverDone && <Toast message="Passed over to doctor." onDone={() => {}} />}
+      {showCustomPrint && (() => {
+        const spv = typeof window !== "undefined" ? localStorage.getItem(`spect_pin_${udid}`) : null;
+        const parseSegField = (s: any): Record<string, string> => {
+          try { return s ? (typeof s === "string" ? JSON.parse(s) : s) : {}; } catch { return {}; }
+        };
+        const hasSegData = (seg: any) =>
+          seg && (
+            Object.values(parseSegField(seg.re)).some((v: any) => v && String(v).trim()) ||
+            Object.values(parseSegField(seg.le)).some((v: any) => v && String(v).trim())
+          );
+        const customSections: CustomSection[] = [
+          { id: "cc", label: "Chief Complaint", param: "cc", hasData: !!visit.generalExam?.chiefComplaint },
+          { id: "allergy", label: "Drug Allergy", param: "allergy", hasData: !!visit.generalExam?.allergies },
+          { id: "va", label: "Visual Acuity", param: "va", hasData: !!visit.visualAcuity },
+          { id: "rx", label: "Refraction", param: "rx", hasData: !!(visit.refraction) },
+          { id: "cv", label: "Colour Vision", param: "cv", hasData: (() => { try { const re = parseSegField(visit.colourVisionCS?.re); const le = parseSegField(visit.colourVisionCS?.le); return !!(re.result || re.notes || le.result || le.notes); } catch { return false; } })() },
+          { id: "cs", label: "Contrast Sensitivity", param: "cs", hasData: (() => { try { const re = parseSegField(visit.colourVisionCS?.re); const le = parseSegField(visit.colourVisionCS?.le); return !!(re.csResult || re.csNotes || le.csResult || le.csNotes); } catch { return false; } })() },
+          { id: "iop", label: "Intra-Ocular Pressure", param: "iop", hasData: (visit.iopReadings?.length ?? 0) > 0 },
+          { id: "gonio", label: "Gonioscopy", param: "gonio", hasData: (() => { try { return Object.values(parseSegField(visit.gonioNotes)).some((value: any) => !!value); } catch { return false; } })() },
+          { id: "extras", label: "Extra Corrections", param: "extras", hasData: !!(visit.refraction?.extraCorrections) },
+          { id: "retino", label: "Retinoscopy", param: "retino", hasData: !!visit.retinoscopy },
+          { id: "ant", label: "Anterior Segment", param: "ant", hasData: (() => { try { return hasSegData(visit.anteriorSegment); } catch { return false; } })() },
+          { id: "pos", label: "Posterior Segment", param: "pos", hasData: (() => { try { return hasSegData(visit.posteriorSegment) || !!visit.posteriorSegment?.notes; } catch { return false; } })() },
+          { id: "tear", label: "Tear Film", param: "tear", hasData: !!(visit.tearFilm?.tbutRe != null || visit.tearFilm?.tbutLe != null || visit.tearFilm?.schirmer1Re != null || visit.tearFilm?.schirmer1Le != null || visit.tearFilm?.schirmer2Re != null || visit.tearFilm?.schirmer2Le != null) },
+          { id: "lacrimal", label: "Lacrimal Sac Syringing", param: "lacrimal", hasData: (() => { try { const re = parseSegField(visit.lacrimalSac?.re); const le = parseSegField(visit.lacrimalSac?.le); return Object.values(re).some((value: any) => (Array.isArray(value) ? value.length > 0 : !!value)) || Object.values(le).some((value: any) => (Array.isArray(value) ? value.length > 0 : !!value)); } catch { return false; } })() },
+          { id: "diplopia", label: "Diplopia Charting", param: "diplopia", hasData: (() => { try { return Object.keys(parseSegField(visit.diplopiaChart?.grid)).length > 0; } catch { return false; } })() },
+          { id: "hess", label: "Hess Charting", param: "hess", hasData: (() => { try { return Object.keys(parseSegField(visit.hessChart?.grid)).length > 0 || !!visit.hessChart?.interpretation; } catch { return false; } })() },
+          { id: "dx", label: "Diagnoses", param: "dx", hasData: visit.diagnoses?.length > 0 },
+          { id: "meds", label: "Medications", param: "meds", hasData: visit.medications?.length > 0 },
+          { id: "inv", label: "Investigations", param: "inv", hasData: visit.investigationOrders?.length > 0 },
+          { id: "proc", label: "Minor Procedure", param: "proc", hasData: !!visit.procedureName },
+          { id: "advice", label: "Advice & Follow-up", param: "advice", hasData: !!visit.adviseNotes || !!visit.followUpDate },
+        ];
+        return (
+          <CustomPrintModal
+            summaryBase={summaryBase}
+            spv={spv}
+            sections={customSections}
+            visitId={visit.id}
+            onClose={() => setShowCustomPrint(false)}
+          />
+        );
+      })()}
       {showPartial && (
         <PartialDispenseModal
           loading={partialPending}
@@ -439,6 +571,23 @@ export function EmrActionBar({
                 <div>
                   <p className="font-medium">Print Short Summary</p>
                   <p className="text-caption text-[var(--color-ink-400)]">Plan, Rx &amp; advice only</p>
+                </div>
+              </button>
+
+              <div className="border-t border-[var(--color-border)]" />
+
+              {/* 4. Custom Print */}
+              <button
+                onClick={() => {
+                  setPrintOpen(false);
+                  setShowCustomPrint(true);
+                }}
+                className="flex items-center gap-3 px-4 py-3 w-full text-left text-label sm:text-sm text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] transition-colors"
+              >
+                <FileText size={15} className="text-[var(--color-primary-600)] shrink-0" />
+                <div>
+                  <p className="font-medium">Custom Print</p>
+                  <p className="text-caption text-[var(--color-ink-400)]">Choose sections to include</p>
                 </div>
               </button>
             </div>
