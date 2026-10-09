@@ -505,6 +505,30 @@ export async function getPatientSpectacleHistory(patientId: string) {
     }));
 }
 
+export async function getPatientNoShows(patientId: string) {
+  await requirePermission("patients.view");
+  const appts = await prisma.appointment.findMany({
+    where: { patientId, status: "NO_SHOW" },
+    orderBy: { dateTime: "desc" },
+    select: {
+      id: true,
+      dateTime: true,
+      visitType: true,
+      notes: true,
+      hospital: { select: { name: true } },
+      doctor:   { select: { name: true } },
+    },
+  });
+  return appts.map((a) => ({
+    id:          a.id,
+    dateTime:    a.dateTime.toISOString(),
+    visitType:   a.visitType ?? null,
+    notes:       a.notes ?? null,
+    hospitalName: a.hospital?.name ?? null,
+    doctorName:   a.doctor?.name ?? null,
+  }));
+}
+
 export async function updatePatientDetails(patientId: string, data: Record<string, unknown>) {
   const user = await requireRole("DOCTOR", "HOSPITAL");
   const before = await prisma.patient.findUnique({ where: { id: patientId }, select: { name: true, age: true, mobile: true, complaint: true } });

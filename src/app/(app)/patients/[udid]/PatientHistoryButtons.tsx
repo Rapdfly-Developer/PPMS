@@ -2,12 +2,13 @@
 
 import { useState, useTransition, useRef, useEffect } from "react";
 import { format } from "date-fns";
-import { X, FlaskConical, Pill, Glasses, Loader2, ChevronDown, ChevronUp, Upload, Eye, Pencil, Trash2 } from "lucide-react";
+import { X, FlaskConical, Pill, Glasses, Loader2, ChevronDown, ChevronUp, Upload, Eye, Pencil, Trash2, UserX, Calendar, Building2, Stethoscope } from "lucide-react";
 import { parseJSON } from "@/lib/json";
 import {
   getPatientInvestigations,
   getPatientTreatmentHistory,
   getPatientSpectacleHistory,
+  getPatientNoShows,
 } from "../actions";
 import { attachResult, deleteInvestigationOrder, updateInvestigationNotes } from "@/app/(app)/emr/[udid]/actions";
 import { fileHref } from "@/lib/file-href";
@@ -629,6 +630,100 @@ export function SpectacleHistoryButton({ patientId, udid }: { patientId: string;
   );
 }
 
+/* ══════════════════════════════════════════════════════════════════════════
+   4. No Show Registry
+══════════════════════════════════════════════════════════════════════════ */
+type NoShowEntry = Awaited<ReturnType<typeof getPatientNoShows>>[number];
+
+function NoShowRegistryDrawer({
+  patientId,
+  open,
+  onClose,
+}: {
+  patientId: string;
+  open: boolean;
+  onClose: () => void;
+}) {
+  const [data, setData] = useState<NoShowEntry[] | null>(null);
+  const [isPending, start] = useTransition();
+
+  useEffect(() => {
+    if (!open || data !== null || isPending) return;
+    start(async () => setData(await getPatientNoShows(patientId)));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, data]);
+
+  return (
+    <Drawer open={open} onClose={onClose} title="No Show Registry" icon={<UserX size={16} />}>
+      {isPending && (
+        <div className="flex justify-center py-10">
+          <Loader2 size={22} className="animate-spin text-[var(--color-primary-500)]" />
+        </div>
+      )}
+      {!isPending && data?.length === 0 && <Empty label="no-show appointments" />}
+      {!isPending && data && data.length > 0 && (
+        <div className="space-y-3">
+          <p className="text-caption text-[var(--color-ink-400)]">
+            {data.length} no-show appointment{data.length !== 1 ? "s" : ""} on record · newest first
+          </p>
+          {data.map((entry, idx) => (
+            <div
+              key={entry.id}
+              className={`rounded-xl border p-4 ${idx === 0 ? "border-red-300 bg-red-50/60" : "border-[var(--color-border)] bg-white"}`}
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <span className={`w-6 h-6 rounded-full flex items-center justify-center text-caption font-bold shrink-0 ${idx === 0 ? "bg-red-500 text-white" : "bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)]"}`}>
+                    {data.length - idx}
+                  </span>
+                  <div>
+                    <p className={`text-sm font-bold ${idx === 0 ? "text-red-700" : "text-[var(--color-ink-800)]"}`}>
+                      {format(new Date(entry.dateTime), "dd MMM yyyy")}
+                    </p>
+                    <p className="text-caption text-[var(--color-ink-400)]">
+                      {format(new Date(entry.dateTime), "h:mm a")}
+                    </p>
+                  </div>
+                </div>
+                {idx === 0 && (
+                  <span className="text-caption font-semibold px-2 py-0.5 rounded-full bg-red-500 text-white shrink-0">
+                    Latest
+                  </span>
+                )}
+              </div>
+              <div className="mt-3 space-y-1.5 pl-8">
+                {entry.hospitalName && (
+                  <div className="flex items-center gap-2 text-caption text-[var(--color-ink-500)]">
+                    <Building2 size={11} className="shrink-0 text-[var(--color-ink-300)]" />
+                    {entry.hospitalName}
+                  </div>
+                )}
+                {entry.doctorName && (
+                  <div className="flex items-center gap-2 text-caption text-[var(--color-ink-500)]">
+                    <Stethoscope size={11} className="shrink-0 text-[var(--color-ink-300)]" />
+                    Dr. {entry.doctorName}
+                  </div>
+                )}
+                {entry.visitType && (
+                  <div className="flex items-center gap-2 text-caption text-[var(--color-ink-500)]">
+                    <Calendar size={11} className="shrink-0 text-[var(--color-ink-300)]" />
+                    {entry.visitType}
+                  </div>
+                )}
+                {entry.notes && (
+                  <p className="text-caption text-[var(--color-ink-400)] italic mt-1">
+                    &ldquo;{entry.notes}&rdquo;
+                  </p>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </Drawer>
+  );
+}
+
 export function PatientActionsPanel({
   patientId,
   patientName,
@@ -649,8 +744,10 @@ export function PatientActionsPanel({
   layout?: "row" | "column";
 }) {
   const [showActions, setShowActions] = useState(true);
+  const [noShowOpen, setNoShowOpen] = useState(false);
   return (
     <>
+      <NoShowRegistryDrawer patientId={patientId} open={noShowOpen} onClose={() => setNoShowOpen(false)} />
       {/* Total Visits card — hamburger icon is the toggle */}
       <div className="rounded-xl border border-[var(--color-border)] bg-white p-5">
         <div className="flex items-center justify-between">
@@ -691,11 +788,15 @@ export function PatientActionsPanel({
               </p>
             )}
             {noShowCount > 0 && (
-              <p className="flex items-center justify-end gap-1 text-red-500">
+              <button
+                onClick={() => setNoShowOpen(true)}
+                className="flex items-center justify-end gap-1 text-red-500 hover:text-red-700 transition-colors group"
+                title="View No Show Registry"
+              >
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="17" y1="8" x2="23" y2="14"/><line x1="23" y1="8" x2="17" y2="14"/></svg>
                 <span className="font-semibold">{noShowCount}</span>
-                <span className="text-red-400">No Show{noShowCount > 1 ? "s" : ""}</span>
-              </p>
+                <span className="text-red-400 group-hover:text-red-600 group-hover:underline underline-offset-2">No Show{noShowCount > 1 ? "s" : ""}</span>
+              </button>
             )}
           </div>
         </div>
