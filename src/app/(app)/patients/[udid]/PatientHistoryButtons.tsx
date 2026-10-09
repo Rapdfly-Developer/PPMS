@@ -710,11 +710,6 @@ function NoShowRegistryDrawer({
                     {entry.visitType}
                   </div>
                 )}
-                {entry.notes && (
-                  <p className="text-caption text-[var(--color-ink-400)] italic mt-1">
-                    &ldquo;{entry.notes}&rdquo;
-                  </p>
-                )}
               </div>
             </div>
           ))}

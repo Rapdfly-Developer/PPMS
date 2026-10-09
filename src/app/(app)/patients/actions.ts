@@ -7,6 +7,7 @@ import { redirect } from "next/navigation";
 import { writeAudit } from "@/lib/audit";
 import Anthropic from "@anthropic-ai/sdk";
 import { formatComplaintDisplay } from "@/lib/appointment-cc";
+import { istTodayRange } from "@/lib/ist";
 
 // ── Undo Dispense ────────────────────────────────────────────────────────────
 
@@ -507,23 +508,31 @@ export async function getPatientSpectacleHistory(patientId: string) {
 
 export async function getPatientNoShows(patientId: string) {
   await requirePermission("patients.view");
+  const { dayStart } = istTodayRange();
   const appts = await prisma.appointment.findMany({
-    where: { patientId, status: "NO_SHOW" },
+    where: {
+      patientId,
+      visit:    null,
+      dateTime: { lt: dayStart },
+      status:   { notIn: ["CANCELLED", "RESCHEDULED", "DISPENSED"] },
+    },
     orderBy: { dateTime: "desc" },
     select: {
-      id: true,
-      dateTime: true,
-      visitType: true,
-      notes: true,
-      hospital: { select: { name: true } },
-      doctor:   { select: { name: true } },
+      id:         true,
+      dateTime:   true,
+      visitType:  true,
+      isWalkIn:   true,
+      arrivedAt:  true,
+      hospital:   { select: { name: true } },
+      doctor:     { select: { name: true } },
     },
   });
   return appts.map((a) => ({
-    id:          a.id,
-    dateTime:    a.dateTime.toISOString(),
-    visitType:   a.visitType ?? null,
-    notes:       a.notes ?? null,
+    id:           a.id,
+    dateTime:     a.dateTime.toISOString(),
+    visitType:    a.visitType ?? null,
+    isWalkIn:     a.isWalkIn,
+    arrivedAt:    a.arrivedAt ? a.arrivedAt.toISOString() : null,
     hospitalName: a.hospital?.name ?? null,
     doctorName:   a.doctor?.name ?? null,
   }));
