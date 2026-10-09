@@ -136,11 +136,17 @@ export function AppointmentRow({ appt, role, perms, token, hideAddToQueue }: { a
       ? (arrivedAt ? "In Queue" : "Confirmed")
       : (STATUS_LABELS[appt.status] ?? appt.status.replace(/_/g, " "));
 
-  const patientUrl = `/patients/${p.udid}?returnTo=${encodeURIComponent(window.location.pathname + window.location.search)}&source=appointments`;
+  const getPatientUrl = () => {
+    // AppointmentRow is pre-rendered on the server, where `window` does not
+    // exist. Read the current URL only in the click handler so the exact
+    // appointment tab/date is still preserved when the user navigates back.
+    const returnTo = window.location.pathname + window.location.search;
+    return `/patients/${p.udid}?returnTo=${encodeURIComponent(returnTo)}&source=appointments`;
+  };
 
   return (
     <div
-      onClick={() => router.push(patientUrl)}
+      onClick={() => router.push(getPatientUrl())}
       className="flex items-start gap-3 px-4 sm:px-5 py-4 rounded-xl border border-[var(--color-border)] bg-white hover:bg-[var(--color-primary-50)] hover:border-[var(--color-primary-200)] transition-colors cursor-pointer"
     >
       <div
@@ -156,7 +162,7 @@ export function AppointmentRow({ appt, role, perms, token, hideAddToQueue }: { a
         {/* Left: patient identity and diagnosis */}
         <div className="min-w-0 flex-1">
           <button
-            onClick={(e) => { e.stopPropagation(); router.push(patientUrl); }}
+            onClick={(e) => { e.stopPropagation(); router.push(getPatientUrl()); }}
             className="text-label sm:text-sm font-semibold text-[var(--color-ink-900)] hover:text-[var(--color-primary-600)] transition-colors text-left leading-snug"
           >
             {p.name}

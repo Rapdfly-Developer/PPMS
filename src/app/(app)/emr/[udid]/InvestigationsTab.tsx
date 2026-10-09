@@ -12,7 +12,7 @@ import { useAutoSave } from "@/lib/useAutoSave";
 import { format } from "date-fns";
 import {
   Paperclip, ExternalLink, Upload, Download, Eye, Clock,
-  CheckCircle2, XCircle, FlaskConical, Plus, History, Camera,
+  CheckCircle2, XCircle, FlaskConical, Plus, History,
   X, Search, Trash2,
 } from "lucide-react";
 
@@ -205,25 +205,32 @@ function InvestigationCard({
 
   return (
     <Card className="px-3 py-2.5">
-      {/* Row 1: test name */}
-      <p className="text-label font-semibold text-[var(--color-ink-900)] leading-snug mb-1.5">
-        {order.laterality && <span className="text-[var(--color-primary-700)] mr-1.5">{order.laterality}</span>}
-        {order.testName}
-      </p>
+      {/* Row 1: test name | in view of + input | actions */}
+      <div className="flex items-start gap-2">
+        <p className="text-label font-semibold text-[var(--color-ink-900)] leading-snug shrink-0 pt-2">
+          {order.laterality && <span className="text-[var(--color-primary-700)] mr-1.5">{order.laterality}</span>}
+          {order.testName}
+        </p>
 
-      {/* Row 2: meta + actions on same line */}
-      <div className="flex items-center justify-between gap-2">
-        {/* Left: badges + time */}
-        <div className="flex flex-wrap items-center gap-1 min-w-0">
-          <PriorityPill priority={order.priority} />
-          <StatusBadge status={order.status} resultRef={order.resultRef} />
-          <span className="text-caption text-[var(--color-ink-400)] flex items-center gap-0.5">
-            <Clock size={10} />{format(new Date(order.createdAt), "h:mm a")}
-          </span>
+        <div className="flex-1 min-w-0 flex items-start gap-1.5">
+          {!readOnly ? (
+            <>
+              <span className="text-caption text-[var(--color-ink-400)] shrink-0 pt-2">in view of</span>
+              <div className="flex-1 min-w-0">
+                <KeywordInput
+                  fieldKey="inv_in_view_of"
+                  value={inViewOf}
+                  onChange={setInViewOf}
+                  placeholder="Indication for this test…"
+                />
+              </div>
+            </>
+          ) : order.notes ? (
+            <span className="text-caption text-[var(--color-ink-500)] italic pt-2">in view of: {order.notes}</span>
+          ) : null}
         </div>
 
-        {/* Right: actions */}
-        <div className="flex items-center gap-1.5 shrink-0">
+        <div className="flex items-center gap-1 shrink-0 pt-1">
           {order.resultRef ? (
             <>
               <button
@@ -265,26 +272,14 @@ function InvestigationCard({
         </div>
       </div>
 
-      {/* In view of — read-only once the visit is closed, editable otherwise.
-          Its own keyword vocabulary (inv_in_view_of), so indications do not mix
-          with the complaint or exam keyword lists. */}
-      {readOnly ? (
-        order.notes ? (
-          <p className="text-caption text-[var(--color-ink-500)] italic mt-1.5">In view of: {order.notes}</p>
-        ) : null
-      ) : (
-        <div className="mt-2">
-          <label className="text-caption font-semibold uppercase tracking-wider text-[var(--color-ink-400)] block mb-1">
-            In view of
-          </label>
-          <KeywordInput
-            fieldKey="inv_in_view_of"
-            value={inViewOf}
-            onChange={setInViewOf}
-            placeholder="Indication for this test…"
-          />
-        </div>
-      )}
+      {/* Row 2: meta badges */}
+      <div className="flex flex-wrap items-center gap-1 mt-1.5">
+        <PriorityPill priority={order.priority} />
+        <StatusBadge status={order.status} resultRef={order.resultRef} />
+        <span className="text-caption text-[var(--color-ink-400)] flex items-center gap-0.5">
+          <Clock size={10} />{format(new Date(order.createdAt), "h:mm a")}
+        </span>
+      </div>
 
       {/* Inline result preview */}
       {order.resultRef && (
@@ -318,7 +313,6 @@ function UploadButton({ orderId, udid }: { orderId: string; udid: string }) {
   const [error, setError] = useState("");
   const [, startTransition] = useTransition();
   const fileRef = useRef<HTMLInputElement>(null);
-  const cameraRef = useRef<HTMLInputElement>(null);
 
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -340,34 +334,21 @@ function UploadButton({ orderId, udid }: { orderId: string; udid: string }) {
     } finally {
       setUploading(false);
       if (fileRef.current) fileRef.current.value = "";
-      if (cameraRef.current) cameraRef.current.value = "";
     }
   };
 
   return (
     <div className="flex flex-col items-end gap-0.5">
       <input ref={fileRef} type="file" accept=".pdf,.jpg,.jpeg,.png,.docx" className="hidden" onChange={handleFile} />
-      <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFile} />
-
-      <div className="flex items-center gap-1">
-        <button
-          type="button"
-          disabled={uploading}
-          onClick={() => fileRef.current?.click()}
-          className="flex items-center gap-1 text-caption font-medium px-2 py-1 rounded-lg border border-dashed border-[var(--color-primary-400)] text-[var(--color-primary-600)] hover:bg-[var(--color-primary-50)] disabled:opacity-50 transition-colors"
-        >
-          {uploading ? <Upload size={12} className="animate-pulse" /> : <Upload size={12} />}
-          {uploading ? "…" : "File"}
-        </button>
-        <button
-          type="button"
-          disabled={uploading}
-          onClick={() => cameraRef.current?.click()}
-          className="flex items-center gap-1 text-caption font-medium px-2 py-1 rounded-lg border border-dashed border-[var(--color-accent-400)] text-[var(--color-accent-600)] hover:bg-[var(--color-accent-50)] disabled:opacity-50 transition-colors"
-        >
-          <Camera size={12} /> Cam
-        </button>
-      </div>
+      <button
+        type="button"
+        disabled={uploading}
+        onClick={() => fileRef.current?.click()}
+        className="flex items-center gap-1 text-caption font-medium px-2 py-1 rounded-lg border border-dashed border-[var(--color-primary-400)] text-[var(--color-primary-600)] hover:bg-[var(--color-primary-50)] disabled:opacity-50 transition-colors"
+      >
+        {uploading ? <Upload size={12} className="animate-pulse" /> : <Upload size={12} />}
+        {uploading ? "…" : "File"}
+      </button>
       {error && <p className="text-caption text-red-600">{error}</p>}
     </div>
   );
@@ -787,13 +768,14 @@ function StatusBadge({ status, resultRef }: { status: string; resultRef?: string
     );
   }
   const map: Record<string, { label: string; cls: string; icon: React.ReactNode }> = {
-    ORDERED:          { label: "Ordered",     cls: "bg-[var(--color-info-100)] text-[var(--color-info-600)]",       icon: <Clock size={11} /> },
+    ORDERED:          { label: "",             cls: "",                                                               icon: null },
     IN_PROGRESS:      { label: "In Progress", cls: "bg-[var(--color-accent-100)] text-[var(--color-accent-600)]",   icon: <Clock size={11} /> },
     RESULT_AVAILABLE: { label: "Result Ready",cls: "bg-[var(--color-success-100)] text-[var(--color-success-600)]", icon: <CheckCircle2 size={11} /> },
     REVIEWED:         { label: "Reviewed",    cls: "bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)]",  icon: <CheckCircle2 size={11} /> },
     CANCELLED:        { label: "Cancelled",   cls: "bg-[var(--color-danger-100)] text-[var(--color-danger-600)]",   icon: <XCircle size={11} /> },
   };
   const s = map[status] ?? map.ORDERED;
+  if (!s.icon && !s.label) return null;
   return (
     <span className={`inline-flex items-center gap-1 text-caption font-medium px-2 py-0.5 rounded-full ${s.cls}`}>
       {s.icon} {s.label}

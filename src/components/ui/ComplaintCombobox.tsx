@@ -239,15 +239,6 @@ export function ComplaintCombobox({
               className={`${inputCls} flex-1`}
             />
           )}
-          <button
-            type="button"
-            onClick={addCustom}
-            disabled={!isCustomValue}
-            title="Save as keyword"
-            className="shrink-0 flex items-center gap-1 px-3 py-2 rounded-xl border border-[var(--color-border)] text-xs font-semibold text-[var(--color-ink-600)] bg-white hover:bg-[var(--color-surface-sunken)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-          >
-            <Plus size={12} /> Add
-          </button>
           {trailing}
         </div>
       )}
