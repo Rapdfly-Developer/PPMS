@@ -1539,6 +1539,7 @@ function parseProcedureList(raw: string): string[] {
 
 function MinorProcedureCard({ visit, udid, priorVisits, readOnly = false }: { visit: any; udid: string; priorVisits: any[]; readOnly?: boolean }) {
   const overview = useEmrOverview();
+  const [open,           setOpen]           = useState(false);
   const [laterality,     setLaterality]     = useState<string>(visit.procedureLaterality ?? "OU");
   const [anesthesia,     setAnesthesia]     = useState<string>(visit.anesthesiaType ?? "");
   const [customAnesthesia, setCustomAnesthesia] = useState<string[]>(() => typeof window === "undefined" ? [] : getCustomAnesthesia());
@@ -1577,12 +1578,22 @@ function MinorProcedureCard({ visit, udid, priorVisits, readOnly = false }: { vi
     <div {...(overview && procIsEmpty ? { "data-overview-empty-section": "" } : {})}>
     <Card>
       {/* Heading row */}
-      <div className="flex items-center mb-4 gap-2">
-        <p className="text-label sm:text-sm font-medium text-[var(--color-ink-700)]">Minor Procedure</p>
-        <button data-overview-hide onClick={() => setShowHistory((v) => !v)} className={`${historyBtnCls} ml-auto shrink-0`}>
-          <History size={12} /> History
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          className="flex items-center gap-1.5 text-left flex-1 min-w-0"
+        >
+          <p className="text-label sm:text-sm font-medium text-[var(--color-ink-700)]">Minor Procedure</p>
+          <ChevronDown size={14} className={`text-[var(--color-ink-400)] transition-transform shrink-0 ${open ? "rotate-180" : ""}`} />
         </button>
+        {open && (
+          <button data-overview-hide onClick={() => setShowHistory((v) => !v)} className={`${historyBtnCls} shrink-0`}>
+            <History size={12} /> History
+          </button>
+        )}
       </div>
+      {open && <div className="mt-4">
 
       {/* Laterality | Procedure | Anesthesia */}
       <div className="grid grid-cols-1 sm:grid-cols-[auto_1fr_1fr] gap-3 items-start">
@@ -1773,6 +1784,7 @@ function MinorProcedureCard({ visit, udid, priorVisits, readOnly = false }: { vi
           </div>
         </div>
       )}
+      </div>}
     </Card>
     </div>
   );
@@ -2783,6 +2795,7 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
 
 function OpticalPrescriptionCard({ visit }: { visit: any }) {
   const overview = useEmrOverview();
+  const [open, setOpen] = useState(false);
   const rc = visit.refraction;
   type RxFields = { sph: string; cyl: string; axis: string; nearSph: string; va: string; nearVa: string; method?: string };
   const emptyRx: RxFields = { sph: "", cyl: "", axis: "", nearSph: "", va: "", nearVa: "", method: "" };
@@ -2828,15 +2841,22 @@ function OpticalPrescriptionCard({ visit }: { visit: any }) {
     return (
       <div {...(overview ? { "data-overview-empty-section": "" } : {})}>
         <Card>
-          <p className="text-label sm:text-sm font-medium text-[var(--color-ink-700)] mb-2">Optical Prescription</p>
-          <p className="text-label sm:text-sm text-[var(--color-ink-500)]">
-            No subjective refraction recorded.
-          </p>
-          <p className="mt-1 text-caption sm:text-xs text-[var(--color-ink-400)]">
-            {methodsPresent.length > 0
-              ? `Only ${methodsPresent.join(", ")} recorded. A prescription is issued from a subjective refraction, so nothing is carried over here.`
-              : "Record a subjective refraction in the Ophthalmic Exam tab to issue a prescription."}
-          </p>
+          <button type="button" onClick={() => setOpen((v) => !v)} className="flex items-center gap-1.5 text-left w-full mb-2">
+            <p className="text-label sm:text-sm font-medium text-[var(--color-ink-700)]">Optical Prescription</p>
+            <ChevronDown size={14} className={`text-[var(--color-ink-400)] transition-transform shrink-0 ${open ? "rotate-180" : ""}`} />
+          </button>
+          {open && (
+            <>
+              <p className="text-label sm:text-sm text-[var(--color-ink-500)]">
+                No subjective refraction recorded.
+              </p>
+              <p className="mt-1 text-caption sm:text-xs text-[var(--color-ink-400)]">
+                {methodsPresent.length > 0
+                  ? `Only ${methodsPresent.join(", ")} recorded. A prescription is issued from a subjective refraction, so nothing is carried over here.`
+                  : "Record a subjective refraction in the Ophthalmic Exam tab to issue a prescription."}
+              </p>
+            </>
+          )}
         </Card>
       </div>
     );
@@ -2845,46 +2865,51 @@ function OpticalPrescriptionCard({ visit }: { visit: any }) {
   return (
     <div {...(overview && !hasData ? { "data-overview-empty-section": "" } : {})}>
     <Card>
-      <div className="flex items-center justify-between mb-3">
-        <p className="text-label sm:text-sm font-medium text-[var(--color-ink-700)]">Optical Prescription</p>
-        {hasData && (
+      <div className="flex items-center justify-between">
+        <button type="button" onClick={() => setOpen((v) => !v)} className="flex items-center gap-1.5 text-left flex-1 min-w-0">
+          <p className="text-label sm:text-sm font-medium text-[var(--color-ink-700)]">Optical Prescription</p>
+          <ChevronDown size={14} className={`text-[var(--color-ink-400)] transition-transform shrink-0 ${open ? "rotate-180" : ""}`} />
+        </button>
+        {open && hasData && (
           <span className="flex items-center gap-1 text-caption font-semibold text-[var(--color-primary-600)] bg-[var(--color-primary-50)] border border-[var(--color-primary-200)] rounded-full px-2 py-0.5">
             <CheckCircle2 size={10} />
             Added to Summary
           </span>
         )}
       </div>
-      <table className="w-full table-fixed border-collapse">
-        <thead>
-          <tr className="border-b border-[var(--color-border)]">
-            <th className="text-left pb-2 pr-2 text-caption font-bold uppercase tracking-wider text-[var(--color-ink-400)] w-[22%]" />
-            {HEADERS.map((h) => (
-              <th key={h} className="text-center pb-2 px-1 text-caption font-bold uppercase tracking-wider text-[var(--color-ink-400)]">
-                {h === "VA" || h === "NV"
-                  ? <span className="inline-block px-1.5 py-0.5 rounded bg-[var(--color-surface-sunken)] text-[var(--color-ink-300)]">{h}</span>
-                  : h}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {ROWS.map(({ label, rx }) => (
-            <tr key={label} className="border-b border-[var(--color-border)]">
-              <td className="py-3 pr-2 text-xs font-semibold text-[var(--color-primary-700)] whitespace-nowrap">{label}</td>
-              <td className="text-center py-3 px-1 text-label sm:text-sm text-[var(--color-ink-800)]">{cell(rx.sph)}</td>
-              <td className="text-center py-3 px-1 text-label sm:text-sm text-[var(--color-ink-800)]">{cell(rx.cyl)}</td>
-              <td className="text-center py-3 px-1 text-label sm:text-sm text-[var(--color-ink-800)]">{cell(rx.axis)}</td>
-              <td className="text-center py-3 px-1 text-label sm:text-sm">
-                <span className="inline-block px-1.5 py-0.5 rounded bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)]">{cell(rx.va)}</span>
-              </td>
-              <td className="text-center py-3 px-1 text-label sm:text-sm text-[var(--color-ink-800)]">{showNear ? cell(rx.nearSph) : cell("")}</td>
-              <td className="text-center py-3 px-1 text-label sm:text-sm">
-                <span className="inline-block px-1.5 py-0.5 rounded bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)]">{showNear ? cell(rx.nearVa) : cell("")}</span>
-              </td>
+      {open && (
+        <table className="w-full table-fixed border-collapse mt-3">
+          <thead>
+            <tr className="border-b border-[var(--color-border)]">
+              <th className="text-left pb-2 pr-2 text-caption font-bold uppercase tracking-wider text-[var(--color-ink-400)] w-[22%]" />
+              {HEADERS.map((h) => (
+                <th key={h} className="text-center pb-2 px-1 text-caption font-bold uppercase tracking-wider text-[var(--color-ink-400)]">
+                  {h === "VA" || h === "NV"
+                    ? <span className="inline-block px-1.5 py-0.5 rounded bg-[var(--color-surface-sunken)] text-[var(--color-ink-300)]">{h}</span>
+                    : h}
+                </th>
+              ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {ROWS.map(({ label, rx }) => (
+              <tr key={label} className="border-b border-[var(--color-border)]">
+                <td className="py-3 pr-2 text-xs font-semibold text-[var(--color-primary-700)] whitespace-nowrap">{label}</td>
+                <td className="text-center py-3 px-1 text-label sm:text-sm text-[var(--color-ink-800)]">{cell(rx.sph)}</td>
+                <td className="text-center py-3 px-1 text-label sm:text-sm text-[var(--color-ink-800)]">{cell(rx.cyl)}</td>
+                <td className="text-center py-3 px-1 text-label sm:text-sm text-[var(--color-ink-800)]">{cell(rx.axis)}</td>
+                <td className="text-center py-3 px-1 text-label sm:text-sm">
+                  <span className="inline-block px-1.5 py-0.5 rounded bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)]">{cell(rx.va)}</span>
+                </td>
+                <td className="text-center py-3 px-1 text-label sm:text-sm text-[var(--color-ink-800)]">{showNear ? cell(rx.nearSph) : cell("")}</td>
+                <td className="text-center py-3 px-1 text-label sm:text-sm">
+                  <span className="inline-block px-1.5 py-0.5 rounded bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)]">{showNear ? cell(rx.nearVa) : cell("")}</span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
     </Card>
     </div>
   );
@@ -2892,6 +2917,7 @@ function OpticalPrescriptionCard({ visit }: { visit: any }) {
 
 function DispositionCard({ visit, udid, patientSex, priorVisits = [], readOnly = false }: { visit: any; udid: string; patientSex: string; priorVisits?: any[]; readOnly?: boolean }) {
   const overview = useEmrOverview();
+  const [open, setOpen] = useState(false);
   const [activePanels, setActivePanels] = useState<string[]>(
     [
     ].filter(Boolean) as string[]
@@ -2908,15 +2934,20 @@ function DispositionCard({ visit, udid, patientSex, priorVisits = [], readOnly =
   return (
     <div {...(overview && !hasFollowUpData ? { "data-overview-empty-section": "" } : {})}>
     <Card>
-      <p className="text-label sm:text-sm font-medium text-[var(--color-ink-700)] mb-3">Patient Disposition</p>
-      {!readOnly && (
+      <button type="button" onClick={() => setOpen((v) => !v)} className="flex items-center gap-1.5 text-left w-full mb-3">
+        <p className="text-label sm:text-sm font-medium text-[var(--color-ink-700)]">Patient Disposition</p>
+        <ChevronDown size={14} className={`text-[var(--color-ink-400)] transition-transform shrink-0 ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && !readOnly && (
         <div data-overview-hide className="flex gap-3 flex-wrap mb-2">
           <DispositionToggle icon={<RefreshCw size={16} />}  label="Follow Up Dates"      active={activePanels.includes("follow")}   onClick={() => togglePanel("follow")} />
         </div>
       )}
-      <div className="flex flex-col gap-4">
-        {displayPanels.includes("follow")   && <FollowUpdatesPanel   visit={visit} udid={udid} priorVisits={priorVisits} />}
-      </div>
+      {open && (
+        <div className="flex flex-col gap-4">
+          {displayPanels.includes("follow") && <FollowUpdatesPanel visit={visit} udid={udid} priorVisits={priorVisits} />}
+        </div>
+      )}
     </Card>
     </div>
   );
