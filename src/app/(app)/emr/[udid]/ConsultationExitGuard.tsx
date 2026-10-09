@@ -7,14 +7,9 @@ import { AlertTriangle, PackageOpen, X } from "lucide-react";
 /**
  * Guards the exit from an UNFINALISED consultation.
  *
- * Two jobs:
- *  1. Start the consultation clock the first time this EMR is opened. The
- *     clock lives in sessionStorage, keyed by visit id — no database column
- *     and no server round-trip. It therefore survives a refresh, is scoped to
- *     this tab (two tabs on two visits cannot collide), and disappears when
- *     the tab closes.
- *  2. Intercept every way of leaving the EMR while the visit is still open,
- *     and ask what should happen to the consultation.
+ * Intercepts every way of leaving the EMR while the visit is still open and
+ * asks what should happen to the consultation. Timing is persisted separately
+ * by VisitTimeline and must never be reset by navigation or tab lifetime.
  *
  * Scoping: this component only ever mounts on the EMR route, and only for a
  * visit that is not closed. Every listener it installs is removed on unmount,
@@ -33,20 +28,11 @@ import { AlertTriangle, PackageOpen, X } from "lucide-react";
  *    prompt here and the wording cannot be customised, so this is a backstop
  *    rather than the real dialog.
  */
-/**
- * sessionStorage key for one visit's consultation clock. Keyed by visit id so
- * two visits open in two tabs keep separate clocks, and a stale key from an
- * earlier visit can never be mistaken for this one's.
- */
-export const consultClockKey = (visitId: string) => `emr_consult_start_${visitId}`;
-
 export function ConsultationExitGuard({
-  visitId,
   exitHref,
   active,
   onPartialDispense,
 }: {
-  visitId: string;
   /**
    * Where "OK" goes when the blocked navigation had no destination of its own
    * (the browser/hardware Back, and the TopBar Back button, which renders as a
@@ -73,23 +59,7 @@ export function ConsultationExitGuard({
   const activeRef = useRef(active);
   useEffect(() => { activeRef.current = active; }, [active]);
 
-  /* ── 1. Start the clock ───────────────────────────────────────────────── */
-  useEffect(() => {
-    if (!active) return;
-    // Only stamp when absent, so a refresh or React Strict Mode's double
-    // effect does not move the start time.
-    try {
-      const key = consultClockKey(visitId);
-      if (!window.sessionStorage.getItem(key)) {
-        window.sessionStorage.setItem(key, new Date().toISOString());
-      }
-    } catch {
-      // Private mode or blocked storage: the guard still works, the timing
-      // simply is not recorded. Never let this break the EMR.
-    }
-  }, [active, visitId]);
-
-  /* ── 2a. In-app link clicks ───────────────────────────────────────────── */
+  /* ── 1. In-app link clicks ────────────────────────────────────────────── */
   useEffect(() => {
     if (!active) return;
 
@@ -122,7 +92,7 @@ export function ConsultationExitGuard({
     return () => document.removeEventListener("click", onClick, true);
   }, [active]);
 
-  /* ── 2b. Browser / hardware back ──────────────────────────────────────── */
+  /* ── 2. Browser / hardware back ───────────────────────────────────────── */
   useEffect(() => {
     if (!active) return;
 
@@ -141,7 +111,7 @@ export function ConsultationExitGuard({
     return () => window.removeEventListener("popstate", onPop);
   }, [active]);
 
-  /* ── 2c. Tab close / reload ───────────────────────────────────────────── */
+  /* ── 3. Tab close / reload ────────────────────────────────────────────── */
   useEffect(() => {
     if (!active) return;
     const onBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -177,15 +147,7 @@ export function ConsultationExitGuard({
     else router.replace(exitHref);
   }, [router, exitHref]);
 
-  // OK: discard the consultation timing, then leave. Clearing sessionStorage
-  // is synchronous, so navigation happens in the same tick — there is no
-  // server round-trip to await before the screen changes.
   const onOk = () => {
-    try {
-      window.sessionStorage.removeItem(consultClockKey(visitId));
-    } catch {
-      /* storage unavailable — nothing to clear */
-    }
     proceed();
   };
 
@@ -218,11 +180,11 @@ export function ConsultationExitGuard({
           </span>
           <div className="flex-1 min-w-0">
             <h2 id="emr-exit-title" className="text-heading-sm sm:text-base font-bold text-[var(--color-ink-900)]">
-              Your progress will be lost
+              Leave consultation?
             </h2>
             <p className="mt-1 text-label sm:text-sm text-[var(--color-ink-500)]">
-              The consultation duration for this visit will be reset. Do you wish to
-              partially dispense instead?
+              This consultation will remain open and its duration will continue. Do you
+              wish to partially dispense instead?
             </p>
           </div>
           <button

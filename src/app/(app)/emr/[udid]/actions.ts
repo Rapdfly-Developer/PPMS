@@ -11,6 +11,7 @@ import { writeAudit } from "@/lib/audit";
 import { syncVisit } from "@/lib/integration/engine";
 import { isSameDay } from "date-fns";
 import { convertNotesToCC } from "@/lib/appointment-cc";
+import { canRecordRefraction } from "@/lib/refraction-access";
 
 async function assertVisitAccess(visitId: string) {
   const user = await requireUser();
@@ -92,6 +93,61 @@ function revalidate(udid: string) {
 // Defer it to after the response is sent so the "Saved" indicator appears faster.
 function revalidateAfter(udid: string) {
   after(() => revalidate(udid));
+}
+
+// ── Persistent consultation / refraction clocks ─────────────────────────
+
+export async function startEmrTiming(visitId: string) {
+  const user = await requireUser();
+  await assertVisitOwner(visitId);
+
+  const visit = await prisma.visit.findUnique({
+    where: { id: visitId },
+    select: {
+      status: true,
+      consultationStartedAt: true,
+      consultationCompletedAt: true,
+      refractionStartedAt: true,
+      refractionCompletedAt: true,
+      refractionPassedOverAt: true,
+    },
+  });
+  if (!visit) throw new Error("Visit not found");
+
+  if (visit.status === "IN_PROGRESS") {
+    const now = new Date();
+    if (user.role === "DOCTOR") {
+      await prisma.visit.updateMany({
+        where: { id: visitId, status: "IN_PROGRESS", consultationStartedAt: null },
+        data: { consultationStartedAt: now },
+      });
+    } else if (user.role === "REFRACTIONIST") {
+      if (!canRecordRefraction(user)) throw new Error("Forbidden");
+      await prisma.visit.updateMany({
+        where: { id: visitId, status: "IN_PROGRESS", refractionStartedAt: null },
+        data: { refractionStartedAt: now },
+      });
+    }
+  }
+
+  const timing = await prisma.visit.findUnique({
+    where: { id: visitId },
+    select: {
+      consultationStartedAt: true,
+      consultationCompletedAt: true,
+      refractionStartedAt: true,
+      refractionCompletedAt: true,
+      refractionPassedOverAt: true,
+    },
+  });
+
+  return {
+    consultationStartedAt: timing?.consultationStartedAt?.toISOString() ?? null,
+    consultationCompletedAt: timing?.consultationCompletedAt?.toISOString() ?? null,
+    refractionStartedAt: timing?.refractionStartedAt?.toISOString() ?? null,
+    refractionCompletedAt: timing?.refractionCompletedAt?.toISOString() ?? null,
+    refractionPassedOverAt: timing?.refractionPassedOverAt?.toISOString() ?? null,
+  };
 }
 
 // ── Start Visit ─────────────────────────────────────────────────────────
@@ -689,7 +745,12 @@ export async function closeVisit(visitId: string, udid: string) {
 
   await prisma.visit.update({
     where: { id: visitId },
-    data: { status: "CLOSED", finalizedAt: now },
+    data: {
+      status: "CLOSED",
+      finalizedAt: now,
+      consultationStartedAt: visit.consultationStartedAt ?? now,
+      consultationCompletedAt: now,
+    },
   });
 
   // Resolve appointmentId — visits created via old flow may not have it linked
@@ -807,8 +868,31 @@ export async function markPartialDispense(visitId: string, udid: string, reason?
 
 export async function passOverToDoctor(visitId: string) {
   const user = await requireUser();
-  if (user.role !== "REFRACTIONIST") throw new Error("Forbidden");
-  await prisma.visit.update({ where: { id: visitId }, data: { refractionDone: true } });
-  await writeAudit(user.id, "Visit", visitId, "PASS_OVER", {});
+  if (user.role !== "REFRACTIONIST" || !canRecordRefraction(user)) throw new Error("Forbidden");
+  await assertVisitOwner(visitId);
+
+  const visit = await prisma.visit.findUnique({
+    where: { id: visitId },
+    select: { status: true, refractionStartedAt: true, refractionPassedOverAt: true },
+  });
+  if (!visit) throw new Error("Visit not found");
+  if (visit.status !== "IN_PROGRESS") throw new Error("This consultation has already been finalized.");
+
+  const now = new Date();
+  const transitioned = await prisma.visit.updateMany({
+    where: { id: visitId, refractionPassedOverAt: null },
+    data: {
+      refractionDone: true,
+      refractionStartedAt: visit.refractionStartedAt ?? now,
+      refractionCompletedAt: now,
+      refractionPassedOverAt: now,
+    },
+  });
+  if (transitioned.count > 0) {
+    await writeAudit(user.id, "Visit", visitId, "PASS_OVER", {
+      refractionStartedAt: (visit.refractionStartedAt ?? now).toISOString(),
+      refractionPassedOverAt: now.toISOString(),
+    });
+  }
   revalidatePath("/dashboard");
 }

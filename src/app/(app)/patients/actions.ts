@@ -127,7 +127,10 @@ export type TimelineEvent = {
     bookedAt?: string | null;           // Appointment.createdAt
     scheduledAt?: string | null;        // Appointment.dateTime
     arrivedAt?: string | null;          // Appointment.arrivedAt
-    seenAt?: string | null;             // Visit.date (consultation started)
+    seenAt?: string | null;             // Visit.consultationStartedAt
+    consultationCompletedAt?: string | null;
+    refractionStartedAt?: string | null;
+    refractionPassedOverAt?: string | null;
     partialDispenseAt?: string | null;  // Appointment.partialDispenseAt
     finalizedAt?: string | null;        // Visit.finalizedAt (dispensed)
     // INVESTIGATION
@@ -211,7 +214,14 @@ export async function getPatientTimeline(patientId: string): Promise<TimelineEve
         bookedAt:          v.appointment?.createdAt?.toISOString()          ?? null,
         scheduledAt:       v.appointment?.dateTime?.toISOString()           ?? null,
         arrivedAt:         v.appointment?.arrivedAt?.toISOString()          ?? null,
-        seenAt:            v.status === "CLOSED" ? v.date.toISOString() : null,
+        // New visits use the exact persisted consultation start. Preserve the
+        // existing historical display for records created before this field
+        // existed instead of making their "Doctor Seen" time disappear.
+        seenAt:            v.consultationStartedAt?.toISOString()
+          ?? (v.status === "CLOSED" ? v.date.toISOString() : null),
+        consultationCompletedAt: v.consultationCompletedAt?.toISOString()    ?? null,
+        refractionStartedAt:     v.refractionStartedAt?.toISOString()        ?? null,
+        refractionPassedOverAt:  v.refractionPassedOverAt?.toISOString()     ?? null,
         partialDispenseAt: v.appointment?.partialDispenseAt?.toISOString() ?? null,
         finalizedAt:       v.finalizedAt?.toISOString()                     ?? null,
       },

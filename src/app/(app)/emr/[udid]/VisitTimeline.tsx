@@ -1,24 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { consultClockKey } from "./ConsultationExitGuard";
+import { startEmrTiming } from "./actions";
 
-/**
- * The visit's five times, in the patient header.
- *
- * Booking, appointment and visit times are fixed points and arrive already
- * formatted from the server. The two live ones are computed here because they
- * cannot be rendered on the server:
- *
- *  - Waiting time counts from arrival and must FREEZE the moment the
- *    consultation starts, so it needs the consultation clock.
- *  - Consultation time counts from that clock.
- *
- * The clock lives in sessionStorage (see ConsultationExitGuard) rather than the
- * database, so it is per-tab and per-device: another device viewing the same
- * visit shows no consultation time, and waiting time keeps running there. That
- * is a deliberate trade-off to avoid a schema change, not an oversight.
- */
+type TimingRole = "DOCTOR" | "REFRACTIONIST" | null;
+
+type StoredTiming = {
+  consultationStartedAt: string | null;
+  consultationCompletedAt: string | null;
+  refractionStartedAt: string | null;
+  refractionCompletedAt: string | null;
+  refractionPassedOverAt: string | null;
+};
 
 function elapsed(fromMs: number, toMs: number): string {
   const mins = Math.max(0, Math.floor((toMs - fromMs) / 60000));
@@ -26,6 +19,12 @@ function elapsed(fromMs: number, toMs: number): string {
   const m = mins % 60;
   if (h > 0) return m > 0 ? `${h}h ${m}m` : `${h}h`;
   return `${m}m`;
+}
+
+function asMs(value: string | null): number | null {
+  if (!value) return null;
+  const ms = new Date(value).getTime();
+  return Number.isFinite(ms) ? ms : null;
 }
 
 function Row({ label, value, live }: { label: string; value: string; live?: boolean }) {
@@ -45,47 +44,81 @@ export function VisitTimeline({
   appointmentTime,
   visitTime,
   arrivedAtIso,
+  finalizedAtIso,
+  consultationStartedAtIso,
+  consultationCompletedAtIso,
+  refractionStartedAtIso,
+  refractionCompletedAtIso,
+  refractionPassedOverAtIso,
+  timingRole,
   visitClosed,
 }: {
   visitId: string;
-  /** Pre-formatted on the server so the first paint matches, avoiding a hydration mismatch. */
   bookingTime: string | null;
   appointmentTime: string | null;
   visitTime: string | null;
   arrivedAtIso: string | null;
+  finalizedAtIso: string | null;
+  consultationStartedAtIso: string | null;
+  consultationCompletedAtIso: string | null;
+  refractionStartedAtIso: string | null;
+  refractionCompletedAtIso: string | null;
+  refractionPassedOverAtIso: string | null;
+  timingRole: TimingRole;
   visitClosed: boolean;
 }) {
-  // Re-render once a minute; these are minute-resolution durations.
-  const [now, setNow] = useState<number | null>(null);
-  const [consultStart, setConsultStart] = useState<number | null>(null);
+  const [now, setNow] = useState<number>(() => Date.now());
+  const [timing, setTiming] = useState<StoredTiming>({
+    consultationStartedAt: consultationStartedAtIso,
+    consultationCompletedAt: consultationCompletedAtIso,
+    refractionStartedAt: refractionStartedAtIso,
+    refractionCompletedAt: refractionCompletedAtIso,
+    refractionPassedOverAt: refractionPassedOverAtIso,
+  });
 
   useEffect(() => {
-    const read = () => {
-      try {
-        const raw = window.sessionStorage.getItem(consultClockKey(visitId));
-        const t = raw ? new Date(raw).getTime() : NaN;
-        setConsultStart(Number.isFinite(t) ? t : null);
-      } catch {
-        setConsultStart(null);
-      }
-      setNow(Date.now());
+    let cancelled = false;
+
+    if (!visitClosed && timingRole) {
+      void startEmrTiming(visitId).then((stored) => {
+        if (!cancelled) {
+          setTiming(stored);
+          setNow(Date.now());
+        }
+      }).catch(() => {
+        // Timing must never prevent the EMR from opening. Authorization and
+        // persistence remain enforced by the server action.
+      });
+    }
+
+    if (visitClosed) return () => { cancelled = true; };
+    const id = window.setInterval(() => setNow(Date.now()), 30_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
     };
-    read();
-    if (visitClosed) return;
-    const id = window.setInterval(read, 30_000);
-    return () => window.clearInterval(id);
-  }, [visitId, visitClosed]);
+  }, [timingRole, visitClosed, visitId]);
 
-  const arrivedMs = arrivedAtIso ? new Date(arrivedAtIso).getTime() : null;
+  const arrivedMs = asMs(arrivedAtIso);
+  const finalizedMs = asMs(finalizedAtIso);
+  const consultationStartMs = asMs(timing.consultationStartedAt);
+  const consultationCompletedMs = asMs(timing.consultationCompletedAt);
+  const refractionStartMs = asMs(timing.refractionStartedAt);
+  const refractionEndMs = asMs(timing.refractionPassedOverAt ?? timing.refractionCompletedAt);
 
-  // Waiting stops when the consultation starts; until then it runs.
-  const waiting =
-    arrivedMs && now
-      ? elapsed(arrivedMs, consultStart && consultStart > arrivedMs ? consultStart : now)
-      : null;
-  const waitingLive = !!waiting && !consultStart && !visitClosed;
+  const waitingEndMs = consultationStartMs ?? (visitClosed ? finalizedMs : now);
+  const waiting = arrivedMs && waitingEndMs ? elapsed(arrivedMs, waitingEndMs) : null;
+  const waitingLive = !!waiting && !consultationStartMs && !visitClosed;
 
-  const consulting = consultStart && now ? elapsed(consultStart, now) : null;
+  const consultationEndMs = consultationCompletedMs ?? (visitClosed ? finalizedMs : now);
+  const consulting = consultationStartMs && consultationEndMs
+    ? elapsed(consultationStartMs, consultationEndMs)
+    : null;
+
+  const refractionEnd = refractionEndMs ?? (!visitClosed ? now : null);
+  const refracting = refractionStartMs && refractionEnd
+    ? elapsed(refractionStartMs, refractionEnd)
+    : null;
 
   return (
     <div className="grid grid-cols-2 gap-x-4 gap-y-0.5">
@@ -93,8 +126,8 @@ export function VisitTimeline({
       {appointmentTime && <Row label="Appt" value={appointmentTime} />}
       {visitTime && <Row label="Visit" value={visitTime} />}
       {waiting && <Row label="Waiting" value={waiting} live={waitingLive} />}
-      {/* Only once a consultation has actually begun in this tab. */}
-      {consulting && <Row label="Consult" value={consulting} live={!visitClosed} />}
+      {consulting && <Row label="Consult" value={consulting} live={!consultationCompletedMs && !visitClosed} />}
+      {refracting && <Row label="Refraction" value={refracting} live={!refractionEndMs && !visitClosed} />}
     </div>
   );
 }

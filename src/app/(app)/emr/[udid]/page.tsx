@@ -522,6 +522,13 @@ export default async function PatientDetailedEMR({
                       appointmentTime={fmtStamp(activeVisit.appointment?.dateTime)}
                       visitTime={fmtStamp(activeVisit.date)}
                       arrivedAtIso={activeVisit.appointment?.arrivedAt?.toISOString() ?? null}
+                      finalizedAtIso={activeVisit.finalizedAt?.toISOString() ?? null}
+                      consultationStartedAtIso={activeVisit.consultationStartedAt?.toISOString() ?? null}
+                      consultationCompletedAtIso={activeVisit.consultationCompletedAt?.toISOString() ?? null}
+                      refractionStartedAtIso={activeVisit.refractionStartedAt?.toISOString() ?? null}
+                      refractionCompletedAtIso={activeVisit.refractionCompletedAt?.toISOString() ?? null}
+                      refractionPassedOverAtIso={activeVisit.refractionPassedOverAt?.toISOString() ?? null}
+                      timingRole={user.role === "DOCTOR" || user.role === "REFRACTIONIST" ? user.role : null}
                       visitClosed={activeVisit.status !== "IN_PROGRESS"}
                     />
                     {activeVisit.finalizedAt && (

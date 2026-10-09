@@ -78,6 +78,9 @@ function EventDetail({ ev }: { ev: TimelineEvent }) {
   if (ev.type === "CONSULTATION") {
     const arrivedAt   = d.arrivedAt   ? new Date(d.arrivedAt)   : null;
     const seenAt      = d.seenAt      ? new Date(d.seenAt)      : null;
+    const consultationCompletedAt = d.consultationCompletedAt ? new Date(d.consultationCompletedAt) : null;
+    const refractionStartedAt = d.refractionStartedAt ? new Date(d.refractionStartedAt) : null;
+    const refractionPassedOverAt = d.refractionPassedOverAt ? new Date(d.refractionPassedOverAt) : null;
     const finalizedAt = d.finalizedAt ? new Date(d.finalizedAt) : null;
     const waitMins    = arrivedAt && seenAt
       ? Math.max(0, Math.round((seenAt.getTime() - arrivedAt.getTime()) / 60000))
@@ -85,11 +88,17 @@ function EventDetail({ ev }: { ev: TimelineEvent }) {
     const totalMins   = arrivedAt && finalizedAt
       ? Math.max(0, Math.round((finalizedAt.getTime() - arrivedAt.getTime()) / 60000))
       : null;
+    const consultationMins = seenAt && consultationCompletedAt
+      ? Math.max(0, Math.round((consultationCompletedAt.getTime() - seenAt.getTime()) / 60000))
+      : null;
+    const refractionMins = refractionStartedAt && refractionPassedOverAt
+      ? Math.max(0, Math.round((refractionPassedOverAt.getTime() - refractionStartedAt.getTime()) / 60000))
+      : null;
     const fmtDur = (m: number) => m < 60 ? `${m} min` : `${Math.floor(m / 60)}h ${m % 60}m`;
 
     return (
       <div className="mt-3 space-y-3 text-caption sm:text-xs text-[var(--color-ink-700)]">
-        {(d.bookedAt || d.arrivedAt || d.seenAt || d.finalizedAt) && (
+        {(d.bookedAt || d.arrivedAt || d.seenAt || d.refractionStartedAt || d.finalizedAt) && (
           <div className="rounded-xl border border-[var(--color-border)] overflow-hidden">
             <p className="px-3 py-1.5 text-micro sm:text-micro sm:text-caption font-bold uppercase tracking-wider text-[var(--color-ink-500)] bg-[var(--color-surface-sunken)] border-b border-[var(--color-border)]">
               Visit Timeline
@@ -136,6 +145,46 @@ function EventDetail({ ev }: { ev: TimelineEvent }) {
                   </span>
                   <span className="font-semibold text-[var(--color-ink-800)]">
                     {timeOnly(seenAt)}
+                  </span>
+                </div>
+              )}
+              {consultationCompletedAt && (
+                <div className="flex items-center justify-between px-3 py-2">
+                  <span className="flex items-center gap-1.5 text-teal-600">
+                    <Stethoscope size={11} className="shrink-0" /> Consultation Completed
+                    {consultationMins !== null && (
+                      <span className="ml-1 text-[var(--color-ink-400)] font-normal">
+                        ({fmtDur(consultationMins)})
+                      </span>
+                    )}
+                  </span>
+                  <span className="font-semibold text-[var(--color-ink-800)]">
+                    {timeOnly(consultationCompletedAt)}
+                  </span>
+                </div>
+              )}
+              {refractionStartedAt && (
+                <div className="flex items-center justify-between px-3 py-2">
+                  <span className="flex items-center gap-1.5 text-cyan-600">
+                    <Clock size={11} className="shrink-0" /> Refraction Started
+                  </span>
+                  <span className="font-semibold text-[var(--color-ink-800)]">
+                    {timeOnly(refractionStartedAt)}
+                  </span>
+                </div>
+              )}
+              {refractionPassedOverAt && (
+                <div className="flex items-center justify-between px-3 py-2">
+                  <span className="flex items-center gap-1.5 text-cyan-700">
+                    <CheckCircle2 size={11} className="shrink-0" /> Passed to Doctor
+                    {refractionMins !== null && (
+                      <span className="ml-1 text-[var(--color-ink-400)] font-normal">
+                        ({fmtDur(refractionMins)})
+                      </span>
+                    )}
+                  </span>
+                  <span className="font-semibold text-[var(--color-ink-800)]">
+                    {timeOnly(refractionPassedOverAt)}
                   </span>
                 </div>
               )}

@@ -1307,7 +1307,7 @@ export function getOperations(scope: AnalyticsScope, f: AnalyticsFilters): Promi
     const [appts, prevCount, openDocs, openInv, overdueFu, awaiting, partial] = await Promise.all([
       prisma.appointment.findMany({
         where: apptWhere(scope, f, cur),
-        select: { dateTime: true, arrivedAt: true, completedAt: true, status: true, hospitalId: true, visit: { select: { date: true } } },
+        select: { dateTime: true, arrivedAt: true, completedAt: true, status: true, hospitalId: true, visit: { select: { date: true, consultationStartedAt: true } } },
       }),
       prisma.appointment.count({ where: apptWhere(scope, f, prev) }),
       prisma.visit.count({ where: { ...vAll, finalizedAt: null } }),
@@ -1321,8 +1321,8 @@ export function getOperations(scope: AnalyticsScope, f: AnalyticsFilters): Promi
 
     const MAX_MIN = 12 * 60;
     const waits = appts
-      .filter((a) => a.arrivedAt && a.visit?.date)
-      .map((a) => (a.visit!.date.getTime() - a.arrivedAt!.getTime()) / 60_000)
+      .filter((a) => a.arrivedAt && a.visit)
+      .map((a) => ((a.visit!.consultationStartedAt ?? a.visit!.date).getTime() - a.arrivedAt!.getTime()) / 60_000)
       .filter((m) => m >= 0 && m <= MAX_MIN);
     const inClinic = appts
       .filter((a) => a.arrivedAt && a.completedAt)

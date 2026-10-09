@@ -1,0 +1,2 @@
+ALTER TABLE "Visit" ADD COLUMN IF NOT EXISTS "consultationStartedAt"   TIMESTAMP(3);
+ALTER TABLE "Visit" ADD COLUMN IF NOT EXISTS "consultationCompletedAt" TIMESTAMP(3);
