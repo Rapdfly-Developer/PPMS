@@ -23,15 +23,21 @@ export function Tabs({
   onOverviewToggle?: () => void;
 }) {
   const [internalActive, setInternalActive] = useState(defaultTab ?? tabs[0]?.id);
-  const active = controlledActive ?? internalActive;
+  const requestedActive = controlledActive ?? internalActive;
+  const visibleTabs = tabs.filter((t) => !t.hidden);
+  // A permission change can hide the tab stored in a controlled tab context
+  // (or the caller's default tab). Never render the content of a hidden tab;
+  // fall back to the first tab the current user is allowed to see.
+  const active = visibleTabs.some((t) => t.id === requestedActive)
+    ? requestedActive
+    : visibleTabs[0]?.id;
 
   function handleTabChange(id: string) {
     if (controlledActive === undefined) setInternalActive(id);
     onTabChange?.(id);
   }
 
-  const activeTab = tabs.find((t) => t.id === active);
-  const visibleTabs = tabs.filter((t) => !t.hidden);
+  const activeTab = visibleTabs.find((t) => t.id === active);
   const totalRows = Math.ceil(visibleTabs.length / 2);
 
   // ── Sub variant — pill style, unchanged ──────────────────────────────────────
@@ -39,7 +45,7 @@ export function Tabs({
     return (
       <div className="w-full">
         <div className="flex flex-wrap gap-1.5 px-1 py-2 mb-4 rounded-xl bg-[var(--color-surface-1,#F1F5F9)] border border-[var(--color-border)]">
-          {tabs.map((tab) => (
+          {visibleTabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => handleTabChange(tab.id)}

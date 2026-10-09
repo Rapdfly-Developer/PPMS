@@ -8,6 +8,7 @@ import { writeAudit } from "@/lib/audit";
 import Anthropic from "@anthropic-ai/sdk";
 import { formatComplaintDisplay } from "@/lib/appointment-cc";
 import { istTodayRange } from "@/lib/ist";
+import { patientRecordScope } from "@/lib/patient-access";
 
 // ── Undo Dispense ────────────────────────────────────────────────────────────
 
@@ -539,7 +540,10 @@ export async function getPatientNoShows(patientId: string) {
 }
 
 export async function updatePatientDetails(patientId: string, data: Record<string, unknown>) {
-  const user = await requireRole("DOCTOR", "HOSPITAL");
+  const user = await requirePermission("patients.edit");
+  const scope = await patientRecordScope(user);
+  const patient = scope && await prisma.patient.findFirst({ where: { id: patientId, ...scope }, select: { id: true } });
+  if (!patient) throw new Error("Forbidden");
   const before = await prisma.patient.findUnique({ where: { id: patientId }, select: { name: true, age: true, mobile: true, complaint: true } });
   await prisma.patient.update({ where: { id: patientId }, data });
   writeAudit(user.id, "Patient", patientId, "UPDATE", data, {

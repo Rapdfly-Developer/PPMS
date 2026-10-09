@@ -26,6 +26,15 @@ async function assertVisitAccess(visitId: string) {
   return visit;
 }
 
+async function requireVisitWrite(visitId: string, ...permissions: string[]) {
+  const user = await requireUser();
+  if (!userCan(user, "emr.edit") && !permissions.some((permission) => userCan(user, permission))) {
+    throw new Error("Forbidden");
+  }
+  await assertVisitAccess(visitId);
+  return user;
+}
+
 /**
  * Ownership only: the visit is this doctor's, or at the staff member's own
  * hospital. Unlike assertVisitAccess it does not apply the finalised-visit
@@ -213,8 +222,7 @@ export async function verifyPastExternalVisit(id: string, udid: string, status: 
 // ── Ophthalmic Examination sub-modules ───────────────────────────────────
 
 export async function saveVisualAcuity(visitId: string, udid: string, data: { testMethod: string; re: string; le: string }) {
-  const exists = !!(await prisma.visualAcuity.findUnique({ where: { visitId }, select: { id: true } }));
-  const user = await requireRefractionWrite(visitId, exists);
+  const user = await requireVisitWrite(visitId, "emr.va.edit", "emr.ophthalmic.edit");
   const reviewedByDoctor = user.role === "DOCTOR";
   await prisma.visualAcuity.upsert({
     where: { visitId },
@@ -272,8 +280,7 @@ export async function sendToOpticals(visitId: string, udid: string) {
 }
 
 export async function saveColourVision(visitId: string, udid: string, data: { re: string; le: string }) {
-  const exists = !!(await prisma.colourVisionContrastSensitivity.findUnique({ where: { visitId }, select: { id: true } }));
-  const user = await requireRefractionWrite(visitId, exists);
+  const user = await requireVisitWrite(visitId, "emr.colour.edit", "emr.ophthalmic.edit");
   const reviewedByDoctor = user.role === "DOCTOR";
   await prisma.colourVisionContrastSensitivity.upsert({
     where: { visitId },
@@ -285,7 +292,7 @@ export async function saveColourVision(visitId: string, udid: string, data: { re
 }
 
 export async function addIOPReading(visitId: string, udid: string, data: { re?: number; le?: number; method: string }) {
-  const user = await requireRefractionWrite(visitId, false);
+  const user = await requireVisitWrite(visitId, "emr.iop.edit", "emr.ophthalmic.edit");
   await prisma.iOPReading.create({
     data: { visitId, re: data.re, le: data.le, method: data.method, source: user.role, reviewedByDoctor: user.role === "DOCTOR" },
   });
@@ -296,7 +303,7 @@ export async function addIOPReading(visitId: string, udid: string, data: { re?: 
 export async function removeIOPReading(id: string, udid: string) {
   const reading = await prisma.iOPReading.findUnique({ where: { id }, select: { visitId: true } });
   if (!reading) throw new Error("Reading not found");
-  const user = await requireRefractionWrite(reading.visitId, true);
+  const user = await requireVisitWrite(reading.visitId, "emr.iop.edit", "emr.ophthalmic.edit");
   await prisma.iOPReading.delete({ where: { id } });
   await writeAudit(user.id, "IOPReading", id, "DELETE", {});
   revalidate(udid);
@@ -352,9 +359,7 @@ export async function saveHess(visitId: string, udid: string, grid: string, inte
 }
 
 export async function saveRetinoscopy(visitId: string, udid: string, data: { re: string; le: string }) {
-  const user = await requireUser();
-  if (user.role !== "DOCTOR" && !userCan(user, "emr.ophthalmic.edit")) throw new Error("Forbidden");
-  await assertVisitAccess(visitId);
+  const user = await requireVisitWrite(visitId, "refraction.edit", "emr.refraction.edit", "emr.ophthalmic.edit");
   await prisma.retinoscopy.upsert({ where: { visitId }, create: { visitId, ...data }, update: data });
   await writeAudit(user.id, "Retinoscopy", visitId, "SAVE", data);
   revalidateAfter(udid);
@@ -630,8 +635,7 @@ export async function saveFollowUp(visitId: string, udid: string, data: { follow
 }
 
 export async function saveGonioNotes(visitId: string, udid: string, data: { re: string; le: string; reDeg?: string; leDeg?: string; method?: string }) {
-  await requireRole("DOCTOR");
-  await assertVisitAccess(visitId);
+  await requireVisitWrite(visitId, "emr.iop.edit", "emr.ophthalmic.edit");
   await prisma.visit.update({ where: { id: visitId }, data: { gonioNotes: JSON.stringify(data) } });
   revalidateAfter(udid);
 }

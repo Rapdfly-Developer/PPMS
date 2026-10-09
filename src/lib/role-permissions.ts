@@ -1,6 +1,76 @@
 import { prisma } from "@/lib/prisma";
 
 /**
+ * Action permissions imply the minimum read access needed to use that action.
+ * Stored role selections remain unchanged; this only expands the effective
+ * permission set loaded for a signed-in user.
+ */
+const PERMISSION_IMPLICATIONS: Record<string, string[]> = {
+  "opd.walkin.create": ["opd.view"],
+  "opd.queue.manage": ["opd.view"],
+  "opd.dispense": ["opd.view"],
+  "opd.partialDispense": ["opd.view"],
+
+  "appointments.create": ["appointments.view"],
+  "appointments.edit": ["appointments.view"],
+  "appointments.cancel": ["appointments.view"],
+  "appointments.noshow": ["appointments.view"],
+
+  "patients.create": ["patients.view"],
+  "patients.edit": ["patients.view"],
+  "patients.delete": ["patients.view"],
+
+  "emr.create": ["emr.view"],
+  "emr.edit": ["emr.view"],
+  "emr.print": ["emr.view"],
+  "emr.copilot.view": ["emr.view"],
+  "emr.general.edit": ["emr.general.view", "emr.view"],
+  "emr.va.edit": ["emr.va.view", "emr.view"],
+  "refraction.create": ["refraction.view", "emr.view"],
+  "refraction.edit": ["refraction.view", "emr.view"],
+  "emr.refraction.edit": ["refraction.view", "emr.view"],
+  "emr.iop.edit": ["emr.iop.view", "emr.view"],
+  "emr.colour.edit": ["emr.colour.view", "emr.view"],
+  "emr.anterior.edit": ["emr.anterior.view", "emr.view"],
+  "emr.posterior.edit": ["emr.posterior.view", "emr.view"],
+  "emr.assessment.edit": ["emr.assessment.view", "emr.view"],
+  "emr.plan.edit": ["emr.plan.view", "emr.view"],
+  "emr.medications.view": ["emr.plan.view", "emr.view"],
+  "emr.medications.edit": ["emr.medications.view", "emr.plan.view", "emr.view"],
+  "emr.ophthalmic.edit": ["emr.view"],
+  "investigations.create": ["investigations.view", "emr.view"],
+  "investigations.edit": ["investigations.view", "emr.view"],
+  "emr.labReports.upload": ["investigations.view", "emr.view"],
+  "emr.labReports.edit": ["investigations.view", "emr.view"],
+
+  "followups.edit": ["followups.view"],
+  "reports.export": ["reports.view"],
+  "availability.manage": ["availability.view"],
+  "settings.manage": ["settings.view"],
+  "users.manage": ["settings.view"],
+  "roles.manage": ["settings.view"],
+  "plugins.manage": ["plugins.view"],
+};
+
+export function expandPermissionImplications(permissions: string[]): string[] {
+  if (permissions.includes("*")) return permissions;
+  const effective = new Set(permissions);
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const permission of [...effective]) {
+      for (const implied of PERMISSION_IMPLICATIONS[permission] ?? []) {
+        if (!effective.has(implied)) {
+          effective.add(implied);
+          changed = true;
+        }
+      }
+    }
+  }
+  return [...effective];
+}
+
+/**
  * The doctor whose Role Manager settings govern this staff account: the
  * refractionist's own doctor, otherwise the doctor linked to the staff
  * member's hospital (earliest active link when a hospital has several).
@@ -66,5 +136,6 @@ export async function getSavedPermsForForms(roles: string[], doctorId: string): 
 /** Effective permissions for a signed-in account. */
 export async function getUserPermissions(userId: string, role: string): Promise<string[]> {
   if (role === "DOCTOR") return ["*"];
-  return getRolePermissionsForDoctor(role, await getOwnerDoctorId(userId));
+  const assigned = await getRolePermissionsForDoctor(role, await getOwnerDoctorId(userId));
+  return expandPermissionImplications(assigned);
 }

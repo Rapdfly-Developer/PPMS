@@ -70,13 +70,14 @@ export function EmrTabsShell({
   const [openPartialSignal, setOpenPartialSignal] = useState(0);
   const [editMode, setEditMode] = useState(searchParams.get("edit") === "1");
   const [overviewMode, setOverviewMode] = useState(false);
-  const currentIndex = tabs.findIndex((t) => t.id === activeTab);
+  const visibleTabs = tabs.filter((t) => !t.hidden);
+  const currentIndex = visibleTabs.findIndex((t) => t.id === activeTab);
 
   const closed = visit.status === "CLOSED";
   const showEditGate = closed && !!finalizedToday && !editMode;
 
   function nextSection() {
-    const next = tabs[currentIndex + 1];
+    const next = visibleTabs[currentIndex + 1];
     if (next) setActiveTab(next.id);
   }
 

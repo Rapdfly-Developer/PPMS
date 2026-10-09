@@ -260,6 +260,7 @@ export default async function PatientDetailedEMR({
     userCan(user, "emr.ophthalmic.edit") ||
     userCan(user, "emr.labReports.edit");
   const readOnly = viewOnlySource || !canEditSomething || visitLocked;
+  const canViewGeneral = userCan(user, "emr.general.view");
   const generalReadOnly = viewOnlySource || !userCan(user, "emr.general.edit") || visitLocked;
   // Refraction-workflow sections split into per-section flags so each can be
   // granted or revoked independently. DOCTOR has * so all resolve true.
@@ -290,10 +291,14 @@ export default async function PatientDetailedEMR({
   const canPrint = userCan(user, "emr.print");
   const canPartialDispense = userCan(user, "opd.partialDispense");
   // Ophthalmic sub-tab visibility
-  const canViewVA       = userCan(user, "emr.va.view");
-  const canViewIOP      = userCan(user, "emr.iop.view");
+  const canViewVA = userCan(user, "emr.va.view");
+  const canViewRefraction = userCan(user, "refraction.view");
+  const canViewColour = userCan(user, "emr.colour.view");
+  const canViewIOP = userCan(user, "emr.iop.view");
   const canViewAnterior = userCan(user, "emr.anterior.view");
   const canViewPosterior = userCan(user, "emr.posterior.view");
+  const canViewOphthalmic = canViewVA || canViewRefraction || canViewColour || canViewIOP || canViewAnterior || canViewPosterior;
+  const canUseCopilot = userCan(user, "emr.copilot.view");
 
   // Closed by the EOD sweep rather than finalized & signed by the doctor
   const autoClosed =
@@ -534,7 +539,7 @@ export default async function PatientDetailedEMR({
 
         {/* Quick-nav buttons into hidden tabs — sit at the foot of the banner */}
         {activeVisit && (
-          <EmrBannerNavButtons priorRecordsCount={patient.pastExternalVisits.length} visitId={activeVisit.id} />
+          <EmrBannerNavButtons priorRecordsCount={patient.pastExternalVisits.length} visitId={activeVisit.id} canUseCopilot={canUseCopilot} />
         )}
       </div>
 
@@ -594,7 +599,8 @@ export default async function PatientDetailedEMR({
                 id: "general",
                 label: "General",
                 icon: <User size={14} />,
-                content: (
+                hidden: !canViewGeneral,
+                content: canViewGeneral ? (
                   <div className="flex flex-col gap-4">
                     <GeneralExamTab
                       visit={activeVisit}
@@ -603,7 +609,7 @@ export default async function PatientDetailedEMR({
                       readOnly={generalReadOnly}
                     />
                   </div>
-                ),
+                ) : null,
               },
               {
                 id: "prior-records",
@@ -633,7 +639,8 @@ export default async function PatientDetailedEMR({
                 id: "ophthalmic",
                 label: "Ophthalmic",
                 icon: <Eye size={14} />,
-                content: (
+                hidden: !canViewOphthalmic,
+                content: canViewOphthalmic ? (
                   <div className="flex flex-col gap-4">
                     <OphthalmicExamTab
                       visit={activeVisit}
@@ -647,12 +654,14 @@ export default async function PatientDetailedEMR({
                       canEditAnterior={canEditAnterior}
                       canEditPosterior={canEditPosterior}
                       canViewVA={canViewVA}
+                      canViewRefraction={canViewRefraction}
+                      canViewColour={canViewColour}
                       canViewIOP={canViewIOP}
                       canViewAnterior={canViewAnterior}
                       canViewPosterior={canViewPosterior}
                     />
                   </div>
-                ),
+                ) : null,
               },
               {
                 id: "assess",

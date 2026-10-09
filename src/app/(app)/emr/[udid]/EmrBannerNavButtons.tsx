@@ -8,9 +8,11 @@ import { CopilotDrawer } from "./CopilotDrawer";
 export function EmrBannerNavButtons({
   priorRecordsCount,
   visitId,
+  canUseCopilot,
 }: {
   priorRecordsCount: number;
   visitId: string;
+  canUseCopilot: boolean;
 }) {
   const { setActiveTab } = useEmrTabs();
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -30,13 +32,15 @@ export function EmrBannerNavButtons({
             </span>
           )}
         </button>
-        <button
-          onClick={() => setDrawerOpen(true)}
-          className="flex items-center gap-1.5 text-caption font-semibold px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 active:bg-white/25 text-white/80 border border-white/15 transition-colors"
-        >
-          <Sparkles size={12} />
-          Co-pilot Assistance
-        </button>
+        {canUseCopilot && (
+          <button
+            onClick={() => setDrawerOpen(true)}
+            className="flex items-center gap-1.5 text-caption font-semibold px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 active:bg-white/25 text-white/80 border border-white/15 transition-colors"
+          >
+            <Sparkles size={12} />
+            Co-pilot Assistance
+          </button>
+        )}
       </div>
       {drawerOpen && (
         <CopilotDrawer visitId={visitId} onClose={() => setDrawerOpen(false)} />

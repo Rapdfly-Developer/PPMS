@@ -331,9 +331,9 @@ export default async function PatientProfilePage({
                   </span>
                 </div>
               </div>
-              {user.role === "DOCTOR" && (
+              {(userCan(user, "patients.edit") || (user.role === "DOCTOR" && userCan(user, "patients.delete"))) && (
                 <div className="flex items-center gap-1 shrink-0">
-                  <EditPatientButton
+                  {userCan(user, "patients.edit") && <EditPatientButton
                     patientId={patient.id}
                     className="rounded-lg p-1.5 text-white/50 transition-colors hover:bg-white/10 hover:text-white"
                     defaultValues={{
@@ -349,14 +349,14 @@ export default async function PatientProfilePage({
                       state: patient.state ?? null,
                       pincode: patient.pincode ?? null,
                     }}
-                  />
-                  <DeletePatientButton
+                  />}
+                  {user.role === "DOCTOR" && userCan(user, "patients.delete") && <DeletePatientButton
                     patientId={patient.id}
                     patientName={patient.name}
                     patientCode={patient.udid || patient.uhid || patient.id}
                     redirectTo="/patients"
                     className="rounded-lg p-1.5 text-white/50 transition-colors hover:bg-white/10 hover:text-red-300"
-                  />
+                  />}
                 </div>
               )}
             </div>
