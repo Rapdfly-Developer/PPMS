@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { convertNotesToCC } from "@/lib/appointment-cc";
 import { ChevronDown, AlertTriangle, Plus, X, Tag } from "lucide-react";
 import { Card } from "@/components/ui/Card";
@@ -11,12 +11,33 @@ import { parseJSON } from "@/lib/json";
 import { useAutoSave, SaveIndicator } from "@/lib/useAutoSave";
 import { KeywordTextarea, KeywordChipsRow, removeKeywordFromText } from "@/components/emr/KeywordField";
 import { saveGeneralExam } from "./actions";
+import { type MedEntry, searchMedications } from "@/lib/ophthalmic-medications";
 import { useEmrOverview } from "./EmrOverviewContext";
 import { ComplaintChips } from "@/components/ui/ComplaintChips";
 
 const LATERALITY_OPTIONS = ["RE", "LE", "OU"] as const;
 type Laterality = typeof LATERALITY_OPTIONS[number];
 const SINCE_UNITS = ["days", "weeks", "months", "years"] as const;
+
+type CurrentMed = { drugName: string; dosage: string; frequency: string; duration: string };
+
+function parseMeds(raw: string): CurrentMed[] {
+  if (!raw.trim()) return [{ drugName: "", dosage: "", frequency: "", duration: "" }];
+  try {
+    const arr = JSON.parse(raw);
+    if (Array.isArray(arr) && arr.length > 0) return arr as CurrentMed[];
+  } catch {}
+  return [{ drugName: raw.trim(), dosage: "", frequency: "", duration: "" }];
+}
+
+function serializeMeds(meds: CurrentMed[]): string {
+  const filled = meds.filter((m) => m.drugName.trim());
+  return filled.length === 0 ? "" : JSON.stringify(filled);
+}
+
+const CM_DOSE_OPTIONS = ["1 drop","2 drops","½ tablet","1 tablet","2 tablets","1 capsule","25 mg","50 mg","100 mg","250 mg","500 mg","1 g"];
+const CM_FREQ_OPTIONS = ["OD (Once daily)","BD (Twice daily)","TID (Three times daily)","QID (Four times daily)","5 times daily","QHS (At bedtime)","PRN (As needed)"];
+const CM_DUR_OPTIONS  = ["1 day","3 days","1 week","2 weeks","1 month","3 months","6 months","1 year","Long-term","As needed","Until healed"];
 
 function parseComplaintPrefixes(text: string): { lat: Laterality | null; sinceNum: string; sinceUnit: string; body: string } {
   let rest = text;
@@ -59,7 +80,7 @@ function serializeComplaints(list: Complaint[]): string {
     .join(COMPLAINT_SEP);
 }
 
-/* Past medical history is stored in the same JSON column as before, but each
+/* Past history is stored in the same JSON column as before, but each
    entry now carries an optional duration:
      [{ name: "HTN", sinceNum: "2", sinceUnit: "years" }, ...]
    Records written by the earlier chip UI are a plain string[] ("HTN"), so the
@@ -226,41 +247,47 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly }: { visit: 
   const [complaints, setComplaints] = useState<Complaint[]>(() => parseComplaints(ge?.chiefComplaint ?? ""));
   const [openKwIdx, setOpenKwIdx] = useState<number | null>(null);
   const [hpi, setHpi] = useState(ge?.hpi ?? "");
-  const [pmh, setPmh] = useState<PmhEntry[]>(() => parsePmh(ge?.pastMedicalHistory));
-  const [pmhOptions, setPmhOptions] = useState<string[]>(() => {
-    const saved = parsePmh(ge?.pastMedicalHistory).map((entry) => entry.name);
-    return [...new Set([...PAST_MEDICAL_HISTORY_CHIPS, ...saved])];
+  const [pmh, setPmh] = useState<PmhEntry[]>(() => {
+    // Every saved visit contains a cumulative snapshot. Seed from the newest
+    // prior snapshot so deleted entries do not reappear from older visits.
+    const latestPrior = priorVisits
+      .map((prior) => parsePmh(prior.generalExam?.pastMedicalHistory))
+      .find((entries) => entries.length > 0) ?? [];
+    const initial = mergePmh(latestPrior, parsePmh(ge?.pastMedicalHistory));
+    return initial.length > 0 ? initial : [emptyPmh()];
   });
-  const [addingPmhKeyword, setAddingPmhKeyword] = useState(false);
-  const [newPmhKeyword, setNewPmhKeyword] = useState("");
   const [pmhOther, setPmhOther] = useState(ge?.pmhOtherText ?? "");
 
-  const [medications, setMedications] = useState(ge?.medications ?? "");
+  const [medRows, setMedRows] = useState<CurrentMed[]>(() => parseMeds(ge?.medications ?? ""));
+  const medications = serializeMeds(medRows);
   const [allergies, setAllergies] = useState(ge?.allergies ?? "");
   const [nkda, setNkda] = useState(ge?.nkda ?? false);
 
-  // PMH persists cumulatively across visits per the PRD
-  const priorPmh = priorVisits.flatMap((v) => parsePmh(v.generalExam?.pastMedicalHistory));
-  const cumulativePmh = mergePmh(priorPmh, pmh);
-  const displayPmhOptions = [...new Set([...pmhOptions, ...cumulativePmh.map((entry) => entry.name)])];
+  const cumulativePmh = pmh.filter((entry) => entry.name.trim());
+  const displayPmhOptions = [...new Set([...PAST_MEDICAL_HISTORY_CHIPS, ...cumulativePmh.map((entry) => entry.name)])];
 
-  const togglePmh = (name: string) => {
+  const patchPmh = (index: number, patch: Partial<PmhEntry>) =>
+    setPmh((current) => current.map((entry, i) => (i === index ? { ...entry, ...patch } : entry)));
+
+  const addPmhRow = (name = "") => {
+    const normalized = name.trim().toLowerCase();
     setPmh((current) => {
-      const exists = current.some((entry) => entry.name.toLowerCase() === name.toLowerCase());
-      return exists
-        ? current.filter((entry) => entry.name.toLowerCase() !== name.toLowerCase())
-        : [...current, emptyPmh(name)];
+      if (normalized && current.some((entry) => entry.name.trim().toLowerCase() === normalized)) return current;
+      // If adding a named entry and there's already an empty row, fill it rather than appending.
+      if (normalized) {
+        const emptyIdx = current.findIndex((entry) => !entry.name.trim());
+        if (emptyIdx !== -1) {
+          return current.map((entry, i) => i === emptyIdx ? { ...entry, name: name.trim() } : entry);
+        }
+      }
+      // Don't add a second empty row if one already exists.
+      if (!normalized && current.some((entry) => !entry.name.trim())) return current;
+      return [...current, emptyPmh(name)];
     });
   };
 
-  const addPmhKeyword = () => {
-    const name = newPmhKeyword.trim();
-    if (!name) return;
-    setPmhOptions((current) => current.some((option) => option.toLowerCase() === name.toLowerCase()) ? current : [...current, name]);
-    setPmh((current) => current.some((entry) => entry.name.toLowerCase() === name.toLowerCase()) ? current : [...current, emptyPmh(name)]);
-    setNewPmhKeyword("");
-    setAddingPmhKeyword(false);
-  };
+  const removePmhRow = (index: number) =>
+    setPmh((current) => current.filter((_, i) => i !== index));
 
   const chiefComplaintFull = serializeComplaints(complaints);
   const data = { bp, pulse, temperature, weight, chiefComplaint: chiefComplaintFull, hpi, pastMedicalHistory: JSON.stringify(cumulativePmh), pmhOtherText: pmhOther, medications, allergies, nkda };
@@ -291,7 +318,7 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly }: { visit: 
   const hasCC         = complaints.some((c) => c.text.trim());
   const hasHpi        = !!hpi.trim();
   const hasPmh        = cumulativePmh.length > 0;
-  const hasMeds       = !!medications.trim();
+  const hasMeds       = medRows.some((m) => m.drugName.trim());
   const hasOtherHistory = !!pmhOther.trim();
   const hasAllergies  = nkda || !!allergies.trim();
   const hasVitals     = !!(bp || pulse || temperature || weight);
@@ -436,55 +463,107 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly }: { visit: 
       </Card>
       </div>
 
-      {/* PAST MEDICAL HISTORY */}
+      {/* PAST HISTORY */}
       <div {...(overview && !hasPmh ? { "data-overview-empty-section": "" } : {})}>
       <Card>
-        <p className="text-xs font-semibold tracking-widest text-[var(--color-ink-500)] uppercase mb-3">
-          Past Medical History <span className="text-caption font-normal normal-case tracking-normal text-[var(--color-ink-400)]">(cumulative across visits)</span>
-        </p>
-        <div className="flex flex-wrap items-center gap-1.5">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <p className="text-xs font-semibold tracking-widest text-[var(--color-ink-500)] uppercase">
+            Past History <span className="text-caption font-normal normal-case tracking-normal text-[var(--color-ink-400)]">(cumulative across visits)</span>
+          </p>
           {!readOnly && (
             <button
               data-overview-hide
               type="button"
-              onClick={() => setAddingPmhKeyword(true)}
-              className="inline-flex items-center gap-0.5 rounded border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] px-2 py-1 text-caption font-medium text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] transition-colors"
+              onClick={() => addPmhRow()}
+              aria-label="Add past history entry"
+              title="Add past history entry"
+              className="inline-flex items-center gap-1 rounded-lg border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] px-2.5 py-1.5 text-caption font-semibold text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] transition-colors"
             >
-              <Plus size={12} strokeWidth={2.5} /> Add
+              <Plus size={13} strokeWidth={2.5} /> Add
             </button>
           )}
-          {visiblePmhOptions.map((option) => (
-            <button
-              key={option}
-              type="button"
-              disabled={readOnly}
-              className="chip disabled:cursor-default"
-              data-active={cumulativePmh.some((entry) => entry.name.toLowerCase() === option.toLowerCase())}
-              onClick={() => togglePmh(option)}
-            >
-              {option}
-            </button>
-          ))}
         </div>
-        {addingPmhKeyword && !readOnly && (
-          <div className="mt-2 flex max-w-sm items-center gap-2">
-            <input
-              autoFocus
-              value={newPmhKeyword}
-              onChange={(event) => setNewPmhKeyword(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") { event.preventDefault(); addPmhKeyword(); }
-                if (event.key === "Escape") { setAddingPmhKeyword(false); setNewPmhKeyword(""); }
-              }}
-              placeholder="Add medical history keyword"
-              className="min-w-0 flex-1 rounded-lg border border-[var(--color-border)] bg-white px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
-            />
-            <button type="button" onClick={addPmhKeyword} disabled={!newPmhKeyword.trim()} className="rounded-lg bg-[var(--color-primary-600)] px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50">
-              Add
-            </button>
-            <button type="button" onClick={() => { setAddingPmhKeyword(false); setNewPmhKeyword(""); }} className="p-1.5 text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)]" aria-label="Cancel adding keyword">
-              <X size={14} />
-            </button>
+
+        <div className="space-y-2">
+          {pmh.map((entry, index) => (
+            <div
+              key={index}
+              className="flex items-start gap-2"
+            >
+              <span className="w-6 pt-2 text-caption font-semibold tabular-nums text-[var(--color-ink-400)]">{index + 1}.</span>
+              <div className="grid min-w-0 flex-1 grid-cols-[auto_4.5rem_minmax(0,1fr)_auto] items-center gap-2 sm:grid-cols-[minmax(12rem,1fr)_auto_4.5rem_6.5rem_auto]">
+                <input
+                  value={entry.name}
+                  onChange={(event) => patchPmh(index, { name: event.target.value })}
+                  disabled={readOnly}
+                  aria-label={`Past history condition ${index + 1}`}
+                  placeholder="Enter condition or past procedure"
+                  className="col-span-4 min-w-0 rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-sm text-[var(--color-ink-800)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] disabled:bg-[var(--color-surface-sunken)] sm:col-span-1"
+                />
+                <span className="text-caption font-semibold text-[var(--color-ink-400)]">Since</span>
+                <select
+                  value={entry.sinceNum}
+                  onChange={(event) => patchPmh(index, { sinceNum: event.target.value })}
+                  disabled={readOnly}
+                  aria-label={`Past history duration ${index + 1}`}
+                  className="rounded-lg border border-[var(--color-border)] bg-white px-2 py-2 text-sm text-[var(--color-ink-700)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] disabled:bg-[var(--color-surface-sunken)]"
+                >
+                  <option value="">—</option>
+                  {Array.from({ length: 100 }, (_, n) => n + 1).map((n) => (
+                    <option key={n} value={String(n)}>{n}</option>
+                  ))}
+                </select>
+                <select
+                  value={entry.sinceUnit}
+                  onChange={(event) => patchPmh(index, { sinceUnit: event.target.value })}
+                  disabled={readOnly || !entry.sinceNum}
+                  aria-label={`Past history duration unit ${index + 1}`}
+                  className="rounded-lg border border-[var(--color-border)] bg-white px-2 py-2 text-sm capitalize text-[var(--color-ink-700)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] disabled:bg-[var(--color-surface-sunken)] disabled:opacity-60"
+                >
+                  {SINCE_UNITS.map((unit) => (
+                    <option key={unit} value={unit}>{unit}</option>
+                  ))}
+                </select>
+                {!readOnly && (
+                  <button
+                    data-overview-hide
+                    type="button"
+                    onClick={() => removePmhRow(index)}
+                    aria-label={`Delete past history entry ${index + 1}`}
+                    title="Delete entry"
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-[var(--color-ink-400)] hover:bg-red-50 hover:text-red-600 focus:outline-none focus:ring-2 focus:ring-red-400 transition-colors"
+                  >
+                    <X size={15} strokeWidth={2.25} />
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+          {pmh.length === 0 && (
+            <p className="rounded-lg border border-dashed border-[var(--color-border)] px-3 py-2 text-caption text-[var(--color-ink-400)]">
+              {readOnly ? "No past history recorded." : "No past history added."}
+            </p>
+          )}
+        </div>
+
+        {!readOnly && (
+          <div data-overview-hide className="mt-3 flex flex-wrap items-center gap-1.5 border-t border-[var(--color-border)] pt-3">
+            <span className="mr-1 text-caption font-semibold text-[var(--color-ink-400)]">Keywords</span>
+            {visiblePmhOptions.map((option) => {
+              const active = cumulativePmh.some((entry) => entry.name.toLowerCase() === option.toLowerCase());
+              return (
+                <button
+                  key={option}
+                  type="button"
+                  disabled={active}
+                  className="chip disabled:cursor-default"
+                  data-active={active}
+                  onClick={() => addPmhRow(option)}
+                >
+                  {option}
+                </button>
+              );
+            })}
           </div>
         )}
       </Card>
@@ -493,17 +572,21 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly }: { visit: 
       {/* CURRENT MEDICATIONS */}
       <div {...(overview && !hasMeds ? { "data-overview-empty-section": "" } : {})}>
       <Card>
-        <FieldWithHistory label="CURRENT MEDICATIONS" history={histFor((g) => g.medications)} currentValue={medications} onLoad={readOnly ? undefined : setMedications}>
-          <KeywordTextarea fieldKey="ge_medications" value={medications} onChange={setMedications} disabled={readOnly} rows={2} placeholder="Drug, dosage, frequency" />
+        <FieldWithHistory label="CURRENT MEDICATIONS" history={histFor((g) => g.medications)} currentValue={medications} onLoad={readOnly ? undefined : (v) => setMedRows(parseMeds(v))}>
+          {readOnly ? (
+            <CmReadOnly meds={medRows.filter((m) => m.drugName.trim())} />
+          ) : (
+            <CmEditor rows={medRows} onChange={setMedRows} />
+          )}
         </FieldWithHistory>
       </Card>
       </div>
 
-      {/* OTHER MEDICAL HISTORY */}
+      {/* SYSTEMIC HISTORY */}
       <div {...(overview && !hasOtherHistory ? { "data-overview-empty-section": "" } : {})}>
       <Card>
-        <FieldWithHistory label="OTHER MEDICAL HISTORY" history={histFor((g) => g.pmhOtherText)} currentValue={pmhOther} onLoad={readOnly ? undefined : setPmhOther}>
-          <KeywordTextarea fieldKey="ge_pmh_other" value={pmhOther} onChange={setPmhOther} disabled={readOnly} rows={3} placeholder="Add any other relevant medical history..." />
+        <FieldWithHistory label="SYSTEMIC HISTORY" history={histFor((g) => g.pmhOtherText)} currentValue={pmhOther} onLoad={readOnly ? undefined : setPmhOther}>
+          <KeywordTextarea fieldKey="ge_pmh_other" value={pmhOther} onChange={setPmhOther} disabled={readOnly} rows={3} placeholder="Add relevant systemic history..." />
         </FieldWithHistory>
       </Card>
       </div>
@@ -579,6 +662,145 @@ function Field({ label, value, onChange, placeholder, readOnly }: { label: strin
         placeholder={placeholder}
         className="mt-1 w-full rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] disabled:bg-[var(--color-surface-sunken)]"
       />
+    </div>
+  );
+}
+
+// ── Current Medications structured editor ─────────────────────────────────
+
+function CmDrugInput({ value, onChange, className }: { value: string; onChange: (name: string, defaultDose?: string) => void; className?: string }) {
+  const [open, setOpen] = useState(false);
+  const blurRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const suggestions = useMemo(() => searchMedications(value), [value]);
+
+  return (
+    <div className="relative flex-1 min-w-0">
+      <input
+        value={value}
+        onChange={(e) => { onChange(e.target.value); setOpen(true); }}
+        onFocus={() => setOpen(true)}
+        onBlur={() => { blurRef.current = setTimeout(() => setOpen(false), 150); }}
+        placeholder="Drug name"
+        className={className}
+        autoComplete="off"
+      />
+      {open && suggestions.length > 0 && (
+        <div
+          className="absolute z-50 left-0 right-0 top-full mt-0.5 bg-white rounded-xl shadow-xl border border-[var(--color-border)] overflow-auto"
+          style={{ maxHeight: 200 }}
+          onMouseDown={(e) => { e.preventDefault(); if (blurRef.current) clearTimeout(blurRef.current); }}
+        >
+          {suggestions.map((med: MedEntry) => (
+            <button
+              key={med.id}
+              type="button"
+              onClick={() => { onChange(med.name, med.defaultDose); setOpen(false); }}
+              className="w-full text-left px-3 py-1.5 text-xs border-b border-[var(--color-border)] last:border-0 hover:bg-[var(--color-primary-50)] hover:text-[var(--color-primary-700)] transition-colors"
+            >
+              <span className="font-semibold">{med.name}</span>
+              {med.defaultDose && <span className="text-[var(--color-ink-400)] ml-1">· {med.defaultDose}</span>}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CmOptionsInput({ value, options, onChange, placeholder, className }: { value: string; options: string[]; onChange: (v: string) => void; placeholder?: string; className?: string }) {
+  const [open, setOpen] = useState(false);
+  const blurRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const filtered = useMemo(() => {
+    const q = value.trim().toLowerCase();
+    return q ? options.filter((o) => o.toLowerCase().includes(q)) : options;
+  }, [value, options]);
+
+  return (
+    <div className="relative">
+      <input
+        value={value}
+        onChange={(e) => { onChange(e.target.value); setOpen(true); }}
+        onFocus={() => setOpen(true)}
+        onBlur={() => { blurRef.current = setTimeout(() => setOpen(false), 150); }}
+        placeholder={placeholder}
+        className={className}
+        autoComplete="off"
+      />
+      {open && filtered.length > 0 && (
+        <div
+          className="absolute z-50 left-0 right-0 top-full mt-0.5 bg-white rounded-xl shadow-xl border border-[var(--color-border)] overflow-auto"
+          style={{ maxHeight: 160 }}
+          onMouseDown={(e) => { e.preventDefault(); if (blurRef.current) clearTimeout(blurRef.current); }}
+        >
+          {filtered.map((opt) => (
+            <button
+              key={opt}
+              type="button"
+              onClick={() => { onChange(opt); setOpen(false); }}
+              className="w-full text-left px-3 py-1.5 text-xs border-b border-[var(--color-border)] last:border-0 hover:bg-[var(--color-primary-50)] hover:text-[var(--color-primary-700)] transition-colors"
+            >
+              {opt}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CmEditor({ rows, onChange }: { rows: CurrentMed[]; onChange: (r: CurrentMed[]) => void }) {
+  const set = (i: number, field: keyof CurrentMed, val: string) =>
+    onChange(rows.map((r, idx) => (idx === i ? { ...r, [field]: val } : r)));
+
+  const remove = (i: number) => {
+    const next = rows.filter((_, idx) => idx !== i);
+    onChange(next.length === 0 ? [{ drugName: "", dosage: "", frequency: "", duration: "" }] : next);
+  };
+
+  const inputCls = "w-full rounded-lg border border-[var(--color-border)] bg-white px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-400)]";
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      {rows.map((row, i) => (
+        <div key={i} className="flex items-center gap-1.5">
+          <CmDrugInput
+            value={row.drugName}
+            onChange={(name, defaultDose) =>
+              onChange(rows.map((r, idx) => idx === i ? { ...r, drugName: name, ...(defaultDose && !r.dosage ? { dosage: defaultDose } : {}) } : r))
+            }
+            className={`${inputCls} flex-1 min-w-0`}
+          />
+          <CmOptionsInput value={row.dosage} options={CM_DOSE_OPTIONS} onChange={(v) => set(i, "dosage", v)} placeholder="Dose" className={`${inputCls} w-20 shrink-0`} />
+          <CmOptionsInput value={row.frequency} options={CM_FREQ_OPTIONS} onChange={(v) => set(i, "frequency", v)} placeholder="Frequency" className={`${inputCls} w-32 shrink-0`} />
+          <CmOptionsInput value={row.duration} options={CM_DUR_OPTIONS} onChange={(v) => set(i, "duration", v)} placeholder="Duration" className={`${inputCls} w-24 shrink-0`} />
+          <button type="button" onClick={() => remove(i)} className="shrink-0 text-[var(--color-ink-300)] hover:text-red-500 p-0.5 transition-colors">
+            <X size={13} />
+          </button>
+        </div>
+      ))}
+      <button
+        type="button"
+        onClick={() => onChange([...rows, { drugName: "", dosage: "", frequency: "", duration: "" }])}
+        className="self-start text-xs text-[var(--color-primary-700)] hover:underline mt-0.5"
+      >
+        + Add medication
+      </button>
+    </div>
+  );
+}
+
+function CmReadOnly({ meds }: { meds: CurrentMed[] }) {
+  if (meds.length === 0) return null;
+  return (
+    <div className="flex flex-col gap-1">
+      {meds.map((m, i) => (
+        <div key={i} className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm">
+          <span className="font-medium text-[var(--color-ink-800)]">{m.drugName}</span>
+          {m.dosage    && <span className="text-[var(--color-ink-500)]">{m.dosage}</span>}
+          {m.frequency && <span className="text-[var(--color-ink-500)]">{m.frequency}</span>}
+          {m.duration  && <span className="text-[var(--color-primary-700)]">{m.duration}</span>}
+        </div>
+      ))}
     </div>
   );
 }
