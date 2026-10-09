@@ -242,37 +242,20 @@ export default async function PatientsPage({
       take:    6,
       select:  { name: true, udid: true, uhid: true, sex: true, age: true, category: true, createdAt: true, mobile: true, photoUrl: true },
     }),
-    // Patients who physically arrived (any date) but didn't complete consultation.
-    // Walk-ins skip the arrivedAt flow so match on isWalkIn; regular appointments
-    // need arrivedAt set (meaning they were actually moved into the queue).
-    // No date filter — older unfinished cases must persist in the registry.
+    // No-show registry: past appointments where consultation never started
+    // (no Visit record created) and the appointment was not cancelled or rescheduled.
     prisma.appointment.findMany({
       where: {
         ...apptScope,
-        status: { in: ["CONFIRMED", "PARTIAL_DISPENSE"] },
-        OR: [
-          { isWalkIn: true },
-          { arrivedAt: { not: null } },
-        ],
+        visit:    null,
+        dateTime: { lt: today },
+        status:   { notIn: ["CANCELLED", "RESCHEDULED", "DISPENSED"] },
       },
       include: {
         patient:  { select: { name: true, udid: true, uhid: true, age: true, sex: true, mobile: true, photoUrl: true } },
         hospital: { select: { name: true } },
-        // Fetch clinical data from the unfinished visit so cards don't show
-        // data from a different, already-completed consultation.
-        visit: {
-          select: {
-            visitType: true,
-            generalExam: { select: { chiefComplaint: true } },
-            diagnoses: {
-              select: { description: true, laterality: true },
-              orderBy: { createdAt: "asc" as const },
-              take: 4,
-            },
-          },
-        },
       },
-      orderBy: { arrivedAt: "asc" },
+      orderBy: { dateTime: "desc" as const },
     }),
   ]);
 
@@ -343,12 +326,8 @@ export default async function PatientsPage({
     // visit would inherit if a visit record exists.
     visitType:     a.visitType,
     hospitalName:  a.hospital?.name ?? null,
-    // Clinical data from the linked unfinished visit record (null if not yet created)
-    chiefComplaint: a.visit?.generalExam?.chiefComplaint ?? null,
-    diagnoses:     (a.visit?.diagnoses ?? []).map((d) => ({
-      description: d.description,
-      laterality:  d.laterality ?? null,
-    })),
+    chiefComplaint: null,
+    diagnoses:     [],
     patient: {
       name:     a.patient.name,
       udid:     a.patient.udid ?? "",

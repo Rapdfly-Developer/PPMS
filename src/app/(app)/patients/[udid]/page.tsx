@@ -137,7 +137,12 @@ export default async function PatientProfilePage({
 
   /* ── No Show count ───────────────────────────────────────────────────── */
   const noShowCount = await prisma.appointment.count({
-    where: { patientId: patient.id, status: "NO_SHOW" },
+    where: {
+      patientId: patient.id,
+      visit:     null,
+      dateTime:  { lt: startOfDay(new Date()) },
+      status:    { notIn: ["CANCELLED", "RESCHEDULED", "DISPENSED"] },
+    },
   });
 
   /* ── Patient timeline — finalization audit entries ───────────────────── */
