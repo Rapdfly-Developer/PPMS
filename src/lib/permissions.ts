@@ -86,12 +86,6 @@ export const P = {
   INVESTIGATIONS_CREATE:   "investigations.create",
   INVESTIGATIONS_EDIT:     "investigations.edit",
 
-  // Billing
-  BILLING_VIEW:            "billing.view",
-  BILLING_CREATE:          "billing.create",
-  BILLING_EDIT:            "billing.edit",
-  BILLING_PRINT:           "billing.print",
-
   // Reports / Analytics
   REPORTS_VIEW:            "reports.view",
   REPORTS_EXPORT:          "reports.export",
@@ -103,12 +97,6 @@ export const P = {
   // Settings
   SETTINGS_VIEW:           "settings.view",
   SETTINGS_MANAGE:         "settings.manage",
-
-  // Insurance / Billing
-  INSURANCE_VIEW:          "insurance.view",
-  INSURANCE_CREATE:        "insurance.create",
-  INSURANCE_EDIT:          "insurance.edit",
-  INSURANCE_MANAGE:        "insurance.manage",
 
   // Follow-ups
   FOLLOWUPS_VIEW:          "followups.view",
@@ -159,16 +147,8 @@ export const ROLE_DEFAULT_PERMISSIONS: Record<string, string[]> = {
     P.INVESTIGATIONS_CREATE,
     P.INVESTIGATIONS_EDIT,
     P.EMR_COPILOT_VIEW,
-    P.BILLING_VIEW,
-    P.BILLING_CREATE,
-    P.BILLING_EDIT,
-    P.BILLING_PRINT,
     P.REPORTS_VIEW,
     P.REPORTS_EXPORT,
-    P.INSURANCE_VIEW,
-    P.INSURANCE_CREATE,
-    P.INSURANCE_EDIT,
-    P.INSURANCE_MANAGE,
     P.FOLLOWUPS_VIEW,
     P.FOLLOWUPS_EDIT,
     P.SETTINGS_VIEW,

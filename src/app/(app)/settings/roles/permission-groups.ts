@@ -169,28 +169,6 @@ export const PERMISSION_GROUPS: {
     ],
   },
 
-  // ── Billing ───────────────────────────────────────────────────────────────
-  {
-    category: "Billing",
-    permissions: [
-      { key: "billing.view",   label: "View Billing",       description: "See invoices, receipts and payment history" },
-      { key: "billing.create", label: "Create Invoices",    description: "Generate new bills and invoices" },
-      { key: "billing.edit",   label: "Edit Billing",       description: "Modify existing invoices and payment records" },
-      { key: "billing.print",  label: "Print / Export Bills","description": "Download or print receipts and billing summaries" },
-    ],
-  },
-
-  // ── Insurance ─────────────────────────────────────────────────────────────
-  {
-    category: "Insurance",
-    permissions: [
-      { key: "insurance.view",   label: "View Insurance",     description: "Read patient insurance coverage and claim records" },
-      { key: "insurance.create", label: "Add Insurance",      description: "Register new insurance policies for patients" },
-      { key: "insurance.edit",   label: "Edit Insurance",     description: "Update insurance details and coverage" },
-      { key: "insurance.manage", label: "Manage Claims",      description: "Submit, process and settle insurance claims" },
-    ],
-  },
-
   // ── Follow-ups ────────────────────────────────────────────────────────────
   {
     category: "Follow-ups",
