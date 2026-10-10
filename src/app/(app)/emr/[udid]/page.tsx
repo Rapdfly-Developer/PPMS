@@ -550,7 +550,26 @@ export default async function PatientDetailedEMR({
 
         {/* Quick-nav buttons into hidden tabs — sit at the foot of the banner */}
         {activeVisit && (
-          <EmrBannerNavButtons priorRecordsCount={patient.pastExternalVisits.length} visitId={activeVisit.id} canUseCopilot={canUseCopilot} />
+          <EmrBannerNavButtons
+            priorRecordsCount={patient.pastExternalVisits.length}
+            visitId={activeVisit.id}
+            canUseCopilot={canUseCopilot}
+            decisionSupportSlot={
+              canUseCopilot && activeVisit.status !== "CLOSED"
+                ? getAllRegisteredPlugins()
+                    .filter((p) => p.manifest.externalOrigin)
+                    .map((p) => (
+                      <ExternalPluginSlot
+                        key={p.manifest.pluginId}
+                        pluginId={p.manifest.pluginId}
+                        triggerPermission={p.manifest.ui?.emrPanel?.triggerPermission ?? ""}
+                        patientUdid={udid}
+                        visitId={activeVisit.id}
+                      />
+                    ))
+                : null
+            }
+          />
         )}
       </div>
 
@@ -582,29 +601,9 @@ export default async function PatientDetailedEMR({
                 visitClosed={activeVisit.status === "CLOSED"}
               />
             }
-            /* Mounted once for the life of the page so the consolidated
-               analysis starts when the visit opens and its differential is
-               ready on every tab -- but only shown on the Copilot's own tab,
-               so the assistant and its sub-tabs no longer sit under the
-               clinical sections. Gated on the visit being open: re-running the
-               analysis against a signed visit costs a call and changes
-               nothing, matching how ConsultationExitGuard stands down. */
-            tabScopedSlotTabId="ai-copilot"
-            tabScopedSlot={
-              userCan(user, "emr.copilot.view") && activeVisit.status !== "CLOSED"
-                ? getAllRegisteredPlugins()
-                    .filter((p) => p.manifest.externalOrigin)
-                    .map((p) => (
-                      <ExternalPluginSlot
-                        key={p.manifest.pluginId}
-                        pluginId={p.manifest.pluginId}
-                        triggerPermission={p.manifest.ui?.emrPanel?.triggerPermission ?? ""}
-                        patientUdid={udid}
-                        visitId={activeVisit.id}
-                      />
-                    ))
-                : null
-            }
+            /* The AI Copilot plugin panel is now rendered inside CopilotDrawer
+               when the user clicks "Decision Support →". tabScopedSlot is no
+               longer needed for this flow. */
             tabs={[
               {
                 id: "general",
