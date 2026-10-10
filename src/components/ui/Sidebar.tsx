@@ -26,15 +26,15 @@ type TopNavItem = NavItem & { icon: any };
 type NavEntry = TopNavItem;
 
 const ALL_NAV: NavEntry[] = [
-  { href: "/dashboard",    label: "Dashboard",    icon: LayoutGrid,      permission: "dashboard.view"                                        },
-  { href: "/opd",          label: "OPD",          icon: Stethoscope,     permission: "opd.view"                                              },
-  { href: "/appointments",    label: "Appointments",    icon: CalendarDays, permission: "appointments.view"                                    },
-  { href: "/hospital-manager", label: "Hospital Manager", icon: Building2, permission: "hospital.manage"                                       },
-  { href: "/patients",     label: "Patient Library", icon: Users,        permission: "patients.view"                                         },
-  { href: "/follow-ups",   label: "Follow Ups",   icon: CalendarClock,   permission: "followups.view"                                        },
-  { href: "/analytics",    label: "Analytics",     icon: BarChart2,      permission: "reports.view",      roles: ["DOCTOR", "HOSPITAL"]      },
-  { href: "/settings/plugins", label: "Plugins", icon: Puzzle, permission: "plugins.view", roles: ["DOCTOR"] },
-  { href: "/settings",     label: "Settings",     icon: Settings,        permission: "settings.view"                                         },
+  { href: "/dashboard",        label: "Dashboard",        icon: LayoutGrid,   permission: "dashboard.view"                               },
+  { href: "/opd",              label: "OPD",              icon: Stethoscope,  permission: "opd.view"                                     },
+  { href: "/appointments",     label: "Appointments",     icon: CalendarDays, permission: "appointments.view"                            },
+  { href: "/follow-ups",       label: "Follow Ups",       icon: CalendarClock, permission: "followups.view"                              },
+  { href: "/patients",         label: "Patient Library",  icon: Users,        permission: "patients.view"                                },
+  { href: "/hospital-manager", label: "Hospital Manager", icon: Building2,    permission: "hospital.manage"                              },
+  { href: "/analytics",        label: "Analytics",        icon: BarChart2,    permission: "reports.view", roles: ["DOCTOR", "HOSPITAL"]  },
+  { href: "/settings/plugins", label: "Plugins",          icon: Puzzle,       permission: "plugins.view", roles: ["DOCTOR"]              },
+  { href: "/settings",         label: "Settings",         icon: Settings,     permission: "settings.view"                                },
 ];
 
 const ROLE_LABEL: Record<string, string> = {
