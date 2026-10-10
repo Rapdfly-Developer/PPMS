@@ -298,7 +298,6 @@ export default async function PatientsPage({
     photoUrl:      p.photoUrl ?? null,
     dispensedApptId: (
       p.visits[0]?.appointment?.status === "DISPENSED" &&
-      p.visits[0]?.appointment?.consultationStatus === "FINALIZED" &&
       p.visits[0]?.finalizedAt != null
     ) ? (p.visits[0].appointment?.id ?? null) : null,
     diagnoses: (p.visits[0] as any)?.diagnoses?.map((d: any) => ({ description: d.description, laterality: d.laterality ?? null })) ?? [],
