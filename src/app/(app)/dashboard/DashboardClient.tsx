@@ -437,21 +437,6 @@ export function DashboardClient({
                 <Plus size={15} /> {newEncounterLabel}
               </Link>
             )}
-            {can("appointments.view") && scope === "DOCTOR" && filterOptions.length > 0 && (
-              <TealSelect
-                variant="banner"
-                className="min-w-0 max-w-[10rem] sm:max-w-[14rem]"
-                value={selectedFilter}
-                onChange={setSelectedFilter}
-                options={[
-                  { value: "all", label: filterLabel },
-                  ...filterOptions.map((opt) => ({
-                    value: opt.id,
-                    label: opt.name,
-                  })),
-                ]}
-              />
-            )}
           </div>
         </div>
       </div>
