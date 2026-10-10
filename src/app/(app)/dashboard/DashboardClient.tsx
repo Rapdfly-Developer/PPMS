@@ -273,8 +273,8 @@ function ApptRow({ appt, serial, canManageQueue, canViewPatient, returnTo }: { a
             </span>
           )}
           {appt.refractionDone && (
-            <span title="Refraction done — passed over to doctor" className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-caption font-semibold whitespace-nowrap">
-              <CheckCheck size={11} /> Refraction done
+            <span title="Refraction done — passed over to doctor" className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-emerald-100 text-emerald-600">
+              <CheckCheck size={13} />
             </span>
           )}
           {appt.status !== "CONFIRMED" && (
