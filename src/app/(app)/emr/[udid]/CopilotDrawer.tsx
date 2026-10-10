@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { X, Sparkles, ArrowRight, ShieldAlert } from "lucide-react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { X, Sparkles, ArrowRight, ChevronLeft, ShieldAlert } from "lucide-react";
 import { AiDisclaimer } from "@/components/ui/AiDisclaimer";
-import { useEmrTabs } from "./EmrTabsContext";
 import { useCopilotCard, type CopilotCardState } from "./copilot-cards-store";
 import { useDdx, usePlan, useGuidance, useRefractive, requestGuidance, requestRefractiveGuidance } from "./copilot-store";
 import type { DdxState } from "./DifferentialDiagnosisCard";
@@ -535,12 +534,14 @@ function RefractiveGuidanceSection({ state, visitId }: { state: RefractiveState;
 export function CopilotDrawer({
   visitId,
   onClose,
+  decisionSupportSlot,
 }: {
   visitId: string;
   onClose: () => void;
+  decisionSupportSlot?: ReactNode;
 }) {
-  const { setActiveTab } = useEmrTabs();
   const panelRef = useRef<HTMLDivElement>(null);
+  const [view, setView] = useState<"guidance" | "decision-support">("guidance");
 
   const guidanceState       = useGuidance(visitId);
   const refractiveState     = useRefractive(visitId);
@@ -558,8 +559,7 @@ export function CopilotDrawer({
     planState !== null;
 
   function handleDecisionSupport() {
-    onClose();
-    setActiveTab("ai-copilot");
+    setView("decision-support");
   }
 
   // Capture caller element, move focus in, restore on unmount
@@ -647,9 +647,18 @@ export function CopilotDrawer({
           }}
         >
           <div className="flex items-center gap-2 min-w-0">
+            {view === "decision-support" && (
+              <button
+                onClick={() => setView("guidance")}
+                aria-label="Back to Co-pilot Assistance"
+                className="shrink-0 -ml-1 mr-0.5 p-1.5 rounded-lg hover:bg-black/5 text-[var(--color-primary-600)] hover:text-[var(--color-primary-800)] transition-colors"
+              >
+                <ChevronLeft size={16} />
+              </button>
+            )}
             <Sparkles size={16} className="text-[var(--color-primary-600)] shrink-0" />
             <h2 className="text-label sm:text-sm font-bold text-[var(--color-primary-800)]">
-              Co-pilot Assistance
+              {view === "decision-support" ? "AI Clinical Copilot" : "Co-pilot Assistance"}
             </h2>
             <span className="shrink-0 text-micro sm:text-caption font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-[var(--color-primary-50)] text-[var(--color-primary-600)] border border-[var(--color-primary-100)] ml-1">
               AI · guidance only
@@ -664,77 +673,93 @@ export function CopilotDrawer({
           </button>
         </div>
 
-        {/* Scrollable body */}
-        <div className="overflow-y-auto flex-1 px-4 sm:px-5 py-3" style={{ background: "transparent" }}>
-          {!hasAnyContent ? (
-            <div className="flex flex-col items-center gap-3 py-12 text-center">
-              <Sparkles size={32} className="text-[var(--color-primary-400)]" />
-              <p className="text-sm font-medium text-[var(--color-ink-500)]">
-                Co-pilot is not active for this visit.
-              </p>
-              <p className="text-xs text-[var(--color-ink-400)] max-w-xs">
-                The AI Clinical Copilot plugin may not be enabled or licensed for this session.
-              </p>
-            </div>
-          ) : (
-            <>
-              {guidanceState !== null && (
-                <>
-                  <ExamGuidanceSection state={guidanceState} visitId={visitId} />
-                  {sections.indexOf("guidance") < sections.length - 1 && <SectionDivider />}
-                </>
-              )}
-              {refractiveState !== null && (
-                <>
-                  <RefractiveGuidanceSection state={refractiveState} visitId={visitId} />
-                  {sections.indexOf("refractive") < sections.length - 1 && <SectionDivider />}
-                </>
-              )}
-              {assessmentState !== null && (
-                <>
-                  <AssessmentSection state={assessmentState} />
-                  {sections.indexOf("assessment") < sections.length - 1 && <SectionDivider />}
-                </>
-              )}
-              {ddxState !== null && (
-                <>
-                  <DdxSection state={ddxState} />
-                  {sections.indexOf("ddx") < sections.length - 1 && <SectionDivider />}
-                </>
-              )}
-              {investigationsState !== null && (
-                <>
-                  <InvestigationsSection state={investigationsState} />
-                  {sections.indexOf("investigations") < sections.length - 1 && <SectionDivider />}
-                </>
-              )}
-              {planState !== null && <PlanSection state={planState} />}
-            </>
-          )}
-        </div>
-
-        {/* Footer */}
-        <div
-          className="shrink-0 px-4 sm:px-5 py-3 flex flex-col gap-2.5"
-          style={{
-            borderTop: "1px solid rgba(21,122,115,0.15)",
-            background: "rgba(240,248,246,0.78)",
-          }}
-        >
-          <AiDisclaimer />
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="text-caption sm:text-caption text-[var(--color-ink-400)] italic">
-              Results are based on the record when the analysis ran. Regenerate in AI Clinical
-              Copilot after adding findings.
-            </p>
-            <button
-              onClick={handleDecisionSupport}
-              className="flex items-center gap-1.5 text-caption sm:text-xs font-semibold px-3.5 py-2 rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] active:bg-[var(--color-primary-800)] transition-colors shrink-0"
-            >
-              Decision Support <ArrowRight size={12} />
-            </button>
+        {view === "decision-support" ? (
+          /* Decision Support — full-height plugin panel */
+          <div className="flex-1 overflow-hidden">
+            {decisionSupportSlot ?? (
+              <div className="flex flex-col items-center gap-3 py-12 text-center px-5">
+                <Sparkles size={32} className="text-[var(--color-primary-400)]" />
+                <p className="text-sm font-medium text-[var(--color-ink-500)]">
+                  AI Clinical Copilot is not available for this visit.
+                </p>
+              </div>
+            )}
           </div>
-        </div>
+        ) : (
+          <>
+            {/* Scrollable body */}
+            <div className="overflow-y-auto flex-1 px-4 sm:px-5 py-3" style={{ background: "transparent" }}>
+              {!hasAnyContent ? (
+                <div className="flex flex-col items-center gap-3 py-12 text-center">
+                  <Sparkles size={32} className="text-[var(--color-primary-400)]" />
+                  <p className="text-sm font-medium text-[var(--color-ink-500)]">
+                    Co-pilot is not active for this visit.
+                  </p>
+                  <p className="text-xs text-[var(--color-ink-400)] max-w-xs">
+                    The AI Clinical Copilot plugin may not be enabled or licensed for this session.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  {guidanceState !== null && (
+                    <>
+                      <ExamGuidanceSection state={guidanceState} visitId={visitId} />
+                      {sections.indexOf("guidance") < sections.length - 1 && <SectionDivider />}
+                    </>
+                  )}
+                  {refractiveState !== null && (
+                    <>
+                      <RefractiveGuidanceSection state={refractiveState} visitId={visitId} />
+                      {sections.indexOf("refractive") < sections.length - 1 && <SectionDivider />}
+                    </>
+                  )}
+                  {assessmentState !== null && (
+                    <>
+                      <AssessmentSection state={assessmentState} />
+                      {sections.indexOf("assessment") < sections.length - 1 && <SectionDivider />}
+                    </>
+                  )}
+                  {ddxState !== null && (
+                    <>
+                      <DdxSection state={ddxState} />
+                      {sections.indexOf("ddx") < sections.length - 1 && <SectionDivider />}
+                    </>
+                  )}
+                  {investigationsState !== null && (
+                    <>
+                      <InvestigationsSection state={investigationsState} />
+                      {sections.indexOf("investigations") < sections.length - 1 && <SectionDivider />}
+                    </>
+                  )}
+                  {planState !== null && <PlanSection state={planState} />}
+                </>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div
+              className="shrink-0 px-4 sm:px-5 py-3 flex flex-col gap-2.5"
+              style={{
+                borderTop: "1px solid rgba(21,122,115,0.15)",
+                background: "rgba(240,248,246,0.78)",
+              }}
+            >
+              <AiDisclaimer />
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <p className="text-caption sm:text-caption text-[var(--color-ink-400)] italic">
+                  Results are based on the record when the analysis ran. Regenerate in AI Clinical
+                  Copilot after adding findings.
+                </p>
+                <button
+                  onClick={handleDecisionSupport}
+                  className="flex items-center gap-1.5 text-caption sm:text-xs font-semibold px-3.5 py-2 rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] active:bg-[var(--color-primary-800)] transition-colors shrink-0"
+                >
+                  Decision Support <ArrowRight size={12} />
+                </button>
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

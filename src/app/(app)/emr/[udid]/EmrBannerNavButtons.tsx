@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { FolderOpen, Sparkles } from "lucide-react";
 import { useEmrTabs } from "./EmrTabsContext";
 import { CopilotDrawer } from "./CopilotDrawer";
@@ -9,10 +9,12 @@ export function EmrBannerNavButtons({
   priorRecordsCount,
   visitId,
   canUseCopilot,
+  decisionSupportSlot,
 }: {
   priorRecordsCount: number;
   visitId: string;
   canUseCopilot: boolean;
+  decisionSupportSlot?: ReactNode;
 }) {
   const { setActiveTab } = useEmrTabs();
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -43,7 +45,11 @@ export function EmrBannerNavButtons({
         )}
       </div>
       {drawerOpen && (
-        <CopilotDrawer visitId={visitId} onClose={() => setDrawerOpen(false)} />
+        <CopilotDrawer
+          visitId={visitId}
+          onClose={() => setDrawerOpen(false)}
+          decisionSupportSlot={decisionSupportSlot}
+        />
       )}
     </>
   );
