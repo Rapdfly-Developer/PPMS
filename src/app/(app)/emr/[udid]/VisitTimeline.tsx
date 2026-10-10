@@ -120,11 +120,16 @@ export function VisitTimeline({
     ? elapsed(refractionStartMs, refractionEnd)
     : null;
 
+  const visitEndMs = visitClosed ? finalizedMs : now;
+  const visitDuration = arrivedMs && visitEndMs ? elapsed(arrivedMs, visitEndMs) : null;
+  const visitDurationLive = !!visitDuration && !visitClosed;
+
   return (
     <div className="grid grid-cols-2 gap-x-4 gap-y-0.5">
       {bookingTime && <Row label="Booked" value={bookingTime} />}
       {appointmentTime && <Row label="Appt" value={appointmentTime} />}
       {visitTime && <Row label="Visit" value={visitTime} />}
+      {visitDuration && <Row label="Duration" value={visitDuration} live={visitDurationLive} />}
       {waiting && <Row label="Waiting" value={waiting} live={waitingLive} />}
       {consulting && <Row label="Consult" value={consulting} live={!consultationCompletedMs && !visitClosed} />}
       {refracting && <Row label="Refraction" value={refracting} live={!refractionEndMs && !visitClosed} />}
