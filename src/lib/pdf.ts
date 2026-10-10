@@ -29,6 +29,73 @@ function val(v: unknown, fallback = "—") {
   return escapeHtml(String(v));
 }
 
+/* ─────────────────────────────────────────────────────────────────────────── */
+/*  TAPER / DURATION HELPERS                                                    */
+/* ─────────────────────────────────────────────────────────────────────────── */
+
+type TaperStepPdf = { dose: string; frequency: string; durationNum: string; durationUnit: string };
+
+function parseTaperStepsPdf(text: string): TaperStepPdf[] {
+  return text.split(" → ").flatMap((step) => {
+    const m = step.match(/^(?:(.+?) · )?(.*?) × (\d+) (days?|weeks?|months?|years?)$/i);
+    return m ? [{ dose: m[1] ?? "", frequency: m[2], durationNum: m[3], durationUnit: m[4] }] : [];
+  });
+}
+
+function splitTaperPdf(instructions: string | null | undefined, duration: string | null | undefined) {
+  const parts = String(instructions ?? "").split(" | ");
+  const instrTaper = parts.find((p) => p.startsWith("Tapering: "))?.slice("Tapering: ".length);
+  const [baseDuration, presetTaper] = String(duration ?? "").split(" → Taper: ", 2);
+  const taperText = instrTaper || presetTaper;
+  const taper = taperText ? parseTaperStepsPdf(taperText) : [];
+  return {
+    note: parts.filter((p) => p && !p.startsWith("Tapering: ")).join(" | "),
+    baseDuration: baseDuration.trim(),
+    taper,
+  };
+}
+
+function parseDurationDaysPdf(s: string): number | null {
+  const m = s.trim().match(/^(\d+)\s*(day|days|week|weeks|month|months|year|years)$/i);
+  if (!m) return null;
+  const n = parseInt(m[1], 10);
+  const u = m[2].toLowerCase().replace(/s$/, "");
+  if (u === "day") return n;
+  if (u === "week") return n * 7;
+  if (u === "month") return n * 30;
+  if (u === "year") return n * 365;
+  return null;
+}
+
+const PDF_MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+function addDaysPdf(date: Date, days: number): Date {
+  const d = new Date(date.getTime());
+  d.setDate(d.getDate() + days);
+  return d;
+}
+
+function fmtEndDatePdf(d: Date): string {
+  return `${d.getDate()} ${PDF_MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+/**
+ * Returns {html, days}: html is "3 days<br/><small>(until 8 Oct 2026)</small>" when parseable,
+ * otherwise just the escaped duration. days is the parsed integer or null.
+ */
+function durCellPdf(durationStr: string | null | undefined, startDate: Date): { html: string; days: number | null } {
+  if (!durationStr || !durationStr.trim()) {
+    return { html: `<span style="color:#aaa;font-style:italic;">—</span>`, days: null };
+  }
+  const days = parseDurationDaysPdf(durationStr);
+  if (days === null) return { html: escapeHtml(durationStr), days: null };
+  const end = addDaysPdf(startDate, days - 1);
+  return {
+    html: `${escapeHtml(durationStr)}<br/><span style="font-size:7.5px;color:#777;">(until ${fmtEndDatePdf(end)})</span>`,
+    days,
+  };
+}
+
 async function makeQr(text: string): Promise<string> {
   try {
     return await QRCode.toDataURL(text, {
@@ -656,14 +723,33 @@ async function renderPrescriptionHtml(data: PrescriptionData): Promise<string> {
   };
 
   const medRows = data.medications.length
-    ? data.medications.map((m, i) => `
+    ? data.medications.map((m, i) => {
+        const split = splitTaperPdf(m.instructions, m.duration);
+        const baseDur = durCellPdf(split.baseDuration, data.visit.date);
+        let offsetDays = baseDur.days ?? null;
+        const mainRow = `
       <tr>
         <td class="td-num">${i + 1}</td>
-        <td><div class="drug-name">${pdfMedBadge(m.route, m.laterality, m.drugName)}${escapeHtml(m.drugName)}</div>${m.instructions ? `<div class="drug-sub">${escapeHtml(m.instructions)}</div>` : ""}</td>
+        <td><div class="drug-name">${pdfMedBadge(m.route, m.laterality, m.drugName)}${escapeHtml(m.drugName)}</div>${split.note ? `<div class="drug-sub">${escapeHtml(split.note)}</div>` : ""}</td>
         <td class="drug-dose">${val(m.dosage)}</td>
         <td>${val(m.frequency)}</td>
-        <td>${val(m.duration)}</td>
-      </tr>`).join("")
+        <td>${baseDur.html}</td>
+      </tr>`;
+        const taperRows = split.taper.map((t) => {
+          const taperStart = offsetDays !== null ? addDaysPdf(data.visit.date, offsetDays) : data.visit.date;
+          const taperDur = durCellPdf(`${t.durationNum} ${t.durationUnit}`, taperStart);
+          if (taperDur.days !== null && offsetDays !== null) offsetDays += taperDur.days;
+          else offsetDays = null;
+          return `<tr style="background:#f8fafa;">
+        <td class="td-num" style="color:#bbb;">↓</td>
+        <td style="padding:3px 8px;font-size:8.5px;color:#666;">↓ Taper</td>
+        <td class="drug-dose">${t.dose ? escapeHtml(t.dose) : `<span style="color:#aaa;">—</span>`}</td>
+        <td>${t.frequency ? escapeHtml(t.frequency) : `<span style="color:#aaa;">—</span>`}</td>
+        <td>${taperDur.html}</td>
+      </tr>`;
+        }).join("");
+        return mainRow + taperRows;
+      }).join("")
     : `<tr class="empty-row"><td colspan="5">No medications prescribed</td></tr>`;
 
   const rxRow = (eye: string, sub: string, sph?: string, cyl?: string, axis?: string) =>
@@ -911,19 +997,37 @@ async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
   const MED_TD = `padding:6px 7px;border-bottom:1px dotted #C8DBD8;font-size:9.5px;`;
 
   const medRows = d.medications.length
-    ? d.medications.map((m, i) =>
-        `<tr style="background:#fff;">` +
-        `<td style="${MED_TD}text-align:center;color:#888;">${i + 1}</td>` +
-        `<td style="${MED_TD}">` +
-        pdfMedBadge2(m.route, m.laterality, m.drugName) +
-        `<span style="font-weight:700;color:#1a1a1a;">${escapeHtml(m.drugName)}</span>` +
-        (m.instructions ? `<span style="font-size:8.5px;color:#777;margin-left:5px;">${escapeHtml(m.instructions)}</span>` : "") +
-        `</td>` +
-        `<td style="${MED_TD}">${v2(m.dosage)}</td>` +
-        `<td style="${MED_TD}">${v2(m.frequency)}</td>` +
-        `<td style="${MED_TD}">${v2(m.duration)}</td>` +
-        `</tr>`
-      ).join("")
+    ? d.medications.map((m, i) => {
+        const split = splitTaperPdf(m.instructions, m.duration);
+        const baseDur = durCellPdf(split.baseDuration, d.visit.date);
+        let offsetDays = baseDur.days ?? null;
+        const mainRow =
+          `<tr style="background:#fff;">` +
+          `<td style="${MED_TD}text-align:center;color:#888;">${i + 1}</td>` +
+          `<td style="${MED_TD}">` +
+          pdfMedBadge2(m.route, m.laterality, m.drugName) +
+          `<span style="font-weight:700;color:#1a1a1a;">${escapeHtml(m.drugName)}</span>` +
+          (split.note ? `<span style="font-size:8.5px;color:#777;margin-left:5px;">${escapeHtml(split.note)}</span>` : "") +
+          `</td>` +
+          `<td style="${MED_TD}">${v2(m.dosage)}</td>` +
+          `<td style="${MED_TD}">${v2(m.frequency)}</td>` +
+          `<td style="${MED_TD}">${baseDur.html}</td>` +
+          `</tr>`;
+        const taperRows = split.taper.map((t) => {
+          const taperStart = offsetDays !== null ? addDaysPdf(d.visit.date, offsetDays!) : d.visit.date;
+          const taperDur = durCellPdf(`${t.durationNum} ${t.durationUnit}`, taperStart);
+          if (taperDur.days !== null && offsetDays !== null) offsetDays += taperDur.days;
+          else offsetDays = null;
+          return `<tr style="background:#f8fafa;">` +
+            `<td style="${MED_TD}text-align:center;color:#bbb;">↓</td>` +
+            `<td style="${MED_TD}padding-left:16px;font-size:8.5px;color:#888;">↓ Taper</td>` +
+            `<td style="${MED_TD}">${t.dose ? escapeHtml(t.dose) : `<span style="color:#aaa;">—</span>`}</td>` +
+            `<td style="${MED_TD}">${t.frequency ? escapeHtml(t.frequency) : `<span style="color:#aaa;">—</span>`}</td>` +
+            `<td style="${MED_TD}">${taperDur.html}</td>` +
+            `</tr>`;
+        }).join("");
+        return mainRow + taperRows;
+      }).join("")
     : `<tr><td colspan="5" style="padding:4px 8px;border:none;">${none("No medications prescribed")}</td></tr>`;
 
   /* ── Optical Rx ── */
@@ -1559,17 +1663,36 @@ async function renderFullEmrHtml(d: FullEmrData): Promise<string> {
     : `<tr><td colspan="4" style="padding:6px 8px;font-size:9.5px;color:#aaa;font-style:italic;">No diagnoses recorded</td></tr>`;
 
   const medRows = d.medications.length
-    ? d.medications.map((m, i) =>
-        `<tr style="background:#fff;">` +
-        `<td style="${MED_TD}text-align:center;color:#888;">${i + 1}</td>` +
-        `<td style="${MED_TD}">${medBadge(m.route, m.laterality, m.drugName)}` +
-        `<span style="font-weight:700;color:#1a1a1a;">${escapeHtml(m.drugName)}</span>` +
-        (m.instructions ? `<span style="font-size:8.5px;color:#777;margin-left:5px;">${escapeHtml(m.instructions)}</span>` : "") +
-        `</td>` +
-        `<td style="${MED_TD}">${v2(m.dosage)}</td>` +
-        `<td style="${MED_TD}">${v2(m.frequency)}</td>` +
-        `<td style="${MED_TD}">${v2(m.duration)}</td>` +
-        `</tr>`).join("")
+    ? d.medications.map((m, i) => {
+        const split = splitTaperPdf(m.instructions, m.duration);
+        const baseDur = durCellPdf(split.baseDuration, d.visit.date);
+        let offsetDays = baseDur.days ?? null;
+        const mainRow =
+          `<tr style="background:#fff;">` +
+          `<td style="${MED_TD}text-align:center;color:#888;">${i + 1}</td>` +
+          `<td style="${MED_TD}">${medBadge(m.route, m.laterality, m.drugName)}` +
+          `<span style="font-weight:700;color:#1a1a1a;">${escapeHtml(m.drugName)}</span>` +
+          (split.note ? `<span style="font-size:8.5px;color:#777;margin-left:5px;">${escapeHtml(split.note)}</span>` : "") +
+          `</td>` +
+          `<td style="${MED_TD}">${v2(m.dosage)}</td>` +
+          `<td style="${MED_TD}">${v2(m.frequency)}</td>` +
+          `<td style="${MED_TD}">${baseDur.html}</td>` +
+          `</tr>`;
+        const taperRows = split.taper.map((t) => {
+          const taperStart = offsetDays !== null ? addDaysPdf(d.visit.date, offsetDays!) : d.visit.date;
+          const taperDur = durCellPdf(`${t.durationNum} ${t.durationUnit}`, taperStart);
+          if (taperDur.days !== null && offsetDays !== null) offsetDays += taperDur.days;
+          else offsetDays = null;
+          return `<tr style="background:#f8fafa;">` +
+            `<td style="${MED_TD}text-align:center;color:#bbb;">↓</td>` +
+            `<td style="${MED_TD}padding-left:16px;font-size:8.5px;color:#888;">↓ Taper</td>` +
+            `<td style="${MED_TD}">${t.dose ? escapeHtml(t.dose) : `<span style="color:#aaa;">—</span>`}</td>` +
+            `<td style="${MED_TD}">${t.frequency ? escapeHtml(t.frequency) : `<span style="color:#aaa;">—</span>`}</td>` +
+            `<td style="${MED_TD}">${taperDur.html}</td>` +
+            `</tr>`;
+        }).join("");
+        return mainRow + taperRows;
+      }).join("")
     : `<tr><td colspan="5" style="padding:4px 8px;border:none;">${none("No medications prescribed")}</td></tr>`;
 
   const invRows = d.investigations.length
@@ -2093,8 +2216,22 @@ export async function generateAllVisitsSummaryPdf(visits: any[]): Promise<Buffer
       }
       return "";
     };
+    const visitDate = new Date(visit.date);
     const medRows = d.medications.length
-      ? d.medications.map((m, i) => `<tr><td class="td-num">${i + 1}</td><td><div class="drug-name">${pdfMedBadge4(m.route, m.laterality, m.drugName)}${escapeHtml(m.drugName)}</div>${m.instructions ? `<div class="drug-sub">${escapeHtml(m.instructions)}</div>` : ""}</td><td>${val(m.dosage)}</td><td>${val(m.frequency)}</td><td>${val(m.duration)}</td></tr>`).join("")
+      ? d.medications.map((m, i) => {
+          const split = splitTaperPdf(m.instructions, m.duration);
+          const baseDur = durCellPdf(split.baseDuration, visitDate);
+          let offsetDays = baseDur.days ?? null;
+          const mainRow = `<tr><td class="td-num">${i + 1}</td><td><div class="drug-name">${pdfMedBadge4(m.route, m.laterality, m.drugName)}${escapeHtml(m.drugName)}</div>${split.note ? `<div class="drug-sub">${escapeHtml(split.note)}</div>` : ""}</td><td>${val(m.dosage)}</td><td>${val(m.frequency)}</td><td>${baseDur.html}</td></tr>`;
+          const taperRows = split.taper.map((t) => {
+            const taperStart = offsetDays !== null ? addDaysPdf(visitDate, offsetDays!) : visitDate;
+            const taperDur = durCellPdf(`${t.durationNum} ${t.durationUnit}`, taperStart);
+            if (taperDur.days !== null && offsetDays !== null) offsetDays += taperDur.days;
+            else offsetDays = null;
+            return `<tr style="background:#f8fafa;"><td class="td-num" style="color:#bbb;">↓</td><td style="padding:3px 8px;font-size:8.5px;color:#666;">↓ Taper</td><td>${t.dose ? escapeHtml(t.dose) : `<span style="color:#aaa;">—</span>`}</td><td>${t.frequency ? escapeHtml(t.frequency) : `<span style="color:#aaa;">—</span>`}</td><td>${taperDur.html}</td></tr>`;
+          }).join("");
+          return mainRow + taperRows;
+        }).join("")
       : `<tr class="empty-row"><td colspan="5">No medications prescribed</td></tr>`;
 
     const invRows = d.investigations.length
