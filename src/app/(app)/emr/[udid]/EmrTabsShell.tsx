@@ -16,6 +16,7 @@ type TabDef = {
   badge?: number;
   content: ReactNode;
   hidden?: boolean;
+  tabBarHidden?: boolean;
 };
 
 export function EmrTabsShell({
@@ -70,7 +71,7 @@ export function EmrTabsShell({
   const [openPartialSignal, setOpenPartialSignal] = useState(0);
   const [editMode, setEditMode] = useState(searchParams.get("edit") === "1");
   const [overviewMode, setOverviewMode] = useState(false);
-  const visibleTabs = tabs.filter((t) => !t.hidden);
+  const visibleTabs = tabs.filter((t) => !t.hidden && !t.tabBarHidden);
   const currentIndex = visibleTabs.findIndex((t) => t.id === activeTab);
 
   const closed = visit.status === "CLOSED";

@@ -704,7 +704,8 @@ export default async function PatientDetailedEMR({
                 id: "ai-copilot",
                 label: "AI Clinical Copilot",
                 icon: <Sparkles size={14} />,
-                hidden: true,
+                hidden: !userCan(user, "emr.copilot.view"),
+                tabBarHidden: true,
                 // The panel itself is empty: the assistant is mounted below the
                 // tab strip (so it keeps running while other tabs are open) and
                 // is revealed there when this tab is active, immediately under

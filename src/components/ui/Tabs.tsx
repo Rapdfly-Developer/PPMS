@@ -14,7 +14,7 @@ export function Tabs({
   overviewMode = false,
   onOverviewToggle,
 }: {
-  tabs: { id: string; label: string; icon?: ReactNode; badge?: number; content: ReactNode; hidden?: boolean }[];
+  tabs: { id: string; label: string; icon?: ReactNode; badge?: number; content: ReactNode; hidden?: boolean; tabBarHidden?: boolean }[];
   defaultTab?: string;
   activeTab?: string;
   onTabChange?: (id: string) => void;
@@ -24,28 +24,32 @@ export function Tabs({
 }) {
   const [internalActive, setInternalActive] = useState(defaultTab ?? tabs[0]?.id);
   const requestedActive = controlledActive ?? internalActive;
-  const visibleTabs = tabs.filter((t) => !t.hidden);
+  // renderableTabs: not hidden — used for active/content resolution (includes tabBarHidden tabs)
+  const renderableTabs = tabs.filter((t) => !t.hidden);
+  // tabBarTabs: shown as buttons in the tab bar
+  const tabBarTabs = renderableTabs.filter((t) => !t.tabBarHidden);
   // A permission change can hide the tab stored in a controlled tab context
   // (or the caller's default tab). Never render the content of a hidden tab;
   // fall back to the first tab the current user is allowed to see.
-  const active = visibleTabs.some((t) => t.id === requestedActive)
+  // tabBarHidden tabs are still valid active targets — do NOT fall back from them.
+  const active = renderableTabs.some((t) => t.id === requestedActive)
     ? requestedActive
-    : visibleTabs[0]?.id;
+    : tabBarTabs[0]?.id;
 
   function handleTabChange(id: string) {
     if (controlledActive === undefined) setInternalActive(id);
     onTabChange?.(id);
   }
 
-  const activeTab = visibleTabs.find((t) => t.id === active);
-  const totalRows = Math.ceil(visibleTabs.length / 2);
+  const activeTab = renderableTabs.find((t) => t.id === active);
+  const totalRows = Math.ceil(tabBarTabs.length / 2);
 
   // ── Sub variant — pill style, unchanged ──────────────────────────────────────
   if (variant === "sub") {
     return (
       <div className="w-full">
         <div className="flex flex-wrap gap-1.5 px-1 py-2 mb-4 rounded-xl bg-[var(--color-surface-1,#F1F5F9)] border border-[var(--color-border)]">
-          {visibleTabs.map((tab) => (
+          {tabBarTabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => handleTabChange(tab.id)}
@@ -95,7 +99,7 @@ export function Tabs({
           aria-label="Clinical sections"
         >
           <div className="grid grid-cols-2">
-            {visibleTabs.map((tab, i) => {
+            {tabBarTabs.map((tab, i) => {
               const isActive   = active === tab.id;
               const isRightCol = i % 2 === 1;
               const rowIdx     = Math.floor(i / 2);
@@ -176,7 +180,7 @@ export function Tabs({
         className="hidden md:flex flex-wrap items-center gap-1 border-b border-[var(--color-border)] mb-5"
         role="tablist"
       >
-        {visibleTabs.map((tab) => (
+        {tabBarTabs.map((tab) => (
           <button
             key={tab.id}
             role="tab"
