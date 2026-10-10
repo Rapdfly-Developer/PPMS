@@ -284,6 +284,10 @@ export default async function PatientDetailedEMR({
   const canEditAnterior = !viewOnlySource && !visitLocked && (
     isDoctor || userCan(user, "emr.anterior.edit") || userCan(user, "emr.ophthalmic.edit")
   );
+  // Gonioscopy is on the IOP/Gonio tab — Refractionists have emr.iop.edit so include it here
+  const canEditGonioscopy = !viewOnlySource && !visitLocked && (
+    isDoctor || userCan(user, "emr.iop.edit") || userCan(user, "emr.anterior.edit") || userCan(user, "emr.ophthalmic.edit")
+  );
   const canEditPosterior = !viewOnlySource && !visitLocked && (
     isDoctor || userCan(user, "emr.posterior.edit") || userCan(user, "emr.ophthalmic.edit")
   );
@@ -659,6 +663,7 @@ export default async function PatientDetailedEMR({
                       canEditColour={canEditColour}
                       canEditIOP={canEditIOP}
                       canEditAnterior={canEditAnterior}
+                      canEditGonioscopy={canEditGonioscopy}
                       canEditPosterior={canEditPosterior}
                       canViewVA={canViewVA}
                       canViewRefraction={canViewRefraction}
