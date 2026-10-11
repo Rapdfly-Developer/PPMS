@@ -10,7 +10,7 @@ import {
   getPatientSpectacleHistory,
   getPatientNoShows,
 } from "../actions";
-import { attachResult, deleteInvestigationOrder, updateInvestigationNotes } from "@/app/(app)/emr/[udid]/actions";
+import { attachResult, deleteInvestigationOrder, updateInvestigationNotes, removeResult } from "@/app/(app)/emr/[udid]/actions";
 import { fileHref } from "@/lib/file-href";
 import { TimeStampButton } from "./PatientTimeline";
 
@@ -106,65 +106,50 @@ function Empty({ label }: { label: string }) {
 ══════════════════════════════════════════════════════════════════════════ */
 type InvVisit = Awaited<ReturnType<typeof getPatientInvestigations>>[number];
 
-function InvUploadButton({ orderId, udid, onUploaded }: {
-  orderId: string; udid: string; onUploaded: (url: string) => void;
-}) {
-  const [uploading, setUploading] = useState(false);
-  const [error, setError] = useState("");
-  const [, startTx] = useTransition();
-  const fileRef = useRef<HTMLInputElement>(null);
+type InvOrder = InvVisit["orders"][number];
 
-  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploading(true); setError("");
+function InvOrderRow({ o, idx, udid, onView }: {
+  o: InvOrder; idx: number; udid: string; onView: (ref: string) => void;
+}) {
+  const [localNotes, setLocalNotes]         = useState(o.notes ?? "");
+  const [localResultRef, setLocalResultRef] = useState(o.resultRef ?? null);
+  const [uploading, setUploading]           = useState(false);
+  const [uploadError, setUploadError]       = useState("");
+  const [editing, setEditing]               = useState(false);
+  const [editNotes, setEditNotes]           = useState(o.notes ?? "");
+  const [saving, startSave]                 = useTransition();
+  const [removing, startRemove]             = useTransition();
+  const [confirmRemove, setConfirmRemove]   = useState(false);
+  const [, startTx]                         = useTransition();
+  const fileRef                             = useRef<HTMLInputElement>(null);
+
+  const hasFile = !!localResultRef;
+
+  async function uploadFile(file: File) {
+    setUploading(true); setUploadError("");
     try {
       const fd = new FormData();
       fd.append("file", file);
       const res  = await fetch("/api/uploads", { method: "POST", body: fd });
       const json = await res.json();
       if (!res.ok || json.error) throw new Error(json.error ?? "Upload failed");
-      // Update local state immediately so the View button activates without a page reload
-      onUploaded(json.url);
+      setLocalResultRef(json.url);
       startTx(async () => {
-        const r = await attachResult(orderId, udid, json.url);
-        if (r?.error) setError(r.error);
+        const r = await attachResult(o.id, udid, json.url);
+        if (r?.error) setUploadError(r.error);
       });
     } catch (err: any) {
-      setError(err.message ?? "Upload failed");
+      setUploadError(err.message ?? "Upload failed");
     } finally {
       setUploading(false);
       if (fileRef.current) fileRef.current.value = "";
     }
-  };
+  }
 
-  return (
-    <div className="flex flex-col items-end gap-1">
-      <input ref={fileRef} type="file" accept=".pdf,.jpg,.jpeg,.png,.docx" className="hidden" onChange={handleFile} />
-      <button type="button" disabled={uploading} onClick={() => fileRef.current?.click()}
-        className="flex items-center gap-1 text-caption font-medium px-2 py-1 rounded-md border border-[var(--color-primary-300)] text-[var(--color-primary-600)] hover:bg-[var(--color-primary-50)] disabled:opacity-50 transition-colors">
-        {uploading ? <Upload size={11} className="animate-pulse" /> : <Upload size={11} />}
-        {uploading ? "Uploading…" : "Add File"}
-      </button>
-      {error && <p className="text-caption text-red-600 mt-0.5">{error}</p>}
-    </div>
-  );
-}
-
-type InvOrder = InvVisit["orders"][number];
-
-function InvOrderRow({ o, idx, udid, onView }: {
-  o: InvOrder; idx: number; udid: string; onView: (ref: string) => void;
-}) {
-  const [editing, setEditing]             = useState(false);
-  const [editNotes, setEditNotes]         = useState(o.notes ?? "");
-  const [localNotes, setLocalNotes]       = useState(o.notes ?? "");
-  const [localResultRef, setLocalResultRef] = useState(o.resultRef ?? null);
-  const [saving, startSave]               = useTransition();
-  const [deleting, startDelete]           = useTransition();
-  const [confirmDelete, setConfirmDelete] = useState(false);
-
-  function openEdit() { setEditNotes(localNotes); setEditing(true); }
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file) void uploadFile(file);
+  }
 
   function saveNotes() {
     startSave(async () => {
@@ -174,9 +159,11 @@ function InvOrderRow({ o, idx, udid, onView }: {
     });
   }
 
-  function doDelete() {
-    startDelete(async () => {
-      await deleteInvestigationOrder(o.id, udid);
+  function doRemoveResult() {
+    startRemove(async () => {
+      await removeResult(o.id, udid);
+      setLocalResultRef(null);
+      setConfirmRemove(false);
     });
   }
 
@@ -186,73 +173,83 @@ function InvOrderRow({ o, idx, udid, onView }: {
     <div className="flex items-start gap-2.5 py-2.5 border-b border-[var(--color-border)] last:border-0">
       <span className="text-caption text-[var(--color-ink-300)] tabular-nums w-4 shrink-0 mt-0.5">{idx + 1}.</span>
       <div className="flex-1 min-w-0">
-        <div className="flex items-start justify-between gap-2">
-          <p className="text-sm font-semibold text-[var(--color-ink-800)] leading-snug">
+
+        {/* Top row: test name + notes + actions */}
+        <div className="flex items-start gap-2">
+          {/* Test name */}
+          <p className="text-sm font-semibold text-[var(--color-ink-800)] leading-snug shrink-0">
             {o.laterality && (
               <span className="font-bold text-[var(--color-primary-700)] mr-1.5">{o.laterality}</span>
             )}
             {o.testName}
           </p>
 
-          {/* Actions row */}
+          {/* In view of — fills the empty space */}
+          {localNotes && !editing && (
+            <span className="flex-1 min-w-0 text-caption text-[var(--color-ink-400)] italic truncate mt-0.5">
+              {localNotes}
+            </span>
+          )}
+          {!localNotes && !editing && <span className="flex-1" />}
+
+          {/* Actions */}
           <div className="flex items-center gap-1 shrink-0">
-            <InvUploadButton orderId={o.id} udid={udid} onUploaded={(url) => setLocalResultRef(url)} />
+            <input ref={fileRef} type="file" accept=".pdf,.jpg,.jpeg,.png,.docx" className="hidden" onChange={handleFileChange} />
 
-            {/* View */}
-            <button
-              onClick={() => localResultRef && onView(localResultRef)}
-              disabled={!localResultRef}
-              title={localResultRef ? "View result" : "No result attached"}
-              className={`${iconBtn} ${localResultRef
-                ? "border-teal-200 text-teal-700 hover:bg-teal-50"
-                : "border-[var(--color-border)] text-[var(--color-ink-300)] cursor-not-allowed"}`}
-            >
-              <Eye size={13} />
-            </button>
-
-            {/* Edit */}
-            <button
-              onClick={openEdit}
-              title="Edit notes"
-              className={`${iconBtn} border-[var(--color-border)] text-[var(--color-ink-400)] hover:text-[var(--color-primary-600)] hover:border-[var(--color-primary-300)]`}
-            >
-              <Pencil size={13} />
-            </button>
-
-            {/* Delete */}
-            {confirmDelete ? (
+            {!hasFile ? (
+              /* No file yet — show Add File only */
+              <button type="button" disabled={uploading} onClick={() => fileRef.current?.click()}
+                className="flex items-center gap-1 text-caption font-medium px-2 py-1 rounded-md border border-[var(--color-primary-300)] text-[var(--color-primary-600)] hover:bg-[var(--color-primary-50)] disabled:opacity-50 transition-colors">
+                {uploading ? <Upload size={11} className="animate-pulse" /> : <Upload size={11} />}
+                {uploading ? "Uploading…" : "Add File"}
+              </button>
+            ) : confirmRemove ? (
+              /* Confirm remove file */
               <div className="flex items-center gap-1">
-                <button onClick={doDelete} disabled={deleting}
+                <button onClick={doRemoveResult} disabled={removing}
                   className="text-caption font-semibold px-2 py-1 rounded-md bg-red-500 text-white hover:bg-red-600 disabled:opacity-50 transition-colors">
-                  {deleting ? "…" : "Yes"}
+                  {removing ? "…" : "Remove"}
                 </button>
-                <button onClick={() => setConfirmDelete(false)}
+                <button onClick={() => setConfirmRemove(false)}
                   className="text-caption font-semibold px-2 py-1 rounded-md border border-[var(--color-border)] text-[var(--color-ink-500)] hover:bg-[var(--color-surface-sunken)] transition-colors">
-                  No
+                  Cancel
                 </button>
               </div>
             ) : (
-              <button
-                onClick={() => setConfirmDelete(true)}
-                title="Delete order"
-                className={`${iconBtn} border-[var(--color-border)] text-[var(--color-ink-400)] hover:text-red-500 hover:border-red-300`}
-              >
-                <Trash2 size={13} />
-              </button>
+              /* File exists — show 3 icons */
+              <>
+                {/* View */}
+                <button onClick={() => onView(localResultRef!)} title="View report"
+                  className={`${iconBtn} border-teal-200 text-teal-700 hover:bg-teal-50`}>
+                  <Eye size={13} />
+                </button>
+                {/* Edit / re-upload */}
+                <button
+                  onClick={() => uploading ? undefined : fileRef.current?.click()}
+                  disabled={uploading}
+                  title="Replace report file"
+                  className={`${iconBtn} border-[var(--color-border)] text-[var(--color-ink-400)] hover:text-[var(--color-primary-600)] hover:border-[var(--color-primary-300)] disabled:opacity-50`}>
+                  {uploading ? <Upload size={13} className="animate-pulse" /> : <Pencil size={13} />}
+                </button>
+                {/* Delete file reference */}
+                <button onClick={() => setConfirmRemove(true)} title="Remove report"
+                  className={`${iconBtn} border-[var(--color-border)] text-[var(--color-ink-400)] hover:text-red-500 hover:border-red-300`}>
+                  <Trash2 size={13} />
+                </button>
+              </>
             )}
           </div>
         </div>
 
-        {/* Second line */}
+        {/* Upload error */}
+        {uploadError && <p className="text-caption text-red-600 mt-0.5">{uploadError}</p>}
+
+        {/* Second line: priority · time. Edit notes inline. */}
         {editing ? (
           <div className="flex items-center gap-1.5 mt-1.5">
-            <input
-              autoFocus
-              value={editNotes}
-              onChange={(e) => setEditNotes(e.target.value)}
+            <input autoFocus value={editNotes} onChange={(e) => setEditNotes(e.target.value)}
               placeholder="In view of…"
-              className="flex-1 min-w-0 text-caption border border-[var(--color-primary-300)] rounded-md px-2 py-1 outline-none focus:border-[var(--color-primary-500)]"
-            />
+              className="flex-1 min-w-0 text-caption border border-[var(--color-primary-300)] rounded-md px-2 py-1 outline-none focus:border-[var(--color-primary-500)]" />
             <button onClick={saveNotes} disabled={saving}
               className="text-caption font-semibold px-2 py-1 rounded-md bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-50 transition-colors">
               {saving ? "…" : "Save"}
@@ -263,11 +260,14 @@ function InvOrderRow({ o, idx, udid, onView }: {
             </button>
           </div>
         ) : (
-          <p className="text-caption text-[var(--color-ink-400)] mt-0.5">
+          <p
+            className="text-caption text-[var(--color-ink-400)] mt-0.5 cursor-pointer hover:text-[var(--color-ink-600)]"
+            title="Click to edit 'in view of' note"
+            onClick={() => { setEditNotes(localNotes); setEditing(true); }}
+          >
             {o.priority && <span>{o.priority}</span>}
             {o.priority && <span className="mx-1">·</span>}
             <span>{format(new Date(o.createdAt), "h:mm a")}</span>
-            {localNotes && <span className="italic"> · in view of: {localNotes}</span>}
           </p>
         )}
       </div>

@@ -517,6 +517,20 @@ export async function attachResult(id: string, udid: string, resultRef: string):
   return {};
 }
 
+export async function removeResult(id: string, udid: string): Promise<{ error?: string }> {
+  const user = await requireRole("DOCTOR", "HOSPITAL");
+  await assertRowOwner("investigationOrder", id);
+  const order = await prisma.investigationOrder.findUnique({ where: { id } });
+  if (!order) return { error: "Order not found." };
+  await prisma.investigationOrder.update({
+    where: { id },
+    data: { resultRef: null, status: "PENDING" },
+  });
+  await writeAudit(user.id, "InvestigationOrder", id, "RESULT_REMOVED", {});
+  revalidate(udid);
+  return {};
+}
+
 // ── Assessment ────────────────────────────────────────────────────────────
 
 export async function saveProvisionalDiagnosis(visitId: string, udid: string, text: string) {
