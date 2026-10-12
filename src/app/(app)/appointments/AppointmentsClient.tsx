@@ -341,7 +341,7 @@ export function AppointmentsClient({
               href="/appointments/book"
               className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 bg-[var(--color-primary-600)] text-white text-caption sm:text-sm font-semibold px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl hover:bg-[var(--color-primary-700)] transition-colors shadow-sm whitespace-nowrap"
             >
-              <Plus size={14} /> {role === "DOCTOR" ? "Patient Appt" : "Book Appointment"}
+              <Plus size={14} /> Book Appointment
             </Link>
           )}
           {/* Filter toggle */}
