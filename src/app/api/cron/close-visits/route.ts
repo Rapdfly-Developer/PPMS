@@ -56,7 +56,7 @@ export async function GET(req: Request) {
     const ids = noShows.map((a) => a.id);
     await prisma.appointment.updateMany({
       where: { id: { in: ids } },
-      data: { status: "CANCELLED" },
+      data: { status: "NO_SHOW" },
     });
     // Write audit log for each no-show
     // AuditLog.userId is a foreign key and there is no "system" user, so the

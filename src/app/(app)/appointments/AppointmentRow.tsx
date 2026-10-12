@@ -3,15 +3,14 @@
 import { format } from "date-fns";
 import { openPdfNative } from "@/lib/open-pdf";
 import { useRouter } from "next/navigation";
-import { useState, useTransition, useRef } from "react";
-import { Phone, Tag, CalendarPlus, Printer, Clock, Timer, LogIn, CheckCircle2, Calendar, UserX, Undo2, Check, ListPlus, X } from "lucide-react";
+import { useState, useTransition } from "react";
+import { Phone, Tag, CalendarPlus, Printer, Clock, Timer, LogIn, CheckCircle2, Calendar, Undo2, Check, ListPlus, X } from "lucide-react";
 import {
   confirmAppointmentOnly,
   rejectAppointment,
   addToQueue,
   undoConfirmAppointment,
   hospitalUpdateAppointmentStatus,
-  doctorUpdateAppointmentStatus,
   doctorCancelAppointment,
 } from "./actions";
 import { ScheduleNextSlotModal } from "./ScheduleNextSlotModal";
@@ -54,7 +53,6 @@ export function AppointmentRow({ appt, role, perms, token, hideAddToQueue }: { a
   const [showSlotModal, setShowSlotModal] = useState(false);
   const [confirmToast, setConfirmToast] = useState(false);
   const [rejectToast, setRejectToast] = useState(false);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const p = appt.patient;
   const provisionalDx: ProvisionalDx[] = (appt.visit?.diagnoses ?? []).filter(
     (d: ProvisionalDx) => d.provisional,
@@ -72,8 +70,6 @@ export function AppointmentRow({ appt, role, perms, token, hideAddToQueue }: { a
   // ── New 3-button handlers ─────────────────────────────────────────────────
   function handleConfirm() {
     setConfirmToast(true);
-    if (timerRef.current) clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(() => setConfirmToast(false), 5000);
     startTransition(() => confirmAppointmentOnly(appt.id));
   }
 
@@ -88,13 +84,8 @@ export function AppointmentRow({ appt, role, perms, token, hideAddToQueue }: { a
   }
 
   function handleUndo() {
-    if (timerRef.current) clearTimeout(timerRef.current);
     setConfirmToast(false);
     startTransition(() => undoConfirmAppointment(appt.id));
-  }
-
-  function doctorSetStatus(status: "DISPENSED" | "NO_SHOW" | "RESCHEDULED") {
-    startTransition(() => doctorUpdateAppointmentStatus(appt.id, status));
   }
 
   const isCompleted = appt.status === "DISPENSED";
@@ -114,12 +105,7 @@ export function AppointmentRow({ appt, role, perms, token, hideAddToQueue }: { a
     perms.schedule && !isCompleted && appt.isWalkIn && appt.status === "CONFIRMED";
 
   const showCancelConfirmed =
-    perms.cancel && !isCompleted && appt.status === "CONFIRMED" && !appt.isWalkIn;
-
-  const showNoShow =
-    perms.noshow &&
-    appt.status === "CONFIRMED" &&
-    !appt.arrivedAt;
+    (isDoctor || perms.cancel) && !isCompleted && appt.status === "CONFIRMED" && !appt.isWalkIn;
 
   // Timestamp data
   const arrivedAt   = appt.arrivedAt          ? new Date(appt.arrivedAt)          : null;
@@ -278,20 +264,6 @@ export function AppointmentRow({ appt, role, perms, token, hideAddToQueue }: { a
               </div>
             )}
 
-            {/* ── Confirm toast with Undo (5 s) ── */}
-            {confirmToast && (
-              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-50 border border-emerald-200 text-caption sm:text-xs text-emerald-700">
-                <CheckCircle2 size={13} className="shrink-0 text-emerald-600" />
-                <span className="flex-1">Appointment confirmed</span>
-                <button
-                  onClick={handleUndo}
-                  disabled={pending}
-                  className="inline-flex items-center gap-1 font-semibold text-emerald-800 hover:underline disabled:opacity-50"
-                >
-                  <Undo2 size={11} /> Undo
-                </button>
-              </div>
-            )}
 
             {/* ── Reject toast (auto-dismisses) ── */}
             {rejectToast && (
@@ -300,18 +272,6 @@ export function AppointmentRow({ appt, role, perms, token, hideAddToQueue }: { a
               </div>
             )}
 
-            {/* ── CONFIRMED + not yet queued: Add to Q ── */}
-            {showAddToQForConfirmed && !hideAddToQueue && (
-              <div className="flex flex-wrap justify-end gap-2">
-                <button
-                  disabled={pending}
-                  onClick={handleAddToQueue}
-                  className="text-caption sm:text-xs font-medium px-3 py-1.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50 transition-colors"
-                >
-                  {pending ? "…" : "Add to Q"}
-                </button>
-              </div>
-            )}
 
             {/* ── Prescription (completed) ── */}
             {isCompleted && appt.visit && (
@@ -348,25 +308,37 @@ export function AppointmentRow({ appt, role, perms, token, hideAddToQueue }: { a
               </div>
             )}
 
-            {/* ── Cancel Confirmed / No Show ── */}
-            {(showCancelConfirmed || showNoShow) && (
-              <div className="flex flex-wrap justify-end gap-2">
-                {showCancelConfirmed && (
+            {/* ── CONFIRMED: Add to Q + Cancel + Undo in one row ── */}
+            {(showAddToQForConfirmed || showCancelConfirmed || confirmToast) && (
+              <div className="flex items-center justify-end gap-1.5">
+                {confirmToast && (
                   <button
+                    title="Undo confirmation"
                     disabled={pending}
-                    onClick={cancelConfirmedAppt}
-                    className="text-caption sm:text-xs font-medium px-3 py-1 rounded-lg bg-white border border-[var(--color-border)] text-[var(--color-danger-600)] hover:bg-[var(--color-danger-50)] disabled:opacity-50"
+                    onClick={handleUndo}
+                    className="p-1.5 rounded-lg bg-white border border-[var(--color-border)] text-[var(--color-ink-500)] hover:bg-[var(--color-surface-sunken)] disabled:opacity-50 transition-colors"
                   >
-                    Cancel
+                    <Undo2 size={14} />
                   </button>
                 )}
-                {showNoShow && (
+                {showAddToQForConfirmed && !hideAddToQueue && (
                   <button
+                    title="Add to Queue"
                     disabled={pending}
-                    onClick={() => doctorSetStatus("NO_SHOW")}
-                    className="flex items-center gap-1 text-caption sm:text-xs font-medium px-3 py-1 rounded-lg bg-white border border-[var(--color-border)] text-red-500 hover:bg-red-50 hover:border-red-200 disabled:opacity-50 transition-colors"
+                    onClick={handleAddToQueue}
+                    className="p-1.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50 transition-colors"
                   >
-                    <UserX size={11} /> No Show
+                    <ListPlus size={14} />
+                  </button>
+                )}
+                {showCancelConfirmed && (
+                  <button
+                    title="Cancel appointment"
+                    disabled={pending}
+                    onClick={cancelConfirmedAppt}
+                    className="p-1.5 rounded-lg bg-white border border-[var(--color-border)] text-[var(--color-danger-600)] hover:bg-[var(--color-danger-50)] disabled:opacity-50 transition-colors"
+                  >
+                    <X size={14} />
                   </button>
                 )}
               </div>

@@ -143,10 +143,15 @@ export function ComplaintCombobox({
   // shows up there and vice versa.
   const STORAGE_KEY = `kw_${CHIEF_COMPLAINT_FIELD_KEY}`;
 
-  const [customKeywords, setCustomKeywords] = useState<string[]>(() =>
-    readMergedKeywords(STORAGE_KEY));
+  const [customKeywords, setCustomKeywords] = useState<string[]>([]);
 
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Load from localStorage after mount to avoid SSR/client hydration mismatch.
+  useEffect(() => {
+    setCustomKeywords(readMergedKeywords(STORAGE_KEY));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Persist whenever the list changes. This also completes the merge above:
   // the combined list is written back under the shared key on first mount.
