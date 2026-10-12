@@ -9,7 +9,7 @@ import {
 import { ChevronLeft, ChevronRight, CalendarDays, X } from "lucide-react";
 import { AppointmentRow, type ApptPerms } from "./AppointmentRow";
 
-const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const WEEKDAYS = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
 
 export function UpcomingCalendar({
   appts,
@@ -20,11 +20,10 @@ export function UpcomingCalendar({
   role: string;
   perms: ApptPerms;
 }) {
-  const [viewDate, setViewDate]       = useState(new Date());
-  const [selectedDk, setSelectedDk]   = useState<string | null>(null);
+  const [viewDate, setViewDate]         = useState(new Date());
+  const [selectedDk, setSelectedDk]     = useState<string | null>(null);
   const [calendarOpen, setCalendarOpen] = useState(true);
 
-  // Group by date key
   const byDate: Record<string, any[]> = {};
   for (const a of appts) {
     const dk = format(new Date(a.dateTime), "yyyy-MM-dd");
@@ -50,133 +49,221 @@ export function UpcomingCalendar({
   function handleDayClick(dk: string, count: number) {
     if (count === 0) return;
     setSelectedDk(dk);
-    setCalendarOpen(false); // collapse calendar, show list
-  }
-
-  function CountBadge({ count, selected }: { count: number; selected: boolean }) {
-    return (
-      <span className={[
-        "mt-1 text-[10px] font-bold leading-none px-1.5 py-0.5 rounded-full",
-        selected ? "bg-white/25 text-white" : "bg-teal-100 text-teal-700",
-      ].join(" ")}>
-        {count}
-      </span>
-    );
+    setCalendarOpen(false);
   }
 
   return (
     <div className="flex flex-col gap-5">
 
-      {/* ── Calendar (collapsible) ── */}
+      {/* ── Calendar ── */}
       {calendarOpen && (
         <div
-          className="rounded-2xl overflow-hidden"
+          className="mx-auto w-full sm:max-w-[480px] lg:max-w-[600px]"
           style={{
-            background: "linear-gradient(160deg, var(--color-primary-50) 0%, #ffffff 55%)",
-            border: "1px solid var(--color-border)",
-            boxShadow: "0 4px 24px 0 rgba(0,0,0,0.06), 0 1px 4px 0 rgba(0,0,0,0.04)",
+            background: "#fff",
+            borderRadius: 16,
+            border: "1px solid #e5e7eb",
+            boxShadow: "0 4px 24px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04)",
+            overflow: "hidden",
           }}
         >
-          {/* Header strip */}
+          {/* ── Month header ── */}
           <div
-            className="px-5 py-4 flex items-center justify-between"
-            style={{ background: "linear-gradient(135deg, var(--color-primary-700) 0%, var(--color-primary-600) 100%)" }}
+            className="px-4 sm:px-5 lg:px-6 py-3 sm:py-4"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              background: "linear-gradient(135deg, var(--color-primary-700) 0%, var(--color-primary-500) 100%)",
+            }}
           >
             <button
               onClick={() => { setViewDate(subMonths(viewDate, 1)); setSelectedDk(null); }}
-              className="w-8 h-8 flex items-center justify-center rounded-xl bg-white/15 text-white hover:bg-white/25 transition-colors"
+              style={{
+                width: 30, height: 30, borderRadius: 8, border: "none",
+                background: "rgba(255,255,255,0.15)", color: "#fff",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                cursor: "pointer", transition: "background 0.15s",
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.25)")}
+              onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.15)")}
             >
               <ChevronLeft size={15} />
             </button>
-            <div className="text-center">
-              <p className="text-base font-bold text-white tracking-tight leading-none">
+
+            <div style={{ textAlign: "center" }}>
+              <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: "#fff", letterSpacing: "0.01em" }}>
                 {format(viewDate, "MMMM yyyy")}
               </p>
-              <p className="text-xs text-white/70 mt-1 leading-none">
+              <p style={{ margin: "2px 0 0", fontSize: 11, color: "rgba(255,255,255,0.65)" }}>
                 {totalThisMonth > 0
                   ? `${totalThisMonth} appointment${totalThisMonth !== 1 ? "s" : ""} this month`
                   : "No appointments this month"}
               </p>
             </div>
+
             <button
               onClick={() => { setViewDate(addMonths(viewDate, 1)); setSelectedDk(null); }}
-              className="w-8 h-8 flex items-center justify-center rounded-xl bg-white/15 text-white hover:bg-white/25 transition-colors"
+              style={{
+                width: 30, height: 30, borderRadius: 8, border: "none",
+                background: "rgba(255,255,255,0.15)", color: "#fff",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                cursor: "pointer", transition: "background 0.15s",
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.25)")}
+              onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.15)")}
             >
               <ChevronRight size={15} />
             </button>
           </div>
 
-          {/* Weekday labels */}
-          <div className="grid grid-cols-7 px-3 pt-3 pb-1">
+          {/* ── Weekday labels ── */}
+          <div className="grid grid-cols-7 px-3 sm:px-4 lg:px-6 pt-3 pb-1">
             {WEEKDAYS.map((d) => (
-              <div key={d} className="text-center text-[10px] font-bold uppercase tracking-widest text-[var(--color-ink-400)] py-1">
-                {d.slice(0, 1)}
+              <div
+                key={d}
+                style={{
+                  textAlign: "center", fontSize: 11, fontWeight: 600,
+                  letterSpacing: "0.06em", color: "#9ca3af", padding: "2px 0",
+                }}
+              >
+                {d}
               </div>
             ))}
           </div>
 
-          {/* Days grid */}
-          <div className="grid grid-cols-7 gap-0.5 px-3 pb-4">
+          {/* ── Days grid ── */}
+          <div className="grid grid-cols-7 px-3 sm:px-4 lg:px-6 pb-3 sm:pb-4 lg:pb-5" style={{ gap: 2 }}>
             {days.map((day) => {
               const dk         = format(day, "yyyy-MM-dd");
               const count      = byDate[dk]?.length ?? 0;
               const inMonth    = isSameMonth(day, viewDate);
               const isSelected = selectedDk === dk;
               const isNow      = isToday(day);
+              const hasAppt    = count > 0;
 
               return (
                 <button
                   key={dk}
-                  disabled={count === 0}
+                  disabled={!hasAppt}
                   onClick={() => handleDayClick(dk, count)}
-                  className={[
-                    "relative flex flex-col items-center justify-center rounded-xl py-2 transition-all duration-150 select-none",
-                    !inMonth ? "opacity-20" : "",
-                    count === 0 ? "cursor-default" : "cursor-pointer",
-                    isSelected ? "shadow-lg scale-105" : count > 0 ? "hover:scale-105 hover:shadow-md" : "",
-                  ].filter(Boolean).join(" ")}
-                  style={
-                    isSelected
-                      ? { background: "linear-gradient(135deg, var(--color-primary-600) 0%, var(--color-primary-700) 100%)", boxShadow: "0 4px 12px rgba(0,0,0,0.18)" }
-                      : isNow
-                        ? { background: "var(--color-primary-50)", border: "1.5px solid var(--color-primary-400)" }
-                        : count > 0
-                          ? { background: "rgba(20,184,166,0.08)", border: "1px solid rgba(20,184,166,0.2)" }
-                          : {}
-                  }
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    padding: "4px 2px 5px",
+                    border: "none",
+                    borderRadius: 10,
+                    background: "transparent",
+                    cursor: hasAppt ? "pointer" : "default",
+                    opacity: !inMonth ? 0.2 : 1,
+                    gap: 2,
+                    transition: "background 0.12s",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (hasAppt && !isSelected)
+                      e.currentTarget.style.background = "var(--color-primary-50)";
+                  }}
+                  onMouseLeave={(e) => {
+                    if (hasAppt && !isSelected)
+                      e.currentTarget.style.background = "transparent";
+                  }}
                 >
-                  <span className={[
-                    "text-sm font-semibold tabular-nums leading-none",
-                    isSelected ? "text-white" : isNow ? "text-[var(--color-primary-700)]" : count > 0 ? "text-[var(--color-ink-900)]" : "text-[var(--color-ink-500)]",
-                  ].join(" ")}>
+                  {/* Day circle */}
+                  <span
+                    className="flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 lg:w-11 lg:h-11 shrink-0"
+                    style={{
+                      borderRadius: "50%",
+                      fontSize: "clamp(12px, 1.5vw, 15px)",
+                      fontWeight: isSelected || isNow ? 700 : hasAppt ? 600 : 400,
+                      transition: "all 0.12s",
+                      ...(isSelected
+                        ? {
+                            background: "linear-gradient(135deg, var(--color-primary-600), var(--color-primary-700))",
+                            color: "#fff",
+                            boxShadow: "0 3px 10px rgba(13,148,136,0.35)",
+                          }
+                        : isNow
+                          ? {
+                              background: "var(--color-primary-50)",
+                              color: "var(--color-primary-700)",
+                              boxShadow: "0 0 0 1.5px var(--color-primary-400)",
+                            }
+                          : hasAppt
+                            ? { color: "var(--color-ink-900)" }
+                            : { color: "#6b7280" }),
+                    }}
+                  >
                     {format(day, "d")}
                   </span>
-                  {count > 0 && <CountBadge count={count} selected={isSelected} />}
+
+                  {/* Appointment count badge */}
+                  <span
+                    style={{
+                      fontSize: 9,
+                      fontWeight: 700,
+                      lineHeight: 1,
+                      color: hasAppt
+                        ? isSelected
+                          ? "var(--color-primary-500)"
+                          : "var(--color-primary-600)"
+                        : "transparent",
+                    }}
+                  >
+                    {hasAppt ? count : "0"}
+                  </span>
                 </button>
               );
             })}
           </div>
 
-          {/* Legend */}
-          <div className="flex items-center justify-center gap-4 px-4 pb-3 pt-1 border-t border-[var(--color-border)]">
-            <div className="flex items-center gap-1.5">
-              <span className="inline-flex items-center justify-center w-5 h-4 rounded-full bg-teal-100 text-[9px] font-bold text-teal-700">3</span>
-              <span className="text-[10px] text-[var(--color-ink-400)] font-medium">Appointments</span>
+          {/* ── Footer legend ── */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 20,
+              padding: "10px 16px",
+              borderTop: "1px solid #f3f4f6",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span
+                style={{
+                  display: "inline-flex", alignItems: "center", justifyContent: "center",
+                  width: 22, height: 22, borderRadius: "50%",
+                  background: "linear-gradient(135deg, var(--color-primary-600), var(--color-primary-700))",
+                  fontSize: 9, fontWeight: 700, color: "#fff",
+                }}
+              >
+                2
+              </span>
+              <span style={{ fontSize: 11, color: "#9ca3af", fontWeight: 500 }}>Appointments</span>
             </div>
-            <div className="flex items-center gap-1.5">
-              <span className="w-5 h-5 rounded-lg border-[1.5px] border-[var(--color-primary-400)] bg-[var(--color-primary-50)]" style={{ display: "inline-block" }} />
-              <span className="text-[10px] text-[var(--color-ink-400)] font-medium">Today</span>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span
+                style={{
+                  display: "inline-flex", alignItems: "center", justifyContent: "center",
+                  width: 22, height: 22, borderRadius: "50%",
+                  background: "var(--color-primary-50)",
+                  boxShadow: "0 0 0 1.5px var(--color-primary-400)",
+                  fontSize: 9, fontWeight: 700, color: "var(--color-primary-700)",
+                }}
+              >
+                {format(new Date(), "d")}
+              </span>
+              <span style={{ fontSize: 11, color: "#9ca3af", fontWeight: 500 }}>Today</span>
             </div>
           </div>
         </div>
       )}
 
-      {/* ── Collapsed state: always show the calendar button ── */}
+      {/* ── Collapsed state ── */}
       {!calendarOpen && (
         <div>
-          {/* Header: always visible — calendar button + optional date info + X */}
           <div className="flex items-center gap-2 mb-4">
-            {/* Small calendar button to reopen */}
             <button
               title="Open calendar"
               onClick={() => setCalendarOpen(true)}
@@ -189,7 +276,6 @@ export function UpcomingCalendar({
               <CalendarDays size={14} className="text-white" />
             </button>
 
-            {/* Date info — only when a date with appointments is selected */}
             {selectedDk && selectedAppts.length > 0 ? (
               <>
                 <div className="flex-1 min-w-0">
@@ -200,7 +286,6 @@ export function UpcomingCalendar({
                     {selectedAppts.length} appointment{selectedAppts.length !== 1 ? "s" : ""}
                   </p>
                 </div>
-                {/* Clear selection */}
                 <button
                   title="Back to calendar"
                   onClick={() => { setSelectedDk(null); setCalendarOpen(true); }}
@@ -216,7 +301,6 @@ export function UpcomingCalendar({
             )}
           </div>
 
-          {/* Patient list — only when a date with appointments is selected */}
           {selectedDk && selectedAppts.length > 0 && (
             <div className="flex flex-col gap-3">
               {selectedAppts.map((appt: any, idx: number) => (
