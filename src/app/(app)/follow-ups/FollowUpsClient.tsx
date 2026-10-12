@@ -457,7 +457,7 @@ function FollowUpRow({
             </div>
             <div className="min-w-0">
               <Link
-                href={`/patients/${v.patient.udid}`}
+                href={`/patients/${v.patient.udid}?returnTo=/follow-ups&source=follow-ups`}
                 className="text-label sm:text-sm font-semibold text-[var(--color-ink-900)] hover:text-[var(--color-primary-700)] hover:underline truncate block"
               >
                 {v.patient.name}

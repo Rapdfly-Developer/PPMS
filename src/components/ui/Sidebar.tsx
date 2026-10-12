@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 import {
   Stethoscope, CalendarDays, Users,
@@ -128,7 +128,8 @@ export function Sidebar({
 }: {
   role: Role; name: string; permissions: string[]; licenseActive?: boolean;
 }) {
-  const pathname  = usePathname();
+  const pathname     = usePathname();
+  const searchParams = useSearchParams();
   const { open, close, collapsed, toggleCollapsed } = useSidebar();
   // On mobile overlay (open=true), always show full labels regardless of collapsed state
   const effectiveCollapsed = collapsed && !open;
@@ -137,8 +138,21 @@ export function Sidebar({
   const mainEntries  = entries.filter((e) => e.href !== "/settings");
   const settingsItem = entries.find((e) => e.href === "/settings");
 
+  // When inside a patient profile, resolve the active sidebar item from
+  // the returnTo/source query params instead of the pathname.
+  const resolvedPathname = (() => {
+    if (!pathname?.startsWith("/patients/")) return pathname;
+    const source   = searchParams.get("source")   ?? "";
+    const returnTo = searchParams.get("returnTo") ?? "";
+    if (source === "opd-queue"    || returnTo === "/opd")          return "/opd";
+    if (source === "appointments" || returnTo === "/appointments")  return "/appointments";
+    if (source === "follow-ups"   || returnTo === "/follow-ups")   return "/follow-ups";
+    if (returnTo === "/dashboard")                                  return "/dashboard";
+    return pathname; // default → Patient Library
+  })();
+
   const isActive = (href: string) =>
-    pathname === href || pathname?.startsWith(href + "/");
+    resolvedPathname === href || resolvedPathname?.startsWith(href + "/");
 
   useEffect(() => { close(); }, [pathname, close]);
 
