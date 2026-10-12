@@ -158,7 +158,7 @@ export function AppointmentRow({ appt, role, perms, token, hideAddToQueue }: { a
               {p.udid}
             </span>
             <span className="text-caption sm:text-xs text-[var(--color-ink-400)]">
-              {p.age}y / {p.sex === "MALE" ? "M" : p.sex === "FEMALE" ? "F" : "O"}
+              {p.age}y / {p.sex ? p.sex.charAt(0).toUpperCase() : ""}
             </span>
             {p.mobile && (
               <span className="inline-flex items-center gap-0.5 text-caption sm:text-xs text-[var(--color-ink-400)]">

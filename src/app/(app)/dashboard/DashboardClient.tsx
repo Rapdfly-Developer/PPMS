@@ -145,7 +145,7 @@ function PartialDispenseRow({ appt: a, serial, canDispense, canViewPatient, retu
             {a.patient.udid}
           </span>
           <span className="text-caption sm:text-caption text-[var(--color-ink-400)]">
-            {a.patient.age}y / {a.patient.sex === "MALE" ? "M" : a.patient.sex === "FEMALE" ? "F" : "O"}
+            {a.patient.age}y / {a.patient.sex ? a.patient.sex.charAt(0).toUpperCase() : ""}
           </span>
           {a.patient.mobile && (
             <span className="inline-flex items-center gap-0.5 text-caption sm:text-caption text-[var(--color-ink-400)]">
@@ -246,7 +246,7 @@ function ApptRow({ appt, serial, canManageQueue, canViewPatient, returnTo }: { a
             {appt.patient.udid}
           </span>
           <span className="text-caption sm:text-caption text-[var(--color-ink-400)]">
-            {appt.patient.age}y / {appt.patient.sex === "MALE" ? "M" : appt.patient.sex === "FEMALE" ? "F" : "O"}
+            {appt.patient.age}y / {appt.patient.sex ? appt.patient.sex.charAt(0).toUpperCase() : ""}
           </span>
           {appt.patient.mobile && (
             <span className="inline-flex items-center gap-0.5 text-caption sm:text-caption text-[var(--color-ink-400)]">
