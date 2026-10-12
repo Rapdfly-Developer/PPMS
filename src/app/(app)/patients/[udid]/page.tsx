@@ -92,7 +92,9 @@ export default async function PatientProfilePage({
 
   const todayVisits = patient.visits.filter((v) => {
     const d = new Date(v.date);
-    return d >= todayStart && d <= todayEnd;
+    return d >= todayStart && d <= todayEnd &&
+      v.appointment?.status !== "CANCELLED" &&
+      v.appointment?.status !== "NO_SHOW";
   });
 
   let todayVisitRecord =

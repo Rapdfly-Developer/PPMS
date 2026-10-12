@@ -218,7 +218,8 @@ function TableApptRow({ appt, scope, canManageQueue, canViewPatient, consultantN
   appt: Appt; scope: "DOCTOR" | "HOSPITAL"; canManageQueue: boolean; canViewPatient: boolean; consultantName?: string;
 }) {
   const [undoing, startUndo] = useTransition();
-  const isInConsultation = !!(appt.visitId && !appt.visitFinalizedAt);
+  const isInConsultation = !!(appt.visitId && !appt.visitFinalizedAt) &&
+    appt.status !== "CANCELLED" && appt.status !== "NO_SHOW";
   const statusKey = isInConsultation ? "IN_CONSULTATION" : appt.status;
   const cfg = STATUS_CFG[statusKey] ?? STATUS_CFG["REQUESTED"];
   const time = format(new Date(appt.dateTime), "hh:mm a");
