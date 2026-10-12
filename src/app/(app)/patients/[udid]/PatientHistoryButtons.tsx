@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useRef, useEffect } from "react";
 import { format } from "date-fns";
-import { X, FlaskConical, Pill, Glasses, Loader2, ChevronDown, ChevronUp, Upload, Eye, Pencil, Trash2, UserX, Calendar, Building2, Stethoscope } from "lucide-react";
+import { X, FlaskConical, Pill, Glasses, Loader2, ChevronDown, ChevronUp, Upload, Eye, Pencil, Trash2, UserX, Calendar, Building2 } from "lucide-react";
 import { parseJSON } from "@/lib/json";
 import {
   getPatientInvestigations,
@@ -22,6 +22,7 @@ function Drawer({
   icon,
   children,
   wide = false,
+  mid = false,
 }: {
   open: boolean;
   onClose: () => void;
@@ -29,15 +30,17 @@ function Drawer({
   icon: React.ReactNode;
   children: React.ReactNode;
   wide?: boolean;
+  mid?: boolean;
 }) {
   if (!open) return null;
+  const widthCls = wide ? "sm:max-w-2xl" : mid ? "sm:max-w-xl" : "sm:max-w-lg";
   return (
     <div
       className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4"
       style={{ background: "rgba(0,0,0,0.45)" }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className={`bg-white w-full sm:rounded-2xl shadow-2xl flex flex-col max-h-[92vh] rounded-t-2xl ${wide ? "sm:max-w-2xl" : "sm:max-w-lg"}`}>
+      <div className={`bg-white w-full sm:rounded-2xl shadow-2xl flex flex-col max-h-[92vh] rounded-t-2xl ${widthCls}`}>
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--color-border)] shrink-0">
           <div className="flex items-center gap-2 text-[var(--color-ink-800)]">
@@ -654,7 +657,7 @@ function NoShowRegistryDrawer({
   }, [open, data]);
 
   return (
-    <Drawer open={open} onClose={onClose} title="No Show Registry" icon={<UserX size={16} />}>
+    <Drawer open={open} onClose={onClose} title="No Show Registry" icon={<UserX size={16} />} mid>
       {isPending && (
         <div className="flex justify-center py-10">
           <Loader2 size={22} className="animate-spin text-[var(--color-primary-500)]" />
@@ -669,47 +672,39 @@ function NoShowRegistryDrawer({
           {data.map((entry, idx) => (
             <div
               key={entry.id}
-              className={`rounded-xl border p-4 ${idx === 0 ? "border-red-300 bg-red-50/60" : "border-[var(--color-border)] bg-white"}`}
+              className={`rounded-lg border px-3 py-2 ${idx === 0 ? "border-red-200 bg-red-50/50" : "border-[var(--color-border)] bg-white"}`}
             >
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <span className={`w-6 h-6 rounded-full flex items-center justify-center text-caption font-bold shrink-0 ${idx === 0 ? "bg-red-500 text-white" : "bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)]"}`}>
-                    {data.length - idx}
-                  </span>
-                  <div>
-                    <p className={`text-sm font-bold ${idx === 0 ? "text-red-700" : "text-[var(--color-ink-800)]"}`}>
-                      {format(new Date(entry.dateTime), "dd MMM yyyy")}
-                    </p>
-                    <p className="text-caption text-[var(--color-ink-400)]">
-                      {format(new Date(entry.dateTime), "h:mm a")}
-                    </p>
-                  </div>
-                </div>
+              {/* Line 1: count · date · hospital · visitType · Latest */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className={`w-5 h-5 rounded-full flex items-center justify-center text-micro font-bold shrink-0 ${idx === 0 ? "bg-red-500 text-white" : "bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)]"}`}>
+                  {data.length - idx}
+                </span>
+                <span className={`text-sm font-bold ${idx === 0 ? "text-red-700" : "text-[var(--color-ink-800)]"}`}>
+                  {format(new Date(entry.dateTime), "dd MMM yyyy")}
+                </span>
+                {entry.hospitalName && (
+                  <>
+                    <span className="text-[var(--color-ink-300)] text-caption">·</span>
+                    <span className="text-caption text-[var(--color-ink-500)]">{entry.hospitalName}</span>
+                  </>
+                )}
+                {entry.visitType && (
+                  <>
+                    <span className="text-[var(--color-ink-300)] text-caption">·</span>
+                    <span className="text-caption text-[var(--color-ink-500)]">{entry.visitType}</span>
+                  </>
+                )}
                 {idx === 0 && (
                   <span className="text-caption font-semibold px-2 py-0.5 rounded-full bg-red-500 text-white shrink-0">
                     Latest
                   </span>
                 )}
               </div>
-              <div className="mt-3 space-y-1.5 pl-8">
-                {entry.hospitalName && (
-                  <div className="flex items-center gap-2 text-caption text-[var(--color-ink-500)]">
-                    <Building2 size={11} className="shrink-0 text-[var(--color-ink-300)]" />
-                    {entry.hospitalName}
-                  </div>
-                )}
-                {entry.doctorName && (
-                  <div className="flex items-center gap-2 text-caption text-[var(--color-ink-500)]">
-                    <Stethoscope size={11} className="shrink-0 text-[var(--color-ink-300)]" />
-                    Dr. {entry.doctorName}
-                  </div>
-                )}
-                {entry.visitType && (
-                  <div className="flex items-center gap-2 text-caption text-[var(--color-ink-500)]">
-                    <Calendar size={11} className="shrink-0 text-[var(--color-ink-300)]" />
-                    {entry.visitType}
-                  </div>
-                )}
+              {/* Line 2: time */}
+              <div className="pl-7 mt-0.5">
+                <span className="text-caption text-[var(--color-ink-400)]">
+                  {format(new Date(entry.dateTime), "h:mm a")}
+                </span>
               </div>
             </div>
           ))}
