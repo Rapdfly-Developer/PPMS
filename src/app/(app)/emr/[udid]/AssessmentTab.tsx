@@ -359,9 +359,9 @@ export function AssessmentTab({
 
   const [provQuery, setProvQuery] = useState("");
   const [provLaterality, setProvLateralityState] = useState<string>(
-    () => sessionStorage.getItem(`prov-lat-${visit.id}`) ?? "OU"
+    () => (typeof window !== "undefined" ? sessionStorage.getItem(`prov-lat-${visit.id}`) : null) ?? "OU"
   );
-  const setProvLaterality = (v: string) => { sessionStorage.setItem(`prov-lat-${visit.id}`, v); setProvLateralityState(v); };
+  const setProvLaterality = (v: string) => { if (typeof window !== "undefined") sessionStorage.setItem(`prov-lat-${visit.id}`, v); setProvLateralityState(v); };
   const [showProvSuggestions, setShowProvSuggestions] = useState(false);
   const [provSuggestionIndex, setProvSuggestionIndex] = useState(-1);
   const provBlurTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -371,9 +371,9 @@ export function AssessmentTab({
 
   const [query, setQuery] = useState("");
   const [laterality, setLateralityState] = useState<string>(
-    () => sessionStorage.getItem(`icd-lat-${visit.id}`) ?? "OU"
+    () => (typeof window !== "undefined" ? sessionStorage.getItem(`icd-lat-${visit.id}`) : null) ?? "OU"
   );
-  const setLaterality = (v: string) => { sessionStorage.setItem(`icd-lat-${visit.id}`, v); setLateralityState(v); };
+  const setLaterality = (v: string) => { if (typeof window !== "undefined") sessionStorage.setItem(`icd-lat-${visit.id}`, v); setLateralityState(v); };
   const [pending, startTransition] = useTransition();
 
   /** Runs a mutating server action, surfacing any error instead of failing silently. */

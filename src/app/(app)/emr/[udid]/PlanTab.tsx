@@ -2223,9 +2223,9 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
       </div>}
 
       {/* Per-diagnosis protocol prompt cards — shown below search */}
-      {pendingDiagPrompts.map(({ diagnosisDesc, laterality: diagLat, matches }) => (
+      {pendingDiagPrompts.map(({ diagnosisDesc, laterality: diagLat, matches }, i) => (
         <ProtocolPromptCard
-          key={diagLat ? `${diagnosisDesc}-${diagLat}` : diagnosisDesc}
+          key={`${diagnosisDesc}-${diagLat ?? "none"}-${i}`}
           diagnosisDesc={diagLat ? `${diagnosisDesc} (${diagLat})` : diagnosisDesc}
           onConfirm={() => onConfirmPrompt({ diagnosisDesc, laterality: diagLat, matches })}
           onDismiss={() => onDismissPrompt(diagnosisDesc, matches)}
