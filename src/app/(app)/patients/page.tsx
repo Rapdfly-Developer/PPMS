@@ -196,11 +196,11 @@ export default async function PatientsPage({
   const today     = startOfDay(new Date());
   const weekStart = subDays(today, 6);
   const doctorId  = user.role === "DOCTOR" ? scopeDoctorId(user) : null;
-  const apptScope = isHospital
-    ? { hospitalId: user.hospitalId! }
-    : doctorId
+  const apptScope = doctorId
     ? { doctorId }
-    : {};
+    : user.hospitalId
+    ? { hospitalId: user.hospitalId }
+    : { id: "__no_match__" };
 
   const todayEnd = new Date(today); todayEnd.setHours(23, 59, 59, 999);
 
