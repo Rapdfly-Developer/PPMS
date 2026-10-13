@@ -113,8 +113,9 @@ export default async function PatientsPage({
   }
   if (opStatusFilter === "noshowreg") {
     listConds.push({ appointments: { some: {
-      status: { in: ["CONFIRMED", "PARTIAL_DISPENSE"] },
-      OR: [{ isWalkIn: true }, { arrivedAt: { not: null } }],
+      visit:    null,
+      dateTime: { lt: listToday },
+      status:   { notIn: ["CANCELLED", "RESCHEDULED", "DISPENSED"] },
     }}});
   }
 
