@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { startEmrTiming } from "./actions";
 
 type TimingRole = "DOCTOR" | "REFRACTIONIST" | null;
@@ -25,17 +25,6 @@ function asMs(value: string | null): number | null {
   if (!value) return null;
   const ms = new Date(value).getTime();
   return Number.isFinite(ms) ? ms : null;
-}
-
-function Row({ label, value, live }: { label: string; value: string; live?: boolean }) {
-  return (
-    <div className="flex items-baseline gap-1 min-w-0">
-      <span className="text-caption uppercase tracking-wide text-white/45 shrink-0 truncate">{label}</span>
-      <span className={`text-caption tabular-nums whitespace-nowrap shrink-0 ml-auto ${live ? "font-semibold text-emerald-300" : "text-white/75"}`}>
-        {value}
-      </span>
-    </div>
-  );
 }
 
 export function VisitTimeline({
@@ -124,15 +113,45 @@ export function VisitTimeline({
   const visitDuration = arrivedMs && visitEndMs ? elapsed(arrivedMs, visitEndMs) : null;
   const visitDurationLive = !!visitDuration && !visitClosed;
 
+  type Cell = { label: string; value: string; live?: boolean } | null;
+  const pairs: [Cell, Cell][] = [
+    [
+      bookingTime ? { label: "Booked", value: bookingTime } : null,
+      appointmentTime ? { label: "Appt", value: appointmentTime } : null,
+    ],
+    [
+      visitTime ? { label: "Visit", value: visitTime } : null,
+      visitDuration ? { label: "Duration", value: visitDuration, live: visitDurationLive } : null,
+    ],
+    [
+      waiting ? { label: "Waiting", value: waiting, live: waitingLive } : null,
+      consulting ? { label: "Consult", value: consulting, live: !consultationCompletedMs && !visitClosed } : null,
+    ],
+    ...(refracting
+      ? [[{ label: "Refraction", value: refracting, live: !refractionEndMs && !visitClosed }, null] as [Cell, Cell]]
+      : []),
+  ];
+
+  const lbl = "text-caption uppercase tracking-wide text-white/45 whitespace-nowrap";
+  const val = (live?: boolean) =>
+    `text-caption tabular-nums whitespace-nowrap ${live ? "font-semibold text-emerald-300" : "text-white/75"}`;
+
   return (
-    <div className="grid grid-cols-2 gap-x-4 gap-y-0.5">
-      {bookingTime && <Row label="Booked" value={bookingTime} />}
-      {appointmentTime && <Row label="Appt" value={appointmentTime} />}
-      {visitTime && <Row label="Visit" value={visitTime} />}
-      {visitDuration && <Row label="Duration" value={visitDuration} live={visitDurationLive} />}
-      {waiting && <Row label="Waiting" value={waiting} live={waitingLive} />}
-      {consulting && <Row label="Consult" value={consulting} live={!consultationCompletedMs && !visitClosed} />}
-      {refracting && <Row label="Refraction" value={refracting} live={!refractionEndMs && !visitClosed} />}
+    <div
+      className="gap-y-0.5"
+      style={{ display: "grid", gridTemplateColumns: "auto auto auto auto", columnGap: "6px" }}
+    >
+      {pairs.map(([left, right], i) => {
+        if (!left && !right) return null;
+        return (
+          <Fragment key={i}>
+            <span className={lbl}>{left?.label ?? ""}</span>
+            <span className={val(left?.live)}>{left?.value ?? ""}</span>
+            <span className={`${lbl} pl-2`}>{right?.label ?? ""}</span>
+            <span className={val(right?.live)}>{right?.value ?? ""}</span>
+          </Fragment>
+        );
+      })}
     </div>
   );
 }
