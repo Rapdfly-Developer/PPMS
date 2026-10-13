@@ -13,6 +13,7 @@ import { KeywordTextarea, KeywordChipsRow, removeKeywordFromText } from "@/compo
 import { saveGeneralExam } from "./actions";
 import { type MedEntry, searchMedications } from "@/lib/ophthalmic-medications";
 import { useEmrOverview } from "./EmrOverviewContext";
+import { useEMRSaveContext } from "./EmrSaveContext";
 import { useCustomPrintPref } from "@/lib/useCustomPrintPref";
 import { ComplaintChips } from "@/components/ui/ComplaintChips";
 
@@ -303,10 +304,11 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly }: { visit: 
     setComplaints((prev) => (prev.length === 1 ? [emptyComplaint()] : prev.filter((_, idx) => idx !== i)));
   };
 
+  const { savePaused } = useEMRSaveContext();
   const state = useAutoSave(data, async (d) => {
     if (readOnly) return;
     await saveGeneralExam(visit.id, udid, d);
-  }, undefined, { flushOnUnmount: true });
+  }, undefined, { flushOnUnmount: true, paused: savePaused });
 
   const overview = useEmrOverview();
   const visiblePmhOptions = overview

@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, ReactNode } from "react";
+import { useState, useEffect, ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
 import { Tabs } from "@/components/ui/Tabs";
 import { EmrActionBar } from "./EmrActionBar";
 import { ConsultationExitGuard } from "./ConsultationExitGuard";
 import { useEmrTabs } from "./EmrTabsContext";
 import { EmrOverviewProvider } from "./EmrOverviewContext";
+import { EMRSaveContext } from "./EmrSaveContext";
 import { LayoutList } from "lucide-react";
 
 type TabDef = {
@@ -77,12 +78,27 @@ export function EmrTabsShell({
   const closed = visit.status === "CLOSED";
   const showEditGate = closed && !!finalizedToday && !editMode;
 
+  // When re-editing a finalized visit, pause auto-saves until the user clicks
+  // "Finalize & Sign". A separate unblocked flag lets the action bar unpause
+  // without changing editMode (which would alter the UI gate).
+  const [saveUnblocked, setSaveUnblocked] = useState(false);
+  const savePaused = closed && !!finalizedToday && editMode && !saveUnblocked;
+
+  // Reset the override each time editMode is activated so a second edit session
+  // starts paused again.
+  useEffect(() => {
+    if (editMode) setSaveUnblocked(false);
+  }, [editMode]);
+
+  function unpauseSaves() { setSaveUnblocked(true); }
+
   function nextSection() {
     const next = visibleTabs[currentIndex + 1];
     if (next) setActiveTab(next.id);
   }
 
   return (
+    <EMRSaveContext.Provider value={{ savePaused, unpauseSaves }}>
     <EmrOverviewProvider value={overviewMode}>
       <div>
         <div className={showEditGate ? "pointer-events-none select-none opacity-70" : ""}>
@@ -153,5 +169,6 @@ export function EmrTabsShell({
         )}
       </div>
     </EmrOverviewProvider>
+    </EMRSaveContext.Provider>
   );
 }

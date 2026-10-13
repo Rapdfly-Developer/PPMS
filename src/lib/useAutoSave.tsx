@@ -52,7 +52,7 @@ export function useAutoSave<T>(
   data: T,
   save: (data: T) => Promise<void>,
   intervalMs = 30000,
-  { flushOnUnmount = false }: { flushOnUnmount?: boolean } = {},
+  { flushOnUnmount = false, paused = false }: { flushOnUnmount?: boolean; paused?: boolean } = {},
 ) {
   const [state, setState] = useState<SaveState>("idle");
 
@@ -71,8 +71,10 @@ export function useAutoSave<T>(
   // Always-current copies so async closures never read stale values.
   const dataRef = useRef(data);
   const saveRef = useRef(save);
+  const pausedRef = useRef(paused);
   dataRef.current = data;
   saveRef.current = save;
+  pausedRef.current = paused;
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -89,6 +91,16 @@ export function useAutoSave<T>(
     // will automatically retry — no data is lost.
     if (inFlightRef.current) {
       devLog("AUTO_SAVE_SKIP_IN_FLIGHT", {
+        change: changeVersionRef.current,
+        saved: savedVersionRef.current,
+      });
+      return;
+    }
+
+    // Saves are paused (e.g. re-editing a finalized visit). Keep dirty so
+    // the save fires as soon as paused becomes false.
+    if (pausedRef.current) {
+      devLog("AUTO_SAVE_SKIP_PAUSED", {
         change: changeVersionRef.current,
         saved: savedVersionRef.current,
       });
@@ -147,14 +159,27 @@ export function useAutoSave<T>(
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Flush on unmount: fire the save immediately so keystrokes are not lost
-  // when a tab unmounts before the debounce timer fires.
+  // when a tab unmounts before the debounce timer fires. Skipped when paused
+  // (e.g. re-editing a finalized visit without re-finalizing).
   useEffect(() => {
     return () => {
-      if (flushOnUnmount && changeVersionRef.current > savedVersionRef.current) {
+      if (flushOnUnmount && !pausedRef.current && changeVersionRef.current > savedVersionRef.current) {
         void saveRef.current(dataRef.current);
       }
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // When paused transitions true → false, fire an immediate save for any
+  // pending dirty data (e.g. the user clicked "Finalize & Sign" in edit mode).
+  // The ref tracks the previous value so this is a no-op on initial mount.
+  const prevPausedRef = useRef(paused);
+  useEffect(() => {
+    const wasPaused = prevPausedRef.current;
+    prevPausedRef.current = paused;
+    if (wasPaused && !paused) {
+      void doSaveRef.current?.();
+    }
+  }, [paused]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return state;
 }

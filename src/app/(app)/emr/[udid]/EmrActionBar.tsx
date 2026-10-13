@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 import { useSidebar } from "@/components/ui/SidebarContext";
 import { Toast } from "@/components/ui/Toast";
 import { closeVisit, markPartialDispense, passOverToDoctor } from "./actions";
+import { useEMRSaveContext } from "./EmrSaveContext";
 
 const PARTIAL_REASONS = [
   "Glasses not ready",
@@ -377,6 +378,7 @@ export function EmrActionBar({
 }) {
   const router = useRouter();
   const { collapsed } = useSidebar();
+  const { unpauseSaves } = useEMRSaveContext();
   const [pending, startTransition] = useTransition();
   const [partialPending, startPartialTransition] = useTransition();
   const [passOverPending, startPassOver] = useTransition();
@@ -643,6 +645,7 @@ export function EmrActionBar({
                 disabled={pending}
                 onClick={() =>
                   startTransition(async () => {
+                    if (editMode) unpauseSaves();
                     await closeVisit(visit.id, udid);
                     setShowSuccess(true);
                   })

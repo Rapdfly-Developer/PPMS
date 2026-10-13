@@ -2,6 +2,7 @@
 
 import { useState, useTransition, useRef } from "react";
 import { useEmrOverview } from "./EmrOverviewContext";
+import { useEMRSaveContext } from "./EmrSaveContext";
 import { Card } from "@/components/ui/Card";
 import { SingleChipSelect } from "@/components/ui/Chip";
 import { ORDER_PRIORITIES, LATERALITY } from "@/lib/constants";
@@ -194,10 +195,11 @@ function InvestigationCard({
   // existing `notes` column. Autosaved like every other clinical field so a
   // doctor never has to hunt for a save button.
   const [inViewOf, setInViewOf] = useState<string>(order.notes ?? "");
+  const { savePaused } = useEMRSaveContext();
   useAutoSave(inViewOf, async (v) => {
     if (readOnly) return;
     await updateInvestigationNotes(order.id, udid, v);
-  }, undefined, { flushOnUnmount: true });
+  }, undefined, { flushOnUnmount: true, paused: savePaused });
 
   const handleDelete = () => {
     if (!confirmDelete) { setConfirmDelete(true); setTimeout(() => setConfirmDelete(false), 3500); return; }
