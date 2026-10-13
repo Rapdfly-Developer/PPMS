@@ -8,7 +8,7 @@ import {
   Calendar, Clock, Undo2, CalendarX2,
   Users, UserCheck, UserMinus, Activity, TrendingUp, TrendingDown,
   ChevronRight, Stethoscope, ArrowRight, Bot,
-  BarChart2, BedDouble, Scissors, Lock,
+  BarChart2, BedDouble, Scissors, Lock, LogIn,
 } from "lucide-react";
 import clsx from "clsx";
 import { undoQueueEntry, undoPartialDispense } from "@/app/(app)/appointments/actions";
@@ -338,8 +338,9 @@ function PartialDispenseRow({ appt: a, scope, canDispense, canViewPatient }: {
         {canDispense && (
           <button disabled={undoing}
             onClick={() => startUndo(async () => { await undoPartialDispense(a.id); })}
-            className="px-3 py-1.5 rounded-lg border border-orange-300 bg-white text-orange-700 text-caption font-semibold hover:bg-orange-50 disabled:opacity-50 transition-all">
-            {undoing ? <Loader2 size={11} className="animate-spin" /> : "To Queue"}
+            title="Move to Queue"
+            className="p-1.5 rounded-lg border border-orange-300 bg-white text-orange-700 hover:bg-orange-50 disabled:opacity-50 transition-all">
+            {undoing ? <Loader2 size={14} className="animate-spin" /> : <LogIn size={14} />}
           </button>
         )}
       </td>

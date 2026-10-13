@@ -179,10 +179,10 @@ function PartialDispenseRow({ appt: a, serial, canDispense, canViewPatient, retu
             disabled={undoing}
             title="Move back to Today's Queue"
             onClick={() => startUndo(async () => { await undoPartialDispense(a.id); })}
-            className="flex items-center gap-1 text-caption sm:text-caption font-semibold px-2 py-1 rounded-lg bg-white border border-orange-300 text-orange-700 hover:bg-orange-100 disabled:opacity-50 transition-all"
+            title="Move to Queue"
+            className="p-1.5 rounded-lg bg-white border border-orange-300 text-orange-700 hover:bg-orange-100 disabled:opacity-50 transition-all"
           >
-            {undoing ? <Loader2 size={11} className="animate-spin" /> : <LogIn size={11} />}
-            {!undoing && "To Queue"}
+            {undoing ? <Loader2 size={14} className="animate-spin" /> : <LogIn size={14} />}
           </button>
         )}
       </div>
