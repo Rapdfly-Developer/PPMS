@@ -22,7 +22,7 @@ export const VERIFICATION_STATUSES = ["PENDING_REVIEW", "VERIFIED", "REJECTED"] 
 export const ORDER_PRIORITIES = ["ROUTINE", "URGENT", "STAT"] as const;
 export const ORDER_STATUSES = ["ORDERED", "IN_PROGRESS", "RESULT_AVAILABLE", "REVIEWED"] as const;
 
-export const DIAGNOSIS_STATUSES = ["ACTIVE", "RESOLVED", "CHRONIC"] as const;
+export const DIAGNOSIS_STATUSES = ["ACTIVE", "RESOLVED", "CHRONIC", "QUERY"] as const;
 
 export const LATERALITY = ["RE", "LE", "OU"] as const;
 
