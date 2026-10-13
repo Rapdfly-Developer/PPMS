@@ -92,6 +92,7 @@ export function EmrTabsShell({
             onTabChange={(id) => { setActiveTab(id); }}
             overviewMode={overviewMode}
             onOverviewToggle={() => setOverviewMode((v) => !v)}
+            keepMounted
           />
         </div>
         {pluginSlot}

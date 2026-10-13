@@ -52,6 +52,7 @@ export function useAutoSave<T>(
   data: T,
   save: (data: T) => Promise<void>,
   intervalMs = 30000,
+  { flushOnUnmount = false }: { flushOnUnmount?: boolean } = {},
 ) {
   const [state, setState] = useState<SaveState>("idle");
 
@@ -143,6 +144,16 @@ export function useAutoSave<T>(
   useEffect(() => {
     const id = setInterval(() => doSaveRef.current?.(), intervalMs);
     return () => clearInterval(id);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Flush on unmount: fire the save immediately so keystrokes are not lost
+  // when a tab unmounts before the debounce timer fires.
+  useEffect(() => {
+    return () => {
+      if (flushOnUnmount && changeVersionRef.current > savedVersionRef.current) {
+        void saveRef.current(dataRef.current);
+      }
+    };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return state;

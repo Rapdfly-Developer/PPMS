@@ -161,6 +161,7 @@ export function OphthalmicExamTab({ visit, priorVisits, udid, role, canEditVA, c
       <Tabs
         variant="sub"
         defaultTab="va"
+        keepMounted
         tabs={[
           { id: "va",        label: "Visual Acuity",    hidden: !(canViewVA ?? true), content: <div {...ovSect(empty.va)}><VisualAcuityCard visit={visit} udid={udid} editable={vaCanEdit} priorVisits={priorVisits} /></div> },
           { id: "refraction",label: "Refraction",        hidden: !(canViewRefraction ?? true), content: <div {...ovSect(empty.rx)}><RefractionCard visit={visit} udid={udid} editable={refractionistCanEdit} priorVisits={priorVisits} /></div> },
@@ -230,7 +231,7 @@ function VisualAcuityCard({ visit, udid, editable, priorVisits = [] }: { visit: 
   const state = useAutoSave({ testMethod, re: JSON.stringify(re), le: JSON.stringify(le) }, async (d) => {
     if (!editable) return;
     await saveVisualAcuity(visit.id, udid, d);
-  });
+  }, undefined, { flushOnUnmount: true });
 
   const getHistory = (section: string, eye: "re" | "le", fieldKey: string): HistoryEntry[] =>
     priorVisits
@@ -587,7 +588,8 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
       le: "",
       extraCorrections: JSON.stringify(extras.map((ex) => ({ _v: 2, ...ex }))),
     },
-    async (d) => { if (!editable) return; await saveRefraction(visit.id, udid, d); }
+    async (d) => { if (!editable) return; await saveRefraction(visit.id, udid, d); },
+    undefined, { flushOnUnmount: true }
   );
 
   // ── Correction helpers ─────────────────────────────────────────────────────
@@ -967,7 +969,8 @@ function ColourContrastTab({ visit, udid, editable, priorVisits = [] }: { visit:
       re: JSON.stringify({ cvMethod, result: reResult, notes: reNotes, csMethod, csResult: csReResult, csNotes: csReNotes }),
       le: JSON.stringify({ cvMethod, result: leResult, notes: leNotes, csMethod, csResult: csLeResult, csNotes: csLeNotes }),
     },
-    async (d) => { if (!editable) return; await saveColourVision(visit.id, udid, d); }
+    async (d) => { if (!editable) return; await saveColourVision(visit.id, udid, d); },
+    undefined, { flushOnUnmount: true }
   );
 
   const priorCv = priorVisits
@@ -1575,7 +1578,7 @@ function GonioscopyCard({
   const state = useAutoSave(
     { re, le, reDeg, leDeg, method },
     async (data) => { await saveGonioNotes(visit.id, udid, data); },
-    1500,
+    1500, { flushOnUnmount: true }
   );
 
   const empty = { re: "", le: "", reDeg: "", leDeg: "" };
@@ -1913,7 +1916,7 @@ function AnteriorSegmentCard({ visit, udid, editable, priorVisits = [] }: { visi
   const state = useAutoSave({ re: JSON.stringify(re), le: JSON.stringify(le) }, async (d) => {
     if (!editable) return;
     await saveAnteriorSegment(visit.id, udid, d);
-  });
+  }, undefined, { flushOnUnmount: true });
 
   const getSegHistory = (eye: "re" | "le", key: string): HistoryEntry[] =>
     priorVisits
@@ -2157,7 +2160,7 @@ function PosteriorSegmentCard({ visit, udid, editable, priorVisits = [] }: { vis
   const state = useAutoSave({ re: JSON.stringify(re), le: JSON.stringify(le) }, async (d) => {
     if (!editable) return;
     await savePosteriorSegment(visit.id, udid, d);
-  });
+  }, undefined, { flushOnUnmount: true });
 
   const histFor = (key: string, eyeKey: "re" | "le"): HistoryEntry[] =>
     priorVisits
@@ -2383,7 +2386,7 @@ function DiplopiaCard({ visit, udid, editable }: { visit: any; udid: string; edi
   const state = useAutoSave(grid, async (g) => {
     if (!editable) return;
     await saveDiplopia(visit.id, udid, JSON.stringify(g));
-  });
+  }, undefined, { flushOnUnmount: true });
 
   return (
     <Card>
@@ -2410,7 +2413,7 @@ function HessCard({ visit, udid, editable }: { visit: any; udid: string; editabl
   const state = useAutoSave({ grid, interpretation }, async (d) => {
     if (!editable) return;
     await saveHess(visit.id, udid, JSON.stringify(d.grid), d.interpretation);
-  });
+  }, undefined, { flushOnUnmount: true });
 
   return (
     <Card>
@@ -2452,7 +2455,7 @@ function RetinoscopyCard({ visit, udid, editable }: { visit: any; udid: string; 
   const state = useAutoSave({ re: JSON.stringify(re), le: JSON.stringify(le) }, async (d) => {
     if (!editable) return;
     await saveRetinoscopy(visit.id, udid, d);
-  });
+  }, undefined, { flushOnUnmount: true });
 
   const copyFromRefraction = async () => {
     setCopying(true);
@@ -2601,7 +2604,7 @@ function TearFilmCard({ visit, udid, editable, priorVisits = [] }: { visit: any;
     if (!editable) return;
     const numeric = Object.fromEntries(Object.entries(d).map(([k, v]) => [k, v === "" ? undefined : parseFloat(v as string)]));
     await saveTearFilm(visit.id, udid, numeric);
-  });
+  }, undefined, { flushOnUnmount: true });
 
   const upd = (k: keyof typeof data) => (v: string) => setData((prev) => ({ ...prev, [k]: v }));
 
@@ -2739,7 +2742,8 @@ function LacrimalSacCard({ visit, udid, editable, priorVisits = [] }: { visit: a
       re: JSON.stringify({ chips: reChips, findings: reFindings }),
       le: JSON.stringify({ chips: leChips, findings: leFindings }),
     },
-    async (d) => { if (!editable) return; await saveLacrimalSac(visit.id, udid, d); }
+    async (d) => { if (!editable) return; await saveLacrimalSac(visit.id, udid, d); },
+    undefined, { flushOnUnmount: true }
   );
 
   const HistoryPanel = ({ eye }: { eye: "re" | "le" }) => {

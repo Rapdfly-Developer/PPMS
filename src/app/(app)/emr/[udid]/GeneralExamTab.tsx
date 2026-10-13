@@ -306,7 +306,7 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly }: { visit: 
   const state = useAutoSave(data, async (d) => {
     if (readOnly) return;
     await saveGeneralExam(visit.id, udid, d);
-  });
+  }, undefined, { flushOnUnmount: true });
 
   const overview = useEmrOverview();
   const visiblePmhOptions = overview

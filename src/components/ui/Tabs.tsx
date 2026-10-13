@@ -13,6 +13,7 @@ export function Tabs({
   variant = "primary",
   overviewMode = false,
   onOverviewToggle,
+  keepMounted = false,
 }: {
   tabs: { id: string; label: string; icon?: ReactNode; badge?: number; content: ReactNode; hidden?: boolean; tabBarHidden?: boolean }[];
   defaultTab?: string;
@@ -21,6 +22,7 @@ export function Tabs({
   variant?: "primary" | "sub";
   overviewMode?: boolean;
   onOverviewToggle?: () => void;
+  keepMounted?: boolean;
 }) {
   const [internalActive, setInternalActive] = useState(defaultTab ?? tabs[0]?.id);
   const requestedActive = controlledActive ?? internalActive;
@@ -72,17 +74,27 @@ export function Tabs({
             </button>
           ))}
         </div>
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={active}
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -6 }}
-            transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
-          >
-            {activeTab?.content}
-          </motion.div>
-        </AnimatePresence>
+        {keepMounted ? (
+          <div>
+            {renderableTabs.map((tab) => (
+              <div key={tab.id} style={tab.id !== active ? { display: "none" } : undefined}>
+                {tab.content}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={active}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+            >
+              {activeTab?.content}
+            </motion.div>
+          </AnimatePresence>
+        )}
       </div>
     );
   }
@@ -253,18 +265,32 @@ export function Tabs({
       )}
 
       {/* ══ Shared content panel ═════════════════════════════════════════════ */}
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={active}
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -8 }}
-          transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
-          className={overviewMode ? "emr-overview-active" : undefined}
-        >
-          {activeTab?.content}
-        </motion.div>
-      </AnimatePresence>
+      {keepMounted ? (
+        <div>
+          {renderableTabs.map((tab) => (
+            <div
+              key={tab.id}
+              className={tab.id === active && overviewMode ? "emr-overview-active" : undefined}
+              style={tab.id !== active ? { display: "none" } : undefined}
+            >
+              {tab.content}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={active}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+            className={overviewMode ? "emr-overview-active" : undefined}
+          >
+            {activeTab?.content}
+          </motion.div>
+        </AnimatePresence>
+      )}
     </div>
   );
 }

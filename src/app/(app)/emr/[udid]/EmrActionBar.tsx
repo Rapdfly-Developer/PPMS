@@ -279,18 +279,20 @@ function CustomPrintModal({
   visitId: string;
   onClose: () => void;
 }) {
-  const filledSections = sections.filter((s) => s.hasData);
   const [checked, setChecked] = useState<Record<string, boolean>>(() =>
-    Object.fromEntries(filledSections.map((s) => [s.id, readCustomPrintPref(visitId, s.id)]))
+    Object.fromEntries(sections.map((s) => [s.id, readCustomPrintPref(visitId, s.id)]))
   );
 
-  const toggle = (id: string) => setChecked((prev) => ({ ...prev, [id]: !prev[id] }));
+  const toggle = (id: string) => {
+    const next = !checked[id];
+    setChecked((prev) => ({ ...prev, [id]: next }));
+    try { localStorage.setItem(`cp_${visitId}_${id}`, next ? "1" : "0"); } catch {}
+  };
 
   const handlePrint = () => {
     const params = new URLSearchParams();
     if (spv) params.set("spv", spv);
-    // Set =0 for any filled section that is unchecked
-    for (const s of filledSections) {
+    for (const s of sections) {
       if (!checked[s.id]) params.set(s.param, "0");
     }
     const url = `${summaryBase}${params.toString() ? `?${params.toString()}` : ""}`;
@@ -298,32 +300,41 @@ function CustomPrintModal({
     onClose();
   };
 
+  const anyChecked = sections.some((s) => checked[s.id]);
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
         <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--color-border)]">
-          <h2 className="text-sm font-semibold text-[var(--color-ink-800)]">Custom Print</h2>
+          <div>
+            <h2 className="text-sm font-semibold text-[var(--color-ink-800)]">Custom Print</h2>
+            <p className="text-caption text-[var(--color-ink-400)] mt-0.5">Select sections to include</p>
+          </div>
           <button onClick={onClose} className="text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)]">
             <X size={16} />
           </button>
         </div>
 
-        <div className="px-5 py-4 space-y-1 max-h-80 overflow-y-auto">
-          {filledSections.length === 0 ? (
-            <p className="text-sm text-[var(--color-ink-400)] text-center py-4">No data available to print.</p>
-          ) : (
-            filledSections.map((s) => (
-              <label key={s.id} className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-[var(--color-surface-sunken)] cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={checked[s.id] ?? false}
-                  onChange={() => toggle(s.id)}
-                  className="accent-[var(--color-primary-600)] w-4 h-4 shrink-0"
-                />
-                <span className="text-sm text-[var(--color-ink-700)]">{s.label}</span>
-              </label>
-            ))
-          )}
+        <div className="px-5 py-3 max-h-96 overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-200">
+          {sections.map((s) => (
+            <label
+              key={s.id}
+              className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-[var(--color-surface-sunken)] cursor-pointer select-none"
+            >
+              <input
+                type="checkbox"
+                checked={checked[s.id] ?? false}
+                onChange={() => toggle(s.id)}
+                className="accent-[var(--color-primary-600)] w-4 h-4 shrink-0"
+              />
+              <span className={`text-sm ${s.hasData ? "text-[var(--color-ink-800)]" : "text-[var(--color-ink-400)]"}`}>
+                {s.label}
+              </span>
+              {!s.hasData && (
+                <span className="ml-auto text-caption text-[var(--color-ink-300)] shrink-0">no data</span>
+              )}
+            </label>
+          ))}
         </div>
 
         <div className="flex justify-end gap-3 px-5 py-4 border-t border-[var(--color-border)]">
@@ -334,7 +345,7 @@ function CustomPrintModal({
             Cancel
           </button>
           <button
-            disabled={filledSections.length === 0 || !filledSections.some((s) => checked[s.id])}
+            disabled={!anyChecked}
             onClick={handlePrint}
             className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-50 transition-colors"
           >

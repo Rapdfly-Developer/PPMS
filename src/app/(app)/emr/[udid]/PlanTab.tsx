@@ -1262,7 +1262,7 @@ export function PlanTab({ visit, udid, patientSex, priorVisits = [], readOnly = 
   const [pendingDiagPrompts, setPendingDiagPrompts] = useState<{ diagnosisDesc: string; laterality?: string; matches: PresetMatch[] }[]>([]);
   const [activeDialogDiag, setActiveDialogDiag]     = useState<{ diagnosisDesc: string; laterality?: string; matches: PresetMatch[]; isChanging: boolean } | null>(null);
   const [adviseNotes, setAdviseNotes]       = useState<string>(visit.adviseNotes ?? "");
-  useAutoSave(adviseNotes, (notes) => saveAdviseNotes(visit.id, udid, notes));
+  useAutoSave(adviseNotes, (notes) => saveAdviseNotes(visit.id, udid, notes), undefined, { flushOnUnmount: true });
 
   const diagnoses: { icd10Code: string; description: string; laterality?: string }[] = visit.diagnoses ?? [];
   const medications: any[] = visit.medications ?? [];
@@ -1559,10 +1559,10 @@ function MinorProcedureCard({ visit, udid, priorVisits, readOnly = false }: { vi
   const doctorId: string = visit.doctorId ?? "";
   const legacyProcedureKwKeys = useMemo(() => [procKwKey(doctorId)], [doctorId]);
 
-  useAutoSave(laterality, (val) => saveProcedureLaterality(visit.id, udid, val));
-  useAutoSave(anesthesia, (val) => saveAnesthesiaType(visit.id, udid, val));
-  useAutoSave(procInput,  (val) => saveProcedureName(visit.id, udid, val));
-  useAutoSave(procNotes,  (val) => saveProcedureNotes(visit.id, udid, val));
+  useAutoSave(laterality, (val) => saveProcedureLaterality(visit.id, udid, val), undefined, { flushOnUnmount: true });
+  useAutoSave(anesthesia, (val) => saveAnesthesiaType(visit.id, udid, val),        undefined, { flushOnUnmount: true });
+  useAutoSave(procInput,  (val) => saveProcedureName(visit.id, udid, val),         undefined, { flushOnUnmount: true });
+  useAutoSave(procNotes,  (val) => saveProcedureNotes(visit.id, udid, val),        undefined, { flushOnUnmount: true });
 
   const filteredAnesthesia = [...ANESTHESIA_KEYWORDS, ...customAnesthesia].filter((kw) =>
     anesthesia.trim() === "" || kw.toLowerCase().includes(anesthesia.toLowerCase())

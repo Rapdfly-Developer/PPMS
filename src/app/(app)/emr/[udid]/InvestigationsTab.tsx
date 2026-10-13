@@ -197,7 +197,7 @@ function InvestigationCard({
   useAutoSave(inViewOf, async (v) => {
     if (readOnly) return;
     await updateInvestigationNotes(order.id, udid, v);
-  });
+  }, undefined, { flushOnUnmount: true });
 
   const handleDelete = () => {
     if (!confirmDelete) { setConfirmDelete(true); setTimeout(() => setConfirmDelete(false), 3500); return; }
