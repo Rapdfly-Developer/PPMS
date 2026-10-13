@@ -932,31 +932,37 @@ export function PatientsClient({
                       {/* Visit Times: Arrival / Dispensed / Duration */}
                       <div className="block w-32 sm:w-44 shrink-0">
                         <div className="space-y-0.5">
-                          {queueTimeStr ? (
-                            <p className="text-caption text-[var(--color-ink-600)]">
-                              <span className="text-micro font-semibold text-[var(--color-ink-400)] mr-1 hidden sm:inline">Arrival</span>
-                              <span className="text-micro font-semibold text-[var(--color-ink-400)] mr-1 sm:hidden">In</span>
-                              {queueTimeStr}
-                            </p>
-                          ) : null}
-                          {finalTimeStr ? (
-                            <p className="text-caption text-[var(--color-ink-600)]">
-                              <span className="text-micro font-semibold text-emerald-600 mr-1 hidden sm:inline">Dispensed</span>
-                              <span className="text-micro font-semibold text-emerald-600 mr-1 sm:hidden">Out</span>
-                              {finalTimeStr}
-                            </p>
-                          ) : null}
-                          {inClinicStr ? (
-                            <p className="text-caption font-semibold text-[var(--color-ink-700)]">
-                              <span className="text-micro font-semibold text-[var(--color-ink-400)] mr-1">Duration</span>{inClinicStr}
-                            </p>
-                          ) : null}
-                          {!queueTimeStr && !finalTimeStr && (
+                          {opStatusFilter === "noshowreg" ? (
                             noShowRow ? (
                               <p className="text-sm font-bold text-amber-600 text-right">{noShowExtras}</p>
                             ) : (
                               <span className="text-caption text-[var(--color-ink-300)]">—</span>
                             )
+                          ) : (
+                            <>
+                              {queueTimeStr ? (
+                                <p className="text-caption text-[var(--color-ink-600)]">
+                                  <span className="text-micro font-semibold text-[var(--color-ink-400)] mr-1 hidden sm:inline">Arrival</span>
+                                  <span className="text-micro font-semibold text-[var(--color-ink-400)] mr-1 sm:hidden">In</span>
+                                  {queueTimeStr}
+                                </p>
+                              ) : null}
+                              {finalTimeStr ? (
+                                <p className="text-caption text-[var(--color-ink-600)]">
+                                  <span className="text-micro font-semibold text-emerald-600 mr-1 hidden sm:inline">Dispensed</span>
+                                  <span className="text-micro font-semibold text-emerald-600 mr-1 sm:hidden">Out</span>
+                                  {finalTimeStr}
+                                </p>
+                              ) : null}
+                              {inClinicStr ? (
+                                <p className="text-caption font-semibold text-[var(--color-ink-700)]">
+                                  <span className="text-micro font-semibold text-[var(--color-ink-400)] mr-1">Duration</span>{inClinicStr}
+                                </p>
+                              ) : null}
+                              {!queueTimeStr && !finalTimeStr && (
+                                <span className="text-caption text-[var(--color-ink-300)]">—</span>
+                              )}
+                            </>
                           )}
                         </div>
                       </div>
