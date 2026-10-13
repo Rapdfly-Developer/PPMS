@@ -808,7 +808,9 @@ export function PatientsClient({
                   <span className="text-micro sm:text-caption font-bold uppercase tracking-wider text-[var(--color-ink-400)]">Chief Complaint / Diagnosis</span>
                 </div>
                 <div className="w-32 sm:w-44 shrink-0">
-                  <span className="text-micro sm:text-caption font-bold uppercase tracking-wider text-[var(--color-ink-400)]">Visit Times</span>
+                  <span className="text-micro sm:text-caption font-bold uppercase tracking-wider text-[var(--color-ink-400)]">
+                    {opStatusFilter === "noshowreg" ? "No of No Show Records" : "Visit Times"}
+                  </span>
                 </div>
               </div>
 
@@ -951,10 +953,7 @@ export function PatientsClient({
                           ) : null}
                           {!queueTimeStr && !finalTimeStr && (
                             noShowRow ? (
-                              <div>
-                                <p className="text-micro font-semibold text-[var(--color-ink-400)] uppercase tracking-wider mb-0.5">No Show Records</p>
-                                <p className="text-sm font-bold text-amber-600">{noShowExtras}</p>
-                              </div>
+                              <p className="text-sm font-bold text-amber-600">{noShowExtras}</p>
                             ) : (
                               <span className="text-caption text-[var(--color-ink-300)]">—</span>
                             )
