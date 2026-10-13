@@ -133,7 +133,7 @@ export function AppointmentRow({ appt, role, perms, token, hideAddToQueue }: { a
   return (
     <div
       onClick={() => router.push(getPatientUrl())}
-      className="flex items-start gap-3 px-4 sm:px-5 py-4 rounded-xl border border-[var(--color-border)] bg-white hover:bg-[var(--color-primary-50)] hover:border-[var(--color-primary-200)] transition-colors cursor-pointer min-w-[580px]"
+      className="flex items-start gap-3 px-4 sm:px-5 py-4 rounded-xl border border-[var(--color-border)] bg-white hover:bg-[var(--color-primary-50)] hover:border-[var(--color-primary-200)] transition-colors cursor-pointer"
     >
       <div
         className="flex items-center justify-center shrink-0 w-9 h-9 rounded-xl text-label sm:text-sm font-bold mt-0.5"
@@ -142,9 +142,9 @@ export function AppointmentRow({ appt, role, perms, token, hideAddToQueue }: { a
         {token}
       </div>
 
-      <div className="w-px self-stretch bg-[var(--color-border)]" />
+      <div className="w-px self-stretch bg-[var(--color-border)] hidden sm:block" />
 
-      <div className="flex-1 min-w-0 grid grid-cols-[minmax(0,1fr)_minmax(180px,260px)_220px] items-start gap-5">
+      <div className="flex-1 min-w-0 flex flex-col gap-3 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(180px,260px)_220px] lg:items-start lg:gap-5">
         {/* Left: patient identity and diagnosis */}
         <div className="min-w-0 flex-1">
           <button
