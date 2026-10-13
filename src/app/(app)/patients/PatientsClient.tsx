@@ -775,7 +775,7 @@ export function PatientsClient({
 
 
           {/* Patient list — queue style */}
-          <div className="surface-card overflow-hidden">
+          <div className="surface-card overflow-x-auto">
             {patients.length === 0 ? (
               <div className="py-16 text-center">
                 <Users size={36} className="mx-auto text-[var(--color-ink-300)] mb-3" />
@@ -799,20 +799,20 @@ export function PatientsClient({
             ) : (
               <>
               {/* Column headers */}
-              <div className="hidden xl:flex items-center gap-4 px-7 py-2.5 border-b border-[var(--color-border)] bg-[var(--color-surface-sunken)]">
+              <div className="flex items-center gap-4 px-7 py-2.5 border-b border-[var(--color-border)] bg-[var(--color-surface-sunken)] min-w-[560px]">
                 <div className="size-8 shrink-0" />
-                <div className="w-64 shrink-0">
+                <div className="w-44 sm:w-64 shrink-0">
                   <span className="text-micro sm:text-caption font-bold uppercase tracking-wider text-[var(--color-ink-400)]">Patient</span>
                 </div>
                 <div className="flex-1 min-w-0">
                   <span className="text-micro sm:text-caption font-bold uppercase tracking-wider text-[var(--color-ink-400)]">Chief Complaint / Diagnosis</span>
                 </div>
-                <div className="w-44 shrink-0">
+                <div className="w-32 sm:w-44 shrink-0">
                   <span className="text-micro sm:text-caption font-bold uppercase tracking-wider text-[var(--color-ink-400)]">Visit Times</span>
                 </div>
               </div>
 
-              <ul className="px-3 py-3 space-y-3">
+              <ul className="px-3 py-3 space-y-3 min-w-[560px]">
                 {patients.map((p, idx) => {
                   const av  = avatarColor(p.name);
                   const cat = CAT[p.category] ?? { label: p.category, cls: "bg-slate-100 text-slate-700" };
@@ -841,7 +841,7 @@ export function PatientsClient({
                   return (
                     <li
                       key={p.id}
-                      className="px-4 py-4 flex items-center gap-4 rounded-xl border border-[var(--color-border)] bg-white transition-colors cursor-pointer hover:bg-[var(--color-surface-sunken)] hover:border-[var(--color-primary-200)] hover:shadow-sm"
+                      className="px-4 py-4 flex items-center gap-4 rounded-xl border border-[var(--color-border)] bg-white transition-colors cursor-pointer hover:bg-[var(--color-surface-sunken)] hover:border-[var(--color-primary-200)] hover:shadow-sm min-w-[560px]"
                       onClick={() => {
                         const returnTo = encodeURIComponent(window.location.pathname + window.location.search);
                         const src = activeCard === "total" ? "&source=total-dispensed" : "";
@@ -857,7 +857,7 @@ export function PatientsClient({
                       </div>
 
                       {/* Avatar + name + UDID + age/sex + date + category */}
-                      <div className="flex items-center gap-3 flex-1 min-w-0 xl:w-64 xl:flex-none xl:shrink-0">
+                      <div className="flex items-center gap-3 w-44 sm:w-64 flex-none shrink-0 min-w-0">
                         {p.photoUrl ? (
                           <img
                             src={photoSrc(p.photoUrl)}
@@ -905,59 +905,11 @@ export function PatientsClient({
                               </span>
                             )}
                           </div>
-                          {/* Arrival / dispensed / duration — mobile/tablet only (xl column handles it) */}
-                          {(queueTimeStr || finalTimeStr || inClinicStr) && (
-                            <div className="xl:hidden flex items-center gap-2 mt-0.5 flex-wrap">
-                              {queueTimeStr && (
-                                <span className="text-micro sm:text-caption text-[var(--color-ink-400)]">
-                                  <span className="font-semibold text-[var(--color-ink-500)]">In</span> {queueTimeStr}
-                                </span>
-                              )}
-                              {finalTimeStr && (
-                                <span className="text-micro sm:text-caption text-[var(--color-ink-400)]">
-                                  <span className="font-semibold text-emerald-600">Out</span> {finalTimeStr}
-                                </span>
-                              )}
-                              {inClinicStr && (
-                                <span className="text-micro sm:text-caption font-semibold text-[var(--color-ink-600)]">{inClinicStr}</span>
-                              )}
-                            </div>
-                          )}
-                          {/* Chief complaint — the lg+ column is hidden below lg, so mirror it
-                              here. Breakpoints are exact complements: never both, never neither. */}
-                          {displayComplaint && (
-                            <div className="lg:hidden mt-1">
-                              {/* Wrap rather than truncate: on a phone this card is the only
-                                  place the complaint is shown, so it must be readable in full. */}
-                              <ComplaintChips value={displayComplaint} wrap />
-                            </div>
-                          )}
-                          {/* Diagnoses — same mirroring for the xl+ column. Without this a doctor
-                              on a tablet loses the working diagnosis entirely. Two pills then a
-                              count; that count is bounded by the `take: 4` fetch in page.tsx. */}
-                          {displayDiagnoses.length > 0 && (
-                            <div className="lg:hidden flex items-center gap-1 mt-1 flex-wrap">
-                              {displayDiagnoses.slice(0, 2).map((d, i) => (
-                                <span
-                                  key={i}
-                                  className="clinical-diagnosis-chip inline-flex max-w-full items-center gap-1 px-2 py-0.5 rounded-full border text-micro sm:text-caption"
-                                >
-                                  {d.laterality && <span className="clinical-laterality shrink-0">{d.laterality}</span>}
-                                  <span className="break-words">{d.description}</span>
-                                </span>
-                              ))}
-                              {displayDiagnoses.length > 2 && (
-                                <span className="text-micro sm:text-caption text-[var(--color-ink-400)]">
-                                  +{displayDiagnoses.length - 2} more
-                                </span>
-                              )}
-                            </div>
-                          )}
                         </div>
                       </div>
 
                       {/* Clinical summary — complaint and diagnosis stacked as specified */}
-                      <div className="hidden lg:flex flex-1 min-w-0 flex-col items-start gap-1.5">
+                      <div className="flex flex-1 min-w-0 flex-col items-start gap-1.5">
                         {displayComplaint ? (
                           <ComplaintChips value={displayComplaint} />
                         ) : (
@@ -981,16 +933,20 @@ export function PatientsClient({
                       </div>
 
                       {/* Visit Times: Arrival / Dispensed / Duration */}
-                      <div className="hidden xl:block w-44 shrink-0">
+                      <div className="block w-32 sm:w-44 shrink-0">
                         <div className="space-y-0.5">
                           {queueTimeStr ? (
                             <p className="text-caption text-[var(--color-ink-600)]">
-                              <span className="text-micro font-semibold text-[var(--color-ink-400)] mr-1">Arrival</span>{queueTimeStr}
+                              <span className="text-micro font-semibold text-[var(--color-ink-400)] mr-1 hidden sm:inline">Arrival</span>
+                              <span className="text-micro font-semibold text-[var(--color-ink-400)] mr-1 sm:hidden">In</span>
+                              {queueTimeStr}
                             </p>
                           ) : null}
                           {finalTimeStr ? (
                             <p className="text-caption text-[var(--color-ink-600)]">
-                              <span className="text-micro font-semibold text-emerald-600 mr-1">Dispensed</span>{finalTimeStr}
+                              <span className="text-micro font-semibold text-emerald-600 mr-1 hidden sm:inline">Dispensed</span>
+                              <span className="text-micro font-semibold text-emerald-600 mr-1 sm:hidden">Out</span>
+                              {finalTimeStr}
                             </p>
                           ) : null}
                           {inClinicStr ? (

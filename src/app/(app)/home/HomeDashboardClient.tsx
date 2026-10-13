@@ -289,7 +289,7 @@ function TableApptRow({ appt, scope, canManageQueue, canViewPatient, consultantN
               View
             </Link>
           ))}
-          {appt.status === "CONFIRMED" && canManageQueue && (
+          {appt.status === "CONFIRMED" && !isInConsultation && canManageQueue && (
             <button disabled={undoing} title="Move back to appointment time"
               onClick={() => startUndo(async () => { await undoQueueEntry(appt.id); })}
               className="p-1.5 rounded-lg border border-[var(--color-border)] bg-white text-[var(--color-ink-400)] hover:text-amber-600 hover:border-amber-300 hover:bg-amber-50 disabled:opacity-50 transition-all">
