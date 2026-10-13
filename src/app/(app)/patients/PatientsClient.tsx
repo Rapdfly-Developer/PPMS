@@ -893,11 +893,6 @@ export function PatientsClient({
                                 {noShowRow.hospitalName && (
                                   <span className="text-micro sm:text-caption text-[var(--color-ink-400)] truncate max-w-[120px]">{noShowRow.hospitalName}</span>
                                 )}
-                                {noShowExtras > 1 && (
-                                  <span className="text-micro font-semibold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">
-                                    +{noShowExtras - 1} more
-                                  </span>
-                                )}
                               </>
                             ) : (
                               <span className={`inline-flex text-micro sm:text-caption font-semibold px-2 py-0.5 rounded-full ${cat.cls}`}>
@@ -955,7 +950,14 @@ export function PatientsClient({
                             </p>
                           ) : null}
                           {!queueTimeStr && !finalTimeStr && (
-                            <span className="text-caption text-[var(--color-ink-300)]">—</span>
+                            noShowRow ? (
+                              <div>
+                                <p className="text-micro font-semibold text-[var(--color-ink-400)] uppercase tracking-wider mb-0.5">No Show Records</p>
+                                <p className="text-sm font-bold text-amber-600">{noShowExtras}</p>
+                              </div>
+                            ) : (
+                              <span className="text-caption text-[var(--color-ink-300)]">—</span>
+                            )
                           )}
                         </div>
                       </div>
