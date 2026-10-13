@@ -29,9 +29,9 @@ function asMs(value: string | null): number | null {
 
 function Row({ label, value, live }: { label: string; value: string; live?: boolean }) {
   return (
-    <div className="flex items-baseline justify-between gap-2">
-      <span className="text-caption uppercase tracking-wide text-white/45 shrink-0">{label}</span>
-      <span className={`text-caption tabular-nums whitespace-nowrap ${live ? "font-semibold text-emerald-300" : "text-white/75"}`}>
+    <div className="flex items-baseline gap-1 min-w-0">
+      <span className="text-caption uppercase tracking-wide text-white/45 shrink-0 truncate">{label}</span>
+      <span className={`text-caption tabular-nums whitespace-nowrap shrink-0 ml-auto ${live ? "font-semibold text-emerald-300" : "text-white/75"}`}>
         {value}
       </span>
     </div>
