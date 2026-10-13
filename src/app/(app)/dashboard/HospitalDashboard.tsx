@@ -109,7 +109,7 @@ export async function HospitalDashboard({
         filterOptions={doctors}
         hospitalLogoUrl={hospital?.logoUrl ?? null}
         newEncounterHref="/appointments/book"
-        newEncounterLabel="New Appointment"
+        newEncounterLabel={userCan(user, "opd.walkin.create") ? "Add Walk-in" : "New Appointment"}
         returnTo={returnTo}
       />
     </>
