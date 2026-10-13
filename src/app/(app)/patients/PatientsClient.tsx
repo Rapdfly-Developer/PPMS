@@ -799,15 +799,17 @@ export function PatientsClient({
             ) : (
               <>
               {/* Column headers */}
-              <div className="flex items-center gap-4 px-7 py-2.5 border-b border-[var(--color-border)] bg-[var(--color-surface-sunken)] min-w-[560px]">
-                <div className="size-8 shrink-0" />
-                <div className="w-44 sm:w-64 shrink-0">
+              <div className="grid items-center gap-4 px-7 py-2.5 border-b border-[var(--color-border)] bg-[var(--color-surface-sunken)] min-w-[560px]" style={{ gridTemplateColumns: opStatusFilter === "noshowreg" ? "2rem 1fr 1fr" : "2rem 1fr 1fr 1fr" }}>
+                <div className="size-8" />
+                <div>
                   <span className="text-micro sm:text-caption font-bold uppercase tracking-wider text-[var(--color-ink-400)]">Patient</span>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <span className="text-micro sm:text-caption font-bold uppercase tracking-wider text-[var(--color-ink-400)]">Chief Complaint / Diagnosis</span>
-                </div>
-                <div className="w-32 sm:w-44 shrink-0 text-right">
+                {opStatusFilter !== "noshowreg" && (
+                  <div>
+                    <span className="text-micro sm:text-caption font-bold uppercase tracking-wider text-[var(--color-ink-400)]">Chief Complaint / Diagnosis</span>
+                  </div>
+                )}
+                <div className={(opStatusFilter === "noshowreg" || opStatusFilter === "totaldispensed") ? "text-center" : ""}>
                   <span className="text-micro sm:text-caption font-bold uppercase tracking-wider text-[var(--color-ink-400)]">
                     {opStatusFilter === "noshowreg" ? "No of No Show Records" : "Visit Times"}
                   </span>
@@ -843,7 +845,8 @@ export function PatientsClient({
                   return (
                     <li
                       key={p.id}
-                      className="px-4 py-4 flex items-center gap-4 rounded-xl border border-[var(--color-border)] bg-white transition-colors cursor-pointer hover:bg-[var(--color-surface-sunken)] hover:border-[var(--color-primary-200)] hover:shadow-sm min-w-[560px]"
+                      className="px-4 py-3 grid items-center gap-4 rounded-xl border border-[var(--color-border)] bg-white transition-colors cursor-pointer hover:bg-[var(--color-surface-sunken)] hover:border-[var(--color-primary-200)] hover:shadow-sm min-w-[560px]"
+                      style={{ gridTemplateColumns: opStatusFilter === "noshowreg" ? "2rem 1fr 1fr" : "2rem 1fr 1fr 1fr" }}
                       onClick={() => {
                         const returnTo = encodeURIComponent(window.location.pathname + window.location.search);
                         const src = activeCard === "total" ? "&source=total-dispensed" : "";
@@ -859,7 +862,7 @@ export function PatientsClient({
                       </div>
 
                       {/* Avatar + name + UDID + age/sex + date + category */}
-                      <div className="flex items-center gap-3 w-44 sm:w-64 flex-none shrink-0 min-w-0">
+                      <div className="flex items-center gap-3 min-w-0">
                         {p.photoUrl ? (
                           <img
                             src={photoSrc(p.photoUrl)}
@@ -875,17 +878,19 @@ export function PatientsClient({
                           </div>
                         )}
                         <div className="min-w-0">
+                          {/* Line 1: name */}
                           <p className="text-label sm:text-sm font-semibold text-[var(--color-ink-900)] truncate">{p.name}</p>
-                          <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                            <span className="font-mono text-micro sm:text-caption bg-[#F0F8F6] text-[#115E59] px-1.5 py-0.5 rounded">
+                          {/* Line 2: PPMS ID + age/sex/phone — no wrap */}
+                          <div className="flex items-center gap-1.5 mt-0.5 overflow-hidden">
+                            <span className="font-mono text-micro sm:text-caption bg-[#F0F8F6] text-[#115E59] px-1.5 py-0.5 rounded shrink-0">
                               {p.udid}
                             </span>
-                            <span className="text-micro sm:text-caption text-[var(--color-ink-400)]">
+                            <span className="text-micro sm:text-caption text-[var(--color-ink-400)] truncate">
                               {p.age}y · {sexLabel}{p.mobile ? ` · ${p.mobile}` : ""}
                             </span>
                           </div>
-                          {/* Date + category / visit context — always visible */}
-                          <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                          {/* Line 3: date + category */}
+                          <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                             {displayDateStr && (
                               <span className="text-micro sm:text-caption text-[var(--color-ink-500)]">{displayDateStr}</span>
                             )}
@@ -905,36 +910,38 @@ export function PatientsClient({
                         </div>
                       </div>
 
-                      {/* Clinical summary — complaint and diagnosis stacked as specified */}
-                      <div className="flex flex-1 min-w-0 flex-col items-start gap-1.5">
-                        {displayComplaint ? (
-                          <ComplaintChips value={displayComplaint} />
-                        ) : (
-                          <span className="text-caption sm:text-caption italic text-[var(--color-ink-300)]">Complaint not recorded</span>
-                        )}
-                        {displayDiagnoses.length > 0 ? (
-                          <div className="flex max-w-full flex-wrap gap-1">
-                            {displayDiagnoses.slice(0, 2).map((d, i) => (
-                              <span key={i} className="clinical-diagnosis-chip inline-flex max-w-full items-center gap-1 px-2.5 py-0.5 rounded-full border text-caption sm:text-caption">
-                                {d.laterality && <span className="clinical-laterality shrink-0">{d.laterality}</span>}
-                                <span className="truncate">{d.description}</span>
-                              </span>
-                            ))}
-                            {displayDiagnoses.length > 2 && (
-                              <span className="self-center text-micro sm:text-caption text-[var(--color-ink-400)]">+{displayDiagnoses.length - 2}</span>
-                            )}
-                          </div>
-                        ) : (
-                          <span className="text-caption sm:text-caption italic text-[var(--color-ink-300)]">Diagnosis not recorded</span>
-                        )}
-                      </div>
+                      {/* Clinical summary — hidden in No Show Registry */}
+                      {opStatusFilter !== "noshowreg" && (
+                        <div className="flex min-w-0 flex-col items-start gap-1.5">
+                          {displayComplaint ? (
+                            <ComplaintChips value={displayComplaint} />
+                          ) : (
+                            <span className="text-caption sm:text-caption italic text-[var(--color-ink-300)]">Complaint not recorded</span>
+                          )}
+                          {displayDiagnoses.length > 0 ? (
+                            <div className="flex max-w-full flex-wrap gap-1">
+                              {displayDiagnoses.slice(0, 2).map((d, i) => (
+                                <span key={i} className="clinical-diagnosis-chip inline-flex max-w-full items-center gap-1 px-2.5 py-0.5 rounded-full border text-caption sm:text-caption">
+                                  {d.laterality && <span className="clinical-laterality shrink-0">{d.laterality}</span>}
+                                  <span className="truncate">{d.description}</span>
+                                </span>
+                              ))}
+                              {displayDiagnoses.length > 2 && (
+                                <span className="self-center text-micro sm:text-caption text-[var(--color-ink-400)]">+{displayDiagnoses.length - 2}</span>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-caption sm:text-caption italic text-[var(--color-ink-300)]">Diagnosis not recorded</span>
+                          )}
+                        </div>
+                      )}
 
-                      {/* Visit Times: Arrival / Dispensed / Duration */}
-                      <div className="block w-32 sm:w-44 shrink-0">
+                      {/* Visit Times: Arrival / Dispensed / Duration + Undo */}
+                      <div className={`flex items-start gap-2 min-w-0 ${(opStatusFilter === "noshowreg" || opStatusFilter === "totaldispensed") ? "justify-center" : "justify-between"}`}>
                         <div className="space-y-0.5">
                           {opStatusFilter === "noshowreg" ? (
                             noShowRow ? (
-                              <p className="text-sm font-bold text-amber-600 text-right">{noShowExtras}</p>
+                              <p className="text-sm font-bold text-amber-600 text-center">{noShowExtras}</p>
                             ) : (
                               <span className="text-caption text-[var(--color-ink-300)]">—</span>
                             )
@@ -965,10 +972,6 @@ export function PatientsClient({
                             </>
                           )}
                         </div>
-                      </div>
-
-                      {/* Undo — right side */}
-                      <div className="flex items-center gap-2 shrink-0 justify-end">
                         {opStatusFilter === "dispensed" && p.dispensedApptId && (
                           <button
                             onClick={(e) => {
