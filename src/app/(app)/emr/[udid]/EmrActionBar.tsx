@@ -98,105 +98,101 @@ function PartialDispenseModal({
           </button>
         </div>
 
-        <div className="px-6 py-5 space-y-3">
-          {/* Searchable combobox */}
-          <div ref={ref} className="relative">
-            <div className="relative">
-              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] pointer-events-none" />
-              <input
-                type="text"
-                value={query}
-                autoFocus
-                onChange={(e) => {
-                  setQuery(e.target.value);
-                  setReason(e.target.value);
-                  setOpen(true);
-                }}
-                onFocus={() => setOpen(true)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && query.trim()) {
-                    select(query.trim());
-                  } else if (e.key === "Escape") {
-                    setOpen(false);
-                  }
-                }}
-                placeholder="Search or type a reason…"
-                className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-[var(--color-border)] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 bg-[var(--color-surface)]"
-              />
-            </div>
-
-            {showDropdown && (
-              <ul className="absolute z-50 left-0 right-0 mt-1 rounded-xl border border-[var(--color-border)] bg-white shadow-xl overflow-hidden max-h-64 overflow-y-auto">
-                {/* Preset reasons */}
-                {filteredPresets.length > 0 && (
-                  <>
-                    <li className="px-3 py-1.5 text-caption font-bold uppercase tracking-widest text-[var(--color-ink-400)] bg-[var(--color-surface-sunken)]">
-                      Presets
-                    </li>
-                    {filteredPresets.map((r) => (
-                      <li key={r}>
-                        <button
-                          type="button"
-                          onMouseDown={(e) => { e.preventDefault(); select(r); }}
-                          className={`w-full text-left px-3 py-2.5 text-sm transition-colors flex items-center justify-between gap-2 ${
-                            reason === r
-                              ? "bg-amber-50 text-amber-800 font-semibold"
-                              : "text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]"
-                          }`}
-                        >
-                          {r}
-                          {reason === r && <CheckCircle2 size={13} className="text-amber-600 shrink-0" />}
-                        </button>
-                      </li>
-                    ))}
-                  </>
-                )}
-
-                {/* History */}
-                {filteredHistory.length > 0 && (
-                  <>
-                    <li className="px-3 py-1.5 text-caption font-bold uppercase tracking-widest text-[var(--color-ink-400)] bg-[var(--color-surface-sunken)] flex items-center gap-1.5 border-t border-[var(--color-border)]">
-                      <Clock size={10} /> Recent
-                    </li>
-                    {filteredHistory.map((r) => (
-                      <li key={r}>
-                        <button
-                          type="button"
-                          onMouseDown={(e) => { e.preventDefault(); select(r); }}
-                          className={`w-full text-left px-3 py-2.5 text-sm transition-colors flex items-center gap-2 ${
-                            reason === r
-                              ? "bg-amber-50 text-amber-800 font-semibold"
-                              : "text-[var(--color-ink-700)] hover:bg-amber-50/60"
-                          }`}
-                        >
-                          <Clock size={12} className="text-[var(--color-ink-400)] shrink-0" />
-                          {r}
-                          {reason === r && <CheckCircle2 size={13} className="ml-auto text-amber-600 shrink-0" />}
-                        </button>
-                      </li>
-                    ))}
-                  </>
-                )}
-
-                {/* Add custom keyword */}
-                {canAddCustom && (
-                  <li className="border-t border-[var(--color-border)]">
-                    <button
-                      type="button"
-                      onMouseDown={(e) => { e.preventDefault(); select(query.trim()); }}
-                      className="w-full text-left px-3 py-2.5 text-sm text-amber-700 hover:bg-amber-50 transition-colors flex items-center gap-2"
-                    >
-                      <Plus size={13} className="shrink-0" />
-                      Add &ldquo;<span className="font-semibold">{query.trim()}</span>&rdquo; as custom reason
-                    </button>
-                  </li>
-                )}
-              </ul>
-            )}
+        <div ref={ref} className="px-6 py-5 space-y-3">
+          {/* Input */}
+          <div className="relative">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] pointer-events-none" />
+            <input
+              type="text"
+              value={query}
+              autoFocus
+              onChange={(e) => {
+                setQuery(e.target.value);
+                setReason(e.target.value);
+                setOpen(true);
+              }}
+              onFocus={() => setOpen(true)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && query.trim()) {
+                  select(query.trim());
+                } else if (e.key === "Escape") {
+                  setOpen(false);
+                }
+              }}
+              placeholder="Search or type a reason…"
+              className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-[var(--color-border)] text-sm focus:outline-none focus:border-[var(--color-primary-400)] focus:ring-2 focus:ring-[var(--color-primary-100)] bg-[var(--color-surface)] placeholder:text-[var(--color-ink-300)]"
+            />
           </div>
 
-          {/* Selected reason badge */}
-          {reason.trim() && (
+          {/* Inline dropdown list */}
+          {showDropdown && (
+            <ul className="rounded-xl border border-[var(--color-border)] bg-white overflow-hidden max-h-52 overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-200">
+              {filteredPresets.length > 0 && (
+                <>
+                  <li className="px-3 py-1.5 text-caption font-semibold uppercase tracking-widest text-[var(--color-ink-300)] bg-[var(--color-surface-sunken)]">
+                    Presets
+                  </li>
+                  {filteredPresets.map((r) => (
+                    <li key={r}>
+                      <button
+                        type="button"
+                        onMouseDown={(e) => { e.preventDefault(); select(r); }}
+                        className={`w-full text-left px-3 py-2.5 text-sm transition-colors flex items-center justify-between gap-2 ${
+                          reason === r
+                            ? "bg-amber-50 text-amber-800 font-semibold"
+                            : "text-[var(--color-ink-800)] hover:bg-gray-50"
+                        }`}
+                      >
+                        {r}
+                        {reason === r && <CheckCircle2 size={13} className="text-amber-600 shrink-0" />}
+                      </button>
+                    </li>
+                  ))}
+                </>
+              )}
+
+              {filteredHistory.length > 0 && (
+                <>
+                  <li className="px-3 py-1.5 text-caption font-semibold uppercase tracking-widest text-[var(--color-ink-300)] bg-[var(--color-surface-sunken)] flex items-center gap-1.5 border-t border-[var(--color-border)]">
+                    <Clock size={10} /> Recent
+                  </li>
+                  {filteredHistory.map((r) => (
+                    <li key={r}>
+                      <button
+                        type="button"
+                        onMouseDown={(e) => { e.preventDefault(); select(r); }}
+                        className={`w-full text-left px-3 py-2.5 text-sm transition-colors flex items-center gap-2 ${
+                          reason === r
+                            ? "bg-amber-50 text-amber-800 font-semibold"
+                            : "text-[var(--color-ink-800)] hover:bg-gray-50"
+                        }`}
+                      >
+                        <Clock size={12} className="text-[var(--color-ink-400)] shrink-0" />
+                        {r}
+                        {reason === r && <CheckCircle2 size={13} className="ml-auto text-amber-600 shrink-0" />}
+                      </button>
+                    </li>
+                  ))}
+                </>
+              )}
+
+              {canAddCustom && (
+                <li className="border-t border-[var(--color-border)]">
+                  <button
+                    type="button"
+                    onMouseDown={(e) => { e.preventDefault(); select(query.trim()); }}
+                    className="w-full text-left px-3 py-2.5 text-sm text-amber-700 hover:bg-amber-50 transition-colors flex items-center gap-2"
+                  >
+                    <Plus size={13} className="shrink-0" />
+                    Add &ldquo;<span className="font-semibold">{query.trim()}</span>&rdquo; as custom reason
+                  </button>
+                </li>
+              )}
+            </ul>
+          )}
+
+          {/* Selected reason badge — shown when dropdown is closed */}
+          {!showDropdown && reason.trim() && (
             <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200">
               <CheckCircle2 size={14} className="text-amber-600 shrink-0" />
               <span className="text-sm text-amber-800 font-medium flex-1 min-w-0 truncate">{reason}</span>
@@ -210,9 +206,11 @@ function PartialDispenseModal({
             </div>
           )}
 
-          <p className="text-caption text-[var(--color-ink-400)]">
-            Type a keyword to search presets, pick a recent reason, or enter a custom one and press Enter.
-          </p>
+          {!showDropdown && (
+            <p className="text-caption text-[var(--color-ink-400)]">
+              Type a keyword to search presets, pick a recent reason, or enter a custom one and press Enter.
+            </p>
+          )}
         </div>
 
         <div className="flex justify-end gap-3 px-6 py-4 border-t border-[var(--color-border)]">
