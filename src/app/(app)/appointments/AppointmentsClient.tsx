@@ -646,7 +646,7 @@ export function AppointmentsClient({
                               · {(dkAppts as any[]).length} appointment{(dkAppts as any[]).length !== 1 ? "s" : ""}
                             </span>
                           </p>
-                          <div className="flex flex-col gap-3">
+                          <div className="flex flex-col gap-3 overflow-x-auto">
                             {(dkAppts as any[]).map((appt: any, idx: number) => (
                               <AppointmentRow key={appt.id} appt={appt} role={role} perms={apptPerms} token={idx + 1} />
                             ))}
@@ -744,7 +744,7 @@ export function AppointmentsClient({
                     {happts.length}
                   </span>
                 </div>
-                <div className="flex flex-col gap-3">
+                <div className="flex flex-col gap-3 overflow-x-auto">
                   {happts
                     .slice()
                     .sort((a: any, b: any) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime())
@@ -785,7 +785,7 @@ export function AppointmentsClient({
                     {dateAllExp ? "Collapse All" : "Expand All"}
                   </button>
                 </div>
-                <div className="flex flex-col gap-3">
+                <div className="flex flex-col gap-3 overflow-x-auto">
                   {dateAppts.map((appt: any) => (
                     <AppointmentRow key={appt.id} appt={appt} role={role} perms={apptPerms} token={tokenMap[appt.id]} />
                   ))}
