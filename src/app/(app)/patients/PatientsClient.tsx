@@ -537,9 +537,9 @@ export function PatientsClient({
 
       {/* ── KPI Cards ──────────────────────────────────────────────────── */}
       <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-5">
-        <KpiCard icon={<AlertCircle size={17} />}   label="No Show Registry" value={noShowPatientCount}    color="amber" isActive={activeCard === "noshowreg"} onSelect={() => navigate({ opStatus: activeCard === "noshowreg" ? "dispensed" : "noshowreg", card: activeCard === "noshowreg" ? "dispensed" : "noshowreg", page: "1" })} />
         <KpiCard icon={<PackageCheck size={17} />}  label="Dispensed Today"  value={kpis.todayDispensed} color="green" isActive={activeCard === "dispensed" || activeCard === ""} onSelect={() => navigate({ opStatus: activeCard === "dispensed" || activeCard === "" ? "all" : "dispensed", card: activeCard === "dispensed" || activeCard === "" ? "total" : "dispensed", page: "1" })} />
         <KpiCard icon={<Users size={17} />}         label="Total Dispensed"  value={kpis.totalDispensed} color="teal"  isActive={activeCard === "total"}    onSelect={() => navigate({ opStatus: activeCard === "total" ? "dispensed" : "totaldispensed", card: activeCard === "total" ? "dispensed" : "total", page: "1" })} />
+        <KpiCard icon={<AlertCircle size={17} />}   label="No Show Registry" value={noShowPatientCount}    color="amber" isActive={activeCard === "noshowreg"} onSelect={() => navigate({ opStatus: activeCard === "noshowreg" ? "dispensed" : "noshowreg", card: activeCard === "noshowreg" ? "dispensed" : "noshowreg", page: "1" })} />
       </div>
 
       {/* ── Table + Analytics ──────────────────────────────────────────── */}
