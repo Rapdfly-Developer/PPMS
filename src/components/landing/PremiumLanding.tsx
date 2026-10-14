@@ -476,7 +476,7 @@ const FAQ_ITEMS: FaqItem[] = [
   },
   {
     q: "What happens to our existing patient records?",
-    a: "Records can be imported from spreadsheets or an existing system during onboarding. Anything already captured on paper can be attached to a patient as a scanned document, and text is extracted so it becomes searchable alongside typed notes.",
+    a: "Records can be imported from spreadsheets or an existing system during onboarding. Anything already captured on paper can be attached to a patient as a scanned document and stored with the record.",
   },
   {
     q: "Is the 7-day free trial limited in any way?",
@@ -733,11 +733,6 @@ export function PremiumLanding() {
               icon: <History size={17} strokeWidth={1.25} />,
               label: "Full patient timeline",
               desc: "Every visit, prescription and result on one scrollable thread.",
-            },
-            {
-              icon: <ScanLine size={17} strokeWidth={1.25} />,
-              label: "Scanned reports become searchable",
-              desc: "Upload an outside lab report and its text is extracted and indexed with the record.",
             },
           ]}
         >
