@@ -252,20 +252,8 @@ function JourneyPanel() {
         lede="Every stage writes to the same record, so the next person to see the patient starts from what actually happened rather than from what was remembered."
       />
 
-      <div className="mt-8 grid gap-5 sm:mt-10 lg:grid-cols-[0.9fr_1.1fr]">
-        <div className="flex flex-col gap-6">
-          <Reveal variant="image">
-            <Frame
-              src={`${IMG}/wearable-vitals-hologram.jpg`}
-              alt="Vital signs displayed above a wearable device during remote patient monitoring"
-              aspect="aspect-[4/3]"
-              sizes="(max-width: 1024px) 92vw, 42vw"
-              quality={80}
-              radius="2rem"
-            />
-          </Reveal>
-
-          <ScrollRail className="flex flex-1 flex-col">
+      <div className="mt-8 grid gap-5 sm:mt-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
+        <ScrollRail className="flex flex-col">
           <RevealGroup className="flex flex-1 flex-col gap-3" stagger={0.07}>
             {[
               { n: "01", t: "Booking", d: "Front desk or patient books against your real availability at that hospital." },
@@ -288,17 +276,17 @@ function JourneyPanel() {
               </RevealItem>
             ))}
           </RevealGroup>
-          </ScrollRail>
-        </div>
+        </ScrollRail>
 
         <Reveal>
           <Frame
             src={`${IMG}/patient-preliminary-analysis-scan.jpg`}
             alt="A clinician reviewing a patient's preliminary analysis on a full-body diagnostic display"
-            aspect="aspect-[2/3]"
+            aspect="aspect-[5/4]"
             sizes="(max-width: 1024px) 92vw, 50vw"
             quality={82}
             radius="2.25rem"
+            className="[&_.lp-frame-img]:object-top"
           />
         </Reveal>
       </div>
@@ -387,7 +375,6 @@ function SurgeryPanel() {
 function AnalyticsPanel() {
   return (
       <Split
-        flip
         title="The numbers you actually run the practice on."
         lede="Today's queue, this month's revenue by hospital, no-show rate, repeat-visit rate, computed from the same records your staff are already entering, so there is no separate reporting exercise."
         points={[
