@@ -254,28 +254,32 @@ function JourneyPanel() {
 
       <div className="mt-8 grid gap-5 sm:mt-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
         <ScrollRail className="flex flex-col">
-          <RevealGroup className="flex flex-1 flex-col gap-3" stagger={0.07}>
-            {[
-              { n: "01", t: "Booking", d: "Front desk or patient books against your real availability at that hospital." },
-              { n: "02", t: "Consultation", d: "Vitals, notes, diagnosis and plan captured in the room." },
-              { n: "03", t: "Investigation", d: "Labs and imaging ordered, results attached back to the same visit." },
-              { n: "04", t: "Follow-up", d: "Next appointment, repeat prescription and reminders scheduled before they leave." },
-            ].map((s) => (
-              <RevealItem key={s.n}>
-                <div data-lp-tilt="" className="flex items-start gap-5 rounded-2xl bg-white p-5 3xl:p-7 4xl:p-8 ring-1 ring-inset ring-emerald-950/[0.07] transition-[transform,box-shadow] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:-translate-y-1 hover:shadow-[0_20px_44px_-34px_rgba(6,60,45,0.5)]">
-                  <span className="font-display text-[13px] font-bold tracking-[0.1em] text-emerald-500">
-                    {s.n}
-                  </span>
-                  <div>
-                    <div className="text-[15px] font-semibold tracking-tight text-emerald-950">
-                      {s.t}
+          <div className="relative flex flex-1 flex-col">
+            {/* Timeline spine connecting the step nodes */}
+            <div aria-hidden="true" className="absolute left-[1.55rem] top-7 bottom-7 w-px rounded-full bg-gradient-to-b from-emerald-300/70 via-emerald-200/40 to-emerald-100/10 pointer-events-none" />
+            <RevealGroup className="flex flex-1 flex-col gap-3" stagger={0.07}>
+              {[
+                { n: "01", t: "Booking", d: "Front desk or patient books against your real availability at that hospital." },
+                { n: "02", t: "Consultation", d: "Vitals, notes, diagnosis and plan captured in the room." },
+                { n: "03", t: "Investigation", d: "Labs and imaging ordered, results attached back to the same visit." },
+                { n: "04", t: "Follow-up", d: "Next appointment, repeat prescription and reminders scheduled before they leave." },
+              ].map((s) => (
+                <RevealItem key={s.n}>
+                  <div data-lp-tilt="" className="flex items-start gap-5 rounded-2xl bg-white p-5 3xl:p-7 4xl:p-8 ring-1 ring-inset ring-emerald-950/[0.07] transition-[transform,box-shadow] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:-translate-y-1 hover:shadow-[0_20px_44px_-34px_rgba(6,60,45,0.5)]">
+                    <span className="relative z-10 font-display text-[13px] font-bold tracking-[0.1em] text-emerald-500 w-5 shrink-0 text-center">
+                      {s.n}
+                    </span>
+                    <div>
+                      <div className="text-[15px] font-semibold tracking-tight text-emerald-950">
+                        {s.t}
+                      </div>
+                      <p className="mt-1.5 text-[14px] leading-relaxed text-slate-600">{s.d}</p>
                     </div>
-                    <p className="mt-1.5 text-[14px] leading-relaxed text-slate-600">{s.d}</p>
                   </div>
-                </div>
-              </RevealItem>
-            ))}
-          </RevealGroup>
+                </RevealItem>
+              ))}
+            </RevealGroup>
+          </div>
         </ScrollRail>
 
         <Reveal>
@@ -317,7 +321,7 @@ function SurgeryPanel() {
           },
         ]}
         extras={
-          <div className="rounded-2xl bg-emerald-950 px-5 py-5 ring-1 ring-inset ring-emerald-950">
+          <div className="rounded-2xl bg-emerald-950 px-5 py-5 ring-1 ring-inset ring-white/10">
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-400 mb-4">
               What gets documented per surgery
             </p>
@@ -433,7 +437,7 @@ function AnalyticsPanel() {
             <Frame
               src={`${IMG}/clinician-analytics-wall.jpg`}
               alt="A doctor reviewing practice analytics charts on a large transparent display"
-              aspect="aspect-[2/3]"
+              aspect="aspect-[4/5] lg:aspect-[1/1]"
               sizes="(max-width: 1024px) 92vw, 46vw"
               quality={82}
               radius="2.25rem"
@@ -531,7 +535,7 @@ const PLANS = [
     tag: "Best value",
     price: "₹9,999",
     period: "/year",
-    discount: null,
+    discount: "Save ₹26,000 vs monthly",
     features: [
       "Everything in 5 Doctors",
       "Unlimited hospitals",
@@ -614,9 +618,8 @@ export function PremiumLanding() {
 
             <div className="lp-in" style={inDelay(360)}>
               <p className="mt-5 max-w-xl 2xl:max-w-[680px] 4xl:max-w-[760px] 5xl:max-w-[880px] 6xl:max-w-[1040px] text-[length:var(--lp-lede-hero)] leading-relaxed text-slate-600 sm:mt-6">
-                Appointments, medical records, prescriptions, surgery and billing across every
-                hospital you practise at, managed from a single secure account, with the patient
-                history following the patient rather than the building.
+                Everything that happens in each consultation — notes, prescriptions, results,
+                billing — in one record, at every hospital, from one login.
               </p>
             </div>
 
@@ -912,16 +915,25 @@ export function PremiumLanding() {
       </Section>
 
       {/* ── FAQ ──────────────────────────────────────────────────────────── */}
-      <Section id="faq">
-        <SectionHead
-          eyebrow="FAQ"
-          title="Questions we hear most."
-        />
-        <Reveal>
-          <div className="mx-auto mt-10 max-w-3xl">
-            <Faq items={FAQ_ITEMS} />
-          </div>
-        </Reveal>
+      <Section id="faq" className="relative bg-slate-50/60">
+        {/* Soft radial glow — same technique as hero, keeps it on-brand */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 overflow-hidden"
+        >
+          <div className="absolute left-1/2 top-0 h-[500px] w-[900px] -translate-x-1/2 -translate-y-1/3 rounded-full bg-emerald-100/40 blur-3xl" />
+        </div>
+        <div className="relative">
+          <SectionHead
+            eyebrow="FAQ"
+            title="Questions we hear most."
+          />
+          <Reveal>
+            <div className="mx-auto mt-10 max-w-3xl">
+              <Faq items={FAQ_ITEMS} />
+            </div>
+          </Reveal>
+        </div>
       </Section>
 
       {/* ── Book a Free Demo ─────────────────────────────────────────────── */}
@@ -932,7 +944,7 @@ export function PremiumLanding() {
           <Reveal className="lg:sticky lg:top-28">
             <Eyebrow>Free Demo</Eyebrow>
             <h2 className="font-display mt-5 text-[length:var(--lp-h2-split)] font-bold leading-[1.07] tracking-[-0.03em] text-balance text-emerald-950 sm:mt-6">
-              <Words text="See How RF Health Can Transform Your Practice" delay={0.1} />
+              <Words text="Get a 20-minute live walkthrough." delay={0.1} />
             </h2>
             <p className="mt-5 text-[16px] leading-relaxed text-slate-600">
               Book a free, personalised demo with our team. We will walk you through
