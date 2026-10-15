@@ -219,85 +219,45 @@ const DURATION_METRICS: { label: string; from: keyof VisitTimestamps; to: keyof 
   { label: "Total Visit",     from: "arrivedAt",           to: "finalizedAt"             },
 ];
 
-const DOT_CLS: Record<TsGroup, string> = {
-  booking:  "bg-sky-400",
-  clinical: "bg-[var(--color-primary-500)]",
-  dispense: "bg-emerald-500",
-};
-const LINE_CLS: Record<TsGroup, string> = {
-  booking:  "bg-sky-200",
-  clinical: "bg-[var(--color-primary-200)]",
-  dispense: "bg-emerald-200",
-};
-
 function TimestampSection({ ts }: { ts: VisitTimestamps }) {
   const active = TS_STEPS.filter((s) => ts[s.key]);
   if (active.length === 0) return null;
 
-  const groups = [...new Set(active.map((s) => s.group))] as TsGroup[];
+  const durations = DURATION_METRICS
+    .map((d) => ({ label: d.label, value: fmtDuration(ts[d.from], ts[d.to]) }))
+    .filter((d) => d.value);
 
   return (
     <div className="bg-white rounded-xl border border-[var(--color-border)] p-3">
       {/* heading */}
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-1.5">
-          <Clock size={12} className="text-[var(--color-ink-400)]" />
-          <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-ink-500)]">
-            Time Stamps
-          </span>
-        </div>
-        {/* inline legend */}
-        <div className="flex items-center gap-2.5">
-          {groups.map((g) => (
-            <span key={g} className="flex items-center gap-1 text-[9px] text-[var(--color-ink-400)] capitalize">
-              <span className={`size-1.5 rounded-full ${DOT_CLS[g]}`} />
-              {g}
-            </span>
-          ))}
-        </div>
+      <div className="flex items-center gap-1.5 mb-3">
+        <Clock size={12} className="text-[var(--color-ink-400)]" />
+        <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-ink-500)]">
+          Time Stamps
+        </span>
       </div>
 
-      {/* two-column grid of timeline rows */}
-      <div className="grid grid-cols-2 gap-x-4">
-        {active.map(({ key, label, group }, i) => {
-          const isLastInCol = i === active.length - 1 || i === active.length - 2;
-          return (
-            <div key={key} className="flex gap-2">
-              <div className="flex flex-col items-center shrink-0 w-3">
-                <span className={`mt-[6px] size-2 rounded-full shrink-0 ${DOT_CLS[group]}`} />
-                {!isLastInCol && (
-                  <span className={`w-0.5 flex-1 min-h-[14px] mt-0.5 ${LINE_CLS[group]}`} />
-                )}
-              </div>
-              <div className="pb-2.5">
-                <p className="text-[9px] font-bold uppercase tracking-wider text-[var(--color-ink-400)] leading-tight">{label}</p>
-                <p className="text-[11px] font-bold tabular-nums text-[var(--color-ink-800)] leading-snug mt-0.5">{fmtTime(ts[key]!)}</p>
-              </div>
-            </div>
-          );
-        })}
+      {/* clean grid of chips */}
+      <div className="grid grid-cols-2 gap-2">
+        {active.map(({ key, label }) => (
+          <div key={key} className="rounded-lg bg-[var(--color-surface-sunken)] px-2.5 py-2">
+            <p className="text-[9px] font-bold uppercase tracking-wider text-[var(--color-ink-400)] leading-tight mb-0.5">{label}</p>
+            <p className="text-[12px] font-bold tabular-nums text-[var(--color-ink-800)] leading-none">{fmtTime(ts[key]!)}</p>
+          </div>
+        ))}
       </div>
 
       {/* durations */}
-      {(() => {
-        const durations = DURATION_METRICS
-          .map((d) => ({ label: d.label, value: fmtDuration(ts[d.from], ts[d.to]) }))
-          .filter((d) => d.value);
-        if (durations.length === 0) return null;
-        return (
-          <div className="mt-3 pt-2.5 border-t border-[var(--color-border)]">
-            <p className="text-[9px] font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-2">Durations</p>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
-              {durations.map(({ label, value }) => (
-                <div key={label}>
-                  <p className="text-[9px] font-bold uppercase tracking-wider text-[var(--color-ink-400)] leading-tight">{label}</p>
-                  <p className="text-[11px] font-bold tabular-nums text-[var(--color-ink-800)]">{value}</p>
-                </div>
-              ))}
+      {durations.length > 0 && (
+        <div className="mt-2.5 pt-2.5 border-t border-[var(--color-border)] grid grid-cols-2 gap-2">
+          {durations.map(({ label, value }) => (
+            <div key={label} className="rounded-lg bg-[var(--color-primary-50)] px-2.5 py-2">
+              <p className="text-[9px] font-bold uppercase tracking-wider text-[var(--color-primary-400)] leading-tight mb-0.5">{label}</p>
+              <p className="text-[12px] font-bold tabular-nums text-[var(--color-primary-700)] leading-none">{value}</p>
             </div>
-          </div>
-        );
-      })()}
+          ))}
+        </div>
+      )}
     </div>
   );
 }
