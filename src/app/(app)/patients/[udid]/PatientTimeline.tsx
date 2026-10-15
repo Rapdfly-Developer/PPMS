@@ -96,123 +96,32 @@ function EventDetail({ ev }: { ev: TimelineEvent }) {
     const fmtDur = (m: number) => m < 60 ? `${m} min` : `${Math.floor(m / 60)}h ${m % 60}m`;
 
     return (
-      <div className="mt-3 space-y-3 text-caption sm:text-xs text-[var(--color-ink-700)]">
+      <div className="mt-3">
         {(d.bookedAt || d.arrivedAt || d.seenAt || d.refractionStartedAt || d.finalizedAt) && (
-          <div className="rounded-xl border border-[var(--color-border)] overflow-hidden">
-            <p className="px-3 py-1.5 text-micro sm:text-micro sm:text-caption font-bold uppercase tracking-wider text-[var(--color-ink-500)] bg-[var(--color-surface-sunken)] border-b border-[var(--color-border)]">
+          <div className="rounded-2xl overflow-hidden" style={{ background: "var(--color-surface-sunken)" }}>
+            <p className="px-4 pt-3 pb-1 text-[9px] font-bold uppercase tracking-[0.12em] text-[var(--color-ink-400)]">
               Visit Timeline
             </p>
-            <div className="divide-y divide-[var(--color-border)]">
-              {d.bookedAt && (
-                <div className="flex items-center justify-between px-3 py-2">
-                  <span className="flex items-center gap-1.5 text-[var(--color-ink-500)]">
-                    <Clock size={11} className="shrink-0" /> Appointment Booked
+            <div className="px-3 pb-3 space-y-1">
+              {[
+                d.bookedAt     && { icon: <Clock size={10} />,        label: "Appointment Booked",    time: timeOnly(new Date(d.bookedAt)),    color: "text-[var(--color-ink-500)]",  bg: "" },
+                d.scheduledAt  && { icon: <Calendar size={10} />,     label: "Appointment Time",       time: timeOnly(new Date(d.scheduledAt)), color: "text-[var(--color-ink-500)]",  bg: "" },
+                arrivedAt      && { icon: <LogIn size={10} />,        label: "Arrived at Clinic",      time: timeOnly(arrivedAt),              color: "text-[var(--color-primary-600)]", bg: "" },
+                seenAt         && { icon: <Stethoscope size={10} />,  label: "Seen by Doctor",         time: timeOnly(seenAt),                 color: "text-[var(--color-primary-600)]", bg: "", note: waitMins !== null ? `${fmtDur(waitMins)} wait` : null, noteColor: "text-amber-500" },
+                consultationCompletedAt && { icon: <Stethoscope size={10} />, label: "Consultation Done", time: timeOnly(consultationCompletedAt), color: "text-[var(--color-primary-600)]", bg: "", note: consultationMins !== null ? fmtDur(consultationMins) : null, noteColor: "text-[var(--color-ink-400)]" },
+                refractionStartedAt && { icon: <Clock size={10} />,   label: "Refraction Started",    time: timeOnly(refractionStartedAt),    color: "text-cyan-600", bg: "" },
+                refractionPassedOverAt && { icon: <CheckCircle2 size={10} />, label: "Passed to Doctor", time: timeOnly(refractionPassedOverAt), color: "text-cyan-700", bg: "", note: refractionMins !== null ? fmtDur(refractionMins) : null, noteColor: "text-[var(--color-ink-400)]" },
+                d.partialDispenseAt && { icon: <AlertCircle size={10} />, label: "Partial Dispense",  time: timeOnly(new Date(d.partialDispenseAt)), color: "text-amber-600", bg: "bg-amber-50/60" },
+                finalizedAt    && { icon: <CheckCircle2 size={10} />, label: "Dispensed",             time: timeOnly(finalizedAt),            color: "text-emerald-600", bg: "bg-emerald-50/50", note: totalMins !== null ? `${fmtDur(totalMins)} total` : null, noteColor: "text-[var(--color-ink-400)]" },
+              ].filter(Boolean).map((row: any, i: number) => (
+                <div key={i} className={`flex items-center justify-between rounded-xl px-3 py-2 ${row.bg || "bg-white/70"}`}>
+                  <span className={`flex items-center gap-1.5 text-[11px] font-medium ${row.color}`}>
+                    {row.icon} {row.label}
+                    {row.note && <span className={`text-[10px] font-normal ${row.noteColor}`}>· {row.note}</span>}
                   </span>
-                  <span className="font-semibold text-[var(--color-ink-800)]">
-                    {timeOnly(new Date(d.bookedAt))}
-                  </span>
+                  <span className="text-[11px] font-bold tabular-nums text-[var(--color-ink-800)]">{row.time}</span>
                 </div>
-              )}
-              {d.scheduledAt && (
-                <div className="flex items-center justify-between px-3 py-2">
-                  <span className="flex items-center gap-1.5 text-[var(--color-ink-500)]">
-                    <Calendar size={11} className="shrink-0" /> Appointment Time
-                  </span>
-                  <span className="font-semibold text-[var(--color-ink-800)]">
-                    {timeOnly(new Date(d.scheduledAt))}
-                  </span>
-                </div>
-              )}
-              {arrivedAt && (
-                <div className="flex items-center justify-between px-3 py-2">
-                  <span className="flex items-center gap-1.5 text-teal-500">
-                    <LogIn size={11} className="shrink-0" /> Arrived at Clinic
-                  </span>
-                  <span className="font-semibold text-[var(--color-ink-800)]">
-                    {timeOnly(arrivedAt)}
-                  </span>
-                </div>
-              )}
-              {seenAt && (
-                <div className="flex items-center justify-between px-3 py-2">
-                  <span className="flex items-center gap-1.5 text-teal-600">
-                    <Stethoscope size={11} className="shrink-0" />
-                    Seen by Doctor
-                    {waitMins !== null && (
-                      <span className="ml-1 text-amber-500 font-medium">({fmtDur(waitMins)} wait)</span>
-                    )}
-                  </span>
-                  <span className="font-semibold text-[var(--color-ink-800)]">
-                    {timeOnly(seenAt)}
-                  </span>
-                </div>
-              )}
-              {consultationCompletedAt && (
-                <div className="flex items-center justify-between px-3 py-2">
-                  <span className="flex items-center gap-1.5 text-teal-600">
-                    <Stethoscope size={11} className="shrink-0" /> Consultation Completed
-                    {consultationMins !== null && (
-                      <span className="ml-1 text-[var(--color-ink-400)] font-normal">
-                        ({fmtDur(consultationMins)})
-                      </span>
-                    )}
-                  </span>
-                  <span className="font-semibold text-[var(--color-ink-800)]">
-                    {timeOnly(consultationCompletedAt)}
-                  </span>
-                </div>
-              )}
-              {refractionStartedAt && (
-                <div className="flex items-center justify-between px-3 py-2">
-                  <span className="flex items-center gap-1.5 text-cyan-600">
-                    <Clock size={11} className="shrink-0" /> Refraction Started
-                  </span>
-                  <span className="font-semibold text-[var(--color-ink-800)]">
-                    {timeOnly(refractionStartedAt)}
-                  </span>
-                </div>
-              )}
-              {refractionPassedOverAt && (
-                <div className="flex items-center justify-between px-3 py-2">
-                  <span className="flex items-center gap-1.5 text-cyan-700">
-                    <CheckCircle2 size={11} className="shrink-0" /> Passed to Doctor
-                    {refractionMins !== null && (
-                      <span className="ml-1 text-[var(--color-ink-400)] font-normal">
-                        ({fmtDur(refractionMins)})
-                      </span>
-                    )}
-                  </span>
-                  <span className="font-semibold text-[var(--color-ink-800)]">
-                    {timeOnly(refractionPassedOverAt)}
-                  </span>
-                </div>
-              )}
-              {d.partialDispenseAt && (
-                <div className="flex items-center justify-between px-3 py-2 bg-amber-50/60">
-                  <span className="flex items-center gap-1.5 text-amber-600">
-                    <AlertCircle size={11} className="shrink-0" /> Partial Dispense
-                  </span>
-                  <span className="font-semibold text-amber-700">
-                    {timeOnly(new Date(d.partialDispenseAt))}
-                  </span>
-                </div>
-              )}
-              {finalizedAt && (
-                <div className="flex items-center justify-between px-3 py-2 bg-emerald-50/60">
-                  <span className="flex items-center gap-1.5 text-emerald-600">
-                    <CheckCircle2 size={11} className="shrink-0" />
-                    Dispensed
-                    {totalMins !== null && (
-                      <span className="ml-1 text-[var(--color-ink-400)] font-normal">
-                        ({fmtDur(totalMins)} total visit)
-                      </span>
-                    )}
-                  </span>
-                  <span className="font-semibold text-emerald-700">
-                    {timeOnly(finalizedAt)}
-                  </span>
-                </div>
-              )}
+              ))}
             </div>
           </div>
         )}
@@ -221,25 +130,32 @@ function EventDetail({ ev }: { ev: TimelineEvent }) {
   }
 
   if (ev.type === "INVESTIGATION") return (
-    <div className="mt-3 space-y-2">
-      {d.orders?.map((o) => {
-        const hasReport = !!o.reportUpdatedAt;
-        const time = hasReport ? o.reportUpdatedAt : o.orderedAt;
-        return (
-          <div key={o.id} className="flex items-center gap-2 text-xs bg-white rounded-lg px-3 py-2.5 border border-teal-50">
-            {o.laterality && (
-              <span className="shrink-0 text-micro sm:text-caption font-bold text-teal-600">{o.laterality}</span>
-            )}
-            <span className="flex-1 min-w-0 font-medium text-[var(--color-ink-800)] truncate">{o.testName}</span>
-            {time && (
-              <span className={`shrink-0 flex items-center gap-1 text-caption ${hasReport ? "text-emerald-600" : "text-[var(--color-ink-400)]"}`}>
-                {hasReport ? <CheckCircle2 size={9} className="shrink-0" /> : <Clock size={9} className="shrink-0" />}
-                {hasReport ? "Report updated" : "Ordered"}: {format(new Date(time), "d MMM yyyy, h:mm a")}
-              </span>
-            )}
-          </div>
-        );
-      })}
+    <div className="mt-3 rounded-2xl overflow-hidden" style={{ background: "var(--color-surface-sunken)" }}>
+      <p className="px-4 pt-3 pb-1 text-[9px] font-bold uppercase tracking-[0.12em] text-[var(--color-ink-400)]">
+        Investigations
+      </p>
+      <div className="px-3 pb-3 space-y-1">
+        {d.orders?.map((o) => {
+          const hasReport = !!o.reportUpdatedAt;
+          const time = hasReport ? o.reportUpdatedAt : o.orderedAt;
+          return (
+            <div key={o.id} className="flex items-center gap-2.5 bg-white/70 rounded-xl px-3 py-2">
+              {o.laterality && (
+                <span className="shrink-0 text-[10px] font-bold text-[var(--color-primary-600)] bg-[var(--color-primary-50)] px-1.5 py-0.5 rounded-md">
+                  {o.laterality}
+                </span>
+              )}
+              <span className="flex-1 min-w-0 text-[11px] font-semibold text-[var(--color-ink-800)]">{o.testName}</span>
+              {time && (
+                <span className={`shrink-0 flex items-center gap-1 text-[10px] font-medium ${hasReport ? "text-emerald-600" : "text-[var(--color-ink-400)]"}`}>
+                  {hasReport ? <CheckCircle2 size={9} /> : <Clock size={9} />}
+                  {format(new Date(time), "h:mm a")}
+                </span>
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 
@@ -366,37 +282,34 @@ function CalendarGrid({
   const leadingBlanks = getDay(days[0]);
 
   return (
-    <div className="shrink-0 px-5 pt-4 pb-3 border-b border-[var(--color-border)]"
+    <div className="shrink-0 px-8 pt-2 pb-1.5 border-b border-[var(--color-border)]"
       style={{ background: "linear-gradient(160deg, var(--color-primary-50) 0%, #fff 60%)" }}
     >
       {/* Month navigation */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-1.5">
         <button
           onClick={onPrev}
-          className="size-8 flex items-center justify-center rounded-full bg-white border border-[var(--color-border)] shadow-sm hover:shadow text-[var(--color-ink-500)] hover:text-[var(--color-primary-600)] transition-all"
+          className="size-7 flex items-center justify-center rounded-full bg-white border border-[var(--color-border)] shadow-sm hover:shadow text-[var(--color-ink-500)] hover:text-[var(--color-primary-600)] transition-all"
         >
-          <ChevronLeft size={14} />
+          <ChevronLeft size={13} />
         </button>
 
         <div className="text-center">
-          <h3 className="text-[15px] font-bold tracking-tight text-[var(--color-ink-800)]">
-            {format(currentMonth, "MMMM")}
+          <h3 className="text-[13px] font-bold tracking-tight text-[var(--color-ink-800)]">
+            {format(currentMonth, "MMMM yyyy")}
           </h3>
-          <p className="text-[11px] text-[var(--color-ink-400)] font-medium -mt-0.5">
-            {format(currentMonth, "yyyy")}
-          </p>
         </div>
 
         <button
           onClick={onNext}
-          className="size-8 flex items-center justify-center rounded-full bg-white border border-[var(--color-border)] shadow-sm hover:shadow text-[var(--color-ink-500)] hover:text-[var(--color-primary-600)] transition-all"
+          className="size-7 flex items-center justify-center rounded-full bg-white border border-[var(--color-border)] shadow-sm hover:shadow text-[var(--color-ink-500)] hover:text-[var(--color-primary-600)] transition-all"
         >
-          <ChevronRight size={14} />
+          <ChevronRight size={13} />
         </button>
       </div>
 
       {/* Day-of-week header */}
-      <div className="grid grid-cols-7 mb-2">
+      <div className="grid grid-cols-7 mb-1">
         {DAY_LABELS.map((d) => (
           <span key={d} className="text-center text-[9px] font-bold text-[var(--color-ink-300)] uppercase tracking-widest">
             {d}
@@ -405,7 +318,7 @@ function CalendarGrid({
       </div>
 
       {/* Date cells */}
-      <div className="grid grid-cols-7 gap-y-1.5">
+      <div className="grid grid-cols-7 gap-y-0">
         {Array.from({ length: leadingBlanks }).map((_, i) => <div key={`b-${i}`} />)}
         {days.map((day) => {
           const key        = format(day, "yyyy-MM-dd");
@@ -416,12 +329,12 @@ function CalendarGrid({
           const types      = [...new Set(dayEvents.map((e) => e.type))] as TimelineEventType[];
 
           return (
-            <div key={key} className="flex justify-center">
-              <button
-                disabled={!hasEvents}
-                onClick={() => hasEvents && onSelectDate(key)}
-                className={[
-                  "relative flex flex-col items-center justify-center size-9 rounded-xl transition-all duration-150",
+            <button
+              key={key}
+              disabled={!hasEvents}
+              onClick={() => hasEvents && onSelectDate(key)}
+              className={[
+                  "relative flex flex-col items-center justify-center w-full h-10 rounded-xl transition-all duration-150",
                   isSelected
                     ? "bg-[var(--color-primary-600)] text-white shadow-md scale-105"
                     : hasEvents
@@ -444,14 +357,13 @@ function CalendarGrid({
                     ))}
                   </div>
                 )}
-              </button>
-            </div>
+            </button>
           );
         })}
       </div>
 
       {/* Today button + Legend */}
-      <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-[var(--color-border)]/60">
+      <div className="flex items-center justify-between mt-2 pt-1.5 border-t border-[var(--color-border)]/60">
         <button
           onClick={onToday}
           className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-white border border-[var(--color-primary-200)] text-[var(--color-primary-600)] hover:bg-[var(--color-primary-50)] shadow-sm transition-all"
@@ -573,7 +485,7 @@ export function PatientTimelineModal({
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       {/* Panel */}
-      <div className="absolute inset-y-0 right-0 w-full max-w-[400px] bg-[var(--color-surface)] flex flex-col shadow-2xl">
+      <div className="absolute inset-y-0 right-0 w-full max-w-[520px] bg-[var(--color-surface)] flex flex-col shadow-2xl">
 
         {/* Header */}
         <div
