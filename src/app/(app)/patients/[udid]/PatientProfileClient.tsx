@@ -386,10 +386,12 @@ function LastVisitSummarySection({
   summary,
   longitudinalVisits = [],
   udid,
+  label = "Last Visit Summary",
 }: {
   summary: LastVisitSummary;
   longitudinalVisits?: LongitudinalVisit[];
   udid: string;
+  label?: string;
 }) {
   const tabState = useVisitSummaryState(summary.id, { autoGenerateAI: false });
   const hasLongitudinal = longitudinalVisits.length > 0;
@@ -411,7 +413,7 @@ function LastVisitSummarySection({
                     : "text-[var(--color-ink-400)] hover:text-[var(--color-ink-600)]"
                 }`}
               >
-                {st === "single" ? "Last Visit" : "Longitudinal"}
+                {st === "single" ? (label === "Today's Visit Summary" ? "Today's Visit" : "Last Visit") : "Longitudinal"}
               </button>
             ))}
           </div>
@@ -461,7 +463,7 @@ function LastVisitSummarySection({
         <div className="px-4 py-2 border-b border-[var(--color-border)] flex items-center justify-between gap-2 overflow-hidden">
           <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
             <Activity size={13} className="text-[var(--color-primary-600)] shrink-0" />
-            <span className="text-caption sm:text-xs font-semibold text-[var(--color-ink-800)]">Last Visit Summary</span>
+            <span className="text-caption sm:text-xs font-semibold text-[var(--color-ink-800)]">{label}</span>
             <span className="text-[var(--color-ink-300)] text-micro sm:text-caption">·</span>
             <span className="text-micro sm:text-caption text-[var(--color-ink-400)]">{format(new Date(summary.date), "dd MMM yyyy")}</span>
             <VisitSummaryTabBar
@@ -914,6 +916,7 @@ export function PatientProfileClient({
   showTodayVisit = true,
   allowEmrEdit = true,
   timelineEntries = [],
+  todayVisitSummary = null,
   lastVisitSummary = null,
   longitudinalVisits = [],
   profileReturnPath,
@@ -930,6 +933,7 @@ export function PatientProfileClient({
   /** False when navigating from the Total Dispensed card — EMR is view-only, no edit allowed. */
   allowEmrEdit?: boolean;
   timelineEntries?: TimelineEntry[];
+  todayVisitSummary?: LastVisitSummary | null;
   lastVisitSummary?: LastVisitSummary | null;
   longitudinalVisits?: LongitudinalVisit[];
   profileReturnPath?: string;
@@ -1059,14 +1063,21 @@ export function PatientProfileClient({
         </div>
       )}
 
-      {/* ── Last Visit Summary (AI tab has Last Visit / Longitudinal sub-switch) ── */}
-      {lastVisitSummary && (
+      {/* ── Visit Summary — today's if finalized, otherwise last past visit ── */}
+      {todayVisitSummary ? (
+        <LastVisitSummarySection
+          summary={todayVisitSummary}
+          longitudinalVisits={longitudinalVisits}
+          udid={udid}
+          label="Today's Visit Summary"
+        />
+      ) : lastVisitSummary ? (
         <LastVisitSummarySection
           summary={lastVisitSummary}
           longitudinalVisits={longitudinalVisits}
           udid={udid}
         />
-      )}
+      ) : null}
     </>
   );
 }

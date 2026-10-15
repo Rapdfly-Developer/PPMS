@@ -195,6 +195,31 @@ export default async function PatientProfilePage({
     }))
     .filter((sv) => new Date(sv.date) < todayStart);
 
+  /* ── Today's visit summary — shown when today's visit is finalized ───── */
+  let todayVisitSummary: LastVisitSummary | null = null;
+  if (todayVisitRecord && todayVisitRecord.status === "CLOSED") {
+    const [tHosp, tDoc, tGenExam, tDiags, tMeds, tInvOrders] = await Promise.all([
+      prisma.hospital.findUnique({ where: { id: todayVisitRecord.hospitalId }, select: { name: true } }),
+      prisma.doctor.findUnique({ where: { id: todayVisitRecord.doctorId }, select: { name: true } }),
+      prisma.generalExamination.findUnique({ where: { visitId: todayVisitRecord.id }, select: { chiefComplaint: true } }),
+      prisma.diagnosis.findMany({ where: { visitId: todayVisitRecord.id }, select: { id: true, description: true, icd10Code: true, laterality: true, status: true, provisional: true } }),
+      prisma.medication.findMany({ where: { visitId: todayVisitRecord.id }, select: { id: true, drugName: true, dosage: true, frequency: true, duration: true, laterality: true } }),
+      prisma.investigationOrder.findMany({ where: { visitId: todayVisitRecord.id }, select: { id: true, category: true, testName: true, priority: true, laterality: true, status: true, notes: true, resultRef: true, createdAt: true }, orderBy: { createdAt: "asc" } }),
+    ]);
+    todayVisitSummary = {
+      id:             todayVisitRecord.id,
+      date:           todayVisitRecord.date.toISOString(),
+      visitType:      todayVisitRecord.visitType ?? null,
+      hospitalName:   tHosp?.name ?? null,
+      doctorName:     tDoc?.name ?? null,
+      chiefComplaint: tGenExam?.chiefComplaint ?? null,
+      diagnoses:      tDiags,
+      medications:    tMeds,
+      investigations: tInvOrders.map((o) => ({ ...o, createdAt: o.createdAt.toISOString() })),
+      followUpDate:   (todayVisitRecord as any).followUpDate ? (todayVisitRecord as any).followUpDate.toISOString() : null,
+    };
+  }
+
   /* ── Last visit full detail (summary + investigations) ───────────────── */
   // "Last visit" = the most recent visit BEFORE today; today's visit lives
   // under the Today's Visit button, not in history.
@@ -483,6 +508,7 @@ export default async function PatientProfilePage({
           allowEmrEdit={source !== "total-dispensed"}
             showTodayVisit={showTodayVisit}
             timelineEntries={timelineEntries}
+            todayVisitSummary={todayVisitSummary}
             lastVisitSummary={lastVisitSummary}
             longitudinalVisits={longitudinalVisits}
             profileReturnPath={profileReturnPath}
