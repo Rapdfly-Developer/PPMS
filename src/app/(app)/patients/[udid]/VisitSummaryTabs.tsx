@@ -502,19 +502,19 @@ function RxTable({ rows }: { rows: { label: string; re?: string | null; le?: str
       <table className="w-full table-fixed border-collapse">
         <thead>
           <tr className="bg-[var(--color-surface-sunken)]">
-            <th className={`${TH} border-r border-[var(--color-border)]`} />
-            <th className={`${TH} text-center border-r border-[var(--color-border)]`}>RE</th>
-            <th className={`${TH} text-center`}>LE</th>
+            <th className="px-4 py-2 text-left text-micro font-bold uppercase tracking-widest text-[var(--color-ink-400)] border-r border-[var(--color-border)]" />
+            <th className="px-4 py-2 text-center text-micro font-bold uppercase tracking-widest text-[var(--color-ink-400)] border-r border-[var(--color-border)]">RE</th>
+            <th className="px-4 py-2 text-center text-micro font-bold uppercase tracking-widest text-[var(--color-ink-400)]">LE</th>
           </tr>
         </thead>
         <tbody>
           {visible.map((row) => (
             <tr key={row.label} className="border-t border-[var(--color-border)]">
-              <td className={`${TD_MUTED} border-r border-[var(--color-border)]`}>{row.label}</td>
-              <td className={`${TD} text-center tabular-nums border-r border-[var(--color-border)]`}>
+              <td className="px-4 py-2 align-middle text-caption text-[var(--color-ink-500)] border-r border-[var(--color-border)]">{row.label}</td>
+              <td className="px-4 py-2 align-middle text-center text-caption text-[var(--color-ink-700)] tabular-nums border-r border-[var(--color-border)]">
                 {row.re || DASH}
               </td>
-              <td className={`${TD} text-center tabular-nums`}>
+              <td className="px-4 py-2 align-middle text-center text-caption text-[var(--color-ink-700)] tabular-nums">
                 {row.le || DASH}
               </td>
             </tr>
